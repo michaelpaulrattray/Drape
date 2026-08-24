@@ -17,8 +17,12 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
+import { photorealHumanConstant } from "./cohortPhotorealHuman";
 import {
+  applyFramingClause,
   applyFramingTrim,
+  FRAMING_CLAUSE_FROM,
+  FRAMING_CLAUSE_TO,
   FRAMING_TRIM_DELIVERED,
   FRAMING_TRIM_RENDER,
   FRAMING_TRIM_TARGET,
@@ -172,5 +176,52 @@ describe("the framing trim step", () => {
       extentOf: (mask) => ({ box: mask as never }),
     }, { bytes });
     expect(flags).toEqual([true, true]);
+  });
+});
+
+describe("the margin clause", () => {
+  it("swaps the landmark sentence and leaves the shoulders clause standing", () => {
+    const composed = `blah ${FRAMING_CLAUSE_FROM} Shoulders fully inside the frame with margin at both sides. tail`;
+    const result = applyFramingClause(composed);
+    expect(result.applied).toBe(true);
+    expect(result.prompt).toContain(FRAMING_CLAUSE_TO);
+    expect(result.prompt).not.toContain(FRAMING_CLAUSE_FROM);
+    /* ⚠ THE SECOND SENTENCE SURVIVES. The court replaced only the FIRST of the
+       two, and a swap that took both would be a prompt no court has rendered. */
+    expect(result.prompt).toContain("Shoulders fully inside the frame with margin at both sides.");
+    expect(result.prompt.startsWith("blah ")).toBe(true);
+    expect(result.prompt.endsWith(" tail")).toBe(true);
+  });
+
+  it("REPORTS a miss rather than silently returning its input", () => {
+    const result = applyFramingClause("a prompt with no landmark sentence in it at all");
+    expect(result.applied).toBe(false);
+    expect(result.prompt).toBe("a prompt with no landmark sentence in it at all");
+  });
+
+  it("swaps exactly once, even if the sentence somehow appears twice", () => {
+    const twice = `${FRAMING_CLAUSE_FROM} middle ${FRAMING_CLAUSE_FROM}`;
+    const result = applyFramingClause(twice);
+    expect(result.prompt.split(FRAMING_CLAUSE_TO).length - 1).toBe(1);
+    /* The second occurrence is left alone — a prompt carrying the sentence twice
+       is a defect somewhere else, and doubling the new clause would compound it
+       rather than report it. */
+    expect(result.prompt).toContain(FRAMING_CLAUSE_FROM);
+  });
+
+  /*
+    ⚠ THE DRIFT GUARD, and it is the reason `applied` exists at all.
+
+    `String.replace` that matches nothing returns its input and says nothing. So
+    an ordinary edit to `FRAMING_FIXED` — rewording the landmark, adding a
+    comma — would silently disable this clause, and a flagged roll would render
+    LARGE WITH NO MARGIN ASK, which arm R measured as a tighter picture than
+    today. Worse than not having the feature, and visible to nobody.
+
+    This arm asks the real constant, so the drift is caught here at build time
+    rather than in production by a founder wondering why his sheets got tighter.
+  */
+  it("the sentence it swaps STILL EXISTS in the composed constant", () => {
+    expect(photorealHumanConstant(null)).toContain(FRAMING_CLAUSE_FROM);
   });
 });

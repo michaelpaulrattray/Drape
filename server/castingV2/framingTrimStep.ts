@@ -156,3 +156,41 @@ export async function applyFramingTrim(
     return untouched("trim-failed");
   }
 }
+
+/**
+ * ⚠ THE MARGIN CLAUSE — the one sentence, applied the way the court applied it.
+ *
+ * `FRAMING_FIXED`'s landmark sentence is REPLACED, not appended to. That is not
+ * a stylistic choice: ROUND2's specimen was an ADDED framing sentence which
+ * widened its own population's spread by 5.0 points, and *context is not
+ * additive* is a measured lesson in this campaign.
+ *
+ * **It is a post-composition swap on the finished prompt rather than a flag
+ * threaded through the composer, and that is deliberate.** The court's own arms
+ * produced their prompts as `composed.replace(FROM, TO)` — so doing it here
+ * reproduces the bytes the founder's eye accepted, exactly, instead of a
+ * differently-assembled prompt that ought to be the same. It also leaves
+ * `cohortConstantBlocks` and every pin that recomposes it completely untouched.
+ *
+ * ⚠ **THE `FROM` IS THE FIRST SENTENCE ONLY.** The constant reads *"Frame from
+ * mid-torso up in a 2:3 portrait. Shoulders fully inside the frame with margin
+ * at both sides."* and the court replaced only the first of those, leaving the
+ * shoulders clause standing after the new text. A swap that took both would be
+ * a prompt no court has ever rendered.
+ *
+ * ⚠ **AND IT REPORTS WHETHER IT FOUND ANYTHING.** A `String.replace` that matches
+ * nothing returns its input and says nothing — so an edit to `FRAMING_FIXED`
+ * could silently disable this clause and leave a flagged roll rendering large
+ * with no margin ask, which arm R measured as a TIGHTER picture than today. The
+ * caller logs the miss loudly and renders anyway (a customer does not lose a
+ * roll because a constant moved), and a unit arm asserts the sentence still
+ * exists in the composed constant so the drift is caught at build time instead.
+ */
+export const FRAMING_CLAUSE_FROM = "Frame from mid-torso up in a 2:3 portrait.";
+export const FRAMING_CLAUSE_TO = "Frame from the hips up in a 2:3 portrait. If in doubt include MORE "
+  + "of the body rather than less — a little extra room below and at the sides is correct.";
+
+export function applyFramingClause(prompt: string): { prompt: string; applied: boolean } {
+  if (!prompt.includes(FRAMING_CLAUSE_FROM)) return { prompt, applied: false };
+  return { prompt: prompt.replace(FRAMING_CLAUSE_FROM, FRAMING_CLAUSE_TO), applied: true };
+}

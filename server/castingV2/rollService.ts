@@ -82,7 +82,7 @@ import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
 import { createFalRegionReader } from "./falRegionReader";
 import { extentOf } from "./inkReferenceCrop";
-import { applyFramingTrim, FRAMING_TRIM_RENDER } from "./framingTrimStep";
+import { applyFramingClause, applyFramingTrim, FRAMING_TRIM_RENDER } from "./framingTrimStep";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
@@ -643,7 +643,33 @@ export async function createRoll(
 
   // ---- dispatch: eight independent jobs, one operation ----
   const engine = (dependencies.engine ?? castingCreativeEngine)();
-  const promptByPosition = new Map(compiled.candidates.map((spec) => [spec.position, spec.prompt]));
+  /*
+    ⚠ THE MARGIN CLAUSE, swapped into the finished prompts under the flag.
+
+    A post-composition swap rather than a flag threaded through the composer, so
+    the bytes match what the court actually rendered and every pin that
+    recomposes `cohortConstantBlocks` is untouched. Off the flag this map is the
+    compiled prompts unchanged.
+
+    The miss is LOGGED rather than swallowed: `String.replace` that matches
+    nothing returns its input silently, so an edit to `FRAMING_FIXED` could
+    disable the clause and leave a flagged roll rendering large with no margin
+    ask — a TIGHTER picture than today, which is worse than not having the
+    feature. The roll still renders (a customer does not lose one because a
+    constant moved) and a unit arm catches the drift at build time.
+  */
+  const promptByPosition = new Map(compiled.candidates.map((spec) => {
+    if (!trimEnabled) return [spec.position, spec.prompt] as const;
+    const clause = applyFramingClause(spec.prompt);
+    if (!clause.applied) {
+      log.error(
+        { operationId: gate.operationId, position: spec.position },
+        "[rollService] the framing clause found no landmark sentence to replace — "
+        + "rendering large WITHOUT the margin ask, which is tighter than today",
+      );
+    }
+    return [spec.position, clause.prompt] as const;
+  }));
 
   /* Shared across the eight; see  on dispatchCandidate. */
   const accountDown = { tripped: false };
