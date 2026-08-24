@@ -169,6 +169,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "off",
     why: "never flipped on production; additive and inert while off",
   },
+  CASTING_FRAMING_TRIM_SCOPE: {
+    position: "off",
+    why:
+      "the framing trim, built dark and NOT YET FLIPPABLE. Ordered by the founder on his own eye "
+      + "at the court's strips; off, the roll road is byte-identical to today's. ⚠ It does not flip "
+      + "before the kept-original column exists (CASTING_FRAMING_TRIM_BUILD.md §11a): a roll under "
+      + "the trim without it would trim its frames and DISCARD the originals, which is the one thing "
+      + "the KEEP ruling exists to prevent and is unrecoverable for those casts except by "
+      + "re-rendering different faces. The clause sentence is also still to land.",
+  },
   CASTING_TWO_PATHS_SCOPE: {
     position: "users:1",
     /* ⚠ THE FOURTH COPY OF ONE STALE SENTENCE, AND THIS FILE IS THE LAST PLACE

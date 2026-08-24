@@ -39,7 +39,11 @@ import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
-import { captureCastingBornInkEnabled, captureCastingTwoPathsEnabled } from "./castingV2Scope";
+import {
+  captureCastingBornInkEnabled,
+  captureCastingFramingTrimEnabled,
+  captureCastingTwoPathsEnabled,
+} from "./castingV2Scope";
 import { mintBornInkRows } from "./bornInkMint";
 import type { StatedInk } from "./castingIntent";
 
@@ -76,6 +80,9 @@ import { storageDelete, storagePut } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
+import { createFalRegionReader } from "./falRegionReader";
+import { extentOf } from "./inkReferenceCrop";
+import { applyFramingTrim, FRAMING_TRIM_RENDER } from "./framingTrimStep";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
@@ -423,6 +430,17 @@ export async function createRoll(
   */
   const readInk = captureCastingBornInkEnabled(input.userId);
 
+  /*
+    ⚠ THE FRAMING TRIM, CAPTURED ONCE FOR THE WHOLE ROLL.
+
+    Read here and handed down to every slice rather than re-read per candidate:
+    a flag consulted eight times in one request is a request that can disagree
+    with itself, and a roll whose frames were rendered at two different sizes is
+    a sheet nobody can compare — which is the exact thing this feature exists to
+    fix. Every scope in this program captures at request entry for that reason.
+  */
+  const trimEnabled = captureCastingFramingTrimEnabled(input.userId);
+
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
@@ -648,7 +666,21 @@ export async function createRoll(
         operationId: gate.operationId,
         candidate,
         prompt: promptByPosition.get(candidate.position) ?? "",
-        size: compiled.size,
+        /*
+          ⚠ THE TRIM RENDERS LARGER THAN IT DELIVERS, and this is the whole of
+          where that decision enters the roll (`CASTING_FRAMING_TRIM_BUILD.md`
+          §2). Off the flag this is `compiled.size` exactly as it has always
+          been; on it, the frame is 1536×2304 and `dispatchCandidate` trims it
+          back to the delivered size before a byte is stored, so nothing
+          downstream sees a different frame.
+
+          The larger render is not a preference: a crop can only ever crop IN,
+          so a trim on a frame rendered at the delivered size would have to
+          invent pixels. Arm R measured the cost — a tighter picture, 3.9 points
+          of `T_min` — and the clause is what pays it back.
+        */
+        size: trimEnabled ? `${FRAMING_TRIM_RENDER.width}x${FRAMING_TRIM_RENDER.height}` : compiled.size,
+        trimEnabled,
         quality: compiled.quality,
         /* Handed on from the compile that produced these eight prompts, so the
            row written and the sheet compiled cannot disagree about what the
@@ -847,6 +879,14 @@ async function dispatchCandidate(input: {
   candidate: { id: number; publicId: string; position: number; pointsCost: number };
   prompt: string;
   size: `${number}x${number}`;
+  /**
+   * Whether this roll renders large and gets trimmed to the common frame
+   * (`CASTING_FRAMING_TRIM_SCOPE`). Captured ONCE per roll at the top and handed
+   * down, never re-read here: a flag read twice in one request is a request that
+   * can disagree with itself, which is the rule every scope in this program
+   * already follows.
+   */
+  trimEnabled: boolean;
   quality: "low" | "medium" | "high";
   /**
    * Trips the moment our provider ACCOUNT refuses (401/403).
@@ -950,10 +990,50 @@ async function dispatchCandidate(input: {
       throw new ProviderError("render_fault", renderFaultVerdict.detail);
     }
 
+    /*
+      ⚠ THE FRAMING TRIM — the delivered bytes cut to the common frame before
+      anything references them (`CASTING_FRAMING_TRIM_BUILD.md` §5, countersigned
+      fable-1576; ordered by the founder on his own eye at the strips).
+
+      It sits HERE and nowhere else because this is the only point where the
+      bytes exist and nothing points at them yet — the same reason the smoke
+      alarm above throws before the store rather than after it.
+
+      ⚠ **It cannot fail the candidate.** `applyFramingTrim` catches everything
+      and returns the bytes it was given with a reason attached: a roll is billed
+      and refunded per slice, so a segmenter hiccup that threw here would cost
+      her a face and buy a refund, which is a worse product than a frame that is
+      merely not in the common frame. The reason is LOGGED rather than dropped —
+      the rate of `share-above-target` is what moves the target, and it moves it
+      on the founder's eye at strips rather than on arithmetic.
+    */
+    let delivered = image.bytes;
+    const apiKey = process.env.FAL_KEY;
+    if (input.trimEnabled && apiKey) {
+      const trim = await applyFramingTrim(
+        {
+          reader: createFalRegionReader({ apiKey }),
+          extentOf: (mask) => extentOf(mask as never),
+        },
+        { bytes: image.bytes },
+      );
+      delivered = trim.bytes;
+      log.info(
+        {
+          operationId, candidate: candidate.publicId,
+          trimmed: trim.trimmed, why: trim.why ?? null,
+          headroom: trim.headroom ?? null, ownHeadroom: trim.ownHeadroom ?? null,
+        },
+        trim.trimmed
+          ? "[rollService] framing trim applied"
+          : "[rollService] framing trim declined — the frame is delivered as rendered",
+      );
+    }
+
     // Bytes land in OUR storage before anything references them. A provider
     // URL is never persisted and never projected (§E, §J).
     const store = input.dependencies.storeImage ?? defaultStoreImage;
-    const stored = await store({ bytes: image.bytes, contentType: image.contentType });
+    const stored = await store({ bytes: delivered, contentType: image.contentType });
 
     /*
       AND A SMALL PICTURE BESIDE IT (fable-503).
@@ -964,7 +1044,12 @@ async function dispatchCandidate(input: {
       paid for does not fail because its small copy did not encode or store, so
       both failures land as `null` and the row is exactly what it was.
     */
-    const thumb = await thumbnailOf({ bytes: image.bytes, prefix: CANDIDATE_KEY_PREFIX });
+    /* ⚠ FROM THE DELIVERED BYTES, NOT THE RENDERED ONES. A thumbnail cut from
+       the untrimmed frame would be framed differently from the frame it opens —
+       and nothing would fail, no test would redden, and the defect would be
+       visible only to someone comparing a tile with its own picture. Named in
+       the build's §5 for exactly that reason. */
+    const thumb = await thumbnailOf({ bytes: delivered, prefix: CANDIDATE_KEY_PREFIX });
     const thumbKey = thumb === null ? null : await store({
       key: thumb.key,
       bytes: thumb.bytes,

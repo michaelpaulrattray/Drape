@@ -2444,3 +2444,107 @@ export function validateCastingTwoPathsEnvironment(input: {
   }
   return child;
 }
+
+/* ---------------------------------------------- the framing trim */
+
+/**
+ * THE FRAMING TRIM — whether a roll renders LARGER than it delivers and trims
+ * every frame to a common head size before storing it.
+ *
+ * Ordered by the founder on his own eye, 2026-08-24, after comparing the court's
+ * cut strips against the raw ones: *"hate to say it but the strips genuinely
+ * look better and it gives us more control over framing just need to make sure
+ * the hair is fully in the image."* Its evidence is
+ * `CASTING_FRAMING_CONSISTENCY_COURT.md`; its build is
+ * `CASTING_FRAMING_TRIM_BUILD.md`, countersigned fable-1576.
+ *
+ * **Off, and absent means off, the roll road is BYTE-IDENTICAL to today's**: the
+ * render size is unchanged, `FRAMING_FIXED` carries its current landmark
+ * sentence, no region read is bought and no trim runs. That matters more here
+ * than usual — *context is not additive* was measured in this campaign, so a
+ * prompt change that leaked to unflagged accounts would change every cast in the
+ * product, not just the ones being watched.
+ *
+ * On, a roll renders at 1536×2304 with one swapped sentence, reads `face` and
+ * `head` on each delivered frame, trims to a common head size with per-frame
+ * headroom (`framingTrim.ts`), and downscales to the 1024×1536 it delivers
+ * today. Nothing downstream moves: the stored candidate is the same size at the
+ * same key, so every refine still anchors on it.
+ *
+ * The parent is `CASTING_V2_SCOPE` and nothing narrower — what it governs is a
+ * ROLL, and a user outside casting has no roll to trim.
+ *
+ * ⚠ **IT DOES NOT FLIP BEFORE THE KEPT-ORIGINAL COLUMN EXISTS** (build §11a). A
+ * roll under the trim without it would trim its frames and DISCARD the
+ * originals, which is the one thing the KEEP ruling exists to prevent and is
+ * unrecoverable for those casts except by re-rendering different faces. That is
+ * a sequencing condition on the FLIP rather than a boot guard, exactly as the
+ * ink studio's table prerequisite is — a boot guard cannot see whether a column
+ * this code does not yet write is present.
+ */
+export const CASTING_FRAMING_TRIM_SCOPE_ENV = "CASTING_FRAMING_TRIM_SCOPE";
+
+export class CastingFramingTrimScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_FRAMING_TRIM_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingFramingTrimScopeConfigurationError";
+  }
+}
+
+export class CastingFramingTrimCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_FRAMING_TRIM_SCOPE_ENV} ${detail}`);
+    this.name = "CastingFramingTrimCoverageError";
+  }
+}
+
+export function parseCastingFramingTrimScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingFramingTrimScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's rolls render large and get trimmed.
+ *
+ * An AND of the chain, for `captureCastingRepaintEnabled`'s reason: the boot
+ * check already refuses a scope reaching past its parent, and the same rule is
+ * enforced again where it is used, because a boot check nobody invoked is the
+ * second way a flag pair goes wrong.
+ */
+export function captureCastingFramingTrimEnabled(userId: number): boolean {
+  const trim = parseCastingFramingTrimScope(process.env[CASTING_FRAMING_TRIM_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(trim, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingFramingTrimEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const trim = parseCastingFramingTrimScope(input.scope);
+  if (trim.kind === "off") return trim;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingFramingTrimCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — what it governs is a ROLL, and a `
+      + "user outside casting has no roll to trim",
+    );
+  }
+  if (parent.kind === "all") return trim;
+  if (trim.kind === "all") {
+    throw new CastingFramingTrimCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = trim.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingFramingTrimCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return trim;
+}

@@ -165,11 +165,17 @@ geometry row keep the frame they already assume.
                                                         ≈ +$0.26 per roll
 ```
 
-⚠ **TWO reads per slice, not one.** fable-1574's cost line says *"~$0.005 × 8 per
-roll"*; the trim needs `share` and `headroom`, which are FACE-box quantities, and
-`gap`, which needs the HEAD box. There is no one-read version of this arithmetic
-short of re-deriving the court's numbers on a different box. **$0.08 per roll, not
-$0.04.**
+⚠ **TWO reads per slice, not one** (adopted everywhere, fable-1577 §4). The trim
+needs `share` and `headroom`, which are FACE-box quantities, and `gap`, which
+needs the HEAD box. **$0.08 per roll, not $0.04.**
+
+**And there is nothing to piggyback on — verified rather than assumed.** The roll
+road buys **zero** region reads today: `detectRenderFault`, the only measurement
+between render and store, imports `sharp` and nothing else and is a greyscale
+seam analysis, not a segmenter call. A one-read version exists only by
+re-deriving the court's arithmetic on the head box instead of the face box, which
+would discard the measurement his eye ratified — so it is not a saving, it is a
+different court.
 
 **Latency: ~+11%, about 4 seconds a frame** (render only — the +32% first relayed
 was measured through a harness that also ran two segmenter reads and a 5 MB
@@ -335,6 +341,39 @@ came from, and the untrimmed-rate and per-sheet wall-clock beside them.
 → **his gate, on strips** → the ratchet. The cost package at his gate carries all
 three corrected numbers: **+$0.26 per roll**, **~+11%** render time with its
 provenance, and **whatever the dark rolls say contention actually costs.**
+
+### ⚠ 11a. THE SEQUENCE, because §7's column makes the order load-bearing
+
+**Every push deploys.** So a commit that writes a column production does not have
+yet is the crash the *migration-before-code* rule is named for, and §7's KEEP
+gives this build exactly such a column. The ruled sequencing (fable-1577 §3) is
+that the **production ceremony is the last gate before the code that needs it** —
+and since the ceremony is the founder's, the build is split so that nothing waits
+on him that does not have to:
+
+```
+  A  THE WIRE, dark, NO schema dependency
+     flag · render size · the clause · the two reads · the trim · the thumbnail
+     from the TRIMMED bytes · a counter for every untrimmed reason.
+     Safe to deploy the hour it is written: with the flag off the roll road is
+     byte-identical to today's, and nothing touches a column.
+
+  B  THE DEV MIGRATION + the card              (pre-authorized / his desk)
+     `pnpm db:push` against dev, and the production ceremony carded with its
+     one command.
+
+  C  THE PRODUCTION CEREMONY                    ← HIS WORD, the last gate
+     the column exists on the service.
+
+  D  THE KEPT ORIGINAL: the column's write + its UNCONDITIONAL manifest entry.
+     Deploys only after C.
+```
+
+⚠ **AND THE FLAG DOES NOT FLIP BEFORE D.** A dark roll under A alone would trim
+its frames and **discard the originals** — which is the one thing KEEP was ruled
+to prevent, and it is unrecoverable for those casts except by re-rendering
+different faces. The flip is a step after D, not after A, and this sentence is
+the only thing standing between the two.
 
 No credit is spent by this document, and the dark rolls price themselves fresh
 when they are ordered.

@@ -428,6 +428,42 @@ the ruled prose above: each states the grammar, the parent, and nothing this
 seat did not read off the code. A flag that deserves a full paragraph should get
 one from whoever owns its road.
 
+- `CASTING_FRAMING_TRIM_SCOPE` — `off`/absent, `all`, or `users:<ids>`; **whether
+  a roll renders LARGER than it delivers and trims every frame to a common head
+  size** (ordered by the founder on his own eye at the court's strips,
+  2026-08-24: *"hate to say it but the strips genuinely look better and it gives
+  us more control over framing just need to make sure the hair is fully in the
+  image"*; evidence `CASTING_FRAMING_CONSISTENCY_COURT.md`, build
+  `CASTING_FRAMING_TRIM_BUILD.md`, countersigned fable-1576). **Off, and absent
+  means off, the roll road is BYTE-IDENTICAL to today's** — the render size is
+  unchanged, `FRAMING_FIXED` carries its current landmark sentence, no region
+  read is bought and no trim runs. That matters more than usual here: *context is
+  not additive* was measured in this campaign, so a prompt change leaking to
+  unflagged accounts would change every cast in the product. On, a roll renders
+  at 1536×2304, reads `face` and `head` on each delivered frame, trims to a
+  common head size with **per-frame headroom** (`framingTrim.ts` —
+  `max(house, gap + 0.05)`), and downscales to the 1024×1536 it delivers today,
+  so nothing downstream moves. **`R` is per frame because a COMMON one is
+  impossible**: its feasible set is `[max gap, min headroom]` and across the
+  court's clause cells that interval is EMPTY (0.508 against 0.352) — a tall-
+  curled woman genuinely needs more air than a flat-cropped man, which is his own
+  ontology (*"different hair styles body types will always change the output
+  releative to the frame"*). Its parent is `CASTING_V2_SCOPE` and nothing
+  narrower: what it governs is a ROLL. It costs **~+$0.26 per roll** (+$0.176
+  render, +$0.08 for two reads per slice — `share`/`headroom` are FACE-box
+  quantities and `gap` needs the HEAD box, and the roll road buys zero region
+  reads today) and **~+11% render time**, and it declares no new fal allowance —
+  the reads ride the shared `FAL_CONCURRENCY` courtesy pool, so
+  `assertFalBudget`'s sum stays at the account ceiling. ⚠ **IT DOES NOT FLIP
+  BEFORE THE KEPT-ORIGINAL COLUMN EXISTS** (build §11a): a roll under the trim
+  without it would trim its frames and DISCARD the 1536×2304 originals, which is
+  the one thing the KEEP ruling exists to prevent and is unrecoverable for those
+  casts except by re-rendering different faces. A sequencing condition on the
+  FLIP rather than a boot guard, exactly as the ink studio's table prerequisite
+  is — a boot guard cannot see whether a column this code does not yet write is
+  present. **The clause sentence is also still to land**, so with the flag on
+  today a roll renders large without the margin clause, which arm R measured as a
+  TIGHTER picture: another reason the flip waits
 - `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
   account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
   5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is

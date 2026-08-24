@@ -1220,16 +1220,3 @@
   why: "a CAP that enforces nothing. Its only consumer anywhere is server/r7-evidence-image-retry.test.ts:31, which asserts a TIMEOUT is >= 4x it — so the number is asserted about and applied to no request path (invariant 7's own sentence). No card and no founder item, ruled fable-1508 §3: R7_EVIDENCE_COMPOSER_SCOPE is off in production, so no customer stands behind it. The condition is the row: a dead control keeps a live reputation exactly while its road is off"
   argued: 29e
   owner: "the sitting that turns R7_EVIDENCE_COMPOSER_SCOPE on — it inherits this question by name, and must decide whether the cap is enforced or deleted before that scope serves anybody"
-
-- symbol: planFramingTrim
-  file: server/castingV2/framingTrim.ts
-  verdict: HELD
-  why: |
-    the framing trim's arithmetic, built and driven ahead of its wire — countersigned
-    fable-1576, and deliberately not called yet because the wire is the FLAGGED half
-    (`CASTING_FRAMING_TRIM_SCOPE` in `rollService.ts`, between `detectRenderFault` and
-    `storeImage`). It is a pure function with 13 arms and a sabotage-proven negative
-    control; what it does not have is a caller, which is the honest state of a build
-    whose design landed an hour before its wiring.
-  argued: CASTING_FRAMING_TRIM_BUILD.md §5
-  blocker: its own wire — the flagged trim step in rollService.ts, this build's next commit
