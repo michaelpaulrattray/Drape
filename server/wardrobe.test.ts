@@ -17,6 +17,7 @@ import { useWardrobeStore } from "../client/src/features/wardrobe/stores/useWard
 import { resolveVtoErrorCopy, shouldAutoRetryVto } from "../client/src/features/wardrobe/vtoErrorCopy";
 import { resolveOverlayOnNavigation, shouldUpdateOverlay } from "../client/src/features/wardrobe/overlayNavigation";
 import { planModelSetup, shouldShowQualityWarning } from "../client/src/features/wardrobe/modelSetupPlan";
+import { buildStyleNote, parseStyleNote } from "../client/src/features/wardrobe/components/layerHelpers";
 import { wardrobeRouter } from "./routes/wardrobe";
 import {
   wardrobeClassifyEditInput,
@@ -1325,65 +1326,70 @@ describe("DecompositionDrawer — selection & import logic", () => {
 
 // ── LayersPanel Refinement Logic Tests ──────────────────────────────────────
 
-describe("LayersPanel — refinement chip and input logic", () => {
-  it("should filter suggested actions as chip labels", () => {
-    const suggestedActions = ["Roll sleeves", "Unbutton", "Tuck in", "Add belt"];
-    expect(suggestedActions).toHaveLength(4);
-    expect(suggestedActions.every((a) => typeof a === "string" && a.length > 0)).toBe(true);
+describe("LayersPanel — style-note chips, DRIVEN", () => {
+  /*
+   * ⚠ SEVEN ARMS STOOD HERE AND NONE OF THEM HAD A SUBJECT. Three declared an
+   * `onRefine` callback, called it themselves, and asserted it had recorded the
+   * call ("Simulate chip click"). The rest asserted array literals and `&&`.
+   *
+   * ⚠ AND THE FLOW THEY DESCRIBED DOES NOT EXIST. `onRefine` appears in
+   * `LayersPanel.tsx` EXACTLY ONCE — the optional prop declaration on line 31 —
+   * and is never called. The chip path goes through `onUpdateNote` with
+   * `parseStyleNote` / `buildStyleNote`. So these were a description of a
+   * callback flow the component does not have, sitting where the real one's
+   * tests would be.
+   *
+   * `layerHelpers.ts` — pure, exported, and it had ZERO tests. It is the real
+   * subject and the arms below drive it. Filed under 3g's D.
+   */
+
+  it("splits a style note into chips the garment offers and freeform the customer typed", () => {
+    const actions = ["Roll sleeves", "Tuck in"];
+    expect(parseStyleNote("Roll sleeves; Make it more relaxed; Tuck in", actions)).toEqual({
+      chips: ["Roll sleeves", "Tuck in"],
+      freeform: ["Make it more relaxed"],
+    });
   });
 
-  it("should pass garmentId and chip text to onRefine", () => {
-    const calls: Array<{ garmentId: number; instruction: string }> = [];
-    const onRefine = (garmentId: number, instruction: string) => {
-      calls.push({ garmentId, instruction });
-    };
-    // Simulate chip click
-    onRefine(42, "Roll sleeves");
-    onRefine(42, "Unbutton");
-    expect(calls).toEqual([
-      { garmentId: 42, instruction: "Roll sleeves" },
-      { garmentId: 42, instruction: "Unbutton" },
-    ]);
+  it("an absent or empty note is no chips and no freeform, not a crash", () => {
+    expect(parseStyleNote(undefined, ["Roll sleeves"])).toEqual({ chips: [], freeform: [] });
+    expect(parseStyleNote("", ["Roll sleeves"])).toEqual({ chips: [], freeform: [] });
   });
 
-  it("should pass garmentId and custom text to onRefine", () => {
-    const calls: Array<{ garmentId: number; instruction: string }> = [];
-    const onRefine = (garmentId: number, instruction: string) => {
-      calls.push({ garmentId, instruction });
-    };
-    // Simulate custom input submit
-    const customText = "Make it more relaxed";
-    onRefine(99, customText.trim());
-    expect(calls).toEqual([{ garmentId: 99, instruction: "Make it more relaxed" }]);
+  it("a note whose entries are NONE of the offered actions is all freeform", () => {
+    expect(parseStyleNote("Something else", ["Roll sleeves"])).toEqual({
+      chips: [],
+      freeform: ["Something else"],
+    });
   });
 
-  it("should not call onRefine with empty custom text", () => {
-    const calls: Array<{ garmentId: number; instruction: string }> = [];
-    const onRefine = (garmentId: number, instruction: string) => {
-      calls.push({ garmentId, instruction });
-    };
-    const customText = "   ";
-    if (customText.trim()) {
-      onRefine(1, customText.trim());
-    }
-    expect(calls).toHaveLength(0);
+  it("chips come before freeform when the note is rebuilt — the order is the product's", () => {
+    expect(buildStyleNote(["Roll sleeves", "Tuck in"], ["Make it more relaxed"])).toBe(
+      "Roll sleeves; Tuck in; Make it more relaxed",
+    );
   });
 
-  it("should extract suggestedActions from garment safely", () => {
-    const garmentWithActions = { id: 1, suggestedActions: ["Roll sleeves", "Tuck in"] };
-    const garmentWithout = { id: 2 };
-    const actions1: string[] = (garmentWithActions as Record<string, unknown>).suggestedActions as string[] ?? [];
-    const actions2: string[] = (garmentWithout as Record<string, unknown>).suggestedActions as string[] ?? [];
-    expect(actions1).toEqual(["Roll sleeves", "Tuck in"]);
-    expect(actions2).toEqual([]);
+  it("parse and build round-trip a customer's note unchanged", () => {
+    const actions = ["Roll sleeves", "Tuck in"];
+    const note = "Roll sleeves; Tuck in; Make it more relaxed";
+    const { chips, freeform } = parseStyleNote(note, actions);
+    expect(buildStyleNote(chips, freeform)).toBe(note);
   });
 
-  it("should only show refinement when hasResult and onRefine are provided", () => {
-    const shouldShow = (hasResult: boolean, onRefine: unknown) => hasResult && !!onRefine;
-    expect(shouldShow(true, () => {})).toBe(true);
-    expect(shouldShow(false, () => {})).toBe(false);
-    expect(shouldShow(true, undefined)).toBe(false);
-    expect(shouldShow(false, undefined)).toBe(false);
+  it("an empty rebuild is an empty string, so a cleared note does not become \"undefined\"", () => {
+    expect(buildStyleNote([], [])).toBe("");
+  });
+
+  /*
+   * FROM THE DIFF — a real fragility, asserted as the behaviour it IS rather
+   * than filed as a bug: the separator is "; " and freeform text is not
+   * escaped, so a customer who types a semicolon-space inside one instruction
+   * gets it split in two on the next parse. Stated here so a future escape (or
+   * a decision to leave it) is made deliberately.
+   */
+  it("FROM THE DIFF — freeform containing the separator SPLITS on the next parse", () => {
+    const note = buildStyleNote([], ["Roll the sleeves; then tuck it in"]);
+    expect(parseStyleNote(note, []).freeform).toEqual(["Roll the sleeves", "then tuck it in"]);
   });
 });
 
