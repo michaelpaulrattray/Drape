@@ -1,6 +1,6 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { getClientIp } from "../../security/rateLimit";
-import { executeApprovedAdminAction } from "../../lib/adminActions";
+import { CHANGE_REQUEST_ACTION_NAMES, executeApprovedAdminAction } from "../../lib/adminActions";
 import {
   requestApproval as requestSlackApproval,
   getApprovalStatus as getSlackApprovalStatus,
@@ -14,7 +14,13 @@ export const slackApprovalRouter = router({
   // Request Slack approval for a sensitive admin action
   requestApproval: adminProcedure
     .input(z.object({
-      action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "cr_suspendUser", "cr_unsuspendUser", "cr_refundCredits", "cr_addCredits", "cr_blockIP", "cr_stripeRefund"]),
+      // The five DIRECT actions are declared here; the six change-request
+      // actions DERIVE from `CHANGE_REQUEST_ACTION_NAMES` (3g's D — this enum
+      // was the third hand-typed copy of them).
+      action: z.enum([
+        "suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP",
+        ...CHANGE_REQUEST_ACTION_NAMES,
+      ]),
       targetId: z.string(),
       description: z.string().min(1).max(1000),
       params: z.record(z.string(), z.unknown()).optional().default({}),

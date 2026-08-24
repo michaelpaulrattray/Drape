@@ -55,9 +55,15 @@ describe("executeApprovedAdminAction — the routing, driven", () => {
   /*
    * The six names are written out here ON PURPOSE and it is the one list in
    * this file that is hand-typed. Deriving them from the module under test
-   * would make the arm agree with any set the module happens to hold, which is
-   * the failure this whole row is about. They are the product's contract,
-   * quoted, and a name changing on either side must break something.
+   * would make the arm agree with whatever set the module happens to hold,
+   * which is the failure this whole row is about. They are the product's
+   * contract, quoted, and a name changing on either side must break something.
+   *
+   * ⚠ Since the three production copies were unified into
+   * `CHANGE_REQUEST_ACTION_BY_TYPE`, this quoted list has a second job: it is
+   * now the ONLY independent statement of those six names anywhere, so the
+   * `agrees with the one declaration` arm below is what keeps the unification
+   * from silently changing what the product accepts.
    */
   const CHANGE_REQUEST_ACTIONS = [
     "cr_suspendUser",
@@ -67,6 +73,23 @@ describe("executeApprovedAdminAction — the routing, driven", () => {
     "cr_blockIP",
     "cr_stripeRefund",
   ];
+
+  it("the ONE declaration holds exactly these six, keyed by the change-request type", async () => {
+    const { CHANGE_REQUEST_ACTION_BY_TYPE } = await import("./lib/adminActions");
+    expect(CHANGE_REQUEST_ACTION_BY_TYPE).toEqual({
+      suspend_user: "cr_suspendUser",
+      unsuspend_user: "cr_unsuspendUser",
+      refund_credits: "cr_refundCredits",
+      add_credits: "cr_addCredits",
+      block_ip: "cr_blockIP",
+      stripe_refund: "cr_stripeRefund",
+    });
+    // …and the tuple the zod enum derives from is those same values, in a
+    // shape `z.enum` accepts. An empty tuple would make the enum accept
+    // nothing and this arm is the population control against it.
+    const { CHANGE_REQUEST_ACTION_NAMES } = await import("./lib/adminActions");
+    expect([...CHANGE_REQUEST_ACTION_NAMES].sort()).toEqual([...CHANGE_REQUEST_ACTIONS].sort());
+  });
 
   it("routes every cr_* action to the change-request handler and NOT to the direct one", async () => {
     const { executeApprovedAdminAction } = await import("./lib/adminActions");

@@ -1,6 +1,6 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { getClientIp } from "../../security/rateLimit";
-import { executeApprovedAdminAction } from "../../lib/adminActions";
+import { CHANGE_REQUEST_ACTION_BY_TYPE, executeApprovedAdminAction } from "../../lib/adminActions";
 import {
   requestApproval as requestSlackApproval,
   getApprovalStatus as getSlackApprovalStatus,
@@ -84,14 +84,9 @@ export const changeRequestsRouter = router({
       const isSensitive = SENSITIVE_TYPES.includes(request.type);
 
       // Map change request types to Slack approval action types
-      const CR_TO_APPROVAL_ACTION: Record<string, string> = {
-        suspend_user: "cr_suspendUser",
-        unsuspend_user: "cr_unsuspendUser",
-        refund_credits: "cr_refundCredits",
-        add_credits: "cr_addCredits",
-        block_ip: "cr_blockIP",
-        stripe_refund: "cr_stripeRefund",
-      };
+      // Derived, never re-typed: `CHANGE_REQUEST_ACTION_BY_TYPE` is the one
+      // declaration (3g's D — this was one of three hand-typed copies).
+      const CR_TO_APPROVAL_ACTION: Record<string, string> = CHANGE_REQUEST_ACTION_BY_TYPE;
 
       const actionVerb = input.action === "approved" ? "Approved" : "Denied";
       const actionEmoji = input.action === "approved" ? "\u2705" : "\u274c";
