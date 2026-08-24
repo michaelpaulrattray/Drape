@@ -7,6 +7,12 @@ vi.mock("./slack/slackNotification", () => ({
   sendAdminActionNotification: vi.fn().mockResolvedValue(true),
   sendAuditLogEntry: vi.fn().mockResolvedValue(true),
   sendSlackAlert: vi.fn().mockResolvedValue(true),
+  // Reached by the REAL `adminSecurity`, which the admin-gate arms drive
+  // rather than stub — see the note on that mock below.
+  SlackAlerts: {
+    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
+    securityAlert: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 // Mock the auditLog module
@@ -25,12 +31,22 @@ vi.mock("./auditLog", () => ({
   },
 }));
 
-// Mock the adminSecurity module
-vi.mock("./security/adminSecurity", () => ({
-  logAdminAction: vi.fn().mockResolvedValue(undefined),
-  isSensitiveAction: vi.fn().mockReturnValue(false),
-  writeImmutableLog: vi.fn().mockResolvedValue(undefined),
-}));
+// Mock the adminSecurity module.
+//
+// ⚠ `validateAdminAccess` and `logUnauthorizedAdminAccess` PASS THROUGH to the
+// real module on purpose (3g's D). `validateAdminAccess` IS the admin gate the
+// refusal arms below drive; stubbing it would make those arms assert this mock,
+// which is the exact defect this row exists to remove. Everything else here is
+// a genuine side effect (audit writes, Slack) that a unit test must not fire.
+vi.mock("./security/adminSecurity", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./security/adminSecurity")>();
+  return {
+    ...actual,
+    logAdminAction: vi.fn().mockResolvedValue(undefined),
+    isSensitiveAction: vi.fn().mockReturnValue(false),
+    writeImmutableLog: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 // Mock the db module
 vi.mock("./db", () => ({
@@ -955,6 +971,37 @@ describe("Change Request - Security Boundaries (DRIVEN through the real procedur
       user: { id: 10, role: "moderator", suspendedAt: null },
     } as never);
     await expect(caller.getMyChangeRequests({} as never)).resolves.toBeDefined();
+  });
+
+  /*
+   * 3g's D read (2026-08-25): NOTHING in the suite drove `reviewChangeRequest`
+   * or `listChangeRequests`. What stood for them were arms that asserted
+   * `expect(admin.role === "admin").toBe(true)` over a literal, and arms that
+   * called a mocked db helper themselves and then asserted the mock. The two
+   * below are the refusal actually happening.
+   */
+
+  it("a MODERATOR is refused reviewChangeRequest — the admin gate blocks, it is not recited", async () => {
+    const caller = changeRequestsRouter.createCaller({
+      user: { id: 10, role: "moderator", email: "mod@example.com", name: "Mod", suspendedAt: null },
+    } as never);
+    await expect(
+      caller.reviewChangeRequest({ requestId: 1, action: "approved" } as never),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("a MODERATOR is refused listChangeRequests — every admin's-eyes-only read, not just the write", async () => {
+    const caller = changeRequestsRouter.createCaller({
+      user: { id: 10, role: "moderator", email: "mod@example.com", name: "Mod", suspendedAt: null },
+    } as never);
+    await expect(caller.listChangeRequests({} as never)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("an UNAUTHENTICATED caller is refused with UNAUTHORIZED, not FORBIDDEN", async () => {
+    const caller = changeRequestsRouter.createCaller({ user: null } as never);
+    await expect(caller.listChangeRequests({} as never)).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
   });
 
   it("change request review actions should be limited to approved/denied", () => {

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d0690559421aa690"
+    "sourceFingerprint": "64808940aed67d12"
   },
   "domains": [
     {
@@ -10009,6 +10009,10 @@
     {
       "id": "test:server/accountFreeze.test.ts",
       "path": "server/accountFreeze.test.ts"
+    },
+    {
+      "id": "test:server/adminActionDispatch.test.ts",
+      "path": "server/adminActionDispatch.test.ts"
     },
     {
       "id": "test:server/adminAuditLogs.test.ts",
