@@ -54,7 +54,16 @@ The canvas is the set, the whiteboard and the editing room at once:
 ```
 PRODUCTION (canvas)
  ├─ Script rail        — the story, broken into SCENE CARDS
- ├─ Asset shelf        — casts, locations, props, diagrams (minted + named)
+ ├─ Asset shelf        — THIS PRODUCTION'S call sheet, not the library:
+ │                        CAST (one tile per person; outfit/state cards nest
+ │                        inside, pulled lazily as scenes need them — takes
+ │                        are output, never shelf assets), LOCATIONS, PROPS,
+ │                        DIAGRAMS (filed under their scene). Populated by
+ │                        the Line Producer from scene docs as GAP TILES
+ │                        ("The case — needed by SC 3 · Mint / Upload /
+ │                        Pick"), resolved not authored. Research scale: a
+ │                        whole film ran on 54 refs; the Special's registry
+ │                        held 33 entries. Shelves are small by design.
  ├─ Scene groups       — each scene: its document + its SHOT NODES
  │    └─ Shot node     — opens to a TAKES fan (contact sheet); starred = keeper
  └─ Cut strip          — keepers in scene order = the rough cut, assembling
