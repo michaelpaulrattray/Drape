@@ -6,7 +6,17 @@
  * cut, downscales to the delivered frame, and — above everything else it does —
  * **never fails the candidate.** The trim is a courtesy on top of a frame the
  * customer has already paid for and received: every path returns bytes, and a
- * path that cannot trim returns the bytes it was given with a reason attached.
+ * path that cannot trim returns the frame it was given, downscaled to the same
+ * delivered size, with a reason attached.
+ *
+ * # EVERY FRAME LEAVES HERE AT THE DELIVERED SIZE — trimmed or not
+ *
+ * Declining to trim used to return the RENDER bytes, so a sheet could ship six
+ * frames at 1024x1536 and two at 1536x2304. That happened, in production, on
+ * the founder's first flagged sheet (roll 209). The `untouched` closure below
+ * carries the incident; the invariant is stated here because it is the thing a
+ * caller is entitled to assume, and `framingTrimStep.test.ts`'s sheet arm is
+ * what keeps it true.
  *
  * That is not politeness, it is the money. A roll is billed per slice and
  * refunded per slice; a trim that could throw would turn a segmenter hiccup into
@@ -62,7 +72,12 @@ export const FRAMING_TRIM_TARGET: TrimTarget = {
 
 /** What a caller needs to know afterwards, whichever way it went. */
 export type FramingTrimOutcome = {
-  /** Always present. The bytes to store — trimmed, or exactly what came in. */
+  /**
+   * Always present, and ALWAYS at `FRAMING_TRIM_DELIVERED` — trimmed, or the
+   * frame as rendered and downscaled to the same box. The only exception is a
+   * resize that throws, which is logged and hands back what it was given
+   * rather than failing a candidate.
+   */
   bytes: Buffer;
   trimmed: boolean;
   /** Set when `trimmed` is false. Counted by the caller; it moves `T`. */
@@ -95,19 +110,63 @@ export async function applyFramingTrim(
   input: { bytes: Buffer; target?: TrimTarget },
 ): Promise<FramingTrimOutcome> {
   const target = input.target ?? FRAMING_TRIM_TARGET;
-  const untouched = (why: FramingTrimOutcome["why"]): FramingTrimOutcome => ({
-    bytes: input.bytes, trimmed: false, why,
-  });
+  /*
+    ⚠ AN UNTRIMMED FRAME IS STILL DELIVERED AT THE DELIVERED SIZE (ordered
+    fable-1592 §1, from the defect read at his own first flagged sheet).
+
+    This returned `input.bytes` — the 1536x2304 RENDER — so declining to trim
+    silently changed what the product ships. Roll 209 is the specimen and it is
+    production: six frames delivered at 1024x1536 and **two at 1536x2304, on one
+    sheet**, read at the bytes rather than at a log line
+    (`output/framing-live-roll-209/STRIP-B-true-scale-roll-209.png` is the
+    picture — the two stand a head proud of their own row).
+
+    That is the feature's own failure mode wearing its clothes: the whole point
+    is a sheet that reads as framed alike, and a frame at 2.25x the area is the
+    most visible way to break that. Everything downstream inherited it too —
+    the thumbnail is built from these bytes.
+
+    **The content is honest either way**: a frame is untrimmed because its own
+    composition already sits at or tighter than the target, so a downscale of
+    the large render IS its delivery — the frame at its own framing, at the
+    size every other frame arrives in.
+
+    It still cannot fail the candidate. A resize that throws returns the bytes
+    it was given, which is the old behaviour as the LAST resort rather than the
+    first.
+
+    The `resize` call is the SAME shape the trimmed path uses two branches down,
+    deliberately: both boxes are exactly 2:3, so this is a pure downscale and
+    never a crop. A frame that came back at some other aspect would be covered
+    to fit — the same thing the trimmed path would do to it — rather than
+    shipping at an odd size, which is the defect this block exists to end.
+  */
+  const untouched = async (why: FramingTrimOutcome["why"]): Promise<FramingTrimOutcome> => {
+    try {
+      const bytes = await sharp(input.bytes)
+        .resize({ width: FRAMING_TRIM_DELIVERED.width, height: FRAMING_TRIM_DELIVERED.height })
+        .png()
+        .toBuffer();
+      return { bytes, trimmed: false, why };
+    } catch (error) {
+      log.warn(
+        { err: String(error).slice(0, 160), why },
+        "[framingTrim] an untrimmed frame could not be resized to the delivered size — "
+        + "it is delivered as rendered, which is a frame of a different size on the sheet",
+      );
+      return { bytes: input.bytes, trimmed: false, why };
+    }
+  };
 
   let width: number;
   let height: number;
   try {
     const meta = await sharp(input.bytes).metadata();
-    if (!meta.width || !meta.height) return untouched("no-dimensions");
+    if (!meta.width || !meta.height) return await untouched("no-dimensions");
     width = meta.width;
     height = meta.height;
   } catch {
-    return untouched("no-dimensions");
+    return await untouched("no-dimensions");
   }
 
   let face: TrimBox | null;
@@ -128,7 +187,7 @@ export async function applyFramingTrim(
       { err: String(error).slice(0, 160) },
       "[framingTrim] a region read failed — the frame is delivered as rendered",
     );
-    return untouched("read-failed");
+    return await untouched("read-failed");
   }
 
   const plan = planFramingTrim({
@@ -136,7 +195,7 @@ export async function applyFramingTrim(
     deliver: FRAMING_TRIM_DELIVERED,
     face, head, target,
   });
-  if (!plan.trim) return untouched(plan.why);
+  if (!plan.trim) return await untouched(plan.why);
 
   try {
     const bytes = await sharp(input.bytes)
@@ -153,7 +212,7 @@ export async function applyFramingTrim(
       { err: String(error).slice(0, 160) },
       "[framingTrim] the cut itself failed — the frame is delivered as rendered",
     );
-    return untouched("trim-failed");
+    return await untouched("trim-failed");
   }
 }
 

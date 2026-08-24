@@ -300,6 +300,56 @@ because nothing here can fail the candidate — the trim is a courtesy on top of
 frame she has already paid for and received, exactly the shape `thumbKey` uses
 four lines away.
 
+### 8a. ⚠ THE FIRST ROW OF THAT TABLE SAYS *"plain downscale"* AND THE BUILD DID
+### NOT DO IT — found in production on the first flagged sheet (2026-08-24)
+
+**The design specified the right thing and the implementation dropped one word
+of it, and no arm in the suite could see the difference.** `applyFramingTrim`'s
+`untouched()` returned `input.bytes` — the 1536×2304 RENDER — on every decline,
+so a frame the trim declined shipped at 2.25× the area of its sheet-mates.
+
+**The specimens are real and they are his** (roll 209, the first and only sheet
+cast under the flag, read at the bytes rather than at a log line):
+
+```
+roll 209  candidates 1665..1672
+  #1666  delivered 1536x2304   UNTRIMMED   position 1
+  #1671  delivered 1536x2304   UNTRIMMED   position 6
+  the other six                delivered 1024x1536, kept originals written
+```
+
+`output/framing-live-roll-209/STRIP-B-true-scale-roll-209.png` is the picture —
+eight tiles at one scale factor, bottom-aligned, and the two stand a head proud
+of their own row. **Those two frames are left exactly as they shipped** (ruled
+fable-1592 §1): his sheet, already seen, and a retroactive byte-swap of
+delivered frames is not a thing this product does.
+
+**Three things this cost, and the third is the lesson:**
+
+1. the feature's own failure mode wearing its clothes — the whole point is a
+   sheet that reads as framed alike;
+2. everything downstream inherited it, the thumbnail included, since it is built
+   from the delivered bytes;
+3. ⚠ **`rollService.ts`'s own docblock asserted the opposite** — *"trims it back
+   to the delivered size before a byte is stored, so nothing downstream sees a
+   different frame"* — which was true of the trimmed path and false of the one
+   the sentence was written to reassure about. **The claim was in a comment and
+   the fact was in the bytes** (working law 1), and what found it was measuring
+   the stored objects rather than re-reading the code that wrote them.
+
+**Fixed the same day**: `untouched()` downscales to `FRAMING_TRIM_DELIVERED`
+before returning, the docblock is true of both paths, and — the part that was
+actually missing — **the suite gained an arm that can SEE a sheet.** Every arm
+before it drove one frame, and the defect was only visible across eight:
+`framingTrimStep.test.ts`'s *"delivers every frame of a sheet at ONE size"*
+drives eight frames with a reader that trims six and declines two, at positions
+1 and 6, which is where his actually fell. Watched failing: with the resize
+removed it reddens that arm and the four decline arms, and nothing else.
+
+⚠ **A resize that throws still returns the bytes it was given** — the old
+behaviour kept as the LAST resort rather than the first, because a candidate is
+never failed by this step.
+
 ---
 
 ## 9. The flag and the ratchet

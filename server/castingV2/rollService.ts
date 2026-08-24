@@ -696,9 +696,18 @@ export async function createRoll(
           ⚠ THE TRIM RENDERS LARGER THAN IT DELIVERS, and this is the whole of
           where that decision enters the roll (`CASTING_FRAMING_TRIM_BUILD.md`
           §2). Off the flag this is `compiled.size` exactly as it has always
-          been; on it, the frame is 1536×2304 and `dispatchCandidate` trims it
+          been; on it, the frame is 1536×2304 and `dispatchCandidate` brings it
           back to the delivered size before a byte is stored, so nothing
           downstream sees a different frame.
+
+          ⚠ **THAT LAST CLAUSE WAS TRUE OF THE TRIMMED PATH AND FALSE OF THE
+          OTHER ONE, AND IT IS THE PATH IT WAS WRITTEN TO REASSURE ABOUT**
+          (found at the bytes on his first flagged sheet, ordered fable-1592
+          §1). `applyFramingTrim` used to hand a DECLINED frame back as
+          rendered, so roll 209 shipped six candidates at 1024×1536 and two at
+          1536×2304. It is true of both paths now — the untouched path
+          downscales to the same box — and `framingTrimStep.test.ts`'s sheet arm
+          is what keeps it true rather than this comment.
 
           The larger render is not a preference: a crop can only ever crop IN,
           so a trim on a frame rendered at the delivered size would have to

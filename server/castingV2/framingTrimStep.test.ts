@@ -53,6 +53,14 @@ function readerFor(boxes: { face: unknown; head: unknown }): FramingTrimDependen
   };
 }
 
+/** Every frame that leaves the step is this size — trimmed or not. */
+async function expectDeliveredSize(bytes: Buffer): Promise<void> {
+  const meta = await sharp(bytes).metadata();
+  expect([meta.width, meta.height]).toEqual([
+    FRAMING_TRIM_DELIVERED.width, FRAMING_TRIM_DELIVERED.height,
+  ]);
+}
+
 const FACE = { left: 620, top: 227, width: 386, height: 454 };   /* share 0.197, headroom 0.500 */
 const HEAD = { left: 600, top: 105, width: 430, height: 600 };   /* gap 0.269 */
 
@@ -82,6 +90,17 @@ describe("the framing trim step", () => {
   });
 
   describe("it CANNOT fail a candidate — every wrong turn returns the bytes", () => {
+    /*
+      ⚠ THESE FOUR USED TO ASSERT `outcome.bytes.equals(bytes)` AND THAT
+      ASSERTION WAS THE DEFECT, WRITTEN DOWN AND GUARDED.
+
+      Byte identity on a decline is exactly what shipped two 1536x2304 frames
+      onto a sheet of 1024x1536 ones (roll 209, production, read at the bytes).
+      What a decline owes the caller is BYTES BACK — never a throw, never a
+      failed candidate — at the size every other frame arrives in. So each arm
+      asserts the outcome the contract actually has: not trimmed, a reason, and
+      the delivered size.
+    */
     it("a reader that throws", async () => {
       const bytes = await renderSizeFrame();
       const outcome = await applyFramingTrim({
@@ -90,7 +109,7 @@ describe("the framing trim step", () => {
       }, { bytes });
       expect(outcome.trimmed).toBe(false);
       expect(outcome.why).toBe("read-failed");
-      expect(outcome.bytes.equals(bytes)).toBe(true);
+      await expectDeliveredSize(outcome.bytes);
     });
 
     it("a reader that finds no face", async () => {
@@ -98,7 +117,7 @@ describe("the framing trim step", () => {
       const outcome = await applyFramingTrim(readerFor({ face: null, head: HEAD }), { bytes });
       expect(outcome.trimmed).toBe(false);
       expect(outcome.why).toBe("no-face");
-      expect(outcome.bytes.equals(bytes)).toBe(true);
+      await expectDeliveredSize(outcome.bytes);
     });
 
     it("a reader that finds no head — never guess a gap", async () => {
@@ -106,7 +125,7 @@ describe("the framing trim step", () => {
       const outcome = await applyFramingTrim(readerFor({ face: FACE, head: null }), { bytes });
       expect(outcome.trimmed).toBe(false);
       expect(outcome.why).toBe("no-head");
-      expect(outcome.bytes.equals(bytes)).toBe(true);
+      await expectDeliveredSize(outcome.bytes);
     });
 
     it("a head already bigger than the target", async () => {
@@ -115,7 +134,7 @@ describe("the framing trim step", () => {
       const outcome = await applyFramingTrim(readerFor({ face: big, head: { ...big, top: 300 } }), { bytes });
       expect(outcome.trimmed).toBe(false);
       expect(outcome.why).toBe("share-above-target");
-      expect(outcome.bytes.equals(bytes)).toBe(true);
+      await expectDeliveredSize(outcome.bytes);
     });
 
     it("bytes that are not an image at all", async () => {
@@ -146,6 +165,43 @@ describe("the framing trim step", () => {
       expect(outcome.why === "trim-failed" || outcome.why === "no-dimensions").toBe(true);
       expect(outcome.bytes.equals(bytes)).toBe(true);
     });
+  });
+
+  /*
+    ⚠ THE ARM THE DEFECT NEEDED AND DID NOT HAVE (ordered fable-1592 §1).
+
+    Every arm above is about ONE frame, and the defect was only visible across a
+    SHEET: six candidates at 1024x1536 beside two at 1536x2304 (roll 209, his
+    own first flagged sheet). A per-frame suite can be entirely green while the
+    product ships a sheet nobody can compare — which is the exact thing this
+    feature exists to prevent.
+
+    So this drives eight frames through the real step with a reader that trims
+    six and declines two, and asserts the property a SHEET has. Delete the
+    resize in `untouched` and it goes red here and nowhere else.
+  */
+  it("delivers every frame of a sheet at ONE size, whether it was trimmed or not", async () => {
+    const bytes = await renderSizeFrame();
+    /* share 0.304 — above target, so the planner declines. The two positions
+       are 1 and 6, which is where roll 209's two actually fell. */
+    const tooBig = { left: 500, top: 400, width: 600, height: 700 };
+    const sheet = await Promise.all([0, 1, 2, 3, 4, 5, 6, 7].map((position) => {
+      const declines = position === 1 || position === 6;
+      const face = declines ? tooBig : FACE;
+      const head = declines ? { ...tooBig, top: 300 } : HEAD;
+      return applyFramingTrim(readerFor({ face, head }), { bytes });
+    }));
+
+    expect(sheet.map((outcome) => outcome.trimmed))
+      .toEqual([true, false, true, true, true, true, false, true]);
+    for (const outcome of sheet) await expectDeliveredSize(outcome.bytes);
+
+    /* And said as the property rather than as eight coincidences: ONE size. */
+    const sizes = new Set(await Promise.all(sheet.map(async (outcome) => {
+      const meta = await sharp(outcome.bytes).metadata();
+      return `${meta.width}x${meta.height}`;
+    })));
+    expect([...sizes]).toEqual([`${FRAMING_TRIM_DELIVERED.width}x${FRAMING_TRIM_DELIVERED.height}`]);
   });
 
   it("buys exactly two reads, and asks for face then head", async () => {
