@@ -1287,6 +1287,106 @@ carry the rulings, the courts and the histories.
                                          SERVER side and unswept. The real base64
                                          arm arrives with it. Counted here, not
                                          taken.
+                                         ⚠ **THE CENSUS RAN 2026-08-25 AND THE
+                                         ROW ABOVE WAS WRONG ABOUT ITS OWN
+                                         SUBJECT** (opus-1247, ruled fable-1623
+                                         and fable-1624/1625). The floor was
+                                         short in BOTH halves — **4 declared
+                                         mirrors, not ~3** (the fourth is
+                                         `serverResilience.test.ts:11`), and
+                                         **37 `Simulate` sites, not ~25**. More
+                                         importantly the row's triage vocabulary
+                                         is TWO-valued and the population is
+                                         **FOUR**-valued, with the two missing
+                                         values in the MAJORITY:
+                                           A  computation mirror     13  (the
+                                              row's actual subject)
+                                           B  legitimate stand-in     5  the
+                                              real symbol IS under test; only
+                                              an unreachable STATE is faked.
+                                              Two exemplars, named so no sweep
+                                              eats them:
+                                              `r7-storage-cleanup-worker-db
+                                              .test.ts:216` (R2 accepted, then
+                                              the process died — at a real
+                                              database) and
+                                              `restoreSlotVersion.test.ts:133`
+                                           C  the LANGUAGE is the subject ~12
+                                              `!!`, assignment, `Math.random`,
+                                              `===` on a literal
+                                           D  the arm asserts its own MOCK ~14
+                                         C and D are not mirrors and not tests:
+                                         no change to Drape can move them, so
+                                         reconnection has nothing to reconnect.
+                                         ✅ **(a) DONE — `d8386ed7`.** The
+                                         `tattooAnalysis` mirror, and it is the
+                                         class's worst form: **not drift, BORN
+                                         SHORT.** Copy and original enter the
+                                         tree in the SAME commit (`60eb0b4e`,
+                                         2026-03-24, *"Exact SOT prompt and
+                                         parsing logic ported … 7 new tests, all
+                                         1,302 tests passing"*). The copy's
+                                         has-tattoos fragment rendered **121
+                                         characters against the product's 528 —
+                                         407 absent, 77%**, and what was missing
+                                         was both constraining paragraphs. Fixed
+                                         by lifting `buildTattooMap` as a named
+                                         export, byte-preserving, production as
+                                         its first reader; three arms written
+                                         FROM THE DIFF assert the 407.
+                                         ✅ **C1 DONE, C2 DONE (`ede0a914`).**
+                                         C1 deleted with finding-blocks. **C2 is
+                                         the part that was not test hygiene**:
+                                         two describes named *"Security
+                                         Boundaries"* asserted Drape's access
+                                         control by typing a literal and
+                                         comparing it to itself
+                                         (`expect("admin" === "admin")`,
+                                         `expect(10 === 10)` for invariant 1),
+                                         and one of their hand-typed lists **held
+                                         7 procedures where the router holds 15,
+                                         two of the 7 FICTIONAL**
+                                         (`getAuditStatistics`, `getBlockedIps`).
+                                         Replaced with arms DERIVED off
+                                         `moderatorRouter._def.procedures` and
+                                         DRIVEN through real callers.
+                                         ⚠ **THE FINDING THAT OUTRANKS THE ROW:
+                                         two live controls had NO test that
+                                         BLOCKS, proven by controlling the whole
+                                         SUITE rather than the cluster.** With
+                                         account freezing stripped from BOTH
+                                         spend paths: `9372 passed`, the only
+                                         failures the Atlas noticing two files
+                                         had changed. With `moderatorProcedure`'s
+                                         ROLE gate disabled — any signed-in user
+                                         reaching the entire moderator surface —
+                                         **exactly one arm failed, and it was one
+                                         written that hour.** Both now redden.
+                                         ⚠ **WHAT REMAINS: the twelve other
+                                         A-sites, and D (~14 arms).** D's read is
+                                         *which of those procedures has no other
+                                         arm anywhere* — that subset is the real
+                                         hole, and deleting without it destroys
+                                         the only (false) map of it.
+                                         ⚠ **AND THE CLOSING SWEEP'S NUMBER IS A
+                                         CANDIDATE LIST, NOT A CENSUS**: a
+                                         structural reader (an `expect` whose
+                                         every symbol is bound inside the arm)
+                                         reports **605 of 9,045 arms**. It is
+                                         quoted with its controls because it
+                                         FAILED TWICE before it was believed —
+                                         the positive control caught it SKIPPING
+                                         any file with no product import (the
+                                         wholly-subjectless file, its strongest
+                                         specimen, invisible), and the negative
+                                         control caught it blind to
+                                         `await import()`, which is how half of
+                                         `changeRequests.test.ts` reaches its
+                                         subjects. Repaired, it finds 111/111
+                                         known-C arms and falsely reports none of
+                                         the twelve arms written this sitting.
+                                         Its stated limit is one hop, so it
+                                         over-reports.
 
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
