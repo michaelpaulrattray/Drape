@@ -155,6 +155,52 @@ export const SYSTEM_PROMPT_FOR_TESTS = () => SYSTEM_PROMPT;
  * byte-identical to yesterday's. `interpreterSystemPrompt` is the one composer;
  * `SYSTEM_PROMPT` remains the base and is what every existing contract test
  * reads.
+ *
+ * # ⚠ THE BOREDOM CLAUSE CAME OUT ON 2026-08-25, AND IT WAS NEVER ONE CLAUSE
+ *
+ * Founder order (relayed fable-1595, verbatim): *"whats up with the wardrobe
+ * choosing the aboslute lamest uninspired outfits?"* Design
+ * `docs/specs/CASTING_V2_WARDROBE_PICKER_DESIGN.md`, countersigned fable-1609,
+ * court run and shape A ruled in.
+ *
+ * **Nothing was ever being truncated.** Read at production's four pathed rolls
+ * — the picker's entire delivered output, ever — it spent **10 words of an
+ * announced 30 and 79 characters of a 180-character door**, and the word
+ * *plain* was in **4 of 4** picks. His cyborg brief, 553 characters of implant
+ * ports and plate joins, produced *"a plain charcoal grey crew-neck tee"* —
+ * **7 of its 12 tokens shared with `HOUSE_WARDROBE_LINE`**, the fallback the
+ * picker exists to beat. The block rationed REGISTER the way `characterNotes`'
+ * announced cap rationed LENGTH: *an announced adjective is a brief.*
+ *
+ * ⚠ **AND THE WORKED EXAMPLES WERE THE STRONGER INSTRUCTION, WHICH THE COURT
+ * PROVED RATHER THAN ASSUMED.** The court ran a third side — the same rails and
+ * the same deletions but a NEUTRAL register direction that KEPT the old caveman
+ * example — and on the caveman brief **both of its drives came back
+ * byte-identical to a drive of today's prompt**, where every other brief on
+ * both shapes was 0 of 2 identical. Where the old example survived, the old
+ * answer survived. So an edit here changes the EXAMPLES or it changes nothing.
+ *
+ * **Every rail is unchanged and enumerated**: props, weapons, headwear, logos,
+ * numbers, setting/activity/pose, completeness, the whole-reply refusal, and
+ * `wardrobeDoor.ts` behind all of it. The one deletion inside the safety
+ * paragraph is the ADJECTIVE — *"PLAIN, AND NEVER COSTUME"* became *"CLOTHES
+ * ONLY"* — because `costume` was doing taste work under a safety word and would
+ * have sat four lines from a costume-designer direction, contradicting it in
+ * one breath. The trailing *"so keep it simple rather than interesting"* went
+ * with it: that clause joined the RAILS to a TASTE instruction with a *so*, and
+ * taught the model that the way not to be refused is to be dull.
+ *
+ * Measured, five briefs x three sides x two drives, one tree: *plain* fell from
+ * **8 of 10 to 2 of 10**, **zero door refusals and zero cohort walls on any
+ * side**, `cohort`/`sex`/`ageBand`/`build` identical across all three sides on
+ * all five briefs, the *"a woman in her 30s"* negative control stayed out of
+ * costume, and the barista's apron survived every drive.
+ *
+ * ⚠ **What to watch is LENGTH, and it is counted rather than hoped for.** A
+ * bolder pick is a longer pick and the door refuses over 180 characters into
+ * the greyest sentence in the product — the complaint reproduced by a different
+ * mechanism. Longest seen: 112 in the court, 131 in the probe. That is what
+ * `WARDROBE_PICK_REFUSED` (`wardrobeDoor.ts`) exists to make readable.
  */
 const WARDROBE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
 
@@ -165,22 +211,25 @@ const WARDROBE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
   this one even when the brief says nothing about clothes — that is the normal
   case and choosing well is the job.
   IF THE BRIEF NAMES AN OUTFIT, that outfit is the answer, in their words, and
-  you complete it in the same restrained register: "a barista in a red apron"
-  gives "a red apron over a plain white tee, dark straight jeans, plain low
-  shoes".
-  OTHERWISE CHOOSE ONE that matches the kind of person being cast and stays
-  plain. A caveman gets a one-shoulder hide and bare feet. A surgeon gets plain
-  scrubs. Someone the brief describes only as "a woman in her 30s" gets ordinary
-  plain clothes.
+  you complete it in the register the brief itself set: "a barista in a red
+  apron" gives "a red apron over a soft white tee, dark straight jeans, worn
+  leather low shoes".
+  OTHERWISE DRESS THEM FOR THEIR OWN SHOOT. You are the costume designer on this
+  job: read who this person is and choose what THEY would wear in front of this
+  camera, with taste, and specific about fabric, cut and colour. A cybernetically
+  augmented man gets matte black technical layers with hard seams. A runway model
+  gets something sharp and current with a strong line. A caveman gets a rough
+  one-shoulder hide and bare feet. A surgeon gets scrubs in their real colour.
+  Someone the brief describes only as "a woman in her 30s" has no character to
+  dress, and gets well-cut everyday clothes rather than anything loud.
   ALWAYS COMPLETE — top, bottoms, footwear, in one phrase under 30 words. The
   sheet is waist-up but the signed portrait set is full length, so an outfit
   that stops at the waist is an outfit those pictures have to invent.
-  PLAIN, AND NEVER COSTUME. No props and nothing held. No weapons. No hats,
-  caps or anything on the head. No logos, brand names, slogans or writing of any
-  kind. No numbers. No setting, no activity, no pose — say what they are
-  wearing and stop.
+  CLOTHES ONLY. No props and nothing held. No weapons. No hats, caps or anything
+  on the head. No logos, brand names, slogans or writing of any kind. No numbers.
+  No setting, no activity, no pose — say what they are wearing and stop.
   A reply that breaks any of those is thrown away whole and the sheet falls back
-  to its plain studio clothes, so keep it simple rather than interesting.`;
+  to its plain studio clothes.`;
 
 /**
  * THE INK BLOCK — asked only inside `CASTING_BORN_INK_SCOPE` (7b(a), gating
@@ -756,6 +805,7 @@ export const NOTES_OVERFLOW = "notesOverflow";
  * met it twice in an hour.
  */
 export const COHORT_WALL_RETRIED = "cohortWallRetried";
+
 
 /**
  * ⚠ COMPRESS RATHER THAN GUILLOTINE — one re-ask, on about 2% of rolls

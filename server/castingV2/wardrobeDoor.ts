@@ -108,6 +108,45 @@ export type WardrobePickVerdict =
   | { ok: false; reason: WardrobePickRefusal; word: string | null };
 
 /**
+ * THE REASON AN ENGINE-PICKED OUTFIT NEVER REACHED A SHEET — one string, so the
+ * count is one grep.
+ *
+ *     grep wardrobePickRefused <the service log>
+ *
+ * counts every pick this door threw out, and each line carries the CLASS and
+ * the WORD that fired it.
+ *
+ * ⚠ **It exists because the picker got bolder in the same commit** (the founder
+ * order relayed fable-1595; design
+ * `docs/specs/CASTING_V2_WARDROBE_PICKER_DESIGN.md` §5, ruled fable-1609 ruling
+ * 1). A pick that names fabric, cut and colour is a LONGER pick against
+ * {@link WARDROBE_PICK_MAX}, and a costume designer reaches for a *badge*, a
+ * *beret*, a *holster* — each a correct refusal by one of the lists below, and
+ * each one costing the whole outfit and falling back to `HOUSE_WARDROBE_LINE`,
+ * **which is the greyest sentence in the product and therefore the exact defect
+ * that commit removes, reinstated silently.**
+ *
+ * Before this constant the refusal logged and NOTHING counted it: no counter,
+ * no census row, no operation, no ledger line — so a door tripping on one pick
+ * in four would have looked exactly like production looked the day before. The
+ * two-paths design's own §9 is the argument in its own words: *a refusal nobody
+ * counts is a demand signal thrown away.*
+ *
+ * ⚠ **The line names the class and never the LINE ITSELF.** A refused pick is
+ * still a model's sentence about a customer's brief, and the discipline that
+ * keeps `masterPrompt` out of a projection keeps a wardrobe sentence out of a
+ * log nobody scoped. The class and the offending word are what a reader can act
+ * on; the outfit is not.
+ *
+ * It lives HERE rather than beside `COHORT_WALL_RETRIED` in `interpreter.ts`,
+ * whose shape it copies, for a mechanical reason worth stating: `interpreter.ts`
+ * imports `castingIntent.ts`, and `castingIntent.ts` is where this token is
+ * logged — so the obvious home would have been an import cycle. The door that
+ * produces the refusal owns its name.
+ */
+export const WARDROBE_PICK_REFUSED = "wardrobePickRefused";
+
+/**
  * The cap, and it REFUSES rather than truncating — unlike every other free-text
  * field in `castingIntent.ts`.
  *

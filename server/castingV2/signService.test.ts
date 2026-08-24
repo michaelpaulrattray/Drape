@@ -54,7 +54,10 @@ const candidateRow = {
   thumbKey: "casting-v2/candidates/abc-thumb.png",
   personaLine: "Dry and flat",
   position: 3,
-  internalPrompt: { prompt: "the composed casting instruction", resolved: { sex: "female" } },
+  /* `unknown` because it IS unknown at the boundary this fixture stands in for
+     — a JSON column written across several eras — and because one arm below
+     drives the shape where `$.prompt` is absent. */
+  internalPrompt: { prompt: "the composed casting instruction", resolved: { sex: "female" } } as unknown,
 };
 
 /**
@@ -338,6 +341,10 @@ beforeEach(() => {
   manifestThrows = false;
   candidateRow.status = "ready";
   candidateRow.signedCastId = null;
+  /* Restored here as well, because one arm below drives a candidate whose
+     compiled prompt is missing and a fixture that keeps a mutation is how a
+     later arm silently reads a state nobody chose for it. */
+  candidateRow.internalPrompt = { prompt: "the composed casting instruction", resolved: { sex: "female" } };
   selectedVariant = null;
   vi.clearAllMocks();
 });
@@ -1235,5 +1242,64 @@ describe("a covered surface says so on the same disposition surface", () => {
       { designPublicId: "chest-1", rode: false, reason: "surfaceCovered" },
       { designPublicId: "arm-1", rode: true },
     ]);
+  });
+});
+
+/**
+ * THE `masterPrompt` FALLBACK — the branch with no production population.
+ *
+ * `identityDocumentsFor` composes the Cast's "Full casting spec" from the
+ * FACE's own compiled prompt and falls back to the roll's raw brief when that
+ * prompt is missing or blank:
+ *
+ *   masterPrompt = internal.prompt ?? source.roll.briefText
+ *
+ * ⚠ **Nothing in production has ever taken the second road, and until this arm
+ * nothing drove it either.** Read at the rows 2026-08-25: `internalPrompt` is
+ * NULL on 0 of 63 candidates and `$.prompt` is absent on 0 of them, so the
+ * branch is defensive rather than exercised — which is precisely the shape this
+ * repository has paid for before (a corner declared unreachable is a corner
+ * with no test). It is driven here rather than deleted, because the column is
+ * JSON written across several eras and a Sign that throws on a missing key
+ * would be a worse answer than a degraded one.
+ *
+ * The chase that produced this arm also CLOSED a different question: the two
+ * production Casts whose `masterPrompt` is nine characters are not this branch
+ * at all — they read `[deleted]`, which is `finalCastDeletion.ts`'s tombstone
+ * scrubbing the sensitive field group on a permanently deleted Cast, working
+ * exactly as designed.
+ */
+describe("the Full casting spec when the face carries no compiled prompt", () => {
+  it("falls back to the roll's own brief rather than throwing or writing nothing", async () => {
+    candidateRow.internalPrompt = { resolved: { sex: "female" } };
+
+    await signCandidate(
+      { schedulePackage: awaitPackage, buildPackage: packageReturning({}) },
+      input,
+    );
+
+    const boundary = boundaryInputs.at(-1)!;
+    expect(boundary.masterPrompt).toBe("a redhead in her 30s");
+    expect(boundary.identityText).toContain("Full casting spec: a redhead in her 30s");
+  });
+
+  it("treats a blank prompt as no prompt — whitespace is not a casting spec", async () => {
+    candidateRow.internalPrompt = { prompt: "   ", resolved: { sex: "female" } };
+
+    await signCandidate(
+      { schedulePackage: awaitPackage, buildPackage: packageReturning({}) },
+      input,
+    );
+
+    expect(boundaryInputs.at(-1)!.masterPrompt).toBe("a redhead in her 30s");
+  });
+
+  it("CONTROL — an ordinary candidate still snapshots its own compiled prompt", async () => {
+    await signCandidate(
+      { schedulePackage: awaitPackage, buildPackage: packageReturning({}) },
+      input,
+    );
+
+    expect(boundaryInputs.at(-1)!.masterPrompt).toBe("the composed casting instruction");
   });
 });

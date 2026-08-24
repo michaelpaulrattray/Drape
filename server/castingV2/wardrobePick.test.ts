@@ -1,11 +1,28 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseCastingIntent, parseWardrobePick } from "./castingIntent";
+import { WARDROBE_PICK_REFUSED } from "./wardrobeDoor";
 import {
   SYSTEM_PROMPT_FOR_TESTS,
   interpretBrief,
   interpreterSystemPrompt,
 } from "./interpreter";
 import type { TextEngine } from "../providers/types";
+
+/**
+ * The module logger, captured — the house pattern, and it is `vi.hoisted` so
+ * the array exists before the factory runs at the first static import.
+ */
+const logged = vi.hoisted(() => [] as Array<{ fields: Record<string, unknown>; message: string }>);
+vi.mock("../logging/logger", () => {
+  const record = () => (fields: unknown, message: string) => {
+    logged.push({ fields: (fields ?? {}) as Record<string, unknown>, message });
+  };
+  return {
+    createModuleLogger: () => ({
+      error: record(), warn: record(), info: record(), debug: record(), fatal: record(),
+    }),
+  };
+});
 
 /**
  * THE PICK — cases (a) and (b) of the Wardrobe path (design §4, item 4).
@@ -166,5 +183,109 @@ describe("the pick goes through §4.1's door on its way into the intent", () => 
     expect(contained.ok).toBe(true);
     if (!contained.ok) return;
     expect(contained.intent.statedAccessories).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ THE REWRITE THAT TOOK THE BOREDOM CLAUSE OUT — and the rails it must not
+ * have taken with it (founder order relayed fable-1595; design
+ * `docs/specs/CASTING_V2_WARDROBE_PICKER_DESIGN.md` §9, ruled fable-1609).
+ *
+ * **A rewrite is exactly the operation that drops a rail by accident**, and a
+ * dropped rail here is a prop, a hat or a slogan on eight paid frames. The
+ * block is prose, so nothing but an arm can notice a missing sentence — the
+ * court measured what the model DOES, and these assert what it is TOLD.
+ *
+ * Compared on collapsed whitespace, because the block wraps its sentences
+ * across lines with indentation and the court's own first run tripped on
+ * exactly that.
+ */
+describe("the picker's rails survived the boredom clause coming out", () => {
+  const flat = (text: string) => text.replace(/\s+/g, " ");
+  const block = flat(interpreterSystemPrompt({ wardrobe: true }));
+
+  it("still forbids every class the door enforces, sentence by sentence", () => {
+    for (const rail of [
+      "No props and nothing held.",
+      "No weapons.",
+      "No hats, caps or anything on the head.",
+      "No logos, brand names, slogans or writing of any kind.",
+      "No numbers.",
+      "No setting, no activity, no pose",
+      "ALWAYS COMPLETE — top, bottoms, footwear, in one phrase under 30 words.",
+      "thrown away whole and the sheet falls back",
+    ]) {
+      expect(block, `rail lost from the wardrobe block: "${rail}"`).toContain(flat(rail));
+    }
+  });
+
+  it("⚠ no longer teaches the model that dullness is how not to be refused", () => {
+    /*
+      The deleted clause joined the RAILS to a TASTE instruction with a *so* —
+      "…thrown away whole … so keep it simple rather than interesting" — and
+      production's four picks carried the word `plain` four times out of four.
+    */
+    expect(block).not.toContain("keep it simple rather than interesting");
+    expect(block).not.toContain("NEVER COSTUME");
+    expect(block).not.toContain("stays plain");
+    expect(block).not.toContain("the same restrained register");
+  });
+
+  it("⚠ replaces the WORKED EXAMPLES, which the court proved are the instruction", () => {
+    /*
+      The court ran a third side with the same rails, the same deletions and a
+      neutral register direction that KEPT the old caveman example: both of its
+      drives came back byte-identical to a drive of today's prompt, where every
+      other brief on both shapes was 0 of 2 identical. An edit here changes the
+      examples or it changes nothing — so the old ones are pinned ABSENT and the
+      new ones pinned present.
+    */
+    expect(block).not.toContain("A surgeon gets plain scrubs");
+    expect(block).not.toContain("gets ordinary plain clothes");
+    expect(block).toContain("DRESS THEM FOR THEIR OWN SHOOT");
+    expect(block).toContain("matte black technical layers with hard seams");
+    expect(block).toContain("has no character to dress");
+  });
+
+  it("CONTROL — none of this reached an account outside the flag", () => {
+    /* The whole block is still conditional; the base prompt must not have
+       gained a word of it. Same argument as the file's first arm, re-taken
+       after a rewrite because that is when it could have been lost. */
+    const base = flat(SYSTEM_PROMPT_FOR_TESTS());
+    expect(base).not.toContain("DRESS THEM FOR THEIR OWN SHOOT");
+    expect(base).not.toContain("CLOTHES ONLY");
+    expect(base).not.toContain('"wardrobe"');
+  });
+});
+
+/**
+ * ⚠ THE REFUSAL IS COUNTED NOW — ruled fable-1609 ruling 1.
+ *
+ * A bolder picker is a longer picker against a 180-character door, and a
+ * costume designer reaches for a badge, a beret, a holster. Every one of those
+ * is a CORRECT refusal that costs the whole outfit and falls back to the house
+ * line — the greyest sentence in the product, and therefore the exact defect
+ * the rewrite removes, reinstated silently. Before this the refusal logged and
+ * nothing counted it.
+ */
+describe("a refused pick is counted, and says why without saying what", () => {
+  it("logs the token, the class and the word — and never the outfit", () => {
+    /* ⚠ Captured at the MODULE LOGGER, which is the house pattern here, and the
+       two seams that do NOT work are worth naming so the next author does not
+       spend the same twenty minutes: `console.warn` never sees it (pino), and
+       `process.stdout.write` never sees it either (in development pino uses a
+       transport writing to fd 1 directly). Both spies record an empty array,
+       and an absence-only assertion is GREEN on nothing. */
+    logged.length = 0;
+    expect(parseWardrobePick("a work jacket, jeans, boots, and a baseball cap")).toBeNull();
+
+    const said = JSON.stringify(logged);
+    expect(logged.length, "nothing was logged at all — the arm would pass on absence").toBeGreaterThan(0);
+    expect(said, "the counter token is what makes the count one grep").toContain(WARDROBE_PICK_REFUSED);
+    expect(said, "an arm asserts its own reason — the class").toContain("headwear");
+    expect(said, "and the word that fired it").toContain("cap");
+    /* ⚠ The sensitive half: a refused pick is still a model's sentence about a
+       customer's brief. The class is actionable; the outfit is not. */
+    expect(said, "the outfit itself must never reach the log").not.toContain("work jacket");
   });
 });

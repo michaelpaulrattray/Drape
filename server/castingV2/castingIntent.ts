@@ -111,7 +111,7 @@ import {
   type BodyAnchorRegion,
 } from "../../shared/bodyAnchorRegions";
 import { mentionsWornClothing } from "./statedWardrobe";
-import { wardrobePickDoor } from "./wardrobeDoor";
+import { WARDROBE_PICK_REFUSED, wardrobePickDoor } from "./wardrobeDoor";
 import { createModuleLogger } from "../logging/logger";
 
 /*
@@ -1179,8 +1179,9 @@ export function parseWardrobePick(raw: unknown): string | null {
      answer on a road where declining is correct — not worth a line each time. */
   if (verdict.reason !== "blank") {
     log.warn(
-      { reason: verdict.reason, word: verdict.word },
-      "[castingIntent] wardrobe pick refused at the door — falling back to the house line",
+      { counter: WARDROBE_PICK_REFUSED, reason: verdict.reason, word: verdict.word },
+      `[castingIntent] ${WARDROBE_PICK_REFUSED} — the wardrobe pick was refused at the door, `
+      + "falling back to the house line",
     );
   }
   return null;

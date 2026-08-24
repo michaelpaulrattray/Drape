@@ -691,6 +691,36 @@ carry the rulings, the courts and the histories.
                                          `scripts/_court-cohort-ablation-
                                          disposable.mts`, kept untracked, cells
                                          and both controls in place
+                                         ⚠ **AND ITS PREMISE MOVED ON 2026-08-24,
+                                         WHICH DEFLATES WHAT IT BUYS — added
+                                         here on fable-1608's instruction, at
+                                         the row rather than in a message.**
+                                         The cohort wall now ASKS TWICE before
+                                         it walls (`c801afd1`, design
+                                         `CASTING_V2_COHORT_WALL_DOUBLE_CHECK_DESIGN.md`
+                                         §0), and the court that bought it
+                                         measured, on his exact brief through
+                                         the real entrance: **3 of 6 first reads
+                                         WALLED, and 3 of 3 of those refusals
+                                         PASSED on an immediate second read** —
+                                         with the control holding, **2 of 2
+                                         named-character drives walled on BOTH
+                                         reads.** So the customer-visible defect
+                                         3d exists to remove is largely already
+                                         removed: what 3d would now buy is not
+                                         *stop refusing him* but *stop needing a
+                                         second read to not refuse him*, which
+                                         is a smaller good bought at the same
+                                         ~$3.8–13.2. **The number this row parks
+                                         on did not change; the value on the
+                                         other side of it did**, and a seat that
+                                         funds 3d without reading this sentence
+                                         would be paying yesterday's price for
+                                         today's remainder. ⚠ Two limits keep it
+                                         from being a closure: nine drives on ONE
+                                         brief is not a rate for the product, and
+                                         a rescue is a second paid read rather
+                                         than a correct first one
 3b ✅ KEYING + MULTI-TATTOO REMOVAL       BUILT AND LANDED 2026-08-24, both
                                           halves of its court run. Ruled
                                           fable-1494/1495/1496. Design report:
