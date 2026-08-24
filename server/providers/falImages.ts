@@ -67,8 +67,49 @@ export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
  * 2026-07-30, read from the account balance before and after. List-price
  * arithmetic put it at $0.084, so the real rate is ~18% higher — which is
  * enough to blow a spend ceiling that trusts the list. Cost planning uses this.
+ *
+ * ⚠ **AND IT IS STALE BY ABOUT 2.5×, MEASURED 2026-08-24 — DO NOT QUOTE IT FOR
+ * A FAL-SIDE PRICE UNTIL IT IS RE-MEASURED** (finding opus-1187 §3, row ordered
+ * fable-1542 Q2). Two settled readings that day put a medium 1024×1536 image at
+ * **$0.0400** and a 1536×2304 at **$0.0650** — so every fal-side court this
+ * program has priced through this constant was priced at roughly two and a half
+ * times its real cost, and **the direction is the one that matters: cheapness
+ * that was hidden is capability that was parked.**
+ *
+ * It is NOT simply overwritten with $0.0400, and that is deliberate. The new
+ * figure rests on n=2 with one side taken by difference against a balance
+ * quantised to the cent, and the re-measurement ordered to firm it up was
+ * DESTROYED by a $20 auto top-up landing mid-run (`fal spent $-18.6600` —
+ * `docs/specs/INSTRUMENT_DOCTRINE.md` #25). **A fresher lie is not the repair.**
+ * The repair is a DATED constant — *measured $X on DATE, re-measure before
+ * quoting* — designed once a solid figure exists, so the next reader inherits a
+ * price with a shelf life rather than a number with a footnote.
+ *
+ * Four planning surfaces import this (`scripts/build-cprime-pack.mts`,
+ * `scripts/calibrate-providers.mts`, `scripts/calibration/accessory-instance-cell.mts`,
+ * and a test that pins it), which is why the warning lives on the constant and
+ * not in a document any of them could have been written without reading.
  */
 export const FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099;
+
+/**
+ * ⚠ **AN OPEN QUESTION ABOUT THIS ENGINE, filed rather than discovered twice**
+ * (opus-1189 §4, queued fable-1544 §2): **render size may change COMPOSITION,
+ * not just resolution.**
+ *
+ * The same brief class came back at **33.2%** head share (face-box height over
+ * frame height) at 1536×2304 against **27.3%** at 1024×1536 — the engine
+ * appearing to frame TIGHTER at the larger size. It is confounded (the two
+ * sheets differed in wardrobe as well as in size) and is therefore a question
+ * rather than a finding.
+ *
+ * It is written here because it bears on ANY future size change and not merely
+ * on the framing court that turned it up: a caller who assumes a bigger render
+ * is the same picture with more pixels has assumed exactly what this reading
+ * puts in doubt. **What is already settled is the other half — bigger buys
+ * PIXELS, not FIELD OF VIEW: the engine composes to the frame it is given, so a
+ * larger render offers no margin to crop into.**
+ */
 
 export type FalCreativeConfig = {
   apiKey: string;

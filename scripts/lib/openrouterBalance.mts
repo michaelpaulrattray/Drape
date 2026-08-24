@@ -108,6 +108,25 @@ export type OpenRouterBalance =
  * — and the difference is what is left. Deliberately not the per-day/week
  * endpoint: this line exists to answer "will the product stop working", and
  * only the remainder answers that.
+ *
+ * # ⚠ IT IS A POSITION, NOT A SPEND METER (2026-08-24, ruled fable-1544 Q4)
+ *
+ * Reading it either side of a call answers *what does the account hold*, which
+ * is only *what did that cost* if the charge has landed and nothing else moved
+ * the account. **Neither holds by default**, and this endpoint's own shape says
+ * why the first one bites: `total` is the LIFETIME granted figure, so a top-up
+ * raises the remainder without any of it being a refund — which is exactly what
+ * the rite's warning line means by *"a top-up would RAISE the granted figure
+ * beside it; if that number is not moving, the top-up is not firing."*
+ *
+ * The sibling ledger is where this was measured rather than argued:
+ * `scripts/lib/falSpend.mts` settles about **three minutes late** and rose $20
+ * mid-run on an auto top-up, printing a spend of **`$-18.6600`**. So a caller
+ * pricing anything against EITHER ledger waits for **two consecutive equal
+ * reads after a move** and **checks the direction as well as the delta** — a run
+ * whose balance rose is un-measured rather than cheap.
+ *
+ * `docs/specs/INSTRUMENT_DOCTRINE.md` #25 is the rule both readers belong to.
  */
 export async function readOpenRouterBalance(
   key: string | undefined = process.env.OPENROUTER_API_KEY,

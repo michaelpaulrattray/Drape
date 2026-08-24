@@ -187,6 +187,32 @@ export type FalBalance =
 /**
  * Ask fal what is left. Expected to be refused today, and the refusal is a
  * READING — it names which door is shut so the fix is one sentence long.
+ *
+ * # ⚠ WHAT THIS IS NOT: A SPEND METER (2026-08-24, ruled fable-1544 Q4)
+ *
+ * It answers *what does the account hold*, which is only *what did that cost*
+ * if the charge has landed and nothing else moved the account. **Both fail
+ * routinely here, in opposite directions.**
+ *
+ * **It settles about three minutes late.** An arm priced a larger render by
+ * reading this at the size boundary and got $10.3500 → $10.3100 for two
+ * 1024×1536 images and → $10.3100 for two 1536×2304 images — **$0.0000 an
+ * image**, printed as a verdict. Polled once a minute afterwards it kept moving,
+ * 10.31 → 10.24 → 10.14, then held: $0.21 for four images. So a caller pricing
+ * anything waits for **two consecutive equal reads after a move**. One change is
+ * the middle of settlement, not the end of it.
+ *
+ * **And it can go UP.** The same court's careful re-measurement printed
+ * `fal spent $-18.6600`, because a **$20 auto top-up** landed mid-run. A
+ * negative cost is loud; a top-up that masks half the spend is silent, and that
+ * is the one this exists to warn about. **Check the direction as well as the
+ * delta, and treat a run whose balance ROSE as un-measured rather than cheap.**
+ *
+ * The account fact that follows: fal auto-replenishes, so *the balance stops the
+ * work* is not this account's failure mode. **Unnoticed spend is.**
+ *
+ * `scripts/lib/openrouterBalance.mts` is the other ledger and carries its own
+ * note; `docs/specs/INSTRUMENT_DOCTRINE.md` #25 is the rule both belong to.
  */
 export async function readFalBalance(
   /*

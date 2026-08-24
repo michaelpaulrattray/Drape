@@ -470,6 +470,32 @@ where the skipping is cheapest and least noticed.
 *Banked:* fable-1485 §3, corrected at opus-1135; findings at opus-1134 and the
 four overlays in `output/two-paths-court{,-round2}/READ-WARDROBE-chest*.jpg`.
 
+**25. A LEDGER IS NOT A SPEND METER: IT SETTLES LATE AND IT CAN GO UP.**
+A balance read on either side of a dispatch answers *what does the account hold*,
+which is only *what did this cost* if nothing else moved it and the charge has
+landed. Both conditions fail routinely, in opposite directions, and neither
+announces itself.
+*Incident, the lateness:* an arm priced a larger render by reading fal's balance
+at the size boundary — $10.3500 → $10.3100 for two 1024×1536 images and **→
+$10.3100 for two 1536×2304 images**, printing **$0.0000 per image** and the
+verdict *"the price is immaterial"* off a division by a figure that had not
+landed. Polled once a minute afterwards the ledger kept moving — 10.31 → 10.24 →
+10.14 — and then held: **$0.21 for four images, about three minutes late.** The
+rule is **two consecutive equal reads after a move**; one change is the middle of
+settlement, not the end of it.
+*Incident, the direction:* the SAME court's re-measurement, taken correctly at
+both ends, printed **`fal spent $-18.6600`** — an auto top-up of $20 landed
+mid-run, so the ledger rose while the work spent. A negative cost is loud; a
+top-up that merely masks half the spend is silent, and that is the reading this
+rule exists for. **Check the direction as well as the delta**, and treat any run
+whose ledger rose as un-measured rather than cheap.
+*The account fact that follows:* fal auto-replenishes at $20, so *the balance
+stops the work* is no longer that account's failure mode. **Unnoticed spend is.**
+*Banked:* fable-1542 §1 and fable-1544 Q4, findings at opus-1187 §1 and
+opus-1189 §3; the settlement behaviour of both ledgers is written into
+`scripts/lib/falSpend.mts` and `scripts/lib/openrouterBalance.mts` where a
+reader meets it.
+
 ---
 
 ## Adding to this file
@@ -477,4 +503,4 @@ four overlays in `output/two-paths-court{,-round2}/READ-WARDROBE-chest*.jpg`.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twenty-four of these describe.
+the failure mode all twenty-five of these describe.
