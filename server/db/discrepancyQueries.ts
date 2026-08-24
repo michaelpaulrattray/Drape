@@ -25,6 +25,111 @@ export interface FlaggedUserDiscrepancy {
   failedGenerations: number;
 }
 
+/** What the per-user aggregation of credit transactions yields. */
+export interface DiscrepancyCreditAgg {
+  userId: number;
+  grossDeductions: number;
+  totalRefunds: number;
+}
+
+/** What the per-user aggregation of generations yields. */
+export interface DiscrepancyGenAgg {
+  userId: number;
+  completedCost: number;
+  pendingCost: number;
+  totalGenerations: number;
+  failedGenerations: number;
+}
+
+export type FlaggedDiscrepancyData = Omit<
+  FlaggedUserDiscrepancy,
+  "userId" | "userName" | "email"
+>;
+
+/**
+ * The discrepancy arithmetic itself — every user with |discrepancy| at or
+ * above the threshold, and how many were scanned.
+ *
+ * Lifted out of `getUsersWithDiscrepancies` BYTE-PRESERVING (2026-08-25, 3g)
+ * so the money arithmetic can be driven without a database.
+ * `getUsersWithDiscrepancies` below is its first and production reader.
+ *
+ * ⚠ WHY: `server/discrepancyFlagging.test.ts` opened with the line
+ * *"Mirror the core computation logic from discrepancyQueries.ts"* and then
+ * re-typed 60 lines of it — the netCost subtraction, the `Math.max(0, …)` on
+ * refunds, the `>=` threshold and the abs-descending sort — and every arm
+ * tested the copy. The copy happened to be faithful when it was checked; that
+ * is luck, not a property, and it is the arrangement in which the credit
+ * discrepancy arithmetic could be changed here with the suite green.
+ * Working law 4: derive, never mirror.
+ */
+export function computeFlaggedDiscrepancies(
+  creditAgg: DiscrepancyCreditAgg[],
+  genAgg: DiscrepancyGenAgg[],
+  threshold: number,
+): { flagged: Array<{ userId: number; data: FlaggedDiscrepancyData }>; scannedCount: number } {
+  const creditMap = new Map(creditAgg.map((r) => [r.userId, r]));
+  const genMap = new Map(genAgg.map((r) => [r.userId, r]));
+
+  const allUserIds = Array.from(new Set([...Array.from(creditMap.keys()), ...Array.from(genMap.keys())]));
+
+  const flagged: Array<{ userId: number; data: FlaggedDiscrepancyData }> = [];
+
+  for (const uid of allUserIds) {
+    const credit = creditMap.get(uid);
+    const gen = genMap.get(uid);
+
+    const grossDeductions = Number(credit?.grossDeductions ?? 0);
+    const totalRefunds = Math.max(0, Number(credit?.totalRefunds ?? 0));
+    const netCost = grossDeductions - totalRefunds;
+    const completedCost = Number(gen?.completedCost ?? 0);
+    const pendingCost = Number(gen?.pendingCost ?? 0);
+    const discrepancy = netCost - completedCost - pendingCost;
+
+    if (Math.abs(discrepancy) >= threshold) {
+      flagged.push({
+        userId: uid,
+        data: {
+          grossDeductions,
+          totalRefunds,
+          netCost,
+          completedCost,
+          pendingCost,
+          discrepancy,
+          totalGenerations: Number(gen?.totalGenerations ?? 0),
+          failedGenerations: Number(gen?.failedGenerations ?? 0),
+        },
+      });
+    }
+  }
+
+  return { flagged, scannedCount: allUserIds.length };
+}
+
+/**
+ * Attach the user's name and email to each flagged row and order the report
+ * by the size of the discrepancy, largest first. Lifted with the function
+ * above and for the same reason.
+ */
+export function attachUserInfoToFlagged(
+  flagged: Array<{ userId: number; data: FlaggedDiscrepancyData }>,
+  userRows: Array<{ id: number; name: string | null; email: string | null }>,
+): FlaggedUserDiscrepancy[] {
+  const userMap = new Map(userRows.map((u) => [u.id, u]));
+
+  return flagged
+    .map((f) => {
+      const u = userMap.get(f.userId);
+      return {
+        userId: f.userId,
+        userName: u?.name ?? null,
+        email: u?.email ?? null,
+        ...f.data,
+      };
+    })
+    .sort((a, b) => Math.abs(b.discrepancy) - Math.abs(a.discrepancy));
+}
+
 /**
  * Scan all users for credit discrepancies above a threshold.
  * Uses SQL aggregation for performance — no N+1 queries.
@@ -60,47 +165,12 @@ export async function getUsersWithDiscrepancies(
     .from(generations)
     .groupBy(generations.userId);
 
-  // Step 3: Build lookup maps
-  const creditMap = new Map(creditAgg.map((r) => [r.userId, r]));
-  const genMap = new Map(genAgg.map((r) => [r.userId, r]));
-
-  // Step 4: Collect all user IDs that have either credit txns or generations
-  const allUserIds = Array.from(new Set([...Array.from(creditMap.keys()), ...Array.from(genMap.keys())]));
-
-  // Step 5: Compute discrepancies and filter by threshold
-  const flagged: Array<{ userId: number; data: Omit<FlaggedUserDiscrepancy, "userId" | "userName" | "email"> }> = [];
-
-  for (const uid of allUserIds) {
-    const credit = creditMap.get(uid);
-    const gen = genMap.get(uid);
-
-    const grossDeductions = Number(credit?.grossDeductions ?? 0);
-    const totalRefunds = Math.max(0, Number(credit?.totalRefunds ?? 0));
-    const netCost = grossDeductions - totalRefunds;
-    const completedCost = Number(gen?.completedCost ?? 0);
-    const pendingCost = Number(gen?.pendingCost ?? 0);
-    const discrepancy = netCost - completedCost - pendingCost;
-
-    if (Math.abs(discrepancy) >= threshold) {
-      flagged.push({
-        userId: uid,
-        data: {
-          grossDeductions,
-          totalRefunds,
-          netCost,
-          completedCost,
-          pendingCost,
-          discrepancy,
-          totalGenerations: Number(gen?.totalGenerations ?? 0),
-          failedGenerations: Number(gen?.failedGenerations ?? 0),
-        },
-      });
-    }
-  }
+  // Steps 3-5: lookup maps, the union of user ids, and the threshold filter.
+  const { flagged, scannedCount } = computeFlaggedDiscrepancies(creditAgg, genAgg, threshold);
 
   // Step 6: Fetch user info for flagged users
   if (flagged.length === 0) {
-    return { users: [], scannedCount: allUserIds.length };
+    return { users: [], scannedCount };
   }
 
   const flaggedIds = flagged.map((f) => f.userId);
@@ -109,19 +179,5 @@ export async function getUsersWithDiscrepancies(
     .from(users)
     .where(sql`${users.id} IN (${sql.join(flaggedIds.map((id) => sql`${id}`), sql`, `)})`);
 
-  const userMap = new Map(userRows.map((u) => [u.id, u]));
-
-  const result: FlaggedUserDiscrepancy[] = flagged
-    .map((f) => {
-      const u = userMap.get(f.userId);
-      return {
-        userId: f.userId,
-        userName: u?.name ?? null,
-        email: u?.email ?? null,
-        ...f.data,
-      };
-    })
-    .sort((a, b) => Math.abs(b.discrepancy) - Math.abs(a.discrepancy));
-
-  return { users: result, scannedCount: allUserIds.length };
+  return { users: attachUserInfoToFlagged(flagged, userRows), scannedCount };
 }

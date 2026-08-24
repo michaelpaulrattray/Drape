@@ -12,6 +12,9 @@ import type { ZodTypeAny } from "zod";
 import { WARDROBE_CREDIT_COSTS } from "./wardrobe/creditCosts";
 import { readIdentityVerdict } from "./wardrobe/identityCheck";
 import { buildTattooMap } from "./wardrobe/tattooAnalysis";
+import { buildOutfitContext, selectDescribableGarments } from "./wardrobe/garmentDescription";
+import { useWardrobeStore } from "../client/src/features/wardrobe/stores/useWardrobeStore";
+import { resolveVtoErrorCopy, shouldAutoRetryVto } from "../client/src/features/wardrobe/vtoErrorCopy";
 import { wardrobeRouter } from "./routes/wardrobe";
 import {
   wardrobeClassifyEditInput,
@@ -332,21 +335,44 @@ describe("Wardrobe Router Input Validation", () => {
     expect(invalid.success).toBe(false);
   });
 
+  /*
+   * ⚠ THIS ARM USED TO RE-TYPE THE FILTER, commented "Simulates the
+   * server-side logic that builds outfitContext" — the FOURTH hand-written
+   * copy of one product rule. The other three were `routes/wardrobe.ts` and
+   * `vtoGeneration.ts` twice, each with its own
+   * `!description.startsWith("Analyzing")`. All four now derive from
+   * `wardrobe/garmentDescription.ts`, and this drives it. Filed under 3g's A.
+   */
   it("should build outfit context string from garment descriptions", () => {
-    // Simulates the server-side logic that builds outfitContext
-    const mockGarments = [
+    const garments = [
       { description: "Black leather bomber jacket", status: "ready" },
       { description: "White cotton t-shirt", status: "ready" },
       { description: "Analyzing...", status: "ready" },
       { description: null, status: "ready" },
       { description: "Dark denim jeans", status: "processing" },
     ];
-    const validGarments = mockGarments.filter(
-      (g) => g.status === "ready" && !!g.description && !g.description.startsWith("Analyzing"),
-    );
-    const outfitContext = validGarments.map((g) => g.description).join(", ");
-    expect(outfitContext).toBe("Black leather bomber jacket, White cotton t-shirt");
+    const validGarments = selectDescribableGarments(garments);
     expect(validGarments).toHaveLength(2);
+    expect(buildOutfitContext(validGarments)).toBe(
+      "Black leather bomber jacket, White cotton t-shirt",
+    );
+  });
+
+  it("FROM THE DIFF — a null entry is dropped, which is what the ownership filter leaves behind", () => {
+    // `routes/wardrobe.ts` maps another user's garment to `null` BEFORE this
+    // runs (invariant 3, at `ctx.user.id`). The copy's fixture had no nulls,
+    // so nothing said what happens to them. They are dropped.
+    expect(
+      selectDescribableGarments([
+        null,
+        { description: "Wool overcoat", status: "ready" },
+        null,
+      ]),
+    ).toEqual([{ description: "Wool overcoat", status: "ready" }]);
+  });
+
+  it("FROM THE DIFF — no describable garment yields NO context rather than an empty sentence", () => {
+    expect(buildOutfitContext([])).toBeUndefined();
   });
 
   it("should extract tattoo prompt fragment from tattooMap", () => {
@@ -757,40 +783,33 @@ describe("Detect Result Garments", () => {
 // ── Full Look Radio Selection Tests ───────────────────────────────────────
 
 describe("Full Look Radio Selection", () => {
-  // Simulate the store's toggleGarmentSelection logic
-  function toggleGarmentSelection(
-    selectedIds: Set<number>,
-    id: number,
-    slotType?: string,
-    fullLookIdsToDeselect?: number[],
-  ): Set<number> {
-    const next = new Set(selectedIds);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      if (slotType === "full_look" && fullLookIdsToDeselect) {
-        for (const fid of fullLookIdsToDeselect) {
-          if (fid !== id) next.delete(fid);
-        }
-      }
-      next.add(id);
-    }
-    return next;
+  /*
+   * ⚠ A PRIVATE `toggleGarmentSelection` USED TO BE DECLARED HERE, commented
+   * "Simulate the store's toggleGarmentSelection logic" — a transcription of
+   * the real Zustand action. Every arm below tested the copy, so the radio
+   * rule that governs which garments a customer has selected could have been
+   * changed in the store with this file green.
+   *
+   * The copy was faithful when it was read (2026-08-25). It was also never
+   * necessary: `session-reset.test.ts` has driven the real wardrobe store from
+   * a server test since it was written. Every arm now drives the REAL action
+   * and reads the REAL `selectedGarmentIds`. Filed under 3g's A.
+   */
+  function toggleOn(selected: number[], id: number, slotType?: string, fullLookIds?: number[]): Set<number> {
+    useWardrobeStore.setState({ selectedGarmentIds: new Set(selected) });
+    useWardrobeStore.getState().toggleGarmentSelection(id, slotType as never, fullLookIds);
+    return useWardrobeStore.getState().selectedGarmentIds;
   }
 
   it("should deselect other full_look garments when selecting a new one", () => {
-    const allFullLookIds = [10, 20, 30];
-    let selected = new Set<number>([10]); // garment 10 already selected
-    selected = toggleGarmentSelection(selected, 20, "full_look", allFullLookIds);
+    const selected = toggleOn([10], 20, "full_look", [10, 20, 30]);
     expect(selected.has(20)).toBe(true);
     expect(selected.has(10)).toBe(false);
     expect(selected.size).toBe(1);
   });
 
   it("should not deselect non-full_look garments when selecting full_look", () => {
-    const allFullLookIds = [10, 20];
-    let selected = new Set<number>([10, 100, 200]); // 100, 200 are tops/bottoms
-    selected = toggleGarmentSelection(selected, 20, "full_look", allFullLookIds);
+    const selected = toggleOn([10, 100, 200], 20, "full_look", [10, 20]);
     expect(selected.has(20)).toBe(true);
     expect(selected.has(10)).toBe(false);
     expect(selected.has(100)).toBe(true);
@@ -798,32 +817,26 @@ describe("Full Look Radio Selection", () => {
   });
 
   it("should toggle off a full_look garment when clicking it again", () => {
-    const allFullLookIds = [10, 20];
-    let selected = new Set<number>([10]);
-    selected = toggleGarmentSelection(selected, 10, "full_look", allFullLookIds);
+    const selected = toggleOn([10], 10, "full_look", [10, 20]);
     expect(selected.has(10)).toBe(false);
     expect(selected.size).toBe(0);
   });
 
   it("should not affect other slots when selecting non-full_look", () => {
-    let selected = new Set<number>([10, 50]);
-    selected = toggleGarmentSelection(selected, 60, "tops");
+    const selected = toggleOn([10, 50], 60, "tops");
     expect(selected.has(10)).toBe(true);
     expect(selected.has(50)).toBe(true);
     expect(selected.has(60)).toBe(true);
   });
 
   it("should work when fullLookIdsToDeselect is undefined (non-full_look slot)", () => {
-    let selected = new Set<number>([10]);
-    selected = toggleGarmentSelection(selected, 20, "tops", undefined);
+    const selected = toggleOn([10], 20, "tops", undefined);
     expect(selected.has(10)).toBe(true);
     expect(selected.has(20)).toBe(true);
   });
 
   it("should handle selecting first full_look with no prior selection", () => {
-    const allFullLookIds = [10, 20, 30];
-    let selected = new Set<number>();
-    selected = toggleGarmentSelection(selected, 10, "full_look", allFullLookIds);
+    const selected = toggleOn([], 10, "full_look", [10, 20, 30]);
     expect(selected.has(10)).toBe(true);
     expect(selected.size).toBe(1);
   });
@@ -891,67 +904,66 @@ describe("Overlay Scan Wiring Logic", () => {
 // ── SAFETY_BLOCK Auto-Retry Logic Tests ───────────────────────────────────
 
 describe("SAFETY_BLOCK Auto-Retry Logic", () => {
-  // Simulate the retry decision logic from generateVTO catch block
-  function shouldAutoRetry(errorMsg: string, isRetry: boolean): boolean {
-    return errorMsg.includes("SAFETY_BLOCK") && !isRetry;
-  }
-
-  function getFinalErrorMessage(
-    errorMsg: string,
-    isRetry: boolean,
-    retrySucceeded: boolean,
-  ): string | null {
-    if (errorMsg.includes("SAFETY_BLOCK") && !isRetry) {
-      // First attempt — would auto-retry
-      if (retrySucceeded) return null; // retry succeeded, no error
-      // Retry failed — show final error
-      return "Generation blocked by safety filters — try different garments";
-    }
-    if (errorMsg.includes("SAFETY_BLOCK")) {
-      return "Generation blocked by safety filters — try different garments";
-    }
-    if (errorMsg.includes("TOO_MANY_REQUESTS")) {
-      return "Rate limit reached. Please wait a moment.";
-    }
-    return errorMsg;
-  }
+  /*
+   * ⚠ A PRIVATE `shouldAutoRetry` AND `getFinalErrorMessage` USED TO BE
+   * DECLARED HERE, commented "Simulate the retry decision logic from
+   * generateVTO catch block", and eight arms asserted the copy — two of them
+   * hand-typing the customer-facing sentences.
+   *
+   * ⚠ AND THE COPY WAS INCOMPLETE IN A WAY NO ARM COULD SHOW: the hook sets
+   * an inline message AND a toast, and they are DIFFERENT sentences. The copy
+   * modelled only the inline one, so "Safety filter triggered — try different
+   * garments" and "Too many requests — please wait" had never been described
+   * anywhere in the suite. Both are asserted now.
+   *
+   * `shouldAutoRetryVto` and `resolveVtoErrorCopy` are named exports of
+   * `client/src/features/wardrobe/vtoErrorCopy.ts` with the hook as their
+   * first reader. Filed under 3g's A. Working law 4: derive, never mirror.
+   */
 
   it("should auto-retry on first SAFETY_BLOCK", () => {
-    expect(shouldAutoRetry("SAFETY_BLOCK: content flagged", false)).toBe(true);
+    expect(shouldAutoRetryVto("SAFETY_BLOCK: content flagged", false)).toBe(true);
   });
 
   it("should NOT auto-retry on second SAFETY_BLOCK (isRetry=true)", () => {
-    expect(shouldAutoRetry("SAFETY_BLOCK: content flagged", true)).toBe(false);
+    expect(shouldAutoRetryVto("SAFETY_BLOCK: content flagged", true)).toBe(false);
   });
 
   it("should NOT auto-retry on non-SAFETY_BLOCK errors", () => {
-    expect(shouldAutoRetry("TOO_MANY_REQUESTS", false)).toBe(false);
-    expect(shouldAutoRetry("Unknown error", false)).toBe(false);
+    expect(shouldAutoRetryVto("TOO_MANY_REQUESTS", false)).toBe(false);
+    expect(shouldAutoRetryVto("Unknown error", false)).toBe(false);
   });
 
-  it("should return null error when retry succeeds", () => {
-    const result = getFinalErrorMessage("SAFETY_BLOCK: flagged", false, true);
-    expect(result).toBeNull();
-  });
-
-  it("should return safety error when retry also fails", () => {
-    const result = getFinalErrorMessage("SAFETY_BLOCK: flagged", false, false);
-    expect(result).toBe("Generation blocked by safety filters — try different garments");
-  });
-
-  it("should return safety error on isRetry=true (second failure)", () => {
-    const result = getFinalErrorMessage("SAFETY_BLOCK: flagged", true, false);
-    expect(result).toBe("Generation blocked by safety filters — try different garments");
+  it("should return safety error for SAFETY_BLOCK", () => {
+    expect(resolveVtoErrorCopy("SAFETY_BLOCK: flagged").inline).toBe(
+      "Generation blocked by safety filters — try different garments",
+    );
   });
 
   it("should return rate limit error for TOO_MANY_REQUESTS", () => {
-    const result = getFinalErrorMessage("TOO_MANY_REQUESTS", false, false);
-    expect(result).toBe("Rate limit reached. Please wait a moment.");
+    expect(resolveVtoErrorCopy("TOO_MANY_REQUESTS").inline).toBe(
+      "Rate limit reached. Please wait a moment.",
+    );
   });
 
   it("should return raw error for other errors", () => {
-    const result = getFinalErrorMessage("Network timeout", false, false);
-    expect(result).toBe("Network timeout");
+    expect(resolveVtoErrorCopy("Network timeout").inline).toBe("Network timeout");
+  });
+
+  it("FROM THE DIFF — the TOAST is a different sentence from the inline one, on every branch", () => {
+    for (const msg of ["SAFETY_BLOCK: flagged", "TOO_MANY_REQUESTS", "Network timeout"]) {
+      const copy = resolveVtoErrorCopy(msg);
+      expect(copy.toast).not.toBe(copy.inline);
+      expect(copy.toast.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("FROM THE DIFF — the toast sentences themselves, which nothing had ever described", () => {
+    expect(resolveVtoErrorCopy("SAFETY_BLOCK: flagged").toast).toBe(
+      "Safety filter triggered — try different garments",
+    );
+    expect(resolveVtoErrorCopy("TOO_MANY_REQUESTS").toast).toBe("Too many requests — please wait");
+    expect(resolveVtoErrorCopy("Network timeout").toast).toBe("VTO generation failed");
   });
 });
 

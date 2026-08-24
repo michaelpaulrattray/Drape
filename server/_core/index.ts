@@ -42,14 +42,8 @@ const log = createModuleLogger("server");
 async function alertCriticalError(label: string, error: unknown): Promise<void> {
   try {
     const { dispatch } = await import("../slack/slackCore");
-    await dispatch({
-      type: "critical_security_server_crash",
-      severity: "critical",
-      title: `Server ${label}`,
-      description: error instanceof Error
-        ? `${error.message}\n\`\`\`${error.stack?.slice(0, 500)}\`\`\``
-        : String(error),
-    });
+    const { buildCriticalErrorAlert } = await import("./criticalAlert");
+    await dispatch(buildCriticalErrorAlert(label, error));
   } catch {
     // Slack dispatch itself failed — nothing more we can do
   }

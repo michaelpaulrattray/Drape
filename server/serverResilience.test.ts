@@ -8,51 +8,32 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ============================================================================
-// ALERT CRITICAL ERROR — mirrors the helper in server/_core/index.ts
+// ALERT CRITICAL ERROR — the REAL payload builder, imported
 // ============================================================================
+/*
+ * ⚠ THIS SECTION USED TO RE-TYPE `alertCriticalError` FROM
+ * `server/_core/index.ts`, and it said so in its own heading. The copy had
+ * DRIFTED, and its arms asserted the drift: it took the dispatch function as
+ * an argument and RETURNED A BOOLEAN, so six arms read `expect(sent).toBe(…)`
+ * about a helper that has never returned anything — the real one is
+ * `Promise<void>` and imports `dispatch` itself.
+ *
+ * Two of those arms — "should return false if dispatch itself throws" and
+ * "should return false if dispatch returns sent: false" — described a
+ * contract the product does not have and could never have failed. They are
+ * gone. What they were reaching for (a crash handler must not throw while
+ * reporting a crash) is real, and it lives in the `catch` at the call site,
+ * which is not reachable from here without booting the server.
+ *
+ * `buildCriticalErrorAlert` is now a named export of `_core/criticalAlert.ts`
+ * with `_core/index.ts` as its first reader, and every arm below drives it.
+ * Filed under 3g's A. Working law 4: derive, never mirror.
+ */
+import { buildCriticalErrorAlert } from "./_core/criticalAlert";
 
-type SlackDispatchFn = (event: {
-  type: string;
-  severity: string;
-  title: string;
-  description: string;
-}) => Promise<{ sent: boolean; channels: string[] }>;
-
-async function alertCriticalError(
-  label: string,
-  error: unknown,
-  dispatchFn: SlackDispatchFn
-): Promise<boolean> {
-  try {
-    const result = await dispatchFn({
-      type: "critical_security_server_crash",
-      severity: "critical",
-      title: `Server ${label}`,
-      description:
-        error instanceof Error
-          ? `${error.message}\n\`\`\`${error.stack?.slice(0, 500)}\`\`\``
-          : String(error),
-    });
-    return result.sent;
-  } catch {
-    return false;
-  }
-}
-
-describe("alertCriticalError", () => {
-  let mockDispatch: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    mockDispatch = vi.fn().mockResolvedValue({ sent: true, channels: ["admin-actions"] });
-  });
-
-  it("should dispatch a critical alert for Error objects", async () => {
-    const error = new Error("Something broke");
-    const sent = await alertCriticalError("Uncaught Exception", error, mockDispatch);
-
-    expect(sent).toBe(true);
-    expect(mockDispatch).toHaveBeenCalledOnce();
-    const call = mockDispatch.mock.calls[0][0];
+describe("buildCriticalErrorAlert", () => {
+  it("builds a critical alert for Error objects", () => {
+    const call = buildCriticalErrorAlert("Uncaught Exception", new Error("Something broke"));
     expect(call.type).toBe("critical_security_server_crash");
     expect(call.severity).toBe("critical");
     expect(call.title).toBe("Server Uncaught Exception");
@@ -60,51 +41,24 @@ describe("alertCriticalError", () => {
     expect(call.description).toContain("```");
   });
 
-  it("should dispatch a critical alert for string errors", async () => {
-    const sent = await alertCriticalError("Unhandled Rejection", "string error", mockDispatch);
-
-    expect(sent).toBe(true);
-    const call = mockDispatch.mock.calls[0][0];
-    expect(call.description).toBe("string error");
+  it("builds a critical alert for string errors", () => {
+    expect(buildCriticalErrorAlert("Unhandled Rejection", "string error").description)
+      .toBe("string error");
   });
 
-  it("should dispatch for non-Error objects", async () => {
-    const sent = await alertCriticalError("Unhandled Rejection", { code: 42 }, mockDispatch);
-
-    expect(sent).toBe(true);
-    const call = mockDispatch.mock.calls[0][0];
-    expect(call.description).toBe("[object Object]");
+  it("builds one for non-Error objects", () => {
+    expect(buildCriticalErrorAlert("Unhandled Rejection", { code: 42 }).description)
+      .toBe("[object Object]");
   });
 
-  it("should dispatch for null/undefined errors", async () => {
-    const sent = await alertCriticalError("Uncaught Exception", null, mockDispatch);
-
-    expect(sent).toBe(true);
-    const call = mockDispatch.mock.calls[0][0];
-    expect(call.description).toBe("null");
+  it("builds one for null/undefined errors", () => {
+    expect(buildCriticalErrorAlert("Uncaught Exception", null).description).toBe("null");
   });
 
-  it("should return false if dispatch itself throws", async () => {
-    mockDispatch.mockRejectedValue(new Error("Slack is down"));
-    const sent = await alertCriticalError("Uncaught Exception", new Error("test"), mockDispatch);
-
-    expect(sent).toBe(false);
-  });
-
-  it("should return false if dispatch returns sent: false", async () => {
-    mockDispatch.mockResolvedValue({ sent: false, channels: [] });
-    const sent = await alertCriticalError("Uncaught Exception", new Error("test"), mockDispatch);
-
-    expect(sent).toBe(false);
-  });
-
-  it("should truncate long stack traces to 500 chars", async () => {
+  it("truncates long stack traces to 500 chars", () => {
     const longStackError = new Error("fail");
     longStackError.stack = "Error: fail\n" + "a".repeat(1000);
-    await alertCriticalError("Uncaught Exception", longStackError, mockDispatch);
-
-    const call = mockDispatch.mock.calls[0][0];
-    // The stack portion inside backticks should be at most 500 chars
+    const call = buildCriticalErrorAlert("Uncaught Exception", longStackError);
     const stackMatch = call.description.match(/```(.*)```/s);
     expect(stackMatch).toBeTruthy();
     expect(stackMatch![1].length).toBeLessThanOrEqual(500);
@@ -286,8 +240,26 @@ describe("Graceful shutdown sequencing", () => {
 // IDEMPOTENT SHUTDOWN (prevent double-shutdown)
 // ============================================================================
 
-describe("Idempotent shutdown guard", () => {
-  it("should only execute shutdown once even if called multiple times", async () => {
+/*
+ * ⚠ THIS ONE IS A SIMULATION AND STAYS ONE — 3g's B, said out loud rather
+ * than left to be discovered.
+ *
+ * The real guard is three lines (`if (shuttingDown) return; shuttingDown =
+ * true;`) inside a closure inside `registerShutdownHandlers` in
+ * `server/_core/index.ts`, which also closes the HTTP server, arms a
+ * `process.exit` timer and ends the database pool. Reaching it from a test
+ * means either booting the server or restructuring a production shutdown
+ * path for a test's convenience, and the second is a worse trade than the
+ * mirror it would remove.
+ *
+ * So this arm asserts a PROPERTY (a re-entrant call is a no-op) against a
+ * model of the guard, and it does not claim to be testing
+ * `registerShutdownHandlers`. What would make it real: `shutdown` taking its
+ * cleanup steps as arguments, which is a shape change to the boot path and
+ * wants its own decision, not a test's.
+ */
+describe("Idempotent shutdown guard (MODEL, not the product — see the note above)", () => {
+  it("a re-entrant shutdown is a no-op — asserted on a model, not on registerShutdownHandlers", async () => {
     let shutdownCount = 0;
     let isShuttingDown = false;
 

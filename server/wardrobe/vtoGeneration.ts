@@ -10,6 +10,7 @@
  * Credit cost: 5 points (full VTO), 3 points (incremental)
  */
 import { IMAGE_PRO } from "@shared/modelRegistry";
+import { hasUsableDescription } from "./garmentDescription";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -43,8 +44,8 @@ function buildGarmentNarrative(
 
   for (const g of sortedGarments) {
     const label =
-      g.description && !g.description.startsWith("Analyzing")
-        ? sanitizeDescription(g.description)
+      hasUsableDescription(g)
+        ? sanitizeDescription(g.description!)
         : g.type;
     const style = g.styleNote ? ` Styling: ${g.styleNote}.` : "";
 
@@ -99,8 +100,8 @@ function buildGarmentNarrative(
         const innerLabels = sameCategory
           .slice(0, -1)
           .map((sg) =>
-            sg.description && !sg.description.startsWith("Analyzing")
-              ? sanitizeDescription(sg.description)
+            hasUsableDescription(sg)
+              ? sanitizeDescription(sg.description!)
               : sg.type,
           )
           .join(" and ");

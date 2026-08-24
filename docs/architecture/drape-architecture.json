@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "489949973c26a374"
+    "sourceFingerprint": "e992bdc68f436ed8"
   },
   "domains": [
     {
@@ -98,7 +98,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 15
+      "moduleCount": 16
     },
     {
       "id": "domain:profile",
@@ -148,7 +148,7 @@
     {
       "id": "domain:wardrobe",
       "name": "wardrobe",
-      "moduleCount": 33
+      "moduleCount": 35
     }
   ],
   "modules": [
@@ -2247,6 +2247,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/wardrobe/vtoErrorCopy.ts",
+      "path": "client/src/features/wardrobe/vtoErrorCopy.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/foundation/AppShell.tsx",
       "path": "client/src/foundation/AppShell.tsx",
       "domain": "foundation",
@@ -2507,6 +2513,12 @@
     {
       "id": "module:server/_core/cookies.ts",
       "path": "server/_core/cookies.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/_core/criticalAlert.ts",
+      "path": "server/_core/criticalAlert.ts",
       "domain": "platform",
       "lifecycle": "active"
     },
@@ -5309,6 +5321,12 @@
     {
       "id": "module:server/wardrobe/garmentAnalysis.ts",
       "path": "server/wardrobe/garmentAnalysis.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/wardrobe/garmentDescription.ts",
+      "path": "server/wardrobe/garmentDescription.ts",
       "domain": "wardrobe",
       "lifecycle": "active"
     },
@@ -16713,6 +16731,11 @@
     },
     {
       "from": "module:client/src/features/wardrobe/hooks/useWardrobeGeneration.ts",
+      "to": "module:client/src/features/wardrobe/vtoErrorCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/hooks/useWardrobeGeneration.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -17854,6 +17877,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/_core/context.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/_core/criticalAlert.ts",
       "kind": "imports"
     },
     {
@@ -29803,6 +29831,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/wardrobe/garmentDescription.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/garmentDetection.ts",
       "kind": "imports"
     },
@@ -30339,6 +30372,11 @@
     {
       "from": "module:server/wardrobe/vtoGeneration.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/vtoGeneration.ts",
+      "to": "module:server/wardrobe/garmentDescription.ts",
       "kind": "imports"
     },
     {

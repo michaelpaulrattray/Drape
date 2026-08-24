@@ -1,115 +1,26 @@
 import { describe, it, expect } from "vitest";
 
-// ── Mirror of buildReconciliationCsv from client (pure logic, no DOM) ──
+/*
+ * ⚠ A HUNDRED LINES OF `client/src/features/moderator/reconciliation-csv.ts`
+ * USED TO BE RE-TYPED HERE, under a heading that said so: "Mirror of
+ * buildReconciliationCsv from client (pure logic, no DOM)". Every arm below
+ * tested the copy — the CSV quoting rule, the section order, the money
+ * columns of a BILLING DISPUTE export.
+ *
+ * The mirror was never necessary: `buildReconciliationCsv` is and was an
+ * `export`, and vitest's `@` alias resolves to `client/src`, so this file
+ * could always have imported it. Diffed before repointing (2026-08-25): copy
+ * and source differed only in seven section COMMENTS the copy had dropped, so
+ * nothing had drifted yet — which is the state every mirror is in right up
+ * until it isn't. Filed under 3g's A. Working law 4: derive, never mirror.
+ *
+ * The `ReconciliationData` shape is taken off the real function's own
+ * signature rather than re-declared, so a field added or renamed there is a
+ * typecheck failure here instead of a silent divergence.
+ */
+import { buildReconciliationCsv } from "@/features/moderator/reconciliation-csv";
 
-function escCsv(value: string | number): string {
-  const s = String(value);
-  return s.includes(",") || s.includes('"') || s.includes("\n")
-    ? `"${s.replace(/"/g, '""')}"`
-    : s;
-}
-
-function row(...cells: (string | number)[]): string {
-  return cells.map(escCsv).join(",");
-}
-
-interface ReconciliationData {
-  credits: {
-    totalEarned: number;
-    totalSpent: number;
-    grossGenerationDeductions: number;
-    totalRefunds: number;
-    netGenerationCost: number;
-    byType: Record<string, { count: number; totalAmount: number }>;
-  };
-  generations: {
-    total: number;
-    completed: number;
-    failed: number;
-    pending: number;
-    creditsOnCompleted: number;
-    creditsOnFailed: number;
-    creditsOnPending: number;
-    failureRate: number;
-    byType: Array<{ type: string; totalCount: number; totalCost: number }>;
-  };
-  reconciliation: {
-    grossGenerationDeductions: number;
-    totalRefunds: number;
-    netGenerationCost: number;
-    completedGenerationCost: number;
-    pendingGenerationCost: number;
-    discrepancy: number;
-    hasDiscrepancy: boolean;
-    summary: string;
-  };
-}
-
-function buildReconciliationCsv(
-  data: ReconciliationData,
-  userId: number,
-  startDate?: string,
-  endDate?: string,
-): string {
-  const lines: string[] = [];
-
-  lines.push(row("Drape — Credit Reconciliation Report"));
-  lines.push(row("Generated", new Date().toISOString()));
-  lines.push(row("User ID", userId));
-  lines.push(row("Date Range", startDate || "All time", endDate || "Present"));
-  lines.push("");
-
-  lines.push(row("CREDIT SUMMARY"));
-  lines.push(row("Metric", "Value"));
-  lines.push(row("Total Earned", data.credits.totalEarned));
-  lines.push(row("Total Spent", data.credits.totalSpent));
-  lines.push(row("Gross Generation Deductions", data.credits.grossGenerationDeductions));
-  lines.push(row("Refunds (failed generations)", data.credits.totalRefunds));
-  lines.push(row("Net Generation Cost", data.credits.netGenerationCost));
-  lines.push("");
-
-  lines.push(row("CREDIT BREAKDOWN BY TYPE"));
-  lines.push(row("Type", "Count", "Total Amount"));
-  for (const [type, info] of Object.entries(data.credits.byType)) {
-    lines.push(row(type, info.count, info.totalAmount));
-  }
-  lines.push("");
-
-  lines.push(row("GENERATION SUMMARY"));
-  lines.push(row("Metric", "Value"));
-  lines.push(row("Total Generations", data.generations.total));
-  lines.push(row("Completed", data.generations.completed));
-  lines.push(row("Failed", data.generations.failed));
-  lines.push(row("Pending", data.generations.pending));
-  lines.push(row("Failure Rate (%)", data.generations.failureRate));
-  lines.push(row("Completed Cost (credits)", data.generations.creditsOnCompleted));
-  lines.push(row("Failed Cost (credits)", data.generations.creditsOnFailed));
-  lines.push(row("Pending Cost (credits)", data.generations.creditsOnPending));
-  lines.push("");
-
-  lines.push(row("GENERATION BREAKDOWN BY TYPE"));
-  lines.push(row("Type", "Count", "Total Cost"));
-  for (const entry of data.generations.byType) {
-    lines.push(row(entry.type, entry.totalCount, entry.totalCost));
-  }
-  lines.push("");
-
-  lines.push(row("RECONCILIATION"));
-  lines.push(row("Metric", "Value"));
-  lines.push(row("Gross Generation Deductions", data.reconciliation.grossGenerationDeductions));
-  lines.push(row("Refunds", data.reconciliation.totalRefunds));
-  lines.push(row("Net Generation Cost", data.reconciliation.netGenerationCost));
-  lines.push(row("Completed Generation Cost", data.reconciliation.completedGenerationCost));
-  lines.push(row("Pending Generation Cost", data.reconciliation.pendingGenerationCost));
-  lines.push(row("Discrepancy", data.reconciliation.discrepancy));
-  lines.push(row("Discrepancy Detected", data.reconciliation.hasDiscrepancy ? "YES" : "NO"));
-  lines.push("");
-
-  lines.push(row("ASSESSMENT"));
-  lines.push(row(data.reconciliation.summary));
-
-  return lines.join("\n") + "\n";
-}
+type ReconciliationData = Parameters<typeof buildReconciliationCsv>[0];
 
 // ── Test data helpers ──
 

@@ -18,6 +18,7 @@ import { enforceDailyQuota } from "../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import { createModuleLogger } from "../logging/logger";
 import { WARDROBE_CREDIT_COSTS } from "../wardrobe/creditCosts";
+import { buildOutfitContext, selectDescribableGarments } from "../wardrobe/garmentDescription";
 import {
   createGarment, getGarmentById, getUserGarments, getUserGarmentsBySlot,
   updateGarment, deleteGarment,
@@ -459,13 +460,10 @@ const vtoRouter = router({
             return g;
           }),
         );
-        const validGarments = allGarments.filter(
-          (g): g is NonNullable<typeof g> =>
-            g !== null && g.status === "ready" && !!g.description && !g.description.startsWith("Analyzing"),
-        );
+        const validGarments = selectDescribableGarments(allGarments);
 
         if (validGarments.length > 0) {
-          outfitContext = validGarments.map((g) => g.description).join(", ");
+          outfitContext = buildOutfitContext(validGarments);
           garmentReferenceUrls = validGarments
             .filter((g) => g.isolatedImageUrl || g.originalImageUrl)
             .map((g) => ({

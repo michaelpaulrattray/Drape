@@ -7,96 +7,36 @@
 
 import { describe, it, expect } from "vitest";
 
-// ── Mirror the core computation logic from discrepancyQueries.ts ──
+/*
+ * ⚠ SIXTY LINES OF `discrepancyQueries.ts` USED TO BE RE-TYPED HERE, under a
+ * heading that said so: "Mirror the core computation logic from
+ * discrepancyQueries.ts". Every arm below tested that copy — the netCost
+ * subtraction, the `Math.max(0, …)` floor on refunds, the `>=` threshold and
+ * the abs-descending sort — so the CREDIT DISCREPANCY ARITHMETIC could have
+ * been changed in the product with this file green about it.
+ *
+ * The copy was faithful when it was read (2026-08-25) and that is luck rather
+ * than a property: a mirror is not caught being wrong, it makes the catching
+ * assertion unwritable. `computeFlaggedDiscrepancies` and
+ * `attachUserInfoToFlagged` are now named exports of the production module
+ * with `getUsersWithDiscrepancies` as their first reader, and the arms drive
+ * those. Filed under 3g's A. Working law 4: derive, never mirror.
+ */
+import {
+  attachUserInfoToFlagged,
+  computeFlaggedDiscrepancies,
+  type FlaggedUserDiscrepancy,
+} from "./db/discrepancyQueries";
 
-interface FlaggedUserDiscrepancy {
-  userId: number;
-  userName: string | null;
-  email: string | null;
-  grossDeductions: number;
-  totalRefunds: number;
-  netCost: number;
-  completedCost: number;
-  pendingCost: number;
-  discrepancy: number;
-  totalGenerations: number;
-  failedGenerations: number;
-}
-
-interface CreditAgg {
-  userId: number;
-  grossDeductions: number;
-  totalRefunds: number;
-}
-
-interface GenAgg {
-  userId: number;
-  completedCost: number;
-  pendingCost: number;
-  totalGenerations: number;
-  failedGenerations: number;
-}
-
+/** The production pair, composed the way `getUsersWithDiscrepancies` composes them. */
 function computeDiscrepancies(
-  creditAgg: CreditAgg[],
-  genAgg: GenAgg[],
+  creditAgg: Parameters<typeof computeFlaggedDiscrepancies>[0],
+  genAgg: Parameters<typeof computeFlaggedDiscrepancies>[1],
   userInfo: Array<{ id: number; name: string | null; email: string | null }>,
-  threshold: number
+  threshold: number,
 ): { users: FlaggedUserDiscrepancy[]; scannedCount: number } {
-  const creditMap = new Map(creditAgg.map((r) => [r.userId, r]));
-  const genMap = new Map(genAgg.map((r) => [r.userId, r]));
-  const allUserIds = Array.from(
-    new Set([...Array.from(creditMap.keys()), ...Array.from(genMap.keys())])
-  );
-
-  const flagged: Array<{
-    userId: number;
-    data: Omit<FlaggedUserDiscrepancy, "userId" | "userName" | "email">;
-  }> = [];
-
-  for (const uid of allUserIds) {
-    const credit = creditMap.get(uid);
-    const gen = genMap.get(uid);
-
-    const grossDeductions = Number(credit?.grossDeductions ?? 0);
-    const totalRefunds = Math.max(0, Number(credit?.totalRefunds ?? 0));
-    const netCost = grossDeductions - totalRefunds;
-    const completedCost = Number(gen?.completedCost ?? 0);
-    const pendingCost = Number(gen?.pendingCost ?? 0);
-    const discrepancy = netCost - completedCost - pendingCost;
-
-    if (Math.abs(discrepancy) >= threshold) {
-      flagged.push({
-        userId: uid,
-        data: {
-          grossDeductions,
-          totalRefunds,
-          netCost,
-          completedCost,
-          pendingCost,
-          discrepancy,
-          totalGenerations: Number(gen?.totalGenerations ?? 0),
-          failedGenerations: Number(gen?.failedGenerations ?? 0),
-        },
-      });
-    }
-  }
-
-  const userMap = new Map(userInfo.map((u) => [u.id, u]));
-
-  const result: FlaggedUserDiscrepancy[] = flagged
-    .map((f) => {
-      const u = userMap.get(f.userId);
-      return {
-        userId: f.userId,
-        userName: u?.name ?? null,
-        email: u?.email ?? null,
-        ...f.data,
-      };
-    })
-    .sort((a, b) => Math.abs(b.discrepancy) - Math.abs(a.discrepancy));
-
-  return { users: result, scannedCount: allUserIds.length };
+  const { flagged, scannedCount } = computeFlaggedDiscrepancies(creditAgg, genAgg, threshold);
+  return { users: attachUserInfoToFlagged(flagged, userInfo), scannedCount };
 }
 
 // ── Tests ──

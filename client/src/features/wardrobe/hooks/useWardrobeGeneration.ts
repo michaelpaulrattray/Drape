@@ -6,6 +6,7 @@
  * detection, and delegates history to useWardrobeStore.
  */
 import { useCallback, useEffect, useRef } from "react";
+import { resolveVtoErrorCopy, shouldAutoRetryVto } from "../vtoErrorCopy";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
@@ -294,7 +295,7 @@ export function useWardrobeGeneration({
     } catch (err: unknown) {
       if (genId !== generationIdRef.current) return;
       const msg = (err as Error)?.message || "VTO generation failed";
-      if (msg.includes("SAFETY_BLOCK") && !isRetry) {
+      if (shouldAutoRetryVto(msg, isRetry)) {
         // Auto-retry once — server sanitizes descriptions on re-fetch
         console.warn("[VTO] Safety block detected — retrying with sanitized descriptions");
         setGeneratingMessage("Adjusting descriptions...");
@@ -305,16 +306,9 @@ export function useWardrobeGeneration({
           // Retry also failed — fall through to show error
         }
       }
-      if (msg.includes("SAFETY_BLOCK")) {
-        setErrorMessage("Generation blocked by safety filters — try different garments");
-        toast.error("Safety filter triggered — try different garments");
-      } else if (msg.includes("TOO_MANY_REQUESTS")) {
-        setErrorMessage("Rate limit reached. Please wait a moment.");
-        toast.error("Too many requests — please wait");
-      } else {
-        setErrorMessage(msg);
-        toast.error("VTO generation failed");
-      }
+      const copy = resolveVtoErrorCopy(msg);
+      setErrorMessage(copy.inline);
+      toast.error(copy.toast);
     } finally {
       if (genId === generationIdRef.current) {
         setIsGenerating(false);
