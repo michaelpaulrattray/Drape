@@ -1,10 +1,15 @@
 # THE FRAMING CONSISTENCY COURT — redesign
 
-⚠ **STATUS: DESIGN ONLY. NOTHING HERE HAS RUN AND NOTHING IS BUILT.** It comes
-for countersign before one image is bought (fable-1544 Q2: *redesign, fresh
-sitting, countersign first*). Zero spent writing it — every number below is
-either read off an artifact already on disk or arithmetic over one, and the
-arithmetic is machine-produced rather than hand-derived.
+✅ **STATUS: COUNTERSIGNED (fable-1552). ARM H HAS RUN AND ITS GATE IS OPEN —
+the cut's landmark word is `head` (§8a), and §8b shows the hair collision on a
+real frame the last court's own cut produced.** Arms R and M are unrun and
+nothing is built. All five questions
+answered — the median bar reshapes with **PARTIAL never ships** added as a
+clause (§6.1), arm H gates the court alone, BASICS is the second sheet on the
+mixed-variable condition stated in §9, the price stands, and nothing reaches the
+founder until the strips are beside it. Zero spent writing it — every number
+below is either read off an artifact already on disk or arithmetic over one, and
+the arithmetic is machine-produced rather than hand-derived.
 
 **Ordered by the founder**, 2026-08-24, verbatim: *"id like the framing to be
 consistent across casts personally"* — said after asking why the suit sheet
@@ -195,6 +200,14 @@ PARTIAL   26.0 < T_min <= 29.0
                              a common frame exists and costs a median move he
                              has to see. The court's output is the strips and
                              the number, and HE rules.
+                             ⚠ PARTIAL NEVER SHIPS. Its only exit is his eyes
+                             on the strips — never a shift's judgement that 29
+                             is close enough to 26. (Countersigned fable-1552
+                             §1, added as a clause to Q1's yes: the whole
+                             reason the bar has three outcomes rather than two
+                             is that a median move he never saw is his
+                             decision, and a PARTIAL a shift can wave through
+                             is a two-way bar wearing a third row.)
 FAIL      T_min > 29.0%      the clause bought less than a third of the gap.
                              Prose is not a margin source, across-cast
                              consistency is deferred, and the honest fallback is
@@ -322,6 +335,51 @@ measured word delivers one is not known. That is arm H below: two words asked of
 frames already on disk, no render, ~$0.08. **It is a prerequisite of the build
 and cheap enough to be a prerequisite of the court.**
 
+### ✅ 8a. ARM H HAS RUN, AND THE GATE IS OPEN. The word is `head`.
+
+**20 reads, $0.10, no render, no credit** (`armH.log`, `armH-bald.log`,
+`ARMH-head.png`, `ARMH-hair.png`).
+
+```
+SUIT, 4 frames     "head" box top ABOVE the face box top on 4 of 4,
+(face boxes known) by 0.21 – 0.29 face-heights. "hair" agrees within 2px.
+HAIR VOLUME, 4     both words outline from the top of the hair — judged at the
+(eye, law 9)       overlays, not at the numbers: a quiff, a wave, a dreadlock
+                   updo and a crop, all contained.
+BALD, 2            ⚠ "hair" is ABSENT on both. "head" answers on both,
+                   416x544 and 394x536.
+```
+
+⚠ **The bald cell is what decides between the two words, and it is the reason it
+was bought rather than reasoned.** A bald subject has no hair to outline is an
+obvious inference — and an obvious inference about a segmenter is still an
+inference, on a word the cut would run on every frame of every sheet. Measured,
+`hair` returns *nothing there* and would hand the cut no landmark at all on a
+population this product has a whole acceptance court for. **`head` is the
+landmark; `hair` is disqualified.**
+
+### ⚠ 8b. And the collision is not hypothetical — it is on a frame the LAST COURT'S CUT PRODUCED
+
+`output/framing-court/arm3-caveman-pos4.png` is a delivered frame from the
+failed court. It carries a dreadlock updo, and:
+
+```
+  the segmenter   "hair" box top = 0        the mask reaches the frame's first row
+  raw luminance   6 pixels darker than 100 IN ROW 0 of the image itself
+  my eyes         the topmost locks sit against the edge; there is no air above
+```
+
+Three readings, two of them independent of each other and one of them a person
+looking. `FRAMING_FIXED` requires *"clear space between the topmost hair and the
+top edge"*, and this frame has none.
+
+⚠ **What CANNOT be said from it, and is not:** whether the cut put the hair
+there, or whether the raw render already had it there and the cut merely kept
+it. **The harness wrote only cut frames, so the raw is gone** — which is its own
+small lesson for the next arm: keep the input beside the output, or a finding
+about a transformation has nothing to compare against. The court's own arms
+keep both.
+
 ---
 
 ## 9. The arms, priced from fresh measurement
@@ -334,12 +392,13 @@ per interpreter compile (openrouter). The 2026-07-30 constant is not used.
 the product's own entrance and dispatches directly; the candidate row and the
 charge are the only absentees, and neither bears on whether eight frames agree.
 
-### Arm H — the head-top landmark. ~$0.08, no render.
+### ✅ Arm H — the head-top landmark. RUN, **$0.10** against ~$0.08 estimated.
 
-Ask `hair` and `head` of eight frames already on disk (arm 0's own SUIT set,
-plus the tallest-hair frame the court can find) and see which returns a box whose
-top sits reliably above the face box. **Decides whether the cut is buildable at
-all**, and it is the cheapest thing on the board.
+Asked `hair` and `head` of eight frames already on disk, then **four more reads
+the estimate did not carry** — two bald frames, which is what disqualified
+`hair`. The overrun is two cents and it is stated rather than absorbed: the cell
+that decided the answer was the one nobody had costed. Result and evidence in
+§8a and §8b. **The gate is open and the word is `head`.**
 
 ### Arm R — does render size change composition? 16 images, ~$1.00.
 
@@ -376,6 +435,14 @@ which is the wrong purchase for the court's own question. The caveman keeps its
 place in this design as the population the perturbation bar is calibrated on
 (§6.2) — data that already exists and costs nothing to use.
 
+⚠ **AND IT BUYS A MIXED VARIABLE, SAID HERE RATHER THAN FOUND LATER.** BASICS is
+a **path**, not a brief, so the clause is being tested across a path boundary as
+well as a brief boundary — which is more like the real population and less like
+a clean single-variable A/B. **The control cell is the whole of what keeps it
+honest**: same path, same seeds, clause as the only difference within the cell,
+so the clause's effect is read inside each population and never across the two.
+(Countersigned fable-1552 §2 on that condition.)
+
 ### The clause itself, for countersign
 
 **A landmark swap, not an added sentence.** `FRAMING_FIXED` currently says:
@@ -399,7 +466,7 @@ looks.
 ### Total
 
 ```
-  arm H   ~$0.08                        fal
+  arm H   $0.10  SPENT                  fal · 20 reads · gate OPEN
   arm R   ~$1.00  (+$0.08 openrouter)
   arm M   ~$1.80  (+$0.16 openrouter)   at 1536x2304; ~$1.20 at 1024x1536
   ------------------------------------

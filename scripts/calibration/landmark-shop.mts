@@ -125,12 +125,23 @@ for (const [tag, file] of Object.entries(SPECIMENS)) {
     + `  ${phantom.length === 0 ? "— returned nothing, correct" : "— INVENTED A LOCATION"}`,
   );
 
-  /* Draw them, because coordinates are not a picture (D-202). */
+  /*
+    Draw them, because coordinates are not a picture (D-202).
+
+    ⚠ WHITE, NOT RED — corrected 2026-08-24. The founder ruled on 2026-08-11
+    that on-image geometry is monochrome EVERYWHERE, and these dots were
+    `{ r: 255, g: 40, b: 40 }` on a photograph from before that ruling until
+    now. `onImageGeometryMonochrome` exists to catch exactly this and could not
+    see it: it hunts an SVG hex and an `[r, g, b]` ARRAY, and sharp's own
+    colour shape is an OBJECT. Found by sweeping the idiom after the guard
+    caught the same mistake of mine in the SVG form — the instance it could see
+    led to the one it could not.
+  */
   const dots = points.map((p) => ({
     input: {
       create: {
         width: 18, height: 18, channels: 4,
-        background: { r: 255, g: 40, b: 40, alpha: 1 },
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
       },
     },
     left: Math.max(0, Math.round(p.x * 1024) - 9),
