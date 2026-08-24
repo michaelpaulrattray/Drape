@@ -1,0 +1,78 @@
+-- THE FRAMING TRIM'S KEPT ORIGINAL — a candidate records WHERE ITS UNTRIMMED
+-- FRAME LIVES (founder ruling 2026-08-24 on his own eye at the court's strips,
+-- *"hate to say it but the strips genuinely look better and it gives us more
+-- control over framing"*; design `docs/specs/CASTING_FRAMING_TRIM_BUILD.md` §7,
+-- KEEP ruled fable-1576 §1, its true price ruled fable-1577 §1).
+--
+-- ============================================================================
+-- WHY THE ORIGINAL IS KEPT AT ALL
+-- ============================================================================
+--
+-- A trimmed roll renders at 1536x2304 and delivers 1024x1536. The delivered
+-- frame is a CROP, so the pixels outside it are gone the moment the original is
+-- discarded — and a crop can only ever crop IN. That makes the discard
+-- irreversible in one specific direction: every later framing change becomes a
+-- RE-RENDER rather than a re-trim, which is paid, slow, and comes back with a
+-- DIFFERENT FACE, because the engine is stochastic.
+--
+-- Framing is already on his candidate list as a customer-facing axis. **Served
+-- by re-trimming a kept master it is a slider; served by re-rendering it is a
+-- paid operation with a different person at the end of it.** That asymmetry is
+-- the whole of the KEEP ruling: keeping costs this column and some storage, all
+-- reversible; discarding forecloses the cheaper product and can only be undone
+-- by re-rendering every cast.
+--
+-- ============================================================================
+-- ON THE CANDIDATE, BECAUSE THAT IS WHOSE BYTES THEY ARE
+-- ============================================================================
+--
+-- One original per delivered frame. Not on the roll: eight candidates have eight
+-- originals. It sits beside `imageKey` and `thumbKey` for the reason those two
+-- sit together — `candidateRetention.ts` builds its delete manifest from
+-- ENUMERATED KEYS, and a candidate's own line is literally
+-- `[candidate.imageKey, candidate.thumbKey]`. This is the third member of that
+-- list, and its entry there is UNCONDITIONAL, never gated on the trim flag, in
+-- the file's own voice: *a flag turned back off after objects exist must not
+-- strand them.*
+--
+-- **An untrimmed original with no manifest entry would be a photograph of a
+-- person at a permanently public URL outliving the cast it belongs to** — which
+-- is exactly what every purge block in that file exists to prevent.
+--
+-- ============================================================================
+-- NULL, AND NO DEFAULT
+-- ============================================================================
+--
+-- `NULL` means **this candidate has no kept original** — either it was cast
+-- before the trim existed, or its roll was not trimmed. That meaning survives
+-- only if the ALTER leaves historical rows alone, and `ADD COLUMN ... NULL
+-- DEFAULT ''` would not: MySQL fills every existing row with the default, and
+-- the distinction it destroys is the only evidence of which candidates predate
+-- the feature. There is no repair afterwards. So: nullable, no default, and the
+-- ceremony reads the non-null count back for exactly that reason.
+--
+-- ============================================================================
+-- 512, THE SAME AS ITS NEIGHBOURS
+-- ============================================================================
+--
+-- The same width as `imageKey` and `thumbKey` because it holds the same kind of
+-- thing — a storage key under the candidate prefix with a `crypto.randomUUID()`
+-- name. A narrower column truncates a key under `STRICT_TRANS_TABLES`, which
+-- errors at the write, days after this command, in front of a customer.
+--
+-- ============================================================================
+-- IT LANDS DARK, AND THE ORDER IS THE POINT
+-- ============================================================================
+--
+-- A new column on a table drizzle SELECTs is in every read, flag or no flag —
+-- so the order is **migration ceremony -> the schema half -> the write -> his
+-- gate -> the flip**, and the ceremony is a founder-only production act. At the
+-- commit that carries this file, `drizzle/schema.ts` does NOT name the column
+-- and nothing in the product can write one. The file is inert bytes until
+-- `scripts/ceremony-framing-trim-source.mts` is run, exactly as migration 0051
+-- was.
+--
+-- PURELY ADDITIVE. No column is removed, no column changes type, no index
+-- moves, no row is rewritten. Every existing reader of `casting_candidates`
+-- sees exactly what it saw before.
+ALTER TABLE `casting_candidates` ADD COLUMN `sourceKey` varchar(512) NULL;
