@@ -480,7 +480,43 @@ async function buildOneView(
         substituted: a Cast with neither sends the composer's own output, byte
         for byte, which is the inertness both lanes are asserted on.
       */
-      const wordsClause = composeViewFeatureWordsClause(input.featureWords ?? []).clause;
+      const composedWords = composeViewFeatureWordsClause(input.featureWords ?? []);
+      const wordsClause = composedWords.clause;
+      /*
+        ⚠ **AND WHAT THE CHARACTER CAP PUSHED OUT IS SAID OUT LOUD** (survey
+        finding opus-1231 §1, ordered fable-1607 ruling 1).
+
+        This line read `…(…).clause` and threw `dropped` away — while the
+        producer's own docblock said, in as many words, why it hands it back:
+        *"a cap that silently truncates reads, from the outside, exactly like a
+        feature that was never there."* The report existed and its only consumer
+        discarded the half that explains. That is arm-at-the-producer's exact
+        silhouette, on the road where a customer pays for frames she keeps.
+
+        The COUNT cap already logs its declines at the Sign
+        (`[signService] the features this Cast's views carry as words`); this is
+        the other cap, said the same way and with the same discipline:
+        **SLOTS ONLY, never the words**, because the words are the customer's own
+        and this log is not a place they belong.
+
+        It fires per view rather than once per package, deliberately: the clause
+        is composed here, and a log that claimed to describe a package from
+        outside the loop would be describing a composition it did not watch. The
+        drop is deterministic across the six, so the repetition is honest noise
+        rather than six different facts.
+      */
+      if (composedWords.dropped.length > 0) {
+        log.warn(
+          {
+            operationId: input.operationId,
+            angle,
+            droppedSlots: composedWords.dropped.map((feature) => feature.slot),
+            keptCount: (input.featureWords ?? []).length - composedWords.dropped.length,
+          },
+          "[packageOrchestrator] the view clause hit its character cap — these features "
+          + "were dropped from the words this view carries",
+        );
+      }
       const image = await engine.generateView({
         prompt: [
           composePackageViewPrompt(angle, input.wardrobeLine ?? null),

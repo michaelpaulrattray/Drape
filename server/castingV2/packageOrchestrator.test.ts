@@ -3,6 +3,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProviderError } from "../providers/types";
 import type { ViewConformanceVerdict } from "./viewConformance";
 import { pronounsForSex } from "./castPronouns";
+import { MAX_CLAUSE_CHARACTERS } from "./viewFeatureWords";
+
+/*
+  ⚠ THE LOGGER IS REPLACED FOR THIS FILE, and it is for exactly one arm.
+
+  A dropped feature's only observable is the log — that IS the shape of the
+  defect the drop-log fixes — so the arm at the bottom of this file needs a seam
+  the process can see. An earlier draft captured `process.stdout.write` and
+  caught NOTHING: pino does not write through that seam under vitest, and a
+  green arm would have been the danger.
+
+  Nothing else in this file asserts a log, so silencing them costs nothing.
+*/
+const loggedWarnings: unknown[][] = [];
+vi.mock("../logging/logger", () => {
+  const sink = (...args: unknown[]) => { loggedWarnings.push(args); };
+  const shape = { info: () => {}, warn: sink, error: () => {}, debug: () => {} };
+  return { logger: shape, createModuleLogger: () => shape };
+});
 
 /**
  * The package's six independently refundable units (plan §F, §H.4).
@@ -989,5 +1008,61 @@ describe("a riding clause cannot move the conformance check", () => {
       expect(JSON.stringify(request)).not.toContain("tail");
       expect(JSON.stringify(request)).not.toContain("scaled");
     }
+  });
+});
+
+describe("⚠ what the character cap pushed out is said out loud", () => {
+  /*
+    THE SURVEY FINDING THIS ARM EXISTS FOR (opus-1231 §1, ordered fable-1607).
+
+    `composeViewFeatureWordsClause` returns `{ clause, dropped }` and its own
+    docblock says why it hands `dropped` back: *"a cap that silently truncates
+    reads, from the outside, exactly like a feature that was never there."* Its
+    ONLY consumer took `.clause` and discarded the rest — so a feature falling
+    off the tail of a 450-credit package left no log, no counter and no row.
+    **The producer's arms were all green while that was true**, which is
+    arm-at-the-producer's exact silhouette.
+  */
+  const working = () => ({
+    id: "e",
+    editWithReferences: vi.fn(),
+    generateView: vi.fn(async () => ({
+      bytes: Buffer.from("view"),
+      contentType: "image/png",
+      latencyMs: 1,
+      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+    })),
+  });
+
+  /** Long enough that two of them cannot both fit the character cap. */
+  const wordy = (slot: string) => ({
+    slot,
+    noun: slot.replace("open:", ""),
+    words: ["w".repeat(MAX_CLAUSE_CHARACTERS)],
+    region: "belowWaist" as const,
+  });
+
+  const capWarnings = () => loggedWarnings.filter(
+    (call) => String(call[1] ?? "").includes("hit its character cap"),
+  );
+
+  it("is logged, by SLOT and never by the customer's own words", async () => {
+    loggedWarnings.length = 0;
+    await buildCastPackage(deps({ identityEngine: working }), {
+      ...input, featureWords: [wordy("open:tail"), wordy("open:wings")],
+    });
+    const said = capWarnings();
+    expect(said.length).toBeGreaterThan(0);
+    const payload = said[0]![0] as { droppedSlots: string[] };
+    expect(payload.droppedSlots).toContain("open:wings");
+    /* SLOTS ONLY. The words are the customer's own and a log is not where they
+       belong — the same discipline the Sign's own feature line already keeps. */
+    expect(JSON.stringify(payload)).not.toContain("wwwwwwwwww");
+  });
+
+  it("⚠ CONTROL — a package that drops nothing says nothing", async () => {
+    loggedWarnings.length = 0;
+    await buildCastPackage(deps({ identityEngine: working }), { ...input, featureWords: [] });
+    expect(capWarnings()).toHaveLength(0);
   });
 });
