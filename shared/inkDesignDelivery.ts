@@ -5,8 +5,18 @@
  * `CASTING_INK_CUT_SCOPE` changes what a customer's stored design IS: her
  * photograph goes in and the design alone, on transparency, is what lands at
  * `casting_ink_designs.storageKey`. A change to her own picture that she has no
- * way to look at is a change she cannot accept or reject, so the flip waits on
- * this — opus-841 §4, "both halves, then one flip".
+ * way to look at is a change she cannot accept or reject.
+ *
+ * ⚠ **THIS SAID *"so the flip waits on this — opus-841 §4, both halves then one
+ * flip"* UNTIL 2026-08-24, AND THE FLIP DID NOT WAIT.** The founder closed the
+ * frames gate himself — *"yes its acceptable"* — and replaced that condition
+ * with a narrower one of his own: **his account only until the customer-facing
+ * preview ships** (fable-1257 §1). The flag was flipped on that word and
+ * production holds `CASTING_INK_CUT_SCOPE=users:1` (fable-1260). So this path
+ * serves the bytes today, 3a.2(b) — the room that DRAWS them — is still
+ * unbuilt, and what the missing half now gates is WIDENING past `users:1`
+ * rather than existing at all. `CLAUDE.md` took the same correction on
+ * 2026-08-23; this copy is a day and a surface behind it.
  *
  * # Why the path lives in `shared/` and not in the route that serves it
  *

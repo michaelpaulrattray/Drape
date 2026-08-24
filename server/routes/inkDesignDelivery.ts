@@ -19,8 +19,15 @@ const log = createModuleLogger("routes/inkDesignDelivery");
 
 /**
  * LOOKING AT A STORED DESIGN — the shown cut (ruled fable-1127 §2, ratified
- * fable-1135 §4d, precondition of the `CASTING_INK_CUT_SCOPE` flip per
- * opus-841 §4).
+ * fable-1135 §4d).
+ *
+ * ⚠ It was described here as a *"precondition of the `CASTING_INK_CUT_SCOPE`
+ * flip per opus-841 §4"* until 2026-08-24. The flip happened first: the founder
+ * closed the frames gate in person and set his own narrower condition — his
+ * account only until the customer-facing preview ships (fable-1257 §1) — and
+ * production holds `users:1` (fable-1260). The surface that condition names is
+ * 3a.2(b), which draws these bytes and is still unbuilt; this route is its
+ * server half, landed early.
  *
  * An Express route rather than a tRPC procedure because the answer is IMAGE
  * BYTES — `characterSheet.ts`'s own reason, and this follows that route's shape

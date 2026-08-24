@@ -43,9 +43,13 @@
  *
  * The founder's ruling (fable-1290) is that the road opens wherever the delivery
  * mint can find and crop the result — which is the whole measured vocabulary.
- * It has NOT been opened here: `upperChest` and `upperArm` wait on the court
- * that measures whether the mint fires on what they deliver (fable-1296 §3).
- * When it does, {@link WORDS_ROAD_PLACEMENTS} is the one line that widens.
+ * ⚠ **Both courts have now reported and this said they were waiting until
+ * 2026-08-24**: `upperArm` on 2026-08-23 (opus-960, ratified fable-1301 §1) and
+ * `upperChest` the same day on a second court (`131de797`), so
+ * {@link WORDS_ROAD_PLACEMENTS_OPEN} holds all three and
+ * `CASTING_INK_WORDS_SCOPE` is `all` in production. {@link WORDS_ROAD_PLACEMENTS}
+ * — the CLOSED list — is still `neck` alone, which is what a caller outside the
+ * flag sees and is the only sense in which the road has not been opened here.
  *
  * # ⚠ AND THE RETIREMENT IS PER LANE, WHICH THE SUITE HAD TO TEACH ME
  *
@@ -111,7 +115,26 @@ const WORDS_ROAD_PLACEMENTS: readonly InkPlacementKey[] = ["neck"];
  * So this list is hand-written rather than derived, and the difference from its
  * neighbour is the point: "which placements does the vocabulary hold" is a fact
  * about measurement, and "which of them can this road carry" is a fact about
- * courts. Deriving the second from the first is what put `upperChest` here.
+ * courts.
+ *
+ * ⚠ **AND `upperChest` IS BACK — EVERYTHING ABOVE IS THE PREVIOUS COURT AND THE
+ * LINE BELOW IS THE CURRENT ONE.** `131de797` (2026-08-23) returned it on a
+ * second court bought at the service: on a Basics cast *"give her a small
+ * swallow tattoo on her upper chest"* rendered in 86s and the mint wrote
+ * `ink:upperChest`, 725x344 on an 848x1264 frame, both frames opened. **The
+ * first court had measured a GARMENT and been read as measuring a PLACEMENT** —
+ * every reading behind it was taken on sixteen crew-tee masters, and D-226 says
+ * you cannot segment a thing that is hidden, so what it proved was that a chest
+ * under a tee cannot be cropped. That fact now lives in `inkSurfaceCoverage.ts`
+ * where it belongs, and it is why the widening is DARK in production: every
+ * production cast is `unpathed` and wears the house tee, whose chest is
+ * `covered`, so a chest ask still walls free.
+ *
+ * ⚠ **The paragraphs above described that narrowing as current for one day
+ * after the line below stopped agreeing with them** — a docblock contradicted
+ * by the constant it documents, ONE LINE away, by a commit whose own message is
+ * sixty lines about the change. Distance never explains this class; not
+ * grepping the file for the sentences a new truth falsifies does.
  */
 const WORDS_ROAD_PLACEMENTS_OPEN: readonly InkPlacementKey[] = ["neck", "upperArm", "upperChest"];
 
@@ -327,8 +350,12 @@ export function classifyInkPlacement(
    * `CASTING_INK_WORDS_SCOPE`, resolved by the service and passed in.
    *
    * REQUIRED, and not defaulted, for the reason `lane` is not: a default would
-   * let a future caller inherit whichever answer was convenient. `false` is
-   * today's product for everybody.
+   * let a future caller inherit whichever answer was convenient.
+   *
+   * ⚠ **`false` was described here as *"today's product for everybody"* until
+   * 2026-08-24 and it is `true` for everybody now**: the flag is `all` in
+   * production (fable-1400). A caller that inherits `false` is asking about a
+   * configuration production does not have, which is exactly why it is required.
    */
   wordsRoadOpen: boolean,
   /**

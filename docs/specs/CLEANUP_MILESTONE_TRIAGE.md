@@ -3328,3 +3328,57 @@ of them is wrong only in its TENSE.
 
 **No TAKE rows.** Nothing in this section authorises a deletion, a fold or an
 edit, and none is proposed.
+
+### 33d. ✅ THE SITTING RAN (2026-08-24, opus-1177/1178, ruled fable-1528/1529)
+
+**The three specimens above are repaired and they were three of nineteen.** What
+made the sitting possible is that the class §33b names has a sub-population with
+a GROUND TRUTH in the repository: prose that names a governed flag can be
+compared against `scripts/lib/productionFlagPositions.mts`, the declared table
+the deploy rite compares to the SERVICE on every push. That is an ENTITY anchor,
+not a phrase anchor — *the prose says `off`, the table says `users:1`* is a
+comparison; *"not yet" sounds stale* is an impression.
+
+```
+491 files under server/ and shared/ carry comment prose · 69,527 comment lines
+121 comment lines name a governed flag, across 40 files   <- the sitting
+ 19 STALE · 24 HOLDS · 78 not-a-claim
+```
+
+**The population honestly disqualifies the sitting as §33c wrote it**: 69,527
+lines is six times the whole live design-docs population, so *"a hand reading of
+`server/` and `shared/` docblock prose"* is a program rather than a sitting. And
+**recency is not a filter here** — of 357 files carrying a header docblock
+(10,807 lines), 201 were touched in the fortnight before this sitting, which
+removes 19% of the lines. The whole `castingV2` tree is hot, which is why its
+prose rots AND why git recency cannot find the rot: distance from where work
+happens is measured in LINES INSIDE A FILE here, not in commits.
+
+**What the nineteen were, ranked the way they should be**: four carried a SAFETY
+ARGUMENT rather than a description — `subjectCards.ts` telling the next seat that
+promoting a subject *"changes nothing for anyone but the founder"* when
+`CASTING_REPAINT_SCOPE` is `all`; `inkViewReferences.ts` proving a wrong-arm
+tattoo unreachable from a premise that had gone false (the conclusion survives on
+`MANNEQUIN_ROAD_DEFERRED`, and the repaired docblock now says so); a flag's
+docblock claiming the customer *is shown* a crop on a surface that does not
+exist; and a live prohibition — *"do not widen this flag on the strength of this
+docblock"* — against a widening the founder had already made with his own hand,
+which was the **FIFTH** surface of a sentence four other documents had each
+corrected before it. One sentence about the repaint scope was found in THREE
+files; one about the words road in three more.
+
+**The remainder is named with its price and stays shut**: the 357 header
+docblocks (10,807 lines) as its own multi-sitting program, inheriting both
+disqualifications above — no phrase anchor, and no git-recency cut.
+
+⚠ **THE FLOOR SENTENCE NOW CARRIES TWO NUMBERS.** On the one population where
+truth was known, a phrase anchor matched **3 of 6** and one miss carried no
+stale-claim word at all. On this sitting's own population, the entity anchor
+found **19 of 24 findings** — the other five were found only because a person
+read the prose AROUND the hit, and not one of those five names a flag: a
+docblock contradicted by the constant ONE LINE below it, a stale clause four
+lines above a true one, a third number for one house-money figure inside one
+file, and a stale claim in `CLAUDE.md` about a live spendable road. **A state
+claim that never names an entity is invisible to any anchor, and the only
+instrument that has ever found one is a reader.** A clean anchored run is a
+floor and not coverage.

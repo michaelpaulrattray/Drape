@@ -52,13 +52,13 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:612<br>server/castingV2/refineInterpreter.ts:890<br>(+1) | 6 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:612<br>server/castingV2/refineInterpreter.ts:894<br>(+1) | 6 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1165<br>server/castingV2/castingIntent.ts:1182<br>(+14) | 16 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
-| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1587<br>(+2) | 7 test(s) | guard.likeness |
-| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:547<br>server/castingV2/refineInterpreter.ts:1523<br>(+1) | 6 test(s) | guard.content |
-| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1597<br>(+2) | 8 test(s) | background.white |
-| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1615<br>(+1) | 4 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
-| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineDelta.ts:1316<br>(+2) | 9 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1595<br>(+2) | 7 test(s) | guard.likeness |
+| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:547<br>server/castingV2/refineInterpreter.ts:1527<br>(+1) | 6 test(s) | guard.content |
+| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1605<br>(+2) | 8 test(s) | background.white |
+| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1619<br>(+1) | 4 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
+| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineDelta.ts:1324<br>(+2) | 9 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:571<br>server/castingV2/refineDelta.ts:571<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:578<br>server/castingV2/refineDelta.ts:578<br>(+4) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:597<br>server/castingV2/refineDelta.ts:597<br>(+3) | 3 test(s) | _documented-unreachable or gap — see findings_ |

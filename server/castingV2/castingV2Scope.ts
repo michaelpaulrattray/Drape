@@ -128,8 +128,11 @@ export function captureCastingV2Enabled(userId: number): boolean {
 /**
  * Segment permanence — its OWN switch, and the reason is not tidiness.
  *
- * `CASTING_V2_SCOPE` is already open in production for the founder's own
- * dogfooding. A store that shipped under that flag alone would begin writing
+ * `CASTING_V2_SCOPE` is already open in production — it read *"for the
+ * founder's own dogfooding"* until 2026-08-24 and the position is `all`, so the
+ * argument below holds for everyone rather than for one account, which is more
+ * of the reason and not less. A store that shipped under that flag alone would
+ * begin writing
  * segment rows into a database whose table does not exist yet the moment it
  * deployed, and would do it on the paid path. The sub-flag is what makes
  * "dark from the first commit" true rather than aspirational: absent means off,
@@ -342,10 +345,14 @@ export function validateCastingSegmentsDeliveredEnvironment(input: {
 /* ---------------------------------------- the reference-library sub-flag */
 
 /**
- * THE REFERENCE LIBRARY — its own switch, off everywhere until the ceremony.
+ * THE REFERENCE LIBRARY — its own switch, off everywhere until the ceremony,
+ * and `all` in production since (the ceremony ran and the flag rode with the
+ * repaint road, which carries features by crop and cannot work without it).
  *
  * The library is a NEW TABLE (migration 0028) on the same paid path
- * `CASTING_V2_SCOPE` already opens for the founder. A writer shipping under
+ * `CASTING_V2_SCOPE` already opens — for EVERY account (`all`); this said *"for
+ * the founder"* until 2026-08-24, and this flag has since been widened to `all`
+ * itself. A writer shipping under
  * that flag alone would INSERT into a table production does not have yet, on a
  * render somebody paid for. So the table lands by ceremony and the flag is
  * flipped afterwards; neither step alone changes behaviour, and neither alone
@@ -656,11 +663,17 @@ export function validateCastingSidePhrasingEnvironment(input: {
  * # Why it needs a switch of its own, given the panel already has one
  *
  * It SPENDS. Not a customer's credits — a scan is house money on a read the
- * user never asked to pay for — but fourteen segmenter calls per version
- * looked at, and a switch is the difference between that starting when we
- * choose and starting the moment a deploy lands on whoever already has the
- * panel. `CASTING_REFERENCE_LIBRARY_SCOPE` is open for the founder, so without
- * this the scan would arrive on his next selection unannounced.
+ * user never asked to pay for — but **twelve questions costing twenty segmenter
+ * calls per version looked at, $0.100** (⚠ this said *fourteen calls* until
+ * 2026-08-24; the counted figure was taken through `scanFace` itself with a
+ * recording reader, and its neighbour at the kept-scan flag has always said
+ * twelve questions and about ten cents — one file, three numbers for one fact).
+ * A switch is the difference between that starting when we choose and starting
+ * the moment a deploy lands on whoever already has the panel.
+ * `CASTING_REFERENCE_LIBRARY_SCOPE` is `all` in production — it read *"open for
+ * the founder"* until the same day — so without this the scan would arrive on
+ * EVERY account's next selection unannounced, which is more of the reason and
+ * not less.
  *
  * # Its parent is the LIBRARY scope, because the panel is its only consumer
  *
@@ -1464,7 +1477,16 @@ export function validateCastingRefineDispatchEnvironment(input: {
  * On, an ask that POINTS AT AN ATTACHED PICTURE for a tattoo stops meeting the
  * ink document gate (D-137), because the picture is the document the gate was
  * always asking for. Off, and absent means off, the gate behaves exactly as it
- * has: face and neck render from words, everything else waits.
+ * has for a words ask.
+ *
+ * ⚠ **That used to read *"face and neck render from words, everything else
+ * waits"*, and BOTH halves have moved since.** The face carve-out was RETIRED
+ * ungated on 2026-08-21 (`2fdc382d`, fable-1296 §1) — a face ask passed this
+ * gate and died one door later at the measured-placement door, so the gate's
+ * list stopped naming a surface `INK_PLACEMENTS` does not hold. And what a
+ * words ask reaches is `CASTING_INK_WORDS_SCOPE`'s business, which is `all`:
+ * her neck, an upper arm and her upper chest, narrowed by what her outfit
+ * covers. This flag governs the REFERENCE arm alone.
  *
  * # WHY THIS ONE NEEDED A FLAG WHEN THE RESOLVER DID NOT
  *
@@ -1808,13 +1830,25 @@ export function captureCastingInkCutEnabled(userId: number): boolean {
  *
  * # AND ITS SECOND IS THE OFFER, which is also the containment test's backstop
  *
- * The customer is shown the crop that will ride (fable-1183 §2c) — 3a.2(b)'s
- * surface, the same prerequisite `CASTING_INK_CUT_SCOPE` carries. On this road
- * the offer is load-bearing in a second way that fable-1201 §3 ordered written
- * down: **region masks can overlap across adjacent surfaces in a contorted
- * frame, so a borderline containment pass is survivable ONLY because she sees
- * the crop before anything rides.** Nobody may relax the offer while believing
- * the containment test stands alone.
+ * The customer is to be shown the crop that will ride (fable-1183 §2c) —
+ * 3a.2(b)'s surface, the same prerequisite `CASTING_INK_CUT_SCOPE` carries. On
+ * this road the offer is load-bearing in a second way that fable-1201 §3 ordered
+ * written down: **region masks can overlap across adjacent surfaces in a
+ * contorted frame, so a borderline containment pass is survivable ONLY because
+ * she sees the crop before anything rides.** Nobody may relax the offer while
+ * believing the containment test stands alone.
+ *
+ * ⚠ **AND THE SENTENCE ABOVE WAS IN THE PRESENT TENSE UNTIL 2026-08-24, WHICH
+ * CLAIMED A SURFACE THAT DOES NOT EXIST.** 3a.2(b) is unbuilt — read at the
+ * code rather than remembered: the only consumer of `inkDesignImagePath`
+ * anywhere in `client/` is `shownCutSurface.test.ts`, a test asserting who owns
+ * the spelling of the address. The route serves the bytes
+ * (`routes/inkDesignDelivery.ts`); no room draws them. **This flag nevertheless
+ * stands at `users:1` in production, and that is authorised rather than
+ * accidental**: it rode with the cut pair on his own yes, because the object he
+ * approved is the SURFACE cut and only this flag produces one (fable-1260 §2).
+ * So the offer is a condition on WIDENING and on relaxing the containment test,
+ * and it is not something a customer has today.
  *
  * # The parent is the CUT scope and nothing else
  *
@@ -1990,12 +2024,18 @@ export function validateCastingInkCutEnvironment(input: {
  * a sentence fix rather than a capability and gating an apology keeps it wrong
  * for everyone. This flag governs only what OPENS.
  *
- * # ⚠ ITS SHAPE IS NOT FINISHED, AND THAT IS WRITTEN HERE ON PURPOSE
+ * # ⚠ ITS SHAPE WAS NOT FINISHED WHEN THIS WAS WRITTEN — AND THE COURT HAS
+ * # SINCE REPORTED, THE FOUNDER HAS JUDGED IT, AND THE FLAG IS `all`
  *
- * The flag exists ahead of its own court because the court cannot drive a
+ * The flag was armed ahead of its own court because the court cannot drive a
  * walled road without it, and proving the road in a locally-widened
  * configuration that has never existed is the harness-supplied-argument trap
- * with money attached (rejected fable-1298 §3).
+ * with money attached (rejected fable-1298 §3). That is history now: the court
+ * RAN (opus-960, ratified fable-1301 §1), he judged the frames and the thirteen
+ * glossary styles himself (fable-1398), and **the flip to `all` went through
+ * his own hand** (fable-1400) — the first capability this program has taken
+ * from `users:1` to `all`. The paragraphs below record what the court was for
+ * and what it decided; they are not a live instruction.
  *
  * What the court decides (fable-1296 §2) is whether this flag also has to carry
  * an OCCLUSION REFUSAL. The house line dresses her in a crew-neck tee, so the
@@ -2009,8 +2049,16 @@ export function validateCastingInkCutEnvironment(input: {
  * accepted. If the words road scoops too, no refusal is needed. If it does not,
  * one belongs here.
  *
- * **So do not widen this flag on the strength of this docblock.** It is armed
- * for a court, and the court's verdict is what finishes it.
+ * ⚠ **THIS PARAGRAPH ENDED *"So do not widen this flag on the strength of this
+ * docblock — it is armed for a court"* UNTIL 2026-08-24, AND IT WAS A LIVE
+ * PROHIBITION AGAINST SOMETHING ALREADY DONE.** It was the FIFTH surface of that
+ * sentence: `CLAUDE.md`, `POST_SIGN_ROADMAP.md`, the positions table's own
+ * header — which quotes it as the specimen of this exact class — and that
+ * table's `why` field were each corrected before this one, because a correction
+ * tracks readership rather than authority and nobody re-opens a flag's docblock
+ * to read about a flip. What survives of it is narrower and still true: **the
+ * occlusion question above is open**, and the chest's answer today comes from
+ * `inkSurfaceCoverage.ts` (her outfit) rather than from this flag.
  *
  * # Why the parent is `CASTING_V2_SCOPE` and nothing narrower
  *

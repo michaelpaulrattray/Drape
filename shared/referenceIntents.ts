@@ -45,8 +45,17 @@
  * code on 2026-08-19. It is not the whole truth: `inkPlateMint.ts` hands the
  * plate engine the STORED UPLOAD UNCHANGED, and `inkUploadDoor.ts` gates
  * placement, size, format, edge, intent and the per-Cast cap — nothing about
- * who is in the picture. **So a full-person photograph rides wholesale to the
- * MINT today**, on the one account inside `CASTING_INK_STUDIO_SCOPE`.
+ * who is in the picture. **So a full-person photograph rode wholesale to the
+ * MINT**, on the one account inside `CASTING_INK_STUDIO_SCOPE`.
+ *
+ * ⚠ **THAT SENTENCE SAID *"rides … today"* UNTIL 2026-08-24, AND IT WAS WRONG
+ * IN ITS TENSE — twice over, both in the safe direction.** Nothing rides to any
+ * engine now: `MANNEQUIN_ROAD_DEFERRED` parks the mint for every account, and
+ * `CASTING_INK_CUT_SCOPE=users:1` means what is stored is the CUT rather than
+ * her photograph. **Neither retires the tripwire below**, which is why it is
+ * kept word for word: a deferral is not a scope, a flag that can be off is not
+ * a structural fact, and rows written before the cut flipped still hold whole
+ * pictures. The bound RE-ARMS the moment the mannequin road resumes.
  *
  * Ruled fable-1052 §1–§3: no interim gate (a face detector cannot tell a
  * portrait tattoo from a photograph of a person, and law 9 forbids asking a
@@ -115,7 +124,10 @@ const ENTRIES: Readonly<Record<ReferenceIntent, ReferenceIntentEntry>> = Object.
     form: "mannequinPlate",
     /* The upload is built; the plate is not (the mannequin template is a
        founder taste gate). Open here means a design may be ATTACHED — the whole
-       road is behind `CASTING_INK_STUDIO_SCOPE`, which is off. */
+       road is behind `CASTING_INK_STUDIO_SCOPE`, which is `users:1` in
+       production. ⚠ It said "which is off" until 2026-08-24; the flag has been
+       on his account since fable-1260, and what holds the plate shut is
+       `MANNEQUIN_ROAD_DEFERRED` rather than this flag. */
     open: true,
   }),
   hair: Object.freeze({

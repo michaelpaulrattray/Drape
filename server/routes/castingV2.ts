@@ -542,11 +542,18 @@ async function inkWornBy(
 /**
  * THE INK STUDIO — attaching a design a customer owns to her Cast (M12 row 15).
  *
- * Dark by default and dark in production: `CASTING_INK_STUDIO_SCOPE` is
- * absent, and absent means off. It opens onto a room that is still being
- * built — the mannequin plate a design is drawn onto does not exist until the
- * founder's one-time taste gate is answered — which is exactly why the door
- * is shut and why nothing here charges anybody anything (fable-921 §3b).
+ * Dark by default: `CASTING_INK_STUDIO_SCOPE` is absent-means-off, and it opens
+ * onto a room that is still being built — the mannequin plate a design is drawn
+ * onto does not exist until the founder's one-time taste gate is answered, which
+ * is why nothing here charges anybody anything (fable-921 §3b).
+ *
+ * ⚠ **AND IT IS NOT DARK IN PRODUCTION, WHICH IS WHAT THIS SAID UNTIL
+ * 2026-08-24.** The flag is `users:1` — the founder's own account, his own
+ * uploads — held there by the widening tripwire (fable-1052 §2): it does not
+ * pass `users:1` while uploads ride uncropped to the plate mint. So this door is
+ * OPEN for exactly one person, the free-of-charge sentence above is still true
+ * of it, and the plate is held shut by `MANNEQUIN_ROAD_DEFERRED` rather than by
+ * this flag.
  *
  * Everything this namespace decides is decided elsewhere on purpose: the
  * doors in `castingV2/inkUploadDoor.ts`, the order in `inkUploadService.ts`,
@@ -1986,11 +1993,16 @@ export const castingV2Router = router({
    * everything — so the rows come from the slot catalogue and the library says
    * what each one currently is.
    *
-   * **Gated on `CASTING_REFERENCE_LIBRARY_SCOPE`, which is unset everywhere.**
-   * The flag governs whether rows are written; a panel over an empty library
-   * would be a list of every feature with nothing said about any of them, which
-   * is true and useless. Off, this returns an empty panel and the client renders
-   * v1 exactly as today.
+   * **Gated on `CASTING_REFERENCE_LIBRARY_SCOPE`.** The flag governs whether
+   * rows are written; a panel over an empty library would be a list of every
+   * feature with nothing said about any of them, which is true and useless. Off,
+   * this returns an empty panel and the client renders v1 exactly as today.
+   *
+   * ⚠ **The clause above read *"which is unset everywhere"* until 2026-08-24
+   * and the flag is `all` in production** — it rode with the repaint road, which
+   * carries features by crop and cannot work without it. So this panel is live
+   * for every account, and the empty-panel branch describes a configuration
+   * production does not have.
    *
    * Ownership is proved inside the statements that read (invariant 1):
    * `resolveOwnedCandidateId`, `listCandidateVariants` and

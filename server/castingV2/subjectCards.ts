@@ -67,11 +67,21 @@ export type SubjectCard = {
    * `repaintOnly` is the promotion gate (fable-525 §3). A subject promoted off a
    * measurement court has been measured on ONE road — the repaint road, because
    * that is where the courts are run — and admitting it on the old road would be
-   * charging somebody for a kind nobody has ever measured there. It is also what
-   * keeps the standing autonomy law: a promoted subject IS live behaviour, and
-   * `CASTING_REPAINT_SCOPE` is `users:1` today, so the deploy changes nothing for
-   * anyone but the founder. When repaint widens, the promoted kinds widen with
-   * it — one gate rather than two lists that drift apart (law 4).
+   * charging somebody for a kind nobody has ever measured there. When repaint
+   * widens, the promoted kinds widen with it — one gate rather than two lists
+   * that drift apart (law 4).
+   *
+   * ⚠ **AND REPAINT HAS WIDENED, SO THE SAFETY ARGUMENT THAT USED TO SIT HERE
+   * IS GONE — read this before promoting anything.** This paragraph said *"a
+   * promoted subject IS live behaviour, and `CASTING_REPAINT_SCOPE` is `users:1`
+   * today, so the deploy changes nothing for anyone but the founder"*, which was
+   * the standing autonomy law satisfied by the flag's position rather than by
+   * the promotion. **The flag is `all` in production** (widened fable-1253), so
+   * the first half of that sentence is now the whole of it: **a promotion is
+   * live behaviour for every account on the deploy that ships it.** Nothing here
+   * is broken and no promoted subject is wrong — what changed is that
+   * `repaintOnly` no longer buys a dark landing, so a promotion needs its court
+   * and its own countersign the way any other live change does.
    *
    * Required rather than optional, and that is the point of V1: an absent field
    * decides by absence, which is the silent-decider class this vocabulary was

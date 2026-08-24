@@ -811,8 +811,12 @@ export type RefineInterpretInput = {
   inkDocumentedByDelivery?: boolean;
   /**
    * `CASTING_INK_WORDS_SCOPE`, resolved by the service — how far the words road
-   * reaches on this account. Absent means her neck alone, which is today's
-   * product for everybody.
+   * reaches on this account. Absent means her neck alone.
+   *
+   * ⚠ **It said *"which is today's product for everybody"* until 2026-08-24 and
+   * that is now the opposite of the truth**: the flag is `all` in production
+   * (fable-1400, his own hand), so every account's words road reaches her neck,
+   * an upper arm and her upper chest, and only the outfit narrows it.
    */
   inkWordsRoadOpen?: boolean;
   /**

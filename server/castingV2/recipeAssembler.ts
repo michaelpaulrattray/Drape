@@ -2072,10 +2072,11 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
         "Change only his neck tattoo: a small geometric skeleton design."
 
-    That is a LIVE lane — `CASTING_REPAINT_SCOPE` is `users:1` in production and
-    D-137's face/neck road lets words alone document ink there — so it was a
-    paid render told to draw a tattoo and told nothing about what one is.
-    Countersigned fable-1190 §1.
+    That is a LIVE lane — `CASTING_REPAINT_SCOPE` is `all` in production
+    (⚠ this said `users:1` until 2026-08-24, which was true when the defect was
+    found and stopped being true at fable-1253's widening) and D-137's words road
+    documents ink at her neck there — so it was a paid render told to draw a
+    tattoo and told nothing about what one is. Countersigned fable-1190 §1.
 
     # WHY IT IS ITS OWN SENTENCE AND NOT PART OF "Change only …"
 

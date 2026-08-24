@@ -5316,8 +5316,13 @@ async function refineCandidateCounted(
     said to a customer whose own sentence was *"give him a small geometric
     dinosaur skeleton tattoo ON HIS NECK"*, and whose FILED DELTA held those
     words verbatim. The product asked her for the one thing she had already
-    said. In production that is `CASTING_REPAINT_SCOPE=users:1` — his own
-    account — on every tattoo ask.
+    said. ⚠ **This narrated the incident's own moment in the present tense and
+    went false underneath itself**: it read *"In production that is
+    `CASTING_REPAINT_SCOPE=users:1` — his own account — on every tattoo ask"*,
+    and the flag was widened to `all` (fable-1253). It was `users:1` when the
+    defect was found; it is `all` now, so the lane this defect sat on is every
+    account's. The file's own line ~800 above already says `all` — one file,
+    two answers about one flag, and the reader meets the older one first.
 
     # WHY THIS IS NOT THE INFERENCE fable-1115 §3 OUTLAWED
 
@@ -5876,9 +5881,14 @@ async function refineCandidateCounted(
         `carried: []` beside two healthy library rows. The version rail's take
         grouping climbs the same column.
 
-        Nothing in production was ever exposed (all four scopes name the founder
-        alone), but `CASTING_V2_SCOPE` is already `all`, so widening the repaint
-        road by itself would have detonated it for everyone at once.
+        Nothing in production was ever exposed — the defect was closed while all
+        four scopes still named the founder alone, and ⚠ **two of those four are
+        `all` now** (`CASTING_REPAINT_SCOPE` and `CASTING_REFERENCE_LIBRARY_SCOPE`,
+        widened fable-1253), so the parenthetical that used to carry this
+        sentence has expired even though the sentence is still true. That is the
+        shape the warning below predicted: `CASTING_V2_SCOPE` was already `all`,
+        so widening the repaint road by itself would have detonated it for
+        everyone at once — and the repaint road has since widened.
 
         AND A RE-ROLL TAKES THE PREDECESSOR'S PARENT, not the predecessor: it is
         the same version again, so it hangs where that version hung. Recording

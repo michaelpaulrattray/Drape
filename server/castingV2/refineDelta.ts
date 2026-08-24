@@ -894,9 +894,17 @@ export type FreeLaneCheck = {
    * WHETHER THIS ACCOUNT'S WORDS ROAD REACHES PAST HER NECK —
    * `CASTING_INK_WORDS_SCOPE`, resolved by the service.
    *
-   * Absent means off, which is today's product for everybody: an ask naming an
-   * upper arm or an upper chest walls here, free, before the claim. On, those
-   * two join `neck` and the same ask renders and mints.
+   * Absent means off: an ask naming an upper arm or an upper chest walls here,
+   * free, before the claim. On, those two join `neck` and the same ask renders
+   * and mints.
+   *
+   * ⚠ **AND ABSENT IS NO LONGER TODAY'S PRODUCT, WHICH IS WHAT THIS SAID UNTIL
+   * 2026-08-24.** `CASTING_INK_WORDS_SCOPE` is `all` in production — his own
+   * hand, fable-1400, the first capability this program took from `users:1` to
+   * `all` — so the service resolves this TRUE for every account and the off
+   * state is a test configuration rather than the shipped one. The file already
+   * says so ~600 lines above (*"on a lane where `CASTING_INK_WORDS_SCOPE` is
+   * `all`"*); this is the same file's older answer.
    *
    * It governs the INK lane only. The mark lane's list is not a capability
    * question and no flag moves it.

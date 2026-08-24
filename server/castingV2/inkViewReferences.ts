@@ -146,9 +146,17 @@ export function inkPlacementPhrase(input: {
     is the founder's own right-facing/left-facing template pair. The fix is
     drawn and queued on the template commit's checklist, §7.10 item 4 of
     `V3B_INK_AND_MARKS_DESIGN_NOTE.md`. **Until those blanks land, an upper-arm
-    tattoo can ride a package view on the wrong arm.** Nothing paid is exposed:
-    `CASTING_INK_STUDIO_SCOPE` is absent in production, so no design row exists,
-    so no plate exists, so this clause is never written there.
+    tattoo can ride a package view on the wrong arm.** Nothing paid is exposed
+    — and ⚠ **the proof is RE-DERIVED here rather than patched, because its
+    first step had gone false.** It used to read *"`CASTING_INK_STUDIO_SCOPE` is
+    absent in production, so no design row exists, so no plate exists"*. That
+    flag is `users:1`, so design rows CAN exist. What holds the conclusion up
+    today is one step further along the same road: `MANNEQUIN_ROAD_DEFERRED`
+    (`shared/inkMannequinDeferral.ts`) means **no upload mints a plate at all**,
+    on any account, so there is no plate for this clause to be written about.
+    A containment argument whose first step is false is worth repairing even
+    when its answer survives — and the support it now rests on is a CONSTANT
+    rather than a flag position, which is the sturdier of the two.
 
     The clause stays — it is the right sentence, it costs nothing per render,
     and it is what the other lane measured. It is unconditional here because the
