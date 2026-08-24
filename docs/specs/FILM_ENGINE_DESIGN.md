@@ -205,12 +205,43 @@ Improvements the research licenses, not speculation:
 5. **The scene document as the actual UI** — they wrote them by hand inside
    prompts; our users fill six labelled fields and never see a prompt.
 
+## 5b. The control ladder — the form is the default, never the limit (founder challenge, 2026-08-24)
+
+The founder asked whether the scene-document interface takes control away:
+what if the prompt needs altering, or the director has a specific action in
+mind? Answer, pinned: **control is layered, not removed.**
+
+- **Level 0 — the six fields.** The engine writes everything.
+- **Level 1 — director controls, in director language.** The precision the
+  pros used when they wanted it — timed beats ("0-2s: she reaches for the
+  case"), first-frame placement, gaze, don't-show, locks — exposed as
+  structured FIELDS on the shot card. A specific action or cut is written
+  here in plain sentences with timestamps, exactly as the studied crews wrote
+  it, never as prompt syntax. The shot list is proposals: approve, edit,
+  delete, add by hand. The cut strip reorders freely.
+- **Level 2 — the assembled prompt, visible always, editable on demand.**
+  Every shot node carries a drawer showing the FULL prompt the engine wrote
+  (transparency, and it teaches). Editing it starts a NEW setup (the takes
+  law: tweaks and re-rolls never blur) and shows a diff of engine-text vs
+  user-text, with the offer to keep the change as a standing rule for the
+  scene — the drift-lock idea applied to prompts.
+- **Level 3 — blank page.** Full prompt authorship for power users.
+
+**The failing-shot flow leads with the levers that measurably work.** The
+research showed rewording rarely fixes a failing setup; changing the INPUT
+does (the inverted-sheet lesson). So when takes keep missing, the UI offers,
+in order: swap/fix the reference -> add a blocking diagram -> harden a lock ->
+edit the prompt. The prompt editor is always available and deliberately
+fourth.
+
 ## 6. What we deliberately do NOT build
 
 - **Shot-to-shot memory / frame handoffs** — measured across 23,809 jobs:
   never used, and rerolls would break it. Islands + assets + hard cuts.
-- **A prompt editor as the primary surface** — the scene document is the
-  interface; raw prompt access is an advanced drawer at most.
+- **A prompt editor as the PRIMARY surface** — the scene document leads; the
+  full control ladder (§5b) keeps the prompt visible always and editable on
+  demand, so nothing is hidden, but prompt syntax is never the price of
+  entry.
 - **Automatic keeper selection** — the eye picks; telemetry measures cost
   only (law 9).
 
