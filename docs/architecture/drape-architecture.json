@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bebbec5d5cf68b60"
+    "sourceFingerprint": "e9c0709a87232083"
   },
   "domains": [
     {
@@ -11593,6 +11593,10 @@
     {
       "id": "test:server/db/castingV2ReferenceLibrary.test.ts",
       "path": "server/db/castingV2ReferenceLibrary.test.ts"
+    },
+    {
+      "id": "test:server/db/dailyQuota.test.ts",
+      "path": "server/db/dailyQuota.test.ts"
     },
     {
       "id": "test:server/db/migrationLag.test.ts",
