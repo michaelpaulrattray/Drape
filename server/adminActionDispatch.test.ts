@@ -18,14 +18,18 @@
  * suspend a user or move credits without ever settling the change request that
  * authorised it.
  *
- * ⚠ AND THE ROUTING TABLE IS A SECOND HAND-TYPED LIST. `CHANGE_REQUEST_ACTIONS`
- * in `lib/adminActions/index.ts` and `CR_TO_APPROVAL_ACTION` in
- * `routes/admin/changeRequests.ts:87` name the same six actions in two modules,
- * and nothing compares them. They agree today — read at both, 2026-08-25. The
- * day a seventh change-request type is added and only one list learns it, the
- * approved action routes to the wrong handler and nothing says so. That repair
- * is one declaration rather than two and is filed for its own countersign; the
- * arms below are what stands in the meantime.
+ * ⚠ THE ROUTING TABLE WAS A SECOND HAND-TYPED LIST WHEN THIS FILE WAS WRITTEN,
+ * AND THAT PARAGRAPH OUTLIVED ITS OWN REPAIR BY ONE SITTING. It said the two
+ * lists were unreconciled and that the fix was "filed for its own
+ * countersign". It landed the same day (fable-1628 §3): all five copies now
+ * derive from `CHANGE_REQUEST_ACTION_BY_TYPE`, and the first arm below is what
+ * reads it. Corrected 2026-08-25 — a stale paragraph in a test file is read as
+ * the current state by whoever opens the file to change it.
+ *
+ * ⚠ AND WHAT HAPPENS TO A NAME THIS ROUTER DOES NOT RECOGNISE CANNOT BE ASKED
+ * IN THIS FILE. Both handlers are replaced below, so any outcome that depends
+ * on what they do is a property of the double. That question — and the false
+ * answer this file once gave it — is `server/adminActionRefusal.test.ts`.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -113,11 +117,13 @@ describe("executeApprovedAdminAction — the routing, driven", () => {
     }
   });
 
-  it("an UNKNOWN action falls through to the direct handler rather than throwing", async () => {
-    // Stated because it is a real property and a slightly uncomfortable one:
-    // the dispatcher has no default refusal, so a typo in a cr_ name does not
-    // error — it silently takes the other road. That is exactly what makes the
-    // two-list drift worth guarding.
+  it("an UNKNOWN action is ROUTED to the direct road — the dispatcher itself has no default", async () => {
+    // This arm proves ROUTING and nothing else, and the distinction is the
+    // whole content of the correction below: `directHandler` is a
+    // `mockResolvedValue`, so it CANNOT throw. Any claim of the form "and it
+    // does not error" read off this arm would be a property of the double.
+    // What the product does with an unrecognised name is proven one describe
+    // down, against the real handlers.
     const { executeApprovedAdminAction } = await import("./lib/adminActions");
     await executeApprovedAdminAction(pending("cr_suspendUserr"), CTX);
     expect(directHandler).toHaveBeenCalledOnce();
@@ -139,3 +145,11 @@ describe("executeApprovedAdminAction — the routing, driven", () => {
     );
   });
 });
+
+/*
+ * The companion arms — what the product ACTUALLY does with an unrecognised
+ * action name — are in `server/adminActionRefusal.test.ts`, and they are in a
+ * SEPARATE FILE on purpose: `vi.mock` above is file-wide, and `importActual`
+ * un-mocks the module you name without un-mocking what that module imports.
+ * A question about the real handlers cannot be asked under these doubles.
+ */

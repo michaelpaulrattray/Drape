@@ -48,15 +48,33 @@ export const CHANGE_REQUEST_ACTION_NAMES = Object.values(
 const CHANGE_REQUEST_ACTIONS: ReadonlySet<string> = new Set(CHANGE_REQUEST_ACTION_NAMES);
 
 /**
- * ⚠ AN OPEN PRODUCT QUESTION, filed here so it is asked once and deliberately
- * rather than discovered after a seventh action type ships (fable-1628):
- * there is NO DEFAULT REFUSAL. An action name that is not in the set above —
- * including a typo'd `cr_` name — does not error; it takes the OTHER road and
- * runs as an admin-initiated action, settling no change request. Whether the
- * dispatcher should instead refuse an unrecognised `cr_*` is a small product
- * call, not a defect to patch quietly. `server/adminActionDispatch.test.ts`
- * asserts the CURRENT behaviour so the answer, whichever it is, has to be
- * given on purpose.
+ * This function has no `default:` of its own — membership decides the road,
+ * and an unrecognised name takes the direct one.
+ *
+ * ⚠ AND THIS DOCBLOCK SAID THAT MEANT THERE WAS "NO DEFAULT REFUSAL", THAT AN
+ * UNRECOGNISED NAME "DOES NOT ERROR", AND THAT IT "RUNS AS AN ADMIN-INITIATED
+ * ACTION, SETTLING NO CHANGE REQUEST". **All three are false of the product**,
+ * corrected 2026-08-25 by driving it. Both handlers end in a `default:` that
+ * throws — `Unknown direct action type: …` and `Unknown change request action
+ * type: …` — so an unrecognised name is refused on whichever road it lands on
+ * and nothing executes. There is no unrefused path.
+ *
+ * The claim came from an arm in `server/adminActionDispatch.test.ts` that
+ * replaces BOTH handlers with `vi.fn().mockResolvedValue(...)`. A double that
+ * cannot throw makes "and it does not throw" true before the subject is
+ * reached, so the conclusion was a property of the mock. It was then filed
+ * from there into this docblock and onto the roadmap as an open product
+ * question about admin money actions — which is the cost worth remembering: a
+ * property read off a double became a question on a planning page.
+ *
+ * What actually survives is smaller and is diagnostic rather than monetary.
+ * Because the road is chosen by MEMBERSHIP and not by the `cr_` prefix, a
+ * typo'd `cr_` name is refused BY THE DIRECT ROAD, so the operator reading the
+ * failure is told about a "direct action type". Whether the dispatcher should
+ * recognise the prefix and refuse in its own words is a small product call, not
+ * a defect to patch quietly. `server/adminActionRefusal.test.ts` drives the
+ * real handlers and pins all of it — including that misleading message — so the
+ * answer, whichever it is, is given on purpose.
  */
 export async function executeApprovedAdminAction(
   pendingAction: PendingAction,

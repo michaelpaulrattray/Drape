@@ -70,7 +70,6 @@ interface WardrobeState {
   /** Cache of overlay items per history index */
   overlayCache: Map<number, DetectedItem[]>;
   cacheOverlayItems: (index: number, items: DetectedItem[]) => void;
-  getCachedOverlay: (index: number) => DetectedItem[] | undefined;
 
   /** Cooldown timer (seconds remaining before next generation) */
   cooldownSeconds: number;
@@ -342,10 +341,6 @@ export const useWardrobeStore = create<WardrobeState>()(
           false,
           "cacheOverlayItems",
         ),
-
-      getCachedOverlay: (index) => {
-        return get().overlayCache.get(index);
-      },
 
       // ── Cooldown ───────────────────────────────────────────
       setCooldownSeconds: (seconds) =>

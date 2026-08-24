@@ -1461,24 +1461,66 @@ carry the rulings, the courts and the histories.
                                          TRPCError with code CONFLICT`. It throws
                                          BAD_REQUEST. A comment can be wrong for
                                          as long as nobody runs it.
-                                         ⚠ **ONE OPEN PRODUCT QUESTION, filed as
-                                         a comment in the code rather than
-                                         discovered later** (fable-1628): the
-                                         dispatcher has NO DEFAULT REFUSAL, so an
-                                         unrecognised `cr_*` — a typo — takes the
-                                         OTHER road and runs as an
+                                         ⚠ **THE OPEN PRODUCT QUESTION THIS ROW
+                                         FILED WAS FALSE OF THE PRODUCT, AND
+                                         THE ROW IS THE END OF THE CHAIN THAT
+                                         CARRIED IT** (corrected 2026-08-25 by
+                                         driving it, `server/adminActionRefusal.test.ts`).
+                                         It said the dispatcher had NO DEFAULT
+                                         REFUSAL, so an unrecognised `cr_*`
+                                         "takes the OTHER road and runs as an
                                          admin-initiated action, settling
-                                         nothing. The arms pin the CURRENT
-                                         behaviour so the answer is given on
-                                         purpose.
-                                         ⚠ **AND ONE DEAD STORE ACTION IS FILED
-                                         RATHER THAN REMOVED**: `getCachedOverlay`
-                                         — call site never written
-                                         (`git log -S` empty), no consumer
-                                         anywhere. Deleting it is a product
-                                         change with its own small countersign
-                                         (fable-1627 §1); the row keeps it from
-                                         being re-derived.
+                                         nothing." **It does not run.** Both
+                                         handlers end in a `default:` that
+                                         throws — `Unknown direct action type:
+                                         …` and `Unknown change request action
+                                         type: …` — so an unrecognised name is
+                                         refused on whichever road it lands on
+                                         and there is no unrefused path at all.
+                                         ⚠ **WHERE IT CAME FROM IS WORTH MORE
+                                         THAN THE CORRECTION**: the arm it was
+                                         read off replaces BOTH handlers with
+                                         `vi.fn().mockResolvedValue(...)`, so
+                                         *not throwing* was guaranteed by the
+                                         double before the subject was reached.
+                                         **The conclusion was a property of the
+                                         mock.** It then travelled — arm title →
+                                         module docblock → this row → a planning
+                                         page's list of open product questions
+                                         about admin money actions — and every
+                                         stop after the first was a faithful
+                                         copy. The sibling shape in this suite
+                                         is legitimate and looks identical at a
+                                         grep: a mock made to REJECT, proving
+                                         the code under test swallows it. There
+                                         the double is the PREMISE; here it was
+                                         the CONCLUSION, and that is the tell.
+                                         Two siblings were read and both are the
+                                         legitimate shape.
+                                         ✅ **WHAT SURVIVES IS SMALLER AND IS
+                                         DIAGNOSTIC**: the road is chosen by
+                                         MEMBERSHIP, not by the `cr_` prefix, so
+                                         a typo'd `cr_` name is refused by the
+                                         DIRECT road and the operator is told
+                                         the wrong road's name. Pinned as
+                                         current behaviour with its own arm.
+                                         Whether the dispatcher should recognise
+                                         the prefix and refuse in its own words
+                                         is what is left of the question, and it
+                                         is small.
+                                         ✅ **AND THE DEAD STORE ACTION IS
+                                         DELETED** (2026-08-25, countersigned
+                                         fable-1631): `getCachedOverlay` — call
+                                         site never written (`git log -S`
+                                         empty), no consumer anywhere. Three
+                                         lines and no behaviour: the interface
+                                         member, the implementation, and the
+                                         hook's selector line. The sentence
+                                         stays where the code was, because an
+                                         unused BINDING is not an unused
+                                         BEHAVIOUR and the near-miss on this
+                                         one was stopped only by opening the
+                                         handler.
                                          ⚠ **AND THE CLOSING SWEEP'S NUMBER IS A
                                          CANDIDATE LIST, NOT A CENSUS**: a
                                          structural reader (an `expect` whose

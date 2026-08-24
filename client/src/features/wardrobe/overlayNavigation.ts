@@ -13,13 +13,16 @@
  * decides whether a customer pays a fresh vision read on every undo could have
  * been changed in the hook with those arms green.
  *
- * ⚠ AND A DEAD BINDING SITS BESIDE THIS, reported rather than removed here
- * because deleting a store action is a product change and not a mirror repair:
- * `useWardrobeGeneration` selects `getCachedOverlay` from the store (line 70)
- * and never calls it — `git log -S "getCachedOverlay("` over that file is
- * EMPTY, so the call site was never written. The handlers reach into
- * `state.overlayCache` directly instead, which is why nothing was broken by
- * it. The store action has no consumer anywhere.
+ * ✅ AND THE DEAD BINDING BESIDE IT IS GONE (2026-08-25, countersigned
+ * fable-1631). `useWardrobeGeneration` selected `getCachedOverlay` from the
+ * store and never called it — `git log -S "getCachedOverlay("` over that file
+ * was EMPTY, so the call site was never written; the handlers reach into
+ * `state.overlayCache` directly, which is why nothing was broken by it. The
+ * store action had no consumer anywhere and is deleted: the interface member,
+ * the implementation, and the hook's selector line. **Kept written down
+ * because an unused BINDING is not an unused BEHAVIOUR** — the near-miss on
+ * this one was stopped only by opening the handler, and the sentence is what
+ * keeps the next reader from re-deriving a store action nobody asked for.
  */
 
 /** A re-scan only applies if no newer generation has started since it was asked. */

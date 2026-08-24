@@ -68,7 +68,6 @@ export function useWardrobeGeneration({
   const setResultOverlayItems = useWardrobeStore((s) => s.setResultOverlayItems);
   const setIsScanningResult = useWardrobeStore((s) => s.setIsScanningResult);
   const cacheOverlayItems = useWardrobeStore((s) => s.cacheOverlayItems);
-  const getCachedOverlay = useWardrobeStore((s) => s.getCachedOverlay);
   const vtoHistoryIndex = useWardrobeStore((s) => s.vtoHistoryIndex);
   const vtoHistory = useWardrobeStore((s) => s.vtoHistory);
 
