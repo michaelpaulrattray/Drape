@@ -1,9 +1,10 @@
 # A SETTINGS MODAL FOR CASTING — design report
 
-⚠ **STATUS: COUNTERSIGNED (fable-1545) AND THEN AMENDED IN FOUR PLACES BY THE
-FOUNDER THE SAME DAY (fable-1546). READ §10 FIRST — it is his words, and this
-document says things he has overruled wherever §10 is not consulted.** Nothing
-here is built.
+⚠ **STATUS: COUNTERSIGNED (fable-1545) AND THEN AMENDED IN FIVE PLACES BY THE
+FOUNDER THE SAME DAY (fable-1546 and fable-1547). READ §10 FIRST — it is his
+words, and this document says things he has overruled wherever §10 is not
+consulted.** Nothing here is built.
+
 Ordered fable-1531 §2 from the founder's own question, with the Higgsfield "Film
 setup" screen he sent as the reference
 (`docs/specs/references/settings-modal-higgsfield-reference.png`). Written
@@ -82,7 +83,7 @@ There are exactly **two** settings that exist as facts on a roll today:
 
 | setting | where it lives now | who authors it |
 |---|---|---|
-| **Path** — Wardrobe / Basics | `casting_rolls.path`, migration 0051; `PathToggle` on two surfaces | the customer, by a control that already exists |
+| **Path** — Wardrobe / Basics ⚠ **shown to a customer as `Default` / `Basics`**, §10a | `casting_rolls.path`, migration 0051; `PathToggle` on two surfaces | the customer, by a control that already exists |
 | **Outfit line** | `casting_rolls.wardrobeLine` | **nobody, directly** — `bornWardrobeLine` resolves it from the BRIEF or the engine's pick |
 
 **The asymmetry is the design's real content.** Path already is a control and the
@@ -351,3 +352,24 @@ Four rulings, each amending a section above:
 unchanged, and bypass-with-notification wired.** His named candidates for later
 axes are cast style, lighting and backgrounds — each still dark → measured →
 opened per §5, and each admitted to the modal only if §7 says it is picturable.
+
+### 10a. A fifth ruling, the next hour (relayed fable-1547)
+
+> *"wardrbe should just be the default setting called default inside the modal
+> anyway."*
+
+**The path setting's customer-facing vocabulary is `Default` / `Basics`, not
+`Wardrobe` / `Basics`.** The ordinary way a cast is born needs no name of its
+own; Basics is the deliberate departure, which is the same shape as ruling 2 —
+Basics is an advanced selection — said in copy rather than in placement.
+
+**It is COPY and nothing else.** `shared/castingPaths.ts`, the `casting_rolls.path`
+column, `CASTING_TWO_PATHS_SCOPE` and every internal name stay exactly as they
+are: this is the customer's ontology (working law 8), and renaming an enum to
+match a label is how the two stop being able to disagree on purpose.
+
+⚠ **It creates a sweep the build owns and nobody else**: every surface that says
+*"Wardrobe"* TO A CUSTOMER inherits the rename — the sheet's own path line, the
+pills for as long as they exist, and `sheetNotice`'s copy. **Swept at the modal
+build's own sitting, not before**, because a half-renamed vocabulary across two
+sittings is worse than either name consistently.
