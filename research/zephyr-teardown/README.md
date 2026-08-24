@@ -19,6 +19,12 @@ video generations.
 
 0. **[`THE-FRAMEWORK.md`](./THE-FRAMEWORK.md)** — plain-English rundown of how the
    whole system works, across both productions. **Start here.**
+0a. **[`THE-CRAFT-PLAYBOOK.md`](./THE-CRAFT-PLAYBOOK.md)** — the sixteen craft
+   techniques (unseen sources, countable events, causal physics, gaze
+   choreography, the LOCKS contract…) frequency-mining buried, plus the
+   story→shots pipeline traced on a real scene — props minted mid-scene in six
+   minutes, the coverage ladder, and the scene-document fields that make
+   decomposition mechanical.
 0b. **[`PROMPT-TECHNIQUE-REFERENCE.md`](./PROMPT-TECHNIQUE-REFERENCE.md)** — every
    prompting technique, mined from all 21,749 prompted jobs and frequency-ranked.
    Camera, lens, movement, framing, lighting, colour, physics, acting, reference
