@@ -170,6 +170,16 @@ body, one close-up). Five months of production experience kept only the
 non-redundant panels: outfit front, outfit back, identity once. The
 three-quarter and profile views evidently earned nothing at the engine.
 
+**And the pose-plate specimen (founder, same day) settles how non-standard
+poses are handled:** for an inverted/sideways/unusual orientation they mint a
+bespoke body-in-pose reference — **headless even there** — and pair it with the
+one canonical face via DUAL REFERENCE. The face exists in exactly one image of
+the whole stack, always. For takes this means a Setup with an unusual pose may
+need a minted pose plate (a one-shot, disposable artifact — film one's 39%
+single-use tail is exactly these), while identity always rides the same face
+panel. Object/vehicle sheets are exempt from the one-face economy and can carry
+detail panels and capability notes.
+
 **Consequence, stated carefully:** the six-view package is the PRODUCT Sign
 sells — untouched by this. The ENGINE-FACING composite is a different artifact,
 and the court above should include a 2–3-panel arm (big face + body front ±

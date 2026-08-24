@@ -339,6 +339,31 @@ the cut into the recipe. An accident, adopted, then codified. And the face
 count converges the same way across productions: film one's sheets carry faces
 at three angles, the Special's carry one, Adiliada's recipe demands exactly one.
 
+**The founder then produced the artifact that closes the loop — the POSE
+PLATE.** For a non-standard orientation (Naomi hanging inverted in her
+cockpit), the crew mints a bespoke reference of the exact pose — body, harness
+and cabin, shot as needed — **and crops her head out of frame even there.**
+The shot prompt then reassembles her by DUAL REFERENCE: *"FACE/HEAD from the
+CLOSE-UP head reference (image 2) at full close-up fidelity; body/harness/cabin
+from the WIDE cockpit reference (image 1)."* So the one-face rule is not a
+sheet template — it is enforced across the ENTIRE reference stack of a shot:
+however many images ride, the face exists in exactly one of them.
+
+Two further consequences of that specimen:
+
+- **It explains film one's bespoke tail.** 39.4% of production references were
+  used in exactly one shot and we did not know what they were. They are pose
+  plates — minted per unusual setup, headless by rule, paired with the
+  permanent face close-up, discarded after.
+- **Object sheets play by different rules.** Haru's mecha sheet is rich —
+  four views, an annotated capability note (*"Two retractable blades from the
+  forearms… fast piercing or slashing movements"*), a pilot-in-cabin cell. The
+  one-face economy governs CHARACTER identity; a vehicle can afford detail
+  panels because no face competes.
+- Her asset line also shows the permanent-accessory lock in the wild:
+  *"rimless oval glasses **(always)**, lower-lip ring **(always)**"* — the
+  same grammar for accessories as for anatomy.
+
 **Why? Never stated in any of the 34,000 records — but the founder's hypothesis
 (multiple faces on a reference confuse the video engine's identity read) fits
 every observed habit:** *"Use image 1 (face close-up) as the **main
