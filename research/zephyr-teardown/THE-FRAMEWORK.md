@@ -327,6 +327,106 @@ I tested whether that works:
 
 So multi-shot prompting buys **more cuts per second, never more seconds**.
 
+## 8b. How shots join without drift — measured, and it is not what it looks like
+
+A reasonable guess is that each generation must **end** where the next one can
+begin — a matched handoff. **They do not do that, and the data is one-sided.**
+
+### The head is locked. The tail is not.
+
+| | Film 1 (10,344 video jobs) | Special (3,647 video jobs) |
+|---|---:|---:|
+| `"First frame…"` specified | 218 | **1,005** |
+| Subject placed at `x%/y%` | 0 | 341 |
+| `"ends on / out on / closes on"` | **0** | 456 |
+| `"holds on …"` | 3 | **1,144** |
+| `"button"` (editorial closer) | 0 | 131 |
+| `"final/last frame"` | 56 | 0 |
+| **`"continues from the previous shot"`** | **0** | **8** |
+
+**2,281 "First frame" instructions across the corpus.** The opening is nailed
+down — subject, position, posture, eyeline, what sits behind:
+
+> *"First frame on Haru at **~35%x/55%y**, leaning forward over her knees, eyes
+> huge, both hands already coming up; sofa group soft behind her."*
+
+**Nothing matches an ending to the next beginning.** Film one specified endings
+essentially never.
+
+### What the tail gets instead: a hold
+
+The Special's ending instruction is a **hold**, 1,144 times:
+
+> *"Handheld, close-up, small drift, **holds on Zero**"*
+> *"eases to a **brief hold on each girl's face** as it passes"*
+> *"The shot **holds on the boiling jar and ends here**"* `[174]`
+> *"CU on Jasmin → **loose WIDE button**"* `[131]`
+
+That is exactly what a live-action operator does: settle and hold at the end of
+a take so the editor has handles. A held tail can be cut at any frame. A matched
+tail can only be cut at one — and would have to survive a reroll to stay matched.
+
+### The cut itself is hard, and hard cuts need no matching
+
+**2,083** hard-cut instructions; **1,319** `cut to` / 切镜. Against that:
+**30** match-cuts and **189** dissolves in the entire corpus.
+
+**They are not transitioning. They are cutting.** A hard cut is the one join
+that cannot drift, because there is nothing in between to get wrong.
+
+### What actually carries across the cut — three things, none of them pixels
+
+Inside the multi-shot documents, **280 of 332 non-first shots (84%) do reference
+the previous shot** — but never by matching frames. By:
+
+**1. Screen direction.** Everyone's eyeline agrees about where the off-screen
+person is:
+
+> *"head turning toward Haru **off-screen-left**"* `[28]`
+> *"both **looking off-screen toward Haru**"* `[20]`
+> *"keep the **same position and eyeline as Shot 1**; she turns from
+> off-screen-left (Haru) outward toward the room"* `[16]`
+
+**2. Sound.** The voice bridges the join — a classic L-cut:
+
+> *"**Haru's voice continues off-screen**"* `[40]`
+> *"Haru off-screen **(continuing)**: …"* `[20]`
+> *"Haru **voice off-screen only**; consistent light; no music"*
+
+and underneath everything, a continuous bed: **1,127** `room tone` /
+continuous-ambience instructions, **622** "locked to the input track / plays
+throughout".
+
+**3. Light.** *"consistent light"*, *"location AND lighting"* from the same
+environment asset every time.
+
+### So the answer
+
+**Nothing drifts because nothing is being handed off.** Each shot is
+independently anchored to the same assets, given a precisely specified opening
+and a held ending, and then hard-cut against its neighbours. Continuity is
+carried by *spatial logic and sound*, not by matched pixels:
+
+| Risk | What holds it |
+|---|---|
+| Face/costume drift | the same reference plate on every shot |
+| Look/grade drift | one style block, copied unchanged |
+| Geography drift | the blocking diagram + `off-screen-left/right` eyelines |
+| Lighting drift | lighting inherited from the location asset |
+| Audible seams | continuous room tone, voice carrying over the cut |
+| The join itself | a hard cut, which cannot drift |
+
+**And the reason this design is right rather than merely convenient:** rerolls.
+A shot is re-pulled a median of five times. Anything that depends on the *exact*
+end state of the previous take would break on every reroll. A held tail and a
+hard cut survive being regenerated; a matched handoff would not.
+
+That is the single most important lesson in this document for building it in
+Drape. **Do not build frame-matched handoffs. Lock heads, hold tails, cut hard,
+and carry continuity in the assets and the sound.**
+
+---
+
 ### Is the framework transferable to Seedance 3.0 (30s)?
 
 **Almost entirely, and the parts that transfer are the parts that matter.** My
