@@ -214,6 +214,16 @@ same" is four mechanisms working together:
    dialogue (*"only Zero speaks"*), and a zero-risk lane (*"Vocals: non-verbal
    only"*, 237 runs). No cut ever places two versions of one voice side by side.
 
+⚠ **Founder correction (2026-08-24), his ears on the finished film:** *there
+is plenty of dialogue and the characters DO sound like themselves.* So the
+masking framing above overstates its case — the outcome is more consistent
+than the mechanism predicts. Two live hypotheses, filed as a deferred test
+(OPEN_TEST_voice-clips-vs-descriptions.md): the description pins voices
+tighter than credited, and/or **the face card anchors the voice** (the engine
+conditions audio on the video, so the same attached face pulls a similar voice
+each take — the picture system quietly buying audio consistency for free).
+Post-production work on the film cannot be ruled out from records.
+
 The contrast proves the rule: in the lip-sync lane (*"`<<<audio_1>>>` plays
 throughout; Mira sings lead (lip-synced)"*) the voice IS identical across 716
 generations — because the file contains the performance and is audible. **Two
