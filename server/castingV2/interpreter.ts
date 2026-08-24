@@ -740,6 +740,24 @@ export function resetInterpreterForTests(): void {
 export const NOTES_OVERFLOW = "notesOverflow";
 
 /**
+ * THE REASON A BRIEF WAS READ TWICE BEFORE IT WAS WALLED — one string, so the
+ * count is one grep.
+ *
+ *     grep cohortWallRetried <the service log>
+ *
+ * counts every brief the cohort classifier refused on its first read, and each
+ * line says whether the second read cast it or agreed.
+ *
+ * ⚠ **It is the ONLY record this wall has ever had.** `unsupported_cohort` is
+ * thrown as a `BriefRefusal` before a roll row exists, so there is no row, no
+ * operation, no ledger entry and no counter anywhere — the product could not
+ * answer *how often does the cohort wall fire* in either world. That absence is
+ * what let a ~30% misfire rate on a real brief go unnoticed until the founder
+ * met it twice in an hour.
+ */
+export const COHORT_WALL_RETRIED = "cohortWallRetried";
+
+/**
  * ⚠ COMPRESS RATHER THAN GUILLOTINE — one re-ask, on about 2% of rolls
  * (ruled fable-1415 (c)).
  *
@@ -933,7 +951,7 @@ export async function interpretBrief(input: {
 
   try {
     const result = await runOnce();
-    const parsed = parseCastingIntent(result.text, input.briefText, notesMax);
+    let parsed = parseCastingIntent(result.text, input.briefText, notesMax);
     recordParseOutcome(!parsed.ok, result.truncated === true);
 
     /*
@@ -968,7 +986,70 @@ export async function interpretBrief(input: {
     }
 
     if (!parsed.ok) {
-      if (parsed.reason === "unsupported_cohort") return { ok: false, reason: "unsupported_cohort" };
+      /*
+        ⚠ **ASK TWICE BEFORE YOU WALL** — the cohort wall's double check
+        (`CASTING_V2_COHORT_WALL_DOUBLE_CHECK_DESIGN.md`, ordered fable-1588
+        from a live founder walling, built fable-1602 ruling 2 after its own
+        court closed).
+
+        The wall's answer is a MODEL'S JUDGEMENT taken once and acted on as
+        though it were a fact about the brief. Measured on the founder's own
+        553-character cybernetics brief — a photographable person, nobody in
+        particular, with surgically integrated implants:
+
+          8 refusals in 27 pooled drives (~30%) across three instruments,
+          two of which were looking for something else entirely
+
+        And measured on the mechanism this line is:
+
+          3 of 3 refusals PASSED on an immediate second read
+          2 of 2 named-character asks refused BOTH reads, twice
+
+        **So the two reads are not locked together and the second one is a
+        genuinely independent draw** — the independence the arithmetic assumes,
+        tested rather than inherited, which is the only evidence anyone has for
+        it.
+
+        # THREE THINGS IT MAY NOT DO
+
+          loop      ONE extra read. A stochastic failure repeated without bound
+                    is how a bad day at the provider becomes an unbounded spend
+                    — the aesthetic retry's own sentence, unchanged
+          soften    the second ask is the SAME ask. A nudge would not be a
+                    second opinion, it would be arguing the model out of a
+                    refusal, and it would weaken the wall on exactly the briefs
+                    the wall is right about
+          open      anything other than a clean second intent still WALLS.
+                    Fail-closed, unchanged
+      */
+      if (parsed.reason === "unsupported_cohort") {
+        const second = await runOnce();
+        const reread = parseCastingIntent(second.text, input.briefText, notesMax);
+        const rescued = reread.ok;
+        /*
+          COUNTED WHATEVER HAPPENS, because the absence of a count is what let
+          this hide. Nothing in the product has ever recorded this wall firing:
+          the refusal is thrown before a roll row exists, so there is no row, no
+          operation and no ledger entry — only this line. One string, so the
+          rate is one grep.
+        */
+        log.warn(
+          {
+            reason: COHORT_WALL_RETRIED,
+            outcome: rescued ? "rescued" : "walled",
+            firstLatencyMs: result.latencyMs,
+            secondLatencyMs: second.latencyMs,
+          },
+          rescued
+            ? "[interpreter] cohortWallRetried — the second read cast it; the first refusal was a wobble"
+            : "[interpreter] cohortWallRetried — both reads refused, and the brief is walled",
+        );
+        if (!rescued) return { ok: false, reason: "unsupported_cohort" };
+        parsed = reread;
+      }
+    }
+
+    if (!parsed.ok) {
       log.warn(
         { latencyMs: result.latencyMs, truncated: result.truncated === true },
         "[interpreter] reply could not be read as an intent — falling back",

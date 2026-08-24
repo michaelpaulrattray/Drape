@@ -480,6 +480,7 @@
         "id": "unreadable",
         "kind": "interpreter-refusal",
         "pinnedBy": [
+          "server/castingV2/cohortWallRetry.test.ts",
           "server/castingV2/hairColourFromReference.test.ts",
           "server/castingV2/hairReferenceCutter.test.ts",
           "server/castingV2/inkReferenceCutter.test.ts",
