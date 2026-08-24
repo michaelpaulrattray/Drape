@@ -141,6 +141,33 @@ a finding, not proposed as work.
 
 ---
 
+## The pipeline has three layers, and Drape currently owns one
+
+This is the shape the backend would have to reproduce:
+
+| Layer | ZEPHYR's tool | Volume | What it does |
+|---|---|---|---|
+| **1. Bible** | Hand-made, uploaded | 54 files | Annotated model sheets. The identity anchor. |
+| **2. Shot plate** | `nano_banana_2`, 3 refs, 16:9 | 2,157 jobs | Composes *this character, this outfit, this place, this angle* into one frame. |
+| **3. Motion** | `seedance_2_0` | 10,066 jobs | Turns a plate plus prose into a shot. |
+
+**Drape today is strong at layer 1 and has nothing at layer 2.** The signed
+package is a bible artifact. The refine road edits a cast. But there is no step
+that takes *"Mira, in the cockpit, scared, low angle"* and mints the 16:9 frame
+that a video model can act on.
+
+That middle layer is where the 39% bespoke references come from, and it is
+probably the single most important thing to understand before designing the film
+capability. It is also the layer where the everyday-person promise lives: the
+user describes a shot, and layer 2 is what turns their sentence into pictures.
+
+**The two grammars matter here.** The still compositor assigns references by
+*attribute* ("face from image 3, priority identity; palette from image 1"); the
+video model takes references as *whole entities* substituted inline. A backend
+that emits one grammar to both engines will be wrong at one of them.
+
+---
+
 ## The four findings that should shape the backend
 
 ### 1. Continuity is a filing system, not a model feature

@@ -255,6 +255,74 @@ shot needs was made for that shot.
 
 ---
 
+## Finding 5b — the middle layer: shot plates, and a second reference grammar
+
+The bible is not fed straight to the video model in every case. There is a step
+in between, and it accounts for the bespoke 39% above.
+
+**`nano_banana_2` is the shot-plate compositor.** 2,157 jobs, and its shape gives
+it away:
+
+| | |
+|---|---|
+| Input images | **3 is the mode** (1,090 of 2,157); 1 or 2 in most of the rest |
+| Aspect ratio | **16:9 dominant** (1,320) — it is minting *frames*, not portraits |
+| Prompt length | median **301 chars** — short, because the images carry the load |
+| Intent | background 37%, expression 37%, outfit 33%, camera angle 18%, identity-hold 15% |
+
+So: take three bible references, compose a specific 16:9 frame — this character,
+in this outfit, in this place, at this angle — and *that* becomes the plate the
+video model gets.
+
+### The second grammar: attribute assignment
+
+Seedance prompts use `<<<image_N>>>` as inline noun substitution. The still
+compositor does something different — it assigns each reference a **named
+attribute**:
+
+> **Face from image 3 (priority identity), overall vibe from image 2.**
+>
+> Character: young Asian female, very attractive, slightly edgy, messy sexy vibe.
+> Details: — subtle dark circles under eyes — sharp, styled nails — small horns
+> (stylized, natural integration, not fantasy-overkill)
+> Outfit: carelessly sexy, futuristic-grunge — asymmetrical, slightly messy,
+> partially undone / imperfect fit
+> **Color palette (image 1):** deep blue / teal tones / soft light accents
+> Style: raw, slightly chaotic, sensual but not clean, fashion-forward.
+> White studio background, soft cinematic lighting, realistic.
+>
+> **Important:**
+> — keep face accurate to image 3
+> — avoid overdesign, keep natural imperfection and attitude
+
+Three things to notice: each reference owns **one named attribute** (face / vibe
+/ palette); identity is marked **priority**; and the prompt closes with an
+`Important:` block that **repeats the identity constraint it already stated.**
+
+A second author uses demonstratives instead of slots entirely — *"That woman
+character sits in the cockpit of that mecha… Similar lighting and composition as
+in reference image 3. No hud. Pedals under feet. Space behind."*
+
+**So this corpus contains two distinct reference grammars, used per engine:**
+
+| | Video (`seedance_2_0`) | Stills (`nano_banana_2`) |
+|---|---|---|
+| Grammar | `<<<image_N>>>` inline, as a noun | "X from image N", by attribute |
+| Prompt length | median 359 chars | median 301 chars |
+| What refs carry | whole entities (person, mech, place) | attributes (face, vibe, palette) |
+
+### And the tiniest prompts are surgical edits
+
+Sorted by length, the shortest prompts are micro-revisions in Russian on an
+existing plate — `убери персонажей` ("remove the characters", stripping figures
+out of a location plate to get a clean empty set) and `change belt to crossbelt`
+(a costume revision, propagated to the plate rather than re-described in every
+shot).
+
+Both were rerolled 8–10 times. Even a two-word edit gets the same treatment.
+
+---
+
 ## Finding 6 — eleven models, each with one job
 
 | Model | Jobs | Configuration | Role |
