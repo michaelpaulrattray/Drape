@@ -16,7 +16,7 @@ so an everyday user gets these for free without being a prompt artist.
 
 ---
 
-## Part A — the craft techniques (28)
+## Part A — the craft techniques (40)
 
 ### 1. The unseen source — light (or sound) from outside the frame
 
@@ -222,6 +222,93 @@ audio lanes: audio-as-performance (truly the same voice) and audio-as-metronome
 Drape: a `Voice:` field on the cast buys the cheap 80%; true voice identity
 across takes needs a voice ASSET, which their stack lacked and they engineered
 around.
+
+### 29–40. The deep-read pass (2026-08-24, self-directed)
+
+The founder delegated the specimen-hunting; the twelve richest unread
+documents across both projects were selected per lane and read whole. Twelve
+more techniques:
+
+**29. The dedicated negative prompt.** Film one's mature prompts end with a
+paste-ready negative field ("if Seedance has a negative input box, paste
+here") enumerating **failure modes**: anti-composite tells (*"pasted-in look,
+composited feel, Photoshop traces, cutout edges"*), anti-copy (*"same angle as
+the reference, copy-paste composition"*), and viewer-comfort bounds
+(*"unusable harsh shake, nausea"*).
+
+**30. Scope a reference to its LOOK, not its composition.** *"Match
+`<image_1>`'s grade, fog-blend and materials — but use a DIFFERENT camera
+angle; do not copy its composition (avoid the copy-paste look)."* A new
+scoping axis: grade vs geometry. One reference is designated the **GRADE
+ANCHOR** (*"GRADE-UNIFY with `<image_1>`; integrated, not pasted-in"*).
+
+**31. Weighted references.** *"Active references: `<image_1>` 100%;
+`<image_4>` **90%**"* — percentage activation per reference.
+
+**32. Directing the near-miss — and framing that reads as meaning.** The
+almost-fall: name the arc (*slips → drops a short distance → caught*) and
+fence the completion (*"the cable NEVER snaps, the anchor NEVER releases, NO
+free-fall"*). And the deepest sentence in the corpus: *"don't push in on the
+cable/anchor during the drop — **that would read as the cable snapping**."*
+They know a framing choice IS a narrative statement, and fence the shot
+grammar itself.
+
+**33. Emotion fenced from both sides — and the audience's feeling as the
+spec.** The cramped-cockpit two-hander names the target register (*"subtly
+coquettish / playful-flirty… awkward"*) and bans BOTH neighbours: the entire
+sexualization register AND the fear register (*"NOT scared, no panic"*). And
+the spec is written as what the viewer must feel: *"The camera must make the
+viewer feel: **'how the hell are two people fitting in there?'**"*
+
+**34. Negatives that carry their correction.** *"spacious roomy cockpit **(it
+is a CRAMPED single seat)**; entering through the glass canopy **(she enters
+ONLY through the small TOP HATCH)**"* — each ban paired inline with its fix.
+
+**35. Reference hygiene — named bleed vectors.** *"Mech/cabin images give
+silhouette, colours and interior ONLY — do NOT copy any cockpit seatbelt
+harness onto Haru out on the bridge — **those leak from the cockpit-seat
+harness**."* They know exactly WHICH feature bleeds from WHICH reference and
+fence that specific contamination.
+
+**36. The colour doctrine is parameterized, split per set.** One scene, two
+doctrines: *"cabin shots → 70% cold dark + 20% navy + 10% ember; bridge shots
+→ 70% cold blue-grey + 20% warm orange-red + 10% sage/purple."* And the punk
+MV inverts the whole formula (*"~70% blown-white base + ~25% the subject's own
+wardrobe accent"*) — same structure, different values per piece.
+
+**37. Same instant, three angles.** *"Hard cuts; **same moment, three
+angles**… (same instant, different angles)"* — coverage that freezes story
+time and varies only viewpoint. A third cutting mode beside sequence-cuts and
+cross-cuts.
+
+**38. Machine-camera motion signatures.** The device POV (#27) extended to
+MOTION: *"the robot head whip-pans — fast servo motion that snaps and settles
+with a small mechanical **overshoot-and-settle judder**."* Crisp axiom form:
+*"**Optical character = yes; gun-sight overlay = no.**"* And the operator's
+inverse: *"run-and-gun… real shoulder-mounted mass, whip-pans, breath, jolts
+and **human over-correction**… never gimbal-sterile, never floaty drone."*
+
+**39. The per-segment LENS LOCK schedule.** Six segments, six locked lenses:
+*"LENS LOCK SEG1 = 107° wide … SEG3 = 29° short telephoto … SEG6 = 107° wide.
+**No focal drift mid-segment.**"* Plus anti-dead-air (*"The first frame
+already shows the mech center-frame, fists raised — **no empty establishing
+frame**"*), one slow-mo accent with audio that reacts to it (*"slow-motion
+beat **drops ambient under a low pressurized tone**"*), and *"sakuga energy"*
+as a style anchor.
+
+**40. The prompt is a collaboration document.** The most unexpected finding:
+prompts carry operator-facing and team-facing writing beside the model-facing
+text — an ASCII **attachment banner** (*"MUSIC / AUDIO TRACK — ATTACH IN PANEL
+HERE … MAIN TRACK SLOT → `<audio_1>`"* in a box-drawing frame); **director
+notes annotating deliberate default overrides** (*"(Director note: fisheye
+intentionally replaces the 65mm spherical default for this piece.)"* — so
+nobody 'fixes' it back); **changelog memos to teammates** (in Russian:
+*"updated the layout for the new set … no dagger in this set — fully
+weaponless, as you asked"*); per-character screen-time allocations
+(*"(Appears rarely — shortest beat)"*); and state-override semantics on
+permanent features (*"RED PLAID/TARTAN NOSE PATCH **(this state only — it
+replaces her usual holographic strip)**"*). The prompt is simultaneously spec,
+changelog and handoff note — the team's single source of truth per scene.
 
 ---
 
