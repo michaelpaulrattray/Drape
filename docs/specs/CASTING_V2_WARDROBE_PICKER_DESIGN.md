@@ -1,4 +1,4 @@
-# The wardrobe picker — taking the boredom clause out, for countersign
+# The wardrobe picker — taking the boredom clause out
 
 **Founder order, relayed fable-1595, verbatim:** *"whats up with the wardrobe
 choosing the aboslute lamest uninspired outfits?"* — and the order that came
@@ -7,10 +7,13 @@ headwear, completeness, the fallback), delete the boredom clause, replace it
 with costume-designer direction — *dress THIS person for THEIR shoot; the cyborg
 gets matte techwear, the model gets fashion-forward.*
 
-**This document decides nothing.** It is prose for countersign: what the picker
+**It was written to decide nothing** — prose for countersign: what the picker
 actually does today measured at the rows, what in the prompt does it, the two
 taste shapes his open question splits into, a court that can tell them apart,
-and the sequencing rule this build inherits.
+and the sequencing rule this build inherits. It has since been countersigned,
+courted and built, and the sections carry their outcomes where they were
+predicted rather than in a summary at the top, so a reader meets each claim
+beside what happened to it.
 
 Status: ✅ **COUNTERSIGNED (fable-1609), COURTED (§6.5), AND BUILT IN SHAPE A** —
 2026-08-25. What is still open is his taste word: shape B is one paragraph away
@@ -584,9 +587,9 @@ this document is one of those text stages.
 
 ---
 
-## 9. The build, if countersigned
+## 9. The build — ✅ LANDED 2026-08-25, `98c06ec0`
 
-One commit, behind its court:
+One commit, behind its court, exactly as listed:
 
 ```
 1  WARDROBE_BLOCK rewritten     instructions 1-4 and the worked examples, in the
@@ -610,13 +613,22 @@ survive the edit is cheaper than finding out at a paid roll.
 
 ## 10. What needs a word
 
+✅ **FABLE'S ITEMS ARE ALL ANSWERED AND ALL SHIPPED** (fable-1609/1610/1611):
+the design countersigned, the refusal token BUILT in the same commit, the image
+arm NOT bought, the trimmed court GO at $1.50 and run at $0.9900, and the result
+accepted with shape A in.
+
 ```
-FABLE      countersign, and a ruling on §5's refusal token (recommended: build
-           it, same commit) and §6.3's image arm (recommended: do not buy it)
-FOUNDER    his taste answer — Shape A or Shape B (§4). Recommended: A.
-           He is the only account with a population, so it is his sheet either
-           way. It is a taste question and it goes to him as one, not as a card
+FOUNDER    his taste answer — Shape A or Shape B (§4). Recommended: A, and the
+           court has since made that a measurement rather than an argument
+           (§6.6). ⚠ It does NOT block and it never did: A is what shipped, so
+           he is answering from his own frames rather than in the abstract, and
+           B is one paragraph away with the court's rows on disk
+OPEN, HIS  the wider board's items, neither of them this design's: stage 3's
+           flip-and-roll, and the framing retarget behind it
 ```
 
-Neither blocks the other: the court runs on both shapes if his answer is late,
-since the court's arms are per-side and a second direction is a third arm.
+⚠ **AND ONE THING IS PARKED ON AN INSTRUMENT RATHER THAN ON A PERSON** — §5.1's
+bounds disagreement. Its trigger is `wardrobePickRefused` with `reason:
+"too_long"`, which production will announce for free the first time it happens.
+Nobody has to remember to look.
