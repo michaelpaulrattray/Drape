@@ -192,7 +192,11 @@ watching understand?*
 
 In the voices-only musical scenes the attached `.wav` is a metronome the mix
 excludes — so **the voices are re-invented by the engine on every take.** No
-voice reference exists anywhere in the corpus. What makes them read as "the
+voice reference exists anywhere in the corpus — and the founder's follow-up
+("did they pull the voices in as Elements?") is answered by measurement:
+**all 9,460 element attachments across both later productions are images
+(zero audio, zero video; the format's `video_medias` slot is empty in every
+one).** An Element carries a face; nothing in this stack carries a voice. What makes them read as "the
 same" is four mechanisms working together:
 
 1. **A voice spec carried like a face spec** — `Voice:` on every sheet
