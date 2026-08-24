@@ -1,7 +1,11 @@
 # ASK TWICE BEFORE YOU WALL — the cohort wall's double check
 
-⚠ **STATUS: DESIGN REPORT, AWAITING COUNTERSIGN. NOTHING IS BUILT AND NOTHING
-HERE IS DECIDED.** Ordered fable-1588 from a live founder walling mid-dogfood.
+⚠ **STATUS: DESIGN REPORT, AWAITING COUNTERSIGN. NOTHING IS BUILT.** Ordered
+fable-1588 from a live founder walling mid-dogfood.
+
+✅ **AND ITS COURT HAS NOW RUN (2026-08-24, $0.4968, 16 calls, tree
+`d1bd3316` clean) — see §0. Both questions answered, and the rate is WORSE than
+this document was written on.**
 Written 2026-08-24 against the code rather than from recollection; every line
 number below was opened.
 
@@ -12,6 +16,49 @@ His report, verbatim, relayed fable-1588:
 > character from a game or film … You have not been chargeed."*
 
 And an hour later, fable-1589: **at least twice consecutively.**
+
+---
+
+## 0. ✅ THE COURT, RUN AFTER THIS DESIGN WAS WRITTEN
+
+Ordered fable-1592 §2 as the re-aimed $0.48, priority raised fable-1599 §3.
+Harness `scripts/_cohort-wall-rescue-disposable.mts`; rows
+`output/cohort-wall/wall-rescue.{log,json}`. Six first reads of his exact brief
+through the real entrance, every refusal immediately re-driven once, plus a
+named-character control on both reads.
+
+```
+  rate      3 of 6 first reads WALLED
+  rescue    3 of 3 refusals PASSED on an immediate second read
+  control   2 of 2 named-character drives walled on the FIRST read
+            2 of 2 walled on the SECOND read as well
+```
+
+⚠ **THE RATE IS WORSE THAN THIS DOCUMENT WAS WRITTEN ON.** §1's pooled figure
+is 3 in 18 (~17%). Today's tree, two instruments, neither looking for it:
+**2 of 3 in the budget court's arm A and 3 of 6 here — 5 of 9 (56%).** Pooled
+across every sighting the product has: **8 of 27 (~30%).** Whether the rate has
+MOVED or the earlier samples were lucky is not settled by nine drives, and this
+document does not claim it is; what is settled is that ~1 in 6 was the optimistic
+end of the range and the mitigation is worth more than it was priced at.
+
+✅ **AND THE ASSUMPTION §9 SAID MUST BE TESTED RATHER THAN INHERITED HOLDS ON
+THIS SPECIMEN: 3 of 3 rescued.** Two reads of the classifier on one brief are not
+locked together — an identical re-sample genuinely lands somewhere else. So the
+double check is not arithmetic on an assumption; it is a measured 3-for-3 on the
+brief that motivated it.
+
+✅ **And the control is the half that protects the wall: a named character
+refused BOTH reads, twice.** A retry does not open the door the wall exists to
+hold.
+
+⚠ **Two limits, stated rather than buried.** (a) Nine drives on ONE brief is a
+small sample and the rescue fraction is not a rate for the product. (b) The
+retry here is a whole re-compile with a different `rollSeed` — faithful to the
+proposed mechanism because `rollSeed` never reaches `interpretBrief`, whose
+inputs are the brief, the engine and the two block flags, so the second read
+receives byte-identical input. That is read at the call site rather than
+assumed.
 
 ---
 
