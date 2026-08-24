@@ -9,6 +9,7 @@
  * for the same model image (avoids rate-limit errors).
  */
 import { useEffect, useRef } from "react";
+import { planModelSetup, shouldShowQualityWarning } from "../modelSetupPlan";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
@@ -27,29 +28,22 @@ export function useModelSetup(modelImageUrl: string | null): void {
   const lastQualityUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Skip if URL hasn't actually changed
-    if (modelImageUrl === prevUrlRef.current) return;
+    const store = useWardrobeStore.getState();
+    const plan = planModelSetup({
+      newUrl: modelImageUrl,
+      prevUrl: prevUrlRef.current,
+      hasHistory: store.vtoHistory.length > 0,
+      hasTattooMap: !!store.tattooMap,
+      lastAnalyzedUrl: lastAnalyzedUrlRef.current,
+      lastQualityUrl: lastQualityUrlRef.current,
+    });
+    if (!plan) return;
     prevUrlRef.current = modelImageUrl;
 
-    // Clear state on model change — but skip if VTO history already exists
-    // (session resume case: history was just hydrated, don't wipe it)
-    const hasHistory = useWardrobeStore.getState().vtoHistory.length > 0;
-    if (!hasHistory) {
-      clearVTOHistory();
-    }
+    if (plan.clearHistory) clearVTOHistory();
+    if (plan.clearTattooMap) setTattooMap(null);
 
-    // Skip tattoo clear + re-analysis if already restored from DB (session resume)
-    const existingTattooMap = useWardrobeStore.getState().tattooMap;
-    if (!existingTattooMap) {
-      setTattooMap(null);
-    }
-
-    // No API calls if model is cleared
-    if (!modelImageUrl) return;
-
-    // Skip tattoo analysis if we already have a map (restored from DB)
-    // OR if we already successfully analyzed this exact URL
-    if (!existingTattooMap && lastAnalyzedUrlRef.current !== modelImageUrl) {
+    if (plan.runTattooAnalysis && modelImageUrl) {
       analyzeMutation
         .mutateAsync({ imageUrl: modelImageUrl })
         .then((map) => {
@@ -65,13 +59,12 @@ export function useModelSetup(modelImageUrl: string | null): void {
         });
     }
 
-    // Skip quality check if we already checked this exact URL
-    if (lastQualityUrlRef.current !== modelImageUrl) {
+    if (plan.runQualityCheck && modelImageUrl) {
       qualityMutation
         .mutateAsync({ imageUrl: modelImageUrl })
         .then((result) => {
           lastQualityUrlRef.current = modelImageUrl;
-          if (result.quality === "poor") {
+          if (shouldShowQualityWarning(result.quality)) {
             console.log("[Quality Check] Issues:", result.issues);
             toast.warning("Model photo quality is low — results may vary", {
               description: result.issues.join(", "),

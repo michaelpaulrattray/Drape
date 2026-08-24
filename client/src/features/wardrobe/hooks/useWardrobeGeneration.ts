@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useRef } from "react";
 import { resolveVtoErrorCopy, shouldAutoRetryVto } from "../vtoErrorCopy";
+import { resolveOverlayOnNavigation, shouldUpdateOverlay } from "../overlayNavigation";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
@@ -167,7 +168,7 @@ export function useWardrobeGeneration({
       detectMutation
         .mutateAsync({ resultUrl })
         .then((detected) => {
-          if (generationIdRef.current !== genId) return;
+          if (!shouldUpdateOverlay(genId, generationIdRef.current)) return;
           const idx = useWardrobeStore.getState().vtoHistoryIndex;
           setResultOverlayItems(detected);
           cacheOverlayItems(idx, detected);
@@ -676,13 +677,13 @@ export function useWardrobeGeneration({
     setTimeout(() => {
       restoreSelectionForIndex();
       const state = useWardrobeStore.getState();
-      const cached = state.overlayCache.get(state.vtoHistoryIndex);
-      if (cached) {
-        setResultOverlayItems(cached);
-      } else {
-        const url = state.vtoHistory[state.vtoHistoryIndex];
-        if (url) scanResultOverlay(url, generationIdRef.current);
-      }
+      const plan = resolveOverlayOnNavigation(
+        state.overlayCache,
+        state.vtoHistoryIndex,
+        state.vtoHistory[state.vtoHistoryIndex],
+      );
+      if (plan.source === "cache") setResultOverlayItems(plan.items);
+      else if (plan.source === "scan") scanResultOverlay(plan.url, generationIdRef.current);
     }, 0);
   }, [undoVTO, restoreSelectionForIndex, setResultOverlayItems, scanResultOverlay]);
 
@@ -691,13 +692,13 @@ export function useWardrobeGeneration({
     setTimeout(() => {
       restoreSelectionForIndex();
       const state = useWardrobeStore.getState();
-      const cached = state.overlayCache.get(state.vtoHistoryIndex);
-      if (cached) {
-        setResultOverlayItems(cached);
-      } else {
-        const url = state.vtoHistory[state.vtoHistoryIndex];
-        if (url) scanResultOverlay(url, generationIdRef.current);
-      }
+      const plan = resolveOverlayOnNavigation(
+        state.overlayCache,
+        state.vtoHistoryIndex,
+        state.vtoHistory[state.vtoHistoryIndex],
+      );
+      if (plan.source === "cache") setResultOverlayItems(plan.items);
+      else if (plan.source === "scan") scanResultOverlay(plan.url, generationIdRef.current);
     }, 0);
   }, [redoVTO, restoreSelectionForIndex, setResultOverlayItems, scanResultOverlay]);
 

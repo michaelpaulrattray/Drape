@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e992bdc68f436ed8"
+    "sourceFingerprint": "d0690559421aa690"
   },
   "domains": [
     {
@@ -148,7 +148,7 @@
     {
       "id": "domain:wardrobe",
       "name": "wardrobe",
-      "moduleCount": 35
+      "moduleCount": 37
     }
   ],
   "modules": [
@@ -2231,6 +2231,18 @@
     {
       "id": "module:client/src/features/wardrobe/layerUtils.ts",
       "path": "client/src/features/wardrobe/layerUtils.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/wardrobe/modelSetupPlan.ts",
+      "path": "client/src/features/wardrobe/modelSetupPlan.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/wardrobe/overlayNavigation.ts",
+      "path": "client/src/features/wardrobe/overlayNavigation.ts",
       "domain": "wardrobe",
       "lifecycle": "active"
     },
@@ -14525,6 +14537,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/casting/ControlPanel.tsx",
+      "to": "module:shared/castingOptions.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/casting/creationPayload.ts",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -16716,12 +16733,22 @@
     },
     {
       "from": "module:client/src/features/wardrobe/hooks/useModelSetup.ts",
+      "to": "module:client/src/features/wardrobe/modelSetupPlan.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/hooks/useModelSetup.ts",
       "to": "module:client/src/features/wardrobe/stores/useWardrobeStore.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/wardrobe/hooks/useModelSetup.ts",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/hooks/useWardrobeGeneration.ts",
+      "to": "module:client/src/features/wardrobe/overlayNavigation.ts",
       "kind": "imports"
     },
     {

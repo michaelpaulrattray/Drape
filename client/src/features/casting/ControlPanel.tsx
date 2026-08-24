@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ethnicityLegacyString } from "@shared/castingOptions";
 import { ArrowLeft, Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
@@ -273,7 +274,7 @@ export function ControlPanel({
 
   const ethnicityBlend = prefs.ethnicityBlend || [];
   const setEthnicityBlend = (blend: { name: string; pct: number }[]) => {
-    const legacyStr = blend.map(e => e.name).join(', ');
+    const legacyStr = ethnicityLegacyString(blend);
     updatePrefs({ ethnicityBlend: blend, ethnicity: legacyStr });
   };
 

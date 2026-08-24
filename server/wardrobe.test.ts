@@ -15,6 +15,8 @@ import { buildTattooMap } from "./wardrobe/tattooAnalysis";
 import { buildOutfitContext, selectDescribableGarments } from "./wardrobe/garmentDescription";
 import { useWardrobeStore } from "../client/src/features/wardrobe/stores/useWardrobeStore";
 import { resolveVtoErrorCopy, shouldAutoRetryVto } from "../client/src/features/wardrobe/vtoErrorCopy";
+import { resolveOverlayOnNavigation, shouldUpdateOverlay } from "../client/src/features/wardrobe/overlayNavigation";
+import { planModelSetup, shouldShowQualityWarning } from "../client/src/features/wardrobe/modelSetupPlan";
 import { wardrobeRouter } from "./routes/wardrobe";
 import {
   wardrobeClassifyEditInput,
@@ -845,10 +847,20 @@ describe("Full Look Radio Selection", () => {
 // ── Overlay Scan Wiring Logic Tests ───────────────────────────────────────
 
 describe("Overlay Scan Wiring Logic", () => {
-  // Simulate the scanResultOverlay stale-check pattern
-  function shouldUpdateOverlay(genIdAtCall: number, currentGenId: number): boolean {
-    return genIdAtCall === currentGenId;
-  }
+  /*
+   * ⚠ A PRIVATE `shouldUpdateOverlay` AND `resolveOverlayOnNavigation` USED
+   * TO BE DECLARED HERE, commented "Simulate the scanResultOverlay stale-check
+   * pattern" and "Simulate undo/redo cache-or-scan logic". Both were faithful
+   * — which is luck, not a property. The rule they modelled decides whether a
+   * customer's undo buys a fresh vision read on the house, and it could have
+   * been changed in the hook with these arms green.
+   *
+   * Both are now named exports of
+   * `client/src/features/wardrobe/overlayNavigation.ts`, with `handleUndo` and
+   * `handleRedo` as their production readers. Those two handlers were
+   * BYTE-IDENTICAL to each other, so the lift removed a duplicate as well as a
+   * mirror. Filed under 3g's A. Working law 4: derive, never mirror.
+   */
 
   it("should allow overlay update when genId matches current", () => {
     expect(shouldUpdateOverlay(5, 5)).toBe(true);
@@ -857,18 +869,6 @@ describe("Overlay Scan Wiring Logic", () => {
   it("should reject overlay update when genId is stale", () => {
     expect(shouldUpdateOverlay(5, 6)).toBe(false);
   });
-
-  // Simulate undo/redo cache-or-scan logic
-  function resolveOverlayOnNavigation(
-    overlayCache: Map<number, string[]>,
-    historyIndex: number,
-    historyUrl: string | undefined,
-  ): { source: "cache" | "scan" | "none"; items?: string[] } {
-    const cached = overlayCache.get(historyIndex);
-    if (cached) return { source: "cache", items: cached };
-    if (historyUrl) return { source: "scan" };
-    return { source: "none" };
-  }
 
   it("should restore from cache when overlay is cached for index", () => {
     const cache = new Map<number, string[]>();
@@ -970,50 +970,43 @@ describe("SAFETY_BLOCK Auto-Retry Logic", () => {
 // ── useModelSetup Decision Logic Tests ────────────────────────────────────
 
 describe("useModelSetup Decision Logic", () => {
-  // Simulate the hook's decision logic for what to do on model URL change
-  interface ModelSetupActions {
-    clearHistory: boolean;
-    clearTattooMap: boolean;
-    runTattooAnalysis: boolean;
-    runQualityCheck: boolean;
-  }
-
-  function getModelSetupActions(
-    newUrl: string | null,
-    prevUrl: string | null,
-  ): ModelSetupActions | null {
-    // Skip if URL hasn't changed
-    if (newUrl === prevUrl) return null;
-
-    const actions: ModelSetupActions = {
-      clearHistory: true,
-      clearTattooMap: true,
-      runTattooAnalysis: false,
-      runQualityCheck: false,
-    };
-
-    if (newUrl) {
-      actions.runTattooAnalysis = true;
-      actions.runQualityCheck = true;
-    }
-
-    return actions;
-  }
+  /*
+   * ⚠ A PRIVATE `getModelSetupActions` USED TO BE DECLARED HERE, commented
+   * "Simulate the hook's decision logic for what to do on model URL change",
+   * AND IT DESCRIBED A HOOK WITH NO GUARDS —
+   *
+   *     const actions = { clearHistory: true, clearTattooMap: true, … };
+   *     if (newUrl) { actions.runTattooAnalysis = true; actions.runQualityCheck = true; }
+   *
+   * The real hook has four, and each protects something. History is cleared
+   * ONLY when there is none to lose; the tattoo map ONLY when there is not one
+   * already — both because a RESUMED SESSION has just hydrated them, and
+   * wiping them is the defect the guards were added for. The tattoo analysis
+   * needs no existing map and an unanalyzed URL; the quality check needs an
+   * unchecked URL.
+   *
+   * So five arms asserted, as correct, exactly the behaviour those guards
+   * exist to prevent — delete the resume guard and they go GREEN about a
+   * customer losing their session. This is 3g's worst functional drift and it
+   * is the reason the row's arms are written FROM THE DIFF.
+   *
+   * `planModelSetup` is now a named export of
+   * `client/src/features/wardrobe/modelSetupPlan.ts` with the hook as its
+   * production reader. Working law 4: derive, never mirror.
+   */
+  const FRESH = {
+    hasHistory: false,
+    hasTattooMap: false,
+    lastAnalyzedUrl: null,
+    lastQualityUrl: null,
+  };
 
   it("should skip all actions when URL has not changed", () => {
-    const result = getModelSetupActions(
-      "https://example.com/model.jpg",
-      "https://example.com/model.jpg",
-    );
-    expect(result).toBeNull();
+    expect(planModelSetup({ newUrl: "https://x/m.jpg", prevUrl: "https://x/m.jpg", ...FRESH })).toBeNull();
   });
 
   it("should clear history and run analyses when URL changes to a new model", () => {
-    const result = getModelSetupActions(
-      "https://example.com/model2.jpg",
-      "https://example.com/model1.jpg",
-    );
-    expect(result).toEqual({
+    expect(planModelSetup({ newUrl: "https://x/m2.jpg", prevUrl: "https://x/m1.jpg", ...FRESH })).toEqual({
       clearHistory: true,
       clearTattooMap: true,
       runTattooAnalysis: true,
@@ -1022,8 +1015,7 @@ describe("useModelSetup Decision Logic", () => {
   });
 
   it("should clear history and run analyses when URL set from null", () => {
-    const result = getModelSetupActions("https://example.com/model.jpg", null);
-    expect(result).toEqual({
+    expect(planModelSetup({ newUrl: "https://x/m.jpg", prevUrl: null, ...FRESH })).toEqual({
       clearHistory: true,
       clearTattooMap: true,
       runTattooAnalysis: true,
@@ -1031,9 +1023,8 @@ describe("useModelSetup Decision Logic", () => {
     });
   });
 
-  it("should clear history but NOT run analyses when URL set to null", () => {
-    const result = getModelSetupActions(null, "https://example.com/model.jpg");
-    expect(result).toEqual({
+  it("should clear but NOT run analyses when URL set to null", () => {
+    expect(planModelSetup({ newUrl: null, prevUrl: "https://x/m.jpg", ...FRESH })).toEqual({
       clearHistory: true,
       clearTattooMap: true,
       runTattooAnalysis: false,
@@ -1042,24 +1033,43 @@ describe("useModelSetup Decision Logic", () => {
   });
 
   it("should skip when both are null (no change)", () => {
-    const result = getModelSetupActions(null, null);
-    expect(result).toBeNull();
+    expect(planModelSetup({ newUrl: null, prevUrl: null, ...FRESH })).toBeNull();
   });
 
-  // Simulate quality check toast decision
-  function shouldShowQualityWarning(quality: "good" | "fair" | "poor"): boolean {
-    return quality === "poor";
-  }
+  /*
+   * FROM THE DIFF — the four guards. Every one of these was FALSE of the copy,
+   * so none of them could have been written against it.
+   */
 
-  it("should show warning toast for poor quality", () => {
+  it("FROM THE DIFF — a RESUMED session keeps its history: it is not cleared when history exists", () => {
+    const plan = planModelSetup({ newUrl: "https://x/m.jpg", prevUrl: null, ...FRESH, hasHistory: true });
+    expect(plan?.clearHistory).toBe(false);
+  });
+
+  it("FROM THE DIFF — a RESUMED session keeps its tattoo map, and does not re-buy the analysis", () => {
+    const plan = planModelSetup({ newUrl: "https://x/m.jpg", prevUrl: null, ...FRESH, hasTattooMap: true });
+    expect(plan?.clearTattooMap).toBe(false);
+    expect(plan?.runTattooAnalysis).toBe(false);
+  });
+
+  it("FROM THE DIFF — a URL already analyzed is not analyzed again across a remount", () => {
+    const url = "https://x/m.jpg";
+    const plan = planModelSetup({ newUrl: url, prevUrl: "https://x/other.jpg", ...FRESH, lastAnalyzedUrl: url });
+    expect(plan?.runTattooAnalysis).toBe(false);
+    // …and the quality check is decided independently of it.
+    expect(plan?.runQualityCheck).toBe(true);
+  });
+
+  it("FROM THE DIFF — a URL already quality-checked is not checked again across a remount", () => {
+    const url = "https://x/m.jpg";
+    const plan = planModelSetup({ newUrl: url, prevUrl: "https://x/other.jpg", ...FRESH, lastQualityUrl: url });
+    expect(plan?.runQualityCheck).toBe(false);
+    expect(plan?.runTattooAnalysis).toBe(true);
+  });
+
+  it("should show warning toast for poor quality, and only for poor", () => {
     expect(shouldShowQualityWarning("poor")).toBe(true);
-  });
-
-  it("should NOT show warning toast for fair quality", () => {
     expect(shouldShowQualityWarning("fair")).toBe(false);
-  });
-
-  it("should NOT show warning toast for good quality", () => {
     expect(shouldShowQualityWarning("good")).toBe(false);
   });
 });

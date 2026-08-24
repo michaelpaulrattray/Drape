@@ -14,6 +14,7 @@
  * fail-open (passthrough prefs) — see mergeParsedPreferences/boardOps.
  */
 import { TEXT_LIGHT_FALLBACK } from "@shared/modelRegistry";
+import { ethnicityLegacyString } from "@shared/castingOptions";
 import { generateRandomPreferences, CASTING_BRANDS } from "@shared/castingOptions";
 import { getAiClient, SAFETY_SETTINGS, safeResponseText, withSingleRetry503, withTimeout, formatGeminiError } from "./geminiClient";
 import { PublicError } from "../lib/publicError";
@@ -136,7 +137,7 @@ export function mergeParsedPreferences(
   // Legacy compatibility: the engine's ethnicity string derives from the blend
   const blend = merged.ethnicityBlend as Array<{ name: string }> | undefined;
   if (blend && blend.length > 0 && !merged.ethnicity) {
-    merged.ethnicity = blend.map((e) => e.name).join(", ");
+    merged.ethnicity = ethnicityLegacyString(blend);
   }
 
   merged.userPrompt = originalPrompt;

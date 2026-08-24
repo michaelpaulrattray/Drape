@@ -13,6 +13,7 @@
  * Ratified-but-modality-unavailable entries refuse exactly like refused ones.
  */
 import type { ModelPreferences } from "../geminiTypes";
+import { ethnicityLegacyString } from "@shared/castingOptions";
 import {
   type AuthorizableIdentityField,
   type EnumWithOverrideValue,
@@ -357,17 +358,17 @@ export const IDENTITY_FIELD_HANDLERS = {
     buildPreferencePatch(value) {
       return {
         ethnicityBlend: value.blend,
-        ethnicity: value.blend.map((e) => e.name).join(", "),
+        ethnicity: ethnicityLegacyString(value.blend),
       };
     },
     buildSchemaWrite(value) {
-      return { path: "subject.ethnicity", value: value.blend.map((e) => e.name).join(", ") };
+      return { path: "subject.ethnicity", value: ethnicityLegacyString(value.blend) };
     },
     buildPromptFragment(value) {
       return `ethnicity: ${value.blend.map((e) => `${e.name} ${e.pct}%`).join(", ")}`;
     },
     promptDirectives(value) {
-      return unlockDirective("person.ethnicity", value.blend.map((e) => e.name).join(", "));
+      return unlockDirective("person.ethnicity", ethnicityLegacyString(value.blend));
     },
     stalesSiblings: true,
   },

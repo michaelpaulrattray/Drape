@@ -103,6 +103,32 @@ export interface EthnicityBlendEntry {
 }
 
 /**
+ * The legacy `prefs.ethnicity` string a blend dual-writes — **names only, no
+ * percentages**. This is the value that reaches `generateMasterPrompt`.
+ *
+ * SIX places computed this by hand: `ControlPanel.tsx`'s `setEthnicityBlend`,
+ * `generateRandomPreferences` below, `identityFieldHandlers.ts` three times,
+ * and `promptParser.ts`. They all agreed — and `server/casting/
+ * geminiPhase5Integration.test.ts` carried a SEVENTH copy that did NOT: it
+ * formatted `"60% East Asian, 40% Nordic"` and its own comment claimed *"this
+ * format is what gets written to prefs.ethnicity and is consumed by
+ * generateMasterPrompt in the server"*. The product has never written a
+ * percentage into that field. (2026-08-25, 3g. Working law 4.)
+ *
+ * ⚠ `ControlPanel.tsx:46` joins the same names with `" + "` and is left
+ * alone on purpose — that is a SUMMARY CHIP for the customer to read, not the
+ * value that rides into a prompt. Two different questions that happen to
+ * share a `.map`.
+ */
+export function ethnicityLegacyString(blend: readonly { name: string }[]): string {
+  // Typed on `name` alone rather than `EthnicityBlendEntry`, because `name` is
+  // all it reads and `promptParser.ts` legitimately holds a blend with no
+  // percentages yet. A signature that demands a field it ignores turns a
+  // correct call site into a cast.
+  return blend.map((e) => e.name).join(", ");
+}
+
+/**
  * Full-random preference set — ported verbatim from the client helper so the
  * server's random-intent path (D-14) and the studio's Randomize button
  * produce identical distributions. The randomizer's hair-color list is
@@ -153,7 +179,7 @@ export function generateRandomPreferences(): Record<string, unknown> {
   const ethnicityBlend: EthnicityBlendEntry[] = eth2
     ? [{ name: eth1, pct: 60 }, { name: eth2, pct: 40 }]
     : [{ name: eth1, pct: 100 }];
-  const ethnicity = ethnicityBlend.map((e) => e.name).join(", ");
+  const ethnicity = ethnicityLegacyString(ethnicityBlend);
 
   return {
     castingBrand: pick(CASTING_BRANDS),

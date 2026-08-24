@@ -9,6 +9,7 @@
  * - EthnicityBlend dual-write format is correct
  */
 import { describe, it, expect } from "vitest";
+import { ethnicityLegacyString } from "@shared/castingOptions";
 
 import { allowColdImports } from "../testing/coldImportTimeout";
 
@@ -113,23 +114,57 @@ describe("type contracts", () => {
 // ============================================================================
 
 describe("ethnicity blend format", () => {
-  it("dual-write produces correct legacy string format", () => {
-    // Simulate what EthnicityBlender dual-write produces
-    const blend = [
+  /*
+   * ⚠ THESE ARMS RE-TYPED THE DUAL-WRITE AND GOT IT WRONG, and the comment
+   * they carried made the wrongness a claim about the product:
+   *
+   *     const legacyString = blend.map((e) => `${e.pct}% ${e.name}`).join(", ");
+   *     expect(legacyString).toBe("60% East Asian, 40% Nordic");
+   *     // This format is what gets written to prefs.ethnicity
+   *     // and is consumed by generateMasterPrompt in the server
+   *
+   * **Drape has never written a percentage into that field.** The real
+   * dual-write, `ControlPanel.tsx`'s `setEthnicityBlend`, is
+   * `blend.map(e => e.name).join(', ')` — names only. So the one description
+   * in the suite of what reaches `generateMasterPrompt` described a format
+   * the engine has never been sent.
+   *
+   * The second arm passed by accident: it branched on `length === 1` to
+   * return the bare name, which agrees with the product for a single entry
+   * and for no other reason.
+   *
+   * SIX production sites computed this string by hand and all six agreed —
+   * `ControlPanel.tsx`, `generateRandomPreferences`, `identityFieldHandlers.ts`
+   * (three), `promptParser.ts`. They now derive from `ethnicityLegacyString`
+   * in `@shared/castingOptions`, and these arms drive it.
+   * Filed under 3g's A. Working law 4: derive, never mirror.
+   */
+
+  it("dual-write produces the legacy string format — NAMES ONLY, no percentages", () => {
+    expect(ethnicityLegacyString([
       { name: "East Asian", pct: 60 },
       { name: "Nordic", pct: 40 },
-    ];
-    const legacyString = blend.map((e) => `${e.pct}% ${e.name}`).join(", ");
-    expect(legacyString).toBe("60% East Asian, 40% Nordic");
-    // This format is what gets written to prefs.ethnicity
-    // and is consumed by generateMasterPrompt in the server
+    ])).toBe("East Asian, Nordic");
   });
 
   it("single ethnicity produces simple string", () => {
-    const blend = [{ name: "Korean", pct: 100 }];
-    // Single ethnicity = just the name, no percentage
-    const legacyString = blend.length === 1 ? blend[0].name : blend.map((e) => `${e.pct}% ${e.name}`).join(", ");
-    expect(legacyString).toBe("Korean");
+    expect(ethnicityLegacyString([{ name: "Korean", pct: 100 }])).toBe("Korean");
+  });
+
+  it("FROM THE DIFF — the percentage NEVER appears, whatever the split", () => {
+    // The copy this replaced would have failed every one of these.
+    for (const blend of [
+      [{ name: "Nordic", pct: 90 }, { name: "Latino", pct: 10 }],
+      [{ name: "Slavic", pct: 50 }, { name: "Polynesian", pct: 50 }],
+      [{ name: "Mediterranean", pct: 100 }],
+    ]) {
+      expect(ethnicityLegacyString(blend)).not.toMatch(/\d/);
+      expect(ethnicityLegacyString(blend)).not.toContain("%");
+    }
+  });
+
+  it("FROM THE DIFF — an empty blend is an empty string, not the word undefined", () => {
+    expect(ethnicityLegacyString([])).toBe("");
   });
 
   /*
