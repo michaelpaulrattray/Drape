@@ -26,6 +26,18 @@ import {
 import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
+
+/**
+ * This dialog's single box submits to whichever procedure the button chose,
+ * so the room it gives must satisfy BOTH schemas. Derived rather than picked:
+ * on the day one of them moves, the narrower one wins without anybody editing
+ * this line.
+ */
+const FREEZE_OR_UNFREEZE_MAX_LENGTH = Math.min(
+  FREEZE_REASON_MAX_LENGTH,
+  UNFREEZE_NOTES_MAX_LENGTH,
+);
 
 // ── User Table ──
 
@@ -273,9 +285,18 @@ function FreezeActionButton({
                 placeholder={isFrozen ? "Explain why the account is being unfrozen..." : "Explain why this account should be frozen..."}
                 className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm text-[#0A0A0A] placeholder:text-[#CCC] resize-none focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/10"
                 rows={3}
-                maxLength={500}
+                /*
+                  THE ONE FIELD WITH TWO DESTINATIONS. The button decides
+                  whether this text is `freezeAccount`'s `reason` or
+                  `unfreezeAccount`'s `notes` — two schemas, and it cannot name
+                  either. It takes the MIN, here, where having two destinations
+                  is visible; they agree at 500 today and this stays correct on
+                  the day one of them moves.
+                */
+                maxLength={FREEZE_OR_UNFREEZE_MAX_LENGTH}
               />
-              <p className="text-[10px] text-[#CCC] mt-1 text-right">{reason.length}/500</p>
+              {/* The counter was a THIRD hand-typed copy of this number. */}
+              <p className="text-[10px] text-[#CCC] mt-1 text-right">{reason.length}/{FREEZE_OR_UNFREEZE_MAX_LENGTH}</p>
             </div>
           </div>
 

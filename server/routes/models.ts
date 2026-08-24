@@ -26,6 +26,7 @@ import {
 } from "../casting/finalCastDeletion";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
+import { LEGACY_MODEL_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 import {
   projectEffectiveModelForClient,
   projectModelForClient,
@@ -232,7 +233,7 @@ export const modelsRouter = router({
   update: protectedProcedure
     .input(z.object({
       modelId: z.number(),
-      name: z.string().trim().min(1).max(128),
+      name: z.string().trim().min(1).max(LEGACY_MODEL_NAME_MAX_LENGTH),
     }).strict()) // E6: unknown fields (e.g. the removed `status`) are REJECTED, never silently stripped
     .mutation(async ({ ctx, input }) => {
       const model = await getModelById(input.modelId);

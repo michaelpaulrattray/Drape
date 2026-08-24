@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
 import { CastingModal } from "./CastingModal";
+import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**
  * The sign-to-roster modal, rebuilt to the prototype (spec, 2026-08-03).
@@ -94,7 +95,7 @@ export function SignConfirm({
               id="dpc-signm-name"
               ref={inputRef}
               value={name}
-              maxLength={60}
+              maxLength={CAST_NAME_MAX_LENGTH}
               placeholder={disposition ? `e.g. ${disposition}` : "e.g. Grounded"}
               disabled={busy}
               autoComplete="off"

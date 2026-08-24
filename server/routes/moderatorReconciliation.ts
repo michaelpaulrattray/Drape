@@ -10,6 +10,7 @@ import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
+import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "../../shared/inputLimits";
 const log = createModuleLogger("routes/moderatorReconciliation");
 
 /** Auto-freeze threshold: users with discrepancy >= this are frozen automatically. */
@@ -256,7 +257,7 @@ export const moderatorReconciliationRouter = router({
   freezeAccount: moderatorProcedure
     .input(z.object({
       userId: z.number(),
-      reason: z.string().min(1, "Reason is required").max(500),
+      reason: z.string().min(1, "Reason is required").max(FREEZE_REASON_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -314,7 +315,7 @@ export const moderatorReconciliationRouter = router({
   unfreezeAccount: moderatorProcedure
     .input(z.object({
       userId: z.number(),
-      notes: z.string().min(1, "Review notes are required").max(500),
+      notes: z.string().min(1, "Review notes are required").max(UNFREEZE_NOTES_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();

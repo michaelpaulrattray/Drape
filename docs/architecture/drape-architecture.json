@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0e435baafeedb200"
+    "sourceFingerprint": "0f2e2299296ffda9"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 36
+      "moduleCount": 37
     },
     {
       "id": "domain:studio",
@@ -5519,6 +5519,12 @@
     {
       "id": "module:shared/inkTransforms.ts",
       "path": "shared/inkTransforms.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/inputLimits.ts",
+      "path": "shared/inputLimits.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -11505,6 +11511,10 @@
       "path": "server/claudeMdFlagEnumeration.test.ts"
     },
     {
+      "id": "test:server/clientInputCaps.test.ts",
+      "path": "server/clientInputCaps.test.ts"
+    },
+    {
       "id": "test:server/court.test.ts",
       "path": "server/court.test.ts"
     },
@@ -13211,6 +13221,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/overview/BannerManagement.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/index.ts",
       "to": "module:client/src/features/admin/overview/AlertsFeed.tsx",
       "kind": "imports"
@@ -13433,6 +13448,11 @@
     {
       "from": "module:client/src/features/boards/BoardHeader.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardHeader.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -14098,6 +14118,11 @@
     {
       "from": "module:client/src/features/casting/components/CastProfilePanel.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/CastProfilePanel.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -15021,8 +15046,18 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -15646,6 +15681,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/StatsCards.tsx",
       "to": "module:client/src/components/ui/skeleton.tsx",
       "kind": "imports"
@@ -15713,6 +15753,11 @@
     {
       "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -15828,6 +15873,11 @@
     {
       "from": "module:client/src/features/profile/ProfileTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/ProfileTab.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -16576,6 +16626,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/wardrobe/components/LayersPanel.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/wardrobe/components/QualityBadge.tsx",
       "to": "module:client/src/features/wardrobe/types.ts",
       "kind": "imports"
@@ -17016,6 +17071,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/AdminInviteCodes.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/AdminOverview.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -17203,6 +17263,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -17628,6 +17693,11 @@
     {
       "from": "module:client/src/pages/Login.tsx",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/Login.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -27581,6 +27651,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/access.ts",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/account.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -27638,6 +27713,11 @@
     {
       "from": "module:server/routes/admin/announcements.ts",
       "to": "module:server/db/announcementQueries.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/announcements.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -27758,6 +27838,11 @@
     {
       "from": "module:server/routes/admin/inviteCodes.ts",
       "to": "module:server/security/adminSecurity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/inviteCodes.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -28058,6 +28143,11 @@
     {
       "from": "module:server/routes/boards.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/boards.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -28368,6 +28458,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/inkReleasedPlacements.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -29371,6 +29466,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/models.ts",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/moderator.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -29481,6 +29581,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/moderatorReconciliation.ts",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/newsletter.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
@@ -29513,6 +29618,11 @@
     {
       "from": "module:server/routes/profile.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/profile.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -29733,6 +29843,11 @@
     {
       "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/vtoSession.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

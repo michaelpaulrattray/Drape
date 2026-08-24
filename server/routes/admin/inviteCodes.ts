@@ -2,6 +2,7 @@ import { adminProcedure, router } from "../../_core/trpc";
 import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { INVITE_CODE_MAX_LENGTH, INVITE_CODE_NOTE_MAX_LENGTH } from "../../../shared/inputLimits";
 
 export const inviteCodesRouter = router({
   /** List all invite codes with status info */
@@ -21,11 +22,11 @@ export const inviteCodesRouter = router({
         code: z
           .string()
           .min(3, "Code must be at least 3 characters")
-          .max(32, "Code must be at most 32 characters")
+          .max(INVITE_CODE_MAX_LENGTH, `Code must be at most ${INVITE_CODE_MAX_LENGTH} characters`)
           .regex(/^[A-Za-z0-9_-]+$/, "Code can only contain letters, numbers, hyphens, and underscores"),
         maxUses: z.number().int().min(1).max(10000).default(1),
         expiresInDays: z.number().int().min(1).max(365).nullable().optional(),
-        note: z.string().max(256).nullable().optional(),
+        note: z.string().max(INVITE_CODE_NOTE_MAX_LENGTH).nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

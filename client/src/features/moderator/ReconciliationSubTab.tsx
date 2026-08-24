@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { downloadReconciliationCsv } from "./reconciliation-csv";
 import { useState } from "react";
 import { toast } from "sonner";
+import { UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
 
 interface ReconciliationSubTabProps {
   userId: number;
@@ -122,7 +123,7 @@ export function ReconciliationSubTab({
                     placeholder="Review notes (required) — explain why the account is being unfrozen..."
                     className="w-full bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] placeholder:text-[#CCC] resize-none"
                     rows={2}
-                    maxLength={500}
+                    maxLength={UNFREEZE_NOTES_MAX_LENGTH}
                   />
                   <div className="flex gap-2">
                     <Button

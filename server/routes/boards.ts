@@ -36,6 +36,7 @@ import { isModelAvailableStatus, isModelDraftStatus } from "../../shared/modelLi
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
 import { projectEffectiveBoardModelInfo } from "../casting/modelReadProjections";
+import { BOARD_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 
 const log = createModuleLogger("routes/boards");
 
@@ -76,7 +77,7 @@ export const boardsRouter = router({
   /** Create a new board */
   create: protectedProcedure
     .input(z.object({
-      name: z.string().max(128).optional(),
+      name: z.string().max(BOARD_NAME_MAX_LENGTH).optional(),
       description: z.string().max(1000).optional(),
       startedWith: z.enum(["casting", "wardrobe", "blank"]),
     }))
@@ -121,7 +122,7 @@ export const boardsRouter = router({
   update: protectedProcedure
     .input(z.object({
       boardId: z.number().int().positive(),
-      name: z.string().max(128).optional(),
+      name: z.string().max(BOARD_NAME_MAX_LENGTH).optional(),
       description: z.string().max(1000).optional(),
       status: z.enum(["active", "archived"]).optional(),
       thumbnailUrl: z.string().url().nullable().optional(),

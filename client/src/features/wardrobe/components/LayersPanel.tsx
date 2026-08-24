@@ -21,6 +21,7 @@ import { SLOT_DISPLAY_NAMES } from "../constants";
 import type { GarmentSlotType } from "../types";
 import { parseStyleNote, buildStyleNote, extractColors } from "./layerHelpers";
 import { buildHierarchy } from "../layerUtils";
+import { OUTFIT_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 interface LayersPanelProps {
   isGenerating: boolean;
@@ -489,7 +490,7 @@ export function LayersPanel({
               placeholder="Outfit name..."
               className="flex-1 px-3 py-1.5 rounded-lg border-none outline-none"
               style={{ background: "#ffffff", fontSize: 11, color: "#1a1a1a" }}
-              maxLength={128}
+              maxLength={OUTFIT_NAME_MAX_LENGTH}
             />
             <button
               onClick={handleSaveOutfit}

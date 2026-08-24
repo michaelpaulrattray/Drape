@@ -15,6 +15,7 @@ import {
 import { CardMenu } from "@/features/castingV2/components/CardMenu";
 import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
+import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**
  * The casting room (plan §F, §J; handoff chapter 07).
@@ -325,7 +326,7 @@ export default function CastingRoom() {
                     <input
                       className="dpc-room__nameinput"
                       value={draftName}
-                      maxLength={60}
+                      maxLength={CAST_NAME_MAX_LENGTH}
                       autoFocus
                       disabled={rename.isPending}
                       onChange={(event) => setDraftName(event.target.value)}

@@ -11,6 +11,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowLeft, Check, Pencil } from 'lucide-react';
 import { ProfileAvatar } from '@/features/profile/ProfileVisual';
+import { BOARD_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 interface BoardHeaderProps {
   name: string;
@@ -112,7 +113,7 @@ export function BoardHeader({
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={commitRename}
-            maxLength={128}
+            maxLength={BOARD_NAME_MAX_LENGTH}
             className="px-2 py-1 rounded-canvas-sm outline-none text-canvas-lg font-medium text-canvas-ink bg-canvas-surface-inset border-hairline border-canvas-border-strong"
             style={{ width: 240 }}
           />

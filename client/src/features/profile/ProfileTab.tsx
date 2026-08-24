@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { compressImage, AVATAR_COMPRESSION, BANNER_COMPRESSION } from "@/lib/imageUtils";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { ProfileAvatar, ProfileCover } from "./ProfileVisual";
+import { PROFILE_BIO_MAX_LENGTH, PROFILE_DISPLAY_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import {
   Upload,
   Check,
@@ -304,7 +305,7 @@ export function ProfileTab({
           type="text"
           value={editedName}
           onChange={(e) => setEditedName(e.target.value)}
-          maxLength={100}
+          maxLength={PROFILE_DISPLAY_NAME_MAX_LENGTH}
           className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#0A0A0A] text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all"
           placeholder="Your display name"
         />
@@ -319,7 +320,7 @@ export function ProfileTab({
         <textarea
           value={editedBio}
           onChange={(e) => setEditedBio(e.target.value)}
-          maxLength={500}
+          maxLength={PROFILE_BIO_MAX_LENGTH}
           rows={3}
           className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#0A0A0A] text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all resize-none"
           placeholder="Tell us about yourself..."

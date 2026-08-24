@@ -166,6 +166,7 @@ import {
   type WardrobeResolution,
 } from "../castingV2/wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
+import { CAST_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 
 /** Opaque public ids. Bounded so a hostile value never reaches a query. */
 const publicId = z.string().uuid();
@@ -1246,7 +1247,7 @@ export const castingV2Router = router({
             is found and referred to afterwards. Enforced here as well as in the
             dialog — a control the client happens to render is not a rule.
           */
-          name: z.string().trim().min(1).max(60),
+          name: z.string().trim().min(1).max(CAST_NAME_MAX_LENGTH),
         })
         .strict(),
     )
@@ -1792,7 +1793,7 @@ export const castingV2Router = router({
    * (FR-3B): it never touches identity, and `agencyId` remains the stable key.
    */
   renameCast: protectedProcedure
-    .input(z.object({ castId: z.string().min(1).max(32), name: z.string().trim().min(1).max(60) }).strict())
+    .input(z.object({ castId: z.string().min(1).max(32), name: z.string().trim().min(1).max(CAST_NAME_MAX_LENGTH) }).strict())
     .mutation(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);

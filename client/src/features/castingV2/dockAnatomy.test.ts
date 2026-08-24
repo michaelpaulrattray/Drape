@@ -171,8 +171,21 @@ describe("the sheet dock commits to one candidate", () => {
 
     const route = await readFile(new URL("../../../../server/routes/castingV2.ts", import.meta.url), "utf8");
     const signInput = route.slice(route.indexOf("  sign: protectedProcedure"), route.indexOf("  renameCast:"));
-    expect(signInput).toContain("name: z.string().trim().min(1).max(60),");
-    expect(signInput).not.toContain(".max(60).optional()");
+    /*
+      ⚠ THIS ASSERTED `.max(60)` AND WAS ITSELF A HAND-TYPED COPY OF THE CAP —
+      a FOURTH place for a number the census had counted three of, and one
+      neither §10 row 3f nor that census reached, because both looked at
+      surfaces and schemas rather than at arms. It went red when the schema
+      started deriving (`CAST_NAME_MAX_LENGTH`), which is the good failure: a
+      test pinning a literal turns every legitimate change of that literal into
+      a false alarm.
+
+      What this arm actually cares about is the RULE — a name is required and
+      is not optional — so that is what it asserts, with the cap named rather
+      than spelled.
+    */
+    expect(signInput).toContain("name: z.string().trim().min(1).max(CAST_NAME_MAX_LENGTH),");
+    expect(signInput).not.toContain("CAST_NAME_MAX_LENGTH).optional()");
   });
 
   it("lets a Cast be renamed from her own room", async () => {

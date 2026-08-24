@@ -9,6 +9,7 @@ import { useCastingGenerationStore } from '@/features/casting/stores/useCastingG
 import { resolvedEngineChoices, type RequiredCastField } from '@/features/casting/engineChoicePersistence';
 import { castingIdentityLabel, honestModelName } from '@/features/casting/modelDisplayTruth';
 import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
+import { LEGACY_MODEL_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 interface CastProfilePanelProps {
   onFork?: () => void;
@@ -183,7 +184,7 @@ export function CastProfilePanel({
                     <input
                       autoFocus
                       value={nameDraft}
-                      maxLength={128}
+                      maxLength={LEGACY_MODEL_NAME_MAX_LENGTH}
                       onChange={(event) => setNameDraft(event.target.value)}
                       className="min-w-0 w-full border-b border-canvas-ink bg-transparent py-0.5 text-canvas-lg font-medium text-canvas-ink outline-none"
                       aria-label="Cast name"

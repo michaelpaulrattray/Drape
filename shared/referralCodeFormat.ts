@@ -69,19 +69,21 @@ export const REFERRAL_CODE_MINT_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  */
 export const REFERRAL_CODE_ACCEPTED_CLASS = "A-Z2-9";
 
-/*
-  ⚠ THERE IS NO `REFERRAL_CODE_LENGTH` HERE, AND ITS ABSENCE IS DELIBERATE.
-
-  It was written (prefix + separator + body = 12) and the disposition door
-  refused the build over it: `unread 1 REFERRAL_CODE_LENGTH`. The door was
-  right. The one place that wants it is `RedeemCodeModal`'s `maxLength={16}` —
-  a cap, and caps are §10 row 3f's sweep, which is its own countersigned
-  sitting. Declaring a constant ahead of the consumer that justifies it is the
-  thing the door exists to catch, and this file is not the place to argue with
-  it. **3f adds the constant and its reader in one commit.**
-
-  Nothing is lost meanwhile: 16 cannot lock anyone out of a 12-character code.
-*/
+/**
+ * `DRAPE-A3K9X2` — **12.** The real length of every code that has ever existed.
+ *
+ * ⚠ IT WAS WRITTEN IN `0efe3f9f` AND DELETED THE SAME HOUR, because the
+ * disposition door refused the build over it — `unread 1` — its only wanting
+ * consumer being `RedeemCodeModal`'s `maxLength={16}`, which belonged to §10
+ * row 3f's sweep rather than to that commit. The door was right and it is back
+ * now with its reader, in the same commit, which is the only order the door
+ * permits.
+ *
+ * **The box used to say 16.** Nobody was ever locked out — no code is longer
+ * than 12 — but the number came from nowhere, and 12 comes from the format.
+ */
+export const REFERRAL_CODE_LENGTH =
+  REFERRAL_CODE_PREFIX.length + REFERRAL_CODE_SEPARATOR.length + REFERRAL_CODE_BODY_LENGTH;
 
 /**
  * `DRAPE-XXXXXX` — the shape, spelled for a human.

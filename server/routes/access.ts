@@ -12,6 +12,7 @@ import { redeemInviteCode } from "../db/inviteCodes";
 import { validateInviteCode } from "../db/validateInviteCode";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
+import { ACCESS_CODE_MAX_LENGTH } from "../../shared/inputLimits";
 
 export const accessRouter = router({
   /**
@@ -25,7 +26,7 @@ export const accessRouter = router({
     // only caller and it sends `{ code }` alone.
     .input(
       z.object({
-        code: z.string().min(1, "Access code is required").max(64),
+        code: z.string().min(1, "Access code is required").max(ACCESS_CODE_MAX_LENGTH),
       }).strict()
     )
     .mutation(async ({ ctx, input }) => {
@@ -50,7 +51,7 @@ export const accessRouter = router({
   redeem: onboardingProcedure
     .input(
       z.object({
-        code: z.string().min(1, "Access code is required").max(64),
+        code: z.string().min(1, "Access code is required").max(ACCESS_CODE_MAX_LENGTH),
       })
     )
     .mutation(async ({ ctx, input }) => {

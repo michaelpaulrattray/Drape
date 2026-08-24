@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ASSETS_BASE_URL } from "@shared/const";
+import { ACCESS_CODE_MAX_LENGTH } from "@shared/inputLimits";
 
 // ─── Error configurations ──────────────────────────────────────────────────
 const ERROR_MESSAGES = {
@@ -694,7 +695,7 @@ export default function Login() {
                       value={accessCode}
                       onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                       placeholder="DRAPE-XXXXX"
-                      maxLength={64}
+                      maxLength={ACCESS_CODE_MAX_LENGTH}
                       disabled={validateMutation.isPending}
                       autoFocus
                       className="w-full h-12 pl-11 pr-4 rounded-full border border-[#0A0A0A]/10 bg-white font-mono text-sm tracking-wider placeholder:text-[#BFBFBF] focus:outline-none focus:border-[#0A0A0A]/30 transition-colors"

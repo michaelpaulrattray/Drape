@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
+  ANNOUNCEMENT_MESSAGE_MAX_LENGTH,
+  ANNOUNCEMENT_TITLE_MAX_LENGTH,
+} from "@shared/inputLimits";
+import {
   Megaphone,
   Plus,
   Trash2,
@@ -112,14 +116,14 @@ export function BannerManagement() {
             placeholder="Banner title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            maxLength={200}
+            maxLength={ANNOUNCEMENT_TITLE_MAX_LENGTH}
             className="w-full px-3 py-2 rounded-lg border border-[#ddd] bg-white text-sm text-[#0A0A0A] placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20"
           />
           <textarea
             placeholder="Banner message (shown to all users)"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            maxLength={2000}
+            maxLength={ANNOUNCEMENT_MESSAGE_MAX_LENGTH}
             rows={2}
             className="w-full px-3 py-2 rounded-lg border border-[#ddd] bg-white text-sm text-[#0A0A0A] placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20 resize-none"
           />

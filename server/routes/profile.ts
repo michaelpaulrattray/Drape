@@ -5,6 +5,7 @@ import { storagePut, storageDelete } from "../storage";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
+import { PROFILE_BIO_MAX_LENGTH, PROFILE_DISPLAY_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 const log = createModuleLogger("routes/profile");
 
 export const profileRouter = router({
@@ -33,8 +34,8 @@ export const profileRouter = router({
   // Update profile fields (displayName, bio)
   update: protectedProcedure
     .input(z.object({
-      displayName: z.string().max(100).optional(),
-      bio: z.string().max(500).optional(),
+      displayName: z.string().max(PROFILE_DISPLAY_NAME_MAX_LENGTH).optional(),
+      bio: z.string().max(PROFILE_BIO_MAX_LENGTH).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const result = await updateUserProfile(ctx.user.id, {

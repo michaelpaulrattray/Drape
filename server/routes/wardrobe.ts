@@ -45,6 +45,7 @@ import { classifyEditSize } from "../wardrobe/editClassifier";
 import { checkIdentityMatch } from "../wardrobe/identityCheck";
 import { seedSession, clearSession } from "../wardrobe/vtoSession";
 import { getImageAspectBucket, type GarmentForVTO } from "../wardrobe/utils";
+import { OUTFIT_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 import {
   resolveWardrobeSessionCreateImage,
   resolveWardrobeSessionUseImage,
@@ -810,7 +811,7 @@ const outfitRouter = router({
 
   save: protectedProcedure
     .input(z.object({
-      name: z.string().min(1).max(128),
+      name: z.string().min(1).max(OUTFIT_NAME_MAX_LENGTH),
       garmentIds: z.array(z.number()).min(1),
       styleNotes: z.record(z.string(), z.string()).optional(),
       resultThumbUrl: z.string().url().optional(),

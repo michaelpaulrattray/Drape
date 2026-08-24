@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { INVITE_CODE_MAX_LENGTH, INVITE_CODE_NOTE_MAX_LENGTH } from "@shared/inputLimits";
 
 /* ─── helpers ─── */
 
@@ -148,7 +149,7 @@ export default function AdminInviteCodes() {
                 placeholder="DRAPE-XXXX-XXXX"
                 className="flex-1 h-10 px-3 rounded-full border border-[#D5D5D5] bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20"
                 required
-                maxLength={32}
+                maxLength={INVITE_CODE_MAX_LENGTH}
               />
               <Button
                 type="button"
@@ -197,7 +198,7 @@ export default function AdminInviteCodes() {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="e.g. For @mike"
-                  maxLength={256}
+                  maxLength={INVITE_CODE_NOTE_MAX_LENGTH}
                   className="w-full h-9 px-3 rounded-full border border-[#D5D5D5] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20"
                 />
               </div>

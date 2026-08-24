@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Ticket, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { REFERRAL_CODE_EXAMPLE } from "@shared/referralCodeFormat";
+import { REFERRAL_CODE_EXAMPLE, REFERRAL_CODE_LENGTH } from "@shared/referralCodeFormat";
 
 interface RedeemCodeModalProps {
   open: boolean;
@@ -87,7 +87,7 @@ export function RedeemCodeModal({ open, onClose }: RedeemCodeModalProps) {
             }}
             onKeyDown={(e) => e.key === "Enter" && handleRedeem()}
             className="text-center font-mono tracking-wider text-base"
-            maxLength={16}
+            maxLength={REFERRAL_CODE_LENGTH}
           />
           {error && (
             <div className="flex items-center gap-1.5 mt-2 text-destructive text-sm">

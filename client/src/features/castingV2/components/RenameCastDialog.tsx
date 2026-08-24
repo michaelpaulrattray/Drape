@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**
  * The rename dialog (spec, 2026-08-03).
@@ -98,7 +99,7 @@ export function RenameCastDialog({
             <input
               ref={inputRef}
               value={name}
-              maxLength={60}
+              maxLength={CAST_NAME_MAX_LENGTH}
               placeholder={currentName}
               disabled={busy}
               autoComplete="off"
