@@ -131,7 +131,9 @@ describe("geminiSuggestions", () => {
 });
 
 // ============================================================================
-// PROMPT COMPACTOR — unit tests
+// PROMPT COMPACTOR — export availability only. The arm below proves an
+// import; "unit tests" is what this header used to say, which is the same
+// false-label shape as the two sections above it.
 // ============================================================================
 
 describe("geminiPromptCompactor", () => {

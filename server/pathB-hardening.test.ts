@@ -1,7 +1,17 @@
 /**
- * Path B Production Hardening Tests
+ * Path B Production Hardening — EXPORT AVAILABILITY. Thirteen of these
+ * twenty-one arms assert that something is exported and is a function, and
+ * the label now says so rather than saying "Tests for".
  *
- * Tests for:
+ * ⚠ THE SIBLING FILE'S IDENTICAL LABEL HID A MONEY-PATH CONTROL WITH NO ARM
+ * AT ALL (`pathB-completion.test.ts`, Stripe webhook idempotency, found
+ * 2026-08-25). A header naming a behaviour over an arm that proves an import
+ * reads as coverage and is what stops anyone looking. Whether each behaviour
+ * named below is driven ANYWHERE is a read in progress (fable-1634); this
+ * docblock deliberately claims nothing about that, because claiming it is the
+ * defect.
+ *
+ * Export availability for:
  *  1. Database transactions (withTransaction helper)
  *  2. GDPR data export (exportUserData + account.exportData endpoint)
  *  3. Context correlation ID propagation

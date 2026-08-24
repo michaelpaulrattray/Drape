@@ -1,10 +1,27 @@
 /**
- * Path B Completion Tests
+ * Path B Completion — EXPORT AVAILABILITY for the 3 final production
+ * hardening items. Fifteen of these sixteen arms assert that something is
+ * exported and is a function; the label now says so.
  *
- * Tests for the 3 final production hardening items:
+ * ⚠ IT USED TO READ "Tests for … 2. Stripe webhook idempotency — DUPLICATE
+ * EVENT DETECTION", AND NOTHING ANYWHERE DROVE A REDELIVERY. The section
+ * below is headed "recordProcessedEvent is internal" over an arm asserting an
+ * interface is exported. Stripe delivers at least once by design, and a
+ * redelivered checkout reaches the referral payout — so the gate could have
+ * stopped working with the whole suite green. Found by the label sweep
+ * 2026-08-25 and driven in `server/stripe/webhookIdempotency.test.ts`, which
+ * is where that behaviour now lives. **It is not that nobody wrote the tests;
+ * this docblock said someone had, and a label is what a reader greps.**
+ *
+ * The arms here are honest and worth keeping — a dropped export or a renamed
+ * schema column really does redden them. Item 3 always said "(tested via
+ * module exports)" and was the only one of the three telling the truth.
+ *
+ * Export availability for:
  * 1. Structured logging (pino) — logger factory, request context middleware
- * 2. Stripe webhook idempotency — duplicate event detection, test event handling
- * 3. GDPR export UI — SecurityTab component (tested via module exports)
+ * 2. Stripe webhook plumbing — schema table, handler and result type
+ *    (behaviour: `server/stripe/webhookIdempotency.test.ts`)
+ * 3. GDPR export UI — SecurityTab component
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 

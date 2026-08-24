@@ -1,6 +1,14 @@
 /**
- * Phase A Tests — Configurable queue limits, daily quota tracking,
- * and queue status endpoint.
+ * Phase A — largely EXPORT AVAILABILITY. Four of these six arms assert that
+ * something is exported and is a function; the label now says so.
+ *
+ * ⚠ THE SAME LABEL SHAPE ON A SIBLING FILE HID A MONEY-PATH CONTROL WITH NO
+ * ARM AT ALL (`pathB-completion.test.ts`, Stripe webhook idempotency, found
+ * 2026-08-25). Whether the behaviours named below are driven anywhere is a
+ * read in progress (fable-1634); this docblock claims nothing about it.
+ *
+ * Covers: configurable queue limits, daily quota tracking, and the queue
+ * status endpoint — at their exports.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
