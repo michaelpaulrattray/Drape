@@ -19,6 +19,11 @@ video generations.
 
 0. **[`THE-FRAMEWORK.md`](./THE-FRAMEWORK.md)** — plain-English rundown of how the
    whole system works, across both productions. **Start here.**
+0b. **[`PROMPT-TECHNIQUE-REFERENCE.md`](./PROMPT-TECHNIQUE-REFERENCE.md)** — every
+   prompting technique, mined from all 21,749 prompted jobs and frequency-ranked.
+   Camera, lens, movement, framing, lighting, colour, physics, acting, reference
+   scoping, the negative stack, audio, and the asset-mint recipes — verbatim,
+   with run counts. **This is the build spec.**
 1. **This file** — the first film's pipeline, prompt grammar and numbers.
 2. **[`narrative-and-continuity.md`](./narrative-and-continuity.md)** — how the
    story was built and how continuity survived, including the 15-second ceiling.
