@@ -170,7 +170,7 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why: "never flipped on production; additive and inert while off",
   },
   CASTING_TWO_PATHS_SCOPE: {
-    position: "off",
+    position: "users:1",
     /* ⚠ THE FOURTH COPY OF ONE STALE SENTENCE, AND THIS FILE IS THE LAST PLACE
        IT SHOULD HAVE SURVIVED (repaired 2026-08-24, opus-1175).
 
@@ -186,8 +186,35 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
        on the moment he answers.
 
        The lesson belongs here rather than in a report: a `why` is prose, and
-       prose in an instrument rots exactly like prose in a document. */
-    why: "the court RAN (2026-08-23, both arms); the flip waits on his eyes alone",
+       prose in an instrument rots exactly like prose in a document.
+
+       ✅ **AND THE FLIP CAME THE NEXT HOUR, WHICH IS WHY THIS ROW READS
+       `users:1` (2026-08-24, fable-1530).** He looked at the §6 pack and
+       accepted it — *"as for everything else you mentioned im happy"* — and the
+       flip was executed on that word by the reviewer seat under the established
+       variable procedure, read back by name, redeployed, health ×3 200.
+
+       ⚠ **AND THE RECORD LEARNED IT FROM THE SERVICE RATHER THAN FROM THE
+       RULING, which is this file's whole purpose firing for the first time on a
+       real divergence.** The executor seat's rite pushed 94 seconds later and
+       exited 1: `<unset>` at 2026-08-23T23:41:22Z, `users:1` at
+       2026-08-24T00:19:24Z, with a Railway deployment at 10:19:53 +10:00 that no
+       push produced — which is what a variable change looks like. Neither seat
+       had told the other yet. **The instrument closed a gap that a message was
+       still crossing**, which is a better reason to keep it than the one it was
+       built for.
+
+       ⚠ **A POSITION IS NOT AN ACCEPTANCE, and one of the two open items was
+       closed separately and by his own word.** He answered *"yes"* to the
+       refuse-until-read state (fable-1531 §1), so 7a-bis builds when the
+       `surfaceCoverageUnread` tally says so rather than before the flip. The
+       other item — the `build`/`skin` honesty claim before BASICS widens — is
+       still open and this position does not touch it. Production held 208 rolls,
+       0 pathed, 0 with a wardrobe line the hour it flipped. */
+    why:
+      "his acceptance of the §6 pack (fable-1530), flipped on that word and read "
+      + "back by name; his separate 'yes' to refuse-until-read (fable-1531 §1) "
+      + "closes 7a-bis as a precondition — it builds on the tally instead",
   },
   CASTING_BORN_INK_SCOPE: {
     position: "off",

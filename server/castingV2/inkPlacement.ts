@@ -262,9 +262,15 @@ export type InkPlacement =
    * read is a refusal that lies about why it closed. Its own sentence names its
    * own reason and offers the surfaces that DO work on this cast.
    *
-   * Unreachable while `CASTING_TWO_PATHS_SCOPE` is absent — every roll is
-   * `unpathed` and answers the house table — and reachable the day it widens,
-   * which is why 7a-bis is an enumerated precondition of that flip.
+   * Unreachable while no roll carries a path — every `unpathed` roll answers the
+   * house table — and reachable on the first pathed one, which is why 7a-bis is
+   * an enumerated precondition of that flip.
+   *
+   * ⚠ **This said *"while `CASTING_TWO_PATHS_SCOPE` is absent"* until 2026-08-24
+   * and the flag is `users:1` now** (his own hand). The condition is restated
+   * against the ROWS because that is what actually gates it: production held 208
+   * rolls, 0 pathed, at the flip. A claim about a flag dies when the flag moves;
+   * a claim about the rule survives it.
    */
   | { kind: "coverage_unread"; place: string; surface: InkPlacementKey; alternatives: readonly string[] }
   /** Needs a design document. Gated until the body-art studio ships (D-137). */

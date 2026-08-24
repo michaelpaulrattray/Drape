@@ -266,8 +266,11 @@ the covering-garment precondition the same day it was priced.
 flip precondition, and CLAUDE.md still queued a court that ran"*. So the
 roadmap was corrected, then the constitution was corrected, and **the design
 document the flip actually belongs to was never asked** — the same shape as
-the item-5 warnings that bought this sweep, one document over. What remains of
-the order above is **his eyes → flip**.
+the item-5 warnings that bought this sweep, one document over. What remained of
+the order above was **his eyes → flip**, and ✅ **both happened on 2026-08-24**:
+he looked at the §6 pack, accepted it, and `CASTING_TWO_PATHS_SCOPE` stands at
+`users:1` on production (§10). The whole order — migration ceremony → code dark
+→ court → his eyes → flip — has now run end to end on this road.
 
 The cheaper-looking alternative — hiding both facts inside the existing
 `compiledBrief` JSON — is refused on purpose. Sign would then read an internal
@@ -765,7 +768,22 @@ how many people wanted it*), and a second table is a second thing to read.
 
 ```
 CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOPE
+PRODUCTION: users:1 since 2026-08-24 — his word on the §6 pack (fable-1530)
 ```
+
+✅ **THE FLIP HAPPENED, AND IT IS THE FIRST THING TO READ IN THIS SECTION.** He
+looked at the evidence pack and accepted it — *"as for everything else you
+mentioned im happy"* — with one new ordered item that is not a defect in this
+road (framing consistency across casts). The flag was set to `users:1` on that
+word, read back by name, redeployed, health ×3 200. Everything below describes
+what the flag DOES and what its widening past his account still needs; the
+sentences that described the flip as pending are marked where they stand.
+
+⚠ **And the record learned it from the SERVICE rather than from the ruling**: the
+executor's rite pushed 94 seconds after the variable moved and exited 1 on the
+mismatch against `scripts/lib/productionFlagPositions.mts`, which is that arm's
+first firing on a real divergence. Two seats, one flag, and the instrument closed
+the gap a message was still crossing.
 
 - **Off, and absent means off**: no toggle is rendered, no path is written, every
   roll composes the wardrobe sentence exactly as it does today, `wall_stage`
@@ -785,10 +803,16 @@ CASTING_TWO_PATHS_SCOPE     off | all | users:<ids>      parent: CASTING_V2_SCOP
 read the ticks, not the numbers.** One has been struck and one has been split
 out of it since, so *"a fourth"* and *"a fifth"* are the fourth and fifth things
 ever put on this list rather than a tally of what is open. **Open as of
-2026-08-24: TWO** — 7a-bis or his acceptance, and the `build`/`skin` honesty
-claim before BASICS widens. **Discharged: four** — the columns, the
-bleeding-onto-fabric read, the covering-garment read (run the same day it was
-priced), and `RefinePanel`'s *"not their clothes"* line.
+2026-08-24: ONE** — the `build`/`skin` honesty claim before BASICS widens.
+**Discharged: five** — the columns, the bleeding-onto-fabric read, the
+covering-garment read (run the same day it was priced), `RefinePanel`'s *"not
+their clothes"* line, and ✅ **the 7a-bis pair, closed by his own word the hour
+the flip landed**: asked whether a tattoo ask on an outfit nobody has measured
+should refuse honestly while a tally counts the hits, he answered **"yes"**
+(fable-1531 §1). So the acceptance branch of the bullet below is TAKEN,
+`surfaceCoverageUnread` is the governing number, and 7a-bis's countersigned
+design stays ready-to-build on that trigger rather than standing in front of the
+flip.
 
 - ⚠ **AND A SECOND NAMED PREREQUISITE OF THE FLIP, added when item 7a landed**
   (ruling fable-1368 §2): **every ink placement refuses on a Wardrobe-path cast
@@ -797,12 +821,13 @@ priced), and `RefinePanel`'s *"not their clothes"* line.
   (`server/castingV2/inkSurfaceCoverage.ts`) in place of three frozen constants
   all measured on sixteen masters in the house crew tee. It answers for the
   lines this product WROTE — the house line, the two Basics forms — and
-  `unknown` for anything else, and `unknown` fails closed. With the flag absent
-  that costs nobody anything (every roll is `unpathed` and answers the house
-  table byte for byte). The flip carries either **7a-bis**, the reader that
-  answers an arbitrary line, or **his explicit acceptance** of the
-  refuse-until-read state — which is a real option, since he may want the paths
-  before the tattoos.
+  `unknown` for anything else, and `unknown` fails closed. While no roll carries
+  a path that costs nobody anything (every `unpathed` roll answers the house
+  table byte for byte — 208 rolls, 0 pathed, at the flip). The flip carried
+  either **7a-bis**, the reader that answers an arbitrary line, or **his explicit
+  acceptance** of the refuse-until-read state — which was a real option, since he
+  may want the paths before the tattoos. ✅ **He took the second: "yes"**
+  (fable-1531 §1).
 
   ✅ **7a-bis IS DESIGNED AND COUNTERSIGNED, AND ITS RULING IS THAT THE BUILD
   WAITS ON A NUMBER** — `CASTING_V2_7A_BIS_COVERAGE_READER_DESIGN.md`,
@@ -822,7 +847,9 @@ priced), and `RefinePanel`'s *"not their clothes"* line.
   technical precondition therefore converts into his ONE-SENTENCE interim
   acceptance**, put to him in the sitting that follows his look at §6 — *not "we
   skipped a build", but "the product is counting whether this build is needed,
-  and here is the interim honesty."*
+  and here is the interim honesty."* ✅ **Put and answered, 2026-08-24: "yes".**
+  The sequence is now live: flipped → counting `surfaceCoverageUnread` → build
+  against what it says.
 
 - ⚠ **AND A THIRD, added when the scoop court ran** (opus-1110, ruled fable-1452
   ASK 1, condition 2): **the Wardrobe path's first non-house garments RE-OPEN

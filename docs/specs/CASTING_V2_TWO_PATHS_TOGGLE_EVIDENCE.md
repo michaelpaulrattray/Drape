@@ -6,9 +6,18 @@ themes plus a copy audit classifying every user-visible string. This is that
 pack for §6 of `CASTING_V2_TWO_PATHS_DESIGN.md` — the last slice of roadmap
 item 5 (THE TWO PATHS), built 2026-08-24.
 
-Everything here ships **dark** behind `CASTING_TWO_PATHS_SCOPE`, which is `off`
-on production. The pack's negative controls are what make that a reading rather
-than a claim.
+✅ **HE LOOKED, AND THIS PACK IS HISTORICAL AS OF 2026-08-24.** It did the job it
+was built for: he read it, accepted it (*"as for everything else im happy"*) with
+one new ordered item that is not a defect in this road — framing consistency
+across casts — and `CASTING_TWO_PATHS_SCOPE` was flipped to `users:1` on that
+word (fable-1530). **Everything below is the state of the surfaces at the moment
+of the gate, and it is kept as that record.** The standing re-shoot rule below
+therefore no longer binds: this pack is not the live description of the toggle,
+because the toggle is live.
+
+Everything here shipped **dark** behind `CASTING_TWO_PATHS_SCOPE`, which was
+`off` on production when the pack was built. The pack's negative controls are
+what make that a reading rather than a claim.
 
 ⚠ **THIS PACK'S OWN STANDING RULE, adopted fable-1490: a pack that stops matching
 its surface is worse than no pack.** A copy change on a surface photographed here

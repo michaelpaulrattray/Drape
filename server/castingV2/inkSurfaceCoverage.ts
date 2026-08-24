@@ -70,11 +70,24 @@
  *
  * # What makes `unknown` rare, and when
  *
- * Today it is unreachable: `CASTING_TWO_PATHS_SCOPE` is absent, so every roll
- * in production is `unpathed` and answers the house table byte for byte. It
- * becomes reachable the day that flag widens, and at that moment EVERY
- * Wardrobe-path cast with a picked or customer-named outfit meets an ink
- * refusal on every placement.
+ * ⚠ **THAT DAY CAME ON 2026-08-24 AND THIS SENTENCE WAS THE FIRST CASUALTY.** It
+ * read *"Today it is unreachable: `CASTING_TWO_PATHS_SCOPE` is absent, so every
+ * roll in production is `unpathed`"*. The flag is `users:1` — the founder's own
+ * account, his own hand — so the premise is gone. The CONCLUSION still holds and
+ * is now read at the rows rather than at the flag: **208 production rolls, 0
+ * pathed, 0 with a wardrobe line** the hour it flipped, so every roll in
+ * production still answers the house table byte for byte, and his next pathed
+ * roll is what changes that.
+ *
+ * At that moment EVERY Wardrobe-path cast with a picked or customer-named outfit
+ * meets an ink refusal on every placement — which is no longer a prediction
+ * about a widening but the state of one live account.
+ *
+ * ⚠ **And the grammar is the lesson, bought inside an hour** (opus-1178/1179): a
+ * sweep certified this row and eight siblings as holding, and the three that
+ * went false within the hour were the three asserting the WORLD (*"the flag is
+ * absent"*); the six asserting the RULE (*"a roll outside the flag resolves to
+ * `unpathed`"*) could not be falsified by a flag moving. Write the rule.
  *
  * **That coupling is an enumerated precondition of the flip and not a note
  * here** (fable-1368 ruling 2): the reader that answers coverage for an

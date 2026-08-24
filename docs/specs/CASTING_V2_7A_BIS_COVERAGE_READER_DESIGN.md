@@ -14,6 +14,14 @@ explicit acceptance of the refuse-until-read state** — and §7 argues that the
 second is a real answer rather than a fallback, because it is already
 instrumented.
 
+✅ **HE TOOK THE SECOND, 2026-08-24, and §7's argument is what he was answering**
+(fable-1531 §1). Put to him in plain English — a tattoo ask on an outfit nobody
+has measured refuses honestly while a tally counts how often it is hit, and the
+reader gets built when that number says so — his answer was **"yes"**. So this is
+no longer a precondition of anything: `CASTING_TWO_PATHS_SCOPE` is `users:1` on
+production, this design stays countersigned and ready-to-build, and its trigger
+is `surfaceCoverageUnread`. Everything below stands as written.
+
 ---
 
 ## 1. The question, read at the code
@@ -328,9 +336,15 @@ likely to have rotted were driven rather than skimmed:
   place in the repository, this file; `casting_wardrobe_coverage` appears in no
   migration and no server module.
 - *Today `unknown` is unreachable; every production roll is `unpathed`* —
-  `CASTING_TWO_PATHS_SCOPE` is `off`, read at
-  `scripts/lib/productionFlagPositions.mts`, the declared table the deploy rite
-  compares to the SERVICE on every push, rather than at prose.
+  ⚠ **the SECOND half is still true and the FIRST half's reason has changed,
+  2026-08-24.** This row read *"`CASTING_TWO_PATHS_SCOPE` is `off`, read at
+  `scripts/lib/productionFlagPositions.mts`"*; the flag is `users:1` now
+  (fable-1530, his word on the §6 pack). What holds `unknown` unreachable is the
+  ROWS rather than the flag: **208 production rolls, 0 pathed, 0 with a wardrobe
+  line**, read at `casting_rolls` the hour it flipped. His first pathed roll on a
+  picked outfit is what makes it reachable, and by his own *"yes"* (fable-1531
+  §1) that state is ACCEPTED rather than blocking — this build now waits on the
+  `surfaceCoverageUnread` tally saying it is needed.
 - §1.1's *Five, at eight call sites* — all eight cited `file:line` pairs land
   exactly where cited. ⚠ One precision note, not a stale row: five of the eight
   are direct calls to this module's exports (`inkPlacement` x3,

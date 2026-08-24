@@ -53,8 +53,12 @@
  * The honest instrument is the per-frame read this header already calls the
  * honest one, and it is still not built.
  *
- * While the paths are flag-dark (`CASTING_TWO_PATHS_SCOPE` off everywhere) the
- * table is exactly right for every roll in production. On a pathed cast its
+ * While no roll carries a path the table is exactly right for every roll in
+ * production — read at the rows rather than at the flag, because ⚠ **this said
+ * *"while the paths are flag-dark (`CASTING_TWO_PATHS_SCOPE` off everywhere)"*
+ * until 2026-08-24 and the flag is `users:1` now** (the founder's own hand, on
+ * his own account). Production held 208 rolls, 0 pathed, at the flip, so the
+ * sentence's conclusion survived its premise. On a pathed cast its
  * `waist` entry refuses an edit the photograph could serve — the safe direction,
  * and a named prerequisite of the flip rather than a note here (founder card
  * FQ-a, 2026-08-23).

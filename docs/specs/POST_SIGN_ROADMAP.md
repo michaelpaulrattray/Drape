@@ -321,6 +321,31 @@ carry the rulings, the courts and the histories.
                                           his card, the design's §10, CLAUDE.md —
                                           never reached this one, which is
                                           fable-805 §2 at the bytes
+                                          ✅ **HE LOOKED AND IT IS FLIPPED —
+                                          `CASTING_TWO_PATHS_SCOPE=users:1` ON
+                                          PRODUCTION, 2026-08-24** (fable-1530).
+                                          He accepted the §6 pack — *"as for
+                                          everything else you mentioned im
+                                          happy"* — with ONE new ordered item
+                                          that is not a defect in this road:
+                                          framing consistency across casts (the
+                                          engine under-obeys the waist-up order
+                                          on business wardrobe; suit sheets came
+                                          back chest-up while prehistoric and
+                                          basics obeyed). Its court is the next
+                                          design on the board. ✅ AND THE LAST
+                                          TECHNICAL PRECONDITION CLOSED BY HIS
+                                          OWN WORD THE SAME HOUR: asked whether
+                                          a tattoo ask on an outfit nobody has
+                                          measured should refuse honestly while
+                                          a tally counts the hits, he said
+                                          **"yes"** (fable-1531 §1) — so 7a-bis
+                                          builds when `surfaceCoverageUnread`
+                                          says so, and the evidence pack is
+                                          HISTORICAL from this point. What is
+                                          still open past `users:1` is the
+                                          `build`/`skin` honesty claim before
+                                          BASICS widens — one item, not two
 3c ⚠ THE BRIEF HAS NO SKIN LANE, AND     ordered fable-1477 ASK 2, from the
    COLOUR WORDS ARE THE PARAPHRASE'S    brief-fidelity corpus (opus-1128).
    MAIN VICTIMS                          MEASURED at the wire, survival counted

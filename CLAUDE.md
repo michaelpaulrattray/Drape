@@ -436,7 +436,22 @@ one from whoever owns its road.
   users. **The `casting_rolls.path` / `.wardrobeLine` columns are a prerequisite
   of the CODE rather than of the flip** — migration `0051`, ceremony run on both
   databases 2026-08-22 — so the boot guard does not check for them: by the time
-  it can run, the schema naming them has already shipped. Off on production.
+  it can run, the schema naming them has already shipped.
+  ✅ **`users:1` ON PRODUCTION SINCE 2026-08-24 — HIS WORD ON THE §6 PACK.** This
+  line said *"Off on production"*. He looked and accepted (*"as for everything
+  else you mentioned im happy"*), and the flip was executed on that word under
+  the established variable procedure, read back by name, redeployed, health ×3
+  200 (fable-1530). ⚠ **The record learned it from the SERVICE, not from the
+  ruling**: the next rite exited 1 on the mismatch — `<unset>` at 23:41:22Z,
+  `users:1` at 00:19:24Z, a Railway deployment no push produced — so
+  `scripts/lib/productionFlagPositions.mts`'s comparison closed a gap a message
+  was still crossing, which is that arm's first real firing. ⚠ **A position is
+  not an acceptance**, and of the two open items below the FIRST is now closed by
+  his own separate word: asked whether a tattoo ask on an outfit nobody has
+  measured should refuse honestly while a tally counts the hits, he answered
+  **"yes"** (fable-1531 §1), so 7a-bis builds when `surfaceCoverageUnread` says
+  so rather than before the flip. Production held **208 rolls, 0 pathed, 0 with a
+  wardrobe line** the hour it flipped.
   ⚠ **THE ROAD IS COMPLETE AS OF 2026-08-24 — every slice of item 5 is built and
   live dark, §6 the toggle last** (evidence pack and copy audit:
   `docs/specs/CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`, both themes, two negative
@@ -445,13 +460,17 @@ one from whoever owns its road.
   said 18 for a pack that held 24, and the two commits that grew it edited this
   very bullet four lines below it). This line said *"the flip waits on a 320-credit dev
   court and then his eyes"*; **the court RAN** (2026-08-23, both arms, two Signs)
-  and its two findings went to him and came back answered, so what the flip waits
-  on now is **his eyes on the pack** and the enumerated preconditions in the
-  design's §10 — none of which is a defect to repair. ⚠ **Read the ticks there,
+  and its two findings went to him and came back answered, so what the flip
+  waited on was **his eyes on the pack** and the enumerated preconditions in the
+  design's §10 — none of which is a defect to repair. **He has now looked and
+  flipped it to his own account** (see the tick above); what the design's §10
+  still governs is everything past `users:1`. ⚠ **Read the ticks there,
   not the ordinals: they record the order things were ADDED, and one has been
-  struck.** Open as of 2026-08-24: **TWO** — 7a-bis or his acceptance of the
-  refuse-until-read ink state, and the `build`/`skin` honesty claim before BASICS
-  widens. **Discharged: four** — `RefinePanel`'s *"not their clothes"* line,
+  struck.** Open as of 2026-08-24: **ONE** — the `build`/`skin` honesty claim
+  before BASICS widens. (It was TWO until he answered *"yes"* to the
+  refuse-until-read state the hour the flip landed; that item is discharged into
+  a TRIGGER rather than a gate — 7a-bis builds when `surfaceCoverageUnread` says
+  so.) **Discharged: five** — `RefinePanel`'s *"not their clothes"* line,
   which was true today and false on day one for a pathed customer, now a sixth
   config gate named for garment-ask admission joined with the roll's own path;
   the columns;
