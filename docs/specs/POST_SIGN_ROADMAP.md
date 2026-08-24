@@ -1414,20 +1414,91 @@ carry the rulings, the courts and the histories.
                                          never written). Reported, NOT deleted:
                                          removing a store action is a product
                                          change, not a mirror repair.
-                                         ⚠ **WHAT REMAINS: D alone (~14 arms).**
-                                         D's read is *which of those procedures
-                                         has no other arm anywhere* — that subset
-                                         is the real hole, and deleting without it
-                                         destroys the only (false) map of it. The
-                                         structural sweep promotes to `scripts/`
-                                         WITH that sitting and not before
-                                         (ruled fable-1626 §5), because until then
-                                         it has no reader.
+                                         ✅ **D IS CLOSED TOO — 3g IS CLOSED.**
+                                         `058e94ec` · `970e3124` · `1d16cbb8` ·
+                                         `bdfc6dc9` · `a986987b` · `62c89ddf` ·
+                                         `a91fc2b8` · `8a65accd` · `786f5aae`.
+                                         **The read found FIVE naked controls**,
+                                         each of which now has exactly one arm
+                                         that dies with it — proven by
+                                         controlling the whole SUITE, not the
+                                         cluster:
+                                           account freeze on BOTH spend paths
+                                           `moderatorProcedure`'s ROLE gate
+                                           an admin demoting another admin
+                                           the ±100,000 credit-adjustment cap
+                                           both admin action handlers (629
+                                             lines, 11 money/permission cases,
+                                             ZERO tests anywhere)
+                                         — against ONE proven already guarded
+                                         (the admin role gate: `adminInviteCodes`
+                                         and `adminSecurity` both redden). **The
+                                         read is what tells them apart; a hunch
+                                         would have got five of six right and
+                                         filed the sixth as a finding.**
+                                         ⚠ **AND THE ACTION LISTS WERE FIVE, NOT
+                                         THREE, AND TWO HAD DRIFTED.** The six
+                                         `cr_*` names that decide which handler
+                                         an approved admin action reaches were
+                                         declared in `lib/adminActions`,
+                                         `routes/admin/changeRequests.ts` twice
+                                         (the map AND `SENSITIVE_TYPES`),
+                                         `routes/admin/slackApproval.ts`'s
+                                         `z.enum`, and `changeRequests.test.ts`
+                                         twice. **The test file's two were SHORT
+                                         — `stripe_refund` missing from both —
+                                         so the suite's only description of which
+                                         change requests need Slack approval
+                                         said a STRIPE REFUND does not**, and its
+                                         arms counted their own literals. All now
+                                         derive from
+                                         `CHANGE_REQUEST_ACTION_BY_TYPE`; one
+                                         character changed there reddens arms
+                                         across three files.
+                                         ⚠ **A COMMENT WHERE AN ASSERTION SHOULD
+                                         HAVE BEEN, AND WRONG IN IT**: an arm
+                                         ended `// The procedure would throw
+                                         TRPCError with code CONFLICT`. It throws
+                                         BAD_REQUEST. A comment can be wrong for
+                                         as long as nobody runs it.
+                                         ⚠ **ONE OPEN PRODUCT QUESTION, filed as
+                                         a comment in the code rather than
+                                         discovered later** (fable-1628): the
+                                         dispatcher has NO DEFAULT REFUSAL, so an
+                                         unrecognised `cr_*` — a typo — takes the
+                                         OTHER road and runs as an
+                                         admin-initiated action, settling
+                                         nothing. The arms pin the CURRENT
+                                         behaviour so the answer is given on
+                                         purpose.
+                                         ⚠ **AND ONE DEAD STORE ACTION IS FILED
+                                         RATHER THAN REMOVED**: `getCachedOverlay`
+                                         — call site never written
+                                         (`git log -S` empty), no consumer
+                                         anywhere. Deleting it is a product
+                                         change with its own small countersign
+                                         (fable-1627 §1); the row keeps it from
+                                         being re-derived.
                                          ⚠ **AND THE CLOSING SWEEP'S NUMBER IS A
                                          CANDIDATE LIST, NOT A CENSUS**: a
                                          structural reader (an `expect` whose
                                          every symbol is bound inside the arm)
-                                         reports **605 of 9,045 arms**. It is
+                                         reports **356 of 9,106 arms**. ⚠ THIS
+                                         ROW SAID **605 of 9,045** AND THAT
+                                         FIGURE CAME FROM A BROKEN READER
+                                         (corrected 2026-08-25 at the
+                                         instrument's promotion): its
+                                         dynamic-import extraction was greedy
+                                         from the FIRST BRACE IN THE FILE, so
+                                         the binding names it "found" were
+                                         whatever prose lay between a
+                                         `describe(… => {` and the next `}`.
+                                         It APPEARED to work, and its negative
+                                         control PASSED, because that span
+                                         usually happened to contain the name —
+                                         **a control can pass for the wrong
+                                         reason.** Caught by an arm on the
+                                         guard's first run. It is
                                          quoted with its controls because it
                                          FAILED TWICE before it was believed —
                                          the positive control caught it SKIPPING
