@@ -201,14 +201,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "unmeasured.",
   },
   CASTING_BRIEF_FIDELITY_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
       "the brief fidelity build — the announced cap on characterNotes, the bound the reply is "
-      + "held to, and the stated skin lane. Ships DARK: off, the compile is byte-identical to "
-      + "today's. Its lifespan is DECLARED SHORT (fable-1600) — it exists for the unmeasured "
-      + "IMAGE side, so it widens to `all` promptly after his gate rather than living at users:1, "
-      + "because two products interpreting two sets of briefs is a cost paid briefly and on "
-      + "purpose. ⚠ A reading taken while it is narrow states which side it drove.",
+      + "held to, and the stated skin lane. Flipped users:1 2026-08-25 on the founder's own "
+      + "order (\"run the cyborg re-roll on my account\", fable-1636) for the stage-3 gate: his "
+      + "cyborg brief re-rolled with the fidelity lane live, judged by his eyes. Its lifespan is "
+      + "DECLARED SHORT (fable-1600) — it exists for the unmeasured IMAGE side, so it widens to "
+      + "`all` promptly after his gate rather than living at users:1, because two products "
+      + "interpreting two sets of briefs is a cost paid briefly and on purpose. ⚠ A reading "
+      + "taken while it is narrow states which side it drove.",
   },
   CASTING_TWO_PATHS_SCOPE: {
     position: "users:1",
