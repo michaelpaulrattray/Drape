@@ -130,6 +130,23 @@ evidence; the ruling is the founder's.
 
 ---
 
+## Specimen raising arm D's stakes (founder, 2026-08-24)
+
+A REINA sheet from the studio's projects carries, baked into its text block
+beside the facts and the voice line, a **render directive**:
+
+> *"Photorealistic, soft studio lighting, minimal style, unusual and quirky
+> appearance."*
+
+So the baked text is three kinds of writing — facts ("Height: 183 cm"),
+performance ("Voice: low, arrogant, aristocratic, slightly velvety, sensual"),
+and **style instructions**. These sheets are imported as Elements whole, so if
+the engine reads baked text, every `@Reina` attach ships a stowaway prompt
+inside the pixels — the sheet would be a **dual-channel asset** (picture +
+prompt), and their consistency may partly ride on it. Arm D is the arm that
+decides this, and this specimen is why its answer matters beyond lettering
+leakage.
+
 ## Related open question, same sitting
 
 ZEPHYR's plates carry `Voice:` and `Character:` lines — information an image
