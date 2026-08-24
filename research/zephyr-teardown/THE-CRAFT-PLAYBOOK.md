@@ -188,6 +188,37 @@ candidate for what a Drape film engine should ask an everyday user for, because
 it is the one field a non-director can always answer: *what should someone
 watching understand?*
 
+### 17. Voice consistency without a voice reference (founder asked 2026-08-24)
+
+In the voices-only musical scenes the attached `.wav` is a metronome the mix
+excludes — so **the voices are re-invented by the engine on every take.** No
+voice reference exists anywhere in the corpus. What makes them read as "the
+same" is four mechanisms working together:
+
+1. **A voice spec carried like a face spec** — `Voice:` on every sheet
+   (*"soprano (high)"* / *"low, well-controlled"*) and restated in shot scopes
+   (*"low female voice"*; *"calm baseline that cracks upward only on the
+   outburst"*, 227 runs). A register cannot clone a voice, but it keeps each
+   character in her lane and the characters distinct from each other.
+2. **Fixed words, fixed tempo, melody scaffold** — verbatim lyrics in the
+   prompt, 87 BPM stated, the attached track carrying the vocal hook. Same
+   performance shape every take, whichever throat renders it.
+3. **Directed imperfection doubles as the mask** — *"off-key, a bit off-time,
+   shouty, not polished"* means there is no precise vocal identity to violate;
+   group chaos hides take-to-take drift completely.
+4. **The edit** — music laid under the cut, ~8s shots, one-speaker-per-shot in
+   dialogue (*"only Zero speaks"*), and a zero-risk lane (*"Vocals: non-verbal
+   only"*, 237 runs). No cut ever places two versions of one voice side by side.
+
+The contrast proves the rule: in the lip-sync lane (*"`<<<audio_1>>>` plays
+throughout; Mira sings lead (lip-synced)"*) the voice IS identical across 716
+generations — because the file contains the performance and is audible. **Two
+audio lanes: audio-as-performance (truly the same voice) and audio-as-metronome
+(voice faked consistent by spec + fixed lyrics + sloppiness + the mix).** For
+Drape: a `Voice:` field on the cast buys the cheap 80%; true voice identity
+across takes needs a voice ASSET, which their stack lacked and they engineered
+around.
+
 ---
 
 ## Part B — how a story becomes shots (traced on a real scene)
