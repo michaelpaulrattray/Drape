@@ -50,12 +50,21 @@ whatever letters they see."*
 annotations burnt into the pixels, and those files are the attachments on
 finished, shipped shots.
 
-I am not saying Drape's rule is wrong. The reasoning behind it is sound and the
-failure it guards against is real. But **the rule is currently justified by an
-argument, not by a measurement**, and here is a large body of contrary practice.
-This is a cheap thing to settle: render one sheet with labels and one without,
-put them through the same generation, and look. Until then, "engines reproduce
-letters they see" should be held as a hypothesis rather than a finding.
+I am not saying Drape's rule is wrong, and nothing here proposes changing it.
+
+⚠ **Two things I got wrong when I first wrote this section, corrected at the
+code.** The rule is a **founder ruling**, not an engineering preference —
+`4994e953`: *"the founder extended it to the export."* And its premise is not
+unsupported: the M3 mug incident
+(`server/castingV2/briefCompiler.test.ts`) has text beating the framing block's
+own *"no text, no logos"* constraint. The sheet's textlessness is also properly
+tested — for **compliance** (*"never draws a label, whatever the label says"*).
+
+What is genuinely untested is narrower than "the rule": specifically the
+**reference-image** case — whether text on an attached plate reaches the
+delivered frame. Filed with a four-arm design, controls that let it fail, and a
+pre-registered bar:
+[`OPEN_TEST_baked-text-on-references.md`](./OPEN_TEST_baked-text-on-references.md).
 
 ### What Drape already has right
 

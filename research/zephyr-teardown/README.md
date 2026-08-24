@@ -19,6 +19,13 @@ video generations.
 3. **[`implications-for-drape.md`](./implications-for-drape.md)** — what it means
    for the casting studio and the backend.
 
+**Filed out of this research, not yet run:**
+[`OPEN_TEST_baked-text-on-references.md`](./OPEN_TEST_baked-text-on-references.md)
+— ZEPHYR's reference plates carry text burnt into the pixels and shipped a film;
+Drape's character sheet is deliberately textless by founder ruling. The specific
+untested question is whether text on an *attached reference* reaches the
+delivered frame. Four arms, controls that let it fail, pre-registered bar.
+
 ---
 
 ## The corpus
