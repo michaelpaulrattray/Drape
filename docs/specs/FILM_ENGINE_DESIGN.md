@@ -102,6 +102,41 @@ you've generated it."* — so the engine does what their team did by argument:
   user *before* credits are spent.
 - Output: scene cards on the canvas, editable in plain English.
 
+### Phase A-2 — How scenes are generated and what is editable (founder Q, 2026-08-24)
+
+Three story inputs, one convergent flow:
+- **Full script pasted** -> the Writer PARSES, never invents: scenes split at
+  location/time changes, each six-field document DISTILLED from the user's
+  own text (read-back pattern at production scale; the script stays visible
+  and untouched as "your script").
+- **Logline** -> the Writer PROPOSES a scene list; it passes through the same
+  approve/edit/delete/reorder screen as the shot list. Nothing below a scene
+  exists until approved.
+- **"Help me write it"** -> conversation ending in the same proposed list.
+
+Editability: everything, each at its level, and edits flow DOWNSTREAM only.
+Editing the script after scenes exist never silently rewrites them — affected
+scenes flag "script changed — may be stale" and the user chooses to refresh
+(island principle + money safety). Scene-doc corrections feed the NEXT shot
+proposal, never drawn takes.
+
+### Phase B-0 — How required assets are determined (the Line Producer's test)
+
+Not every noun becomes an asset — the pros shelved ~10 props out of
+everything on screen; scene dressing lived in prompts. An object becomes a
+GAP TILE only when **drift between shots would hurt**, detected as any of:
+1. a character handles it and action depends on it (the lemonade glass);
+2. it appears across multiple shots/scenes (continuity risk);
+3. it is deliberately withheld ("stays out of frame until SC 4" in
+   what_we_do_not_show — the strongest signal: you cannot withhold an
+   undefined object);
+4. it carries story weight by name in the script.
+Everything else stays prompt-described. Gap tiles SHOW THEIR REASONING (click
+-> the script lines that triggered them) and the user ratifies: dismiss
+("does not need a card") or promote any mentioned object. Detect-then-ratify,
+the drift-lock shape. Cast and locations extract the same way: named person
+-> cast gap tile; distinct setting -> location tile.
+
 ### Phase B — Pre-production (assets first, then nothing else moves)
 
 Their law: *"Not a single shot until every character, location and prop is
