@@ -1,12 +1,30 @@
 /**
- * Phase 2 Migration Tests
- * 
+ * Phase 2 Migration Tests — EXPORT AVAILABILITY, and that is the whole of it.
+ *
+ * ⚠ THIS DOCBLOCK CLAIMED BEHAVIOUR COVERAGE THIS FILE HAS NEVER HAD, AND TWO
+ * LIVE DEFECTS SAT UNDER THE CLAIM. It read:
+ *
+ *     - geminiSchemaUpdater.ts — safeParseJsonObject behavior, export availability
+ *     - geminiSuggestions.ts   — safeParseJsonArray behavior, export availability
+ *
+ * Both parsers are module-private and neither had a single behaviour arm
+ * anywhere in the repository. Driven 2026-08-25, `safeParseJsonObject` let a
+ * bare JSON string, a bare number and an array each REPLACE a cast's
+ * `technicalSchema`, against this module's own documented DR-15 fail-safe.
+ * **It is not that nobody wrote the tests — the file said someone had**, and
+ * a label is what a reader greps.
+ *
+ * The arms here are honest and worth keeping: a broken barrel re-export or a
+ * procedure dropped from the router really does redden them. They prove
+ * IMPORTS. Behaviour lives in the files named below.
+ *
  * Covers:
- *   - geminiSchemaUpdater.ts — safeParseJsonObject behavior, export availability
- *   - geminiSuggestions.ts — safeParseJsonArray behavior, export availability
- *   - geminiPromptCompactor.ts — export availability
- *   - aiService.ts — re-exports for all Phase 2 functions
- *   - castingRefinement.ts — new tRPC procedures exist on the router
+ *   - geminiSchemaUpdater.ts    — export availability
+ *     (behaviour: `geminiSchemaUpdater.test.ts`)
+ *   - geminiSuggestions.ts      — export availability
+ *   - geminiPromptCompactor.ts  — export availability
+ *   - aiService.ts              — re-exports for all Phase 2 functions
+ *   - castingRefinement.ts      — new tRPC procedures exist on the router
  */
 
 import { describe, it, expect } from "vitest";
@@ -82,7 +100,9 @@ describe("Phase 2 re-exports from aiService", () => {
 });
 
 // ============================================================================
-// SCHEMA UPDATER — unit tests for safeParseJsonObject behavior
+// SCHEMA UPDATER — export availability only.
+// safeParseJsonObject's behaviour is driven in `geminiSchemaUpdater.test.ts`;
+// this header used to claim it and the arm below only ever proved an import.
 // ============================================================================
 
 describe("geminiSchemaUpdater", () => {

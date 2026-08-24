@@ -30,19 +30,51 @@ const log = createModuleLogger("casting/geminiSchemaUpdater");
 // ============================================================================
 
 /**
+ * A parsed value counts as a schema only if it is a plain object.
+ *
+ * ⚠ THIS EXISTS BECAUSE THE FUNCTION'S NAME WAS NOT TRUE OF THE FUNCTION.
+ * `safeParseJsonObject` returned whatever `JSON.parse` produced, and its
+ * callers guarded with `if (!parsed) throw` — a TRUTHINESS test on something
+ * named `…JsonObject`. `null` was caught by luck; a bare JSON string, a bare
+ * number and an array all sailed through and BECAME the schema. Driven
+ * 2026-08-25 through the real public function:
+ *
+ *   `"blonde"` → the schema became the string "blonde"
+ *   `42`       → the schema became the number 42
+ *   `[{…},{…}]`→ the schema became an array
+ *
+ * This module's own header states **DR-15: both functions fail safe — return
+ * current schema unchanged on error.** Three reachable replies did not return
+ * it unchanged, and what they replaced it with is `technicalSchema`: the
+ * sensitive field group, the thing a cast is reproduced from. Property access
+ * on `"blonde"` is `undefined` all the way down.
+ *
+ * `typeof null === "object"` and `typeof [] === "object"`, so both are named
+ * out rather than assumed away.
+ */
+const isPlainObject = (value: unknown): boolean =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
  * Resilient JSON object parser for schema/reconciliation responses.
  * Handles markdown fences, trailing text, and malformed JSON.
+ *
+ * Returns null for anything that parses but is not an object — the ladder
+ * keeps trying, and a reply that never yields an object fails safe rather
+ * than overwriting the caller's schema with a non-schema.
  */
 const safeParseJsonObject = (text: string): any | null => {
   // 1. Try clean parse
   try {
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    if (isPlainObject(parsed)) return parsed;
   } catch {}
 
   // 2. Strip markdown fences
   const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
   try {
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+    if (isPlainObject(parsed)) return parsed;
   } catch {}
 
   // 3. Try to find the outermost {} and parse that
@@ -50,7 +82,8 @@ const safeParseJsonObject = (text: string): any | null => {
   const lastBrace = cleaned.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     try {
-      return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+      const parsed = JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+      if (isPlainObject(parsed)) return parsed;
     } catch {}
   }
 
