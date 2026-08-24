@@ -964,6 +964,62 @@ carry the rulings, the courts and the histories.
                                          fixed in `080ffe6d`. The only other hit
                                          for the shape is a toast string. So this
                                          row is drift, never a dead end.
+                                         ⚠ **AND THAT LAST SENTENCE WAS WRONG —
+                                         THE CENSUS FOUND A LIVE CUSTOMER-FACING
+                                         DEAD END IN THE FIRST FIELD IT OPENED**
+                                         (2026-08-25, opus-1241, ruled
+                                         fable-1617; fixed `0efe3f9f`). Confirming
+                                         the `RedeemCodeModal` 16↔20 luck meant
+                                         reading the format, and the format's own
+                                         refusal said **`Expected: FORMA-XXXXXX`**
+                                         — a prefix retired six months earlier by
+                                         `06585f07`, the rebrand that renamed all
+                                         four occurrences in the file DECLARING
+                                         the format and edited three OTHER lines
+                                         of the file QUOTING it, reporting *"All
+                                         952 tests passing"*. Every mistyping
+                                         customer was told to type a prefix that
+                                         has never existed. **So a hand-typed
+                                         second place does not merely RISK
+                                         drifting — it drifts, at the next
+                                         rename, and the suite stays green about
+                                         it.** That is this row's motivation
+                                         restated as a fact rather than a
+                                         forecast, and it is why 3(a) shipped
+                                         ahead of the sweep.
+                                         ⚠ **THREE THINGS THE CENSUS FOUND THAT
+                                         CHANGE THIS ROW'S BUILD**, folded into
+                                         its shape by fable-1617 §2 so the next
+                                         seat does not re-derive them:
+                                         (a) TWO CLIENT SITES SHARE ONE SERVER
+                                         NUMBER — `renameCast`'s 60 is typed in
+                                         `RenameCastDialog` AND `CastingRoom`, so
+                                         that cap is a THREE-place cap. **The arm
+                                         is a SWEEP over client sites, never a
+                                         typed checklist**, or a 1:1 pairing
+                                         moves one and leaves the other.
+                                         (b) ONE FIELD FEEDS TWO PROCEDURES —
+                                         `UserInvestigationWidgets`' single box
+                                         submits to `freezeAccount` (reason) or
+                                         `unfreezeAccount` (notes). Both 500
+                                         today; if they diverge no single
+                                         constant is correct, so it takes the MIN
+                                         and DECLARES it at the call site.
+                                         (c) THE SERVER HOLDS SECOND COPIES TOO —
+                                         `announcements.ts` states 200/2000 twice
+                                         (create :29-30, update :59-60). The
+                                         constant is what BOTH schemas import, or
+                                         the client mirror is fixed while a
+                                         server mirror stands where nothing looks.
+                                         The population is now **15**, not 16:
+                                         `RedeemCodeModal`'s `maxLength={16}` is
+                                         the one site whose real number (12) is
+                                         already declared and waiting —
+                                         deliberately left, because the
+                                         disposition door refused a
+                                         `REFERRAL_CODE_LENGTH` with no reader
+                                         and **3f adds the constant and its
+                                         reader in one commit.**
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.
