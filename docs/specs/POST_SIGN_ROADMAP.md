@@ -332,8 +332,14 @@ carry the rulings, the courts and the histories.
                                           engine under-obeys the waist-up order
                                           on business wardrobe; suit sheets came
                                           back chest-up while prehistoric and
-                                          basics obeyed). Its court is the next
-                                          design on the board. ⚠ AND FRAMING IS
+                                          basics obeyed). ✅ ITS COURT IS
+                                          DESIGNED — 2026-08-24,
+                                          `CASTING_FRAMING_CONSISTENCY_COURT.md`,
+                                          awaiting countersign, nothing spent.
+                                          The gap is MEASURED at last: SUIT
+                                          27.3% head share against BASICS 23.5%,
+                                          and a frame common to both costs +8.1
+                                          points of median today. ⚠ AND FRAMING IS
                                           NOW ON HIS OWN CANDIDATE LIST AS A
                                           CUSTOMER SETTING (fable-1548; the
                                           settings-modal design §10b) — so that
