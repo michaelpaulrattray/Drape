@@ -78,9 +78,12 @@ carries across the cut: everyone's eyelines agree (via a top-down blocking
 map), the sound continues (a voice carries over the cut), and the light stays
 the same. Continuity lives in geometry and sound — never in matched pixels.
 
-**7. Voices are faked, not stored.**
-There is no voice technology in their stack. Each take, the engine invents new
-voices matching a written description ("soprano, playful" / "low, velvety").
+**7. Voices are never stored on a character — only on a scene.**
+Measured: across 9,460 character-card attachments, zero carry audio. A
+handful of scenes DO reuse a recorded performance (the song with its sung
+vocal, one file reused 716 times) — that is the only place a voice is
+literally the same. Everywhere else, each take the engine invents new voices
+matching a written description ("soprano, playful" / "low, velvety").
 It sounds consistent because the words and tempo are fixed, the singing is
 deliberately sloppy (sloppy hides differences), and the edit never puts two
 versions of a voice side by side. Lesson for Drape: **pictures solve faces;
