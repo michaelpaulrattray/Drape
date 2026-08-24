@@ -17,6 +17,9 @@ video generations.
 
 **Read in this order:**
 
+00. **[`FOUNDER-REPORT.md`](./FOUNDER-REPORT.md)** — everything learned, in
+   plain English, with the Drape and casting-studio applications. The summary
+   of summaries.
 0. **[`THE-FRAMEWORK.md`](./THE-FRAMEWORK.md)** — plain-English rundown of how the
    whole system works, across both productions. **Start here.**
 0a. **[`THE-CRAFT-PLAYBOOK.md`](./THE-CRAFT-PLAYBOOK.md)** — the sixteen craft
