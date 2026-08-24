@@ -58,7 +58,17 @@ PRODUCTION (canvas)
  │                        CAST (one tile per person; outfit/state cards nest
  │                        inside, pulled lazily as scenes need them — takes
  │                        are output, never shelf assets), LOCATIONS, PROPS,
- │                        DIAGRAMS (filed under their scene). Populated by
+ │                        DIAGRAMS (filed under their scene), and AUDIO —
+ │                        music tracks and PROMOTED PERFORMANCE ANCHORS (a
+ │                        starred take's audio fed back as reference, their
+ │                        716-reuse pattern). A track attaches to a scene in
+ │                        one of two modes: AUDIBLE (plays throughout,
+ │                        lip-synced) or TIMING ONLY (the unheard-metronome
+ │                        lane; real music laid under the cut in post). The
+ │                        cast's voice lives inside her cast tile; per-line
+ │                        dialogue clips file under their shot; foley is
+ │                        prompt-written, not a file. Research scale: nine
+ │                        audio files served an entire production. Populated by
  │                        the Line Producer from scene docs as GAP TILES
  │                        ("The case — needed by SC 3 · Mint / Upload /
  │                        Pick"), resolved not authored. Research scale: a
