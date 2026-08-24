@@ -1,9 +1,12 @@
 # THE FRAMING CONSISTENCY COURT — redesign
 
-✅ **STATUS: COUNTERSIGNED (fable-1552). ARM H HAS RUN AND ITS GATE IS OPEN —
-the cut's landmark word is `head` (§8a), and §8b shows the hair collision on a
-real frame the last court's own cut produced.** Arms R and M are unrun and
-nothing is built. All five questions
+✅ **STATUS: COUNTERSIGNED (fable-1552, extended fable-1553). ARM H HAS RUN AND
+ITS GATE IS OPEN — the cut's landmark word is `head` (§8a), §8b shows the hair
+collision on a real frame the last court's own cut produced, and §8c answers the
+question that swap raises: at the cut's own headroom the head CLEARS, by 35 px on
+the one frame that decides it.** Arms R and M are unrun and nothing is built.
+The fal price is **$3.1** — fable-1553 Q1 granted the `head` reads §8c argued
+for, and Q2 granted arm R the pre-registered bar this design had left out. All five questions
 answered — the median bar reshapes with **PARTIAL never ships** added as a
 clause (§6.1), arm H gates the court alone, BASICS is the second sheet on the
 mixed-variable condition stated in §9, the price stands, and nothing reaches the
@@ -337,8 +340,39 @@ and cheap enough to be a prerequisite of the court.**
 
 ### ✅ 8a. ARM H HAS RUN, AND THE GATE IS OPEN. The word is `head`.
 
-**20 reads, $0.10, no render, no credit** (`armH.log`, `armH-bald.log`,
-`ARMH-head.png`, `ARMH-hair.png`).
+**20 reads, $0.10, no render, no credit** (`armH.json`, `armH-bald.log`,
+`armH-bald.json`, `ARMH-head.png`, `ARMH-hair.png`).
+
+⚠ **THE CITATION HERE SAID `armH.log` AND THERE IS NO SUCH FILE — corrected
+2026-08-24 by opening the artifacts rather than the report.** The reader's run
+**crashed at its presentation step** after the reads had settled, so it never
+reached its own `writeFileSync`; the 16 SUIT/HAIR rows were then recovered by a
+second script and `armH.json` carries `source: "transcribed from the run's
+stdout after its presentation step crashed"` on its own face. **The artifact was
+honest and this page was not** — it cited a file that does not exist and said
+nothing about the transcription, which is the shape where a provenance note
+survives in the JSON nobody opens and dies in the prose everybody reads.
+
+Two things keep the verdict standing anyway, and they are worth more than the
+correction:
+
+- **The FACE half of those rows is not transcribed.** Arm H's script reads
+  `faceTop`/`faceHeight` out of `arm0.log`, an instrument-written file — and all
+  four SUIT rows match it exactly. `_framing-headroom-budget-disposable.mts`
+  **asserts that join rather than assuming it** and throws if the two arms ever
+  disagree about the same frame.
+- **The cell that DECIDED the verdict is instrument-written.** `hair` being
+  absent on two bald men is `armH-bald.log`, written by its own reader, and that
+  is the whole of what disqualified `hair`. The transcribed cell supports the
+  build number (how far above the face the head sits); it does not carry the
+  gate.
+
+**It is not re-bought**, and that is a judgement rather than an omission: the
+court's own arms render raw frames and will read `head` beside `face` on every
+one of them (§9), which replaces a transcribed cell with an instrument-written
+one on a BETTER population — raw rather than cut, and volume rather than eight
+close-cropped suit heads. Spending $0.08 to re-take a superseded reading buys
+provenance for a number about to be measured properly.
 
 ```
 SUIT, 4 frames     "head" box top ABOVE the face box top on 4 of 4,
@@ -380,6 +414,62 @@ small lesson for the next arm: keep the input beside the output, or a finding
 about a transformation has nothing to compare against. The court's own arms
 keep both.
 
+### ✅ 8c. AND THE LANDMARK SWAP RAISES A NUMBER NOBODY HAD COMPUTED: does the cut's own `R` clear the head?
+
+`T_min` is computed on FACE boxes — `share = faceH/H`, `headroom = faceTop/faceH`
+— and the common headroom `R` is the tightest headroom on the sheet. **The swap
+to `head` asks whether the crop's top edge, placed at `R`, sits above the top of
+the head.** The crop top is `faceTop − R·faceH` and the head top is
+`faceTop − gap·faceH`, so the head is contained exactly when **`R > gap`**, and
+the clearance is `R − gap` in face-heights. Nothing had evaluated it.
+
+Evaluated — **free arithmetic over two paid files**, no render, no read, no
+credit (`_framing-headroom-budget-disposable.mts`):
+
+```
+  SUIT   usable R 0.37   binding frame pos5 (headroom 0.370)
+    pos1  gap 0.231   clearance +0.139  (+67 px)   CLEARS
+    pos3  gap 0.215   clearance +0.155  (+62 px)   CLEARS
+    pos5  gap 0.289   clearance +0.081  (+35 px)   CLEARS
+    pos7  gap 0.274   clearance +0.096  (+40 px)   CLEARS
+  BASICS usable R 0.47   gap UNKNOWN on every frame — and it is not averaged in
+```
+
+**The cut is buildable at the landmark the hair clause requires**, on the cell
+that has been measured — which is the answer §8 could not give and is the
+difference between a design and a hope.
+
+⚠ **AND THE TIGHTEST FRAME IS TIGHT IN BOTH DIRECTIONS AT ONCE, which is a
+coincidence worth naming rather than a comfort.** `pos5` is the frame that SETS
+`R` (it has the least headroom of the eight) **and** the frame whose head sits
+furthest above its own face (`gap 0.289`, the widest of the four). So the entire
+margin the cut has on this cell is **0.081 face-heights — 35 px** on a 1536-tall
+frame, and it is on the one frame that decides `R`. A per-cell mean would have
+read +0.118 and hidden it; the instrument prints the binding frame's own number
+on its own line for exactly that reason.
+
+⚠ **Two things this does NOT establish, printed by the instrument on its own
+face rather than left for a reader to notice:**
+
+- **Coverage is 4 of 15.** `gap` is known only on the SUIT cell arm H read.
+  BASICS has none, and the script refuses to average across cells rather than
+  producing a tidier number.
+- **35 px is not-clipping; the clause asks for CLEAR SPACE.** *"Clear space
+  between the topmost hair and the top edge"* is a judgement about a picture and
+  it is his (law 9). The number says the hair is inside the frame. Whether
+  35 px of air READS as air is a strip in front of his eyes, and it is in §6.4's
+  list.
+- And the population the clause exists for — an afro, an updo, volume — **has no
+  raw frame with both boxes on it anywhere on disk.** The HAIR cell's frames
+  carry a head box and no face box, and they are CUT frames (§8b), so a gap
+  measured on them is a lower bound on the raw gap and would bias the check
+  toward passing.
+
+**That last one is why the arms below buy a `head` read beside every `face`
+read** (§9): it is the only way this number gets measured on raw frames, on the
+population that matters, by an instrument rather than by extrapolation from
+eight close-cropped greying suit heads.
+
 ---
 
 ## 9. The arms, priced from fresh measurement
@@ -412,6 +502,35 @@ calibrated at the size we ship.**
 It also re-takes the price reading the top-up destroyed, as a by-product, under
 §7(3)'s guards — which closes the queued stale-constant row.
 
+#### ⚠ Arm R's own bar — pre-registered where this design left it barless
+
+**This design gave arm R no bar, and a prerequisite reading judged after the
+deltas are visible is how a confound gets waved through.** So one was
+pre-registered before the run, in the harness's own header, and it lands here by
+citation rather than living only in a script (granted fable-1553 Q2, both
+halves — the shape and the move):
+
+```
+  median PAIRED |ΔShare|     <= 1.5 pt              size does NOT move composition
+  median PAIRED |ΔHeadroom|  <= 0.10 face-heights
+  beyond either              →  arm M is calibrated at the SHIP size, nowhere else
+  inside both                →  arm M may render at either size
+```
+
+**PAIRED is the whole design**: the same prompt is rendered twice, so the pair
+is the measurement. An unpaired comparison of two eight-frame spreads would
+drown a real size effect in exactly the wobble this court exists to measure.
+`1.5 pt` is the tolerance this program already applies to a median his eye has
+accepted; `0.10` face-heights is a third of the failed court's own headroom
+spread bar.
+
+⚠ **AND IT READS `head` BESIDE `face` ON EVERY FRAME — 16 extra reads, $0.08**
+(added 2026-08-24 from §8c). `face` is the court's own measure, because the
+medians his eye accepted are face shares. `head` is the CUT's landmark, and §8c
+is a floor taken on 4 of 15 frames, all of them CUT rather than raw. This is the
+only place the gap gets measured on raw frames by an instrument, and the reads
+are $0.005 each on frames that have already been paid for.
+
 ⚠ **The eight 1024×1536 frames are the SUIT control cell for arm M**, same
 sitting and same seeds. That is why arm R renders eight per size rather than the
 two a price reading would need.
@@ -425,7 +544,9 @@ two a price reading would need.
 ```
 
 The suit control is arm R's. Measured on `share` and `headroom`; `T_min` and the
-spread bars computed per §6.
+spread bars computed per §6. **`head` is read beside `face` here too — 24 extra
+reads, $0.12**, for §8c's reason: the gap has never been measured on a raw
+frame, and BASICS has never been measured at all.
 
 ⚠ **The second sheet is BASICS and not the caveman, and the reason is §1.** The
 across-cast gap this court exists to close is **SUIT 27.3% against BASICS
@@ -467,11 +588,19 @@ looks.
 
 ```
   arm H   $0.10  SPENT                  fal · 20 reads · gate OPEN
-  arm R   ~$1.00  (+$0.08 openrouter)
+  arm R   ~$1.00  (+$0.08 openrouter)   8 @1024x1536 + 8 @1536x2304, 16 face reads
+          +$0.08                        16 `head` reads (§8c, added 2026-08-24)
   arm M   ~$1.80  (+$0.16 openrouter)   at 1536x2304; ~$1.20 at 1024x1536
+          +$0.12                        24 `head` reads (§8c, added 2026-08-24)
   ------------------------------------
-  ~$2.9 fal + ~$0.24 openrouter, NO CREDITS at any point
+  ~$3.1 fal + ~$0.24 openrouter, NO CREDITS at any point
 ```
+
+⚠ **The fal figure moved $2.9 → $3.1 after the countersign at fable-1552 §2, and
+it is stated rather than absorbed.** The whole of the $0.20 is §8c's `head`
+reads: 40 segmenter calls at $0.005, on frames the arms are buying anyway. It is
+carried back for countersign rather than folded in, on the same discipline arm H
+reported its own two-cent overrun under. **Granted fable-1553 Q1.**
 
 The three interpreter compiles are ~$0.24 of openrouter. **The account balance
 is deliberately NOT written here**: it is retired from the founder's desk at any
