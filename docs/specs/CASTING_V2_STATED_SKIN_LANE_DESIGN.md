@@ -3,6 +3,16 @@
 ⚠ **STATUS: COUNTERSIGNED (fable-1501) AND THEN STOPPED AT ITS OWN COURT
 (2026-08-24, opus-1185, ruled fable-1539). NOTHING IS BUILT, AND THE COMPLAINT
 BELOW IS NOT WHAT THE PRODUCT DOES — read §0 before anything else.**
+
+➡ **THE REDESIGN IS `docs/specs/CASTING_V2_DENSE_BRIEF_RATIONING_DESIGN.md`**
+(2026-08-24, ordered fable-1539 Q2 and scoped fable-1543 §1, awaiting
+countersign). **It replaces this document's STATED CASE and keeps its SHAPE**:
+the subject is dense briefs rather than colour words, the `NOTES_MAX`/born-ink
+coupling is in the same look, `olive` is carved out as its own vocabulary
+defect, and the acceptance arm is one that goes red on the tree it measures.
+§5's proposal, §6c's law and §7's fixture trap are cited there and unchanged —
+this file stays as the record of the stop, and it is not the page to build
+from.
 Ordered fable-1477 ASK 2 (*"a stated-appearance brief lane, designed AFTER the
 hair assert proves the pattern"*), re-endorsed fable-1499 §3 (*"3c's build still
 wants its design report and countersign before any prompt change —

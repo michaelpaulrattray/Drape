@@ -532,6 +532,37 @@ carry the rulings, the courts and the histories.
                                          *porcelain survives after the build*, it
                                          would go green against a tree where the
                                          word already survives 3/3
+                                         ✅ **THE REDESIGN IS WRITTEN**
+                                         (2026-08-24, awaiting countersign):
+                                         `docs/specs/CASTING_V2_DENSE_BRIEF_RATIONING_DESIGN.md`
+                                         — decides nothing, written on four FREE
+                                         readings, two of them new at the
+                                         production database. ⚠ THE FINDING IS
+                                         ONE POPULATION WITH TWO FAILURE MODES
+                                         AND ONLY ONE COUNTED: `notesOverflow`
+                                         sees the cap being hit (rolls 128, 129)
+                                         and NOTHING sees a fact quietly dropped
+                                         from a summary that fits (rolls 206,
+                                         208 — 148 and 165 chars against a 180
+                                         cap, `porcelain` absent from both).
+                                         ⚠ THE MECHANISM IS A FIXED OUTPUT
+                                         BUDGET: the density court's two arms
+                                         produced notes of the SAME LENGTH
+                                         (153/149 vs 152/152/146) on briefs of
+                                         553 and 190 chars, and production
+                                         agrees at 209 rolls — note length
+                                         climbs with brief length and then
+                                         stops, max 25 words in the entire
+                                         product against an ANNOUNCED "Under 25
+                                         words" the model writes to.
+                                         ⚠ AND THE POPULATION IS FOUR ROLLS, ALL
+                                         HIS — 4 of 209 briefs exceed 200
+                                         characters; the ordinary customer brief
+                                         is 48. The dense population is strictly
+                                         LARGER than the near-cap one the
+                                         `NOTES_MAX` park was closed on, which is
+                                         half of the re-read that park owes
+                                         before `CASTING_BORN_INK_SCOPE` widens
 3d ⚠ HIS CYBERNETIC BRIEF IS REFUSED     ordered fable-1477 §6, found by driving
    AS A VIDEO-GAME CHARACTER,            (opus-1128 §6). His own brief tripped
    ABOUT 1 TIME IN 7                     the cohort wall twice in fifteen

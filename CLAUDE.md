@@ -454,8 +454,26 @@ one from whoever owns its road.
   quantities and `gap` needs the HEAD box, and the roll road buys zero region
   reads today) and **~+11% render time**, and it declares no new fal allowance —
   the reads ride the shared `FAL_CONCURRENCY` courtesy pool, so
-  `assertFalBudget`'s sum stays at the account ceiling. ✅ **`users:1` ON
-  PRODUCTION SINCE 2026-08-24** — his own rolls are trimmed now. ⚠ **THE TWO
+  `assertFalBudget`'s sum stays at the account ceiling. ⚠ **IT WENT `users:1`
+  ON PRODUCTION 2026-08-24, SERVED EXACTLY ONE SHEET, AND IS `off` AGAIN — AND
+  THE REASON IS A FOUNDER RETARGET RATHER THAN A ROLLBACK** (fable-1593, his own
+  eye, the same hour). Roll 209 is the whole live population: 6 of 8 trimmed,
+  50s against 43/40s untrimmed, kept originals written. Two things came out of
+  it. **(a) a defect** — an untrimmed frame shipped AS RENDERED, so his sheet
+  carried six frames at 1024×1536 and two at 1536×2304, the feature's own
+  failure mode wearing its clothes; `rollService.ts`'s docblock asserted the
+  opposite, and what found it was measuring the stored objects rather than
+  re-reading the code that wrote them (working law 1). Fixed the same day: the
+  untouched path downscales, and the suite gained the first arm that can see a
+  SHEET rather than a frame. **(b) the retarget, which is why the flag is off** —
+  his eye found that **PAINTED DETAIL FOLLOWS COMPOSITION, not resolution**: the
+  engine paints fine facial texture where the face fills the frame, and no later
+  crop recovers what a wide composition never painted. So **the margin clause
+  comes OUT** (it was both the detail thief and the geometry breaker — the empty
+  feasible-`R` interval was measured on CLAUSE cells only, while the no-clause
+  control cells were all feasible), the large render and the trim STAY, and `T`
+  is re-chosen at the no-clause population's own geometry. **It flips back when
+  the RETARGETED version is what flips on, and not before.** ⚠ **THE TWO
   PRECONDITIONS THIS ENTRY USED TO NAME ARE BOTH DISCHARGED, and they are kept
   rather than deleted because a condition that leaves no trace is how the next
   seat re-derives it.** They were: the kept-original column must exist (a roll
