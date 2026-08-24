@@ -79,9 +79,15 @@ export const changeRequestsRouter = router({
         stripe_refund: "Stripe Refund",
         other: "Other",
       };
-      // Sensitive types that require Slack approval before execution
-      const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits", "stripe_refund"];
-      const isSensitive = SENSITIVE_TYPES.includes(request.type);
+      // Sensitive types require Slack approval before execution — and a type is
+      // sensitive EXACTLY WHEN it has an approval action to be approved with.
+      // That equivalence is structural rather than coincidental: two lines
+      // below, a sensitive type is looked up in `CR_TO_APPROVAL_ACTION`, so a
+      // sensitive type without an action would send `undefined` to Slack.
+      // Derived rather than re-typed (3g's D — this was a fourth hand-typed
+      // copy of the same six, and the test file's own copy had already drifted
+      // to FIVE, missing `stripe_refund`).
+      const isSensitive = request.type in CHANGE_REQUEST_ACTION_BY_TYPE;
 
       // Map change request types to Slack approval action types
       // Derived, never re-typed: `CHANGE_REQUEST_ACTION_BY_TYPE` is the one

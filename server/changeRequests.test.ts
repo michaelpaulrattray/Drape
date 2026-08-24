@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { moderatorRouter } from "./routes/moderator";
 import { changeRequestsRouter } from "./routes/admin/changeRequests";
+import { CHANGE_REQUEST_ACTION_BY_TYPE } from "./lib/adminActions";
 
 // Mock the slackNotification module
 vi.mock("./slack/slackNotification", () => ({
@@ -1528,57 +1529,96 @@ describe("Change Request - Slack Approval Gating", () => {
     vi.clearAllMocks();
   });
 
-  const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits"];
-  const NON_SENSITIVE_TYPES = ["flag_account", "note_incident", "other"];
+  /*
+   * ⚠ THIS BLOCK DECLARED ITS OWN SENSITIVE/NON-SENSITIVE LISTS AND ASSERTED
+   * THEIR LENGTHS — and it had DRIFTED, in a way its own arms could not see:
+   *
+   *     const SENSITIVE_TYPES = [... five entries ...];
+   *     it("should classify 5 types as sensitive", () => {
+   *       expect(SENSITIVE_TYPES).toHaveLength(5);      // its own array
+   *     });
+   *     it("should cover all 8 change request types", …) // the product has NINE
+   *
+   * `stripe_refund` was missing from both. The product treats SIX types as
+   * sensitive and accepts NINE, so the suite's only description of which
+   * change requests need Slack approval said a Stripe refund does not — and
+   * the arm that would have caught it was counting its own literal.
+   *
+   * Everything below is DERIVED: the vocabulary off the running
+   * `moderatorRouter`'s own input schema, and sensitivity off
+   * `CHANGE_REQUEST_ACTION_BY_TYPE`, which the review procedure now uses too.
+   * Filed under 3g's D.
+   */
+  function changeRequestTypes(): string[] {
+    const procedures = (moderatorRouter as unknown as {
+      _def: { procedures: Record<string, { _def: { inputs: unknown[] } }> };
+    })._def.procedures;
+    const schema = procedures.createChangeRequest!._def.inputs[0] as {
+      shape: { type: { options: string[] } };
+    };
+    const types = schema.shape.type.options;
+    // Population control: a reader that reads nothing agrees with everything.
+    if (!types?.length) throw new Error("read no change-request types off the router");
+    return [...types];
+  }
 
-  describe("sensitive type classification", () => {
-    it("should classify 5 types as sensitive", () => {
-      expect(SENSITIVE_TYPES).toHaveLength(5);
-      expect(SENSITIVE_TYPES).toContain("suspend_user");
-      expect(SENSITIVE_TYPES).toContain("unsuspend_user");
-      expect(SENSITIVE_TYPES).toContain("block_ip");
-      expect(SENSITIVE_TYPES).toContain("refund_credits");
-      expect(SENSITIVE_TYPES).toContain("add_credits");
+  /*
+   * Both lists are DERIVED, and the neighbouring arms in this describe use
+   * them. They were hand-typed literals until 2026-08-25, and the sensitive
+   * one had drifted to five (see the block above).
+   */
+  const SENSITIVE_TYPES = Object.keys(CHANGE_REQUEST_ACTION_BY_TYPE);
+  const NON_SENSITIVE_TYPES = changeRequestTypes().filter(
+    (t) => !SENSITIVE_TYPES.includes(t),
+  );
+
+  describe("sensitive type classification, DERIVED", () => {
+    it("a type is sensitive EXACTLY when it has a Slack approval action", () => {
+      const sensitive = Object.keys(CHANGE_REQUEST_ACTION_BY_TYPE);
+      // Quoted independently, because deriving BOTH sides would agree with
+      // anything: this is the product's contract, stated once, in a test.
+      expect([...sensitive].sort()).toEqual([
+        "add_credits", "block_ip", "refund_credits",
+        "stripe_refund", "suspend_user", "unsuspend_user",
+      ]);
     });
 
-    it("should classify 3 types as non-sensitive", () => {
-      expect(NON_SENSITIVE_TYPES).toHaveLength(3);
-      expect(NON_SENSITIVE_TYPES).toContain("flag_account");
-      expect(NON_SENSITIVE_TYPES).toContain("note_incident");
-      expect(NON_SENSITIVE_TYPES).toContain("other");
+    it("FROM THE DIFF — stripe_refund IS sensitive, which the old five-member list denied", () => {
+      expect(Object.keys(CHANGE_REQUEST_ACTION_BY_TYPE)).toContain("stripe_refund");
+      expect(changeRequestTypes()).toContain("stripe_refund");
     });
 
-    it("should not overlap between sensitive and non-sensitive", () => {
-      for (const type of SENSITIVE_TYPES) {
-        expect(NON_SENSITIVE_TYPES).not.toContain(type);
+    it("FROM THE DIFF — the product accepts NINE types, not the eight this file counted", () => {
+      expect(changeRequestTypes()).toHaveLength(9);
+    });
+
+    it("every sensitive type is one the product actually accepts", () => {
+      const accepted = changeRequestTypes();
+      for (const type of Object.keys(CHANGE_REQUEST_ACTION_BY_TYPE)) {
+        expect(accepted, `${type} has an approval action but is not an accepted type`).toContain(type);
       }
-      for (const type of NON_SENSITIVE_TYPES) {
-        expect(SENSITIVE_TYPES).not.toContain(type);
-      }
     });
 
-    it("should cover all 8 change request types", () => {
-      const allTypes = [...SENSITIVE_TYPES, ...NON_SENSITIVE_TYPES];
-      expect(allTypes).toHaveLength(8);
-      expect(allTypes).toContain("refund_credits");
-      expect(allTypes).toContain("add_credits");
-      expect(allTypes).toContain("flag_account");
-      expect(allTypes).toContain("note_incident");
-      expect(allTypes).toContain("suspend_user");
-      expect(allTypes).toContain("unsuspend_user");
-      expect(allTypes).toContain("block_ip");
-      expect(allTypes).toContain("other");
+    it("the non-sensitive types are the remainder, derived rather than listed twice", () => {
+      const sensitive = new Set(Object.keys(CHANGE_REQUEST_ACTION_BY_TYPE));
+      const nonSensitive = changeRequestTypes().filter((t) => !sensitive.has(t));
+      expect([...nonSensitive].sort()).toEqual(["flag_account", "note_incident", "other"]);
+      // Sensitive and non-sensitive partition the vocabulary — no type falls
+      // through either side, which is what "covers all types" was reaching for.
+      expect(nonSensitive.length + sensitive.size).toBe(changeRequestTypes().length);
     });
   });
 
   describe("CR to Slack approval action mapping", () => {
-    const CR_TO_APPROVAL_ACTION: Record<string, string> = {
-      suspend_user: "cr_suspendUser",
-      unsuspend_user: "cr_unsuspendUser",
-      refund_credits: "cr_refundCredits",
-      add_credits: "cr_addCredits",
-      block_ip: "cr_blockIP",
-    };
+    /*
+     * ⚠ A FIFTH HAND-TYPED COPY OF THE MAP STOOD HERE, and it had drifted to
+     * FIVE entries — `stripe_refund` missing, exactly as in the sensitive list
+     * above. It went unnoticed because the arm below iterated the file's OWN
+     * five-member `SENSITIVE_TYPES`, so the two short lists agreed with each
+     * other. Deriving the sensitive list made this arm fail on the first run,
+     * which is the derivation catching its neighbour.
+     */
+    const CR_TO_APPROVAL_ACTION: Record<string, string> = CHANGE_REQUEST_ACTION_BY_TYPE;
 
     it("should map all sensitive types to cr_ prefixed actions", () => {
       for (const type of SENSITIVE_TYPES) {
