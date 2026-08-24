@@ -379,7 +379,12 @@ evidence that short takes cut together are enough to make a film.
 Worth being blunt, because it bounds the ambition:
 
 - **No engine wrote the story.** The script-and-chat surface on the platform is
-  empty for both projects. The screenplay — a real one, with character arcs, a
+  empty for both projects — measured, not assumed. The second film does organise
+  its writing visibly, though: prompts carry screenplay-style character cues with
+  parentheticals (*"Haru (high, excited, childlike):"*), per-shot foley lines,
+  and a `purpose` field that labels every generation as a **beat** — with 63 jobs
+  declaring themselves *blocking tests* and *acting tests* rather than takes.
+  That rehearsal tier is worth copying. The screenplay — a real one, with character arcs, a
   hazing subplot and a death — is human work that enters only as prose inside
   individual shot prompts.
 - **No engine broke the story into shots.** Someone decided this beat is a

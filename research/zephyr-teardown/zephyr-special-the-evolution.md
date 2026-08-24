@@ -610,6 +610,67 @@ Sheet-mint prompts appear across models: **108 `gpt_image_2`, 102
 
 ---
 
+## 9c. The story layer — screenplay format, and a rehearsal tier
+
+**Still no script in the platform.** `cs_chat_ids` is empty on the Special's
+folders too, so across both productions there is no story artifact anywhere. The
+writing happens outside and arrives as prose.
+
+But the Special's JSON exposes how the writing is *organised*, through a field
+the first film had no equivalent of: **`scene_summary.purpose`**, 19 distinct
+values. The production is built from **beats**, not scenes:
+
+| Jobs | Purpose |
+|---:|---|
+| 129 | *"Zero dialogue beat — single-take CU, brow/forehead acting accuracy, directed eyelines, low female voice."* |
+| 58 | *"two-shot dialogue beat — both framed BIG: Jasmin big 3/4 CU with brief downward glance, Zero very tight 3/4 CU…"* |
+| 57 | *"high-energy musical group beat — long-focal 34°-FOV lens roaming between dancers…"* |
+| 54 | *"two-shot dialogue beat — Zero CU with directed eyelines + brow accuracy, then hard-cut Haru CU reaction."* |
+| **43** | *"**placement / blocking test** of the character scheme on the location."* |
+| **20** | *"**expressive-acting + reaction-cutaway test** on the established placement scheme."* |
+
+**Two of those are not shots at all.** 63 jobs declare themselves *tests* — of
+blocking against the diagram, and of acting coverage. That is a **rehearsal
+tier** the first film had no sign of: they generate to check staging works before
+generating the take.
+
+### The prompts are written in screenplay format
+
+Character cues with parenthetical direction, exactly as a script would:
+
+> **Haru (high, excited, childlike):** "…"
+> **Haru off-screen (continuing):** "…"
+> **Haru (escalating):** "…"
+> **Haru (muffled, struggling, then triumphant):** "…"
+
+And per-shot foley, different for every cut:
+
+> *Room tone, fabric rustle. No music.*
+> *Faint sofa creak. No music.*
+> *Fabric rustle on the big gestures. No music.*
+
+### The content is comedy, not action
+
+The first film was mecha peril. The Special's dialogue spine is a sitcom
+anecdote — "HARU'S STORY":
+
+> *"And she's just hanging there! And the wind goes—"*
+> *"She just grabs the radio and goes: 'I'm fucked up!'"*
+
+with segment titles like *"Lunch on the Dead Bridge"*, *"Chill Zone"*, *"GAME
+ON"*, *"VIBES"*. A character special about the same cast off-duty — which is why
+the whole method shifted from stylised action to handheld naturalism.
+
+### And the "scenes" are blocking positions
+
+The recurring named locations in prompts are not story locations, they are
+**marked positions on the scheme**: *"seated on the green sofa in her marked
+position (to the right of Reina)"*, *"standing/jumping ON the green sofa cushions
+in the mid-ground"*, *"seated cross-legged on the PINK yoga mat at the front of
+the room"*. The blocking diagram and the script are the same document.
+
+---
+
 ## 10. What carries over unchanged
 
 Worth stating, because it is the durable part:
