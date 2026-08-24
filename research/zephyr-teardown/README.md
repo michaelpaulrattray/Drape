@@ -31,6 +31,10 @@ video generations.
    the second production, and everything it changed.
 4. **[`implications-for-drape.md`](./implications-for-drape.md)** — what it means
    for the casting studio and the backend.
+4b. **[`CASTING-STUDIO-IMPLICATIONS.md`](./CASTING-STUDIO-IMPLICATIONS.md)** —
+   the research mapped onto Casting V2: what a post-Sign "take" should be (a
+   sample of a frozen Setup, never an edit), and the sheet answer (compose from
+   bought views, never generate), plus drift locks and the transfer cautions.
 5. **[`DRAPE-IMPLEMENTATION-SPEC.md`](./DRAPE-IMPLEMENTATION-SPEC.md)** — the
    framework written in the shape Drape would need it: data model, prompt
    assembler, camera spec, the shot contract, asset-mint recipes, the economics,
