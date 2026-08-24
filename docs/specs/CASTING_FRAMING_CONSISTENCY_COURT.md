@@ -12,7 +12,49 @@ it costs **3.9 points of `T_min`** (§2). The render step this design treated as
 free is a cost, the fidelity reason it is needed anyway is now measured, and the
 clause's target moved from a 1.22× widening to **1.32×**.
 
-✅ **ARM M HAS NOW RUN TOO, AND THE CLAUSE PASSES ITS MARGIN BAR — `T_min` =
+✅ **COURT CLOSED — PASS, WITH TWO BUILD CONDITIONS** (ruled fable-1559, headline
+adopted fable-1560, condition 2 rescinded and replaced fable-1561). **Neither is
+optional:**
+
+> **1. The cut's `R` is taken from the widest HEAD GAP in the population as well
+> as the tightest headroom.** `T_min` and `usableR` guarantee the FACE fits and
+> know nothing about the hair; BASICS proved it at a frame with 61 px of crown
+> sliced off (§9, arm M). A build without this sells the exact opposite of
+> `FRAMING_FIXED`'s own sentence.
+>
+> **2. The target `T` is chosen from the CLAUSE cells' evidence at the render
+> size.** `T_min` is the loosest reachable common frame and the best by cut size;
+> looser exists only by handling the binding outlier; tighter is freely reachable
+> and costs cut size monotonically. The build presents `T_min` — and at most one
+> tighter alternative — as strips, and **his eye picks**.
+>
+> ⚠ **The first version of condition 2 said *"chosen mid-band, not at `T_min`"*
+> and was RESCINDED within the hour, on driven arithmetic** (opus-1202,
+> fable-1561 §1): its supporting figures came from §1's **no-clause medians at the
+> DELIVERED size**, where the clause cells' own medians both sit BELOW `T_min`,
+> so the bar is strictly increasing in `T` and mid-band is where it is WORST.
+> **It is the size-moves-composition conflation arm R spent $1.24 disproving,
+> committed by the court's own reviewer inside the hour.** It is kept here rather
+> than deleted because a rescinded condition that leaves no trace is how the same
+> conflation arrives a third time. ⚠ **AND THE HEADLINE IS NOT `T_min`, WHICH IS THE
+INSTRUMENT THIS COURT CHOSE RATHER THAN THE QUESTION HE ASKED:**
+
+```
+  NO CLAUSE   SUIT 29.5%   BASICS 23.3%   →   ACROSS-CAST GAP  6.2pt   (n 8/8)
+  CLAUSE      SUIT 20.4%   BASICS 19.4%   →   ACROSS-CAST GAP  0.9pt   (n 8/7)
+
+  GAP NOISE FLOOR  the SAME SUIT prompts rendered twice differ by 1.2pt of median
+```
+
+**Under the clause the two casts agree with each other as closely as one cast
+agrees with itself.** That is *"id like the framing to be consistent across casts
+personally"* answered in his own terms. Like-for-like at ONE render size
+(1536×2304) — the §1 table's 27.3/23.5 are at the DELIVERED size and cannot stand
+beside these, because arm R proved size moves composition. ⚠ **The floor is n=1
+and is a SUIT-vs-SUIT figure standing in for a cross-cast one** — enough to say
+0.9pt is not worth arguing about, not enough to build a bar on.
+
+✅ **ARM M HAS RUN, AND THE CLAUSE PASSES ITS MARGIN BAR — `T_min` =
 22.7% against a bar of 26.0%, from 31.6% untouched.** It also IMPROVED
 within-sheet spread on both populations rather than degrading it (SUIT 7.4 →
 3.5pt, BASICS 6.6 → 3.6pt), against a noise floor of 0.2pt that makes the
@@ -274,6 +316,37 @@ FAIL      T_min > 29.0%      the clause bought less than a third of the gap.
 
 **It can go red**: today's number is 31.6%, which is a FAIL by this bar. The
 clause has to buy a **1.22× linear widening** on the binding frame to reach PASS.
+
+⚠ **AND THE MEDIAN-MOVE HALF OF THIS BAR WAS MEASURING THE WRONG THING —
+CORRECTED PROSPECTIVELY, WITH ITS FAILING ROW KEPT VISIBLE** (raised opus-1202
+§3, ruled fable-1561 §2). Applied to CLAUSE cells, *"no sheet's median moves more
+than 2.5 points to reach the common frame"* measures **the size of the CUT**, and
+the size of the cut is the mechanism working: the clause's whole job is to
+overshoot and the cut's whole job is to take the overshoot back, so the more
+margin the clause buys the bigger the "move". **The bar penalises the mechanism
+for succeeding.** The customer never sees the raw median; the frame she receives
+IS `T`.
+
+So the bar's PURPOSE — protect the frames his eye has accepted — transfers to the
+deliverable:
+
+```
+  the common frame T sits inside his accepted band     22.3-27.3%
+  no frame is upscaled to reach it                     0 of 15 at T = 22.7%
+  the hair clears at R                                 build condition 1
+  HIS EYE ratifies the frame at the strips             law 9, and it is the point
+```
+
+⚠ **WHY THIS IS A BAR CORRECTION AND NOT OPTIONAL STOPPING, on the record,
+because the distinction is the whole of its legitimacy**: the re-reading is
+STRUCTURAL rather than numerical (it says what the quantity means, not that the
+threshold should move); **the delivered row stays, FAIL and all**, in §9's arm M;
+it was raised by the seat holding the PASS and ruled by the seat that had just
+relayed a wrong rescue for it, so neither position profits; and the arithmetic
+that killed the *comfortable* alternative — raising `T` — was driven first and is
+recorded beside it. *"The bar measures the wrong thing"* is the most comfortable
+sentence available to anyone holding a FAIL, and it is only ever admissible with
+these four things attached.
 
 ⚠ **AND IT ACQUIRES A FOURTH OUTCOME AND AN n, BECAUSE THE BASICS SHEET DOES NOT
 ARRIVE WHOLE** (§6.5, ruled fable-1558 §1(d)). `T_min` is read **as delivered** —
@@ -809,6 +882,37 @@ its $5.00 ceiling; the ledger closes exactly — $27.3300 − $1.6100 − $1.140
   **BASICS moves 3.3pt (FAIL)**. The clause pulled BASICS's own median down to
   19.4%, so the common frame is now further from BASICS than from SUIT — the
   opposite of the gap this court started with.
+
+  ⚠ **THE FAIL IS ONE FRAME OF FIFTEEN, AND THAT IS A SENSITIVITY RATHER THAN A
+  RE-READING** (opus-1201 §2, ruled fable-1560). `T_min` is a min-over-max, so
+  the single tightest frame in either clause cell sets the common frame for both
+  sheets:
+
+  ```
+    as delivered (15 frames)       T 22.7%  binding SUIT/pos4
+                                   SUIT moves 2.3pt PASS · BASICS moves 3.3pt FAIL
+    without the ONE binding frame  T 21.9%  binding SUIT/pos7
+                                   SUIT moves 1.8pt PASS · BASICS moves 2.4pt PASS
+  ```
+
+  **THE DELIVERED READING STANDS — BASICS FAILS.** Dropping the frame that makes
+  a bar fail and reporting the pass is optional stopping, which §6.2 already
+  refuses in writing; the second row is here to show what the verdict is MADE OF,
+  and the headline above is the independent witness that the populations
+  themselves agree to 0.9pt.
+
+  ⚠ **AND RAISING THE TARGET DOES NOT RESCUE IT — IT IS STRICTLY WORSE,
+  MONOTONICALLY** (driven, opus-1202 §1). Both clause medians sit BELOW `T_min`
+  (20.4 and 19.4 against 22.7), and the bar is `|T − median|`, so over the whole
+  reachable range `T ≥ T_min` the moves only grow: at 25.0% they are 4.6pt and
+  5.6pt, at 26.0% 5.6pt and 6.6pt. **`T_min` is where this bar is BEST on the
+  evidence in hand, not the bottom of a feasible region** — the only direction
+  that improves it is downward, which means addressing that one tightest frame.
+
+  **The open question the build answers, and the court records rather than
+  settles**: does the cut target `T_min` — one outlier setting the frame for
+  everyone — or a quantile with the outlier handled another way (a wider render
+  for that slice, or one frame of eight accepted as unreachable)?
 
 ⚠ **AND THE FINDING §8c COULD NOT HAVE FOUND, BECAUSE IT WAS MEASURED ON SUIT.**
 §8c asked whether the cut's own `R` clears the head and answered *yes, by 35 px
