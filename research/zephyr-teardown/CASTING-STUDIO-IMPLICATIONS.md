@@ -189,6 +189,26 @@ this scene — omit entirely, for continuity with the burger-story shots"*), is
 what keeps a permanent flag usable: scenes can vary a locked feature without
 anyone deleting the lock.
 
+**Refined with the founder (2026-08-24), and this is the load-bearing design
+sentence: a lock guards SILENCE, and an explicit ask always beats it.** Drift is
+by definition an unasked change, so the lock is emitted only into renders whose
+ask does not touch that feature. The moment the user explicitly asks for the
+"forbidden" thing (blue eyes on a never-blue cast), that is an edit, not drift —
+the lock steps aside with no unlocking ceremony, and one follow-up settles the
+rule's future: *"just this look"* (rule survives, this version varies — the
+ZEPHYR horns pattern) or *"update the rule"* (the lock now protects the new
+value). A lock can therefore never fight an intentional edit, by construction.
+
+**Capture is semi-automatic: the server detects, the founder ratifies.** The
+detection signal needs no vision reader — a correction-shaped ask on a slot
+nobody ever edited, appearing twice, is drift evidence read from the ask
+history alone. On the second occurrence the studio offers the lock; one tap
+files it. Fully automatic filing is rejected on two in-house grounds: law 9 (a
+reader's verdict silently becoming a permanent rule is the engine ruling
+without his eyes), and *context-is-not-additive* (every emitted clause has a
+measured cost, so a wrongly auto-filed rule would quietly degrade every future
+render of that cast with no author to ask). Detection automatic; filing his.
+
 ---
 
 ## 4. Cautions — where blind transfer would collide with Drape's own measurements
