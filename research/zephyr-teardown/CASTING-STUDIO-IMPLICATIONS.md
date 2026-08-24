@@ -211,6 +211,41 @@ render of that cast with no author to ask). Detection automatic; filing his.
 
 ---
 
+## 3e. Producing better casts — the design-phase art direction (founder asked 2026-08-24)
+
+ZEPHYR spent three days designing characters before shooting a frame, and those
+design prompts are roll/refine territory. Five transferable habits, quoted:
+
+1. **Anti-polish vocabulary** — the counter to every engine's drift toward
+   generic airbrushed beauty, applied constantly: *"a natural, unpolished
+   attractive look — soft features, slightly messy hair"*, *"avoid overdesign,
+   keep natural imperfection and attitude"*, *"subtle dark circles under eyes
+   (light, aesthetic)"*, *"partially undone / imperfect fit — effortlessly
+   provocative, not polished"*, plus the skin stack (*"visible pores, fine
+   vellus hair, natural asymmetry, no smoothing"*). They buy flaws because
+   flaws read as a person.
+2. **One signature anchor per character** — Zero's horns, Haru's nose-glitter
+   strip, Reina's silver hoops; written with restraint (*"small horns —
+   stylized, natural integration, not fantasy-overkill"*). Double duty:
+   instant recognisability, and a discrete checkable feature — the natural
+   first drift-lock and the easiest thing to verify across generations.
+3. **Personality as renderable behaviour** — *"calm, spontaneous (awkward
+   poses), slightly slouched posture, indifferent"*. Not psychology; what the
+   trait looks like in a frame. Law 8 in someone else's data.
+4. **Silhouette-first design language** for stylized subjects — *"strong,
+   clean, and iconic silhouette"*, *"clean and readable"*, *"a designed
+   character rather than a natural insect"*, *"bold and iconic, not
+   cluttered"*, a *"HEAD DESIGN (main focus, signature feature)"* block.
+5. **A locked mini-palette per character** — Zero is olive/cream in every
+   wardrobe state; two or three named colours make every future outfit read
+   as hers.
+
+⚠ **None of this is pasted into roll prompts without a court.** The
+context-is-not-additive measurement (a subset of prompt context beat its
+superset) prices every added clause; each habit above earns its way in through
+a controlled pair, and `PHOTOREAL_HUMAN_BLOCKS` already covers part of the
+skin/realism ground — check overlap first.
+
 ## 4. Cautions — where blind transfer would collide with Drape's own measurements
 
 These are the places the research must NOT be applied as-is, each with the
