@@ -1022,6 +1022,12 @@ export async function landCandidate(input: {
   candidateId: number;
   imageKey: string;
   thumbKey?: string | null;
+  /**
+   * The untrimmed original this frame was cut from, when the roll was trimmed
+   * (migration 0053). Optional and null by default: a candidate cast before the
+   * trim existed, or on an untrimmed roll, honestly has none.
+   */
+  sourceKey?: string | null;
   provider: string;
   providerModel: string;
   providerRef?: string | null;
@@ -1050,6 +1056,7 @@ export async function landCandidate(input: {
       ) = 'cancelled' THEN 'cancelled_unseen' ELSE NULL END`,
       imageKey: input.imageKey,
       thumbKey: input.thumbKey ?? null,
+      sourceKey: input.sourceKey ?? null,
       provider: input.provider,
       providerModel: input.providerModel,
       providerRef: input.providerRef ?? null,
@@ -1274,6 +1281,13 @@ export type PurgeableCandidate = {
   userId: number;
   imageKey: string | null;
   thumbKey: string | null;
+  /**
+   * The framing trim's kept original (migration 0053) — purged with the rest,
+   * UNCONDITIONALLY. It holds an untrimmed frame of a person at a permanently
+   * public URL, so a retention path that forgot it would leave exactly the
+   * artifact the segment and library purges exist to destroy.
+   */
+  sourceKey: string | null;
 };
 
 /**
@@ -1306,6 +1320,7 @@ export async function listPurgeableCandidates(input: {
       userId: castingCandidates.userId,
       imageKey: castingCandidates.imageKey,
       thumbKey: castingCandidates.thumbKey,
+      sourceKey: castingCandidates.sourceKey,
     })
     .from(castingCandidates)
     .where(and(

@@ -1034,6 +1034,9 @@ async function dispatchCandidate(input: {
       on the founder's eye at strips rather than on arithmetic.
     */
     let delivered = image.bytes;
+    /* Whether the trim actually cut this frame — not merely whether the flag is
+       on. An untrimmed frame IS its own original, so nothing is kept for it. */
+    let trimmedThisFrame = false;
     const apiKey = process.env.FAL_KEY;
     if (input.trimEnabled && apiKey) {
       const trim = await applyFramingTrim(
@@ -1044,6 +1047,7 @@ async function dispatchCandidate(input: {
         { bytes: image.bytes },
       );
       delivered = trim.bytes;
+      trimmedThisFrame = trim.trimmed;
       log.info(
         {
           operationId, candidate: candidate.publicId,
@@ -1060,6 +1064,39 @@ async function dispatchCandidate(input: {
     // URL is never persisted and never projected (§E, §J).
     const store = input.dependencies.storeImage ?? defaultStoreImage;
     const stored = await store({ bytes: delivered, contentType: image.contentType });
+
+    /*
+      ⚠ THE KEPT ORIGINAL — the untrimmed frame the delivered one was cut from
+      (KEEP ruled fable-1576 §1; his *"run it"* on the ceremony 2026-08-24).
+
+      A crop only ever crops IN, so the pixels outside the delivered frame are
+      gone the moment this is not written. That makes discarding it irreversible
+      in one direction: every later framing change becomes a RE-RENDER — paid,
+      slow, and back with a DIFFERENT face — instead of a re-trim that is
+      instant, free and the same person. Framing is on his candidate list as a
+      customer axis, and a slider needs a master to slide on.
+
+      **Only when the trim actually happened.** An untrimmed frame IS its own
+      original; storing a second copy of identical bytes would double the
+      storage to record that nothing was cut.
+
+      A COURTESY, exactly like the thumbnail below it: a face she paid for does
+      not fail because its source copy did not store, so the failure lands as
+      `null` and the row is what it would have been. What it costs then is a
+      re-render instead of a re-trim, one day, for one cast.
+    */
+    const sourceKey = trimmedThisFrame
+      ? await store({ bytes: image.bytes, contentType: image.contentType })
+        .then((written) => written.key)
+        .catch((error) => {
+          log.warn(
+            { err: String(error).slice(0, 120), candidate: candidate.publicId },
+            "[rollService] the untrimmed original did not store — the face stands without one, "
+            + "and a later framing change on this cast is a re-render rather than a re-trim",
+          );
+          return null;
+        })
+      : null;
 
     /*
       AND A SMALL PICTURE BESIDE IT (fable-503).
@@ -1093,6 +1130,7 @@ async function dispatchCandidate(input: {
       candidateId: candidate.id,
       imageKey: stored.key,
       thumbKey,
+      sourceKey,
       provider: image.provenance.provider,
       providerModel: image.provenance.model,
       providerRef: image.provenance.providerRef ?? null,

@@ -871,3 +871,96 @@ describe("abandoning a sheet releases it, rather than waiting for a sweep", () =
     expect(source.match(/expiredReason: "retention"/g) ?? []).toHaveLength(1);
   });
 });
+
+/**
+ * ⚠ THE FRAMING TRIM'S KEPT ORIGINAL PURGES WITH THE CAST — unconditionally.
+ *
+ * `sourceKey` holds the untrimmed 1536x2304 frame a delivered face was cut from:
+ * **a photograph of a person at a permanently public URL.** An original that
+ * outlived its cast is precisely the artifact the segment and library purges
+ * above exist to destroy, arrived at by a third door — so it is on the same
+ * manifest, in the same transaction, and NOT gated on the trim flag.
+ */
+describe("a candidate's kept original purges with it", () => {
+  beforeEach(() => {
+    calls.deleteCandidates.mockResolvedValue(1);
+  });
+
+  it("carries the untrimmed original onto the candidate's own manifest", async () => {
+    calls.listPurgeableCandidates.mockResolvedValue([
+      {
+        id: 1, userId: 7,
+        imageKey: "casting-v2/candidates/a.png",
+        thumbKey: "casting-v2/candidates/a-thumb.png",
+        sourceKey: "casting-v2/candidates/a-source.png",
+      },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    const [manifest] = calls.queueStorageCleanup.mock.calls.at(-1) as [
+      { kind: string; storageItems: Array<{ storageKey: string }> },
+    ];
+    /* ONE manifest, like the segments above — WHICH batch it is on is the
+       assertion, because a second retention path is how bytes outlive the sheet
+       that promised to destroy them. */
+    expect(manifest.kind).toBe("casting_candidate_cleanup");
+    expect(manifest.storageItems.map((item) => item.storageKey)).toEqual([
+      "casting-v2/candidates/a.png",
+      "casting-v2/candidates/a-thumb.png",
+      "casting-v2/candidates/a-source.png",
+    ]);
+    expect(result.objectsQueued).toBe(3);
+  });
+
+  it("purges it whatever the trim flag says — the flag governs writing, never purging", async () => {
+    /*
+      The scope is explicitly OFF here, which is the state that would strand
+      objects if the manifest entry were gated: a flag turned back off after
+      originals exist must not leave them behind. Every purge block in this file
+      says so in its own voice; this arm is that sentence driven.
+    */
+    const previous = process.env.CASTING_FRAMING_TRIM_SCOPE;
+    process.env.CASTING_FRAMING_TRIM_SCOPE = "off";
+    try {
+      calls.listPurgeableCandidates.mockResolvedValue([
+        {
+          id: 1, userId: 7,
+          imageKey: "casting-v2/candidates/a.png",
+          thumbKey: null,
+          sourceKey: "casting-v2/candidates/a-source.png",
+        },
+      ]);
+
+      await runCandidateRetentionSweep();
+
+      const [manifest] = calls.queueStorageCleanup.mock.calls.at(-1) as [
+        { storageItems: Array<{ storageKey: string }> },
+      ];
+      expect(manifest.storageItems.map((item) => item.storageKey))
+        .toContain("casting-v2/candidates/a-source.png");
+    } finally {
+      if (previous === undefined) delete process.env.CASTING_FRAMING_TRIM_SCOPE;
+      else process.env.CASTING_FRAMING_TRIM_SCOPE = previous;
+    }
+  });
+
+  it("a candidate with no kept original queues no phantom key", async () => {
+    /* NULL means this candidate has no original — cast before the trim existed,
+       or on an untrimmed roll. Queueing a delete for a key nobody wrote is how a
+       sweep's counts stop meaning anything. */
+    calls.listPurgeableCandidates.mockResolvedValue([
+      { id: 1, userId: 7, imageKey: "casting-v2/candidates/a.png", thumbKey: null, sourceKey: null },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    const [manifest] = calls.queueStorageCleanup.mock.calls.at(-1) as [
+      { storageItems: Array<{ storageKey: string }> },
+    ];
+    expect(manifest.storageItems.map((item) => item.storageKey)).toEqual([
+      "casting-v2/candidates/a.png",
+    ]);
+    expect(result.objectsQueued).toBe(1);
+  });
+});

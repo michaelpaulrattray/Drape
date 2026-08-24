@@ -2114,6 +2114,31 @@ export const castingCandidates = mysqlTable("casting_candidates", {
   pointsCost: int("pointsCost").default(0).notNull(),
   imageKey: varchar("imageKey", { length: 512 }),
   thumbKey: varchar("thumbKey", { length: 512 }),
+  /*
+    THE FRAMING TRIM'S KEPT ORIGINAL — the untrimmed 1536x2304 frame the
+    delivered one was cut from (migration 0053; KEEP ruled fable-1576 §1 on the
+    founder's *"it gives us more control over framing"*, his *"run it"* on the
+    ceremony 2026-08-24).
+
+    NULL means this candidate has no kept original: cast before the trim existed,
+    or cast on an untrimmed roll. A crop only ever crops IN, so without it every
+    later framing change is a RE-RENDER — paid, slow, and back with a DIFFERENT
+    face — instead of a re-trim that is instant, free and the same person.
+
+    ⚠ NEVER PROJECTED. It is a source, not a picture anyone may fetch, and the
+    bucket is public — *not projected* is the only thing between it and a
+    stranger (fable-1576 §1, condition 3).
+
+    ⚠ It is the THIRD member of the key list `candidateRetention.ts` enumerates,
+    and its entry there is UNCONDITIONAL — never gated on the trim flag — in that
+    file's own voice: a flag turned back off after objects exist must not strand
+    them.
+
+    ⚠ Deliberately NOT on `casting_candidate_variants`. A refine anchors on the
+    delivered master at today's size and no trim runs on that road, so a variant
+    has no original to keep and a column there would be a promise nothing makes.
+  */
+  sourceKey: varchar("sourceKey", { length: 512 }),
   // INTERNAL provenance (D-12). Never projected.
   provider: varchar("provider", { length: 32 }),
   providerModel: varchar("providerModel", { length: 96 }),

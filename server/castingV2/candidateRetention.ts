@@ -312,8 +312,22 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
 
   for (const [userId, candidates] of Array.from(byUser.entries())) {
     const candidateIds = candidates.map((candidate) => candidate.id);
+    /*
+      ⚠ AND THE FRAMING TRIM'S KEPT ORIGINAL, `sourceKey` (migration 0053).
+
+      The third member of this list, and it is here UNCONDITIONALLY — never gated
+      on `CASTING_FRAMING_TRIM_SCOPE` — for the reason every block below this one
+      gives in its own words: **the flag governs whether it is WRITTEN, and
+      nothing governs whether it is PURGED.** A flag turned back off after
+      objects exist must not strand them.
+
+      What it holds is the untrimmed 1536x2304 frame a delivered face was cut
+      from — **a photograph of a person at a permanently public URL.** An
+      original that outlived its cast is precisely the artifact the segment and
+      library blocks below were written to destroy, arrived at by a third door.
+    */
     const storageItems = candidates.flatMap((candidate) =>
-      [candidate.imageKey, candidate.thumbKey]
+      [candidate.imageKey, candidate.thumbKey, candidate.sourceKey]
         .filter((key): key is string => Boolean(key))
         .map((storageKey) => ({ storageKey, storageBackend: "public_r2" as const })),
     );

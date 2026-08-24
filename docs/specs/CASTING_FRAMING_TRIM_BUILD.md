@@ -214,6 +214,21 @@ and all four are build items:
    Eight per roll ≈ **+40 MB per roll**, roughly tripling a candidate's storage
    footprint (~2.4 MB delivered + ~0.1 MB thumb + ~5 MB source).
 
+   ✅ **AND HE ASKED THE SCALABILITY QUESTION BEFORE SAYING "run it"** (2026-08-24,
+   his word verbatim; relayed fable-1579). The answer he was given, recorded here
+   so the next reader does not have to reconstruct it: **the DATABASE holds one
+   ~60-byte key per candidate** — the bytes live in R2 under the unconditional
+   purge path and die with the cast — which is roughly **$6/month at a
+   1000-user scale.**
+
+   ⚠ **The aging-out knob is NAMED AND NOT BUILT.** Originals are a
+   CONVENIENCE, never a dependency: nothing in the product reads one, and the
+   delivered frame is complete on its own. So if the storage line ever stops
+   being worth it, expiring originals older than some age is a POLICY CHANGE on
+   this same column — a sweep that nulls the key and queues the object — and
+   costs nothing anyone can see except that a re-trim of an old cast becomes a
+   re-render again. It is the future lever; it is not on the board.
+
 ⚠ **AND THE MANIFEST ENTRY IS UNCONDITIONAL — never gated on
 `CASTING_FRAMING_TRIM_SCOPE`.** Every purge block in `candidateRetention.ts` is
 written in the same voice: *the flag governs whether it is WRITTEN, nothing
