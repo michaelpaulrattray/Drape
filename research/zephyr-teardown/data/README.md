@@ -1,4 +1,7 @@
-# ZEPHYR corpus — what is here and how to reproduce it
+# ZEPHYR corpora — what is here and how to reproduce it
+
+**Two productions.** ZEPHYR (Mar–Apr 2026, 18,972 records) and ZEPHYR Special
+(Jun–Aug 2026, 4,838 records).
 
 Pulled 2026-08-24 from `https://fnf-api-gw.higgsfield.ai/fnf/folders/<id>/items/v2`,
 the ZEPHYR project's own folder API. **No authentication is required** — the
@@ -9,7 +12,17 @@ Re-fetch with [`../scripts/harvest.mjs`](../scripts/harvest.mjs) (`node harvest.
 writes `raw/*.json`). It pages at 100 items — the API's maximum — with a 120ms
 delay and five retries per page.
 
-## Folder IDs
+## Folder IDs — ZEPHYR Special (Jun–Aug 2026)
+
+| Folder | ID | Items |
+|---|---|---|
+| Root, "ZEPHYR Special FINAL" | `03f15fb6-c85c-427d-b030-c509b967d4ba` | 4,838 (incl. subfolders) |
+| regenerations | `e80a9c8b-c7ea-47a1-8661-65e7352f6dcb` | 90 |
+
+Harvest with `../scripts/harvest2.mjs`. Page the root with
+`include_subfolders=true`.
+
+## Folder IDs — ZEPHYR (Mar–Apr 2026)
 
 | Folder | ID | Items |
 |---|---|---|
@@ -26,7 +39,10 @@ delay and five retries per page.
 | `production.json` | 1.1M | All 275 keeper shots, verbatim — prompts, params, reference attachments. |
 | `production-shotlist.md` | 316K | The 275 shots as readable text, chronological, with author, settings, reference count and full prompt. |
 | `characters-manifest.md` | 2.8K | The asset bible as a table — filename, pixel dimensions, bytes. |
-| `iteration-prompts.jsonl` | 2.0M | **Derived.** The 18,643 iterations collapsed to 1,608 distinct (model, prompt) pairs with run count, authors, first/last timestamp and key parameters. |
+| `iteration-prompts.jsonl` | 2.0M | **Derived.** The 18,643 first-film iterations collapsed to 1,608 distinct (model, prompt) pairs with run count, authors, first/last timestamp and key parameters. |
+| `special-prompts.jsonl` | 3.3M | **Derived, ZEPHYR Special.** 541 distinct (model, prompt) pairs with runs, authors, duration, resolution, aspect, ref count and Element names. **Carries no audio field** — use the census below for audio claims. |
+| `special-job-census.jsonl` | 1.9M | **Derived, ZEPHYR Special — one row per job (4,837).** Model, author, timestamp, duration, resolution, `generate_audio`, audio attachment count, audio asset ids, audio host, image-ref count, Element names+categories, which reference grammar the prompt uses, and flags for `<<<audio_N>>>` / "87 BPM" / "not audible" / follow-the-audio. **This is the file that makes the audio and grammar claims checkable.** |
+| `reference-samples/` | ~11M | Plates and one audio clip, downloaded and opened. See its own README. |
 
 ## What is deliberately not committed
 

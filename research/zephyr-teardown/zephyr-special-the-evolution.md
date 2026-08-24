@@ -18,9 +18,9 @@ formalised. Where the two disagree, this document is the newer practice.
 
 | | ZEPHYR (Mar–Apr) | ZEPHYR Special (Jun–Aug) |
 |---|---|---|
-| Prompt language | **Chinese 216/275** | **English 3,647 / zero Chinese** |
-| Prompt form | prose | **structured JSON** (18%, and it is the best 18%) |
-| Reference addressing | `<<<image_N>>>` positional | **`<<<UUID>>>` naming a saved Element** |
+| Prompt language | **Chinese 216/275** | **English dominant; 12 jobs still Chinese** |
+| Prompt form | prose | prose + **structured JSON** (886 jobs) |
+| Reference addressing | `<<<image_N>>>` positional | positional **still dominant**, UUID Elements **added alongside** |
 | Resolution | 720p, all 275 | **4K (2,160) and 1080p (1,393)** |
 | Aspect | 16:9 only | 16:9 + **21:9** on Seedance 2.5 |
 | Slow motion | requested, 23% | **forbidden, 28% say "no slow-mo"** |
@@ -38,9 +38,28 @@ Models: `seedance_2_0` 3,553 · `soul_cinematic` 553 · `nano_banana_2` 346 ·
 In the first film, references were positional: `<<<image_1>>>` meant "the first
 file I attached", and its meaning changed shot to shot.
 
-**Now every reference is a named, categorised, persistent Element, addressed by
-UUID.** Measured: **2,955 of 2,955 prompt tokens (100%) resolve to a
-`reference_elements` id.** Nothing is positional any more.
+The Special **adds** a second grammar: a named, categorised, persistent Element
+addressed by UUID. Where a prompt carries UUID tokens, **2,955 of 2,955 (100%)
+resolve to a `reference_elements` id** — that figure holds.
+
+⚠ **But an earlier draft of this section said "nothing is positional any more",
+and that was flatly wrong.** Counted at the job level:
+
+| Grammar | Jobs | Distinct prompts |
+|---|---:|---:|
+| Positional `<<<image_N>>>` | **2,548** | 258 |
+| UUID Element `<<<uuid>>>` | 1,065 | 86 |
+| `@name` mention, no UUID | 213 | — |
+| **Both positional AND UUID** | **0** | 0 |
+
+**Positional addressing still dominates, and the two grammars are never mixed in
+one prompt** — zero jobs use both. So this is not a migration; it is **two
+parallel methods**, and the UUID one is heavily correlated with @jagan96's JSON
+approach. There is also a third, looser form — `@name` mentions (`@Naomi`,
+`@bridge`, `@музыка`) — that the first draft did not mention at all.
+
+The 100% figure was a true numerator over the wrong denominator, which is the
+exact shape of mistake this repo keeps re-learning.
 
 33 distinct Elements. The naming is the system:
 
@@ -61,6 +80,47 @@ it a first-class addressable object the prompt can name.
 
 Note also **props per character** (`guitar_reina` vs `guitar_zero`) and the
 `auto:` category prefix, which appears to be platform auto-classification.
+
+⚠ **The naming is the system, and the system has already drifted.** The registry
+contains **both `Sheet_MIRA` and `Sheet_mira`**, plus `zero_sheet` sitting beside
+`Sheet_zero`. That is working law 4 arriving in someone else's data: a hand-typed
+parallel naming scheme diverges from itself. Any Drape equivalent needs the name
+to be derived or constrained, not typed.
+
+### What actually gets attached to a shot, and why
+
+Counted across the 1,034 seedance jobs that use Elements — **the categories tell
+you the grammar of a scene**:
+
+| Category | Attachments |
+|---|---:|
+| `character` | 2,859 |
+| `environment` | 911 |
+| `prop` | 568 |
+
+The most common combinations per generation:
+
+| Jobs | Combination | What it is |
+|---:|---|---|
+| 200 | 5×character + environment | the whole band in a room |
+| 172 | character + environment + prop | one actor, a place, a thing |
+| 161 | 2×character + environment + prop | a two-hander with a prop |
+| 106 | 5×character + environment + prop | the group scene with the lemonade |
+| 98 | character alone | a clean single |
+
+**One Element per person** — five characters means five attachments, not one
+group plate. Elements per generation runs 1–7, with modes at 6 and 3.
+
+**The prop is not decoration; it is a continuity object with a per-beat state.**
+The `Glass` Element is attached **349 times**, and its scope line changes every
+beat: *"HERE: Zero is mid-sip from it when she chokes; liquid sloshes and a drop
+catches her lip"*, then *"the lemonade rocks glass held in her hand the whole
+take, mid-sip at the open"*. The same object, tracked through a scene.
+
+**And Elements ride OUTSIDE the image-attachment count** — 620 seedance jobs use
+Elements with **zero** image attachments; 2,609 use attachments with no Elements;
+414 use both. That is important enough to have superseded an argument in
+[`implications-for-drape.md`](./implications-for-drape.md); see the note there.
 
 ### Each Element carries a written identity block
 
@@ -203,6 +263,15 @@ So the model reads the geometry and is forbidden from rendering the arrows. This
 solves "where is everyone and which way are they facing" — a thing prose is bad
 at and a diagram is perfect for.
 
+**It also carries a camera visibility cone** — the pale wedge from the lower
+left, which the JSON prompts cite as *"the schematic's visibility cone"*. So the
+diagram encodes **camera blocking as well as character blocking**: where the
+lens is, and what is inside its view. I missed that on first reading and it is
+the more sophisticated half.
+
+And per §9, the base image was **generated** — a top-down of the room Element —
+then annotated. The whole artifact is minted, not drawn by hand.
+
 The plate is committed at
 [`data/reference-samples/Home_Scheme.png`](./data/reference-samples/Home_Scheme.png).
 
@@ -225,26 +294,47 @@ beside a large face close-up. Why?
 > head references (image 1 face + image 4 inverted) **at full close-up fidelity**;
 > **body/costume** from the character reference; harness/cabin from…
 
-They **source the face and the body from different references on purpose.** The
-sheet is built to support that split:
+They **source the face and the body from different references on purpose.** That
+technique is real, quoted verbatim, and used in **63 jobs**.
 
-- **Headless body views** carry the *costume* — cleanly, with no small
-  low-resolution face competing for the model's attention.
-- **The large face crop** carries the *identity* at maximum pixel density.
+⚠ **But I linked it to the headless sheets, and the data does not support that
+link. Three separate checks kill it:**
 
-The template is fixed across the whole project. `Zero_home` and `Sheet_zero` are
-byte-for-byte the same layout — title block (`ZERO` / `Height: 173 cm` /
-character traits / `Voice: calm, measured, confident`), two headless bodies,
-one big face — differing **only in wardrobe**. Both are committed under
+1. **DUAL REFERENCE jobs attach separate images, not one sheet.** All 63 carry
+   **zero `reference_elements`** and a mean of **4.0 image attachments**, and
+   their own text names *"the CLOSE-UP head ref (image 2)"* and *"the WIDE
+   cockpit ref (image 1)"* — two distinct files, not two panels of one plate.
+   **Not one DUAL job attaches a `Sheet_*` Element.**
+2. **The headless template is not new.** `Mira.jpg` — a **first-film** bible page,
+   already committed in this repo — is headless in exactly the same layout. Both
+   templates coexisted inside film one, so there was no between-productions
+   change to explain.
+3. **My own committed file already said so.** `data/reference-samples/README.md`
+   has carried the line *"Note the head is cropped off the body views"* about
+   `Mira.jpg` since the first commit. I wrote a contradiction of my own evidence
+   and did not check it.
+
+**What survives, and it is still worth having:** the sheets *are* built as
+face-and-body-in-separate-panels, and the prompts *do* split face and body
+sourcing. Whether the second is the reason for the first is **unestablished** —
+they are two expressions of the same instinct, and I have no evidence of a causal
+link between them.
+
+**And the honest reading of "why headless" is now: probably not on purpose.** The
+sheet-mint prompt (§9 below) explicitly asks for *"two full-length photos **from
+shoes to head**, front and back"* — heads requested. Some outputs have heads
+(the shot-013 sheet), some do not (`Mira.jpg`, `Zero_home`, `Sheet_zero`). The
+headlessness looks like **something the generator did**, not something the crew
+specified.
+
+⚠ **Also corrected: `Zero_home` and `Sheet_zero` do not differ "only in
+wardrobe".** Opened side by side, `Sheet_zero`'s face crop **has horns** and
+`Zero_home`'s **does not**. A wardrobe-state Element carries **body state as
+well as clothing** — which matters for Drape, because horns are a Casting-owned
+feature, not an outfit.
+
+Both plates are committed under
 [`data/reference-samples/`](./data/reference-samples/).
-
-> **Note the evolution.** The first film's shot-013 sheet had **heads on the body
-> views**. This project removed them. That is a deliberate template change
-> between productions, and the DUAL REFERENCE prompts are what it was changed
-> *for*.
-
-Also worth recording: the identity text block is **identical** across a
-character's wardrobe Elements. Identity is constant; only the outfit varies.
 
 ---
 
@@ -283,17 +373,52 @@ are one act.
 
 Same grammar as the image slots.
 
-### The most interesting part: the track is a *timing* reference, not a soundtrack
+### What the 9 audio files actually ARE — downloaded and measured
+
+Not uploaded songs. **Nine mono `.wav` clips, each about the length of one
+shot:**
+
+| Asset | Uses | Duration | Format |
+|---|---:|---:|---|
+| `47480bd1…_sfx.wav` | **716** | **14.12s** | 44.1 kHz, **mono**, 16-bit |
+| `783cdc43…_sfx.wav` | 148 | 13.64s | 44.1 kHz, mono, 16-bit |
+| `f9f3e6f7…_sfx.wav` | 135 | 13.64s | 44.1 kHz, mono, 16-bit |
+
+Two things identify them. Every URL ends **`_sfx.wav`**, the platform's own
+generated-audio naming; and they are served from
+**`d8j0ntlcm91z4.cloudfront.net`, the RESULTS host** — the same host the finished
+`.mp4`s come from, not the `d2ol7oe51mr4n9` host that serves uploads.
+
+**So the audio is the platform's own generated output, fed back in as an input.**
+The crew generated a shot with audio, kept the take they liked, and then attached
+that ~14-second clip to hundreds of later generations so the performance stayed
+consistent. One 14-second clip drove **716 generations**.
+
+That makes it neither a music track nor a sample library. It is a **performance
+anchor** — the audio equivalent of the character sheet. The most-used one is
+committed at
+[`data/reference-samples/audio-anchor-used-716x.wav`](./data/reference-samples/audio-anchor-used-716x.wav).
+
+### And the attached clip is a *timing* reference, not the soundtrack
 
 > `"audio"`: **diegetic singing ONLY. The DnB track itself is NOT audible / NOT
 > present in the mix** — we hear only the girls' voices, their laughter and the
 > room. **They sing in time as if the (unheard) 87 BPM track is playing.** No
 > music in the audio. No subtitles.
 
-They attach the song so the performance lands on the beat, then **instruct the
-model to exclude the song from the output**, leaving only diegetic voices. The
+They attach the clip so the performance lands on the beat, then **instruct the
+model to exclude the music from the output**, leaving only diegetic voices. The
 BPM is stated numerically. Music gets laid under the cut later — the same
 "SFX only, no music" discipline as the first film, now with a timing carrier.
+
+**Verified at the job level, because this was challenged:** every job whose
+prompt says `87 BPM` — **171 of 171** — carries an attached `audio_input`. Every
+job saying *"NOT audible / not present in the mix / diegetic singing ONLY"* —
+**139 of 139** — carries one too. Only 11 of those 139 also use an
+`<<<audio_N>>>` token, so **token presence badly under-counts attachment** and
+must not be used as a proxy. The per-job evidence is committed as
+[`data/special-job-census.jsonl`](./data/special-job-census.jsonl) (one row per
+job: audio count, audio host, grammar, elements, and these flags).
 
 ### And they direct imperfection
 
@@ -420,15 +545,67 @@ real limit, and they are different things.
 
 ---
 
-## 9. New models
+## 9. `gpt_image_2` is the asset factory — this is how the sheets get made
 
-- **`gpt_image_2`** (250 jobs, model id `videotape-alpha`) — 2816×1408,
-  `quality: high`, `resolution: 2k`, `aspect_ratio: auto`, and a `remove_bg`
-  flag. Prompts open *"Create a photorealistic cinematic film still…"*.
+The biggest thing the first draft under-read. 250 jobs, 30 distinct prompts, and
+only 6 of those are the *"Create a photorealistic cinematic film still…"* shape.
+**The rest mint the production's assets**, and several are in Russian.
+
+### The character-sheet recipe, in their own words
+
+> **сделай коллаж персонажа из image1** — должна быть **две фотографии в полный
+> рост с обуви до головы, спереди и сзади**, **крупный кадр лица и крупный кадр
+> профиля**, должна быть видна текстура кожи, матовая… она должна стоять на фоне
+> нейтральной серой стены
+>
+> *(make a character collage from image1 — two full-length photos from shoes to
+> head, front and back, a large face shot and a large profile shot, skin texture
+> must be visible, matte… she should stand against a neutral grey wall)*
+
+That is the sheet template as an instruction. Note it **asks for heads** — see
+§5 for why that matters.
+
+### Sheet = person × outfit, in one step
+
+The single most Drape-relevant prompt in the entire corpus:
+
+> **Character reference sheet of the character shown in `<<<image_1>>>`, wearing
+> the outfit/clothing from `<<<image_2>>>`, labeled "Zjasmin" at the top.** The
+> character is in a photo studio with a neutral seamless…
+
+One identity reference, one outfit reference, one composition step, out comes a
+wardrobe-state sheet. **And the label is explicitly requested** — the baked-in
+text is not an accident of the template, it is asked for by name. That is
+material for
+[`OPEN_TEST_baked-text-on-references.md`](./OPEN_TEST_baked-text-on-references.md).
+
+### It also revises sheets, and mints props and the blocking diagram
+
+- **Sheet revision preserving the text:** *"сделай новый character sheet, должна
+  остаться вся текстовая информация…"* — make a new sheet, all the text
+  information must remain, change the background.
+- **Props on white:** *"realistic item asset whiskey cup with transparent
+  lemonade"* — this is where the `Glass` Element comes from.
+- **The blocking diagram is MINTED, not drawn:** *"exact right topdown view of
+  that room. keep positions of all items"*, run against the room Element. The
+  `Home_Scheme` base is a generated top-down of the existing location, which was
+  then annotated with the character markers.
+
+Sheet-mint prompts appear across models: **108 `gpt_image_2`, 102
+`seedance_2_0`, 6 `seedance_2_5`** (216 jobs, 31 distinct).
+
+## 9b. The other new models
+
+- **`gpt_image_2`** — model id `videotape-alpha`, 2816×1408, `quality: high`,
+  `resolution: 2k`, `aspect_ratio: auto`, plus a `remove_bg` flag. *(These
+  parameter values are read from the harvest, not from the committed digests.)*
 - **`seedance_2_5`** (90) — the entire `regenerations` folder, all on
-  **2026-08-11**, all 720p, **21:9 (2016×864)**, with an `extension_mode` field
-  Seedance 2.0 does not have. This is the newest work in the corpus: re-running
-  finished shots through a newer model at cinemascope.
+  **2026-08-11**, **all 90 at 720p**, 21:9 (2016×864), with an `extension_mode`
+  field Seedance 2.0 does not have.
+  ⚠ **This is NOT finishing or upscaling, and an earlier draft implied it was.**
+  720p at the tail of a project that shot 2,160 jobs in 4K is *cheaper* than the
+  work it follows. The honest reading is a **model trial / re-take pass** — new
+  engine, low resolution, one day, done.
 - **`cinematic_studio_video_3_5`** (4) — barely touched.
 
 ---
@@ -437,7 +614,8 @@ real limit, and they are different things.
 
 Worth stating, because it is the durable part:
 
-- **No chaining.** Still no shot-to-shot lineage.
+- **No chaining.** Counted for this project too: `job_set_parent_id` is set on
+  **0 of 4,837** jobs. Two productions, 23,809 jobs, zero lineage.
 - **`multi_shots: false`** on every video job, in both projects.
 - **Negative constraints do the heavy lifting** — `NOT a 3D render, NOT a game
   engine, NOT game-cutscene aesthetic, NOT a cartoon` is the direct descendant

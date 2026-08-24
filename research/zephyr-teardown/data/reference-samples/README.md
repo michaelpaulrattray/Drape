@@ -1,4 +1,4 @@
-# Four reference plates, downloaded and opened
+# Reference plates and clips, downloaded and opened
 
 These are the artifacts behind the claims in the teardown. They are here because
 an earlier draft described these files from their **filenames** and got it wrong
@@ -12,6 +12,16 @@ model sheets. Open them.
 | `Mira.jpg` | A `Characters` bible page. Title, height, voice, character notes; a **headless** costume turnaround front and back; a large face close-up. Note the head is cropped off the body views — costume and face are shown separately. |
 | `Reina_s_mecha.png` | Vehicle model sheet. Title, design-intent line, four views (front with pilot visible, back, side), and an annotated weapons close-up. |
 
-Sources are the CloudFront URLs recorded in `../production.json` and
-`../characters.json`; these were fetched 2026-08-24. Copyright remains
+## From ZEPHYR Special (the later production)
+
+| File | What it is |
+|---|---|
+| `Zero_home.png` | A wardrobe-state Element. Same template as `Sheet_zero` — text block, two **headless** bodies, one big face — but a different outfit **and no horns on the face crop**. State plates carry body state, not just clothing. |
+| `Sheet_zero.png` | The same character, rock wardrobe, **horns present**. |
+| `Home_Scheme.png` | The blocking diagram: top-down room plan, a coloured marker per character showing position and facing, plus a **camera visibility cone** (the pale wedge, lower left). Scoped in prompts as *"layout only, overlays never drawn."* Its base was **generated** from the room Element, then annotated. |
+| `special-6shots-in-8s-frames.png` | Eight frames sampled from one finished video whose prompt described six shots over "~24s" on an 8-second job. Five or six distinct setups land inside 8.042s — the model compresses rather than truncating. Zero appears with **no horns**, per her scene override. |
+| `audio-anchor-used-716x.wav` | The most-reused audio input in the project: **14.12s, mono, 44.1 kHz**, served from the *results* host. Platform-generated audio fed back in as a performance anchor for 716 generations. |
+
+Sources are the CloudFront URLs recorded in `../production.json`,
+`../characters.json` and `../special-job-census.jsonl`; fetched 2026-08-24. Copyright remains
 Higgsfield Studio's — held here as research evidence, not for reuse.

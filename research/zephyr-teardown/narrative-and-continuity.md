@@ -1,6 +1,8 @@
 # How ZEPHYR held a story together — and how it handled the 15-second ceiling
 
-Read off 18,972 job records from the project's own API, 2026-08-24. Every number
+Read off 18,972 job records from the FIRST production's own API, 2026-08-24.
+⚠ A later production (ZEPHYR Special) changed much of this — see
+[`zephyr-special-the-evolution.md`](./zephyr-special-the-evolution.md). Every number
 here is counted, not estimated. Where something is not established by the data,
 this document says so rather than filling the gap.
 

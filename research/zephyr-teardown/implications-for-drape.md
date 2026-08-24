@@ -101,6 +101,13 @@ cockpit, city. **If a single character costs six attachment slots, you cannot
 compose a shot at all** — one character would consume more references than an
 entire finished ZEPHYR shot uses.
 
+⚠ **This slot arithmetic is superseded for engines with an asset registry.** In
+the later ZEPHYR Special, saved Elements ride **outside** the attachment count —
+620 shots use Elements with **zero** image attachments. Where a registry exists,
+a character does not consume an attachment slot at all. The composite-plate
+argument still holds for engines without one, which is the case this section was
+written against; it is no longer the general case.
+
 So the requirement is not more views. It is a **composite plate**: the views
 Drape already renders, laid out into one image, as one attachment. Drape's
 `composeCharacterSheet` already does exactly this kind of composition for the
@@ -140,6 +147,48 @@ composition story** — a way to put a Casting-owned person into a Wardrobe-owne
 outfit and get a stable plate out — rather than a second asset library inside
 Casting. That is a real product question and a founder one; it is named here as
 a finding, not proposed as work.
+
+### The later production answers this, and its answer crosses D-62's line
+
+ZEPHYR Special solved the state axis with a **named asset registry** —
+`Zero_home`, `Zero_rock`, `zero_inside`: one person, three outfits, three
+separately addressable plates, each reusable across hundreds of shots. It works,
+and it is the cleanest thing in either corpus.
+
+**But those are exactly the persistent per-state plates D-62 assigns away from
+Casting.** So the model that works crosses the boundary rather than respecting
+it. This does not make D-62 wrong — it makes the tension concrete, and it is the
+founder's to resolve.
+
+**Two facts sharpen the question rather than softening it:**
+
+1. **A state plate carries body state, not just clothing.** Opened side by side,
+   `Sheet_zero`'s face crop has horns and `Zero_home`'s does not — same character,
+   same template, same identity text. Horns are a *Casting-owned feature*. So a
+   "wardrobe" plate is not purely a Wardrobe artifact, and a clean split along
+   the D-62 line may not be available in practice.
+2. **The composition is one step, and they do it with an image model.** From
+   their own prompt: *"Character reference sheet of the character shown in
+   `<<<image_1>>>`, **wearing the outfit/clothing from `<<<image_2>>>`**, labeled
+   'Zjasmin' at the top."* Identity reference × outfit reference → state sheet.
+   That is the Casting↔Wardrobe composition story, already built by someone else,
+   in a single generation.
+
+**Where the composed plate would live — Casting, Wardrobe, or somewhere new — is
+a founder fork.** Flagged, not decided. The adjacent live thread is
+`CASTING_TWO_PATHS_SCOPE` (`path` / `wardrobeLine` on the cast, `users:1` since
+2026-08-24).
+
+### And a pattern with no Drape analogue at all
+
+`Home_Scheme`: mint a top-down view of the location, annotate it with a marker
+per character showing **position and facing** plus a **camera visibility cone**,
+attach it scoped *"layout only, overlays never drawn."*
+
+It is the proven cheap answer to multi-character staging — the thing prose is
+worst at. Drape has nothing like it, and if a film capability is ever built this
+is the pattern to copy first. Worth noting the base image was **generated** from
+the location asset, so it costs one image call, not an illustrator.
 
 > **Also worth orienting against:** `CASTING_TWO_PATHS_SCOPE` went live at
 > `users:1` on 2026-08-24, giving casts a `path` and a `wardrobeLine`
@@ -305,7 +354,7 @@ exploration, which is exactly the layer Drape intends to own.
 Worth stating because it bounds the ambition honestly.
 
 **The engines rendered shots. They did not tell the story.** `cs_chat_ids` is
-empty on all three project folders — no script, no beat sheet, no story artifact
+empty on all three of the FIRST project's folders — no script, no beat sheet, no story artifact
 exists in the platform. The screenplay is human work that enters the system only
 as prose inside individual shot prompts. The dialogue reconstructed from the
 prompts is a real screenplay with character arcs, a hazing subplot and a death;

@@ -1,8 +1,8 @@
 # The ZEPHYR teardown
 
 A forensic reverse-engineering of **ZEPHYR**, the mecha short film published by
-Higgsfield Studio — read off **18,972 job records** pulled from the project's own
-API on 2026-08-24. Every prompt, every model parameter, every reference
+Higgsfield Studio — read off **18,972 job records** from this project's own API on 2026-08-24
+(a second production adds 4,838 more — see the Special). Every prompt, every model parameter, every reference
 attachment.
 
 Why it is in this repo: Drape intends to let an ordinary person produce a film
@@ -11,12 +11,20 @@ to a complete, inspectable worked example that exists. It also answers a live
 casting-studio question — what a cast needs in order to stay consistent across
 video generations.
 
+> ⚠ **There are TWO productions.** This file covers the first (Mar–Apr 2026).
+> A later, more advanced one — **ZEPHYR Special**, Jun–Aug 2026 — supersedes much
+> of the method below. Where they disagree, the Special is the newer practice.
+
 **Read in this order:**
 
-1. **This file** — the pipeline, the prompt grammar, the numbers.
+0. **[`THE-FRAMEWORK.md`](./THE-FRAMEWORK.md)** — plain-English rundown of how the
+   whole system works, across both productions. **Start here.**
+1. **This file** — the first film's pipeline, prompt grammar and numbers.
 2. **[`narrative-and-continuity.md`](./narrative-and-continuity.md)** — how the
    story was built and how continuity survived, including the 15-second ceiling.
-3. **[`implications-for-drape.md`](./implications-for-drape.md)** — what it means
+3. **[`zephyr-special-the-evolution.md`](./zephyr-special-the-evolution.md)** —
+   the second production, and everything it changed.
+4. **[`implications-for-drape.md`](./implications-for-drape.md)** — what it means
    for the casting studio and the backend.
 
 **Filed out of this research, not yet run:**
