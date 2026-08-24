@@ -333,7 +333,17 @@ carry the rulings, the courts and the histories.
                                           on business wardrobe; suit sheets came
                                           back chest-up while prehistoric and
                                           basics obeyed). Its court is the next
-                                          design on the board. ✅ AND THE LAST
+                                          design on the board. ⚠ AND FRAMING IS
+                                          NOW ON HIS OWN CANDIDATE LIST AS A
+                                          CUSTOMER SETTING (fable-1548; the
+                                          settings-modal design §10b) — so that
+                                          court may be building toward a
+                                          user-facing axis and not only a house
+                                          consistency fix, and the two need
+                                          different things: a house fix needs
+                                          consistency, a customer axis needs a
+                                          closed vocabulary and a picture per
+                                          option. ✅ AND THE LAST
                                           TECHNICAL PRECONDITION CLOSED BY HIS
                                           OWN WORD THE SAME HOUR: asked whether
                                           a tattoo ask on an outfit nobody has

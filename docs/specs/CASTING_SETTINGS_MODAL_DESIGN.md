@@ -1,9 +1,9 @@
 # A SETTINGS MODAL FOR CASTING — design report
 
-⚠ **STATUS: COUNTERSIGNED (fable-1545) AND THEN AMENDED IN FIVE PLACES BY THE
-FOUNDER THE SAME DAY (fable-1546 and fable-1547). READ §10 FIRST — it is his
-words, and this document says things he has overruled wherever §10 is not
-consulted.** Nothing here is built.
+⚠ **STATUS: COUNTERSIGNED (fable-1545) AND THEN AMENDED IN SIX PLACES BY THE
+FOUNDER THE SAME DAY (fable-1546, fable-1547 and fable-1548). READ §10 FIRST —
+it is his words, and this document says things he has overruled wherever §10 is
+not consulted.** Nothing here is built.
 
 Ordered fable-1531 §2 from the founder's own question, with the Higgsfield "Film
 setup" screen he sent as the reference
@@ -192,6 +192,18 @@ server says this account can actually set, never authored in the client. That is
 the same shape `twoPathsEnabled` already has, and it is why the toggle can be
 absent rather than disabled.
 
+⚠ **AND HE HAS DRAWN THE LINE ONE STEP FURTHER OUT — the bullet above forbade
+FUTURE rows and his ruling forbids DISABLED ones** (§10b, relayed fable-1548).
+The distinction is real and it is not a softening: **a disabled control is a
+question that dead-ends; a labeled "coming soon" row is an announcement, not a
+question.** It invites no tap, promises nothing today, and tells the customer
+where the product is going — so D-180 is not engaged by it at all. The rail
+therefore carries **two kinds of row**: LIVE, derived from the server exactly as
+the corollary says and unchanged by his ruling; and COMING SOON, labeled as such
+and non-interactive. What the sentence above still governs is the LIVE half, and
+the ratchet is untouched — a coming-soon row is not an axis ordered, it is an
+axis named.
+
 ---
 
 ## 6. The composite-plate input (attached fable-1543 §2)
@@ -318,7 +330,11 @@ on the page rather than being tidied away into their answers.
    → **Ruled: with the build, and RESERVED** (fable-1545 §1.5) — brought to him
    before the styles build starts, citing §7. He has since named styles,
    lighting and backgrounds as the candidate axes (§10), so the question now has
-   three subjects rather than one.
+   three subjects rather than one. ⚠ **And the sixth ruling widened that list
+   again** (§10b): backgrounds, lighting, wardrobes, energy/moods, potentially
+   framing. **Every one of them meets §7's test before it is admitted**, and
+   naming a row is not answering that test — a coming-soon row announces the
+   axis, it does not decide whether the axis can be pictured.
 
 ---
 
@@ -352,6 +368,8 @@ Four rulings, each amending a section above:
 unchanged, and bypass-with-notification wired.** His named candidates for later
 axes are cast style, lighting and backgrounds — each still dark → measured →
 opened per §5, and each admitted to the modal only if §7 says it is picturable.
+⚠ **That candidate list is superseded by §10b's, which is longer and which he
+gave a place to LIVE on the surface before any of them is built.**
 
 ### 10a. A fifth ruling, the next hour (relayed fable-1547)
 
@@ -373,3 +391,49 @@ match a label is how the two stop being able to disagree on purpose.
 pills for as long as they exist, and `sheetNotice`'s copy. **Swept at the modal
 build's own sitting, not before**, because a half-renamed vocabulary across two
 sittings is worse than either name consistently.
+
+### 10b. A sixth ruling, the same day (relayed fable-1548)
+
+> *"this allows us to build out customizability for the user whether they want
+> specific backgrounds for their sci fi casts or lighting or wardrobes or
+> energy/moods or potentially even framing. you can design these all into the
+> modal and coming soon features so the modal stays true"*
+
+**THE RAIL CARRIES LABELED "COMING SOON" ROWS FOR AXES THE PRODUCT CANNOT SERVE
+YET.** → §5's corollary, amended there rather than here.
+
+⚠ **This overrides §5's *"a rail that ships six with four disabled is D-180's
+dead end"* — and it overrides it on a distinction, not on a preference.** My
+sentence banned FUTURE rows because I read every extra row as a control that
+dead-ends. His draws the line at DISABLED: **a disabled control is a question
+with no answer; a coming-soon row is an announcement, and an announcement asks
+the customer nothing.** So the rail has two kinds of row — LIVE (derived from
+what the server says this account can set, unchanged) and COMING SOON (labeled,
+non-interactive, honest) — and D-180 is engaged by neither.
+
+**The discipline that keeps *"the modal stays true"* true.** A coming-soon row
+is a PROMISE made on a customer surface, so the list is governed rather than
+decorative, in the shape `KNOWN_DEBTS` already has in this repository:
+
+- a row appears **only for an axis genuinely on the roadmap** — never to make
+  the rail look fuller;
+- each names its axis **in the customer's ontology** (working law 8), not in the
+  schema's;
+- a row **leaves only by going LIVE or by his word**, never by silent deletion.
+  A promise withdrawn quietly is the failure this shape exists to prevent.
+
+**His candidate set, verbatim and recorded as candidates:** backgrounds (e.g.
+for sci-fi casts), lighting, wardrobes, energy/moods, potentially framing.
+⚠ **None of them is thereby ordered as buildable.** Each still earns its way
+dark → measured → opened (§5, LIVE half unchanged) and each is admitted only if
+§7 says it can be pictured. **What is ordered is that the modal's rail is where
+they will live, and that it may say so now.**
+
+⚠ **Note the last one, because it reaches a sitting that is already on the
+board: FRAMING IS NOW ON HIS OWN CANDIDATE LIST AS A CUSTOMER AXIS.** The
+framing redesign was ordered as a house-consistency fix (the engine under-obeys
+the waist-up order on business wardrobe). Its court may be building toward a
+user-facing setting, and a court designed for one of those is not automatically
+a court for the other — a house fix needs consistency, a customer axis needs a
+vocabulary and a picture per option. The framing sitting is told this in
+`POST_SIGN_ROADMAP.md`, where it will act, and not only here.
