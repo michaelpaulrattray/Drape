@@ -17,6 +17,10 @@ video generations.
 
 **Read in this order:**
 
+000. **[`MAKERS-BRIEFS.md`](./MAKERS-BRIEFS.md)** — the studio's OWN project
+   briefs: their struggles, their lessons, and the reveal that the prompts were
+   written by **Claude running skills** (CINEDANCE). The research's findings
+   scored against their own account.
 00. **[`FOUNDER-REPORT.md`](./FOUNDER-REPORT.md)** — everything learned, in
    plain English, with the Drape and casting-studio applications. The summary
    of summaries.

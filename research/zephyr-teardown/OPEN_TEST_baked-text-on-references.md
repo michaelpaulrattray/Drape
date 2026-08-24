@@ -147,6 +147,16 @@ prompt), and their consistency may partly ride on it. Arm D is the arm that
 decides this, and this specimen is why its answer matters beyond lettering
 leakage.
 
+## Maker verdict, logged 2026-08-24 (evidence, not a measurement)
+
+The Episode 1 project brief, in the studio's own words: *"those little
+descriptions under the detail are **almost useless for the video generation**,
+because you still have to describe the whole weapon operation process in the
+prompt."* The makers themselves say baked annotations do not function as
+prompts for the video engine — while still shipping sheets with text on them.
+Practitioner testimony for the D-adjacent question; the controlled pairs above
+remain the test.
+
 ## Related open question, same sitting
 
 ZEPHYR's plates carry `Voice:` and `Character:` lines — information an image

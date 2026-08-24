@@ -172,6 +172,18 @@ research waiting for your go.
 
 ---
 
+## Late discovery: their own briefs (read after this report was first written)
+
+The three project pages each carry a brief written by the studio — their own
+struggles and lessons. They confirm the research almost point for point, and
+add the biggest fact of all: **their prompts were written by Claude running
+skills** (an acting system + CINEDANCE, their video-prompt writer, plus a
+diagram skill for staging). Your plan — turn this research into Claude skills
+inside Drape — is not a bet; it is the studied studio's own proven pipeline.
+Their deepest craft rule, from Adiliada: **the character's face close-up is
+never regenerated — every sheet, state and universe is assembled around the
+same literal pixels.** Full quotes and the scorecard: `MAKERS-BRIEFS.md`.
+
 ## Decisions that are yours (parked, not forgotten)
 
 1. **The baked-text test** — their cards have text printed on them (name,
