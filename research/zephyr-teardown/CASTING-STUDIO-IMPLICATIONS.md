@@ -160,6 +160,23 @@ five angles on one plate. Before the composite ships as the engine-facing
 artifact, court the layout: one-big-face-plus-bodies vs all-six-views, same
 setup, identity fidelity judged by eye.
 
+**And the founder's second observation (same day) extends it: they use 2–3
+panels, not five or six.** Counted on the opened sheets, the panel count
+converges exactly like the face count: film one's early sheet had ~7 cells
+(bodies front+back, face at three angles, two costume crops); the bible and
+Special sheets have **3** (body front, body back, one big face); Adiliada's
+recipe orders **2** (*"two-panel character reference sheet"* — one headless
+body, one close-up). Five months of production experience kept only the
+non-redundant panels: outfit front, outfit back, identity once. The
+three-quarter and profile views evidently earned nothing at the engine.
+
+**Consequence, stated carefully:** the six-view package is the PRODUCT Sign
+sells — untouched by this. The ENGINE-FACING composite is a different artifact,
+and the court above should include a 2–3-panel arm (big face + body front ±
+body back) beside the six-cell one. If the minimal layout wins, the composite
+is also smaller, cheaper to attach, and leaves more of the attachment budget
+for the scene.
+
 Their prompts source **face and body from different references on purpose** —
 *"take the FACE/HEAD — skin, pores, hair, eyes — [from the close ref]; take
 BODY POSE + COSTUME from the wide ref."* The sheet layout serves that split: a
