@@ -1090,6 +1090,54 @@ carry the rulings, the courts and the histories.
                                          build rather than a rename) and filed
                                          here rather than swept silently, per
                                          law 7's own wording.
+                                         ✅ **TAKEN AND CLOSED 2026-08-25**
+                                         (countersigned fable-1619, shipped
+                                         `f1030bad`). ⚠ **IT WAS FILED AS FOUR
+                                         MIRRORS AND IT IS SEVEN — and FOUR of
+                                         the seven had already drifted**, which
+                                         is the third time in this arc that a
+                                         population came in bigger than the
+                                         report that filed it. `refine`,
+                                         `generate` and `sessions.create` are
+                                         `.strict()` and their copies were not,
+                                         so those arms would have ACCEPTED an
+                                         unknown field the product refuses —
+                                         invariant 4, tested backwards; and
+                                         `garments.import`'s copy had no
+                                         `cropUrl` at all, so three arms said
+                                         nothing about the field carrying the
+                                         cut. All eight wardrobe wire schemas
+                                         now live in
+                                         `server/routes/wardrobeInput.ts`, which
+                                         the router uses directly — the THIRD
+                                         instance of that module shape after
+                                         `emailAuthInput.ts` and
+                                         `modelCreateInput.ts`.
+                                         ⚠ **THE LESSON IS THAT RECONNECTING
+                                         THE ARMS WAS NOT THE FIX.** All seven
+                                         passed before the reconnection and
+                                         after it: none of them had ever
+                                         asserted the things that drifted, so
+                                         the copies were never CAUGHT being
+                                         wrong — they were merely unable to be
+                                         checked. **A silent difference stays
+                                         silent until something asks**, so two
+                                         arms were written FROM THE DIFF between
+                                         copy and source rather than from
+                                         imagination. A sitting that reconnects
+                                         a mirrored test and stops there has
+                                         moved the mirror, not removed it.
+                                         ⚠ **AND THE DISPOSITION DOOR CHOSE THE
+                                         SHAPE**: exporting the schemas from
+                                         `wardrobe.ts` was fewer lines and would
+                                         have given them a test as their only
+                                         reader, which the door refuses. Lifting
+                                         them gives each a production reader
+                                         with the test as a second — the door
+                                         pushing toward the shape that was right
+                                         anyway, for the second time in this
+                                         arc (`REFERRAL_CODE_LENGTH` was the
+                                         first).
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.
