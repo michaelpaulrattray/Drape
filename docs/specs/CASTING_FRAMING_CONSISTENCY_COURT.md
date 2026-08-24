@@ -3,10 +3,19 @@
 ✅ **STATUS: COUNTERSIGNED (fable-1552, extended fable-1553). ARM H HAS RUN AND
 ITS GATE IS OPEN — the cut's landmark word is `head` (§8a), §8b shows the hair
 collision on a real frame the last court's own cut produced, and §8c answers the
-question that swap raises: at the cut's own headroom the head CLEARS, by 35 px on
-the one frame that decides it.** Arms R and M are unrun and nothing is built.
-The fal price is **$3.1** — fable-1553 Q1 granted the `head` reads §8c argued
-for, and Q2 granted arm R the pre-registered bar this design had left out. All five questions
+question that swap raises: the head CLEARS at the cut's own headroom.**
+
+✅ **ARM R HAS RUN TOO, AND IT IS THE LARGEST THING THIS COURT HAS LEARNED: SIZE
+MOVES COMPOSITION, AND IT MOVES IT THE WRONG WAY.** The larger render the
+mechanism requires is a TIGHTER picture whose sheet agrees with itself less, and
+it costs **3.9 points of `T_min`** (§2). The render step this design treated as
+free is a cost, the fidelity reason it is needed anyway is now measured, and the
+clause's target moved from a 1.22× widening to **1.32×**. **Arm M is unrun**,
+its harness is written and its guards are proven able to refuse, and nothing is
+built. Two things are open at the countersign and named where they live: §6.2's
+**noise floor** (the perturbation bar had none, and the one free observation
+exceeds it) and the **re-price** (§9's Total — arm R's own settled ledger says
+the shift's fresh image prices are low by 28.6%). All five original questions
 answered — the median bar reshapes with **PARTIAL never ships** added as a
 clause (§6.1), arm H gates the court alone, BASICS is the second sheet on the
 mixed-variable condition stated in §9, the price stands, and nothing reaches the
@@ -54,8 +63,43 @@ sentence is why the last court failed and why this one is shaped the way it is.
 ## 2. What survives from the failed court, and what does not
 
 **Dead:** L3's premise. *Render bigger to buy margin* — the engine composes to
-whatever frame it is given, so a larger render is the same picture with more
-pixels. Measured, and it is not recoverable by wording.
+whatever frame it is given, so a larger render buys no field of view. Measured,
+and it is not recoverable by wording.
+
+⚠ **AND THAT SENTENCE USED TO END *"a larger render is the same picture with more
+pixels"*, WHICH ARM R HAS NOW MEASURED AND IT IS WRONG IN THE UNHELPFUL
+DIRECTION** (§9, arm R; 16 frames, same eight prompts at both sizes, size the
+only variable). It is a **TIGHTER** picture with more pixels, and its sheet
+agrees with itself LESS:
+
+```
+                     share median    within-sheet spread    T_min
+  small 1024x1536       27.8%              4.0 pt           30.4%
+  large 1536x2304       29.7%              7.4 pt           34.3%
+```
+
+**The render size the mechanism REQUIRES costs 3.9 points of `T_min`** — the
+court's own headline — so the clause has to buy 8.3 points rather than the 6.3
+this document computed from arm 0's 31.6%. A **1.32× linear widening**, not
+1.22×. The bar does not move; the gap the clause must cross got a third wider,
+and it got wider because of a step this design treated as free.
+
+⚠ **The step is still required, and arm R priced the other half of that tradeoff
+on the same frames for nothing.** At a common target `T`, is the crop a DOWNSCALE
+(no pixel invented) or an UPSCALE?
+
+```
+  T = 26.0%   small  median crop 1642 px   needing an UPSCALE: 1/8
+              large  median crop 2635 px                       0/8
+  T = 30.4%   small  median crop 1405 px                       8/8   ← small's own T_min
+              large  median crop 2253 px                       0/8
+  T = 34.3%   large  median crop 1997 px                       0/8   ← large's own T_min
+```
+
+**Cutting at the DELIVERED size invents pixels on every frame at its own reachable
+target.** Cutting from the SHIP size invents none, at any target, on any frame —
+and costs the 3.9 points above. Both halves are numbers now rather than one
+assumption, and they pull opposite ways.
 
 **Alive, and load-bearing here:**
 
@@ -235,6 +279,38 @@ fail this bar two and a half times over.** That is deliberate: a bar no
 previously shipped lever could fail is not a bar.
 Control cells are rendered in the same run, same brief, same seeds, same
 wardrobe line — the clause as the only variable.
+
+⚠ **AND THIS BAR HAD NO NOISE FLOOR, WHICH MEANS NEITHER OF ITS VERDICTS MEANT
+ANYTHING** (found after arm R, opus-1197 §7). The control cell and the clause
+cell are two DIFFERENT rolls — their prompts differ by the clause, so the engine
+runs twice — and the difference between their spreads therefore contains
+roll-to-roll noise that nothing here had ever measured. The one free observation
+available says the bar sits inside that noise:
+
+```
+  arm 0 SUIT   spread 6.6 pt    same brief, same wardrobe line, NO clause
+  arm R small  spread 4.0 pt    same brief, same wardrobe line, NO clause
+  -------------------------------------------------------------------
+  2.6 pt of drift between two clause-free rolls, against a +2.0 pt bar
+```
+
+n=1, and `max − min` over eight frames is driven by two of them, so it is weak
+evidence — **in the direction that matters.** *Carry the noise floor* is a
+written lesson in this program, bought from a measurement that drifted 0.0%
+against 21.3% on the same recipe twice.
+
+**So the bar acquires a REPLICATE cell and a pre-registered null.** Arm R's
+`large` prompts are rendered a second time — identical bytes, same size, same
+sitting — and the spread difference between run A and run B is **pure engine
+noise at the ship size**, which is exactly the floor this comparison needs (the
+control and clause prompt sets differ *only* by the clause, so everything else is
+byte-identical).
+
+> **If the measured floor is at or above 2.0 pt, the perturbation reading is
+> NULL — this court does not establish the clause's effect on spread — and the
+> bar is NOT widened to fit.** Registered before the spend, at opus-1197 §7.
+> Moving a bar after seeing what it would have said is the one move forbidden
+> here outright.
 
 ### 6.3 The delivered numbers are REPORTED, never the bar
 
@@ -470,6 +546,54 @@ read** (§9): it is the only way this number gets measured on raw frames, on the
 population that matters, by an instrument rather than by extrapolation from
 eight close-cropped greying suit heads.
 
+### ✅ 8d. RAW FRAMES ANSWERED, AND THE CORRECTION RUNS THE SAFE WAY
+
+Arm R's 16 raw frames carry both boxes, which is what §8c said had never existed:
+
+```
+                gap med    gap max    usable R    clearance at the widest gap
+  small          0.188      0.243       0.39            +0.147
+  large          0.183      0.212       0.34            +0.128
+  §8c (CUT)        —        0.289       0.37            +0.081
+```
+
+**Raw gaps are SMALLER and `R` is no worse, so the real clearance is +0.128 to
++0.147 face-heights** against §8c's +0.081. §8c warned that a gap measured on cut
+frames is a lower bound biasing the check toward PASSING; measured, **the bias
+ran the other way and the cut-frame reading was conservative.** The warning was
+right to exist and wrong about its sign, and both halves of that belong on the
+page.
+
+### ⚠ 8e. AND ONE ALARM RAISED FROM A JPEG THAT AN INSTRUMENT REFUTED
+
+The widest-gap frame was opened at full resolution and **the `head` box looked
+like it was sitting inside the hair** — an afro whose sides plainly cross the
+box's left and right edges. That would have put the landmark back in question one
+section after it was settled.
+
+Measured instead of argued, by a reader sharing **no resolver with the
+segmenter** — raw luminance, no network, no credit
+(`_framing-hairtop-disposable.mts`). Nothing in the house frame sits above the
+head, so the topmost row holding a run of dark pixels IS the top of the hair:
+
+```
+  16 of 16 frames: the `head` box top agrees with the raw hair top within 4 px
+  worst   large-pos1, box 4 px BELOW the hair
+```
+
+**The landmark holds.** Four pixels is ~0.009 face-heights against a clearance of
++0.128 — two orders of the wrong thing. **The eye was reading the SIDES of the
+box and calling it the TOP**, which is what a downsized crop is good at
+producing. Law 9 makes a reader's prose non-final; it does not make a squint at a
+JPEG a fact, and that asymmetry is worth stating once rather than discovering
+twice.
+
+⚠ **One thing the instrument needed, which the record should carry:** its
+threshold is derived **per frame** from that frame's own top-left corner. The
+corner luminance ranges **156 to 206** across these 16 frames, so §8b's fixed
+*"darker than 100"* would have found nothing on most of them. A constant tuned on
+one dark-haired frame is not a reader.
+
 ---
 
 ## 9. The arms, priced from fresh measurement
@@ -490,7 +614,7 @@ the estimate did not carry** — two bald frames, which is what disqualified
 that decided the answer was the one nobody had costed. Result and evidence in
 §8a and §8b. **The gate is open and the word is `head`.**
 
-### Arm R — does render size change composition? 16 images, ~$1.00.
+### ✅ Arm R — does render size change composition? RUN. **YES, AND TIGHTER.** $1.24 against ~$1.08.
 
 Eight at 1024×1536 and eight at 1536×2304 — **same brief, same wardrobe line,
 same seeds, size as the only variable.** This is fable-1544's §4 question,
@@ -533,7 +657,45 @@ are $0.005 each on frames that have already been paid for.
 
 ⚠ **The eight 1024×1536 frames are the SUIT control cell for arm M**, same
 sitting and same seeds. That is why arm R renders eight per size rather than the
-two a price reading would need.
+two a price reading would need. ⚠ **In the event, arm R's verdict sent arm M to
+the LARGE size, so the SUIT control is the eight 1536×2304 frames** — which the
+same sentence's reason covers, because arm R rendered eight at BOTH sizes.
+
+#### ✅ What arm R returned
+
+```
+  median SIGNED    dShare +2.97 pt   dHeadroom -0.025
+  median ABSOLUTE  dShare  3.10 pt (bar 1.50)   dHeadroom 0.067 (bar 0.100)
+  → SIZE MOVES COMPOSITION. Arm M is calibrated at the ship size and nowhere else.
+```
+
+**Share carried it and headroom did not** — 3.10 against 1.50 on one, 0.067
+against 0.100 on the other. So the engine puts the head in the same PLACE at both
+sizes and makes it BIGGER at the larger one. The consequences are in §2, and they
+are the largest thing this court has learned: the render step the mechanism needs
+is not free, and the fidelity reason it is needed anyway is now measured too.
+
+Arm M's harness re-derives this verdict from arm R's stored ROWS through
+different code (`scripts/lib/framingTmin.mts`) and **refuses `--size small` on
+it**, rather than trusting an operator to remember. Two implementations agreeing
+on one set of rows is a second reader that does not share the first's resolver;
+if they ever disagree the court has a defect and not a reading.
+
+⚠ **AND IT RE-PRICED THE PRICE READING IT WAS SENT TO RE-TAKE — 28.6% UPWARDS,
+AGAINST A FIGURE MEASURED THE SAME DAY.**
+
+```
+  expected images  $0.8400   8 × $0.0400 + 8 × $0.0650, arm 1's own fresh reading
+  measured images  $1.0800   $1.2400 settled, less 32 reads at $0.005
+```
+
+Arm 1's figures are low by 28.6% on a 16-image sample against its n=2. **The two
+sizes cannot be separated from one balance**, so the honest statement is about the
+MIX, and the two candidate readings are `small $0.0400 → large ≈ $0.0950` or
+`ratio held → small ≈ $0.0514, large ≈ $0.0836`. **Arm M settles it for free**:
+every one of its frames is one size, so its own spend ÷ its own image count IS
+the large price. Until then this document prices against the upper reading,
+because the other direction is how a court runs out of balance mid-run.
 
 ### Arm M — the margin clause. 24 images, ~$1.80 at the larger size.
 
@@ -587,20 +749,34 @@ looks.
 ### Total
 
 ```
-  arm H   $0.10  SPENT                  fal · 20 reads · gate OPEN
-  arm R   ~$1.00  (+$0.08 openrouter)   8 @1024x1536 + 8 @1536x2304, 16 face reads
-          +$0.08                        16 `head` reads (§8c, added 2026-08-24)
-  arm M   ~$1.80  (+$0.16 openrouter)   at 1536x2304; ~$1.20 at 1024x1536
-          +$0.12                        24 `head` reads (§8c, added 2026-08-24)
-  ------------------------------------
-  ~$3.1 fal + ~$0.24 openrouter, NO CREDITS at any point
+  arm H   $0.10  SPENT      fal · 20 reads · gate OPEN
+  arm R   $1.24  SPENT      16 images, 32 reads · granted ~$1.08 · over by $0.16
+  arm M   ~$2.25-$2.52      24 images at 1536x2304 + 48 reads, at the two price readings
+  floor   ~$0.75-$0.84      the replicate cell, §6.2 · 8 images + 16 reads
+  --------------------------------------------------------------------------
+  court total ~$4.34-$4.70 fal + ~$0.16 openrouter, NO CREDITS at any point
 ```
 
-⚠ **The fal figure moved $2.9 → $3.1 after the countersign at fable-1552 §2, and
-it is stated rather than absorbed.** The whole of the $0.20 is §8c's `head`
-reads: 40 segmenter calls at $0.005, on frames the arms are buying anyway. It is
-carried back for countersign rather than folded in, on the same discipline arm H
-reported its own two-cent overrun under. **Granted fable-1553 Q1.**
+⚠ **THE PRICE HAS MOVED TWICE AND BOTH MOVES ARE STATED RATHER THAN ABSORBED.**
+
+The first was $2.9 → $3.1 after fable-1552 §2, and the whole of that $0.20 was
+§8c's `head` reads — 40 segmenter calls at $0.005, on frames the arms buy anyway
+(granted fable-1553 Q1).
+
+The second is $3.1 → ~$4.7 and **neither half of it is scope**:
+
+- **§9's price correction.** Arm R's settled ledger says arm 1's fresh figures
+  are low by **28.6%**. The same 24 images simply cost more than the shift's own
+  reading said they would.
+- **§6.2's floor cell.** A bar whose noise floor is unmeasured cannot be read in
+  either direction, and it is the bar that protects the picture.
+
+**The openrouter figure went DOWN, $0.24 → $0.16**, and for a reason worth
+having: arm M reuses arm R's stored prompts for the SUIT cell rather than
+recompiling the brief, because the interpreter is a language model and *same
+seeds, same people* is only true if the prompts are the same bytes. Three
+compiles became two, and the saving is a by-product of a correctness
+requirement.
 
 The three interpreter compiles are ~$0.24 of openrouter. **The account balance
 is deliberately NOT written here**: it is retired from the founder's desk at any

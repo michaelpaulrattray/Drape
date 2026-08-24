@@ -37,15 +37,17 @@
 
 import { readFileSync } from "node:fs";
 
+import { type FramingFrame, identityHolds, tMinOf } from "./lib/framingTmin.mts";
+
 const SOURCE = "output/framing-court/arm0.log";
 
-type Frame = {
-  group: string;
-  pos: string;
-  share: number;
-  headroom: number;
-  below: number;
-};
+/* ⚠ THE ARITHMETIC MOVED OUT AND NOTHING ABOUT THE OUTPUT DID (2026-08-24).
+   Arm M reads its own freshly rendered frames and needs the same measure, and
+   two implementations of a court's HEADLINE number is working law 4 with the
+   stakes turned up. `scripts/lib/framingTmin.mts` is the one copy; this script
+   is now its reader-and-printer. Its printed output was compared line for line
+   before and after the move. */
+type Frame = FramingFrame;
 
 const ROW = /^(SUIT|BASICS)\s+(pos\d)\.png\s+frame \d+x(\d+)\s+faceBox \d+x(\d+) at \d+,(\d+)/;
 
@@ -73,7 +75,6 @@ for (const line of readFileSync(SOURCE, "utf8").split(/\r?\n/)) {
 */
 if (frames.length === 0) throw new Error(`${SOURCE}: no frame rows matched — has the log's format moved?`);
 
-const median = (values: number[]): number => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]!;
 const pct = (value: number): string => `${(value * 100).toFixed(1)}%`;
 
 console.log(`T_MIN — the loosest common frame, over ${frames.length} frames from ${SOURCE}`);
@@ -83,26 +84,19 @@ const groups = [...new Set(frames.map((frame) => frame.group))];
 for (const group of [...groups, "BOTH"]) {
   const mine = group === "BOTH" ? frames : frames.filter((frame) => frame.group === group);
 
-  /* R can be no larger than the tightest headroom on the sheet, or that frame
-     cannot take the common headroom without cropping above its own top edge. */
-  const usableR = Math.floor(Math.min(...mine.map((frame) => frame.headroom)) * 100) / 100;
-  const perFrame = mine.map((frame) => Math.max(frame.share, 1 / (frame.below + usableR + 1)));
-  const tMin = Math.max(...perFrame);
-  const binding = mine[perFrame.indexOf(tMin)]!;
-
-  const shares = mine.map((frame) => frame.share);
-  console.log(`${group.padEnd(7)} n=${mine.length}`);
-  console.log(`  share     median ${pct(median(shares))}  min ${pct(Math.min(...shares))}  max ${pct(Math.max(...shares))}`
-    + `  spread ${((Math.max(...shares) - Math.min(...shares)) * 100).toFixed(1)}pt`);
-  console.log(`  headroom  median ${median(mine.map((frame) => frame.headroom)).toFixed(2)}`
-    + `  usable R ${usableR.toFixed(2)}`);
-  console.log(`  below     median ${median(mine.map((frame) => frame.below)).toFixed(2)}  (DERIVED, see the identity below)`);
-  console.log(`  T_min     ${pct(tMin)}  at R=${usableR.toFixed(2)}  ·  binding frame ${binding.group}/${binding.pos}`);
+  const read = tMinOf(mine);
+  console.log(`${group.padEnd(7)} n=${read.n}`);
+  console.log(`  share     median ${pct(read.shareMedian)}  min ${pct(read.shareMin)}  max ${pct(read.shareMax)}`
+    + `  spread ${(read.shareSpread * 100).toFixed(1)}pt`);
+  console.log(`  headroom  median ${read.headroomMedian.toFixed(2)}`
+    + `  usable R ${read.usableR.toFixed(2)}`);
+  console.log(`  below     median ${read.belowMedian.toFixed(2)}  (DERIVED, see the identity below)`);
+  console.log(`  T_min     ${pct(read.tMin)}  at R=${read.usableR.toFixed(2)}  ·  binding frame ${read.binding.group}/${read.binding.pos}`);
   console.log();
 }
 
-const broken = frames.filter((frame) => Math.abs((1 / frame.share - frame.headroom - 1) - frame.below) > 1e-9);
-console.log(`identity  below = 1/share - headroom - 1  holds on ${frames.length - broken.length}/${frames.length} frames`);
+const identity = identityHolds(frames);
+console.log(`identity  below = 1/share - headroom - 1  holds on ${identity.held}/${identity.of} frames`);
 
 /* And the last statement ends the process. */
-process.exit(broken.length === 0 ? 0 : 1);
+process.exit(identity.held === identity.of ? 0 : 1);

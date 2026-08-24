@@ -489,8 +489,18 @@ mid-run, so the ledger rose while the work spent. A negative cost is loud; a
 top-up that merely masks half the spend is silent, and that is the reading this
 rule exists for. **Check the direction as well as the delta**, and treat any run
 whose ledger rose as un-measured rather than cheap.
-*The account fact that follows:* fal auto-replenishes at $20, so *the balance
-stops the work* is no longer that account's failure mode. **Unnoticed spend is.**
+*The account fact that follows:* fal auto-replenishes, so *the balance stops the
+work* is no longer that account's failure mode. **Unnoticed spend is.**
+⚠ **AND THIS LINE SAID "AUTO-REPLENISHES AT $20", WHICH READS AS A TRIGGER AND IS
+THE AMOUNT** (corrected 2026-08-24, opus-1198; found at opus-1194 §6 and fixed in
+the court design that day while THIS file, the source a harness sitting opens
+first, kept the wrong sentence for four commits). The trigger has never been
+observed directly. The only arithmetic this account has: a run began at $10.01,
+spent ~$1.34 and settled at $28.67 — so **$20 went IN, and the trigger fired
+somewhere between $8.67 and $10.01.** A guard written against $20 as a threshold
+refuses runs it should allow and allows runs it should refuse; the shape that
+works is `balance − 2 × expectedSpend > $12`, the observed ceiling with margin.
+**Correction-reaches-copy-not-source, on the doctrine file itself.**
 *Banked:* fable-1542 §1 and fable-1544 Q4, findings at opus-1187 §1 and
 opus-1189 §3; the settlement behaviour of both ledgers is written into
 `scripts/lib/falSpend.mts` and `scripts/lib/openrouterBalance.mts` where a
@@ -524,6 +534,28 @@ competing with the parallel fleet. Neither has been costed. The third instance
 should find this paragraph rather than somebody's memory.
 *Banked:* fable-1551, specimens at opus-1182 §6 and opus-1193.
 
+**27. A COMPLETION SENTINEL IS ONLY EVIDENCE AT THE END OF THE STREAM.**
+Waiting for a log to CONTAIN `EXIT` is not waiting for the run to finish — a
+redirect truncates the file when its command STARTS, so while an earlier command
+in the same chain is still going, the log still holds the PREVIOUS run's
+sentinel, and its previous verdict with it. **Wait until the sentinel is the log's
+LAST LINE**, never until the file contains it.
+*The incident:* `pnpm check && pnpm test` writing two logs, waited on with
+`until grep -q "SUITE EXIT" suite.log`. It matched instantly, on the prior run's
+`SUITE EXIT 1`, and its failure block was read and nearly reported as the new
+reading — a green suite filed as red. Caught by looking at the log's SIZE before
+its words, and then at its tail, which showed tests still streaming.
+*Why it earns an entry:* **the guard written to prevent a stale reading is what
+delivered one.** That is entry 26's shape — an instrument's own scaffolding
+producing a verdict about the subject — and the *run label names the file* class
+with its direction reversed: that one is a stale OUTPUT mistaken for a fresh one,
+this is a stale VERDICT mistaken for a fresh one.
+*The rule of practice:* a background run is finished when its exit sentinel is
+the last line, or when the harness says the task completed **and the log agrees**
+— the task notification reports the LAST command's status, so a chain ending in
+`echo` reports success over a red suite.
+*Banked:* fable-1554, incident at opus-1196 §2.
+
 ---
 
 ## Adding to this file
@@ -531,4 +563,4 @@ should find this paragraph rather than somebody's memory.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twenty-six of these describe.
+the failure mode all twenty-seven of these describe.
