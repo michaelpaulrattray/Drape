@@ -366,58 +366,18 @@ describe("Admin User Management", () => {
     });
   });
 
-  describe("Credit adjustment audit logging", () => {
-    it("should log credit addition to audit system", async () => {
-      vi.mocked(getUserById).mockResolvedValue({
-        id: 1,
-        openId: "test-open-id",
-        name: "Test User",
-        email: "test@example.com",
-        avatarUrl: null,
-        bannerUrl: null,
-        bio: null,
-        displayName: null,
-        role: "user",
-        storageUsed: 0,
-        storageLimit: 10240,
-        suspendedAt: null,
-        suspendedReason: null,
-        suspendedBy: null,
-        lockedUntil: null,
-        failedLoginAttempts: 0,
-        createdAt: new Date(),
-        lastSignedIn: new Date(),
-        updatedAt: new Date(),
-      });
-
-      vi.mocked(adjustUserCredits).mockResolvedValue({
-        success: true,
-        newBalance: 600,
-      });
-
-      // Simulate the audit log call that would happen in the router
-      await logAuditEvent({
-        userId: 2, // admin ID
-        action: "credits.admin_added",
-        resourceType: "credits",
-        resourceId: "1",
-        metadata: {
-          targetUserId: 1,
-          amount: 100,
-          reason: "Bonus credits",
-          newBalance: 600,
-        },
-        severity: "warning",
-      });
-
-      expect(logAuditEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "credits.admin_added",
-          resourceType: "credits",
-        })
-      );
-    });
-  });
+  /*
+   * ⚠ A `Credit adjustment audit logging` DESCRIBE STOOD HERE. Its arm was
+   * commented "Simulate the audit log call that would happen in the router",
+   * called the mocked `logAuditEvent` ITSELF with a payload it typed, and then
+   * asserted `logAuditEvent` had been called with it — the test asserting its
+   * own call. It could not have failed on any change to `admin.adjustCredits`.
+   *
+   * DELETED rather than repointed, because the real thing is already asserted:
+   * the DRIVEN describe at the foot of this file runs the procedure and the
+   * audit row rides that path. Filed under 3g's D, category (3) — covered, so
+   * deleted after the cluster control rather than before it.
+   */
 });
 
 /*
@@ -498,5 +458,17 @@ describe("admin.adjustCredits — DRIVEN", () => {
       caller.adjustCredits({ userId: 1, amount: 100, reason: "Bonus credits" }),
     ).resolves.toBeDefined();
     expect(adjustUserCredits).toHaveBeenCalledWith(1, 100, "Bonus credits", 2);
+  });
+
+  it("a successful adjustment writes the AUDIT ROW — what the deleted mock-asserting arm was reaching for", async () => {
+    const caller = (await router()).createCaller(ADMIN_CTX);
+    await caller.adjustCredits({ userId: 1, amount: 100, reason: "Bonus credits" });
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: "credits",
+        resourceId: "1",
+        metadata: expect.objectContaining({ amount: 100, reason: "Bonus credits" }),
+      }),
+    );
   });
 });

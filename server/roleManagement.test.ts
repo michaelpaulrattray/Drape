@@ -192,113 +192,83 @@ describe("Role Management", () => {
   });
 
   describe("Security logging for role changes", () => {
-    it("should log role changes to audit, admin actions, and immutable log", async () => {
-      const { logAuditEvent } = await import("./auditLog");
+    /*
+     * ⚠ AN ARM STOOD HERE commented "Simulate what the procedure does" and
+     * "Verify the logging functions exist and are callable". It called the
+     * mocked db helpers and the mocked `logAuditEvent` ITSELF, then asserted
+     * they had been called — the test asserting its own calls. It could not
+     * have failed on any change to `changeUserRole`.
+     *
+     * It is replaced by a DRIVE of the real procedure below, which asserts the
+     * three records a role change owes: the audit row, the admin action, and
+     * the immutable log.
+     */
+    it("a successful role change writes the audit row, the admin action AND the immutable log", async () => {
       const { logAdminAction, writeImmutableLog } = await import("./security/adminSecurity");
+      const { logAuditEvent } = await import("./auditLog");
+      mockGetUserById.mockResolvedValue({ id: 42, role: "user", email: "u@x", name: "User" } as never);
+      mockUpdateUserRole.mockResolvedValue({ success: true, previousRole: "user" } as never);
 
-      mockGetUserById.mockResolvedValue({
-        id: 42,
-        openId: "test-open-id",
-        name: "Test User",
-        email: "test@example.com",
-        role: "user",
-        displayName: null,
-        avatarUrl: null,
-        avatarKey: null,
-        bannerUrl: null,
-        bannerKey: null,
-        bio: null,
-        loginMethod: "oauth",
-        approved: true,
-        storageUsed: 0,
-        storageLimit: 104857600,
-        suspendedAt: null,
-        suspendedReason: null,
-        suspendedBy: null,
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastSignedIn: new Date(),
-      } as any);
+      await rolesRouter
+        .createCaller({
+          user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+          req: { headers: {}, socket: {} },
+        } as never)
+        .changeUserRole({ userId: 42, newRole: "moderator", reason: "Trusted member" });
 
-      mockUpdateUserRole.mockResolvedValue({
-        success: true,
-        previousRole: "user",
-      });
-
-      // Simulate what the procedure does
-      const targetUser = await getUserById(42);
-      expect(targetUser).toBeDefined();
-
-      const result = await updateUserRole(42, "moderator", 1);
-      expect(result.success).toBe(true);
-
-      // Verify the logging functions exist and are callable
-      await logAuditEvent({
-        userId: 1,
-        action: "admin.role_changed",
-        resourceType: "user",
-        resourceId: "42",
-        metadata: {
-          previousRole: "user",
-          newRole: "moderator",
-          reason: "Trusted member",
-        },
-        severity: "warning",
-        ipAddress: "127.0.0.1",
-        userAgent: "test",
-      });
-
-      await logAdminAction({
-        adminId: 1,
-        adminName: "Admin",
-        action: "changeUserRole",
-        targetType: "user",
-        targetId: "42",
-        details: "Promoted to Moderator: test@example.com (user → moderator). Reason: Trusted member",
-        ipAddress: "127.0.0.1",
-      });
-
-      await writeImmutableLog("role_changed", {
-        adminId: 1,
-        targetUserId: 42,
-        previousRole: "user",
-        newRole: "moderator",
-        reason: "Trusted member",
-      });
-
-      expect(logAuditEvent).toHaveBeenCalled();
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: "user",
+          resourceId: "42",
+          severity: "warning",
+          metadata: expect.objectContaining({
+            previousRole: "user",
+            newRole: "moderator",
+            reason: "Trusted member",
+          }),
+        }),
+      );
       expect(logAdminAction).toHaveBeenCalled();
       expect(writeImmutableLog).toHaveBeenCalled();
     });
   });
 
   describe("Role hierarchy enforcement", () => {
-    it("should not allow promoting to admin via changeUserRole", () => {
-      // The z.enum(["user", "moderator"]) prevents admin promotion
-      const allowedTargetRoles = ["user", "moderator"];
-      expect(allowedTargetRoles).not.toContain("admin");
+    /*
+     * ⚠ THIS DESCRIBE MOCKED A FAILURE AND THEN ASSERTED THE MOCK RETURNED IT:
+     *
+     *     mockUpdateUserRole.mockResolvedValue({ success: false, error: "…" });
+     *     const result = await updateUserRole(1, "user", 2);
+     *     expect(result.success).toBe(false);
+     *
+     * Its two guard arms are driven for real in "changeUserRole — the
+     * refusals, DRIVEN" at the foot of this file. What remains here is the one
+     * thing that describe does not cover: the INPUT enum.
+     */
+    it("cannot promote to admin — the input enum refuses it, driven not recited", async () => {
+      mockGetUserById.mockResolvedValue({ id: 42, role: "user", email: "u@x", name: "User" } as never);
+      const caller = rolesRouter.createCaller({
+        user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+        req: { headers: {}, socket: {} },
+      } as never);
+      await expect(
+        caller.changeUserRole({ userId: 42, newRole: "admin", reason: "promote" } as never),
+      ).rejects.toBeDefined();
+      expect(mockUpdateUserRole).not.toHaveBeenCalled();
     });
 
-    it("should not allow changing an admin user's role", async () => {
-      mockUpdateUserRole.mockResolvedValue({
-        success: false,
-        error: "Cannot change the role of an admin user",
-      });
-
-      const result = await updateUserRole(1, "user", 2);
-      expect(result.success).toBe(false);
-    });
-
-    it("should prevent self-demotion by admin", async () => {
-      mockUpdateUserRole.mockResolvedValue({
-        success: false,
-        error: "Cannot change your own role",
-      });
-
-      const result = await updateUserRole(1, "user", 1);
-      expect(result.success).toBe(false);
+    it("FROM THE DIFF — the reason is REQUIRED and bounded, which no arm had said", async () => {
+      mockGetUserById.mockResolvedValue({ id: 42, role: "user", email: "u@x", name: "User" } as never);
+      const caller = rolesRouter.createCaller({
+        user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+        req: { headers: {}, socket: {} },
+      } as never);
+      for (const reason of ["", "x".repeat(501)]) {
+        await expect(
+          caller.changeUserRole({ userId: 42, newRole: "moderator", reason } as never),
+        ).rejects.toBeDefined();
+      }
+      expect(mockUpdateUserRole).not.toHaveBeenCalled();
     });
   });
 });
