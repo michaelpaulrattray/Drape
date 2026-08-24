@@ -39,6 +39,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import {
   EMPTY_STATED_HAIR,
+  EMPTY_STATED_SKIN,
   NO_TENDENCIES,
   lockFactsOf,
   validateLocks,
@@ -383,6 +384,15 @@ function fallbackIntent(briefText: string): CastingIntent {
       interpreter to have worked (D-89).
     */
     statedHair: EMPTY_STATED_HAIR,
+    /*
+      And the same honest reading for skin: the interpreter never ran, so
+      nothing was extracted, so the lane says nothing. `statedAxis` still reads
+      her RAW SENTENCE and still stands the engine down on a stated skin fact —
+      the gate is the authority on WHETHER and does not need the interpreter to
+      have worked. What is lost on this path is only the SPEAKING half, which is
+      the honest degrade rather than a hidden one.
+    */
+    statedSkin: EMPTY_STATED_SKIN,
     // The fallback compiles from the raw sentence, so nothing was interpreted
     // and there is nothing to say back.
     statedAccessories: [],

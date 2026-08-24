@@ -4,6 +4,7 @@ import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompile
 import {
   lockFactsOf,
   EMPTY_STATED_HAIR,
+  EMPTY_STATED_SKIN,
   NO_TENDENCIES,
   parseCastingIntent,
   stripQuotedSpans,
@@ -36,6 +37,7 @@ const BASE_INTENT: CastingIntent = {
   cohort: "photoreal_human",
   role: "a dad in his 30s",
   statedHair: EMPTY_STATED_HAIR,
+  statedSkin: EMPTY_STATED_SKIN,
   statedAccessories: [],
   statedInk: null,
   poolTendencies: NO_TENDENCIES,
@@ -109,6 +111,15 @@ describe("the precedence fix", () => {
       // 7b(a): tattoos the brief itself named, and the regions they cover.
       // NULL on every roll today — the interpreter is not yet asked for it.
       "statedInk",
+      /*
+        The brief-fidelity lane: WHAT the brief said about her skin, in her own
+        words. Both halves null outside `CASTING_BRIEF_FIDELITY_SCOPE`, because
+        the interpreter is not asked — and null here too, since this fixture's
+        poison never names skin. Unlike `statedInk` it SPEAKS: the composer
+        emits it, which is why the containment on it is `statedHair`'s and not
+        an echo field's.
+      */
+      "statedSkin",
       "variationAxis",
       /*
         ⚠ `wardrobe` IS ON THIS LIST NOW, and it was the poison fixture's own

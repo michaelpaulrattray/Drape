@@ -423,6 +423,12 @@ export type CastingIntent = {
    * code-owned gate's job (D-89). See `StatedHair`.
    */
   statedHair: StatedHair;
+  /**
+   * What the brief said about her SKIN, in her own words — null on both halves
+   * outside `CASTING_BRIEF_FIDELITY_SCOPE`, because the interpreter was not
+   * asked.
+   */
+  statedSkin: StatedSkin;
   /** Worn things the brief named, in the user's own words. Echo-only. */
   statedAccessories: string[];
   /**
@@ -519,6 +525,34 @@ export type StatedHair = {
 };
 
 export const STATED_HAIR_MAX = 40;
+
+/**
+ * ⚠ **THE STATED SKIN LANE** — what the brief said about her skin, in her own
+ * words (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` section 3c, countersigned
+ * fable-1600; the shape is `CASTING_V2_STATED_SKIN_LANE_DESIGN.md` section 5's,
+ * unchanged).
+ *
+ * TWO SUB-FIELDS AND NOT ONE, because they fail differently and the measurement
+ * says so: `ruddy` and `freckled` already survive the summary 4 of 4 while the
+ * colour names do not, so folding them together would put a word that works at
+ * the mercy of a change made for a word that does not. It also keeps this
+ * parallel to `statedHair`'s per-part shape, which D-79 bought with a real
+ * incident: the unit of *said* is the FACT, not the axis.
+ *
+ *   tone       the colour or complexion in HER word — "porcelain", "olive",
+ *              "deep brown", "ruddy", "sallow", "a deep tan"
+ *   character  what the skin DOES — "weathered", "lined", "scarred",
+ *              "pockmarked". Null unless she said it
+ */
+export type StatedSkin = {
+  tone: string | null;
+  character: string | null;
+};
+
+export const EMPTY_STATED_SKIN: StatedSkin = { tone: null, character: null };
+
+/** Kept short for `STATED_HAIR_MAX`'s reason: this is a phrase she typed. */
+export const STATED_SKIN_MAX = 40;
 
 export const EMPTY_STATED_HAIR: StatedHair = {
   cutLength: null,
@@ -703,6 +737,7 @@ const wireSchema = z.object({
   composedDirection: z.unknown().nullable().optional(),
   statedHair: z.unknown().nullable().optional(),
   statedAccessories: z.unknown().nullable().optional(),
+  statedSkin: z.unknown().nullable().optional(),
   statedInk: z.unknown().nullable().optional(),
   poolTendencies: z.unknown().nullable().optional(),
   wardrobe: z.unknown().nullable().optional(),
@@ -909,6 +944,38 @@ export function parseStatedHair(raw: unknown, briefText: string): StatedHair {
     texture: field("texture"),
     greying: wire.greying === true,
   };
+}
+
+/**
+ * The skin the brief named, in the user's own words.
+ *
+ * Mirrors `parseStatedHair` deliberately and down to the containment: scrubbed,
+ * refused if it carries a digit or a CLOTHING word, then checked TOKEN BY TOKEN
+ * against her own sentence. A phrase containing a word she did not type is
+ * DROPPED rather than repaired — the closed-SOURCE rule (D-89), which is what
+ * makes a free-text field safe to read back without a closed vocabulary.
+ * "Pale porcelain" is in no enum and never will be.
+ *
+ * ⚠ **A null here is better than a guess, and that is not politeness.** This
+ * value is SPOKEN to the image model, so a paraphrase would be the product
+ * putting words in her mouth about her own face — which is the one thing D-172
+ * exists to stop. The engine's own skin vocabulary is still there for a brief
+ * that says nothing.
+ */
+export function parseStatedSkin(raw: unknown, briefText: string): StatedSkin {
+  if (!raw || typeof raw !== "object") return EMPTY_STATED_SKIN;
+  const wire = raw as Record<string, unknown>;
+
+  const field = (key: "tone" | "character"): string | null => {
+    const cleaned = scrubBrands(cleanFreeText(wire[key], STATED_SKIN_MAX));
+    if (!cleaned) return null;
+    if (/[0-9]/.test(cleaned)) return null;
+    if (mentionsWornClothing(cleaned)) return null;
+    if (!tokensComeFromBrief(cleaned, briefText)) return null;
+    return cleaned;
+  };
+
+  return { tone: field("tone"), character: field("character") };
 }
 
 /** Kept short: this is a phrase the user typed, not a description. */
@@ -1250,6 +1317,7 @@ export function parseCastingIntent(
       reads: parseReads(wire.reads),
       composedDirection: parseComposedDirection(wire.composedDirection),
       statedHair: parseStatedHair(wire.statedHair, briefText),
+      statedSkin: parseStatedSkin(wire.statedSkin, briefText),
       statedAccessories: parseStatedAccessories(wire.statedAccessories, briefText),
       statedInk: parseStatedInk(wire.statedInk, briefText),
       poolTendencies: parsePoolTendencies(wire.poolTendencies),

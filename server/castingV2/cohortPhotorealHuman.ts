@@ -78,6 +78,7 @@ import {
   type Sex,
   EMPTY_STATED_HAIR,
   type StatedHair,
+  type StatedSkin,
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import { resolveHairAxes, type HairTiers } from "./hairResolver";
@@ -1567,17 +1568,94 @@ const AXIS_WORDS: Record<"eyes" | "facialHair" | "brows" | "skin", string[]> = {
     "cleanshaven", "unshaven", "beardless", "whiskers", "sideburns", "scruff",
   ],
   brows: ["brow", "brows", "eyebrow", "eyebrows", "unibrow", "monobrow"],
+  /*
+    ⚠ THE TONE VOCABULARY, ADDED WITH THE LANE AND NOT BEFORE IT
+    (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` section 3c).
+
+    This list decides whether the engine STANDS DOWN from authoring a skin
+    character, and until now it held **not one colour or tone word**. Driven at
+    this function on twelve ordinary ways a brief states skin, SIX left the
+    engine authoring — including *"a ruddy man in his fifties"*, *"she is very
+    fair"* and *"a sallow office worker"* — so a brief naming her tone could be
+    handed `SKIN CHARACTER: freckled skin` on top of her own word, and
+    `resolvedIdentity` kept the fabricated character.
+
+    ⚠ **It is widened WITH the speaking half and never before it.** Widening
+    deference alone makes the engine quieter about a fact still not being said,
+    which is `statedHair`'s original defect and strictly worse than today.
+  */
   skin: [
     "freckle", "freckles", "freckled", "acne", "scar", "scarred", "birthmark",
     "mole", "beauty", "pockmarked", "weathered", "complexion", "skin",
     "blemish", "blemishes",
+    /* Tone and colour — her word for the surface itself. */
+    "porcelain", "olive", "sallow", "ruddy", "tan", "tanned", "fair", "pale",
+    "pallid", "ashen", "bronzed", "golden", "ebony", "dark", "swarthy",
+    "sunburnt", "sunburned", "sundarkened", "windburned",
   ],
 };
+
+/**
+ * ⚠ THE INFLECTION HOLE, and it is the whole of one measured failure.
+ *
+ * `statedAxis` splits on non-letters, so `"olive-skinned"` becomes
+ * `{olive, skinned}` — and `skinned` is not `skin`. Measured at the wire:
+ * *"Olive-skinned woman"* came back 0 of 3 with `heritage: [Mediterranean]`
+ * while *"a woman with olive skin"* came back 3 of 3 with `heritage: []`. The
+ * hyphenated form is read as an ETHNICITY, filed into a neighbouring lane, and
+ * the notes then decline to repeat it.
+ *
+ * The same class `validInContext` solved one file over with an inflection walk,
+ * and the typo gate's own docblock warns about it: *a second list that is
+ * supposed to mirror a vocabulary will drift from it.* So the membership test
+ * walks a small, CLOSED set of suffixes rather than growing the list by hand —
+ * `tan` covers `tanned`, `skin` covers `skinned`, `sun` covers `sunned`.
+ *
+ * ⚠ It is a SUFFIX strip and never a prefix match: `scar` must not be found
+ * inside `scarce`, and `tan` must not be found inside `tantrum`.
+ */
+const AXIS_SUFFIXES = ["ed", "ned", "med", "ish", "y", "s"];
+
+function axisStem(word: string): string[] {
+  const stems = [word];
+  for (const suffix of AXIS_SUFFIXES) {
+    if (word.length > suffix.length + 2 && word.endsWith(suffix)) {
+      stems.push(word.slice(0, word.length - suffix.length));
+    }
+  }
+  return stems;
+}
+
+/**
+ * HER OWN WORDS FOR HER OWN SKIN, or nothing at all.
+ *
+ * The frame is ours and the VALUE is hers (D-172, source containment) — the
+ * parser has already dropped any phrase carrying a word she did not type, so
+ * everything between the colon and the full stop came out of her sentence.
+ *
+ * Two sub-fields, one sentence, and the join is deliberate: a brief that says
+ * *"pale porcelain skin, heavily weathered"* should not arrive as two competing
+ * instructions about one surface. Either half alone is a complete sentence.
+ *
+ * Empty on every unflagged roll, because the lane is never filled there — so
+ * this contributes nothing to a prompt outside `CASTING_BRIEF_FIDELITY_SCOPE`.
+ */
+export function statedSkinSentence(stated: StatedSkin | null | undefined): string {
+  const tone = stated?.tone ?? null;
+  const character = stated?.character ?? null;
+  if (!tone && !character) return "";
+  const said = tone && character ? `${tone}, ${character}` : (tone ?? character);
+  return `SKIN: ${said} — exactly as described.`;
+}
 
 /** True when the brief's own words already decided this axis. */
 /** Exported so the sheet taste pass defers on the same words the prompt does. */
 export function statedAxis(axis: "eyes" | "facialHair" | "brows" | "skin", stated: string): boolean {
-  const words = new Set(stated.toLowerCase().split(/[^a-z]+/));
+  const words = new Set<string>();
+  for (const raw of stated.toLowerCase().split(/[^a-z]+/)) {
+    if (!raw) continue;
+    for (const stem of axisStem(raw)) words.add(stem);
+  }
   return AXIS_WORDS[axis].some((word) => words.has(word));
 }
 
@@ -2461,6 +2539,30 @@ export function composeCandidatePrompt(input: {
   const subject = [
     `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, hairDeferenceFor({ briefText: input.briefText, intent }), resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
+    /*
+      ⚠ THE STATED SKIN LANE SPEAKS — her own word, said plainly
+      (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` section 3c; the shape is the stopped
+      design's section 5).
+
+      **A lane that silences is not a lane that speaks.** `statedHair` failed
+      for a year in exactly that way — it stood the engine down from authoring a
+      cut and never said what the cut was, and his bald cast came back with
+      hair. So this half is not optional and does not ship without the deference
+      half beside it: filling `statedSkin` and saying nothing would buy a
+      quieter engine on a fact nobody states, which is strictly worse than
+      today.
+
+      Placed AFTER character detail for `coveringFor`'s reason — it qualifies
+      the user's own words rather than competing with them — and it renders
+      NOTHING at all unless the brief itself named skin. Every value in it is
+      hers: `parseStatedSkin` drops any phrase carrying a word she did not type,
+      so this frame is the only thing the product contributes.
+
+      Outside `CASTING_BRIEF_FIDELITY_SCOPE` the lane is empty on every roll,
+      because the interpreter was never asked — so this line does not exist for
+      an unflagged account and the prompt is byte-identical to today's.
+    */
+    statedSkinSentence(intent.statedSkin),
     /*
       A STATED FAITH COVERING, as the garment rather than as a noun (D-124).
 

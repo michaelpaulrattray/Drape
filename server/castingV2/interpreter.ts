@@ -228,6 +228,57 @@ const BORN_INK_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
   product remembering what the brief said, so it can say it back.`;
 
 /**
+ * ⚠ **THE STATED SKIN LANE'S BLOCK** — one more key, asked only inside
+ * `CASTING_BRIEF_FIDELITY_SCOPE` (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` section
+ * 3c; the shape is the stopped design's section 5, unchanged).
+ *
+ * # Why a BLOCK and not a field in the base schema
+ *
+ * `BORN_INK_BLOCK`'s argument, unchanged and for the same measurement: a field
+ * in the base prompt is a field EVERY account's roll pays for in context, and
+ * this program has measured that a SUBSET of prompt context raised the stage
+ * wall twice as often as its superset. Outside the flag the bytes on the wire
+ * are byte-identical to yesterday's, and `SYSTEM_PROMPT` stays the base every
+ * existing contract test reads.
+ *
+ * # Why the lane exists at all when the budget is being fixed in the same commit
+ *
+ * The obvious objection, and it has an answer: a budget with room means the
+ * tone USUALLY survives, and *usually* is the answer this whole item exists to
+ * stop giving. A lane is not summarised at all. And it is not merely insurance
+ * — `olive` is measured being TRANSLATED out of the notes into `heritage`
+ * (0/3 hyphenated against 3/3 not), which no amount of budget repairs.
+ *
+ * # ⚠ The half that is NOT here, and shipping it alone would be the old defect
+ *
+ * A lane that fills a field and never speaks is `statedHair`'s original defect
+ * — right about authoring, wrong about silence — and his bald cast came back
+ * with hair because of it. So the composer sentence and the deference widening
+ * land in the same commit as this block, and none of the three ships alone.
+ */
+const SKIN_LANE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
+
+  "statedSkin": { "tone": string | null, "character": string | null }
+
+- "statedSkin": WHAT THE BRIEF ITSELF SAID ABOUT THIS PERSON'S SKIN.
+  Both halves null is the ordinary answer and means the brief said nothing about
+  skin. Most briefs do not.
+  "tone": the colour or complexion in THEIR OWN WORDS — "pale porcelain",
+  "olive", "deep brown", "ruddy", "sallow", "a deep tan".
+  "character": what the skin DOES rather than what colour it is — "weathered",
+  "deeply lined", "scarred", "pockmarked", "freckled".
+  USE ONLY WORDS THAT APPEAR IN THE BRIEF, the same rule as "statedHair" and
+  "statedAccessories": anything containing a word the user did not type is
+  dropped, so a paraphrase is worse than a null. Do not normalise "porcelain"
+  to "pale" or "sallow" to "yellowish" — the specific word is the whole point of
+  this field.
+  NEVER INFER. A heritage is not a skin tone, an age is not a texture, and an
+  occupation is not weathering. Only the brief saying so is.
+  THIS IS IN ADDITION TO, NEVER INSTEAD OF, "role" and "characterNotes". A fact
+  recorded here must still appear in "characterNotes" if it belongs there — a
+  lane is not a place to move a fact OUT of the summary.`;
+
+/**
  * THE ANNOUNCED CAP, AND ITS REPLACEMENT — the one sentence
  * `CASTING_BRIEF_FIDELITY_SCOPE` swaps (`CASTING_V2_BRIEF_FIDELITY_BUILD.md`
  * section 3a, countersigned fable-1600).
@@ -283,6 +334,7 @@ export function interpreterSystemPrompt(
     base = base.replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED);
   }
   const blocks: string[] = [];
+  if (options?.fidelity === true) blocks.push(SKIN_LANE_BLOCK);
   if (options?.wardrobe === true) blocks.push(WARDROBE_BLOCK);
   if (options?.ink === true) blocks.push(BORN_INK_BLOCK);
   return blocks.length === 0 ? base : [base, ...blocks].join("\n");

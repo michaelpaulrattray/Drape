@@ -46,7 +46,14 @@ import {
   interpretBrief,
   interpreterSystemPrompt,
 } from "./interpreter";
-import { NOTES_MAX, NOTES_MAX_FIDELITY, parseCastingIntent } from "./castingIntent";
+import {
+  NOTES_MAX,
+  NOTES_MAX_FIDELITY,
+  parseCastingIntent,
+  parseStatedSkin,
+} from "./castingIntent";
+import { statedAxis, statedSkinSentence } from "./cohortPhotorealHuman";
+import { castingBriefCompiler } from "./briefCompiler";
 
 describe("the ladder", () => {
   it("is off when absent, and off means off", () => {
@@ -97,21 +104,45 @@ describe("the gate, both sides", () => {
     expect(interpreterSystemPrompt({ fidelity: false })).toBe(off);
   });
 
-  it("ON swaps exactly one sentence and changes nothing else", () => {
+  it("ON swaps exactly one sentence and appends exactly one block", () => {
     const off = interpreterSystemPrompt();
     const on = interpreterSystemPrompt({ fidelity: true });
     expect(on).not.toContain(NOTES_CAP_SENTENCE);
     expect(on).toContain(NOTES_CAP_RELEASED);
-    /* The whole difference, stated as an identity rather than as two
-       `toContain`s: the flagged prompt IS the unflagged one with that sentence
-       replaced. Anything else that moved would fail here. */
-    expect(on).toBe(off.replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED));
+
+    /*
+      The whole difference stated as an identity rather than as a handful of
+      `toContain`s: the flagged prompt IS the unflagged one with that sentence
+      replaced, followed by ONE appended block and nothing else. Anything that
+      moved inside the base would fail on the prefix; anything extra appended
+      would fail on the tail.
+    */
+    const swapped = off.replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED);
+    expect(on.startsWith(swapped)).toBe(true);
+    const appended = on.slice(swapped.length);
+    expect(appended.startsWith("\n")).toBe(true);
+    expect(appended).toContain(`"statedSkin"`);
+    /* And the lane's own rule, at the bytes: it must not read as a place to
+       move a fact OUT of the summary — `statedHair`'s original defect. */
+    expect(appended).toContain("IN ADDITION TO, NEVER INSTEAD OF");
   });
 
-  it("composes with the other blocks without disturbing them", () => {
+  it("composes with the other blocks in a FIXED ORDER", () => {
     const both = interpreterSystemPrompt({ fidelity: true, ink: true });
     const inkOnly = interpreterSystemPrompt({ ink: true });
-    expect(both).toBe(inkOnly.replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED));
+    /* The base is the same base under both, swapped only when flagged. */
+    expect(both.startsWith(interpreterSystemPrompt().replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED)))
+      .toBe(true);
+    /* Both blocks are present, and the ORDER is fixed — two accounts with the
+       same pair of flags must get the same bytes, which is the composer's own
+       stated contract. */
+    expect(both).toContain(`"statedSkin"`);
+    expect(both).toContain(`"statedInk"`);
+    expect(both.indexOf(`"statedSkin"`)).toBeLessThan(both.indexOf(`"statedInk"`));
+    /* And the ink block itself is untouched by the fidelity flag: whatever the
+       ink-only prompt appended, the both-prompt appends the same bytes. */
+    const inkAppended = inkOnly.slice(interpreterSystemPrompt().length);
+    expect(both.endsWith(inkAppended)).toBe(true);
   });
 });
 
@@ -279,5 +310,206 @@ describe("the malfunction the new bound can no longer catch", () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.intent.characterNotes!.length).toBeLessThan(brief.length);
+  });
+});
+
+describe("the lane — parse, speak, and stand down", () => {
+  /*
+    ⚠ THREE ARMS AND NOT ONE, because the lane has three halves and any two of
+    them without the third is a defect this product has already shipped once.
+    `statedHair` filled a field and never spoke, so his bald cast came back with
+    hair; widening deference without a speaking lane would be the same mistake
+    from the other side.
+  */
+
+  describe("what the parser will keep", () => {
+    const brief = "Bald male, mid-40s, pale porcelain skin, heavily weathered.";
+
+    it("keeps her own words", () => {
+      const stated = parseStatedSkin(
+        { tone: "pale porcelain", character: "heavily weathered" }, brief,
+      );
+      expect(stated).toEqual({ tone: "pale porcelain", character: "heavily weathered" });
+    });
+
+    it("DROPS a paraphrase, because a null is better than words in her mouth", () => {
+      /* "sallow" is a perfectly good reading of this brief and she did not
+         type it. Source containment (D-89): dropped, never repaired. */
+      const stated = parseStatedSkin({ tone: "sallow", character: null }, brief);
+      expect(stated.tone).toBeNull();
+    });
+
+    it("drops a digit and a clothing word, exactly as the hair lane does", () => {
+      expect(parseStatedSkin({ tone: "type 4 skin", character: null }, "type 4 skin").tone)
+        .toBeNull();
+      expect(parseStatedSkin({ tone: "shirt", character: null }, "a shirt").tone)
+        .toBeNull();
+    });
+
+    it("answers empty on absence rather than throwing", () => {
+      expect(parseStatedSkin(null, brief)).toEqual({ tone: null, character: null });
+      expect(parseStatedSkin("nonsense", brief)).toEqual({ tone: null, character: null });
+    });
+  });
+
+  describe("what the composer says", () => {
+    it("says nothing at all when the lane is empty — an unflagged roll", () => {
+      expect(statedSkinSentence(null)).toBe("");
+      expect(statedSkinSentence({ tone: null, character: null })).toBe("");
+    });
+
+    it("says her tone, her character, or both in one sentence", () => {
+      expect(statedSkinSentence({ tone: "pale porcelain", character: null }))
+        .toBe("SKIN: pale porcelain — exactly as described.");
+      expect(statedSkinSentence({ tone: null, character: "deeply lined" }))
+        .toBe("SKIN: deeply lined — exactly as described.");
+      expect(statedSkinSentence({ tone: "olive", character: "scarred" }))
+        .toBe("SKIN: olive, scarred — exactly as described.");
+    });
+  });
+
+  describe("and the gate stands down on the same facts", () => {
+    /*
+      The six that used to leave the engine authoring a skin character ON TOP of
+      her own word — driven at the real function before the lane existed
+      (`scripts/_skin-axis-probe-disposable.mts`, free, no model).
+    */
+    const wereAuthoring = [
+      "a ruddy man in his fifties",
+      "olive-skinned, mid-30s",
+      "she is very fair",
+      "a sallow office worker",
+      "a woman with a deep tan",
+      "porcelain",
+    ];
+    for (const statement of wereAuthoring) {
+      it(`defers on "${statement}"`, () => {
+        expect(statedAxis("skin", statement)).toBe(true);
+      });
+    }
+
+    /*
+      ⚠ THE ARMS THAT PROVE THE INFLECTION WALK IS DOING SOMETHING, and they
+      exist because a sabotage said it was not.
+
+      Deleting the walk reddened NOTHING on the first pass: every statement in
+      the list above defers through a listed word, so the walk was carrying no
+      weight in this suite and would have read as a mechanism nobody needed.
+      These are the shapes it actually buys — a PLURAL of a listed singular,
+      which is how a person writes about marks on a face.
+    */
+    it("defers on a plural of a listed word — the walk, not the list", () => {
+      expect(statedAxis("skin", "she has scars on her cheek")).toBe(true);
+      expect(statedAxis("skin", "a few moles across the nose")).toBe(true);
+      expect(statedAxis("skin", "two birthmarks on her jaw")).toBe(true);
+    });
+
+    it("and the ones that always worked still work", () => {
+      expect(statedAxis("skin", "Bald male, mid-40s, pale porcelain skin, heavily weathered.")).toBe(true);
+      expect(statedAxis("skin", "tanned and freckled")).toBe(true);
+      expect(statedAxis("skin", "she has a scar on her cheek")).toBe(true);
+    });
+
+    /*
+      ⚠ THE NEGATIVE CONTROL, and it is the reason the inflection walk strips a
+      SUFFIX rather than matching a PREFIX. `scar` inside `scarce` and `tan`
+      inside `tantrum` would stand the whole axis down on briefs that say
+      nothing about skin at all — a wider gate that silences the engine for
+      free is not an improvement, it is the defect with better manners.
+    */
+    it("does NOT defer on words that merely contain a skin word", () => {
+      expect(statedAxis("skin", "a scarce, quiet presence")).toBe(false);
+      expect(statedAxis("skin", "prone to a tantrum")).toBe(false);
+      expect(statedAxis("skin", "a molecular biologist")).toBe(false);
+      expect(statedAxis("skin", "a woman in her forties")).toBe(false);
+    });
+  });
+});
+
+describe("the WIRE, again — the lane reaches the eight prompts", () => {
+  /*
+    ⚠ WRITTEN BECAUSE THE SABOTAGE ON THE BOUND FOUND THIS SUITE'S FIRST HOLE.
+
+    Everything in "the lane" above drives the parser and the sentence helper
+    directly. That proves the helper composes a sentence and proves nothing
+    about whether the composer CALLS it — which is the same shape as the
+    defect that suite already caught once, and the same shape as the defect
+    this whole build exists to repair: a fact that goes missing between two
+    honest components.
+
+    So this compiles a brief through the real entrance with a stub transport,
+    and reads the CANDIDATE PROMPT (invariant 5 — a contract about what gets
+    sent is proven on the outgoing request).
+  */
+  const BRIEF = "Bald male, mid-40s, pale porcelain skin, heavily weathered.";
+
+  const engineSaying = (statedSkin: unknown): TextEngine => ({
+    id: "stub",
+    complete: vi.fn(async () => ({
+      text: JSON.stringify({
+        cohort: "photoreal_human",
+        role: "a weathered man",
+        characterNotes: "Bald, severe bone structure",
+        sex: "male",
+        ageBand: "40s",
+        heritage: [],
+        statedAccessories: [],
+        statedSkin,
+      }),
+      latencyMs: 1,
+      provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
+    })),
+  } as unknown as TextEngine);
+
+  it("her word is in EVERY ONE of the eight prompts", async () => {
+    const compiled = await castingBriefCompiler({
+      briefText: BRIEF,
+      candidateCount: 8,
+      rollSeed: "lane-wire",
+      engine: engineSaying({ tone: "pale porcelain", character: "heavily weathered" }),
+      briefFidelity: true,
+    });
+    const prompts = compiled.candidates.map((candidate) => candidate.prompt);
+    expect(prompts).toHaveLength(8);
+    for (const prompt of prompts) {
+      expect(prompt).toContain("SKIN: pale porcelain, heavily weathered — exactly as described.");
+    }
+  });
+
+  it("and an empty lane contributes NOTHING to the prompt", async () => {
+    const compiled = await castingBriefCompiler({
+      briefText: BRIEF,
+      candidateCount: 8,
+      rollSeed: "lane-wire",
+      engine: engineSaying({ tone: null, character: null }),
+      briefFidelity: true,
+    });
+    for (const candidate of compiled.candidates) {
+      /*
+        `SKIN:` and nothing looser. The first draft of this arm also asserted
+        the absence of *"exactly as described"* and went red on working code:
+        that phrase is house prose in the STATED ACCESSORIES and STATED MAKEUP
+        constants, which have nothing to do with this lane. A negative arm wide
+        enough to catch its neighbours is an arm that will be edited away the
+        first time it fires.
+      */
+      expect(candidate.prompt).not.toContain("SKIN:");
+    }
+  });
+
+  it("and a PARAPHRASE never reaches the picture, however confident the reader was", async () => {
+    /* The reader answers "sallow" about a brief that says "porcelain". Source
+       containment drops it, and the prompt says nothing rather than saying a
+       word she did not type about her own face. */
+    const compiled = await castingBriefCompiler({
+      briefText: BRIEF,
+      candidateCount: 8,
+      rollSeed: "lane-wire",
+      engine: engineSaying({ tone: "sallow", character: null }),
+      briefFidelity: true,
+    });
+    for (const candidate of compiled.candidates) {
+      expect(candidate.prompt).not.toContain("sallow");
+    }
   });
 });
