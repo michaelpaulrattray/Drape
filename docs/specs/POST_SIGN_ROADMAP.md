@@ -841,9 +841,43 @@ carry the rulings, the courts and the histories.
                                          nothing for any customer, on a green
                                          suite. The number now lives in
                                          `shared/refineLimits.ts` and both
-                                         surfaces import it: **this row's build is
-                                         one constant, and it is sequenced
-                                         accordingly.**
+                                         surfaces import it.
+                                         ⚠ BUT THE BUILD IS NOT ONE CONSTANT —
+                                         IT IS ONE CONSTANT AND A PRODUCTION
+                                         MIGRATION, and this line said
+                                         "one constant" for about an hour
+                                         (corrected 2026-08-25, read at the
+                                         service). `requestText` — the column
+                                         that stores what she actually typed —
+                                         is `varchar(220)`, a bare literal
+                                         deriving from nothing, guarded by no
+                                         arm, and 20 characters of headroom over
+                                         today's cap. Raise the cap past 220 and
+                                         a customer's own sentence is refused or
+                                         truncated AT THE INSERT, after her
+                                         render is paid for. Read on production
+                                         (:23768): `varchar 220 NULL`, 19 stored
+                                         sentences, longest 144 — which
+                                         independently re-derives this row's own
+                                         population figure from a different
+                                         query. ⚠ The reason the BRIEF's raise
+                                         to 2000 was free and this one is not is
+                                         in the same reading: `briefText` is
+                                         `text` (65535). Two sentences a
+                                         customer types, two storage decisions
+                                         nobody wrote down together. So the
+                                         order is MIGRATION FIRST, then the
+                                         constant — a widened column on a
+                                         written table is a founder-gated
+                                         ceremony, never a shift's act.
+                                         DESIGN REPORT (decides nothing, GO
+                                         fable-1614, awaiting countersign):
+                                         `docs/specs/CASTING_V2_REFINE_FIDELITY_DESIGN.md`
+                                         — it carries the court's shape, the
+                                         migration prerequisite, and the two
+                                         decisions that are NOT a shift's (the
+                                         target number, and whether the box
+                                         should invite a long ask at all).
                                          ⚠ AND THE READ FOUND A LATENT DEFECT AND
                                          CLOSED IT. The region popover submits
                                          `prefill + said` — *"his upper chest
