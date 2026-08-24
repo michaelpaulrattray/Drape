@@ -25,21 +25,20 @@ import {
   recordFailure,
 } from "./geminiCircuitBreaker";
 import { createModuleLogger } from "../logging/logger";
+import { envInt } from "../_core/env";
 const log = createModuleLogger("casting/geminiQueue");
 
 // ── Configuration (env-configurable) ──────────────────────────────────────
-const IMAGE_CONCURRENCY = parseInt(
-  process.env.GEMINI_IMAGE_CONCURRENCY ?? "5",
-  10,
-);
-const TEXT_CONCURRENCY = parseInt(
-  process.env.GEMINI_TEXT_CONCURRENCY ?? "5",
-  10,
-);
-const MAX_QUEUE_DEPTH = parseInt(
-  process.env.GEMINI_MAX_QUEUE_DEPTH ?? "50",
-  10,
-);
+/*
+ * ⚠ THESE THREE WERE `parseInt(process.env.X ?? "5", 10)`. `??` does not catch
+ * the EMPTY STRING, so a blank variable made the value NaN — and a NaN
+ * concurrency admits nothing, which holds every Gemini call in the queue
+ * forever with no error anywhere. `envInt` refuses at boot by name instead;
+ * see NUMERIC_ENV_VARS, where the defaults now live.
+ */
+const IMAGE_CONCURRENCY = envInt("GEMINI_IMAGE_CONCURRENCY");
+const TEXT_CONCURRENCY = envInt("GEMINI_TEXT_CONCURRENCY");
+const MAX_QUEUE_DEPTH = envInt("GEMINI_MAX_QUEUE_DEPTH");
 
 log.info(
   `[GeminiQueue] Initialized — image: ${IMAGE_CONCURRENCY} concurrent, text: ${TEXT_CONCURRENCY} concurrent, max depth: ${MAX_QUEUE_DEPTH}`,

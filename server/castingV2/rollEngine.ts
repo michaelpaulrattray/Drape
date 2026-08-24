@@ -14,17 +14,8 @@ import { createFalCreativeEngine, FAL_GPT_IMAGE_2 } from "../providers/falImages
 import { falAllowanceOf } from "./falBudget";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { CreativeEngine } from "../providers/types";
+import { envInt } from "../_core/env";
 
-/** Set to 8 for the fal transport per the M3 report's recommendation 7. */
-function envInt(name: string, fallback: number): number {
-  const raw = process.env[name];
-  if (raw === undefined || raw === "") return fallback;
-  const parsed = Number(raw);
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
-    throw new TypeError(`${name} must be a positive integer`);
-  }
-  return parsed;
-}
 
 let queue: ProviderQueue | null = null;
 let engine: CreativeEngine | null = null;
@@ -36,7 +27,7 @@ export function castingImageQueue(): ProviderQueue {
       /* From the shared budget, which the boot check proves fits inside the
          account's ceiling beside the scans, the views and the edits. */
       concurrency: falAllowanceOf("ROLL_IMAGE_CONCURRENCY"),
-      maxQueueDepth: envInt("ROLL_IMAGE_MAX_QUEUE_DEPTH", 64),
+      maxQueueDepth: envInt("ROLL_IMAGE_MAX_QUEUE_DEPTH"),
     });
   }
   return queue;

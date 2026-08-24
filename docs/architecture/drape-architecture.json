@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e9c0709a87232083"
+    "sourceFingerprint": "d5dee173146b7d08"
   },
   "domains": [
     {
@@ -8618,21 +8618,6 @@
       "valueRecorded": false
     },
     {
-      "id": "env:GEMINI_IMAGE_CONCURRENCY",
-      "name": "GEMINI_IMAGE_CONCURRENCY",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:GEMINI_MAX_QUEUE_DEPTH",
-      "name": "GEMINI_MAX_QUEUE_DEPTH",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:GEMINI_TEXT_CONCURRENCY",
-      "name": "GEMINI_TEXT_CONCURRENCY",
-      "valueRecorded": false
-    },
-    {
       "id": "env:GOOGLE_CLIENT_ID",
       "name": "GOOGLE_CLIENT_ID",
       "valueRecorded": false
@@ -8845,6 +8830,11 @@
     {
       "id": "env:VITE_STRIPE_PUBLISHABLE_KEY",
       "name": "VITE_STRIPE_PUBLISHABLE_KEY",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:X",
+      "name": "X",
       "valueRecorded": false
     }
   ],
@@ -9997,6 +9987,10 @@
     {
       "id": "test:server/_core/invalidInputWire.test.ts",
       "path": "server/_core/invalidInputWire.test.ts"
+    },
+    {
+      "id": "test:server/_core/numericEnv.test.ts",
+      "path": "server/_core/numericEnv.test.ts"
     },
     {
       "id": "test:server/access.test.ts",
@@ -19860,6 +19854,11 @@
     },
     {
       "from": "module:server/casting/geminiQueue.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiQueue.ts",
       "to": "module:server/casting/geminiCircuitBreaker.ts",
       "kind": "imports"
     },
@@ -24930,6 +24929,11 @@
     },
     {
       "from": "module:server/castingV2/rollEngine.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/castingV2/falBudget.ts",
       "kind": "imports"
     },
@@ -25271,6 +25275,11 @@
     {
       "from": "module:server/castingV2/sidePhrasing.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signEngine.ts",
+      "to": "module:server/_core/env.ts",
       "kind": "imports"
     },
     {
@@ -26256,6 +26265,11 @@
     {
       "from": "module:server/db/dailyQuota.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/dailyQuota.ts",
+      "to": "module:server/_core/env.ts",
       "kind": "imports"
     },
     {

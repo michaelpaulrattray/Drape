@@ -54,8 +54,8 @@
         ],
         "sites": [
           "server/castingV2/refineService.ts:4888",
-          "server/castingV2/rollEngine.ts:65",
-          "server/castingV2/rollEngine.ts:77"
+          "server/castingV2/rollEngine.ts:56",
+          "server/castingV2/rollEngine.ts:68"
         ]
       },
       {

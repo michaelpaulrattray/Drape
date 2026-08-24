@@ -14,8 +14,18 @@
 import { eq, and, gte, sql } from "drizzle-orm";
 import { generationOperations, generations } from "../../drizzle/schema";
 import { getDb } from "./connection";
+import { envInt } from "../_core/env";
 
-const DAILY_LIMIT = parseInt(process.env.DAILY_GENERATION_LIMIT ?? "50", 10);
+/*
+ * ⚠ THIS WAS `parseInt(process.env.DAILY_GENERATION_LIMIT ?? "50", 10)`.
+ * `??` does not catch the EMPTY STRING, which is what a Railway variable
+ * created with no value holds — so a blank variable made this NaN, `used <
+ * NaN` is false, and the quota refused EVERY generation at zero used, at six
+ * call sites, telling the customer "Daily generation limit reached (NaN per
+ * day)". An outage wearing a quota message. `envInt` refuses at boot by name
+ * instead; see NUMERIC_ENV_VARS.
+ */
+const DAILY_LIMIT = envInt("DAILY_GENERATION_LIMIT");
 
 /** Image generation types that consume Gemini image RPD */
 const IMAGE_GEN_TYPES = [

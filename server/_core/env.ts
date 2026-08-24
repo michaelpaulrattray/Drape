@@ -101,10 +101,112 @@ const OPTIONAL_VARS: Record<string, string> = {
 };
 
 /**
+ * EVERY NUMERIC ENVIRONMENT VARIABLE, WITH THE VALUE IT TAKES WHEN NOBODY SETS
+ * IT — one declaration, read by the boot check and by each consumer.
+ *
+ * ⚠ THIS EXISTS BECAUSE `?? "default"` IN FRONT OF `parseInt` DOES NOT CATCH
+ * THE EMPTY STRING, AND AN EMPTY STRING IS EXACTLY WHAT A RAILWAY VARIABLE
+ * CREATED WITH NO VALUE HOLDS. `??` answers to `null` and `undefined` and
+ * nothing else, so `parseInt("", 10)` is `NaN` and every comparison against it
+ * is `false`. Four sites were written that way, and each turned that blank
+ * variable into a SILENT OUTAGE:
+ *
+ *   DAILY_GENERATION_LIMIT   `used < NaN` is false, so the quota refused
+ *                            EVERY generation at zero used, telling the
+ *                            customer "Daily generation limit reached (NaN
+ *                            per day)" — an outage wearing a quota message,
+ *                            at six call sites
+ *   GEMINI_IMAGE_CONCURRENCY a NaN concurrency admits nothing, so the queue
+ *   GEMINI_TEXT_CONCURRENCY  holds every call forever
+ *   GEMINI_MAX_QUEUE_DEPTH   a NaN depth makes the overflow test meaningless
+ *
+ * A blank variable is one careless click, and none of those four fails in a
+ * way anyone could read. So the failure moves to BOOT, where the deploy rite's
+ * health check catches it and the operator reads the variable's NAME instead
+ * of the customer reading a lie.
+ *
+ * ⚠ THE FAL ALLOWANCES ARE DELIBERATELY NOT HERE. `ROLL_IMAGE_CONCURRENCY`,
+ * `SIGN_VIEW_CONCURRENCY`, `REFINE_EDIT_CONCURRENCY`, `FAL_CONCURRENCY`,
+ * `INK_PLATE_CONCURRENCY` and `FAL_ACCOUNT_CEILING` are governed by
+ * `FAL_ALLOWANCES` and `assertFalBudget()`, which already refuses to boot
+ * naming the offending variable — `Number("")` is 0 there, not NaN, and a path
+ * with no slots is precisely what that check exists to refuse. Two owners for
+ * one variable would be worse than the defect this table fixes.
+ *
+ * `PORT` is also not here and is also clear: it reads `|| "3000"`, which DOES
+ * catch the empty string, and a non-numeric value makes `findAvailablePort`
+ * throw `No available port found starting from NaN` before the server listens.
+ */
+export const NUMERIC_ENV_VARS = {
+  DAILY_GENERATION_LIMIT: 50,
+  GEMINI_IMAGE_CONCURRENCY: 5,
+  GEMINI_TEXT_CONCURRENCY: 5,
+  GEMINI_MAX_QUEUE_DEPTH: 50,
+  ROLL_IMAGE_MAX_QUEUE_DEPTH: 64,
+  SIGN_VIEW_MAX_QUEUE_DEPTH: 24,
+} as const;
+
+export type NumericEnvVar = keyof typeof NUMERIC_ENV_VARS;
+
+/**
+ * Read one numeric variable, or refuse by name.
+ *
+ * Unset and EMPTY both mean "nobody set it" and take the declared default —
+ * the empty case stated first, because it is the one four sites got wrong.
+ * Anything else must be a positive safe integer or this throws.
+ *
+ * Lifted 2026-08-25 from two byte-identical private copies in
+ * `castingV2/rollEngine.ts` and `castingV2/signEngine.ts`, which had the shape
+ * right and were the only two sites that did. Working law 4: the fallbacks
+ * live in the table above rather than at each call, so a default cannot drift
+ * from the boot check that validates it.
+ */
+export function envInt(name: NumericEnvVar): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return NUMERIC_ENV_VARS[name];
+  const parsed = Number(raw);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `${name} must be a positive integer (got ${JSON.stringify(raw)}). ` +
+        `Unset it to use the default of ${NUMERIC_ENV_VARS[name]}.`,
+    );
+  }
+  return parsed;
+}
+
+/**
+ * Read every numeric variable at boot so a bad one cannot wait for the module
+ * that happens to consume it to be imported. Derived from the table — there is
+ * no second list to fall behind it.
+ */
+export function assertNumericEnv(): void {
+  for (const name of Object.keys(NUMERIC_ENV_VARS) as NumericEnvVar[]) envInt(name);
+}
+
+/**
  * Fail loudly at boot if a required env var is missing.
  * Called from server/_core/index.ts before anything else starts.
  */
 export function validateEnv(): void {
+  /*
+   * FIRST, and deliberately before the missing-variable check: this validates
+   * the SHAPE of values that ARE set, which is independent of whether anything
+   * else is present. Two things follow, and the second is why it is here.
+   *
+   * A malformed number is refused even on a deployment that is also missing
+   * something else, so the operator is not made to fix one problem to be shown
+   * the next. And the guard becomes drivable by setting ONE variable —
+   * `numericEnv.test.ts` proves the wire without touching any other, which
+   * matters because `DATABASE_URL` is a required var and `vitest.setup.ts`
+   * strips it ON PURPOSE so a unit test can never reach the live database. The
+   * first version of that arm satisfied every missing variable by reading them
+   * out of this function's own error message — elegant, derived, and it set
+   * `DATABASE_URL`, reaching around the one safety mechanism in the suite that
+   * exists to be unreachable. It perturbed a neighbouring suite, which is how
+   * it was caught.
+   */
+  assertNumericEnv();
+
   const missing = Object.entries(REQUIRED_VARS).filter(
     ([key]) => !process.env[key]
   );

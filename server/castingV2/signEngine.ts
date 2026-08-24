@@ -25,16 +25,8 @@ import {
   forcedFailAnglesFromEnv,
   type ViewConformanceJudge,
 } from "./viewConformance";
+import { envInt } from "../_core/env";
 
-function envInt(name: string, fallback: number): number {
-  const raw = process.env[name];
-  if (raw === undefined || raw === "") return fallback;
-  const parsed = Number(raw);
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
-    throw new TypeError(`${name} must be a positive integer`);
-  }
-  return parsed;
-}
 
 let viewQueue: ProviderQueue | null = null;
 let identityEngine: IdentityEngine | null = null;
@@ -51,7 +43,7 @@ export function castPackageQueue(): ProviderQueue {
         one customer's wait for everybody's.
       */
       concurrency: falAllowanceOf("SIGN_VIEW_CONCURRENCY"),
-      maxQueueDepth: envInt("SIGN_VIEW_MAX_QUEUE_DEPTH", 24),
+      maxQueueDepth: envInt("SIGN_VIEW_MAX_QUEUE_DEPTH"),
     });
   }
   return viewQueue;
