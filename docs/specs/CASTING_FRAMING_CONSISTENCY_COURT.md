@@ -102,12 +102,66 @@ BASICS    7   median 23.5%          5.7 points
 - **ACROSS casts** — 27.3% against 23.5%, a **3.8 point** gap between two sheets
   given the identical framing order. That is the half he actually said out loud,
   and no court before this one has had it as its subject.
-- **WITHIN a sheet** — 6.6 and 5.7 points of spread, which is `FRAMING_FIXED`'s
-  own comparability law (E1: *fixed for every candidate so that comparing two of
-  them compares two people*) failing on every sheet the product casts.
+- **WITHIN a sheet** — 6.6 and 5.7 points of spread on every sheet the product
+  casts.
+
+  ⚠ **THIS BULLET SAID *"which is `FRAMING_FIXED`'s own comparability law (E1)
+  FAILING"*, AND THAT SENTENCE IS WHERE THIS COURT WENT WRONG** (corrected
+  2026-08-24 on opus-1209, ruled fable-1572). **E1 has not failed and cannot fail
+  this way.** Read at its definition — `CASTING_V2_LEGACY_CRAFT_CATALOG.md` §E,
+  which this court only ever *cited* — E1 is **a prompt-construction technique**:
+  *"Fixed POSE & FRAMING + LIGHTING & CAMERA sections (**always the same**)"*,
+  solving *"comp-card views that can't be compared because every cast is posed
+  differently."* It is a claim about the TEXT every candidate receives, and that
+  text is identical for every candidate — arm M's own single-variable assertion
+  is the standing proof, since it compares the outgoing prompts and would have
+  refused if any candidate's framing sentence differed.
+
+  **A fixed order producing varied output is not a law failing; it is a
+  stochastic engine.** Whether the variation is acceptable is a boundary
+  question, it belongs to the founder, and he has answered it — see §1b.
 
 A cut can close both. What it cannot do is invent field of view, and that single
 sentence is why the last court failed and why this one is shaped the way it is.
+
+---
+
+## 1b. ⚠ THE LAW THIS COURT NEEDED AND DID NOT HAVE — his, in his words
+
+**Founder ruling, 2026-08-24, verbatim:**
+
+> *"i said this from the beginning frames do not need to be identical 100% just
+> within a good boundary because obviously different hair styles body types will
+> always change the output releative to the frame."*
+
+**And its companion the same day, on everything this court built around that:**
+
+> *"its just over engineerings for no reason what so ever."*
+
+**The target is a TOLERANCE BAND, never identity.** Variation from hair, body
+type and build is EXPECTED AND CORRECT output — not wobble to be eliminated. The
+acceptance bar is **his eye on a boundary**, and no measurement substitutes for
+it (law 9).
+
+### ⚠ How the drift happened, because it had TWO causes and only one is language
+
+His order said **consistent**. This court worked to **identical**. Both roads in:
+
+1. **Loose language.** *Consistent* is an adjective about taste; the court needed
+   a number, and *identical* is the number-shaped word nearest to it. Law 8: the
+   user's description is the spec, and the math proves it happened — not the
+   other way round.
+2. ⚠ **A MISREAD CITATION, which is the one worth guarding against.** E1 was cited
+   as a *comparability law* the product was failing. It is a technique entry
+   describing prompt text. **A citation of a catalogue entry is a claim about what
+   that entry SAYS, and it is checked at the entry's definition** — the
+   premise-from-one-module hazard, arriving through a document instead of a
+   module. `CASTING_V2_LEGACY_CRAFT_CATALOG.md` is full of technique entries a
+   future court could mistake for output promises exactly this way.
+
+**When a founder ask is an ADJECTIVE — consistent, similar, clean — the
+acceptance bar is his eye on a boundary. A court that hardens it into an identity
+or an equality asks him FIRST.**
 
 ---
 
@@ -942,6 +996,83 @@ widest head gap in the population as well, or it will sell a customer a frame
 with the top of her hair cut off — which is what `FRAMING_FIXED` asks for the
 opposite of, in its own words: CLEAR SPACE above the hair.
 
+### ✅ THE CLAUSE-ONLY COURT AT SHIP SIZE — RUN. **Spread PASSES, hair PASSES, the across-cast gap FAILS its bar at 2.6pt against 2.0.**
+
+Ordered fable-1566 after the founder looked at arm M's raw strips and said
+*"i honestly dont understand why we even need to be cropping STRIP-A Suit raw
+looks absolutely fine every image obeyed the frame same with the STRIP B basics
+raw."* **His eye accepted the clause cells' RAW frames as product**, which retires
+the cut — so the only open question was whether the clause survives at the size a
+roll actually delivers (1024×1536), since arm R proved size moves composition.
+
+Arm M's clause prompts, asserted **byte-identical**, no recompile. 16 dispatched,
+14 measured, 2 refused. **$0.9200 settled**; this court $1.81 of its $2.50.
+
+```
+  suit-ship    n=8  share med 21.4%  spread 3.5pt  (bar 4.5)  PASS
+  basics-ship  n=6  share med 18.9%  spread 1.4pt  (bar 4.5)  PASS
+  ACROSS-CAST GAP   SUIT 21.3%  BASICS 18.7%  →  2.6pt  (bar 2.0)  ⚠ FAIL
+  HAIR AS DELIVERED  0 of 14 frames with the head box on the top row   PASS
+  identity           below = 1/share − headroom − 1 holds on 14/14
+```
+
+**The clause survives the size shift on what it was built for**: within-sheet
+wobble is 3.5 and 1.4pt against today's 6.6–7.4, and BASICS is *tighter* at ship
+size than at large. **What did not survive is the across-cast gap** — 0.9pt at
+large, 2.6pt here — though it is still down from today's 6.2pt.
+
+⚠ **THE FAIL IS ROBUST TO THE TWO REFUSED SLICES, checked before it was
+reported.** `basics-ship` landed n=6 (`pos6`, `pos7` refused `content_policy`), so
+the verdict was re-taken against every plausible substitution:
+
+```
+  as delivered                                                gap 2.6pt  FAIL
+  arm M's LARGE shares for the same two positions             gap 2.6pt  FAIL
+  both missing frames at the LOWEST this population has shown gap 3.0pt  FAIL
+  both missing frames at the HIGHEST                          gap 2.1pt  FAIL
+```
+
+**A FAIL that a plausible pair of frames could flip would be a reading about who
+the checker refused rather than about the clause.** This one is not.
+
+⚠ **AND THE BAR IS NOT MOVED.** The comfortable sentence available here is *"2.0
+was too tight for the ship size"*, and it is refused on the same ground §6.2's
+NULL and §6.1's correction were: a bar re-read after seeing it fail is optional
+stopping. What IS true and is not a rescue: **the ship size's own run-to-run floor
+has never been measured.** The 1.2pt floor is a large-size figure from one
+replicate pair, and the 2.0 bar was set against it — so whether 2.6pt at
+1024×1536 is a real gap or engine noise is *unknown*, which is a statement about
+what was never bought.
+
+**The boundary is his**, by his own ruling (fable-1567): *"frames do not need to
+be identical 100% just within a good boundary because obviously different hair
+styles body types will always change the output releative to the frame."* The
+strips — `output/framing-court/shipsize/STRIP-{suit,basics}-ship-raw.png`, raw
+rows at ship size with no boxes, because what he accepted was a LOOK — go to him,
+and his eye closes it. If it hesitates, the floor is 8 renders and ~$0.45; it is
+not bought speculatively.
+
+⚠ **AND THE REFUSALS SETTLED SOMETHING ELSE FOR FREE.** `providerQueue.ts` never
+retries `content_policy` and `types.ts` gives the reason — *"retrying them burns
+budget to reach the same answer."* Three passes over one prompt set say otherwise:
+
+```
+  arm M run 1 (large)   basics pos2 REFUSED
+  arm M run 2 (large)   basics pos2 DELIVERED · basics-clause pos2 REFUSED
+  ship size             basics pos2 DELIVERED · pos6 and pos7 REFUSED
+```
+
+**Same prompts, different casualties each pass.** It is not a property of any
+prompt and it is not the same answer. Running tally across this court: **4 refused
+of 25 BASICS dispatches, 0 of 24 SUIT.** The open question narrows from *is it
+stochastic* to *does an immediate retry recover the slice*, which matters because
+the founder priced the lowered neckline at about one slice in four and kept it.
+
+**And a price is retired**: images cost **$0.0557 each** at 1024×1536 — the FIRST
+settled per-image reading for this size alone. Arm R rendered both sizes against
+one balance and the split was never separable, so $0.0400, $0.0514 and the
+conservative $0.0630 were all estimates.
+
 ### Arm M as designed — the plan it ran against
 
 ```
@@ -1031,6 +1162,51 @@ countersign request rather than in a document he may open.
 ---
 
 ## 10. What this decides for the build, and for the settings modal
+
+### ⚠ 10.0 THE LATENCY FIGURES, AND WHICH INTERVAL EACH ONE MEASURES
+
+Recorded here rather than in a build design, because there is no build design —
+and recorded at all because **the founder reacted to the larger figure**
+(*"30% extra time is significant but we will see how it feels"*, 2026-08-24) and
+it was inflated about fourfold by the court's own instrument. If the render-size
+route is ever revived, the corrected number governs and nobody re-feels against
+the wrong one.
+
+Both readings come from the SAME eight-frame pairs, arm R's file mtimes:
+
+```
+  small 1024x1536   n=7   raw → raw   median 47.6s      boxes → raw   median 33.2s
+  large 1536x2304   n=7   raw → raw   median 63.0s      boxes → raw   median 37.0s
+  -------------------------------------------------------------------------------
+  DELTA                   +15.4s / +32%                 +3.8s / +11%
+```
+
+**`raw → raw` is not render time.** The harness writes `-raw.png` the instant the
+engine returns, then asks the segmenter for `face`, asks again for `head`,
+composites the boxes with sharp and writes a second multi-megabyte PNG — and only
+then dispatches the next frame. So the gap between consecutive raw files is *this
+frame's render plus the previous frame's instrumentation*. **And that
+instrumentation is size-dependent** (bigger uploads to the segmenter, a bigger
+composite), which is what turns a measurement artifact into a wrong verdict: the
+harness's own overhead grew from ~14.4s to ~26.0s between the two sizes, so
+**~11.6s of the ~15.4s delta is work the product never does.**
+
+`boxes[n−1] → raw[n]` is the window from the last thing the harness did to the
+moment the next frame landed — dispatch, render, return, write — and is the
+closest thing these artifacts hold to render time.
+
+**What is robust is the DECOMPOSITION, not the absolutes**: n=7 per size, one
+sitting, serial dispatch, a shared network, file mtimes as the clock, and a 93s
+outlier in the small cell. The decomposition follows from what the harness's loop
+does between two writes, not from timing precision. At 8-parallel dispatch the
+sheet-level cost is bounded by the slowest frame, so a corrected per-image delta
+of ~+3.8s is a few seconds on a sheet, not the +15–20s first relayed.
+
+⚠ **On the surviving clause-only route this is all moot** — the render size does
+not change at all. It is kept for the revival case and for the lesson: *a figure
+measured through an instrument carries the instrument.*
+
+---
 
 **Where the cut would live** is a build question and not this court's, but its
 shape is already fixed by what the court proves: a post-render step on the

@@ -339,7 +339,60 @@ carry the rulings, the courts and the histories.
                                           The gap is MEASURED at last: SUIT
                                           27.3% head share against BASICS 23.5%,
                                           and a frame common to both costs +8.1
-                                          points of median today. ⚠ AND FRAMING IS
+                                          points of median today.
+                                          ✅ **AND THE COURT HAS NOW RUN AND
+                                          CLOSED — PASS, WITH TWO BUILD
+                                          CONDITIONS** (2026-08-24, arms H/R/M,
+                                          $4.09 of a $5.00 ceiling, no credits
+                                          at any point; ruled fable-1559,
+                                          condition 2 rescinded and replaced
+                                          fable-1561). **The headline is his own
+                                          question rather than the court's
+                                          instrument: the across-cast gap goes
+                                          6.2pt → 0.9pt, against a 1.2pt
+                                          run-to-run floor — under the clause the
+                                          two casts agree with each other as
+                                          closely as one cast agrees with
+                                          itself.** The clause also killed the
+                                          wobble on both populations (SUIT 7.4 →
+                                          3.5pt, BASICS 6.6 → 3.6pt). He has the
+                                          strips and the verdict. **What the
+                                          BUILD must carry, neither optional:**
+                                          (1) the cut's `R` comes from the widest
+                                          HEAD GAP as well as the tightest
+                                          headroom — `T_min`/`usableR` guarantee
+                                          the FACE and know nothing about the
+                                          hair, proven at a BASICS frame with
+                                          61 px of crown sliced off; and (2) the
+                                          target `T` is chosen from the CLAUSE
+                                          cells at the render size, `T_min` and
+                                          at most one tighter alternative shown
+                                          as strips, and **his eye picks**.
+                                          ⚠ **The `content_policy` refusal may
+                                          not be terminal — ~$0.80 to find out.**
+                                          `providerQueue.ts` does not retry the
+                                          class and `types.ts` states the reason:
+                                          *"retrying them burns budget to reach
+                                          the same answer."* Arm M observed the
+                                          same stored prompt bytes REFUSED at
+                                          16:50 and DELIVERED at 17:17 (opus-1200
+                                          §3), so it is not the same answer —
+                                          **at n=1, which funds the question and
+                                          settles nothing.** Two explanations
+                                          want different remedies: per-call
+                                          stochasticity (an immediate retry
+                                          recovers slices) or the checker moving
+                                          between the two calls (only a deferred
+                                          retry would). The measurement is one
+                                          known-refused prompt re-dispatched N
+                                          times back-to-back. **What it is worth:
+                                          the founder knowingly priced the
+                                          lowered neckline at about one slice in
+                                          four and kept it (fable-1465); if a
+                                          retry recovers a useful share, the
+                                          trade he accepted gets cheaper without
+                                          touching the neckline he refused to
+                                          raise.** ⚠ AND FRAMING IS
                                           NOW ON HIS OWN CANDIDATE LIST AS A
                                           CUSTOMER SETTING (fable-1548; the
                                           settings-modal design §10b) — so that
