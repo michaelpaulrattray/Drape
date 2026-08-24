@@ -312,6 +312,58 @@ length distribution — if the new prompt pushes lines past ~150 characters
 routinely, the answer is to tell the picker to be specific in FEWER clauses, not
 to widen a contract every downstream reader depends on.
 
+⚠ **THAT PARAGRAPH IS UNCHANGED AND §5.1 BELOW NARROWS IT, so the two are read
+together rather than as a contradiction.** It stands as the rule for *the picker
+is writing long lines* — the case it was written about, and the case the court
+measured as not happening. §5.1 is a different case that the court's rows turned
+up afterwards: **the announced bound and the enforced bound do not agree with
+each other**, and that is a defect in the pair rather than a symptom of long
+lines. If THAT is what ever has to be fixed, the door is the side that moves,
+because the alternative is rationing the register this whole item exists to stop
+rationing.
+
+### ⚠ 5.1 THE ANNOUNCED CAP AND THE ENFORCED DOOR DISAGREE, AND THEY ALWAYS HAVE
+
+Found in the court's own rows after the build landed, and it is **not** something
+this change introduced — it is true of today's prompt and was true before it.
+
+The block announces the bound in WORDS (*"in one phrase under 30 words"*);
+`wardrobeDoor.ts` enforces it in CHARACTERS (`WARDROBE_PICK_MAX` 180). Measured
+across the court's thirty picks:
+
+```
+CURRENT   6.25 chars per word   ->  a compliant 30-word reply is ~188 chars
+A         6.77                  ->  ~203
+B         6.51                  ->  ~195
+```
+
+**A reply that obeys the announced instruction exactly is refused by the door**,
+on every side including the one shipping today. That is the shape the brief
+fidelity work named in as many words — *the announced cap and the enforced bound
+move TOGETHER* — one field over.
+
+**It has never fired, and the reason is the reason it stayed invisible**: the
+picker writes at half its allowance. Observed maxima on shape A are **16 words
+of an announced 30 and 112 characters of a 180 door** (131 in the probe). The
+headroom shrank from ~2.5x to ~1.9x with this change; it did not close.
+
+**Recommendation: change nothing yet, and name the trigger.** Two reasons.
+
+1. **The obvious repair is a ration.** Lowering the announcement to ~25 words
+   would make the two agree, and *an announced cap is a brief* — this document's
+   own §1.1. Buying agreement with a smaller number is buying it in the currency
+   the whole item exists to stop spending. If anything moves it should be the
+   DOOR (180 → 200, still well inside the column's 240), and that is a change to
+   a durable contract six signed views are composed from, which deserves its own
+   sitting rather than a footnote.
+2. **We now have a free instrument where we had none.** `WARDROBE_PICK_REFUSED`
+   counts a `too_long` refusal the moment one happens, in production, at no
+   cost. A closure whose premise is *"it has never fired"* must name the thing
+   that would make it fire, and here that thing announces itself.
+
+**THE TRIGGER: the first `wardrobePickRefused` carrying `reason: "too_long"`
+re-opens this, and the answer is the door rather than the announcement.**
+
 ---
 
 ## 6. The court — text only, no picture, no credits
@@ -521,7 +573,10 @@ this document is one of those text stages.
 - **It does not add a sixth door class.** Setting and activity remain
   prompt-walled only — `wardrobeDoor.ts`'s stated limit — and adding a list
   quietly is a design change wearing a diff. Still filed, still open.
-- **It does not raise either cap.** 30 announced words, 180 door characters. §5.
+- **It does not raise either cap.** 30 announced words, 180 door characters. §5
+  — and §5.1, which found after the build that those two numbers have never
+  agreed with each other on ANY side of the court, including today's shipped
+  prompt. Still not raised here; parked on a named trigger rather than closed.
 - **It does not change any customer-visible copy.** The *"engine's pick"* label,
   the sheet notice and the path toggle are untouched.
 - **It does not change what happens to a brief that names an outfit.** Case (a)
