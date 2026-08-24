@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { moderatorRouter } from "./routes/moderator";
+import { changeRequestsRouter } from "./routes/admin/changeRequests";
 
 // Mock the slackNotification module
 vi.mock("./slack/slackNotification", () => ({
@@ -888,38 +890,71 @@ describe("Change Request - Admin Review Procedures", () => {
 // ============================================================
 // Change Request - Security Boundaries
 // ============================================================
-describe("Change Request - Security Boundaries", () => {
-  it("only moderators and admins can create change requests", () => {
-    const moderator = { id: 10, role: "moderator" };
-    const admin = { id: 1, role: "admin" };
-    const user = { id: 42, role: "user" };
+/*
+ * ⚠ EVERY ARM IN THIS DESCRIBE ASSERTED A JAVASCRIPT OPERATOR ON A LITERAL
+ * IT HAD JUST TYPED, under a heading that says "Security Boundaries".
+ * Verbatim:
+ *
+ *     it("only admins can review change requests", () => {
+ *       const admin = { id: 1, role: "admin" };
+ *       expect(admin.role === "admin").toBe(true);          // "admin" === "admin"
+ *     });
+ *
+ *     it("moderators can only view their own requests", () => {
+ *       const moderatorId = 10;
+ *       const request = { submittedById: 10 };
+ *       expect(request.submittedById === moderatorId).toBe(true);   // 10 === 10
+ *     });
+ *
+ * The second is **invariant 1** — *scope the owner in the statement that
+ * reads or writes* — asserted as `10 === 10`. Move `reviewChangeRequest` to
+ * `moderatorProcedure`, or read `getMyChangeRequests`' moderator id out of
+ * procedure INPUT instead of `ctx.user.id`, and every one of them stays
+ * green. Invariant 7: a test must prove it BLOCKS.
+ *
+ * The product was read at the router when these were replaced (2026-08-25)
+ * and every clause was correct: `createChangeRequest` is `moderatorProcedure`,
+ * `reviewChangeRequest` and `listChangeRequests` are `adminProcedure`, and
+ * `getMyChangeRequests` passes `ctx.user.id` INTO the db helper rather than
+ * filtering after the fact. These arms exist for the day that changes.
+ */
+describe("Change Request - Security Boundaries (DRIVEN through the real procedures)", () => {
+  function callerFor(user: { id: number; role: string } | null) {
+    return moderatorRouter.createCaller({ user, ...(user ? {} : {}) } as never);
+  }
 
-    expect(moderator.role === "moderator" || moderator.role === "admin").toBe(true);
-    expect(admin.role === "moderator" || admin.role === "admin").toBe(true);
-    expect(user.role === "moderator" || user.role === "admin").toBe(false);
+  it("a plain user is REFUSED createChangeRequest — the middleware blocks, it is not recited", async () => {
+    await expect(
+      callerFor({ id: 42, role: "user" }).createChangeRequest({
+        type: "refund_credits",
+        priority: "normal",
+        targetUserId: 7,
+        title: "Refund credits for service disruption",
+        description: "A description long enough to pass the minimum length rule.",
+      } as never),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("only admins can review change requests", () => {
-    const admin = { id: 1, role: "admin" };
-    const moderator = { id: 10, role: "moderator" };
-
-    expect(admin.role === "admin").toBe(true);
-    expect(moderator.role === "admin").toBe(false);
+  it("an unauthenticated caller is REFUSED, and with UNAUTHORIZED rather than FORBIDDEN", async () => {
+    await expect(
+      callerFor(null).getMyChangeRequests({} as never),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("moderators can only view their own requests", () => {
-    const moderatorId = 10;
-    const request = { submittedById: 10 };
-    const otherRequest = { submittedById: 20 };
-
-    expect(request.submittedById === moderatorId).toBe(true);
-    expect(otherRequest.submittedById === moderatorId).toBe(false);
+  it("a SUSPENDED moderator is refused even though the role is right", async () => {
+    const caller = moderatorRouter.createCaller({
+      user: { id: 10, role: "moderator", suspendedAt: new Date() },
+    } as never);
+    await expect(caller.getMyChangeRequests({} as never)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 
-  it("admins can view all requests", () => {
-    const admin = { id: 1, role: "admin" };
-    expect(admin.role === "admin").toBe(true);
-    // Admin uses listChangeRequests without submittedById filter
+  it("POSITIVE CONTROL — a live moderator is ALLOWED, so the three refusals above are not refusing everyone", async () => {
+    const caller = moderatorRouter.createCaller({
+      user: { id: 10, role: "moderator", suspendedAt: null },
+    } as never);
+    await expect(caller.getMyChangeRequests({} as never)).resolves.toBeDefined();
   });
 
   it("change request review actions should be limited to approved/denied", () => {
@@ -946,13 +981,50 @@ describe("Change Request - Security Boundaries", () => {
 // Update moderator.test.ts references
 // ============================================================
 describe("Change Request - Replaces Escalation", () => {
-  it("moderator write operations should now be createChangeRequest and getMyChangeRequests", () => {
-    const moderatorMutations = ["createChangeRequest"];
-    const moderatorQueries = ["getAuditLogs", "getAbuseAlerts", "getAuditStatistics", "listUsers", "getUserDetails", "getBlockedIps", "getMyChangeRequests"];
+  /*
+   * ⚠ AN ARM STOOD HERE THAT TYPED THE MODERATOR SURFACE OUT BY HAND AND
+   * ASSERTED ITS OWN ARRAY: `expect(moderatorQueries).toContain(…)` over a
+   * `const moderatorQueries = [...]` on the line above.
+   *
+   * It had drifted, and this is the specimen the census kept. It named
+   * SEVEN procedures. **The router holds FIFTEEN**, and **two of its seven
+   * do not exist**:
+   *
+   *     getAuditStatistics   → the router has `getAuditStats`
+   *     getBlockedIps        → the router has `listBlockedIPs`
+   *
+   * Nine real procedures were absent from it. Two fictional names sat in a
+   * list describing an access-control surface and nothing could notice,
+   * because nothing ever compared the list to the router it named.
+   *
+   * The surface is now DERIVED off `moderatorRouter._def.procedures` in
+   * `server/moderator.test.ts` — "Moderator Role - Security Boundaries
+   * (DERIVED from the running router)" — where a second write operation or
+   * a renamed query reddens an arm. This arm is deleted rather than moved:
+   * a second place stating the same surface is the disease it died of.
+   */
 
-    expect(moderatorMutations).toContain("createChangeRequest");
-    expect(moderatorMutations).not.toContain("escalateToAdmin");
-    expect(moderatorQueries).toContain("getMyChangeRequests");
+  it("moderators may only REQUEST a change; only admins may act on one — asked of both ROUTERS", () => {
+    const moderatorSurface = Object.keys(
+      (moderatorRouter as unknown as { _def: { procedures: Record<string, unknown> } })._def.procedures,
+    );
+    const adminSurface = Object.keys(
+      (changeRequestsRouter as unknown as { _def: { procedures: Record<string, unknown> } })._def.procedures,
+    );
+    // Population control — a reader that reads nothing agrees with everything.
+    expect(moderatorSurface.length).toBeGreaterThan(0);
+    expect(adminSurface.length).toBeGreaterThan(0);
+
+    // The request half is the moderator's, and the escalation it replaced is gone.
+    expect(moderatorSurface).toContain("createChangeRequest");
+    expect(moderatorSurface).toContain("getMyChangeRequests");
+    expect(moderatorSurface).not.toContain("escalateToAdmin");
+
+    // The acting half is the admin's, and is NOT on the moderator router.
+    expect(adminSurface).toContain("reviewChangeRequest");
+    expect(adminSurface).toContain("listChangeRequests");
+    expect(moderatorSurface).not.toContain("reviewChangeRequest");
+    expect(moderatorSurface).not.toContain("listChangeRequests");
   });
 
   it("change request should have structured fields instead of free-text reason", () => {

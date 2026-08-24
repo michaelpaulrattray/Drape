@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { moderatorRouter } from "./routes/moderator";
 
 // Mock the slackNotification module
 vi.mock("./slack/slackNotification", () => ({
@@ -108,6 +109,7 @@ vi.mock("./db", () => ({
     credits: { balance: 100 },
     stats: { totalModels: 5, totalGenerations: 50 },
   }),
+  getUserCredits: vi.fn().mockResolvedValue({ balance: 100 }),
   getUserStatistics: vi.fn().mockResolvedValue({
     totalUsers: 100,
     activeUsers: 80,
@@ -451,38 +453,98 @@ describe("Moderator Role - Change Requests (replaces Escalation)", () => {
   });
 });
 
-describe("Moderator Role - Security Boundaries", () => {
-  it("moderator router should NOT contain suspend mutation", () => {
-    // The moderator router has read queries + createChangeRequest mutation
-    // No suspendUser, unsuspendUser, blockIP, unblockIP, adjustCredits
-    const moderatorWriteOperations = ["createChangeRequest"];
-    const adminOnlyOperations = [
+/*
+ * ⚠ THIS DESCRIBE USED TO ASSERT DRAPE'S ACCESS CONTROL AGAINST ARRAYS IT
+ * TYPED ON THE LINE ABOVE, and it was called "Security Boundaries" while
+ * doing it. Verbatim, the shape of all three arms:
+ *
+ *     const moderatorWriteOperations = ["createChangeRequest"];
+ *     adminOnlyOperations.forEach(op =>
+ *       expect(moderatorWriteOperations).not.toContain(op));
+ *
+ * That asserts a literal against itself. Add `suspendUser` to the moderator
+ * router tomorrow and it stays green — which is the capability grid's
+ * moderator row with no test that BLOCKS (invariant 7).
+ *
+ * ⚠ AND IT HAD ALREADY DRIFTED, WHICH IS THE SPECIMEN WORTH KEEPING. The
+ * sibling list in `changeRequests.test.ts` named SEVEN procedures where the
+ * router holds FIFTEEN, and **two of its seven do not exist**:
+ * `getAuditStatistics` (the router has `getAuditStats`) and `getBlockedIps`
+ * (the router has `listBlockedIPs`). Two fictional procedure names sat in a
+ * security describe, unassertable, because nothing ever compared the list to
+ * the thing it named. `list-stops-being-the-list`, on the security surface.
+ *
+ * Every arm below now DERIVES its population from the running router —
+ * `moderatorRouter._def.procedures`, the same technique `wardrobe.test.ts`
+ * uses for schemas. No list is typed here that the code does not state.
+ *
+ * The product was verified correct at the router when these were written
+ * (2026-08-25): createChangeRequest is the only mutation, review and list are
+ * `adminProcedure` in `routes/admin/changeRequests.ts`, and
+ * `getMyChangeRequests` scopes on `ctx.user.id`. These arms exist for the day
+ * that stops being true.
+ */
+describe("Moderator Role - Security Boundaries (DERIVED from the running router)", () => {
+  type ProcedureDef = { _def: { type?: string } };
+
+  function moderatorSurface(): Record<string, ProcedureDef> {
+    const procedures = (moderatorRouter as unknown as {
+      _def: { procedures: Record<string, ProcedureDef> };
+    })._def.procedures;
+    const names = Object.keys(procedures);
+    // Population control: a reader that reads nothing agrees with everything.
+    if (names.length === 0) throw new Error("read no procedures off moderatorRouter");
+    return procedures;
+  }
+
+  function namesOfType(type: "mutation" | "query"): string[] {
+    return Object.entries(moderatorSurface())
+      .filter(([, p]) => p._def.type === type)
+      .map(([name]) => name)
+      .sort();
+  }
+
+  it("has exactly ONE write operation and it is createChangeRequest", () => {
+    expect(namesOfType("mutation")).toEqual(["createChangeRequest"]);
+  });
+
+  it("carries none of the admin-only write operations — asked of the ROUTER, not of a list", () => {
+    const surface = Object.keys(moderatorSurface());
+    for (const adminOnly of [
       "suspendUser", "unsuspendUser", "blockIP", "unblockIP",
       "adjustCredits", "exportAuditLogs", "deleteAuditLogs",
-    ];
-
-    adminOnlyOperations.forEach(op => {
-      expect(moderatorWriteOperations).not.toContain(op);
-    });
+      "reviewChangeRequest", "listChangeRequests",
+    ]) {
+      expect(surface).not.toContain(adminOnly);
+    }
   });
 
-  it("moderator should only have one write operation (createChangeRequest)", () => {
-    const moderatorMutations = ["createChangeRequest"];
-    expect(moderatorMutations).toHaveLength(1);
-    expect(moderatorMutations[0]).toBe("createChangeRequest");
+  it("every procedure it does carry is a read, save that one write", () => {
+    const surface = Object.keys(moderatorSurface()).sort();
+    // Derived, not typed: queries + the one mutation must account for ALL of
+    // them, so a procedure declared with neither type cannot hide here.
+    expect([...namesOfType("query"), ...namesOfType("mutation")].sort()).toEqual(surface);
   });
 
-  it("moderator read operations should not expose sensitive admin data", () => {
-    // getUserDetails returns a subset of fields
-    const moderatorUserFields = [
-      "id", "name", "email", "role", "suspendedAt", "suspendedReason",
-      "lockedUntil", "failedLoginAttempts", "createdAt", "lastSignedIn",
-    ];
-    // Should NOT include: passwordHash, apiKeys, stripeCustomerId, etc.
-    const sensitiveFields = ["passwordHash", "apiKey", "stripeCustomerId"];
-    sensitiveFields.forEach(field => {
-      expect(moderatorUserFields).not.toContain(field);
-    });
+  it("getUserDetails hands back the projection the ROUTER builds, driven not recited", async () => {
+    const caller = moderatorRouter.createCaller({
+      user: { id: 10, role: "moderator", suspendedAt: null },
+    } as never);
+    const result = await caller.getUserDetails({ userId: 42 });
+    const user = (result as { user: Record<string, unknown> }).user;
+
+    // Invariant 8 — an explicit projection, proven on what CROSSES the
+    // boundary rather than on a list of what we hope it contains.
+    for (const forbidden of [
+      "passwordHash", "apiKey", "stripeCustomerId", "masterPrompt",
+      "technicalSchema", "preferences",
+    ]) {
+      expect(Object.keys(user)).not.toContain(forbidden);
+    }
+    // Positive control: the arm above passes trivially if the call returned
+    // an empty object, so pin that it actually carried the user through.
+    expect(user.id).toBe(42);
+    expect(user.email).toBe("test@example.com");
   });
 
   it("change request priority should support 4 levels", () => {

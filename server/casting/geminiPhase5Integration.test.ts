@@ -132,15 +132,15 @@ describe("ethnicity blend format", () => {
     expect(legacyString).toBe("Korean");
   });
 
-  it("blend percentages always sum to 100", () => {
-    // Simulate the clamping logic from EthnicityBlender
-    const clamp = (v: number) => Math.max(10, Math.min(90, v));
-    const pct1 = clamp(73);
-    const pct2 = 100 - pct1;
-    expect(pct1 + pct2).toBe(100);
-    expect(pct1).toBeGreaterThanOrEqual(10);
-    expect(pct2).toBeGreaterThanOrEqual(10);
-  });
+  /*
+   * ⚠ A `blend percentages always sum to 100` ARM STOOD HERE. It declared
+   * its own `clamp`, applied it to the literal 73, and asserted that
+   * `pct1 + (100 - pct1) === 100`. That identity holds for every number in
+   * JavaScript; the arm could not fail whatever `EthnicityBlender` does.
+   * Deleted under 3g's C1 — structural, nothing to disconnect. The real
+   * subject (EthnicityBlender's clamp, which still exists in the client)
+   * is an A-site and is named in the row.
+   */
 });
 
 // ============================================================================

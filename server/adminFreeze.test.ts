@@ -146,35 +146,25 @@ describe("Admin Freeze/Unfreeze UI Logic", () => {
     });
   });
 
-  describe("Modal state management", () => {
-    it("should clear freeze reason on successful freeze", () => {
-      let freezeReason = "Test reason";
-      // Simulate onSuccess callback
-      freezeReason = "";
-      expect(freezeReason).toBe("");
-    });
-
-    it("should clear unfreeze notes on successful unfreeze", () => {
-      let unfreezeNotes = "Issue resolved";
-      // Simulate onSuccess callback
-      unfreezeNotes = "";
-      expect(unfreezeNotes).toBe("");
-    });
-
-    it("should close modal on successful freeze", () => {
-      let freezeModalOpen = true;
-      // Simulate onSuccess callback
-      freezeModalOpen = false;
-      expect(freezeModalOpen).toBe(false);
-    });
-
-    it("should close modal on successful unfreeze", () => {
-      let unfreezeModalOpen = true;
-      // Simulate onSuccess callback
-      unfreezeModalOpen = false;
-      expect(unfreezeModalOpen).toBe(false);
-    });
-  });
+  /*
+   * ⚠ A `Modal state management` DESCRIBE STOOD HERE WITH FOUR ARMS, and
+   * every one of them was this, verbatim:
+   *
+   *     let freezeReason = "Test reason";
+   *     // Simulate onSuccess callback
+   *     freezeReason = "";
+   *     expect(freezeReason).toBe("");
+   *
+   * The subject is JavaScript assignment. There is no product symbol in the
+   * arm — nothing imported, nothing called — so no change to Drape can move
+   * it, and there was nothing to strip for a negative control because there
+   * was nothing connecting it to the product in the first place. That is a
+   * structural finding rather than a measured one and is stated as such.
+   *
+   * Deleted rather than rewritten: the real subject would be
+   * `AdminUserDetail`'s modal reset, which lives in the client and is not
+   * this file's business. Filed under 3g's C1.
+   */
 
   describe("UserDetailData interface freeze fields", () => {
     interface UserData {

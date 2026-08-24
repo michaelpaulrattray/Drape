@@ -13,6 +13,10 @@ vi.mock("./db", () => ({
   getUserCredits: (...args: any[]) => mockGetUserCredits(...args),
 }));
 
+vi.mock("./db/connection", () => ({
+  getDb: vi.fn(),
+}));
+
 vi.mock("./auditLog", () => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
   AUDIT_ACTIONS: {
@@ -68,39 +72,88 @@ describe("Account Freeze System", () => {
     });
   });
 
-  describe("Freeze enforcement in withAtomicCredits", () => {
-    it("should block generation when user is frozen", () => {
-      // Simulate the freeze check logic from withAtomicCredits
-      const user = { frozenAt: new Date(), frozenReason: "Auto-frozen: discrepancy" };
-      const isFrozen = !!user.frozenAt;
-      expect(isFrozen).toBe(true);
+  /*
+   * ⚠ TWO DESCRIBES STOOD HERE — "Freeze enforcement in withAtomicCredits"
+   * and "Freeze enforcement in billing checkout", five arms — and every one
+   * of them was this:
+   *
+   *     const user = { frozenAt: new Date(), … };
+   *     const isFrozen = !!user.frozenAt;
+   *     expect(isFrozen).toBe(true);
+   *
+   * The subject is `!!`. Nothing was imported and nothing was called.
+   *
+   * ⚠ AND THE CONTROL THAT PROVED IT SUBJECTLESS FOUND SOMETHING WORSE.
+   * The freeze enforcement was stripped from BOTH real spend paths
+   * (`user?.frozenAt` → `false` in `casting/atomicCredits.ts` and
+   * `castingV2/spendGuards.ts`) and the WHOLE SUITE was run:
+   *
+   *     Tests  2 failed | 9372 passed | 337 skipped (9711)
+   *
+   * — and both failures were the Architecture Atlas noticing that two files
+   * had CHANGED, saying nothing about what the change did. **A frozen
+   * account could spend on both paths and not one of 9,711 tests said a
+   * word.** That is invariant 7 on a money path: a control with no test
+   * that BLOCKS.
+   *
+   * So these were replaced rather than deleted (ruled fable-1625). The arms
+   * below drive the real guards.
+   *
+   * The product was read and was CORRECT when they were written
+   * (2026-08-25): both guards throw FORBIDDEN on `frozenAt`, and
+   * `server/db/security.ts` is the setter. They exist for the day that
+   * stops being true.
+   */
+  describe("Freeze enforcement — DRIVEN through the real guards", () => {
+    /** A drizzle-shaped double: `db.select().from().where().limit()` resolves to rows. */
+    function dbReturning(rows: Array<{ frozenAt: Date | null }>) {
+      const chain = { limit: async () => rows };
+      return { select: () => ({ from: () => ({ where: () => chain }) }) };
+    }
+
+    it("castingV2 spend: a FROZEN account is refused FORBIDDEN before anything is claimed", async () => {
+      const { getDb } = await import("./db/connection");
+      vi.mocked(getDb).mockResolvedValue(
+        dbReturning([{ frozenAt: new Date("2026-08-01") }]) as never,
+      );
+      const { assertNotFrozen } = await import("./castingV2/spendGuards");
+      await expect(assertNotFrozen(1)).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
 
-    it("should allow generation when user is not frozen", () => {
-      const user = { frozenAt: null, frozenReason: null };
-      const isFrozen = !!user.frozenAt;
-      expect(isFrozen).toBe(false);
+    it("castingV2 spend: POSITIVE CONTROL — an unfrozen account passes, so the arm above is not refusing everyone", async () => {
+      const { getDb } = await import("./db/connection");
+      vi.mocked(getDb).mockResolvedValue(dbReturning([{ frozenAt: null }]) as never);
+      const { assertNotFrozen } = await import("./castingV2/spendGuards");
+      await expect(assertNotFrozen(1)).resolves.toBeUndefined();
     });
 
-    it("frozen check should use frozenAt field, not frozenReason", () => {
-      // Edge case: reason exists but frozenAt is null (shouldn't happen but defensive)
-      const user = { frozenAt: null, frozenReason: "Some old reason" };
-      const isFrozen = !!user.frozenAt;
-      expect(isFrozen).toBe(false);
-    });
-  });
+    it("withAtomicCredits: a FROZEN account is refused and THE OPERATION NEVER RUNS", async () => {
+      const { getDb } = await import("./db/connection");
+      vi.mocked(getDb).mockResolvedValue(
+        dbReturning([{ frozenAt: new Date("2026-08-01") }]) as never,
+      );
+      const { withAtomicCredits } = await import("./casting/atomicCredits");
+      const operation = vi.fn().mockResolvedValue("rendered");
 
-  describe("Freeze enforcement in billing checkout", () => {
-    it("should block checkout when user is frozen", () => {
-      const user = { frozenAt: new Date() };
-      const shouldBlock = !!user.frozenAt;
-      expect(shouldBlock).toBe(true);
+      await expect(
+        withAtomicCredits(
+          { userId: 1, amount: 25, description: "test", referenceId: "ref-1" } as never,
+          operation,
+        ),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+      // The refusal is worth nothing if the work happened anyway — this is
+      // the half a `!!` on a literal could never have said.
+      expect(operation).not.toHaveBeenCalled();
     });
 
-    it("should allow checkout when user is not frozen", () => {
-      const user = { frozenAt: null };
-      const shouldBlock = !!user.frozenAt;
-      expect(shouldBlock).toBe(false);
+    it("the check reads frozenAt and NOT frozenReason — a stale reason alone does not freeze", async () => {
+      const { getDb } = await import("./db/connection");
+      vi.mocked(getDb).mockResolvedValue(
+        dbReturning([{ frozenAt: null, frozenReason: "Some old reason" } as never]) as never,
+      );
+      const { assertNotFrozen } = await import("./castingV2/spendGuards");
+      await expect(assertNotFrozen(1)).resolves.toBeUndefined();
     });
   });
 

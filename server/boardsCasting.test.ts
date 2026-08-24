@@ -45,22 +45,15 @@ describe('Board Casting Integration', () => {
       expect(label).toBe('Model 456');
     });
 
-    it('should generate position within expected range', () => {
-      const baseX = 100;
-      const baseY = 100;
-      const randomOffset = 200;
-
-      // Simulate the position calculation
-      for (let i = 0; i < 10; i++) {
-        const posX = baseX + Math.floor(Math.random() * randomOffset);
-        const posY = baseY + Math.floor(Math.random() * randomOffset);
-
-        expect(posX).toBeGreaterThanOrEqual(baseX);
-        expect(posX).toBeLessThan(baseX + randomOffset);
-        expect(posY).toBeGreaterThanOrEqual(baseY);
-        expect(posY).toBeLessThan(baseY + randomOffset);
-      }
-    });
+    /*
+     * ⚠ A `should generate position within expected range` ARM STOOD HERE.
+     * It computed `100 + Math.floor(Math.random() * 200)` ten times and
+     * asserted the result was in `[100, 300)`. Its subject is the contract
+     * of `Math.random`, not Drape's board placement — nothing about the
+     * product appears in it, so no change here can move it. Deleted under
+     * 3g's C1; structural finding, no negative control possible because
+     * there is nothing to disconnect.
+     */
   });
 
   describe('Board item update on view generation', () => {
