@@ -7,19 +7,49 @@ vi.mock("./db", () => ({
 }));
 
 // Mock audit logging
-vi.mock("./auditLog", () => ({
-  logAuditEvent: vi.fn().mockResolvedValue(undefined),
-}));
+// `AUDIT_ACTIONS` passes through to the real module: the action NAME an audit
+// row carries is the product's, and a stub here would let it drift.
+vi.mock("./auditLog", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./auditLog")>();
+  return { ...actual, logAuditEvent: vi.fn().mockResolvedValue(undefined) };
+});
 
-// Mock admin security
-vi.mock("./security/adminSecurity", () => ({
-  logAdminAction: vi.fn().mockResolvedValue(undefined),
-  writeImmutableLog: vi.fn().mockResolvedValue(undefined),
-  validateAdminAccess: vi.fn().mockResolvedValue({ allowed: true }),
-  logUnauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
-}));
+// Mock admin security.
+//
+// ⚠ `validateAdminAccess` and `logUnauthorizedAdminAccess` PASS THROUGH to the
+// real module (3g's D): the arms below drive the admin gate, and stubbing the
+// gate an arm drives is the defect this row removes. The stub that stood here
+// was also WRONG in a way nothing could notice — `validateAdminAccess` is
+// SYNCHRONOUS and the mock returned a Promise, so `validation.allowed` would
+// have read `undefined` and refused every admin. Nothing in this file drove the
+// router, so it never fired.
+vi.mock("./security/adminSecurity", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./security/adminSecurity")>();
+  return {
+    ...actual,
+    logAdminAction: vi.fn().mockResolvedValue(undefined),
+    writeImmutableLog: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 // Mock Slack
+vi.mock("./slack/slackNotification", () => ({
+  sendSlackAlert: vi.fn().mockResolvedValue(undefined),
+  sendAdminActionNotification: vi.fn().mockResolvedValue(undefined),
+  sendAuditLogEntry: vi.fn().mockResolvedValue(undefined),
+  sendEmergencyActionsToAdminChannel: vi.fn().mockResolvedValue(undefined),
+  // Reached by the REAL adminSecurity, which the arms below drive.
+  SlackAlerts: {
+    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
+    sensitiveAdminAction: vi.fn().mockResolvedValue(undefined),
+    securityAlert: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// ⚠ The mock below names "./slackNotification" — a path that does not exist;
+// the module is "./slack/slackNotification", mocked above. Left in place
+// rather than deleted: it is inert either way and removing it is not this
+// row's business, but it is worth the next reader knowing it does nothing.
 vi.mock("./slackNotification", () => ({
   sendSlackAlert: vi.fn().mockResolvedValue(undefined),
   sendAdminActionNotification: vi.fn().mockResolvedValue(undefined),
@@ -35,6 +65,7 @@ vi.mock("./slackApproval", () => ({
 }));
 
 import { updateUserRole, getUserById } from "./db";
+import { rolesRouter } from "./routes/admin/roles";
 
 const mockUpdateUserRole = vi.mocked(updateUserRole);
 const mockGetUserById = vi.mocked(getUserById);
@@ -269,5 +300,83 @@ describe("Role Management", () => {
       const result = await updateUserRole(1, "user", 1);
       expect(result.success).toBe(false);
     });
+  });
+});
+
+/*
+ * 3g's D read (2026-08-25): NOTHING in the repository drove `changeUserRole`.
+ * What stood for it was an arm commented "Simulate what the procedure does"
+ * that called the mocked db helpers itself and then asserted the mocks had
+ * been called — a coverage claim over an untested procedure.
+ *
+ * The procedure has THREE refusals and every one is a privilege guard:
+ *   - the target must exist                       NOT_FOUND
+ *   - an admin may not change their OWN role      BAD_REQUEST
+ *   - NOBODY may change an admin's role           FORBIDDEN
+ *
+ * The last is the one worth having an arm: without it an admin can demote
+ * another admin, which is how a two-admin product becomes a one-admin product.
+ * None of the three had ever been driven. They are driven now.
+ */
+describe("changeUserRole — the refusals, DRIVEN", () => {
+  const ADMIN = {
+    user: {
+      id: 1, role: "admin", email: "admin@example.com", name: "Admin",
+      openId: null, suspendedAt: null,
+    },
+    req: { headers: {}, socket: {} },
+  } as never;
+
+  function adminCaller() {
+    return rolesRouter.createCaller(ADMIN);
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUpdateUserRole.mockResolvedValue({ success: true, previousRole: "user" } as never);
+  });
+
+  it("refuses NOBODY may change an ADMIN's role — the privilege guard", async () => {
+    mockGetUserById.mockResolvedValue({ id: 42, role: "admin", email: "other@x", name: "Other" } as never);
+    await expect(
+      adminCaller().changeUserRole({ userId: 42, newRole: "user", reason: "cleanup" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // The refusal is worth nothing if the write happened anyway.
+    expect(mockUpdateUserRole).not.toHaveBeenCalled();
+  });
+
+  it("refuses an admin changing their OWN role", async () => {
+    mockGetUserById.mockResolvedValue({ id: 1, role: "admin", email: "admin@example.com", name: "Admin" } as never);
+    await expect(
+      adminCaller().changeUserRole({ userId: 1, newRole: "user", reason: "stepping back" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mockUpdateUserRole).not.toHaveBeenCalled();
+  });
+
+  it("refuses a target that does not exist", async () => {
+    mockGetUserById.mockResolvedValue(null as never);
+    await expect(
+      adminCaller().changeUserRole({ userId: 999, newRole: "moderator", reason: "promote" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(mockUpdateUserRole).not.toHaveBeenCalled();
+  });
+
+  it("POSITIVE CONTROL — promoting an ordinary user SUCCEEDS, so the refusals above are not refusing everyone", async () => {
+    mockGetUserById.mockResolvedValue({ id: 42, role: "user", email: "u@x", name: "User" } as never);
+    await expect(
+      adminCaller().changeUserRole({ userId: 42, newRole: "moderator", reason: "trusted member" }),
+    ).resolves.toBeDefined();
+    expect(mockUpdateUserRole).toHaveBeenCalledWith(42, "moderator", 1);
+  });
+
+  it("a MODERATOR is refused the whole procedure — it is adminProcedure, driven not recited", async () => {
+    const caller = rolesRouter.createCaller({
+      user: { id: 10, role: "moderator", email: "mod@x", name: "Mod", openId: null, suspendedAt: null },
+      req: { headers: {}, socket: {} },
+    } as never);
+    await expect(
+      caller.changeUserRole({ userId: 42, newRole: "moderator", reason: "trying it on" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mockUpdateUserRole).not.toHaveBeenCalled();
   });
 });

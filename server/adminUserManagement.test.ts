@@ -9,10 +9,38 @@ vi.mock("./db", () => ({
   getUserById: vi.fn(),
 }));
 
-// Mock the audit log module
-vi.mock("./auditLog", () => ({
-  logAuditEvent: vi.fn().mockResolvedValue(true),
-  getFilteredAuditLogs: vi.fn(),
+// Mock the audit log module. `AUDIT_ACTIONS` passes through — the action NAME
+// an audit row carries is the product's, and a stub would let it drift.
+vi.mock("./auditLog", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./auditLog")>();
+  return {
+    ...actual,
+    logAuditEvent: vi.fn().mockResolvedValue(true),
+    getFilteredAuditLogs: vi.fn(),
+  };
+});
+
+// ⚠ adminSecurity PASSES THROUGH (3g's D): the arms at the foot of this file
+// drive the real admin gate, and stubbing a gate an arm drives is the defect
+// this row removes.
+vi.mock("./security/adminSecurity", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./security/adminSecurity")>();
+  return {
+    ...actual,
+    logAdminAction: vi.fn().mockResolvedValue(undefined),
+    writeImmutableLog: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+vi.mock("./slack/slackNotification", () => ({
+  sendAdminActionNotification: vi.fn().mockResolvedValue(true),
+  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
+  sendSlackAlert: vi.fn().mockResolvedValue(true),
+  SlackAlerts: {
+    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
+    sensitiveAdminAction: vi.fn().mockResolvedValue(undefined),
+    securityAlert: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 import {
@@ -389,5 +417,86 @@ describe("Admin User Management", () => {
         })
       );
     });
+  });
+});
+
+/*
+ * 3g's D read (2026-08-25): NOTHING drove `admin.adjustCredits`. What stood
+ * for it was an arm commented "Simulate the audit log call that would happen
+ * in the router" that called the mocked `logAuditEvent` ITSELF and then
+ * asserted it had been called — the test asserting its own call.
+ *
+ * `pathB-hardening.test.ts` mentions `adjustUserCredits`, but what it asserts
+ * is `typeof mod.adjustUserCredits === "function"`: an export-existence arm,
+ * not a drive. So the coverage was nil.
+ *
+ * This is a MONEY procedure — it moves credits into or out of any account —
+ * and the arms below drive it: the gate, the missing target, the declared
+ * bounds, and a positive control so the refusals are not refusing everyone.
+ */
+describe("admin.adjustCredits — DRIVEN", () => {
+  const ADMIN_CTX = {
+    user: {
+      id: 2, role: "admin", email: "admin@example.com", name: "Admin",
+      openId: null, suspendedAt: null,
+    },
+    req: { headers: {}, socket: {} },
+  } as never;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(adjustUserCredits).mockResolvedValue({ success: true, newBalance: 600 } as never);
+    vi.mocked(getUserById).mockResolvedValue({ id: 1, role: "user", email: "u@x", name: "User" } as never);
+  });
+
+  async function router() {
+    const { usersRouter } = await import("./routes/admin/users");
+    return usersRouter;
+  }
+
+  it("a MODERATOR is refused — it is adminProcedure, driven not recited", async () => {
+    const caller = (await router()).createCaller({
+      user: { id: 10, role: "moderator", email: "mod@x", name: "Mod", openId: null, suspendedAt: null },
+      req: { headers: {}, socket: {} },
+    } as never);
+    await expect(
+      caller.adjustCredits({ userId: 1, amount: 100, reason: "Bonus credits" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    // A refused caller must not have moved money.
+    expect(adjustUserCredits).not.toHaveBeenCalled();
+  });
+
+  it("refuses a target that does not exist, and moves nothing", async () => {
+    vi.mocked(getUserById).mockResolvedValue(null as never);
+    const caller = (await router()).createCaller(ADMIN_CTX);
+    await expect(
+      caller.adjustCredits({ userId: 999, amount: 100, reason: "Bonus credits" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(adjustUserCredits).not.toHaveBeenCalled();
+  });
+
+  it("FROM THE DIFF — refuses an amount outside the declared ±100,000, and a reason outside 1..500", async () => {
+    const caller = (await router()).createCaller(ADMIN_CTX);
+    for (const bad of [
+      { userId: 1, amount: 100001, reason: "too much" },
+      { userId: 1, amount: -100001, reason: "too much the other way" },
+      { userId: 1, amount: 100, reason: "" },
+      { userId: 1, amount: 100, reason: "x".repeat(501) },
+    ]) {
+      await expect(caller.adjustCredits(bad as never)).rejects.toBeDefined();
+    }
+    expect(adjustUserCredits).not.toHaveBeenCalled();
+    // The boundaries themselves are accepted, so the arm is not refusing all.
+    await expect(
+      caller.adjustCredits({ userId: 1, amount: 100000, reason: "x".repeat(500) }),
+    ).resolves.toBeDefined();
+  });
+
+  it("POSITIVE CONTROL — an admin adjusting an ordinary account SUCCEEDS, with the amount and actor passed through", async () => {
+    const caller = (await router()).createCaller(ADMIN_CTX);
+    await expect(
+      caller.adjustCredits({ userId: 1, amount: 100, reason: "Bonus credits" }),
+    ).resolves.toBeDefined();
+    expect(adjustUserCredits).toHaveBeenCalledWith(1, 100, "Bonus credits", 2);
   });
 });
