@@ -39,6 +39,61 @@ const EMPTY_MAP: TattooMap = {
 };
 
 /**
+ * Turn the reader's per-area verdicts into a TattooMap.
+ *
+ * Lifted out of `analyzeTattoos` BYTE-PRESERVING (2026-08-25, 3g) so that
+ * something other than the provider call can reach it. It is not a helper
+ * for tests: `analyzeTattoos` below is its first and production reader, and
+ * the arms in `server/wardrobe.test.ts` are its second.
+ *
+ * ⚠ WHY THIS EXISTS, because the next person to transcribe it should meet
+ * the specimen: `wardrobe.test.ts` carried a private `parseTattooResponse`
+ * that re-typed this function, and its `promptFragment` was **189 characters
+ * against this one's 604** — it never carried the "Areas covered by
+ * clothing…" or "Do NOT add tattoos to any CLEAN area…" paragraphs, which
+ * are the two that do the constraining. It did not drift there: copy and
+ * original entered the tree in the SAME commit, `60eb0b4e` (2026-03-24),
+ * whose message reads *"Exact SOT prompt and parsing logic ported … 7 new
+ * tests, all 1,302 tests passing."* **It was born short and the suite was
+ * green about it for five months**, because twelve `promptFragment`
+ * assertions were pointed at the copy. Working law 4: derive, never mirror.
+ *
+ * @param areas - the reader's `{ area: "TATTOO" | "CLEAN" | "HIDDEN" }` map
+ */
+export function buildTattooMap(areas: Record<string, unknown>): TattooMap {
+  const tattooAreas: string[] = [];
+  const cleanAreas: string[] = [];
+
+  for (const [area, status] of Object.entries(areas)) {
+    const readableName = area.replace(/_/g, " ");
+    if (status === "TATTOO") tattooAreas.push(readableName);
+    else if (status === "CLEAN") cleanAreas.push(readableName);
+    // HIDDEN areas are omitted — we don't make claims about them
+  }
+
+  const hasTattoos = tattooAreas.length > 0;
+
+  let promptFragment = "";
+  if (hasTattoos) {
+    promptFragment = `TATTOO MAP (from model image analysis):
+Tattoos exist ONLY on: ${tattooAreas.join(", ")}.
+These areas are confirmed CLEAN (no tattoos): ${cleanAreas.join(", ")}.
+Areas covered by clothing are unknown — if a garment change exposes \
+previously hidden skin, default to CLEAN skin unless the exposed area \
+is adjacent to a confirmed tattoo area AND the tattoo visibly extends \
+to the edge of the clothing line in Image 1.
+Do NOT add tattoos to any CLEAN area. Do NOT extend arm tattoos to \
+hands. Do NOT add chest or stomach tattoos unless they are confirmed \
+in the map above.`;
+  } else {
+    promptFragment = `TATTOO MAP (from model image analysis):
+The model has NO visible tattoos. Any exposed skin must be completely clean and free of ink. Do not hallucinate tattoos on hands, arms, chest, or neck.`;
+  }
+
+  return { hasTattoos, tattooAreas, cleanAreas, promptFragment };
+}
+
+/**
  * Analyze a model photo for visible tattoos and body art.
  *
  * @param imageUrl - S3 URL or base64 data URL of the model image
@@ -105,39 +160,12 @@ Respond with JSON only:
     const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
     const areas = parsed.areas || {};
 
-    const tattooAreas: string[] = [];
-    const cleanAreas: string[] = [];
-
-    for (const [area, status] of Object.entries(areas)) {
-      const readableName = area.replace(/_/g, " ");
-      if (status === "TATTOO") tattooAreas.push(readableName);
-      else if (status === "CLEAN") cleanAreas.push(readableName);
-      // HIDDEN areas are omitted — we don't make claims about them
-    }
-
-    const hasTattoos = tattooAreas.length > 0;
-
-    let promptFragment = "";
-    if (hasTattoos) {
-      promptFragment = `TATTOO MAP (from model image analysis):
-Tattoos exist ONLY on: ${tattooAreas.join(", ")}.
-These areas are confirmed CLEAN (no tattoos): ${cleanAreas.join(", ")}.
-Areas covered by clothing are unknown — if a garment change exposes \
-previously hidden skin, default to CLEAN skin unless the exposed area \
-is adjacent to a confirmed tattoo area AND the tattoo visibly extends \
-to the edge of the clothing line in Image 1.
-Do NOT add tattoos to any CLEAN area. Do NOT extend arm tattoos to \
-hands. Do NOT add chest or stomach tattoos unless they are confirmed \
-in the map above.`;
-    } else {
-      promptFragment = `TATTOO MAP (from model image analysis):
-The model has NO visible tattoos. Any exposed skin must be completely clean and free of ink. Do not hallucinate tattoos on hands, arms, chest, or neck.`;
-    }
+    const map = buildTattooMap(areas);
 
     log.info(
-      `Tattoo analysis complete: hasTattoos=${hasTattoos}, areas=${tattooAreas.length} tattoo / ${cleanAreas.length} clean`,
+      `Tattoo analysis complete: hasTattoos=${map.hasTattoos}, areas=${map.tattooAreas.length} tattoo / ${map.cleanAreas.length} clean`,
     );
-    return { hasTattoos, tattooAreas, cleanAreas, promptFragment };
+    return map;
   }, "tattoo-analysis").catch((err) => {
     log.warn(`Tattoo analysis failed: ${err.message}`);
     return EMPTY_MAP;

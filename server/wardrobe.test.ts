@@ -11,6 +11,7 @@ import { describe, it, expect } from "vitest";
 import type { ZodTypeAny } from "zod";
 import { WARDROBE_CREDIT_COSTS } from "./wardrobe/creditCosts";
 import { readIdentityVerdict } from "./wardrobe/identityCheck";
+import { buildTattooMap } from "./wardrobe/tattooAnalysis";
 import { wardrobeRouter } from "./routes/wardrobe";
 import {
   wardrobeClassifyEditInput,
@@ -508,27 +509,32 @@ describe("Slot Types", () => {
 describe("Tattoo Analysis", () => {
   const { z } = require("zod");
 
-  // Simulate the parsing logic from tattooAnalysis.ts
-  function parseTattooResponse(areas: Record<string, string>) {
-    const tattooAreas: string[] = [];
-    const cleanAreas: string[] = [];
-    for (const [area, status] of Object.entries(areas)) {
-      const readableName = area.replace(/_/g, " ");
-      if (status === "TATTOO") tattooAreas.push(readableName);
-      else if (status === "CLEAN") cleanAreas.push(readableName);
-    }
-    const hasTattoos = tattooAreas.length > 0;
-    let promptFragment = "";
-    if (hasTattoos) {
-      promptFragment = `TATTOO MAP (from model image analysis):\nTattoos exist ONLY on: ${tattooAreas.join(", ")}.\nThese areas are confirmed CLEAN (no tattoos): ${cleanAreas.join(", ")}.`;
-    } else {
-      promptFragment = `TATTOO MAP (from model image analysis):\nThe model has NO visible tattoos. Any exposed skin must be completely clean and free of ink. Do not hallucinate tattoos on hands, arms, chest, or neck.`;
-    }
-    return { hasTattoos, tattooAreas, cleanAreas, promptFragment };
-  }
+  /*
+   * ⚠ THIS BLOCK USED TO TEST A PRIVATE `parseTattooResponse` DECLARED RIGHT
+   * HERE — a hand transcription of `server/wardrobe/tattooAnalysis.ts`. It is
+   * gone; every arm below drives the real `buildTattooMap`.
+   *
+   * The specimen is worth meeting, because it is the mirror class's worst
+   * form and it is NOT drift. The copy's has-tattoos `promptFragment` was
+   * 189 source characters against the product's 604 — rendered on a
+   * one-tattoo/one-clean input, **121 characters against 528, so 407 of what
+   * the product actually sends (77%) was absent**. What was missing was not
+   * decoration: both constraining paragraphs, `Areas covered by clothing…`
+   * and `Do NOT add tattoos to any CLEAN area…`.
+   *
+   * Copy and original entered the tree in the SAME commit — `60eb0b4e`,
+   * 2026-03-24, whose message reads *"Exact SOT prompt and parsing logic
+   * ported to server architecture … 7 new tests, all 1,302 tests passing."*
+   * **It was born short, not drifted**, twelve `promptFragment` assertions
+   * were pointed at it, and the suite was green about it for five months
+   * while being the only description of that prompt anywhere.
+   *
+   * The arms marked FROM THE DIFF below are the ones that could not be
+   * written against the copy — they assert the 407 characters it never had.
+   */
 
   it("should detect tattoos and build correct prompt fragment", () => {
-    const result = parseTattooResponse({
+    const result = buildTattooMap({
       face: "CLEAN",
       neck: "CLEAN",
       chest: "TATTOO",
@@ -544,7 +550,7 @@ describe("Tattoo Analysis", () => {
   });
 
   it("should return clean prompt fragment when no tattoos found", () => {
-    const result = parseTattooResponse({
+    const result = buildTattooMap({
       face: "CLEAN",
       neck: "CLEAN",
       chest: "CLEAN",
@@ -558,7 +564,7 @@ describe("Tattoo Analysis", () => {
   });
 
   it("should exclude HIDDEN areas from both arrays", () => {
-    const result = parseTattooResponse({
+    const result = buildTattooMap({
       face: "CLEAN",
       chest: "TATTOO",
       left_thigh: "HIDDEN",
@@ -572,7 +578,7 @@ describe("Tattoo Analysis", () => {
   });
 
   it("should convert underscores to spaces in area names", () => {
-    const result = parseTattooResponse({
+    const result = buildTattooMap({
       left_upper_arm: "TATTOO",
       right_forearm: "CLEAN",
       left_lower_leg: "HIDDEN",
@@ -582,28 +588,67 @@ describe("Tattoo Analysis", () => {
   });
 
   it("should handle empty areas object", () => {
-    const result = parseTattooResponse({});
+    const result = buildTattooMap({});
     expect(result.hasTattoos).toBe(false);
     expect(result.tattooAreas).toEqual([]);
     expect(result.cleanAreas).toEqual([]);
     expect(result.promptFragment).toContain("NO visible tattoos");
   });
 
-  it("TattooMap type should have correct shape", () => {
-    const map = {
-      hasTattoos: true,
-      tattooAreas: ["left forearm", "right forearm"],
-      cleanAreas: ["face", "neck", "chest"],
-      promptFragment: "TATTOO MAP (from model image analysis):\nTattoos exist ONLY on: left forearm, right forearm.",
-    };
-    expect(map).toHaveProperty("hasTattoos");
-    expect(map).toHaveProperty("tattooAreas");
-    expect(map).toHaveProperty("cleanAreas");
-    expect(map).toHaveProperty("promptFragment");
-    expect(Array.isArray(map.tattooAreas)).toBe(true);
-    expect(Array.isArray(map.cleanAreas)).toBe(true);
-    expect(typeof map.hasTattoos).toBe("boolean");
-    expect(typeof map.promptFragment).toBe("string");
+  /*
+   * ⚠ A `TattooMap type should have correct shape` arm stood here. It
+   * declared an object literal and asserted the literal had the four
+   * properties typed on the lines above — `expect(map).toHaveProperty(…)`
+   * over `const map = { … }`. Its subject was the object initialiser, not
+   * Drape, and it could not fail on any change to this product. Deleted
+   * rather than repointed: `buildTattooMap`'s return type is `TattooMap` and
+   * the compiler makes that claim already, which is the reader that the arm
+   * was standing in for.
+   */
+
+  // ── FROM THE DIFF ─────────────────────────────────────────────────────
+  // The two arms below could not be written while this block tested a copy:
+  // against the 189-character transcription they would have FAILED, and a
+  // failing assertion in a green file reads as the author's own mistake.
+  // They assert the 407 rendered characters the copy never carried.
+
+  it("FROM THE DIFF — tells the engine what to do with skin a garment change EXPOSES", () => {
+    const result = buildTattooMap({ chest: "TATTOO", face: "CLEAN" });
+    // The whole point of the map: hidden skin is not a claim either way, and
+    // a garment change that reveals it defaults to CLEAN unless the ink is
+    // visibly continuous across the clothing line.
+    expect(result.promptFragment).toContain("Areas covered by clothing are unknown");
+    expect(result.promptFragment).toContain("default to CLEAN skin");
+    expect(result.promptFragment).toContain(
+      "the tattoo visibly extends to the edge of the clothing line in Image 1",
+    );
+  });
+
+  it("FROM THE DIFF — forbids the three hallucinations by name, not just in spirit", () => {
+    const result = buildTattooMap({ left_forearm: "TATTOO", right_hand: "CLEAN" });
+    expect(result.promptFragment).toContain("Do NOT add tattoos to any CLEAN area");
+    expect(result.promptFragment).toContain("Do NOT extend arm tattoos to hands");
+    expect(result.promptFragment).toContain(
+      "Do NOT add chest or stomach tattoos unless they are confirmed in the map above",
+    );
+  });
+
+  it("FROM THE DIFF — the constraints ride on EVERY has-tattoos fragment, not one shape of input", () => {
+    // The born-short copy was correct about the first three lines and silent
+    // about the rest, so an arm that only checks the opening would have
+    // passed against it. This one pins the whole fragment's size.
+    for (const areas of [
+      { chest: "TATTOO" },
+      { chest: "TATTOO", face: "CLEAN", left_thigh: "HIDDEN" },
+      { left_forearm: "TATTOO", right_forearm: "TATTOO", neck: "CLEAN", right_hand: "CLEAN" },
+    ]) {
+      const fragment = buildTattooMap(areas).promptFragment;
+      expect(fragment).toContain("Areas covered by clothing are unknown");
+      expect(fragment).toContain("Do NOT add tattoos to any CLEAN area");
+      // 407 characters of constraint + the opening lines. The copy rendered
+      // 121 on the first of these; anything near that is the mirror back.
+      expect(fragment.length).toBeGreaterThan(400);
+    }
   });
 
   // Validate the tRPC endpoint input schema
