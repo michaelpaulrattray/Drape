@@ -320,12 +320,36 @@ sourcing. Whether the second is the reason for the first is **unestablished** �
 they are two expressions of the same instinct, and I have no evidence of a causal
 link between them.
 
-**And the honest reading of "why headless" is now: probably not on purpose.** The
-sheet-mint prompt (§9 below) explicitly asks for *"two full-length photos **from
-shoes to head**, front and back"* — heads requested. Some outputs have heads
-(the shot-013 sheet), some do not (`Mira.jpg`, `Zero_home`, `Sheet_zero`). The
-headlessness looks like **something the generator did**, not something the crew
-specified.
+**And the reading of "why headless" has now been overturned TWICE, ending at
+deliberate.** This paragraph first claimed the headless template was a design;
+Fable's review killed that (ZEPHYR's own mint asks for *"two full-length photos
+**from shoes to head**"* — heads requested), so it was refiled as "probably
+something the generator did." Then the founder produced a THIRD production —
+**Adiliada** (11,142 jobs, Apr–Aug 2026) — whose sheets follow the same
+template, and its mint prompt settles it verbatim (21 jobs, 2026-07-12,
+`nano_banana_2`):
+
+> *"A two-panel character reference sheet … on the left a full-body figure
+> standing front-facing and **cleanly headless cut at the base of the neck**,
+> on the right a front-facing head-and-shoulders close-up"*
+
+So the honest arc is: ZEPHYR asked for heads and sometimes got headless bodies
+anyway → the crews **kept and curated the headless outputs** → Adiliada wrote
+the cut into the recipe. An accident, adopted, then codified. And the face
+count converges the same way across productions: film one's sheets carry faces
+at three angles, the Special's carry one, Adiliada's recipe demands exactly one.
+
+**Why? Never stated in any of the 34,000 records — but the founder's hypothesis
+(multiple faces on a reference confuse the video engine's identity read) fits
+every observed habit:** *"Use image 1 (face close-up) as the **main
+identity**"* (111 runs), *"face from image 2 (**priority identity**)"*, the
+DUAL REFERENCE face/body split. The whole practice engineers each sheet toward
+**one unambiguous identity anchor**. Filed as the leading hypothesis, not fact
+— and cheaply courted: same setup, one-face sheet vs multi-face sheet, frames
+judged by eye. ⚠ **Direct Drape consequence:** a composite of the six-view
+package would carry a face at four or five angles on one plate — exactly the
+shape these crews evolved away from. The composite's layout is now a flagged
+question, not a decided one.
 
 ⚠ **Also corrected: `Zero_home` and `Sheet_zero` do not differ "only in
 wardrobe".** Opened side by side, `Sheet_zero`'s face crop **has horns** and

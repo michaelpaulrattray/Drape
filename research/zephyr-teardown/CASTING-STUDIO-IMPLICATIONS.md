@@ -147,7 +147,18 @@ it actually sent** (the pattern `StoredReference.digest` and the ink route's
 sha256 refusal already use). Then "which sheet did this campaign shoot against"
 stays answerable after views change.
 
-### 3b. Keep the DUAL-REFERENCE layout logic
+### 3b. Keep the DUAL-REFERENCE layout logic — and the one-face question (added 2026-08-24)
+
+⚠ **The composite plate's layout is now a flagged design question.** A third
+production (Adiliada) settled that the headless-body/one-face sheet is a
+deliberate house convention — its mint prompt orders *"cleanly headless cut at
+the base of the neck"* beside a single close-up. The founder's hypothesis for
+why — **more than one face on a reference confuses the engine's identity
+read** — is unstated in all three corpora but consistent with every habit in
+them. Drape's six-view package composed naively would put a face at four or
+five angles on one plate. Before the composite ships as the engine-facing
+artifact, court the layout: one-big-face-plus-bodies vs all-six-views, same
+setup, identity fidelity judged by eye.
 
 Their prompts source **face and body from different references on purpose** —
 *"take the FACE/HEAD — skin, pores, hair, eyes — [from the close ref]; take

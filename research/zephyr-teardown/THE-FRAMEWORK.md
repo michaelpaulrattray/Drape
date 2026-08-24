@@ -66,12 +66,16 @@ prompt says *"labeled 'Zjasmin' at the top"*. Whether that's wise is a live
 question for us, filed at
 [`OPEN_TEST_baked-text-on-references.md`](./OPEN_TEST_baked-text-on-references.md).
 
-> **On the headless bodies you spotted:** some sheets have heads on the body
-> views, some don't, **in both projects**. And the recipe that mints them asks
-> for *"two full-length photos from shoes to head"* — heads requested. So the
-> headlessness looks like something the image generator did rather than something
-> anyone specified. I originally claimed it was a deliberate design; that claim
-> did not survive checking.
+> **On the headless bodies: deliberate — settled by a third production.** In
+> ZEPHYR the mints asked for heads ("shoes to head") and headless outputs were
+> kept anyway; in **Adiliada** the mint prompt orders it verbatim: *"a
+> full-body figure … **cleanly headless cut at the base of the neck**"* beside
+> one head-and-shoulders close-up. The convention hardened over time toward
+> **exactly one face per sheet**. Nobody ever wrote down why, but the founder's
+> hypothesis — multiple faces confuse the engine's identity read — fits every
+> habit in the corpus (*"face close-up as the main identity"*, the face/body
+> dual-sourcing). Held as the leading hypothesis; one controlled pair would
+> settle it.
 
 ### How the sheets are made
 
