@@ -454,16 +454,26 @@ one from whoever owns its road.
   quantities and `gap` needs the HEAD box, and the roll road buys zero region
   reads today) and **~+11% render time**, and it declares no new fal allowance —
   the reads ride the shared `FAL_CONCURRENCY` courtesy pool, so
-  `assertFalBudget`'s sum stays at the account ceiling. ⚠ **IT DOES NOT FLIP
-  BEFORE THE KEPT-ORIGINAL COLUMN EXISTS** (build §11a): a roll under the trim
-  without it would trim its frames and DISCARD the 1536×2304 originals, which is
-  the one thing the KEEP ruling exists to prevent and is unrecoverable for those
-  casts except by re-rendering different faces. A sequencing condition on the
-  FLIP rather than a boot guard, exactly as the ink studio's table prerequisite
-  is — a boot guard cannot see whether a column this code does not yet write is
-  present. **The clause sentence is also still to land**, so with the flag on
-  today a roll renders large without the margin clause, which arm R measured as a
-  TIGHTER picture: another reason the flip waits
+  `assertFalBudget`'s sum stays at the account ceiling. ✅ **`users:1` ON
+  PRODUCTION SINCE 2026-08-24** — his own rolls are trimmed now. ⚠ **THE TWO
+  PRECONDITIONS THIS ENTRY USED TO NAME ARE BOTH DISCHARGED, and they are kept
+  rather than deleted because a condition that leaves no trace is how the next
+  seat re-derives it.** They were: the kept-original column must exist (a roll
+  under the trim without it would trim its frames and DISCARD the 1536×2304
+  originals — unrecoverable except by re-rendering different faces), and the
+  clause sentence must have landed (with the flag on and no clause, a roll
+  renders large without the margin ask, which arm R measured as a TIGHTER picture
+  than today — worse than not having the feature). The column exists on
+  production by ceremony on his word (migration `0053`; `sourceKey varchar(512)
+  NULL no default`, 31 rows, a kept original on 0) and the clause is in. Both
+  were sequencing conditions on the FLIP rather than boot guards, exactly as the
+  ink studio's table prerequisite is — a boot guard cannot see whether a column
+  the code does not yet write is present. ⚠ **It does not widen past `users:1`
+  until his eye has passed the strips from his OWN flagged rolls**, with the
+  untrimmed-rate and the per-sheet wall-clock beside them: the latency acceptance
+  he gave (*"its a non issue"*) was priced against the render delta alone, and
+  the courtesy-pool contention — up to 16 reads queued behind a five-wide door
+  while 8 renders are in flight — is still unmeasured
 - `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
   account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
   5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is

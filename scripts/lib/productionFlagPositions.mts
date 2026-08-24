@@ -170,14 +170,20 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why: "never flipped on production; additive and inert while off",
   },
   CASTING_FRAMING_TRIM_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
-      "the framing trim, built dark and NOT YET FLIPPABLE. Ordered by the founder on his own eye "
-      + "at the court's strips; off, the roll road is byte-identical to today's. ⚠ It does not flip "
-      + "before the kept-original column exists (CASTING_FRAMING_TRIM_BUILD.md §11a): a roll under "
-      + "the trim without it would trim its frames and DISCARD the originals, which is the one thing "
-      + "the KEEP ruling exists to prevent and is unrecoverable for those casts except by "
-      + "re-rendering different faces. The clause sentence is also still to land.",
+      "the framing trim, LIVE ON HIS ACCOUNT since 2026-08-24. Ordered by the founder on his own "
+      + "eye at the court's strips; his rolls now render 1536x2304 with the margin clause and are "
+      + "trimmed to a common head size before storage. ⚠ BOTH PRECONDITIONS THIS LINE USED TO NAME "
+      + "ARE DISCHARGED and are kept here rather than deleted, because a condition that leaves no "
+      + "trace is how the next seat re-derives it: the kept-original column EXISTS on production "
+      + "(migration 0053, ceremony run on his word — sourceKey varchar(512) NULL no default, 31 "
+      + "rows, a kept original on 0), and the clause sentence HAS landed. Without the column a "
+      + "trimmed roll would have discarded its originals, unrecoverably. ⚠ It does not widen past "
+      + "users:1 until his eye has passed the strips from his OWN flagged rolls, with the "
+      + "untrimmed-rate and the per-sheet wall-clock beside them — the latency acceptance he gave "
+      + "was priced against the render delta alone, and the courtesy-pool contention is still "
+      + "unmeasured.",
   },
   CASTING_TWO_PATHS_SCOPE: {
     position: "users:1",
