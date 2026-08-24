@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "672116169dd12991"
+    "sourceFingerprint": "dc9a0087ab456bf2"
   },
   "domains": [
     {
@@ -8404,6 +8404,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_BRIEF_FIDELITY_SCOPE",
+      "name": "CASTING_BRIEF_FIDELITY_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
       "name": "CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
       "valueRecorded": false
@@ -8793,6 +8798,11 @@
     {
       "id": "flag:CASTING_BORN_INK_SCOPE",
       "name": "CASTING_BORN_INK_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_BRIEF_FIDELITY_SCOPE",
+      "name": "CASTING_BRIEF_FIDELITY_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -10545,6 +10555,10 @@
     {
       "id": "test:server/castingV2/briefFactsRole.test.ts",
       "path": "server/castingV2/briefFactsRole.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/briefFidelityScope.test.ts",
+      "path": "server/castingV2/briefFidelityScope.test.ts"
     },
     {
       "id": "test:server/castingV2/callCensus.test.ts",
@@ -32222,17 +32236,17 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:215",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:216",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:215",
+      "subject": "server/castingV2/rollService.ts:216",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:263",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:264",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:263",
+      "subject": "server/castingV2/rollService.ts:264",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

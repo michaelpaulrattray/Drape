@@ -319,6 +319,17 @@ export type BriefCompilerInput = {
    * and no means the bytes on the wire are byte-identical to today's.
    */
   readInk?: boolean;
+  /**
+   * READ THE BRIEF WITHOUT RATIONING IT — inside `CASTING_BRIEF_FIDELITY_SCOPE`
+   * (`CASTING_V2_BRIEF_FIDELITY_BUILD.md`, countersigned fable-1600).
+   *
+   * Same shape and same reason as `readInk` above: the flag is read at the
+   * ROLL, once, and its answer travels — never read here, so the compiler stays
+   * a pure function of its input and the prompt a roll sent can be
+   * reconstructed from what it was handed. Absent means no, and no means the
+   * bytes on the wire are byte-identical to today's.
+   */
+  briefFidelity?: boolean;
   /** Set on a follow roll; the sheet narrows around this candidate. */
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
@@ -881,6 +892,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     engine: input.engine,
     wardrobe: input.pickWardrobe === true,
     ink: input.readInk === true,
+    fidelity: input.briefFidelity === true,
   });
 
   /*

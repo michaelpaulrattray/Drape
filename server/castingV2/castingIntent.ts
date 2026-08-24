@@ -532,6 +532,26 @@ export const COMPOSED_AVOID_MAX = 120;
 
 export const ROLE_MAX = 80;
 export const NOTES_MAX = 180;
+/**
+ * ⚠ **THE SAME BOUND, INSIDE `CASTING_BRIEF_FIDELITY_SCOPE`** — 2000 rather
+ * than 180 (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` §3b, ruled fable-1600).
+ *
+ * It is the BRIEF's own bound: `briefText` is capped at 2000 characters where
+ * the roll is accepted (`server/routes/castingV2.ts`), and the headroom reading
+ * measured the notes coming back SHORTER THAN THE BRIEF on 8 of 8 drives with
+ * the announced cap released. So at 2000 this stops being a content decision
+ * and becomes a malfunction stop — which is why it beat the measured 1200 at
+ * the countersign: **a bound that is true by construction beats one that is
+ * true by measurement**, and a measured bound is one unusual brief away from
+ * being the defect again.
+ *
+ * ⚠ **A bound that can no longer ration also can no longer NOTICE.** The thing
+ * 180 used to catch — a reply far longer than it should be — is now asserted
+ * directly instead: a summary LONGER THAN THE BRIEF IT SUMMARISES is a defect
+ * wearing length, and `interpreter.test.ts` holds that arm independently of
+ * either cap.
+ */
+export const NOTES_MAX_FIDELITY = 2000;
 
 /* --------------------------------------------------------------- scrubbing */
 
@@ -629,8 +649,8 @@ function cleanFreeText(value: unknown, max: number): string | null {
  * A second call site applying its own cap is how the compressed line and the
  * original would come to obey different rules.
  */
-export function cleanCharacterNotes(value: unknown): string | null {
-  return cleanFreeText(value, NOTES_MAX);
+export function cleanCharacterNotes(value: unknown, notesMax: number = NOTES_MAX): string | null {
+  return cleanFreeText(value, notesMax);
 }
 
 export function freeTextOverflow(value: unknown, max: number): number {
@@ -1171,7 +1191,20 @@ export type IntentParseResult =
  * bad response, and an exception here would turn a recoverable interpreter
  * wobble into a failed roll.
  */
-export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseResult {
+export function parseCastingIntent(
+  raw: unknown,
+  briefText = "",
+  /*
+    THE BOUND, HANDED IN RATHER THAN READ HERE.
+
+    `NOTES_MAX` is the default and is what every caller outside
+    `CASTING_BRIEF_FIDELITY_SCOPE` gets, so an unflagged parse is byte-identical
+    to today's. It is a PARAMETER because this function is pure and the flag is
+    captured once at the roll — a module reading an env var per parse is how two
+    parses of one request come to disagree with each other.
+  */
+  notesMax: number = NOTES_MAX,
+): IntentParseResult {
   let payload = raw;
   if (typeof raw === "string") {
     try {
@@ -1199,12 +1232,12 @@ export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseRes
     ok: true,
     notes: {
       raw: typeof wire.characterNotes === "string" ? wire.characterNotes : null,
-      overflow: freeTextOverflow(wire.characterNotes, NOTES_MAX),
+      overflow: freeTextOverflow(wire.characterNotes, notesMax),
     },
     intent: {
       cohort: cohort as CohortKey,
       role: cleanFreeText(wire.role, ROLE_MAX),
-      characterNotes: cleanFreeText(wire.characterNotes, NOTES_MAX),
+      characterNotes: cleanFreeText(wire.characterNotes, notesMax),
       sex: wire.sex as Sex | null,
       ageBand: wire.ageBand as AgeBand | null,
       agePhase: wire.agePhase as AgePhase | null,

@@ -28,6 +28,7 @@ import {
   ENERGY_KEYS,
   HERITAGES,
   NOTES_MAX,
+  NOTES_MAX_FIDELITY,
   SEXES,
   cleanCharacterNotes,
   freeTextOverflow,
@@ -227,20 +228,64 @@ const BORN_INK_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
   product remembering what the brief said, so it can say it back.`;
 
 /**
+ * THE ANNOUNCED CAP, AND ITS REPLACEMENT — the one sentence
+ * `CASTING_BRIEF_FIDELITY_SCOPE` swaps (`CASTING_V2_BRIEF_FIDELITY_BUILD.md`
+ * section 3a, countersigned fable-1600).
+ *
+ * **A cap the ask announces is not a filter, it is a BRIEF.** Production says
+ * so at 211 rolls: the longest `characterNotes` any customer has ever received
+ * is 25 words, and the four densest briefs sit at 21, 24, 25, 25 — the model
+ * writes to the number. His own 553-character brief lost seven of the fourteen
+ * facts he typed to it, and the seven that lived were the seven inside the
+ * first 180 characters.
+ *
+ * Released, the model still summarises — measured, the notes came back SHORTER
+ * THAN THE BRIEF on 8 of 8 drives — so **this sentence was never restraining
+ * padding; it was rationing content.** The replacement says what the field is
+ * FOR instead of how long it may be, and every other restraint clause on the
+ * field (write only what can be SEEN, no mood words, no brands, no numbers) is
+ * untouched.
+ *
+ * The text below is the text the two courts actually drove, so what ships is
+ * what was measured.
+ */
+export const NOTES_CAP_SENTENCE = "Under 25 words.";
+export const NOTES_CAP_RELEASED =
+  "Say every concrete, visible fact the brief states. Do not pad, do not repeat, "
+  + "and add nothing the brief does not contain.";
+
+/**
  * The system prompt this roll will actually send.
  *
  * One composer, so there is no second copy of the base to drift. Each option is
  * its own flag's question and nothing else changes with it; the blocks append in
  * a FIXED ORDER so that two accounts with the same pair of flags get the same
  * bytes, and an account with neither gets `SYSTEM_PROMPT` itself.
+ *
+ * ⚠ **The fidelity swap ASSERTS IT APPLIED.** `String.replace` that matches
+ * nothing returns its input silently, so an edit to the cap sentence would
+ * leave a flagged account quietly running the UNFLAGGED prompt — the footprint
+ * class this repository has already been bitten by. A miss throws here rather
+ * than shipping a prompt nobody chose.
  */
 export function interpreterSystemPrompt(
-  options?: { wardrobe?: boolean; ink?: boolean },
+  options?: { wardrobe?: boolean; ink?: boolean; fidelity?: boolean },
 ): string {
+  let base = SYSTEM_PROMPT;
+  if (options?.fidelity === true) {
+    if (!base.includes(NOTES_CAP_SENTENCE)) {
+      throw new Error(
+        `[interpreter] the announced cap sentence "${NOTES_CAP_SENTENCE}" is not in the system `
+        + "prompt — the brief-fidelity swap cannot apply, and shipping the unflagged prompt to a "
+        + "flagged account would be a silent no-op",
+      );
+    }
+    base = base.replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED);
+  }
   const blocks: string[] = [];
   if (options?.wardrobe === true) blocks.push(WARDROBE_BLOCK);
   if (options?.ink === true) blocks.push(BORN_INK_BLOCK);
-  return blocks.length === 0 ? SYSTEM_PROMPT : [SYSTEM_PROMPT, ...blocks].join("\n");
+  return blocks.length === 0 ? base : [base, ...blocks].join("\n");
 }
 
 const SYSTEM_PROMPT = `You read a casting brief and extract only what it actually says about WHO to cast.
@@ -749,7 +794,22 @@ export async function interpretBrief(input: {
    * measurement.
    */
   ink?: boolean;
+  /**
+   * READ THE BRIEF WITHOUT RATIONING IT — inside `CASTING_BRIEF_FIDELITY_SCOPE`.
+   *
+   * Absent means no, and no means the bytes on the wire are byte-identical to
+   * today's: the announced cap stands, the reply is bounded at `NOTES_MAX`, and
+   * nothing about this call moves. On, the cap sentence is swapped
+   * (`interpreterSystemPrompt`) and the bound becomes `NOTES_MAX_FIDELITY`.
+   *
+   * The two travel TOGETHER and that is the whole point of the flag being one
+   * boolean rather than two: a raised announcement with the old bound is
+   * measurably WORSE than neither — the model says everything and the guillotine
+   * takes it, which the budget court watched happen 3 drives out of 3.
+   */
+  fidelity?: boolean;
 }): Promise<InterpretOutcome> {
+  const notesMax = input.fidelity === true ? NOTES_MAX_FIDELITY : NOTES_MAX;
   const textEngine = input.engine ?? interpreterEngine();
   if (!textEngine) {
     log.warn({}, "[interpreter] no OPENROUTER_API_KEY — compiling without interpretation");
@@ -764,6 +824,7 @@ export async function interpretBrief(input: {
       system: interpreterSystemPrompt({
         wardrobe: input.wardrobe === true,
         ink: input.ink === true,
+        fidelity: input.fidelity === true,
       }),
       user: input.briefText,
       json: true,
@@ -820,7 +881,7 @@ export async function interpretBrief(input: {
 
   try {
     const result = await runOnce();
-    const parsed = parseCastingIntent(result.text, input.briefText);
+    const parsed = parseCastingIntent(result.text, input.briefText, notesMax);
     recordParseOutcome(!parsed.ok, result.truncated === true);
 
     /*
@@ -842,7 +903,7 @@ export async function interpretBrief(input: {
         "[interpreter] reply was CUT OFF at the token ceiling — retrying rather than dropping the brief's locks",
       );
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
       recordParseOutcome(!reparsed.ok, retry.truncated === true);
       if (reparsed.ok) {
         return {
@@ -922,16 +983,16 @@ export async function interpretBrief(input: {
       const compressed = raw === null
         ? null
         : await compressCharacterNotes({
-          notes: raw, max: NOTES_MAX, engine: textEngine, signal: input.signal,
+          notes: raw, max: notesMax, engine: textEngine, signal: input.signal,
         });
-      const fitted = compressed === null ? null : cleanCharacterNotes(compressed);
-      const kept = fitted !== null && freeTextOverflow(compressed ?? "", NOTES_MAX) === 0;
+      const fitted = compressed === null ? null : cleanCharacterNotes(compressed, notesMax);
+      const kept = fitted !== null && freeTextOverflow(compressed ?? "", notesMax) === 0;
       if (kept) intent = { ...intent, characterNotes: fitted };
       log.warn(
         {
           reason: NOTES_OVERFLOW,
           over: parsed.notes.overflow,
-          limit: NOTES_MAX,
+          limit: notesMax,
           reaskRan: raw !== null,
           outcome: kept ? "compressed" : "reaskFailed",
           detail: intent.characterNotes,
@@ -945,7 +1006,7 @@ export async function interpretBrief(input: {
     if (needsAestheticRetry(input.briefText, intent)) {
       log.info({ stage: "interpreter" }, "[interpreter] aesthetic reference landed nowhere — re-sampling once");
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
       // Counted like any other attempt. A denominator that skips the retries
       // is a rate nobody can act on — this one keeps the same brief's second
       // reply in the same window as its first.

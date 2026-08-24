@@ -2548,3 +2548,114 @@ export function validateCastingFramingTrimEnvironment(input: {
   }
   return trim;
 }
+
+/**
+ * ⚠ **THE BRIEF FIDELITY BUILD** — whether a customer's own words are RATIONED
+ * on the way into her sheet (`CASTING_BRIEF_FIDELITY_BUILD.md`, countersigned
+ * fable-1600; two courts, $1.12, both text-only).
+ *
+ * Off, and absent means off, the roll road is BYTE-IDENTICAL to today's: the
+ * interpreter is told `characterNotes` must be "Under 25 words.", the reply is
+ * bounded at 180 characters, and there is no skin lane. On, that sentence is
+ * replaced, the bound becomes the brief's own bound, and a stated skin fact
+ * gets a lane that speaks.
+ *
+ * # WHY THERE IS A FLAG HERE AT ALL, AND WHY IT IS AN UNCOMFORTABLE ONE
+ *
+ * Every other capability in this program ships dark behind a scope because the
+ * road is separable. This one is not: the announced cap and the enforced bound
+ * are properties of ONE interpreter call that every roll makes, so a per-user
+ * branch means **two products interpreting two sets of briefs**, with the
+ * census, the corpus and every future reading having to ask which one it
+ * measured. That is a real cost and it is paid on purpose, for one reason:
+ *
+ *   **the IMAGE side is unmeasured.** Both courts under this build are TEXT —
+ *   the notes and the compiled prompts. A `Character detail:` line going from
+ *   ~150 to ~500 characters is more IMAGE-prompt context, and this product's
+ *   own measurement is that context is not additive: a SUBSET of prompt context
+ *   raised the stage wall twice as often as its superset. Three things could
+ *   move and none is measured — the eight candidates' variety, the stage wall,
+ *   and the provider's content checker.
+ *
+ * # ⚠ ITS LIFESPAN IS DECLARED SHORT, AND THE DECLARATION IS PART OF THE RULING
+ *
+ * (fable-1600.) It exists for that one unknown, so **it widens to `all`
+ * promptly after the founder's gate rather than living at `users:1` for weeks.**
+ * Two products interpreting two sets of briefs is a cost paid briefly and on
+ * purpose; paid indefinitely it becomes the road the design rejected — a flag
+ * that never widens is a second product nobody maintains.
+ *
+ * **Every brief-fidelity reading taken while this is narrow stamps which side it
+ * drove.** That is the run-label lesson and this campaign has paid for it once:
+ * a corpus whose before/after labels named the OUTPUT FILE and nothing else
+ * cost a two-tree confusion that a control word had to catch.
+ *
+ * The parent is `CASTING_V2_SCOPE` and nothing narrower — what it governs is
+ * the compile of a ROLL, and a user outside casting has no brief to compile.
+ */
+export const CASTING_BRIEF_FIDELITY_SCOPE_ENV = "CASTING_BRIEF_FIDELITY_SCOPE";
+
+export class CastingBriefFidelityScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_BRIEF_FIDELITY_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingBriefFidelityScopeConfigurationError";
+  }
+}
+
+export class CastingBriefFidelityCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_BRIEF_FIDELITY_SCOPE_ENV} ${detail}`);
+    this.name = "CastingBriefFidelityCoverageError";
+  }
+}
+
+export function parseCastingBriefFidelityScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingBriefFidelityScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's briefs are read without a ration.
+ *
+ * An AND of the chain, for `captureCastingRepaintEnabled`'s reason: the boot
+ * check already refuses a scope reaching past its parent, and the same rule is
+ * enforced again where it is used, because a boot check nobody invoked is the
+ * second way a flag pair goes wrong.
+ */
+export function captureCastingBriefFidelityEnabled(userId: number): boolean {
+  const fidelity = parseCastingBriefFidelityScope(process.env[CASTING_BRIEF_FIDELITY_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(fidelity, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingBriefFidelityEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const fidelity = parseCastingBriefFidelityScope(input.scope);
+  if (fidelity.kind === "off") return fidelity;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingBriefFidelityCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — what it governs is the COMPILE of a `
+      + "roll, and a user outside casting has no brief to compile",
+    );
+  }
+  if (parent.kind === "all") return fidelity;
+  if (fidelity.kind === "all") {
+    throw new CastingBriefFidelityCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = fidelity.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingBriefFidelityCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return fidelity;
+}

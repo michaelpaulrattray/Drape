@@ -50,6 +50,8 @@ import {
   validateCastingTwoPathsEnvironment,
   CASTING_FRAMING_TRIM_SCOPE_ENV,
   validateCastingFramingTrimEnvironment,
+  CASTING_BRIEF_FIDELITY_SCOPE_ENV,
+  validateCastingBriefFidelityEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -385,6 +387,17 @@ export function validateEnv(): void {
   */
   validateCastingFramingTrimEnvironment({
     scope: process.env[CASTING_FRAMING_TRIM_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+
+  /*
+    THE BRIEF FIDELITY BUILD, same parent and the same reason one step earlier
+    in the road: it gates the COMPILE of a roll — the announced cap on
+    `characterNotes`, the enforced bound on the reply, and the stated skin lane
+    — so a user outside casting has no brief for it to read.
+  */
+  validateCastingBriefFidelityEnvironment({
+    scope: process.env[CASTING_BRIEF_FIDELITY_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
 

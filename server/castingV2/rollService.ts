@@ -42,6 +42,7 @@ import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPath
 import {
   captureCastingBornInkEnabled,
   captureCastingFramingTrimEnabled,
+  captureCastingBriefFidelityEnabled,
   captureCastingTwoPathsEnabled,
 } from "./castingV2Scope";
 import { mintBornInkRows } from "./bornInkMint";
@@ -441,6 +442,18 @@ export async function createRoll(
   */
   const trimEnabled = captureCastingFramingTrimEnabled(input.userId);
 
+  /*
+    THE BRIEF FIDELITY BUILD, CAPTURED ONCE FOR THE WHOLE ROLL — same rule as
+    every scope in this program and the same reason: a flag consulted twice in
+    one request is a request that can disagree with itself.
+
+    What it governs is the COMPILE — the announced cap on `characterNotes` and
+    the bound the reply is held to — so it is read here and handed to `compile`
+    rather than read inside it. Off, the compiler's bytes on the wire are
+    byte-identical to today's.
+  */
+  const briefFidelity = captureCastingBriefFidelityEnabled(input.userId);
+
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
@@ -465,6 +478,7 @@ export async function createRoll(
         : undefined,
       pickWardrobe,
       readInk,
+      briefFidelity,
       followPersonaLine,
       followIdentity,
     });

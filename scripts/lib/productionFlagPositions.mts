@@ -200,6 +200,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "was priced against the render delta alone, and the courtesy-pool contention is still "
       + "unmeasured.",
   },
+  CASTING_BRIEF_FIDELITY_SCOPE: {
+    position: "off",
+    why:
+      "the brief fidelity build — the announced cap on characterNotes, the bound the reply is "
+      + "held to, and the stated skin lane. Ships DARK: off, the compile is byte-identical to "
+      + "today's. Its lifespan is DECLARED SHORT (fable-1600) — it exists for the unmeasured "
+      + "IMAGE side, so it widens to `all` promptly after his gate rather than living at users:1, "
+      + "because two products interpreting two sets of briefs is a cost paid briefly and on "
+      + "purpose. ⚠ A reading taken while it is narrow states which side it drove.",
+  },
   CASTING_TWO_PATHS_SCOPE: {
     position: "users:1",
     /* ⚠ THE FOURTH COPY OF ONE STALE SENTENCE, AND THIS FILE IS THE LAST PLACE
