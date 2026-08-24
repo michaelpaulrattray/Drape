@@ -911,6 +911,59 @@ carry the rulings, the courts and the histories.
                                          (`REFINE_ANSWERING_MAX_LENGTH`), by the
                                          docblock that names this exact dead end
                                          one field over.
+3f THE CLIENT TYPES ITS OWN COPY OF      filed by the law-7 sweep of 3e
+   EVERY SERVER CAP — 16 SITES,          (opus-1239 §3b, ruled fable-1615).
+   ONE ALREADY DRIFTED                   SMALL and LOW; it is a drift risk
+                                         rather than a live defect.
+                                         A `maxLength={N}` on a client input is a
+                                         second copy of a number the server's zod
+                                         schema owns, and the product has 18 of
+                                         them. TWO now derive (the refine pair,
+                                         `080ffe6d`); **16 do not**. Confirmed at
+                                         both ends by reading the pair:
+                                         `BoardHeader` 128 ↔ `boards.ts max(128)`,
+                                         `ProfileTab` 100/500 ↔ `profile.ts
+                                         max(100)/max(500)`, `AdminInviteCodes`
+                                         256 ↔ `inviteCodes.ts max(256)`.
+                                         ⚠ THE MOTIVATION IS THAT ONE HAS ALREADY
+                                         DRIFTED AND NOBODY NOTICED:
+                                         `RedeemCodeModal` caps at 16 while
+                                         `referral.ts` accepts 20. **It costs
+                                         nothing today, and only by luck about a
+                                         format** — the codes the product mints
+                                         are `DRAPE-` plus six characters, 12 in
+                                         all (`server/db/referrals.ts`), so
+                                         nobody can be locked out of a code that
+                                         exists. Change the generator and the
+                                         drift becomes a customer who cannot
+                                         redeem what they were sent.
+                                         ⚠ IT IS FILED RATHER THAN FIXED, which
+                                         is law 7's own wording. Sixteen sites
+                                         across billing, auth, boards, admin and
+                                         profile is a sweep with a countersign,
+                                         not the tail of a refine commit.
+                                         THE BUILD'S SHAPE, named now so it is
+                                         not re-derived: the caps move to
+                                         `shared/` beside their schemas and the
+                                         inputs import them, and the arm is one
+                                         that REDDENS ON A BARE LITERAL across
+                                         the client — which is why this is a
+                                         build and not a park, since that arm
+                                         reddens all sixteen the day it is
+                                         written. `client/src/features/castingV2/
+                                         facePanelAnatomy.test.ts`'s
+                                         "NEITHER holds a bare number" is the
+                                         pattern at two-site scale, prose stripped
+                                         first so a docblock quoting the old value
+                                         cannot pass for the breach.
+                                         ⚠ WHAT IS NOT IN THIS ROW, because it is
+                                         closed: the DANGEROUS variant — a field
+                                         capping a TAIL while the wire carries a
+                                         composition — was swept across the whole
+                                         client and is UNIQUE to `FaceRegions`,
+                                         fixed in `080ffe6d`. The only other hit
+                                         for the shape is a toast string. So this
+                                         row is drift, never a dead end.
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.

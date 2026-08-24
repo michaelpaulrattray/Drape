@@ -35,6 +35,27 @@
  * Same rule as the capability atlas's `KNOWN_DEBTS`: a row that becomes present
  * is an ERROR until its line is deleted. An exception nobody has to remove is
  * an exception that outlives its reason.
+ *
+ * # ⚠ WHAT IT DOES NOT SEE — PRESENCE, NEVER SHAPE
+ *
+ * It compares NAMES. A column that exists satisfies it whatever its type,
+ * width, nullability or default — so a `varchar(220)` where the code now wants
+ * 800, or a `NOT NULL` the code reads as optional, passes this reader without
+ * a word.
+ *
+ * That is a real limit rather than a theoretical one, and it was found by
+ * needing the answer (2026-08-25): §10 item 3e raises the refine cap, the
+ * column that stores a customer's sentence is `varchar(220)`, and **the rite's
+ * `OK` had to be set aside and `information_schema` read directly** to learn
+ * it. A reader whose verdict is quoted as *"every table, column and named
+ * index the code declares is there"* will be read as covering the shape of
+ * them unless it says otherwise — which is what this paragraph is for.
+ *
+ * Widening it to compare types is a bigger job than it looks (drizzle's
+ * declaration and MySQL's `COLUMN_TYPE` disagree in spelling on several kinds,
+ * so a naive comparison would raise noise on rows that are correct) and it is
+ * deliberately not attempted here. **Until it is, a claim about a column's
+ * WIDTH is taken at the database and not off this verdict.**
  */
 
 export type DeclaredSchema = ReadonlyMap<string, ReadonlySet<string>>;
