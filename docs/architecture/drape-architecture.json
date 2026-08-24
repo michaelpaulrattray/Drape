@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d28bc08578ed8a97"
+    "sourceFingerprint": "32ea5cf36babbbf0"
   },
   "domains": [
     {
@@ -10405,6 +10405,10 @@
     {
       "id": "test:server/casting/geminiSchemaUpdater.test.ts",
       "path": "server/casting/geminiSchemaUpdater.test.ts"
+    },
+    {
+      "id": "test:server/casting/geminiSuggestions.test.ts",
+      "path": "server/casting/geminiSuggestions.test.ts"
     },
     {
       "id": "test:server/casting/identity/anchorSelector.test.ts",

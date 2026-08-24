@@ -59,27 +59,78 @@ async function ensureBase64(input: string): Promise<string> {
 // ============================================================================
 
 /**
+ * The commonest way a model wraps a list it was asked for: `{"suggestions":
+ * [...]}`. Steps 1-2 parsed that fine and rejected it for not BEING an array,
+ * and step 3 then harvested every quoted string in the text — so the word
+ * `"suggestions"` arrived on the customer's screen as a suggestion chip.
+ *
+ * Narrow on purpose: the FIRST array-valued property of an object that already
+ * parsed. Nothing is guessed at from prose, and an object with no array in it
+ * is not rescued — it falls to the empty answer and the caller's fallback,
+ * which is the right outcome for a refusal envelope.
+ */
+const firstArrayValue = (parsed: unknown): unknown[] | null => {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
+  for (const value of Object.values(parsed as Record<string, unknown>)) {
+    if (Array.isArray(value)) return value;
+  }
+  return null;
+};
+
+/**
  * Resilient JSON array parser — handles truncated responses, unescaped quotes,
  * and malformed JSON from vision model outputs.
+ *
+ * ⚠ STEP 3 IS THE LAST RESORT AND IT IS NOW GATED ON THE TEXT NOT BEING JSON
+ * AT ALL. It reads every quoted 3-80 character run out of the text, and it has
+ * no idea whether it is looking at an array — so when a reply PARSED but was
+ * not an array, its keys were harvested beside its values. Driven 2026-08-25
+ * through the real public function:
+ *
+ *   {"error":"model refused this request","code":"safety_block"}
+ *     -> the customer's chips were
+ *        ["error","model refused this request","code","safety_block"]
+ *   {"suggestions":["Fuller lower lip","Stronger jawline"]}
+ *     -> ["suggestions","Fuller lower lip","Stronger jawline"]
+ *
+ * The second is the worse one and it is not an error path: the model was being
+ * helpful in the ordinary wrapper shape, and the product half-recovered with
+ * the seam showing. It is repaired properly (`firstArrayValue`) rather than
+ * survived.
+ *
+ * So a reply that parses as JSON is answered from the JSON alone. Step 3 now
+ * serves only what it was written for — text that is not valid JSON, which is
+ * the truncated reply its own docblock advertises.
  */
 const safeParseJsonArray = (text: string): string[] => {
   // 1. Try clean parse first
+  let parsedSomething = false;
   try {
     const parsed = JSON.parse(text);
+    parsedSomething = true;
     if (Array.isArray(parsed)) return parsed.map(String);
+    const unwrapped = firstArrayValue(parsed);
+    if (unwrapped) return unwrapped.map(String);
   } catch {}
 
   // 2. Try stripping markdown fences
   const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
   try {
     const parsed = JSON.parse(cleaned);
+    parsedSomething = true;
     if (Array.isArray(parsed)) return parsed.map(String);
+    const unwrapped = firstArrayValue(parsed);
+    if (unwrapped) return unwrapped.map(String);
   } catch {}
 
-  // 3. Extract strings via regex — handles truncated JSON
-  const matches = cleaned.match(/"([^"]{3,80})"/g);
-  if (matches && matches.length > 0) {
-    return matches.map((m) => m.replace(/^"|"$/g, "")).slice(0, 6);
+  // 3. Extract strings via regex — handles TRUNCATED JSON, and only that.
+  //    If the text parsed, we already know what it says; harvesting quotes out
+  //    of it can only invent.
+  if (!parsedSomething) {
+    const matches = cleaned.match(/"([^"]{3,80})"/g);
+    if (matches && matches.length > 0) {
+      return matches.map((m) => m.replace(/^"|"$/g, "")).slice(0, 6);
+    }
   }
 
   return [];

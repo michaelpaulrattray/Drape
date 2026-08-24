@@ -22,6 +22,7 @@
  *   - geminiSchemaUpdater.ts    — export availability
  *     (behaviour: `geminiSchemaUpdater.test.ts`)
  *   - geminiSuggestions.ts      — export availability
+ *     (behaviour: `geminiSuggestions.test.ts`)
  *   - geminiPromptCompactor.ts  — export availability
  *   - aiService.ts              — re-exports for all Phase 2 functions
  *   - castingRefinement.ts      — new tRPC procedures exist on the router
@@ -115,7 +116,9 @@ describe("geminiSchemaUpdater", () => {
 });
 
 // ============================================================================
-// SUGGESTIONS — unit tests for safeParseJsonArray behavior
+// SUGGESTIONS — export availability only.
+// safeParseJsonArray's behaviour is driven in `geminiSuggestions.test.ts`;
+// this header used to claim it and the arm below only ever proved an import.
 // ============================================================================
 
 describe("geminiSuggestions", () => {
