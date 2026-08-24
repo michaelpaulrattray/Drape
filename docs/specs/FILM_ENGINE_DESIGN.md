@@ -234,6 +234,41 @@ in order: swap/fix the reference -> add a blocking diagram -> harden a lock ->
 edit the prompt. The prompt editor is always available and deliberately
 fourth.
 
+## 5c. Design-review amendments (Opus designer rebuttal, adjudicated 2026-08-24)
+
+Five rebuttals from the prototype build, adjudicated against the research;
+four accepted, one split:
+
+1. **The Wall is a reading surface only.** Health map, hover-preview, drag
+   between lanes, click-through to Desk. No starring or re-rolling on the
+   Wall — the research shows curation happened at contact-sheet density and
+   organization in folders: two modes, never a hybrid.
+2. **Authoring is inverted: one line first, fields as corrections.** The
+   measured practice is accretion — their setups grew precision AFTER seeing
+   takes (the choke scene's purpose string gaining "+directed eyelines"),
+   and their own brief chose "less strict prompting… key anchor points"
+   then harvested. Flow: one-line scene -> proposed shots -> first takes ->
+   the eleven fields arrive PRE-FILLED from the model's inferences, edited
+   rather than authored. The dramaturgy check survives as an advisory chip
+   ("this scene has no turn"), never a gate.
+3. **Accent carries two states**: generating (pulse — transient and urgent)
+   and keeper (solid underline — permanent and quiet). Idle is colourless.
+4. **The wait is designed.** Takes run 30–90s+; casting's supervised-wait
+   language (distribution and marker) ports to take cards, with lane-level
+   aggregates for shots mid-generation.
+5. **Continuity is structural, not prose.** The pros wrote LOCKS as text
+   because their platform had no mechanism; identity in their system rode the
+   attached assets. Drape has the mechanism: the signed Cast's card and drift
+   locks are INHERITED by every shot as a hard constraint (an identity-locked
+   badge, not editable text). The LOCKS field becomes "Staging locks",
+   scoped to shot-specific rules only.
+
+**Vocabulary (founder decision, flagged):** four live words for a generated
+thing — takes, candidates, versions, frames. Recommendation: two — "take"
+(any sampled generation chosen among) and "version" (a chosen state in an
+edit chain); "candidates" folds into takes, "frames" reverts to video
+frames. Casting vocabulary is live product; the rename is the founder's call.
+
 ## 6. What we deliberately do NOT build
 
 - **Shot-to-shot memory / frame handoffs** — measured across 23,809 jobs:
