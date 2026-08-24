@@ -16,7 +16,7 @@ so an everyday user gets these for free without being a prompt artist.
 
 ---
 
-## Part A — the craft techniques (22)
+## Part A — the craft techniques (28)
 
 ### 1. The unseen source — light (or sound) from outside the frame
 
