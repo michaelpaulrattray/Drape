@@ -1556,6 +1556,109 @@ carry the rulings, the courts and the histories.
                                          Its stated limit is one hop, so it
                                          over-reports.
 
+3h THE FALSE-LABEL ROW — ✅ **CLOSED
+   2026-08-25.** 3g closed a class of
+   MIRRORS; its closing sweep opened a
+   FOURTH KIND and this row is what that
+   kind produced. **A TRUE ARM UNDER A
+   FALSE LABEL**: the arm is honest (a
+   dropped export really does redden it)
+   and the header over it names a
+   behaviour and the word *"tests"*. It
+   reads as coverage, and a label is what
+   a reader greps — so nobody looks.
+   **It produced TWO money-path findings
+   in one sitting**, which is why it is
+   recorded as a class and not as four
+   tidied comments.
+   ⚠ **STRIPE WEBHOOK DUPLICATE-EVENT
+   DETECTION HAD NO TEST THAT BLOCKS**
+   (`a999b5d0`). `pathB-completion.test.ts`
+   opened *"Tests for … duplicate event
+   detection"* over arms proving a table
+   is exported and a handler is a
+   function. Stripe delivers at least once
+   BY DESIGN, and a redelivered
+   `checkout.session.completed` reaches
+   the referral payout. Two files could
+   have covered it silently and neither
+   does — `environmentTag.test.ts` drives
+   the same entry point for WORLD TAGGING,
+   and `webhookSecurity.test.ts`'s
+   *"duplicate restore (idempotency)"* is
+   the DISPUTE-RESTORE, one section away.
+   That near-miss is why it was read
+   rather than guessed at. Seven arms, no
+   product change.
+   ⚠ **THE DAILY GENERATION QUOTA — the
+   only SPEND control in the product —
+   was mocked in all six of its test
+   appearances and driven in none**
+   (`e523055c`). Eight arms, including the
+   boundary (`used < limit`, so the
+   limit-th generation is the refused one)
+   and the fail-open, pinned.
+   ⚠ **AND READING IT FOUND A LATENT
+   OUTAGE IN FOUR PLACES** (`3ef90762`):
+   `?? "default"` in front of `parseInt`
+   does NOT catch the EMPTY STRING, which
+   is what a Railway variable created with
+   no value holds. A blank
+   `DAILY_GENERATION_LIMIT` made the limit
+   NaN, `used < NaN` is false, and the
+   quota refused EVERY generation at zero
+   used — a full outage wearing a quota
+   message, at six call sites. The three
+   `GEMINI_*` queue settings were the same
+   shape. Swept multiline (**the first
+   sweep was single-line and MISSED three
+   of the four** — the geminiQueue calls
+   wrap), fixed through one `envInt`, and
+   the fal family and `PORT` read and
+   explicitly CLEARED rather than assumed.
+   ⚠ **TWO DIRECTION QUESTIONS FILED, both
+   pinned by an arm and NEITHER answered**
+   (ruled fable-1635). An arm that pins is
+   not an endorsement; both are money- or
+   spend-adjacent and each needs its own
+   read rather than a rider on someone
+   else's commit:
+     (a) the Stripe webhook gate FAILS
+         OPEN — a failed idempotency
+         lookup proceeds. Fail-CLOSED is
+         arguably right for a webhook
+         (return the error, Stripe
+         retries, it processes when the
+         database recovers), but a
+         database blip during a retry
+         storm is exactly when a duplicate
+         would be paid, and changing it is
+         a money-path behaviour change
+     (b) `getUserDailyGenerationCount`'s
+         `if (!db) return 0` — same
+         family: the control could not
+         read its own state, so it stood
+         aside and let the spend through
+   ⚠ **AND A ROW ABOUT THE SUITE ITSELF,
+   recorded and NOT actioned** (fable-1635
+   §3): `withTransaction` and
+   `exportUserData` are driven only in
+   suites that SKIP without
+   `TEST_DATABASE_URL`. **A DB-gated arm
+   is coverage of the BEHAVIOUR and not
+   coverage of the GATE** — the property
+   is proven by an arm that exists and
+   would redden, so neither is naked, but
+   `pnpm test` cannot go red if either
+   breaks, so the default run's green says
+   nothing about them and a reader of the
+   suite summary is reading a FLOOR. That
+   is a property of the suite, not of
+   those files; the eventual repair is a
+   pipeline running the DB-gated suites
+   against a disposable database, not
+   moving the arms.
+
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.
