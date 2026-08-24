@@ -1011,15 +1011,85 @@ carry the rulings, the courts and the histories.
                                          constant is what BOTH schemas import, or
                                          the client mirror is fixed while a
                                          server mirror stands where nothing looks.
-                                         The population is now **15**, not 16:
-                                         `RedeemCodeModal`'s `maxLength={16}` is
-                                         the one site whose real number (12) is
-                                         already declared and waiting —
-                                         deliberately left, because the
-                                         disposition door refused a
-                                         `REFERRAL_CODE_LENGTH` with no reader
-                                         and **3f adds the constant and its
-                                         reader in one commit.**
+                                         **THE POPULATION IS STILL 16 SITES.**
+                                         (This line said "now 15, not 16" and
+                                         that `REFERRAL_CODE_LENGTH` was
+                                         "already declared and waiting" — BOTH
+                                         WRONG, corrected within the sitting that
+                                         wrote them, opus-1242. The constant was
+                                         written and then DELETED: the
+                                         disposition door refused the build over
+                                         it, `unread 1`, because its only wanting
+                                         consumer is a cap and caps are this row.
+                                         Nothing about `RedeemCodeModal` is done.)
+                                         What `0efe3f9f` actually left it is a
+                                         HOME — `shared/referralCodeFormat.ts`
+                                         exists and holds the parts the length is
+                                         built from, so 3f declares
+                                         `REFERRAL_CODE_LENGTH` there **and wires
+                                         `maxLength={16}` to it in the same
+                                         commit**, which is the only order the
+                                         door permits. ⚠ That site is also the
+                                         one where the cap CHANGES rather than
+                                         merely deriving: 16 → 12. Harmless (no
+                                         code is longer than 12) but it is a
+                                         behaviour change on a customer input and
+                                         is called out rather than slipped in
+                                         with fifteen renames.
+                                         ✅ **BUILT AND LIVE 2026-08-25** —
+                                         countersigned fable-1617 §2, shipped
+                                         `08216aa0`. **ZERO of the 18 client
+                                         `maxLength` sites is now a bare number**
+                                         — the 16 this row owned plus the refine
+                                         pair `080ffe6d` had already done — and
+                                         **18 server declaration sites** import
+                                         the same constants (counted, not
+                                         estimated; this line first said 13 and
+                                         13 was a guess at the number of FIELDS
+                                         rather than a count of the places that
+                                         state them, which is the row's own law
+                                         failing inside the row). Their home is
+                                         `shared/inputLimits.ts`, except the
+                                         referral length, which belongs to the
+                                         format module that owns the shape.
+                                         Two arms in
+                                         `server/clientInputCaps.test.ts`, both
+                                         sabotage-proven, plus the population
+                                         control the doctrine requires: a sweep
+                                         that reads nothing passes every ban in
+                                         the file, so the floor and the shape are
+                                         asserted first.
+                                         ⚠ **AND THE BUILD FOUND A FOURTH PLACE
+                                         THE CENSUS HAD NOT COUNTED: A TEST.**
+                                         `dockAnatomy.test.ts` asserted
+                                         `name: z.string().trim().min(1).max(60),`
+                                         — a hand-typed copy of `CAST_NAME_MAX_-
+                                         LENGTH` — and went RED the moment the
+                                         schema started deriving. **Both the row
+                                         and the census looked at SURFACES and
+                                         SCHEMAS; neither looked at ARMS**, and a
+                                         test pinning a literal turns every
+                                         legitimate change of that literal into a
+                                         false alarm. It now asserts the RULE (a
+                                         name is required, not optional) with the
+                                         cap NAMED rather than spelled. The
+                                         law-7 sweep for siblings found no other
+                                         test asserting one of these caps.
+                                         ⚠ **ONE SIBLING FILED, NOT FIXED, AND IT
+                                         IS A DIFFERENT CLASS.**
+                                         `server/wardrobe.test.ts` (:157, :241,
+                                         :333, :1295) **re-declares its own copy
+                                         of the outfit and instruction schemas**
+                                         and validates against that, rather than
+                                         importing the router's. It is not a cap
+                                         mirror — it is a whole SCHEMA mirror, so
+                                         those arms would stay green if the real
+                                         schema changed underneath them. Out of
+                                         3f's countersigned scope (the router's
+                                         schemas are not exported, so it is a
+                                         build rather than a rename) and filed
+                                         here rather than swept silently, per
+                                         law 7's own wording.
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.
