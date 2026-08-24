@@ -211,40 +211,44 @@ render of that cast with no author to ask). Detection automatic; filing his.
 
 ---
 
-## 3e. Producing better casts — the design-phase art direction (founder asked 2026-08-24)
+## 3e. Producing better casts — what the ENGINE does underneath (founder-corrected 2026-08-24)
 
-ZEPHYR spent three days designing characters before shooting a frame, and those
-design prompts are roll/refine territory. Five transferable habits, quoted:
+First framing of this section put suggestions on the wrong side of a line the
+founder then drew: **what gets cast is the director's decision — always.** The
+signature detail, the palette, who the character is: theirs. Drape's engine
+underneath owns **style, realism, energy, vibe and detail, deciphered from the
+prompt and the chosen settings.** Re-sorted onto the engine's side, three
+ZEPHYR habits transfer:
 
-1. **Anti-polish vocabulary** — the counter to every engine's drift toward
-   generic airbrushed beauty, applied constantly: *"a natural, unpolished
-   attractive look — soft features, slightly messy hair"*, *"avoid overdesign,
-   keep natural imperfection and attitude"*, *"subtle dark circles under eyes
-   (light, aesthetic)"*, *"partially undone / imperfect fit — effortlessly
-   provocative, not polished"*, plus the skin stack (*"visible pores, fine
-   vellus hair, natural asymmetry, no smoothing"*). They buy flaws because
-   flaws read as a person.
-2. **One signature anchor per character** — Zero's horns, Haru's nose-glitter
-   strip, Reina's silver hoops; written with restraint (*"small horns —
-   stylized, natural integration, not fantasy-overkill"*). Double duty:
-   instant recognisability, and a discrete checkable feature — the natural
-   first drift-lock and the easiest thing to verify across generations.
-3. **Personality as renderable behaviour** — *"calm, spontaneous (awkward
-   poses), slightly slouched posture, indifferent"*. Not psychology; what the
-   trait looks like in a frame. Law 8 in someone else's data.
-4. **Silhouette-first design language** for stylized subjects — *"strong,
-   clean, and iconic silhouette"*, *"clean and readable"*, *"a designed
-   character rather than a natural insect"*, *"bold and iconic, not
-   cluttered"*, a *"HEAD DESIGN (main focus, signature feature)"* block.
-5. **A locked mini-palette per character** — Zero is olive/cream in every
-   wardrobe state; two or three named colours make every future outfit read
-   as hers.
+1. **The realism recipe, applied silently.** ZEPHYR hand-typed the anti-polish
+   craft onto every character prompt — *"natural, unpolished attractive look"*,
+   *"avoid overdesign, keep natural imperfection"*, *"visible pores, fine
+   vellus hair, natural asymmetry, no smoothing"*, *"subtle dark circles
+   (light, aesthetic)"*. They buy flaws because flaws read as a person. In
+   Drape this is house craft under every photoreal cast — the user never types
+   or sees it; it is why the casts look like people and not renders. Cohort
+   territory (`PHOTOREAL_HUMAN_BLOCKS` already covers part of it — check
+   overlap, court the rest).
+2. **Vibe words translated into renderable behaviour.** A picture cannot draw
+   "shy". ZEPHYR's crew translated by hand on every card — *"calm, spontaneous
+   (awkward poses), slightly slouched posture, indifferent"*. In Drape that
+   translation is the brief compiler's natural job: the director says the
+   vibe, the engine works out what it looks like (posture, gaze, stance,
+   grooming). Law 8's ontology, running in the correct direction — the user's
+   word is the spec, the engine renders its visible form.
+3. **Art styles as saved recipes, not re-descriptions.** Their entire look was
+   carried by ONE saved style (`General_Olzhas`) applied unchanged to 5,275
+   stills — never re-described per prompt. That is what an art-style setting
+   should be on Drape's side: chosen once, a tested craft block rides
+   underneath every render of that cast.
 
-⚠ **None of this is pasted into roll prompts without a court.** The
-context-is-not-additive measurement (a subset of prompt context beat its
-superset) prices every added clause; each habit above earns its way in through
-a controlled pair, and `PHOTOREAL_HUMAN_BLOCKS` already covers part of the
-skin/realism ground — check overlap first.
+Retired from the earlier draft as director-side, not ours: the signature
+anchor, the per-character palette, silhouette-first design. (One residue
+survives on the engine side: drift locks guard whatever details the director
+*did* choose — the engine protects their decisions, it does not make them.)
+
+⚠ **Standing caution unchanged:** nothing lands in prompts without a
+controlled pair — context-is-not-additive priced every added clause.
 
 ## 4. Cautions — where blind transfer would collide with Drape's own measurements
 
