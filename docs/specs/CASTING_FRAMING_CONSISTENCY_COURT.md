@@ -10,9 +10,18 @@ MOVES COMPOSITION, AND IT MOVES IT THE WRONG WAY.** The larger render the
 mechanism requires is a TIGHTER picture whose sheet agrees with itself less, and
 it costs **3.9 points of `T_min`** (§2). The render step this design treated as
 free is a cost, the fidelity reason it is needed anyway is now measured, and the
-clause's target moved from a 1.22× widening to **1.32×**. **Arm M is unrun**,
-its harness is written and its guards are proven able to refuse, and nothing is
-built. Two things are open at the countersign and named where they live: §6.2's
+clause's target moved from a 1.22× widening to **1.32×**.
+
+✅ **ARM M HAS NOW RUN TOO, AND THE CLAUSE PASSES ITS MARGIN BAR — `T_min` =
+22.7% against a bar of 26.0%, from 31.6% untouched.** It also IMPROVED
+within-sheet spread on both populations rather than degrading it (SUIT 7.4 →
+3.5pt, BASICS 6.6 → 3.6pt), against a noise floor of 0.2pt that makes the
+perturbation bar readable for the first time. **Two things are not clean and
+both are in §9's arm M**: BASICS moves 3.3pt to the common frame against a 2.5pt
+bar, and ⚠ **the cut CLIPS the top of a head on BASICS** — a finding §8c's gate
+could not have produced, because §8c was measured on SUIT and BASICS had never
+been measured at all. `T_min` and `usableR` guarantee the FACE fits and know
+nothing about the HEAD. Nothing is built. Two things are open at the countersign and named where they live: §6.2's
 **noise floor** (the perturbation bar had none, and the one free observation
 exceeds it) and the **re-price** (§9's Total — arm R's own settled ledger says
 the shift's fresh image prices are low by 28.6%). All five original questions
@@ -266,6 +275,15 @@ FAIL      T_min > 29.0%      the clause bought less than a third of the gap.
 **It can go red**: today's number is 31.6%, which is a FAIL by this bar. The
 clause has to buy a **1.22× linear widening** on the binding frame to reach PASS.
 
+⚠ **AND IT ACQUIRES A FOURTH OUTCOME AND AN n, BECAUSE THE BASICS SHEET DOES NOT
+ARRIVE WHOLE** (§6.5, ruled fable-1558 §1(d)). `T_min` is read **as delivered** —
+a slice the content checker refuses is a frame the customer never receives, so
+her real sheet is the population — but it is a MAX-type statistic, so **fewer
+frames reads LOWER, which is toward PASS.** Below **n = 6** usable
+`basics-clause` frames the across-cast reading is **NULL**: this court does not
+establish the across-cast number, the figure is printed and is not a verdict, and
+the bar is not relaxed to fit. Registered before the spend.
+
 ### 6.2 The perturbation bar — and it is calibrated on a clause that would fail it
 
 The clause must not degrade the picture it widens:
@@ -334,6 +352,64 @@ Two strips, same construction as the ones he has already seen:
   which is the thing he actually asked for and which no number substitutes for
   (law 9).
 
+
+### ⚠ 6.5 THE BASICS SHEET DOES NOT ARRIVE WHOLE, AND THE RATE WAS PUBLISHED BEFORE THIS COURT WAS WRITTEN
+
+Arm M's first run died at `basics-control/pos2`: **422 `content_policy`, the
+provider refusing the PROMPT and naming `body.prompt`.** The diff between pos2
+and pos0 is one clause — *slim female … clearly visible collarbones* against
+*athletic* — and everything else, wardrobe line included, is byte-identical.
+
+**This is not a product defect and nothing in the product is to be repaired.**
+`server/castingV2/wardrobeLine.ts`, the file this court copies its BASICS line
+out of, carries the measurement DIRECTLY ABOVE the return statement: *"about one
+slice in four … 6 refused of 24 slices … every one `content_policy`"*
+(opus-1121). The founder was shown that number and **kept the lower top**
+(fable-1465), and the file says in as many words *do not "fix" this by raising
+the neckline* — that is the decision being reversed, not a defect being repaired.
+
+**What was defective is this design.** §9 priced BASICS at 8 + 8 with no
+allowance for a rate that was already written down. At 25%, sixteen slices arrive
+intact with probability `0.75^16` = **1.0%**: ⚠ **arm M as designed had a
+ninety-nine percent chance of dying**, and it died with the whole SUIT half
+already paid for. The harness carried a tolerance for a frame the READER finds no
+face on — a failure with no measured rate at all — and no arm whatever for the
+one failure with a published base rate. **Guard the failure you have measured,
+not the failure you imagined.**
+
+Four repairs, ruled fable-1558 §1 on opus-1199 §4, and none of them moves a bar:
+
+1. **A refusal is FILED, not fatal.** `content_policy` is caught per position and
+   the cell continues; the position is recorded with its `providerRef` and the
+   cell's refusal count prints on its own line. `providerQueue.ts:119` does not
+   retry the class, so a refusal is one throw and no repeat spend. Every other
+   failure class still kills the run.
+2. **SYMMETRIC DROP on every PAIRED reading.** §6.2's bar compares `max − min`
+   share spread between two cells, and the expected value of a RANGE grows with
+   n — so a control cell landing 6 against a clause cell's 8 makes the clause
+   look wider **by sample size alone**, and the bar would read that as the clause
+   degrading the picture. A position refused in EITHER half of a population
+   leaves BOTH halves' paired numbers, and the paired n prints beside the bar.
+3. **`T_min` AS DELIVERED, with its n-bias named.** The delivered sheet is the
+   honest population for the headline, the direction of the bias is stated
+   (toward PASS, the unsafe direction), and a **matched-n sensitivity band** is
+   printed beside it — the across figure recomputed with the same number of
+   positions dropped from SUIT, over every choice of which. It is free, because
+   the SUIT rows are already bought.
+4. **The n = 6 NULL above**, pre-registered before the spend.
+
+⚠ **AND THE RESUME HAD A CORRECTNESS TRAP IN IT THAT HAS NOTHING TO DO WITH
+MONEY.** The obvious resume recompiles the BASICS brief and renders the six
+missing slices — and the interpreter is a language model, so the recompiled sheet
+is a DIFFERENT sheet, which would pair two already-rendered frames against six
+frames from other prompts. That is the single-variable defect this harness exists
+to refuse, arriving through the resume door. A resumed run therefore reads the
+prompts the dead run STORED — the same requirement fable-1552 §2 accepted for the
+SUIT cell, reached from the other side.
+
+**n ≈ 6 is not a degraded population; it is the real one** (fable-1558 §1(e)).
+Over-rendering to recover eight survivors would measure a sheet the product does
+not deliver.
 ---
 
 ## 7. The last court's three defects, made structural
@@ -697,7 +773,72 @@ every one of its frames is one size, so its own spend ÷ its own image count IS
 the large price. Until then this document prices against the upper reading,
 because the other direction is how a court runs out of balance mid-run.
 
-### Arm M — the margin clause. 24 images, ~$1.80 at the larger size.
+### ✅ Arm M — THE MARGIN CLAUSE. RUN, in two sittings. **PASS on the margin bar at `T_min` = 22.7%** — and ⚠ **the cut CLIPS a head on BASICS, which §8c's gate could not have seen.**
+
+Run at `--size large` (1536×2304), four cells, 32 dispatches, **31 frames and one
+`content_policy` refusal** (§6.5). $2.75 across both sittings; court **$4.09** of
+its $5.00 ceiling; the ledger closes exactly — $27.3300 − $1.6100 − $1.1400 =
+**$24.5800 settled**.
+
+```
+                         n   share med   spread    R      T_min    binding
+  SUIT clause            8     20.7%     3.5pt    0.35    22.7%    SUIT/pos4
+  BASICS clause          7     19.4%     3.6pt    0.44    20.3%    BASICS/pos7
+  BASICS control         8     23.7%     6.6pt    0.43    29.4%    BASICS/pos6
+  SUIT control (arm R)   8     29.7%     7.4pt    0.34    34.3%    SUIT/pos1
+  SUIT control B (repl.) 8     28.9%     7.6pt    0.36    34.3%    SUIT/pos5
+  BOTH clause cells     15     19.7%     6.0pt    0.35    22.7%    SUIT/pos4
+```
+
+- **MARGIN BAR — PASS.** 22.7% against `PASS ≤ 26.0`. Today's untouched figure is
+  31.6%, so the clause bought **8.9 points of the 5.6 it needed**. The
+  matched-n sensitivity band — the same figure with one position dropped from
+  SUIT too, over all eight choices — is **21.9%–22.7%**, so the whole band is
+  inside PASS and the n-bias does not reach the verdict. `basics-clause` landed
+  n=7 against the pre-registered floor of 6, so the reading is not NULL.
+- **NOISE FLOOR — 0.2pt**, against the +2.0pt bar. ⚠ **This is the first time
+  this court's perturbation bar has meant anything**: arm R's own SUIT prompts
+  rendered a second time, identical bytes, spread 7.4 → 7.6. The one prior
+  observation (2.6pt between two clause-free *rolls*) turns out to have been
+  measuring roll-to-roll variation, not the engine.
+- **PERTURBATION — PASS on both populations, and the clause IMPROVED the
+  picture** rather than degrading it: SUIT 7.4 → 3.5pt, BASICS 6.6 → 3.6pt.
+  Paired n=8/8 and n=7/7 after the symmetric drop, so both rows are comparisons.
+- **MEDIAN BAR — the common frame is INSIDE the accepted band (22.7% against
+  22.3–27.3%), and one row FAILS**: SUIT moves 2.0pt (bar 2.5, PASS) and
+  **BASICS moves 3.3pt (FAIL)**. The clause pulled BASICS's own median down to
+  19.4%, so the common frame is now further from BASICS than from SUIT — the
+  opposite of the gap this court started with.
+
+⚠ **AND THE FINDING §8c COULD NOT HAVE FOUND, BECAUSE IT WAS MEASURED ON SUIT.**
+§8c asked whether the cut's own `R` clears the head and answered *yes, by 35 px
+on the one frame that decides it* — on SUIT frames, because BASICS had never been
+measured at all (this section said so before the run). On BASICS it does not:
+
+```
+  suit-clause      widest head gap 0.222  ·  R 0.35  →  +0.128   CLEARS
+  suit-control-b                   0.251  ·  R 0.36  →  +0.109   CLEARS
+  basics-control                   0.328  ·  R 0.43  →  +0.102   CLEARS
+  basics-clause                    0.508  ·  R 0.44  →  −0.068   ⚠ CLIPS
+                                          at the ACROSS R of 0.35 →  −0.158
+```
+
+**Opened at the frame rather than filed off the number** (law 9): cut to the
+court's own common frame, `basics-clause/pos6`'s crop starts **61 px BELOW the
+top of her head** and the crown of her hair is sliced by the frame edge.
+`basics-clause/pos0` was opened as the other arm — its crop starts 37 px ABOVE
+the head and clears, with a thin band of air. Instrument and eye agree in both
+directions.
+
+**The structural reading is worth more than the instance: `T_min` and `usableR`
+guarantee the FACE fits and know nothing about the HEAD.** `usableR` is floored
+by the tightest *headroom* in the set; the hair gap is a second constraint the
+arithmetic has never carried. Any build of the cut has to take `R` from the
+widest head gap in the population as well, or it will sell a customer a frame
+with the top of her hair cut off — which is what `FRAMING_FIXED` asks for the
+opposite of, in its own words: CLEAR SPACE above the hair.
+
+### Arm M as designed — the plan it ran against
 
 ```
   suit + clause        8    the founder's own population, the tight one
