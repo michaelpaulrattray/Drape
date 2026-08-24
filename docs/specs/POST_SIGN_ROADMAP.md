@@ -1138,6 +1138,156 @@ carry the rulings, the courts and the histories.
                                          anyway, for the second time in this
                                          arc (`REFERRAL_CODE_LENGTH` was the
                                          first).
+                                         ⚠ **AND THE SEVEN WERE NOT ALL OF THEM
+                                         EITHER — SIX MORE WERE STILL LIVE IN
+                                         THIS FILE AND THE NEXT, ONE OF THEM
+                                         DRIFTED, FORTY LINES BELOW THE DOCBLOCK
+                                         `f1030bad` WROTE TO EXPLAIN THE
+                                         DISEASE** (2026-08-25, opus-1245, ruled
+                                         fable-1621; fixed in the same sitting).
+                                         The lift could not reach them **because
+                                         it was aimed at the wrong declaration
+                                         site**: it moved the schemas the ROUTER
+                                         declared inline, and these five mirror
+                                         procedures whose schema is declared at
+                                         the CALL SITE (`model.analyzeTattoos`,
+                                         `model.checkQuality`,
+                                         `vto.detectResultGarments` twice,
+                                         `vto.checkIdentity`), with a sixth in
+                                         `batch3-hardening.test.ts` mirroring
+                                         `account.deleteAccount`.
+                                         **`vto.checkIdentity`'s copy had
+                                         drifted TWICE and the second drift was
+                                         HIDDEN BY THE FIRST**: the real schema
+                                         is `.strict()` and carries
+                                         `sessionId: z.number().optional()`; the
+                                         copy had neither, and `sessionId`
+                                         parsed clean against it only because it
+                                         was open to everything. Proven at the
+                                         wire before the repair — `unknown field
+                                         real=false copy=true` — never by
+                                         reading and comparing.
+                                         THE FIX WAS NOT ANOTHER LIFT: these
+                                         arms read the schema off the RUNNING
+                                         router (`invalidInputWire.test.ts`'s
+                                         own technique), so nothing new is
+                                         exported and nothing new can be
+                                         reader-less. **`wardrobeInput.ts` was
+                                         the right answer for router-declared
+                                         schemas and the wrong tool for
+                                         call-site-declared ones**, which is the
+                                         reusable half of this correction.
+                                         ⚠ **AND A LOGIC MIRROR IN THE SAME
+                                         `describe` WAS ASSERTING THE OPPOSITE
+                                         OF THE PRODUCT.** Three arms re-typed
+                                         two lines of
+                                         `server/wardrobe/identityCheck.ts`
+                                         three different ways, and the one named
+                                         *"defaults to true for empty
+                                         responses"* wrote `||` where the
+                                         product has `??` — so it claimed an
+                                         empty reply means a MATCH when the
+                                         product reports a DRIFT, and it was the
+                                         only description of that behaviour
+                                         anywhere. **A schema mirror goes quiet;
+                                         a logic mirror can go quiet AND WRONG,
+                                         and still be the documentation.** The
+                                         parse is now `readIdentityVerdict`,
+                                         byte-preserving, with the
+                                         empty-response question DOCUMENTED at
+                                         the export and deliberately NOT decided
+                                         (conservative-toward-drift is the
+                                         defensible default for an identity
+                                         check; the trigger is a real
+                                         empty-response population in the logs
+                                         and the call is the founder's).
+                                         The wider population this sweep found
+                                         and did NOT take is row **3g**.
+3g THE SUITE RE-IMPLEMENTS THE PRODUCT   filed by the law-7 sweep of 3f's own
+   IT CLAIMS TO TEST — A FLOOR OF        closing commit (opus-1245 §5, ruled
+   ~3 DECLARED + ~25 "Simulate" SITES    fable-1621 §4). SMALL each, LARGE in
+                                         total; a green-while-proving-nothing
+                                         risk rather than a live defect.
+                                         ⚠ **THIS ROW EXISTS BECAUSE THE CLASS
+                                         SURVIVED TWO SITTINGS THAT THOUGHT THEY
+                                         HAD CLOSED IT.** `f1030bad` reconnected
+                                         seven mirrored wardrobe schemas; the
+                                         next shift found SIX MORE in the same
+                                         and one neighbouring file — one drifted
+                                         twice, proven at the wire (`unknown
+                                         field  real=false copy=true`) — plus a
+                                         LOGIC mirror asserting the OPPOSITE of
+                                         the product and three arms whose subject
+                                         was zod rather than Drape. All of that
+                                         is closed. **What is NOT closed is the
+                                         population below**, and it is filed
+                                         rather than swept because it is a
+                                         triage, not a rename.
+                                         THE POPULATION, AND IT IS A FLOOR —
+                                         stated in the house wording fable-1620
+                                         adopted, because three careful counts by
+                                         one author came in short in a row and
+                                         each was taken with an instrument shaped
+                                         for a different class. The instrument
+                                         here was a grep for SELF-DECLARED
+                                         mirrors, so it cannot see an undeclared
+                                         one:
+                                           `server/discrepancyFlagging.test.ts:10`
+                                             "Mirror the core computation logic
+                                              from discrepancyQueries.ts"
+                                           `server/reconciliationCsv.test.ts:3`
+                                             "Mirror of buildReconciliationCsv
+                                              from client"
+                                           `server/debugUtility.test.ts:54`
+                                             "Helper function that mirrors the
+                                              one in CastingStudio.tsx"
+                                         plus ~25 `// Simulate the X logic` sites
+                                         across `changeRequests`, `accountFreeze`,
+                                         `boardsCasting`, `restoreSlotVersion`,
+                                         `roleManagement` and others.
+                                         ⚠ **THE TRIAGE VOCABULARY IS PART OF THE
+                                         ROW** so the sitting does not re-derive
+                                         it: **simulating a CALLBACK in a flow is
+                                         a legitimately different thing from
+                                         re-implementing a COMPUTATION.** The
+                                         first is a stand-in for something the
+                                         test cannot reach; the second is a
+                                         second copy of a source of truth, which
+                                         is working law 4. Only the second is
+                                         this row's subject. Nobody has read the
+                                         ~25 and no claim is made about them.
+                                         THE SHAPE, named now: where the product
+                                         symbol is reachable, the arm imports it
+                                         (a schema comes off the running router
+                                         per `invalidInputWire.test.ts`; a pure
+                                         computation gets a named export with the
+                                         production path as its FIRST reader, the
+                                         shape the disposition door pushed
+                                         `readIdentityVerdict` into). Where it is
+                                         genuinely unreachable, the simulation
+                                         stays and SAYS SO at the arm.
+                                         ⚠ **AND THE ARM THAT MATTERS IS WRITTEN
+                                         FROM THE DIFF**, never from imagination:
+                                         a transcription does not get caught
+                                         being wrong, it makes the catching
+                                         assertion UNWRITABLE — against the copy
+                                         it would fail, and a failing assertion
+                                         in a green file reads as your own
+                                         mistake. Reconnection alone moves the
+                                         mirror; it does not remove it.
+                                         ⚠ **IT ALSO INHERITS A SIBLING THAT IS
+                                         NOT A MIRROR**: `10_000_000` is a
+                                         NINE-place server literal
+                                         (`routes/generation/castingRefinement.ts`
+                                         x3, `routes/generation/iterateInput.ts`
+                                         x2, `routes/wardrobe.ts` x2,
+                                         `routes/wardrobeInput.ts` x2) — the
+                                         cap-places class 3f closed for the
+                                         client's `maxLength` sites, on the
+                                         SERVER side and unswept. The real base64
+                                         arm arrives with it. Counted here, not
+                                         taken.
+
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.
