@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3cbfaee71c1b5678"
+    "sourceFingerprint": "c6d9311b073fcc63"
   },
   "domains": [
     {
@@ -10013,6 +10013,10 @@
     {
       "id": "test:server/adminActionDispatch.test.ts",
       "path": "server/adminActionDispatch.test.ts"
+    },
+    {
+      "id": "test:server/adminActionHandlers.test.ts",
+      "path": "server/adminActionHandlers.test.ts"
     },
     {
       "id": "test:server/adminAuditLogs.test.ts",
