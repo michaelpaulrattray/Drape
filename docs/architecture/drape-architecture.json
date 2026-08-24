@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e784ce8489e9a954"
+    "sourceFingerprint": "0e435baafeedb200"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 35
+      "moduleCount": 36
     },
     {
       "id": "domain:studio",
@@ -5555,6 +5555,12 @@
     {
       "id": "module:shared/referenceIntents.ts",
       "path": "shared/referenceIntents.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/referralCodeFormat.ts",
+      "path": "shared/referralCodeFormat.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12023,6 +12029,10 @@
       "path": "server/referral.test.ts"
     },
     {
+      "id": "test:server/referralCodeFormat.test.ts",
+      "path": "server/referralCodeFormat.test.ts"
+    },
+    {
       "id": "test:server/refinePanelDoors.test.ts",
       "path": "server/refinePanelDoors.test.ts"
     },
@@ -15848,6 +15858,11 @@
     {
       "from": "module:client/src/features/referral/RedeemCodeModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/referral/RedeemCodeModal.tsx",
+      "to": "module:shared/referralCodeFormat.ts",
       "kind": "imports"
     },
     {
@@ -26856,6 +26871,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/referrals.ts",
+      "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/security.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -29558,6 +29578,11 @@
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/referralCodeFormat.ts",
       "kind": "imports"
     },
     {

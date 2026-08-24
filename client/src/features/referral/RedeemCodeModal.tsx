@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Ticket, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { REFERRAL_CODE_EXAMPLE } from "@shared/referralCodeFormat";
 
 interface RedeemCodeModalProps {
   open: boolean;
@@ -72,8 +73,13 @@ export function RedeemCodeModal({ open, onClose }: RedeemCodeModalProps) {
 
         {/* Input */}
         <div className="px-6 pb-4">
+          {/* The placeholder is the shape she is about to be judged against, so
+              it comes from the one place that declares it — the box and the
+              refusal cannot then disagree. They did: the refusal named a dead
+              brand for six months while this placeholder was right, and nothing
+              compared them. */}
           <Input
-            placeholder="DRAPE-XXXXXX"
+            placeholder={REFERRAL_CODE_EXAMPLE}
             value={code}
             onChange={(e) => {
               setCode(e.target.value.toUpperCase());

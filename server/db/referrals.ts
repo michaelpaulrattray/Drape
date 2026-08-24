@@ -10,26 +10,42 @@ import { addCredits } from "./credits";
 import { getDb } from "./connection";
 import { logAuditEvent } from "../auditLog";
 import crypto from "crypto";
+import {
+  REFERRAL_CODE_BODY_LENGTH,
+  REFERRAL_CODE_FORMAT_MESSAGE,
+  REFERRAL_CODE_MINT_ALPHABET,
+  REFERRAL_CODE_PREFIX,
+  REFERRAL_CODE_SEPARATOR,
+  referralCodePattern,
+} from "../../shared/referralCodeFormat";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/referrals");
 
 /**
- * Generate a unique referral code like "DRAPE-A3K9X2"
+ * Generate a unique referral code — `DRAPE-A3K9X2` in today's shape.
+ *
+ * Every part of that shape comes from `shared/referralCodeFormat.ts`. It used
+ * to be spelled here and quoted, by hand, in the refusal one file away; the
+ * FormaStudio→Drape rename fixed this file and missed that quotation, so every
+ * mistyping customer was told to type `FORMA-XXXXXX` for six months.
  */
 function createReferralCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I/O/0/1 to avoid confusion
+  const chars = REFERRAL_CODE_MINT_ALPHABET; // No I/O/0/1 to avoid confusion
   let code = "";
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < REFERRAL_CODE_BODY_LENGTH; i++) {
     code += chars[crypto.randomInt(chars.length)];
   }
-  return `DRAPE-${code}`;
+  return `${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${code}`;
 }
 
 /**
- * Validate referral code format: DRAPE-XXXXXX (6 alphanumeric chars)
+ * Validate referral code format: `DRAPE-XXXXXX` (6 minted characters).
+ *
+ * The pattern is derived, not written — see `referralCodePattern` for why the
+ * accepted class is deliberately wider than the mint alphabet.
  */
 export function isValidReferralCodeFormat(code: string): boolean {
-  return /^DRAPE-[A-Z2-9]{6}$/.test(code.toUpperCase());
+  return referralCodePattern().test(code.toUpperCase());
 }
 
 /**
@@ -164,7 +180,7 @@ export async function claimReferral(
 
   // Validate code format
   if (!isValidReferralCodeFormat(referralCode)) {
-    return { success: false, error: "Invalid referral code format" };
+    return { success: false, error: REFERRAL_CODE_FORMAT_MESSAGE };
   }
 
   const referrer = await getUserByReferralCode(referralCode);

@@ -12,6 +12,7 @@ import {
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
+import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { sendReferralInviteEmail } from "../klaviyo";
@@ -157,7 +158,10 @@ export const referralRouter = router({
       if (!isValidReferralCodeFormat(input.code)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Invalid referral code format. Expected: FORMA-XXXXXX",
+          // DERIVED, never typed. This line read "Expected: FORMA-XXXXXX" from
+          // `bf184b0b` until 2026-08-25 — a prefix retired by `06585f07`, the
+          // rebrand commit that edited three OTHER lines of this same file.
+          message: REFERRAL_CODE_FORMAT_MESSAGE,
         });
       }
 
