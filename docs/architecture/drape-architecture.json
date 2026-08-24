@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3035471dceddaced"
+    "sourceFingerprint": "ca046cca7be25d91"
   },
   "domains": [
     {
@@ -12273,6 +12273,10 @@
     {
       "id": "test:server/studio.test.ts",
       "path": "server/studio.test.ts"
+    },
+    {
+      "id": "test:server/subjectlessArmCensus.test.ts",
+      "path": "server/subjectlessArmCensus.test.ts"
     },
     {
       "id": "test:server/suiteLine.test.ts",
