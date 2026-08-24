@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "16b5f7d3f491eb38"
+    "sourceFingerprint": "57a328c4944ca7e8"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 171
+      "moduleCount": 172
     },
     {
       "id": "domain:castingV2",
@@ -3563,6 +3563,12 @@
     {
       "id": "module:server/castingV2/falRegionReader.ts",
       "path": "server/castingV2/falRegionReader.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/framingTrim.ts",
+      "path": "server/castingV2/framingTrim.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10679,6 +10685,10 @@
     {
       "id": "test:server/castingV2/followDrift.test.ts",
       "path": "server/castingV2/followDrift.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/framingTrim.test.ts",
+      "path": "server/castingV2/framingTrim.test.ts"
     },
     {
       "id": "test:server/castingV2/fullLengthBottoms.test.ts",
