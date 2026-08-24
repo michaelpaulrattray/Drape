@@ -8,7 +8,10 @@
  * - Wardrobe router Zod input validation
  */
 import { describe, it, expect } from "vitest";
+import type { ZodTypeAny } from "zod";
 import { WARDROBE_CREDIT_COSTS } from "./wardrobe/creditCosts";
+import { readIdentityVerdict } from "./wardrobe/identityCheck";
+import { wardrobeRouter } from "./routes/wardrobe";
 import {
   wardrobeClassifyEditInput,
   wardrobeImportInput,
@@ -18,6 +21,33 @@ import {
   wardrobeUploadInput,
   wardrobeVtoGenerateInput,
 } from "./routes/wardrobeInput";
+
+/**
+ * The production schema itself, off the production procedure — the technique
+ * `server/_core/invalidInputWire.test.ts` already uses.
+ *
+ * ⚠ **THIS EXISTS BECAUSE THE DOCBLOCK BELOW WAS NOT THE WHOLE STORY.**
+ * `f1030bad` lifted the eight schemas the ROUTER declared inline to
+ * `routes/wardrobeInput.ts` and reconnected seven arms to them. Five arms in
+ * this file mirror procedures whose schema is declared **at the call site**
+ * instead, so the lift could not reach them and they kept their copies — and
+ * one had already drifted twice. Nothing is exported to serve a test here: the
+ * arms read what the running router runs.
+ */
+function realWardrobeInput(procedurePath: string): ZodTypeAny {
+  const procedures = (wardrobeRouter as unknown as {
+    _def: { procedures: Record<string, { _def: { inputs: unknown[] } }> };
+  })._def.procedures;
+  const procedure = procedures[procedurePath];
+  if (!procedure) {
+    throw new Error(`no procedure "${procedurePath}" on wardrobeRouter`);
+  }
+  const inputs = procedure._def.inputs;
+  if (inputs.length !== 1) {
+    throw new Error(`expected one input schema on "${procedurePath}", got ${inputs.length}`);
+  }
+  return inputs[0] as ZodTypeAny;
+}
 
 // ── Credit Cost Tests ──────────────────────────────────────────────────────
 
@@ -578,7 +608,7 @@ describe("Tattoo Analysis", () => {
 
   // Validate the tRPC endpoint input schema
   it("should validate analyzeTattoos input schema", () => {
-    const schema = z.object({ imageUrl: z.string().url() });
+    const schema = realWardrobeInput("model.analyzeTattoos");
     const valid = schema.safeParse({ imageUrl: "https://example.com/model.png" });
     expect(valid.success).toBe(true);
     const invalid = schema.safeParse({ imageUrl: "not-a-url" });
@@ -647,7 +677,7 @@ describe("Quality Check", () => {
   });
 
   it("should validate checkQuality input schema", () => {
-    const schema = z.object({ imageUrl: z.string().url() });
+    const schema = realWardrobeInput("model.checkQuality");
     const valid = schema.safeParse({ imageUrl: "https://example.com/model.png" });
     expect(valid.success).toBe(true);
     const invalid = schema.safeParse({ imageUrl: "not-a-url" });
@@ -663,7 +693,7 @@ describe("Detect Result Garments", () => {
   const { z } = require("zod");
 
   it("should validate detectResultGarments input schema", () => {
-    const schema = z.object({ resultUrl: z.string().url() });
+    const schema = realWardrobeInput("vto.detectResultGarments");
     const valid = schema.safeParse({ resultUrl: "https://example.com/result.png" });
     expect(valid.success).toBe(true);
     const invalid = schema.safeParse({ resultUrl: "not-a-url" });
@@ -673,7 +703,7 @@ describe("Detect Result Garments", () => {
   });
 
   it("should reject empty string as resultUrl", () => {
-    const schema = z.object({ resultUrl: z.string().url() });
+    const schema = realWardrobeInput("vto.detectResultGarments");
     const result = schema.safeParse({ resultUrl: "" });
     expect(result.success).toBe(false);
   });
@@ -1360,39 +1390,49 @@ describe("Edit Classifier", () => {
 // ── Identity Check ──────────────────────────────────────────────────────────
 
 describe("Identity Check", () => {
-  it("parses YES responses as match (true)", () => {
-    const parse = (text: string): boolean =>
-      text.trim().toUpperCase().includes("YES");
+  /*
+    ⚠ THESE ARMS USED TO RE-TYPE THE PARSE — THREE OF THEM, THREE DIFFERENT WAYS.
 
-    expect(parse("YES")).toBe(true);
-    expect(parse("  yes  ")).toBe(true);
-    expect(parse("YES\n")).toBe(true);
-    expect(parse("YES, they are the same person")).toBe(true);
+    `identityCheck.ts` held two lines inline:
+
+        const text = (response.text ?? "YES").trim().toUpperCase();
+        return text.includes("YES");
+
+    and the three arms below transcribed them as `text.trim()…` (no default at
+    all, twice) and `(text || "YES").trim()…` (`||`, not `??`). The third was
+    named "defaults to true for empty responses" and its one load-bearing
+    assertion was `parse("") === true` — **which the product does not do**, and
+    it was the only place the behaviour was described anywhere.
+
+    They now drive `readIdentityVerdict`, the product's own parse. The empty
+    case is asserted as it BEHAVES, and why that is documented rather than
+    decided is on the export's own docblock.
+  */
+  it("parses YES responses as match (true)", () => {
+    expect(readIdentityVerdict("YES")).toBe(true);
+    expect(readIdentityVerdict("  yes  ")).toBe(true);
+    expect(readIdentityVerdict("YES\n")).toBe(true);
+    expect(readIdentityVerdict("YES, they are the same person")).toBe(true);
   });
 
   it("parses NO responses as no match (false)", () => {
-    const parse = (text: string): boolean =>
-      text.trim().toUpperCase().includes("YES");
-
-    expect(parse("NO")).toBe(false);
-    expect(parse("  no  ")).toBe(false);
-    expect(parse("NO, the identity has drifted")).toBe(false);
+    expect(readIdentityVerdict("NO")).toBe(false);
+    expect(readIdentityVerdict("  no  ")).toBe(false);
+    expect(readIdentityVerdict("NO, the identity has drifted")).toBe(false);
   });
 
-  it("defaults to true for empty responses", () => {
-    const parse = (text: string): boolean =>
-      (text || "YES").trim().toUpperCase().includes("YES");
-
-    expect(parse("")).toBe(true);
-    expect(parse("YES")).toBe(true);
+  it("defaults to a match only when the reader said NOTHING — an EMPTY reply is a drift", () => {
+    /* `??` catches null/undefined and NOT `""`. The absent reply defaults to
+       "YES"; the empty STRING holds no "YES" and reports a drift. The old arm
+       claimed the opposite by writing `||` where the product has `??`. */
+    expect(readIdentityVerdict(undefined)).toBe(true);
+    expect(readIdentityVerdict("")).toBe(false);
+    expect(readIdentityVerdict("   ")).toBe(false);
+    expect(readIdentityVerdict("YES")).toBe(true);
   });
 
   it("validates checkIdentity input schema", () => {
-    const { z } = require("zod");
-    const schema = z.object({
-      modelImageUrl: z.string().url(),
-      resultImageUrl: z.string().url(),
-    });
+    const schema = realWardrobeInput("vto.checkIdentity");
 
     expect(schema.safeParse({
       modelImageUrl: "https://example.com/model.png",
@@ -1407,6 +1447,38 @@ describe("Identity Check", () => {
     expect(schema.safeParse({
       modelImageUrl: "https://example.com/model.png",
     }).success).toBe(false);
+  });
+
+  /*
+    ⚠ WRITTEN FROM THE DIFF between the deleted copy and the real schema — the
+    only place that information existed, and neither assertion below could have
+    been written against the copy without failing (fable-1618/1619's banked
+    rule: a transcription does not get caught being wrong, it makes the catching
+    assertion unwritable).
+
+    Proven at the wire before the repair: `unknown field  real=false copy=true`.
+  */
+  it("REFUSES an unknown field — the copy accepted one, which is invariant 4 backwards", () => {
+    const schema = realWardrobeInput("vto.checkIdentity");
+
+    expect(schema.safeParse({
+      modelImageUrl: "https://example.com/model.png",
+      resultImageUrl: "https://example.com/result.png",
+      unexpected: "field",
+    }).success).toBe(false);
+  });
+
+  it("carries the OPTIONAL sessionId the copy had never heard of", () => {
+    const schema = realWardrobeInput("vto.checkIdentity");
+    const base = {
+      modelImageUrl: "https://example.com/model.png",
+      resultImageUrl: "https://example.com/result.png",
+    };
+
+    /* The second drift was HIDDEN BY THE FIRST: `sessionId` parsed clean
+       against the copy only because the copy was open to everything. */
+    expect(schema.safeParse({ ...base, sessionId: 7 }).success).toBe(true);
+    expect(schema.safeParse({ ...base, sessionId: "seven" }).success).toBe(false);
   });
 
   it("identity retry flag prevents infinite loops", () => {

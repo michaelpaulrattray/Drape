@@ -114,38 +114,26 @@ describe("Session Eviction", () => {
 });
 
 // ============================================================================
-// 3. Base64 Size Validation Tests (Zod schema)
+// 3. Base64 Size Validation Tests — ⚠ DELETED 2026-08-25
 // ============================================================================
 
-describe("Base64 Size Validation", () => {
-  it("rejects base64 strings exceeding 10MB", () => {
-    const { z } = require("zod");
-    const schema = z.string().max(10_000_000);
+/*
+  ⚠ THREE ARMS STOOD HERE AND THEIR SUBJECT WAS ZOD, NOT DRAPE.
 
-    // 10MB + 1 byte should fail
-    const oversized = "x".repeat(10_000_001);
-    const result = schema.safeParse(oversized);
-    expect(result.success).toBe(false);
-  });
+  Each built `z.string().max(10_000_000)` on the spot and asserted that zod
+  rejects 10,000,001 characters and accepts 5,000,000. They imported, named and
+  reached **no Drape symbol at all** — delete every base64 cap in the product
+  and all three stayed green. That is the mirror shape at its limit, where the
+  copy has stopped even pretending to point at something.
 
-  it("accepts base64 strings under 10MB", () => {
-    const { z } = require("zod");
-    const schema = z.string().max(10_000_000);
-
-    // 5MB should pass
-    const normal = "x".repeat(5_000_000);
-    const result = schema.safeParse(normal);
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts empty/optional base64 strings", () => {
-    const { z } = require("zod");
-    const schema = z.string().max(10_000_000).optional();
-
-    expect(schema.safeParse(undefined).success).toBe(true);
-    expect(schema.safeParse("").success).toBe(true);
-  });
-});
+  Deleted rather than repaired (ruled fable-1621 §3). A real arm for this cap
+  arrives with the server-side cap-places row, which is where the finding
+  belongs: `10_000_000` is a **nine-place server literal** —
+  `routes/generation/castingRefinement.ts` x3, `routes/generation/iterateInput.ts`
+  x2, `routes/wardrobe.ts` x2, `routes/wardrobeInput.ts` x2 — the same class 3f
+  closed for the client's `maxLength` sites, on the server side and unswept.
+  Named here so it is counted rather than re-derived.
+*/
 
 // ============================================================================
 // 4. Queue Overflow Protection Tests

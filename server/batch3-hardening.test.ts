@@ -78,15 +78,19 @@ describe("Account Deletion Route", () => {
     expect(accountRouter._def.procedures).toHaveProperty("deleteAccount");
   });
 
+  /* ⚠ THIS ARM USED TO VALIDATE ITS OWN TRANSCRIPTION of `deleteAccount`'s
+     schema — a hand-copy of the refine and its message, declared here and
+     asserted against. It had not drifted yet; `vto.checkIdentity`'s copy in
+     `wardrobe.test.ts` had, twice, and silently. The schema now comes off the
+     running procedure (`invalidInputWire.test.ts`'s technique). */
   it("rejects wrong confirmation string via Zod validation", async () => {
-    const { z } = await import("zod");
-    const schema = z.object({
-      confirmation: z
-        .string()
-        .refine((val) => val === "DELETE MY ACCOUNT", {
-          message: 'You must type "DELETE MY ACCOUNT" to confirm.',
-        }),
-    });
+    const { accountRouter } = await import("./routes/account");
+    const procedures = (accountRouter as unknown as {
+      _def: { procedures: Record<string, { _def: { inputs: unknown[] } }> };
+    })._def.procedures;
+    const inputs = procedures.deleteAccount!._def.inputs;
+    expect(inputs).toHaveLength(1);
+    const schema = inputs[0] as import("zod").ZodTypeAny;
 
     const badResult = schema.safeParse({ confirmation: "delete" });
     expect(badResult.success).toBe(false);
