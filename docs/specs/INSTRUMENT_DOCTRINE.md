@@ -496,6 +496,34 @@ opus-1189 §3; the settlement behaviour of both ledgers is written into
 `scripts/lib/falSpend.mts` and `scripts/lib/openrouterBalance.mts` where a
 reader meets it.
 
+**26. A TEST THAT WALKS THE TREE IS RACING THE SUITE THAT RUNS IT, AND THE
+DEFAULT TIMEOUT TURNS THAT RACE INTO A VERDICT ABOUT THE SUBJECT.**
+A test whose work is reading hundreds of files takes its time from the machine,
+not from the code it is testing. Under the full parallel suite it can starve past
+vitest's 5,000 ms default and go red — and a red test names its SUBJECT, so the
+run reports a defect in something that is fine. Alone it passes in under a tenth
+of a second.
+*Incidents, two, and the second is why this is an entry rather than an anecdote:*
+`server/operationLockWire.test.ts` — `Test timed out in 5000ms` under the full
+suite, **3 passed in 240 ms** alone (**opus-1165 §6**; the ruling that ordered
+this entry cites it as opus-1182 §6, which is a different message — the section
+number is right and the message number is not, and it is corrected here rather
+than copied); `server/r7-evidence-ingestion-contract.test.ts` — the same timeout
+under load two nights later, **5 passed in 93 ms** alone (opus-1193). Same
+shape, both tree-grepping, neither a defect in its subject.
+*The rule of practice:* a timeout failure on a tree-walking test is re-run ALONE
+before it is believed OR dismissed, and **the report carries both readings** —
+quoting only the green re-run hides a real harness fault, and quoting only the
+red one files a defect against innocent code.
+⚠ **OPEN, and this is the row rather than the lesson** (fable-1551, on
+fable-1516's pre-registration that two instances make it a harness question).
+The class needs a fix from whichever sitting next touches the harness, and the
+two obvious candidates are named so nobody re-derives them: **an explicit larger
+timeout on the tree-walking class**, or **a vitest pool hint** that stops them
+competing with the parallel fleet. Neither has been costed. The third instance
+should find this paragraph rather than somebody's memory.
+*Banked:* fable-1551, specimens at opus-1182 §6 and opus-1193.
+
 ---
 
 ## Adding to this file
@@ -503,4 +531,4 @@ reader meets it.
 Follow the admission rule at the top: numbered Fable ruling, real incident, one
 line each, citation. Keep it to a page or two — **terse over complete.** A
 doctrine file long enough to skim past is an instrument nobody reads, which is
-the failure mode all twenty-five of these describe.
+the failure mode all twenty-six of these describe.
