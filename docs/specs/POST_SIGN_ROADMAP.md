@@ -1362,12 +1362,67 @@ carry the rulings, the courts and the histories.
                                          reaching the entire moderator surface —
                                          **exactly one arm failed, and it was one
                                          written that hour.** Both now redden.
-                                         ⚠ **WHAT REMAINS: the twelve other
-                                         A-sites, and D (~14 arms).** D's read is
-                                         *which of those procedures has no other
-                                         arm anywhere* — that subset is the real
-                                         hole, and deleting without it destroys
-                                         the only (false) map of it.
+                                         ✅ **A IS CLOSED — `7f8f668f` +
+                                         `0db1b2a6`. Thirteen sites, NINE of
+                                         them drifted**, which is the row's real
+                                         answer to *"small each, large in total"*:
+                                         it was not small. The four that read
+                                         worst:
+                                         **(i)** `useModelSetup`'s copy described
+                                         a hook with NONE of its four guards, so
+                                         five arms asserted as correct exactly
+                                         the behaviour those guards exist to
+                                         prevent — **delete the session-resume
+                                         guard and they go GREEN about a customer
+                                         losing their history.**
+                                         **(ii)** `geminiPhase5Integration`
+                                         formatted the ethnicity dual-write as
+                                         *"60% East Asian, 40% Nordic"* and
+                                         commented that this *"is what gets
+                                         written to prefs.ethnicity and is
+                                         consumed by generateMasterPrompt"* —
+                                         **the product has never written a
+                                         percentage into that field.** Six
+                                         production sites computed the string by
+                                         hand; all six now derive.
+                                         **(iii)** `debugUtility` drifted FOUR
+                                         ways at once: it named a DELETED file
+                                         (`CastingStudio.tsx`), generated 9 of
+                                         28 fields, held a vocabulary that
+                                         differed by one member each way **at the
+                                         same LENGTH** (`Mediterranean` vs
+                                         `Mixed`), and mapped `.value` over a
+                                         shape the product no longer has.
+                                         **(iv)** `boardsCasting` was a mirror
+                                         that OUTLIVED ITS SOURCE — its header
+                                         named `BoardCastingPanel`, deleted at
+                                         `b9238535`.
+                                         **ONE stayed a simulation and SAYS SO**
+                                         (the shutdown guard, 3g's B): reaching
+                                         it means restructuring a production boot
+                                         path for a test's convenience, which is
+                                         the worse trade, and the describe now
+                                         names what would make it real.
+                                         ⚠ **A CLAIM MADE MID-BUILD WAS WRONG AND
+                                         IS KEPT**: the overlay cache was read as
+                                         written-but-never-read. It IS read —
+                                         both handlers reach `state.overlayCache`
+                                         directly. What is dead is the
+                                         `getCachedOverlay` STORE ACTION
+                                         (`git log -S "getCachedOverlay("` over
+                                         the hook is EMPTY — the call site was
+                                         never written). Reported, NOT deleted:
+                                         removing a store action is a product
+                                         change, not a mirror repair.
+                                         ⚠ **WHAT REMAINS: D alone (~14 arms).**
+                                         D's read is *which of those procedures
+                                         has no other arm anywhere* — that subset
+                                         is the real hole, and deleting without it
+                                         destroys the only (false) map of it. The
+                                         structural sweep promotes to `scripts/`
+                                         WITH that sitting and not before
+                                         (ruled fable-1626 §5), because until then
+                                         it has no reader.
                                          ⚠ **AND THE CLOSING SWEEP'S NUMBER IS A
                                          CANDIDATE LIST, NOT A CENSUS**: a
                                          structural reader (an `expect` whose
