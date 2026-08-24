@@ -11,7 +11,7 @@ We reverse-engineered how a professional studio makes AI films. We pulled
 **35,000+ generation records** from three of their productions — every prompt
 they wrote, every reference image they attached, every setting they used. We
 downloaded their character sheets and looked at them. We downloaded their
-finished videos and measured them. We listened to their audio files. Nothing
+finished videos and measured them. We measured their audio files. Nothing
 here is guessed.
 
 ---
@@ -86,8 +86,11 @@ literally the same. Everywhere else, each take the engine invents new voices
 matching a written description ("soprano, playful" / "low, velvety").
 It sounds consistent because the words and tempo are fixed, the singing is
 deliberately sloppy (sloppy hides differences), and the edit never puts two
-versions of a voice side by side. Lesson for Drape: **pictures solve faces;
-voices need their own saved asset one day.**
+versions of a voice side by side. **Drape's planned per-cast voices are a
+leap PAST them, not a catch-up**: they engineered around this hole (sloppy
+group singing, one speaker per shot, whole non-verbal scenes) because they
+could not close it. A cast voice asset closes it — and the card keeps a
+Voice: description line beside it as the performance style.
 
 **8. Most of the prompt is telling the engine what NOT to do.**
 "NOT a 3D render, NOT a game engine, NOT a cartoon. No plastic skin. No dead
@@ -142,8 +145,10 @@ Concrete things already filed for the casting build:
   (which is basically what wardrobe/VTO already does), saved and reused.
   Where that artifact lives (Casting vs Wardrobe) is a decision only you can
   make — it touches the D-62 boundary.
-- **A Voice field at Sign**: costs nothing to record now, matters the day
-  casts appear in video.
+- **Cast voices are already planned development** (founder, 2026-08-24) —
+  the research says pair the voice ASSET (identity) with a Voice: text line
+  (performance style), the same picture+words pattern their cards use for
+  faces.
 
 ---
 
