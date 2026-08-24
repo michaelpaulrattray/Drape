@@ -563,6 +563,39 @@ carry the rulings, the courts and the histories.
                                          `NOTES_MAX` park was closed on, which is
                                          half of the re-read that park owes
                                          before `CASTING_BORN_INK_SCOPE` widens
+                                         ✅ **THE BUDGET COURT HAS RUN — founder
+                                         order, his own cyborg brief**
+                                         (2026-08-24, $0.6775, 22 calls;
+                                         `CASTING_V2_BUDGET_COURT_READING.md`).
+                                         ⚠ **THE ANSWER IS BIGGER THAN THE
+                                         QUESTION: given room the interpreter
+                                         holds ALL FOURTEEN of his named facts,
+                                         3 of 3, in his own wording — and the
+                                         product still delivers seven, because
+                                         `NOTES_MAX` (180 chars, ENFORCED and
+                                         never announced) guillotines what the
+                                         raised cap bought.** So option 1 is a
+                                         TWO-NUMBER change and never was one:
+                                         the announced cap and the enforced
+                                         bound move together or the second cuts
+                                         what the first buys. `Under 80 words`
+                                         is a sufficient operating point (same
+                                         14 facts as no limit, in fewer words);
+                                         the measured need is ~70 words /
+                                         ~500 chars against his own
+                                         *"300-500 words is generally safe."*
+                                         ⚠ And the cybernetics die because they
+                                         are LAST IN THE SENTENCE — the seven
+                                         survivors are the seven inside the
+                                         first 180 characters, which is rolls
+                                         128/129's tattoo loss exactly.
+                                         Controls: the short brief UNMOVED under
+                                         both caps, the cohort wall walled 2/2
+                                         under both. ⚠ It decides NO PICTURE —
+                                         every number is text, and the
+                                         image-side context risk of a longer
+                                         detail line is unmeasured (law 9,
+                                         stage 3, his eyes)
 3d ⚠ HIS CYBERNETIC BRIEF IS REFUSED     ordered fable-1477 §6, found by driving
    AS A VIDEO-GAME CHARACTER,            (opus-1128 §6). His own brief tripped
    ABOUT 1 TIME IN 7                     the cohort wall twice in fifteen
