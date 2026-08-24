@@ -240,8 +240,21 @@ is exactly this door.
 
 ## 9. Founder gates
 
-1. Canvas information architecture (script rail / scene groups / cut strip)
-   — needs the Canvas team's shape, not just this sketch.
+1. The surface. Discussed with the founder 2026-08-24: his instinct is the
+   canvas for the bird's-eye overlook; the recommendation on the table is a
+   **dedicated cinematic-studio surface built ON canvas technology, with two
+   views over one Production** — the WALL (canvas-tech bird's-eye: every
+   scene, shot, take and asset spatially, where curation and review happen —
+   validated by the research: picking 275 keepers from 18,900 generations was
+   their central activity, and their flat folders failed them at exactly this)
+   and the DESK (structured editors: script rail, scene document, takes
+   contact sheet, reorderable cut strip — because a film's spine is ordered
+   and half the work is editing, not arranging). Evidence for dedicated over
+   generic: the studied studio built its own Cinema Studio surface rather
+   than using its boards product, and their standout-scene lesson means
+   creation order ≠ cut order permanently, so the cut must be a strip
+   independent of any board layout. Not yet decided — needs the Canvas
+   team's shape.
 2. Pricing model for productions (§7).
 3. D-62: where outfit/state cards live.
 4. The two deferred tests (baked text; voice clips vs descriptions) — their
