@@ -31,6 +31,10 @@ video generations.
    the second production, and everything it changed.
 4. **[`implications-for-drape.md`](./implications-for-drape.md)** — what it means
    for the casting studio and the backend.
+5. **[`DRAPE-IMPLEMENTATION-SPEC.md`](./DRAPE-IMPLEMENTATION-SPEC.md)** — the
+   framework written in the shape Drape would need it: data model, prompt
+   assembler, camera spec, the shot contract, asset-mint recipes, the economics,
+   and the founder gates. **Research output — nothing scheduled, nothing built.**
 
 **Filed out of this research, not yet run:**
 [`OPEN_TEST_baked-text-on-references.md`](./OPEN_TEST_baked-text-on-references.md)
