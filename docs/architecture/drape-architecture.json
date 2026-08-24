@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9f5e141f48b8e6d3"
+    "sourceFingerprint": "e784ce8489e9a954"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 34
+      "moduleCount": 35
     },
     {
       "id": "domain:studio",
@@ -5555,6 +5555,12 @@
     {
       "id": "module:shared/referenceIntents.ts",
       "path": "shared/referenceIntents.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/refineLimits.ts",
+      "path": "shared/refineLimits.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14925,6 +14931,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/FaceRegions.tsx",
+      "to": "module:shared/refineLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
@@ -14992,6 +15003,11 @@
     {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:shared/refineLimits.ts",
       "kind": "imports"
     },
     {
@@ -23862,6 +23878,11 @@
     {
       "from": "module:server/castingV2/refineLimits.ts",
       "to": "module:server/castingV2/refineReask.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineLimits.ts",
+      "to": "module:shared/refineLimits.ts",
       "kind": "imports"
     },
     {

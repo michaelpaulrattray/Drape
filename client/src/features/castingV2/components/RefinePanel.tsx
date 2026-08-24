@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, RotateCw, X } from "lucide-react";
 
 import type { InkProvenance } from "@shared/inkProvenance";
+import { REFINE_INSTRUCTION_MAX_LENGTH } from "@shared/refineLimits";
 
 import { Button } from "@/foundation";
 import {
@@ -917,7 +918,14 @@ export function RefinePanel({
           value={instruction}
           onChange={(event) => setInstruction(event.target.value)}
           placeholder="Change something about them…"
-          maxLength={200}
+          /*
+            THE ROUTER'S OWN NUMBER, not a copy of it (law 4, ruled fable-1613).
+            A tapped row prefills this field rather than riding along invisibly,
+            so what the browser counts is exactly what the wire carries — which
+            is why this one needs no allowance arithmetic and the region
+            popover's does.
+          */
+          maxLength={REFINE_INSTRUCTION_MAX_LENGTH}
           disabled={busy}
           aria-label="What to change about this person"
         />

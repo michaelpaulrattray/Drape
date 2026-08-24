@@ -161,6 +161,18 @@ export type OpenKindReading =
   | { ok: false; reason: "unreadable" };
 
 /** The reply shape, parsed defensively — a model's JSON is input, not a promise. */
+/**
+ * The widest noun this lane will accept, NAMED rather than left as a literal.
+ *
+ * It was `40` inline until 2026-08-25. It got a name because a second reader
+ * now depends on it: an open kind's noun is what the panel's prefill is built
+ * from, and the region popover's typing allowance is `cap − prefill`, so this
+ * number bounds the smallest room a customer can be given. A test that
+ * re-typed `40` would be the mirror working law 4 forbids, and it would drift
+ * the day this moves.
+ */
+export const OPEN_KIND_NOUN_MAX_LENGTH = 40;
+
 function readKind(raw: string): { kind: string; noun: string } | null {
   let parsed: unknown;
   try {
@@ -178,7 +190,7 @@ function readKind(raw: string): { kind: string; noun: string } | null {
     and accepting it would key the lane on something nobody proved stable.
     Three words is generous for "the thing" and still refuses a description.
   */
-  if (!plain || plain.length > 40 || plain.split(" ").length > 3) return null;
+  if (!plain || plain.length > OPEN_KIND_NOUN_MAX_LENGTH || plain.split(" ").length > 3) return null;
   if (!/^[a-z][a-z '-]*$/.test(plain)) return null;
   /*
     THE KEY IS A SINGLE TOKEN; THE NOUN KEEPS ITS SPACES.

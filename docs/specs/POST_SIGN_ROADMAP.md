@@ -799,6 +799,84 @@ carry the rulings, the courts and the histories.
                                           fixture asserts one delivered slot by
                                           name, so no row has ever been driven
                                           against a Cast wearing two
+3e ⚠ THE INSPIRED EDIT IS CAPPED AT A    ordered fable-1603, from his own
+   TENTH OF THE INSPIRED BRIEF           question — *"when refining an image do
+                                         we have any composer issues"*.
+                                         `REFINE_INSTRUCTION_MAX_LENGTH` is 200
+                                         characters — about 35 words — while a
+                                         brief now speaks at up to 2000 with full
+                                         fidelity. No silent summarisation: the
+                                         instruction travels whole and the cap is
+                                         INPUT validation, so a long ask is
+                                         refused at the door rather than
+                                         rationed. The row is to raise it in the
+                                         fidelity spirit, and the court it needs
+                                         is whether a dense 400–800 character ask
+                                         parses as faithfully as a short one.
+                                         PRIORITY IS LOW BY ITS OWN READING and
+                                         that is deliberate (1603's own
+                                         condition): 0 of 19 production refines
+                                         came within 20 of the cap, max 144, all
+                                         his. The row still stands — the fidelity
+                                         direction predicts longer asks, not
+                                         shorter — but nobody is waiting on it.
+                                         Risks the court must name: the
+                                         interpreter's multi-change behaviour,
+                                         announced-vs-enforced consistency (do
+                                         NOT recreate the two-guards trap this
+                                         campaign killed on the roll side), and
+                                         the reask-handle arithmetic —
+                                         `refineLimits.ts` sums the two, so the
+                                         sum moves with the cap.
+                                         ✅ **ITS PRECONDITION LANDED FIRST, AND
+                                         THE BUILD WOULD HAVE BEEN INVISIBLE
+                                         WITHOUT IT** (2026-08-25, ruled
+                                         fable-1613, from the surface read 1603
+                                         left explicitly UNREAD). The client held
+                                         TWO hand-typed copies of the cap
+                                         (`RefinePanel.tsx`, `FaceRegions.tsx`,
+                                         both `maxLength={200}`) and no reference
+                                         to the constant at all — so raising the
+                                         server's number would have changed
+                                         nothing for any customer, on a green
+                                         suite. The number now lives in
+                                         `shared/refineLimits.ts` and both
+                                         surfaces import it: **this row's build is
+                                         one constant, and it is sequenced
+                                         accordingly.**
+                                         ⚠ AND THE READ FOUND A LATENT DEFECT AND
+                                         CLOSED IT. The region popover submits
+                                         `prefill + said` — *"his upper chest
+                                         tattoo — "* then her words — while its
+                                         field capped `said` ALONE, so the box
+                                         composed asks the router refuses, and
+                                         the refusal reads *"keep it to 200
+                                         characters or fewer"* to somebody the
+                                         box already held to 200, about
+                                         characters she cannot see. Correct until
+                                         `44369835` moved the prefill out of the
+                                         field on the founder's own ruling
+                                         (fable-1270 §1): the ruling is right and
+                                         the cap's arithmetic was bolted to the
+                                         prefill's location — law 7's second
+                                         half, no failing test and no error. The
+                                         field now budgets `cap − prefill`
+                                         (151–190 characters of room, measured
+                                         over the catalogue and the open lane's
+                                         40-char bound). SILENT rather than
+                                         counted, ruled fable-1613 §2 on his two
+                                         prunings of this popover; the condition
+                                         that reopens the counter question is
+                                         that a raised cap brings typical asks
+                                         near the composed limit, and it arrives
+                                         with THAT build.
+                                         ⚠ The `answering` field was checked in
+                                         the same sweep and does NOT share the
+                                         defect: it is server-supplied and its
+                                         cap is already DERIVED
+                                         (`REFINE_ANSWERING_MAX_LENGTH`), by the
+                                         docblock that names this exact dead end
+                                         one field over.
 6  CAST-BORN INK DISCOVERY                after 5 — the Basics path is its
                                           population
 7  RETIREMENT + CLEANUP                   §0b's bar is the finish line.

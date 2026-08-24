@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 
 const PANEL = new URL("./components/FacePanel.tsx", import.meta.url);
 const REGIONS = new URL("./components/FaceRegions.tsx", import.meta.url);
+const REFINE_PANEL = new URL("./components/RefinePanel.tsx", import.meta.url);
 const SELECTION = new URL("./components/faceSelection.ts", import.meta.url);
 const VIEWER = new URL("./components/CandidateViewer.tsx", import.meta.url);
 const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
@@ -915,5 +916,59 @@ describe("both halves of a pair are drawn at one magnification", () => {
     expect(block).toContain("var(--dpc-cut-box-w) / var(--dpc-cut-sw)");
     /* Centring still reads its own crop. */
     expect(block).toContain("var(--dpc-cut-x) + var(--dpc-cut-w) / 2");
+  });
+});
+
+/**
+ * THE TWO BOXES SPEND THE ROUTER'S NUMBER, NOT A COPY OF IT.
+ *
+ * Both refine fields held a hand-typed `maxLength={200}` until 2026-08-25
+ * (ruled fable-1613). Two consequences, and the second is the expensive one:
+ *
+ * 1. The region popover submits `prefill + said` while its field capped `said`
+ *    alone, so the box composed asks the router refused — and the refusal read
+ *    *"please keep it to 200 characters or fewer"* to somebody the box had
+ *    already held to 200, about characters she cannot see. Correct until
+ *    `44369835` moved the prefill out of the field on the founder's own ruling
+ *    (fable-1270 §1): the ruling is right, and the cap's arithmetic was bolted
+ *    to the prefill's location and went with it.
+ *
+ * 2. **The refine-fidelity row's whole content is raising that number, and
+ *    raising it would have changed nothing for any customer.** The server would
+ *    take a longer ask; both boxes would still stop at 200, silently, and the
+ *    suite would have been green about it.
+ *
+ * The arithmetic is proven in `server/castingV2/refineReask.test.ts` against
+ * the real catalogue. What is proven HERE is the thing that arm cannot see: the
+ * surfaces actually spend the derivation rather than a literal.
+ */
+describe("the refine fields derive their cap", () => {
+  it("the ask box spends the shared constant", async () => {
+    const panel = withoutProse(await readFile(REFINE_PANEL, "utf8"));
+    expect(panel).toContain("maxLength={REFINE_INSTRUCTION_MAX_LENGTH}");
+    expect(panel).toContain('from "@shared/refineLimits"');
+  });
+
+  it("the region popover spends the ROOM LEFT, because its noun rides invisibly", async () => {
+    const regions = withoutProse(await readFile(REGIONS, "utf8"));
+    expect(regions).toContain("maxLength={refineTypingAllowance(open.prefill)}");
+    expect(regions).toContain('from "@shared/refineLimits"');
+    /* And the composition this allowance is budgeted against is still the one
+       being submitted — if the prefill stopped riding along, the subtraction
+       would be shortening the box for no reason. */
+    expect(regions).toContain("onAsk(`${open.prefill}${said}`, open.scope);");
+  });
+
+  it("NEITHER holds a bare number — the mirror, banned by spelling", async () => {
+    /*
+      The sabotage this arm exists for is a tidy-up that "simplifies" the
+      import away and re-types the literal. Prose is stripped first, so the
+      docblocks above — which quote the old value on purpose — cannot pass for
+      the breach they describe.
+    */
+    for (const source of [REFINE_PANEL, REGIONS]) {
+      const code = withoutProse(await readFile(source, "utf8"));
+      expect(code, `${source.pathname} re-typed the cap`).not.toMatch(/maxLength=\{\s*\d/);
+    }
   });
 });

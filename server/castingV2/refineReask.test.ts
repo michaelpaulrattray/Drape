@@ -18,6 +18,10 @@ const HER: CastPronouns = { subject: "she", object: "her", possessive: "her", pl
 
 import { describe, expect, it } from "vitest";
 
+import { SEXES } from "../../shared/castingVocabularies";
+import { refineComposedWireLength, refineTypingAllowance } from "../../shared/refineLimits";
+import { pronounsForSex } from "./castPronouns";
+import { OPEN_KIND_NOUN_MAX_LENGTH } from "./openLaneKind";
 import { readDelta } from "./refineDelta";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "./refineLimits";
 import { FREE_SUBJECTS, FREE_SUBJECT_KEYS } from "./refineSubjects";
@@ -613,6 +617,150 @@ describe("the answering field is wide enough for a handled question", () => {
     expect(designNamedIn(handle)).toHaveLength(randomUUID().length);
     expect(residentNamedIn(handle)).toHaveLength(randomUUID().length);
     expect(designNamedIn(handle)).not.toBe(residentNamedIn(handle));
+  });
+});
+
+/**
+ * AND THE SAME DEAD END ON THE OTHER FIELD — the one nobody derived.
+ *
+ * The describe above exists because a handle in front of a full-length sentence
+ * would overflow `answering`. **The region popover does the identical thing to
+ * `instruction` and it was never given the identical treatment**: `FaceRegions`
+ * submits `prefill + said` — *"his upper chest tattoo — "* and then her words —
+ * while its field capped `said` alone at the router's number.
+ *
+ * So the box composed asks the router refused, and the refusal said *"please
+ * keep it to 200 characters or fewer"* to somebody the box had already held to
+ * 200. Advice about characters she cannot see: exactly the quieter dead end the
+ * derivation above was built to prevent, one field over.
+ *
+ * It was correct until `44369835` moved the prefill out of the field on the
+ * founder's own ruling (fable-1270 §1). The ruling is right; the arithmetic was
+ * bolted to the prefill's location and went with it — no failing test, no
+ * error. This is that failing test, arriving late.
+ *
+ * **Every term is measured off the product**, never re-typed: the nouns come
+ * from the catalogue, the possessives from `pronounsForSex` over `SEXES`, and
+ * the open lane's width from its own exported bound. The arm cannot agree with
+ * the code about a number neither of them checked.
+ */
+describe("a scoped ask cannot compose more than the door accepts", () => {
+  /* The prefill the panel builds, spelled the way `facePanel.ts` spells it —
+     possessive, noun, em-dash — and asserted against that speller below so the
+     two cannot drift apart in silence. */
+  const prefillOf = (possessive: string, noun: string) => `${possessive} ${noun} — `;
+
+  const POSSESSIVES = Array.from(
+    new Set(SEXES.map((sex) => pronounsForSex(sex).possessive)),
+  );
+
+  /**
+   * Every noun the panel can put in front of a customer's sentence.
+   *
+   * ⚠ The plural is at `instances.pairNoun` and only on a `perSide` slot — it
+   * is NOT a top-level field. The first cut of this arm read
+   * `definition.pairNoun`, which is `undefined` on every entry, so the whole
+   * plural class was silently absent from a population this arm reports as
+   * complete. **Vitest was green on it; `pnpm check` is what said so** — the
+   * both-instruments rule earning its keep on the very arm written to stop a
+   * mirror.
+   */
+  const NOUNS: string[] = [
+    ...Object.values(SLOT_CATALOGUE).flatMap((definition) => [
+      definition.noun,
+      ...(definition.instances.of === "perSide" ? [definition.instances.pairNoun] : []),
+    ]),
+    /* The open lane's worst case: a kind nobody catalogued, at the widest the
+       lane will accept. This is the row that gives the least room, and it is
+       the row a mirror of the constant would have stopped covering. */
+    "z".repeat(OPEN_KIND_NOUN_MAX_LENGTH),
+  ];
+
+  const PREFILLS = POSSESSIVES.flatMap((possessive) =>
+    NOUNS.map((noun) => prefillOf(possessive, noun)),
+  );
+
+  it("the population is real — the catalogue, both nouns, every possessive", () => {
+    /*
+      A magic count would pin the fixture rather than the product (a catalogued
+      slot arriving must not redden this). What is asserted is that the arm is
+      looking at something: the catalogue is non-empty, every possessive the
+      product speaks is represented, and the open lane's worst case is present.
+    */
+    expect(PREFILLS.length).toBeGreaterThan(NOUNS.length);
+    expect(POSSESSIVES.length).toBeGreaterThan(1);
+    expect(NOUNS).toContain("z".repeat(OPEN_KIND_NOUN_MAX_LENGTH));
+    /*
+      AND THE PLURAL CLASS IS PRESENT — the arm's own negative control against
+      the defect it was born with. Derived from the catalogue rather than named,
+      so a renamed pair does not redden it and a VANISHED plural class does.
+    */
+    const plurals = Object.values(SLOT_CATALOGUE)
+      .filter((definition) => definition.instances.of === "perSide");
+    expect(plurals.length).toBeGreaterThan(0);
+    for (const definition of plurals) {
+      const pairNoun = (definition.instances as { of: "perSide"; pairNoun: string }).pairNoun;
+      expect(NOUNS, `the plural ${JSON.stringify(pairNoun)} is not in the population`)
+        .toContain(pairNoun);
+    }
+  });
+
+  it("a field filled to its allowance still fits through the door", () => {
+    for (const prefill of PREFILLS) {
+      const allowance = refineTypingAllowance(prefill);
+      /* A room of zero or less is a box nobody can type in — a different
+         defect, and one this assertion would otherwise pass over silently. */
+      expect(allowance, `${JSON.stringify(prefill)} leaves no room to type`)
+        .toBeGreaterThan(0);
+      const said = "x".repeat(allowance);
+      expect(
+        refineComposedWireLength(prefill, said),
+        `${JSON.stringify(prefill)} composes past the door`,
+      ).toBeLessThanOrEqual(REFINE_INSTRUCTION_MAX_LENGTH);
+    }
+  });
+
+  it("AND ONE CHARACTER MORE DOES NOT — the arm's own negative control", () => {
+    /*
+      Without this, an allowance of zero would pass the arm above by making
+      every composition trivially short. The bound has to BITE.
+    */
+    for (const prefill of PREFILLS) {
+      const said = "x".repeat(refineTypingAllowance(prefill) + 1);
+      expect(
+        refineComposedWireLength(prefill, said),
+        `${JSON.stringify(prefill)} has slack the allowance did not spend`,
+      ).toBeGreaterThan(REFINE_INSTRUCTION_MAX_LENGTH);
+    }
+  });
+
+  it("the allowance is the door's number minus the prefill, not a second number", () => {
+    /*
+      Derived, not chosen: raising the router's cap must raise the room by the
+      same amount on the same day, which is the whole reason the constant moved
+      to `shared/`. A literal here would re-create the mirror one layer down.
+    */
+    for (const prefill of PREFILLS) {
+      expect(refineTypingAllowance(prefill))
+        .toBe(REFINE_INSTRUCTION_MAX_LENGTH - prefill.length);
+    }
+    /* An unscoped ask carries no noun, so it spends the whole allowance — the
+       ask box's own case, and the reason that field needs no arithmetic. */
+    expect(refineTypingAllowance("")).toBe(REFINE_INSTRUCTION_MAX_LENGTH);
+  });
+
+  it("the prefill is spelled the way the PANEL spells it, not the way this test does", () => {
+    /*
+      The one place this arm could be quietly wrong: if `facePanel.ts` changed
+      its prefill shape, every assertion above would keep passing against a
+      string the product no longer builds. Read at the panel's own source.
+    */
+    const panel = readFileSync(
+      fileURLToPath(new URL("./facePanel.ts", import.meta.url)),
+      "utf8",
+    );
+    expect(panel).toContain("return `${spoken} — `;");
+    expect(panel).toContain("return `${possessive} ${nounOf(definition, paired)}`;");
   });
 });
 

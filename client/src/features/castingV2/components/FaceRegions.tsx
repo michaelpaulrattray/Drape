@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { refineTypingAllowance } from "@shared/refineLimits";
+
 import type { FacePanelRow } from "./FacePanel";
 import type { FaceSelectionModel } from "./faceSelection";
 
@@ -464,7 +466,25 @@ export function FaceRegions({
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Describe your edit…"
-            maxLength={200}
+            /*
+              THE ROOM LEFT AFTER THE INVISIBLE NOUN — ruled fable-1613.
+
+              This field holds the TAIL; `onSubmit` above composes
+              `prefill + said` and the router caps the WHOLE. A bare 200 here
+              therefore let the box build an ask the server refused, and the
+              refusal read *"please keep it to 200 characters or fewer"* to
+              somebody the box had already held to 200 — advice about
+              characters she cannot see.
+
+              It is SILENT rather than counted (ruled fable-1613 §2, on his own
+              two prunings of this popover): the worst room the catalogue can
+              produce is 151 characters and the longest ask anyone has ever
+              typed is 144, so a counter here would be furniture. The condition
+              that reopens that is written down — if a raised cap ever brings
+              typical asks near the composed limit, the counter arrives with
+              THAT build.
+            */
+            maxLength={refineTypingAllowance(open.prefill)}
             disabled={busy}
             /* The one label that is a SENTENCE, so it keeps the possessive
                (fable-451): a screen reader hearing "what to change about left

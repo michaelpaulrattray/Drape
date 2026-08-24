@@ -5,17 +5,18 @@
  * reason: the second is DERIVED from the first, and a derivation written into a
  * schema literal is a second copy of a decision (law 4). Here they can also be
  * read by a suite without importing the router, which boots the world.
+ *
+ * ⚠ **The FIRST of the two now lives in `shared/` and is re-exported here**
+ * (2026-08-25, ruled fable-1613). The client held two hand-typed copies of it
+ * and the row that raises it would have been invisible to every customer; the
+ * reasoning is in `shared/refineLimits.ts`'s own header. This module keeps the
+ * DERIVED cap, because the handle length it is built from is server-only — and
+ * it keeps the re-export so nothing here has two names for one number.
  */
+import { REFINE_INSTRUCTION_MAX_LENGTH } from "../../shared/refineLimits";
 import { REASK_HANDLE_MAX_LENGTH } from "./refineReask";
 
-/**
- * ONE ADJUSTMENT, NOT A BRIEF.
- *
- * The founder's own framing of the box: the brief box is where a paragraph
- * belongs, and a long instruction here is somebody trying to re-cast rather
- * than refine.
- */
-export const REFINE_INSTRUCTION_MAX_LENGTH = 200;
+export { REFINE_INSTRUCTION_MAX_LENGTH };
 
 /**
  * AND THE FIELD AN ANSWER TRAVELS IN, which has to be WIDER.
