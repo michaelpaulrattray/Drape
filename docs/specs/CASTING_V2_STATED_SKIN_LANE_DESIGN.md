@@ -1,12 +1,117 @@
 # A STATED SKIN LANE — §10 item 3c's design report
 
-**Status: FOR COUNTERSIGN. Nothing here is built.**
+⚠ **STATUS: COUNTERSIGNED (fable-1501) AND THEN STOPPED AT ITS OWN COURT
+(2026-08-24, opus-1185, ruled fable-1539). NOTHING IS BUILT, AND THE COMPLAINT
+BELOW IS NOT WHAT THE PRODUCT DOES — read §0 before anything else.**
 Ordered fable-1477 ASK 2 (*"a stated-appearance brief lane, designed AFTER the
 hair assert proves the pattern"*), re-endorsed fable-1499 §3 (*"3c's build still
 wants its design report and countersign before any prompt change —
 context-is-not-additive is measured here, so no lane joins a prompt on a shift's
 judgement"*). Written 2026-08-24, opus-1150, against the code and the census
 rather than from recollection.
+
+---
+
+## 0. ⚠ WHAT THE COURT FOUND, AND WHY THE BUILD DID NOT LAND (2026-08-24)
+
+**Everything below §0 is the design as countersigned. It is kept because its
+mechanism is right and its shape is probably still the answer — but its STATED
+CASE is refuted, and a seat reading it from §1 would build against a complaint
+the tree does not have.**
+
+§7's own fixture rule says the survival arm *"must be the one that went red
+against working code before it went green."* The `before` side of the court ran
+first, on tree `16f1ba79`, 24 drives, and the arm did not go red the way this
+document predicts:
+
+```
+TONE at the wire, N=3, before any build      CHARACTER at the wire
+  porcelain   3/3  (100%)                      lined  ·  scarred  ·  pockmarked
+  olive       0/3  (  0%)                        all 3/3 (100%)
+  sallow      3/3  (100%)
+  ruddy       3/3  (100%)
+```
+
+**Three of four tone words survive every drive.** By fable-1537 §3's ruling —
+given in advance precisely so it could not be argued away at 1am — a `before`
+run that does not reproduce the complaint files its reading and **the build does
+not land**. It did not. The after-side was never bought.
+
+### 0a. The headline figure is true and was measured on ONE brief
+
+§1's *porcelain 0/4 on this tree* is a correct reading of the corpus, and
+`porcelain` appears in exactly one corpus brief: `his-cyborg`, **553
+characters**, the longest in it. Opened at that run's own log rather than
+recalled:
+
+```
+his-cyborg drive 1   notes 151   "Weathered pale skin; strong brow, deep-set…"
+his-cyborg drive 3   notes 153   "Bald, pale weathered skin, pronounced brow…"
+```
+
+**The notes are 151–161 characters against a 180 cap. Nothing overflowed.**
+`pale porcelain skin, heavily weathered` came back as `pale weathered skin` —
+the summariser dropped the more specific of two adjacent synonyms while
+compressing a dense brief. (The tidy hypothesis — *the notes overflowed* — was
+mine, and it was killed by opening that column rather than by argument.)
+
+### 0b. Density is the mechanism, measured with density as the only variable
+
+The density court (opus-1185 R1, ruled fable-1539 Q2; 9 drives, ~$0.72;
+`output/skin-lane-court/density-court.log`) drove the identical phrase *"pale
+porcelain skin"* in two briefs, same tree, same hour:
+
+```
+A  the 553-character cyborg brief, verbatim      porcelain  0/2 at the wire
+B  a 190-character brief, same phrase            porcelain  3/3 at the wire
+```
+
+**So the mechanism in §2 is exactly right and its CONDITION was missing: the
+paraphrase normalises a colour word under COMPRESSION PRESSURE, not because it
+is a colour.** The population this complaint actually names is DENSE BRIEFS.
+
+⚠ **And that population is already spoken for** (fable-1539 Q2): the near-cap
+census (opus-1068 §5) found the only briefs near `NOTES_MAX` are the ones that
+describe tattoos, which is why `CASTING_BORN_INK_SCOPE`'s widening re-opens the
+cap. **A dense-brief fix and that coupling are designed in one look, not two.**
+
+⚠ One incidental from arm A, filed rather than dropped: **the cyborg brief — the
+founder's own writing — was REFUSED by the cohort wall on 1 of 3 drives**
+(*"not a named person, not a character from a game or film"*), having compiled
+fine on the other two. A wall that is non-deterministic on a brief a customer
+would legitimately write is its own finding and belongs to whoever owns that
+wall.
+
+### 0c. `olive` is a real defect and it is the HYPHEN — §3's hole, at the wire
+
+`olive` failed 0/3 on a 163-character brief whose notes came back at 110, so
+compression is not its problem. Arm C changed one word:
+
+```
+"Olive-skinned woman …"      olive  0/3 at the wire   heritage: [Mediterranean]
+"a woman … with olive skin"  olive  3/3 at the wire   heritage: []
+```
+
+**The hyphenated form is read as an ethnicity, filed into `heritage`, and the
+notes then decline to repeat it.** The tree fingerprint agrees from the other
+side: `statedAxis("skin", …)` **AUTHORS** on *"olive-skinned woman"* where it
+**DEFERS** on *"pale porcelain skin"*. So §3's inflection hole is not a tidiness
+item — it is the whole of this word's failure, and it is a vocabulary fix rather
+than a lane.
+
+### 0d. What survives of this design, stated so it is not over-read
+
+**Nothing here says the lane is wrong.** A `statedSkin` lane under source
+containment is immune to both mechanisms — a lane is not compressed and a lane
+is not translated into `heritage`. What the court kills is the ACCEPTANCE ARM:
+built on *porcelain survives after the build*, it would have gone green against a
+tree where the word already survives 3/3. That is `arm-at-the-producer` with a
+lane attached, and it is why this stopped rather than proceeded.
+
+**A rebuild of this design needs**: the dense-brief population as its subject,
+the `NOTES_MAX` / born-ink coupling in the same look, `olive`'s hyphen handled as
+the separate vocabulary defect it is, and an acceptance arm that can go red on
+the tree it is measured against.
 
 ---
 
@@ -328,6 +433,20 @@ STAGE 3 — at the frames                          160 credits + his eyes
   law 9 says no reader closes that. Staged separately and NOT authorized here.
 ```
 
+⚠ **THAT ARITHMETIC IS WRONG BY 2.1× AND IT WAS COUNTERSIGNED WRONG** (caught at
+the harness before a penny moved, opus-1184; accepted fable-1537 as an error at
+the reviewer's desk rather than in the count). *"~$1.80"* is ONE SIDE wearing the
+whole court's name: 4 briefs × 3 drives is **12** per stage per side, so
+
+```
+STAGE 1   12 drives per side        STAGE 2   12 drives per side
+          24 drives per side ≈ $1.92          before + after 48 ≈ $3.84
+```
+
+The line below is kept as it was signed, because a corrected figure that erases
+the signed one hides the thing worth knowing — **a price in prose is not a price
+until somebody multiplies it.**
+
 Stage 1 + 2 is **~$1.80 at the measured $0.080 a drive**, which the balance can
 carry where 3d's ~$3.80 cannot.
 
@@ -338,6 +457,21 @@ was heard** — the bald court's own hardest-won lesson, and it applies directly
 house's own sentence. **Stage 1's briefs must state tones the engine never
 authors** — porcelain, olive, sallow, ruddy — and the arm must be the one that
 went red against working code before it went green.
+
+⚠ **AND THE TRAP IS IDENTICAL ONE SUB-FIELD OVER, which this section named for
+TONE alone until 2026-08-24** (fable-1504 §1, carried here by the shift that
+held it rather than dropped into *when next touched*). `freckled` and
+`sun-weathered` are in the house's own closed `SKIN_CHARACTERS`
+(`shared/castingRealization.ts`), so **a CHARACTER survival arm built on them
+measures nothing** — the word can enter a compiled prompt from the house. The
+character subjects are `lined`, `scarred` and `pockmarked`, none of which the
+house can author.
+
+`scar` and `pockmarked` DO appear in `AXIS_WORDS.skin`, and that is no
+contradiction: that list is the DEFERENCE list — the words the engine stands
+down FOR — and a word the engine stands down for is not a word the engine can
+SAY. Two lists, two questions. **A document that names its own rule for one
+sub-field and not the other is how the next court walks into it.**
 
 ---
 

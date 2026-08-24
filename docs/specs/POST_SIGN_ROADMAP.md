@@ -415,6 +415,54 @@ carry the rulings, the courts and the histories.
                                          still not being said — `statedHair`'s
                                          original defect, and strictly worse
                                          than today
+                                         ⚠ **THE COURT RAN AND STOPPED THE
+                                         BUILD — the complaint above is NOT what
+                                         the tree does** (2026-08-24, opus-1185,
+                                         ruled fable-1539; the reading is §0 of
+                                         the design). The `before` side, 24
+                                         drives on `16f1ba79`: `porcelain` 3/3,
+                                         `sallow` 3/3, `ruddy` 3/3 at the wire,
+                                         and only `olive` 0/3. fable-1537 §3's
+                                         rule — given in advance — is that a
+                                         `before` run which does not reproduce
+                                         the complaint files its reading and the
+                                         build does NOT land. It did not; the
+                                         after-side was never bought
+                                         ⚠ **AND THE ROW ABOVE'S OWN FIGURES ARE
+                                         WHY: `porcelain 1 of 3` was measured on
+                                         ONE brief — `his-cyborg`, 553 chars,
+                                         the longest in the corpus.** The
+                                         density court (9 drives, $0.72) drove
+                                         the identical phrase *"pale porcelain
+                                         skin"* in two briefs, one hour apart on
+                                         one tree: **dense 0/2, plain 3/3.** The
+                                         mechanism is COMPRESSION PRESSURE, not
+                                         colour-ness — and the notes never
+                                         overflowed (151–161 against a 180 cap;
+                                         the summariser dropped the more
+                                         specific of two adjacent synonyms)
+                                         ✅ **`olive` IS THE HYPHEN, settled at
+                                         the wire**: *"Olive-skinned woman"*
+                                         0/3 with `heritage: [Mediterranean]`,
+                                         *"a woman … with olive skin"* 3/3 with
+                                         `heritage: []`. The fact is TRANSLATED
+                                         into a neighbouring lane and the notes
+                                         then decline to repeat it. That is the
+                                         inflection hole two bullets up, arriving
+                                         at the wire — a vocabulary fix, not a
+                                         lane
+                                         ⚠ A REBUILD NEEDS: dense briefs as its
+                                         subject, the `NOTES_MAX` / born-ink
+                                         coupling in the SAME look (the only
+                                         near-cap briefs are the ones describing
+                                         tattoos — opus-1068 §5, coupling ruled
+                                         fable-1539 Q2), `olive`'s hyphen as its
+                                         own defect, and an acceptance arm that
+                                         can go RED on the tree it is measured
+                                         against. The old arm could not: built on
+                                         *porcelain survives after the build*, it
+                                         would go green against a tree where the
+                                         word already survives 3/3
 3d ⚠ HIS CYBERNETIC BRIEF IS REFUSED     ordered fable-1477 §6, found by driving
    AS A VIDEO-GAME CHARACTER,            (opus-1128 §6). His own brief tripped
    ABOUT 1 TIME IN 7                     the cohort wall twice in fifteen
@@ -430,6 +478,21 @@ carry the rulings, the courts and the histories.
                                          both got through, so he has not met it;
                                          the next identical roll has roughly a
                                          1-in-7 chance.
+                                         ⚠ **A THIRD AND FOURTH DATA POINT
+                                         ARRIVED FREE, 2026-08-24** (opus-1185's
+                                         density court, which drove that exact
+                                         brief for a different question): **1
+                                         refusal in 3 drives**, same sentence,
+                                         with the other two compiling fine.
+                                         Pooled with the original: **3 of 18.**
+                                         The rate is unchanged in kind and the
+                                         wall's non-determinism on one brief is
+                                         now measured twice by two instruments
+                                         that were not looking for it. Nothing
+                                         here re-schedules 3d — it still parks
+                                         on a number — but the next seat that
+                                         funds it inherits a bigger sample than
+                                         the one this row was written on.
                                          THE READING FIRST: ablate his brief
                                          against the classifier to find which
                                          phrase trips it. THEN the fix is
