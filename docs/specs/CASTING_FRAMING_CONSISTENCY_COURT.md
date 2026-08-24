@@ -406,9 +406,10 @@ looks.
   ~$2.9 fal + ~$0.24 openrouter, NO CREDITS at any point
 ```
 
-⚠ **openrouter holds $3.33** and the rite is printing its LOW banner. Three
-compiles is ~$0.24 of it. That is affordable and it is worth saying out loud
-before a court that needs the interpreter is authorised.
+The three interpreter compiles are ~$0.24 of openrouter. **The account balance
+is deliberately NOT written here**: it is retired from the founder's desk at any
+figure by standing order and belongs in custody blocks, so it rides in the
+countersign request rather than in a document he may open.
 
 ---
 
