@@ -18,7 +18,8 @@
     "architecture:check": "tsx scripts/check-architecture.mts",
     "check:scripts": "tsc --noEmit -p tsconfig.scripts.json",
     "capability:generate": "tsx scripts/generate-capability-atlas.mts",
-    "capability:check": "tsx scripts/generate-capability-atlas.mts --check"
+    "capability:check": "tsx scripts/generate-capability-atlas.mts --check",
+    "janitor:knip": "knip --no-progress --reporter compact"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.984.0",
@@ -118,6 +119,7 @@
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "knip": "^6.32.2",
     "pnpm": "^10.15.1",
     "postcss": "^8.4.47",
     "prettier": "^3.6.2",

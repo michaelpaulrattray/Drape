@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "server/_core/index.ts",
+    "client/src/main.tsx",
+    "scripts/**/*.{ts,mts}",
+    "!scripts/lib/**",
+    "!scripts/calibration/lib/**",
+    "seed.ts",
+    "vitest.setup.ts"
+  ],
+  "project": [
+    "server/**/*.ts",
+    "client/src/**/*.{ts,tsx}",
+    "shared/**/*.ts",
+    "scripts/**/*.{ts,mts}"
+  ],
+  "ignore": [
+    "scripts/**/*-disposable.*",
+    "scripts/_*-disposable.py",
+    "dist/**",
+    "output/**",
+    "docs/**"
+  ],
+  "ignoreBinaries": ["railway.cmd", "netstat", "taskkill.exe"],
+  "drizzle": false,
+  "paths": {
+    "@/*": ["client/src/*"],
+    "@shared/*": ["shared/*"]
+  }
+}
