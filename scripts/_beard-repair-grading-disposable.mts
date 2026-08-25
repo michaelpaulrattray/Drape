@@ -111,12 +111,32 @@ type Strategy = "today" | "uniform" | "exclude" | "cycle" | "never";
  * The beard half of `applySheetTaste`, replicated. Everything outside the
  * re-pick is copied from the product; only the marked line differs per strategy.
  */
-function beardPass(before: readonly string[], rollSeed: string, strategy: Strategy): string[] {
+function beardPass(
+  before: readonly string[],
+  heritages: readonly string[],
+  rollSeed: string,
+  strategy: Strategy,
+): string[] {
   const out: string[] = [];
   const placed: Array<{ heritage: string; beard: string | null }> = [];
   for (let position = 0; position < before.length; position += 1) {
     let facialHair = before[position]!;
-    const primary = "";
+    /*
+      ⚠ THE FIRST REPLICA HARD-CODED THIS TO "" AND MATCHED 0 OF 2000 SHEETS.
+
+      `intent.heritage` is EMPTY on this brief, and the first model read that as
+      "every candidate has no heritage". It does not: the RESOLVER draws one per
+      candidate, so `neighbours(primary)` returns only the previously-placed
+      candidates in the SAME neighbourhood — and the rule therefore fires far
+      less often on a heritage-VARIED sheet than on a locked one.
+
+      Found by DRIVING the real function on hand-built sheets
+      (`_beard-rule-probe-disposable.mts`) rather than by reading it again: four
+      identical bare values with one heritage came back `.***`, which is exactly
+      what the first replica predicted — so the rule was never wrong, the INPUT
+      was. Three readings of the code had already eliminated the wrong suspects.
+    */
+    const primary = heritages[position] ?? "";
     /* `authorsCut` is FALSE on a stated-hair brief, so the family filter does not
        apply and every nearby candidate counts — the product's own branch. */
     const nearby = placed.filter((entry) => sameNeighbourhood(entry.heritage, primary));
@@ -149,17 +169,18 @@ function beardPass(before: readonly string[], rollSeed: string, strategy: Strate
 
 /* ─── THE POPULATION ─── */
 
-type Sheet = { seed: string; before: string[]; real: string[] };
+type Sheet = { seed: string; before: string[]; heritages: string[]; real: string[] };
 const sheets: Sheet[] = [];
 for (let s = 0; s < SHEETS; s += 1) {
   const rollSeed = `taste-census-${s}`;
   const resolved = Array.from({ length: PER_SHEET }, (_, position) =>
     resolveCandidateIdentity(intent, position, rollSeed) as any);
   const before = resolved.map((r) => String(r.realized?.facialHair ?? "null"));
+  const heritages = resolved.map((r) => String(r.heritage?.[0]?.heritage ?? ""));
   const tasted = applySheetTaste(resolved, rollSeed, {
     statedFacialHair: false, authoredParts: new Set(),
   }) as any[];
-  sheets.push({ seed: rollSeed, before, real: tasted.map((r) => String(r.realized?.facialHair ?? "null")) });
+  sheets.push({ seed: rollSeed, before, heritages, real: tasted.map((r) => String(r.realized?.facialHair ?? "null")) });
 }
 
 /* ─── ⚠ THE REPLICA ARM. Nothing is reported unless this passes. ─── */
@@ -167,7 +188,7 @@ for (let s = 0; s < SHEETS; s += 1) {
 let mismatched = 0;
 const firstMismatch: string[] = [];
 for (const sheet of sheets) {
-  const replica = beardPass(sheet.before, sheet.seed, "today");
+  const replica = beardPass(sheet.before, sheet.heritages, sheet.seed, "today");
   if (replica.join("|") !== sheet.real.join("|")) {
     mismatched += 1;
     if (firstMismatch.length === 0) {
@@ -198,19 +219,39 @@ const read = (label: string, pick: (sheet: Sheet) => string[]) => {
     for (const v of values) marginal.set(v, (marginal.get(v) ?? 0) + 1);
     distinct.push(new Set(values).size);
     moved += values.filter((v, i) => v !== sheet.before[i]).length;
-    /* THE PASS'S OWN PURPOSE: a neighbouring pair sharing a beard bucket. */
+    /*
+      THE PASS'S OWN PURPOSE: neighbouring pairs sharing a beard bucket.
+
+      ⚠ COUNTED, NOT FLAGGED — and the first version flagged. It asked whether a
+      sheet held AT LEAST ONE such pair, which with eight candidates over TWO
+      buckets is ~100% for every strategy including the null one. A measure that
+      returns 99.9% on all five arms discriminates nothing, and the bar written
+      on it was theatre.
+    */
     for (let i = 1; i < values.length; i += 1) {
-      if (beardBucket(values[i] as never) === beardBucket(values[i - 1] as never)) { adjacentTwins += 1; break; }
+      if (beardBucket(values[i] as never) === beardBucket(values[i - 1] as never)) adjacentTwins += 1;
     }
   }
   const total = SHEETS * PER_SHEET;
   const meanDistinct = distinct.reduce((a, b) => a + b, 0) / distinct.length;
-  const overweight = [...marginal.entries()]
-    .filter(([value, n]) => (n / total) * 100 > ((DECLARED.get(value) ?? 0) / DECLARED_TOTAL) * 100 + 0.5)
-    .map(([value, n]) => `${value} ${(n / total * 100).toFixed(1)}% vs ${((DECLARED.get(value) ?? 0) / DECLARED_TOTAL * 100).toFixed(1)}%`);
+  /*
+    ⚠ TOTAL DISTORTION, NOT "ANY VALUE OVER ITS WEIGHT" — and the first version
+    used the second. Every flip moves mass from one bucket to the other BY
+    DESIGN, so *no value above its declared weight* is satisfiable only by never
+    flipping: it failed TODAY and all three candidates, and passed only the
+    amputation. **A bar that only the null candidate can clear is not a bar.**
+
+    What discriminates is the SIZE of the distortion — the sum of
+    |actual − declared| across the vocabulary — read against TODAY's rather than
+    against zero.
+  */
+  const distortion = [...DECLARED.entries()].reduce((sum, [value, weight]) => {
+    const actual = ((marginal.get(value) ?? 0) / total) * 100;
+    return sum + Math.abs(actual - (weight / DECLARED_TOTAL) * 100);
+  }, 0);
   return {
     label, meanDistinct, movedPct: (moved / total) * 100,
-    twinPct: (adjacentTwins / SHEETS) * 100, overweight,
+    twinsPerSheet: adjacentTwins / SHEETS, distortion,
     top: [...marginal.entries()].sort((a, b) => b[1] - a[1])[0]!,
     total,
   };
@@ -219,30 +260,48 @@ const read = (label: string, pick: (sheet: Sheet) => string[]) => {
 const rows = [
   read("RAW DRAW (no pass)", (s) => s.before),
   read("TODAY", (s) => s.real),
-  read("never flip", (s) => beardPass(s.before, s.seed, "never")),
-  read("UNIFORM", (s) => beardPass(s.before, s.seed, "uniform")),
-  read("EXCLUDE", (s) => beardPass(s.before, s.seed, "exclude")),
-  read("CYCLE", (s) => beardPass(s.before, s.seed, "cycle")),
+  read("never flip", (s) => beardPass(s.before, s.heritages, s.seed, "never")),
+  read("UNIFORM", (s) => beardPass(s.before, s.heritages, s.seed, "uniform")),
+  read("EXCLUDE", (s) => beardPass(s.before, s.heritages, s.seed, "exclude")),
+  read("CYCLE", (s) => beardPass(s.before, s.heritages, s.seed, "cycle")),
 ];
 
 const floor = rows[0]!.meanDistinct;
-const todayTwins = rows[1]!.twinPct;
-console.log(`THE BAR:  distinct/sheet must not fall below the raw draw's ${floor.toFixed(2)}`);
-console.log(`          no value above its declared weight`);
-console.log(`          adjacent same-bucket pairs must not rise above TODAY's ${todayTwins.toFixed(1)}%\n`);
-console.log(`${"".padEnd(20)}${"distinct".padStart(9)}${"moved".padStart(9)}${"twin pair".padStart(11)}   top value        overweight`);
+const today = rows[1]!;
+console.log("THE BAR — ⚠ CORRECTED BY THIS RUN. Two of the three I proposed in the yield");
+console.log("  sweep were degenerate, and the run is what showed it (see the reader's notes):");
+console.log(`  1  distinct/sheet must reach the RAW DRAW's ${floor.toFixed(2)}`);
+console.log(`  2  total marginal distortion must not EXCEED today's ${today.distortion.toFixed(1)} points`);
+console.log(`  3  adjacent same-bucket PAIRS PER SHEET must not exceed today's ${today.twinsPerSheet.toFixed(2)}\n`);
+console.log(`${"".padEnd(20)}${"distinct".padStart(9)}${"moved".padStart(8)}${"twins/sheet".padStart(13)}${"distortion".padStart(12)}   top value`);
 for (const row of rows) {
   const pass = row.label === "RAW DRAW (no pass)" || row.label === "TODAY"
     ? ""
-    : (row.meanDistinct >= floor && row.overweight.length === 0 && row.twinPct <= todayTwins ? "  ✅" : "  ❌");
+    : (row.meanDistinct >= floor && row.distortion <= today.distortion && row.twinsPerSheet <= today.twinsPerSheet
+      ? "  <== PASSES ALL THREE" : "");
   console.log(
-    `${row.label.padEnd(20)}${row.meanDistinct.toFixed(2).padStart(9)}${`${row.movedPct.toFixed(1)}%`.padStart(9)}`
-    + `${`${row.twinPct.toFixed(1)}%`.padStart(11)}   ${`${row.top[0]} ${(row.top[1] / row.total * 100).toFixed(1)}%`.padEnd(17)}`
-    + `${row.overweight.length === 0 ? "none" : row.overweight.join("; ")}${pass}`,
+    `${row.label.padEnd(20)}${row.meanDistinct.toFixed(2).padStart(9)}${`${row.movedPct.toFixed(1)}%`.padStart(8)}`
+    + `${row.twinsPerSheet.toFixed(2).padStart(13)}${row.distortion.toFixed(1).padStart(12)}`
+    + `   ${`${row.top[0]} ${(row.top[1] / row.total * 100).toFixed(1)}%`.padEnd(20)}${pass}`,
   );
 }
-console.log("\n⚠ `never flip` is the NULL CANDIDATE and it is here to fail rule 3. A repair that");
+console.log("\n⚠ `never flip` is the NULL CANDIDATE and rule 3 is the only thing that kills it:");
+console.log("  4.17 adjacent same-bucket pairs against every flipping arm's 3.27. A repair that");
 console.log("  scores well by abandoning the pass's purpose is not a repair.");
+console.log("");
+console.log("⚠ AND RULES 2 AND 3 CANNOT SEPARATE THE THREE CANDIDATES FROM EACH OTHER — read");
+console.log("  the columns: all four flipping arms sit at exactly 3.27 twins and 31.4");
+console.log("  distortion. That is not a coincidence and it should be understood before anyone");
+console.log("  quotes those columns. Every strategy makes the SAME BUCKET decisions and differs");
+console.log("  only in which value it picks INSIDE the target bucket — twins are counted by");
+console.log("  bucket, so they cannot move; and the surplus mass lands on values that are all");
+console.log("  already ABOVE their declared weight, so |actual - declared| sums to the same");
+console.log("  total however that surplus is split.");
+console.log("");
+console.log("  So rules 2 and 3 are GUARDS — they prove no candidate makes anything worse — and");
+console.log("  DISTINCT-PER-SHEET is the only measure that CHOOSES. On it: EXCLUDE at 5.30 is");
+console.log("  the only arm that reaches the raw draw's 5.27; CYCLE 5.14 and UNIFORM 5.04 fall");
+console.log("  short of it, and today is 4.98.");
 console.log("⚠ NOTHING IS BUILT. These are numbers for a shape decision that belongs to the");
 console.log("  reviewer (fable-1668), and any winner still needs the ordinary-population arm.");
 
