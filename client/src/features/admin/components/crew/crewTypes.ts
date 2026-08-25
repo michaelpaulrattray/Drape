@@ -18,3 +18,19 @@ export type CrewNeedsYouCard = CrewBriefingView["needsYou"][number];
 export type CrewPipelineItem = CrewBriefingView["pipeline"][number];
 export type CrewProblem = CrewBriefingView["problems"][number];
 export type CrewJournalEntry = CrewBriefingView["journal"][number];
+
+/**
+ * Whether a reply renders in the JOURNAL rather than under a needs-you card.
+ *
+ * The rule is "does a thread render for its card", not "does the briefing
+ * mention its card": Needs You shows reply threads under OPEN cards only, so a
+ * reply on an answered/done card (still listed under "Recently answered") must
+ * fall through here or it renders NOWHERE — the vanishing the design forbids,
+ * caught live by the PR #72 gate review. Pure, and tested directly.
+ */
+export function replyFallsToJournal(
+  cardId: string | null,
+  cards: readonly Pick<CrewNeedsYouCard, "id" | "state">[],
+): boolean {
+  return cardId === null || !cards.some((card) => card.id === cardId && card.state === "open");
+}

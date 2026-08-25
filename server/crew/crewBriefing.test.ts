@@ -4,9 +4,12 @@
  * arms 1 and 6).
  *
  * The real `crew-briefing.json` is parsed against the real schema on every
- * commit — that, plus esbuild refusing broken JSON at build time, is why a
- * malformed edition cannot reach production; the runtime degraded state stands
- * BEHIND those two, not instead of them. So the arms here are: the real file
+ * commit — that, plus esbuild parsing the STATIC IMPORT at build time, is why
+ * a malformed edition cannot reach production; the runtime degraded state
+ * stands BEHIND those two, not instead of them. (The import being static is
+ * itself load-bearing and has its own arm below: a runtime `readFileSync`
+ * resolved from `import.meta.url` points at `dist/` in production, where the
+ * JSON is never emitted — the PR #72 review's finding 1.) So the arms here are: the real file
  * parses, the schema can refuse (a green parser that cannot fail proves
  * nothing — working law 2), the degraded state carries the honest problem
  * entry, and the acknowledgement function is exactly the deployed edition's
@@ -70,6 +73,27 @@ describe("the briefing file", () => {
     expect(() => crewBriefingSchema.parse(atCap)).not.toThrow();
     const overCap = { ...valid, journal: Array.from({ length: CREW_JOURNAL_CAP + 1 }, () => entry) };
     expect(() => crewBriefingSchema.parse(overCap)).toThrow();
+  });
+
+  it("⚠ the briefing travels INSIDE the bundle — a static import, never a runtime path", () => {
+    /* Production runs the esbuild bundle (dist/index.js). A runtime file read
+       resolved from import.meta.url names dist/crew-briefing.json — a file the
+       build never emits — so every production getState would serve the
+       degraded state forever, while `pnpm dev` (unbundled) works perfectly.
+       The static import inlines the JSON into the bundle and makes esbuild
+       validate it at build time. This arm pins that shape at the source. */
+    const moduleSource = readFileSync(path.join(__dirname, "crewBriefing.ts"), "utf8");
+    expect(moduleSource).toContain('from "./crew-briefing.json"');
+    /* The code half only — the header KEEPS the story of the broken shape, so
+       comments are stripped before the absences are asserted. */
+    const code = moduleSource.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(code, "the module survived the stripper").toContain("export function readCrewBriefing");
+    for (const forbidden of ["readFileSync", "import.meta.url", "fileURLToPath"]) {
+      expect(
+        code,
+        `${forbidden} in crewBriefing.ts — a runtime file read resolves against dist/ in production, where the JSON is never emitted`,
+      ).not.toContain(forbidden);
+    }
   });
 
   it("readCrewBriefing returns the real file's edition (and caches)", () => {

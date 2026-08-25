@@ -25,9 +25,21 @@
  *     which is the honest outcome; he does not see a 502.
  *
  * In practice a malformed file cannot reach production anyway — `crewBriefing.test.ts`
- * parses the real file on every commit, and esbuild refuses broken JSON at
- * build time, both of them before any deploy. The degraded path is what stands
- * behind those two, not instead of them.
+ * parses the real file on every commit, and the static import below makes
+ * esbuild PARSE AND INLINE the JSON at build time, so a broken file fails the
+ * build before any deploy. The degraded path is what stands behind those two,
+ * not instead of them.
+ *
+ * ⚠ **THE JSON IS A STATIC IMPORT AND MUST STAY ONE.** The first version read
+ * it with `readFileSync` at a path resolved from `import.meta.url` — which in
+ * production is the esbuild bundle (`dist/index.js`), so the path named
+ * `dist/crew-briefing.json`, a file the build never emits, and every
+ * production `crew.getState` would have served the degraded state forever.
+ * Found by the PR #72 gate review, at the build scripts rather than at the
+ * running dev server, because `pnpm dev` runs the UNBUNDLED tree where the
+ * broken path happens to work. The static import dissolves the path entirely:
+ * the briefing travels inside the bundle. `crewBriefing.test.ts` pins this
+ * shape at the source.
  *
  * # HOW A SHIFT WRITES IT
  *
@@ -45,10 +57,9 @@
  * theatre and no read receipt the server writes for itself: a reply is seen
  * when the team's own next push proves it was read.
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { z } from "zod";
+
+import briefingJson from "./crew-briefing.json";
 
 /** ISO-8601 with an offset, which is what every writer here emits. */
 const isoDateTime = z.string().min(1).max(64);
@@ -150,12 +161,6 @@ export const crewBriefingSchema = z.object({
 
 export type CrewBriefing = z.infer<typeof crewBriefingSchema>;
 
-/** Where the file lives, resolved from this module so the cwd never matters. */
-const BRIEFING_PATH = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "crew-briefing.json",
-);
-
 /**
  * The state the page gets when the briefing cannot be read.
  *
@@ -196,22 +201,25 @@ export function degradedCrewBriefing(): CrewBriefing {
 let cached: CrewBriefing | null = null;
 
 /**
- * The briefing, parsed once and kept.
+ * The briefing, validated once and kept.
  *
- * ⚠ **Never called at import** — see the header. The cache is a module-level
- * variable rather than anything cleverer because the file only changes when a
- * deploy replaces the process.
+ * ⚠ **The zod parse is never run at import** — see the header. The IMPORT of
+ * the JSON is compile-time and cannot throw at runtime; what could throw is
+ * the schema refusing it, and that stays inside this function so a refusal
+ * degrades instead of crash-looping a deploy. The cache is a module-level
+ * variable rather than anything cleverer because the content only changes
+ * when a deploy replaces the process.
  */
 export function readCrewBriefing(): CrewBriefing {
   if (cached) return cached;
   try {
-    const parsed = crewBriefingSchema.parse(JSON.parse(readFileSync(BRIEFING_PATH, "utf8")));
+    const parsed = crewBriefingSchema.parse(briefingJson);
     cached = parsed;
     return parsed;
   } catch (cause) {
     /* Logged rather than thrown: the page degrades and says so. */
     console.error(
-      `[crew] the briefing at ${BRIEFING_PATH} could not be read — serving the degraded state`,
+      "[crew] the deployed briefing did not parse — serving the degraded state",
       cause,
     );
     return degradedCrewBriefing();

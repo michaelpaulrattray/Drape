@@ -13,6 +13,7 @@
 import { cn } from "@/lib/utils";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { shortDate } from "./CrewProgramBanner";
+import { replyFallsToJournal } from "./crewTypes";
 import type { CrewJournalEntry, CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
 
 type Item =
@@ -34,13 +35,18 @@ export function CrewJournal({
   sending: boolean;
   onSend: (input: { cardId: string | null; body: string }) => Promise<unknown>;
 }) {
-  const liveCardIds = new Set(cards.map((card) => card.id));
-
   /*
-    Which of his replies belong HERE: the cardless ones, plus any whose card the
-    current briefing no longer holds. The second half is the design's promise —
-    the briefing rotates and a reply must never vanish with the card it answered.
+    Which of his replies belong HERE: the cardless ones, plus any whose card no
+    longer renders a thread — which means every card that is not OPEN, because
+    Needs You shows threads under open cards only and collapses the rest to a
+    title line. The first version keyed this on "card still listed", and a
+    reply on an ANSWERED card — listed in "Recently answered", thread nowhere —
+    rendered on no part of the page at all: the exact vanishing the design
+    forbids, caught by the PR #72 gate review (finding 2). The rule is now
+    "does a thread render for it", not "does the briefing mention it".
   */
+  const cardTitles = new Map(cards.map((card) => [card.id, card.title]));
+
   const items: Item[] = [
     ...journal.map((entry) => ({
       kind: "shift" as const,
@@ -48,7 +54,7 @@ export function CrewJournal({
       entry,
     })),
     ...replies
-      .filter((reply) => reply.cardId === null || !liveCardIds.has(reply.cardId))
+      .filter((reply) => replyFallsToJournal(reply.cardId, cards))
       .map((reply) => ({
         kind: "founder" as const,
         at: new Date(String(reply.createdAt)).getTime(),
@@ -95,7 +101,9 @@ export function CrewJournal({
                 </span>
                 {item.kind === "founder" && item.orphanedFrom !== null && (
                   <span className="text-[11px] text-[#BBB]">
-                    on “{item.orphanedFrom}”, a card since closed
+                    {cardTitles.has(item.orphanedFrom)
+                      ? <>on “{cardTitles.get(item.orphanedFrom)}”</>
+                      : <>on “{item.orphanedFrom}”, a card since closed</>}
                   </span>
                 )}
                 {item.kind === "founder" && (

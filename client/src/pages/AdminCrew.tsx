@@ -119,7 +119,12 @@ export default function AdminCrew() {
           </div>
         )}
 
-        {stateQuery.isError && (
+        {/* NOT_FOUND is the flag saying no — the deliberate dark state. Any
+            OTHER failure is a fault this diff deliberately surfaces (a missing
+            database, a malformed scope value), and telling the admin the page
+            "isn't switched on" would be a configuration fault wearing the
+            wrong sentence (PR #72 review, finding 3). */}
+        {stateQuery.isError && stateQuery.error.data?.code === "NOT_FOUND" && (
           <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
             <h2 className="text-sm font-semibold text-[#0A0A0A]">This page isn’t switched on yet</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#666]">
@@ -127,6 +132,20 @@ export default function AdminCrew() {
               <span className="font-medium text-[#0A0A0A]">CREW_TAB_SCOPE</span> is set — and the{" "}
               <span className="font-medium text-[#0A0A0A]">crew_replies</span> table has to be
               created first, by running the ceremony against production.
+            </p>
+          </div>
+        )}
+
+        {stateQuery.isError && stateQuery.error.data?.code !== "NOT_FOUND" && (
+          <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
+            <h2 className="text-sm font-semibold text-[#0A0A0A]">Something is wrong with this page</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[#666]">
+              The tab is switched on, but the briefing could not be loaded. That usually means a
+              configuration fault on the server rather than anything you did — the crew will see the
+              same error and fix it. Nothing you have written is lost.
+            </p>
+            <p className="mt-2 text-[11px] text-[#999]">
+              {readableFailure(stateQuery.error, "The server refused the request.")}
             </p>
           </div>
         )}
