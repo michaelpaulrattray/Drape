@@ -160,6 +160,40 @@ const journalEntrySchema = z.object({
 }).strict();
 
 /**
+ * One frame inside an eye item (#75 — his verbatim ask: *"when these things
+ * run and require my eyes is there a gallery built into this page so i can
+ * genuinely view the tests with an explaination about what im looking at?"*).
+ *
+ * `key` is pinned to the `crew-eye/` prefix with a UUID basename because the
+ * deployed briefing IS the serving route's allowlist: `/api/crew/eye-frame`
+ * refuses any key no edition names, so a briefing typo cannot turn the route
+ * into an open proxy over the bucket. The caption carries what he is LOOKING
+ * AT; the item's `question` carries what he is JUDGING — his card law, product
+ * meaning before mechanics.
+ */
+const eyeFrameSchema = z.object({
+  key: z.string().regex(
+    /^crew-eye\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpg|jpeg|webp)$/,
+    "an eye frame key is crew-eye/<uuid>.<png|jpg|jpeg|webp>",
+  ),
+  caption: z.string().min(1).max(500),
+  /** Which arm produced it (e.g. "A", "control") — null for a lone frame. */
+  arm: z.string().max(40).nullable(),
+}).strict();
+
+const eyeItemSchema = z.object({
+  /** Stable slug; his verdict replies point at it, exactly like a card id. */
+  id: z.string().max(64),
+  title: z.string(),
+  /** What he is judging — the question, never just the picture. */
+  question: z.string(),
+  state: z.enum(["open", "answered", "done"]),
+  filedAt: isoDateTime,
+  issueNumber: z.number().int().positive().nullable(),
+  frames: z.array(eyeFrameSchema).min(1).max(24),
+}).strict();
+
+/**
  * `.strict()` at every level (invariant 4's spirit on a file rather than a
  * wire): a key nobody declared is a shift's typo, and a typo that parses is a
  * fact the page silently does not show.
@@ -177,6 +211,8 @@ export const crewBriefingSchema = z.object({
     chips: z.array(chipSchema).max(6),
   }).strict(),
   needsYou: z.array(needsYouSchema),
+  /** Courts and measurements waiting on his EYE — frames with captions (#75). */
+  eyeItems: z.array(eyeItemSchema),
   pipeline: z.array(pipelineItemSchema),
   problems: z.array(problemSchema),
   /** Shift entries only — his notes arrive as replies. Capped; git holds the rest. */
@@ -207,6 +243,7 @@ export function degradedCrewBriefing(): CrewBriefing {
       chips: [],
     },
     needsYou: [],
+    eyeItems: [],
     pipeline: [],
     problems: [{
       id: "briefing-unreadable",
@@ -269,4 +306,15 @@ export function replyIsAcknowledged(
   replyId: number,
 ): boolean {
   return briefing.acknowledgedReplyIds.includes(replyId);
+}
+
+/**
+ * Every frame key the deployed briefing names — THE serving allowlist.
+ *
+ * `/api/crew/eye-frame` answers 404 for any key outside this set, whatever
+ * exists in the bucket. Recomputed per call over the cached briefing (a Set
+ * built from a few dozen strings), so there is no second cache to invalidate.
+ */
+export function eyeFrameKeys(briefing: Pick<CrewBriefing, "eyeItems">): ReadonlySet<string> {
+  return new Set(briefing.eyeItems.flatMap((item) => item.frames.map((frame) => frame.key)));
 }

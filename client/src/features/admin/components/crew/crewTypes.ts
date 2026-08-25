@@ -15,9 +15,18 @@ type CrewState = inferRouterOutputs<AppRouter>["crew"]["getState"];
 export type CrewBriefingView = CrewState["briefing"];
 export type CrewReplyView = CrewState["replies"][number];
 export type CrewNeedsYouCard = CrewBriefingView["needsYou"][number];
+export type CrewEyeItem = CrewBriefingView["eyeItems"][number];
 export type CrewPipelineItem = CrewBriefingView["pipeline"][number];
 export type CrewProblem = CrewBriefingView["problems"][number];
 export type CrewJournalEntry = CrewBriefingView["journal"][number];
+
+/**
+ * Anything a reply thread can hang under — a needs-you card or an eye item
+ * (#75). Both carry the same id/state/title triple, and `replyFallsToJournal`
+ * asks only for id + state, so the journal's fall-through rule covers both
+ * populations with one list.
+ */
+export type CrewThreadHost = Pick<CrewNeedsYouCard, "id" | "state" | "title">;
 
 /**
  * Whether a reply renders in the JOURNAL rather than under a needs-you card.

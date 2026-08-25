@@ -24,6 +24,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 import { AdminHeader } from "@/features/admin/AdminHeader";
+import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery";
 import { CrewJournal } from "@/features/admin/components/crew/CrewJournal";
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
@@ -162,6 +163,14 @@ export default function AdminCrew() {
               onSend={send}
             />
 
+            <CrewEyeGallery
+              items={stateQuery.data.briefing.eyeItems}
+              replies={stateQuery.data.replies}
+              acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
+              sending={replyMutation.isPending}
+              onSend={send}
+            />
+
             <CrewPipeline items={stateQuery.data.briefing.pipeline} />
 
             <CrewProblems problems={stateQuery.data.briefing.problems} />
@@ -169,7 +178,10 @@ export default function AdminCrew() {
             <CrewJournal
               journal={stateQuery.data.briefing.journal}
               replies={stateQuery.data.replies}
-              cards={stateQuery.data.briefing.needsYou}
+              /* Threads render under open needs-you cards AND open eye items
+                 (#75), so the journal's fall-through covers both — a verdict
+                 on a closed eye item must land here, never nowhere. */
+              cards={[...stateQuery.data.briefing.needsYou, ...stateQuery.data.briefing.eyeItems]}
               acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}
               onSend={send}
