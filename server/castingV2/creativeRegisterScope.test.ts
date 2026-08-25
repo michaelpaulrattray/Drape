@@ -42,7 +42,9 @@ import {
   CANDIDATE_CARD_LABEL,
   CREATIVE_REGISTER_AUTHORITY,
   composeCreativeCandidatePrompt,
+  INVITATION_MAX,
   parseVarianceCard,
+  varianceCardSystemPrompt,
 } from "./creativeRegister";
 
 /* ------------------------------------------------------------ the ladder */
@@ -231,9 +233,29 @@ describe("the card is refused whole, never trimmed", () => {
     expect(parseVarianceCard(JSON.stringify({ invitations: [...eight, eight[0]] }), 8)).toBeNull();
   });
 
+  it("a long-but-compliant line is a card (#99): 35 words of the register's own vocabulary, over the old 240-character bound", () => {
+    /* 35 words, each a word this register actually uses; the gate review of
+       PR #94 found the prompt said "12-35 words" while the parser counted 240
+       characters, so this exact line used to lose the whole card. The arm
+       asserts the line is over the old bound so it cannot pass by being short. */
+    const longWords = "augmentation oxidised collarbone mechanical hardware continuing beneath jawline seams scuffed";
+    const thirtyFive = Array.from({ length: 35 }, (_, i) => longWords.split(" ")[i % 9]!).join(" ");
+    expect(thirtyFive.split(" ")).toHaveLength(35);
+    expect(thirtyFive.length).toBeGreaterThan(240);
+    expect(thirtyFive.length).toBeLessThanOrEqual(INVITATION_MAX);
+    expect(parseVarianceCard(JSON.stringify({ invitations: [...eight.slice(0, 7), thirtyFive] }), 8)).toEqual([...eight.slice(0, 7), thirtyFive]);
+    expect(parseVarianceCard(JSON.stringify({ invitations: [...eight.slice(0, 7), "x".repeat(INVITATION_MAX + 1)] }), 8)).toBeNull();
+  });
+
+  it("the prompt states the bound in the unit the parser enforces (#99)", () => {
+    const prompt = varianceCardSystemPrompt(8);
+    expect(prompt).toContain(`${INVITATION_MAX} characters`);
+    expect(prompt).not.toMatch(/\d+-\d+ words(?![^.]*characters)/);
+  });
+
   it("a duplicate, an essay, a stub or a non-string refuses the whole card", () => {
     expect(parseVarianceCard(JSON.stringify({ invitations: [...eight.slice(0, 7), eight[0]!] }), 8)).toBeNull();
-    expect(parseVarianceCard(JSON.stringify({ invitations: [...eight.slice(0, 7), "x".repeat(300)] }), 8)).toBeNull();
+    expect(parseVarianceCard(JSON.stringify({ invitations: [...eight.slice(0, 7), "x".repeat(INVITATION_MAX + 1)] }), 8)).toBeNull(); /* was a magic 300 — pinned to the bound so raising it cannot silently pass an essay */
     expect(parseVarianceCard(JSON.stringify({ invitations: [...eight.slice(0, 7), "older."] }), 8)).toBeNull();
     expect(parseVarianceCard(JSON.stringify({ invitations: [...eight.slice(0, 7), 42] }), 8)).toBeNull();
   });
