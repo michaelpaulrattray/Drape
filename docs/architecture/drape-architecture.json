@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "29b814fc7cff6614"
+    "sourceFingerprint": "7db315b612c2078f"
   },
   "domains": [
     {
@@ -9910,6 +9910,10 @@
     }
   ],
   "tests": [
+    {
+      "id": "test:client/src/features/admin/components/crew/crewTypes.test.ts",
+      "path": "client/src/features/admin/components/crew/crewTypes.test.ts"
+    },
     {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
       "path": "client/src/features/casting/castingPrices.test.ts"
