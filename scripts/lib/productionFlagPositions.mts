@@ -154,12 +154,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why: "the segment store (migration 0025, ceremony run)",
   },
   CASTING_SIDE_PHRASING_SCOPE: {
-    position: "users:1",
-    why: "per-side positional phrasing on the repaint lane",
+    position: "all",
+    why:
+      "founder ruling 2026-08-25 on the Desk (register card #2): measured "
+      + "p≈0.09, never once worse, free per render; parent repaint is all",
   },
   CASTING_REFINE_DISPATCH_SCOPE: {
-    position: "users:1",
-    why: "Landing C — the paid half of a refine stops holding the request",
+    position: "all",
+    why:
+      "founder ruling 2026-08-25 on the Desk (register card #3): fixes the "
+      + "1.7% lost-answer defect at the ~305s gateway wall; parent V2 is all",
   },
   CASTING_DIAGNOSTIC_CAPTURE_SCOPE: {
     position: "users:1",
