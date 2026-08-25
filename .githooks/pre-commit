@@ -1,0 +1,84 @@
+#!/bin/sh
+#
+# TWO REPEATS THE RETRO FOUND, TURNED INTO A GATE (patrol #1, docs/RETRO_LOG.md
+# R3 and R4; cards #102 and #103). Each arm refuses ONE shape of commit that
+# has happened more than once with the rule already written down. A sentence
+# did not hold; a sentence will not hold.
+#
+# ARM 1 — R3, the shared-tree cross-commit. A shift branch (`team/*`) belongs
+#   in its own worktree by the standing orders: several sessions share the
+#   MAIN working tree, and a commit made there on a shift branch has landed
+#   another seat's work on it more than once. So: a commit in the main tree
+#   while HEAD is a `team/*` branch is refused. Everything else — `main`,
+#   `census/*`, detached HEAD, ANY branch inside a linked worktree — is
+#   untouched, so the founder's interactive sessions never meet it.
+#
+# ARM 2 — R4, the control byte. A non-raw Python heredoc turns `\b` into a
+#   BACKSPACE (0x08) inside the file it writes; the file looks fine and parses
+#   wrong, and once (`.gitleaks.toml`) the consequence was a scanner that
+#   loaded nothing and reported all green. So: a staged TEXT file holding a
+#   byte in 0x00-0x08, 0x0B, 0x0C or 0x0E-0x1F (tab, LF and CR excluded) is
+#   refused, naming the file, the byte and where. Files git itself treats as
+#   binary (`-text` in .gitattributes, or its own heuristic) are skipped by
+#   construction — git's `--numstat` prints `-` for those, and that is the
+#   reading used here rather than a second list of extensions.
+#
+# THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify. Driven by
+# server/preCommitGate.test.ts against real temporary repositories.
+#
+# Installed by:  git config core.hooksPath .githooks
+
+# ---------------------------------------------------------------- ARM 1 (R3)
+branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
+case "$branch" in
+  team/*)
+    toplevel=$(git rev-parse --show-toplevel 2>/dev/null)
+    # The first `worktree` line of the porcelain listing is always the main
+    # working tree; every linked worktree follows it.
+    main_tree=$(git worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')
+    if [ -n "$toplevel" ] && [ "$toplevel" = "$main_tree" ]; then
+      echo "" >&2
+      echo "REFUSED — '$branch' is a shift branch and this is the MAIN working tree." >&2
+      echo "" >&2
+      echo "A team/* branch is committed from its own worktree, never from the shared" >&2
+      echo "tree that other sessions are also editing:" >&2
+      echo "" >&2
+      echo "  git worktree add ../drape-shift-<slug> -b team/<slug>" >&2
+      echo "" >&2
+      echo "(docs/RETRO_LOG.md R3 — a terminal commit has landed on a shift branch" >&2
+      echo "this way more than once. Never --no-verify.)" >&2
+      echo "" >&2
+      exit 1
+    fi
+    ;;
+esac
+
+# ---------------------------------------------------------------- ARM 2 (R4)
+# Staged paths that will exist after the commit (added, copied, modified,
+# renamed) — a deletion has no blob to scan.
+git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | while IFS= read -r path; do
+  [ -n "$path" ] || continue
+  # `-` in the first numstat column is git's own verdict that the blob is
+  # binary, honouring .gitattributes and its content heuristic alike.
+  added=$(git diff --cached --numstat -- "$path" 2>/dev/null | awk 'NR==1 {print $1}')
+  [ "$added" = "-" ] && continue
+  hit=$(git show ":$path" 2>/dev/null | LC_ALL=C grep -a -o -b -m 1 -P '[\x00-\x08\x0B\x0C\x0E-\x1F]' 2>/dev/null | head -n 1)
+  if [ -n "$hit" ]; then
+    offset=${hit%%:*}
+    byte=$(printf '%s' "${hit#*:}" | od -An -tx1 | tr -d ' \n')
+    echo "" >&2
+    echo "REFUSED — $path holds a control byte 0x$byte at offset $offset." >&2
+    echo "" >&2
+    echo "A file that looks fine and parses wrong: this is the shape a non-raw Python" >&2
+    echo "heredoc leaves behind when it turns \\b into a backspace (0x08). Write the" >&2
+    echo "file with a raw string (r'''...''') or chr(), or with a tool that does not" >&2
+    echo "interpret escapes, then re-stage it." >&2
+    echo "" >&2
+    echo "(docs/RETRO_LOG.md R4 — bit two shifts, one of them while citing the" >&2
+    echo "memory. Never --no-verify.)" >&2
+    echo "" >&2
+    exit 1
+  fi
+done || exit 1
+
+exit 0
