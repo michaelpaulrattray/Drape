@@ -91,7 +91,14 @@ const imageCache = new Map<
 
 router.get("/api/hero/:asset", async (req: Request, res: Response) => {
   const assetKey = req.params.asset;
-  const s3Key = HERO_ASSETS[assetKey];
+  /* `hasOwn`, not a bare index: `HERO_ASSETS` is a plain object, so
+     `HERO_ASSETS["constructor"]` is Object's constructor — truthy — and the
+     `!s3Key` door below would wave a request for `/api/hero/constructor`
+     through to storage with a function for a key. Found by the Warden's
+     first semgrep reading (issue #33), swept across the other two
+     request-keyed lookups (`crewEyeFrames.ts` regex + Set,
+     `evidenceDelivery.ts` explicit equality) — both already closed. */
+  const s3Key = Object.hasOwn(HERO_ASSETS, assetKey) ? HERO_ASSETS[assetKey] : undefined;
 
   if (!s3Key) {
     res.status(404).json({ error: "Unknown asset" });
@@ -107,9 +114,9 @@ router.get("/api/hero/:asset", async (req: Request, res: Response) => {
     const acceptsGzip = req.headers["accept-encoding"]?.includes("gzip");
     if (acceptsGzip) {
       res.setHeader("Content-Encoding", "gzip");
-      res.send(cached.gzipped);
+      res.send(cached.gzipped);  // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write -- image bytes from our own bucket under an allowlisted key; nothing user-supplied is in the body
     } else {
-      res.send(cached.buffer);
+      res.send(cached.buffer);  // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write -- image bytes from our own bucket under an allowlisted key; nothing user-supplied is in the body
     }
     return;
   }
@@ -133,9 +140,9 @@ router.get("/api/hero/:asset", async (req: Request, res: Response) => {
     const acceptsGzip = req.headers["accept-encoding"]?.includes("gzip");
     if (acceptsGzip) {
       res.setHeader("Content-Encoding", "gzip");
-      res.send(gzipped);
+      res.send(gzipped);  // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write -- image bytes from our own bucket under an allowlisted key; nothing user-supplied is in the body
     } else {
-      res.send(buffer);
+      res.send(buffer);  // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write -- image bytes from our own bucket under an allowlisted key; nothing user-supplied is in the body
     }
   } catch (err: any) {
     log.error({ err: err.message }, `[Hero Proxy] Error fetching ${assetKey}:`);
