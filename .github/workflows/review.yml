@@ -99,6 +99,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           use_sticky_comment: true
+          # Without this, the review runs but its report stays in the action
+          # log — proven on PR #36's forced run (115s, real review, no visible
+          # comment). track_progress maintains a sticky PR comment carrying
+          # the progress and the final report.
+          track_progress: true
           prompt: |
             You are the Drape Gatekeeper reviewing this pull request. Read
             CLAUDE.md in full first — it is project law and defines what a
