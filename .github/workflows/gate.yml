@@ -47,13 +47,12 @@ jobs:
       - name: Architecture Atlas freshness
         run: pnpm architecture:check
 
-      # DECLARED SCAFFOLD (issue #37): this checker's staleness fingerprint is
-      # platform-dependent — the same commit reads OK on Windows and stale on
-      # Linux (the architecture atlas's autocrlf class, unswept sibling). Until
-      # the generator is platform-neutral, this step reports but cannot block;
-      # the deploy rite and pnpm test still enforce it on Windows.
-      - name: Capability Atlas (static — non-blocking, issue #37)
-        continue-on-error: true
+      # Blocking again as of issue #37's fix: the walk in
+      # scripts/lib/capabilityAtlas.mts sorts on the separator-neutral path, so
+      # one commit yields one verdict on Windows and Linux alike (the Windows
+      # arm is the walk-order test in server/capabilityAtlas.test.ts; this
+      # step is the Linux arm).
+      - name: Capability Atlas (static)
         run: pnpm capability:check
 
       - name: Unit tests
