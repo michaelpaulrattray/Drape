@@ -13,16 +13,14 @@
  * honesty rule. The section renders NOTHING when no items exist — an empty
  * gallery frame would be furniture.
  */
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { CrewEyeViewer } from "./CrewEyeViewer";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { shortDate } from "./CrewProgramBanner";
+import { eyeFrameSrc } from "./eyeFrameSrc";
 import type { CrewEyeItem, CrewReplyView } from "./crewTypes";
-
-/** The only address frames load from — the briefing key's basename. */
-export function eyeFrameSrc(key: string): string {
-  return `/api/crew/eye-frame/${key.split("/").pop() ?? ""}`;
-}
 
 export function CrewEyeGallery({
   items,
@@ -37,10 +35,16 @@ export function CrewEyeGallery({
   sending: boolean;
   onSend: (input: { cardId: string | null; body: string }) => Promise<unknown>;
 }) {
+  /* Which frame is under his eye: (item id, frame index), or null. Keyed by
+     item so the viewer's arrows page WITHIN one judgement — a court's arms
+     are compared against each other, never against another item's. */
+  const [viewing, setViewing] = useState<{ itemId: string; index: number } | null>(null);
+
   if (items.length === 0) return null;
 
   const open = items.filter((item) => item.state === "open");
   const closed = items.filter((item) => item.state !== "open");
+  const viewedItem = viewing ? items.find((item) => item.id === viewing.itemId) : undefined;
 
   return (
     <section>
@@ -63,16 +67,23 @@ export function CrewEyeGallery({
             <p className="mt-3 text-sm leading-relaxed text-[#0A0A0A]">{item.question}</p>
 
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {item.frames.map((frame) => (
+              {item.frames.map((frame, frameIndex) => (
                 <figure key={frame.key}>
-                  <div className="rounded-lg overflow-hidden border border-[#E5E5E5] bg-[#F6F6F6]">
+                  {/* The thumbnail is the overview; the click opens the
+                      judging surface (#75's viewer ask, his verbatim). */}
+                  <button
+                    type="button"
+                    onClick={() => setViewing({ itemId: item.id, index: frameIndex })}
+                    aria-label={`View full size: ${frame.caption}`}
+                    className="block w-full rounded-lg overflow-hidden border border-[#E5E5E5] bg-[#F6F6F6] cursor-zoom-in"
+                  >
                     <img
                       src={eyeFrameSrc(frame.key)}
                       alt={frame.caption}
                       loading="lazy"
                       className="w-full h-auto block"
                     />
-                  </div>
+                  </button>
                   <figcaption className="mt-1.5 text-[12px] leading-snug text-[#666]">
                     {frame.arm && (
                       <span className="font-medium text-[#0A0A0A] mr-1.5">{frame.arm}</span>
@@ -98,6 +109,15 @@ export function CrewEyeGallery({
           </article>
         ))}
       </div>
+
+      {viewing && viewedItem && (
+        <CrewEyeViewer
+          frames={viewedItem.frames}
+          index={Math.min(viewing.index, viewedItem.frames.length - 1)}
+          onNavigate={(index) => setViewing({ itemId: viewedItem.id, index })}
+          onClose={() => setViewing(null)}
+        />
+      )}
 
       {closed.length > 0 && (
         <div className={cn("bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6", open.length > 0 && "mt-4")}>
