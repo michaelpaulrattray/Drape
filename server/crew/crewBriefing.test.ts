@@ -66,6 +66,34 @@ describe("the briefing file", () => {
     ).toThrow();
   });
 
+  it("⚠ a duplicated identity fails the PARSE, never degrades at render (PR #78 review, law 7)", () => {
+    /* React keys on these ids and replies point at them — an edition carrying
+       a duplicate would render one row where two claims were written. The
+       refusal must land on the shift's own commit (this file parses the real
+       briefing), so each population's uniqueness is driven with a real
+       duplicate. */
+    const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
+
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        program: { ...valid.program, ladder: [...valid.program.ladder, valid.program.ladder[0]] },
+      }),
+    ).toThrow(/ladder\[\]\.key/);
+
+    expect(() =>
+      crewBriefingSchema.parse({ ...valid, needsYou: [...valid.needsYou, valid.needsYou[0]] }),
+    ).toThrow(/needsYou\[\]\.id/);
+
+    expect(() =>
+      crewBriefingSchema.parse({ ...valid, pipeline: [...valid.pipeline, valid.pipeline[0]] }),
+    ).toThrow(/pipeline\[\]\.id/);
+
+    expect(() =>
+      crewBriefingSchema.parse({ ...valid, problems: [...valid.problems, valid.problems[0]] }),
+    ).toThrow(/problems\[\]\.id/);
+  });
+
   it("the journal cap holds at the schema", () => {
     const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
     const entry = { at: "2026-08-25T00:00:00+10:00", shift: "x", text: "y" };

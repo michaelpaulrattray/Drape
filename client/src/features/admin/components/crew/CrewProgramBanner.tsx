@@ -32,7 +32,10 @@ const RUNG_LABEL: Record<string, string> = {
 
 const CHIP_TONE: Record<string, string> = {
   good: "border-[#0A0A0A] text-[#0A0A0A]",
-  warn: "border-[#B45309] text-[#B45309]",
+  /* The one non-monochrome value, deliberately: the house's sanctioned error
+     red (tokens.css --errorInk), not an ad-hoc amber — a warn chip is a
+     problem wearing a smaller badge (PR #78 review note). */
+  warn: "border-[#C0473A] text-[#C0473A]",
   neutral: "border-[#D5D5D5] text-[#666]",
 };
 
