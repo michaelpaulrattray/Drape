@@ -1,6 +1,20 @@
-# The pre-push gate is executed by `sh`, and `core.autocrlf=true` on this
-# machine would hand a fresh clone a script with CRLF line endings. A shell
-# refusing its own shebang is a guard that is silently absent — the shape
-# invariant 7 exists for — so the one file whose LINE ENDINGS are load-bearing
-# says so here rather than depending on whoever clones it next.
+# EVERY TEXT FILE CHECKS OUT AS LF, ON EVERY MACHINE (#71).
+#
+# The index has always been LF (`git ls-files --eol` → `i/lf` on all 2,531
+# text files). What varied was the WORKING COPY: `core.autocrlf=true` on a
+# Windows machine smudges a fresh checkout to CRLF, and seven suites that read
+# source files and assert multi-line substrings containing a bare `\n` went red
+# on every fresh `git worktree` while staying green on the long-lived main tree
+# (never re-smudged) and on the ubuntu gate (autocrlf off). The class had
+# already been paid for once by the Atlas's freshness fingerprint. Setting the
+# ending here instead of in each reader kills it for every tool at once.
+#
+# `text=auto` keeps git's own binary detection (the 256 `-text` files stay
+# bytes); `eol=lf` fixes the checkout ending for everything it calls text.
+* text=auto eol=lf
+
+# The pre-push gate is executed by `sh`, and a shell refusing its own shebang
+# is a guard that is silently absent — the shape invariant 7 exists for. The
+# rule above already covers it; this line stays so the one file whose endings
+# are load-bearing says so by name.
 .githooks/** text eol=lf
