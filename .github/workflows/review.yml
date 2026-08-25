@@ -28,17 +28,25 @@ concurrency:
   group: review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# Least privilege at the workflow level (zizmor excessive-permissions, #35);
+# the review job declares what claude-code-action needs, with reasons.
+permissions:
+  contents: read
+
 jobs:
   triage:
+    name: triage
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       review: ${{ steps.decide.outputs.review }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          # Public repo; the fetch below needs no token and nothing pushes.
+          persist-credentials: false
       - name: Decide whether this diff earns a Fable review
         id: decide
         env:
@@ -81,21 +89,26 @@ jobs:
           echo "review=yes" >> "$GITHUB_OUTPUT"
 
   review:
+    name: review
     needs: triage
     if: ${{ needs.triage.outputs.review == 'yes' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # What claude-code-action's own README asks for on a pull_request review.
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
+      pull-requests: write # the sticky review comment (track_progress / use_sticky_comment)
+      issues: write # PR comments are issue comments on GitHub's API
+      id-token: write # OIDC, used by the action to exchange its token
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          # The action reads the tree and talks to GitHub through its own
+          # token input; it never pushes from this checkout.
+          persist-credentials: false
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@16b3b310c3d7b5279df73130324d5205aeea8eac # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           use_sticky_comment: true
