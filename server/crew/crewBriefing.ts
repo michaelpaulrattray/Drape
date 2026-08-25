@@ -194,6 +194,27 @@ const eyeItemSchema = z.object({
 }).strict();
 
 /**
+ * Every identity in an array is unique within it (PR #78 review, law 7):
+ * React keys on these ids, replies point at them, and a duplicated id
+ * renders one row where two claims were written — silently, at his screen.
+ * Enforced HERE so a shift's duplicate reddens `crewBriefing.test.ts` (which
+ * parses the real file on every commit) at write time, never degrades at
+ * render time.
+ */
+function uniqueBy<T>(name: string, of: (item: T) => string) {
+  return (items: readonly T[]) => {
+    const seen = new Set<string>();
+    for (const item of items) {
+      const id = of(item);
+      if (seen.has(id)) return false;
+      seen.add(id);
+    }
+    return true;
+  };
+}
+const uniqueMessage = (field: string) => `${field} must be unique within its array`;
+
+/**
  * `.strict()` at every level (invariant 4's spirit on a file rather than a
  * wire): a key nobody declared is a shift's typo, and a typo that parses is a
  * fact the page silently does not show.
@@ -206,15 +227,20 @@ export const crewBriefingSchema = z.object({
     mission: z.string(),
     focus: focusSchema,
     milestone: milestoneSchema.nullable(),
-    ladder: z.array(ladderRungSchema),
+    ladder: z.array(ladderRungSchema)
+      .refine(uniqueBy("rung", (rung) => rung.key), uniqueMessage("ladder[].key")),
     /** At-a-glance state, capped so the strip stays a glance (#74). */
     chips: z.array(chipSchema).max(6),
   }).strict(),
-  needsYou: z.array(needsYouSchema),
+  needsYou: z.array(needsYouSchema)
+    .refine(uniqueBy("card", (card) => card.id), uniqueMessage("needsYou[].id")),
   /** Courts and measurements waiting on his EYE — frames with captions (#75). */
-  eyeItems: z.array(eyeItemSchema),
-  pipeline: z.array(pipelineItemSchema),
-  problems: z.array(problemSchema),
+  eyeItems: z.array(eyeItemSchema)
+    .refine(uniqueBy("eye item", (item) => item.id), uniqueMessage("eyeItems[].id")),
+  pipeline: z.array(pipelineItemSchema)
+    .refine(uniqueBy("item", (item) => item.id), uniqueMessage("pipeline[].id")),
+  problems: z.array(problemSchema)
+    .refine(uniqueBy("problem", (problem) => problem.id), uniqueMessage("problems[].id")),
   /** Shift entries only — his notes arrive as replies. Capped; git holds the rest. */
   journal: z.array(journalEntrySchema).max(CREW_JOURNAL_CAP),
   acknowledgedReplyIds: z.array(z.number().int().positive()),
