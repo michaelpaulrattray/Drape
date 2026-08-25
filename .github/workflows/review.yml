@@ -1,26 +1,88 @@
 # The Gatekeeper — judgment half.
 #
-# A Fable review of every non-draft PR, posted as a sticky comment that
-# updates in place when the PR changes. Runs on the founder's Claude
-# subscription via CLAUDE_CODE_OAUTH_TOKEN (repo secret) — no API billing.
+# A Fable review, but only where a full look is genuinely warranted
+# (founder ruling 2026-08-25: don't burn Fable tokens on small changes).
+# Triage decides per PR:
 #
-# This is a cross-model-context reviewer by design: it reads the diff cold,
-# with CLAUDE.md as its law book, independent of whichever session built it.
+#   FULL REVIEW (Fable) when any of:
+#     - the diff touches money/auth surfaces (always reviewed, never blocked)
+#     - the diff is substantial (>= 50 changed lines of non-doc code)
+#     - the PR carries the `needs-fable` label (anyone can escalate)
+#   SKIPPED when:
+#     - docs/mailbox/output-only changes, or a trivial diff below the line
+#     - the PR carries the `skip-review` label
+#
+# The four mechanical checks in gate.yml run on EVERY PR regardless —
+# nothing merges broken just because it was too small to review.
+#
+# Runs on the founder's Claude subscription via CLAUDE_CODE_OAUTH_TOKEN.
 
 name: Fable Review
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, ready_for_review]
+    types: [opened, synchronize, ready_for_review, labeled]
 
 concurrency:
   group: review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  review:
+  triage:
     if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      review: ${{ steps.decide.outputs.review }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Decide whether this diff earns a Fable review
+        id: decide
+        env:
+          BASE: ${{ github.base_ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          if echo ",$LABELS," | grep -q ",skip-review,"; then
+            echo "Label skip-review — no AI review."
+            echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if echo ",$LABELS," | grep -q ",needs-fable,"; then
+            echo "Label needs-fable — full review."
+            echo "review=yes" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          git fetch origin "$BASE" --depth=1
+          CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
+
+          MONEY='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^shared/const\.ts$|^drizzle/'
+          if echo "$CHANGED" | grep -qE "$MONEY"; then
+            echo "Money/auth surfaces touched — full review, always."
+            echo "review=yes" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          # Code files only — docs, mailbox, output, images don't count
+          CODE=$(echo "$CHANGED" | grep -vE '\.(md|txt|png|jpg|jpeg|webp|json)$|^docs/|^\.agents/|^output/' || true)
+          if [ -z "$CODE" ]; then
+            echo "Docs/assets only — no AI review."
+            echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          LINES=$(git diff --numstat "origin/$BASE"...HEAD -- $CODE | awk '{s+=$1+$2} END {print s+0}')
+          echo "Changed code lines: $LINES"
+          if [ "$LINES" -lt 50 ]; then
+            echo "Trivial diff (<50 code lines) — no AI review; mechanical checks still apply."
+            echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          echo "Substantial diff — full review."
+          echo "review=yes" >> "$GITHUB_OUTPUT"
+
+  review:
+    needs: triage
+    if: ${{ needs.triage.outputs.review == 'yes' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

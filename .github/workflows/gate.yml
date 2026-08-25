@@ -1,8 +1,11 @@
 # The Gatekeeper — mechanical half.
 #
-# Runs the repo's own four instruments on every PR into main, plus the
-# founder-review rule: a diff touching money or auth surfaces cannot merge
-# on bot approval alone — it requires an approving review from the founder.
+# Runs the repo's own four instruments on every PR into main, and labels
+# any diff touching money or auth surfaces with `founder-review` so it is
+# visible in the digest and always gets the full Fable review — but it does
+# NOT block merge on founder approval. Founder ruling 2026-08-25: "dont
+# worry about money paths just run it - ill let you know if there are money
+# issues."
 #
 # Direct pushes to main by the deploy rite are untouched: branch protection
 # is configured with enforce_admins off, so the rite's push path (admin,
@@ -67,7 +70,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
           BASE: ${{ github.base_ref }}
-          OWNER_LOGIN: michaelpaulrattray
         run: |
           # Surfaces where a bot's approval is never enough (CLAUDE.md:
           # billing, credits, auth, and session code are production-critical).
@@ -78,21 +80,14 @@ jobs:
           HITS=$(echo "$CHANGED" | grep -E "$PATTERNS" || true)
 
           if [ -z "$HITS" ]; then
-            echo "No money/auth surfaces touched — founder gate passes."
+            echo "No money/auth surfaces touched."
             exit 0
           fi
 
-          echo "Founder-review surfaces touched:"
+          # Label only — visibility, not a block (founder ruling 2026-08-25).
+          # The label also forces the full Fable review in review.yml.
+          echo "Money/auth surfaces touched (labelled, not blocked):"
           echo "$HITS"
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label founder-review || true
-
-          APPROVED=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" \
-            --jq "[.[] | select(.user.login == \"$OWNER_LOGIN\" and .state == \"APPROVED\")] | length")
-
-          if [ "$APPROVED" -ge 1 ]; then
-            echo "Founder approval present — gate passes."
-            exit 0
-          fi
-
-          echo "::error::This PR touches billing/credits/auth/session surfaces and needs an approving review from $OWNER_LOGIN before it can merge."
-          exit 1
+          echo "::notice::This PR touches billing/credits/auth/session surfaces — labelled founder-review for the digest and full Fable review."
+          exit 0
