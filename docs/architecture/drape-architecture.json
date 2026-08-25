@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4c278522e8ad901f"
+    "sourceFingerprint": "0e7107208c11c00f"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 47
+      "moduleCount": 49
     },
     {
       "id": "domain:alerting",
@@ -705,6 +705,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
+      "path": "client/src/features/admin/components/crew/CrewEyeViewer.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
       "path": "client/src/features/admin/components/crew/CrewJournal.tsx",
       "domain": "admin",
@@ -749,6 +755,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "path": "client/src/features/admin/components/crew/crewTypes.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/eyeFrameSrc.ts",
+      "path": "client/src/features/admin/components/crew/eyeFrameSrc.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -13365,6 +13377,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "kind": "imports"
     },
@@ -13385,6 +13402,26 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/eyeFrameSrc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
+      "to": "module:client/src/features/admin/components/crew/eyeFrameSrc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
