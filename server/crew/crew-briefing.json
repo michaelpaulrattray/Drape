@@ -1,7 +1,7 @@
 {
- "edition": 12,
- "updatedAt": "2026-08-26T06:25:00+10:00",
- "shift": "foreman-11",
+ "edition": 13,
+ "updatedAt": "2026-08-26T06:50:00+10:00",
+ "shift": "foreman-12",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -82,7 +82,7 @@
    {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 06:25"
+    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 06:50"
    },
    {
     "label": "This page is the Desk",
@@ -92,7 +92,7 @@
    {
     "label": "Night shifts running",
     "tone": "good",
-    "source": "foreman-11 wrote this edition; the court still waits on your eye, so tonight added the dead-code detector (#34) — proven, merged, deployed, nothing deleted"
+    "source": "foreman-12 wrote this edition; the court still waits on your eye, so tonight added the code-shape security reader (#33) — proven both ways, merged, deployed; its first read fixed one small bug"
    },
    {
     "label": "OpenRouter balance $7.52 of $250",
@@ -222,6 +222,13 @@
  ],
  "pipeline": [
   {
+   "id": "semgrep-33",
+   "title": "A second automatic security reader now scans every proposed change for known-dangerous code shapes (#33)",
+   "status": "merged",
+   "prNumber": 91,
+   "note": "in this deploy; team tooling, nothing a customer sees. It looks for the classic mistakes — building database queries from text, running user text as code, writing user text straight into a page. I did not trust it until it had been caught out: I planted two dangerous lines and it found both; the same plant in a throw-away script folder was correctly ignored. It also MISSED one planted shape (running a shell command from a web request), which is written on its record page rather than hidden. Its first read of the product: four notes, all one harmless pattern in the homepage image route — and opening that file to annotate them found a small real bug: asking for a hero image called 'constructor' got a server error instead of a plain 'not found'. Fixed, with a test that fails on the old code."
+  },
+  {
    "id": "knip-34",
    "title": "The team's dead-code detector is in — one command lists every file, export and dependency nothing uses (#34)",
    "status": "merged",
@@ -233,7 +240,7 @@
    "title": "Two safety checkers for the gate's own workflow files — every finding fixed at its site (#35)",
    "status": "in-review",
    "prNumber": 89,
-   "note": "opened by another seat at 05:49 with the gate red on two shellcheck style notes in its own scripts; left to that seat this shift, taken over by the next if still untouched"
+   "note": "the other seat fixed its two style notes at 06:17 and the gate went green; still unmerged at 06:45 with no further activity — the next shift merges it if it is still sitting there, because three follow-ups queue behind it"
   },
   {
    "id": "lobby-theme-toggle-73",
@@ -330,6 +337,11 @@
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T06:50:00+10:00",
+   "shift": "foreman-12",
+   "text": "Still no word from you on the court strips, so the creative register stays parked at its gate and this was maintenance again. The team now has a second automatic security reader (#33): every proposed change is scanned for the classic dangerous code shapes — user text run as code, queries built from text, user text written straight into a page. As with last night's dead-code detector, I made it prove itself first: two planted dangerous lines were both caught, a plant in a throw-away folder was correctly ignored, and one planted shape it MISSED (a shell command run from a web request) is written on its record page so nobody trusts it for that. Its first read of the product came back with four notes, all one harmless pattern in the homepage image route — and opening that file to explain them turned up a small real bug: asking for a hero image named 'constructor' produced a server error instead of a plain 'not found'. Fixed, with a test that fails on the old code, and checked that the two similar routes were already safe. Another seat's workflow-checker change (#35) went green at 06:17 and is still waiting to be merged; if it is still sitting there the next shift merges it. One of the automatic dependency updates is failing for a real reason (a type change in the image library), noted for the next shift. Nothing was spent. Still waiting on you: the eight court strips, the GitHub one-click, and the OpenRouter balance."
+  },
   {
    "at": "2026-08-26T06:25:00+10:00",
    "shift": "foreman-11",
