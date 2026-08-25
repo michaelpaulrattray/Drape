@@ -130,3 +130,11 @@ temp/
 .avela-agent-bridge/
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Untracked scratch that has never been committed and must not be stageable by
+# accident (Janitor patrol #1, issue #96): `output/` holds drive-script
+# artifacts — including minted session JWTs (`output/.tok*`, deleted 2026-08-26)
+# — and `.playwright-mcp/` holds browser console logs and page snapshots from
+# the Playwright MCP drives. Both were 0 tracked files the day this landed.
+output/
+.playwright-mcp/

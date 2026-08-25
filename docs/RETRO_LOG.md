@@ -16,7 +16,7 @@ reverted guards are recorded as plainly as wins.
 
 ---
 
-## Run 1 — 2026-08-26 07:16–07:50 AEST (Retro, patrol #1, card #95)
+## Run 1 — 2026-08-26 07:16–07:30 AEST (Retro, patrol #1, card #95)
 
 ### A. Audit ledger — five reports, every claim opened
 
@@ -93,6 +93,8 @@ period's merged PRs; a PR with no predating card is a process finding.
 - The Fable gate review on #94 raised a real low-severity defect (card prompt
   in words, parser in characters) that would otherwise have lived only in a PR
   comment → filed as **#99**, due before #16's step-3 roll.
+- The window above was first written as 07:16–07:50 (a projected close —
+  the very habit A. names); corrected to the real close (07:30) after the rite.
 - Housekeeping done by the Retro on the way in: PR #94 merged (`80ffd8fb`,
   green and reviewed, foreman-13's stranded unit); `drape-shift-16` removed;
   the two `drape-shift-35*` worktrees belong to another seat and were left.
