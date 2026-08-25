@@ -1,7 +1,7 @@
 {
-  "edition": 15,
-  "updatedAt": "2026-08-26T07:51:55+10:00",
-  "shift": "janitor — patrol #1",
+  "edition": 16,
+  "updatedAt": "2026-08-26T08:28:00+10:00",
+  "shift": "warden — patrol #1 (third seat)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -82,7 +82,7 @@
       {
         "label": "Production healthy",
         "tone": "good",
-        "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 07:45"
+        "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 08:3x"
       },
       {
         "label": "This page is the Desk",
@@ -92,7 +92,7 @@
       {
         "label": "Night shifts running",
         "tone": "good",
-        "source": "the Retro seat wrote this edition (first patrol, on your \"do it\"); the register is merged and dark; the night's reports were audited against what actually happened — see the journal"
+        "source": "the Warden seat wrote this edition (first security patrol, on your \"do it\"); the register is merged and dark, waiting on your word; the code-scanner now runs on every change — see the journal"
       },
       {
         "label": "OpenRouter balance $7.52 of $250",
@@ -244,6 +244,13 @@
   ],
   "pipeline": [
     {
+      "id": "warden-patrol-1",
+      "title": "Warden — patrol #1: the security scanner now checks every change before it can merge; the dead-code reader runs nightly (#97)",
+      "status": "merged",
+      "prNumber": 109,
+      "note": "Team tooling only — nothing a customer sees. Every pull request now has to pass a security-shape scanner (semgrep) before it can merge, and it was proven able to fail: a deliberately planted dangerous line turned the check red, and the same tree without it went green. Its honest limit is written down: it does NOT catch a shell command built from a web request, so the reviewer stays the control for that class. The dead-code reader now runs on its own every night at 1am and leaves a reading for the Janitor. First security baseline recorded: no leaked secrets across all 2,668 commits, no scanner findings, all access-control tests green (26/26). This patrol took three attempts — two shift processes died just before writing their close — which is exactly the class the Retro's #101 guard is for."
+    },
+    {
       "id": "janitor-patrol-1",
       "title": "Janitor — patrol #1: the machine's leftovers cleared, the dead-code reading turned into four cards (#96)",
       "status": "merged",
@@ -359,8 +366,8 @@
   "problems": [
     {
       "id": "shift-report-before-artifacts",
-      "title": "One night report claimed work it had not done (the 07:00 shift) — caught by the audit, guard filed (#101)",
-      "detail": "The 07:00 shift's report said the register was merged, your page was shipped and its workspace cleaned; at 07:17 none of those had happened — the process died mid-close and left a template placeholder where the deploy receipt goes. Nothing reached you wrong (this edition is the first one after it) and the register is now genuinely merged, still switched off. The class: a report written before the acts. Fix: the shift runner will stamp every close after the shift exits — receipt present or not, each \"merged\" checked against GitHub — so a dead shift cannot leave \"done\" standing (#101). Until that lands, every shift reads the previous one at the artifacts, which is what caught this.",
+      "title": "Shift processes dying before their close — the 07:00 shift, then twice on the Warden patrol; guard filed (#101)",
+      "detail": "The 07:00 shift's report said the register was merged, your page was shipped and its workspace cleaned; at 07:17 none of those had happened — the process died mid-close and left a template placeholder where the deploy receipt goes. Nothing reached you wrong (this edition is the first one after it) and the register is now genuinely merged, still switched off. The class: a report written before the acts. Fix: the shift runner will stamp every close after the shift exits — receipt present or not, each \"merged\" checked against GitHub — so a dead shift cannot leave \"done\" standing (#101). Until that lands, every shift reads the previous one at the artifacts, which is what caught this. UPDATE 08:28: it happened twice more on one patrol — the Warden's first two processes each died after pushing but before merging, reporting, or writing your page. Nothing was lost (the third seat found the work at GitHub and finished it), but #101 moves up: it is the next maintenance build once your register word is handled.",
       "severity": "info",
       "state": "open"
     },
@@ -387,6 +394,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T08:28:00+10:00",
+      "shift": "warden — patrol #1 (third seat)",
+      "text": "First Warden patrol, on your \"do it\" — and no reply from you yet, so the register stays switched off and waiting on your word. This was the security seat's run: from now on every change to the product must pass a security-shape scanner before it can merge (PR #109). It was proven able to fail before anyone trusted it — a deliberately planted dangerous line turned the check red, and the same code without it went green. Its limit is written down honestly: it does not catch a shell command built from a web request, so the human-style review still stands guard there. The dead-code reader now runs by itself every night and leaves a reading for the Janitor. The first security baseline is recorded: no leaked secrets in the whole history (2,668 commits), no scanner findings, all 26 access-control tests green. One process problem worth your knowing: this patrol needed three attempts — two shift processes died right after pushing, before they could merge or write this page. Nothing was lost; the third found the work on GitHub and finished it. Nothing spent. Still on your page: the word to switch the register on for your account, and OpenRouter at $7.52."
+    },
     {
       "at": "2026-08-26T07:51:55+10:00",
       "shift": "janitor — patrol #1",

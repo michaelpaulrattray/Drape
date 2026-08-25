@@ -93,3 +93,26 @@ process died between opening the PRs and writing its close):
 
 The plant branch and PR #110 are closed and deleted once this row exists;
 the run id is the artifact, and it outlives the branch.
+
+### D. Close — 2026-08-26 08:28 AEST, stamped by a THIRD seat
+
+The second seat pushed `7153ab86` at 08:21 and its process died too — the
+gate still running, PR #109 open, no mailbox entry, no briefing edition, no
+§D. The next shift (08:24) found the patrol at the artifacts alone, the
+same way the second seat had, and closed it: gate on `7153ab86` completed
+SUCCESS (run 32905724602 — semgrep step, workflow lint, typecheck, both
+atlases, unit suite all green; Fable review pass), **PR #109 merged
+`efa88ea0`**, the `team/warden-1-ci-steps` branch and its worktree removed,
+card #97 closed. Verified before merging rather than believed: the diff was
+re-read in full by the third seat (`gate.yml` +24, `knip.yml` new, the two
+record pages), and PR #110's plant branch was already gone from origin.
+
+What this patrol leaves standing: semgrep is a required gate check from
+`efa88ea0` on (its positive control is §C, run 32905105740); knip reads
+main nightly at 15:00 UTC — the first scheduled run is tonight, and the
+next Janitor reads its summary; the findings baseline is §A. Nothing
+spent. **Next Warden run ~2026-09-02**: read `secrets.yml`'s first Monday
+run (08-31), the first `admin_audit` read (§A's stated gap), append run 2.
+
+A process note for the Retro, not a Warden finding: one patrol, three
+processes, two deaths mid-close — the R5 class (#101) twice in one card.
