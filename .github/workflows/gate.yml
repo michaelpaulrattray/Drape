@@ -136,6 +136,26 @@ jobs:
           # Event path: empty → checkout's default, the merge ref.
           # Dispatch path: the same merge ref, named — see the header.
           ref: ${{ needs.resolve.outputs.ref }}
+          # Full history: the secret scan below walks the PR's own commits
+          # (base..HEAD), which a depth-1 clone cannot reach (the #84 stall).
+          fetch-depth: 0
+
+      # The Warden's secret scan (issue #32) — first, before any install, so
+      # a leaked key fails in seconds. It scans the PR's OWN commits, so a
+      # secret that was committed and then "removed" in a later commit still
+      # reddens the gate: the bytes are in the branch history either way,
+      # and only a rewrite takes them out. Binary pinned by sha256 inside the
+      # script; the same script runs by hand (scripts/secret-scan.sh) and
+      # weekly over the full history (secrets.yml). Values are never
+      # printed (--redact).
+      - name: Secret scan (gitleaks, this PR's commits)
+        env:
+          BASE: ${{ needs.resolve.outputs.base }}
+        run: |
+          # Version + sha256 are pinned INSIDE the script, once, for both runs.
+          GITLEAKS="$(sh scripts/secret-scan.sh fetch)"
+          git fetch origin "$BASE"
+          GITLEAKS="$GITLEAKS" sh scripts/secret-scan.sh "origin/$BASE"
 
       - uses: pnpm/action-setup@v6
 
