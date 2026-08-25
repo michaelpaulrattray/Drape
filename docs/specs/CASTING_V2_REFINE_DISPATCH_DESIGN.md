@@ -323,7 +323,39 @@ anything. Today that is covered by the long hold — the panel is busy for ~200 
 and `refineBusy` folds in the server's pending list — and **the hold is what C
 removes.**
 
-### C's AMENDMENT — a `lockKey` on the candidate, and it is NOT built
+### C's AMENDMENT — a `lockKey` on the candidate — ✅ BUILT 2026-08-18 (`1423e03a`), and this heading said NOT built for a week after
+
+⚠ **THE CORRECTION FIRST, BECAUSE THIS SECTION'S OWN CHECK IS WHAT KEPT IT
+WRONG (2026-08-25, foreman shift 3, issue #54).** The amendment below was
+built the day after fable-974 ruled it: `refineService.ts` passes
+`candidateLockPublicId` at the claim, `acquireCastingCandidateOperationLock`
+resolves it to a row owned by the operation's user in the statement that reads
+it and derives `casting-candidate:<internal id>`, the refusal is the spoken
+customer sentence ("That edit is already being made — it finishes before the
+next one starts. Nothing extra was charged."), and arm 3 of
+`scripts/prove-refine-idempotency-disposable.mts` — tracked, not disposable
+despite its name — is the regression. Taken on BOTH roads, not only behind the
+dispatch flag, so the 2026-08-25 widening of `CASTING_REFINE_DISPATCH_SCOPE`
+to `all` opened no double-submit window: the control was already live on
+production. Re-driven the day the record was corrected — arm 3: two taps, two
+ids, concurrent → operations 2 (one CONFLICT, never charged) · variants 1 ·
+charges 1, ledger unmoved, cleanup 0.
+
+**How a built control got filed as URGENT-missing a week later**: this
+section's reproducible check was `grep -rn "lockKey" server/castingV2/*.ts`
+returns nothing — and the ruled fix's caller DELIBERATELY never says that
+word (the caller passes a candidate publicId; the server derives the key, so
+there is no lockKey to grep for at the call site). The grep still reproduced
+on 2026-08-24 and §9 below celebrated it as the exemplary row; the excavation
+then filed issue #54 off it as an open money-path hole. **A negative grep must
+name a token the BUILT thing would contain, not the token the unbuilt sketch
+was called** — checked against the fix's actual shape the day it lands, or it
+becomes a machine for re-discovering a solved problem. The suite now pins the
+wire itself: `server/operationLockWire.test.ts`'s refine arm reddens if the
+begin call stops passing `candidateLockPublicId`.
+
+What follows is the section as it stood when the amendment was open — kept as
+the record of why the lock has the shape it has.
 
 Filed here rather than fixed (fable-841 §3d): the machinery already exists and
 the concept is already in the tree, so this is a wiring decision that belongs to
@@ -369,7 +401,12 @@ row with the operation. Price: **about one shift, not half.**
   operation's receipt to the second tap — which is friendlier (the customer sees
   their edit running rather than an error) and is the same shape as the replay
   arm 1 already proves. That choice is a product decision about what a double
-  tap MEANS, not a mechanical one.
+  tap MEANS, not a mechanical one. ✅ **Answered by the build (`1423e03a`): the
+  lock, refusing free in her own voice** — the second tap gets the spoken
+  sentence above, its operation row finalized CONFLICT in the same statement,
+  nothing charged. The friendlier return-the-receipt shape was not taken and
+  remains available as a later product refinement if a real customer ever meets
+  the sentence and finds it wanting.
 
 **Acknowledgement.** A settled outcome must be shown once and then dismissed, or
 the panel re-announces a week-old failure every time the sheet opens.
@@ -485,6 +522,22 @@ again on 2026-08-24 and **still returns nothing**. A claim that ships with its
 own reproducible check, and reproduces two weeks later, is the shape every row
 in every document here should aspire to — it cannot go quietly stale, because
 checking it is one command that the document itself supplies.
+
+⚠⚠ **AND THAT ROW WAS FALSE ON BOTH DATES IT REPRODUCED — the sharpest
+correction in this document (2026-08-25, issue #54).** The amendment had been
+BUILT since 2026-08-18 (`1423e03a`), six days before the sweep re-ran the grep
+and celebrated it. The grep reproduced because the ruled fix's caller never
+contains the word it searches for: fable-974 §2's whole design is that the
+caller passes a candidate publicId and the SERVER derives the lock key, so
+`lockKey` is absent from `server/castingV2/` by construction, control present
+or not. A reproducible check is only as good as what its token would prove —
+this one tested the unbuilt sketch's vocabulary and could not see the built
+thing, which makes it worse than no check: it lent six days of false
+confidence, survived a sweep, and produced an URGENT money-path issue about a
+control that was already live on production. The durable repair is not a
+better grep but the suite arm (`server/operationLockWire.test.ts`, the refine
+arm), which reads the call site's actual arguments. See the correction block
+under the amendment's own heading in §4.
 
 ⚠ **This sweep is PHRASE-ANCHORED and is a FLOOR, not coverage.** Measured on
 the one population where truth was already known (V3B's six stale rows, found by
