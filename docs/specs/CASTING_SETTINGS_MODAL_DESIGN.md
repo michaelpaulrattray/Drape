@@ -20,10 +20,18 @@ cast style                    → the register / cohort selector (that doc §2)
 lighting · backgrounds ·      → the SHEET FRAME's own sentences (§1b, middle)
   framing
 energy · moods                → the VARIANCE CARD's flavour (§1b, third part)
-"imagination level"           → the WRITER'S ROOM's latitude (§1d), THIN briefs
-  (future row)                  only — a coming-soon candidate for HIS approval,
+IMAGINATION (future row)      → the WRITER'S ROOM's latitude (§1d), THIN briefs
+                                only — a coming-soon candidate for HIS approval,
                                 noted and NOT built
 ```
+
+**`IMAGINATION` is the FOUNDER'S OWN NAME for that row** (2026-08-25, relayed
+fable-1674, verbatim: *"yes imagination is the perfect work for the setting."*).
+It is recorded now, before the modal builds, so the next seat does not invent a
+different one. Semantics as designed: a faithful ↔ wild latitude for the writer's
+room over **what the brief left unstated**; stated facts pin at every level of
+it; and a rich brief makes the row inert, because there is nothing unstated left
+to author.
 
 **Sequencing is unchanged: the modal sits behind the composer family.** It is
 downstream of the register because a control that sets a sentence needs the
