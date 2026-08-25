@@ -69,7 +69,8 @@ import {
 import { scrubBrands } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
-import { interpretBrief } from "./interpreter";
+import { interpretBrief, interpreterEngine } from "./interpreter";
+import { authorVarianceCard, composeCreativeCandidatePrompt } from "./creativeRegister";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
 import { breakSignatureClusters, type VarianceReport } from "./varianceBudget";
@@ -331,6 +332,15 @@ export type BriefCompilerInput = {
    * bytes on the wire are byte-identical to today's.
    */
   briefFidelity?: boolean;
+  /**
+   * THE CREATIVE REGISTER — inside `CASTING_CREATIVE_REGISTER_SCOPE`, captured
+   * at the roll and handed down like the two above. On, the interpreter is
+   * asked which register the brief belongs in, and a brief it reads as
+   * creative has its eight slices composed by `creativeRegister.ts` instead of
+   * `composeCandidatePrompt`. Off, absent, or on with an ORDINARY brief: the
+   * eight prompts are byte-identical to today's.
+   */
+  creativeRegister?: boolean;
   /** Set on a follow roll; the sheet narrows around this candidate. */
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
@@ -409,6 +419,7 @@ function fallbackIntent(briefText: string): CastingIntent {
       model, so the picture is unaffected — only the record is.
     */
     statedInk: null,
+    creativeRegister: null,
     // No interpreter ran, so no category was read and nothing is implied.
     poolTendencies: NO_TENDENCIES,
     /*
@@ -903,6 +914,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     wardrobe: input.pickWardrobe === true,
     ink: input.readInk === true,
     fidelity: input.briefFidelity === true,
+    register: input.creativeRegister === true,
   });
 
   /*
@@ -995,6 +1007,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     ...adjusted,
     role: guardRole(scrubBrands(adjusted.role)),
     characterNotes: scrubBrands(adjusted.characterNotes),
+    /*
+      AN UNASKED REGISTER READING IS DISCARDED — the wardrobe pick's rule. A
+      model may volunteer a key it was never offered; the parse cannot tell an
+      answer from an offer, and this is the place that knows what was asked.
+      Outside the flag the field is null on the row, so a roll's record is
+      byte-identical to today's whatever the model volunteered.
+    */
+    creativeRegister: input.creativeRegister === true ? adjusted.creativeRegister : null,
   };
   const locks: LockFacts = lockFactsOf(intent);
   const archetype = resolveArchetype(intent, input.rollSeed);
@@ -1010,7 +1030,37 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     inheritedWardrobe: input.inheritedWardrobe,
     pickWardrobe: input.pickWardrobe,
   });
-  const candidates = sheet.candidates;
+  /*
+    THE REGISTER — decided once per roll, recorded once per roll.
+
+    Gated twice on purpose: on the FLAG (the question was put) and on the
+    READING (the answer was yes, with grounds in the brief's own words). An
+    ordinary brief under the flag takes the house road below to the byte, and
+    outside the flag `intent.creativeRegister` is null because the interpreter
+    was never asked, so nothing here can run.
+
+    The identities, the persona lines and the honest record are the HOUSE
+    resolver's, unchanged: the register rewrites what the engine is TOLD, not
+    what the sheet records about who was cast. The lock validator below still
+    runs over the same identities.
+  */
+  const creative = input.creativeRegister === true && intent.creativeRegister?.engaged === true;
+  const cardEngine = input.engine ?? interpreterEngine();
+  const card =
+    creative && cardEngine
+      ? await authorVarianceCard({ engine: cardEngine, briefText, count: input.candidateCount })
+      : null;
+  const candidates = creative
+    ? sheet.candidates.map((candidate) => ({
+        ...candidate,
+        prompt: composeCreativeCandidatePrompt({
+          briefText,
+          role: intent.role,
+          wardrobeLine: sheet.wardrobeLine,
+          invitation: card?.invitations[candidate.position] ?? null,
+        }),
+      }))
+    : sheet.candidates;
 
   const violations = candidates
     .map((candidate) => {
@@ -1043,6 +1093,26 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       intent,
       archetype,
       chips: buildChips(intent, input.followPersonaLine ?? null),
+      /*
+        WHICH REGISTER WROTE THIS SHEET (design §2a) — present ONLY when the
+        flag put the question, so an unflagged roll's row is byte-identical to
+        today's. `card: null` with `cardAuthored: false` is a sheet that went
+        WITHOUT a card (the author refused twice), never one whose card was
+        empty; the two must stay distinguishable at the row.
+      */
+      ...(input.creativeRegister === true
+        ? {
+            register: creative
+              ? {
+                  kind: "creative",
+                  reasons: intent.creativeRegister?.reasons ?? [],
+                  cardAuthored: card !== null,
+                  card: card?.invitations ?? null,
+                  ...(card ? { cardModel: card.model, cardLatencyMs: card.latencyMs } : {}),
+                }
+              : { kind: "house", reasons: [] },
+          }
+        : {}),
     },
     lockContract: locks as Record<string, unknown>,
     cohortKey: intent.cohort,

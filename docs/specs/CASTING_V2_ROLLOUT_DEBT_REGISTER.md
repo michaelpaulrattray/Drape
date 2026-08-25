@@ -109,7 +109,7 @@ does its condition still exist?**
 
 ---
 
-## The five at `off`
+## The five at `off` — six since 2026-08-26
 
 | flag | state | recommendation |
 |---|---|---|
@@ -118,6 +118,7 @@ does its condition still exist?**
 | `R7_EVIDENCE_COMPOSER_RECIPE` | holds the ink-add key with the scope off, so it is inert | **HOLD** |
 | `CASTING_FRAMING_TRIM_SCOPE` | ⚠ listed above as `users:1` in the record and **read `off` on the service at 2026-08-24T11:12Z** after the founder's retarget. It flipped back on 2026-08-25 | — |
 | `ENABLE_*` booleans | all three `true` | — |
+| `CASTING_CREATIVE_REGISTER_SCOPE` | **NEW 2026-08-26** — the creative register (#16, N1), built dark on the founder's verdict on the court. Off, the compile is byte-identical; on, a brief the interpreter reads as creative (grounds in its own words) has its slices written ask-first with the house frame kept and a per-slice variance card | **FLIP `users:1` ON HIS WORD** for step 3 of the design's §5 — a flagged roll of his cyborg brief — then his eye on both bars is the milestone gate. Never `all` on this page's authority |
 
 ---
 

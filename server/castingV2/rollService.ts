@@ -43,6 +43,7 @@ import {
   captureCastingBornInkEnabled,
   captureCastingFramingTrimEnabled,
   captureCastingBriefFidelityEnabled,
+  captureCastingCreativeRegisterEnabled,
   captureCastingTwoPathsEnabled,
 } from "./castingV2Scope";
 import { mintBornInkRows } from "./bornInkMint";
@@ -454,6 +455,14 @@ export async function createRoll(
   */
   const briefFidelity = captureCastingBriefFidelityEnabled(input.userId);
 
+  /*
+    THE CREATIVE REGISTER, captured once for the same reason. It governs WHICH
+    REGISTER the eight slices are written in, which is a property of the
+    compile, so it is read here and handed down. Off, the compiler's bytes on
+    the wire are byte-identical to today's — the design's own §1a.
+  */
+  const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
+
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
@@ -479,6 +488,7 @@ export async function createRoll(
       pickWardrobe,
       readInk,
       briefFidelity,
+      creativeRegister,
       followPersonaLine,
       followIdentity,
     });

@@ -371,6 +371,23 @@ export type HeritageComponent = { heritage: Heritage; pct: number };
  * Everything non-null is therefore, by construction, something the user said —
  * which is what makes `lockFactsOf` below a derivation rather than a guess.
  */
+/**
+ * The interpreter's reading of which register a brief belongs in.
+ *
+ * `reasons` are the brief's own phrases, source-contained like every other
+ * free-text field here — they are the RECORD of why a sheet was written in
+ * the creative register, persisted with the compiled brief so a roll can
+ * always say. They never reach a prompt.
+ */
+export type CreativeRegisterReading = {
+  engaged: boolean;
+  reasons: string[];
+};
+
+/** A reason is a short quotation of the brief, never an essay. */
+export const CREATIVE_REASON_MAX = 80;
+export const CREATIVE_REASONS_LIMIT = 3;
+
 export type CastingIntent = {
   cohort: CohortKey;
   /**
@@ -459,6 +476,16 @@ export type CastingIntent = {
    * ahead of it and moving other fields' answers for nothing.
    */
   statedInk: StatedInk | null;
+  /**
+   * WHICH REGISTER THIS BRIEF BELONGS IN — the creative register's door
+   * (`CREATIVE_REGISTER_DESIGN.md` §2), `null` on every roll outside
+   * `CASTING_CREATIVE_REGISTER_SCOPE` because the interpreter was not asked.
+   *
+   * Null and `{ engaged: false }` both compile HOUSE; the difference is only
+   * whether the question was put. See `parseCreativeRegister` for the two
+   * ways a `true` is read back down to false.
+   */
+  creativeRegister: CreativeRegisterReading | null;
   /**
    * What the CATEGORY implies about axes the brief never stated.
    *
@@ -739,6 +766,7 @@ const wireSchema = z.object({
   statedAccessories: z.unknown().nullable().optional(),
   statedSkin: z.unknown().nullable().optional(),
   statedInk: z.unknown().nullable().optional(),
+  creativeRegister: z.unknown().nullable().optional(),
   poolTendencies: z.unknown().nullable().optional(),
   wardrobe: z.unknown().nullable().optional(),
   /*
@@ -1127,6 +1155,38 @@ export function parseStatedInk(raw: unknown, briefText: string): StatedInk | nul
   return { words, regions, readFailed: false };
 }
 
+/**
+ * THE REGISTER READING — and the two ways a `true` is read down to false.
+ *
+ * Conservative twice over, because the design's §2b puts the whole burden on
+ * one side: a creative brief mis-routed to house is today's known state, an
+ * ordinary brief mis-routed to creative is an unmeasured one. So `engaged`
+ * must be literally `true` (not truthy, not "yes"), and a `true` whose every
+ * reason fails source containment is read as false — a verdict with no
+ * grounds in the customer's own words is not a verdict this product acts on.
+ *
+ * Absent, null or malformed is `null` — the question was not answered — and
+ * `null` compiles house exactly as false does. The distinction is kept for
+ * the record only.
+ */
+export function parseCreativeRegister(raw: unknown, briefText: string): CreativeRegisterReading | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const wire = raw as { engaged?: unknown; reasons?: unknown };
+  const reasons: string[] = [];
+  if (Array.isArray(wire.reasons)) {
+    for (const entry of wire.reasons) {
+      const cleaned = scrubBrands(cleanFreeText(entry, CREATIVE_REASON_MAX));
+      if (!cleaned) continue;
+      if (!tokensComeFromBrief(cleaned, briefText)) continue;
+      if (reasons.some((existing) => existing.toLowerCase() === cleaned.toLowerCase())) continue;
+      reasons.push(cleaned);
+      if (reasons.length >= CREATIVE_REASONS_LIMIT) break;
+    }
+  }
+  const engaged = wire.engaged === true && reasons.length > 0;
+  return { engaged, reasons: engaged ? reasons : [] };
+}
+
 export function parseStatedAccessories(raw: unknown, briefText: string): string[] {
   if (!Array.isArray(raw)) return [];
   const kept: string[] = [];
@@ -1321,6 +1381,7 @@ export function parseCastingIntent(
       statedSkin: parseStatedSkin(wire.statedSkin, briefText),
       statedAccessories: parseStatedAccessories(wire.statedAccessories, briefText),
       statedInk: parseStatedInk(wire.statedInk, briefText),
+      creativeRegister: parseCreativeRegister(wire.creativeRegister, briefText),
       poolTendencies: parsePoolTendencies(wire.poolTendencies),
       /*
         Not source-contained, by design and by declaration (§4.1). The door is
