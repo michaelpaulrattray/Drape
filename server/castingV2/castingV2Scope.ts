@@ -2674,3 +2674,103 @@ export function validateCastingBriefFidelityEnvironment(input: {
   }
   return fidelity;
 }
+
+/* ======================================================================= */
+/*  THE CREATIVE REGISTER — `CASTING_CREATIVE_REGISTER_SCOPE`               */
+/* ======================================================================= */
+
+/**
+ * `CASTING_CREATIVE_REGISTER_SCOPE` — whether a CREATIVE brief compiles in the
+ * creative register instead of the house one (`CREATIVE_REGISTER_DESIGN.md`,
+ * rung N1 of the rebaseline; step 2 ordered by the founder's own verdict on
+ * the court, #16, 2026-08-26: *"I think C is worth building to find out how
+ * close we can get"*).
+ *
+ * Off, and absent means off, the product is BYTE-IDENTICAL to today's: the
+ * interpreter is not asked whether a brief is creative, no field is parsed,
+ * no variance card is authored, and every slice composes through
+ * `composeCandidatePrompt` exactly as it does now. That is the design's own
+ * §1a made structural — the population the engine is already great at never
+ * rides an experiment — and `context-is-not-additive` (a SUBSET of prompt
+ * context once raised the stage wall twice as often as its superset) is why
+ * the gating is the point rather than caution.
+ *
+ * On, the interpreter is asked one more key (`creativeRegister`), and a brief
+ * it reads as creative — with its grounds in the brief's own words — has its
+ * eight slices composed by `creativeRegister.ts`: the ask verbatim first, the
+ * house framing / capture / realism / negatives scaffolding (his condition:
+ * *"C with the framing fixed"*), and a per-slice variance card on open axes
+ * only. An ORDINARY brief under the flag still compiles house, to the byte —
+ * the selector is conservative by design (§2b): a creative brief mis-routed
+ * to house is today's known state, an ordinary one mis-routed to creative is
+ * an unmeasured one.
+ *
+ * Its parent is `CASTING_V2_SCOPE` and nothing narrower: what it governs is
+ * the COMPILE of a roll, the brief-fidelity scope's own reason one block up.
+ */
+export const CASTING_CREATIVE_REGISTER_SCOPE_ENV = "CASTING_CREATIVE_REGISTER_SCOPE";
+
+export class CastingCreativeRegisterScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_CREATIVE_REGISTER_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingCreativeRegisterScopeConfigurationError";
+  }
+}
+
+export class CastingCreativeRegisterCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_CREATIVE_REGISTER_SCOPE_ENV} ${detail}`);
+    this.name = "CastingCreativeRegisterCoverageError";
+  }
+}
+
+export function parseCastingCreativeRegisterScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingCreativeRegisterScopeConfigurationError();
+  });
+}
+
+/**
+ * Captured ONCE at the roll, like every scope in this program: a flag consulted
+ * twice in one request is a request that can disagree with itself. The parent
+ * is enforced again here rather than trusted to boot, because a boot check
+ * nobody invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingCreativeRegisterEnabled(userId: number): boolean {
+  const register = parseCastingCreativeRegisterScope(
+    process.env[CASTING_CREATIVE_REGISTER_SCOPE_ENV],
+  );
+  if (!castingV2EnabledForUser(register, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingCreativeRegisterEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const register = parseCastingCreativeRegisterScope(input.scope);
+  if (register.kind === "off") return register;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingCreativeRegisterCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — what it governs is the COMPILE of a `
+      + "roll, and a user outside casting has no brief to compile",
+    );
+  }
+  if (parent.kind === "all") return register;
+  if (register.kind === "all") {
+    throw new CastingCreativeRegisterCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = register.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingCreativeRegisterCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return register;
+}

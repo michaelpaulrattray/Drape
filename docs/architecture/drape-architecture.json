@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7345cbc33015fe1e"
+    "sourceFingerprint": "1235852cd9e930cd"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 173
+      "moduleCount": 174
     },
     {
       "id": "domain:castingV2",
@@ -3587,6 +3587,12 @@
     {
       "id": "module:server/castingV2/compositeIntegrity.ts",
       "path": "server/castingV2/compositeIntegrity.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/creativeRegister.ts",
+      "path": "server/castingV2/creativeRegister.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8599,6 +8605,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_CREATIVE_REGISTER_SCOPE",
+      "name": "CASTING_CREATIVE_REGISTER_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
       "name": "CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
       "valueRecorded": false
@@ -8988,6 +8999,11 @@
     {
       "id": "flag:CASTING_BRIEF_FIDELITY_SCOPE",
       "name": "CASTING_BRIEF_FIDELITY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_CREATIVE_REGISTER_SCOPE",
+      "name": "CASTING_CREATIVE_REGISTER_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -10873,6 +10889,10 @@
     {
       "id": "test:server/castingV2/compositeIntegrity.test.ts",
       "path": "server/castingV2/compositeIntegrity.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/creativeRegisterScope.test.ts",
+      "path": "server/castingV2/creativeRegisterScope.test.ts"
     },
     {
       "id": "test:server/castingV2/d246VerificationBar.test.ts",
@@ -21681,6 +21701,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/creativeRegister.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/heritagePromotion.ts",
       "kind": "imports"
     },
@@ -22152,6 +22177,21 @@
     {
       "from": "module:server/castingV2/compositeIntegrity.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creativeRegister.ts",
+      "to": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creativeRegister.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creativeRegister.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {
@@ -32912,10 +32952,10 @@
       "message": "Names 4 of SegmentExclusion's 4 fields (server/castingV2/segmentAssembly.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:944",
+      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:981",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cohortPhotorealHuman.ts:944",
+      "subject": "server/castingV2/cohortPhotorealHuman.ts:981",
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -33010,17 +33050,17 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:216",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:217",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:216",
+      "subject": "server/castingV2/rollService.ts:217",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:264",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:265",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:264",
+      "subject": "server/castingV2/rollService.ts:265",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

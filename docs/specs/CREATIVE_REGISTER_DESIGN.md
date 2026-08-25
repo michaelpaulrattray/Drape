@@ -2,8 +2,33 @@
 
 **Status: DESIGN, Fable-authored on the founder's explicit ask (2026-08-25:
 "i honestly will need you to do a fable review of the work for this").
-Nothing built. The dilution court (fable-1660) executes against this
-design; the enrichment design folds into it.**
+The dilution court (fable-1660) executes against this design; the enrichment
+design folds into it.**
+
+**⚠ STEP 1 JUDGED, STEP 2 BUILT DARK (2026-08-26).** The court (§3) ran
+2026-08-26 ($0.93 house money, run1 + the C′ rerun; frames in the Crew tab's
+eye gallery) and the founder judged it on #16 — verbatim: *"I think C is worth
+building to find out how close we can get."* His conditions are the build's
+conditions and are recorded on #16 (rules 1–8) with his amendment (*"Vary the
+open things, never the stated ones"*). **The register is BUILT DARK behind
+`CASTING_CREATIVE_REGISTER_SCOPE`** (`server/castingV2/creativeRegister.ts`,
+the selector block in `interpreter.ts`, the wire in `briefCompiler.ts`;
+suite `creativeRegisterScope.test.ts`, five sabotages proven red). Two
+places the build departs from §1b as first written, both on his word:
+(a) **the sheet frame is the HOUSE frame, not seven words** — framing,
+capture, realism and negatives are shared by reference
+(`creativeRegisterFrameBlocks`) because he read B's realism as *"probably
+due to framing"* and asked for *"C with the framing fixed"*; the person-prose
+(SUBJECT, PHYSIQUE, DIRECTION, PRESENCE, the seven-line category block,
+IDENTITY_INTEGRITY, PRIORITY) is what goes; (b) the register's own AUTHORITY
+paragraph makes the ask absolute about every fact it states, clothing
+included, because arm B put a tee on a bare-chested ask 3 of 3. Not in this
+build, each with its home: the refusal-path rewrite (§1c-pre) waits on
+**#93**'s court; basics in the brief's style is **#92**; the writer's room
+(§1d) is its own slice; the per-slice stated-feature check (#16 rule 3) is an
+acceptance reader over frames. **Step 3 — a flagged roll of his cyborg brief
+— waits on his word to flip `users:1`; step 4, his eye on both bars, is the
+milestone gate.**
 
 **Heirship (founder ruling, 2026-08-25, closing #56):** this design is the
 named heir of **Path B + F8, "the worlds era"** (D-86's ratified rung; D-80's
@@ -213,8 +238,9 @@ register: untouched by construction.
 
 ## 5. Sequencing and the Phase-A gate
 
-Court (§3) → creative register built dark → flagged roll of his cyborg
-brief → his eye on BOTH bars (conviction + spread). That sheet is the
+Court (§3) ✅ judged → creative register built dark ✅ (2026-08-26) → flagged
+roll of his cyborg brief (on his word) → his eye on BOTH bars (conviction +
+spread). That sheet is the
 Phase-A gate (fable-1666, research doc §5b) — and the creative register
 is, deliberately, the first seam of the cohort-module architecture the
 creative-casts program needs anyway: Phase A's cohort modules are

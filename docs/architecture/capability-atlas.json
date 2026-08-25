@@ -499,9 +499,9 @@
           "server/deployWatchDecision.test.ts"
         ],
         "sites": [
-          "server/castingV2/castingIntent.ts:1253",
-          "server/castingV2/castingIntent.ts:1283",
-          "server/castingV2/castingIntent.ts:1288",
+          "server/castingV2/castingIntent.ts:1313",
+          "server/castingV2/castingIntent.ts:1343",
+          "server/castingV2/castingIntent.ts:1348",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:161",
           "server/castingV2/openLaneKind.ts:219",
@@ -644,6 +644,7 @@
     "flags": [
       "CASTING_BORN_INK_SCOPE",
       "CASTING_BRIEF_FIDELITY_SCOPE",
+      "CASTING_CREATIVE_REGISTER_SCOPE",
       "CASTING_FACE_SCAN_SCOPE",
       "CASTING_FRAMING_TRIM_SCOPE",
       "CASTING_HAIR_REFERENCE_SCOPE",
