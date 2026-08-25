@@ -25,6 +25,11 @@
 # Declared ceilings: (1) gitleaks ignores sequential/keyboard-walk values
 # by design; (2) a real UUID token assigned to a field literally named
 # key/id (`railway: { key: "<uuid>" }`) is admitted by the first allowlist.
+# NOT a ceiling any more — EVIL MERGES: git's default log emits no patch
+# for a merge commit, so a secret introduced only in a conflict resolution
+# was invisible (driven 2026-08-26: default log 0, `-m` 2 (one per parent),
+# `--diff-merges=first-parent` 1). The script passes first-parent on both
+# ranges; the cost is re-reading merged-in bytes the walk already saw.
 
 [extend]
 useDefault = true
@@ -43,17 +48,22 @@ keywords = ["railway"]
 # A UUID standing in one of the product's own id fields. publicIds and every
 # R2 storage key are crypto.randomUUID() (CLAUDE.md, "A customer's cast is
 # their work"), and a court script names them `key: "<uuid>"`, `id: "…"`,
-# `CANDIDATE = "…"`. The match is the LINE, not the value alone: a UUID IS a
-# credential shape elsewhere, so `RAILWAY_TOKEN="<uuid>"` — no id-field
-# context — stays a finding (and is now the railway-token rule's).
+# `CANDIDATE = "…"`. The target is the rule's MATCH (field name + value),
+# never the whole LINE: with regexTarget = "line" a real secret sharing a
+# line with an id-field UUID (`{ candidateId: "<uuid>", apiToken: "…" }`)
+# was silenced too — driven green under "line", red under "match" (review
+# finding on PR #88). A bare `RAILWAY_TOKEN="<uuid>"` has no id-field
+# context and is the railway-token rule's.
 [[allowlists]]
 targetRules = ["generic-api-key"]
-regexTarget = "line"
+regexTarget = "match"
 regexes = ['''(?i)\b(key|id|candidate|variant|publicId|imageKey|candidateId|variantId|storageKey)\s*[:=]\s*"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"''']
 
 # A kebab-case file slug — `before-v501-the-arm-swallow`: three or more
-# SHORT lowercase/digit segments (1–12 chars) joined by hyphens, at least
-# one of which holds a letter outside a–f. Both fences are load-bearing:
+# SHORT lowercase/digit segments joined by hyphens, at least one of which
+# holds a letter outside a–f. True bounds: a plain segment is 1–12 chars,
+# and the letter-bearing one is up to 23 (RE2 has no lookahead, so the
+# letter is placed inside the segment instead). Both fences are load-bearing:
 # the segment cap keeps out OpenRouter's `sk-or-v1-<64 hex>` (four
 # lowercase hyphenated segments too — review finding 1 on PR #88), and the
 # non-hex letter keeps out a lowercase UUID, which the cap alone admits.

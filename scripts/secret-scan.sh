@@ -10,13 +10,17 @@
 # grammar). Secrets are never printed: --redact hides the value, and the
 # exit code is the verdict — 1 on any finding, 0 on none.
 set -eu
+# Scan THIS repo whatever the caller's cwd: the config and the target must
+# be the same tree (run from elsewhere it would scan that tree under these
+# allowlists — review nit on PR #88).
+cd "$(dirname "$0")/.."
 GL="${GITLEAKS:-gitleaks}"
-CONFIG="$(dirname "$0")/../.gitleaks.toml"
+CONFIG=".gitleaks.toml"
 if [ "${1:-}" != "" ]; then
   RANGE="$1..HEAD"
   echo "secret-scan: commits $RANGE"
-  exec "$GL" git . --config "$CONFIG" --log-opts="$RANGE" --redact=100 --no-banner --exit-code 1
+  exec "$GL" git . --config "$CONFIG" --log-opts="--diff-merges=first-parent $RANGE" --redact=100 --no-banner --exit-code 1
 else
   echo "secret-scan: full history"
-  exec "$GL" git . --config "$CONFIG" --redact=100 --no-banner --exit-code 1
+  exec "$GL" git . --config "$CONFIG" --log-opts="--diff-merges=first-parent" --redact=100 --no-banner --exit-code 1
 fi
