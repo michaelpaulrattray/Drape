@@ -1,7 +1,7 @@
 {
- "edition": 11,
- "updatedAt": "2026-08-26T06:10:00+10:00",
- "shift": "foreman-10",
+ "edition": 12,
+ "updatedAt": "2026-08-26T06:25:00+10:00",
+ "shift": "foreman-11",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -82,7 +82,7 @@
    {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 06:10"
+    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 06:25"
    },
    {
     "label": "This page is the Desk",
@@ -92,7 +92,7 @@
    {
     "label": "Night shifts running",
     "tone": "good",
-    "source": "foreman-10 wrote this edition; the court still waits on your eye, so tonight finished the lobby theme-button fix (#73) — verified in the running app in both themes, merged, deployed"
+    "source": "foreman-11 wrote this edition; the court still waits on your eye, so tonight added the dead-code detector (#34) — proven, merged, deployed, nothing deleted"
    },
    {
     "label": "OpenRouter balance $7.52 of $250",
@@ -222,6 +222,20 @@
  ],
  "pipeline": [
   {
+   "id": "knip-34",
+   "title": "The team's dead-code detector is in — one command lists every file, export and dependency nothing uses (#34)",
+   "status": "merged",
+   "prNumber": 90,
+   "note": "in this deploy. It is a READER, never a deleter: the Atlas keeps the only authority to remove anything. Proven both ways before it counted — a planted dead file and a planted dead export were both caught, and the five modules our older map once wrongly called unused (both login routes among them) are correctly left alone. First reading: 51 unused files (40 of them unused UI primitives from the component kit), 34 unused packages, 174 unused exports. Nothing was deleted; the Janitor's first patrol takes it from here."
+  },
+  {
+   "id": "workflow-lint-35",
+   "title": "Two safety checkers for the gate's own workflow files — every finding fixed at its site (#35)",
+   "status": "in-review",
+   "prNumber": 89,
+   "note": "opened by another seat at 05:49 with the gate red on two shellcheck style notes in its own scripts; left to that seat this shift, taken over by the next if still untouched"
+  },
+  {
    "id": "lobby-theme-toggle-73",
    "title": "The lobby's sun/moon theme button works again — the help three-dot moves beside it instead of on top of it (#73)",
    "status": "merged",
@@ -316,6 +330,11 @@
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T06:25:00+10:00",
+   "shift": "foreman-11",
+   "text": "Still no word from you on the court strips, so the creative register stays parked at its gate and tonight was maintenance again. The team now has a dead-code detector (#34): one command that lists every file, export and package nothing in the product uses. I did not trust it until it had been caught out both ways — I planted a dead file and a dead export and it found both; and it correctly left alone the five modules our older map once wrongly called unused, including both login routes. Its first reading: 51 unused files (40 are unused pieces of the UI component kit), 34 unused packages, 174 unused exports — and two packages sitting in the project since day one that look like a mistyped install. Nothing was deleted; it is a reader, and the Janitor's first patrol turns the reading into cards. Another seat opened the workflow-file checkers (#35) minutes before I started and its gate is red on two style notes — I left it to them. Nothing was spent. Still waiting on you: the eight court strips, the GitHub one-click, and the OpenRouter balance."
+  },
   {
    "at": "2026-08-26T06:10:00+10:00",
    "shift": "foreman-10",
