@@ -1,0 +1,70 @@
+# The Gatekeeper — judgment half.
+#
+# A Fable review of every non-draft PR, posted as a sticky comment that
+# updates in place when the PR changes. Runs on the founder's Claude
+# subscription via CLAUDE_CODE_OAUTH_TOKEN (repo secret) — no API billing.
+#
+# This is a cross-model-context reviewer by design: it reads the diff cold,
+# with CLAUDE.md as its law book, independent of whichever session built it.
+
+name: Fable Review
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review]
+
+concurrency:
+  group: review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          use_sticky_comment: true
+          prompt: |
+            You are the Drape Gatekeeper reviewing this pull request. Read
+            CLAUDE.md in full first — it is project law and defines what a
+            defect is here.
+
+            Review the diff for, in priority order:
+            1. Correctness bugs — concrete inputs/state that produce wrong
+               output, a crash, or lost money (credits charged without
+               delivery, refunds that cannot fire).
+            2. Enforcement-invariant violations (CLAUDE.md "Enforcement
+               invariants"): owner scoping missing from the SQL statement
+               itself, userId taken from input instead of ctx.user.id,
+               missing .strict() on new input schemas, bare selects or
+               spread rows crossing the serialization boundary, a new
+               public endpoint or session-mint site outside the enumerated
+               lists.
+            3. Flag discipline: new reachable behavior not governed by its
+               feature flag (new code must land dark), or a change that
+               alters unflagged behavior as a side effect.
+            4. Controls: any deletion or refactor that could orphan a
+               control (a caller of a guard being removed) — name what was
+               bolted to the deleted path.
+            5. Tests: a bug fix without its failing-test reproduction, or a
+               class fix without its sweep.
+
+            Report findings as a single review comment: most severe first,
+            each with file:line and a one-sentence failure scenario. If the
+            diff touches billing, credits, auth, or session code, say so in
+            your first line. If you find nothing, say what you checked and
+            pass it cleanly — do not invent findings.
+          claude_args: "--model claude-fable-5"

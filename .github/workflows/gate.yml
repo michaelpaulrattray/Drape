@@ -1,0 +1,98 @@
+# The Gatekeeper — mechanical half.
+#
+# Runs the repo's own four instruments on every PR into main, plus the
+# founder-review rule: a diff touching money or auth surfaces cannot merge
+# on bot approval alone — it requires an approving review from the founder.
+#
+# Direct pushes to main by the deploy rite are untouched: branch protection
+# is configured with enforce_admins off, so the rite's push path (admin,
+# via the pre-push hook ceremony) bypasses these checks. Agent-built work
+# arrives as PRs and cannot.
+
+name: Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate-checks:
+    name: gate-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (pnpm check)
+        run: pnpm check
+
+      - name: Architecture Atlas freshness
+        run: pnpm architecture:check
+
+      - name: Capability Atlas (static)
+        run: pnpm capability:check
+
+      - name: Unit tests
+        run: pnpm test
+
+  founder-gate:
+    name: founder-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Money/auth surface check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.base_ref }}
+          OWNER_LOGIN: michaelpaulrattray
+        run: |
+          # Surfaces where a bot's approval is never enough (CLAUDE.md:
+          # billing, credits, auth, and session code are production-critical).
+          PATTERNS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^shared/const\.ts$|^drizzle/'
+
+          git fetch origin "$BASE" --depth=1
+          CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
+          HITS=$(echo "$CHANGED" | grep -E "$PATTERNS" || true)
+
+          if [ -z "$HITS" ]; then
+            echo "No money/auth surfaces touched — founder gate passes."
+            exit 0
+          fi
+
+          echo "Founder-review surfaces touched:"
+          echo "$HITS"
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label founder-review || true
+
+          APPROVED=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" \
+            --jq "[.[] | select(.user.login == \"$OWNER_LOGIN\" and .state == \"APPROVED\")] | length")
+
+          if [ "$APPROVED" -ge 1 ]; then
+            echo "Founder approval present — gate passes."
+            exit 0
+          fi
+
+          echo "::error::This PR touches billing/credits/auth/session surfaces and needs an approving review from $OWNER_LOGIN before it can merge."
+          exit 1
