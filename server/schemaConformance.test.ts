@@ -269,11 +269,13 @@ describe("the unmigrated exception list only shrinks", () => {
   });
 
   it("⚠ and the entries are pinned by name — joining this list is a deliberate act", () => {
-    /* `crew_replies` joined 2026-08-25 (issue #41): applied in dev, awaiting the
-       founder's production ceremony, which is a named precondition of the
-       CREW_TAB_SCOPE flip. Its line deletes the day the ceremony runs. */
+    /* `crew_replies` joined 2026-08-25 (issue #41) and LEFT the same night:
+       the founder's ceremony applied it on production and `1bc462de` deleted
+       its exception line as that line's own docblock ordered — but not this
+       pin, so main went red until the next shift caught it. The pin and the
+       list move in the SAME commit, always; that is what "deliberate act"
+       costs. */
     expect(Object.keys(DECLARED_BUT_UNMIGRATED)).toEqual([
-      "crew_replies",
       "casting_cast_segments",
     ]);
   });

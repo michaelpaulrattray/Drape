@@ -645,12 +645,15 @@ one from whoever owns its road.
   namespace is behind `adminProcedure` before the flag is consulted, and the
   tab has no engine, no worker, no bytes and no spend it could strand.
   **The `crew_replies` table must exist before this is flipped on** (migration
-  `0054`; production takes it by `scripts/ceremony-crew-replies.mts`, a
-  founder act — a precondition of the FLIP, not a boot guard; until it runs
-  the table is enumerated in `DECLARED_BUT_UNMIGRATED`). The briefing half is
+  `0054`), and it does: the founder ran the ceremony on production 2026-08-25
+  22:55 (`1bc462de` — *"THE CREW TAB IS LIVE — founder's 'go live'"*), columns
+  verified, and the table's `DECLARED_BUT_UNMIGRATED` line deleted in that
+  same commit as its docblock ordered. The briefing half is
   `server/crew/crew-briefing.json`, written by shifts and deployed with the
   code; his replies are the table, written only from the page with his
-  session. Production: `off` — the flip is his, on the completion card
+  session. **Production: `all` since 2026-08-25**, set by his hand and read
+  back — shifts read his replies at shift start and close with
+  `railway.cmd run --service MySQL -- npx tsx scripts/crew-read-replies.mts`
 
 ### Windows notes
 
