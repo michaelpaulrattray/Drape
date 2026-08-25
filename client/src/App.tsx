@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, useLocation } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
 import { AnimatePresence } from "framer-motion";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { PageTransition } from "./components/PageTransition";
@@ -92,6 +92,16 @@ function Router() {
           <Route path="/casting/foundation" component={CastingFoundation} />
 
           {/* Admin */}
+          {/*
+            The bare address answers (#68 — "from the lobby i cant even enter
+            the admin page"): /admin typed into the bar was a 404 while every
+            real page lives one segment deeper. AdminOverview owns the role
+            guards, so this is safe for every role: unauthenticated → login,
+            non-admin → studio, admin → dashboard.
+          */}
+          <Route path="/admin">
+            <Redirect to="/admin/overview" replace />
+          </Route>
           <Route path="/admin/overview" component={AdminOverview} />
           <Route path="/admin/audit-logs" component={AdminAuditLogs} />
           <Route path="/admin/users" component={AdminUserManagement} />
