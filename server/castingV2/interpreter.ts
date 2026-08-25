@@ -389,6 +389,64 @@ const SKIN_LANE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
   lane is not a place to move a fact OUT of the summary.`;
 
 /**
+ * THE CREATIVE REGISTER'S BLOCK — one more key, asked only inside
+ * `CASTING_CREATIVE_REGISTER_SCOPE` (`CREATIVE_REGISTER_DESIGN.md` §2).
+ *
+ * # Why a BLOCK and not a field in the base schema
+ *
+ * `WARDROBE_BLOCK`'s argument, unchanged and for the same measurement: a field
+ * in the base schema is a sentence every account's interpreter reads, and
+ * *context is not additive* in this product. Off, the bytes on the wire are
+ * the bytes every account has always got.
+ *
+ * # What it decides, and what it is forbidden to move
+ *
+ * It decides a ROUTE — which register the eight slices are written in — and
+ * nothing else. The court's selector control (arm H) answered both cells as
+ * designed with a one-word prompt; this asks the same question inside the
+ * call that already runs, so a creative reading costs no second transport
+ * round trip. The closing sentence is the lane rule every other block here
+ * carries: a key must never become a place to move a fact OUT of `role` or
+ * `characterNotes`, which is `statedHair`'s original defect.
+ *
+ * # Conservative by construction (§2b)
+ *
+ * The text says ambiguity resolves to false, and the PARSE enforces it twice
+ * over: `engaged` must be literally `true`, and a `true` with no grounds in
+ * the brief's own words is read as false (`parseCreativeRegister`). A
+ * creative brief mis-routed to house is today's known state; an ordinary one
+ * mis-routed to creative is an unmeasured one.
+ */
+const CREATIVE_REGISTER_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
+
+  "creativeRegister": { "engaged": boolean, "reasons": string[] }
+
+- "creativeRegister": WHETHER THIS BRIEF ASKS FOR SOMETHING A REAL CAMERA COULD
+  NOT PHOTOGRAPH ON A REAL PERSON TODAY — the door to the creative register.
+  "engaged": true ONLY when the brief plainly states at least one of:
+    (a) fantastical or non-human anatomy or hardware AS PART OF THE BODY —
+        cybernetic implants and ports, prosthetics-as-design, creature features,
+        horns, scales, a glowing eye;
+    (b) a role or kind of being outside the ordinary human casting catalogue —
+        an android, an orc, a vampire, a sci-fi soldier, a creature;
+    (c) explicit style, subculture or world language the person is cast INTO —
+        cyberpunk, cyber-goth, post-apocalyptic, high fantasy.
+  false is the ordinary answer and means an ordinary photographable person: a
+  dad, a runway model, a surgeon, a weathered fisherman — however vivid the
+  description, however unusual the face.
+  AMBIGUITY RESOLVES TO false. Heavy tattoos, a shaved head, a scar, an
+  eyepatch, striking makeup or a strong look on their own are false — the
+  ordinary register already casts those well.
+  "reasons": when true, the brief's OWN PHRASES that made it so, up to three,
+  each under 12 words — ["cybernetic augmentation as part of his body"]. When
+  false, an empty array. USE ONLY WORDS THAT APPEAR IN THE BRIEF: a reason
+  containing a word the user did not type is dropped, and a true with no
+  surviving reason is read as false.
+  THIS DECIDES A ROUTE AND NOTHING ELSE. Every other key is filled exactly as
+  it would be for an ordinary brief; nothing is moved out of "role" or
+  "characterNotes" because of this one.`;
+
+/**
  * THE ANNOUNCED CAP, AND ITS REPLACEMENT — the one sentence
  * `CASTING_BRIEF_FIDELITY_SCOPE` swaps (`CASTING_V2_BRIEF_FIDELITY_BUILD.md`
  * section 3a, countersigned fable-1600).
@@ -430,7 +488,7 @@ export const NOTES_CAP_RELEASED =
  * than shipping a prompt nobody chose.
  */
 export function interpreterSystemPrompt(
-  options?: { wardrobe?: boolean; ink?: boolean; fidelity?: boolean },
+  options?: { wardrobe?: boolean; ink?: boolean; fidelity?: boolean; register?: boolean },
 ): string {
   let base = SYSTEM_PROMPT;
   if (options?.fidelity === true) {
@@ -447,6 +505,8 @@ export function interpreterSystemPrompt(
   if (options?.fidelity === true) blocks.push(SKIN_LANE_BLOCK);
   if (options?.wardrobe === true) blocks.push(WARDROBE_BLOCK);
   if (options?.ink === true) blocks.push(BORN_INK_BLOCK);
+  /* Last, so every existing pair of flags keeps the bytes it has today. */
+  if (options?.register === true) blocks.push(CREATIVE_REGISTER_BLOCK);
   return blocks.length === 0 ? base : [base, ...blocks].join("\n");
 }
 
@@ -989,6 +1049,16 @@ export async function interpretBrief(input: {
    * takes it, which the budget court watched happen 3 drives out of 3.
    */
   fidelity?: boolean;
+  /**
+   * ASK WHICH REGISTER THIS BRIEF BELONGS IN — inside
+   * `CASTING_CREATIVE_REGISTER_SCOPE` (`CREATIVE_REGISTER_DESIGN.md` §2).
+   *
+   * Absent means no, and no means the prompt is the one every account has been
+   * getting. See `CREATIVE_REGISTER_BLOCK` for why this is a flag rather than a
+   * permanent addition — it is `WARDROBE_BLOCK`'s argument and the same
+   * measurement.
+   */
+  register?: boolean;
 }): Promise<InterpretOutcome> {
   const notesMax = input.fidelity === true ? NOTES_MAX_FIDELITY : NOTES_MAX;
   const textEngine = input.engine ?? interpreterEngine();
@@ -1006,6 +1076,7 @@ export async function interpretBrief(input: {
         wardrobe: input.wardrobe === true,
         ink: input.ink === true,
         fidelity: input.fidelity === true,
+        register: input.register === true,
       }),
       user: input.briefText,
       json: true,

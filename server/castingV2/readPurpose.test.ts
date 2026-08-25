@@ -52,7 +52,14 @@ describe("the read stage's purpose vocabulary", () => {
     read zero, and a bucket that cannot be non-zero reads as a measurement
     rather than as an absence.
   */
-  it("is exactly the eleven members the design note enumerated", () => {
+  /*
+    TWELVE since 2026-08-26: `author` joined with the creative register's
+    variance card (`creativeRegister.ts`). Every other member is a READING of
+    a sentence or a picture; a card is prose WRITTEN for a slice, and a census
+    that filed it under `interpret` would price the interpreter for work it
+    never did.
+  */
+  it("is exactly the twelve members the design note enumerated, plus `author`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -65,6 +72,7 @@ describe("the read stage's purpose vocabulary", () => {
       "describe",
       "classify",
       "gate",
+      "author",
     ]);
   });
 

@@ -373,7 +373,15 @@ export type ReadPurpose =
   /** A kind or key decision. */
   | "classify"
   /** A yes/no door that is not a re-ask. */
-  | "gate";
+  | "gate"
+  /**
+   * PROSE WRITTEN FOR A SLICE rather than a fact read out of a sentence — the
+   * creative register's variance card (`creativeRegister.ts`), and the
+   * writer's room when it lands. Its own word because every other purpose
+   * here is a READING, and a census that filed an authored card under
+   * `interpret` would price the interpreter for work it never did.
+   */
+  | "author";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -390,6 +398,7 @@ export const READ_PURPOSES = Object.freeze([
   "describe",
   "classify",
   "gate",
+  "author",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

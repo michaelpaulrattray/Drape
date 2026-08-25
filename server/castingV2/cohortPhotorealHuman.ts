@@ -639,6 +639,43 @@ export function cohortConstantBlocks(wardrobeLine: string | null): readonly stri
 }
 
 /**
+ * THE SHEET FRAME THE CREATIVE REGISTER KEEPS — his condition on step 2,
+ * verbatim: *"Id like to see C with the framing fixed"*, and his reading that
+ * B's realism is *"probably due to framing"* (#16, 2026-08-26).
+ *
+ * The register's rule (`CREATIVE_REGISTER_DESIGN.md` §1b) is that every
+ * sentence in the frame names a STRUCTURAL fact of the photograph and never a
+ * quality of the person. Read block by block against that rule:
+ *
+ *   framingBlock       the crop, the pose, the expression mechanics, the
+ *                      backdrop and the wardrobe line — KEPT. This is the lock
+ *                      arm C lost (it delivered full body against a mid-torso
+ *                      ask on 2 of 2 frames).
+ *   CAPTURE            sensor, lens, flash, colour — KEPT. Structural.
+ *   SKIN_AND_FEATURES  what a real photograph of real skin looks like — KEPT.
+ *                      This is B's realism at the pixels.
+ *   NEGATIVES          what must never be in the frame — KEPT.
+ *   IDENTITY_INTEGRITY DROPPED. Heritage-is-bone and "a face a casting
+ *                      director would remember" describe the PERSON and answer
+ *                      questions the engine answers better unaided on this
+ *                      population (§0). Courted, never assumed: it comes back
+ *                      if the next court says the register lost bone.
+ *   PRIORITY           DROPPED. It arbitrates SUBJECT against DIRECTION, and
+ *                      the register composes neither block.
+ *   overrideBlock      REPLACED by the register's own authority paragraph
+ *                      (`creativeRegister.ts`), because the house sentence
+ *                      tells the engine to ignore an implied COSTUME and the
+ *                      register's ask is absolute about what it states.
+ *
+ * Shared by REFERENCE with the house constant rather than re-typed, for the
+ * reason `PHOTOREAL_HUMAN_BLOCKS` gives: two copies of the framing text would
+ * drift, and the one that drifted would be the one nobody was grading.
+ */
+export function creativeRegisterFrameBlocks(wardrobeLine: string | null): readonly string[] {
+  return [framingBlock(wardrobeLine), CAPTURE, SKIN_AND_FEATURES, NEGATIVES];
+}
+
+/**
  * The code-owned constant for one roll.
  *
  * ⚠ **A FUNCTION NOW, AND THE GUARD READS THE SAME FUNCTION.** Two of these

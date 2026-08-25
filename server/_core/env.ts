@@ -51,7 +51,9 @@ import {
   CASTING_FRAMING_TRIM_SCOPE_ENV,
   validateCastingFramingTrimEnvironment,
   CASTING_BRIEF_FIDELITY_SCOPE_ENV,
+  CASTING_CREATIVE_REGISTER_SCOPE_ENV,
   validateCastingBriefFidelityEnvironment,
+  validateCastingCreativeRegisterEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -500,6 +502,18 @@ export function validateEnv(): void {
   */
   validateCastingBriefFidelityEnvironment({
     scope: process.env[CASTING_BRIEF_FIDELITY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+
+  /*
+    THE CREATIVE REGISTER, same parent and the same reason as the two above: it
+    gates the COMPILE of a roll — which register the eight slices are written
+    in — so a user outside casting has no brief for it to route. Off, and absent
+    means off, the compile is byte-identical to today's, which is the design's
+    own §1a and the first thing its suite asserts.
+  */
+  validateCastingCreativeRegisterEnvironment({
+    scope: process.env[CASTING_CREATIVE_REGISTER_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
 
