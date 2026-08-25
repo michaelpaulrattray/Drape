@@ -1,7 +1,7 @@
 {
- "edition": 4,
- "updatedAt": "2026-08-26T01:10:00+10:00",
- "shift": "the terminal relay (Fable), closing the switch-over on the founder's word",
+ "edition": 5,
+ "updatedAt": "2026-08-26T03:00:00+10:00",
+ "shift": "foreman-4",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -14,8 +14,8 @@
    "title": "The creative register — build order (design §5)",
    "steps": [
     {
-     "title": "The court — your cyborg brief, eight arms (funded under your spend threshold; fires when its arms are final)",
-     "state": "waiting"
+     "title": "The court — RUN tonight, eight arms, $0.79 of renders. The strips are in your gallery below; your eye closes this step.",
+     "state": "in-progress"
     },
     {
      "title": "The register built dark behind CASTING_CREATIVE_REGISTER_SCOPE",
@@ -75,19 +75,19 @@
   ],
   "chips": [
    {
+    "label": "The register court ran — frames await your eye",
+    "tone": "good",
+    "source": "18 renders, 6 refusals counted, fal 12.45 → 11.66 USD; full pointers on #16"
+   },
+   {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× for this edition, all 200 — 23:25, 25 Aug"
+    "source": "health checked 3× for this edition, all 200 — 03:00, 26 Aug"
    },
    {
-    "label": "This page went live tonight",
+    "label": "This page is the Desk",
     "tone": "good",
-    "source": "your “go live”, 22:53 — ceremony applied, CREW_TAB_SCOPE=all"
-   },
-   {
-    "label": "Register court funded",
-    "tone": "neutral",
-    "source": "your spend-threshold ruling — it fires when its arms are final"
+    "source": "your switch-over word before bed; the artifact is a read-only mirror"
    },
    {
     "label": "Night shifts running",
@@ -142,49 +142,110 @@
    "issueNumber": 41
   }
  ],
- "eyeItems": [],
+ "eyeItems": [
+  {
+   "id": "creative-register-court-run1",
+   "title": "The creative-register court — eight arms of your cyborg brief",
+   "question": "Does the creative register (arm C) reach your raw prompt’s conviction (arm A, and your two reference frames) while keeping sheet structure? Check each frame against your own list: jaw plate present and prominent, amber eye glowing, porcelain committed, no beards you never asked for, build spread not converged, wardrobe line obeyed. Refusal counts are under each strip’s caption.",
+   "state": "open",
+   "filedAt": "2026-08-26T03:00:00+10:00",
+   "issueNumber": 16,
+   "frames": [
+    {
+     "key": "crew-eye/f62267f7-8aef-4dd4-aeef-d08d65e9ee2a.png",
+     "caption": "Your reference frame 1 — the conviction bar, made by your own raw prompt.",
+     "arm": "REF"
+    },
+    {
+     "key": "crew-eye/5c6b7508-0cbd-49df-abba-e0023353d815.png",
+     "caption": "Your reference frame 2 — the second raw-prompt frame.",
+     "arm": "REF"
+    },
+    {
+     "key": "crew-eye/cc6d6613-d6ff-4776-8aa9-7d03860f558a.png",
+     "caption": "Your raw prompt + your seven words of frame, re-made tonight. 0 of 3 refused. This is the bar the candidate must reach.",
+     "arm": "A"
+    },
+    {
+     "key": "crew-eye/61d18605-d8df-48ec-b7e9-563140c8b0da.png",
+     "caption": "Today’s full compile, through the real entrance. 0 of 3 refused — but look: beards you never asked for on all three, t-shirts against the bare-chested ask, and the hardware gone timid.",
+     "arm": "B"
+    },
+    {
+     "key": "crew-eye/e83e10ee-dd11-4ef5-9468-195d3903a8d7.png",
+     "caption": "THE CANDIDATE — the creative register: your words verbatim, a minimal frame, a per-slice variance card. 1 of 3 refused. Hardware committed — but the mid-torso framing line was ignored (full body delivered), so the lean frame loses locks the old scaffolding held.",
+     "arm": "C"
+    },
+    {
+     "key": "crew-eye/79a0f1de-2e0f-4465-b778-cab9dfe9d63c.png",
+     "caption": "The candidate minus the variance card. 2 OF 3 REFUSED — the card appears to protect against refusals as well as buying spread.",
+     "arm": "D"
+    },
+    {
+     "key": "crew-eye/b5b3406a-df65-4407-b17d-79ced6cbf3e9.png",
+     "caption": "The candidate plus the one-sentence category block. 2 of 3 refused.",
+     "arm": "R"
+    },
+    {
+     "key": "crew-eye/0d0d63a6-f09a-4a7d-b5d6-2180e816ca82.png",
+     "caption": "INVALID AS BUILT, kept for honesty: shortening today’s blocks mechanically also cut YOUR character detail to one word — so these three ordinary men measure the harness’s mistake, not shorter answers. The arm reruns with your facts intact.",
+     "arm": "C′"
+    },
+    {
+     "key": "crew-eye/83bed482-f97b-48cb-975b-cf1a4aa6d383.png",
+     "caption": "The writer’s room: “cyber-goth girl with an eyepatch”, authored into rich concepts, rendered. 1 of 3 refused; the author gave 4 concepts of the 8 asked.",
+     "arm": "W"
+    },
+    {
+     "key": "crew-eye/28a68fbd-afb4-4105-84f7-b7edb60acfa8.png",
+     "caption": "The same thin brief through today’s compile — the control for the writer’s room.",
+     "arm": "W-today"
+    }
+   ]
+  }
+ ],
  "pipeline": [
   {
-   "id": "crew-golive-record",
-   "title": "Your go-live's record completion — the test that reddened the suite when the ceremony ran, plus this page's flag entry",
-   "status": "in-review",
-   "prNumber": 76,
-   "note": "merges first; every other change's checks inherit it"
+   "id": "eye-viewer-84",
+   "title": "The gallery viewer you asked for: click a frame, judge it full size, arrows between arms (#75)",
+   "status": "merged",
+   "prNumber": 84,
+   "note": "in this very deploy — the court strips open in it"
   },
   {
-   "id": "admin-entry-68",
-   "title": "You can enter the admin page again: /admin answers, and the account menu is readable in dark (#68)",
-   "status": "in-review",
-   "prNumber": 77,
-   "note": "your words filed it this morning; driven and photographed in both themes"
+   "id": "eye-route-hardening-83",
+   "title": "Gallery image route hardened per its own review: a flag typo can’t hang requests, served type derived, one id namespace (#82)",
+   "status": "merged",
+   "prNumber": 83,
+   "note": null
+  },
+  {
+   "id": "eye-gallery-79",
+   "title": "The eye gallery (#75)",
+   "status": "merged",
+   "prNumber": 79,
+   "note": "holding its first real item below"
   },
   {
    "id": "crew-ux-parity-74",
-   "title": "This page catches up to the Desk: progress bars, the full ladder, chips, Recently landed, the journal fold (#74)",
-   "status": "in-review",
+   "title": "This page caught up to the Desk: progress bars, full ladder, chips, Recently landed, journal fold (#74)",
+   "status": "merged",
    "prNumber": 78,
-   "note": "what you are reading is the first edition in the new shape"
+   "note": null
   },
   {
-   "id": "crew-tab",
-   "title": "The Crew tab (#41)",
+   "id": "admin-entry-68",
+   "title": "You can enter the admin page again: /admin answers, account menu readable in dark (#68)",
    "status": "merged",
-   "prNumber": 72,
-   "note": "this page, live since your word tonight"
+   "prNumber": 77,
+   "note": null
   },
   {
-   "id": "refine-lockkey-record",
-   "title": "Refine double-tap guard: record corrected, wire pinned in the suite (#54)",
+   "id": "crew-golive-record",
+   "title": "Your go-live’s record completion (the suite-reddening pin) + the spend-threshold record",
    "status": "merged",
-   "prNumber": 67,
-   "note": "the guard itself was already live since 08-18"
-  },
-  {
-   "id": "dependabot-npm",
-   "title": "Dependency bumps: dependabot config + three action bumps",
-   "status": "merged",
-   "prNumber": null,
-   "note": "#36, #46–#48 — each proven by its own gate run"
+   "prNumber": 76,
+   "note": null
   }
  ],
  "problems": [
@@ -204,6 +265,11 @@
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T03:00:00+10:00",
+   "shift": "foreman-4",
+   "text": "THE COURT RAN. Eight arms of your cyborg brief, 18 renders, $0.79 — the strips are in your gallery above, in the full-size viewer you asked for this evening. What’s already visible before your eye: today’s compile put beards you never asked for on all three frames and dressed your bare-chested ask in t-shirts; the lean register carries committed hardware but broke the mid-torso framing lock; and the LEANER the prompt, the MORE the engine refused (the no-variance-card arm refused 2 of 3), so the design’s safety-rewording retry is load-bearing. One arm (C′) is reported invalid — the harness’s own shortening cut your character detail, so its frames measure my mistake, honestly labelled. Your verdict goes in the box under the item; full pointers on #16."
+  },
   {
    "at": "2026-08-25T23:30:00+10:00",
    "shift": "foreman-4",
