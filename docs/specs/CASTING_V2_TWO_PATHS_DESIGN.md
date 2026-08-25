@@ -1,5 +1,49 @@
 # The Two Paths — Wardrobe or Basics: a design for countersign
 
+> ⚠ **SUPERSEDED IN ITS CENTRAL RULING — 2026-08-25. THE TOGGLE DIES AND
+> BASICS BECOMES THE BIRTH DEFAULT FOR EVERY CAST.** Founder direction,
+> verbatim: *"this is how i envision it working, cast without any outfit
+> details (basics) -> cast with wardrobe detail (dress them in that wardrobe)
+> but if i said black lather jacket, would thhey be wearings pants and shoes?
+> -> refinement wardrobe edits allowed -> after signed VTO is its own thing
+> that will get built based on the legacy VTO which we will probably rebuild
+> anyway"* (relayed fable-1643).
+>
+> **This notice is filed at the SOURCE on the day the direction landed, before
+> the replacement design exists**, because the named failure here is a
+> correction that reaches every copy except the document people actually open.
+> The body below is NOT yet amended — it is amended when the new design is
+> written, not before — so read it as the record of what was countersigned on
+> 2026-08-22 and shipped, not as what the product is heading for.
+>
+> **What changes:**
+> - §0's *"A cast is born on one of two paths, chosen before the roll"* — there
+>   is no choice. **Basics is the birth state.** The toggle is removed from the
+>   modal and `CASTING_TWO_PATHS_SCOPE`'s SURFACE retires with it (the §6
+>   toggle UI, the bypass notification, and the `path` column's MEANING —
+>   likely not the column itself). Law 7's ruling clause applies: the sweep at
+>   the closing commit asks what was bolted to the dying branch.
+> - **A stated outfit is still obeyed**, and the slots it leaves unstated
+>   complete from BASICS rather than being engine-styled — his own jacket
+>   question answered: *"black leather jacket"* is jacket plus neutral basics
+>   below, fully dressed, no freelancing. An OPEN styling ask (*"build an
+>   outfit around…"*) is the explicit invitation and routes to the picker, so
+>   the shape-A wardrobe picker built for this design is **not wasted** — it
+>   becomes the engine behind that ask.
+> - **Basics is CATEGORY-SUITED**, keyed off `intent.role` — his words:
+>   *"making a caveman in basics would look weird… if its a monster they might
+>   not even wear anything"*. ⚠ That is a hard dependency on the role-court
+>   repair: a null `role` has no basics to pick from, so the replacement design
+>   must state its fallback and the role fix lands first.
+> - **The reason is VTO**, and it is his: *"its alot easier to dress someone
+>   from basics that fighting with their original clothes."* VTO is its own
+>   post-Sign program on the legacy VTO's bones; this design's only remaining
+>   promise to it is that a signed cast arrives in basics as its canvas.
+>
+> **What does NOT change:** refine wardrobe edits, words or reference, exactly
+> as today.
+
+
 **Founder ruling: fable-1311** (chat, 2026-08-21 — *"this is the way foward
 100%"*), with fable-1312's addendum. **Roadmap §10 item 5.**
 
