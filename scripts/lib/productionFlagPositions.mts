@@ -142,12 +142,17 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   },
   CASTING_OPEN_LANE_SCOPE: { position: "users:1", why: "the open lane; his account" },
   CASTING_FACE_SCAN_SCOPE: {
-    position: "users:1",
-    why: "the auto-scan spends house money per version looked at",
+    position: "all",
+    why:
+      "founder ruling 2026-08-25 on the Desk ('widen the pair'), on the #38 "
+      + "cost model: ~$0.10/scan, ~$30/power-user-month, gated-beta population; "
+      + "re-read before public widening",
   },
   CASTING_SCAN_TABLE_SCOPE: {
-    position: "users:1",
-    why: "keeps a finished scan (migration 0032, ceremony run)",
+    position: "all",
+    why:
+      "widened WITH face-scan as one pair (the boot guard requires it; his "
+      + "same 'widen the pair' word) — the keeper makes every later look free",
   },
   CASTING_SEGMENTS_SCOPE: {
     position: "users:1",

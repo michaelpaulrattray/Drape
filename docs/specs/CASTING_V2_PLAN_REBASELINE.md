@@ -81,6 +81,11 @@ its debts is not restated here — it lives, derived rather than remembered, in:
 The rebaselined ladder below absorbs these by reference, not by copying —
 a second list shadowing the queue would drift from it (working law 4).
 
+> ✅ **COUNTERSIGNED — THE GOVERNING LADDER.** The founder signed on the Desk,
+> 2026-08-25 21:38, his word: *"signed"* — after his own pre-sign review
+> amended it (v2) and the excavation hardened it (v3/v4). N1–N8 governs;
+> PROGRAM.md points here; the original plan's §K ladder is historical.
+
 ## 4. The remaining ladder — rungs N1–N8 (v2: N3 expanded and N4 Takes added on the founder's pre-sign review)
 
 Fresh names (N for "new ladder"), because both "M" and "R" are taken by
