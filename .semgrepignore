@@ -1,0 +1,13 @@
+# Warden instrument: what `pnpm warden:semgrep` does NOT read (issue #33).
+# Semgrep's built-in default list is REPLACED by this file, so everything
+# excluded is stated here. Tests are read on purpose: a test that plants a
+# dangerous shape as a fixture must say so with a `nosemgrep` reason.
+node_modules/
+dist/
+output/
+.playwright-mcp/
+docs/
+drizzle/
+patches/
+# hand-run, thrown-away court scripts (issue #8) — litter, not product
+scripts/**/*-disposable.*

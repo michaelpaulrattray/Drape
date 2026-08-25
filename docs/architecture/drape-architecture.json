@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9d551d9e096a663f"
+    "sourceFingerprint": "7345cbc33015fe1e"
   },
   "domains": [
     {
@@ -11829,6 +11829,10 @@
     {
       "id": "test:server/healthMonitor.test.ts",
       "path": "server/healthMonitor.test.ts"
+    },
+    {
+      "id": "test:server/heroProxy.test.ts",
+      "path": "server/heroProxy.test.ts"
     },
     {
       "id": "test:server/identityChangeDialog.test.ts",
