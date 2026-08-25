@@ -31,7 +31,12 @@ The instruments and their own record pages:
 
 ---
 
-## Run 1 — 2026-08-26 08:02– AEST (Warden, patrol #1, card #97)
+## Run 1 — 2026-08-26 08:02–08:07 and 08:17– AEST (Warden, patrol #1, card #97)
+
+Two seats: the first opened PRs #109/#110 at 08:07 and its process died
+before any close; the second resumed at 08:17 from the artifacts alone (no
+mailbox entry, no briefing existed) and finished the run. Close time is in
+§D, stamped after the close.
 
 Inherited: #97's list. Item 1 (merge PR #89) was already done by foreman-13
 (`cda444ab`) before the card was cut; the run starts at item 2.
@@ -62,7 +67,29 @@ Inherited: #97's list. Item 1 (merge PR #89) was already done by foreman-13
   so the new workflow's lint reading is CI's alone — the gate's own
   workflow-lint step on the PR is the control for `knip.yml`'s shape.
 
-### C. Controls (appended after CI ran — see below)
+- **Two review findings folded in before merge** (the gate's Fable review
+  of PR #109): (1) `knip.yml` treated exit 1 as "knip listed issues", but
+  pnpm itself exits 1 when the script it is asked for does not exist — a
+  renamed `janitor:knip` would have left every nightly green with an empty
+  table. A 1 now has to carry at least one `Category (N)` heading or the job
+  reddens (the heading shape checked against a local reading: seven
+  headings, every one matched by the pattern). (2) the semgrep step ran
+  `pnpm` on the runner image's system Node, before `setup-node`; Node 24 is
+  now set up first, and the step keeps its before-install property.
 
-_(pending at the time of this commit; the PR record and the next section
-carry the run ids)_
+### C. Controls (working law 2 — seen to fail before it counted)
+
+Recorded AT THE RUNS, by the second seat of this patrol (the first seat's
+process died between opening the PRs and writing its close):
+
+| control | branch / PR | run | outcome |
+|---|---|---|---|
+| **semgrep step — positive** | `team/warden-1-semgrep-plant` (PR #110, NEVER merged), `9ebe509a` = PR #109's commit + `server/_semgrepPlant.ts` (`res.send(eval(String(req.query.code)))` and `exec(req.query.cmd)`) | **32905105740** | gate-checks **FAILURE at step 7 "Static shapes (semgrep, OSS rulesets)"** — every step before it green, every step after it skipped. The log: `2 Code Findings` in `server/_semgrepPlant.ts`, both Blocking (`direct-response-write`, `code-string-concat`), `Ran 76 rules on 1608 files: 2 findings`, exit 1. |
+| **semgrep step — negative** | `team/warden-1-ci-steps` (PR #109), `c211b901` — the same tree minus the plant | **32904675152** | gate-checks SUCCESS, step 7 green, `1607` files, 0 findings; typecheck, both atlases and the unit suite green after it. |
+| **the ceiling, re-measured in CI** | same plant | same run | the `exec(req.query.cmd)` line produced **no finding** — only the `eval` did. Exactly what `docs/WARDEN_SEMGREP.md` recorded from the local plant (#33): these rulesets do not taint-track a shell command from a request. Not a regression; a known hole, stated twice now. |
+| `knip.yml` shape | PR #109 | 32904675152, step 5 | actionlint + zizmor (pedantic) read the new workflow and passed it — the only lint reading this file has, since neither tool is on the Windows box. |
+| `upload-artifact` pin | — | `gh api repos/actions/upload-artifact/git/ref/tags/v7.0.1` | resolves to `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` — a lightweight tag straight to the commit, re-resolved independently by the second seat (the review asked for one). |
+| access-control suites | `fcfee27e`, re-run by the second seat 08:24 | — | 4 files / 26 tests green, same numbers as §A. |
+
+The plant branch and PR #110 are closed and deleted once this row exists;
+the run id is the artifact, and it outlives the branch.

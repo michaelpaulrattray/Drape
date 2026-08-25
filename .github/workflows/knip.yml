@@ -69,6 +69,17 @@ jobs:
             echo "::error::knip exited $STATUS — the reading did not run (see the log above)."
             exit "$STATUS"
           fi
+          # Exit 1 is ALSO pnpm's own exit when the script it was asked for
+          # does not exist (ERR_PNPM_NO_SCRIPT) — so if `janitor:knip` were
+          # ever renamed away, every nightly would stay green with an empty
+          # table and pnpm's error as the artifact. A knip 1 always prints
+          # at least one `Category (N)` heading; a 1 without one is not a
+          # reading (review of PR #109, finding 1). Exit 0 legitimately has
+          # no headings and is not checked.
+          if [ "$STATUS" -eq 1 ] && ! grep -qE '^[A-Za-z].*\([0-9]+\)$' knip-reading.txt; then
+            echo "::error::exit 1 with no knip category heading — the reading did not run (see the log above)."
+            exit 1
+          fi
           # The compact reporter prints one heading per category; count the
           # rows under each so the summary carries the numbers the Janitor's
           # table records (files / deps / devDeps / exports / types / duplicates).
