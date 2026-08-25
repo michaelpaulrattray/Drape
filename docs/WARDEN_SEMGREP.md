@@ -13,8 +13,14 @@ gate.
 `python -m venv ~/.semgrep-venv && ~/.semgrep-venv/Scripts/pip install
 semgrep==1.174.0`, then put `~/.semgrep-venv/Scripts` on `PATH` for the
 `pnpm` call. It runs natively on this Windows machine (proven 2026-08-26).
-The CI step lands AFTER PR #89 (#35) merges, on the SHA-pinned workflow shape
-that PR establishes — same rule the knip nightly follows (#34).
+**In the gate since Warden patrol #1 (2026-08-26)**: `gate.yml`'s "Static
+shapes (semgrep, OSS rulesets)" step installs the same pinned version with
+pipx and runs `pnpm warden:semgrep` — the rulesets and flags live in
+`package.json` alone, so the step and a hand reading cannot drift. The version
+pin is in two places by necessity (a Python tool has no line in
+`pnpm-lock.yaml`): the workflow step and the sentence above; move both
+together. The step landed on #89's SHA-pinned shape as promised, and its
+positive control in CI is recorded in `docs/WARDEN_LOG.md` run 1.
 
 ## What it reads
 
@@ -67,3 +73,4 @@ suppression.
 | date | semgrep | rules | targets | findings | note |
 |---|---|---|---|---|---|
 | 2026-08-26 | 1.174.0 | 76 | 1604 | 4 → 0 | First reading at `833175a3`: four `direct-response-write` WARNINGs, all in `server/heroProxy.ts`, one class — image bytes from our own bucket under an allowlisted key sent as the body. Read as false positives for XSS and annotated with the rule id and reason at each site. Opening the file for the annotation found the allowlist was a bare object index: `/api/hero/constructor` passed the unknown-asset door with `Object`'s constructor as a key. Fixed with `Object.hasOwn` and pinned by `server/heroProxy.test.ts`; the other two request-keyed lookups (`crewEyeFrames.ts`, `evidenceDelivery.ts`) were swept and already closed (law 7). Client: 0 findings. |
+| 2026-08-26 | 1.174.0 | 76 | 1607 | 0 | Warden patrol #1 at `fcfee27e` (08:20): clean, exit 0 — the findings baseline. New ceiling: the `react-unsanitized-method` rule TIMED OUT on `server/castingV2/refineService.test.ts` (semgrep default per-rule timeout), so that one file is unread by that one rule; every other rule read it. Skipped: 8 files over 1.0 MB, 1213 by `.semgrepignore`. The step is in `gate.yml` from this run on. |

@@ -186,10 +186,34 @@ jobs:
 
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
 
+      # Node is set up BEFORE the semgrep step below, which runs `pnpm` and
+      # would otherwise execute on whatever Node the runner image ships that
+      # week — a required check going red for a reason unrelated to the tree
+      # (review of PR #109, finding 2). setup-node needs no node_modules, so
+      # semgrep keeps its before-install property.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: pnpm
+
+      # The Warden's static shape reader (issue #33): the OSS Semgrep rulesets
+      # over everything git tracks minus .semgrepignore, failing on any
+      # finding (`--error`). Same bytes as by hand — `pnpm warden:semgrep`
+      # holds the rulesets and flags in ONE place (package.json), so this
+      # step names only the tool version. semgrep is a Python tool, not an
+      # npm dependency, hence pipx (preinstalled on ubuntu-latest) and a
+      # version pin rather than a lockfile; the record page
+      # (docs/WARDEN_SEMGREP.md) states the same version, and a reading whose
+      # rule count moves from the recorded one is the registry's change, not
+      # the tree's. Runs before `pnpm install` because it needs no
+      # node_modules and reads ~1600 files in about a minute.
+      # A finding is suppressed AT ITS LINE with
+      # `// nosemgrep: <rule.id> -- <reason>`, never globally.
+      - name: Static shapes (semgrep, OSS rulesets)
+        run: |
+          pipx install semgrep==1.174.0
+          semgrep --version
+          pnpm warden:semgrep
 
       - name: Install
         run: pnpm install --frozen-lockfile
