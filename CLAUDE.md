@@ -492,7 +492,33 @@ one from whoever owns its road.
   untrimmed-rate and the per-sheet wall-clock beside them: the latency acceptance
   he gave (*"its a non issue"*) was priced against the render delta alone, and
   the courtesy-pool contention — up to 16 reads queued behind a five-wide door
-  while 8 renders are in flight — is still unmeasured
+  while 8 renders are in flight — is still unmeasured.
+  ✅ **THE RETARGET IS BUILT (2026-08-24, ruled fable-1648/1649) AND THE FLAG IS
+  STILL OFF** — it flips when the retargeted version is what flips on, which it
+  now is, and then only on his eye. **The margin clause is DELETED**, so a
+  flagged roll's prompt is byte-identical to an unflagged one — the strongest
+  property this build has had, and its own arm. What survives is the large
+  render, the trim, the per-frame headroom rule and the kept original.
+  ⚠ **`T` MOVED 22.7% → 31.6%, and the arithmetic behind it changed shape.**
+  22.7% was `T_min` across the court's CLAUSE cells, a population the product no
+  longer produces. The retarget's FIRST proposed value, 34.3%, was a correct
+  `T_min` over the no-clause cells — reproduced against the court's published
+  table cell for cell — **and was still unreachable**, because `T_min` is only
+  the LOWER bound. A crop is `faceH / T` tall and one shorter than the delivered
+  height would be an upscale, which the product refuses; that ceiling is
+  `T <= 1.5 × share`. Each frame's band is `[share, 1.5 × share]`, a common `T`
+  needs `max/min share <= 1.5`, and the no-clause population is **1.54 — so no
+  single `T` serves all of it.** `T = 31.6%` is the value that serves the most:
+  **15 of 16, ~6% untrimmed, and that figure is the PRIOR the first dark rolls'
+  untrimmed rate is compared against.** Materially above it escalates to the
+  named-and-refused option B (a larger render, which buys a wider band and rests
+  on the untested premise that head share is scale-invariant). `T` is a slider
+  over kept originals, so moving it is a re-trim rather than a re-cast.
+  ⚠ **The `PASS <= 26.0%` margin bar is RETIRED on the record** (fable-1648): it
+  measured the clause era's COST, where tightening was the price of consistency,
+  and he reversed the goal — closeness is now the point. What replaces it is his
+  own surviving condition, *"just need to make sure the hair is fully in the
+  image"*, encoded as the per-frame headroom rule, plus his eye on strips
 - `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
   account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
   5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is
