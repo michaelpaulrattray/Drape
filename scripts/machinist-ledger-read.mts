@@ -161,10 +161,23 @@ const scans = await q(
      FROM casting_face_scans WHERE createdAt >= ?`,
   [since],
 );
-const paidScans = scans.filter((row) => String(row.scanned) === "true").length;
-const allTime = await q(`SELECT COUNT(*) AS n, COUNT(DISTINCT candidateId) AS faces FROM casting_face_scans`);
-console.log(`\nE. casting_face_scans in window: ${scans.length} rows — ${paidScans} paid looks (scanned:true, 20 reads / $0.10 each = $${(paidScans * 0.1).toFixed(2)}), ${scans.length - paidScans} render-written (scanned:false)`);
-console.log(`   all time: ${allTime[0].n} rows over ${allTime[0].faces} faces`);
+// Three shapes of row, read at the key rather than by subtraction (gate review of
+// PR #112, finding 3 — and the subtraction was wrong on the first run: 27 rows it
+// filed as render-written held no `scanned` key at all). `scanned: true` is a scan
+// written or rewritten since a010923d (2026-08-23); NO key is a scan written before
+// that commit and never rewritten — "absent means true", the rule the only reader
+// applies (`keptFaceScan.ts`, the `scanned === false` door); `scanned: false` is the
+// render's carried-geometry row, which nothing has ever served as a reading.
+const scannedOf = (row: any) => (row.scanned === null || row.scanned === undefined ? "absent" : String(row.scanned));
+const paidScans = scans.filter((row) => scannedOf(row) === "true").length;
+const legacyScans = scans.filter((row) => scannedOf(row) === "absent").length;
+const renderWritten = scans.filter((row) => scannedOf(row) === "false").length;
+const unlabelledScans = scans.length - paidScans - legacyScans - renderWritten;
+const paidLooks = paidScans + legacyScans;
+const allTime = await q(`SELECT COUNT(*) AS n, COUNT(DISTINCT candidateId) AS faces, SUM(JSON_CONTAINS_PATH(geometry, 'one', '$.carried')) AS withCarried FROM casting_face_scans`);
+console.log(`
+E. casting_face_scans in window: ${scans.length} rows — ${paidLooks} paid looks (20 reads / $0.10 each = $${(paidLooks * 0.1).toFixed(2)}; ${paidScans} scanned:true + ${legacyScans} written before the key existed), ${renderWritten} render-written (scanned:false)${unlabelledScans > 0 ? `, ${unlabelledScans} UNLABELLED (a value this reader does not know)` : ""}`);
+console.log(`   all time: ${allTime[0].n} rows over ${allTime[0].faces} faces; rows holding carried geometry (the render's writer, a010923d): ${allTime[0].withCarried}`);
 const scanDays = new Map<string, number>();
 for (const row of scans) scanDays.set(day(row.createdAt), (scanDays.get(day(row.createdAt)) ?? 0) + 1);
 for (const [d, n] of [...scanDays.entries()].sort()) console.log(`   ${d}  ${n}`);

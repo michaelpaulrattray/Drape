@@ -43,7 +43,7 @@ charter is UNREAD, not fine.
 
 ---
 
-## Run 1 — 2026-08-26 08:33–08:56 AEST (Machinist, patrol #1, card #98)
+## Run 1 — 2026-08-26 08:33–08:55 AEST (Machinist, patrol #1, card #98; two seats)
 
 Nothing spent: every reading below is a query over rows that already exist or
 a call to a provider's books endpoint. Window: the 14 days to 2026-08-25
@@ -83,10 +83,17 @@ a call to a provider's books endpoint. Window: the 14 days to 2026-08-25
 
 | reading | 14d | 60d |
 |---|---|---|
-| refines that failed and refunded | **8 of 52 (15.4%)**, 175 credits back | 32 of 222 (14.4%), 800 credits back |
+| refines that FAILED (any terminal `failed` row) | **8 of 52 (15.4%)** | 33 of 222 (14.9%) |
+| …of which REFUNDED (a charge was returned) | 7 of 52 (13.5%), 175 credits back | 32 of 222 (14.4%), 800 credits back |
 | rolls partial or failed | 3 of 16, 240 credits back | 13 of 216 (6.0%), 1,440 credits back |
 | candidates that survive as `failed content_policy` | 4 of 88 surviving | — |
 
+- **Two definitions, stated once so both windows count the same way** (gate
+  review of PR #112, finding 1): *failed* is every `failed` operation row,
+  including the concurrent-edit CONFLICT that charged nothing; *refunded* is
+  the subset that returned a charge. The 14d window holds one such CONFLICT
+  (8 failed, 7 refunded); the 60d window holds one too (33 failed, 32
+  refunded — table A's 33). §F quotes the REFUNDED figure.
 - **Every failed refine is charged to the house twice and earns nothing**: the
   render (≈$0.099) and its reads, usually a second render for the "came back
   twice" class, then a full 25-credit refund. It is also the customer's worst
@@ -105,13 +112,22 @@ a call to a provider's books endpoint. Window: the 14 days to 2026-08-25
 
 ### C. The paid reads the house buys outside a render
 
-- **Face scans**: 63 paid looks in 14 days (rows with `geometry.scanned:
-  true`; 20 segmenter calls / $0.10 each = **$6.30**), 27 render-written
-  carried-feature rows (`scanned:false`, $0.005 a region read). All time: 90
-  rows over 72 faces — the scan table has held since 2026-08-17, so re-buys
-  are structural now, not the 58-for-28 they were before it.
+- **Face scans**: **90 paid looks** in 14 days (20 segmenter calls / $0.10
+  each = **$9.00**) — 63 rows carrying `geometry.scanned: true` and 27 with
+  NO `scanned` key, which the first seat filed as *"27 render-written
+  carried-feature rows"* by subtraction. Read at the rows by the second seat:
+  every one of the 27 holds `asked: 12, found: 12` — a full paid scan —
+  written between 08-17 and 08-23 before `a010923d` (2026-08-23 13:52) added
+  the key, and never rewritten since; *absent means true* is the rule the
+  product's own reader applies (`keptFaceScan.ts`). **Render-written rows
+  (`scanned: false`): 0. Rows holding carried geometry: 0 of 90** — and that
+  is an EMPTY POPULATION, not an inert writer: no refine has run on
+  production since 2026-08-23 02:59Z, 53 minutes before the writer landed.
+  Unread until one does. All time: 90 rows over 72 faces — the scan table
+  has held since 2026-08-17, so re-buys are structural now, not the
+  58-for-28 they were before it.
 - 43 of the 90 rows landed on 2026-08-24 — the framing-trim and two-paths
-  flips' day; the reader does not split paid/unpaid per day yet.
+  flips' day (all 43 paid looks; there are no unpaid rows to split).
 
 ### D. Provider books
 
@@ -128,8 +144,9 @@ a call to a provider's books endpoint. Window: the 14 days to 2026-08-25
   reader: **$10.96 over 14 days** — 88 roll renders $8.71, 20 refine renders
   $1.98, 53 SAM-3 reads $0.27, 3 birefnet $0.00 — a FLOOR, because only
   surviving variant rows contribute. ≈$0.78/day.
-- **So text out-spends image about six to one on the account, and about
-  five to one on product traffic alone** — which is the opposite of what
+- **So text out-spends image about fourteen to one on the raw account books
+  ($159.41 : $10.96), about six to one once the $98.09 campaign day is
+  excluded, and about five to one on product traffic alone** — which is the opposite of what
   "image generation is the cost" assumes, and it is the reads (7.1 per
   refine, the interpreter and the verify/caption pair) that carry it.
 
@@ -145,8 +162,8 @@ is read off the books rather than a rate card (doctrine entry 4).
 
 ### F. THE WORST NUMBER — run 1
 
-**One paid edit in seven fails and is refunded — 8 of 52 in the last 14
-days, 32 of 222 over 60 — and the failure's CLASS is not durably recorded**
+**One paid edit in seven fails and is refunded — 7 of 52 refunded (8 failed)
+in the last 14 days, 32 of 222 refunded (33 failed) over 60 — and the failure's CLASS is not durably recorded**
 (every one is `INTERNAL_SERVER_ERROR`; the class lives in a sentence, and the
 row that could classify it is purged). It is the worst on both halves of the
 charter at once: the house pays for a render nobody receives, and the customer
@@ -172,8 +189,17 @@ because painted detail follows composition, not resolution (fable-1648).
 
 ### H. Close
 
-Reader: `scripts/machinist-ledger-read.mts` (new, branch `team/98-machinist-ledger`). Cards: #111 (the
-worst number's brief). No instrument built beyond the reader the card ordered;
+Reader: `scripts/machinist-ledger-read.mts` (new, PR #112). Cards: #111 (the
+worst number's brief). **Two seats**: the first built the ledger, opened PR
+#112 at 08:45 and exited before the gate answered — no mailbox entry, no
+edition, and this heading stamped with a projected close (the R5 class,
+#101). The second seat folded the gate review's three findings (the
+failed/refunded reconciliation above, the six-to-one clause, the reader's
+unlabelled scan bucket), re-ran the reader against production itself before
+believing the figures — every §A/§B/§D number reproduced, and §C's scan split
+did NOT: the third finding's silent bucket had been holding 27 paid scans
+as render-written rows ($6.30 → $9.00, corrected above) — merged, and
+closed at the real time. No instrument built beyond the reader the card ordered;
 the client half of the charter is UNREAD and is named above rather than
 assumed fine — its instrument is a Retro proposal, not a Machinist act, until
 a card names it. Next run: ~2026-09-02, from this file.
