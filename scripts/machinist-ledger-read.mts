@@ -209,3 +209,6 @@ for (const model of priced.models) {
 console.log(`   fal priced total $${priced.usd.toFixed(2)} (unpriced models: ${priced.unpriced.length}) — refine rows are the SURVIVING ones, so this is a floor`);
 
 await db.end();
+
+/* Both script guards want the process ended here, not left to the loop. */
+process.exit(0);
