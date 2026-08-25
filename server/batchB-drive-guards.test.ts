@@ -12,10 +12,32 @@
  */
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const repoRoot = join(__dirname, "..");
 const script = join("scripts", "drive-batchB-status.mts");
+
+/*
+  The .env-equality binding guard compares the runtime DATABASE_URL against the
+  repository `.env`'s own — so proving THAT refusal (and not an earlier one)
+  needs a configured local checkout: a `.env` with a DATABASE_URL, and the
+  local dev identity so the child gets past the identity guard first. An
+  envless checkout — CI — refuses earlier, on a different guard, which the
+  other cases here already prove. Skip, per the house promise that
+  env-dependent tests skip with a message.
+*/
+const repoEnvPath = join(repoRoot, ".env");
+const bindingGuardReachable
+  = existsSync(repoEnvPath)
+  && /^DATABASE_URL=/m.test(readFileSync(repoEnvPath, "utf-8"))
+  && process.env.VITE_APP_ID === "drape-local";
+
+if (!bindingGuardReachable) {
+  console.log(
+    "[batchB-drive-guards.test] .env-binding case skipped — needs a repository .env with DATABASE_URL and VITE_APP_ID=drape-local so the child reaches the binding guard",
+  );
+}
 
 /** Run the drive with a controlled env; return { status, output }. */
 function runDrive(envOverrides: Record<string, string | undefined>) {
@@ -43,7 +65,7 @@ describe("drive-batchB-status guards (child-process, no DB contact)", () => {
     expect(res.output).toContain("DRIVE_ALLOW_DB_FIXTURES");
   });
 
-  it("refuses a PUBLIC Railway-style DATABASE_URL override BEFORE any connection", () => {
+  it.skipIf(!bindingGuardReachable)("refuses a PUBLIC Railway-style DATABASE_URL override BEFORE any connection", () => {
     // The exact bypass the review named: `.env` supplies the local app id,
     // but the shell still carries a one-off production MYSQL_PUBLIC_URL.
     // That URL contains no 'railway.internal' and passes every pattern

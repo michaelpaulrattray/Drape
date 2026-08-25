@@ -162,6 +162,35 @@ For an eligible Opus primary, call the read-only `advisor` BEFORE substantive wo
 
 For coding under an eligible Opus primary: milestone plans and DECISION_LOG rulings are pre-made judgment, so executing them needs no consult. Consult when the plan leaves implementation shape open and the choice is architectural, after the FIRST failed fix attempt on any bug (not the third), and as a brief review before reporting a milestone chunk complete.
 
+## The night-shift team (founder-ordered, 2026-08-25)
+
+The program is executed by an autonomous agent team; any session doing build
+work is either one of its shifts or must behave like one. The binding pieces:
+
+- **`.agents/foreman/PROGRAM.md` is the campaign pointer** — mission (V2
+  replaces the legacy studio), the CURRENT FOCUS (set only by the founder's
+  word), the design north star, and two founder laws: **THE MILESTONE GATE**
+  (completing a milestone never authorizes starting the next; every boundary
+  ships a completion card + test-drive list to the founder and the focus
+  clears) and **MAINTENANCE MODE** (with no confirmed focus, only
+  agent-detected bugs and inside-existing-behavior improvements run — the
+  team NEVER selects the next feature). A brief that cannot trace to the
+  focus, a standing exception, or a founder instruction is not cut.
+- **GitHub Issues is the sole system of record for work.** Nothing is built
+  outside the queue. The mailbox (`.agents/mailbox/`) is receipts and
+  handoffs, never state — a fact that lives only in a message does not exist.
+- **The gate** (`.github/workflows/gate.yml`, `review.yml`): every PR runs
+  the four instruments; substantial or money-path diffs get a Fable review
+  (under 50 changed code lines skips it; `needs-fable` forces it). Money/auth
+  diffs are labelled `founder-review` for visibility and always reviewed but
+  do NOT block on founder approval (his ruling, 2026-08-25). Product code
+  goes branch → PR → gate; direct pushes to main are the deploy rite's alone.
+- **The founder steers from the Desk** (a claude.ai artifact page): his
+  replies and journal entries there are rulings — quoted verbatim when acted
+  on. Desk cards lead with product impact and a worked example, flags second.
+- The continuous runner and its watchdog task are deliberately persistent
+  processes — never swept as leftovers. `.agents/STOP` halts the team.
+
 ## Commands
 
 - `pnpm dev` — start dev server (Express + Vite middleware, single process on http://localhost:3000; auto-increments port if busy)

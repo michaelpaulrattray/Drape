@@ -83,12 +83,12 @@
         "id": "empty",
         "kind": "interpreter-refusal",
         "pinnedBy": [
+          "server/casting/geminiMigration.test.ts",
           "server/castingV2/diagnosticCapture.test.ts",
           "server/castingV2/faceScan.test.ts",
           "server/castingV2/faceScanService.test.ts",
           "server/castingV2/referenceSlotCatalogue.test.ts",
-          "server/castingV2/refineRefusals.test.ts",
-          "server/casting/geminiMigration.test.ts"
+          "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:612",

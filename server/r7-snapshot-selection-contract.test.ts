@@ -188,6 +188,11 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
         scopeCallers.push(normalized);
       }
     }
+    /* The walk is readdir-ordered and readdir order is platform-dependent
+       (NTFS enumerates `_core` last, ext4 is arbitrary). The contract is the
+       SET of callers, so both sides are compared in sorted order. */
+    effectiveCallers.sort();
+    scopeCallers.sort();
     expect(effectiveCallers).toEqual([
       "server/casting/effectiveCastRead.ts",
       "server/casting/evidence/evidenceMint.ts",
@@ -201,6 +206,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/routes/generation/castingRefinement.ts",
     ]);
     expect(scopeCallers).toEqual([
+      "server/_core/env.ts",
       "server/casting/evidence/evidenceComposerScope.ts",
       "server/casting/mintPackage.ts",
       "server/casting/modelReadProjections.ts",
@@ -218,7 +224,6 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/routes/models.ts",
       "server/routes/wardrobe.ts",
       "server/wardrobe/modelImageAuthority.ts",
-      "server/_core/env.ts",
     ]);
 
     const resolver = await readFile(
