@@ -78,6 +78,20 @@ seen when the team's own next push proves it was read.
     // commit, a row. Max 6, so the strip stays a glance.
     chips: { label: string; tone: "good" | "warn" | "neutral"; source: string | null }[],
   },
+  // #75 (founder ask, 2026-08-25): judgements waiting on his EYE. Frames live
+  // in the bucket under crew-eye/<uuid>.<ext>; the DEPLOYED briefing is the
+  // serving allowlist — /api/crew/eye-frame (the sixth authenticated Express
+  // route) refuses any key no edition names. His verdict is a reply on the
+  // item's id, exactly like a card.
+  eyeItems: {
+    id: string,               // stable slug; replies point at it
+    title: string,
+    question: string,         // what he is JUDGING — leads the item
+    state: "open" | "answered" | "done",
+    filedAt: string,
+    issueNumber: number | null,
+    frames: { key: string; caption: string; arm: string | null }[],  // 1..24
+  }[],
   needsYou: {
     id: string,               // stable slug, e.g. "rebaseline-countersign"
     title: string,
@@ -244,6 +258,14 @@ Order on the page (his reading order, mirroring the Desk):
    acknowledged), and a reply box (textarea + one send button wired to
    `crew.reply`, optimistic append). Answered/done cards collapse into a
    short "recently answered" list.
+2b. **For your eyes** (#75) — the eye gallery, between Needs You and the
+   pipeline. Each open item: the question he is judging first, then the
+   frames with plain-English captions and arm labels, then his reply box
+   (verdict = a reply on the item id, same honesty rule). Renders nothing
+   when no items exist; closed items collapse to an "Already judged" list.
+   Uploading a frame: `scripts/crew-upload-eye-frame.mts`, then name the
+   printed key in the item. Frames outlive their items in the bucket —
+   declared scaffolding; the Janitor sweeps keys no edition references.
 3. **Pipeline** — one row per item: title, status, PR number when it has one.
 4. **Problems** — severity-ordered, plain sentences.
 5. **Journal** — the merged timeline: briefing journal entries and his

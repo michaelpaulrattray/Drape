@@ -15,6 +15,7 @@ import { configureTrustedProxy } from "../security/rateLimit";
 import heroProxyRouter from "../heroProxy";
 import imageProxyRouter from "../routes/imageProxy";
 import evidenceDeliveryRouter from "../routes/evidenceDelivery";
+import crewEyeFramesRouter from "../routes/crewEyeFrames";
 import { createCharacterSheetRouter } from "../routes/characterSheet";
 import { createInkDesignDeliveryRouter } from "../routes/inkDesignDelivery";
 import { createReferenceDeliveryRouter } from "../routes/referenceDelivery";
@@ -234,6 +235,13 @@ async function startServer() {
 
   // Authenticated owner-only private evidence images.
   app.use(evidenceDeliveryRouter);
+
+  /*
+    The Crew tab's eye-gallery frames (#75): admin-only, inside
+    CREW_TAB_SCOPE, and servable keys are EXACTLY those the deployed
+    briefing's eyeItems name — the briefing is the allowlist.
+  */
+  app.use(crewEyeFramesRouter);
 
   /*
     The character sheet, composed on demand and served as bytes. Beside the

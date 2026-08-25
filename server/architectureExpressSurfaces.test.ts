@@ -185,7 +185,7 @@ describe("against the real bootstrap", () => {
     /* THE POPULATION FIRST — an empty or shrunken set would make every
        assertion below vacuously true (`absence-only-expect-passes-on-nothing`). */
     expect(userLimited).toEqual([
-      "characterSheet", "evidenceDelivery", "imageProxy",
+      "characterSheet", "crewEyeFrames", "evidenceDelivery", "imageProxy",
       "inkDesignDelivery", "referenceDelivery",
     ]);
 
@@ -390,9 +390,9 @@ describe("the whole Express surface against invariant 5", () => {
 
     /* And the surface as a whole, so the comparison below cannot be vacuous. */
     expect(groups).toEqual([
-      "/api/auth", "/api/cast", "/api/evidence", "/api/health", "/api/hero",
-      "/api/image-proxy", "/api/ink-design", "/api/reference", "/api/slack",
-      "/api/webhooks",
+      "/api/auth", "/api/cast", "/api/crew", "/api/evidence", "/api/health",
+      "/api/hero", "/api/image-proxy", "/api/ink-design", "/api/reference",
+      "/api/slack", "/api/webhooks",
     ]);
   });
 

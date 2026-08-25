@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { shortDate } from "./CrewProgramBanner";
 import { foldTimeline, replyFallsToJournal } from "./crewTypes";
-import type { CrewJournalEntry, CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
+import type { CrewJournalEntry, CrewReplyView, CrewThreadHost } from "./crewTypes";
 
 type Item =
   | { kind: "shift"; at: number; entry: CrewJournalEntry }
@@ -31,7 +31,8 @@ export function CrewJournal({
 }: {
   journal: readonly CrewJournalEntry[];
   replies: readonly CrewReplyView[];
-  cards: readonly CrewNeedsYouCard[];
+  /** Every thread host on the page — needs-you cards AND eye items (#75). */
+  cards: readonly CrewThreadHost[];
   acknowledgedReplyIds: readonly number[];
   sending: boolean;
   onSend: (input: { cardId: string | null; body: string }) => Promise<unknown>;

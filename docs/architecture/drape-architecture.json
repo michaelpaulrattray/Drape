@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cce59cc19e764e1e"
+    "sourceFingerprint": "4bc51f9239f501a1"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 46
+      "moduleCount": 47
     },
     {
       "id": "domain:alerting",
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 43
+      "moduleCount": 44
     },
     {
       "id": "domain:billing",
@@ -695,6 +695,12 @@
     {
       "id": "module:client/src/features/admin/adminConstants.ts",
       "path": "client/src/features/admin/adminConstants.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "path": "client/src/features/admin/components/crew/CrewEyeGallery.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -5079,6 +5085,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/routes/crewEyeFrames.ts",
+      "path": "server/routes/crewEyeFrames.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/routes/emailAuth.ts",
       "path": "server/routes/emailAuth.ts",
       "domain": "api",
@@ -8450,6 +8462,14 @@
       "path": "/api/cast/:castId/sheet",
       "handler": "createCharacterSheetRouter()",
       "file": "server/routes/characterSheet.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/crew/eye-frame/:frameName (crewEyeFramesRouter)",
+      "method": "GET",
+      "path": "/api/crew/eye-frame/:frameName",
+      "handler": "crewEyeFramesRouter",
+      "file": "server/routes/crewEyeFrames.ts",
       "mountedBy": "server/_core/index.ts"
     },
     {
@@ -12259,6 +12279,10 @@
       "path": "server/routes/characterSheet.test.ts"
     },
     {
+      "id": "test:server/routes/crewEyeFrames.test.ts",
+      "path": "server/routes/crewEyeFrames.test.ts"
+    },
+    {
       "id": "test:server/routes/emailAuth.test.ts",
       "path": "server/routes/emailAuth.test.ts"
     },
@@ -13337,6 +13361,31 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {
@@ -17406,6 +17455,11 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
       "kind": "imports"
     },
@@ -18337,6 +18391,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/routes/characterSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/crewEyeFrames.ts",
       "kind": "imports"
     },
     {
@@ -28967,6 +29026,41 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/db/crewReplies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crewEyeFrames.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crewEyeFrames.ts",
+      "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crewEyeFrames.ts",
+      "to": "module:server/crew/crewBriefing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crewEyeFrames.ts",
+      "to": "module:server/crew/crewTabScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crewEyeFrames.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crewEyeFrames.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crewEyeFrames.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
