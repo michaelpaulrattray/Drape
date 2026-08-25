@@ -40,9 +40,15 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 - `client/src/components/ui/*` are shadcn primitives added as a set; 40 of
   them are unused and they hold the 21 unused `@radix-ui/*` dependencies.
   They are reported on purpose — a vendored library is still code.
+- **A `scripts/lib/` module whose only importer is a `*-disposable.*` reads
+  as unused** (`scripts/lib/sabotage.mts`, imported only by
+  `prove-sabotage-survives-death-disposable.mts`) — a consequence of the
+  disposable ignore above, found Janitor run 1. Such a row is a KEEP; grep
+  `scripts/` including disposables before believing a `lib/` file is dead.
 
 ## Readings (the Janitor appends one line per run; findings become cards)
 
 | date | files | deps | devDeps | exports | types | duplicates | note |
 |---|---|---|---|---|---|---|---|
 | 2026-08-26 | 51 | 34 | 7 | 174 | 115 | 18 | first reading at `1ccc7e21`; `server/db/billing.ts: addTopupCredits` — the path-three death CLAUDE.md records — is in the export list, so the instrument and the differ agree on a known specimen. `add` and `pnpm` in devDependencies since the initial bootstrap (`3dad2280`) look like a mistyped `pnpm add`. |
+| 2026-08-26 | 51 | 34 | 7 | 173 | 115 | 18 | Janitor run 1 at `c6273d0a` (07:40): identical to the first reading bar one export (174 → 173). Filed as cards #105 (shadcn set + deps), #106 (11 files, three readers agree), #107 (devDeps + `semgrep` binary), #108 (exports/types/duplicates via the differ). Ceiling: `scripts/lib/sabotage.mts` is a false positive (importer is a disposable). Full list `output/janitor-knip-20260826.txt`. |

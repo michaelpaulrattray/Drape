@@ -1,7 +1,7 @@
 {
-  "edition": 14,
-  "updatedAt": "2026-08-26T07:40:00+10:00",
-  "shift": "retro — patrol #1",
+  "edition": 15,
+  "updatedAt": "2026-08-26T07:51:55+10:00",
+  "shift": "janitor — patrol #1",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -244,6 +244,13 @@
   ],
   "pipeline": [
     {
+      "id": "janitor-patrol-1",
+      "title": "Janitor — patrol #1: the machine's leftovers cleared, the dead-code reading turned into four cards (#96)",
+      "status": "merged",
+      "prNumber": 104,
+      "note": "Housekeeping only — nothing a customer sees. Four abandoned workspace folders from earlier shifts deleted from the machine; four leftover login tokens minted by test drives (never committed) deleted, and the two scratch folders they lived in are now ignored by git so they can never be committed by accident (PR #104). The code-scanner's first reading became four cards for later: 40 unused UI components carrying 21 unused packages (#105), 11 other unused files confirmed by three separate readers (#106), 7 unused dev packages — two of them a typo from day one (#107), and 173 unused functions to be sorted into never-used vs. quietly disconnected before anything is deleted (#108). The old output folder cleanup (#8) got 4 more folders gone before the disk hung again; 33 remain, harmless."
+    },
+    {
       "id": "retro-patrol-1",
       "title": "Retro — patrol #1: the night's reports checked against what actually happened, and five repeat problems given a fix each (#95)",
       "status": "merged",
@@ -274,9 +281,9 @@
     {
       "id": "workflow-lint-35",
       "title": "Two safety checkers for the gate's own workflow files — every finding fixed at its site (#35)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 89,
-      "note": "the other seat fixed its two style notes at 06:17 and the gate went green; still unmerged at 06:45 with no further activity — the next shift merges it if it is still sitting there, because three follow-ups queue behind it"
+      "note": "the other seat fixed its two style notes at 06:17 and the gate went green; still unmerged at 06:45 with no further activity — the next shift merges it if it is still sitting there, because three follow-ups queue behind it Merged 26 Aug 06:51 (this row said in-review one edition too long)."
     },
     {
       "id": "lobby-theme-toggle-73",
@@ -380,6 +387,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T07:51:55+10:00",
+      "shift": "janitor — patrol #1",
+      "text": "First Janitor patrol, on your \"do it\". No reply from you yet, so the register stays switched off and waiting on your word. This shift was cleaning, not building. Cleared from the machine: four abandoned workspace folders left by earlier shifts, and four login tokens that test drives had minted into a scratch folder (never committed — checked — and the folder is now git-ignored so that can never happen by accident, PR #104). The dead-code scanner's reading was turned into four cards rather than deletions: 40 unused UI components with 21 packages nobody uses, 11 other unused files that three separate readers agree on, 7 unused dev packages (two are a typo from the very first commit), and 173 unused functions that need sorting into never-wired vs. quietly disconnected before anyone deletes a thing — that last distinction is how dead security controls get found rather than swept. The stuck output-folder cleanup from before (#8) got four more folders gone before the disk hung again; 33 remain, harmless. Nothing spent. Still on your page: the word to switch the register on for your account, and OpenRouter at $7.52."
+    },
     {
       "at": "2026-08-26T07:40:00+10:00",
       "shift": "retro — patrol #1",
