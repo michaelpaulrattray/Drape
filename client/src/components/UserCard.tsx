@@ -125,7 +125,7 @@ export function UserCard({
           color: var(--ink);
         }
         .user-card-menu-item-danger:hover {
-          color: #dc2626;
+          color: var(--errorInk);
         }
       `}</style>
     </div>
