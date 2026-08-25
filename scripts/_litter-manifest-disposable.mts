@@ -142,10 +142,30 @@ for (const path of outputUntracked) {
   dirs.set(top, row);
 }
 const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+/*
+  ⚠ THE FOUNDER'S OWN QUEUE IS AN AUTHORITY FOR `output/`, AND THIS CLAUSE WAS
+  ADDED AFTER THE FIRST MANIFEST WOULD HAVE DELETED THREE OF ITS ARTIFACTS.
+
+  `founder-queue.md` names six `output/` paths. Three of them — `eyes-court`,
+  `open-crop-carry`, `outsider-rail` — landed in the REVIEW (uncited) column,
+  because no committed document happens to name them. **They are frames HE was
+  asked to look at.** Deleting them destroys the evidence behind a question on
+  his desk, which is a different and worse thing than deleting a court's spent
+  frames.
+
+  It is the one place the mailbox exclusion above is wrong, and the reason is
+  narrow enough to state: `.agents/` dying with the transcript is an argument
+  about CITATIONS, not about ARTIFACTS. A picture he was pointed at outlives the
+  message that pointed at it.
+*/
+const founderQueue = (() => {
+  try { return readFileSync(".agents/mailbox/founder-queue.md", "utf8"); } catch { return ""; }
+})();
 const CITED_OUTPUT = /^(deploy-receipts|raw-prompt-reference)$/;
 for (const [dir, row] of [...dirs.entries()].sort((a, b) => b[1].bytes - a[1].bytes)) {
-  const cited = CITED_OUTPUT.test(dir) || authority.includes(`output/${dir}`);
-  console.log(`  ${cited ? "KEEP  " : "REVIEW"} ${String(row.files).padStart(5)} files  ${mb(row.bytes).padStart(10)}  output/${dir}`);
+  const onHisDesk = founderQueue.includes(`output/${dir}`);
+  const cited = CITED_OUTPUT.test(dir) || authority.includes(`output/${dir}`) || onHisDesk;
+  console.log(`  ${cited ? "KEEP  " : "REVIEW"} ${String(row.files).padStart(5)} files  ${mb(row.bytes).padStart(10)}  output/${dir}${onHisDesk ? "   ← ON HIS DESK" : ""}`);
 }
 console.log(`  ${"".padStart(6)} ${String(outputUntracked.length).padStart(5)} files  ${mb([...dirs.values()].reduce((a, b) => a + b.bytes, 0)).padStart(10)}  TOTAL`);
 
