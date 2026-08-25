@@ -48,10 +48,15 @@ import { storageReadBytes } from "../storage";
 
 const log = createModuleLogger("routes/crewEyeFrames");
 
-/** One gallery is at most a few dozen images; a reload burst must fit. */
+/**
+ * A cold gallery load is frames-per-item x open items: the briefing schema
+ * caps an item at 24 frames, so 240/min covers ten open items' first paint —
+ * the two numbers are tied on purpose (PR #79 review nit): whoever raises the
+ * frame cap raises this with it.
+ */
 export const CREW_EYE_FRAME_RATE_LIMIT = {
   windowMs: 60_000,
-  maxRequests: 120,
+  maxRequests: 240,
   keyPrefix: "crew_eye_frame",
 } satisfies RateLimitConfig;
 
@@ -59,12 +64,26 @@ export const CREW_EYE_FRAME_RATE_LIMIT = {
 const FRAME_NAME_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpg|jpeg|webp)$/;
 
+/**
+ * The served type is DERIVED from the pinned extension, never read off the
+ * bucket object (PR #79 review finding 3): the bounded reader admits any
+ * image/*, which includes image/svg+xml — scriptable when rendered inline on
+ * the app origin against an admin session. Deriving from the extension the
+ * schema already pins makes a mis-uploaded object inert instead of trusted.
+ */
+const SERVED_CONTENT_TYPES: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+};
+
 type CrewEyeUser = Pick<User, "id" | "role" | "suspendedAt" | "lockedUntil">;
 
 export interface CrewEyeFrameRouteDependencies {
   authenticate(req: Request): Promise<CrewEyeUser>;
   crewTabEnabled(userId: number): boolean;
-  rateLimit(userId: number): { allowed: boolean };
+  rateLimit(userId: number): { allowed: boolean; resetIn: number };
   servableKeys(): ReadonlySet<string>;
   readBytes(key: string): Promise<{ bytes: Buffer; contentType: string }>;
 }
@@ -106,13 +125,30 @@ export function createCrewEyeFrameRouter(
       fixedError(res, 403, "Admin access required");
       return;
     }
-    if (!dependencies.crewTabEnabled(user.id)) {
+    /*
+      captureCrewTabEnabled THROWS on a malformed env value, and Express 4
+      does not catch an async handler's rejection — unwrapped, a CREW_TAB_SCOPE
+      typo would hang every gallery request and fire the process-level
+      critical alert once per image (PR #79 review finding 1). Caught here,
+      it is one plain 500 per request instead.
+    */
+    let enabled: boolean;
+    try {
+      enabled = dependencies.crewTabEnabled(user.id);
+    } catch (cause) {
+      log.error({ err: cause }, "crew tab scope could not be read");
+      fixedError(res, 500, "The gallery's flag could not be read");
+      return;
+    }
+    if (!enabled) {
       /* Same sentence-shape as crew.getState: outside the scope, the surface
          does not exist. */
       fixedError(res, 404, "Not found");
       return;
     }
-    if (!dependencies.rateLimit(user.id).allowed) {
+    const limit = dependencies.rateLimit(user.id);
+    if (!limit.allowed) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil(limit.resetIn / 1000))));
       fixedError(res, 429, "Too many requests");
       return;
     }
@@ -129,8 +165,10 @@ export function createCrewEyeFrameRouter(
     }
 
     try {
-      const { bytes, contentType } = await dependencies.readBytes(key);
-      res.setHeader("Content-Type", contentType);
+      const { bytes } = await dependencies.readBytes(key);
+      const extension = frameName.slice(frameName.lastIndexOf(".") + 1);
+      res.setHeader("Content-Type", SERVED_CONTENT_TYPES[extension] ?? "application/octet-stream");
+      res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("Content-Length", String(bytes.length));
       /* Private: an admin's browser may keep it; nothing shared may. The key
          is content-addressed-ish (a mint-time UUID), so an hour is safe. */

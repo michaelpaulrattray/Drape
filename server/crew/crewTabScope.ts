@@ -106,8 +106,11 @@ export function crewTabEnabledForUser(scope: CrewTabScope, userId: number): bool
  * stale `all`.
  *
  * ⚠ **A malformed value throws here rather than at startup**, which is the
- * whole difference between this flag and the casting ones. The caller — the
- * `crew` router — is the only consumer, and an admin seeing an error where a
+ * whole difference between this flag and the casting ones. Its consumers are
+ * the `crew` router (tRPC converts the throw into an error response) and the
+ * eye-frame route (`routes/crewEyeFrames.ts`, which must CATCH it — Express 4
+ * does not convert an async handler's rejection, so unwrapped it hangs the
+ * request; PR #79 review finding 1). An admin seeing an error where a
  * briefing should be is the correct outcome of a typo in the variable. It is
  * never a customer's request, and it is never a spend.
  */
