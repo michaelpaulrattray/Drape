@@ -1,7 +1,7 @@
 {
- "edition": 9,
- "updatedAt": "2026-08-26T04:35:00+10:00",
- "shift": "foreman-8",
+ "edition": 10,
+ "updatedAt": "2026-08-26T05:25:00+10:00",
+ "shift": "foreman-9",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -82,7 +82,7 @@
    {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 04:35"
+    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 05:25"
    },
    {
     "label": "This page is the Desk",
@@ -92,16 +92,27 @@
    {
     "label": "Night shifts running",
     "tone": "good",
-    "source": "foreman-8 wrote this edition; the court still waits on your eye, so tonight was a records night — two housekeeping cards closed on evidence, no code changed"
+    "source": "foreman-9 wrote this edition; the court still waits on your eye, so tonight built the first secret-leak guard (#32): every change is checked for leaked keys before merge; history read once, clean"
    },
    {
     "label": "OpenRouter balance $7.52 of $250",
     "tone": "warn",
-    "source": "read off the OpenRouter account this shift; the interpreter behind every roll and refine runs on it"
+    "source": "read off the OpenRouter account by foreman-8 at 02:35 on 26 Aug; not re-read this shift (no roll or refine since); the interpreter behind every roll and refine runs on it"
    }
   ]
  },
  "needsYou": [
+  {
+   "id": "github-push-protection",
+   "title": "Turn on GitHub's own leak-blocker for the Drape repository (one click, your account)",
+   "productImpact": "Tonight's check catches a leaked key when a change is proposed. GitHub can also refuse the upload itself, seconds earlier, before the key is anywhere anyone else can see it. That switch is off on the repository — the block we hit tonight came from a setting on the uploading account, which a different account would not have.",
+   "workedExample": "When I deliberately uploaded a fake OpenRouter key to test the new check, GitHub refused the upload outright (\"push declined … OpenRouter API Key\"). That refusal was luck of the account, not a property of the repo: GitHub → Drape repository → Settings → Code security → \"Push protection\" is OFF. Turning it on makes that refusal apply to every account and every branch.",
+   "options": [],
+   "recommendation": "Turn it on. Repository settings are yours, not the team's; it is free and has no effect on customers.",
+   "state": "open",
+   "filedAt": "2026-08-26T05:25:00+10:00",
+   "issueNumber": 32
+  },
   {
    "id": "rebaseline-countersign",
    "title": "Countersign the plan rebaseline",
@@ -211,6 +222,13 @@
  ],
  "pipeline": [
   {
+   "id": "secret-scan-32",
+   "title": "Every change the team proposes is now checked for leaked passwords and API keys before it can merge, and the whole code history gets re-read once a week (#32)",
+   "status": "merged",
+   "prNumber": 88,
+   "note": "in this deploy; team tooling only, nothing a customer sees. The one-time full-history read of 2,636 commits found ZERO real credentials (34 look-alikes, all read by eye: cast id numbers in old court scripts). Proven able to fail before it was trusted: a planted fake key turned the check red in 12 seconds, twice, on the exact wiring that merged. Five review rounds, each finding taken; the last was a clean pass"
+  },
+  {
    "id": "gate-manual-rerun-80",
    "title": "The team's own safety check (the gate every change must pass) can now be re-run by hand when GitHub silently drops it — no more 40-minute waits on a green that cannot arrive (#80)",
    "status": "merged",
@@ -222,7 +240,7 @@
    "title": "The lobby's sun/moon theme button works again — the help three-dot moves beside it instead of on top of it (#73)",
    "status": "in-review",
    "prNumber": 86,
-   "note": "opened by a day seat; still red on the same mechanical step (the architecture map needs regenerating on that branch) — the exact command is on the PR; the next shift verifies the fix at the frames before merging"
+   "note": "opened by a day seat 03:08 and untouched since; still red on the same mechanical step (the architecture map needs regenerating on that branch) — the exact command is on the PR. Left for the seat that owns it; the next shift takes it over if it is still red, verifying the fix at the frames before merging"
   },
   {
    "id": "line-endings-71",
@@ -298,6 +316,11 @@
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T05:25:00+10:00",
+   "shift": "foreman-9",
+   "text": "Still nothing from you on the court strips, so the creative register stays parked at its gate. Tonight went to the team's first security instrument (#32): every proposed change is now scanned for leaked passwords and API keys before it can merge, and the entire code history is re-read every Monday. The one-time read of all 2,636 commits found no real credential anywhere — 34 look-alikes, every one opened and read (cast id numbers in old test scripts, never a key). I did not trust the scanner until it had been made to fail: a planted fake key turned the merge check red in 12 seconds, twice, on the exact version that shipped, and was then removed so it never reached the main history. The reviewer found real gaps across five rounds — one shape of the OpenRouter key would have slipped through, and a secret sharing a line with a cast id would have been hidden — and each was closed and re-proven. One thing for you: GitHub has its own upload-time blocker and it is switched off for the repository (card above, one click). The #73 theme-button fix is still one mechanical step from green on the day seat's branch; if it is still red next shift I will take it over."
+  },
   {
    "at": "2026-08-26T04:35:00+10:00",
    "shift": "foreman-8",
