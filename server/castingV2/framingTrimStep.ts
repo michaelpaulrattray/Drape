@@ -55,17 +55,52 @@ export const FRAMING_TRIM_RENDER = { width: 1536, height: 2304 } as const;
 /**
  * The house target.
  *
- * `headShare` is the value the strips the founder chose were cut to — `T_min`
- * across the court's clause cells, i.e. the loosest common frame those fifteen
- * frames could all reach. His eye is the entire argument for it, and it moves
- * only the same way (build §4a).
+ * `headShare` is `T_min` across the court's NO-CLAUSE control cells — the
+ * loosest common frame those sixteen frames can all reach. **A crop only ever
+ * crops IN**, so a frame whose own share already exceeds `T` cannot be trimmed
+ * to it and is delivered untrimmed instead; `T` is therefore the smallest value
+ * every frame in the population can reach, not an average of them.
+ *
+ * ⚠ **IT WAS 0.227 UNTIL 2026-08-24, AND THE MOVE IS THE RETARGET, NOT A TUNING**
+ * (ruled fable-1648). 22.7% was `T_min` across the court's CLAUSE cells — a
+ * population that no longer exists, because the founder retired the margin
+ * clause on his own eye (*painted detail follows composition, not resolution*).
+ * A constant chosen at the geometry of a population the product no longer
+ * produces is a constant measuring the wrong thing.
+ *
+ * Re-derived from rows already on disk — no new frames and no spend — by
+ * `scripts/_framing-tmin-noclause-disposable.mts`, which imports the court's own
+ * `tMinOf` rather than re-deriving the arithmetic and **reproduces the court's
+ * published table cell for cell, binding frames included**, before asking anyone
+ * to believe its new row:
+ *
+ *   suit-control-b   n=8   share med 28.9%   T_min 34.3%   binding pos5
+ *   basics-control   n=8   share med 23.7%   T_min 29.4%   binding pos6
+ *   BOTH CONTROLS    n=16  share med 25.7%   T_min 34.3%   binding suit-b/pos5
+ *
+ * ⚠ **Sixteen frames is not a population and the binding frame is ONE
+ * position.** What makes that acceptable rather than sloppy is the kept
+ * original (`sourceKey`, migration 0053): `T` is a SLIDER over bytes we already
+ * hold, so being slightly wrong costs a re-trim rather than a re-cast — instant,
+ * free, and the same faces. The first dark rolls' untrimmed rate is what
+ * confirms it, and at a HIGHER `T` that rate can only be lower than the clause
+ * era's, since raising `T` admits more frames rather than fewer.
+ *
+ * ⚠ **The `PASS ≤ 26.0%` margin bar this figure fails is RETIRED**, on the
+ * record and with its premise named (fable-1648): it measured the clause era's
+ * COST, where tightening was the price of consistency. The founder reversed the
+ * goal — closeness is now the point, not the price — so it is not a failed bar,
+ * it is the wrong instrument. What replaces it is his own surviving condition,
+ * *"just need to make sure the hair is fully in the image"*, encoded as the
+ * per-frame headroom rule below, plus his eye on strips from his own rolls.
  *
  * `clearance` is the smallest air above the hair that reads as deliberate rather
  * than as a near miss. A build constant, arbitrary within a range, and the range
- * is wide: 0.088 face-heights of slack on the tightest frame ever measured.
+ * is wide: the tightest slack on the no-clause population is 0.111 face-heights
+ * (it was 0.088 on the clause cells, so the retarget loosens this too).
  */
 export const FRAMING_TRIM_TARGET: TrimTarget = {
-  headShare: 0.227,
+  headShare: 0.316,
   houseHeadroom: 0.35,
   clearance: 0.05,
 };
@@ -217,39 +252,33 @@ export async function applyFramingTrim(
 }
 
 /**
- * ⚠ THE MARGIN CLAUSE — the one sentence, applied the way the court applied it.
+ * ⚠ THE MARGIN CLAUSE LIVED HERE AND IS RETIRED — 2026-08-24, ruled fable-1648.
  *
- * `FRAMING_FIXED`'s landmark sentence is REPLACED, not appended to. That is not
- * a stylistic choice: ROUND2's specimen was an ADDED framing sentence which
- * widened its own population's spread by 5.0 points, and *context is not
- * additive* is a measured lesson in this campaign.
+ * `FRAMING_CLAUSE_FROM`, `FRAMING_CLAUSE_TO` and `applyFramingClause` are
+ * DELETED, with their call site in `rollService` and their arms. This paragraph
+ * is what stands in their place, because a control that stops being reachable
+ * otherwise leaves no failing test and no error — only a green suite and a
+ * document that still describes it.
  *
- * **It is a post-composition swap on the finished prompt rather than a flag
- * threaded through the composer, and that is deliberate.** The court's own arms
- * produced their prompts as `composed.replace(FROM, TO)` — so doing it here
- * reproduces the bytes the founder's eye accepted, exactly, instead of a
- * differently-assembled prompt that ought to be the same. It also leaves
- * `cohortConstantBlocks` and every pin that recomposes it completely untouched.
+ * **What it was:** a post-composition swap that asked the engine for more room
+ * below and at the sides, so a wide render could be trimmed to a common head
+ * size. It shipped, served exactly one production sheet (roll 209), and the
+ * founder retired it on his own eye the same day.
  *
- * ⚠ **THE `FROM` IS THE FIRST SENTENCE ONLY.** The constant reads *"Frame from
- * mid-torso up in a 2:3 portrait. Shoulders fully inside the frame with margin
- * at both sides."* and the court replaced only the first of those, leaving the
- * shoulders clause standing after the new text. A swap that took both would be
- * a prompt no court has ever rendered.
+ * **Why it died, in his finding rather than ours: PAINTED DETAIL FOLLOWS
+ * COMPOSITION, NOT RESOLUTION.** The engine paints fine facial texture where
+ * the face fills the frame, and no later crop recovers what a wide composition
+ * never painted. The clause bought room and spent detail.
  *
- * ⚠ **AND IT REPORTS WHETHER IT FOUND ANYTHING.** A `String.replace` that matches
- * nothing returns its input and says nothing — so an edit to `FRAMING_FIXED`
- * could silently disable this clause and leave a flagged roll rendering large
- * with no margin ask, which arm R measured as a TIGHTER picture than today. The
- * caller logs the miss loudly and renders anyway (a customer does not lose a
- * roll because a constant moved), and a unit arm asserts the sentence still
- * exists in the composed constant so the drift is caught at build time instead.
+ * **And it was the geometry breaker too.** The empty feasible-`R` interval that
+ * forced `R` to float per frame was measured on CLAUSE cells only; every
+ * no-clause control cell was feasible, 16 of 16, with more slack than the
+ * clause cells ever had.
+ *
+ * **What survives is the whole of the feature that his eye liked:** the large
+ * render, the trim, the per-frame headroom rule, and the kept original — with
+ * `T` re-chosen at the no-clause population's own geometry. The feature is now
+ * a crop of a bigger picture rather than an ask of the engine, so the prompt a
+ * flagged roll sends is byte-identical to an unflagged one. **That is the
+ * strongest property this build has ever had** and it has its own arm.
  */
-export const FRAMING_CLAUSE_FROM = "Frame from mid-torso up in a 2:3 portrait.";
-export const FRAMING_CLAUSE_TO = "Frame from the hips up in a 2:3 portrait. If in doubt include MORE "
-  + "of the body rather than less — a little extra room below and at the sides is correct.";
-
-export function applyFramingClause(prompt: string): { prompt: string; applied: boolean } {
-  if (!prompt.includes(FRAMING_CLAUSE_FROM)) return { prompt, applied: false };
-  return { prompt: prompt.replace(FRAMING_CLAUSE_FROM, FRAMING_CLAUSE_TO), applied: true };
-}

@@ -58,6 +58,27 @@ export type TminReading = {
   tMin: number;
   /** The frame that `T_min` is set by — the one the court has to argue about. */
   binding: FramingFrame;
+  /**
+   * ⚠ THE CEILING `tMin` DOES NOT KNOW ABOUT — added 2026-08-24, ruled
+   * fable-1649, after a correct `T_min` turned out to be unreachable.
+   *
+   * `tMin` is the LOWER bound: the smallest `T` every frame can reach, from
+   * `share <= T`. There is a second bound in the opposite direction. The crop
+   * is `faceH / T` tall and a crop shorter than the delivered height would have
+   * to be UPSCALED, which the product refuses (`framingTrim.ts`,
+   * `would-upscale`). So each frame also requires `T <= renderRatio × share`,
+   * where `renderRatio` is render height ÷ delivered height.
+   *
+   * **A bound is not a value.** `tMax` is the largest `T` every frame can
+   * reach, and when `tMin > tMax` NO single `T` serves the whole population —
+   * which is the state of the no-clause cells, and is invisible if you read
+   * `tMin` alone.
+   */
+  tMax: number;
+  /** True when `tMin <= tMax` — i.e. a common `T` exists at all. */
+  commonFeasible: boolean;
+  /** How many frames a given `T` would trim. `null` when no `T` was supplied. */
+  trimsAtT: number | null;
   shareMedian: number;
   shareMin: number;
   shareMax: number;
@@ -69,7 +90,17 @@ export type TminReading = {
 const median = (values: readonly number[]): number =>
   [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]!;
 
-export function tMinOf(frames: readonly FramingFrame[]): TminReading {
+/**
+ * The render-to-delivered height ratio the trim runs at (1536×2304 → 1024×1536).
+ * It is what sets the width of every frame's feasible band, `[share, ratio ×
+ * share]`, so a population whose max/min share exceeds it has no common `T`.
+ */
+export const FRAMING_RENDER_RATIO = 2304 / 1536;
+
+export function tMinOf(
+  frames: readonly FramingFrame[],
+  options?: { renderRatio?: number; at?: number },
+): TminReading {
   if (frames.length === 0) {
     /*
       A reader that comes up empty THROWS rather than returning a clean nothing:
@@ -82,10 +113,18 @@ export function tMinOf(frames: readonly FramingFrame[]): TminReading {
   const perFrame = frames.map((frame) => Math.max(frame.share, 1 / (frame.below + usableR + 1)));
   const tMin = Math.max(...perFrame);
   const shares = frames.map((frame) => frame.share);
+  const ratio = options?.renderRatio ?? FRAMING_RENDER_RATIO;
+  const tMax = Math.min(...shares.map((share) => share * ratio));
+  const at = options?.at ?? null;
   return {
     n: frames.length,
     usableR,
     tMin,
+    tMax,
+    commonFeasible: tMin <= tMax,
+    trimsAtT: at === null
+      ? null
+      : shares.filter((share) => share <= at && at <= share * ratio).length,
     binding: frames[perFrame.indexOf(tMin)]!,
     shareMedian: median(shares),
     shareMin: Math.min(...shares),

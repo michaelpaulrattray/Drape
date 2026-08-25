@@ -19,10 +19,7 @@ import { describe, expect, it } from "vitest";
 
 import { photorealHumanConstant } from "./cohortPhotorealHuman";
 import {
-  applyFramingClause,
   applyFramingTrim,
-  FRAMING_CLAUSE_FROM,
-  FRAMING_CLAUSE_TO,
   FRAMING_TRIM_DELIVERED,
   FRAMING_TRIM_RENDER,
   FRAMING_TRIM_TARGET,
@@ -61,8 +58,37 @@ async function expectDeliveredSize(bytes: Buffer): Promise<void> {
   ]);
 }
 
-const FACE = { left: 620, top: 227, width: 386, height: 454 };   /* share 0.197, headroom 0.500 */
-const HEAD = { left: 600, top: 105, width: 430, height: 600 };   /* gap 0.269 */
+/*
+ * ⚠ THE FIXTURES ARE RE-BASED ON THE NO-CLAUSE POPULATION (2026-08-24, ruled
+ * fable-1649), AND THAT IS THE WHOLE STORY OF THIS FILE'S RED RUN.
+ *
+ * They were `share 0.197` — a real frame, from `basics-clause/pos0`. Under the
+ * clause-era `T = 0.227` it trimmed. It cannot under `T = 0.316`, and not
+ * because the trim broke: **a frame trims only if `share <= T <= 1.5 × share`**,
+ * the upper bound being the point past which the crop is smaller than the
+ * 1024×1536 we deliver and would have to be upscaled. A 0.197 frame's band tops
+ * out at 0.296.
+ *
+ * That two-sided constraint is what the retarget's first proposed `T` (34.3%)
+ * missed, and these arms are what caught it — sized by the trim's own author
+ * against a population the product stopped producing. **They are re-based, not
+ * relaxed**: every fixture below is a REAL row from the court's no-clause
+ * control cells, named, so each one means something and the band it sits in is
+ * stated beside it.
+ */
+
+/** `basics-control/pos5` — the ordinary case. share 0.242, band [0.242, 0.363]. */
+const FACE = { left: 562, top: 241, width: 406, height: 557 };
+const HEAD = { left: 545, top: 107, width: 440, height: 720 };   /* gap 0.241 */
+
+/**
+ * `basics-clause/pos0` — share 0.197, band [0.197, 0.296]. BELOW the settled T,
+ * so it is now the WOULD-UPSCALE specimen rather than the ordinary one. Kept
+ * deliberately: the frame that used to be typical is the one that now takes the
+ * refusal road, which is the retarget in one fixture.
+ */
+const FACE_TOO_SMALL = { left: 620, top: 227, width: 386, height: 454 };
+const HEAD_TOO_SMALL = { left: 600, top: 105, width: 430, height: 600 };
 
 describe("the framing trim step", () => {
   it("trims a frame and delivers it at the delivered size", async () => {
@@ -80,9 +106,11 @@ describe("the framing trim step", () => {
 
   it("reports the headroom a tall-haired frame received, and that it took its own", async () => {
     const bytes = await renderSizeFrame();
-    /* gap 0.508 of a 385px face: the head sits 196px above the face box. */
-    const tallFace = { left: 620, top: 295, width: 330, height: 385 };
-    const tallHead = { left: 600, top: 99, width: 400, height: 600 };
+    /* `basics-control/pos3` — share 0.220 (band [0.220, 0.329]), gap 0.328, so
+       `gap + clearance` is 0.378 against the 0.35 house floor: this frame needs
+       more air than the house gives and must take its own. */
+    const tallFace = { left: 576, top: 399, width: 360, height: 506 };
+    const tallHead = { left: 560, top: 233, width: 395, height: 700 };
     const outcome = await applyFramingTrim(readerFor({ face: tallFace, head: tallHead }), { bytes });
     expect(outcome.trimmed).toBe(true);
     expect(outcome.ownHeadroom).toBe(true);
@@ -130,10 +158,36 @@ describe("the framing trim step", () => {
 
     it("a head already bigger than the target", async () => {
       const bytes = await renderSizeFrame();
-      const big = { left: 500, top: 400, width: 600, height: 700 };  /* share 0.304 */
+      /* `suit-control-b/pos5`, share 0.332 — the LARGEST head in the court's
+         no-clause population and the one frame T = 0.316 cannot serve. It was
+         the binding frame of the old one-sided T_min; under the two-sided band
+         it is the single frame the settled T gives up. */
+      const big = { left: 451, top: 346, width: 648, height: 765 };  /* share 0.332 */
       const outcome = await applyFramingTrim(readerFor({ face: big, head: { ...big, top: 300 } }), { bytes });
       expect(outcome.trimmed).toBe(false);
       expect(outcome.why).toBe("share-above-target");
+      await expectDeliveredSize(outcome.bytes);
+    });
+
+    it("⚠ a frame whose band EXCLUDES T takes the untrimmed road as `would-upscale`", async () => {
+      /*
+        The ceiling, driven. `FACE_TOO_SMALL` is `basics-clause/pos0` — share
+        0.197, so its band tops out at 0.296 and the settled T of 0.316 sits
+        above it. The crop would be 454/0.316 = 1437px tall against the 1536 we
+        deliver, so trimming it would mean UPSCALING, and this road exists to
+        refuse that rather than ship a soft frame.
+
+        It is load-bearing now in a way it was not before: under the clause-era
+        T this frame trimmed happily, and the ceiling was never the binding
+        constraint on anything. It is the reason the retarget's first proposed
+        constant was wrong.
+      */
+      const bytes = await renderSizeFrame();
+      const outcome = await applyFramingTrim(
+        readerFor({ face: FACE_TOO_SMALL, head: HEAD_TOO_SMALL }), { bytes },
+      );
+      expect(outcome.trimmed).toBe(false);
+      expect(outcome.why).toBe("would-upscale");
       await expectDeliveredSize(outcome.bytes);
     });
 
@@ -182,9 +236,10 @@ describe("the framing trim step", () => {
   */
   it("delivers every frame of a sheet at ONE size, whether it was trimmed or not", async () => {
     const bytes = await renderSizeFrame();
-    /* share 0.304 — above target, so the planner declines. The two positions
-       are 1 and 6, which is where roll 209's two actually fell. */
-    const tooBig = { left: 500, top: 400, width: 600, height: 700 };
+    /* `suit-control-b/pos5`, share 0.332 — above target, so the planner
+       declines. The two positions are 1 and 6, which is where roll 209's two
+       actually fell. */
+    const tooBig = { left: 451, top: 346, width: 648, height: 765 };
     const sheet = await Promise.all([0, 1, 2, 3, 4, 5, 6, 7].map((position) => {
       const declines = position === 1 || position === 6;
       const face = declines ? tooBig : FACE;
@@ -235,49 +290,88 @@ describe("the framing trim step", () => {
   });
 });
 
-describe("the margin clause", () => {
-  it("swaps the landmark sentence and leaves the shoulders clause standing", () => {
-    const composed = `blah ${FRAMING_CLAUSE_FROM} Shoulders fully inside the frame with margin at both sides. tail`;
-    const result = applyFramingClause(composed);
-    expect(result.applied).toBe(true);
-    expect(result.prompt).toContain(FRAMING_CLAUSE_TO);
-    expect(result.prompt).not.toContain(FRAMING_CLAUSE_FROM);
-    /* ⚠ THE SECOND SENTENCE SURVIVES. The court replaced only the FIRST of the
-       two, and a swap that took both would be a prompt no court has rendered. */
-    expect(result.prompt).toContain("Shoulders fully inside the frame with margin at both sides.");
-    expect(result.prompt.startsWith("blah ")).toBe(true);
-    expect(result.prompt.endsWith(" tail")).toBe(true);
-  });
-
-  it("REPORTS a miss rather than silently returning its input", () => {
-    const result = applyFramingClause("a prompt with no landmark sentence in it at all");
-    expect(result.applied).toBe(false);
-    expect(result.prompt).toBe("a prompt with no landmark sentence in it at all");
-  });
-
-  it("swaps exactly once, even if the sentence somehow appears twice", () => {
-    const twice = `${FRAMING_CLAUSE_FROM} middle ${FRAMING_CLAUSE_FROM}`;
-    const result = applyFramingClause(twice);
-    expect(result.prompt.split(FRAMING_CLAUSE_TO).length - 1).toBe(1);
-    /* The second occurrence is left alone — a prompt carrying the sentence twice
-       is a defect somewhere else, and doubling the new clause would compound it
-       rather than report it. */
-    expect(result.prompt).toContain(FRAMING_CLAUSE_FROM);
-  });
-
+describe("⚠ THE MARGIN CLAUSE IS GONE, and its absence is asserted rather than assumed", () => {
   /*
-    ⚠ THE DRIFT GUARD, and it is the reason `applied` exists at all.
+    Founder retarget, 2026-08-24, ruled fable-1648: the clause is DELETED —
+    `FRAMING_CLAUSE_FROM`, `FRAMING_CLAUSE_TO` and `applyFramingClause`, with
+    their call site and the five arms that stood here.
 
-    `String.replace` that matches nothing returns its input and says nothing. So
-    an ordinary edit to `FRAMING_FIXED` — rewording the landmark, adding a
-    comma — would silently disable this clause, and a flagged roll would render
-    LARGE WITH NO MARGIN ASK, which arm R measured as a tighter picture than
-    today. Worse than not having the feature, and visible to nobody.
+    His finding retired it: **painted detail follows COMPOSITION, not
+    resolution.** The engine paints fine facial texture where the face fills the
+    frame, and no later crop recovers what a wide composition never painted. The
+    clause bought room and spent detail.
 
-    This arm asks the real constant, so the drift is caught here at build time
-    rather than in production by a founder wondering why his sheets got tighter.
+    ⚠ WHAT REPLACES THOSE FIVE ARMS IS ONE ABSENCE ARM, and an absence test that
+    cannot fail is worse than none — so this one drives the real module's real
+    exports rather than grepping a file. If a prompt rewriter reappears here,
+    this reddens; if the module is renamed out from under it, the import fails.
   */
-  it("the sentence it swaps STILL EXISTS in the composed constant", () => {
-    expect(photorealHumanConstant(null)).toContain(FRAMING_CLAUSE_FROM);
+  it("this module exports NOTHING that rewrites a prompt", async () => {
+    const step = await import("./framingTrimStep");
+    const names = Object.keys(step);
+
+    for (const banned of ["applyFramingClause", "FRAMING_CLAUSE_FROM", "FRAMING_CLAUSE_TO"]) {
+      expect(names, `${banned} came back — the clause must not return silently`).not.toContain(banned);
+    }
+    // …and it is not vacuously empty: the trim road itself is still exported.
+    expect(names).toContain("applyFramingTrim");
+    expect(names).toContain("FRAMING_TRIM_TARGET");
+  });
+
+  it("the landmark sentence is left UNTOUCHED in the composed constant", () => {
+    /*
+      The old arm asserted this sentence still existed so the SWAP could find
+      it. It is asserted now for the opposite reason: nothing rewrites it any
+      more, so a flagged roll's prompt is byte-identical to an unflagged one —
+      the strongest property this build has ever had.
+    */
+    expect(photorealHumanConstant(null)).toContain("Frame from mid-torso up in a 2:3 portrait.");
+  });
+});
+
+describe("⚠ T, re-chosen at the no-clause population", () => {
+  /*
+    22.7% was `T_min` across the court's CLAUSE cells — a population the product
+    no longer produces. 34.3% is `T_min` across its sixteen NO-CLAUSE control
+    frames, re-derived from rows already on disk by
+    `scripts/_framing-tmin-noclause-disposable.mts`, which reproduces the
+    court's published table cell for cell before asking anyone to believe its
+    new row.
+  */
+  it("is the no-clause figure, not the clause-era one", () => {
+    expect(FRAMING_TRIM_TARGET.headShare).toBeCloseTo(0.316, 3);
+    expect(FRAMING_TRIM_TARGET.headShare).not.toBeCloseTo(0.227, 3);
+  });
+
+  it("⚠ T IS TWO-SIDED — the band is [T/1.5, T], and this is the arm that did not exist", () => {
+    /*
+      ⚠ THE CONSTRAINT THE COURT'S OWN INSTRUMENT DID NOT MODEL. `tMinOf`
+      computes the LOWER bound only — `share <= T`, the crop fitting inside the
+      frame. There is a second bound in the opposite direction: `cropHeight =
+      faceH / T` must not be smaller than the 1536 we deliver, or the crop
+      would be an UPSCALE and is refused (`framingTrim.ts`, `would-upscale`).
+      Since `faceH = share × 2304`, that ceiling is `T <= 1.5 × share`.
+
+      A first proposed retarget value of 34.3% — a correct `T_min`, reproduced
+      cell-for-cell against the court's published table — was unreachable for
+      three of sixteen frames because of it. **A bound is not a value.**
+    */
+    const T = FRAMING_TRIM_TARGET.headShare;
+    const RATIO = FRAMING_TRIM_RENDER.height / FRAMING_TRIM_DELIVERED.height;
+    expect(RATIO).toBeCloseTo(1.5, 3);
+
+    /* Real rows from the court's no-clause control cells. */
+    const shares = [
+      0.257, 0.277, 0.259, 0.290, 0.289, 0.332, 0.309, 0.257, // suit-control-b
+      0.229, 0.216, 0.225, 0.220, 0.251, 0.242, 0.281, 0.237, // basics-control
+    ];
+    const trims = shares.filter((share) => share <= T && T <= share * RATIO);
+
+    /* 15 of 16 — the best any single T achieves on this population, because
+       max/min share is 1.54 and the render only affords 1.50. The one it gives
+       up is the largest head, refused as `share-above-target` rather than
+       mis-cropped. */
+    expect(trims).toHaveLength(15);
+    expect(shares.filter((share) => share > T)).toEqual([0.332]);
   });
 });

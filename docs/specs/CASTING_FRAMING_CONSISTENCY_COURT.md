@@ -286,6 +286,36 @@ his own order unsatisfiable by construction.
 The whole court reduces to one number per sheet, and it is not a number the cut
 can determine.
 
+> ⚠ **EVERY `T_min` PUBLISHED IN THIS DOCUMENT IS A LOWER BOUND THAT MAY BE
+> UNREACHABLE — annotated 2026-08-24, ruled fable-1649, at the source rather
+> than in a mailbox.**
+>
+> `T_min` answers *"how small can a common `T` be"* — the constraint `share <=
+> T`, a crop fitting inside its frame. **There is a second constraint in the
+> opposite direction and this court never computed it.** The crop is `faceH / T`
+> tall, and a crop shorter than the delivered height would have to be UPSCALED,
+> which the product refuses (`framingTrim.ts`, `would-upscale`). Since `faceH =
+> share × 2304` and delivery is 1536, that ceiling is `T <= 1.5 × share`.
+>
+> So each frame's feasible band is `[share, 1.5 × share]`, and **a common `T`
+> exists only if the population's `max(share) / min(share) <= 1.5`.**
+>
+> **Nothing in this court's verdicts is wrong and nothing shipped is wrong.** At
+> the clause-era `T = 22.7%` the band is `[0.151, 0.227]` and all fifteen clause
+> frames sat inside it — because the margin clause compressed the within-cell
+> share spread to 3.5/3.6 points. **The ceiling was never binding, so its
+> absence never showed.**
+>
+> It binds the moment the clause goes. On the no-clause control cells the spread
+> is 6.6–7.6 points within a cell and 11.6 across, `max/min` is **1.54**, and the
+> common interval is **EMPTY** (`T_min` 34.3% against `T_max` 32.4%). The
+> retarget's first proposed constant was that unreachable 34.3% — a correct
+> `T_min`, reproduced against this table cell for cell, and still wrong.
+>
+> `scripts/lib/framingTmin.mts` now returns `tMax` and `commonFeasible` beside
+> `tMin`, so the emptiness is visible rather than inferred. **A bound is not a
+> value.**
+
 A frame can only be cropped IN. So for a chosen common head share `T` and common
 headroom `R`, a frame is REACHABLE only if all three hold:
 

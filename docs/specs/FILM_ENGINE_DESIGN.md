@@ -289,7 +289,19 @@ what if the prompt needs altering, or the director has a specific action in
 mind? Answer, pinned: **control is layered, not removed.**
 
 - **Level 0 — the six fields.** The engine writes everything.
-- **Level 1 — director controls, in director language.** The precision the
+- **Level 1 — director controls, presented as a NOTES flow (superseded from
+  a field form, 2026-08-25, after the founder found five open fields
+  confusing).** Under the takes: three actions — Keep, More takes, **Give a
+  note**. A note is one plain-text box spoken like a director between takes
+  ("she keeps looking at camera — she never should"); the engine FILES it
+  into the right structured slot and shows the filing as a removable chip
+  with its slot label (DON'T SHOW · looks at camera ×). The five fields
+  remain as the filing system underneath, reachable via a muted link — where
+  notes land, never a form the user faces. Same detect-file-ratify shape as
+  drift locks and the read-backs. An escalation helper appears when a fan
+  disappoints: more takes first (often luck), a note if the same thing keeps
+  failing, Edit setup if the ingredients are wrong.
+- **Level 1 detail — director controls, in director language.** The precision the
   pros used when they wanted it — timed beats ("0-2s: she reaches for the
   case"), first-frame placement, gaze, don't-show, locks — exposed as
   structured FIELDS on the shot card. A specific action or cut is written
