@@ -51,7 +51,10 @@ function refuseOutsideScope(): never {
  * reply renders in the journal thread instead.
  */
 const replyInput = z.object({
-  cardId: z.string().max(64).nullable(),
+  /* `min(1)` because the empty string is neither a card id nor a journal note
+     (that is what null is for) — a shape nobody sends refuses (invariant 4's
+     spirit; PR #72 re-review). */
+  cardId: z.string().min(1).max(64).nullable(),
   body: z.string().trim().min(1).max(4000),
 }).strict();
 

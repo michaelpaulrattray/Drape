@@ -32,16 +32,20 @@
  * share a hostname and a database name and differ only by port, which has
  * produced a wrong reading here before.
  *
- * # THE WATERLINE
+ * # SET DIFFERENCE, NOT A WATERLINE
  *
- * "Newer than the newest acknowledged id" rather than a timestamp, and rather
- * than "not in the acknowledged set". The ids are a MySQL autoincrement, so
- * `> max(acknowledged)` is monotone and needs no clock — and it degrades in the
- * safe direction: a reply that somehow sorts below the waterline is shown by
- * the `--all` pass rather than lost, and a shift that acknowledges out of order
- * sees MORE than it must rather than less.
+ * The default read prints every reply whose id is NOT in the acknowledged
+ * list — never "newer than the newest acknowledged id". The first version
+ * used that waterline, and its docblock claimed it degraded safely; the claim
+ * was BACKWARDS (caught by the PR #72 re-review): acknowledgement is a HAND
+ * EDIT of a JSON list, so a shift that adds #10 and misses #9 would sink #9
+ * below the waterline and hide it from every future default read forever,
+ * while his page said "Not read yet" — the design's forbidden vanishing,
+ * transplanted into the one tool a shift reads him with. The set difference
+ * cannot hide a reply: an unacknowledged id prints on every run until a
+ * deployed edition names it, however the list was edited.
  *
- *   --all   ignore the waterline and print the whole thread
+ *   --all   print the whole thread, acknowledged or not
  */
 import { readFileSync } from "node:fs";
 
@@ -81,9 +85,7 @@ try {
   console.error("[warn] showing the WHOLE thread and no card titles — nothing is hidden by this.");
 }
 
-const waterline = briefing && briefing.acknowledgedReplyIds.length > 0
-  ? Math.max(...briefing.acknowledgedReplyIds)
-  : 0;
+const acknowledged = briefing?.acknowledgedReplyIds ?? [];
 const titles = new Map((briefing?.needsYou ?? []).map((card) => [card.id, card.title]));
 
 const conn = await openDatabase(url);
@@ -105,15 +107,17 @@ try {
   }
 
   const [total] = await conn.query<any[]>("SELECT COUNT(*) AS n FROM crew_replies");
+  /* Set difference at the statement. The empty list needs its own arm because
+     `NOT IN ()` is not SQL; with nothing acknowledged, everything is new. */
   const [rows] = await conn.query<any[]>(
-    showAll
+    showAll || acknowledged.length === 0
       ? "SELECT id, cardId, body, createdAt FROM crew_replies ORDER BY id ASC"
-      : "SELECT id, cardId, body, createdAt FROM crew_replies WHERE id > ? ORDER BY id ASC",
-    showAll ? [] : [waterline],
+      : "SELECT id, cardId, body, createdAt FROM crew_replies WHERE id NOT IN (?) ORDER BY id ASC",
+    showAll || acknowledged.length === 0 ? [] : [acknowledged],
   );
 
   console.log(
-    `briefing edition ${briefing?.edition ?? "?"} · acknowledged up to id ${waterline} · `
+    `briefing edition ${briefing?.edition ?? "?"} · ${acknowledged.length} acknowledged · `
     + `${total[0].n} replies in total`,
   );
 

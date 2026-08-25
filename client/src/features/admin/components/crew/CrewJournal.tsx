@@ -69,7 +69,7 @@ export function CrewJournal({
 
       <CrewReplyBox
         cardId={null}
-        placeholder="A note to the crew — steer, correct, or ask. “Pause the nights” stops the shifts."
+        placeholder="A note to the crew — steer, correct, or ask. “Pause the nights” stops the shifts before the next one starts."
         sending={sending}
         onSend={onSend}
       />
