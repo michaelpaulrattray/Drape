@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1e789174d55716be"
+    "sourceFingerprint": "4bc51f9239f501a1"
   },
   "domains": [
     {
@@ -9930,6 +9930,10 @@
     }
   ],
   "tests": [
+    {
+      "id": "test:client/src/appRoutes.test.ts",
+      "path": "client/src/appRoutes.test.ts"
+    },
     {
       "id": "test:client/src/features/admin/components/crew/crewTypes.test.ts",
       "path": "client/src/features/admin/components/crew/crewTypes.test.ts"
