@@ -1,7 +1,7 @@
 {
- "edition": 10,
- "updatedAt": "2026-08-26T05:25:00+10:00",
- "shift": "foreman-9",
+ "edition": 11,
+ "updatedAt": "2026-08-26T06:10:00+10:00",
+ "shift": "foreman-10",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -82,7 +82,7 @@
    {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 05:25"
+    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 06:10"
    },
    {
     "label": "This page is the Desk",
@@ -92,12 +92,12 @@
    {
     "label": "Night shifts running",
     "tone": "good",
-    "source": "foreman-9 wrote this edition; the court still waits on your eye, so tonight built the first secret-leak guard (#32): every change is checked for leaked keys before merge; history read once, clean"
+    "source": "foreman-10 wrote this edition; the court still waits on your eye, so tonight finished the lobby theme-button fix (#73) — verified in the running app in both themes, merged, deployed"
    },
    {
     "label": "OpenRouter balance $7.52 of $250",
     "tone": "warn",
-    "source": "read off the OpenRouter account by foreman-8 at 02:35 on 26 Aug; not re-read this shift (no roll or refine since); the interpreter behind every roll and refine runs on it"
+    "source": "read off the OpenRouter account by foreman-8 at 02:35 on 26 Aug; not re-read since (no roll or refine has run); the interpreter behind every roll and refine runs on it"
    }
   ]
  },
@@ -222,6 +222,13 @@
  ],
  "pipeline": [
   {
+   "id": "lobby-theme-toggle-73",
+   "title": "The lobby's sun/moon theme button works again — the help three-dot moves beside it instead of on top of it (#73)",
+   "status": "merged",
+   "prNumber": 86,
+   "note": "in this deploy. The day seat opened the fix at 03:08 and left it one mechanical step from green; this shift took it over, re-ran that step, then verified the fix in the running app before merging — the two buttons sit 14 px apart, clicking the sun/moon flips the theme (and never opens the help menu), the three-dot opens Send feedback / Report a bug and Esc closes it, both themes looked at with my own eyes"
+  },
+  {
    "id": "secret-scan-32",
    "title": "Every change the team proposes is now checked for leaked passwords and API keys before it can merge, and the whole code history gets re-read once a week (#32)",
    "status": "merged",
@@ -234,13 +241,6 @@
    "status": "merged",
    "prNumber": 87,
    "note": "in this deploy; team tooling only, nothing a customer sees. Proven both ways before merging: a wrong re-run goes red, a right one goes green on the same bytes the normal path tests"
-  },
-  {
-   "id": "lobby-theme-toggle-73",
-   "title": "The lobby's sun/moon theme button works again — the help three-dot moves beside it instead of on top of it (#73)",
-   "status": "in-review",
-   "prNumber": 86,
-   "note": "opened by a day seat 03:08 and untouched since; still red on the same mechanical step (the architecture map needs regenerating on that branch) — the exact command is on the PR. Left for the seat that owns it; the next shift takes it over if it is still red, verifying the fix at the frames before merging"
   },
   {
    "id": "line-endings-71",
@@ -310,12 +310,17 @@
   {
    "id": "lobby-theme-toggle",
    "title": "The lobby's theme toggle is unclickable (#73)",
-   "detail": "The lobby's help three-dot sits exactly on top of the topbar's sun/moon button, so clicking it opens the feedback menu instead of switching themes. Found by tonight's drive of the admin-entry fix; measured at the pixels and filed.",
+   "detail": "Fixed and deployed 26 Aug 06:10 (PR #86): the help three-dot now sits in the topbar beside the credits chip and the sun/moon button instead of on top of it. Verified in the running app: the theme flips on click, the help menu still opens and closes, both themes checked by eye.",
    "severity": "info",
-   "state": "open"
+   "state": "resolved"
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T06:10:00+10:00",
+   "shift": "foreman-10",
+   "text": "Still nothing from you on the court strips, so the creative register stays parked at its gate and tonight was maintenance. The lobby bug you would have hit next — the sun/moon theme button that opened the feedback menu instead of switching themes — is fixed and live (#73). A day seat had written the fix but left it stuck on a mechanical step; I finished that step and then did not take the fix on trust: I ran the app, measured that the two buttons now sit 14 pixels apart, clicked the sun/moon and watched the theme flip without the help menu appearing, opened the three-dot and saw Send feedback / Report a bug, pressed Esc and saw it close, and looked at both light and dark frames myself before merging. Nothing was spent. Two things still wait on you: the eight court strips in the gallery, and the one-click GitHub leak-blocker card."
+  },
   {
    "at": "2026-08-26T05:25:00+10:00",
    "shift": "foreman-9",
