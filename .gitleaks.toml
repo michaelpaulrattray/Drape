@@ -24,7 +24,12 @@
 # real secret can hide. Keep entries shape-specific and never path-wide.
 # Declared ceilings: (1) gitleaks ignores sequential/keyboard-walk values
 # by design; (2) a real UUID token assigned to a field literally named
-# key/id (`railway: { key: "<uuid>" }`) is admitted by the first allowlist.
+# key/id (`railway: { key: "<uuid>" }`) is admitted by the first allowlist;
+# (3) the slug allowlist admits ANY all-lowercase kebab token whose segments
+# fit the cap with a non-hex letter somewhere (`q7g2k9x-m3p8w1z-t5r6y4u`,
+# or a truncated `xoxb-…` Slack shape) — driven on PR #88's review; real
+# Slack tokens stay out (13-digit segments, mixed-case tails) and every
+# dedicated vendor rule still fires past it.
 # NOT a ceiling any more — EVIL MERGES: git's default log emits no patch
 # for a merge commit, so a secret introduced only in a conflict resolution
 # was invisible (driven 2026-08-26: default log 0, `-m` 2 (one per parent),

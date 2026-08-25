@@ -144,20 +144,18 @@ jobs:
       # a leaked key fails in seconds. It scans the PR's OWN commits, so a
       # secret that was committed and then "removed" in a later commit still
       # reddens the gate: the bytes are in the branch history either way,
-      # and only a rewrite takes them out. Binary pinned by sha256; the same
-      # script runs by hand (scripts/secret-scan.sh) and weekly over the full
-      # history (secrets.yml). Values are never printed (--redact).
+      # and only a rewrite takes them out. Binary pinned by sha256 inside the
+      # script; the same script runs by hand (scripts/secret-scan.sh) and
+      # weekly over the full history (secrets.yml). Values are never
+      # printed (--redact).
       - name: Secret scan (gitleaks, this PR's commits)
         env:
           BASE: ${{ needs.resolve.outputs.base }}
-          GITLEAKS_VERSION: 8.30.0
-          GITLEAKS_SHA256: 79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e
         run: |
-          curl -fsSL -o /tmp/gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tgz" | sha256sum -c -
-          tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
+          # Version + sha256 are pinned INSIDE the script, once, for both runs.
+          GITLEAKS="$(sh scripts/secret-scan.sh fetch)"
           git fetch origin "$BASE"
-          GITLEAKS=/tmp/gitleaks sh scripts/secret-scan.sh "origin/$BASE"
+          GITLEAKS="$GITLEAKS" sh scripts/secret-scan.sh "origin/$BASE"
 
       - uses: pnpm/action-setup@v6
 
