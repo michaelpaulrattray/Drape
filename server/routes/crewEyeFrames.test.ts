@@ -32,7 +32,7 @@ async function get(
   app.use(createCrewEyeFrameRouter({
     authenticate: async () => ({ ...ADMIN }),
     crewTabEnabled: () => true,
-    rateLimit: () => ({ allowed: true }),
+    rateLimit: () => ({ allowed: true, resetIn: 0 }),
     servableKeys: () => new Set([FRAME_KEY]),
     readBytes: async (key) => {
       if (key !== FRAME_KEY) throw new Error(`unexpected key ${key}`);
@@ -87,9 +87,34 @@ describe("/api/crew/eye-frame — the doors, in order", () => {
     expect(status).toBe(404);
   });
 
-  it("429 over the rate limit", async () => {
-    const { status } = await get({ rateLimit: () => ({ allowed: false }) });
+  it("429 over the rate limit, with Retry-After", async () => {
+    const { status, headers } = await get({ rateLimit: () => ({ allowed: false, resetIn: 30_000 }) });
     expect(status).toBe(429);
+    expect(headers.get("retry-after")).toBe("30");
+  });
+
+  it("⚠ a THROWING flag read answers a plain 500 — never a hung request (PR #79 review finding 1)", async () => {
+    /* captureCrewTabEnabled throws on a malformed CREW_TAB_SCOPE, and Express
+       4 does not catch an async handler's rejection: unwrapped, this request
+       would write NO response and fire the process-level critical alert per
+       image. The arm proves the catch answers. */
+    const { status, json } = await get({
+      crewTabEnabled: () => { throw new Error("CREW_TAB_SCOPE must be ..."); },
+    });
+    expect(status).toBe(500);
+    expect((json as { error: string }).error).toContain("flag");
+  });
+
+  it("⚠ the served type is DERIVED from the pinned extension, never the bucket's claim (finding 3)", async () => {
+    /* The bounded reader admits any image/*, including image/svg+xml — which
+       is scriptable inline on the app origin. A mis-uploaded object's claimed
+       type must be ignored. */
+    const { status, headers } = await get({
+      readBytes: async () => ({ bytes: FRAME_BYTES, contentType: "image/svg+xml" }),
+    });
+    expect(status).toBe(200);
+    expect(headers.get("content-type")).toBe("image/png");
+    expect(headers.get("x-content-type-options")).toBe("nosniff");
   });
 
   it("⚠ THE ALLOWLIST: a key the bucket holds but no briefing edition names is 404", async () => {

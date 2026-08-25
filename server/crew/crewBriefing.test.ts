@@ -114,6 +114,16 @@ describe("the briefing file", () => {
     expect(() =>
       crewBriefingSchema.parse({ ...valid, eyeItems: [eyeItem, eyeItem] }),
     ).toThrow(/eyeItems\[\]\.id/);
+
+    /* And ACROSS the two thread-host populations (PR #79 review finding 2):
+       crew.reply's cardId is one namespace, so an eye item wearing a
+       needs-you card's id would render his verdict under the wrong claim. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        eyeItems: [{ ...eyeItem, id: valid.needsYou[0].id }],
+      }),
+    ).toThrow(/share one reply namespace/);
   });
 
   it("the journal cap holds at the schema", () => {
@@ -191,8 +201,12 @@ describe("acknowledgement — the only definition of seen (§9 arm 6)", () => {
        reason; the schema refuses a negative id in the deployed list, so the
        two cannot meet. */
     expect(replyIsAcknowledged({ acknowledgedReplyIds: [1, 3] }, -1724500000000)).toBe(false);
+    /* Through the WHOLE schema — after the cross-namespace refine (#79
+       review finding 2) there is no `.shape` to reach into, and the whole
+       parse is the door the file actually goes through. */
+    const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
     expect(() =>
-      crewBriefingSchema.shape.acknowledgedReplyIds.parse([-1]),
+      crewBriefingSchema.parse({ ...valid, acknowledgedReplyIds: [-1] }),
     ).toThrow();
   });
 });
