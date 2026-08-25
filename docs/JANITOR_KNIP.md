@@ -7,6 +7,15 @@ authority.** The Atlas's retirement views (`docs/architecture/`) and the
 un-wiring differ (`scripts/diff-importer-count-across-time.mts`) keep that;
 a knip row is a pointer to open the file, never a verdict to remove it.
 
+**The nightly** (`.github/workflows/knip.yml`, Warden patrol #1, 2026-08-26):
+the same command runs on main every night at 15:00 UTC (01:00 AEST) and by
+hand with `gh workflow run knip.yml`. It is a reading, not a gate — the job
+reddens only when knip could not run (any exit but its own 0/1), and
+otherwise writes the per-category counts to the run summary and the compact
+list as a 30-day artifact (`knip-reading-<run id>`). The Janitor patrol reads
+the newest summary against the table below and appends a row; nothing in the
+nightly deletes, and nothing in it decides.
+
 ## What knip reads (and the Atlas could not, until 2026-08-23)
 
 Entries: `server/_core/index.ts`, `client/src/main.tsx`, every hand-run

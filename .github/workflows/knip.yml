@@ -1,0 +1,92 @@
+# The Janitor's nightly dead-code reading (issue #34).
+#
+# knip over the whole tree, once a night, on main — the same command the
+# Janitor runs by hand (`pnpm janitor:knip`, config in knip.json), so the
+# nightly and a hand reading cannot disagree. It is a READING, not a gate:
+# knip has NO deletion authority (docs/JANITOR_KNIP.md — the Atlas's
+# retirement views and the un-wiring differ keep that), and the tree holds
+# ~170 unused exports by the last count, so a job that reddened on any
+# finding would be red every night and say nothing. The job therefore
+# fails only when knip itself could not run (a config error, a crash —
+# any exit other than knip's own 0 "clean" / 1 "issues found"), and
+# otherwise records the reading: the compact list as a 30-day artifact
+# (`knip-reading-<run>`), and the per-category counts in the run summary,
+# where the Janitor's patrol reads them against docs/JANITOR_KNIP.md's
+# table and files the deltas as cards.
+#
+# By hand:  gh workflow run knip.yml
+
+name: Knip (nightly)
+
+on:
+  schedule:
+    # 15:00 UTC — 01:00 AEST, inside the night shifts, so the Janitor's
+    # patrol finds a fresh reading waiting rather than buying its own.
+    - cron: "0 15 * * *"
+  workflow_dispatch:
+
+# A hand-dispatched run beside the nightly would only read the same tree
+# twice; let the later one wait (zizmor concurrency-limits, #35).
+concurrency:
+  group: knip-nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  reading:
+    name: reading
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          # Read-only reading of the tree; nothing here needs the token.
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Dead-code reading (knip)
+        run: |
+          set +e
+          pnpm janitor:knip > knip-reading.txt 2>&1
+          STATUS=$?
+          set -e
+          cat knip-reading.txt
+          # knip's own exit codes: 0 = nothing to report, 1 = issues listed.
+          # Anything else means the reading did not happen.
+          if [ "$STATUS" -ne 0 ] && [ "$STATUS" -ne 1 ]; then
+            echo "::error::knip exited $STATUS — the reading did not run (see the log above)."
+            exit "$STATUS"
+          fi
+          # The compact reporter prints one heading per category; count the
+          # rows under each so the summary carries the numbers the Janitor's
+          # table records (files / deps / devDeps / exports / types / duplicates).
+          {
+            echo "## knip nightly reading — $GITHUB_SHA"
+            echo
+            echo "| category | rows |"
+            echo "|---|---|"
+            awk '
+              /^[A-Za-z].*\([0-9]+\)$/ { cat=$0; sub(/ \([0-9]+\)$/, "", cat); n=$0; gsub(/.*\(|\)$/, "", n); printf("| %s | %s |\n", cat, n) }
+            ' knip-reading.txt
+            echo
+            echo "Full list: the \`knip-reading\` artifact on this run. Counts are read against docs/JANITOR_KNIP.md by the Janitor patrol; knip has no deletion authority."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() }}
+        with:
+          name: knip-reading-${{ github.run_id }}
+          path: knip-reading.txt
+          retention-days: 30
