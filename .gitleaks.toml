@@ -2,33 +2,62 @@
 #
 # Runs in the gate on every PR (scripts/secret-scan.sh, the PR's own commits)
 # and weekly over the FULL history (.github/workflows/secrets.yml). The
-# default ruleset is kept whole; this file only names the two shapes the
-# generic-api-key rule fires on in this repo that are provably not secrets.
+# default ruleset is kept whole, ONE rule is added (railway-token: the
+# credential that deploys this product is a bare UUID, which no default rule
+# sees), and two allowlists name the only shapes the generic-api-key rule
+# fires on in this repo that are provably not secrets. Both allowlists are
+# pinned to that one rule (targetRules), so a dedicated rule
+# (heroku-api-key, stripe-access-token, railway-token, …) is never silenced
+# here — driven: a catch-all allowlist pinned to generic-api-key still lets
+# heroku-api-key fire.
 #
 # First full-history reading, 2026-08-26, gitleaks 8.30.0, 2668 commits:
 # 34 findings, all generic-api-key, all in four disposable court scripts,
 # every one a candidate/variant publicId (a UUID) or a kebab-case filename
 # sitting next to the word "key" (`key: "<uuid>"`, `imageKey`). Zero real
-# credentials in history. With the two allowlists below the same reading is
-# 0, and a planted AWS key still reddens it (the instrument's own negative
-# control — verified before this file was believed).
+# credentials in history. Under this file the same reading is 0, and
+# planted AWS, Stripe, Google, OpenRouter, Heroku and Railway keys each
+# redden the same command — verified on COMMITTED config bytes (an earlier
+# round measured a config that `git reset --hard` had already reverted).
 #
 # Adding to this file is a security decision: a regex here is a place a
 # real secret can hide. Keep entries shape-specific and never path-wide.
+# Declared ceilings: (1) gitleaks ignores sequential/keyboard-walk values
+# by design; (2) a real UUID token assigned to a field literally named
+# key/id (`railway: { key: "<uuid>" }`) is admitted by the first allowlist.
 
 [extend]
 useDefault = true
 
-# A UUID is never a credential in this product — publicIds and every R2
-# storage key are crypto.randomUUID() (CLAUDE.md, "A customer's cast is
-# their work"). Anchored, exact-length, lowercase hex only.
-[[allowlists]]
-regexTarget = "secret"
-regexes = ['''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''']
+# Railway project/account tokens are bare UUIDs, and Railway is the deploy
+# platform (deploy-railway skill). gitleaks' default rules have no Railway
+# rule and generic-api-key does not fire on `RAILWAY_TOKEN="<uuid>"`
+# (driven 2026-08-26, default-only config: no finding). Keyword-anchored so
+# a publicId never trips it.
+[[rules]]
+id = "railway-token"
+description = "Railway token (a UUID beside a railway keyword)"
+regex = '''(?i)railway[a-z0-9_.\-]{0,30}[\s'"]*[:=][\s'"]*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})'''
+keywords = ["railway"]
 
-# A kebab-case file slug: three or more lowercase/digit segments joined by
-# hyphens, nothing else. No issued credential format is shaped like this —
-# API keys carry a prefix (sk_, AKIA, ghp_, AIza…) or mixed case/base64.
+# A UUID standing in one of the product's own id fields. publicIds and every
+# R2 storage key are crypto.randomUUID() (CLAUDE.md, "A customer's cast is
+# their work"), and a court script names them `key: "<uuid>"`, `id: "…"`,
+# `CANDIDATE = "…"`. The match is the LINE, not the value alone: a UUID IS a
+# credential shape elsewhere, so `RAILWAY_TOKEN="<uuid>"` — no id-field
+# context — stays a finding (and is now the railway-token rule's).
 [[allowlists]]
+targetRules = ["generic-api-key"]
+regexTarget = "line"
+regexes = ['''(?i)\b(key|id|candidate|variant|publicId|imageKey|candidateId|variantId|storageKey)\s*[:=]\s*"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"''']
+
+# A kebab-case file slug — `before-v501-the-arm-swallow`: three or more
+# SHORT lowercase/digit segments (1–12 chars) joined by hyphens, at least
+# one of which holds a letter outside a–f. Both fences are load-bearing:
+# the segment cap keeps out OpenRouter's `sk-or-v1-<64 hex>` (four
+# lowercase hyphenated segments too — review finding 1 on PR #88), and the
+# non-hex letter keeps out a lowercase UUID, which the cap alone admits.
+[[allowlists]]
+targetRules = ["generic-api-key"]
 regexTarget = "secret"
-regexes = ['''^[a-z0-9]+(-[a-z0-9]+){2,}$''']
+regexes = ['''^(?:(?:[a-z0-9]{1,12}-){2,}[a-z0-9]{0,11}[g-z][a-z0-9]{0,11}|(?:[a-z0-9]{1,12}-)+[a-z0-9]{0,11}[g-z][a-z0-9]{0,11}(?:-[a-z0-9]{1,12})+|[a-z0-9]{0,11}[g-z][a-z0-9]{0,11}(?:-[a-z0-9]{1,12}){2,})$''']
