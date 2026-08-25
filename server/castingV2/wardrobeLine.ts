@@ -263,7 +263,48 @@ export const HOUSE_WARDROBE_LINE =
  */
 export function basicsWardrobeLine(sex: string | null | undefined): string {
   if (sex === "male") {
-    return "shirtless, in plain black fitted shorts, barefoot";
+    /*
+      ⚠ IT SAID `shirtless` UNTIL 2026-08-25, AND THE WORD WAS COSTING HIM ONE
+      SLICE IN FOUR — swapped on the FOUNDER'S OWN wording test (relayed
+      fable-1659 §1), which is the same construction the legacy VTO road has
+      made for a year: **rename the flagged NOUN, change nothing about the
+      object.**
+
+      His test, his account, his words: *"shirtless is a genuine NSFW flag for
+      gpt image 2 so i tried 'bare chested' and it seemed to work for 4/4 where
+      as shirtless was a 2/4."* n=4 each, and it is quoted as a DIRECTION rather
+      than a rate.
+
+      Our own isolation, on his rolls, arrived at the same door independently:
+
+        basics    "shirtless, …"          4 refused / 16   25.0%  (Wilson 10-50%)
+        wardrobe  six clothed lines        0 refused / 48    0%
+        unpathed  house crew tee           0 refused / 31    0%
+        Fisher exact, two-tailed                            p = 0.00286
+
+      Every refusal was `content_policy` with the provider naming
+      `["body","prompt"]` — the PROMPT checker, before any image existed. Same
+      brief family, same account, inside fifteen hours; Two Paths put him on
+      Basics and the refusals started with the line.
+
+      **This preserves the trade rather than reversing it.** The picture is
+      identical — same body, same coverage, `BASICS_COVERAGE.upperChest` stays
+      `bare`, the chest-ink road untouched. It is strictly narrower than the
+      alternative on the table (swap the garment for a fitted tank), which would
+      have covered the chest and taken the path's whole point with it.
+
+      **The confirming read costs nothing and is already wired**: the refusal
+      counter by wardrobe line gives the real rate free on his future Basics
+      rolls. If `bare chested` still refuses materially, the garment question
+      re-opens with numbers rather than with a hunch.
+
+      ⚠ **The retired sentence does NOT disappear from the product** — two
+      production rolls (#215, #216) are stamped with it, and
+      `inkSurfaceCoverage.ts` derives its known-Basics set from THIS function.
+      See `RETIRED_BASICS_LINES` there: dropping the old string would silently
+      turn those two casts' chest, neck and arm from `bare` to `unknown`.
+    */
+    return "bare chested, in plain black fitted shorts, barefoot";
   }
   /*
     ⚠ THE SCOOP WENT LOWER ON 2026-08-23, AND IT WAS THE FOUNDER'S CALL ON A

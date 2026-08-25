@@ -90,12 +90,24 @@ person in clothes.
 refusals multiply:
 
 ```
-per-image refusal p     P(all FIVE views clear)
-  0.25                    23.7%      ← the rate measured at roll
-  0.10                    59.0%
-  0.05                    77.4%
-  0.02                    90.4%
+per-image refusal p     P(a Sign clears)     five views     four
+  0.25                     31.6%              23.7%         ← the roll rate
+  0.10                     65.6%              59.0%
+  0.05                     81.5%              77.4%
+  0.02                     92.2%              90.4%
 ```
+
+⚠ **AND THE LIVE COLUMN IS THE FOUR, NOT THE FIVE — found by court 1's own
+pre-dispatch guard refusing to buy a view (2026-08-25).** The guard asserts the
+wardrobe line is in every prompt it is about to pay for, and it refused on the
+CLOSE-UP. Read at the code, that is correct product behaviour: `wardrobeSpecFor`
+returns a view's own spec when it is not the shared one, and the close-up's is
+`CLOSE_UP_WARDROBE` — *"at this crop the garment may be barely visible, and that
+is fine — if no clothing is in frame, this passes."* **The close-up is never
+told the wardrobe line at all, so it cannot be refused for the neckline
+sentence.** The risk is carried by four of the five views. Both columns are kept
+because the five is the right exponent for a risk that rides every view, and
+this particular risk does not.
 
 ⚠ **THIS TABLE SAID SIX VIEWS AND THE PACKAGE IS FIVE — corrected 2026-08-25
 (opus-1272, ruled fable-1654 §1), and the correction WEAKENS my own argument by
@@ -213,6 +225,32 @@ default for everybody.
 **And it must include Sign**, per §1(b) — that is where the odds compound and
 where nothing has ever been measured.
 
+⚠ **AND THE MALE HALF OF §3.1's RECOMMENDATION IS SUPERSEDED — HE RAN HIS OWN
+WORDING TEST AND IT WON WITHOUT COSTING THE TRADE** (2026-08-25, relayed
+fable-1659 §1; the swap is in `wardrobeLine.ts`). His words:
+
+> *"shirtless is a genuine NSFW flag for gpt image 2 so i tried 'bare chested'
+> and it seemed to work for 4/4 where as shirtless was a 2/4"*
+
+The male line is now `bare chested, in plain black fitted shorts, barefoot`.
+**It preserves the trade instead of reversing it** — same body, same coverage,
+`BASICS_COVERAGE.upperChest` still `bare`, the chest-ink road untouched — which
+is strictly better than §3.1's tank recommendation, whose whole cost was giving
+that up. No court was bought: the refusal counter by wardrobe line gives the
+real rate free on his next Basics rolls, and if `bare chested` still refuses
+materially the garment question re-opens with numbers.
+
+⚠ **THIS IS DIRECT EVIDENCE FOR COURT 2's CENTRAL HYPOTHESIS AND IT CHANGES THE
+COURT'S SHAPE.** The legacy VTO road's `SAFETY_TERM_MAP` works by renaming the
+flagged **NOUN** (`bralette` → `cropped top`) and never by softening a
+DESCRIPTOR — and the milder-sentence arm that failed here (3 of 8 against 3 of
+16) softened descriptors, which is why it could not separate the two mechanisms.
+`shirtless` → `bare chested` is a noun-register swap and it moved. **So court 2
+gains MALE cells as first-class, not as an afterthought**: today's line, the
+fitted-tank swap, and a construction-register rephrasing — beside the female
+cells, whose candidate wordings should now be drawn the same way, by renaming
+what the garment IS rather than by describing it more gently.
+
 ### 3.3 Colour — black, or neutral?
 
 **Recommendation: NEUTRAL (mid-grey / stone), decided by a reading rather than
@@ -229,10 +267,76 @@ garment boundary is found at all. That is court 3 below.
 
 ---
 
-## 4. The courts — costed, NONE RUN
+⚠ **THE RECOMMENDATION ABOVE IS OVERTURNED BY ITS OWN COURT — the segmenter
+argument is DEAD, and BLACK STANDS pending his aesthetic word** (court 3, run
+2026-08-25 inside `CASTING_BRIEF_FIDELITY_SCOPE`; ruled fable-1656 §3, closed
+fable-1658 §5). **The corrected party is the Fable seat**, whose fable-1645 §3
+made the neutral recommendation; the executor seat wrote it into this section
+and built the instrument that refuted it.
 
-fal stands at **$15.18** and his cyborg re-roll has first claim on it. Nothing
-below is dispatched; these are prices for his word.
+The claim was *"black loses edge definition on dark skin, for his eye and for
+the segmenter alike."* Asked, on the funded population:
+
+```
+BLACK    rendered 4/4  ·  control answered 4/4  ·  subject found 4/4
+         subject px: 178572, 164677, 149743, 115169
+NEUTRAL  rendered 3/4  ·  control answered 3/3  ·  subject found 3/3
+         subject px: 150688, 146458, 178130
+```
+
+**`sports top` is found on every black frame, on genuinely deep dark brown
+skin.** The boundary does not disappear. The refusal direction runs the same
+way — **0 of 8 BLACK, 2 of 8 NEUTRAL** across both runs (Fisher p ≈ 0.47, quoted
+as a direction and not a rate).
+
+⚠ **Run 1 measured the wrong population and that is why there are two runs.**
+The brief said *"deep dark brown skin"*, the phrase reached 4 of 4 compiled
+prompts, and six of seven delivered frames came back medium or light brown — the
+interpreter had invented *"mostly Middle Eastern heritage with Western European
+features"* and put it in the ABSOLUTE block one paragraph above the skin
+sentence, where it beats the skin at the frames. A bare compiler call sits
+OUTSIDE `CASTING_BRIEF_FIDELITY_SCOPE`, so `statedSkin` is null by construction
+and the pin never runs. Re-run inside the flag, the heritage is gone, the skin
+speaks in its own lane, and all seven frames read as genuinely dark. **The two
+runs are two independent populations, not a paired comparison.**
+
+**What is left of §3.3 is the aesthetic call, and it is HIS** (law 9 — a
+segmenter cannot settle *"which looks right for the brand"*). The contact sheet
+is `output/basics-colour-court-run3/CONTACT-black-vs-stone-grey.png`.
+
+✅ **HE HAS RULED AND THE COLOUR QUESTION IS CLOSED: BLACK** (2026-08-25, relayed
+fable-1661 §2). Verbatim:
+
+> *"if the image analyzer fails to pickup grey go with black"*
+
+**His condition is met and it was met by the court's own rows.** The NEUTRAL
+cell rendered 3 of 4 in run 3 and 3 of 4 in run 1 — a refused slice in both —
+and run 1's neutral cell is where a garment read came back short. BLACK rendered
+4 of 4 and was found 4 of 4 on genuinely deep dark brown skin. So the answer is
+his stated fallback, arrived at by the reading he asked for rather than by
+anyone's taste.
+
+**Consequences, discharged here:** the colour question comes off his desk; the
+basics garment is black; and **court 2 drops the colour axis entirely** — it
+tests wording, never colour. This section is now a record rather than an open
+question.
+
+---
+
+## 4. The courts — costed. **COURT 3 HAS RUN (twice); 1, 2 and 4 have not**
+
+⚠ This section read *"NONE RUN"* and *"fal stands at $15.18"* when it was
+written. Court 3 was funded by his own *"3) yes"* and ran on 2026-08-25 — twice,
+because run 1 bought the wrong population (§3.3). **Its verdict is above and it
+overturned this document's own recommendation.** Court 1 is BUILT, guard-proven
+and HELD on funding (fable-1658 §3); courts 2 and 4 are unbuilt.
+
+⚠ **The balance figure below is a DATE-STAMPED READING and not a standing fact.**
+It has been $15.18, $14.33, $13.15 and $12.55 inside four days, and it moves on
+its own — production rolls spend from this same account, so it falls while
+nobody here is spending. Read it at dispatch, never from this page.
+
+Prices for his word:
 
 ```
 1  THE SIGN REFUSAL READING          ⚠ MY FIRST BUY. The 25% is a ROLL figure

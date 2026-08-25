@@ -26,9 +26,12 @@
  * *"surgical scrubs and plain white clogs"* is below the waist, where does a
  * dress sit.
  *
- * So **`shirtless` and `barefoot` are cards** (ruled fable-1459 ASK 1). They are
- * not garments; they are what this person is wearing there, which is nothing,
- * and that is a true and useful thing for a panel to say.
+ * So **`bare chested` and `barefoot` are cards** (ruled fable-1459 ASK 1, whose
+ * own example was `shirtless` — the word the male Basics line carried until
+ * 2026-08-25, when the founder's wording test swapped it for the provider's
+ * prompt checker; the RULING is untouched by that and only its example moved).
+ * They are not garments; they are what this person is wearing there, which is
+ * nothing, and that is a true and useful thing for a panel to say.
  *
  * # ⚠ IT IS A DISPLAY DECOMPOSITION AND IT REACHES NO PROMPT, EVER
  *

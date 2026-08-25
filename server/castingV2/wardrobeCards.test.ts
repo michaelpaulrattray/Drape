@@ -54,7 +54,7 @@ describe("the split is the join read backwards, and nothing else", () => {
       .toEqual(["an androgynous grey suit"]);
   });
 
-  it("⚠ `shirtless` and `barefoot` ARE pieces — no taxonomy decides otherwise", () => {
+  it("⚠ `bare chested` and `barefoot` ARE pieces — no taxonomy decides otherwise", () => {
     /*
       Ruled fable-1459 ASK 1, and it is the arm that stops a
       counts-as-a-garment rule creeping back in. They are not garments; they are
@@ -62,7 +62,7 @@ describe("the split is the join read backwards, and nothing else", () => {
       and useful thing for a panel to say.
     */
     expect(wardrobePieces(basicsWardrobeLine("male")).map((one) => one.phrase))
-      .toEqual(["shirtless", "in plain black fitted shorts", "barefoot"]);
+      .toEqual(["bare chested", "in plain black fitted shorts", "barefoot"]);
   });
 
   it("drops nothing for failing a definition, and drops blanks", () => {

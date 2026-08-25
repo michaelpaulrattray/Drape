@@ -211,10 +211,27 @@ describe("⚠ the Basics spec has two forms and `SEXES` has three members", () =
     piece. So this is not a lesser option; it is the same option with a top on.
   */
   it("gives the male form a bare chest and everything else the covered one", () => {
-    expect(basicsWardrobeLine("male")).toContain("shirtless");
+    expect(basicsWardrobeLine("male")).toContain("bare chested");
     for (const sex of ["female", "nonbinary", null, undefined, "", "unknown"]) {
-      expect(basicsWardrobeLine(sex as string | null), String(sex)).not.toContain("shirtless");
+      expect(basicsWardrobeLine(sex as string | null), String(sex)).not.toContain("bare chested");
       expect(basicsWardrobeLine(sex as string | null), String(sex)).toContain("sports top");
+    }
+  });
+
+  it("⚠ the retired word `shirtless` is on NO form — it costs a slice in four", () => {
+    /*
+      THE SWAP'S OWN ARM (fable-1659 §1). `shirtless` is a genuine NSFW flag at
+      the image provider — his test 4/4 clean against 2/4, our isolation 4 of 16
+      against a clothed control of 0 of 79 at p = 0.003, every refusal
+      `content_policy` naming `["body","prompt"]`.
+
+      It is pinned NEGATIVELY, and on every form rather than on the male one,
+      because the failure this guards is a word creeping back into a sentence
+      somebody rewrites for a different reason. The picture is unchanged: same
+      body, same bare chest, same `BASICS_COVERAGE`.
+    */
+    for (const sex of ["male", "female", "nonbinary", null, undefined, "", "unknown"]) {
+      expect(basicsWardrobeLine(sex as string | null), String(sex)).not.toContain("shirtless");
     }
   });
 
@@ -233,7 +250,7 @@ describe("⚠ the Basics spec has two forms and `SEXES` has three members", () =
       in for, so the next rewording is judged on what it PROMISES rather than on
       whether it reuses somebody's words.
     */
-    expect(basicsWardrobeLine("male")).toContain("shirtless");
+    expect(basicsWardrobeLine("male")).toMatch(/\bbare\b/);
     /* One: the sentence names the chest and says it is BARE. Anything that
        merely mentions a neckline leaves the engine to decide how much. */
     expect(basicsWardrobeLine("female")).toMatch(/upper chest/);

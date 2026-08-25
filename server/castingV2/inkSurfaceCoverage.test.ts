@@ -108,9 +108,15 @@ describe("what this cast's wardrobe leaves showing", () => {
        are what the court measured. */
     expect(basicsWardrobeLine(null)).toMatch(/collarbone/);
     expect(basicsWardrobeLine(null)).toMatch(/sternum/);
-    /* The male form needs no landmark — it is `shirtless`, and the chest is
-       bare by the absence of a garment rather than by the cut of one. */
-    expect(basicsWardrobeLine("male")).toContain("shirtless");
+    /* The male form needs no landmark — it is `bare chested`, and the chest is
+       bare by the absence of a garment rather than by the cut of one.
+
+       ⚠ It said `shirtless` until 2026-08-25 and the swap was the founder's own
+       wording test, for the provider's PROMPT checker and not for the picture
+       (`wardrobeLine.ts`). The negative pin below is the half that matters: the
+       retired word must not creep back, because it costs a slice in four. */
+    expect(basicsWardrobeLine("male")).toContain("bare chested");
+    expect(basicsWardrobeLine("male")).not.toContain("shirtless");
   });
 
   it("⚠ AN OUTFIT NOBODY HAS READ IS `unknown` — never `bare`, and never `covered`", () => {
@@ -138,6 +144,34 @@ describe("what this cast's wardrobe leaves showing", () => {
     */
     expect(coverageOfWardrobeLine("a plain crew-neck tee", "upperChest")).toBe("unknown");
     expect(coverageOfWardrobeLine("shirtless", "upperChest")).toBe("unknown");
+  });
+
+  it("⚠ A RETIRED BASICS SENTENCE KEEPS ITS COVERAGE — two production rolls wear one", () => {
+    /*
+      The arm bought by the `shirtless` → `bare chested` swap (fable-1659 §1),
+      and it is a law-7-second-half arm rather than a feature arm.
+
+      `BASICS_LINES` is DERIVED from `basicsWardrobeLine`, which is right — but
+      derivation tracks what we write NEXT and a stored roll records what we
+      wrote THEN. Production rolls **#215 and #216** were already stamped with
+      the male form's old sentence when it changed. Without
+      `RETIRED_BASICS_LINES` they stop matching and every surface on those two
+      casts falls from `bare` to `unknown` — the chest, neck and upper arm of
+      two casts the founder is actively rolling, with no failing test and no
+      error anywhere.
+
+      It is written as the STORED STRING rather than through the writer on
+      purpose: a retired line has no writer left to ask, and an arm that asked
+      one would be asserting the thing it is meant to catch.
+    */
+    const retiredMaleForm = "shirtless, in plain black fitted shorts, barefoot";
+    for (const placement of INK_PLACEMENTS) {
+      expect(coverageOfWardrobeLine(retiredMaleForm, placement), placement)
+        .toBe(coverageOfWardrobeLine(basicsWardrobeLine("male"), placement));
+    }
+    /* And it is `bare` rather than merely equal — an arm comparing two `unknown`s
+       would pass while the whole point was lost. */
+    expect(coverageOfWardrobeLine(retiredMaleForm, "upperChest")).toBe("bare");
   });
 
   it("⚠ `incoherent` is unknown and not covered", () => {

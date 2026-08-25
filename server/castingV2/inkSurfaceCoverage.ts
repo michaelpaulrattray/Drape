@@ -262,13 +262,47 @@ const BASICS_COVERAGE: Readonly<Record<InkPlacement, SurfaceCoverage>> = Object.
 });
 
 /**
- * The two Basics forms, derived from the writer rather than restated.
+ * ⚠ **A BASICS SENTENCE THAT HAS BEEN RETIRED IS STILL STAMPED ON ROLLS, AND
+ * THIS SET IS WHY THE SWAP DID NOT SILENTLY UN-BARE TWO OF HIS CASTS.**
+ *
+ * `BASICS_LINES` below is DERIVED from `basicsWardrobeLine` — correct, and law
+ * 4 — but derivation has a direction: it tracks what we WRITE NEXT, and a
+ * stored row records what we wrote THEN. When the male form changed from
+ * `shirtless, …` to `bare chested, …` on 2026-08-25 (fable-1659 §1), rolls
+ * **#215 and #216** were already stamped with the old sentence in production.
+ * With the derived set alone they would have stopped matching and fallen to
+ * `unknown` — so the chest, neck and upper arm of two casts the founder is
+ * actively rolling would have gone from *ink can be carried here* to *nobody
+ * has read this outfit*, with no failing test and no error.
+ *
+ * That is law 7's second half exactly: a control orphaned by a correct change
+ * aimed at something else. Counted at the rows before the swap landed
+ * (`scripts/_shirtless-population-disposable.mts`, world PRODUCTION), which is
+ * the only reason the number in this docblock is a fact.
+ *
+ * **A line joins this list when it is retired, and it never leaves.** The
+ * coverage of a sentence we once wrote is a property of the frames that were
+ * painted from it, and those do not change when our wording does.
+ */
+const RETIRED_BASICS_LINES: readonly string[] = Object.freeze([
+  /* Male, until 2026-08-25. Retired for the provider's prompt checker, NOT for
+     what it depicted — same body, same bare chest, so the same coverage. */
+  "shirtless, in plain black fitted shorts, barefoot",
+]);
+
+/**
+ * The two Basics forms, derived from the writer rather than restated — plus
+ * every form we have retired, which derivation cannot see.
  *
  * `sheetBasicsSex` resolves a whole sheet to `"male"` or `null`, so those are
  * the only two arguments `bornWardrobeLine` ever gives it and these are the
- * only two strings it can have written.
+ * only two strings it can have written TODAY.
  */
-const BASICS_LINES: readonly string[] = [basicsWardrobeLine("male"), basicsWardrobeLine(null)];
+const BASICS_LINES: readonly string[] = [
+  basicsWardrobeLine("male"),
+  basicsWardrobeLine(null),
+  ...RETIRED_BASICS_LINES,
+];
 
 /** Compared the way a stored line is stored: trimmed, and nothing else. */
 function same(a: string, b: string): boolean {
