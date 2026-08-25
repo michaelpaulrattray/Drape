@@ -1,5 +1,27 @@
 # The enrichment design — **STATED FACTS ARE A FLOOR, NOT A CEILING**
 
+⚠ **THIS DOCUMENT IS FOLDED INTO `CREATIVE_REGISTER_DESIGN.md` AND IS NO LONGER
+THE DESIGN** (fable-1668, on the founder's ask that Fable author this arc:
+*"i honestly will need you to do a fable review of the work for this"*). The
+floor-not-ceiling mechanism is that document's **variance card** (§1b, third
+part), and shape changes go to Fable rather than landing in a build.
+
+**It is kept, not deleted, for three things the fold does not carry** — and each
+is live:
+
+1. **§0b — the ROLE SUPPRESSION finding.** `role` came back NULL on 3 of 3 rolls
+   inside `CASTING_BRIEF_FIDELITY_SCOPE` and 0 of 4 outside it, same brief
+   family. That flag is scheduled to widen to `all`. Court E1 is text-only.
+2. **§4 — the re-ask analysis**, and its recommendation that the re-ask must NOT
+   be re-worded, with the reason.
+3. **§0's BRACKET** (fable-1665) and the execution-versus-invention distinction
+   (fable-1663), which the variance card assumes and does not state.
+
+Everything below §3.3 is superseded as a MECHANISM by the variance card. It is
+left standing because the card is one paragraph and this is the argument behind
+it — including the part that argues against the obvious cheap version (§3.2, why
+a flat clause cannot work).
+
 **Status: DESIGN ONLY.** Nothing is built, no court is dispatched, no frame is
 rendered, no prompt byte has moved. Ordered fable-1639 §2, re-ordered
 fable-1658 §4 with a correction that has to be read before the rest of it.
@@ -54,6 +76,68 @@ wardrobe, refusal safety, per-slice variance. What has changed is that their
 COST in paint conviction stops being an accepted tax and becomes a measured,
 bounded quantity. And the **INITIAL SHEET** is named as the moment that matters
 most: it is the product's first impression and its Midjourney comparison point.
+
+**Its addendum** (fable-1663), which closes the reading 1662 leaves open:
+
+> *"if someone does ask for extremely specifics obviously deliver it but it needs
+> that creative flare which sells the vision or imagination they had"*
+
+**Specificity does not downgrade a brief to transcription**, and this design has
+to name the distinction because it is the design's own subject: on a SPECIFIC
+ask, creative flare lives in **EXECUTION** — the boldness, materiality and drama
+of the things he stated; on an OPEN ask it also lives in **INVENTION**. §3.3's
+directions are the execution half made into an axis, which is why every one of
+them extends a stated thing and none of them adds a new kind of thing.
+
+**And the third leg** (fable-1667):
+
+> *"it cant break us genuinely creating realistic humans though this is one thing
+> the engine is already great at."*
+
+Which is why §6's flag is not caution: the clause must be provably absent from an
+ordinary sheet's prompt, and the repair is measured on BOTH populations.
+
+### ⚠ The two sheets BRACKET the target — his own paired evidence
+
+fable-1665, his words on an older sheet of the same brief:
+
+> *"this old cast sheet we did genuinely produced excellent results but obviously
+> it wasnt following our prompt."*
+
+Kept at `output/raw-prompt-reference/founder-old-sheet-variety.png`.
+
+```
+THE OLD SHEET   category block present, wardrobe tee, guillotine era.
+                Eight genuinely different men — heritages spread, hair from an
+                afro to a man-bun, facial cybernetics visible and VARIED, a chin
+                device on 08. The variety and energy he wants.
+                AND DISOBEDIENT: he asked BALD and PALE PORCELAIN, and these men
+                have hair and span every skin tone — because the announced cap
+                dropped those facts before the engine ever saw them.
+
+THE NEW SHEET   obedient — all bald, all pale, every fact survived — and dead.
+```
+
+**Same brief, same product, eighteen days apart, each sheet failing the opposite
+half of the promise.** That is the best paired evidence this design will get, and
+it settles what the target is: **the new sheet's obedience with the old sheet's
+spread, on exactly the axes that remain open.**
+
+⚠ **Some of the old sheet's variety is now LEGITIMATELY unavailable, and saying
+so is what stops this design chasing a ghost.** A customer who states bald and
+porcelain has PINNED hair and skin; the old sheet's heritage and hair spread came
+from losing his facts. That half is the product working. What must be re-earned
+is the rest: facial structure within his stated severity, augment STYLE / EXTENT
+/ HARDWARE (the old sheet varied these visibly — face seams on one, a chin unit
+on another), age texture and wear, build (his brief leaves it open and today it
+converges muscular — see the dilution court §1a), and disposition made VISIBLE
+rather than nominal.
+
+⚠ **That last one is not rhetoric.** His roll #216 locked `energy: "grave"`, so
+the disposition sentence is byte-identical on all eight — a locked look does not
+differentiate, and on his sheet only TWO axes varied at all (build and facial
+hair, and the facial hair collapsed). Disposition is named as an open axis by the
+product and was closed by his own brief.
 
 ⚠ **That ranks a sibling court above this design.** `CASTING_V2_DILUTION_COURT.md`
 asks whether ~450 characters of his words inside ~13,700 characters of ours are
