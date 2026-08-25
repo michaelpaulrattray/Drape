@@ -668,6 +668,35 @@ export { REALIZED_AXIS_KEYS };
  * have to be something new. Recorded rather than worked around, because a
  * silent partial fix here would be worse than a known gap.
  *
+ * ⚠ **AND THE MALE MIRROR IS NOT THE HEALTHY CASE — MEASURED 2026-08-25, AND
+ * THIS PARAGRAPH IS WHY NOBODY LOOKED.** The limit above is stated so well that
+ * it reads as a COMPLETE account of where this pass is weak. It is not. On a
+ * sheet of MEN whose hair the brief stated, the fallback DOES fire — and the
+ * separation it buys costs more variety than it returns.
+ *
+ * Driven over 2,000 synthetic sheets of a real production brief's shape (male,
+ * 40s, hair STATED, everything else open), before the pass against after:
+ *
+ *   clean-shaven              26.0%  →  21.1%
+ *   short beard               17.0%  →  27.4%   ← becomes the TOP value
+ *   distinct values / sheet     5.27 →   4.98   ← FEWER
+ *   values moved                        22.8%
+ *   the same, ORDINARY brief             0.0%   (0 of 16,000)
+ *
+ * The mechanism is the re-pick below: a clashing bucket flips to the OTHER
+ * bucket and re-picks from that bucket's WEIGHTED pool, and for a man in his
+ * 40s the `bearded` pool is ~47% `short beard`. So every forced flip toward
+ * `bearded` lands on one value about half the time and the sheet concentrates.
+ *
+ * The founder saw it before the instrument did — *"they all have the same facial
+ * hair for some reason"*, on a sheet where 4 of 5 delivered slices carried
+ * `FACIAL HAIR: short beard`. The repair is designed and NOT built (three
+ * candidate shapes, graded offline against the census above rather than argued):
+ * `docs/specs/CASTING_V2_YIELD_RULE_SWEEP.md` §1 kind 2.
+ *
+ * ⚠ **The lesson for the paragraph above, not just for this one: a stated limit
+ * should say what it has NOT measured, not only what it has.**
+ *
  * **M7 note:** after this pass, `realizeAxes(rollSeed, position)` no longer
  * reproduces the stored value for an adjusted candidate. The registry must read
  * the persisted `resolvedIdentity` as truth and never re-derive it.

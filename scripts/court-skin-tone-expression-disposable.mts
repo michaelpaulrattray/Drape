@@ -1,4 +1,25 @@
 /**
+ * ⚠ **FOLDED, NOT PENDING — DO NOT DISPATCH THIS ON THE STRENGTH OF THE ORDER
+ * QUOTED BELOW.** It was ordered fable-1658 §2 and then SUBSUMED by the
+ * creative-register court's arm C (fable-1668, agreed opus-1277 §2).
+ *
+ * The reason is structural rather than budgetary: both of this court's levers are
+ * about making ONE sentence heard over 13,000 characters of ours, and the
+ * creative register moves that sentence wholesale — his skin words stop being a
+ * `SKIN:` line placed mid-prompt and become part of THE ASK, first, at 46% of
+ * the text. There is no position left to test and no register left to raise.
+ *
+ * **What would revive it**: arm C winning at his eye AND porcelain still reading
+ * timid. Then these cells become the follow-up on a LEAN prompt, which is a
+ * better test than the one they were built for. Until then this file is a
+ * finished instrument with no live question.
+ *
+ * (Filed as a supersession-map instance: a script's header carries a ruling the
+ * same way a design doc does, and design docs get swept for supersession while
+ * scripts do not — `docs/specs/CASTING_V2_SUPERSESSION_MAP.md`, shape 2.)
+ *
+ * ---
+ *
  * THE SKIN-TONE EXPRESSION COURT — **his words reach the prompt and the paint
  * is timid. Does REGISTER or POSITION fix it?** (Scoped opus-1275 §4, ordered
  * fable-1658 §2 at $0.48, cells today's / A / B / A+B, one brief one seed,
