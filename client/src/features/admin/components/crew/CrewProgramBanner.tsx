@@ -46,8 +46,10 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
           discover. */}
       {program.chips.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {program.chips.map((chip) => (
-            <div key={chip.label} className="max-w-[16rem]">
+          {program.chips.map((chip, index) => (
+            /* Composite key (PR #78 review nit): labels are writer-controlled
+               and the schema does not force them unique. */
+            <div key={`${index}-${chip.label}`} className="max-w-[16rem]">
               <span
                 className={cn(
                   "inline-block text-[11px] px-2 py-0.5 rounded-full border",
