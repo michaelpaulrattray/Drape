@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9d4419a28d9f514a"
+    "sourceFingerprint": "a6d7aa348b0b504f"
   },
   "domains": [
     {
@@ -11945,6 +11945,10 @@
     {
       "id": "test:server/phase-a-quota.test.ts",
       "path": "server/phase-a-quota.test.ts"
+    },
+    {
+      "id": "test:server/preCommitGate.test.ts",
+      "path": "server/preCommitGate.test.ts"
     },
     {
       "id": "test:server/prePushGate.test.ts",
