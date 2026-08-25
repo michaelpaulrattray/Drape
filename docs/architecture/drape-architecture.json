@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d5dee173146b7d08"
+    "sourceFingerprint": "9ce513778e48551d"
   },
   "domains": [
     {
@@ -11343,6 +11343,10 @@
     {
       "id": "test:server/castingV2/roleNameGuard.test.ts",
       "path": "server/castingV2/roleNameGuard.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/roleRetry.test.ts",
+      "path": "server/castingV2/roleRetry.test.ts"
     },
     {
       "id": "test:server/castingV2/rollProjection.test.ts",

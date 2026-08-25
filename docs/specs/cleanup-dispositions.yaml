@@ -376,6 +376,17 @@
   why: exported so a test can assert the parse-failure alarm FIRES rather than trusting it does
   argued: 6c
 
+- symbol: interpreterRoleStats
+  file: server/castingV2/interpreter.ts
+  verdict: KEEP
+  why: >-
+    the same shape as interpreterParseStats beside it, for the same reason — a
+    test asserts the counter MOVES rather than trusting it does. It counts the
+    null-role re-ask, and counting is half the repair: `role` is the only field
+    producing the CASTING CATEGORY block, and its absence was reported by the
+    founder twice five months apart because nothing anywhere counted it.
+  argued: 6c
+
 - symbol: SYSTEM_PROMPT_FOR_TESTS
   file: server/castingV2/interpreter.ts
   verdict: KEEP

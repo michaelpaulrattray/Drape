@@ -63,6 +63,34 @@ export function interpreterParseStats(): Readonly<typeof parseStats> {
   return { ...parseStats };
 }
 
+/**
+ * THE ROLE RE-ASK, COUNTED — because its absence is what let this hide.
+ *
+ * `role` is the ONLY field in the product that produces the `CASTING CATEGORY
+ * (ABSOLUTE)` block. When it comes back null the block never renders, the
+ * engine is never told what it is casting, and the eight come back as generic
+ * people — the founder has now reported that outcome TWICE, five months apart
+ * ("generic women" on a high-fashion editorial brief, identical cyborgs on his
+ * augmented-man brief), each time by tripping over it.
+ *
+ * Nothing counted it either time. So the rate ships with the repair: one grep
+ * for `roleNull` gives the number that previously needed a court.
+ *
+ * **The prior, from that court** (`output/role-court/`, 12 compiles of his
+ * 553-character brief): role came back null 2 of 6 with the fidelity lane on
+ * and 0 of 5 with it off — a difference of p = 0.45, which is noise. Read
+ * across 213 real production rolls the null rate is 12.2% (26 of 213), and
+ * **25 of those 26 are short briefs that name no category at all**, which is an
+ * honest silence rather than a miss. That is the population this repair must
+ * NOT fire on.
+ */
+const roleStats = { nullOnCompile: 0, reaskRan: 0, rescued: 0 };
+
+/** Exported so a test can assert the counter moves rather than trusting it does. */
+export function interpreterRoleStats(): Readonly<typeof roleStats> {
+  return { ...roleStats };
+}
+
 const ALARM_AFTER_ATTEMPTS = 20;
 const ALARM_FAILURE_RATE = 0.2;
 
@@ -106,6 +134,39 @@ function needsAestheticRetry(briefText: string, intent: CastingIntent): boolean 
   return intent.composedDirection === null && intent.look === null && intent.archetype === null;
 }
 
+
+/**
+ * Did a brief rich enough to describe a CHARACTER come back with no kind of
+ * person at all?
+ *
+ * PROVABLE rather than heuristic, in `needsAestheticRetry`'s shape and for its
+ * reason: it must never fire on an honest silence. "a redhead in her 30s" names
+ * no category and a null `role` there is correct — re-asking it invites the
+ * model to INVENT one, which is precisely the bug `promoteStatedRole` was
+ * narrowed to stop (its docblock: promoting on a loose trigger "was installing
+ * the whole sentence as a casting category on briefs that named none").
+ *
+ * The signal is the model's OWN uncapped `characterNotes` measured against
+ * `NOTES_MAX` — an existing constant, not a new number chosen to fit. A model
+ * that writes more than the product's long-standing bound for character detail
+ * has found a specific person, and a specific person has a kind.
+ *
+ * **Measured on 213 real production rolls before this was written.** Of the 26
+ * with a null role, twenty-five have raw notes of 62 characters or fewer (most
+ * have none at all) and are short briefs naming no category. The twenty-sixth
+ * is the founder's 553-character cyborg brief at 448 characters of notes —
+ * seven times the next highest. The separation is not a threshold anyone had to
+ * tune; anything between them works, and `NOTES_MAX` sits inside that gap.
+ *
+ * It reads the RAW notes, not the stored ones, so it behaves identically inside
+ * and outside `CASTING_BRIEF_FIDELITY_SCOPE` — the stored value is capped at
+ * 180 on today's road and could never exceed it, which would have made this
+ * repair silently lane-only.
+ */
+function needsRoleRetry(intent: CastingIntent, rawNotes: string | null): boolean {
+  if (intent.role !== null) return false;
+  return (rawNotes?.length ?? 0) > NOTES_MAX;
+}
 
 /**
  * Does the brief name something SPECIFIC that we might have failed to capture?
@@ -1183,6 +1244,49 @@ export async function interpretBrief(input: {
         kept
           ? "[interpreter] notesOverflow — the character detail did not fit and was compressed to fit"
           : "[interpreter] notesOverflow — the character detail did not fit and was CUT at a word boundary",
+      );
+    }
+
+    /*
+      A CATEGORY THE MODEL FOUND AND DID NOT NAME — asked once more.
+
+      Same shape as the aesthetic retry below it and for the same reason: one
+      more sample of the SAME interpretation, never a differently-worded second
+      question. That is what makes it unable to invent — if the model names no
+      category the second time either, nothing changes and the sheet compiles
+      exactly as it would have.
+
+      ⚠ ONLY THE ROLE IS ADOPTED, never the whole reparsed intent. The first
+      parse's other facts are the ones the customer's brief was read for, and on
+      a rich brief that is a great many of them; replacing all of them to
+      recover one field would put fourteen facts at risk to rescue a category.
+      The aesthetic retry adopts wholesale because its subject IS the whole
+      aesthetic; this one has a single subject.
+    */
+    if (needsRoleRetry(intent, parsed.notes.raw)) {
+      roleStats.nullOnCompile += 1;
+      roleStats.reaskRan += 1;
+      const retry = await runOnce();
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
+      recordParseOutcome(!reparsed.ok, retry.truncated === true);
+      const rescuedRole = reparsed.ok ? reparsed.intent.role : null;
+      if (rescuedRole !== null) {
+        intent = { ...intent, role: rescuedRole };
+        roleStats.rescued += 1;
+      }
+      log.info(
+        {
+          stage: "interpreter",
+          reason: "roleNull",
+          rawNotesChars: parsed.notes.raw?.length ?? 0,
+          outcome: rescuedRole === null ? "stillNull" : "rescued",
+          role: rescuedRole,
+          nullOnCompile: roleStats.nullOnCompile,
+          rescued: roleStats.rescued,
+        },
+        rescuedRole === null
+          ? "[interpreter] roleNull — a rich brief named no category, and the re-ask agreed; the sheet compiles without a CASTING CATEGORY block"
+          : "[interpreter] roleNull — a rich brief named no category and the re-ask recovered one",
       );
     }
 
