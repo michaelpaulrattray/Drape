@@ -76,6 +76,10 @@ if (authority.length < 100_000) {
   throw new Error(`the authority index is only ${authority.length} chars — it did not read; every script would read as UNCITED`);
 }
 
+const founderQueue = (() => {
+  try { return readFileSync(".agents/mailbox/founder-queue.md", "utf8"); } catch { return ""; }
+})();
+
 let mailbox = "";
 for (const file of git(["ls-files", "--others", "--exclude-standard", ".agents/"]).slice(0, 4000)) {
   if (!file.endsWith(".md")) continue;
@@ -84,6 +88,42 @@ for (const file of git(["ls-files", "--others", "--exclude-standard", ".agents/"
 
 const base = (path: string) => path.split("/").pop()!;
 const keeper = (path: string) => KEEPER_PATTERNS.some((re) => re.test(path));
+
+/*
+  ⚠ GUARD (a), fable-1676 §3.1 — THE FOUNDER'S QUEUE COVERS `scripts/` TOO.
+  It was added for `output/` after the first manifest would have deleted three
+  sets of frames from his desk; the ruling made the cross mandatory on BOTH
+  delete sets, and a script he was told to run is the same class of artifact as
+  a picture he was told to look at.
+*/
+const onHisDesk = (path: string) => founderQueue.includes(path) || founderQueue.includes(base(path));
+
+/*
+  ⚠ GUARD (b), fable-1676 §3.1 — THE 7-DAY RULE.
+
+  *"Uncited is true of every document the day it is written"* generalises past
+  `docs/`: this week's court scripts have not had time to be cited by anything,
+  and deleting them would delete the work the sweep was ordered from. Anything
+  touched inside the window waits for the next sweep.
+
+  The timestamp is the LATER of the file's mtime and its last commit date, so a
+  script committed today but written weeks ago is still recent, and a tracked
+  file rewritten today without a commit is too. Recency keeps; it never deletes.
+*/
+const WINDOW_DAYS = 7;
+const NOW = Number(process.env.SWEEP_NOW_MS ?? Date.now());
+const commitTimes = new Map<string, number>();
+let lastStamp = 0;
+for (const line of git(["log", "--since", `${WINDOW_DAYS + 1} days ago`, "--name-only", "--format=%ct"])) {
+  if (/^\d{9,}$/.test(line)) { lastStamp = Number(line) * 1000; continue; }
+  const prior = commitTimes.get(line) ?? 0;
+  if (lastStamp > prior) commitTimes.set(line, lastStamp);
+}
+function touchedRecently(path: string): boolean {
+  let newest = commitTimes.get(path) ?? 0;
+  try { newest = Math.max(newest, statSync(path).mtimeMs); } catch { /* gone */ }
+  return NOW - newest < WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
 
 type Verdict = { path: string; keep: boolean; why: string };
 const classify = (path: string): Verdict => {
@@ -98,6 +138,8 @@ const classify = (path: string): Verdict => {
   if (keeper(path)) return { path, keep: true, why: "named keeper" };
   const name = base(path);
   if (authority.includes(name)) return { path, keep: true, why: "cited in docs/code/CLAUDE.md" };
+  if (onHisDesk(path)) return { path, keep: true, why: "ON HIS DESK (founder-queue)" };
+  if (touchedRecently(path)) return { path, keep: true, why: `touched inside the ${WINDOW_DAYS}-day window` };
   if (mailbox.includes(name)) return { path, keep: false, why: "MAILBOX-ONLY citation (not durable)" };
   return { path, keep: false, why: "uncited" };
 };
@@ -108,7 +150,19 @@ const report = (label: string, paths: string[]) => {
   const drop = verdicts.filter((v) => !v.keep);
   const mailboxOnly = drop.filter((v) => v.why.startsWith("MAILBOX"));
   console.log(`\n══ ${label} — ${paths.length} files ══`);
-  console.log(`  KEEP   ${keep.length}   (${keep.filter((v) => v.why === "named keeper").length} named keepers, ${keep.filter((v) => v.why !== "named keeper").length} cited)`);
+  /*
+    ⚠ ONE LINE PER REASON, not "keepers and everything else". The first version
+    printed `N named keepers, M cited` and the guards added at fable-1676 landed
+    in the `cited` bucket — so a count of 16 genuinely-cited untracked scripts
+    reported as 256. A breakdown whose buckets stop matching the reasons is how a
+    manifest's headline stops describing the manifest.
+  */
+  const byReason = new Map<string, number>();
+  for (const v of keep) byReason.set(v.why, (byReason.get(v.why) ?? 0) + 1);
+  console.log(`  KEEP   ${keep.length}`);
+  for (const [why, n] of [...byReason.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`           ${String(n).padStart(4)}  ${why}`);
+  }
   console.log(`  DELETE ${drop.length}   (of which ${mailboxOnly.length} are cited ONLY in the mailbox)`);
   return { verdicts, keep, drop };
 };
@@ -158,14 +212,12 @@ const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   about CITATIONS, not about ARTIFACTS. A picture he was pointed at outlives the
   message that pointed at it.
 */
-const founderQueue = (() => {
-  try { return readFileSync(".agents/mailbox/founder-queue.md", "utf8"); } catch { return ""; }
-})();
 const CITED_OUTPUT = /^(deploy-receipts|raw-prompt-reference)$/;
 for (const [dir, row] of [...dirs.entries()].sort((a, b) => b[1].bytes - a[1].bytes)) {
-  const onHisDesk = founderQueue.includes(`output/${dir}`);
-  const cited = CITED_OUTPUT.test(dir) || authority.includes(`output/${dir}`) || onHisDesk;
-  console.log(`  ${cited ? "KEEP  " : "REVIEW"} ${String(row.files).padStart(5)} files  ${mb(row.bytes).padStart(10)}  output/${dir}${onHisDesk ? "   ← ON HIS DESK" : ""}`);
+  const desk = founderQueue.includes(`output/${dir}`);
+  const recent = outputUntracked.some((f) => f.startsWith(`output/${dir}/`) && touchedRecently(f));
+  const cited = CITED_OUTPUT.test(dir) || authority.includes(`output/${dir}`) || desk || recent;
+  console.log(`  ${cited ? "KEEP  " : "REVIEW"} ${String(row.files).padStart(5)} files  ${mb(row.bytes).padStart(10)}  output/${dir}${desk ? "   ← ON HIS DESK" : recent ? "   ← inside the 7-day window" : ""}`);
 }
 console.log(`  ${"".padStart(6)} ${String(outputUntracked.length).padStart(5)} files  ${mb([...dirs.values()].reduce((a, b) => a + b.bytes, 0)).padStart(10)}  TOTAL`);
 

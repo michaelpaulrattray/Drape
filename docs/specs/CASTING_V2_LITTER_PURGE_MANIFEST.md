@@ -1,0 +1,1268 @@
+# The litter purge — the manifest the deletion commit carries
+
+Ordered fable-1675 §1 from the founder's own words — *"i feel like we have made so
+many scope changes and interations my brain literally cant keep up… maybe do a full
+sweet to figure out how bad our mess is"* — and authorized fable-1676 §3 with two
+added guards.
+
+**A KEEP is a CITATION, never a judgement of value.** Authorities: `docs/`,
+`CLAUDE.md`, `server`/`client`/`shared`, `package.json`, and the named keepers (the
+deploy rite, every ceremony, the Atlas and capability generators, the un-wiring
+differ, the ledger readers, `scripts/lib`, every `court-*` runner).
+
+**The two guards fable-1676 added, and both of them changed the answer:**
+
+- **(a) Anything on the founder's desk is kept.** `founder-queue.md` names six
+  `output/` paths and three of them — `eyes-court`, `open-crop-carry`,
+  `outsider-rail` — were in the uncited column, because no committed document
+  happens to name them. They are frames he was asked to look at. The guard covers
+  `scripts/` too, and caught one there.
+- **(b) The 7-day rule.** *"Uncited is true of every document the day it is
+  written"* generalises past `docs/`: this week's court scripts have not had time
+  to be cited by anything. The timestamp is the LATER of the file's mtime and its
+  last commit date, so recency only ever keeps.
+
+```
+tracked scripts/        705 files   DELETE 307
+untracked scripts/      379 files   DELETE 91
+untracked elsewhere      17 files   DELETE 0
+output/                6723 files   DELETE 2714
+                                       in 760 directories, 2326.5 MB
+                              KEPT     152 directories, 4251.2 MB
+```
+
+## RESTORED — 12 tracked scripts came back, and each one names a hole in this manifest
+
+The classification below says 307 tracked scripts. **295 were actually deleted.**
+Twelve were restored, in three rounds, and every round was found by an
+INSTRUMENT rather than by judgement — `pnpm check` and `pnpm test`, run after the
+deletion and before the commit.
+
+⚠ **All three rounds are the same hole: `scripts/` was not an authority over
+itself.** The citation index read `docs/`, `CLAUDE.md`, the source tree and
+`package.json` — so a file whose only consumers were other scripts read as
+uncited. **A citation index that excludes the population it is classifying cannot
+see that population's internal edges.** The Atlas learned this exact lesson about
+re-exports and dynamic imports; this manifest learned it about scripts importing
+scripts.
+
+**Round 1 — six modules imported by surviving scripts** (found by `pnpm check`,
+repaired by `scripts/_purge-repair-disposable.mts` to a fixed point):
+
+- `scripts/calibration/lib/segment.mts`, `lib/differenceView.mts`,
+  `lib/contact.mts`, `lib/speckDensity.mts`, `calibration/execute.mts`,
+  `calibration/run.mts`
+
+⚠ The repair reader itself missed one on its first pass: it stripped `.js` from a
+specifier and not `.mjs`, so `./lib/speckDensity.mjs` was unresolvable and
+therefore invisible. **A reader whose extension list is shorter than the
+language's reports a clean run.**
+
+**Round 2 — five scripts that were the SOLE CONSUMERS of six server exports**
+(found by the cleanup-disposition door refusing):
+
+- `scripts/drive-golden-refinements.mts` (`imperativeOpenerIn`,
+  `GOLDEN_REFINEMENTS`), `scripts/calibration/wash-suppression.mts`
+  (`suppressWash`), `scripts/calibration/edit-law-cell.mts` (`stepLabel`),
+  `scripts/survey-dev-deliverables-disposable.mts` (`facetsNeedingNames`),
+  `scripts/backfill-board-kinds.ts` (`mapLegacyRow`)
+
+⚠ **This is a FINDING for the retirement program, not just a repair.** Six server
+exports have no consumer in the product at all — their only callers were
+disposable scripts. They are recorded here rather than acted on: deleting a
+server export is a product decision and the disposition table is where it
+belongs.
+
+**Round 3 — one importer of a `scripts/lib/` module** (found by the
+exit-discipline suite):
+
+- `scripts/prove-sabotage-survives-death-disposable.mts`
+
+`scripts/lib/sabotage.mts` had three importers and the purge took all three, so a
+LIBRARY became an entrypoint by the suite's own derivation — *a file nothing
+imports is an entrypoint, and an entrypoint must exit* — and a module that must
+never exit was suddenly required to. **The suite's derived scope caught a
+consequence no list could have.**
+
+---
+
+## What was NOT touched
+
+`.agents/`, `docs/`, `memory`, every tracked source file, and every `output/`
+directory that is cited, on his desk, or inside the window — including
+`deploy-receipts` and `raw-prompt-reference`.
+
+---
+
+## The deleted files
+
+### tracked `scripts/` — 307
+
+- `scripts/adjudicate-carried.mts`
+- `scripts/apply-all-body-ink-migrations.mts`
+- `scripts/audit-delivered-refusable-misses-disposable.mts`
+- `scripts/audit-segment-coverage-disposable.mts`
+- `scripts/backfill-board-kinds.ts`
+- `scripts/bake-per-ear-wording-disposable.mts`
+- `scripts/bench-eyes-glasses-disposable.mts`
+- `scripts/bench-eyes-one-side-court-disposable.mts`
+- `scripts/bench-hair-removal-routing-disposable.mts`
+- `scripts/bench-horn-constancy-disposable.mts`
+- `scripts/bench-horn-phrasing-disposable.mts`
+- `scripts/bench-horns-routing-disposable.mts`
+- `scripts/bench-region-it-depicts-disposable.mts`
+- `scripts/bench-removal-routing-disposable.mts`
+- `scripts/bench-service-road-doors-disposable.mts`
+- `scripts/bench-thin-kind-door-disposable.mts`
+- `scripts/bench-tone-below-chin-disposable.mts`
+- `scripts/bench-tone-neck-carrier-disposable.mts`
+- `scripts/bench-tone-whole-skin-disposable.mts`
+- `scripts/bench-why-one-face-resists-disposable.mts`
+- `scripts/build-horn-sheet-disposable.mts`
+- `scripts/build-judgment-pack.mts`
+- `scripts/build-panel-v2-mock.mts`
+- `scripts/build-panel-v2-pack.mts`
+- `scripts/build-remaining-arms-disposable.mts`
+- `scripts/build-secondfacet-prompts-disposable.mts`
+- `scripts/build-surface-arms-disposable.mts`
+- `scripts/buy-horns-specimen-disposable.mts`
+- `scripts/calibrate-horns-specimen-disposable.mts`
+- `scripts/calibration/a3-natural-rescore-disposable.mts`
+- `scripts/calibration/ab-conditions.mts`
+- `scripts/calibration/accessory-material-agreement.mts`
+- `scripts/calibration/analyse.mts`
+- `scripts/calibration/anchoring-relative-rerun.mts`
+- `scripts/calibration/arm-e-prime-rescore.mts`
+- `scripts/calibration/arm-e-prime.mts`
+- `scripts/calibration/bare-faced-probe.mts`
+- `scripts/calibration/bench-a-stacking.mts`
+- `scripts/calibration/bench-b-gauntlet.mts`
+- `scripts/calibration/bespectacled-roll-production.mts`
+- `scripts/calibration/carry-configuration-diff.mts`
+- `scripts/calibration/carry-count-bisect.mts`
+- `scripts/calibration/carry-diff-sheet.mts`
+- `scripts/calibration/count-bisect-sheet.mts`
+- `scripts/calibration/cprime-bench.mts`
+- `scripts/calibration/cprime-pair-cell.mts`
+- `scripts/calibration/diagnose-authorship.mts`
+- `scripts/calibration/edit-law-cell.mts`
+- `scripts/calibration/edit-law-sheets.mts`
+- `scripts/calibration/engine-mask-probe.mts`
+- `scripts/calibration/execute.mts`
+- `scripts/calibration/eye-shape-matrix.mts`
+- `scripts/calibration/eyes.mts`
+- `scripts/calibration/fox-eyes-capability.mts`
+- `scripts/calibration/fox-eyes-diagnosis.mts`
+- `scripts/calibration/fox-eyes-replicate.mts`
+- `scripts/calibration/fox-eyes-rescore.mts`
+- `scripts/calibration/fringe-fixture.mts`
+- `scripts/calibration/fringe-weight.mts`
+- `scripts/calibration/hair-court-sheets-disposable.mts`
+- `scripts/calibration/harvest-gate.mts`
+- `scripts/calibration/hybrid-refresh.mts`
+- `scripts/calibration/identity-control.mts`
+- `scripts/calibration/interleave-fixture.mts`
+- `scripts/calibration/item-matting-probe.mts`
+- `scripts/calibration/lib/contact.mts`
+- `scripts/calibration/lib/differenceView.mts`
+- `scripts/calibration/lib/segment.mts`
+- `scripts/calibration/lib/speckDensity.mts`
+- `scripts/calibration/lips-control-sheet-disposable.mts`
+- `scripts/calibration/lips-threshold-sweep-disposable.mts`
+- `scripts/calibration/masked-evidence-pack.mts`
+- `scripts/calibration/max-delta-transfer.mts`
+- `scripts/calibration/overlapping-gauntlet-read.mts`
+- `scripts/calibration/overlapping-gauntlet.mts`
+- `scripts/calibration/quality-unit.mts`
+- `scripts/calibration/reader-floor.mts`
+- `scripts/calibration/reader-self-consistency.mts`
+- `scripts/calibration/removal-gate-measure.mts`
+- `scripts/calibration/removal-through-the-harvest.mts`
+- `scripts/calibration/report-ab.mts`
+- `scripts/calibration/run.mts`
+- `scripts/calibration/salvage-recheck.mts`
+- `scripts/calibration/salvage.mts`
+- `scripts/calibration/segmentation-shop.mts`
+- `scripts/calibration/sheet.mts`
+- `scripts/calibration/shrink-look.mts`
+- `scripts/calibration/specimens.mts`
+- `scripts/calibration/sticker-test.mts`
+- `scripts/calibration/strand-reach.mts`
+- `scripts/calibration/tied-back-wording-court.mts`
+- `scripts/calibration/tilt-pool.mts`
+- `scripts/calibration/torn-frame-replay.mts`
+- `scripts/calibration/two-reference-probe-a.mts`
+- `scripts/calibration/two-reference-report.mts`
+- `scripts/calibration/two-reference-trial.mts`
+- `scripts/calibration/veil-door.mts`
+- `scripts/calibration/visibility-gate.mts`
+- `scripts/calibration/wash-suppression.mts`
+- `scripts/calibration/where-it-is-lost.mts`
+- `scripts/calibration/where-the-freckles-went.mts`
+- `scripts/calibration/whole-hair-fringe.mts`
+- `scripts/calibration/within-region-anchoring.mts`
+- `scripts/calibration/zone-placement-check.mts`
+- `scripts/count-run15-nose-specks-disposable.mts`
+- `scripts/count-take-regrouping-disposable.mts`
+- `scripts/dev-ledger-claim6-disposable.mts`
+- `scripts/dev-ledger-claim7-disposable.mts`
+- `scripts/diagnose-earring-cut-disposable.mts`
+- `scripts/diagnose-sheet-bytes-disposable.mts`
+- `scripts/diff-run15-frames-disposable.mts`
+- `scripts/diff-run6-hair-disposable.mts`
+- `scripts/drive-bald-walk-disposable.mts`
+- `scripts/drive-batchAsafe-ui.mts`
+- `scripts/drive-casting-v2-schema-disposable.mts`
+- `scripts/drive-composer-chip-disposable.mts`
+- `scripts/drive-containment.mts`
+- `scripts/drive-eaten-clicks-disposable.mts`
+- `scripts/drive-glasses-survival.mts`
+- `scripts/drive-golden-refinements.mts`
+- `scripts/drive-horns-panel-disposable.mts`
+- `scripts/drive-horns-row-disposable.mts`
+- `scripts/drive-interpreter-ab.mts`
+- `scripts/drive-item-removal.mts`
+- `scripts/drive-kept-panel-evidence.mts`
+- `scripts/drive-outsider-panel-default-disposable.mts`
+- `scripts/drive-outsider-rail-disposable.mts`
+- `scripts/drive-outsider-sign-disposable.mts`
+- `scripts/drive-outsider-walk-disposable.mts`
+- `scripts/drive-panel-live-fill-disposable.mts`
+- `scripts/drive-preservation.mts`
+- `scripts/drive-r7-2a-durable-operations-disposable.mts`
+- `scripts/drive-r7-all-body-ink-schema-disposable.mts`
+- `scripts/drive-r7-credit-ledger-disposable.mts`
+- `scripts/drive-r7-final-cast-deletion-disposable.mts`
+- `scripts/drive-r7-ink-add-lifecycle-disposable.mts`
+- `scripts/drive-r7-ink-add-schema-disposable.mts`
+- `scripts/drive-rail-after-ruling-disposable.mts`
+- `scripts/drive-reference-mint-demo-disposable.mts`
+- `scripts/drive-refine-gauntlet.mts`
+- `scripts/drive-refine-spread.mts`
+- `scripts/drive-regenerate-control-disposable.mts`
+- `scripts/drive-regenerate-in-place-disposable.mts`
+- `scripts/drive-regenerate-replay-disposable.mts`
+- `scripts/drive-scan-on-specimen-disposable.mts`
+- `scripts/drive-sheet-skeleton-disposable.mts`
+- `scripts/drive-smile-walk-disposable.mts`
+- `scripts/drive-specimen-refines-disposable.mts`
+- `scripts/drive-tendency-diagnosis.mts`
+- `scripts/drive-typed-removal.mts`
+- `scripts/drive-version-transition-disposable.mts`
+- `scripts/drive-viewer-wait-latency-disposable.mts`
+- `scripts/drive-w5-bcd.mts`
+- `scripts/drive-w5-e.mts`
+- `scripts/drive-w5-f.mts`
+- `scripts/drive-w6-a.mts`
+- `scripts/drive-wait-notice-disposable.mts`
+- `scripts/drive-walls.mts`
+- `scripts/fetch-candidate-images.mts`
+- `scripts/find-bare-faced.mts`
+- `scripts/find-bespectacled-fresh-disposable.mts`
+- `scripts/find-fresh-faces-disposable.mts`
+- `scripts/find-nose-stud-population-disposable.mts`
+- `scripts/find-replay-controls-disposable.mts`
+- `scripts/find-walk-face.mts`
+- `scripts/fresh-dev-faces-disposable.mts`
+- `scripts/inspect-dev-frames-disposable.mts`
+- `scripts/investigate-run6-disposable.mts`
+- `scripts/judge-beard-identity-disposable.mts`
+- `scripts/list-earring-segments-disposable.mts`
+- `scripts/look-at-casting-frames-disposable.mts`
+- `scripts/look-removal-disposable.mts`
+- `scripts/magnify-diff-disposable.mts`
+- `scripts/measure-block3-coherence-disposable.mts`
+- `scripts/measure-founder-seam-disposable.mts`
+- `scripts/measure-region-resolution-disposable.mts`
+- `scripts/measure-render-fault.mts`
+- `scripts/measure-ring-thickness-disposable.mts`
+- `scripts/name-the-missing-25-disposable.mts`
+- `scripts/new-scope-flag.mts`
+- `scripts/pack-carried-crops-disposable.mts`
+- `scripts/pack-zoom-pair-disposable.mts`
+- `scripts/peek-library-rows-disposable.mts`
+- `scripts/peek-stored-earrings-disposable.mts`
+- `scripts/peek-variant-checks-disposable.mts`
+- `scripts/peek-variants-disposable.mts`
+- `scripts/pick-bald-specimen-disposable.mts`
+- `scripts/pick-walk-face-disposable.mts`
+- `scripts/probe-bald-and-smile-disposable.mts`
+- `scripts/probe-campaign-history-disposable.mts`
+- `scripts/probe-candidate-master-disposable.mts`
+- `scripts/probe-caption-nulls-disposable.mts`
+- `scripts/probe-devdb-disposable.mts`
+- `scripts/probe-library-rows-disposable.mts`
+- `scripts/probe-library-table-disposable.mts`
+- `scripts/probe-nbp-size-disposable.mts`
+- `scripts/probe-nearmiss-disposable.mts`
+- `scripts/probe-panel-gate-disposable.mts`
+- `scripts/probe-r2-anomaly-disposable.mts`
+- `scripts/probe-run6-claim-disposable.mts`
+- `scripts/probe-surface-facets-disposable.mts`
+- `scripts/probe-takeback-promise-disposable.mts`
+- `scripts/probe-tilt-noread-disposable.mts`
+- `scripts/probe-tilt-paired-disposable.mts`
+- `scripts/probe-tilt-rate-disposable.mts`
+- `scripts/probe-unfinished-sheet-door-disposable.mts`
+- `scripts/probe-variant-numbering-disposable.mts`
+- `scripts/probe-walk-specimens-disposable.mts`
+- `scripts/prove-caption-governs-disposable.mts`
+- `scripts/prove-census-disposable.mts`
+- `scripts/prove-constancy-arm-disposable.mts`
+- `scripts/prove-per-ear-kind-disposable.mts`
+- `scripts/prove-prune-guard-disposable.mts`
+- `scripts/prove-sabotage-survives-death-disposable.mts`
+- `scripts/prove-stopline-guard-disposable.mts`
+- `scripts/prove-tilt-derivation-disposable.mts`
+- `scripts/prove-vacate-gate-disposable.mts`
+- `scripts/pull-earring-specimens-disposable.mts`
+- `scripts/pull-founder-stack-disposable.mts`
+- `scripts/pull-kept-exhibit-disposable.mts`
+- `scripts/pull-unfussed-fixture-disposable.mts`
+- `scripts/read-box-drift-disposable.mts`
+- `scripts/read-brief-accessories-disposable.mts`
+- `scripts/read-brief-accessory-extraction-disposable.mts`
+- `scripts/read-candidate-chain-disposable.mts`
+- `scripts/read-carried-fixture-disposable.mts`
+- `scripts/read-carried-words-disposable.mts`
+- `scripts/read-carry-in-prompt-disposable.mts`
+- `scripts/read-cleanup-health-disposable.mts`
+- `scripts/read-delivered-values-disposable.mts`
+- `scripts/read-earned-disposable.mts`
+- `scripts/read-earring-carry-disposable.mts`
+- `scripts/read-earring-crops-disposable.mts`
+- `scripts/read-earring-departure-gate-disposable.mts`
+- `scripts/read-earring-mask-arithmetic-disposable.mts`
+- `scripts/read-eye-side-rate-disposable.mts`
+- `scripts/read-fal-spend-disposable.mts`
+- `scripts/read-fixture-composed-disposable.mts`
+- `scripts/read-fixture-rounds-disposable.mts`
+- `scripts/read-ink-table-state-disposable.mts`
+- `scripts/read-item6-rows-disposable.mts`
+- `scripts/read-llm-reconciliation.mts`
+- `scripts/read-mint-filing-disposable.mts`
+- `scripts/read-new-chain-disposable.mts`
+- `scripts/read-occluded-check-disposable.mts`
+- `scripts/read-open-lane-demand.mts`
+- `scripts/read-pair-clause-disposable.mts`
+- `scripts/read-per-instance-frames-disposable.mts`
+- `scripts/read-rail-collapse-disposable.mts`
+- `scripts/read-removal-refusals-disposable.mts`
+- `scripts/read-removal-specimens-disposable.mts`
+- `scripts/read-run12-prompts-disposable.mts`
+- `scripts/read-run13-checks-disposable.mts`
+- `scripts/read-run14-checks-disposable.mts`
+- `scripts/read-run15-master-disposable.mts`
+- `scripts/read-run15-prompts-disposable.mts`
+- `scripts/read-run15-refusal-disposable.mts`
+- `scripts/read-run15-verdicts-disposable.mts`
+- `scripts/read-selection-tangle-disposable.mts`
+- `scripts/read-sharpeyed-disposable.mts`
+- `scripts/read-stated-details-disposable.mts`
+- `scripts/read-step5-refusal-disposable.mts`
+- `scripts/read-verification-trace-disposable.mts`
+- `scripts/read-what-rode-disposable.mts`
+- `scripts/recompute-mint-slots-disposable.mts`
+- `scripts/recover-wrongly-expired.mts`
+- `scripts/refund-false-passes.mts`
+- `scripts/refund-item6-advisory-absence.mts`
+- `scripts/refund-render-fault-specimen.mts`
+- `scripts/refund-run1-hairdown.mts`
+- `scripts/rehearse-library-refusal-ceremony-disposable.mts`
+- `scripts/rehearse-segment-ceremony-disposable.mts`
+- `scripts/rehearse-side-phrasing-boot-disposable.mts`
+- `scripts/reliability-report.mts`
+- `scripts/removal-contact-sheet-disposable.mts`
+- `scripts/repair-misdelivered-objects.mts`
+- `scripts/replay-run12-prompt-disposable.mts`
+- `scripts/reproduce-carry-disposable.mts`
+- `scripts/requeue-diagnostic-purge.mts`
+- `scripts/restate-terms-monochrome-disposable.mts`
+- `scripts/retro-mint-sizing-disposable.mts`
+- `scripts/run-r7-operation-recovery.mts`
+- `scripts/save-glasses-masters-disposable.mts`
+- `scripts/scan-rate-report.mts`
+- `scripts/seed-dev-segments-disposable.mts`
+- `scripts/seed-face-panel-fixture-disposable.mts`
+- `scripts/seed-regenerate-fixture-disposable.mts`
+- `scripts/seed-wait-notice-disposable.mts`
+- `scripts/show-hoops-disposable.mts`
+- `scripts/show-lost-skin-disposable.mts`
+- `scripts/stack-run15-patches-disposable.mts`
+- `scripts/survey-dev-deliverables-disposable.mts`
+- `scripts/sweep-pin-and-advisory-disposable.mts`
+- `scripts/teeth-pool-dump-disposable.mts`
+- `scripts/teeth-world-scan-disposable.mts`
+- `scripts/tsconfig.evidence-accepted-asset-backfill.json`
+- `scripts/tsconfig.evidence-accepted-asset-disposable.json`
+- `scripts/tsconfig.evidence-accepted-asset-migration.json`
+- `scripts/tsconfig.evidence-identity-revision-repair.json`
+- `scripts/tsconfig.evidence-walk-compatibility-repair.json`
+- `scripts/tsconfig.pin-convergence.json`
+- `scripts/tsconfig.snapshot-inventory.json`
+- `scripts/upload-hero-images.mjs`
+- `scripts/verify-sheet-bespectacled-disposable.mts`
+- `scripts/whereroll-disposable.mts`
+- `scripts/zoom-carried-fixture-disposable.mts`
+- `scripts/zoom-run15-nose-disposable.mts`
+
+### untracked `scripts/` — 91
+
+- `scripts/_tmp_thread_intents.py`
+- `scripts/bench-clipped-anchor-disposable.mts`
+- `scripts/bench-content-wall-stability-disposable.mts`
+- `scripts/bench-fangs-wall-origin-disposable.mts`
+- `scripts/bench-open-lane-routing-disposable.mts`
+- `scripts/bench-refusal-doors-disposable.mts`
+- `scripts/bench-restyle-vs-remove-disposable.mts`
+- `scripts/bench-scoped-verification-disposable.mts`
+- `scripts/bench-skin-carrier-disposable.mts`
+- `scripts/bench-skin-thumbnail-disposable.mts`
+- `scripts/build-earring-side-sheet-disposable.mts`
+- `scripts/build-eyes-specimen-sheet-disposable.mts`
+- `scripts/build-ink-template-panel-disposable.mts`
+- `scripts/capture-refine-prompt-fixture-disposable.mts`
+- `scripts/census-attribution-audit-disposable.mts`
+- `scripts/convert-refine-prompt-fixture-disposable.mts`
+- `scripts/count-wings-masks-disposable.mts`
+- `scripts/crop-carry-walk-mouth-disposable.mts`
+- `scripts/crop-freckle-region-disposable.mts`
+- `scripts/crop-halo-compare-disposable.mts`
+- `scripts/crop-open-walk-mouth-disposable.mts`
+- `scripts/drive-bald-row-disposable.mts`
+- `scripts/drive-build-carry-disposable.mts`
+- `scripts/drive-hold-to-compare-disposable.mts`
+- `scripts/drive-landing-a-supersede-disposable.mts`
+- `scripts/drive-open-crop-carry-disposable.mts`
+- `scripts/drive-open-crop-walk-disposable.mts`
+- `scripts/drive-open-lane-carry-walk-disposable.mts`
+- `scripts/drive-open-lane-walk-disposable.mts`
+- `scripts/drive-settled-failures-disposable.mts`
+- `scripts/drive-sheetcard-brief-clamp-disposable.mts`
+- `scripts/engine-bench-disposable.mts`
+- `scripts/eye-carry-court-disposable.mts`
+- `scripts/find-open-walk-face-disposable.mts`
+- `scripts/freeze-check-fable-disposable.mts`
+- `scripts/halo-sidebyside-disposable.mts`
+- `scripts/landing-a-reach-disposable.mts`
+- `scripts/measure-landing-a-crossings-disposable.mts`
+- `scripts/mint-clipped-carrier-disposable.mts`
+- `scripts/panel-wings-per-side-disposable.mts`
+- `scripts/probe-albino-decomposition-disposable.mts`
+- `scripts/probe-his-lips-disposable.mts`
+- `scripts/probe-per-side-fanout-disposable.mts`
+- `scripts/probe-rail-recorder-disposable.mts`
+- `scripts/probe-skin-condition-slot-disposable.mts`
+- `scripts/read-accessory-filter-discriminator-disposable.mts`
+- `scripts/read-accessory-wire-payload-disposable.mts`
+- `scripts/read-all-library-rows-disposable.mts`
+- `scripts/read-audit-clock-disposable.mts`
+- `scripts/read-balance-now-disposable.mts`
+- `scripts/read-bald-control-disposable.mts`
+- `scripts/read-branch-keys-disposable.mts`
+- `scripts/read-carry-walk-state-disposable.mts`
+- `scripts/read-catalogue-digest-disposable.mts`
+- `scripts/read-collar-length-consequence-disposable.mts`
+- `scripts/read-control-specimens-in-dev-disposable.mts`
+- `scripts/read-dev-candidates-disposable.mts`
+- `scripts/read-earring-sides-anomaly-disposable.mts`
+- `scripts/read-eye-carry-rows-disposable.mts`
+- `scripts/read-fal-balance-disposable.mts`
+- `scripts/read-first-scan-row-disposable.mts`
+- `scripts/read-firstlight-operations-disposable.mts`
+- `scripts/read-frame-scale-disposable.mts`
+- `scripts/read-freckle-branch-disposable.mts`
+- `scripts/read-glasses-incident-disposable.mts`
+- `scripts/read-halo-branch-disposable.mts`
+- `scripts/read-item4-receipt-disposable.mts`
+- `scripts/read-ledger-disposable.mts`
+- `scripts/read-library-liveness-disposable.mts`
+- `scripts/read-library-rows-disposable.mts`
+- `scripts/read-nonestate-specimen-disposable.mts`
+- `scripts/read-open-carry-state-disposable.mts`
+- `scripts/read-open-crop-digest-disposable.mts`
+- `scripts/read-packed-reference-disposable.mts`
+- `scripts/read-panel-words-live-disposable.mts`
+- `scripts/read-receipt-sentences-disposable.mts`
+- `scripts/read-recent-founder-work-disposable.mts`
+- `scripts/read-recipe-silence-reach-disposable.mts`
+- `scripts/read-reference-library-live-disposable.mts`
+- `scripts/read-skin-reversion-disposable.mts`
+- `scripts/read-swept-variant-rows-disposable.mts`
+- `scripts/read-verify-bot-casts-disposable.mts`
+- `scripts/read-wait-notice-rate-disposable.mts`
+- `scripts/read-walk-variants-disposable.mts`
+- `scripts/read-wall-crossings-disposable.mts`
+- `scripts/reconcile-refine-money-disposable.mts`
+- `scripts/resolve-walk-candidate-disposable.mts`
+- `scripts/seed-bald-dev-fixture-disposable.mts`
+- `scripts/seed-diverged-eyes-disposable.mts`
+- `scripts/verify-operation-sentence-disposable.mts`
+- `scripts/watch-fal-balance-disposable.mts`
+
+### untracked, elsewhere — 0
+
+
+### `output/` directories removed — 760
+
+- `output/walk` — 168 files, 217.3 MB
+- `output/hair-court` — 76 files, 162.3 MB
+- `output/per-eye-court` — 59 files, 82.4 MB
+- `output/bench-a` — 58 files, 76.6 MB
+- `output/edit-law` — 101 files, 64.8 MB
+- `output/two-reference-trial` — 40 files, 63.0 MB
+- `output/shift63-removal-class` — 34 files, 62.2 MB
+- `output/born-worn` — 51 files, 55.8 MB
+- `output/body-carrier` — 26 files, 51.4 MB
+- `output/overlapping-gauntlet` — 23 files, 50.5 MB
+- `output/pack` — 36 files, 49.0 MB
+- `output/shift65-earring-court` — 3 files, 48.9 MB
+- `output/shift64-earring-brief` — 21 files, 43.9 MB
+- `output/eye-matrix` — 34 files, 40.9 MB
+- `output/accessory-cell` — 80 files, 40.0 MB
+- `output/shift64-sided-repeat` — 19 files, 34.9 MB
+- `output/marks-court` — 75 files, 33.3 MB
+- `output/shift57` — 66 files, 28.5 MB
+- `output/finding-replay` — 33 files, 27.9 MB
+- `output/side-phrasing-paired` — 14 files, 27.8 MB
+- `output/eye-carry-court` — 19 files, 27.4 MB
+- `output/bench-b` — 14 files, 26.5 MB
+- `output/earring-specimens` — 23 files, 24.6 MB
+- `output/carry-test` — 15 files, 21.7 MB
+- `output/shift63-removal-synthesis` — 16 files, 21.7 MB
+- `output/side-phrasing-court` — 11 files, 21.3 MB
+- `output/tan-court` — 12 files, 21.3 MB
+- `output/earring-cut-diagnosis` — 24 files, 20.7 MB
+- `output/prune-court-horns` — 11 files, 20.5 MB
+- `output/skin-reversion` — 8 files, 19.6 MB
+- `output/finding-replay-run1-preserved` — 24 files, 19.4 MB
+- `output/sheet-verify` — 9 files, 19.4 MB
+- `output/composer-chip` — 9 files, 18.8 MB
+- `output/founder-finding-4` — 17 files, 18.8 MB
+- `output/shift64-mirror-laterality` — 9 files, 18.4 MB
+- `output/shift63-audit` — 8 files, 17.9 MB
+- `output/shift64-per-instance-vacancy` — 18 files, 17.4 MB
+- `output/panel-boxes` — 7 files, 16.1 MB
+- `output/carry-diff` — 23 files, 15.1 MB
+- `output/count-bisect` — 20 files, 14.4 MB
+- `output/shift62-fiveask` — 19 files, 14.4 MB
+- `output/shift59-fiveask` — 19 files, 14.1 MB
+- `output/shift60-fiveask` — 19 files, 14.1 MB
+- `output/shift62-removal-rate` — 6 files, 14.0 MB
+- `output/scratch` — 71 files, 14.0 MB
+- `output/region-phrasing` — 7 files, 12.0 MB
+- `output/shift58-fiveask-2` — 17 files, 11.9 MB
+- `output/maskurl` — 11 files, 11.7 MB
+- `output/run6-audit` — 8 files, 11.6 MB
+- `output/doubleread` — 5 files, 11.1 MB
+- `output/shift63-vacate-persistence` — 6 files, 10.9 MB
+- `output/bespectacled-hunt` — 7 files, 10.5 MB
+- `output/shift61-fiveask` — 18 files, 10.0 MB
+- `output/stuck-render` — 15 files, 9.6 MB
+- `output/engine-bench` — 9 files, 9.6 MB
+- `output/teeth-bench` — 31 files, 9.4 MB
+- `output/engine-mask-alpha2` — 6 files, 9.3 MB
+- `output/prune-midchain-court` — 6 files, 9.1 MB
+- `output/engine-mask` — 7 files, 8.9 MB
+- `output/engine-mask-alpha` — 7 files, 8.9 MB
+- `output/tone-below-chin` — 11 files, 8.6 MB
+- `output/shift58-fiveask` — 8 files, 8.0 MB
+- `output/build-carry` — 5 files, 7.8 MB
+- `output/run7-audit` — 3 files, 7.8 MB
+- `output/open-lane-carry-walk` — 7 files, 7.6 MB
+- `output/shift74-readd` — 4 files, 7.6 MB
+- `output/bald-walk` — 4 files, 6.7 MB
+- `output/founder-pack-2026-08-11` — 18 files, 5.8 MB
+- `output/specimens` — 12 files, 5.6 MB
+- `output/eyes-glasses` — 7 files, 5.5 MB
+- `output/panel-skeleton` — 9 files, 5.3 MB
+- `output/shift64-look-cast-grid.png` — 1 files, 5.2 MB
+- `output/panel-live-fill` — 8 files, 5.1 MB
+- `output/glasses-watch` — 5 files, 5.1 MB
+- `output/shift64-paid-two-step` — 5 files, 5.0 MB
+- `output/facial-hair-court` — 3 files, 4.9 MB
+- `output/hyphen-question` — 5 files, 4.8 MB
+- `output/shift62-removal-ab` — 2 files, 4.8 MB
+- `output/smile-walk` — 3 files, 4.6 MB
+- `output/earring-side-court` — 20 files, 4.5 MB
+- `output/open-crop-carry-before-fix` — 4 files, 4.5 MB
+- `output/open-crop-walk` — 4 files, 4.5 MB
+- `output/landing-a` — 3 files, 4.2 MB
+- `output/refusals` — 10 files, 4.1 MB
+- `output/shift64-earring-two-step` — 3 files, 4.0 MB
+- `output/tmp-devcontrol` — 6 files, 3.9 MB
+- `output/caption-governs` — 4 files, 3.6 MB
+- `output/rail-ruling` — 6 files, 3.5 MB
+- `output/kept-panel` — 17 files, 3.1 MB
+- `output/burst-clicks` — 13 files, 2.9 MB
+- `output/mint-demo` — 3 files, 2.9 MB
+- `output/regenerate-control` — 7 files, 2.9 MB
+- `output/060d1fbc-4a7e-4296-b693-b8fda4df4179.png` — 1 files, 2.7 MB
+- `output/3ca5800a-42da-45c0-9429-5f8be730791e.png` — 1 files, 2.7 MB
+- `output/48fcf10d-60e1-4257-9051-3306c8c4fc5c.png` — 1 files, 2.7 MB
+- `output/ed25f372-701d-44ed-8442-6c00201d6830.png` — 1 files, 2.7 MB
+- `output/regenerate-replay` — 9 files, 2.6 MB
+- `output/wait-notices` — 16 files, 2.6 MB
+- `output/shift27-fixture-frame.png` — 1 files, 2.6 MB
+- `output/w2-d5f11834-4005-4db2-a153-f9f75b0c3404.png` — 1 files, 2.6 MB
+- `output/hair-removal-delivery` — 2 files, 2.6 MB
+- `output/w2-0137361d-a854-4e94-86c8-ad0fb7689e7a.png` — 1 files, 2.6 MB
+- `output/w3-v161.png` — 1 files, 2.5 MB
+- `output/_peek.png` — 1 files, 2.5 MB
+- `output/4327a3e1-2be8-4b0f-a0df-c43a01223b26.png` — 1 files, 2.5 MB
+- `output/wirecount` — 4 files, 2.4 MB
+- `output/suite-verbose-after.txt` — 1 files, 2.3 MB
+- `output/teeth-box` — 3 files, 2.3 MB
+- `output/matting` — 11 files, 2.2 MB
+- `output/version-transition` — 3 files, 2.1 MB
+- `output/shift64-look-mirror-grid.png` — 1 files, 2.1 MB
+- `output/version-transition-plain` — 3 files, 2.1 MB
+- `output/shift64-look-grid.png` — 1 files, 2.1 MB
+- `output/regenerate-in-place` — 8 files, 2.0 MB
+- `output/ENGINE-848.png` — 1 files, 2.0 MB
+- `output/_eye-current-version.png` — 1 files, 1.9 MB
+- `output/panel-mock` — 17 files, 1.9 MB
+- `output/horns-row` — 3 files, 1.8 MB
+- `output/shift64-look-sided-right-ears.png` — 1 files, 1.8 MB
+- `output/shift64-look-sided-both-ears.png` — 1 files, 1.7 MB
+- `output/shift68-inert-regions` — 2 files, 1.7 MB
+- `output/suite-verbose.txt` — 1 files, 1.6 MB
+- `output/shift64-look-mirror-specimen.png` — 1 files, 1.6 MB
+- `output/panel-blink` — 3 files, 1.6 MB
+- `output/_suite-arms.txt` — 1 files, 1.6 MB
+- `output/_suite-shift101b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift98b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift95d.txt` — 1 files, 1.6 MB
+- `output/_suite-shift95e.txt` — 1 files, 1.6 MB
+- `output/_suite-door.txt` — 1 files, 1.6 MB
+- `output/_suite-shift104g.txt` — 1 files, 1.6 MB
+- `output/_suite-shift95h.txt` — 1 files, 1.6 MB
+- `output/_suite-shift98a.txt` — 1 files, 1.6 MB
+- `output/_suite-shift95a.txt` — 1 files, 1.6 MB
+- `output/_suite-shift104.txt` — 1 files, 1.6 MB
+- `output/_suite-shift100c.txt` — 1 files, 1.6 MB
+- `output/_suite-shift102d.txt` — 1 files, 1.6 MB
+- `output/_suite-shift93e.txt` — 1 files, 1.6 MB
+- `output/_suite-shift96b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift95b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift97b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift93d.txt` — 1 files, 1.6 MB
+- `output/_suite-shift104b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift102c.txt` — 1 files, 1.6 MB
+- `output/_suite-shift94b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift92a.txt` — 1 files, 1.6 MB
+- `output/_suite-shift92b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift104i.txt` — 1 files, 1.6 MB
+- `output/_suite-shift92c.txt` — 1 files, 1.6 MB
+- `output/_suite-shift89d.txt` — 1 files, 1.6 MB
+- `output/_suite-shift93b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift89c.txt` — 1 files, 1.6 MB
+- `output/_suite-shift93g.txt` — 1 files, 1.6 MB
+- `output/_suite-shift100b.txt` — 1 files, 1.6 MB
+- `output/_suite-shift90g.txt` — 1 files, 1.5 MB
+- `output/_suite-shift99.txt` — 1 files, 1.5 MB
+- `output/CHEEKS-shift8.png` — 1 files, 1.5 MB
+- `output/_suite-shift92d.txt` — 1 files, 1.5 MB
+- `output/_suite-shift89g.txt` — 1 files, 1.5 MB
+- `output/_suite-shift90d.txt` — 1 files, 1.5 MB
+- `output/_suite-shift88d.txt` — 1 files, 1.5 MB
+- `output/_suite-shift87b.txt` — 1 files, 1.5 MB
+- `output/_suite-shift94g.txt` — 1 files, 1.5 MB
+- `output/_suite-shift90c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift88b.txt` — 1 files, 1.5 MB
+- `output/_suite-shift91e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift90.txt` — 1 files, 1.5 MB
+- `output/_suite-shift95g.txt` — 1 files, 1.5 MB
+- `output/_suite-shift91c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift97a.txt` — 1 files, 1.5 MB
+- `output/_suite-shift104d.txt` — 1 files, 1.5 MB
+- `output/_suite-shift93h.txt` — 1 files, 1.5 MB
+- `output/_suite-rebase.txt` — 1 files, 1.5 MB
+- `output/_suite-shift95c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift88e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift98c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift103b.txt` — 1 files, 1.5 MB
+- `output/_suite-shift98f.txt` — 1 files, 1.5 MB
+- `output/_suite-shift88f.txt` — 1 files, 1.5 MB
+- `output/_suite-shift98e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift102.txt` — 1 files, 1.5 MB
+- `output/_suite-shift98d.txt` — 1 files, 1.5 MB
+- `output/_suite-shift94f.txt` — 1 files, 1.5 MB
+- `output/_suite-shift90f.txt` — 1 files, 1.5 MB
+- `output/_suite-shift101d.txt` — 1 files, 1.5 MB
+- `output/_suite-shift94e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift104f.txt` — 1 files, 1.5 MB
+- `output/_suite-shift102e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift96c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift89e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift93a.txt` — 1 files, 1.5 MB
+- `output/_suite-shift100.txt` — 1 files, 1.5 MB
+- `output/_suite-shift99b.txt` — 1 files, 1.5 MB
+- `output/_suite-shift104e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift101a.txt` — 1 files, 1.5 MB
+- `output/_suite-shift100d.txt` — 1 files, 1.5 MB
+- `output/_suite-shift90e.txt` — 1 files, 1.5 MB
+- `output/_suite-shift94c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift104c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift103.txt` — 1 files, 1.5 MB
+- `output/_suite-ceremony.txt` — 1 files, 1.5 MB
+- `output/_suite-shift104h.txt` — 1 files, 1.5 MB
+- `output/_suite-shift88c.txt` — 1 files, 1.5 MB
+- `output/_suite-shift91b.txt` — 1 files, 1.5 MB
+- `output/_suite-shift86.txt` — 1 files, 1.4 MB
+- `output/_suite-shift93f.txt` — 1 files, 1.4 MB
+- `output/_suite-shift93c.txt` — 1 files, 1.4 MB
+- `output/shift64-look-specimen-head.png` — 1 files, 1.4 MB
+- `output/clipped-sweep` — 3 files, 1.4 MB
+- `output/_suite-shift94.txt` — 1 files, 1.4 MB
+- `output/_suite-shift85.txt` — 1 files, 1.4 MB
+- `output/_suite-shift85c.txt` — 1 files, 1.4 MB
+- `output/_suite-shift85f.txt` — 1 files, 1.4 MB
+- `output/_suite-shift89f.txt` — 1 files, 1.4 MB
+- `output/_suite-shift85e.txt` — 1 files, 1.4 MB
+- `output/_suite-shift85b.txt` — 1 files, 1.4 MB
+- `output/_suite-shift83b.txt` — 1 files, 1.3 MB
+- `output/_suite-shift83c.txt` — 1 files, 1.3 MB
+- `output/caption-fix` — 6 files, 1.3 MB
+- `output/_suite-shift83.txt` — 1 files, 1.3 MB
+- `output/arm-template-three.png` — 1 files, 1.3 MB
+- `output/shift54-library` — 4 files, 1.3 MB
+- `output/selection-tangle` — 3 files, 1.2 MB
+- `output/_unwiring-timeline-nsfixed.json` — 1 files, 1.1 MB
+- `output/_unwiring-timeline.json` — 1 files, 1.1 MB
+- `output/_unwiring-smoke.json` — 1 files, 1.1 MB
+- `output/shift58-rehearsal` — 1 files, 1.1 MB
+- `output/his-eye-colour` — 3 files, 1.0 MB
+- `output/_clip-pos6.png` — 1 files, 1.0 MB
+- `output/_atlas-head.json` — 1 files, 1.0 MB
+- `output/shift58-eread` — 1 files, 0.9 MB
+- `output/_suite-shift95f.txt` — 1 files, 0.9 MB
+- `output/_suite-shift102b.txt` — 1 files, 0.9 MB
+- `output/_clip-pos0.png` — 1 files, 0.9 MB
+- `output/_atlas-fresh-74701e31.json` — 1 files, 0.9 MB
+- `output/_suite-incident.txt` — 1 files, 0.9 MB
+- `output/unwiring-timeline.json` — 1 files, 0.9 MB
+- `output/_suite-shift91.txt` — 1 files, 0.9 MB
+- `output/_suite-shift94d.txt` — 1 files, 0.9 MB
+- `output/_suite-shift89.txt` — 1 files, 0.9 MB
+- `output/_suite-shift88.txt` — 1 files, 0.9 MB
+- `output/_suite-shift90b.txt` — 1 files, 0.9 MB
+- `output/_suite-copyfix.txt` — 1 files, 0.8 MB
+- `output/_suite-shift96a.txt` — 1 files, 0.8 MB
+- `output/_suite-shift89b.txt` — 1 files, 0.8 MB
+- `output/shift58-rehearsal-361` — 1 files, 0.8 MB
+- `output/shift27-fixture-boxes.png` — 1 files, 0.8 MB
+- `output/eaten-clicks` — 4 files, 0.8 MB
+- `output/_suite-shift86b.txt` — 1 files, 0.8 MB
+- `output/shift64-look-two-step.png` — 1 files, 0.8 MB
+- `output/_suite-shift101c.txt` — 1 files, 0.8 MB
+- `output/face-v149-freckles.png` — 1 files, 0.8 MB
+- `output/face-v152-noglasses.png` — 1 files, 0.8 MB
+- `output/face-master.png` — 1 files, 0.8 MB
+- `output/face-v150-lipgloss.png` — 1 files, 0.8 MB
+- `output/use-chip-before.png` — 1 files, 0.8 MB
+- `output/face-v151-earrings.png` — 1 files, 0.8 MB
+- `output/pair-zoom` — 3 files, 0.7 MB
+- `output/w3-v161-ears.png` — 1 files, 0.7 MB
+- `output/_suite-shift85d.txt` — 1 files, 0.7 MB
+- `output/use-chip-after.png` — 1 files, 0.7 MB
+- `output/sheetcard-brief-clamp` — 3 files, 0.7 MB
+- `output/compare-nothing.png` — 1 files, 0.7 MB
+- `output/w2-v153-freckles.png` — 1 files, 0.7 MB
+- `output/w2-v157-final.png` — 1 files, 0.7 MB
+- `output/horns-panel-settled.png` — 1 files, 0.6 MB
+- `output/horns-panel-open.png` — 1 files, 0.6 MB
+- `output/horns-panel.png` — 1 files, 0.6 MB
+- `output/use-replay.png` — 1 files, 0.6 MB
+- `output/crop-v149-freckles.png` — 1 files, 0.6 MB
+- `output/crop-master.png` — 1 files, 0.6 MB
+- `output/crop-v150-lipgloss.png` — 1 files, 0.6 MB
+- `output/compare-held.png` — 1 files, 0.5 MB
+- `output/compare-released.png` — 1 files, 0.5 MB
+- `output/refine-toast` — 2 files, 0.5 MB
+- `output/cf413890-3121-4b30-b80d-ef2db7b8bf96-content.png` — 1 files, 0.5 MB
+- `output/_rs2.backup.ts` — 1 files, 0.5 MB
+- `output/_rs.backup.ts` — 1 files, 0.5 MB
+- `output/shift27-fixture-frame-small.png` — 1 files, 0.4 MB
+- `output/shift64-look-sided-left-full.png` — 1 files, 0.4 MB
+- `output/_bak_svc3_shift99.ts` — 1 files, 0.4 MB
+- `output/_bak_refinesvc2_shift99.ts` — 1 files, 0.4 MB
+- `output/_bak_refinesvc_shift99.ts` — 1 files, 0.4 MB
+- `output/_bak_refine_shift93.ts` — 1 files, 0.4 MB
+- `output/_bak_refine_shift91.ts` — 1 files, 0.4 MB
+- `output/ghost-chip` — 3 files, 0.4 MB
+- `output/viewer-wait` — 2 files, 0.3 MB
+- `output/_founder-queue-before.md` — 1 files, 0.3 MB
+- `output/shift64-look-mirror-l01-ears.png` — 1 files, 0.2 MB
+- `output/shift64-look-sided-left.png` — 1 files, 0.2 MB
+- `output/shift68-refine-card` — 4 files, 0.2 MB
+- `output/female-front-rightside-crop.png` — 1 files, 0.2 MB
+- `output/_1164_backup_schema.ts` — 1 files, 0.2 MB
+- `output/thin-kind-door` — 22 files, 0.2 MB
+- `output/shift74-panel` — 5 files, 0.2 MB
+- `output/sheet-skeleton` — 7 files, 0.2 MB
+- `output/service-road-doors-run2` — 4 files, 0.2 MB
+- `output/service-road-doors-run1` — 4 files, 0.2 MB
+- `output/_bak_delta_shift99.ts` — 1 files, 0.1 MB
+- `output/_bak_delta_shift93.ts` — 1 files, 0.1 MB
+- `output/segment-coverage` — 13 files, 0.1 MB
+- `output/_bak_castingv2css_shift100.css` — 1 files, 0.1 MB
+- `output/_rm.backup.ts` — 1 files, 0.1 MB
+- `output/composite-front-rightside-crop.png` — 1 files, 0.1 MB
+- `output/_use-before-crop.png` — 1 files, 0.1 MB
+- `output/shift64-look-hr02-herleft.png` — 1 files, 0.1 MB
+- `output/_chip.png` — 1 files, 0.1 MB
+- `output/_use-after-crop.png` — 1 files, 0.1 MB
+- `output/open-vocab` — 19 files, 0.1 MB
+- `output/_ra.backup.ts` — 1 files, 0.1 MB
+- `output/deps.json` — 1 files, 0.1 MB
+- `output/packed-reference` — 4 files, 0.1 MB
+- `output/composite-front-crop2.png` — 1 files, 0.1 MB
+- `output/_bak_recipe_shift92.ts` — 1 files, 0.1 MB
+- `output/_bak_recipe_shift91b.ts` — 1 files, 0.1 MB
+- `output/_bak_recipe_shift91.ts` — 1 files, 0.1 MB
+- `output/price-studio.png` — 1 files, 0.1 MB
+- `output/_bak_recipe.ts` — 1 files, 0.1 MB
+- `output/ext1-atlas.json` — 1 files, 0.1 MB
+- `output/_claude-backup-shift98.md` — 1 files, 0.1 MB
+- `output/_facePanel.backup.ts` — 1 files, 0.1 MB
+- `output/_ci.backup.ts` — 1 files, 0.1 MB
+- `output/ledger-window-shift46.txt` — 1 files, 0.1 MB
+- `output/content-wall` — 2 files, 0.1 MB
+- `output/kept-tray` — 2 files, 0.0 MB
+- `output/described-rows` — 1 files, 0.0 MB
+- `output/_bak_genarch_shift99.mts` — 1 files, 0.0 MB
+- `output/shift58-refused` — 8 files, 0.0 MB
+- `output/_1164_backup_sweep.mts` — 1 files, 0.0 MB
+- `output/fal-schemas` — 6 files, 0.0 MB
+- `output/_sab.json` — 1 files, 0.0 MB
+- `output/_bak_cutter_shift93.ts` — 1 files, 0.0 MB
+- `output/_mintedSlots.backup.ts` — 1 files, 0.0 MB
+- `output/_t6.txt` — 1 files, 0.0 MB
+- `output/_interp_old.ts` — 1 files, 0.0 MB
+- `output/wall-context` — 2 files, 0.0 MB
+- `output/_bak_crop_shift95.ts` — 1 files, 0.0 MB
+- `output/anchor-178-small.jpg` — 1 files, 0.0 MB
+- `output/master-small.jpg` — 1 files, 0.0 MB
+- `output/_sweep-old.txt` — 1 files, 0.0 MB
+- `output/eyes-specimen` — 5 files, 0.0 MB
+- `output/_bak_retention_shift92.ts` — 1 files, 0.0 MB
+- `output/tied-back-court` — 1 files, 0.0 MB
+- `output/817090f3-f3f2-4132-8683-4e912487e572-mask.png` — 1 files, 0.0 MB
+- `output/_bak_cutter.ts` — 1 files, 0.0 MB
+- `output/open-lane-bench-run1-prefix-meter` — 2 files, 0.0 MB
+- `output/_1162_backup_sweep.mts` — 1 files, 0.0 MB
+- `output/_ledger-shift94.txt` — 1 files, 0.0 MB
+- `output/_sweep-head.txt` — 1 files, 0.0 MB
+- `output/shift54-walk-variants.txt` — 1 files, 0.0 MB
+- `output/rw-status.json` — 1 files, 0.0 MB
+- `output/_t1.txt` — 1 files, 0.0 MB
+- `output/_env.backup.ts` — 1 files, 0.0 MB
+- `output/service-road-doors` — 4 files, 0.0 MB
+- `output/open-lane-bench` — 2 files, 0.0 MB
+- `output/_1171_repairs.py` — 1 files, 0.0 MB
+- `output/_six-hits.txt` — 1 files, 0.0 MB
+- `output/removal-routing` — 2 files, 0.0 MB
+- `output/_refLib.backup.ts` — 1 files, 0.0 MB
+- `output/_1164_s32.md` — 1 files, 0.0 MB
+- `output/_bak_cropdb_shift93.ts` — 1 files, 0.0 MB
+- `output/_bak_legacy_shift93.ts` — 1 files, 0.0 MB
+- `output/vocab-pin.json` — 1 files, 0.0 MB
+- `output/_vfw.backup.ts` — 1 files, 0.0 MB
+- `output/_bak_platedoor.ts` — 1 files, 0.0 MB
+- `output/hair-removal-routing` — 2 files, 0.0 MB
+- `output/_bak_index_shift99.ts` — 1 files, 0.0 MB
+- `output/version-switch` — 6 files, 0.0 MB
+- `output/_v206.json` — 1 files, 0.0 MB
+- `output/cards-body.txt` — 1 files, 0.0 MB
+- `output/_bak_uploaddoor_shift94.ts` — 1 files, 0.0 MB
+- `output/_1162_s31.md` — 1 files, 0.0 MB
+- `output/_bak_db_shift92.ts` — 1 files, 0.0 MB
+- `output/restyle-vs-remove` — 3 files, 0.0 MB
+- `output/_t4.txt` — 1 files, 0.0 MB
+- `output/_s30.md` — 1 files, 0.0 MB
+- `output/noop-door` — 2 files, 0.0 MB
+- `output/_bak_upscale_shift95.ts` — 1 files, 0.0 MB
+- `output/_openrows_tests.txt` — 1 files, 0.0 MB
+- `output/expression-routing` — 2 files, 0.0 MB
+- `output/horns-routing` — 2 files, 0.0 MB
+- `output/_protocol-before.md` — 1 files, 0.0 MB
+- `output/_bak_cer0049_shift99.mts` — 1 files, 0.0 MB
+- `output/_1169_repairs.py` — 1 files, 0.0 MB
+- `output/d1-gate-tests.txt` — 1 files, 0.0 MB
+- `output/_ras.backup.ts` — 1 files, 0.0 MB
+- `output/_bak_delivcrop_shift92.ts` — 1 files, 0.0 MB
+- `output/open-lane-probe` — 1 files, 0.0 MB
+- `output/face-describe` — 2 files, 0.0 MB
+- `output/_openrows_block.txt` — 1 files, 0.0 MB
+- `output/scripterrors.txt` — 1 files, 0.0 MB
+- `output/_bak_upscale_shift94.ts` — 1 files, 0.0 MB
+- `output/_courtesy-report.txt` — 1 files, 0.0 MB
+- `output/_1198_commitmsg.txt` — 1 files, 0.0 MB
+- `output/ambiguous-words` — 2 files, 0.0 MB
+- `output/_1162_backup_inkReleasedPlacements.ts` — 1 files, 0.0 MB
+- `output/fangs-origin` — 2 files, 0.0 MB
+- `output/_mint_noun.py` — 1 files, 0.0 MB
+- `output/assembler-tests.txt` — 1 files, 0.0 MB
+- `output/finding-replay-run1` — 4 files, 0.0 MB
+- `output/_patch9.py` — 1 files, 0.0 MB
+- `output/_zip-entries.txt` — 1 files, 0.0 MB
+- `output/facet-cards-body.txt` — 1 files, 0.0 MB
+- `output/_1195_commitmsg.txt` — 1 files, 0.0 MB
+- `output/orchestrator-tests.txt` — 1 files, 0.0 MB
+- `output/_commitmsg3.txt` — 1 files, 0.0 MB
+- `output/_fixtures_handle.py` — 1 files, 0.0 MB
+- `output/readd-182b.txt` — 1 files, 0.0 MB
+- `output/_5f_section.md` — 1 files, 0.0 MB
+- `output/_fix_rehearsal.py` — 1 files, 0.0 MB
+- `output/dryrun.txt` — 1 files, 0.0 MB
+- `output/_patch7.py` — 1 files, 0.0 MB
+- `output/readd-182.txt` — 1 files, 0.0 MB
+- `output/signservice-tests.txt` — 1 files, 0.0 MB
+- `output/_1171_commitmsg.txt` — 1 files, 0.0 MB
+- `output/_patch5.py` — 1 files, 0.0 MB
+- `output/refund-pairing-shift46.txt` — 1 files, 0.0 MB
+- `output/_commitmsg4.txt` — 1 files, 0.0 MB
+- `output/_replay_handle.py` — 1 files, 0.0 MB
+- `output/_interp_ink.py` — 1 files, 0.0 MB
+- `output/_fix_catalogue_prose.py` — 1 files, 0.0 MB
+- `output/_reask.py` — 1 files, 0.0 MB
+- `output/albino-probe` — 2 files, 0.0 MB
+- `output/_borninkgrammar.txt` — 1 files, 0.0 MB
+- `output/_hide_broken.py` — 1 files, 0.0 MB
+- `output/brand-styling-bench` — 1 files, 0.0 MB
+- `output/_commitmsg.txt` — 1 files, 0.0 MB
+- `output/_commitmsg_incident.txt` — 1 files, 0.0 MB
+- `output/_use_arms_v2.py` — 1 files, 0.0 MB
+- `output/diagnose-viewer-lag.mts` — 1 files, 0.0 MB
+- `output/_1169_section10.py` — 1 files, 0.0 MB
+- `output/_bornink_flag.txt` — 1 files, 0.0 MB
+- `output/_keeper_arm.py` — 1 files, 0.0 MB
+- `output/_fix_gate.py` — 1 files, 0.0 MB
+- `output/_anchor_chip.py` — 1 files, 0.0 MB
+- `output/_commit-1089.txt` — 1 files, 0.0 MB
+- `output/_export_askwords.py` — 1 files, 0.0 MB
+- `output/bald-smile-probe` — 1 files, 0.0 MB
+- `output/_noun_arms.txt` — 1 files, 0.0 MB
+- `output/_commit-1087.txt` — 1 files, 0.0 MB
+- `output/clause-tests-2.txt` — 1 files, 0.0 MB
+- `output/_1169_commitmsg.txt` — 1 files, 0.0 MB
+- `output/_commitmsg_copyfix.txt` — 1 files, 0.0 MB
+- `output/body-probe` — 1 files, 0.0 MB
+- `output/_ladder_truth.py` — 1 files, 0.0 MB
+- `output/_notes_arms.txt` — 1 files, 0.0 MB
+- `output/_patch12.py` — 1 files, 0.0 MB
+- `output/_sweep-shift85.txt` — 1 files, 0.0 MB
+- `output/_mint_wire_arm.py` — 1 files, 0.0 MB
+- `output/_commitmsg6.txt` — 1 files, 0.0 MB
+- `output/_stack_arms.txt` — 1 files, 0.0 MB
+- `output/_1169_polish.py` — 1 files, 0.0 MB
+- `output/_commit-1088.txt` — 1 files, 0.0 MB
+- `output/_claudemd.py` — 1 files, 0.0 MB
+- `output/_widen_fence.py` — 1 files, 0.0 MB
+- `output/_client_scopable.py` — 1 files, 0.0 MB
+- `output/_client_replay.py` — 1 files, 0.0 MB
+- `output/family-routing` — 2 files, 0.0 MB
+- `output/_use_chip.py` — 1 files, 0.0 MB
+- `output/_stack_question.py` — 1 files, 0.0 MB
+- `output/_marking_arms.py` — 1 files, 0.0 MB
+- `output/_v2partial.mts` — 1 files, 0.0 MB
+- `output/_wire_arm.txt` — 1 files, 0.0 MB
+- `output/_commitmsg2.txt` — 1 files, 0.0 MB
+- `output/_fix_wire_arm.py` — 1 files, 0.0 MB
+- `output/_gapsens.mts` — 1 files, 0.0 MB
+- `output/_reask_arms.txt` — 1 files, 0.0 MB
+- `output/_read_empty.py` — 1 files, 0.0 MB
+- `output/_discharge.py` — 1 files, 0.0 MB
+- `output/_patch13.py` — 1 files, 0.0 MB
+- `output/_arms5.ts` — 1 files, 0.0 MB
+- `output/_doc.py` — 1 files, 0.0 MB
+- `output/skin-slot-probe` — 1 files, 0.0 MB
+- `output/_marking.py` — 1 files, 0.0 MB
+- `output/_commitmsg7.txt` — 1 files, 0.0 MB
+- `output/_commitmsg_shift99.txt` — 1 files, 0.0 MB
+- `output/_notes_seam.py` — 1 files, 0.0 MB
+- `output/_patch11.py` — 1 files, 0.0 MB
+- `output/_wordcut.py` — 1 files, 0.0 MB
+- `output/_tilepeek.mjs` — 1 files, 0.0 MB
+- `output/_arms4.ts` — 1 files, 0.0 MB
+- `output/_ns-blindspot.txt` — 1 files, 0.0 MB
+- `output/_commitmsg8.txt` — 1 files, 0.0 MB
+- `output/verify-carried-pixels.mts` — 1 files, 0.0 MB
+- `output/_commitmsg_ceremony.txt` — 1 files, 0.0 MB
+- `output/_fix_projection_arms.py` — 1 files, 0.0 MB
+- `output/_seam_arm.py` — 1 files, 0.0 MB
+- `output/commitmsg.txt` — 1 files, 0.0 MB
+- `output/_commitmsg10.txt` — 1 files, 0.0 MB
+- `output/_assembler_bornink.py` — 1 files, 0.0 MB
+- `output/prompt-arm-clean-rev2.txt` — 1 files, 0.0 MB
+- `output/_commitmsg_door.txt` — 1 files, 0.0 MB
+- `output/commit-msg.txt` — 1 files, 0.0 MB
+- `output/_claudemd_route.py` — 1 files, 0.0 MB
+- `output/_disp-symbols.txt` — 1 files, 0.0 MB
+- `output/_rite-shift87.txt` — 1 files, 0.0 MB
+- `output/_vars-shift82.json` — 1 files, 0.0 MB
+- `output/probe-stopline-live-disposable.mts` — 1 files, 0.0 MB
+- `output/_projection_arms.py` — 1 files, 0.0 MB
+- `output/_bornink_arms.py` — 1 files, 0.0 MB
+- `output/_patch14.py` — 1 files, 0.0 MB
+- `output/_wire_mint.py` — 1 files, 0.0 MB
+- `output/_rite-shift85b.txt` — 1 files, 0.0 MB
+- `output/_rite-shift85.txt` — 1 files, 0.0 MB
+- `output/_rite-shift85c.txt` — 1 files, 0.0 MB
+- `output/commitmsg2.txt` — 1 files, 0.0 MB
+- `output/_fix_driver.py` — 1 files, 0.0 MB
+- `output/facet-words.json` — 1 files, 0.0 MB
+- `output/_commitmsg9.txt` — 1 files, 0.0 MB
+- `output/_doc2.py` — 1 files, 0.0 MB
+- `output/_reask_wire.py` — 1 files, 0.0 MB
+- `output/_handle_arm.py` — 1 files, 0.0 MB
+- `output/_fix_two_arms.py` — 1 files, 0.0 MB
+- `output/prompt-body-front-greyscale.txt` — 1 files, 0.0 MB
+- `output/_noun_prose.py` — 1 files, 0.0 MB
+- `output/_1169_holds.py` — 1 files, 0.0 MB
+- `output/prompt-body-back-greyscale.txt` — 1 files, 0.0 MB
+- `output/_doctrine.py` — 1 files, 0.0 MB
+- `output/_env.dev.backup` — 1 files, 0.0 MB
+- `output/_dispositions.py` — 1 files, 0.0 MB
+- `output/_chippeek.mjs` — 1 files, 0.0 MB
+- `output/_bak_env_shift100` — 1 files, 0.0 MB
+- `output/_bak_env_shift90` — 1 files, 0.0 MB
+- `output/_bak_env_shift91` — 1 files, 0.0 MB
+- `output/_bak_env_shift92` — 1 files, 0.0 MB
+- `output/_bak_env_shift94` — 1 files, 0.0 MB
+- `output/_project_route.py` — 1 files, 0.0 MB
+- `output/prompt-arm-clean-single-view.txt` — 1 files, 0.0 MB
+- `output/_fix_plumbing.py` — 1 files, 0.0 MB
+- `output/_rfeasible.mts` — 1 files, 0.0 MB
+- `output/_peek.mjs` — 1 files, 0.0 MB
+- `output/_latencycheck.mts` — 1 files, 0.0 MB
+- `output/_gapvsmargin.mts` — 1 files, 0.0 MB
+- `output/_commitmsg_corpus.txt` — 1 files, 0.0 MB
+- `output/_patch4.py` — 1 files, 0.0 MB
+- `output/_targetcheck.mts` — 1 files, 0.0 MB
+- `output/watch-segments.mts` — 1 files, 0.0 MB
+- `output/_commitmsg_arms.txt` — 1 files, 0.0 MB
+- `output/probe-walk-images.mts` — 1 files, 0.0 MB
+- `output/eye-rate` — 1 files, 0.0 MB
+- `output/_t3.txt` — 1 files, 0.0 MB
+- `output/_commitmsg_rebaseatlas.txt` — 1 files, 0.0 MB
+- `output/ts2344.txt` — 1 files, 0.0 MB
+- `output/subtle` — 2 files, 0.0 MB
+- `output/_clipcheck.mts` — 1 files, 0.0 MB
+- `output/_card-correction.md` — 1 files, 0.0 MB
+- `output/_fix_driver2.py` — 1 files, 0.0 MB
+- `output/_iigeneral.mts` — 1 files, 0.0 MB
+- `output/_splice_flag.py` — 1 files, 0.0 MB
+- `output/_gapcheck.mts` — 1 files, 0.0 MB
+- `output/_patch3.py` — 1 files, 0.0 MB
+- `output/_patch6.py` — 1 files, 0.0 MB
+- `output/_commitmsg11.txt` — 1 files, 0.0 MB
+- `output/refusal-doors` — 2 files, 0.0 MB
+- `output/_overflow_field.py` — 1 files, 0.0 MB
+- `output/open-absence-court-run.txt` — 1 files, 0.0 MB
+- `output/_bindcheck.mts` — 1 files, 0.0 MB
+- `output/_measure_words.mts` — 1 files, 0.0 MB
+- `output/_provenance_pointer.py` — 1 files, 0.0 MB
+- `output/_fix_openrows.py` — 1 files, 0.0 MB
+- `output/probe-walk-progress.mts` — 1 files, 0.0 MB
+- `output/_fix_paneltests.py` — 1 files, 0.0 MB
+- `output/_suite-shift105a.txt` — 1 files, 0.0 MB
+- `output/_splice_openrows.py` — 1 files, 0.0 MB
+- `output/_wire_roll_ink.py` — 1 files, 0.0 MB
+- `output/_wire_ink_ask.py` — 1 files, 0.0 MB
+- `output/box-drift` — 1 files, 0.0 MB
+- `output/_check-arms.txt` — 1 files, 0.0 MB
+- `output/_check-ceremony.txt` — 1 files, 0.0 MB
+- `output/_check-copyfix.txt` — 1 files, 0.0 MB
+- `output/_check-door.txt` — 1 files, 0.0 MB
+- `output/_check-incident.txt` — 1 files, 0.0 MB
+- `output/_check-rebase.txt` — 1 files, 0.0 MB
+- `output/_check-shift100.txt` — 1 files, 0.0 MB
+- `output/_check-shift100c.txt` — 1 files, 0.0 MB
+- `output/_check-shift100d.txt` — 1 files, 0.0 MB
+- `output/_check-shift101a.txt` — 1 files, 0.0 MB
+- `output/_check-shift101b.txt` — 1 files, 0.0 MB
+- `output/_check-shift101c.txt` — 1 files, 0.0 MB
+- `output/_check-shift102.txt` — 1 files, 0.0 MB
+- `output/_check-shift102d.txt` — 1 files, 0.0 MB
+- `output/_check-shift103.txt` — 1 files, 0.0 MB
+- `output/_check-shift103b.txt` — 1 files, 0.0 MB
+- `output/_check-shift104.txt` — 1 files, 0.0 MB
+- `output/_check-shift104b.txt` — 1 files, 0.0 MB
+- `output/_check-shift104c.txt` — 1 files, 0.0 MB
+- `output/_check-shift104d.txt` — 1 files, 0.0 MB
+- `output/_check-shift104f.txt` — 1 files, 0.0 MB
+- `output/_check-shift104g.txt` — 1 files, 0.0 MB
+- `output/_check-shift104h.txt` — 1 files, 0.0 MB
+- `output/_check-shift87.txt` — 1 files, 0.0 MB
+- `output/_check-shift88c.txt` — 1 files, 0.0 MB
+- `output/_check-shift88d.txt` — 1 files, 0.0 MB
+- `output/_check-shift88e.txt` — 1 files, 0.0 MB
+- `output/_check-shift89.txt` — 1 files, 0.0 MB
+- `output/_check-shift89b.txt` — 1 files, 0.0 MB
+- `output/_check-shift89d.txt` — 1 files, 0.0 MB
+- `output/_check-shift89e.txt` — 1 files, 0.0 MB
+- `output/_check-shift89g.txt` — 1 files, 0.0 MB
+- `output/_check-shift90a.txt` — 1 files, 0.0 MB
+- `output/_check-shift90b.txt` — 1 files, 0.0 MB
+- `output/_check-shift90c.txt` — 1 files, 0.0 MB
+- `output/_check-shift90e.txt` — 1 files, 0.0 MB
+- `output/_check-shift90f.txt` — 1 files, 0.0 MB
+- `output/_check-shift91.txt` — 1 files, 0.0 MB
+- `output/_check-shift91b.txt` — 1 files, 0.0 MB
+- `output/_check-shift91c.txt` — 1 files, 0.0 MB
+- `output/_check-shift91d.txt` — 1 files, 0.0 MB
+- `output/_check-shift91e.txt` — 1 files, 0.0 MB
+- `output/_check-shift93c.txt` — 1 files, 0.0 MB
+- `output/_check-shift93d.txt` — 1 files, 0.0 MB
+- `output/_check-shift93e.txt` — 1 files, 0.0 MB
+- `output/_check-shift93f.txt` — 1 files, 0.0 MB
+- `output/_check-shift93i.txt` — 1 files, 0.0 MB
+- `output/_check-shift93j.txt` — 1 files, 0.0 MB
+- `output/_check-shift93k.txt` — 1 files, 0.0 MB
+- `output/_check-shift93l.txt` — 1 files, 0.0 MB
+- `output/_check-shift93m.txt` — 1 files, 0.0 MB
+- `output/_check-shift94.txt` — 1 files, 0.0 MB
+- `output/_check-shift94b.txt` — 1 files, 0.0 MB
+- `output/_check-shift94c.txt` — 1 files, 0.0 MB
+- `output/_check-shift94d.txt` — 1 files, 0.0 MB
+- `output/_check-shift94e.txt` — 1 files, 0.0 MB
+- `output/_check-shift94f.txt` — 1 files, 0.0 MB
+- `output/_check-shift94g.txt` — 1 files, 0.0 MB
+- `output/_check-shift94h.txt` — 1 files, 0.0 MB
+- `output/_check-shift94i.txt` — 1 files, 0.0 MB
+- `output/_check-shift95a.txt` — 1 files, 0.0 MB
+- `output/_check-shift95d.txt` — 1 files, 0.0 MB
+- `output/_check-shift95f.txt` — 1 files, 0.0 MB
+- `output/_check-shift95h.txt` — 1 files, 0.0 MB
+- `output/_check-shift96a.txt` — 1 files, 0.0 MB
+- `output/_check-shift96b.txt` — 1 files, 0.0 MB
+- `output/_check-shift96c.txt` — 1 files, 0.0 MB
+- `output/_check-shift97a.txt` — 1 files, 0.0 MB
+- `output/_check-shift97b.txt` — 1 files, 0.0 MB
+- `output/_check-shift98a.txt` — 1 files, 0.0 MB
+- `output/_check-shift98c.txt` — 1 files, 0.0 MB
+- `output/_check-shift98d.txt` — 1 files, 0.0 MB
+- `output/_check-shift98e.txt` — 1 files, 0.0 MB
+- `output/_check-shift98f.txt` — 1 files, 0.0 MB
+- `output/_check-shift99.txt` — 1 files, 0.0 MB
+- `output/_check-shift99b.txt` — 1 files, 0.0 MB
+- `output/_check-shift100b.txt` — 1 files, 0.0 MB
+- `output/_check-shift102b.txt` — 1 files, 0.0 MB
+- `output/_check-shift102c.txt` — 1 files, 0.0 MB
+- `output/_check-shift104i.txt` — 1 files, 0.0 MB
+- `output/_check-shift88b.txt` — 1 files, 0.0 MB
+- `output/_check-shift89f.txt` — 1 files, 0.0 MB
+- `output/_check-shift92a.txt` — 1 files, 0.0 MB
+- `output/_check-shift92b.txt` — 1 files, 0.0 MB
+- `output/_check-shift92c.txt` — 1 files, 0.0 MB
+- `output/_check-shift98b.txt` — 1 files, 0.0 MB
+- `output/_check-shift85b.txt` — 1 files, 0.0 MB
+- `output/_check-shift85c.txt` — 1 files, 0.0 MB
+- `output/_check-shift85.txt` — 1 files, 0.0 MB
+- `output/_wait_enabled.py` — 1 files, 0.0 MB
+- `output/_commit-1090.txt` — 1 files, 0.0 MB
+- `output/_patch2.py` — 1 files, 0.0 MB
+- `output/_prior_words_wire.py` — 1 files, 0.0 MB
+- `output/_protocol-bullet.md` — 1 files, 0.0 MB
+- `output/_patch.py` — 1 files, 0.0 MB
+- `output/probe-prod-state.mts` — 1 files, 0.0 MB
+- `output/_specimen-madeup-request.txt` — 1 files, 0.0 MB
+- `output/clipped-anchor` — 2 files, 0.0 MB
+- `output/commitmsg3.txt` — 1 files, 0.0 MB
+- `output/_check-shift93a.txt` — 1 files, 0.0 MB
+- `output/_check-shift93b.txt` — 1 files, 0.0 MB
+- `output/_read-delivery-key-disposable.mts` — 1 files, 0.0 MB
+- `output/_check-shift93g.txt` — 1 files, 0.0 MB
+- `output/_check-shift93h.txt` — 1 files, 0.0 MB
+- `output/_rollcmp.mts` — 1 files, 0.0 MB
+- `output/_discharge_imports.py` — 1 files, 0.0 MB
+- `output/shoot-pack.mts` — 1 files, 0.0 MB
+- `output/lips-phrasing.txt` — 1 files, 0.0 MB
+- `output/pronoun-targets.txt` — 1 files, 0.0 MB
+- `output/_hairlane.mts` — 1 files, 0.0 MB
+- `output/_commitmsg5.txt` — 1 files, 0.0 MB
+- `output/_tmp_diag.mts` — 1 files, 0.0 MB
+- `output/_fix_anatomytest.py` — 1 files, 0.0 MB
+- `output/_tmp_state.mts` — 1 files, 0.0 MB
+- `output/_splice_bornink.py` — 1 files, 0.0 MB
+- `output/_routecheck.mts` — 1 files, 0.0 MB
+- `output/_a.txt` — 1 files, 0.0 MB
+- `output/_b.txt` — 1 files, 0.0 MB
+- `output/audit-clock` — 1 files, 0.0 MB
+- `output/_proxy.mts` — 1 files, 0.0 MB
+- `output/_state.mts` — 1 files, 0.0 MB
+- `output/_promptcheck.mts` — 1 files, 0.0 MB
+- `output/_who2.mts` — 1 files, 0.0 MB
+- `output/_suite-shift87.txt` — 1 files, 0.0 MB
+- `output/_wheretattoo.mts` — 1 files, 0.0 MB
+- `output/_refurl.mts` — 1 files, 0.0 MB
+- `output/_attach_log.py` — 1 files, 0.0 MB
+- `output/_probe_note.py` — 1 files, 0.0 MB
+- `output/_thumbs.mts` — 1 files, 0.0 MB
+- `output/_census_wording.py` — 1 files, 0.0 MB
+- `output/_bal.mts` — 1 files, 0.0 MB
+- `output/_patch10.py` — 1 files, 0.0 MB
+- `output/_ns-rescued.txt` — 1 files, 0.0 MB
+- `output/crop-faces.mts` — 1 files, 0.0 MB
+- `output/_notes.mts` — 1 files, 0.0 MB
+- `output/_fix2.py` — 1 files, 0.0 MB
+- `output/_atlas-test88.txt` — 1 files, 0.0 MB
+- `output/_t5.txt` — 1 files, 0.0 MB
+- `output/_check-shift88a.txt` — 1 files, 0.0 MB
+- `output/_tmp_delta.mts` — 1 files, 0.0 MB
+- `output/_patch8.py` — 1 files, 0.0 MB
+- `output/_attkey.mts` — 1 files, 0.0 MB
+- `output/_rolls.mts` — 1 files, 0.0 MB
+- `output/_cfg.mts` — 1 files, 0.0 MB
+- `output/_tmp_versions.mts` — 1 files, 0.0 MB
+- `output/_dbg.mts` — 1 files, 0.0 MB
+- `output/_who.mts` — 1 files, 0.0 MB
+- `output/_envvars_before.txt` — 1 files, 0.0 MB
+- `output/_t7.txt` — 1 files, 0.0 MB
+- `output/crop-faces2.mts` — 1 files, 0.0 MB
+- `output/_t2.txt` — 1 files, 0.0 MB
+- `output/crop-walk2.mts` — 1 files, 0.0 MB
+- `output/_pairs.mts` — 1 files, 0.0 MB
+- `output/pack-thumbs.mts` — 1 files, 0.0 MB
+- `output/_mergetree.txt` — 1 files, 0.0 MB
+- `output/_tmp_sess.mts` — 1 files, 0.0 MB
+- `output/_check-shift90d.txt` — 1 files, 0.0 MB
+- `output/_roll375.mts` — 1 files, 0.0 MB
+- `output/_dbg2.mts` — 1 files, 0.0 MB
+- `output/_tmp_whoami.mts` — 1 files, 0.0 MB
+- `output/carry-reproduction` — 2 files, 0.0 MB
+- `output/_sweep-feb-after.txt` — 1 files, 0.0 MB
+- `output/_sweep-feb-before.txt` — 1 files, 0.0 MB
+- `output/cardmenu-placement` — 2 files, 0.0 MB
+- `output/_tmp_spend.mts` — 1 files, 0.0 MB
+- `output/_view2.mts` — 1 files, 0.0 MB
+- `output/_view.mts` — 1 files, 0.0 MB
+- `output/_atlas-shift102.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift102b.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift100.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift100b.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift100c.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift100d.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift102c.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift102d.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift91.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift91b.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift91c.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift92.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift94.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift94b.txt` — 1 files, 0.0 MB
+- `output/_atlas-shift94c.txt` — 1 files, 0.0 MB
+- `output/_atlas88.txt` — 1 files, 0.0 MB
+- `output/.tok` — 1 files, 0.0 MB
+- `output/.tok2` — 1 files, 0.0 MB
+- `output/.tok3` — 1 files, 0.0 MB
+- `output/.tok4` — 1 files, 0.0 MB
+- `output/crop-ears.mts` — 1 files, 0.0 MB
+- `output/_fix.py` — 1 files, 0.0 MB
+- `output/_arch-shift96c.txt` — 1 files, 0.0 MB
+- `output/_scratch-guard.txt` — 1 files, 0.0 MB
+- `output/_courtesy-hits.txt` — 1 files, 0.0 MB
+- `output/rw-status2.json` — 1 files, 0.0 MB
+

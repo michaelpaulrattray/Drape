@@ -1,9 +1,0 @@
-{
-  "extends": "../tsconfig.json",
-  "include": ["./converge-cast-pins.ts"],
-  "exclude": ["../node_modules", "../build", "../dist", "../**/*.test.ts"],
-  "compilerOptions": {
-    "incremental": false,
-    "noEmit": true
-  }
-}
