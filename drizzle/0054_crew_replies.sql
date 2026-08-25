@@ -1,0 +1,92 @@
+-- THE FOUNDER'S HALF OF THE CREW TAB — where his words go (issue #41, design
+-- `docs/specs/CREW_TAB_DESIGN.md` §3).
+--
+-- One row is: **something the founder typed into the Crew page**, either
+-- against a needs-you card or as a note to the shift with no card at all.
+--
+-- ============================================================================
+-- WHY A TABLE AT ALL, WHEN THE OTHER HALF IS A FILE IN THE REPOSITORY
+-- ============================================================================
+--
+-- The store is split by WHO WRITES, and that split is the whole design (§1).
+-- The briefing — everything the night shifts say — is a tracked JSON file
+-- deployed by the same rite every shift already pushes, so git is its audit
+-- trail and the WIP cap is its lock. His replies cannot travel that road: it
+-- needs a terminal, and a founder needing a terminal to steer is the problem
+-- this issue exists to end.
+--
+-- The mirror option — one database blob both sides write — fails the other
+-- way. A night shift writing production rows outside deployed code is the
+-- class of direct production change `CLAUDE.local.md` reserves for the
+-- founder, and a write credential issued to shifts is a new attack surface on
+-- an admin store. So each writer keeps the road it already owns, and the page
+-- merges them at read time.
+--
+-- ============================================================================
+-- `cardId` IS NULLABLE AND IS VALIDATED FOR SHAPE ALONE
+-- ============================================================================
+--
+-- NULL means **a journal note** — a reply to the shift rather than to a card.
+-- It is a real member of the vocabulary, not a missing value.
+--
+-- And a non-NULL `cardId` is never checked against the briefing, deliberately.
+-- The briefing rotates: a card he answers tonight may be closed and gone by
+-- the edition that lands tomorrow. A foreign key, or a validating door, would
+-- turn that ordinary rotation into a REFUSAL of the founder's own words —
+-- and his words are the steering wheel. A reply whose card has left the
+-- briefing renders in the journal thread instead of vanishing. The product
+-- never walls him.
+--
+-- ============================================================================
+-- `authorUserId` IS HERE BECAUSE THE ROW IS THE AUDIT RECORD
+-- ============================================================================
+--
+-- There is no separate audit row for this surface in v1, and that is working
+-- law 4 rather than an omission: the one writer is an `adminProcedure`
+-- mutation that stamps author and time, so an audit row would be a second copy
+-- of the same fact, drifting from it the first time either changes. The column
+-- comes from `ctx.user.id` and never from input (invariant 3).
+--
+-- ============================================================================
+-- `body` IS `text` AND IS NEVER TRUNCATED BY US
+-- ============================================================================
+--
+-- A ruling arrives at whatever length it arrives. The procedure bounds the
+-- wire at 4,000 characters so a runaway paste is refused at the door with a
+-- message, which is honest; what it must never do is accept his sentence and
+-- silently keep part of it. `text` holds far more than the wire admits, so the
+-- column can never be the thing that cuts a ruling in half.
+--
+-- ============================================================================
+-- NO PURGE PATH, DELIBERATELY
+-- ============================================================================
+--
+-- Every other store this program has added owns bytes under a candidate and
+-- rides a retention sweep. This one owns none: it is text, it is rulings, and
+-- it is one person typing. The table is the permanent record and stays small.
+--
+-- ============================================================================
+-- IT LANDS AHEAD OF ITS PRODUCTION CEREMONY, BY DESIGN
+-- ============================================================================
+--
+-- Dev takes it now; **production takes it by `scripts/ceremony-crew-replies.mts`,
+-- which is a founder act.** `CREW_TAB_SCOPE` must not flip until it has run —
+-- that is a precondition of the FLIP and deliberately not a boot guard: the
+-- tab has no engine, no worker and no bytes, so nothing it could strand is
+-- worth crash-looping production over (the 2026-07-31 boot-guard incident is
+-- the law there). Until the ceremony runs, `crew_replies` is enumerated in
+-- `DECLARED_BUT_UNMIGRATED` so the deploy rite reports a known absence rather
+-- than a finding.
+--
+-- PURELY ADDITIVE. One new table. No column of any existing table changes, no
+-- index moves, no row is rewritten.
+CREATE TABLE `crew_replies` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`cardId` varchar(64),
+	`body` text NOT NULL,
+	`authorUserId` int NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `crew_replies_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE INDEX `ix_crew_replies_card` ON `crew_replies` (`cardId`);

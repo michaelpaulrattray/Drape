@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9dccc13c3544f681"
+    "sourceFingerprint": "0148cdd2074fd02e"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 37
+      "moduleCount": 46
     },
     {
       "id": "domain:alerting",
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 42
+      "moduleCount": 43
     },
     {
       "id": "domain:billing",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 58
+      "moduleCount": 59
     },
     {
       "id": "domain:evidence",
@@ -93,7 +93,7 @@
     {
       "id": "domain:pages",
       "name": "pages",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:platform",
@@ -143,7 +143,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 31
+      "moduleCount": 33
     },
     {
       "id": "domain:wardrobe",
@@ -695,6 +695,60 @@
     {
       "id": "module:client/src/features/admin/adminConstants.ts",
       "path": "client/src/features/admin/adminConstants.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "path": "client/src/features/admin/components/crew/CrewJournal.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "path": "client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "path": "client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewProblems.tsx",
+      "path": "client/src/features/admin/components/crew/CrewProblems.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "path": "client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "path": "client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "path": "client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "path": "client/src/features/admin/components/crew/crewTypes.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "path": "client/src/features/admin/components/crew/useCrewState.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -2411,6 +2465,12 @@
     {
       "id": "module:client/src/pages/AdminChangeRequests.tsx",
       "path": "client/src/pages/AdminChangeRequests.tsx",
+      "domain": "pages",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/pages/AdminCrew.tsx",
+      "path": "client/src/pages/AdminCrew.tsx",
       "domain": "pages",
       "lifecycle": "active"
     },
@@ -4389,6 +4449,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/crew/crewBriefing.ts",
+      "path": "server/crew/crewBriefing.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/crew/crewTabScope.ts",
+      "path": "server/crew/crewTabScope.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/accountDeletion.ts",
       "path": "server/db/accountDeletion.ts",
       "domain": "data",
@@ -4553,6 +4625,12 @@
     {
       "id": "module:server/db/credits.ts",
       "path": "server/db/credits.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/crewReplies.ts",
+      "path": "server/db/crewReplies.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -4991,6 +5069,12 @@
     {
       "id": "module:server/routes/credits.ts",
       "path": "server/routes/credits.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/crew.ts",
+      "path": "server/routes/crew.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -6969,6 +7053,26 @@
       "file": "server/routes/credits.ts"
     },
     {
+      "id": "route:crew.getState",
+      "namespace": "crew",
+      "name": "getState",
+      "type": "query",
+      "auth": "admin",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/crew.ts"
+    },
+    {
+      "id": "route:crew.reply",
+      "namespace": "crew",
+      "name": "reply",
+      "type": "mutation",
+      "auth": "admin",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/crew.ts"
+    },
+    {
       "id": "route:evidence.acceptInkAddCandidate",
       "namespace": "evidence",
       "name": "acceptInkAddCandidate",
@@ -8578,6 +8682,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CREW_TAB_SCOPE",
+      "name": "CREW_TAB_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:DAILY_GENERATION_LIMIT",
       "name": "DAILY_GENERATION_LIMIT",
       "valueRecorded": false
@@ -8952,6 +9061,11 @@
     {
       "id": "flag:CASTING_V2_SCOPE",
       "name": "CASTING_V2_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CREW_TAB_SCOPE",
+      "name": "CREW_TAB_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -11585,6 +11699,18 @@
       "path": "server/creditsSQL.test.ts"
     },
     {
+      "id": "test:server/crew/crewBriefing.test.ts",
+      "path": "server/crew/crewBriefing.test.ts"
+    },
+    {
+      "id": "test:server/crew/crewRouter.test.ts",
+      "path": "server/crew/crewRouter.test.ts"
+    },
+    {
+      "id": "test:server/crew/crewTabScope.test.ts",
+      "path": "server/crew/crewTabScope.test.ts"
+    },
+    {
       "id": "test:server/db/castingV2InkDeliveryCrops.test.ts",
       "path": "server/db/castingV2InkDeliveryCrops.test.ts"
     },
@@ -12452,6 +12578,11 @@
     },
     {
       "from": "module:client/src/App.tsx",
+      "to": "module:client/src/pages/AdminCrew.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/App.tsx",
       "to": "module:client/src/pages/AdminInviteCodes.tsx",
       "kind": "imports"
     },
@@ -13041,6 +13172,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/AdminHeader.tsx",
+      "to": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/AuditActionModals.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -13193,6 +13329,116 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProblems.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProblems.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "to": "module:client/src/components/ui/button.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "to": "module:client/src/components/ui/textarea.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:server/routers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
@@ -17137,6 +17383,51 @@
     },
     {
       "from": "module:client/src/pages/AdminChangeRequests.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/AdminHeader.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewProblems.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -26271,6 +26562,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/crewReplies.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewReplies.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/dailyQuota.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -27672,6 +27973,11 @@
     },
     {
       "from": "module:server/routers.ts",
+      "to": "module:server/routes/crew.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routers.ts",
       "to": "module:server/routes/evidence.ts",
       "kind": "imports"
     },
@@ -28628,6 +28934,26 @@
     {
       "from": "module:server/routes/credits.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/crewBriefing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/crewTabScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/db/crewReplies.ts",
       "kind": "imports"
     },
     {

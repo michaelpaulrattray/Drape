@@ -1,0 +1,133 @@
+{
+  "edition": 1,
+  "updatedAt": "2026-08-25T22:40:00+10:00",
+  "shift": "foreman-3",
+  "program": {
+    "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
+    "focus": {
+      "state": "confirmed",
+      "title": "The creative register (#16)",
+      "quote": "Confirm the creative register (#16) as the current focus",
+      "quotedAt": "2026-08-25T19:17:00+10:00"
+    },
+    "milestone": {
+      "title": "The creative register — build order (design §5)",
+      "steps": [
+        {
+          "title": "The court — your cyborg brief, eight arms, priced on a card before it runs",
+          "state": "waiting"
+        },
+        {
+          "title": "The register built dark behind CASTING_CREATIVE_REGISTER_SCOPE",
+          "state": "waiting"
+        },
+        {
+          "title": "A flagged roll of your brief",
+          "state": "waiting"
+        },
+        {
+          "title": "Your eye on both bars — the milestone gate",
+          "state": "waiting"
+        }
+      ]
+    },
+    "ladder": [
+      {
+        "key": "N1",
+        "title": "The creative register",
+        "state": "current"
+      },
+      {
+        "key": "N2–N8",
+        "title": "Awaiting your countersign of the plan rebaseline (#40)",
+        "state": "queued"
+      }
+    ]
+  },
+  "needsYou": [
+    {
+      "id": "rebaseline-countersign",
+      "title": "Countersign the plan rebaseline",
+      "productImpact": "The remaining ladder to retiring the legacy studio governs nothing until you countersign it — the old plan's ladder stops at M7 and the product kept going.",
+      "workedExample": "docs/specs/CASTING_V2_PLAN_REBASELINE.md re-cuts the rest as N1–N8; N1 is the creative register you already confirmed.",
+      "options": [],
+      "recommendation": "Countersign as written, or say what to amend.",
+      "state": "open",
+      "filedAt": "2026-08-25T21:00:00+10:00",
+      "issueNumber": 40
+    },
+    {
+      "id": "creative-court-funding",
+      "title": "Fund the creative-register court",
+      "productImpact": "The first build step of your confirmed focus is a court that renders your cyborg brief eight ways for your eye — it spends real render money, so its price needs your word before any paid arm fires.",
+      "workedExample": null,
+      "options": [],
+      "recommendation": "The priced card follows once the court's arms are final; nothing spends until you say so.",
+      "state": "open",
+      "filedAt": "2026-08-25T21:00:00+10:00",
+      "issueNumber": 16
+    },
+    {
+      "id": "face-scan-pricing",
+      "title": "Face-scan pricing: the readout you ordered",
+      "productImpact": "At your own usage intensity, face scanning costs about $1.00/day — roughly $30 per founder-grade user per month, more than a roll's render cost. Full model on issue #38.",
+      "workedExample": "90 paid scans over 9 days, all yours; a fully-opened roll's scan cost is ~15x the roll's credit value.",
+      "options": [],
+      "recommendation": "Widen both scan flags together at the current approval-gated population; re-read the distribution before any public widening.",
+      "state": "open",
+      "filedAt": "2026-08-25T21:00:00+10:00",
+      "issueNumber": 38
+    },
+    {
+      "id": "crew-tab-launch",
+      "title": "Turn this page on",
+      "productImpact": "This page replaces the Desk artifact so the briefing survives your account swap. Three things only you can do: run the crew_replies ceremony against production, set CREW_TAB_SCOPE, and make the co-founder's account an admin.",
+      "workedExample": "Then test-drive: open /admin/crew on both themes, reply to a card, and the next shift's push should mark it seen.",
+      "options": [],
+      "recommendation": "Flip straight to all — the page is already admin-only; the flag exists to keep it dark until your eyes pass it.",
+      "state": "open",
+      "filedAt": "2026-08-25T22:40:00+10:00",
+      "issueNumber": 41
+    }
+  ],
+  "pipeline": [
+    {
+      "id": "crew-tab",
+      "title": "The Crew tab (#41)",
+      "status": "building",
+      "prNumber": null,
+      "note": "this page, dark behind its flag"
+    },
+    {
+      "id": "refine-lockkey-record",
+      "title": "Refine double-tap guard: record corrected, wire pinned in the suite (#54)",
+      "status": "merged",
+      "prNumber": 67,
+      "note": "the guard itself was already live since 08-18"
+    },
+    {
+      "id": "dependabot-npm",
+      "title": "Five npm dependency bumps",
+      "status": "in-review",
+      "prNumber": null,
+      "note": "gate green; awaiting a reviewer's read"
+    }
+  ],
+  "problems": [
+    {
+      "id": "desk-unreadable",
+      "title": "Night shifts cannot read the Desk artifact (#42)",
+      "detail": "Headless sessions have no artifact tool, so your replies there reach the team only through the terminal relay. This page is the fix.",
+      "severity": "warning",
+      "state": "open"
+    }
+  ],
+  "journal": [
+    {
+      "at": "2026-08-25T22:40:00+10:00",
+      "shift": "foreman-3",
+      "text": "Closed the urgent refine double-charge question: the guard was built a week before it was filed as missing — a second tap on a paid edit has been refused free since 08-18. Merged the record fix and pinned the wire in the test suite (#54, PR 67). Designed and started building this page (#41)."
+    }
+  ],
+  "acknowledgedReplyIds": []
+}

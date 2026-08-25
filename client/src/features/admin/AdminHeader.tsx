@@ -9,8 +9,10 @@ import {
   Eye,
   BarChart3,
   Ticket,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState";
 
 const NAV_LINKS = [
   { href: "/admin/overview", icon: BarChart3, label: "Overview" },
@@ -20,6 +22,16 @@ const NAV_LINKS = [
   { href: "/admin/invite-codes", icon: Ticket, label: "Invite Codes" },
   { href: "/moderator", icon: Eye, label: "Moderator" },
 ] as const;
+
+/**
+ * The Crew tab's nav entry, shown only when the server says the tab exists.
+ *
+ * Not in `NAV_LINKS` because it is the one conditional entry: `crew.getState`
+ * answers `NOT_FOUND` outside `CREW_TAB_SCOPE`, so the query SUCCEEDING is the
+ * flag, and no flag value ever reaches the client (design §5). Flag off = the
+ * surface does not exist anywhere a user can see.
+ */
+const CREW_LINK = { href: "/admin/crew", icon: Megaphone, label: "Crew" } as const;
 
 interface AdminHeaderProps {
   title: string;
@@ -36,6 +48,8 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ title, refreshControls, actions }: AdminHeaderProps) {
+  const crewVisible = useCrewTabVisible();
+
   return (
     <header className="border-b border-[#D5D5D5] bg-white/80 backdrop-blur sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
@@ -95,6 +109,9 @@ export function AdminHeader({ title, refreshControls, actions }: AdminHeaderProp
           {NAV_LINKS.map(({ href, icon: Icon, label }) => (
             <NavLink key={href} href={href} icon={Icon} label={label} />
           ))}
+          {crewVisible && (
+            <NavLink href={CREW_LINK.href} icon={CREW_LINK.icon} label={CREW_LINK.label} />
+          )}
         </nav>
       </div>
     </header>

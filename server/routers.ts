@@ -32,6 +32,7 @@ import { boardOpsRouter } from "./routes/boardOps";
 import { lobbyRouter } from "./routes/lobby";
 import { evidenceRouter } from "./routes/evidence";
 import { castingV2Router } from "./routes/castingV2";
+import { crewRouter } from "./routes/crew";
 
 export const appRouter = router({
   system: systemRouter,
@@ -63,6 +64,11 @@ export const appRouter = router({
   // Casting V2. Additive namespace; every procedure refuses unless
   // CASTING_V2_SCOPE admits the caller. Legacy routers are untouched.
   castingV2: castingV2Router,
+  // The Crew tab (#41). Its own top-level namespace rather than part of the
+  // admin flat-merge, which is a compatibility shape for legacy client calls.
+  // Both procedures are adminProcedure and both answer NOT_FOUND outside
+  // CREW_TAB_SCOPE.
+  crew: crewRouter,
 });
 
 export type AppRouter = typeof appRouter;
