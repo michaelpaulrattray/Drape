@@ -4,6 +4,28 @@ Ordered fable-1675 §2 from the founder's own *"i feel like we have made so many
 scope changes and interations my brain literally cant keep up."* **This is the
 answer to "what is half-finished and why."**
 
+⚠ **POPULATION CORRECTION — THIS PAGE'S CENSUS IS INCOMPLETE BY CONSTRUCTION AND
+THE FOUNDER CAUGHT IT IN TEN MINUTES** (2026-08-25, relayed fable-1679/1680,
+verbatim: *"do another full sweep make sure nothing else like this is missed
+clearly the sweep you did initially wasnt good enough"*).
+
+It derives from GOVERNED FLAGS. **A designed-but-unbuilt thing has no flag yet —
+because a flag is what you add when you start building — so every such item was
+invisible to it.** He named two on sight: the Pinterest-style reference selector
+(issue #14) and the settings modal (#15).
+
+**The corrected population is a UNION** — flags ∪ not-yet-live spec docs ∪ the
+roadmap's queue ∪ the decision log ∪ the capability atlas's debts ∪ undischarged
+mailbox orders ∪ CLAUDE.md's own pending-build paragraphs — and sweep #2 ran on
+it: `docs/specs/CASTING_V2_SWEEP2_WORK_ITEM_LIST.md`, which found **sixteen work
+items with no flag and opened issues #16–#31 for them.**
+
+**The flag rows below stand.** What follows is still the truthful answer to *what
+is half-rolled-out*; it was never the answer to *what is half-built*, and it
+should not be read as one again.
+
+---
+
 **The population is derived, not remembered**: 32 governed variables, read off
 `scripts/lib/productionFlagPositions.mts`, which the deploy rite compares to the
 live service on every push. Positions below are what the SERVICE holds, verified
