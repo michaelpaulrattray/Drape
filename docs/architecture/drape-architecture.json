@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9ce513778e48551d"
+    "sourceFingerprint": "72bbfe961e32aaa6"
   },
   "domains": [
     {
@@ -11407,6 +11407,10 @@
     {
       "id": "test:server/castingV2/signService.test.ts",
       "path": "server/castingV2/signService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/skinTonePin.test.ts",
+      "path": "server/castingV2/skinTonePin.test.ts"
     },
     {
       "id": "test:server/castingV2/slotWordShape.test.ts",

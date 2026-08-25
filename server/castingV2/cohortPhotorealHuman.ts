@@ -1257,17 +1257,60 @@ export function resolveCandidateIdentity(
       ),
       seedFor("ageBand"),
     );
+  /*
+    A STATED SKIN TONE PINS THE EIGHT — the heritage spread stands down.
+
+    Founder ruling, verbatim (2026-08-25): *"a typed skin tone should pin all 8
+    otherwise you have a caucasian african man or a african trying to be white
+    skin. but if you asked for a african albino you would still get it."*
+
+    ⚠ WHY THIS IS A REMOVAL AND NOT A NEW INSTRUCTION. Both facts were already
+    in every one of his eight prompts and they were FIGHTING: the shared block
+    said `SKIN: pale porcelain, heavily weathered — exactly as described.` while
+    each slice's SUBJECT line said East Asian / Afro-Caribbean / West African
+    heritage — and `PRIORITY WHEN INSTRUCTIONS CONFLICT` declares the SUBJECT
+    block absolute. That rule was written for facts the USER stated. The
+    heritage in that line was invented here, by the spread below. **So an
+    invented fact was riding in the absolute block and outranking a stated
+    one.** Measured on his roll 214: one of eight frames read as the porcelain
+    he asked for, four plainly did not.
+
+    Each stated fact is obeyed independently and nothing is inferred from
+    anything: a stated tone never narrows heritage to a "matching" one — that
+    map is a stereotype table and is refused on the record (fable-1646) — and a
+    stated heritage is never overridden by a stated tone. His "african albino"
+    needs no special case at all: both are stated, so both are emitted, which is
+    what the first branch below already does.
+
+    ⚠ THE FOLLOW BRANCH IS DELIBERATELY UNTOUCHED. A follow's heritage comes
+    from the candidate it is anchored on — a fact about a face that exists, not
+    an invention of this function — and a follow's whole promise is "more like
+    this person". Stripping it would break that promise to fix a defect it does
+    not have. Stated here rather than left to be inferred from the placement of
+    one line.
+  */
+  /*
+    Read DEFENSIVELY even though the type says it cannot be absent: `statedSkin`
+    is non-optional on `CastingIntent`, and several fixtures in this suite build
+    an intent without it — `resolveCandidateIdentity` is reached from more than
+    one place and an unguarded `.tone` turned four unrelated follow-anchor arms
+    into TypeErrors the moment this line landed. A crash here is a failed roll
+    on a paid path, which is a steep price for a dot.
+  */
+  const pinnedBySkinTone = intent.heritage.length === 0 && (intent.statedSkin?.tone ?? null) !== null;
   const heritage =
     intent.heritage.length > 0
       ? intent.heritage
       : anchor
         ? anchoredHeritage(anchor, position, rollSeed)
-        : varyHeritage(
-            position,
-            rollSeed,
-            intent.poolTendencies?.heritageLean ?? null,
-            intent.poolTendencies?.leanStrength ?? null,
-          );
+        : pinnedBySkinTone
+          ? []
+          : varyHeritage(
+              position,
+              rollSeed,
+              intent.poolTendencies?.heritageLean ?? null,
+              intent.poolTendencies?.leanStrength ?? null,
+            );
 
   /*
     A SEX-CODED STATED FACT RESOLVES AN UNSTATED SEX.
@@ -2402,6 +2445,23 @@ function describeHair(
   return `${cut} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
 }
 
+/**
+ * The heritage clause AND its separator, or neither.
+ *
+ * ⚠ THE SEPARATOR HAS TO TRAVEL WITH THE CLAUSE. `describeHeritage` has always
+ * returned "" for an empty list, but the SUBJECT template held the comma —
+ * `…${describeAge(…)}, ${describeHeritage(…)}.` — so the first brief to resolve
+ * with no heritage would have shipped `apparent age 44-46 years, .` into a paid
+ * prompt. Nothing did that before a stated skin tone could suppress the spread,
+ * which is exactly why it is worth a named function rather than a template
+ * tweak: it fails as a typo in a customer's prompt, not as an exception, and it
+ * has an arm asserting on the composed STRING.
+ */
+function heritageClause(components: HeritageComponent[]): string {
+  const described = describeHeritage(components);
+  return described === "" ? "" : `, ${described}`;
+}
+
 function describeHeritage(components: HeritageComponent[]): string {
   if (components.length === 0) return "";
   if (components.length === 1) return `${components[0].heritage} heritage`;
@@ -2537,7 +2597,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, hairDeferenceFor({ briefText: input.briefText, intent }), resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}${heritageClause(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, hairDeferenceFor({ briefText: input.briefText, intent }), resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       ⚠ THE STATED SKIN LANE SPEAKS — her own word, said plainly
