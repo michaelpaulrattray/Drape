@@ -275,12 +275,12 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "cap population IS the born-ink population",
   },
   CREW_TAB_SCOPE: {
-    position: "off",
+    position: "all",
     why:
-      "the Crew tab (/admin/crew, issue #41) — built dark, per the design "
-      + "(CREW_TAB_DESIGN.md §5). Its flip is the founder's batch on the "
-      + "completion card: crew_replies ceremony FIRST (migration 0054), then "
-      + "this flag by his hand; move this row in the commit that records it",
+      "the founder's 'go live' on the Desk, 2026-08-25 22:53 — the ceremony "
+      + "ran first (crew_replies APPLIED on production, columns verified, the "
+      + "same sitting), then this flag on his word. The Crew tab (/admin/crew, "
+      + "issue #41) is his briefing surface; CREW_TAB_DESIGN.md §8 was the batch",
   },
   ENABLE_STORAGE_CLEANUP_WORKER: {
     position: "true",
