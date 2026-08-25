@@ -150,6 +150,46 @@ describe("the resource lock reaches the wire", () => {
     expect(unproved).toEqual([]);
   });
 
+  it("the castingV2 refine claim passes its candidate lock", async () => {
+    /*
+      ONE FACE, ONE RENDER (ruled fable-974 §2; built 1423e03a; issue #54).
+
+      The refine claim names no `modelId`, so the model-key rule above cannot
+      see it — and until this arm existed, deleting `candidateLockPublicId`
+      from the call left the entire suite green: the only regression was a
+      hand-run script (`scripts/prove-refine-idempotency-disposable.mts` arm
+      3), and a regression CI never runs is invariant 7's control nobody
+      invokes. This is also the wire whose absence was mis-filed as an URGENT
+      open hole a week after it was closed, because the record's check grepped
+      for a token (`lockKey`) the built call site deliberately never contains.
+
+      The call is injected — `(dependencies.begin ?? beginDirectOperation)(…)`
+      — so the scanner above, which matches the bare name followed by an open
+      paren, cannot see this site either. Matched here in its real shape.
+    */
+    const source = await readFile(
+      path.join(here, "castingV2", "refineService.ts"),
+      "utf8",
+    );
+    const shape = "(dependencies.begin ?? beginDirectOperation)(";
+    const first = source.indexOf(shape);
+    // Positive control: the site exists, and exactly once — a second claim
+    // site in this file must come back here and join the assertion.
+    expect(first).toBeGreaterThan(-1);
+    expect(source.indexOf(shape, first + 1)).toBe(-1);
+
+    let depth = 1;
+    let index = first + shape.length;
+    while (index < source.length && depth > 0) {
+      if (source[index] === "(") depth += 1;
+      else if (source[index] === ")") depth -= 1;
+      index += 1;
+    }
+    const body = source.slice(first + shape.length, index - 1);
+    expect(body).toContain('kind: "castingV2.refine"');
+    expect(body).toMatch(/\bcandidateLockPublicId\s*:\s*input\.candidatePublicId\b/);
+  });
+
   it("model.create is out of scope by construction, not by exemption", async () => {
     // If creation ever starts naming a modelId, it becomes lockable and the
     // rule above must cover it — this pins the REASON, so the day the premise
