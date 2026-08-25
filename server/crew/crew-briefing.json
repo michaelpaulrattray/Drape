@@ -1,6 +1,6 @@
 {
   "edition": 1,
-  "updatedAt": "2026-08-25T22:40:00+10:00",
+  "updatedAt": "2026-08-26T00:10:00+10:00",
   "shift": "foreman-3",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -39,7 +39,7 @@
       },
       {
         "key": "N2–N8",
-        "title": "Awaiting your countersign of the plan rebaseline (#40)",
+        "title": "Signed by you 25 Aug — the rebaseline governs; queued behind N1",
         "state": "queued"
       }
     ]
@@ -52,7 +52,7 @@
       "workedExample": "docs/specs/CASTING_V2_PLAN_REBASELINE.md re-cuts the rest as N1–N8; N1 is the creative register you already confirmed.",
       "options": [],
       "recommendation": "Countersign as written, or say what to amend.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-25T21:00:00+10:00",
       "issueNumber": 40
     },
@@ -74,7 +74,7 @@
       "workedExample": "90 paid scans over 9 days, all yours; a fully-opened roll's scan cost is ~15x the roll's credit value.",
       "options": [],
       "recommendation": "Widen both scan flags together at the current approval-gated population; re-read the distribution before any public widening.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-25T21:00:00+10:00",
       "issueNumber": 38
     },
@@ -123,6 +123,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T00:10:00+10:00",
+      "shift": "foreman-3",
+      "text": "Built this page and proved it in the running app: a reply typed here landed in the database and came back through the crew's own read script, and with the flag off the tab vanishes entirely. Your two Desk taps are on the record — the ladder is signed (N1–N8 governs) and the face-scan pair is widened to everyone in the beta. Both cards below are marked done."
+    },
     {
       "at": "2026-08-25T22:40:00+10:00",
       "shift": "foreman-3",
