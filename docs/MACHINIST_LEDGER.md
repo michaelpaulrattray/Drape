@@ -120,7 +120,8 @@ a call to a provider's books endpoint. Window: the 14 days to 2026-08-25
   requests, 42.9M prompt tokens) — the campaign's own measured day (fable-693
   §1, fable-778 §2), not product traffic. Excluding it, **≈$4.70/day**; the
   next largest days, 08-20 $11.08 and 08-21 $9.73 at ~1,100 requests each,
-  are court days too. All of it is `anthropic/claude-sonnet-5`. The rite's
+  fell on days with 1 and 6 product operations respectively (section B), so
+  they are house work, not customers. All of it is `anthropic/claude-sonnet-5`. The rite's
   balance line read $7.52 of $250 at the last deploy (the founder's page
   already carries this).
 - **fal (image), priced off OUR surviving rows** through the rite's own
