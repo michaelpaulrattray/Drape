@@ -153,12 +153,38 @@ describe("the address her sentence named becomes the cutter's scope", () => {
     }
   });
 
+  /*
+    ⚠ THIS ARM WAS DEAD AND PASSED FOR IT — found by a repo-wide sweep on
+    2026-08-25, not by a failure, because an arm that cannot fail never has one.
+
+    It was meant to read `.not.toMatch(/\b(left|right)\b/)`. What was on disk had
+    two literal BACKSPACE bytes (0x08) where the two word boundaries belong,
+    because `\b` inside a shell heredoc is a backspace escape and the edit that
+    wrote this line went through one. **No string this product ever produces
+    contains a backspace**, so the negation was true of everything and the
+    assertion asserted nothing — on the one contract that says a side word must
+    never reach the segmenter, which is the contract two 300-credit refunds for
+    a design on the wrong anatomical side were bought with.
+
+    The class is filed in `DECISION_LOG.md` and it is one grep:
+    `grep -rn $'\x08' --include=*.ts .` — worth running after any
+    heredoc-authored edit. This was the only live source instance in the repo.
+
+    The CAN-FAIL pair below is the other half of the repair: an arm whose
+    subject could never contain the thing it forbids is right for the wrong
+    reason forever, so the matcher is driven on a string that DOES carry the
+    word before it is trusted on one that must not.
+  */
   it("NEVER SENDS A SIDE WORD — asserted on what the cutter was handed", async () => {
+    const SIDE_WORD = /\b(left|right)\b/;
+    expect("her left upper arm").toMatch(SIDE_WORD);
+    expect("upper arm").not.toMatch(SIDE_WORD);
+
     for (const side of ["left", "right"] as const) {
       const bench = recorder();
       await mintInkDesignFromReference({ ...REQUEST, side }, bench.dependencies);
       expect(bench.scopeSaw[0]!.region, "a side word reached the question")
-        .not.toMatch(/(left|right)/);
+        .not.toMatch(SIDE_WORD);
     }
   });
 

@@ -74,12 +74,23 @@ export type TrimInput = {
   target: TrimTarget;
 };
 
-/** Why a frame is delivered as rendered rather than trimmed. Each is counted. */
+/**
+ * Why a frame is delivered as rendered rather than trimmed. Each is counted.
+ *
+ * ⚠ `insufficient-headroom` was called `cannot-clear-hair` until 2026-08-25 and
+ * the rename is not cosmetic (ordered fable-1658 §1b). It fired on all three
+ * untrimmed frames of the feature's first live sheet — a BALD subject, whose
+ * `hair` region the court's own bald cell reads as ABSENT 2 of 2 — so a reader
+ * of that log was told a hair story about a man with no hair. What refuses is
+ * `max(house, gap + clearance) > face.top / face.height`: the render put the
+ * face too near the top edge for the air we ask for. That is geometry, and the
+ * hair only enters it through `gap`.
+ */
 export type UntrimmedReason =
   | "no-face"
   | "no-head"
   | "share-above-target"
-  | "cannot-clear-hair"
+  | "insufficient-headroom"
   | "would-upscale";
 
 export type TrimPlan =
@@ -124,7 +135,7 @@ export function planFramingTrim(input: TrimInput): TrimPlan {
     a sliced crown — the founder's condition, in his words: "just need to make
     sure the hair is fully in the image."
   */
-  if (needed > headroomAvailable) return { trim: false, why: "cannot-clear-hair" };
+  if (needed > headroomAvailable) return { trim: false, why: "insufficient-headroom" };
 
   const cropHeight = Math.round(faceHeight / target.headShare);
   /* No delivered pixel is ever invented. */
@@ -153,7 +164,7 @@ export function planFramingTrim(input: TrimInput): TrimPlan {
   const top = Math.max(0, Math.min(wanted, frame.height - cropHeight));
   /* Only an UPWARD move would cut into the hair, and it cannot happen here —
      asserted rather than assumed, because this is the branch a crown depends on. */
-  if (top > wanted) return { trim: false, why: "cannot-clear-hair" };
+  if (top > wanted) return { trim: false, why: "insufficient-headroom" };
   const headroomDelivered = (face.top - top) / faceHeight;
 
   /*

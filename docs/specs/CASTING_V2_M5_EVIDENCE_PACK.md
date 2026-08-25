@@ -168,7 +168,7 @@ Skim performed before the founder gate, per the contract. Findings:
 
 | Finding | Disposition |
 |---|---|
-| **Follow is a paid affordance with no price, and the suite's PAID list did not include it** — so "all laws hold" was true of the assertion and false of the surface. On the exact affordance that cost the founder 640 credits. | **Fixed.** Follow now reads "Follow · N cr" on all eight tiles; the suite matches `/^follow/` and rejects a zero price. |
+| **Follow is a paid affordance with no price, and the suite's PAID list did not include it** — so "all laws hold" was true of the assertion and false of the surface. On the exact affordance that cost the founder 640 credits. | **Fixed.** Follow now reads "Follow · N cr" on all eight tiles; the suite matches `/^follow/` and rejects a zero price. |
 | "Nigerian-British" seed: the heritage enum is the ported legacy ten and has no value British maps to, so half the hyphenation would be silently dropped — the seed law's own failure mode. | **Fixed** by swapping to "West African woman, mid 30s". Extending the enum is a plan-level question (line 209), parked below. |
 | `varyByLook`'s docstring described a keyword fallback that was never implemented. | **Fixed** — the comment now matches the code, and says so. |
 | "Skincare founder, 40s, unbothered" was annotated "disposition variation", but a stated energy *locks* flat. | **Fixed** — annotation corrected. |

@@ -130,11 +130,11 @@ describe("the framing trim", () => {
       expect(plan).toEqual({ trim: false, why: "share-above-target" });
     });
 
-    it("a frame that cannot hold its own hair → cannot-clear-hair", () => {
+    it("a frame that cannot hold its own hair → insufficient-headroom", () => {
       /* gap 0.60 + 0.05 clearance against 0.40 of headroom: the crop line would
          start above the frame's own top edge. */
       const plan = planFramingTrim(frameFrom({ share: 0.19, headroom: 0.40, gap: 0.60 }));
-      expect(plan).toEqual({ trim: false, why: "cannot-clear-hair" });
+      expect(plan).toEqual({ trim: false, why: "insufficient-headroom" });
     });
 
     it("a crop shorter than the delivered frame → would-upscale, so no pixel is invented", () => {
