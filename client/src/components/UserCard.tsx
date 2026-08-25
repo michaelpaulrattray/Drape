@@ -3,9 +3,10 @@
  * Settings, Billing, Share Drape, and (for privileged roles) the Admin
  * and Moderator tools, then Log out.
  *
- * Shared by the studio sidebar (rendered inline when expanded) and the
- * lobby rail (rendered inside the profile popover), so account actions
- * look and behave the same everywhere. Role gating mirrors the server:
+ * Rendered inside the lobby rail's profile popover (its only live consumer —
+ * the studio slim header grew its own inline menu). Colors are tokens, never
+ * hardcoded light values: the popover sits on var(--surface), which is dark
+ * in the default theme. Role gating mirrors the server:
  * Admin needs role === 'admin' (adminProcedure), Moderator shows for
  * admins and moderators (moderatorProcedure).
  */
@@ -47,7 +48,7 @@ export function UserCard({
       <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
         <div
           className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
-          style={{ border: '1.5px solid rgba(0,0,0,0.08)' }}
+          style={{ border: '1.5px solid var(--border)' }}
         >
           <ProfileAvatar
             src={profileImage}
@@ -59,13 +60,13 @@ export function UserCard({
         <div className="flex-1 min-w-0">
           <p
             className="truncate"
-            style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}
+            style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}
           >
             {userName}
           </p>
           <p
             className="truncate"
-            style={{ fontSize: 11, color: '#999' }}
+            style={{ fontSize: 11, color: 'var(--meta)' }}
           >
             {creditsBalance.toLocaleString()} credits
           </p>
@@ -91,7 +92,7 @@ export function UserCard({
         />
         {isModerator && (
           <>
-            <div className="my-1" style={{ height: 1, background: 'rgba(0,0,0,0.06)' }} />
+            <div className="my-1" style={{ height: 1, background: 'var(--border)' }} />
             {isAdmin && (
               <UserMenuItem
                 icon={LayoutDashboard}
@@ -104,7 +105,7 @@ export function UserCard({
               label="Moderator"
               onClick={() => navigate('/moderator')}
             />
-            <div className="my-1" style={{ height: 1, background: 'rgba(0,0,0,0.06)' }} />
+            <div className="my-1" style={{ height: 1, background: 'var(--border)' }} />
           </>
         )}
         <UserMenuItem
@@ -117,11 +118,11 @@ export function UserCard({
 
       <style>{`
         .user-card-menu-item {
-          color: #888;
+          color: var(--faint);
         }
         .user-card-menu-item:hover {
-          background: rgba(0,0,0,0.04);
-          color: #1a1a1a;
+          background: var(--well);
+          color: var(--ink);
         }
         .user-card-menu-item-danger:hover {
           color: #dc2626;
