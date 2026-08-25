@@ -1,0 +1,34 @@
+# gitleaks — the Warden's secret scanner (issue #32).
+#
+# Runs in the gate on every PR (scripts/secret-scan.sh, the PR's own commits)
+# and weekly over the FULL history (.github/workflows/secrets.yml). The
+# default ruleset is kept whole; this file only names the two shapes the
+# generic-api-key rule fires on in this repo that are provably not secrets.
+#
+# First full-history reading, 2026-08-26, gitleaks 8.30.0, 2668 commits:
+# 34 findings, all generic-api-key, all in four disposable court scripts,
+# every one a candidate/variant publicId (a UUID) or a kebab-case filename
+# sitting next to the word "key" (`key: "<uuid>"`, `imageKey`). Zero real
+# credentials in history. With the two allowlists below the same reading is
+# 0, and a planted AWS key still reddens it (the instrument's own negative
+# control — verified before this file was believed).
+#
+# Adding to this file is a security decision: a regex here is a place a
+# real secret can hide. Keep entries shape-specific and never path-wide.
+
+[extend]
+useDefault = true
+
+# A UUID is never a credential in this product — publicIds and every R2
+# storage key are crypto.randomUUID() (CLAUDE.md, "A customer's cast is
+# their work"). Anchored, exact-length, lowercase hex only.
+[[allowlists]]
+regexTarget = "secret"
+regexes = ['''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''']
+
+# A kebab-case file slug: three or more lowercase/digit segments joined by
+# hyphens, nothing else. No issued credential format is shaped like this —
+# API keys carry a prefix (sk_, AKIA, ghp_, AIza…) or mixed case/base64.
+[[allowlists]]
+regexTarget = "secret"
+regexes = ['''^[a-z0-9]+(-[a-z0-9]+){2,}$''']
