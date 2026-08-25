@@ -7,6 +7,7 @@
  * set by his word, and the word is the evidence that it was.
  */
 import { cn } from "@/lib/utils";
+import { milestoneCountLine, milestoneProgress } from "./crewTypes";
 import type { CrewBriefingView } from "./crewTypes";
 
 const FOCUS_LABEL: Record<string, string> = {
@@ -29,10 +30,39 @@ const RUNG_LABEL: Record<string, string> = {
   parked: "Parked",
 };
 
+const CHIP_TONE: Record<string, string> = {
+  good: "border-[#0A0A0A] text-[#0A0A0A]",
+  warn: "border-[#B45309] text-[#B45309]",
+  neutral: "border-[#D5D5D5] text-[#666]",
+};
+
 export function CrewProgramBanner({ program }: { program: CrewBriefingView["program"] }) {
   return (
     <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
       <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">The program</h2>
+
+      {/* At-a-glance chips (#74). A chip's source is the reading it cites —
+          shown under it in small type, never hidden in a tooltip he has to
+          discover. */}
+      {program.chips.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {program.chips.map((chip) => (
+            <div key={chip.label} className="max-w-[16rem]">
+              <span
+                className={cn(
+                  "inline-block text-[11px] px-2 py-0.5 rounded-full border",
+                  CHIP_TONE[chip.tone] ?? CHIP_TONE.neutral,
+                )}
+              >
+                {chip.label}
+              </span>
+              {chip.source && (
+                <p className="mt-0.5 pl-1 text-[10px] leading-snug text-[#BBB]">{chip.source}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <p className="text-base leading-relaxed text-[#0A0A0A]">{program.mission}</p>
 
@@ -67,6 +97,25 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
       {program.milestone && (
         <div className="mt-5 pt-5 border-t border-[#EFEFEF]">
           <h3 className="text-sm font-semibold text-[#0A0A0A]">{program.milestone.title}</h3>
+
+          {/* The progress bar (#74 item 1) — READ off the steps below, never a
+              second number beside them. An in-progress step fills half, so the
+              bar moves the day work starts. */}
+          {program.milestone.steps.length > 0 && (() => {
+            const progress = milestoneProgress(program.milestone.steps);
+            return (
+              <div className="mt-3">
+                <div className="h-1.5 rounded-full bg-[#EFEFEF] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[#0A0A0A] transition-[width]"
+                    style={{ width: `${Math.round(progress.fraction * 100)}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[11px] text-[#999]">{milestoneCountLine(progress)}</p>
+              </div>
+            );
+          })()}
+
           <ol className="mt-3 space-y-2">
             {program.milestone.steps.map((step, index) => (
               <li key={`${index}-${step.title}`} className="flex items-baseline gap-3 text-sm">
@@ -91,6 +140,34 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
       {program.ladder.length > 0 && (
         <div className="mt-5 pt-5 border-t border-[#EFEFEF]">
           <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-2">The ladder</h3>
+
+          {/* The rung bar (#74 item 2) — the whole climb in one glance: filled
+              is done, black-ringed is where we stand, light is queued, dashed
+              is parked. The list below stays the reading copy. */}
+          <div className="flex items-end gap-1 mb-3" aria-hidden="true">
+            {program.ladder.map((rung) => (
+              <div key={`bar-${rung.key}`} className="flex-1 min-w-0">
+                <div
+                  className={cn(
+                    "h-2 rounded-sm",
+                    rung.state === "done" && "bg-[#0A0A0A]",
+                    rung.state === "current" && "bg-white border-2 border-[#0A0A0A]",
+                    rung.state === "queued" && "bg-[#E5E5E5]",
+                    rung.state === "parked" && "bg-transparent border border-dashed border-[#CCC]",
+                  )}
+                />
+                <p
+                  className={cn(
+                    "mt-1 text-[10px] tabular-nums truncate",
+                    rung.state === "current" ? "text-[#0A0A0A] font-medium" : "text-[#BBB]",
+                  )}
+                >
+                  {rung.key}
+                </p>
+              </div>
+            ))}
+          </div>
+
           <ul className="space-y-1.5">
             {program.ladder.map((rung) => (
               <li key={rung.key} className="flex items-baseline gap-3 text-sm">

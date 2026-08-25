@@ -10,10 +10,11 @@
  * The box at the top writes a journal note (`cardId: null`). It is the same
  * writer as the card boxes; the placeholder is what tells him it steers.
  */
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { shortDate } from "./CrewProgramBanner";
-import { replyFallsToJournal } from "./crewTypes";
+import { foldTimeline, replyFallsToJournal } from "./crewTypes";
 import type { CrewJournalEntry, CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
 
 type Item =
@@ -45,6 +46,11 @@ export function CrewJournal({
     forbids, caught by the PR #72 gate review (finding 2). The rule is now
     "does a thread render for it", not "does the briefing mention it".
   */
+  /* The fold (#74 item 7 — his standing Desk rule): last 8 merged items
+     visible, the rest behind one disclosure. Folded AFTER the merge so his
+     replies are never hidden by being older than 8 shift entries. */
+  const [showOlder, setShowOlder] = useState(false);
+
   const cardTitles = new Map(cards.map((card) => [card.id, card.title]));
 
   const items: Item[] = [
@@ -63,6 +69,9 @@ export function CrewJournal({
       })),
   ].sort((a, b) => b.at - a.at);
 
+  const { recent, older } = foldTimeline(items);
+  const visibleItems = showOlder ? items : recent;
+
   return (
     <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
       <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999]">Journal</h2>
@@ -80,7 +89,7 @@ export function CrewJournal({
         </p>
       ) : (
         <ul className="mt-5 pt-5 border-t border-[#EFEFEF] space-y-5">
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <li
               key={item.kind === "shift" ? `shift-${item.at}-${item.entry.shift}` : `reply-${item.reply.id}`}
               className={cn(item.kind === "founder" && "pl-3 border-l-2 border-[#0A0A0A]")}
@@ -125,6 +134,18 @@ export function CrewJournal({
             </li>
           ))}
         </ul>
+      )}
+
+      {older.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowOlder((open) => !open)}
+          className="mt-4 text-[11px] text-[#999] hover:text-[#0A0A0A] transition-colors"
+        >
+          {showOlder
+            ? "Show fewer"
+            : `Show ${older.length} earlier ${older.length === 1 ? "entry" : "entries"}`}
+        </button>
       )}
     </section>
   );

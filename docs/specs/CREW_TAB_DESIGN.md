@@ -73,6 +73,10 @@ seen when the team's own next push proves it was read.
       steps: { title: string; state: "done" | "in-progress" | "waiting" | "blocked" }[],
     } | null,
     ladder: { key: string; title: string; state: "done" | "current" | "queued" | "parked" }[],
+    // #74 (founder UX feedback, 2026-08-25): at-a-glance chips. A chip is a
+    // CLAIM, so `source` names the reading it was taken from — a receipt, a
+    // commit, a row. Max 6, so the strip stays a glance.
+    chips: { label: string; tone: "good" | "warn" | "neutral"; source: string | null }[],
   },
   needsYou: {
     id: string,               // stable slug, e.g. "rebaseline-countersign"
@@ -227,9 +231,13 @@ editorial — this is a briefing, not a dashboard; no charts, no KPI tiles.
 
 Order on the page (his reading order, mirroring the Desk):
 
-1. **Program banner** — mission line; focus with its state and his verbatim
-   confirming quote; the current milestone's steps with their states; the
-   ladder as a compact list (done / current / queued / parked).
+1. **Program banner** — the at-a-glance chips (#74, each citing its reading);
+   mission line; focus with its state and his verbatim confirming quote; the
+   current milestone's steps with their states under a progress bar DERIVED
+   from those states (never a second number); the ladder as a rung bar plus
+   the compact list (done / current / queued / parked). The pipeline section
+   splits in-flight from "Recently landed" (derived from `merged`), and the
+   journal folds past its 8 newest merged items (#74 item 7).
 2. **Needs you** — the open cards, product impact first, worked example,
    options with the recommendation stated first, a reply thread under each
    (his replies for this cardId, each marked "seen by the crew" when

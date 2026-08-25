@@ -1,7 +1,7 @@
 {
- "edition": 2,
- "updatedAt": "2026-08-25T23:40:00+10:00",
- "shift": "relay (terminal seat), carrying two founder rulings",
+ "edition": 3,
+ "updatedAt": "2026-08-25T23:30:00+10:00",
+ "shift": "foreman-4",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -14,7 +14,7 @@
    "title": "The creative register — build order (design §5)",
    "steps": [
     {
-     "title": "The court — your cyborg brief, eight arms, priced on a card before it runs",
+     "title": "The court — your cyborg brief, eight arms (funded under your spend threshold; fires when its arms are final)",
      "state": "waiting"
     },
     {
@@ -34,13 +34,65 @@
   "ladder": [
    {
     "key": "N1",
-    "title": "The creative register",
+    "title": "The creative register — creatures and sci-fi without losing photoreal humans",
     "state": "current"
    },
    {
-    "key": "N2–N8",
-    "title": "Signed by you 25 Aug — the rebaseline governs; queued behind N1",
+    "key": "N2",
+    "title": "The ratchet clears — every half-rolled-out flag goes home",
     "state": "queued"
+   },
+   {
+    "key": "N3",
+    "title": "The refine era completes — feature panel, loader, studio surfaces",
+    "state": "queued"
+   },
+   {
+    "key": "N4",
+    "title": "Takes — scheduled on your word, gate-bound",
+    "state": "queued"
+   },
+   {
+    "key": "N5",
+    "title": "Entries converge — canvas and studio cast the same way",
+    "state": "queued"
+   },
+   {
+    "key": "N6",
+    "title": "Cutover plumbing — old addresses lead to the new studio",
+    "state": "queued"
+   },
+   {
+    "key": "N7",
+    "title": "The observation window — your point of no return",
+    "state": "queued"
+   },
+   {
+    "key": "N8",
+    "title": "Legacy retirement",
+    "state": "queued"
+   }
+  ],
+  "chips": [
+   {
+    "label": "Production healthy",
+    "tone": "good",
+    "source": "health checked 3× for this edition, all 200 — 23:25, 25 Aug"
+   },
+   {
+    "label": "This page went live tonight",
+    "tone": "good",
+    "source": "your “go live”, 22:53 — ceremony applied, CREW_TAB_SCOPE=all"
+   },
+   {
+    "label": "Register court funded",
+    "tone": "neutral",
+    "source": "your spend-threshold ruling — it fires when its arms are final"
+   },
+   {
+    "label": "Night shifts running",
+    "tone": "good",
+    "source": "foreman-4 wrote this edition"
    }
   ]
  },
@@ -92,11 +144,32 @@
  ],
  "pipeline": [
   {
+   "id": "crew-golive-record",
+   "title": "Your go-live's record completion — the test that reddened the suite when the ceremony ran, plus this page's flag entry",
+   "status": "in-review",
+   "prNumber": 76,
+   "note": "merges first; every other change's checks inherit it"
+  },
+  {
+   "id": "admin-entry-68",
+   "title": "You can enter the admin page again: /admin answers, and the account menu is readable in dark (#68)",
+   "status": "in-review",
+   "prNumber": 77,
+   "note": "your words filed it this morning; driven and photographed in both themes"
+  },
+  {
+   "id": "crew-ux-parity-74",
+   "title": "This page catches up to the Desk: progress bars, the full ladder, chips, Recently landed, the journal fold (#74)",
+   "status": "building",
+   "prNumber": null,
+   "note": "what you are reading is the first edition in the new shape"
+  },
+  {
    "id": "crew-tab",
    "title": "The Crew tab (#41)",
    "status": "merged",
    "prNumber": 72,
-   "note": "this page, dark behind its flag"
+   "note": "this page, live since your word tonight"
   },
   {
    "id": "refine-lockkey-record",
@@ -107,24 +180,36 @@
   },
   {
    "id": "dependabot-npm",
-   "title": "Five npm dependency bumps",
-   "status": "in-review",
+   "title": "Dependency bumps: dependabot config + three action bumps",
+   "status": "merged",
    "prNumber": null,
-   "note": "gate green; awaiting a reviewer's read"
+   "note": "#36, #46–#48 — each proven by its own gate run"
   }
  ],
  "problems": [
   {
    "id": "desk-unreadable",
    "title": "Night shifts cannot read the Desk artifact (#42)",
-   "detail": "Headless sessions have no artifact tool, so your replies there reach the team only through the terminal relay. This page is the fix.",
+   "detail": "Headless sessions have no artifact tool, so your replies there reach the team only through the terminal relay. This page is the fix — and per your #74 feedback, the Desk stays your primary briefing until this page's UX catches up to it.",
    "severity": "warning",
+   "state": "open"
+  },
+  {
+   "id": "lobby-theme-toggle",
+   "title": "The lobby's theme toggle is unclickable (#73)",
+   "detail": "The lobby's help three-dot sits exactly on top of the topbar's sun/moon button, so clicking it opens the feedback menu instead of switching themes. Found by tonight's drive of the admin-entry fix; measured at the pixels and filed.",
+   "severity": "info",
    "state": "open"
   }
  ],
  "journal": [
   {
-   "at": "2026-08-26T00:10:00+10:00",
+   "at": "2026-08-25T23:30:00+10:00",
+   "shift": "foreman-4",
+   "text": "Fixed your admin-entry complaint (#68): typing /admin was a dead end (a 404) — it now lands on the overview — and the account menu's own text was invisible in dark theme; both driven and photographed before and after. The same drive found the lobby's theme toggle is unclickable (filed as #73). Caught and repaired a record gap your go-live exposed: the test that guards the migration ledger wasn't updated when the ceremony ran, so every change's checks were failing; fix is in review (PR 76). Then rebuilt this page toward your UX feedback (#74): the chips at the top, the milestone progress bar, all eight ladder rungs, Recently landed, and the journal fold you are using now."
+  },
+  {
+   "at": "2026-08-25T22:45:00+10:00",
    "shift": "foreman-3",
    "text": "Built this page and proved it in the running app: a reply typed here landed in the database and came back through the crew's own read script, and with the flag off the tab vanishes entirely. Your two Desk taps are on the record — the ladder is signed (N1–N8 governs) and the face-scan pair is widened to everyone in the beta. Both cards below are marked done."
   },
@@ -134,7 +219,7 @@
    "text": "Closed the urgent refine double-charge question: the guard was built a week before it was filed as missing — a second tap on a paid edit has been refused free since 08-18. Merged the record fix and pinned the wire in the test suite (#54, PR 67). Designed and started building this page (#41)."
   },
   {
-   "at": "2026-08-25T23:40:00+10:00",
+   "at": "2026-08-25T23:14:00+10:00",
    "shift": "relay",
    "text": "FOUNDER RULING — THE SPEND THRESHOLD, verbatim: “i thought we established it doesnt need my permission to do this unless it plans to spend a massive amount of money like $50+”. In the Program: under-$50 courts/measurements run without asking (estimate and actual recorded on the issue); $50+ comes to him priced. The creative-register court is therefore FUNDED. Also filed on his eye: #74, Crew tab UX parity with the Desk (progress bars, full ladder, chips, Done section) — urgent-labelled."
   }
