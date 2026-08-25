@@ -78,7 +78,7 @@ jobs:
             echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
           fi
 
-          LINES=$(git diff --numstat "origin/$BASE"...HEAD -- $CODE | awk '{s+=$1+$2} END {print s+0}')
+          LINES=$(echo "$CODE" | xargs -r -d '\n' git diff --numstat "origin/$BASE"...HEAD -- | awk '{s+=$1+$2} END {print s+0}')
           echo "Changed code lines: $LINES"
           if [ "$LINES" -lt 50 ]; then
             echo "Trivial diff (<50 code lines) — no AI review; mechanical checks still apply."

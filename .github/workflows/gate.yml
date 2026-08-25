@@ -120,9 +120,11 @@ jobs:
             exit 1
           fi
 
-          echo "pr=$INPUT_PR" >> "$GITHUB_OUTPUT"
-          echo "base=$BASE" >> "$GITHUB_OUTPUT"
-          echo "ref=refs/pull/$INPUT_PR/merge" >> "$GITHUB_OUTPUT"
+          {
+            echo "pr=$INPUT_PR"
+            echo "base=$BASE"
+            echo "ref=refs/pull/$INPUT_PR/merge"
+          } >> "$GITHUB_OUTPUT"
           echo "workflow_dispatch: PR #$INPUT_PR ($HEAD_REF @ $HEAD_SHA) into $BASE"
 
   gate-checks:
