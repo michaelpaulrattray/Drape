@@ -379,7 +379,7 @@ written carry nothing new; re-asking re-applies.
 - **The panel.** Two rows, unchanged: `facePanel` already draws one card per
   delivered slot and `facePanel.test.ts:1005` already pins it.
 - **The signed views.** The sign-view wire carries a signed Cast's tattoos into
-  the six angles from the same per-slot record, so a Cast wearing two signs
+  the five angles from the same per-slot record, so a Cast wearing two signs
   wearing two. Not measured — see §7.
 
 ---

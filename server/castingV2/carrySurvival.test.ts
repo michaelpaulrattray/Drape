@@ -65,7 +65,7 @@ const NOT_A_FEATURE_SLOT: Record<string, string> = {
      inherit a costume — and it is carried by the STORED LINE rather than by a
      crop"}` — item 8, 2026-08-23. ⚠ It is excluded from THIS arm and not from
      the promise: a wardrobe edit survives the next render better than a crop
-     could, because the sentence travels into the six signed views where a crop
+     could, because the sentence travels into the five signed views where a crop
      of this frame's fabric would be a picture of the wrong angle. What proves
      that is `wardrobeLine`'s own arms and the recipe's, not the mint's. */
   wardrobe: "notASlot",

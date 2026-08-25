@@ -1530,7 +1530,7 @@ export function facePanel(input: {
     # It is DISPLAY, and the wire is where that is proven
 
     No piece is stored, sent or judged. The LINE is the one owner: the roll
-    prompt, the refine recipe, the six signed views, the wardrobe judge and the
+    prompt, the refine recipe, the five signed views, the wardrobe judge and the
     sheet all read it whole, and an edit to a card rewrites the whole line
     (§7.1's rewrite rule, which is why the wardrobe subject is `plural: false`).
     `wardrobeCardsAreDisplayOnly.test.ts` asserts that on the strings a render

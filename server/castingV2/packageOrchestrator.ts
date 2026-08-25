@@ -2,7 +2,7 @@
  * The canonical package, built under the Sign operation (plan §E, §F "Package
  * completion").
  *
- * Six views, each an independently refundable unit — the same law a roll's
+ * Five views, each an independently refundable unit — the same law a roll's
  * eight candidates live under, for the same reason: a view that does not arrive
  * refunds its exact slice while the rest of the package stands, and the Cast is
  * usable from its master the whole time (D-72's progressive-package law).

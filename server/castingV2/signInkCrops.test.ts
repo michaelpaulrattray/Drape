@@ -1,5 +1,5 @@
 /**
- * THE SIGN-VIEW WIRE — the tattoos a Cast really has, carried into its six
+ * THE SIGN-VIEW WIRE — the tattoos a Cast really has, carried into its five
  * views as pictures of her (fable-1297 §3, countersigned fable-1303).
  *
  * `inkViewReferences.test.ts` tries the CLAUSE and `packageOrchestrator.test.ts`
@@ -149,7 +149,7 @@ describe("which tattoos a signed Cast's views carry", () => {
     /*
       The repaint road's third door, one lane along. Bytes that hash to anything
       else are not the tattoo this row describes, and painting them would put an
-      unknown picture on a customer's body in six frames she paid for.
+      unknown picture on a customer's body in five frames she paid for.
     */
     const { crops, dispositions } = await drive(WEARING_BOTH, {
       readBytes: (async (key: string) => (key.endsWith("arm.png")

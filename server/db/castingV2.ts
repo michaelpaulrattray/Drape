@@ -334,7 +334,7 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
         ⚠ THIS IS THE ONE PLACE IN THE PRODUCT THAT MAY READ THE BORN COLUMN BY
         NAME. Everything else goes through `currentWardrobeLine(branch)` —
         condition (v), fable-1334 §2 — because a branch that has been edited is
-        no longer wearing what it was born in, and six views judged against the
+        no longer wearing what it was born in, and five views judged against the
         wrong line is refunded slices.
 
         Owner-scoped in the statement that reads it (invariant 1), even though
@@ -849,7 +849,7 @@ export async function getBriefForOwnedCandidate(
  * are composed before the transaction opens, so once the wardrobe line reaches
  * the roll prompt, a follow would be PAINTED in a freshly resolved outfit and
  * RECORDED in the parent's — eight pictures disagreeing with the row that
- * describes them, and then six signed views judged against a line they were
+ * describes them, and then five signed views judged against a line they were
  * never painted in. That is the refunded-slices class condition (v) exists for,
  * arriving through the one door condition (v) does not cover.
  *

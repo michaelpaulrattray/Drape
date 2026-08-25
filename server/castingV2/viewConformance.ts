@@ -94,7 +94,7 @@ export type ViewConformanceInput = {
    * from.** `packageViewExpectation` and `composePackageViewPrompt` both derive
    * their sentence from this value through one function, because a judge told a
    * different outfit than the prompt asked for fails a view for obeying its
-   * instructions — six views, the wardrobe axis, refunded slices.
+   * instructions — five views, the wardrobe axis, refunded slices.
    *
    * `null` or absent is every Cast signed to date and keeps today's sentence
    * exactly, including its *anything below the frame cannot be compared* clause.

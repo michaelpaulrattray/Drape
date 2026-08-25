@@ -417,7 +417,7 @@ export const FACET_CARDS = {
    * ⚠ `notASlot`, and the reason is not "we could not think of one" — **this
    * facet already has a carrier and it is better than a crop.** A wardrobe edit
    * rewrites the branch's stored LINE (`wardrobeLine.ts`, the one owner), and a
-   * sentence travels into the roll prompt, the refine recipe, the six signed
+   * sentence travels into the roll prompt, the refine recipe, the five signed
    * views and the wardrobe judge — which is more than any crop of a sleeve
    * could do, because those views are rendered fresh at other angles where a
    * crop of this frame's fabric would be the wrong picture.
@@ -433,7 +433,7 @@ export const FACET_CARDS = {
     zone: "fullFrame",
     slot: {
       notASlot:
-        "presentation, not identity (D-136) — a follow must never inherit a costume — and it is carried by the STORED LINE rather than by a crop: a sentence travels into the six signed views, where a crop of this frame's fabric would be a picture of the wrong angle",
+        "presentation, not identity (D-136) — a follow must never inherit a costume — and it is carried by the STORED LINE rather than by a crop: a sentence travels into the five signed views, where a crop of this frame's fabric would be a picture of the wrong angle",
     },
     region: null,
     movesItsEdge: {

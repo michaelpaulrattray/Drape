@@ -529,7 +529,7 @@ export function castPackageLabel(
  * an engineering preference, which means it is not a tradeoff a later build
  * gets to re-weigh.
  *
- * Two things must exist before any such clause rides six paid views: the
+ * Two things must exist before any such clause rides five paid views: the
  * how-does-the-code-know-a-fact-is-not-shown answer (designed once, with the
  * does-it-extend and is-it-paired kind-properties — fable-872 §2), and a
  * CONTROL on `packageViewExpectation`, which is assembled from the view spec
@@ -576,7 +576,7 @@ function wardrobeSpecFor(angle: CastViewAngle, wardrobeLine: string | null): str
  * and refunded at 50 credits.
  *
  * ⚠ **The design predicted it in writing and half of it landed.** §3.3's table
- * has a row for *the six signed views* and a row for *the wardrobe judge*, both
+ * has a row for *the five signed views* and a row for *the wardrobe judge*, both
  * to derive from `currentWardrobeLine` so generator and judge cannot drift. The
  * JUDGE half shipped — `castPackageWardrobeSpec` composes from the line, which
  * is exactly why these failures were caught rather than delivered. The

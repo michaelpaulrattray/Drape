@@ -57,7 +57,7 @@
  * the reference has the quiet failure instead: a three-quarter frame that
  * happens to catch her upper arm, rendered by an engine holding no picture of
  * the tattoo, comes back with bare skin, and the customer's tattoo has vanished
- * from one frame of six with nothing in the record saying why.
+ * from one frame of five with nothing in the record saying why.
  *
  * The opposite risk — an engine putting a chest tattoo on a back view because
  * it was handed the picture — is real, and it is not argued about here: the
@@ -204,7 +204,7 @@ export function inkPlacementPhrase(input: {
  * exactly as that sentence described, and this table still says `false` for it,
  * because the reason was never the plate: a view whose wardrobe comes back
  * crew-necked has no skin to put the design on however the picture arrives, and
- * both outcomes fail the wardrobe axis and refund a slice — six times per Sign.
+ * both outcomes fail the wardrobe axis and refund a slice — five times per Sign.
  *
  * ⚠ **AND THE THING THIS PARAGRAPH SAID WOULD LIFT IT IS RETIRED — THE PATH
  * DECIDES** (founder ruling 2026-08-21, relayed fable-1311; design
@@ -220,7 +220,7 @@ export function inkPlacementPhrase(input: {
  * was: `neck: true` and `upperArm: true` were read off sixteen masters in the
  * house crew tee exactly as `upperChest: false` was, and the two `true`s are
  * the dangerous direction — `false` refuses a capability, `true` SELLS one, and
- * a neck design sold onto a roll-neck jumper rides all six views and fails the
+ * a neck design sold onto a roll-neck jumper rides all five views and fails the
  * wardrobe axis on every one.
  *
  * The answer now comes from `inkSurfaceCoverage.ts`, which holds the

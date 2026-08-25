@@ -85,21 +85,34 @@ people who wanted a body record. As the default it is paid by everyone,
 including every customer who never wanted a bare chest and only wanted a
 person in clothes.
 
-**(b) IT COMPOUNDS AT SIGN, and Sign is 450 credits.** `signService.ts:323`
-reads `currentWardrobeLine` and carries it into the six package views. Per-image
+**(b) IT COMPOUNDS AT SIGN, and Sign is 450 credits.** `signService.ts`'s
+`currentWardrobeLine` call carries the line into the package views. Per-image
 refusals multiply:
 
 ```
-per-image refusal p     P(all six views clear)
-  0.25                    17.8%      ← the rate measured at roll
-  0.10                    53.1%
-  0.05                    73.5%
-  0.02                    88.6%
+per-image refusal p     P(all FIVE views clear)
+  0.25                    23.7%      ← the rate measured at roll
+  0.10                    59.0%
+  0.05                    77.4%
+  0.02                    90.4%
 ```
+
+⚠ **THIS TABLE SAID SIX VIEWS AND THE PACKAGE IS FIVE — corrected 2026-08-25
+(opus-1272, ruled fable-1654 §1), and the correction WEAKENS my own argument by
+about six points at every row.** `CAST_PACKAGE_VIEWS` holds `closeUp`,
+`threeQuarter`, `frontFull`, `sideClose`, `backFull`, and
+`CASTING_V2_SIGN_PRICE_CREDITS` derives 450 from that length — 200 + 5 × 50.
+Package v3.1 retired the Portrait and its own docblock says *"still five
+generated views"*; the sentence above, and a dozen others across this product's
+prose, never heard. The stale exponent was inflating the headline: at the
+measured roll rate the honest figure is **one Sign in four clearing every view,
+not one in six**. The direction of the argument is unchanged and its size is
+smaller, which is exactly the kind of correction that has to be made before he
+reads it rather than after.
 
 ⚠ **The 25% was measured on ROLL slices, not on Sign views** — different prompt,
 different engine (`Nano Banana Pro` at Sign against `GPT Image 2` at roll). **I
-am not claiming 17.8% of Signs fail.** I am saying his instinct is right, the
+am not claiming 23.7% of Signs fail.** I am saying his instinct is right, the
 arithmetic is brutal at any rate above a couple of percent, and **nobody has
 measured the Sign side at all.** That measurement is court 1 below and it is the
 one I would buy first of everything here.

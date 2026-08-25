@@ -691,7 +691,7 @@ export const PHOTOREAL_HUMAN_BLOCKS = {
     The signed package's authority paragraph, and it takes the UNPATHED form
     deliberately for now: the package composes its own wardrobe spec
     (`CAST_PACKAGE_WARDROBE_SPEC`), and moving it onto the line is item 6 of
-    this build, where the six views and the judge start reading one answer.
+    this build, where the five views and the judge start reading one answer.
     Handing it the amended sentence here — with no line beside it — would take
     the costume guard off the package and give it nothing in exchange.
   */

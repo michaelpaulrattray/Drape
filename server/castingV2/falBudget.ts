@@ -14,7 +14,7 @@
  *
  * ```
  * roll images    ROLL_IMAGE_CONCURRENCY    8   paid      a sheet's eight faces
- * sign views     SIGN_VIEW_CONCURRENCY     3   paid      a package's six views
+ * sign views     SIGN_VIEW_CONCURRENCY     3   paid      a package's five views
  * refine edits   REFINE_EDIT_CONCURRENCY   3   paid      one paid edit at a time-ish
  * region reads   FAL_CONCURRENCY           5   courtesy  scans, harvests, guards
  * ink plates     INK_PLATE_CONCURRENCY     1   courtesy  a design drawn onto a form

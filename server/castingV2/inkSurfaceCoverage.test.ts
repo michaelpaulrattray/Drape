@@ -117,7 +117,7 @@ describe("what this cast's wardrobe leaves showing", () => {
     /*
       The over-promising direction is the dangerous one. `covered` refuses a
       capability; `bare` SELLS one, and a neck tattoo sold onto a roll-neck
-      jumper rides all six package views and fails the wardrobe axis on every
+      jumper rides all five package views and fails the wardrobe axis on every
       one — six refunded slices.
 
       And `unknown` is not `covered` either, because the refusal a customer

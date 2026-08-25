@@ -292,7 +292,7 @@ export type BriefCompilerInput = {
    * inheritance in the statement that writes the row. It cannot help the
    * PROMPT, which is composed first — so without this the eight would be
    * PAINTED in a freshly resolved outfit and RECORDED in the parent's, and
-   * then six signed views judged against a line they were never painted in.
+   * then five signed views judged against a line they were never painted in.
    *
    * ⚠ **Verbatim means the NULLS too.** Following a candidate from a sheet cast
    * before the paths existed must produce an unpathed prompt, because the db is

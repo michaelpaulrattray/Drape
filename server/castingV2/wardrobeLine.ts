@@ -6,7 +6,7 @@
  * # The gap this closes
  *
  * Nothing in this product owns that sentence today. The roll prompt hard-codes
- * one wardrobe line inside a framing constant, the six signed views hard-code a
+ * one wardrobe line inside a framing constant, the five signed views hard-code a
  * different one, the sheet's notice describes a third, and the refine recipe
  * names FIVE nouns of which clothing is not one. Measured at the frames (§2): a
  * removal re-render turned a grey tee BLACK, unasked, because no part of the
@@ -20,8 +20,8 @@
  * Three sentences of the design implied a fourth nobody had written: the roll's
  * line is snapshotted at Sign, a wardrobe edit rewrites the stored line, and a
  * Follow inherits the BORN line. Together those imply a Cast **signed after a
- * wardrobe edit** whose six views would be judged against the born line it is
- * no longer wearing — six views, the wardrobe axis, **refunded slices**, which
+ * wardrobe edit** whose five views would be judged against the born line it is
+ * no longer wearing — five views, the wardrobe axis, **refunded slices**, which
  * is exactly how the crew-neck chest design already cost money.
  *
  * So there is one answer and everything reads it: the recipe derives from it,
@@ -182,7 +182,7 @@ export function editedWardrobeLine(delta: { free?: Partial<Record<string, unknow
  * WHAT A SIGNED CAST IS WEARING — read back off its own snapshot.
  *
  * Sign stores the RESOLVED answer in `technicalSchema.wardrobe` (§3.1), and the
- * six views and their judge are composed from what this returns. It lives here
+ * five views and their judge are composed from what this returns. It lives here
  * rather than beside the package because there is one owner of this sentence
  * and a second reader written elsewhere is the parallel-copy shape.
  *

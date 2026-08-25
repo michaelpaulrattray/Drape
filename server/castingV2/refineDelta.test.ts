@@ -769,7 +769,7 @@ describe("ink renders only where the anchor is the document", () => {
     it("⚠ an outfit nobody has read walls the NECK — which renders today", () => {
       /*
         The over-promising direction, and the one this whole item exists for. A
-        neck ask renders and rides all six package views on the strength of a
+        neck ask renders and rides all five package views on the strength of a
         reading taken on sixteen masters in a crew-neck tee. On a roll-neck
         jumper the same `true` sells a tattoo painted onto wool.
 

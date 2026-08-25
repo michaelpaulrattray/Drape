@@ -225,8 +225,8 @@ had left open by omission.** Three sentences of the design implied a fourth
 nobody had written: the roll's line is snapshotted at Sign (§3.1), a wardrobe
 edit rewrites *the stored line* (§7.1), and a Follow inherits the BORN line
 (above). Together those imply a **per-branch edited line**, and therefore a Cast
-**signed after a wardrobe edit** whose six views would be judged against the born
-line it is no longer wearing — six views, the wardrobe axis, **refunded slices**,
+**signed after a wardrobe edit** whose five views would be judged against the born
+line it is no longer wearing — five views, the wardrobe axis, **refunded slices**,
 which is precisely how the crew-neck chest design already cost money.
 
 So it is stated rather than left to be resolved at the keyboard:
@@ -332,7 +332,7 @@ module, and — per condition (v), §3.1a — every row below reads
 |---|---|---|
 | the roll prompt | `cohortPhotorealHuman.FRAMING`'s fixed *"WARDROBE: plain unbranded clothing in neutral grey or off-white"* | the born line, composed per roll (no branch exists yet) |
 | the refine recipe | nothing at all (§2's five nouns) | `currentWardrobeLine`, stated as already true, dropped the moment this edit writes the slot |
-| the six signed views | `CAST_PACKAGE_WARDROBE_SPEC`, hard-coded *crew-neck* | `currentWardrobeLine` of the branch being signed |
+| the five signed views | `CAST_PACKAGE_WARDROBE_SPEC`, hard-coded *crew-neck* | `currentWardrobeLine` of the branch being signed |
 | the wardrobe judge | the same constant, via `packageViewExpectation` | the SAME answer the views were composed from — one owner, so generator and judge cannot drift, and a Cast signed after a wardrobe edit is judged against what it is wearing |
 | the sheet | `sheetNotice`'s *"casting sheets keep the studio tee"* | `currentWardrobeLine`, with *"· engine's pick"* when it was picked for her |
 | a Follow | — | the BORN column, by name, and it is the only caller that may (§3.1) |
@@ -758,14 +758,14 @@ because these rows now say how they are reached.
    would put one piece's picture on another's row about half the time.
 
    ⚠ **That also refutes this bullet's own headline justification**: the crops
-   were proposed as the fix for irregular-garment drift across the six views —
+   were proposed as the fix for irregular-garment drift across the five views —
    the caveman's hide — and the caveman is precisely the case that cannot be
    served. Any later attempt needs a different READER, not a different word. The
    measurement is kept in `wardrobeCards.ts`, where somebody would come to add
    one. Editing a garment card
    rewrites the line, which is §7.1's road and not a second one. Their crops may
    ride the signed views the way delivery crops do — the intended answer to
-   irregular-garment drift (the caveman's hide across six angles).
+   irregular-garment drift (the caveman's hide across five angles).
    **The judge still checks the full line**, and that is the point: a crop is how
    the view is TOLD, the line is what the view is JUDGED against, and they come
    from one owner so they cannot disagree.
@@ -1067,8 +1067,8 @@ flip.
 | 1. Wardrobe sheet — the caveman | the engine's pick under house taste on the hardest type; eight candidates in ONE outfit | 160 |
 | 2. Basics sheet — an ordinary brief | the basics spec at the frames; is the chest bare, does the sports top sit as specified | 160 |
 | **stop, read the frames, report** | | **320** |
-| 3. Sign the caveman | irregular-garment drift across six judged views; the judge reading the stored line | 450 |
-| 4. Sign the Basics cast | basics across six views, and whether a chest piece can now honestly ride | 450 |
+| 3. Sign the caveman | irregular-garment drift across five judged views; the judge reading the stored line | 450 |
+| 4. Sign the Basics cast | basics across five views, and whether a chest piece can now honestly ride | 450 |
 | | **total** | **1,220 dev credits** |
 
 **Staged deliberately** (fable-1331 §3's discipline): a sheet that fails does not
@@ -1078,7 +1078,7 @@ closes on a reader's prose.
 
 **What arm 4 is really measuring**, said plainly so it is not oversold: whether
 `placementRidesPackageViews` derived from the line delivers a visible chest piece
-across six paid views, or whether the wardrobe axis refunds slices the way it did
+across five paid views, or whether the wardrobe axis refunds slices the way it did
 on the crew neck. That is a real risk and it is why the arm exists.
 
 ---

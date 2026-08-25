@@ -77,7 +77,7 @@ describe("the V4 map reads the shipped vocabulary", () => {
                      been measured, and `decolletage` outlining a sports bra on
                      the day this landed is why one is not invented here. Its
                      detection story is the stored LINE and the wardrobe judge
-                     the six signed views already run, which is a different
+                     the five signed views already run, which is a different
                      instrument from this map
 
       Adding a kind the product can say without a story for seeing it lengthens

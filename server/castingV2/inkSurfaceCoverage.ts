@@ -25,8 +25,8 @@
  *
  * **The over-promising direction is the dangerous one.** `upperChest: false`
  * refuses a real capability, which is a customer who does not get something.
- * `neck: bare` SELLS one: the ask renders, the design rides all six package
- * views, and the wardrobe axis fails them — six refunded slices for a tattoo
+ * `neck: bare` SELLS one: the ask renders, the design rides all five package
+ * views, and the wardrobe axis fails them — five refunded slices for a tattoo
  * painted onto wool.
  *
  * # THE MEASUREMENT LIVES HERE NOW (condition (i), fable-1368 ruling 3)

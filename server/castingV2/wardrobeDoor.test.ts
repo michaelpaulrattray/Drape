@@ -138,7 +138,7 @@ describe("the wardrobe pick door", () => {
     it("⚠ REFUSES an over-long line rather than truncating it", () => {
       /*
         The distinction from every other free-text field here, and the reason is
-        durability: this string is stored as the outfit six signed views are
+        durability: this string is stored as the outfit five signed views are
         composed from and a judge compares them against. A line cut mid-word is
         an outfit no render can satisfy and no judge can pass — kept for the
         life of the Cast.

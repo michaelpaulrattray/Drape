@@ -1268,7 +1268,7 @@
         "entrances": [
           "server/routes/castingV2.ts"
         ],
-        "summary": "A BRIEF is compiled and a ROLL renders eight candidates onto a SHEET (each an independently refundable slice). Opening a candidate gives the panel and REFINE: each paid edit renders a VARIANT anchored on the pristine master, with prior edits carried by the composed chain (words + crops). SIGN freezes an identity: six views rendered from the anchor, each checked against the signed face, delivered as the package. Deletion sweeps the cast and everything minted under it (crops, designs, scans) unconditionally.",
+        "summary": "A BRIEF is compiled and a ROLL renders eight candidates onto a SHEET (each an independently refundable slice). Opening a candidate gives the panel and REFINE: each paid edit renders a VARIANT anchored on the pristine master, with prior edits carried by the composed chain (words + crops). SIGN freezes an identity: five views rendered from the anchor, each checked against the signed face, delivered as the package. Deletion sweeps the cast and everything minted under it (crops, designs, scans) unconditionally.",
         "doors": [],
         "doorsNote": "The roll and sign entrances are not yet driven by the census — their doors are not in the declared set this map validates against. Their corpora are the map's next growth ring (fable-1357 §2).",
         "flags": [
@@ -1384,7 +1384,7 @@
       },
       {
         "id": "sign-views",
-        "title": "Sign — six views, the identity lock, and what rides into them",
+        "title": "Sign — five views, the identity lock, and what rides into them",
         "entrances": [
           "server/castingV2/signService.ts",
           "server/castingV2/packageOrchestrator.ts",

@@ -166,13 +166,13 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why: "keeps the frame from a refused render, on the private evidence adapter",
   },
   CASTING_SEGMENTS_DELIVERED_SCOPE: {
-    position: "off",
-    why: "never flipped on production; additive and inert while off",
+    position: "users:1",
+    why: "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). Prerequisite held: user 1 is inside CASTING_SEGMENTS_SCOPE. never flipped on production; additive and inert while off",
   },
   CASTING_FRAMING_TRIM_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
-      "⚠ OFF SINCE 2026-08-24 11:12:46Z AND IT IS NOT A ROLLBACK — the founder RETARGETED the "
+      "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). The retargeted version (a0a988f8, T=0.316, clause out) is what flipped on, satisfying the entry's own condition. ⚠ OFF SINCE 2026-08-24 11:12:46Z AND IT IS NOT A ROLLBACK — the founder RETARGETED the "
       + "feature the same hour, at his own eye (fable-1593). It went on, served exactly one sheet "
       + "(roll 209: 6 of 8 trimmed, 50s, kept originals written), and came off. Two things "
       + "happened in that window and only the second decides this row. (a) A DEFECT: an untrimmed "
@@ -260,9 +260,9 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "closes 7a-bis as a precondition — it builds on the tally instead",
   },
   CASTING_BORN_INK_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
-      "7b(a); widening it re-opens the NOTES_MAX park first (fable-1431 §1) — the "
+      "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). 7b(a); widening it re-opens the NOTES_MAX park first (fable-1431 §1) — the "
       + "cap population IS the born-ink population",
   },
   ENABLE_STORAGE_CLEANUP_WORKER: {

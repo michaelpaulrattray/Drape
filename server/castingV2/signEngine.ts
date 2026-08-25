@@ -37,7 +37,7 @@ export function castPackageQueue(): ProviderQueue {
     viewQueue = new ProviderQueue({
       name: "fal-cast-views",
       /*
-        Lower than the sheet's eight on purpose. A package is six 2K identity
+        Lower than the sheet's eight on purpose. A package is five 2K identity
         generations against one account-level fal concurrency ceiling that the
         sheet is also drawing on; a Sign that starves the rolls behind it trades
         one customer's wait for everybody's.

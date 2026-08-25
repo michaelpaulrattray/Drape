@@ -581,7 +581,7 @@ describe("the package's money, after the boundary", () => {
 /**
  * WHAT A CAST IS WEARING, SNAPSHOTTED AT SIGN (design §3.1 and condition (v)).
  *
- * A Cast is immutable at Sign, so the outfit its six views are composed from
+ * A Cast is immutable at Sign, so the outfit its five views are composed from
  * and judged against has to be decided here, once. The arms below assert on
  * `technicalSchema` — the sensitive blob that never crosses a projection
  * boundary — because that is where the recipe for reproducing this Cast lives.
@@ -625,7 +625,7 @@ describe("the Cast's wardrobe snapshot", () => {
     /*
       The seam a snapshot arm cannot see, and it was genuinely untested until a
       sabotage said so: replacing this hand-off with `null` left 81 arms green.
-      The six views are composed from this value and the judge judges against
+      The five views are composed from this value and the judge judges against
       it, so what matters is that the sentence crossing into the package is the
       Cast's own — not re-resolved at the call site, where it could differ from
       the record by the time anyone compares them.
@@ -1164,7 +1164,7 @@ describe("a covered surface says so on the same disposition surface", () => {
       reading of photographs, and `inkSurfaceCoverage.ts` carries the rounds.
 
       This is the moment the Basics path delivers what it exists for: a chest
-      piece reaching the six signed views a customer paid for.
+      piece reaching the five signed views a customer paid for.
     */
     const { plates, dispositions } = await carriedInkPlates({
       mannequinDeferred: false,

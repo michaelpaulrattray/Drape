@@ -9,13 +9,13 @@ import {
 import { castWardrobeLine } from "./wardrobeLine";
 
 /**
- * THE SIX VIEWS AND THEIR JUDGE READ ONE ANSWER (design §3.3, item 6).
+ * THE FIVE VIEWS AND THEIR JUDGE READ ONE ANSWER (design §3.3, item 6).
  *
  * The Cast's outfit is decided once at Sign and stored on its own record. What
  * these arms hold is the property that costs money when it breaks: **the
  * sentence the view was GENERATED from and the sentence it is JUDGED against
  * are the same sentence**. A judge told a different outfit than the prompt
- * asked for fails a view for obeying its instructions — six views, the wardrobe
+ * asked for fails a view for obeying its instructions — five views, the wardrobe
  * axis, refunded slices, which is how the crew-neck chest design already cost
  * the customer money.
  */

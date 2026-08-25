@@ -217,7 +217,7 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
    *
    * Production hands it to the event loop and returns, because §F's room "opens
    * immediately on the signed master" and views stream in — making the customer
-   * stare at a spinner for six 2K generations would be a different product.
+   * stare at a spinner for five 2K generations would be a different product.
    * That detachment is not fire-and-forget: the operation is still `running`
    * under its heartbeat and lease, so a process that dies here is exactly the
    * case the Sign adjudicator exists for.
@@ -296,8 +296,8 @@ function identityDocumentsFor(source: SignableCandidate): {
     three sentences of the design implied a fourth nobody had written: the
     roll's line is snapshotted here, a wardrobe edit rewrites the branch's line,
     and a Follow inherits the born one — which together produce a Cast SIGNED
-    AFTER A WARDROBE EDIT whose six views would be judged against the outfit it
-    is no longer wearing. Six views, the wardrobe axis, refunded slices, which
+    AFTER A WARDROBE EDIT whose five views would be judged against the outfit it
+    is no longer wearing. Five views, the wardrobe axis, refunded slices, which
     is exactly how the crew-neck chest design already cost money. So this asks
     the one owner and stores its answer.
 
@@ -591,7 +591,7 @@ export async function signCandidate(
       WHAT THIS CAST IS WEARING, from the documents this Sign just sealed — not
       re-resolved here (§3.3, condition (v)).
 
-      The six views are composed from it and the judge judges against it, so it
+      The five views are composed from it and the judge judges against it, so it
       has to be the SAME sentence the Cast's own record carries. A second
       resolution at this call site is how a Cast comes to be judged against an
       outfit its record does not name.
@@ -620,7 +620,7 @@ function detach(run: () => Promise<void>): void {
  *
  * # Why this exists beside a lane that already claimed to do it
  *
- * `carriedInkPlates` has carried tattoos into the six views since fable-987 §3,
+ * `carriedInkPlates` has carried tattoos into the five views since fable-987 §3,
  * from `casting_ink_plates` — and the mannequin road is parked, so that table
  * is empty in both worlds and **not one signed Cast has ever carried a tattoo
  * into a view.** A control that reads as live and carries nothing is working
@@ -647,7 +647,7 @@ function detach(run: () => Promise<void>): void {
  *
  * The row records the sha256 of the bytes it minted. Bytes that hash to
  * anything else are not the tattoo this row describes, and painting them would
- * put an unknown picture on a customer's body in six frames she paid for. It is
+ * put an unknown picture on a customer's body in five frames she paid for. It is
  * the repaint road's third door, one lane along.
  *
  * # A failure here NEVER fails the Sign

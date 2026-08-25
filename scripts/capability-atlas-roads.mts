@@ -54,7 +54,7 @@ export const ROADS: readonly Road[] = [
     summary:
       "A BRIEF is compiled and a ROLL renders eight candidates onto a SHEET (each an independently refundable slice). "
       + "Opening a candidate gives the panel and REFINE: each paid edit renders a VARIANT anchored on the pristine master, "
-      + "with prior edits carried by the composed chain (words + crops). SIGN freezes an identity: six views rendered from "
+      + "with prior edits carried by the composed chain (words + crops). SIGN freezes an identity: five views rendered from "
       + "the anchor, each checked against the signed face, delivered as the package. Deletion sweeps the cast and "
       + "everything minted under it (crops, designs, scans) unconditionally.",
     doors: [],
@@ -133,7 +133,7 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "sign-views",
-    title: "Sign — six views, the identity lock, and what rides into them",
+    title: "Sign — five views, the identity lock, and what rides into them",
     entrances: ["server/castingV2/signService.ts", "server/castingV2/packageOrchestrator.ts", "server/castingV2/inkViewReferences.ts"],
     summary:
       "Signing renders the package views fresh from the anchor, judges each against the signed face and the wardrobe "

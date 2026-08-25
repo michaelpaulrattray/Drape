@@ -259,7 +259,7 @@ export function validateEnv(): void {
   // roll fails at dispatch), the cleanup worker (or candidate objects outlive
   // the sheets that promised to purge them), and — since Sign (M7) — the
   // view-conformance validator, without which every signed package would fail
-  // closed on all six views and refund itself.
+  // closed on all five views and refund itself in full.
   validateCastingV2Environment({
     scope: process.env[CASTING_V2_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,

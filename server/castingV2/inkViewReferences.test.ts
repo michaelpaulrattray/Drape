@@ -263,7 +263,7 @@ describe("which surfaces can ride a package view at all", () => {
         `unknown`   the Two Paths court rolled eight and asked `upper chest`:
                     **0 px on 4 of 4** (opus-1111, ruled fable-1453). Not
                     `covered` — her chest is plainly visible — and not `bare`,
-                    because that would put a tattoo into six paid views the mint
+                    because that would put a tattoo into five paid views the mint
                     cannot crop
         `bare`      EARNED, 2026-08-23. The founder lowered the spec's neckline
                     to name the collarbones and the sternum, and the re-court
@@ -292,7 +292,7 @@ describe("which surfaces can ride a package view at all", () => {
     /*
       The over-promising direction. `neck: true` was measured under a crew tee
       whose neckline sits below it; on a roll-neck jumper the same `true` sells
-      a design that rides all six views and fails the wardrobe axis on every one.
+      a design that rides all five views and fails the wardrobe axis on every one.
       Unknown fails closed, and `placementRideCoverage` is what stops the caller
       reporting it as a covering.
     */

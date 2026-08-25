@@ -24,7 +24,7 @@
  *
  * # The judge caught us because HALF the design had landed
  *
- * §3.3's table has a row for the six signed views and a row for the wardrobe
+ * §3.3's table has a row for the five signed views and a row for the wardrobe
  * judge, both to derive from `currentWardrobeLine` so generator and judge cannot
  * drift. The judge half shipped; the generator half did not. So the product paid
  * a text model to referee a disagreement it had manufactured, and refunded the

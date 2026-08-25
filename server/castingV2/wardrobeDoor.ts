@@ -152,7 +152,7 @@ export const WARDROBE_PICK_REFUSED = "wardrobePickRefused";
  *
  * Those fields are captions and notes, where `cleanFreeText`'s `slice` costs a
  * clipped tail. This one is stored in `casting_rolls.wardrobeLine` as the
- * durable contract that six signed views are composed from and a judge compares
+ * durable contract that five signed views are composed from and a judge compares
  * them against — so a line cut mid-word ("…plain straight-leg trou") would be
  * an outfit no render can satisfy and no judge can pass, kept for the life of
  * the Cast. Well inside the column's own 240.

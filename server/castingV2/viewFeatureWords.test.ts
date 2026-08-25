@@ -57,7 +57,7 @@ describe("the totality control — no catalogued feature can ever ride words", (
     /*
       The bound, stated as arithmetic over the catalogue: if any catalogued
       feature were anchored somewhere the master cannot see, this lane would
-      start describing a person's face into six paid views, which is the drift
+      start describing a person's face into five paid views, which is the drift
       fable-876 §2 forbids. This is the assertion that would catch it.
     */
     const hidden = cataloguedFeaturesWithRegion().filter((feature) => {

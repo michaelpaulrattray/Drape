@@ -5,7 +5,7 @@
  * The resolution is three lines of code and it is worth this many arms for one
  * reason: **its failure mode is refunded slices rather than an exception.** A
  * Cast signed after a wardrobe edit, judged against the born line it is no
- * longer wearing, fails the wardrobe axis on six paid views — which is not a
+ * longer wearing, fails the wardrobe axis on five paid views — which is not a
  * hypothetical, it is how the crew-neck chest design already cost money.
  *
  * So the arms are about the ORDER of precedence and about the third case the

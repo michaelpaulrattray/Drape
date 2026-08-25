@@ -65,7 +65,7 @@
  * (`inkViewReferences.ts`). A view that cannot show a tail does not show one.
  * Withholding has the quiet failure instead: a frame that happens to catch the
  * surface, rendered by an engine that was never told, comes back with ordinary
- * skin and the customer's feature has vanished from one frame of six with
+ * skin and the customer's feature has vanished from one frame of five with
  * nothing in the record saying why.
  */
 import { anchorPresentsIn, type BodyAnchorRegion } from "../../shared/bodyAnchorRegions";

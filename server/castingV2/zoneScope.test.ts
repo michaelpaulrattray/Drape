@@ -107,7 +107,7 @@ describe("the three the audit sent back, now ruled", () => {
       outlined a sports bra precisely on the day this landed — but no MEASURED
       word for *her outfit* exists in this product's vocabulary, and a word
       invented here is exactly the class that court photographed. It carries the
-      stored LINE instead, which travels into the six signed views where a crop
+      stored LINE instead, which travels into the five signed views where a crop
       of this frame's fabric would be a picture of the wrong angle.
     */
     const regionless = allFacets().filter((facet) => !hasRegion(facet));

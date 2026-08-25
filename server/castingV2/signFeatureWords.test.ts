@@ -107,7 +107,7 @@ describe("gathering the words the anchor cannot show", () => {
       The sign-side half of the carry repair, and the row below is exactly what
       `referenceMint`'s `wordsAreTheAsk` fallback now produces: words, no crop,
       no digest. Before that fallback such a feature filed NO ROW AT ALL, and a
-      Cast signed on that branch reached all six views with nothing said about
+      Cast signed on that branch reached all five views with nothing said about
       it — the library is the only word source on this lane too.
 
       ⚠ The founder's HORNS were never the specimen for this half, and saying so

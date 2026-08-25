@@ -3597,7 +3597,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    *
    * The panel takes a wardrobe LINE apart into cards a person can tap. That is
    * a display decomposition and the line is the one owner: the roll prompt, the
-   * refine recipe, the six signed views, the judge and the sheet all read it
+   * refine recipe, the five signed views, the judge and the sheet all read it
    * WHOLE. A comment saying so is a claim; this is the fact.
    *
    * # The assertion is subtler than "the piece is not in the prompt"
