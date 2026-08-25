@@ -59,6 +59,11 @@ concurrency:
   group: gate-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
 
+# Least privilege at the workflow level (zizmor excessive-permissions, #35):
+# a job that needs more declares it beside a reason.
+permissions:
+  contents: read
+
 jobs:
   # One place that answers "which PR, and which base" for both event shapes.
   # On pull_request it just echoes the event; on workflow_dispatch it asks
@@ -67,6 +72,9 @@ jobs:
     name: resolve
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions:
+      contents: read
+      pull-requests: read # `gh pr view` on the dispatch path reads the PR's state, head and mergeability
     outputs:
       pr: ${{ steps.pr.outputs.pr }}
       base: ${{ steps.pr.outputs.base }}
@@ -112,9 +120,11 @@ jobs:
             exit 1
           fi
 
-          echo "pr=$INPUT_PR" >> "$GITHUB_OUTPUT"
-          echo "base=$BASE" >> "$GITHUB_OUTPUT"
-          echo "ref=refs/pull/$INPUT_PR/merge" >> "$GITHUB_OUTPUT"
+          {
+            echo "pr=$INPUT_PR"
+            echo "base=$BASE"
+            echo "ref=refs/pull/$INPUT_PR/merge"
+          } >> "$GITHUB_OUTPUT"
           echo "workflow_dispatch: PR #$INPUT_PR ($HEAD_REF @ $HEAD_SHA) into $BASE"
 
   gate-checks:
@@ -127,11 +137,13 @@ jobs:
       # A failed resolve must redden this required check, never skip it.
       - name: Refuse unless resolve succeeded
         if: ${{ needs.resolve.result != 'success' }}
+        env:
+          RESULT: ${{ needs.resolve.result }}
         run: |
-          echo "::error::resolve did not succeed (${{ needs.resolve.result }}) — this run gates nothing."
+          echo "::error::resolve did not succeed ($RESULT) — this run gates nothing."
           exit 1
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # Event path: empty → checkout's default, the merge ref.
           # Dispatch path: the same merge ref, named — see the header.
@@ -139,6 +151,10 @@ jobs:
           # Full history: the secret scan below walks the PR's own commits
           # (base..HEAD), which a depth-1 clone cannot reach (the #84 stall).
           fetch-depth: 0
+          # The repo is public, so the fetches below need no token; nothing
+          # here pushes. Leaving the token in .git/config is what zizmor's
+          # artipacked audit is about.
+          persist-credentials: false
 
       # The Warden's secret scan (issue #32) — first, before any install, so
       # a leaked key fails in seconds. It scans the PR's OWN commits, so a
@@ -157,9 +173,20 @@ jobs:
           git fetch origin "$BASE"
           GITLEAKS="$GITLEAKS" sh scripts/secret-scan.sh "origin/$BASE"
 
-      - uses: pnpm/action-setup@v6
+      # The Warden's workflow lint (issue #35): actionlint for shape, zizmor
+      # (pedantic) for safety — unpinned actions, template injection, broad
+      # permissions, persisted credentials. Runs on every PR, before install,
+      # because it takes seconds and the workflows are what everything else
+      # here trusts. Binaries pinned by sha256 inside the script; the same
+      # script runs by hand (scripts/workflow-lint.sh).
+      - name: Workflow lint (actionlint + zizmor)
+        run: |
+          sh scripts/workflow-lint.sh fetch
+          ACTIONLINT=/tmp/actionlint ZIZMOR=/tmp/zizmor sh scripts/workflow-lint.sh
 
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -192,19 +219,23 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # `gh pr edit --add-label founder-review` on money/auth diffs
     steps:
       # A failed resolve must redden this required check, never skip it.
       - name: Refuse unless resolve succeeded
         if: ${{ needs.resolve.result != 'success' }}
+        env:
+          RESULT: ${{ needs.resolve.result }}
         run: |
-          echo "::error::resolve did not succeed (${{ needs.resolve.result }}) — this run gates nothing."
+          echo "::error::resolve did not succeed ($RESULT) — this run gates nothing."
           exit 1
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           ref: ${{ needs.resolve.outputs.ref }}
+          # Public repo, read-only git below; the label write goes through gh.
+          persist-credentials: false
 
       - name: Money/auth surface check
         env:
