@@ -81,7 +81,7 @@ its debts is not restated here — it lives, derived rather than remembered, in:
 The rebaselined ladder below absorbs these by reference, not by copying —
 a second list shadowing the queue would drift from it (working law 4).
 
-## 4. The remaining ladder — rungs N1–N7
+## 4. The remaining ladder — rungs N1–N8 (v2: N3 expanded and N4 Takes added on the founder's pre-sign review)
 
 Fresh names (N for "new ladder"), because both "M" and "R" are taken by
 history. Small, independently reviewable, in the original plan's style: each
@@ -113,34 +113,47 @@ the **two-paths retire-or-fold question** put to the founder (§6). Gate:
 every `users:1` flag either widened, retired, or holding on a **named,
 owned** blocker — the register re-read says so. Rollback: per-flag, minutes.
 
-**N3 — The studio surface completes** *(the designed-unbuilt UI with founder
-rulings)*: the Pinterest-style reference selector (**#14**, countersigned)
-and the settings modal (**#15**, six founder rulings), against the design
-north star and the placeholder law (PROGRAM.md). Gate: evidence pack (both
-themes) + copy audit before his eyes, per the UI milestone contract.
-Rollback: routes/flags off.
+**N3 — The refine era completes: the feature panel + studio surfaces**
+*(amended on the founder's pre-sign review, 2026-08-25, verbatim: "the
+refine era still isnt over e.g we have the auto analyzing all features on a
+cast cropping them creating bounding boxes and putting them in the feature
+panel so they become editable the pinterest style selector on references, we
+settings modal for casts")*: the feature-panel arc — the auto-scan prefill,
+the panel's absent state, open-kind properties, and removal universality
+(**#23**, the four designs the first draft had shelved) — plus the
+Pinterest-style reference selector (**#14**, countersigned) and the settings
+modal (**#15**, six founder rulings), against the design north star and the
+placeholder law (PROGRAM.md). Gate: evidence pack (both themes) + copy audit
+before his eyes, per the UI milestone contract. Rollback: routes/flags off.
 
-**N4 — Entries converge** *(original M10 finished)*: canvas Cast-new and the
+**N4 — Takes** *(scheduled by the founder's word on the same review: "takes
+actually has a solid use case that i designed with another agent" —
+`CASTING_TAKES_DESIGN.md`, #18)*: built per its design, dark behind its
+flag; the design's own founder gates on PRICING stand. Placed before the
+cutover arc, as the original plan intended for M8. Gate: pricing rulings +
+his eye on the shipped surface. Rollback: flag off.
+
+**N5 — Entries converge** *(original M10 finished)*: canvas Cast-new and the
 wardrobe picker re-pointed at V2 sessions/casts; the boards surface stops
 importing `@/features/casting/*`. This is the last *product* prerequisite of
 retirement — legacy stops receiving new sessions from any door. Gate:
 founder drives canvas→cast→sign→board landing. Rollback: picker routes back.
 
-**N5 — Cutover plumbing** *(original M11)*: `/studio?tool=casting*`
+**N6 — Cutover plumbing** *(original M11)*: `/studio?tool=casting*`
 redirects, mixed-deploy verification, the founder-approved disposal list for
-dev-era drafts (list only — execution is N6). Gate: founder approves the
+dev-era drafts (list only — execution is N7). Gate: founder approves the
 list. Rollback: redirects off.
 
-**N6 — Observation done right** *(original M13's unfinished half)*: legacy
+**N7 — Observation done right** *(original M13's unfinished half)*: legacy
 frozen (routes redirect, code untouched), the disposal list executed through
 `executeFinalCastDeletion`, and a **14-day observation window** on V2-only
 use. Note what this is NOT: scope widening — `CASTING_V2_SCOPE` is already
 `all`. It is the deliberate freeze-and-watch the ceremony always meant.
 Gate: window closes on production evidence + founder sign-off — **the point
-of no return that authorizes N7.** Rollback: unfreeze legacy any time inside
+of no return that authorizes N8.** Rollback: unfreeze legacy any time inside
 the window.
 
-**N7 — Retirement (keeps the name M14)** *(#29)*: execute the Retirement
+**N8 — Retirement (keeps the name M14)** *(#29)*: execute the Retirement
 Register per §L.R with the Atlas as deletion authority — noting the Atlas's
 edge graph is only trustworthy for this purpose since `d614320f`, and the
 un-wiring differ runs over the retirement window before the sitting closes
@@ -149,13 +162,14 @@ Register diff + the post-deletion Atlas. Rollback: git revert of pure
 removals.
 
 **The unscheduled shelf** (explicitly not on the ladder; each enters only by
-the founder naming it as a focus): Takes (#18), Voice (old M8b — see §6),
-the Film Engine (#17), creative-casts research (#22, gated on N1's own
-Phase-A sheet), any-feature discovery (#30, gated per §5c), born-ink
-discovery (#31, coupled to the `NOTES_MAX` census re-read), the four older
-designs (#23), the two unacted evaluations (#24), the R7 evidence family
-(#6, parked by ruling), and the post-program backlog from the original plan
-(pre-made roster, reference-shaped casting, upload-a-person). Engineering
+the founder naming it as a focus — as Takes and #23 just did, on his
+pre-sign review): Voice (old M8b — see §6), the Film Engine (#17),
+creative-casts research (#22, gated on N1's own Phase-A sheet), any-feature
+discovery (#30, gated per §5c), born-ink discovery (#31, coupled to the
+`NOTES_MAX` census re-read), the two unacted evaluations (#24), the R7
+evidence family (#6, parked by ruling), and the post-program backlog from
+the original plan (pre-made roster, reference-shaped casting,
+upload-a-person). Engineering
 health (#7, #8, #26, #27, #28, toolbelt #32–35) rides the patrol clocks as
 maintenance, not the ladder.
 
@@ -163,17 +177,19 @@ maintenance, not the ladder.
 
 N1: court price card before spend; his eye on both bars (the milestone
 gate). N2: the widening words; the two-paths ruling; E1's verdict read.
-N3: evidence pack + copy audit. N4: canvas drive. N5: disposal-list
-approval. N6: observation sign-off — point of no return. N7: Register diff +
-post-deletion Atlas. Plus, standing: every rung boundary clears the focus
+N3: evidence pack + copy audit. N4: the Takes pricing rulings + his eye.
+N5: canvas drive. N6: disposal-list approval. N7: observation sign-off —
+point of no return. N8: Register diff + post-deletion Atlas. Plus, standing: every rung boundary clears the focus
 and waits for his word (THE MILESTONE GATE, PROGRAM.md).
 
 ## 6. What this rebaseline does NOT decide — founder questions on the record
 
-1. **Takes and Voice: before or after retirement?** The original ladder put
-   both before cutover; nothing in the product depends on either, and the
-   voice transport was never verified. Recommendation: **after** — the shelf,
-   entered by his word. His call.
+1. **Takes and Voice: before or after retirement?** ⚠ **HALF-ANSWERED on the
+   founder's pre-sign review (2026-08-25): Takes is SCHEDULED — his verbatim
+   "takes actually has a solid use case that i designed with another agent"
+   — now rung N4.** Voice remains the open half: transport never verified,
+   nothing depends on it; recommendation unchanged (**after** — the shelf,
+   entered by his word). His call.
 2. **Is a post-Sign revision product still wanted** (the real M12), now that
    the refine arc serves identity edits pre-Sign? The sign-mint (7b-ii) is
    the first concrete piece if yes. Recommendation: fold into the shelf until
