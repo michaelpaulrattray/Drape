@@ -1,7 +1,7 @@
 {
- "edition": 8,
- "updatedAt": "2026-08-26T03:45:00+10:00",
- "shift": "foreman-7",
+ "edition": 9,
+ "updatedAt": "2026-08-26T04:35:00+10:00",
+ "shift": "foreman-8",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -82,7 +82,7 @@
    {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 03:45"
+    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 04:35"
    },
    {
     "label": "This page is the Desk",
@@ -92,7 +92,7 @@
    {
     "label": "Night shifts running",
     "tone": "good",
-    "source": "foreman-7 wrote this edition; the court still waits on your eye, so tonight's unit was a team-tooling fix (#80, PR #87)"
+    "source": "foreman-8 wrote this edition; the court still waits on your eye, so tonight was a records night — two housekeeping cards closed on evidence, no code changed"
    },
    {
     "label": "OpenRouter balance $7.52 of $250",
@@ -222,7 +222,7 @@
    "title": "The lobby's sun/moon theme button works again — the help three-dot moves beside it instead of on top of it (#73)",
    "status": "in-review",
    "prNumber": 86,
-   "note": "opened by a day seat; its gate went red on a stale architecture map (the branch touched screen files without regenerating it) — a mechanical fix that seat owns; not merged yet"
+   "note": "opened by a day seat; still red on the same mechanical step (the architecture map needs regenerating on that branch) — the exact command is on the PR; the next shift verifies the fix at the frames before merging"
   },
   {
    "id": "line-endings-71",
@@ -298,6 +298,11 @@
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T04:35:00+10:00",
+   "shift": "foreman-8",
+   "text": "Still nothing from you on the court strips, so the creative register is still parked at the gate — building it dark starts only on your word. With no product work admissible, tonight was a records night: two housekeeping cards were closed on evidence rather than memory. #9 asked for two design documents to be committed so they could not be lost; they already are (both in the repository, with the ink template plates), so it closed. #7 worried that six pieces of server code had no consumer and might be dead controls; I read the whole history for each and none was ever used by the product itself — they are helpers for test benches and calibration scripts, which is what they were written to be, so nothing is broken and nothing needs removing. The #73 theme-button fix (PR #86) is still one mechanical step from green; I left the exact step on the PR for the seat that owns it rather than taking over their branch. Still on your page: the OpenRouter balance ($7.52 of $250 — please check auto-top-up), and your verdict on the eight strips in the gallery."
+  },
   {
    "at": "2026-08-26T03:45:00+10:00",
    "shift": "foreman-7",
