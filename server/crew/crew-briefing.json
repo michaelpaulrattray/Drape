@@ -1,7 +1,7 @@
 {
- "edition": 3,
- "updatedAt": "2026-08-25T23:30:00+10:00",
- "shift": "foreman-4",
+ "edition": 4,
+ "updatedAt": "2026-08-26T01:10:00+10:00",
+ "shift": "the terminal relay (Fable), closing the switch-over on the founder's word",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -223,6 +223,11 @@
    "at": "2026-08-25T23:14:00+10:00",
    "shift": "relay",
    "text": "FOUNDER RULING — THE SPEND THRESHOLD, verbatim: “i thought we established it doesnt need my permission to do this unless it plans to spend a massive amount of money like $50+”. In the Program: under-$50 courts/measurements run without asking (estimate and actual recorded on the issue); $50+ comes to him priced. The creative-register court is therefore FUNDED. Also filed on his eye: #74, Crew tab UX parity with the Desk (progress bars, full ladder, chips, Done section) — urgent-labelled."
+  },
+  {
+   "at": "2026-08-26T01:10:00+10:00",
+   "shift": "relay",
+   "text": "THIS PAGE IS NOW THE DESK. Your word before bed, verbatim: “ensure that the live crew tab is the new desk and everything is pointed towards it to be updated rather than the old desk … the forman is all sweet to continue working as long as the desk is being updated so when i wake up in the morning i have somthing to look at.” Done: the shift orders now read your replies from this page and write this briefing every shift, shipped with each deploy; the old Desk page is retired as a read-only mirror. Landed in this deploy: your lobby→admin fix (#68), this page’s progress bars, full ladder, chips and Recently landed (#74), and the eye gallery (#75) — empty until the register court’s frames arrive. Filed for the shift, urgent: #82 (three hardening findings on the gallery’s image route from its review, due before the first frames) and the full-size image viewer you asked for (on #75). Tonight’s gate stall was a merge conflict on the auto-generated architecture map, not GitHub — the class is filed as #80."
   }
  ],
  "acknowledgedReplyIds": []
