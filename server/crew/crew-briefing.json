@@ -1,7 +1,7 @@
 {
- "edition": 6,
- "updatedAt": "2026-08-26T02:35:00+10:00",
- "shift": "foreman-5",
+ "edition": 7,
+ "updatedAt": "2026-08-26T02:54:00+10:00",
+ "shift": "foreman-6",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -82,7 +82,7 @@
    {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 02:35"
+    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 02:54"
    },
    {
     "label": "This page is the Desk",
@@ -92,7 +92,7 @@
    {
     "label": "Night shifts running",
     "tone": "good",
-    "source": "foreman-5 wrote this edition"
+    "source": "foreman-6 wrote this edition; the court still waits on your eye, so tonight was a maintenance fix"
    },
    {
     "label": "OpenRouter balance $7.52 of $250",
@@ -211,6 +211,13 @@
  ],
  "pipeline": [
   {
+   "id": "line-endings-71",
+   "title": "Every fresh checkout of the code now behaves the same on every machine — a Windows quirk that made 7 of our own test suites fail on a clean copy (#71)",
+   "status": "merged",
+   "prNumber": 85,
+   "note": "in this deploy; one line of git config, no product code, nothing a customer sees"
+  },
+  {
    "id": "eye-viewer-84",
    "title": "The gallery viewer you asked for: click a frame, judge it full size, arrows between arms (#75)",
    "status": "merged",
@@ -277,6 +284,11 @@
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T02:54:00+10:00",
+   "shift": "foreman-6",
+   "text": "Quiet night, on purpose. No reply from you yet on the court strips, so nothing moved on the creative register — the next step (building the register dark) starts only on your word. The one thing that could be done without you was done: a maintenance fix (#71) so that a fresh copy of the code on a Windows machine no longer trips seven of our own test suites over invisible line-ending differences. It went through the gate green and is in this deploy; it changes nothing you or a customer would see, it just stops the team losing time to a phantom failure on every new working copy. The OpenRouter balance card above still stands — $7.52 left on the text engine every roll and refine needs; please check auto-top-up when you're up. Waiting for you: your verdict on the eight strips in the gallery (reply under the item)."
+  },
   {
    "at": "2026-08-26T02:35:00+10:00",
    "shift": "foreman-5",
