@@ -19,6 +19,12 @@ export function useCrewState(enabled: boolean) {
     enabled,
     retry: false,
     staleTime: CREW_STALE_MS,
+    /* staleTime only governs SUCCESSFUL data — a NOT_FOUND is always stale,
+       so with the default focus refetch on, a dark flag would refire this on
+       every window focus for every admin, which is the repeat `retry: false`
+       exists to avoid. The nav updates on mount and on send; focus adds
+       nothing a briefing needs. */
+    refetchOnWindowFocus: false,
   });
 }
 

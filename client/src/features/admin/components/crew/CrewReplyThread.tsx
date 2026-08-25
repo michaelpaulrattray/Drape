@@ -26,8 +26,12 @@ export function CrewReplyThread({
 
   /* Oldest first inside a thread — a conversation reads down. The page's
      journal reads the other way, and that is deliberate: one is a thread and
-     the other is a feed. */
-  const ordered = [...replies].sort((a, b) => a.id - b.id);
+     the other is a feed. An OPTIMISTIC row carries a negative id and is the
+     NEWEST thing in the thread, so negatives sort last — a plain id sort put
+     the in-flight reply at the top for ~200ms and then jumped it to the
+     bottom on settle, a visible reorder on the page's one control. */
+  const rank = (id: number) => (id < 0 ? Number.MAX_SAFE_INTEGER : id);
+  const ordered = [...replies].sort((a, b) => rank(a.id) - rank(b.id));
 
   return (
     <ul className="space-y-3">

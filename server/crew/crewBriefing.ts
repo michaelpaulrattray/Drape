@@ -61,8 +61,18 @@ import { z } from "zod";
 
 import briefingJson from "./crew-briefing.json";
 
-/** ISO-8601 with an offset, which is what every writer here emits. */
-const isoDateTime = z.string().min(1).max(64);
+/**
+ * A datetime the page can SORT — `Date.parse` must read it, or the journal's
+ * timeline would place the entry at a NaN's arbitrary position instead of
+ * this parse reddening the shift's commit, which is the one gate built to
+ * catch exactly a shift's typo. (Named for what writers emit — ISO-8601 with
+ * an offset — but validated for what readers need.)
+ */
+const isoDateTime = z
+  .string()
+  .min(1)
+  .max(64)
+  .refine((value) => !Number.isNaN(Date.parse(value)), "not a parseable datetime");
 
 /**
  * How many shift entries the file carries (§2).
