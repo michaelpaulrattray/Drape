@@ -244,7 +244,21 @@ export const crewBriefingSchema = z.object({
   /** Shift entries only — his notes arrive as replies. Capped; git holds the rest. */
   journal: z.array(journalEntrySchema).max(CREW_JOURNAL_CAP),
   acknowledgedReplyIds: z.array(z.number().int().positive()),
-}).strict();
+}).strict().refine(
+  /*
+    The reply cardId namespace is the UNION of needsYou and eyeItems (PR #79
+    review finding 2): crew.reply takes a free string and both surfaces
+    filter the same replies by the same id, so per-array uniqueness alone
+    would let one id carry two claims — his verdict on the frames rendering
+    as an answer to an unrelated card.
+  */
+  (briefing) =>
+    uniqueBy<{ id: string }>("thread host", (host) => host.id)([
+      ...briefing.needsYou,
+      ...briefing.eyeItems,
+    ]),
+  "needsYou[].id and eyeItems[].id share one reply namespace and must be unique across both",
+);
 
 export type CrewBriefing = z.infer<typeof crewBriefingSchema>;
 
