@@ -105,13 +105,88 @@ describe("wardrobe/utils", () => {
     expect(sanitizeDescription("a normal description")).toBe("a normal description");
   });
 
-  it("sanitizeDescription should replace safety terms", async () => {
+  /*
+    THE ARM THAT USED TO STAND HERE REPLACED NOTHING — repaired 2026-08-25
+    (found by reading the device on the founder's own order, ruled fable-1655).
+
+    It was titled "sanitizeDescription should replace safety terms" and its
+    input was `"test input with content"`, which contains no term from the map.
+    It asserted that a string function returned a non-empty string. **Empty the
+    map entirely and it stayed green under a title saying the device was
+    tested** — the false-label class (roadmap 3h), on the one device the founder
+    has since pointed at as the answer to the image engine refusing revealing
+    garments.
+
+    What replaces it derives its population from `SAFETY_TERM_MAP` itself
+    rather than retyping the twenty pairs, because a retyped copy is a second
+    source of truth (working law 4) and would go green with the map deleted.
+  */
+  it("replaces EVERY term the map declares, derived from the map itself", async () => {
+    const { sanitizeDescription, SAFETY_TERM_MAP } = await import("./wardrobe/utils");
+
+    const entries = Object.entries(SAFETY_TERM_MAP);
+    /*
+      THE POPULATION FLOOR, asserted first. A sweep that reads nothing passes
+      every expectation below it — the doctrine's own control — so the map
+      being non-empty is the first claim, not an assumption.
+    */
+    expect(entries.length).toBeGreaterThanOrEqual(15);
+
+    const unreplaced: string[] = [];
+    for (const [term, replacement] of entries) {
+      const out = sanitizeDescription(`a ${term} in black`);
+      if (!out.includes(replacement) || out.includes(`a ${term} `)) unreplaced.push(term);
+    }
+    expect(unreplaced).toEqual([]);
+  });
+
+  it("LONGEST KEY FIRST — a compound term is not eaten by the short key inside it", async () => {
     const { sanitizeDescription } = await import("./wardrobe/utils");
 
-    // Should return a string (may have replacements applied)
-    const result = sanitizeDescription("test input with content");
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
+    // "sports bra" must be consumed before "bra", and "bikini top" before "bikini".
+    expect(sanitizeDescription("a sports bra")).toBe("a athletic crop top");
+    expect(sanitizeDescription("a bikini top and bikini bottom")).toBe("a halter crop top and swim brief");
+  });
+
+  /*
+    ⚠ THE ARM THE OLD ONE COULD NOT HAVE WRITTEN, and the reason this repair
+    was a live customer defect rather than test hygiene.
+
+    The substitution was `new RegExp(term, "gi")` — unanchored — so the
+    three-letter key `bra` owned every word containing those letters. Driven
+    through the real function before the fix: "a silver bracelet" became "a
+    silver cropped topcelet", and that string was going to an image engine on a
+    paying road. Same class as the typo gate that owned the real word "shave"
+    and blocked the founder's bald ask.
+  */
+  it("leaves ORDINARY WORDS that merely contain a key alone", async () => {
+    const { sanitizeDescription } = await import("./wardrobe/utils");
+
+    const innocent = [
+      "a silver bracelet and a linen shirt",
+      "an embroidered brand label",
+      "a warm embrace of colour",
+      "abrasive canvas",
+      "a libra pendant",
+      "topaz earrings",
+      "a cotton bralike wrap",
+    ];
+    for (const phrase of innocent) {
+      expect(sanitizeDescription(phrase)).toBe(phrase);
+    }
+  });
+
+  it("does not stutter when the customer already typed the replacement's last word", async () => {
+    const { sanitizeDescription } = await import("./wardrobe/utils");
+
+    // "corset" -> "structured bodice top", so "a corset top" used to render
+    // "a structured bodice top top".
+    expect(sanitizeDescription("a corset top with a garter belt"))
+      .toBe("a structured bodice top with a leg strap belt");
+    expect(sanitizeDescription("a bralette top")).toBe("a cropped top");
+    expect(sanitizeDescription("a camisole top")).toBe("a thin strap top");
+    // Absorption is TRAILING only — a "top" in front of the match survives.
+    expect(sanitizeDescription("a top over a corset")).toBe("a top over a structured bodice top");
   });
 
   it("diagnoseResponse should detect no-candidate responses", async () => {

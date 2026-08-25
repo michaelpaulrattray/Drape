@@ -21,7 +21,13 @@ const log = createModuleLogger("wardrobe/utils");
 export { getAiClient, SAFETY_SETTINGS, withTextQueue, withImageQueue };
 
 // ── Safety Term Sanitization ───────────────────────────────────────────────
-const SAFETY_TERM_MAP: Record<string, string> = {
+/**
+ * Exported so the arm that proves this device can DERIVE its population from
+ * the map itself. A test that retypes these twenty pairs is a second copy of a
+ * source of truth (working law 4) — it would stay green with the map emptied,
+ * which is precisely the state the old arm was in.
+ */
+export const SAFETY_TERM_MAP: Record<string, string> = {
   bralette: "cropped top",
   bra: "cropped top",
   "sports bra": "athletic crop top",
@@ -43,13 +49,68 @@ const SAFETY_TERM_MAP: Record<string, string> = {
   camisole: "thin strap top",
 };
 
+/**
+ * Rename a garment to a construction noun before it reaches an image engine.
+ *
+ * The map above is the device: every replacement names the same object by how
+ * it is BUILT (`cropped top`, `structured bodice top`, `base layer`) rather
+ * than softening a descriptor. Nothing here removes a body word, and that is
+ * deliberate — it is a rename, not a euphemism.
+ *
+ * ⚠ **THE MATCH IS WORD-BOUNDED, AND IT WAS NOT UNTIL 2026-08-25.**
+ *
+ * `new RegExp(term, "gi")` matches anywhere inside a word, so the three-letter
+ * entry `bra` ate every ordinary word containing those letters. Driven through
+ * this function, printed output, before the fix:
+ *
+ *   "a silver bracelet and a linen shirt" -> "a silver cropped topcelet and a linen shirt"
+ *   "an embroidered brand label"          -> "an embroidered cropped topnd label"
+ *   "a warm embrace of colour"            -> "a warm emcropped topce of colour"
+ *   "abrasive canvas"                     -> "acropped topsive canvas"
+ *   "a libra pendant"                     -> "a licropped top pendant"
+ *
+ * `bracelet` is not a hypothetical word in a wardrobe product. A customer who
+ * typed *"silver bracelet"* into a garment description had `cropped topcelet`
+ * sent to the image engine, on a paid road, silently.
+ *
+ * It is the same class as the typo gate that owned the real word *"shave"* and
+ * blocked the founder's own bald ask: a substitution table applied without a
+ * boundary owns every word its keys are a substring of.
+ *
+ * **Longest key first still matters and is kept**: `sports bra` must be
+ * consumed before `bra`, and `bikini top` before `bikini`, or the shorter key
+ * rewrites the longer one's object into something that no longer names it.
+ * The boundary and the ordering are two different guarantees and this needs
+ * both.
+ *
+ * ⚠ **The key is escaped before it becomes a pattern.** Every current key is
+ * plain letters, a space or a hyphen, so nothing is escaped today — but a key
+ * is a garment name somebody will one day write with a `.` or a `+` in it, and
+ * an unescaped one silently becomes a wildcard rather than an error.
+ *
+ * ⚠ **A REPLACEMENT'S LAST WORD ABSORBS THE SAME WORD BEHIND THE MATCH.**
+ * *"a corset top"* rendered *"a structured bodice top **top**"*, because seven
+ * of the replacements end in a garment noun the customer has usually just
+ * typed herself — `corset top`, `bralette top`, `bra top`, `camisole top` are
+ * all ordinary things to write. So the pattern optionally consumes one
+ * trailing repeat of the replacement's final word.
+ *
+ * **The tradeoff, stated rather than slipped in:** this DROPS a word the
+ * customer typed, in exactly the case where keeping it produces a stutter. It
+ * is scoped as narrowly as the defect — one word, only where it duplicates the
+ * replacement's own last word, only immediately behind the match — and every
+ * cell of it is driven in the arm rather than argued about here.
+ */
 export function sanitizeDescription(desc: string): string {
   let sanitized = desc;
   const sortedTerms = Object.entries(SAFETY_TERM_MAP).sort(
     (a, b) => b[0].length - a[0].length,
   );
   for (const [term, replacement] of sortedTerms) {
-    const regex = new RegExp(term, "gi");
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const tail = replacement.slice(replacement.lastIndexOf(" ") + 1);
+    const tailEscaped = tail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b(?:\\s+${tailEscaped}\\b)?`, "gi");
     sanitized = sanitized.replace(regex, replacement);
   }
   return sanitized;
