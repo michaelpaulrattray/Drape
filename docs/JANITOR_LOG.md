@@ -19,7 +19,7 @@ none of them has deletion authority on its own.
 
 ---
 
-## Run 1 — 2026-08-26 07:35–08:xx AEST (Janitor, patrol #1, card #96)
+## Run 1 — 2026-08-26 07:35–07:58 AEST (Janitor, patrol #1, card #96)
 
 Inherited: the 294-file untracked litter the planner seat left, the `output/`
 remainder (#8), knip's first reading (#34), and four items named on #96.
