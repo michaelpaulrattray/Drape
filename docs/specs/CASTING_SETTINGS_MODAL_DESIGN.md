@@ -5,6 +5,30 @@ FOUNDER THE SAME DAY (fable-1546, fable-1547 and fable-1548). READ §10 FIRST �
 it is his words, and this document says things he has overruled wherever §10 is
 not consulted.** Nothing here is built.
 
+⚠ **AND IT IS ONE GRAMMAR WITH `CREATIVE_REGISTER_DESIGN.md`, on his own
+linkage** (2026-08-25, relayed fable-1673, verbatim: *"right and i feel the
+settings modal we build will allow users to set these settings themselves."*).
+
+**A modal setting is a STATED FACT entered by control instead of by words.** That
+is the whole cross-reference and it settles the precedence question without a new
+rule: stated pins, unstated is authored, and **typed words outrank modal
+settings** — his existing bypass ruling, unchanged. The row map, so neither
+document invents a second one:
+
+```
+cast style                    → the register / cohort selector (that doc §2)
+lighting · backgrounds ·      → the SHEET FRAME's own sentences (§1b, middle)
+  framing
+energy · moods                → the VARIANCE CARD's flavour (§1b, third part)
+"imagination level"           → the WRITER'S ROOM's latitude (§1d), THIN briefs
+  (future row)                  only — a coming-soon candidate for HIS approval,
+                                noted and NOT built
+```
+
+**Sequencing is unchanged: the modal sits behind the composer family.** It is
+downstream of the register because a control that sets a sentence needs the
+sentence to have found its final shape first.
+
 Ordered fable-1531 §2 from the founder's own question, with the Higgsfield "Film
 setup" screen he sent as the reference
 (`docs/specs/references/settings-modal-higgsfield-reference.png`). Written

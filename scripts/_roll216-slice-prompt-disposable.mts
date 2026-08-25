@@ -29,14 +29,40 @@ const [cands] = await conn.query<any[]>(
 const delivered = cands.filter((c) => c.status !== "failed");
 if (delivered.length === 0) throw new Error("no delivered slice on roll 216 — nothing to quote");
 
+const promptOf = (row: any): string => {
+  const node = typeof row.internalPrompt === "string" ? JSON.parse(row.internalPrompt) : row.internalPrompt;
+  const text = String(node?.prompt ?? "");
+  if (text.length === 0) throw new Error(`slice ${row.position} stored no prompt — refusing to write an empty file`);
+  return text;
+};
+
 const chosen = delivered[0]!;
-const node = typeof chosen.internalPrompt === "string" ? JSON.parse(chosen.internalPrompt) : chosen.internalPrompt;
-const prompt = String(node?.prompt ?? "");
-if (prompt.length === 0) throw new Error(`slice ${chosen.position} stored no prompt — refusing to write an empty file`);
+const prompt = promptOf(chosen);
 
 mkdirSync("output/raw-prompt-reference", { recursive: true });
 writeFileSync("output/raw-prompt-reference/roll216-slice-prompt-today.txt", prompt, "utf8");
 writeFileSync("output/raw-prompt-reference/roll216-brief-verbatim.txt", brief, "utf8");
+
+/*
+  ⚠ ARM B's THREE COLUMNS, WRITTEN TO DISK HERE AND NOT READ BY THE COURT ITSELF.
+
+  The court refuses `MYSQL_PUBLIC_URL` outright — a script that spends must not
+  also be able to reach production — and roll #216 lives in production alone. So
+  the crossing happens once, in this read-only script, and the court consumes
+  files. The digest goes in the filename's neighbour file so the court can prove
+  it rendered the bytes this read took rather than a later edit of them.
+*/
+const armB = delivered.slice(0, 3);
+if (armB.length < 3) throw new Error(`only ${armB.length} delivered slices — arm B needs three`);
+const columns = armB.map((row) => ({ position: row.position, status: row.status, prompt: promptOf(row) }));
+writeFileSync(
+  "output/raw-prompt-reference/roll216-armB-columns.json",
+  JSON.stringify({ rollId: 216, world: production ? "PRODUCTION" : "DEV", columns }, null, 2),
+  "utf8",
+);
+console.log(`
+arm B columns: positions ${columns.map((c) => c.position).join(", ")} · ${columns.map((c) => c.prompt.length).join(", ")} chars`);
+console.log("wrote output/raw-prompt-reference/roll216-armB-columns.json");
 
 console.log(`\nroll 216 · slice position ${chosen.position} (${chosen.status})`);
 console.log(`  persona line: ${chosen.personaLine ?? "(none)"}`);
