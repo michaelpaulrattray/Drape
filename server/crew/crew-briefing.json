@@ -1,7 +1,7 @@
 {
-  "edition": 16,
-  "updatedAt": "2026-08-26T08:28:00+10:00",
-  "shift": "warden — patrol #1 (third seat)",
+  "edition": 17,
+  "updatedAt": "2026-08-26T09:30:00+10:00",
+  "shift": "foreman-14",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -82,7 +82,7 @@
       {
         "label": "Production healthy",
         "tone": "good",
-        "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 08:3x"
+        "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 09:3x"
       },
       {
         "label": "This page is the Desk",
@@ -92,7 +92,7 @@
       {
         "label": "Night shifts running",
         "tone": "good",
-        "source": "the Warden seat wrote this edition (first security patrol, on your \"do it\"); the register is merged and dark, waiting on your word; the code-scanner now runs on every change — see the journal"
+        "source": "foreman-14 wrote this edition: #99 fixed and merged, the Machinist's first patrol merged, the runner's machine close-stamp live (#101); the register is dark, waiting on your word — see the journal"
       },
       {
         "label": "OpenRouter balance $7.52 of $250",
@@ -244,6 +244,20 @@
   ],
   "pipeline": [
     {
+      "id": "card-bound-99",
+      "title": "The register's variation card can no longer vanish on a long line (#99)",
+      "status": "merged",
+      "prNumber": 113,
+      "note": "Under the creative register, each candidate on your sheet gets one line of variation. The writer was told \"12–35 words\" while the checker counted 240 characters and threw the WHOLE card away if any line was longer — so a writer that obeyed exactly, in this register's own long words (\"augmentation\", \"collarbone\"), could hand you a sheet with no variation at all, silently. Now the writer is told the character limit in the checker's own unit, the limit is derived from the worst case of 35 long words (384), and a test holds a real 35-word line (337 characters) that used to be refused. Proven able to fail: putting the old limit back turns exactly that test red. Nothing spent; the register is still switched off for everyone."
+    },
+    {
+      "id": "machinist-patrol-1",
+      "title": "Machinist — patrol #1: the performance ledger, built from what production already records; the worst number carded (#98 → #111)",
+      "status": "merged",
+      "prNumber": 112,
+      "note": "A reading, not a change — nothing a customer sees. The seat measured every paid operation's wall-clock, failure and refund rates, the paid face-scan looks, and the provider bills per day, and wrote them to docs/MACHINIST_LEDGER.md with the reader that refreshes it. THE WORST NUMBER: one paid edit in seven fails and is refunded (8 of 52 in the last 14 days, 32 of 222 over 60) — the house pays for a render nobody receives and the customer waits about two minutes for an apology — and the failure's CLASS is not durably recorded (every one is filed as a generic server error), so nothing can be optimised until the classes are named at the rows. That reading is card #111. The runner-up is the edit median of 124 s, which the 2K render-tier experiment (#58) answers. The Machinist's process died twice mid-close (see problems); foreman-14 fixed its one red test line and merged it."
+    },
+    {
       "id": "warden-patrol-1",
       "title": "Warden — patrol #1: the security scanner now checks every change before it can merge; the dead-code reader runs nightly (#97)",
       "status": "merged",
@@ -269,7 +283,7 @@
       "title": "The creative register — your words first, the house framing kept, one line of variation per candidate (#16, step 2 of the build order)",
       "status": "merged",
       "prNumber": 94,
-      "note": "Merged this morning (the earlier shift built it and reported it merged before it was — the Retro merged it after re-checking the gate was green and the review clean). Switched off for every account, and off means today's product to the byte. One small defect the automatic review found is filed (#99) and gets fixed before your flagged roll: the card-writer is told \"12–35 words\" while the checker counts 240 characters, so an obedient long line could drop the whole card."
+      "note": "Merged this morning (the earlier shift built it and reported it merged before it was — the Retro merged it after re-checking the gate was green and the review clean). Switched off for every account, and off means today's product to the byte. The one defect the automatic review found (#99) is now FIXED and merged (PR #113, 26 Aug 09:12): the card-writer and the checker agree on the unit, so an obedient long line can no longer drop the whole card. Nothing stands between your word and the flagged roll."
     },
     {
       "id": "semgrep-33",
@@ -365,11 +379,18 @@
   ],
   "problems": [
     {
-      "id": "shift-report-before-artifacts",
-      "title": "Shift processes dying before their close — the 07:00 shift, then twice on the Warden patrol; guard filed (#101)",
-      "detail": "The 07:00 shift's report said the register was merged, your page was shipped and its workspace cleaned; at 07:17 none of those had happened — the process died mid-close and left a template placeholder where the deploy receipt goes. Nothing reached you wrong (this edition is the first one after it) and the register is now genuinely merged, still switched off. The class: a report written before the acts. Fix: the shift runner will stamp every close after the shift exits — receipt present or not, each \"merged\" checked against GitHub — so a dead shift cannot leave \"done\" standing (#101). Until that lands, every shift reads the previous one at the artifacts, which is what caught this. UPDATE 08:28: it happened twice more on one patrol — the Warden's first two processes each died after pushing but before merging, reporting, or writing your page. Nothing was lost (the third seat found the work at GitHub and finished it), but #101 moves up: it is the next maintenance build once your register word is handled.",
-      "severity": "info",
+      "id": "fable-review-broken",
+      "title": "The automatic code review on pull requests stopped working at 09:10 (#114)",
+      "detail": "Every pull request gets an automatic review by a Claude reviewer before it merges. From 09:10 this morning that job fails inside a second with no message and no cost (twice on the Machinist's PR; it had passed on the same PR at 08:59). The build checks themselves still run and still pass — only the reviewer is silent. It does not block merges (it was never a required check), which is the risk: the next substantial change would merge unreviewed. Most likely the reviewer's login token (it runs on your account); the card says what to check. Nothing needs your hand yet unless the token turns out to be yours to renew.",
+      "severity": "warning",
       "state": "open"
+    },
+    {
+      "id": "shift-report-before-artifacts",
+      "title": "Shift processes dying before their close — cause found and the machine stamp is live (#101 done)",
+      "detail": "The 07:00 shift's report said the register was merged, your page was shipped and its workspace cleaned; at 07:17 none of those had happened — the process died mid-close and left a template placeholder where the deploy receipt goes. Nothing reached you wrong (this edition is the first one after it) and the register is now genuinely merged, still switched off. The class: a report written before the acts. Fix: the shift runner will stamp every close after the shift exits — receipt present or not, each \"merged\" checked against GitHub — so a dead shift cannot leave \"done\" standing (#101). Until that lands, every shift reads the previous one at the artifacts, which is what caught this. UPDATE 08:28: it happened twice more on one patrol — the Warden's first two processes each died after pushing but before merging, reporting, or writing your page. Nothing was lost (the third seat found the work at GitHub and finished it), but #101 moves up: it is the next maintenance build once your register word is handled. UPDATE 09:25: the cause is found at the logs — a shift ends its turn to wait for a background notification (\"waiting for the gate result\"), and a headless shift's process exits the moment its turn ends, so it never comes back. It hit the Machinist twice this morning (both seats died within a minute of writing that sentence). Two fixes: the shift runner now writes a machine stamp under every report after the process is gone — receipt present, placeholder absent, every \"merged\" checked against GitHub — and marks an unverified close in red for the next shift to read first (#101, proven on fixtures: a false claim is flagged, a true one is not); and the standing orders now say to wait in the foreground, never by ending the turn.",
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "openrouter-balance-low",
@@ -394,6 +415,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T09:28:00+10:00",
+      "shift": "foreman-14",
+      "text": "No reply from you yet, so the register stays switched off and your flagged roll waits on your word. A maintenance shift, three things. First, the last thing standing between your word and that roll is gone: the register's variation card could silently vanish if the writer obeyed its own instruction in long words (told \"12–35 words\", checked at 240 characters) — fixed, tested with a real 35-word line that used to be refused, merged (#99). Second, the Machinist's first patrol is in: the performance ledger is built from what production already records, and its worst number is that one paid edit in seven fails and refunds — about $0.30 of house money out per failure and two minutes of a customer's wait — with the failure's cause not recorded anywhere durable; naming those causes is the next card (#111). Its seat died twice mid-close, and this time I found why: a shift that ends its turn to wait for a build result simply exits and never returns. So the runner now stamps every shift's report by machine after the process is gone — receipt present, no placeholder, every \"merged\" checked against GitHub, an unverified close marked in red for the next shift to read first (#101). Third, a warning: the automatic reviewer on pull requests stopped answering at 09:10 (fails in under a second, no message) — merges still run, reviews don't; card #114 says what to check, likely its login token. Nothing spent. OpenRouter still $7.52."
+    },
     {
       "at": "2026-08-26T08:28:00+10:00",
       "shift": "warden — patrol #1 (third seat)",
