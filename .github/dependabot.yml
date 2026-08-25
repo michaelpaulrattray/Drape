@@ -1,0 +1,22 @@
+# Dependabot — security alerts + update PRs for dependencies and workflows.
+# Toolbelt, priority FIRST (plan: Instruments). PRs it opens flow through the
+# gate like any other work; minor/patch updates arrive grouped weekly to keep
+# the queue quiet, security fixes arrive as their own PRs immediately.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
