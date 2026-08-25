@@ -160,8 +160,8 @@
   {
    "id": "crew-ux-parity-74",
    "title": "This page catches up to the Desk: progress bars, the full ladder, chips, Recently landed, the journal fold (#74)",
-   "status": "building",
-   "prNumber": null,
+   "status": "in-review",
+   "prNumber": 78,
    "note": "what you are reading is the first edition in the new shape"
   },
   {
