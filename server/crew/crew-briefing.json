@@ -1,7 +1,7 @@
 {
- "edition": 7,
- "updatedAt": "2026-08-26T02:54:00+10:00",
- "shift": "foreman-6",
+ "edition": 8,
+ "updatedAt": "2026-08-26T03:45:00+10:00",
+ "shift": "foreman-7",
  "program": {
   "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
   "focus": {
@@ -82,7 +82,7 @@
    {
     "label": "Production healthy",
     "tone": "good",
-    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 02:54"
+    "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 03:45"
    },
    {
     "label": "This page is the Desk",
@@ -92,7 +92,7 @@
    {
     "label": "Night shifts running",
     "tone": "good",
-    "source": "foreman-6 wrote this edition; the court still waits on your eye, so tonight was a maintenance fix"
+    "source": "foreman-7 wrote this edition; the court still waits on your eye, so tonight's unit was a team-tooling fix (#80, PR #87)"
    },
    {
     "label": "OpenRouter balance $7.52 of $250",
@@ -211,11 +211,25 @@
  ],
  "pipeline": [
   {
+   "id": "gate-manual-rerun-80",
+   "title": "The team's own safety check (the gate every change must pass) can now be re-run by hand when GitHub silently drops it — no more 40-minute waits on a green that cannot arrive (#80)",
+   "status": "merged",
+   "prNumber": 87,
+   "note": "in this deploy; team tooling only, nothing a customer sees. Proven both ways before merging: a wrong re-run goes red, a right one goes green on the same bytes the normal path tests"
+  },
+  {
+   "id": "lobby-theme-toggle-73",
+   "title": "The lobby's sun/moon theme button works again — the help three-dot moves beside it instead of on top of it (#73)",
+   "status": "in-review",
+   "prNumber": 86,
+   "note": "opened by a day seat; its gate went red on a stale architecture map (the branch touched screen files without regenerating it) — a mechanical fix that seat owns; not merged yet"
+  },
+  {
    "id": "line-endings-71",
    "title": "Every fresh checkout of the code now behaves the same on every machine — a Windows quirk that made 7 of our own test suites fail on a clean copy (#71)",
    "status": "merged",
    "prNumber": 85,
-   "note": "in this deploy; one line of git config, no product code, nothing a customer sees"
+   "note": "deployed 26 Aug 02:55; one line of git config, no product code, nothing a customer sees"
   },
   {
    "id": "eye-viewer-84",
@@ -284,6 +298,11 @@
   }
  ],
  "journal": [
+  {
+   "at": "2026-08-26T03:45:00+10:00",
+   "shift": "foreman-7",
+   "text": "Still no reply from you on the court strips, so the creative register did not move — building it dark starts only on your word. Tonight's one unit was team plumbing, not product: earlier tonight a shift lost forty minutes because GitHub silently never ran our safety check on a change (no error, no banner, just nothing), and there was no way to poke it by hand. Now there is (#80, PR #87), and it was tested both ways before it went in — trying to re-run the check against the wrong change goes red, the right one goes green on exactly the bytes the normal path tests. Along the way the automatic reviewer caught a real gap in my first version (a hand re-run could have passed a change that newer code had since broken), which is closed. The #73 theme-button fix is open as PR #86 from a day seat and is one mechanical step from green. Still on your page: the OpenRouter balance ($7.52 of $250 — please check auto-top-up), and your verdict on the eight strips in the gallery."
+  },
   {
    "at": "2026-08-26T02:54:00+10:00",
    "shift": "foreman-6",
