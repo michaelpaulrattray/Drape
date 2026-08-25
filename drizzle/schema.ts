@@ -3783,3 +3783,62 @@ export const castingInkDeliveryCrops = mysqlTable("casting_ink_delivery_crops", 
 
 export type CastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$inferSelect;
 export type InsertCastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$inferInsert;
+
+/**
+ * THE FOUNDER'S REPLIES — the steering half of the Crew tab (migration 0054;
+ * issue #41, design `docs/specs/CREW_TAB_DESIGN.md` §3).
+ *
+ * One row is: **something the founder typed into `/admin/crew`**, either
+ * against a needs-you card the current briefing is showing him, or as a note to
+ * the shift with no card at all.
+ *
+ * # THE STORE IS SPLIT BY WHO WRITES, AND THIS IS HIS HALF
+ *
+ * Everything the night shifts say — program, ladder, pipeline, cards, problems,
+ * journal — is `server/crew/crew-briefing.json`, a tracked file deployed by the
+ * rite every shift already pushes. Everything HE says is this table, written
+ * only through an `adminProcedure` mutation with his existing session. Neither
+ * writer can reach the other's road, which is what makes the page survive the
+ * account swap that prompted it.
+ *
+ * # `cardId` IS NULLABLE, AND IT IS NEVER VALIDATED AGAINST THE BRIEFING
+ *
+ * NULL means a journal note — a member of the vocabulary, not a missing value.
+ * A non-NULL one is checked for SHAPE (≤64 chars) and nothing else: the
+ * briefing rotates, so a card he answers tonight may be gone from the edition
+ * that lands tomorrow, and a foreign key would turn that ordinary rotation into
+ * a refusal of the founder's own words. A reply whose card has left the
+ * briefing renders in the journal thread instead of vanishing.
+ *
+ * # THE ROW IS THE AUDIT RECORD (working law 4)
+ *
+ * No separate audit row in v1. The single writer stamps `authorUserId` from
+ * `ctx.user.id` (invariant 3) and the time; an audit row would be a second copy
+ * of the same fact, free to drift from it. `body` is `text` and is never
+ * truncated by us — the procedure bounds the WIRE at 4,000 characters so a
+ * runaway paste is refused with a message, but a ruling that is accepted is
+ * kept whole.
+ *
+ * # NO PURGE PATH, DELIBERATELY
+ *
+ * It owns no bytes — no storage key, no candidate, nothing a retention sweep
+ * collects. It is rulings, and it is one person typing. The table is the
+ * permanent record and stays small.
+ */
+export const crewReplies = mysqlTable("crew_replies", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The briefing needs-you card this answers; NULL is a journal note. */
+  cardId: varchar("cardId", { length: 64 }),
+  /** His words, verbatim. Never truncated by us — see the header. */
+  body: text("body").notNull(),
+  /** `ctx.user.id`, never from input (invariant 3). */
+  authorUserId: int("authorUserId").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => ([
+  /* Every read is either "the whole thread, newest first" or "the replies on
+     this card", and the second is what the page does per card. */
+  index("ix_crew_replies_card").on(table.cardId),
+]));
+
+export type CrewReplyRow = typeof crewReplies.$inferSelect;
+export type InsertCrewReplyRow = typeof crewReplies.$inferInsert;

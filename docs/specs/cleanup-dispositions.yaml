@@ -1231,3 +1231,15 @@
   why: "a CAP that enforces nothing. Its only consumer anywhere is server/r7-evidence-image-retry.test.ts:31, which asserts a TIMEOUT is >= 4x it — so the number is asserted about and applied to no request path (invariant 7's own sentence). No card and no founder item, ruled fable-1508 §3: R7_EVIDENCE_COMPOSER_SCOPE is off in production, so no customer stands behind it. The condition is the row: a dead control keeps a live reputation exactly while its road is off"
   argued: 29e
   owner: "the sitting that turns R7_EVIDENCE_COMPOSER_SCOPE on — it inherits this question by name, and must decide whether the cap is enforced or deleted before that scope serves anybody"
+
+- symbol: resetCrewBriefingCacheForTests
+  file: server/crew/crewBriefing.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: replyIsAcknowledged
+  file: server/crew/crewBriefing.ts
+  verdict: KEEP
+  why: "the ONLY definition of 'seen by the crew' (CREW_TAB_DESIGN.md §1) — a pure function extracted so acknowledgement has somewhere to be tested (§9 arm 6). The client renders the same rule from the same deployed list; a drift between them is caught at the page, and the export is the server-side home of the meaning"
+  argued: 6a

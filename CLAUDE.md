@@ -636,6 +636,21 @@ one from whoever owns its road.
   **Production: `true`**, and it has been since at least 2026-08-11.
   ⚠ **It appeared NOWHERE in this file until 2026-08-23** — the ninth flag, and
   the one the section above was written to prevent
+- `CREW_TAB_SCOPE` — `off`/absent, `all`, or `users:<ids>`; **the Crew tab**
+  (`/admin/crew`, issue #41, design `docs/specs/CREW_TAB_DESIGN.md`) — the
+  night shifts' briefing and the founder's reply box, replacing the Desk
+  artifact so the briefing survives his account swap. Off, and absent means
+  off, both `crew.*` procedures answer `NOT_FOUND` and the admin nav never
+  shows the link. No parent flag and no boot-time validation — the whole
+  namespace is behind `adminProcedure` before the flag is consulted, and the
+  tab has no engine, no worker, no bytes and no spend it could strand.
+  **The `crew_replies` table must exist before this is flipped on** (migration
+  `0054`; production takes it by `scripts/ceremony-crew-replies.mts`, a
+  founder act — a precondition of the FLIP, not a boot guard; until it runs
+  the table is enumerated in `DECLARED_BUT_UNMIGRATED`). The briefing half is
+  `server/crew/crew-briefing.json`, written by shifts and deployed with the
+  code; his replies are the table, written only from the page with his
+  session. Production: `off` — the flip is his, on the completion card
 
 ### Windows notes
 

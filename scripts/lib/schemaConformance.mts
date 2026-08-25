@@ -66,6 +66,13 @@ export type LiveSchema = ReadonlyMap<string, ReadonlySet<string>>;
  * the reason it is tolerated. Only ever gets shorter.
  */
 export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
+  crew_replies:
+    "migration 0054, applied in DEV only. The Crew tab's reply table (issue #41) "
+    + "— production takes it by scripts/ceremony-crew-replies.mts, which is a "
+    + "founder act and a named precondition of flipping CREW_TAB_SCOPE. Inert "
+    + "until that flip: the flag is off everywhere, so no procedure reaches the "
+    + "table and no row can be written before the ceremony runs. Delete this "
+    + "line the day it does — the rite reddens until you do, by design.",
   casting_cast_segments:
     "migration 0027, never applied in either world. Nothing reads or writes it — "
     + "the only mentions in the tree are its own declaration and its two inferred "

@@ -274,6 +274,14 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). 7b(a); widening it re-opens the NOTES_MAX park first (fable-1431 §1) — the "
       + "cap population IS the born-ink population",
   },
+  CREW_TAB_SCOPE: {
+    position: "off",
+    why:
+      "the Crew tab (/admin/crew, issue #41) — built dark, per the design "
+      + "(CREW_TAB_DESIGN.md §5). Its flip is the founder's batch on the "
+      + "completion card: crew_replies ceremony FIRST (migration 0054), then "
+      + "this flag by his hand; move this row in the commit that records it",
+  },
   ENABLE_STORAGE_CLEANUP_WORKER: {
     position: "true",
     why: "required by every scope that keeps bytes under a purge path",
