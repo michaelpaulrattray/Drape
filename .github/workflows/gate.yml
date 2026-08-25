@@ -26,6 +26,10 @@
 # satisfy branch protection exactly as an event-driven run would. The
 # `resolve` job refuses a dispatch whose ref is not that PR's head — a run
 # that gated the wrong commit would report green on bytes nobody proposed.
+# And when it refuses, the two required jobs FAIL rather than skip: GitHub
+# treats a skipped required check as passing, so a plain `needs:` would
+# have painted a wrong dispatch green on that branch's head (measured on
+# this workflow's own negative control, 2026-08-26, before it merged).
 #
 # review.yml deliberately has NO dispatch road: claude-code-action's
 # `track_progress` (the sticky review comment) is pull_request/issue-only
@@ -102,9 +106,17 @@ jobs:
   gate-checks:
     name: gate-checks
     needs: resolve
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # A failed resolve must redden this required check, never skip it.
+      - name: Refuse unless resolve succeeded
+        if: ${{ needs.resolve.result != 'success' }}
+        run: |
+          echo "::error::resolve did not succeed (${{ needs.resolve.result }}) — this run gates nothing."
+          exit 1
+
       - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
@@ -137,12 +149,20 @@ jobs:
   founder-gate:
     name: founder-gate
     needs: resolve
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: write
     steps:
+      # A failed resolve must redden this required check, never skip it.
+      - name: Refuse unless resolve succeeded
+        if: ${{ needs.resolve.result != 'success' }}
+        run: |
+          echo "::error::resolve did not succeed (${{ needs.resolve.result }}) — this run gates nothing."
+          exit 1
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
