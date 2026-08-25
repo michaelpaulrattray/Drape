@@ -112,8 +112,22 @@ export function composeCreativeCandidatePrompt(input: {
 
 /* ----------------------------------------------------------- the card */
 
-/** An invitation is one sentence a camera could act on, never an essay. */
-export const INVITATION_MAX = 240;
+/**
+ * An invitation is one sentence a camera could act on, never an essay.
+ *
+ * Both bounds are CHARACTERS, and the prompt says so in the same unit (#99,
+ * the gate review of PR #94): it used to tell the author "12-35 words" while
+ * the parser counted 240 characters, so a line that obeyed the instruction
+ * exactly — 35 words of this register's own vocabulary ("augmentation",
+ * "oxidised", "collarbone") — could exceed the bound and lose the WHOLE card
+ * (the parser refuses, never trims). The ceiling is derived from the worst
+ * case of the word guidance the prompt still gives: 35 words × 10 characters
+ * plus 34 spaces = 384. Ten, not eight: a 35-word line of the register's own
+ * words measured 8.7 characters a word (the test's specimen, 337 chars), and
+ * a ceiling derived from an average is a ceiling half the lines exceed.
+ */
+export const INVITATION_WORDS_MAX = 35;
+export const INVITATION_MAX = INVITATION_WORDS_MAX * 10 + (INVITATION_WORDS_MAX - 1);
 export const INVITATION_MIN = 12;
 
 /**
@@ -131,7 +145,7 @@ export function varianceCardSystemPrompt(count: number): string {
     "",
     `{ "invitations": [ exactly ${count} strings ] }`,
     "",
-    `Each invitation is ONE sentence, ${INVITATION_MIN}-35 words, printed after "${CANDIDATE_CARD_LABEL}" beneath the customer's own brief, so it begins mid-sentence in lowercase — "the augmentation more extensive — hardware continuing below the jaw into the neck and collarbone." / "older wear — the ports and seams scuffed and oxidised at their edges." / "leaner, ascetic — the augmentation sparse and precise, the face more gaunt."`,
+    `Each invitation is ONE sentence — 12-${INVITATION_WORDS_MAX} words and never more than ${INVITATION_MAX} characters (the checker counts characters and refuses a longer line) — printed after "${CANDIDATE_CARD_LABEL}" beneath the customer's own brief, so it begins mid-sentence in lowercase — "the augmentation more extensive — hardware continuing below the jaw into the neck and collarbone." / "older wear — the ports and seams scuffed and oxidised at their edges." / "leaner, ascetic — the augmentation sparse and precise, the face more gaunt."`,
     "",
     `THE ONE RULE: VARY ONLY WHAT THE BRIEF LEAVES OPEN. Read the brief and list to yourself every fact it STATES — sex, age, skin, hair, build, features, hardware, expression, clothing, anything. An invitation must never restate, soften, contradict, remove or vary a stated fact. It varies the things the brief said NOTHING about: extent, wear, age of the work, materials, proportion, bearing, how a stated thing is carried — and each of the ${count} must pull a DIFFERENT open thing, or the same one to a clearly different place, so the ${count} people diverge.`,
     "",
@@ -197,7 +211,7 @@ export async function authorVarianceCard(input: {
       /* Authoring, not extraction: the card exists to make eight people diverge. */
       temperature: 0.8,
       /* Explicit, never the transport default — the W arm's 900 cut a reply
-         mid-word at concept four (foreman-6). Eight sentences of 35 words is
+         mid-word at concept four (foreman-6). Eight sentences of INVITATION_WORDS_MAX words is
          well inside this, and an unused token is not billed. */
       maxOutputTokens: 2000,
       signal: input.signal,
