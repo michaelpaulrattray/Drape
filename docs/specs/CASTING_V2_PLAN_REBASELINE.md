@@ -123,8 +123,13 @@ the panel's absent state, open-kind properties, and removal universality
 (**#23**, the four designs the first draft had shelved) — plus the
 Pinterest-style reference selector (**#14**, countersigned) and the settings
 modal (**#15**, six founder rulings), against the design north star and the
-placeholder law (PROGRAM.md). Gate: evidence pack (both themes) + copy audit
-before his eyes, per the UI milestone contract. Rollback: routes/flags off.
+placeholder law (PROGRAM.md). Joined on the founder's Lost&Found verdicts
+(2026-08-25): **the honest loader** (#55 — real stage names, no invented
+percentages ever, the D-169 mock to his eyes before build), **outfit-card
+thumbnails** (#61, same cutter machinery), and the **words-only-sale honest
+sentence** (#65(1), his ruling: "honest sentence"). Gate: evidence pack
+(both themes) + copy audit before his eyes, per the UI milestone contract.
+Rollback: routes/flags off.
 
 **N4 — Takes** *(scheduled by the founder's word on the same review: "takes
 actually has a solid use case that i designed with another agent" —

@@ -1,5 +1,14 @@
 # BASICS IS THE BIRTH STATE — a design for countersign
 
+> ⚠ **FOUNDER LAW + FUNDING (2026-08-25, verbatim, closing L&F #63):**
+> *"fund the run and fold the toggle into register, basics is the default
+> birth state"* — court 1's run is FUNDED on his word (price stated on a
+> Desk card before any arm fires, per the standing court rule); the
+> Wardrobe/Basics toggle folds into the creative register (#5 -> #16); and
+> **BASICS IS THE DEFAULT BIRTH STATE** is the reconciling law between the
+> two rulings: born basics unless the brief/register calls for otherwise.
+
+
 **Founder direction, 2026-08-25** (relayed fable-1643, with the garment questions
 at fable-1645). Supersedes the central ruling of
 `CASTING_V2_TWO_PATHS_DESIGN.md`, which carries a notice at its head pointing

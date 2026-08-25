@@ -5,6 +5,14 @@
 Nothing built. The dilution court (fable-1660) executes against this
 design; the enrichment design folds into it.**
 
+**Heirship (founder ruling, 2026-08-25, closing #56):** this design is the
+named heir of **Path B + F8, "the worlds era"** (D-86's ratified rung; D-80's
+per-world latitude / earned accessories / style seeds). What Path B promised
+— worlds carrying their own stylistic permission — is delivered here as
+register variants and the variance card; D-80's "interim until Path B"
+styling tier is now "interim until the register," and no separate Path B
+build exists. Recorded so a ratified rung's fate is written, not inferred.
+
 **Authority:** the three-legged founder mandate — creativity at Midjourney's
 level, especially on initial sheets (fable-1662); specific asks delivered
 AND sold (fable-1663); never at the cost of photoreal humans (fable-1667) —
