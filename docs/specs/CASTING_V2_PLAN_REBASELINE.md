@@ -81,6 +81,11 @@ its debts is not restated here — it lives, derived rather than remembered, in:
 The rebaselined ladder below absorbs these by reference, not by copying —
 a second list shadowing the queue would drift from it (working law 4).
 
+> ✅ **COUNTERSIGNED — THE GOVERNING LADDER.** The founder signed on the Desk,
+> 2026-08-25 21:38, his word: *"signed"* — after his own pre-sign review
+> amended it (v2) and the excavation hardened it (v3/v4). N1–N8 governs;
+> PROGRAM.md points here; the original plan's §K ladder is historical.
+
 ## 4. The remaining ladder — rungs N1–N8 (v2: N3 expanded and N4 Takes added on the founder's pre-sign review)
 
 Fresh names (N for "new ladder"), because both "M" and "R" are taken by
@@ -123,8 +128,13 @@ the panel's absent state, open-kind properties, and removal universality
 (**#23**, the four designs the first draft had shelved) — plus the
 Pinterest-style reference selector (**#14**, countersigned) and the settings
 modal (**#15**, six founder rulings), against the design north star and the
-placeholder law (PROGRAM.md). Gate: evidence pack (both themes) + copy audit
-before his eyes, per the UI milestone contract. Rollback: routes/flags off.
+placeholder law (PROGRAM.md). Joined on the founder's Lost&Found verdicts
+(2026-08-25): **the honest loader** (#55 — real stage names, no invented
+percentages ever, the D-169 mock to his eyes before build), **outfit-card
+thumbnails** (#61, same cutter machinery), and the **words-only-sale honest
+sentence** (#65(1), his ruling: "honest sentence"). Gate: evidence pack
+(both themes) + copy audit before his eyes, per the UI milestone contract.
+Rollback: routes/flags off.
 
 **N4 — Takes** *(scheduled by the founder's word on the same review: "takes
 actually has a solid use case that i designed with another agent" —
