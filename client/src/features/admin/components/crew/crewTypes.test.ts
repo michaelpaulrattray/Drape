@@ -11,7 +11,14 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { replyFallsToJournal } from "./crewTypes";
+import {
+  JOURNAL_FOLD_VISIBLE,
+  foldTimeline,
+  milestoneCountLine,
+  milestoneProgress,
+  replyFallsToJournal,
+  splitPipeline,
+} from "./crewTypes";
 
 const CARDS = [
   { id: "open-card", state: "open" },
@@ -48,5 +55,86 @@ describe("where a reply renders", () => {
       expect(inJournal || inOpenThread, `a reply on ${String(cardId)} renders nowhere`).toBe(true);
       expect(inJournal && inOpenThread, `a reply on ${String(cardId)} renders twice`).toBe(false);
     }
+  });
+});
+
+/* ─── #74's derivations. Each is the Desk's information design READ off data
+   the briefing already carries — these arms are what stops the bar, the split
+   and the fold from quietly becoming second copies of state. ─── */
+
+describe("the milestone progress bar (#74)", () => {
+  it("counts each state and fills done + half of in-progress", () => {
+    const progress = milestoneProgress([
+      { state: "done" },
+      { state: "in-progress" },
+      { state: "waiting" },
+      { state: "blocked" },
+    ]);
+    expect(progress).toEqual({
+      done: 1,
+      inProgress: 1,
+      waiting: 1,
+      blocked: 1,
+      total: 4,
+      fraction: (1 + 0.5) / 4,
+    });
+  });
+
+  it("an empty step list is 0, not NaN — a NaN width collapses the bar silently", () => {
+    expect(milestoneProgress([]).fraction).toBe(0);
+  });
+
+  it("all done reads 1.0 — the bar can actually fill", () => {
+    expect(milestoneProgress([{ state: "done" }, { state: "done" }]).fraction).toBe(1);
+  });
+
+  it("the count line says only what is non-zero", () => {
+    expect(
+      milestoneCountLine(milestoneProgress([{ state: "done" }, { state: "waiting" }, { state: "waiting" }])),
+    ).toBe("1 done · 2 waiting");
+    expect(milestoneCountLine(milestoneProgress([{ state: "blocked" }]))).toBe("1 blocked");
+  });
+});
+
+describe("the pipeline split (#74)", () => {
+  const ITEMS = [
+    { id: "a", title: "a", status: "building", prNumber: null, note: null },
+    { id: "b", title: "b", status: "merged", prNumber: 1, note: null },
+    { id: "c", title: "c", status: "blocked", prNumber: null, note: null },
+    { id: "d", title: "d", status: "in-review", prNumber: 2, note: null },
+    { id: "e", title: "e", status: "waiting-founder", prNumber: null, note: null },
+  ] as const;
+
+  it("landed is exactly the merged rows; everything else is in flight", () => {
+    const { inFlight, landed } = splitPipeline([...ITEMS]);
+    expect(landed.map((item) => item.id)).toEqual(["b"]);
+    expect(inFlight.map((item) => item.id)).toEqual(["a", "c", "d", "e"]);
+  });
+
+  it("exhaustive: every item renders in exactly one half", () => {
+    const { inFlight, landed } = splitPipeline([...ITEMS]);
+    expect(inFlight.length + landed.length).toBe(ITEMS.length);
+    const ids = new Set([...inFlight, ...landed].map((item) => item.id));
+    expect(ids.size).toBe(ITEMS.length);
+  });
+});
+
+describe("the journal fold (#74 — his standing Desk rule)", () => {
+  it(`shows ${JOURNAL_FOLD_VISIBLE} and folds the rest, order preserved`, () => {
+    const items = Array.from({ length: 11 }, (_, index) => index);
+    const { recent, older } = foldTimeline(items);
+    expect(recent).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(older).toEqual([8, 9, 10]);
+  });
+
+  it("a short timeline folds nothing — no empty disclosure button", () => {
+    const { recent, older } = foldTimeline([0, 1, 2]);
+    expect(recent).toEqual([0, 1, 2]);
+    expect(older).toEqual([]);
+  });
+
+  it("the boundary itself: exactly the visible count folds nothing", () => {
+    const items = Array.from({ length: JOURNAL_FOLD_VISIBLE }, (_, index) => index);
+    expect(foldTimeline(items).older).toEqual([]);
   });
 });

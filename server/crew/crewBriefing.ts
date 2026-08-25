@@ -105,6 +105,19 @@ const ladderRungSchema = z.object({
   state: z.enum(["done", "current", "queued", "parked"]),
 }).strict();
 
+/**
+ * An at-a-glance chip at the top of the banner (#74 — his own gap list:
+ * "production healthy, what just went live, team running"). A chip is a CLAIM,
+ * so `source` names the reading it was taken from — a receipt, a commit, a
+ * row — or is null only for claims the page itself embodies (working law 7b:
+ * a health sentence with no reading behind it is not said).
+ */
+const chipSchema = z.object({
+  label: z.string().min(1).max(80),
+  tone: z.enum(["good", "warn", "neutral"]),
+  source: z.string().max(200).nullable(),
+}).strict();
+
 const needsYouSchema = z.object({
   /** Stable slug — a reply points at it, and it outlives the card's wording. */
   id: z.string().max(64),
@@ -160,6 +173,8 @@ export const crewBriefingSchema = z.object({
     focus: focusSchema,
     milestone: milestoneSchema.nullable(),
     ladder: z.array(ladderRungSchema),
+    /** At-a-glance state, capped so the strip stays a glance (#74). */
+    chips: z.array(chipSchema).max(6),
   }).strict(),
   needsYou: z.array(needsYouSchema),
   pipeline: z.array(pipelineItemSchema),
@@ -189,6 +204,7 @@ export function degradedCrewBriefing(): CrewBriefing {
       focus: { state: "none", title: "", quote: null, quotedAt: null },
       milestone: null,
       ladder: [],
+      chips: [],
     },
     needsYou: [],
     pipeline: [],
