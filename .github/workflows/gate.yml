@@ -80,7 +80,12 @@ jobs:
           # billing, credits, auth, and session code are production-critical).
           PATTERNS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^shared/const\.ts$|^drizzle/'
 
-          git fetch origin "$BASE" --depth=1
+          # Full fetch, deliberately: a --depth=1 fetch of the base cannot
+          # reach the merge base once main outpaces the branch point, and
+          # `...HEAD` then dies with "no merge base" — which failed PR #84
+          # twice (2026-08-26). The checkout above is already fetch-depth: 0,
+          # so this costs nothing.
+          git fetch origin "$BASE"
           CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
           HITS=$(echo "$CHANGED" | grep -E "$PATTERNS" || true)
 
