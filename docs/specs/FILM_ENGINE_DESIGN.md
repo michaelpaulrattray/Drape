@@ -158,6 +158,29 @@ built, named and locked."*
   the room rearranging itself).
 - All ids derived, never typed (their registry drifted; ours must not).
 
+### Phase B-1 — State flips at story events (founder walkthrough, 2026-08-25)
+
+Asset states are not just picked per scene — they FLIP at story events, and
+the flip is automatic downstream. The rooftop example: "they are talking when
+the building across the street explodes" -> shots before the event inherit
+the location's INTACT state; the event shot renders the explosion; every shot
+AFTER automatically inherits the BURNING state (smoke in the skyline, orange
+glow). A later shot cannot accidentally show the healthy building, because
+that state no longer exists past the event in this scene's timeline. Same
+mechanism as the pros' Tank / Tank (injured) cards, made automatic: the
+Writer marks the event in the beat order, the Line Producer mints the after
+state as a nested state card, and inheritance switches at the boundary. The
+user sees it as a state chip on the scene timeline and can override it like
+any other inheritance.
+
+What makes a multi-shot event seamless, stated for the record (the four
+glues, none requiring shots to know about each other): same world cards in
+every shot; the state flip at the event; SOUND carried across the cuts (the
+boom starts before the cut, debris rumbles under the reactions); and shared
+eyelines from the blocking map (everyone looks toward the event, light from
+that side). This is how physical film does it too — the engine simply does
+the gluing automatically.
+
 ### Phase C — Production (shots and takes)
 
 Per shot node, the engine assembles the prompt with the **DP skill** — our
