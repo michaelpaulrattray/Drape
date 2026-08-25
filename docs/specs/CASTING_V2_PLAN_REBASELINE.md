@@ -129,9 +129,16 @@ before his eyes, per the UI milestone contract. Rollback: routes/flags off.
 **N4 — Takes** *(scheduled by the founder's word on the same review: "takes
 actually has a solid use case that i designed with another agent" —
 `CASTING_TAKES_DESIGN.md`, #18)*: built per its design, dark behind its
-flag; the design's own founder gates on PRICING stand. Placed before the
-cutover arc, as the original plan intended for M8. Gate: pricing rulings +
-his eye on the shipped surface. Rollback: flag off.
+flag; the design's own founder gates on PRICING stand. ⚠ **Two excavated
+preconditions bind this rung (2026-08-25, on #18)**: **D-117's ablation gate
+runs BEFORE any conditioning default is wired** — the design's
+composite-plate default is exactly the kind of default D-117 forbids choosing
+by intuition — with D-118's single selector authority riding it; and the
+**digitals-bank joint decision** (roadmap §8b, filed by the founder "so the
+M8 designer inherits the connection") is owed at this rung's design review.
+Placed before the cutover arc, as the original plan intended for M8. Gate:
+D-117's gate verdict + pricing rulings + his eye on the shipped surface.
+Rollback: flag off.
 
 **N5 — Entries converge** *(original M10 finished)*: canvas Cast-new and the
 wardrobe picker re-pointed at V2 sessions/casts; the boards surface stops
