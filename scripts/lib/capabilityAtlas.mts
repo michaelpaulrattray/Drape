@@ -116,7 +116,7 @@ export type Finding = {
 
 const SOURCE_DIR = path.join(repoRoot, "server", "castingV2");
 
-const listFiles = (dir: string, match: (name: string) => boolean): string[] => {
+export const listFiles = (dir: string, match: (name: string) => boolean): string[] => {
   const out: string[] = [];
   const walk = (at: string) => {
     for (const entry of fs.readdirSync(at, { withFileTypes: true })) {
@@ -126,7 +126,17 @@ const listFiles = (dir: string, match: (name: string) => boolean): string[] => {
     }
   };
   walk(dir);
-  return out.sort();
+  /*
+    SORT ON THE SEPARATOR-NEUTRAL FORM, NOT THE PLATFORM PATH. `out` holds
+    absolute paths, and sorting those compares the separator byte: `\` (0x5C)
+    and `/` (0x2F) sit on opposite sides of the uppercase letters, so sibling
+    directories like `casting/` and `castingV2/` flip order between Windows
+    and Linux. That flip reached the committed census (`pinnedBy` order for
+    the `empty` door) and made one commit read fresh on Windows and stale on
+    ubuntu CI — issue #37's class, found by the gate's first proof run.
+  */
+  const neutral = (p: string) => p.split(path.sep).join("/");
+  return out.sort((a, b) => (neutral(a) < neutral(b) ? -1 : neutral(a) > neutral(b) ? 1 : 0));
 };
 
 const rel = (file: string): string => path.relative(repoRoot, file).split(path.sep).join("/");

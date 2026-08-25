@@ -8,10 +8,14 @@
  * the library recomputes from the same data, so a stale census fails the suite
  * the way a stale Atlas does.
  */
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, relative, sep } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
-  buildStaticAtlas, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings, outcomeId,
+  buildStaticAtlas, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings, listFiles, outcomeId,
   pinningTests, readCommittedAtlas, reasonOfNote,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
@@ -36,6 +40,33 @@ describe("the static half reads what the source declares", () => {
 
   it("is deterministic — two builds on one tree are identical", () => {
     expect(JSON.stringify(buildStaticAtlas(CORPUS))).toEqual(JSON.stringify(buildStaticAtlas(CORPUS)));
+  });
+
+  /*
+    ONE COMMIT, ONE VERDICT ON EVERY PLATFORM (issue #37). The walk used to
+    sort ABSOLUTE paths, and the separator byte — `\` (0x5C) on Windows, `/`
+    (0x2F) on Linux — sits on the opposite side of the uppercase letters, so
+    sibling directories like `casting/` and `castingV2/` flipped order between
+    platforms and the committed census read fresh on one OS and stale on the
+    other. This is the Windows half of the two-platform proof: with `\` as the
+    separator, an absolute-path sort puts `castingV2\` FIRST, so this arm is
+    red without the separator-neutral sort. The Linux half is the gate's own
+    `pnpm capability:check` on CI, where the raw sort happens to agree with
+    the neutral one.
+  */
+  it("walks sibling directories in separator-neutral order (casting/ before castingV2/)", () => {
+    const root = mkdtempSync(join(tmpdir(), "atlas-walk-order-"));
+    try {
+      mkdirSync(join(root, "casting"));
+      mkdirSync(join(root, "castingV2"));
+      writeFileSync(join(root, "casting", "z.test.ts"), "");
+      writeFileSync(join(root, "castingV2", "a.test.ts"), "");
+      const order = listFiles(root, (name) => name.endsWith(".test.ts"))
+        .map((file) => relative(root, file).split(sep).join("/"));
+      expect(order).toEqual(["casting/z.test.ts", "castingV2/a.test.ts"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("reports a declared door that no corpus row expects, and stops when a row expects it", () => {

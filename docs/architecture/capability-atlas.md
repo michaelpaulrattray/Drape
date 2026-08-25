@@ -229,7 +229,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | busy | service-refusal |  | refusalTag.test.ts, rollService.test.ts |
 | candidate_missing | service-refusal |  | refineService.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
-| empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts, server/casting/geminiMigration.test.ts |
+| empty | interpreter-refusal |  | server/casting/geminiMigration.test.ts, diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |

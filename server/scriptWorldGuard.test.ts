@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -162,23 +162,34 @@ describe("a script that reads the app's database declares its world", () => {
 
     Without it the assertion above is what a scan that found NOTHING prints,
     and a walk that silently stopped reading — a renamed directory, a changed
-    extension — is indistinguishable from a fully guarded repository. So the
-    reader is pointed at a fixture it must complain about: the untracked
-    one-shot benches, which are unguarded on purpose and therefore available as
-    a known-positive population.
+    extension — is indistinguishable from a fully guarded repository.
 
-    That population is what this milestone is emptying, so the day it hits zero
-    this control says so out loud rather than passing on nothing.
+    The first cut of this control leaned on the untracked one-shot benches as
+    a known-positive population — which exists only on a working dev machine.
+    A clean checkout (CI) has no litter, so the control failed there for lack
+    of a fixture rather than for a blind reader; its own failure message said
+    to swap in a synthetic one, and this is that swap: the control now PLANTS
+    an untracked unguarded script, proves the reader finds it, and removes it.
+    The main assertion above filters to tracked files, so the plant can never
+    redden it, even mid-flight.
   */
-  it("POSITIVE CONTROL — the reader does find unguarded getDb() scripts", () => {
-    const tracked = trackedScripts(scriptsDir);
-    const benches = databaseScripts(scriptsDir)
-      .filter((relative) => !tracked.has(relative))
-      .filter((relative) => !callsTheGuard(readFileSync(path.join(scriptsDir, relative), "utf8")));
-    expect(
-      benches.length,
-      "no unguarded bench left to control against — swap this fixture for a synthetic one",
-    ).toBeGreaterThan(0);
+  it("POSITIVE CONTROL — the reader does find an unguarded getDb() script", () => {
+    const plantedName = `_scriptworldguard-positive-control-${process.pid}-disposable.mts`;
+    const plantedPath = path.join(scriptsDir, plantedName);
+    writeFileSync(
+      plantedPath,
+      "// synthetic fixture planted by scriptWorldGuard.test.ts — deleted by the same test\nconst db = getDb();\n",
+    );
+    try {
+      const tracked = trackedScripts(scriptsDir);
+      expect(tracked.has(plantedName), "the planted fixture must read as untracked").toBe(false);
+      const benches = databaseScripts(scriptsDir)
+        .filter((relative) => !tracked.has(relative))
+        .filter((relative) => !callsTheGuard(readFileSync(path.join(scriptsDir, relative), "utf8")));
+      expect(benches).toContain(plantedName);
+    } finally {
+      unlinkSync(plantedPath);
+    }
   });
 
   /*

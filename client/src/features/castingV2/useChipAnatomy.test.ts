@@ -1,7 +1,24 @@
 import { readFile } from "node:fs/promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { referencesOf } from "../../../../server/castingV2/refineService";
+
+/*
+  `referencesOf` builds each chip's picture URL through `storagePublicUrl`,
+  which reads the R2 config from an import-time ENV snapshot and throws when
+  it is absent — so on an envless checkout (CI) the introduced-item case died
+  in storage config before its assertion ran. The chip contract does not
+  depend on WHICH bucket is configured — prime any absent R2 variable with an
+  obvious test value (hoisted, so it lands before the ENV snapshot is taken)
+  and leave a configured machine's real values untouched.
+*/
+vi.hoisted(() => {
+  process.env.R2_ENDPOINT ||= "https://r2-unit-test.invalid";
+  process.env.R2_BUCKET ||= "unit-test-bucket";
+  process.env.R2_PUBLIC_URL ||= "https://pub-test.r2.dev";
+  process.env.R2_ACCESS_KEY_ID ||= "unit-test-access-key";
+  process.env.R2_SECRET_ACCESS_KEY ||= "unit-test-secret";
+});
 
 /**
  * THE "USE" CHIP — what it shows, and what pressing it actually resubmits.
