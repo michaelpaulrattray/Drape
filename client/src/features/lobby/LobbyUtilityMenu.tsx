@@ -1,6 +1,13 @@
 /**
- * LobbyUtilityMenu — the quiet three-dot menu in the lobby's top-right
- * corner (Luma-style utility corner).
+ * LobbyUtilityMenu — the quiet three-dot help menu in the lobby's topbar,
+ * rendered into the shell's `topbarRight` slot beside the credits chip.
+ *
+ * It used to sit `absolute top-4 right-5` — the viewport's top-right
+ * corner, Luma-style — which was fine until the M2 foundation shell put
+ * the theme toggle in that exact square (`Topbar.tsx`, shell-owned per
+ * plan §D.8). Two controls in one 30px box: the z-40 one won and the
+ * theme toggle became unclickable (#73). So the menu is now an ordinary
+ * `dp-iconbtn` in the topbar's row, and the shell keeps its corner.
  *
  * v1 holds only live destinations, per the no-dead-links rule: a HELP
  * group with Send feedback and Report a bug, both submitting through
@@ -74,17 +81,19 @@ export function LobbyUtilityMenu() {
   };
 
   return (
-    <div className="hidden md:block absolute top-4 right-5 z-40">
+    <div className="hidden md:block relative">
       <style>{`
         .lobby-menu-item { color: var(--faint); }
         .lobby-menu-item:hover { background: var(--well); color: var(--ink); }
       `}</style>
       <button
         onClick={() => (open ? close() : setOpen(true))}
-        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-[var(--fill)]"
+        type="button"
+        className="dp-iconbtn"
         aria-label="Help and preferences"
+        title="Help and preferences"
       >
-        <MoreHorizontal className="w-4 h-4" style={{ color: 'var(--metaStrong)' }} />
+        <MoreHorizontal size={15} strokeWidth={1.8} />
       </button>
 
       {open && (

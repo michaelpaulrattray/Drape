@@ -98,7 +98,10 @@ export default function AppLobby() {
       current={current.rail}
       width="bare"
       topbarRight={
-        <CreditsChip balance={creditsData?.balance} onClick={() => setIsBillingOpen(true)} />
+        <>
+          <CreditsChip balance={creditsData?.balance} onClick={() => setIsBillingOpen(true)} />
+          <LobbyUtilityMenu />
+        </>
       }
       account={
         user
@@ -131,7 +134,6 @@ export default function AppLobby() {
           : undefined
       }
     >
-      <LobbyUtilityMenu />
       {current.view}
 
       {/* Account modals */}
