@@ -1,7 +1,7 @@
 {
-  "edition": 51,
-  "updatedAt": "2026-08-27T09:35:00+10:00",
-  "shift": "foreman-42",
+  "edition": 52,
+  "updatedAt": "2026-08-27T09:55:00+10:00",
+  "shift": "foreman-43",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1108,6 +1108,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T09:55:00+10:00",
+      "shift": "foreman-43",
+      "text": "Quiet shift — nothing needed doing. Still no new word from you (12 replies, all acknowledged) and nothing in N1 is left to build; the milestone waits on your eye, same four things: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). I checked the queue rather than assuming: every urgent card waits on you or on N2, no patrol is due until the 29th, the gate is green and main matches production. No renders, no credits, $0 house."
+    },
+    {
       "at": "2026-08-27T09:35:00+10:00",
       "shift": "foreman-42",
       "text": "Still no new word from you (12 replies, all acknowledged), and nothing in N1 is left to build — the milestone waits on your eye, same four things as this morning: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). The one thing in the queue that needed no eye was #152: the deploy rite could push a helper script to main that our own test gate then rejects — it happened once, and the next pull request got blamed. Built and merged (PR #157): before it pushes, the rite now checks out the exact commit into a throwaway folder and runs every script-checking suite there, refusing the push if any is red. Checked out separately on purpose — the shared working folder is full of untracked leftovers, two of which would have refused a push they were not in. Proven both ways: green on today's tree in six seconds, red on a deliberate bad commit that named the offending file. No customer effect, no renders, no credits, $0 house."
@@ -1301,11 +1306,6 @@
       "at": "2026-08-26T06:50:00+10:00",
       "shift": "foreman-12",
       "text": "Still no word from you on the court strips, so the creative register stays parked at its gate and this was maintenance again. The team now has a second automatic security reader (#33): every proposed change is scanned for the classic dangerous code shapes — user text run as code, queries built from text, user text written straight into a page. As with last night's dead-code detector, I made it prove itself first: two planted dangerous lines were both caught, a plant in a throw-away folder was correctly ignored, and one planted shape it MISSED (a shell command run from a web request) is written on its record page so nobody trusts it for that. Its first read of the product came back with four notes, all one harmless pattern in the homepage image route — and opening that file to explain them turned up a small real bug: asking for a hero image named 'constructor' produced a server error instead of a plain 'not found'. Fixed, with a test that fails on the old code, and checked that the two similar routes were already safe. Another seat's workflow-checker change (#35) went green at 06:17 and is still waiting to be merged; if it is still sitting there the next shift merges it. One of the automatic dependency updates is failing for a real reason (a type change in the image library), noted for the next shift. Nothing was spent. Still waiting on you: the eight court strips, the GitHub one-click, and the OpenRouter balance."
-    },
-    {
-      "at": "2026-08-26T06:25:00+10:00",
-      "shift": "foreman-11",
-      "text": "Still no word from you on the court strips, so the creative register stays parked at its gate and tonight was maintenance again. The team now has a dead-code detector (#34): one command that lists every file, export and package nothing in the product uses. I did not trust it until it had been caught out both ways — I planted a dead file and a dead export and it found both; and it correctly left alone the five modules our older map once wrongly called unused, including both login routes. Its first reading: 51 unused files (40 are unused pieces of the UI component kit), 34 unused packages, 174 unused exports — and two packages sitting in the project since day one that look like a mistyped install. Nothing was deleted; it is a reader, and the Janitor's first patrol turns the reading into cards. Another seat opened the workflow-file checkers (#35) minutes before I started and its gate is red on two style notes — I left it to them. Nothing was spent. Still waiting on you: the eight court strips, the GitHub one-click, and the OpenRouter balance."
     }
   ],
   "acknowledgedReplyIds": [
