@@ -847,12 +847,30 @@ let engine: TextEngine | null = null;
  * richest briefs is not a safety, it is the defect.
  *
  * 120 s is ~3× the measured rich-brief median and ~2.7× the worst observed
- * success; it leaves room for the variance card (20–60 s) and the aesthetic
- * re-sample inside the gateway's ~305 s wall. It is per CALL
- * (`TextRequest.timeoutMs`), so the shared engine, its queue and every other
- * reader keep the 45 s they were sized for.
+ * success. It is per CALL (`TextRequest.timeoutMs`), so the shared engine and
+ * every other reader keep the 45 s deadline they were sized for.
+ *
+ * ⚠ THE DEADLINE IS PER ATTEMPT AND STACKS UNDER RETRY (the gate's review of
+ * PR #124, finding 1). It sits inside the transport's retry loop and a timeout
+ * is retryable, so with the default two retries a HUNG provider would hold one
+ * interpretation for ~3 × 120 s ≈ 6 min. The interpreter therefore asks for
+ * ONE retry (`INTERPRET_RETRIES`): a transient 429 or 5xx is still re-tried,
+ * and the worst hang is ~2 × 120 s + backoff ≈ 4 min. That is still past the
+ * gateway's ~305 s wall once the card and the render follow — so on a genuinely
+ * hung provider the compile can outlive the socket. Money-safe: the compile
+ * runs before the roll's claim, so nothing is charged; the customer's retry
+ * re-runs the compile from scratch rather than replaying it.
+ *
+ * And the QUEUE is shared (finding 2): the text engine's queue serves every
+ * reader at concurrency 4, so four concurrent rich-brief interpretations can
+ * hold all four slots for up to 120 s each and a describer or a reference
+ * take waits behind them — the queue (depth 32) waits rather than refuses.
+ * Other readers keep their 45 s DEADLINE; their queue wait is now bounded by
+ * this number, not theirs.
  */
 export const INTERPRET_TIMEOUT_MS = 120_000;
+/** One retry, not the transport's two — see the stacking paragraph above. */
+export const INTERPRET_RETRIES = 1;
 
 export function interpreterEngine(): TextEngine | null {
   if (engine) return engine;
@@ -1161,6 +1179,7 @@ export async function interpretBrief(input: {
       maxOutputTokens: 5000,
       signal: input.signal,
       timeoutMs: INTERPRET_TIMEOUT_MS,
+      retries: INTERPRET_RETRIES,
     });
 
   try {

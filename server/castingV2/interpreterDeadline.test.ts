@@ -21,7 +21,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOpenRouterTextEngine } from "../providers/openrouterText";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { TextEngine, TextRequest } from "../providers/types";
-import { INTERPRET_TIMEOUT_MS, interpretBrief } from "./interpreter";
+import { INTERPRET_RETRIES, INTERPRET_TIMEOUT_MS, interpretBrief } from "./interpreter";
 
 const reply = JSON.stringify({
   choices: [{ message: { content: "{}" }, finish_reason: "stop" }],
@@ -71,6 +71,42 @@ describe("the transport — a call's own deadline outranks the engine's default"
       failureClass: "timeout",
     });
   }, 15_000);
+
+  /*
+    THE DEADLINE IS PER ATTEMPT AND STACKS UNDER RETRY (review of PR #124,
+    finding 1): a timeout is retryable and the transport's default is two
+    retries, so a long deadline with default retries holds a hung provider for
+    three deadlines. A call that lengthens its deadline bounds its attempts.
+  */
+  const countingFetch = (): { fetch: typeof fetch; attempts: () => number } => {
+    let attempts = 0;
+    const slow = slowFetch(120);
+    return {
+      fetch: ((url: string, init?: RequestInit) => {
+        attempts += 1;
+        return slow(url, init);
+      }) as typeof fetch,
+      attempts: () => attempts,
+    };
+  };
+
+  it("a request carrying retries: 0 makes exactly one attempt on timeout", async () => {
+    const counting = countingFetch();
+    globalThis.fetch = counting.fetch;
+    await expect(engine().complete({ system: "s", user: "u", retries: 0 })).rejects.toMatchObject({
+      failureClass: "timeout",
+    });
+    expect(counting.attempts()).toBe(1);
+  }, 15_000);
+
+  it("CONTROL — with no per-call retries the transport's default of two applies (three attempts)", async () => {
+    const counting = countingFetch();
+    globalThis.fetch = counting.fetch;
+    await expect(engine().complete({ system: "s", user: "u" })).rejects.toMatchObject({
+      failureClass: "timeout",
+    });
+    expect(counting.attempts()).toBe(3);
+  }, 15_000);
 });
 
 describe("the call — the brief interpreter asks for the deadline its population needs", () => {
@@ -91,7 +127,14 @@ describe("the call — the brief interpreter asks for the deadline its populatio
     const outcome = await interpretBrief({ briefText: "a nurse in her thirties", engine, register: true });
     expect(outcome.ok).toBe(true);
     expect(seen.length).toBeGreaterThan(0);
-    for (const request of seen) expect(request.timeoutMs).toBe(INTERPRET_TIMEOUT_MS);
+    for (const request of seen) {
+      expect(request.timeoutMs).toBe(INTERPRET_TIMEOUT_MS);
+      expect(request.retries).toBe(INTERPRET_RETRIES);
+    }
+  });
+
+  it("and it pays that deadline at most twice, never the transport's three", () => {
+    expect(INTERPRET_RETRIES).toBeLessThanOrEqual(1);
   });
 
   it("and that deadline clears the worst success production has recorded, with room to spare", () => {

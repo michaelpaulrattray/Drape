@@ -455,6 +455,16 @@ export type TextRequest = {
    * typed. One engine, one queue, and the call that needs longer says so.
    */
   timeoutMs?: number;
+  /**
+   * How many times the transport may RETRY this call on a retryable failure
+   * (transport, rate limit, timeout), overriding the transport's default of 2.
+   *
+   * Belongs beside `timeoutMs` because the two multiply: the deadline is per
+   * ATTEMPT and sits inside the retry loop, so a long deadline with the
+   * default retries holds a hung provider for 3x the deadline. A call that
+   * asks for a long deadline says how many times it may pay it.
+   */
+  retries?: number;
 };
 
 export type TextResult = {

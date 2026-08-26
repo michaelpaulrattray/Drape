@@ -265,7 +265,12 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
               },
             };
           },
-          { signal: request.signal },
+          {
+            signal: request.signal,
+            /* The deadline above is per attempt; a call that lengthened it
+               bounds how many attempts may pay it (`TextRequest.retries`). */
+            ...(request.retries === undefined ? {} : { retries: request.retries }),
+          },
         ),
         /* The tokens come off the REPLY and nothing else — this extractor is
            never handed the request, so it cannot become a route by which a

@@ -473,6 +473,8 @@ describe("the WIRE — on with a CREATIVE brief is the register", () => {
     expect(author[0]?.user).toBe(CYBORG);
     expect(author[0]?.maxOutputTokens).toBe(CARD_MAX_OUTPUT_TOKENS);
     expect(author[0]?.timeoutMs).toBe(INTERPRET_TIMEOUT_MS);
+    /* The author loops twice itself; an inner transport retry would multiply a hung provider. */
+    expect(author[0]?.retries).toBe(0);
     expect(author[0]?.temperature).toBe(0.8);
 
     const lines = new Set<string>();

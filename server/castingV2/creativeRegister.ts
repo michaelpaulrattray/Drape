@@ -237,6 +237,10 @@ export async function authorVarianceCard(input: {
       /* Measured 20–60 s per attempt on a 1,494-character brief — the same
          population argument as the interpreter's own deadline. */
       timeoutMs: INTERPRET_TIMEOUT_MS,
+      /* NO transport retries: this function already loops twice, and an inner
+         retry under a 120 s deadline would multiply a hung provider to
+         2 × 3 × 120 s. Two attempts, one deadline each, is the bound. */
+      retries: 0,
     });
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
