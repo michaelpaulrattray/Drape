@@ -13,6 +13,12 @@
 #   `census/*`, detached HEAD, ANY branch inside a linked worktree — is
 #   untouched, so the founder's interactive sessions never meet it.
 #
+# ARM 0 — R1, the generated map. If the atlas merge driver queued a
+#   regeneration (a merge where both sides changed the generated map), it is
+#   performed here on the merged tree and staged before anything else is
+#   judged — see .githooks/atlas-regenerate and .githooks/merge-atlas. Without
+#   a queued regeneration this arm does nothing at all.
+#
 # ARM 2 — R4, the control byte. A non-raw Python heredoc turns `\b` into a
 #   BACKSPACE (0x08) inside the file it writes; the file looks fine and parses
 #   wrong, and once (`.gitleaks.toml`) the consequence was a scanner that
