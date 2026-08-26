@@ -1,7 +1,7 @@
 {
-  "edition": 39,
-  "updatedAt": "2026-08-27T02:00:00+10:00",
-  "shift": "foreman-30 (Lexicographer — refusal patrol #1)",
+  "edition": 40,
+  "updatedAt": "2026-08-27T04:05:00+10:00",
+  "shift": "foreman-31",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -54,7 +54,7 @@
           "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E) — AND THE MINIMAL SETTINGS MODAL (#142, your 'do it'): MERGED PR #150, live on your account — the gear reading 'Photoreal · Low' opens the panel (Style, Imagination, Reset, the override line). N1's last built slice; what remains is #128/#130 (two small courts), #129 (patrol), then your eye = the gate — AND THE LIGHTING COURT (#128) RAN: four lights on the locked block + the distilled clause, your thin brief, 40 frames, $2.60; the two sheets are in your gallery and your eye picks the studio light. Left in N1: #130 (framing to 28%), #129 (patrol), then your eye = the gate — AND THE FRAMING COURT (#130) RAN: four framing sentences on the locked block, your thin brief, 32 frames, $2.05. Words move the frame 3–4 points, not the 8 needed for 28% — and your 9:16 reference carried into our 2:3 frame is ~33%, which the best sentence already hits. Your pick between the two targets is on the eye item. Left in N1: #129 (patrol), then your eye = the gate",
+          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E) — AND THE MINIMAL SETTINGS MODAL (#142, your 'do it'): MERGED PR #150, live on your account — the gear reading 'Photoreal · Low' opens the panel (Style, Imagination, Reset, the override line). N1's last built slice; what remains is #128/#130 (two small courts), #129 (patrol), then your eye = the gate — AND THE LIGHTING COURT (#128) RAN: four lights on the locked block + the distilled clause, your thin brief, 40 frames, $2.60; the two sheets are in your gallery and your eye picks the studio light. Left in N1: #130 (framing to 28%), #129 (patrol), then your eye = the gate — AND THE FRAMING COURT (#130) RAN: four framing sentences on the locked block, your thin brief, 32 frames, $2.05. Words move the frame 3–4 points, not the 8 needed for 28% — and your 9:16 reference carried into our 2:3 frame is ~33%, which the best sentence already hits. Your pick between the two targets is on the eye item. Left in N1: #129 (patrol), then your eye = the gate — AND THE RETRY BUTTON (#122 shape 1, your 'should we also allow a try option aswell?') is BUILT and MERGED (PR #151), switched off for everyone: a tile that failed on an engine error gets 'Retry · 20 credits' and renders again in the same slot. Your word flips it on for your account. Left in N1: your eye on the four open eye items = the gate",
           "state": "in-progress"
         }
       ]
@@ -103,6 +103,11 @@
     ],
     "chips": [
       {
+        "label": "The Retry button (#122) is built and merged — off for everyone until your word",
+        "tone": "good",
+        "source": "PR #151 merged b89d1a12 27 Aug 03:56; CASTING_RETRY_SCOPE recorded off in productionFlagPositions; driven six times on dev (frames in docs/specs/evidence/retry-122/)"
+      },
+      {
         "label": "219 failed on a 45-second clock, not the register — fixed and MERGED (PR #124)",
         "tone": "good",
         "source": "roll 219 row interpreted=false; prod log 01:54:56Z '[interpreter] unavailable'; re-driven 3x: 36.5 s, 36.4 s, 45.012 s = the default deadline; merged de2f47f9, gate x3, review x2"
@@ -130,6 +135,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "retry-flip-122",
+      "title": "The Retry button is built and switched off — flip it on for your account? And should the content-filter tiles get a plain Retry too?",
+      "productImpact": "Today a tile that fails on an engine error says 'Engine error · refunded' and that is the end of it — the only way to get that face back is to roll the whole sheet again (160 credits, eight new faces). With the switch on, that tile gets one button: Retry · 20 credits. It renders the same words again into the same slot. Nothing else on the sheet changes. Today the switch is off for everyone, including you; the button does not exist until it is flipped.",
+      "workedExample": "Roll 240, tile 05 fails on a fal timeout: chip 'Engine error · refunded', your balance is down 140 net. You tap Retry · 20 credits: 120 net, tile 05 goes back to 'Casting…' for about a minute, then the face lands and the sheet is 8 of 8. Had it failed again: the 20 come back, the chip and the button return, and you decide. Measured on the dev sheet six times: casting in 5 seconds, landed in 52. SECOND QUESTION, on the evidence from the refusal patrol: on your roll 222 the engine refused five of eight casts painted from the SAME words and delivered three — the filter is a coin per picture, not a verdict on the words. Your sentence puts those content-filter tiles on the softer-wording road, which is not built yet (#93/#129). A plain Retry on them today would win about 3 in 8 at 20 credits a go, refunded on each loss. Built exactly to your sentence for now: those tiles get no button.",
+      "recommendation": "Flip it on for your account (users:1) so you can try it on the next engine error — nothing else changes and it costs nobody anything until you tap. On the second question my recommendation is YES: a plain Retry on content-filter tiles too, one manual tap per tile with the odds said on the chip ('the filter is a coin — about 3 in 8 pass'), until softer wording lands. It is your call because it is a decision about charging people to be refused, which your rule forbids as a LOOP but not as a tap; if you say no, the softer-wording road stays the only answer for those tiles.",
+      "state": "open",
+      "filedAt": "2026-08-27T04:05:00+10:00",
+      "issueNumber": 122,
+      "options": [
+        {
+          "key": "flip-users1",
+          "label": "Flip CASTING_RETRY_SCOPE to users:1 (your account only)",
+          "consequence": "You see the button on your next engine-error tile; nobody else does; the flag is recorded and read back by name."
+        },
+        {
+          "key": "keep-off",
+          "label": "Keep it off until you have seen a real engine-error tile",
+          "consequence": "Nothing changes; the build waits — its live population on production is zero today anyway."
+        },
+        {
+          "key": "content-filter-too",
+          "label": "Also offer a plain Retry on content-filter tiles (one tap, coin odds shown)",
+          "consequence": "A refused tile can be re-thrown for 20 credits; about 3 in 8 land; every loss refunds. Softer wording replaces it when built."
+        }
+      ]
+    },
     {
       "id": "prompt-author-court-eye",
       "title": "Your eye on the Prompt Author court: which of these sheets is the studio you want — and should MAX imagination mean one face or eight?",
@@ -329,6 +361,31 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "retry-button-122",
+      "title": "The Retry button (#122) — the failed tile, the tap, the landing",
+      "question": "Is this the try option you meant? Frame 1 is the failed tile as it now looks: the ENGINE ERROR chip, the 'refunded' line, and beneath it one quiet button, Retry · 20 credits. Frame 2 is five seconds after the tap: tile 08 back on 'Casting…' with no button. Frame 3 is 52 seconds later: the face landed in slot 08 with Keep / Follow like its siblings, no failed tile left. If the button, its words, or its price-on-the-button read wrong, say so here; if it passes, the flip card above is the next step.",
+      "state": "open",
+      "filedAt": "2026-08-27T04:05:00+10:00",
+      "issueNumber": 122,
+      "frames": [
+        {
+          "key": "crew-eye/3183cd7e-0971-442c-a1d8-55082444948b.png",
+          "arm": "before — the failed tile",
+          "caption": "Tile 08 after an engine error: the chip, 'Engine error · refunded', and the new Retry · 20 credits button (dark theme; light is in the repo)."
+        },
+        {
+          "key": "crew-eye/aafd50aa-0910-489a-a785-e3e70870f876.png",
+          "arm": "5 s after the tap",
+          "caption": "Tile 08 back on 'Casting…'; the button is gone; the other seven untouched."
+        },
+        {
+          "key": "crew-eye/8ac37d48-c5db-4f45-b061-b98fccd7a294.png",
+          "arm": "52 s — landed",
+          "caption": "The retried face in slot 08 with Keep / Follow / discard like its siblings; the sheet is 8 of 8 and its record reads complete."
+        }
+      ]
+    },
     {
       "id": "framing-court-130",
       "title": "The frame (#130) — your reference is 9:16, we render 2:3: which target?",
@@ -564,6 +621,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "retry-122",
+      "title": "The Retry button (#122 shape 1) — BUILT, reviewed twice, MERGED (PR #151); dark until your word",
+      "status": "merged",
+      "prNumber": 151,
+      "note": "Your word on #122: 'Retry on engine-error/didn't-arrive tiles — same prompt, one slice, 20 credits, refunded again on failure.' Built exactly that: a tile whose chip reads ENGINE ERROR or DIDN'T ARRIVE gets one quiet button, Retry · 20 credits. Tap it and the same tile goes back to casting, the same words render once more, and it lands in the same slot (the sheet's record moves from 'partial' to 'complete') — or it fails again and the 20 come back with the chip saying why. Content-filter tiles get NO button, as your sentence puts them on the softer-wording road. Money: its own operation, so its refund can never collide with the slice's first refund; a second tap costs nothing. Driven six times on the dev sheet: tap → casting in 5 s → landed in 52 s → eight faces, and the ledger shows 20 charged, 0 refunded, every time. The review found two real money races and both were fixed before the merge (a slice the seven-day sweep could strand mid-render is refunded; two retries tapped seconds apart can never mark the sheet complete over a failure). Off for everyone: the switch (CASTING_RETRY_SCOPE) is yours to flip — card below."
+    },
     {
       "id": "refusal-patrol-129",
       "title": "The refusal patrol, run #1 (#129) — RUN on the real rows plus one probe: no trigger word is attributable, the checker is a coin per render; nothing built",
@@ -854,6 +918,13 @@
   ],
   "problems": [
     {
+      "id": "rite-pushes-red-scripts-152",
+      "title": "The deploy rite can push a script to main that the test gate rejects — main was quietly red on one guard for a night",
+      "detail": "Two of last night's patrol helper scripts rode to main with the briefing and neither ended the way the script guard requires, so the guard was red on main and nobody saw it until the next pull request inherited the failure this morning. No customer effect — the guard is about how our own helper scripts exit — and it is fixed on main now (PR #151 carried the one-line fix). Filed as #152: the rite should run the two script guards before it pushes. (issue #152)",
+      "state": "open",
+      "severity": "info"
+    },
+    {
       "id": "engine-refuses-lean-and-sternum",
       "title": "The engine's own content checker refuses short prompts most of the time, and one house word ('sternum') reliably",
       "detail": "'goth woman mid 30s' sent raw was refused 17 of 18 times; your full cyber-goth brief 63 of 64 in every form. A single added sentence with 'the crop just below the sternum' turned a prompt that passes 8/8 into 8/8 refused; the same sentence with 'collarbones' passes. The author's re-wording duty (your rule 16, #93) is not a corner case — it is the road for rich briefs. (issue #93) UPDATE (refusal patrol #1, 2026-08-27): the filter is a coin per picture on identical text — roll 222 refused 5 and delivered 3 from ONE prompt; the numeric framing sentence went 2/8 last night and 0/8 tonight. No second trigger word is attributable yet; a plain same-words retry is the cheapest rescue (#122, #93).",
@@ -911,6 +982,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-27T04:05:00+10:00",
+      "shift": "foreman-31",
+      "text": "The Retry button you asked for on #122 ('should we also allow a try option aswell?') is built, reviewed twice and merged — and switched off for everyone until your word. What it does: a tile that failed on an engine error gets 'Retry · 20 credits'; tap it and the same words render again into the same slot, or it fails again and the 20 come back. Content-filter tiles get no button, exactly as your sentence put them on the softer-wording road. I drove it six times on the dev sheet: tap, casting in 5 seconds, the face landed in 52, eight of eight, 20 charged and nothing refunded — the ledger agrees every time. Four things were wrong the first time and only visible with a real render in front of me (the button stretched across the tile; the sheet did not notice the tile had gone back to casting because it was asking too often for a slow answer; a retried tile on an old sheet said 'taking longer than usual' from its first second) — all fixed and re-driven, about $0.39 of house money over seven renders. The reviewer found two real money races and both were closed before the merge. Two things for you: flip it on for your account, and a real question the refusal patrol raised — the engine's filter is a coin per picture (five refused and three delivered from the SAME words on your roll 222), so should a refused tile get a plain Retry too, before softer wording exists? Cards above. Also found: two of last night's helper scripts had made main red on a script guard; fixed, and #152 asks the rite to check before it pushes."
+    },
     {
       "at": "2026-08-27T02:00:00+10:00",
       "shift": "foreman-30 (Lexicographer — refusal patrol #1)",
@@ -1105,11 +1181,6 @@
       "at": "2026-08-25T23:14:00+10:00",
       "shift": "relay",
       "text": "FOUNDER RULING — THE SPEND THRESHOLD, verbatim: “i thought we established it doesnt need my permission to do this unless it plans to spend a massive amount of money like $50+”. In the Program: under-$50 courts/measurements run without asking (estimate and actual recorded on the issue); $50+ comes to him priced. The creative-register court is therefore FUNDED. Also filed on his eye: #74, Crew tab UX parity with the Desk (progress bars, full ladder, chips, Done section) — urgent-labelled."
-    },
-    {
-      "at": "2026-08-26T01:10:00+10:00",
-      "shift": "relay",
-      "text": "THIS PAGE IS NOW THE DESK. Your word before bed, verbatim: “ensure that the live crew tab is the new desk and everything is pointed towards it to be updated rather than the old desk … the forman is all sweet to continue working as long as the desk is being updated so when i wake up in the morning i have somthing to look at.” Done: the shift orders now read your replies from this page and write this briefing every shift, shipped with each deploy; the old Desk page is retired as a read-only mirror. Landed in this deploy: your lobby→admin fix (#68), this page’s progress bars, full ladder, chips and Recently landed (#74), and the eye gallery (#75) — empty until the register court’s frames arrive. Filed for the shift, urgent: #82 (three hardening findings on the gallery’s image route from its review, due before the first frames) and the full-size image viewer you asked for (on #75). Tonight’s gate stall was a merge conflict on the auto-generated architecture map, not GitHub — the class is filed as #80."
     }
   ],
   "acknowledgedReplyIds": [
