@@ -84,6 +84,7 @@
         "kind": "interpreter-refusal",
         "pinnedBy": [
           "server/casting/geminiMigration.test.ts",
+          "server/castingV2/creativeRegisterScope.test.ts",
           "server/castingV2/diagnosticCapture.test.ts",
           "server/castingV2/faceScan.test.ts",
           "server/castingV2/faceScanService.test.ts",

@@ -27,6 +27,6 @@ export const IMAGINATION_NAMES: Readonly<Record<Imagination, string>> = {
  * exist yet.
  */
 export const IMAGINATION_LINES: Readonly<Record<Imagination, string>> = {
-  low: "Your words, then the studio's framing, light and background. Everything you leave open, the engine invents.",
-  max: "Your words as a seed. The author invents a distinctive, ownable look around them and leaves the face open, so the eight are still eight people.",
+  low: "Your words, then the studio's locked camera, light and grey seamless — nothing invented. Everything you leave unsaid, the engine decides.",
+  max: "Your words as a seed. The author adds art direction — mood, materials, makeup and hair language, lighting taste — never an exact face, hairstyle or item, so the eight are eight people in one editorial universe.",
 };

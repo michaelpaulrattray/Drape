@@ -31,17 +31,18 @@ import {
   authorAllowance,
   authorPrompt,
   AUTHOR_ALLOWANCE_FLOOR,
-  composeAuthoredPrompt,
+  composeFinalPrompt,
   countWords,
   DEFAULT_IMAGINATION,
-  lowSystemPrompt,
+  draftRefusal,
   maxSystemPrompt,
   NEVER_WRITTEN,
   neverWrittenIn,
-  PHOTOREAL_BUNDLE,
   staticPrompt,
   WORD_BUDGET,
 } from "./promptAuthor";
+import { AUTHOR_ROAD_FRAMING, containsHouseSentence, HOUSE_BLOCK, HOUSE_BLOCK_SENTENCES } from "./houseBlock";
+import { PHOTOREAL_HUMAN_BLOCKS, photorealHumanConstant } from "./cohortPhotorealHuman";
 
 /* ------------------------------------------------------------ the ladder */
 
@@ -110,55 +111,86 @@ const RICH =
   + "directly from the chest up. She has extremely pale porcelain skin and a sharp, androgynous face. Soft neutral gray "
   + "studio background with seamless gradient.";
 
-describe("the author's instructions (the ruling, at the text)", () => {
-  it("LOW is his default", () => {
-    expect(DEFAULT_IMAGINATION).toBe("low");
-  });
-
-  it("never says 'sternum' — not the bundle, not LOW, not MAX (the word alone refused 8/8)", () => {
-    for (const text of [PHOTOREAL_BUNDLE, lowSystemPrompt(100), maxSystemPrompt(100)]) {
-      for (const { word } of NEVER_WRITTEN) expect(text.toLowerCase()).not.toMatch(new RegExp(`(^|[^a-z])${word}([^a-z]|$)`));
+describe("the locked house block (ruling §5c) — code's, derived, reviewed once", () => {
+  it("is derived from the cohort's own sentences: capture minus the set sentence, the three realism sentences, every negative, the authority paragraph", () => {
+    for (const sentence of PHOTOREAL_HUMAN_BLOCKS.captureSentences) {
+      if (sentence.startsWith("Eight candidates")) expect(HOUSE_BLOCK).not.toContain(sentence);
+      else expect(HOUSE_BLOCK).toContain(sentence);
     }
-    /* The word is not even in the model's ear; the guard on the reply is a whole-word match. */
-    expect(neverWrittenIn("the crop just below the sternum")).toBe("sternum");
-    expect(neverWrittenIn("the crop just below the collarbones")).toBeNull();
-    expect(neverWrittenIn("sternums")).toBeNull();
+    expect(PHOTOREAL_HUMAN_BLOCKS.realismSentences).toHaveLength(3);
+    for (const sentence of PHOTOREAL_HUMAN_BLOCKS.realismSentences) expect(HOUSE_BLOCK).toContain(sentence);
+    for (const sentence of PHOTOREAL_HUMAN_BLOCKS.negativeSentences) expect(HOUSE_BLOCK).toContain(sentence);
+    expect(HOUSE_BLOCK.endsWith(PHOTOREAL_HUMAN_BLOCKS.authority)).toBe(true);
+    /* The anatomy blocks stay retired on this road. */
+    for (const retired of ["EYES:", "SCLERA:", "CATCHLIGHTS:", "IDENTITY", "PRIORITY"]) expect(HOUSE_BLOCK).not.toContain(retired);
   });
 
-  it("both tell the author the brief is placed VERBATIM before its text, and to write only what follows", () => {
-    for (const text of [lowSystemPrompt(100), maxSystemPrompt(100)]) {
-      expect(text).toContain("placed VERBATIM before your text");
-      expect(text).toContain("Write ONLY the text that follows it");
-    }
+  it("is chest-up by his word — the cohort's waist-up pair and the DIRECTION referent are out, by name", () => {
+    for (const sentence of AUTHOR_ROAD_FRAMING) expect(HOUSE_BLOCK).toContain(sentence);
+    expect(HOUSE_BLOCK).not.toContain("waist-up");
+    expect(HOUSE_BLOCK).not.toContain("mid-torso");
+    expect(HOUSE_BLOCK).not.toContain("DIRECTION block");
+    expect(HOUSE_BLOCK).toContain("ENTIRE HAIR SILHOUETTE");
+    expect(HOUSE_BLOCK).toContain("BACKGROUND:");
+    expect(HOUSE_BLOCK).toContain("collarbones");
   });
 
-  it("LOW invents nothing about the person and adds only the bundle where the brief is silent", () => {
-    const low = lowSystemPrompt(120);
-    expect(low).toContain("Do not invent anything about the person");
-    expect(low).toContain("only for the things the user's request is silent about");
-    expect(low).toContain(PHOTOREAL_BUNDLE);
-    expect(low).toContain("at most 120 words");
-  });
-
-  it("MAX carries his §5 instruction AND his casting-call amendment — the face and a few axes stay open", () => {
-    const max = maxSystemPrompt(200);
-    expect(max).toContain("Treat the user request only as a seed.");
-    expect(max).toContain("Midjourney-level identity");
-    expect(max).toContain("THIS IS A CASTING CALL, NOT A PORTRAIT");
-    expect(max).toContain("LEAVE OPEN the face itself and a few axes");
-    expect(max).toContain("You may add; you may not take away.");
-    expect(max).toContain("at most 200 words");
-  });
-
-  it("the bundle says the prompt overrides it, and carries framing, background, lighting and quality", () => {
-    expect(PHOTOREAL_BUNDLE).toContain("anything the user's request states overrides it");
-    for (const clause of ["Chest-up framing", "collarbones", "seamless studio background", "studio lighting", "photorealistic"]) {
-      expect(PHOTOREAL_BUNDLE).toContain(clause);
-    }
+  it("carries no word this studio never sends, and the house composer's own bytes did not move", () => {
+    expect(neverWrittenIn(HOUSE_BLOCK)).toBeNull();
+    const house = photorealHumanConstant(null);
+    expect(house).toContain(PHOTOREAL_HUMAN_BLOCKS.capture);
+    expect(house).toContain(PHOTOREAL_HUMAN_BLOCKS.negatives);
+    expect(house).toContain("Eight candidates must not share one skin");
+    expect(HOUSE_BLOCK_SENTENCES.length).toBeGreaterThan(15);
+    expect(containsHouseSentence("Pale cool-toned skin, intense black makeup language.")).toBeNull();
+    expect(containsHouseSentence(`x ${PHOTOREAL_HUMAN_BLOCKS.negativeSentences[0]} y`)).not.toBeNull();
   });
 });
 
-describe("the budget (rule 14) — the brief is never cut, the author fits in what is left", () => {
+describe("the author's instruction (§5b, at the text)", () => {
+  it("LOW is his default and makes no text call at all — seed + camera/studio is the whole spec", () => {
+    expect(DEFAULT_IMAGINATION).toBe("low");
+    expect(staticPrompt(THIN)).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
+  });
+
+  it("MAX asks for art direction only and forbids, by name, an exact face, hairstyle, eye colour, jewellery item, garment, body type or expression", () => {
+    const max = maxSystemPrompt(200);
+    for (const clause of [
+      "aesthetic language only",
+      "mood, materials, makeup language, hair language and lighting taste",
+      "exact face, exact hairstyle, exact eye colour, exact jewellery item, exact garment, exact body type or exact expression",
+      "Never lock a repeating signature item",
+      "more taste, not more world",
+      "Do NOT write any camera, lens, framing",
+      "Do NOT write notes about the series",
+      "You may add; you may not take away.",
+      "at most 200 words",
+      "avoid explicit sheer or revealing clothing language",
+      "placed VERBATIM before your text",
+    ]) expect(max, clause).toContain(clause);
+    /* No studio sentence and no forbidden word is in the model's ear. */
+    expect(containsHouseSentence(max)).toBeNull();
+    expect(neverWrittenIn(max)).toBeNull();
+  });
+
+  it("never says 'sternum', a pipeline note or a set word — and the guard names them", () => {
+    expect(neverWrittenIn("the crop just below the sternum")).toBe("sternum");
+    expect(neverWrittenIn("the crop just below the collarbones")).toBeNull();
+    expect(neverWrittenIn("expression left unset")).toBe("left unset");
+    expect(neverWrittenIn("this is the signature that must repeat across all eight")).toBe("across all eight");
+    expect(neverWrittenIn("pick one direction per subject, never both")).toBe("per subject");
+    expect(neverWrittenIn("build ranges from lean to fuller, left open across the set")).toBe("across the set");
+    expect(neverWrittenIn("bone structure direction leans toward severity")).toBe("leans toward");
+    expect(neverWrittenIn("each cast member wears black")).toBe("cast member");
+    expect(neverWrittenIn("the setting is a grey studio")).toBeNull();
+    /* A phrase split by a newline or a double space is still the phrase (review of #141, finding 4). */
+    expect(neverWrittenIn("pick one direction per" + String.fromCharCode(10) + "subject")).toBe("per subject");
+    expect(neverWrittenIn("expression left  open")).toBe("left open");
+    for (const { word } of NEVER_WRITTEN) expect(maxSystemPrompt(100).toLowerCase()).not.toMatch(new RegExp(`(^|[^a-z])${word.replace("-", "\\-")}([^a-z]|$)`));
+  });
+});
+
+describe("the budget (rule 14) — the brief is never cut, the author fits in what is left, the block is outside it", () => {
   it("allowance is the budget minus the brief's words, floored", () => {
     expect(countWords(THIN)).toBe(4);
     expect(authorAllowance(THIN)).toBe(WORD_BUDGET - 4);
@@ -166,9 +198,18 @@ describe("the budget (rule 14) — the brief is never cut, the author fits in wh
     expect(authorAllowance(huge)).toBe(AUTHOR_ALLOWANCE_FLOOR);
   });
 
-  it("the composition is the brief, one blank line, the addition — verbatim first BY CODE", () => {
-    expect(composeAuthoredPrompt(`  ${RICH}  `, " added ")).toBe(`${RICH}\n\nadded`);
-    expect(staticPrompt(THIN)).toBe(`${THIN}\n\n${PHOTOREAL_BUNDLE}`);
+  it("the composition is brief → content → block, verbatim first BY CODE, block last BY CODE", () => {
+    expect(composeFinalPrompt(`  ${RICH}  `, " added ")).toBe(`${RICH}\n\nadded\n\n${HOUSE_BLOCK}`);
+    expect(composeFinalPrompt(THIN, null)).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
+    expect(composeFinalPrompt(THIN, "   ")).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
+  });
+
+  it("a draft is refused for: empty, overrun, a forbidden word, a studio sentence", () => {
+    expect(draftRefusal("", 100)).toContain("empty");
+    expect(draftRefusal(Array.from({ length: 120 }, () => "w").join(" "), 100)).toContain("allowance is 100");
+    expect(draftRefusal("lips oxblood on every subject, left open across the set", 100)).toContain('"across the set"');
+    expect(draftRefusal(`Pale skin. ${PHOTOREAL_HUMAN_BLOCKS.negativeSentences[1]}`, 100)).toContain("camera/studio language");
+    expect(draftRefusal("Pale cool-toned skin, intense black makeup language, sculpted black hair.", 100)).toBeNull();
   });
 });
 
@@ -216,73 +257,88 @@ const sent = (engine: Engine, about: string): TextRequest[] =>
     .map((call: unknown[]) => call[0] as TextRequest)
     .filter((request) => request.about === about);
 
-const ADDITION = "A photorealistic casting portrait, chest-up, neutral grey seamless studio background, soft frontal studio lighting, sharp focus.";
+const ADDITION = "Pale cool-toned skin, intense black makeup language, sculpted black hair, and dark structured fashion built from patent, mesh, lace, high collars and metal hardware. Still, confrontational studio presence.";
 
 /* ------------------------------------------------ the author, driven */
 
 describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", () => {
-  it("one call at LOW, temperature 0.3, the interpreter's deadline, no transport retries, the brief as the user turn", async () => {
+  it("LOW: no call at all — seed + block, mode 'seed', zero attempts", async () => {
     const engine = engineAnswering([ADDITION]);
     const out = await authorPrompt({ engine, briefText: THIN });
+    expect(sent(engine, "author")).toHaveLength(0);
+    expect(out).toMatchObject({ mode: "seed", authored: false, content: null, imagination: "low", attempts: 0, addedWords: 0, model: null, latencyMs: null });
+    expect(out.prompt).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
+    expect(out.houseBlockWords).toBe(countWords(HOUSE_BLOCK));
+  });
+
+  it("MAX: one call at 0.8 with the MAX instruction, the interpreter's deadline, no transport retries, the brief as the user turn; content between brief and block", async () => {
+    const engine = engineAnswering([ADDITION]);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     const [request] = sent(engine, "author");
     expect(sent(engine, "author")).toHaveLength(1);
     expect(request?.user).toBe(THIN);
-    expect(request?.system).toBe(lowSystemPrompt(authorAllowance(THIN)));
-    expect(request?.temperature).toBe(0.3);
+    expect(request?.system).toBe(maxSystemPrompt(authorAllowance(THIN)));
+    expect(request?.temperature).toBe(0.8);
     expect(request?.timeoutMs).toBe(INTERPRET_TIMEOUT_MS);
     expect(request?.retries).toBe(0);
     expect(request?.maxOutputTokens).toBe(AUTHOR_MAX_OUTPUT_TOKENS);
     expect(request?.json).toBeUndefined();
-    expect(out).toMatchObject({ authored: true, imagination: "low", attempts: 1, model: "stub-model", latencyMs: 7 });
-    expect(out.prompt).toBe(`${THIN}\n\n${ADDITION}`);
+    expect(out).toMatchObject({ mode: "authored", authored: true, content: ADDITION, imagination: "max", attempts: 1, model: "stub-model", latencyMs: 7 });
+    expect(out.prompt).toBe(`${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}`);
     expect(out.addedWords).toBe(countWords(ADDITION));
+    /* The block is byte-identical at the end, and the author wrote none of it. */
+    expect(out.prompt.endsWith(HOUSE_BLOCK)).toBe(true);
+    expect(containsHouseSentence(out.content ?? "")).toBeNull();
   });
 
-  it("MAX is asked at 0.8 with the MAX instruction", async () => {
-    const engine = engineAnswering([ADDITION]);
-    await authorPrompt({ engine, briefText: THIN, imagination: "max" });
-    const [request] = sent(engine, "author");
-    expect(request?.temperature).toBe(0.8);
-    expect(request?.system).toBe(maxSystemPrompt(authorAllowance(THIN)));
-  });
-
-  it("a reply that says 'sternum' is refused and re-asked ONCE, naming the word; the clean second draft is the prompt", async () => {
+  it("a reply that says 'sternum' is refused and re-asked ONCE, naming the word; the clean second draft is the content", async () => {
     const engine = engineAnswering(["Chest-up, the crop just below the sternum.", ADDITION]);
-    const out = await authorPrompt({ engine, briefText: THIN });
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     const calls = sent(engine, "author");
     expect(calls).toHaveLength(2);
     expect(calls[1]?.system).toContain('used the word "sternum"');
     expect(calls[1]?.system).toContain("PREVIOUS DRAFT:");
-    expect(out.authored).toBe(true);
-    expect(out.attempts).toBe(2);
-    expect(out.prompt).toBe(`${THIN}\n\n${ADDITION}`);
-    expect(neverWrittenIn(out.prompt)).toBeNull();
+    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
+    expect(neverWrittenIn(out.content ?? "")).toBeNull();
   });
 
-  it("an overrun draft is re-asked once to trim itself; refused twice, the STATIC bundle stands and the row says so", async () => {
+  it("a draft that narrates the SET or writes a pipeline note is refused by name (dev roll 95 — 7 of 8 tiles were contact-sheet grids)", async () => {
+    const engine = engineAnswering(["Skin left open across the set, lips oxblood on every subject.", ADDITION]);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
+    expect(sent(engine, "author")[1]?.system).toContain('used the word "across the set"');
+    expect(out).toMatchObject({ mode: "authored", attempts: 2 });
+  });
+
+  it("a draft that writes studio language is refused — the studio appends its own block", async () => {
+    const engine = engineAnswering([`Pale skin. ${PHOTOREAL_HUMAN_BLOCKS.negativeSentences[0]}`, ADDITION]);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
+    expect(sent(engine, "author")[1]?.system).toContain("camera/studio language");
+    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
+  });
+
+  it("an overrun draft is re-asked once to trim itself; refused twice, seed + block stands with mode 'static'", async () => {
     const allowance = authorAllowance(THIN);
     const long = Array.from({ length: Math.ceil(allowance * 1.2) }, () => "word").join(" ");
     const engine = engineAnswering([long, long]);
-    const out = await authorPrompt({ engine, briefText: THIN });
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     expect(sent(engine, "author")).toHaveLength(2);
     expect(sent(engine, "author")[1]?.system).toContain(`the allowance is ${allowance}`);
-    expect(out).toMatchObject({ authored: false, attempts: 2, model: null });
+    expect(out).toMatchObject({ mode: "static", authored: false, content: null, attempts: 2, model: null, addedWords: 0 });
     expect(out.prompt).toBe(staticPrompt(THIN));
   });
 
   it("a throwing author (deadline, transport) costs the customer the AUTHOR and never the roll", async () => {
     const engine = engineAnswering([new Error("TimeoutError")]);
-    const out = await authorPrompt({ engine, briefText: RICH });
-    expect(out).toMatchObject({ authored: false, attempts: 1, model: null, latencyMs: null });
+    const out = await authorPrompt({ engine, briefText: RICH, imagination: "max" });
+    expect(out).toMatchObject({ mode: "static", authored: false, attempts: 1, model: null, latencyMs: null });
     expect(out.prompt).toBe(staticPrompt(RICH));
     expect(out.prompt.startsWith(RICH)).toBe(true);
   });
 
   it("code fences are stripped and an empty reply is re-asked", async () => {
     const engine = engineAnswering(["", "```\n" + ADDITION + "\n```"]);
-    const out = await authorPrompt({ engine, briefText: THIN });
-    expect(out.authored).toBe(true);
-    expect(out.prompt).toBe(`${THIN}\n\n${ADDITION}`);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
+    expect(out).toMatchObject({ mode: "authored", content: ADDITION });
   });
 });
 
@@ -302,7 +358,9 @@ describe("the WIRE — off is today's product to the byte", () => {
     expect(compiled.compiledBrief).not.toHaveProperty("register");
     for (const candidate of compiled.candidates) {
       expect(candidate.prompt.startsWith("CASTING CATEGORY (ABSOLUTE)")).toBe(true);
-      expect(candidate.prompt).not.toContain(PHOTOREAL_BUNDLE);
+      expect(candidate.prompt).not.toContain(AUTHOR_ROAD_FRAMING[0]);
+      /* The house composer's own block did not move (the derivation is by reference). */
+      expect(candidate.prompt).toContain("Eight candidates must not share one skin");
     }
   });
 });
@@ -326,15 +384,14 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     /* The interpreter ran as the READER, and was not asked to route. */
     expect(sent(engine, "interpret").length).toBeGreaterThan(0);
     for (const request of sent(engine, "interpret")) expect(request.system).not.toContain(`"creativeRegister"`);
-    /* ONE author call, the brief as its user turn. */
-    expect(sent(engine, "author")).toHaveLength(1);
-    expect(sent(engine, "author")[0]?.user).toBe(RICH);
+    /* LOW (his default): NO author call — seed + the locked block is the whole spec (§5b). */
+    expect(sent(engine, "author")).toHaveLength(0);
 
     const prompts = new Set(on.candidates.map((c) => c.prompt));
     expect(on.candidates).toHaveLength(8);
     expect(prompts.size).toBe(1);
     const [prompt] = prompts;
-    expect(prompt).toBe(`${RICH}\n\n${ADDITION}`);
+    expect(prompt).toBe(`${RICH}\n\n${HOUSE_BLOCK}`);
     for (const houseOnly of ["CASTING CATEGORY (ABSOLUTE)", "SUBJECT:", "PHYSIQUE:", "DIRECTION:", "THIS CANDIDATE:", "WARDROBE"]) {
       expect(prompt, houseOnly).not.toContain(houseOnly);
     }
@@ -346,14 +403,17 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     expect(on.compiledBrief.register).toMatchObject({
       kind: "author",
       imagination: "low",
-      authored: true,
-      attempts: 1,
-      model: "stub-model",
-      prompt: `${RICH}\n\n${ADDITION}`,
+      mode: "seed",
+      authored: false,
+      content: null,
+      attempts: 0,
+      model: null,
+      houseBlockWords: countWords(HOUSE_BLOCK),
+      prompt: `${RICH}\n\n${HOUSE_BLOCK}`,
     });
   });
 
-  it("a THIN brief takes the same road — the four words first, the author's text after", async () => {
+  it("a THIN brief at MAX — the four words first, the author's art direction, the block last; ONE author call", async () => {
     const engine = engineAnswering([ADDITION]);
     const on = await castingBriefCompiler({
       briefText: THIN,
@@ -363,12 +423,14 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
       creativeRegister: true,
       imagination: "max",
     });
+    expect(sent(engine, "author")).toHaveLength(1);
     expect(sent(engine, "author")[0]?.temperature).toBe(0.8);
-    expect(on.candidates[0]?.prompt.startsWith(`${THIN}\n\n`)).toBe(true);
-    expect(on.compiledBrief.register).toMatchObject({ kind: "author", imagination: "max", authored: true });
+    expect(sent(engine, "author")[0]?.user).toBe(THIN);
+    expect(on.candidates[0]?.prompt).toBe(`${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}`);
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", imagination: "max", mode: "authored", authored: true, content: ADDITION, prompt: `${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}` });
   });
 
-  it("the author down, the sheet still rolls on the static bundle and the row says nobody authored it", async () => {
+  it("the author down at MAX, the sheet still rolls on seed + block and the row says nobody authored it", async () => {
     const engine = engineAnswering([new Error("ECONNRESET")]);
     const on = await castingBriefCompiler({
       briefText: RICH,
@@ -376,10 +438,11 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
       rollSeed: "wire-author-down",
       engine,
       creativeRegister: true,
+      imagination: "max",
     });
     expect(on.candidates).toHaveLength(8);
     for (const candidate of on.candidates) expect(candidate.prompt).toBe(staticPrompt(RICH));
-    expect(on.compiledBrief.register).toMatchObject({ kind: "author", authored: false, model: null, attempts: 1 });
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "static", authored: false, model: null, attempts: 1 });
   });
 });
 
@@ -455,7 +518,7 @@ describe("the WIRE — a roll the author road cannot carry composes HOUSE under 
     expect(sent(overridden, "author")).toHaveLength(0);
     expect(b.compiledBrief.register).toEqual({ kind: "house", because: "edited" });
 
-    /* An EMPTY override object is not an edit — the author road is taken. */
+    /* An EMPTY override object is not an edit — the author road is taken (MAX, so a call is visible). */
     const empty = engineAnswering([ADDITION]);
     const c = await castingBriefCompiler({
       briefText: RICH,
@@ -465,9 +528,10 @@ describe("the WIRE — a roll the author road cannot carry composes HOUSE under 
       overrides: {},
       unlock: [],
       creativeRegister: true,
+      imagination: "max",
     });
     expect(sent(empty, "author")).toHaveLength(1);
-    expect(c.compiledBrief.register).toMatchObject({ kind: "author" });
+    expect(c.compiledBrief.register).toMatchObject({ kind: "author", mode: "authored" });
   });
 
   it("a brand name never reaches the engine (founder gate 21): the brief is scrubbed before the author sees it and before the prompt is composed", async () => {
@@ -478,6 +542,7 @@ describe("the WIRE — a roll the author road cannot carry composes HOUSE under 
       rollSeed: "wire-brand",
       engine,
       creativeRegister: true,
+      imagination: "max",
     });
     const [request] = sent(engine, "author");
     expect(request?.user.toLowerCase()).not.toContain("versace");
@@ -490,8 +555,8 @@ describe("the WIRE — a roll the author road cannot carry composes HOUSE under 
 describe("authorPrompt keeps the latency it already spent when the re-ask throws", () => {
   it("first draft refused, second call throws: static bundle, attempts 2, latency of the first call kept", async () => {
     const engine = engineAnswering(["the crop just below the sternum", new Error("ECONNRESET")]);
-    const out = await authorPrompt({ engine, briefText: THIN });
-    expect(out).toMatchObject({ authored: false, attempts: 2, model: null, latencyMs: 7 });
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
+    expect(out).toMatchObject({ mode: "static", authored: false, attempts: 2, model: null, latencyMs: 7 });
     expect(out.prompt).toBe(staticPrompt(THIN));
   });
 });
@@ -654,9 +719,9 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
     const brief = "a swamp monster with moss-green skin and amber eyes";
     const engine = engineReading([intentWith("being")]);
     const on = await castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-creature", engine, creativeRegister: true });
-    expect(sent(engine, "author")).toHaveLength(1);
-    expect(on.candidates[0]?.prompt).toBe(`${brief}\n\n${ADDITION}`);
-    expect(on.compiledBrief.register).toMatchObject({ kind: "author", subject: "being" });
+    expect(sent(engine, "author")).toHaveLength(0);
+    expect(on.candidates[0]?.prompt).toBe(`${brief}\n\n${HOUSE_BLOCK}`);
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "seed", subject: "being" });
     /* The adapter that resolved the reader's record is still the photoreal-human one, and the row says which. */
     expect(on.cohortKey).toBe("photoreal_human");
     expect(on.compiledBrief.intent).not.toHaveProperty("creativeRegister");

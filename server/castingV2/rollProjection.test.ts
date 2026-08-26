@@ -5,7 +5,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthoredPrompt, readChips, readImagination } = await import(
+const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
   "./rollProjection"
 );
 
@@ -133,6 +133,15 @@ describe("nothing internal crosses the boundary", () => {
 
     it("a house register (a follow or an edited roll under the flag) projects null — its prompt is the house composer's", () => {
       expect(readAuthoredPrompt({ register: { kind: "house", because: "anchored", prompt: "CASTING CATEGORY (ABSOLUTE) …" } })).toBeNull();
+    });
+
+    it("use-as-brief gets the brief + the author's CONTENT and never the block (review of #141): null on a seed/static sheet", () => {
+      expect(readAuthoredText("goth woman mid 30s", { register: { kind: "author", mode: "authored", content: " Pale skin, black lace. ", prompt: "goth woman mid 30s\n\nPale skin, black lace.\n\nFRAMING: …" } }))
+        .toBe("goth woman mid 30s\n\nPale skin, black lace.");
+      expect(readAuthoredText("goth woman mid 30s", { register: { kind: "author", mode: "seed", content: null, prompt: "goth woman mid 30s\n\nFRAMING: …" } })).toBeNull();
+      expect(readAuthoredText("x", { register: { kind: "house", content: "y" } })).toBeNull();
+      const projected = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
+      expect(projected.authoredText).toBeNull();
     });
 
     it("the sheet's imagination is projected from an author register and nowhere else (slice E)", () => {

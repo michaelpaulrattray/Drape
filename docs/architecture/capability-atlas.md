@@ -54,7 +54,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:612<br>server/castingV2/refineInterpreter.ts:894<br>(+1) | 6 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:612<br>server/castingV2/refineInterpreter.ts:894<br>(+1) | 7 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1274<br>server/castingV2/castingIntent.ts:1310<br>(+15) | 18 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1595<br>(+2) | 7 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:547<br>server/castingV2/refineInterpreter.ts:1527<br>(+1) | 6 test(s) | guard.content |
@@ -231,7 +231,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | busy | service-refusal |  | refusalTag.test.ts, rollService.test.ts |
 | candidate_missing | service-refusal |  | refineService.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
-| empty | interpreter-refusal |  | server/casting/geminiMigration.test.ts, diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts |
+| empty | interpreter-refusal |  | server/casting/geminiMigration.test.ts, creativeRegisterScope.test.ts, diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
