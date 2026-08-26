@@ -17,6 +17,9 @@ rows read this shift (2026-08-25) — never asserted from memory (law 7b).
 
 ---
 
+
+> **Amendment 2026-08-26 (founder, verbatim: "do it - add the minimal settings modal to N1"):** the settings modal's MINIMAL first version — style selector (photoreal only) + imagination slider — moves from N3 into N1 as the creative register's last slice before its milestone gate. The FULL modal (advanced framing/lighting/background settings, the other art styles) stays in N3. Context: the Prompt Author ruling (`PROMPT_AUTHOR_RULING_2026-08-26.md`) made the modal the author road's control surface.
+
 ## 1. The name collision, stated once
 
 The plan's ladder and the program's practice both used the name **"M8"** for
