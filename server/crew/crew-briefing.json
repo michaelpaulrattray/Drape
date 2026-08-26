@@ -1,6 +1,6 @@
 {
-  "edition": 24,
-  "updatedAt": "2026-08-26T16:40:00+10:00",
+  "edition": 25,
+  "updatedAt": "2026-08-26T16:48:00+10:00",
   "shift": "foreman-21",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -48,6 +48,14 @@
         {
           "title": "Your 'refuse-free' ruling (#126) — BUILT and MERGED (PR #127): when the brief-reader is genuinely down, a brief longer than a sentence is refused for free before any charge; a short one still rolls on the fallback",
           "state": "done"
+        },
+        {
+          "title": "YOUR VERDICT ON THE PROMPT AUTHOR COURT (reply #8, 16:31): \"B is the studio … build the author verbatim-first with LOW as the default … Never say 'sternum'\" — the register is now rebuilt to this, dark, with the B+R realism court (#128), the refusal loop (#129) and the framing calibration (#130) beside it",
+          "state": "done"
+        },
+        {
+          "title": "The register rebuilt to your ruling — author verbatim-first, LOW default, MAX leaves the face open, reader beside it recording only — dark behind CASTING_CREATIVE_REGISTER_SCOPE (PR #94 superseded)",
+          "state": "in-progress"
         }
       ]
     },
@@ -127,8 +135,8 @@
       "title": "Your eye on the Prompt Author court: which of these sheets is the studio you want — and should MAX imagination mean one face or eight?",
       "productImpact": "This decides what the new author writes for every roll. On your 73-word cyber-goth prompt: sent RAW, the engine gave eight different women with the framing held (your four-women result, at eight). With the author at LOW (it only added studio/framing sentences), the same: different women, the look kept, a steadier chest-up frame. With the author at MAX (your own instruction, word for word), it gave one striking woman EIGHT TIMES — same cut, same latex, same choker — because the author had stated everything and left the engine nothing to vary. Today's studio, for comparison, put your 73 words through the compiler and delivered seven of eight in the grey house tee, and put 'goth woman mid 30s' through it and delivered eight women with no goth styling at all.",
       "workedExample": "Type 'goth woman mid 30s'. LOW author → six distinct goth women who read as their thirties, black lips, chokers, lace, clean studio (two of eight refused by the engine). MAX author → the same spiky-haired woman eight times. Raw, with no author at all → the engine refused it 17 times out of 18. Your call: is LOW the default and MAX a per-sheet choice, or should MAX be rewritten to leave hair/makeup/clothes open so it invents eight faces?",
-      "recommendation": "Build the author verbatim-first as you ruled, with LOW as the default; rewrite the MAX instruction so it names what it leaves to the engine (otherwise MAX = one face); never let the preset say 'sternum' (that one word flipped a passing prompt to eight refusals); and run #93's rewrite-and-retry on your full cyber-goth brief, which the engine refused 63 of 64 times in every form — raw included.",
-      "state": "open",
+      "recommendation": "Build the author verbatim-first as you ruled, with LOW as the default; rewrite the MAX instruction so it names what it leaves to the engine (otherwise MAX = one face); never let the preset say 'sternum' (that one word flipped a passing prompt to eight refusals); and run #93's rewrite-and-retry on your full cyber-goth brief, which the engine refused 63 of 64 times in every form — raw included. — YOUR ANSWER (reply #8, 16:31): \"B is the studio, for both the rich prompt and the thin one — build the author verbatim-first with LOW as the default. MAX as written gives one face eight times; rewrite the MAX instruction so it always leaves the face and a few axes open (casting call, not a portrait). D had the most realistic-looking humans but missed the brief — take a short realism clause from D's photographic language and test B+R against B. Build the refusal loop: log every refused and passed prompt, find trigger words, measured word→replacement pairs into the author's rewrite list, visible on the expanded prompt. Calibrate the preset's framing to my reference frame (28% head share) and lock framing, lighting and studio across every cast. Never say \"sternum\".\" Filed: the register rebuild to this (author verbatim-first, LOW default, MAX rewritten to leave the face open), the B+R realism court (#128), the refusal-loop patrol (#129), the preset calibration to your 28% frame (#130).",
+      "state": "answered",
       "filedAt": "2026-08-26T17:55:00+10:00",
       "issueNumber": 125,
       "options": [
@@ -325,7 +333,7 @@
       "id": "prompt-author-court",
       "title": "The Prompt Author court — raw vs LOW author vs MAX author vs today's compiler, on your three briefs",
       "question": "Which row is the studio you want for a basic user, and for a rich brief? And should MAX imagination give one face eight times (as your instruction does today) or eight different inventions?",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-26T17:55:00+10:00",
       "issueNumber": 125,
       "frames": [
@@ -482,9 +490,9 @@
     },
     {
       "id": "prompt-author-court-125",
-      "title": "THE PROMPT AUTHOR COURT (#125) — RUN, $7.12, five strips in your gallery",
-      "status": "waiting-founder",
-      "note": "272 renders dispatched, 152 refused by the engine's checker (unpaid), 120 delivered; the fact-reader and the frame-pointer were proven on controls before a cent; framing calibrated on your 'this framing is perfect' frame (head 28% of frame height, top of head at 6.8%). Record: docs/specs/PROMPT_AUTHOR_COURT_2026-08-26.md.",
+      "title": "THE PROMPT AUTHOR COURT (#125) — RUN ($7.12) and JUDGED by your eye: B is the studio",
+      "status": "merged",
+      "note": "272 renders dispatched, 152 refused by the engine's checker (unpaid), 120 delivered; the fact-reader and the frame-pointer were proven on controls before a cent; framing calibrated on your 'this framing is perfect' frame (head 28% of frame height, top of head at 6.8%). Record: docs/specs/PROMPT_AUTHOR_COURT_2026-08-26.md. — Closed on your verdict (reply #8). Three cards filed from it: #128 (B+R realism court, under the spend threshold), #129 (refusal-loop patrol), #130 (preset framing calibrated to your 28% reference frame, then locked).",
       "prNumber": null
     },
     {
@@ -716,6 +724,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-26T16:48:00+10:00",
+      "shift": "foreman-21",
+      "text": "Your verdict on the strips arrived while tonight's deploy was running and it is acknowledged here: B is the studio, the author is built verbatim-first with LOW as the default, MAX is rewritten so it never paints one face eight times, D lends a short realism clause to be tested against B (not assumed), the refusal loop becomes a patrol, the preset's framing is calibrated to your 28% reference frame and then locked, and 'sternum' is never written. The relay filed the three side pieces as #128, #129 and #130; the register rebuild itself is the next build and starts dark behind the same flag. Nothing reaches your account until it is rebuilt and you say so."
+    },
+    {
       "at": "2026-08-26T16:55:00+10:00",
       "shift": "foreman-21",
       "text": "Your 'refuse-free' word is in the product. The shift before mine built it and pushed the PR, then its process died before it could write anything down — so I read its work at the artifacts instead of trusting it: ran the tests (56 green), broke the new rule on purpose to see exactly which tests catch it (the four outage tests and nothing else), read the gate and the reviewer's report, fixed the one stale paragraph the reviewer found, and merged. In plain terms: if the brief-reader is genuinely down, anyone who typed more than a sentence now gets 'we couldn't read your brief — nothing was charged, try again in a moment' and keeps every credit; that is roll 219's 160-credit failure closed at the rule itself. A five-word brief still rolls from the words as typed, because that is the option you clicked — a card above asks whether you meant 'always'. Still waiting on your eye for the Prompt Author strips; nothing on the register is built until you answer which sheet is the studio. No house money spent tonight."
@@ -853,6 +866,7 @@
     4,
     5,
     6,
-    7
+    7,
+    8
   ]
 }
