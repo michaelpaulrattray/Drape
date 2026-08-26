@@ -66,7 +66,16 @@ export function candidateFailureKind(failureClass: string | null | undefined): C
     case "capability":
     case "provider_account":
     case "unrecovered":
+    /*
+      `casting_candidates.failureClass` is varchar(24) and every writer slices
+      to it (`claimCandidateForRecovery`, `failCandidate` in `db/castingV2.ts`),
+      so the recovery sweep's `provider_delivered_unlanded` (27 chars) is
+      STORED as its first 24. Both forms are matched: the stored one because
+      that is what a row holds, the full one so a reader handed the class in
+      memory agrees with a reader handed the row (review of #143, finding 1).
+    */
     case "provider_delivered_unlanded":
+    case "provider_delivered_unlan":
     case "unknown":
       return "engine";
     default:

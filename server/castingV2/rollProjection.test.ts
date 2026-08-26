@@ -233,44 +233,6 @@ describe("lifecycle states collapse to the three the client knows", () => {
     expect(projectCandidateStatus("expired")).toBe("failed-refunded");
     // `discarded` still vanishes: the user removed it, and it is gone.
     expect(projectCandidateStatus("discarded")).toBeNull();
-  });
-
-  /*
-    WHY IT DIDN'T ARRIVE (#122). The founder had to guess that two refused
-    tiles were the content filter; the row knew. The kind crosses, the
-    provider's class word does not.
-  */
-  describe("a failed candidate says why, in the customer's vocabulary", () => {
-    it("content_policy projects as the content filter, and the class word stays behind", () => {
-      const projected = projectCandidate(candidateRow({ status: "failed", failureClass: "content_policy", imageKey: null }));
-      expect(projected?.failure).toEqual({ kind: "content_filter" });
-      expect(JSON.stringify(projected)).not.toContain("content_policy");
-    });
-
-    it("every class the roll road writes lands on a named kind, never a throw", () => {
-      // rollService.ts (ProviderError classes + unknown + render_fault + unpaid)
-      // and rollRecovery.ts (unrecovered, provider_delivered_unlanded).
-      const written = [
-        "transport", "rate_limit", "timeout", "content_policy", "capability",
-        "provider_account", "render_fault", "unknown", "unpaid",
-        "unrecovered", "provider_delivered_unlanded",
-      ];
-      for (const failureClass of written) {
-        const projected = projectCandidate(candidateRow({ status: "failed", failureClass, imageKey: null }));
-        expect(projected?.failure?.kind, failureClass).toBeTypeOf("string");
-      }
-      expect(projectCandidate(candidateRow({ status: "failed", failureClass: "render_fault", imageKey: null }))?.failure?.kind).toBe("render_fault");
-      expect(projectCandidate(candidateRow({ status: "failed", failureClass: "timeout", imageKey: null }))?.failure?.kind).toBe("engine");
-      expect(projectCandidate(candidateRow({ status: "failed", failureClass: "unpaid", imageKey: null }))?.failure?.kind).toBe("unpaid");
-      // A failed row with no class at all keeps today's sentence.
-      expect(projectCandidate(candidateRow({ status: "failed", failureClass: null, imageKey: null }))?.failure?.kind).toBe("unknown");
-    });
-
-    it("is null on every status that is not failed — cancelled and expired are the customer's decision", () => {
-      for (const status of ["ready", "queued", "dispatched", "signed", "cancelled", "expired"] as const) {
-        expect(projectCandidate(candidateRow({ status, failureClass: null }))?.failure, status).toBeNull();
-      }
-    });
 
     const projected = projectRoll({
       roll: rollRow({ status: "cancelled" }),
@@ -287,6 +249,55 @@ describe("lifecycle states collapse to the three the client knows", () => {
     expect(projected.candidates[0].imageUrl).toBeNull();
     expect(projected.candidates[0].thumbUrl).toBeNull();
     expect(projected.status).toBe("cancelled");
+  });
+
+  /*
+    WHY IT DIDN'T ARRIVE (#122). The founder had to guess that two refused
+    tiles were the content filter; the row knew. The kind crosses, the
+    provider's class word does not.
+  */
+  describe("a failed candidate says why, in the customer's vocabulary", () => {
+    /** What a row can hold: `failureClass` is varchar(24) and every writer slices to it. */
+    const stored = (failureClass: string) => failureClass.slice(0, 24);
+    const kindOf = (failureClass: string | null) =>
+      projectCandidate(candidateRow({ status: "failed", failureClass, imageKey: null }))?.failure?.kind;
+
+    it("content_policy projects as the content filter, and the class word stays behind", () => {
+      const projected = projectCandidate(candidateRow({ status: "failed", failureClass: "content_policy", imageKey: null }));
+      expect(projected?.failure).toEqual({ kind: "content_filter" });
+      expect(JSON.stringify(projected)).not.toContain("content_policy");
+    });
+
+    it("every class the roll road writes lands on a named kind AS STORED — the 24-char column is part of the wire", () => {
+      // rollService.ts (ProviderError classes + unknown + render_fault + unpaid)
+      // and rollRecovery.ts (unrecovered, provider_delivered_unlanded). Driven
+      // through the same truncation the DB helper applies (review of #143,
+      // finding 1): `provider_delivered_unlanded` is 27 chars and no row has
+      // ever held it whole.
+      const written = [
+        "transport", "rate_limit", "timeout", "content_policy", "capability",
+        "provider_account", "render_fault", "unknown", "unpaid",
+        "unrecovered", "provider_delivered_unlanded",
+      ];
+      for (const failureClass of written) {
+        expect(kindOf(stored(failureClass)), failureClass).not.toBe("unknown");
+        // A reader handed the class in memory agrees with one handed the row.
+        expect(kindOf(failureClass), failureClass).toBe(kindOf(stored(failureClass)));
+      }
+      expect(stored("provider_delivered_unlanded")).toBe("provider_delivered_unlan");
+      expect(kindOf("provider_delivered_unlan")).toBe("engine");
+      expect(kindOf("render_fault")).toBe("render_fault");
+      expect(kindOf("timeout")).toBe("engine");
+      expect(kindOf("unpaid")).toBe("unpaid");
+      // A failed row with no class at all keeps today's sentence.
+      expect(kindOf(null)).toBe("unknown");
+    });
+
+    it("is null on every status that is not failed — cancelled and expired are the customer's decision", () => {
+      for (const status of ["ready", "queued", "dispatched", "signed", "cancelled", "expired"] as const) {
+        expect(projectCandidate(candidateRow({ status, failureClass: null }))?.failure, status).toBeNull();
+      }
+    });
   });
 
   it("suppresses the image on every refunded candidate, not only expired ones", () => {
