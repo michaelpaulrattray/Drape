@@ -41,7 +41,21 @@ import {
   staticPrompt,
   WORD_BUDGET,
 } from "./promptAuthor";
-import { AUTHOR_ROAD_FRAMING, containsHouseSentence, HOUSE_BLOCK, HOUSE_BLOCK_SENTENCES } from "./houseBlock";
+import {
+  AUTHOR_ROAD_FRAMING,
+  AUTHORITY_LINE,
+  COLOUR_LINE,
+  containsHouseSentence,
+  DROPPED_FROM_BLOCK,
+  EXPRESSION_LINE,
+  HOUSE_BLOCK,
+  HOUSE_BLOCK_SENTENCES,
+  LIGHTING_LINE,
+  NEGATIVE_LINES,
+  PHOTOREAL_PRESET,
+  POSTURE_LINE,
+  UNIVERSAL_BLOCK_SENTENCES,
+} from "./houseBlock";
 import { PHOTOREAL_HUMAN_BLOCKS, photorealHumanConstant } from "./cohortPhotorealHuman";
 
 /* ------------------------------------------------------------ the ladder */
@@ -111,28 +125,66 @@ const RICH =
   + "directly from the chest up. She has extremely pale porcelain skin and a sharp, androgynous face. Soft neutral gray "
   + "studio background with seamless gradient.";
 
-describe("the locked house block (ruling §5c) — code's, derived, reviewed once", () => {
-  it("is derived from the cohort's own sentences: capture minus the set sentence, the three realism sentences, every negative, the authority paragraph", () => {
-    for (const sentence of PHOTOREAL_HUMAN_BLOCKS.captureSentences) {
-      if (sentence.startsWith("Eight candidates")) expect(HOUSE_BLOCK).not.toContain(sentence);
-      else expect(HOUSE_BLOCK).toContain(sentence);
+describe("the locked house block — rebuilt to §5d + §5e (#144), code's, reviewed once", () => {
+  it("carries his three §5e lines verbatim, and the block's own posture, negatives, preset and authority", () => {
+    expect(LIGHTING_LINE).toContain(
+      "Large soft frontal key just above the lens, high fill, open shadows. Soft chin and jaw shadow only. Grey seamless slightly brighter behind the head, gentle falloff to the edges, no hard vignette. Minimal rim. No coloured gels. Speculars appear where the person's skin and wardrobe naturally catch the source — not as a forced flash sheen on every face.",
+    );
+    expect(EXPRESSION_LINE).toContain("Eyes into the lens, present, mouth closed. Self-possessed. No broad smile, no laugh, no blank stare, no horror grimace.");
+    expect(COLOUR_LINE).toContain("Neutral daylight, 5500K. Skin stays true to the person. No teal-orange, no beauty-app grade.");
+    for (const line of [LIGHTING_LINE, EXPRESSION_LINE, COLOUR_LINE, POSTURE_LINE, ...NEGATIVE_LINES, ...PHOTOREAL_PRESET, ...AUTHOR_ROAD_FRAMING]) {
+      expect(HOUSE_BLOCK).toContain(line);
     }
+    expect(HOUSE_BLOCK.endsWith(AUTHORITY_LINE)).toBe(true);
+    /* The order is the block's: framing → capture → realism → negatives → preset → authority. */
+    const at = (s: string) => HOUSE_BLOCK.indexOf(s);
+    expect(at(AUTHOR_ROAD_FRAMING[0]!)).toBeLessThan(at("CAMERA:"));
+    expect(at("CAMERA:")).toBeLessThan(at("REALISM:"));
+    expect(at("REALISM:")).toBeLessThan(at(NEGATIVE_LINES[0]!));
+    expect(at(NEGATIVE_LINES[0]!)).toBeLessThan(at(PHOTOREAL_PRESET[0]!));
+  });
+
+  it("keeps what §5e keeps, by name from the cohort: hair silhouette, background, camera, noise, the three realism sentences", () => {
+    expect(HOUSE_BLOCK).toContain("ENTIRE HAIR SILHOUETTE");
+    expect(HOUSE_BLOCK).toContain("Nothing on the head is clipped");
+    expect(HOUSE_BLOCK).toContain("BACKGROUND:");
+    expect(HOUSE_BLOCK).toContain("CAMERA: Medium-format sensor");
+    expect(HOUSE_BLOCK).toContain("Fine luminance-dominant noise");
     expect(PHOTOREAL_HUMAN_BLOCKS.realismSentences).toHaveLength(3);
     for (const sentence of PHOTOREAL_HUMAN_BLOCKS.realismSentences) expect(HOUSE_BLOCK).toContain(sentence);
-    for (const sentence of PHOTOREAL_HUMAN_BLOCKS.negativeSentences) expect(HOUSE_BLOCK).toContain(sentence);
-    expect(HOUSE_BLOCK.endsWith(PHOTOREAL_HUMAN_BLOCKS.authority)).toBe(true);
+    expect(HOUSE_BLOCK).toContain("collarbones");
     /* The anatomy blocks stay retired on this road. */
     for (const retired of ["EYES:", "SCLERA:", "CATCHLIGHTS:", "IDENTITY", "PRIORITY"]) expect(HOUSE_BLOCK).not.toContain(retired);
   });
 
-  it("is chest-up by his word — the cohort's waist-up pair and the DIRECTION referent are out, by name", () => {
-    for (const sentence of AUTHOR_ROAD_FRAMING) expect(HOUSE_BLOCK).toContain(sentence);
-    expect(HOUSE_BLOCK).not.toContain("waist-up");
-    expect(HOUSE_BLOCK).not.toContain("mid-torso");
-    expect(HOUSE_BLOCK).not.toContain("DIRECTION block");
-    expect(HOUSE_BLOCK).toContain("ENTIRE HAIR SILHOUETTE");
-    expect(HOUSE_BLOCK).toContain("BACKGROUND:");
-    expect(HOUSE_BLOCK).toContain("collarbones");
+  it("FORBIDDEN TOKENS (#144): none of the dropped phrases is in the block — the flash studio cannot come back by re-derivation", () => {
+    expect(DROPPED_FROM_BLOCK.length).toBeGreaterThanOrEqual(15);
+    for (const { phrase } of DROPPED_FROM_BLOCK) expect(HOUSE_BLOCK.toLowerCase()).not.toContain(phrase.toLowerCase());
+    /* Positive control: every dropped phrase IS in the old studio's own block, so the arm is reading real sentences. */
+    const old = photorealHumanConstant(null).toLowerCase();
+    const oldHits = DROPPED_FROM_BLOCK.filter(({ phrase }) => old.includes(phrase.toLowerCase())).length;
+    expect(oldHits).toBeGreaterThanOrEqual(13);
+    /* The old expression bans and the text ban, named outright. */
+    for (const gone of ["NO open mouth", "no showing teeth", "NO text", "head straight", "Skin tones warm", "front flash"]) {
+      expect(HOUSE_BLOCK).not.toContain(gone);
+    }
+  });
+
+  it("the style ban lives in the PRESET, not the universal block (§5d) — and the preset is still appended today", () => {
+    const universal = UNIVERSAL_BLOCK_SENTENCES.join(" ");
+    /* "CGI" alone is not the token: the kept REALISM sentence says "no CGI sheen" (a skin quality, not a style ban). */
+    for (const style of ["PHOTOREALISTIC", "NO CGI", "anime", "cartoon", "3D render", "illustration"]) expect(universal).not.toContain(style);
+    expect(PHOTOREAL_PRESET.join(" ")).toContain("PHOTOREALISTIC ONLY");
+    expect(PHOTOREAL_PRESET.join(" ")).toContain("NO CGI, cartoon, anime");
+    expect(HOUSE_BLOCK).toContain(PHOTOREAL_PRESET[0]!);
+    expect(HOUSE_BLOCK_SENTENCES).toEqual([...UNIVERSAL_BLOCK_SENTENCES, ...PHOTOREAL_PRESET, AUTHORITY_LINE]);
+  });
+
+  it("the authority is the road's (rule 8): defaults that a stated fact overrides — never 'always wins'", () => {
+    expect(AUTHORITY_LINE).toContain("overrides any default or negative");
+    expect(AUTHORITY_LINE).toContain("Where the description is silent");
+    expect(AUTHORITY_LINE).not.toContain("always wins");
+    expect(HOUSE_BLOCK).not.toContain(PHOTOREAL_HUMAN_BLOCKS.authority);
   });
 
   it("carries no word this studio never sends, and the house composer's own bytes did not move", () => {
@@ -141,9 +193,11 @@ describe("the locked house block (ruling §5c) — code's, derived, reviewed onc
     expect(house).toContain(PHOTOREAL_HUMAN_BLOCKS.capture);
     expect(house).toContain(PHOTOREAL_HUMAN_BLOCKS.negatives);
     expect(house).toContain("Eight candidates must not share one skin");
+    expect(house).toContain("front flash");
     expect(HOUSE_BLOCK_SENTENCES.length).toBeGreaterThan(15);
     expect(containsHouseSentence("Pale cool-toned skin, intense black makeup language.")).toBeNull();
-    expect(containsHouseSentence(`x ${PHOTOREAL_HUMAN_BLOCKS.negativeSentences[0]} y`)).not.toBeNull();
+    expect(containsHouseSentence(`x ${NEGATIVE_LINES[0]} y`)).not.toBeNull();
+    expect(containsHouseSentence(`x ${LIGHTING_LINE} y`)).not.toBeNull();
   });
 });
 
@@ -208,7 +262,8 @@ describe("the budget (rule 14) — the brief is never cut, the author fits in wh
     expect(draftRefusal("", 100)).toContain("empty");
     expect(draftRefusal(Array.from({ length: 120 }, () => "w").join(" "), 100)).toContain("allowance is 100");
     expect(draftRefusal("lips oxblood on every subject, left open across the set", 100)).toContain('"across the set"');
-    expect(draftRefusal(`Pale skin. ${PHOTOREAL_HUMAN_BLOCKS.negativeSentences[1]}`, 100)).toContain("camera/studio language");
+    expect(draftRefusal(`Pale skin. ${NEGATIVE_LINES[1]}`, 100)).toContain("camera/studio language");
+    expect(draftRefusal(`Pale skin. ${LIGHTING_LINE}`, 100)).toContain("camera/studio language");
     expect(draftRefusal("Pale cool-toned skin, intense black makeup language, sculpted black hair.", 100)).toBeNull();
   });
 });
@@ -310,7 +365,7 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
   });
 
   it("a draft that writes studio language is refused — the studio appends its own block", async () => {
-    const engine = engineAnswering([`Pale skin. ${PHOTOREAL_HUMAN_BLOCKS.negativeSentences[0]}`, ADDITION]);
+    const engine = engineAnswering([`Pale skin. ${PHOTOREAL_PRESET[0]}`, ADDITION]);
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     expect(sent(engine, "author")[1]?.system).toContain("camera/studio language");
     expect(out).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
