@@ -433,9 +433,17 @@ describe("a real failed compile reaches the sheet as a confession", () => {
       candidateCount: 8,
       rollSeed: "11111111-1111-4111-8111-111111111111",
       unlock: [],
-      // The interpreter is unreachable. Fail-open: the roll still compiles from
-      // the sentence itself, and every stated lock is lost.
-      engine: { complete: async () => { throw new Error("interpreter unreachable"); } } as never,
+      // The interpreter ANSWERED and its reply could not be read — since #126
+      // (reply #9, "always") a dead reader refuses free instead, so the one
+      // road that still falls back is the unparsed reply: the roll compiles
+      // from the sentence itself, and every stated lock is lost.
+      engine: {
+        complete: async () => ({
+          text: "not json",
+          latencyMs: 1,
+          provenance: { provider: "openrouter", model: "stub", servedModel: "stub" },
+        }),
+      } as never,
     });
 
     const projected = projectRoll({

@@ -103,33 +103,56 @@ describe("stated style refuses, across phrasings", () => {
   });
 
   it.each(STYLED_BRIEFS)(
-    "refuses %j even when the interpreter is down entirely",
+    "refuses %j when the interpreter ANSWERED and the reply could not be read — the screen's only population now",
     async (brief) => {
       /*
         The guard that matters most. Without it, every one of these becomes a
         photoreal roll the user pays for — which is the shape of the original
-        defect, since a schema failure and an outage are the same outcome to
-        the caller.
+        defect. Since #126 a DEAD reader refuses free before this screen (see
+        below), so the screen's whole population is the unparsed reply.
       */
+      const compile = castingBriefCompiler({
+        briefText: brief,
+        candidateCount: 8,
+        rollSeed: "style",
+        engine: engineReturning("I'm sorry, I can't help with that."),
+      });
+      await expect(compile).rejects.toMatchObject({ code: "unsupported_cohort" });
+    },
+  );
+
+  it.each(STYLED_BRIEFS)(
+    "a dead reader refuses %j FREE as an outage, before the styled screen (#126, 'always' — reply #9)",
+    async (brief) => {
       const compile = castingBriefCompiler({
         briefText: brief,
         candidateCount: 8,
         rollSeed: "style",
         engine: deadEngine,
       });
-      await expect(compile).rejects.toMatchObject({ code: "unsupported_cohort" });
+      await expect(compile).rejects.toMatchObject({ code: "reader_outage" });
     },
   );
 
-  it("still casts an ordinary brief when the interpreter is down", async () => {
-    // The fallback must stay open for everything else: an outage should never
-    // cost someone a roll they could have had.
+  it("an ordinary brief on a dead reader is refused free too — nobody is charged for a sheet that read none of it", async () => {
+    await expect(
+      castingBriefCompiler({
+        briefText: "a retired boxer with a broken nose",
+        candidateCount: 8,
+        rollSeed: "style",
+        engine: deadEngine,
+      }),
+    ).rejects.toMatchObject({ code: "reader_outage" });
+  });
+
+  it("an ordinary brief whose reply could not be read still casts — the one road that falls back", async () => {
     const compiled = await castingBriefCompiler({
       briefText: "a retired boxer with a broken nose",
       candidateCount: 8,
       rollSeed: "style",
-      engine: deadEngine,
+      engine: engineReturning("not json at all"),
     });
     expect(compiled.candidates).toHaveLength(8);
+    expect(compiled.compiledBrief.interpreted).toBe(false);
   });
 });
