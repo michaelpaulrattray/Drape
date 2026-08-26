@@ -1,5 +1,8 @@
 # BASICS IS THE BIRTH STATE — a design for countersign
 
+> ⚠ **SUPERSEDED 2026-08-26 (founder ruling, terminal): the wardrobe/basics toggle is RETIRED — the engine dresses the cast from the prompt; "basics" is a word a user may type, not a mode or a default; skin coverage is MEASURED on the frame, never assumed from a path. See `docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md` §4. This document stays as history.**
+
+
 > ⚠ **FOUNDER LAW + FUNDING (2026-08-25, verbatim, closing L&F #63):**
 > *"fund the run and fold the toggle into register, basics is the default
 > birth state"* — court 1's run is FUNDED on his word (price stated on a

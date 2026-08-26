@@ -1,5 +1,8 @@
 # The Two Paths — Wardrobe or Basics: a design for countersign
 
+> ⚠ **SUPERSEDED 2026-08-26 (founder ruling, terminal): the wardrobe/basics toggle is RETIRED — the engine dresses the cast from the prompt; "basics" is a word a user may type, not a mode or a default; skin coverage is MEASURED on the frame, never assumed from a path. See `docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md` §4. This document stays as history.**
+
+
 > ⚠ **SUPERSEDED IN ITS CENTRAL RULING — 2026-08-25. THE TOGGLE DIES AND
 > BASICS BECOMES THE BIRTH DEFAULT FOR EVERY CAST.** Founder direction,
 > verbatim: *"this is how i envision it working, cast without any outfit
