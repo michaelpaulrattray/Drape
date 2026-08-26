@@ -177,6 +177,7 @@ interface FlaggedUserRowProps {
     discrepancy: number;
     grossDeductions: number;
     expectedCost: number;
+    refundAnomaly: boolean;
     failedGenerations: number;
     totalGenerations: number;
   };
@@ -219,6 +220,11 @@ function FlaggedUserRow({ user, onSelect }: FlaggedUserRowProps) {
           {user.failedGenerations > 0 && (
             <span className="text-[10px] text-amber-600">
               {user.failedGenerations} failed
+            </span>
+          )}
+          {user.refundAnomaly && (
+            <span className="text-[10px] text-red-600">
+              refunds exceed charges
             </span>
           )}
         </div>

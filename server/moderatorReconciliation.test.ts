@@ -51,13 +51,14 @@ vi.mock("./klaviyo", () => ({
 }));
 
 vi.mock("./slack/slackNotification", () => ({
-  SlackAlerts: { accountAutoFrozen: vi.fn().mockResolvedValue(undefined) },
+  SlackAlerts: { accountFrozenByStaff: vi.fn().mockResolvedValue(undefined) },
 }));
 
 vi.mock("./auditLog", () => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
   AUDIT_ACTIONS: {
     ACCOUNT_AUTO_FROZEN: "account.auto_frozen",
+    ACCOUNT_FROZEN: "account.frozen",
     ACCOUNT_UNFROZEN: "account.unfrozen",
   },
 }));

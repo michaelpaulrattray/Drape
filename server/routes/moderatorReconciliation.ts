@@ -29,16 +29,19 @@ export function buildSummary(ctx: {
 }): string {
   const { reading, failedCount, pendingCount } = ctx;
   const hasDiscrepancy = Math.abs(reading.discrepancy) > 0;
+  const anomalyNote = reading.refundAnomaly
+    ? ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed every generation charge ever made (${reading.grossDeductions.toLocaleString()}) — this account has been credited more than it was charged; read the refund rows.`
+    : "";
 
   const failureNote =
     failedCount > 0
       ? reading.unrefundedFailureCost > 0
         ? ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} credits, ${reading.totalRefunds.toLocaleString()} refunded — failures refund only catastrophically by ruling, so the unrefunded ${reading.unrefundedFailureCost.toLocaleString()} is expected.`
-        : ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} credits, covered by ${reading.totalRefunds.toLocaleString()} refunded — failures refund only catastrophically by ruling, so a smaller refund figure here would also be expected.`
+        : ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} credits, against ${reading.totalRefunds.toLocaleString()} refunded overall (not all of it for failures) — failures refund only catastrophically by ruling, so a smaller refund figure here would also be expected.`
       : "";
 
   if (!hasDiscrepancy) {
-    return `No discrepancy. ${reading.grossDeductions.toLocaleString()} credits charged, ${reading.expectedCost.toLocaleString()} recorded.${failureNote}`;
+    return `No discrepancy. ${reading.grossDeductions.toLocaleString()} credits charged, ${reading.expectedCost.toLocaleString()} recorded.${anomalyNote}${failureNote}`;
   }
 
   const absDisc = Math.abs(reading.discrepancy).toLocaleString();
@@ -48,7 +51,7 @@ export function buildSummary(ctx: {
       ? ` ${pendingCount} generation(s) still in flight — a charge can precede its record by minutes, so re-read once they settle.`
       : "";
 
-  return `Discrepancy of ${absDisc} credits — ${direction} (${reading.grossDeductions.toLocaleString()} charged against ${reading.expectedCost.toLocaleString()} recorded).${pendingNote}${failureNote}`;
+  return `Discrepancy of ${absDisc} credits — ${direction} (${reading.grossDeductions.toLocaleString()} charged against ${reading.expectedCost.toLocaleString()} recorded).${anomalyNote}${pendingNote}${failureNote}`;
 }
 
 export const moderatorReconciliationRouter = router({
@@ -206,6 +209,7 @@ export const moderatorReconciliationRouter = router({
           operationRecordCost: reading.operationCost,
           expectedCost: reading.expectedCost,
           discrepancy: reading.discrepancy,
+          refundAnomaly: reading.refundAnomaly,
           hasDiscrepancy,
           summary: buildSummary({ reading, failedCount, pendingCount }),
         },
@@ -235,16 +239,16 @@ export const moderatorReconciliationRouter = router({
       const reason = `Manual freeze by moderator: ${input.reason}`;
       await freezeUser(input.userId, reason, String(ctx.user.id));
 
-      await SlackAlerts.accountAutoFrozen(
+      await SlackAlerts.accountFrozenByStaff(
         input.userId,
         user.name || `User ${input.userId}`,
-        0, // no discrepancy — manual freeze
-        0
+        ctx.user.name || `Moderator ${ctx.user.id}`,
+        input.reason
       );
 
       await logAuditEvent({
         userId: ctx.user.id,
-        action: AUDIT_ACTIONS.ACCOUNT_AUTO_FROZEN,
+        action: AUDIT_ACTIONS.ACCOUNT_FROZEN,
         resourceType: "user",
         resourceId: String(input.userId),
         metadata: {

@@ -438,6 +438,27 @@ describe("Credit Discrepancy Flagging", () => {
     expect(under.users[0].discrepancy).toBe(-2500);
   });
 
+  it("REFUND ANOMALY: refunds exceeding every generation charge flag the account whatever the threshold", () => {
+    // The refund-lane bound (module header): the charge-side rule cannot see
+    // a double-fired refund, so an account credited more than it was ever
+    // charged is flagged on that fact alone. 1,000 charged, 1,200 refunded,
+    // records 1,000 — discrepancy 0, and it is still listed.
+    const credits: CreditAgg[] = [{ userId: 1, grossDeductions: 1000, totalRefunds: 1200 }];
+    const gens: GenAgg[] = [
+      { userId: 1, completedCost: 700, pendingCost: 0, failedCost: 300, unlinkedCost: 1000, totalGenerations: 4, failedGenerations: 1 },
+    ];
+    const result = computeDiscrepancies(credits, gens, [], users, 2000);
+    expect(result.users).toHaveLength(1);
+    expect(result.users[0].discrepancy).toBe(0);
+    expect(result.users[0].refundAnomaly).toBe(true);
+
+    // Negative control: refunds AT the charges is not an anomaly (a fully refunded account is ordinary).
+    const even = computeDiscrepancies(
+      [{ userId: 1, grossDeductions: 1000, totalRefunds: 1000 }], gens, [], users, 2000,
+    );
+    expect(even.users).toHaveLength(0);
+  });
+
   it("scannedCount counts a user present ONLY in the operation aggregation", () => {
     // A Casting V2 refine account can have no `credit_transactions` row in the
     // window and no `generations` row at all. Before the operation

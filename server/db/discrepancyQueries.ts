@@ -47,9 +47,16 @@
  * Refunds are no longer part of the discrepancy. They are written only by
  * the product or by staff (a failure refund, a per-slice refund, an admin
  * correction) and a correction of DELIVERED work is legitimately unbounded by
- * anything a record holds — so a refund-side bound was a false-positive
- * generator, never a control. They are still reported, and the unrefunded
- * failure cost is shown for what it is.
+ * anything a record holds — so a refund-side term was a false-positive
+ * generator. ⚠ IT WAS ALSO THE ONLY THING WATCHING MONEY LEAVE BY THE REFUND
+ * LANE (review of PR #123): a refund path that double-fires would have moved
+ * the old `netCost` and is invisible to the charge-side rule. What stands in
+ * for it is one cheap bound that needs no formula — an account whose refunds
+ * EXCEED its gross generation charges has been credited more than it was ever
+ * charged, and is flagged as `refundAnomaly` whatever its discrepancy reads.
+ * A double refund smaller than that bound is NOT caught; the coverage loss is
+ * named here rather than papered over. Refunds are still reported, and the
+ * unrefunded failure cost is shown for what it is.
  *
  * ⚠ AND THE SCAN NO LONGER FREEZES ANYONE. Founder ruling 2026-08-26 (Crew
  * reply #5, verbatim): "List-only. A control that can freeze a paying
@@ -83,6 +90,8 @@ export interface FlaggedUserDiscrepancy {
   /** `unlinkedCost + operationCost` — what the records say was charged. */
   expectedCost: number;
   discrepancy: number;
+  /** Refunds exceed gross generation charges — credited more than ever charged. Flagged regardless of threshold. */
+  refundAnomaly: boolean;
   totalGenerations: number;
   failedGenerations: number;
 }
@@ -140,6 +149,8 @@ export interface DiscrepancyReading {
   discrepancy: number;
   /** Failed-row cost not covered by refunds — the ruled outcome, shown, never flagged. */
   unrefundedFailureCost: number;
+  /** `totalRefunds > grossDeductions` — the refund-lane bound (header). */
+  refundAnomaly: boolean;
 }
 
 /**
@@ -168,6 +179,7 @@ export function computeDiscrepancy(input: DiscrepancyInputs): DiscrepancyReading
     expectedCost,
     discrepancy: grossDeductions - expectedCost,
     unrefundedFailureCost: Math.max(0, failedCost - totalRefunds),
+    refundAnomaly: totalRefunds > grossDeductions,
   };
 }
 
@@ -211,7 +223,7 @@ export function computeFlaggedDiscrepancies(
       operationCost: op?.operationCost ?? 0,
     });
 
-    if (Math.abs(reading.discrepancy) >= threshold) {
+    if (Math.abs(reading.discrepancy) >= threshold || reading.refundAnomaly) {
       flagged.push({
         userId: uid,
         data: {
@@ -225,6 +237,7 @@ export function computeFlaggedDiscrepancies(
           operationCost: reading.operationCost,
           expectedCost: reading.expectedCost,
           discrepancy: reading.discrepancy,
+          refundAnomaly: reading.refundAnomaly,
           totalGenerations: Number(gen?.totalGenerations ?? 0),
           failedGenerations: Number(gen?.failedGenerations ?? 0),
         },
@@ -342,6 +355,16 @@ export async function getUsersWithDiscrepancies(
  * the same two expressions the scan aggregates, scoped by `userId` in the
  * WHERE. The per-user reconciliation page reads this so its number is the
  * scan's number for the same user.
+ *
+ * ⚠ A DATE RANGE IS APPROXIMATE HERE, AND THAT IS A PROPERTY OF THE PAGE, NOT
+ * A FORMULA BUG (review of PR #123, finding 3). The range keys an operation by
+ * ITS OWN `createdAt`, and its fallback rows are summed whole — an operation
+ * inside the window carries all of its rows, one outside carries none — while
+ * the page's charge side comes from `getDetailedCreditHistory` (row-filtered,
+ * capped at 10,000 rows). A window that cuts through an operation, or an
+ * account past 10k transactions, can therefore show a small discrepancy the
+ * ALL-TIME scan does not. The all-time number is the one that means something;
+ * a windowed one is a lens.
  */
 export async function getUserRecordCosts(
   userId: number,

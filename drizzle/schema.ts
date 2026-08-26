@@ -1405,6 +1405,8 @@ export const AUDIT_ACTIONS = {
   
   // Account freeze events (billing investigation)
   ACCOUNT_AUTO_FROZEN: "account.auto_frozen",
+  /** A freeze by a moderator or admin — with their id on the row. The scan no longer freezes (#119). */
+  ACCOUNT_FROZEN: "account.frozen",
   ACCOUNT_UNFROZEN: "account.unfrozen",
   
   // Account lifecycle events

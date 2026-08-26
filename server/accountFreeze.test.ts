@@ -23,13 +23,14 @@ vi.mock("./auditLog", () => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
   AUDIT_ACTIONS: {
     ACCOUNT_AUTO_FROZEN: "account.auto_frozen",
+    ACCOUNT_FROZEN: "account.frozen",
     ACCOUNT_UNFROZEN: "account.unfrozen",
   },
 }));
 
 vi.mock("./slack/slackNotification", () => ({
   SlackAlerts: {
-    accountAutoFrozen: vi.fn().mockResolvedValue(undefined),
+    accountFrozenByStaff: vi.fn().mockResolvedValue(undefined),
   },
 }));
 

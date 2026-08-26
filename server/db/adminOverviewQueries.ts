@@ -360,6 +360,7 @@ export async function getRecentAlerts(limit: number = 15): Promise<Array<{
     .where(
       sql`${auditLogs.severity} IN ('critical', 'warning') OR ${auditLogs.action} IN (
         'account.auto_frozen',
+        'account.frozen',
         'account.unfrozen',
         'admin.account_suspended',
         'admin.account_unsuspended',

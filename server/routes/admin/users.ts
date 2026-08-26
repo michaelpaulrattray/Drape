@@ -191,7 +191,7 @@ export const usersRouter = router({
 
       await logAuditEvent({
         userId: ctx.user.id,
-        action: AUDIT_ACTIONS.ACCOUNT_AUTO_FROZEN,
+        action: AUDIT_ACTIONS.ACCOUNT_FROZEN,
         resourceType: "user",
         resourceId: input.userId.toString(),
         metadata: {
