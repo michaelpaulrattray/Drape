@@ -63,3 +63,4 @@ for (const [variant, prompt] of CELLS) {
 }
 writeFileSync(`${OUT}/rows.json`, JSON.stringify({ brief: BRIEF, variants: VARIANTS, thin: THIN_VARIANTS, rows }, null, 2), "utf8");
 console.log("\nrefused per variant:", CELLS.map(([v]) => `${v} ${rows.filter((r) => r.variant === v && r.refused).length}/${N}`).join(" · "));
+process.exit(0);

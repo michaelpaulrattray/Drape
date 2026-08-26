@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
+import { castingBriefCompiler, deterministicBriefCompiler, FALLBACK_CARRIES_CHARS, READER_OUTAGE_MESSAGE } from "./briefCompiler";
 import {
   lockFactsOf,
   EMPTY_STATED_HAIR,
@@ -500,5 +500,110 @@ describe("compilation", () => {
     // C6's fidelity gate: a named social archetype may never be quietly
     // replaced by a generic fashion type.
     expect(prompt).toContain("punk drummer");
+  });
+});
+
+describe("a reader outage refuses free (#126 — founder, Crew reply #7: 'refuse-free')", () => {
+  /*
+    Law 3: the catch branch is driven DIRECTLY by an engine that throws — the
+    way the 120 s deadline, a dead transport or a provider outage reach it —
+    never through a reader that usually behaves. Roll 219 is the specimen:
+    the deadline fired, the brief was never read, and 160 credits bought men
+    and women against a cyber-goth brief.
+  */
+  const engineThrowing = (reason: string): TextEngine => ({
+    id: "test:interpreter-down",
+    complete: async () => {
+      throw new Error(reason);
+    },
+  });
+  const BRIEF = "a young woman with an intense cyber-goth aesthetic, platinum-silver asymmetric hair, pale porcelain skin";
+
+  it("interpretBrief names the cause when the call throws", async () => {
+    const outcome = await interpretBrief({ briefText: BRIEF, engine: engineThrowing("TimeoutError") });
+    expect(outcome).toMatchObject({ ok: false, reason: "unavailable", cause: "thrown" });
+  });
+
+  it("interpretBrief names the cause when the reply cannot be read", async () => {
+    const outcome = await interpretBrief({
+      briefText: BRIEF,
+      engine: engineReturning("I'm sorry, I can't help with that."),
+    });
+    expect(outcome).toMatchObject({ ok: false, reason: "unavailable", cause: "unparsed" });
+  });
+
+  it("the compiler REFUSES a brief the reader never read — code, sentence, nothing compiled", async () => {
+    await expect(
+      castingBriefCompiler({ briefText: BRIEF, candidateCount: 8, rollSeed: "s", engine: engineThrowing("TimeoutError") }),
+    ).rejects.toMatchObject({ name: "BriefRefusal", code: "reader_outage", message: READER_OUTAGE_MESSAGE });
+    // The sentence is written for the person holding the credits.
+    expect(READER_OUTAGE_MESSAGE).toMatch(/not been charged/);
+    expect(READER_OUTAGE_MESSAGE).not.toMatch(/sternum/i);
+  });
+
+  it("the outage outranks the styled-brief screen — a long anime brief the reader never read is an OUTAGE, not a cohort verdict", async () => {
+    await expect(
+      castingBriefCompiler({
+        briefText: "an anime swordswoman with silver hair, a long red coat, a scar across her left cheek and a katana on her back",
+        candidateCount: 8,
+        rollSeed: "s",
+        engine: engineThrowing("ECONNRESET"),
+      }),
+    ).rejects.toMatchObject({ code: "reader_outage" });
+  });
+
+  /*
+    THE RULING'S OTHER CLAUSE — "a short brief keeps today's fallback". The
+    line is the fallback's own carrying capacity: a brief the role slice
+    carries WHOLE reaches the engine as typed, so an outage costs it nothing
+    the ruling named. One character over that line and the same outage
+    refuses. Both arms are asserted so the boundary is a fact, not a belief.
+  */
+  it("a SHORT brief the fallback carries whole still rolls on an outage — and one character over refuses", async () => {
+    const short = "a".repeat(FALLBACK_CARRIES_CHARS - 20) + " dad in his 30s";
+    expect(short.length).toBeLessThanOrEqual(FALLBACK_CARRIES_CHARS);
+    const compiled = await castingBriefCompiler({
+      briefText: short,
+      candidateCount: 8,
+      rollSeed: "s",
+      engine: engineThrowing("ECONNRESET"),
+    });
+    expect(compiled.compiledBrief.interpreted).toBe(false);
+    expect((compiled.compiledBrief.intent as CastingIntent).role).toBe(short);
+
+    const overByOne = "b".repeat(FALLBACK_CARRIES_CHARS - 14) + " dad in his 30s";
+    expect(overByOne.length).toBe(FALLBACK_CARRIES_CHARS + 1);
+    await expect(
+      castingBriefCompiler({ briefText: overByOne, candidateCount: 8, rollSeed: "s", engine: engineThrowing("ECONNRESET") }),
+    ).rejects.toMatchObject({ code: "reader_outage" });
+  });
+
+  /*
+    THE CONTROL — the half of the ruling's card that stays. A reply the
+    provider GAVE and the compiler could not parse still falls back to the
+    sentence-only compile, `interpreted: false`. Delete the refusal above and
+    the two arms before this one go red while this one stays green; that is
+    the shape of a guard whose arms are independent.
+  */
+  it("a reply the provider gave and we could not read still falls back (the card's other half, unruled)", async () => {
+    const compiled = await castingBriefCompiler({
+      briefText: BRIEF,
+      candidateCount: 8,
+      rollSeed: "s",
+      engine: engineReturning("I'm sorry, I can't help with that."),
+    });
+    expect(compiled.compiledBrief.interpreted).toBe(false);
+    expect(compiled.candidates).toHaveLength(8);
+  });
+
+  it("the styled-brief screen still guards the unreadable path", async () => {
+    await expect(
+      castingBriefCompiler({
+        briefText: "an anime swordswoman with silver hair",
+        candidateCount: 8,
+        rollSeed: "s",
+        engine: engineReturning("I'm sorry, I can't help with that."),
+      }),
+    ).rejects.toMatchObject({ code: "unsupported_cohort" });
   });
 });

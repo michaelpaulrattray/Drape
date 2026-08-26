@@ -1278,7 +1278,8 @@
         "notes": [
           "Anchor law: every refine renders from candidate.imageKey (the pristine master), never from a delivered frame — chaining on delivered frames was measured to drift.",
           "A roll is eight independently refundable units; a deploy landing mid-roll costs only the undelivered slices (accepted collision class, D-85).",
-          "The path/wardrobeLine columns (migration 0051) make the born path a fact of the roll; NULL means cast before the paths existed."
+          "The path/wardrobeLine columns (migration 0051) make the born path a fact of the roll; NULL means cast before the paths existed.",
+          "A brief the reader NEVER READ (the deadline fired, the transport or provider failed, no engine configured) and that the fallback would CUT (longer than FALLBACK_CARRIES_CHARS, 80) is refused FREE before the claim as `reader_outage` (briefCompiler.ts, founder ruling #126 'refuse-free', Crew reply #7 2026-08-26) — it replaced the H30 fallback that charged roll 219 for a sheet cast from the brief's first 80 characters. By the same ruling's text a short brief the fallback carries whole still rolls, and a reply the provider gave that the compiler could not parse still falls back; the roll entrance is outside this map's declared door set (doorsNote above), so this note is the entry until the roll corpus lands."
         ]
       },
       {

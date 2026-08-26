@@ -811,10 +811,27 @@ them is discarded before it reaches the image model:
 Never invent a detail the brief did not contain. Never write prose outside the
 JSON.`;
 
+/**
+ * WHY the interpreter had no answer — the caller's decision hangs on it (#126).
+ *
+ *   - `thrown` — the call itself failed: the deadline fired, the transport
+ *     died, the provider was down. The brief was never read at all.
+ *   - `unconfigured` — no text engine exists in this deployment. Never read.
+ *   - `unparsed` — the provider ANSWERED and the reply could not be read as
+ *     an intent (a refusal in prose, a truncated object, a schema failure).
+ *
+ * The founder's ruling (Crew reply #7, "refuse-free") is about the first two:
+ * a roll whose brief was never read refuses free instead of charging for a
+ * sheet cast from `briefText.slice(0, 80)`. The third is a different question
+ * — a reply we could not parse — and keeps the compiler's fallback until he
+ * says otherwise; the compiler's own docblock says which is which.
+ */
+export type InterpreterUnavailableCause = "thrown" | "unconfigured" | "unparsed";
+
 export type InterpretOutcome =
   | { ok: true; intent: CastingIntent; latencyMs: number; model: string }
   | { ok: false; reason: "unsupported_cohort" }
-  | { ok: false; reason: "unavailable"; latencyMs: number };
+  | { ok: false; reason: "unavailable"; latencyMs: number; cause: InterpreterUnavailableCause };
 
 let engine: TextEngine | null = null;
 
@@ -837,14 +854,16 @@ let engine: TextEngine | null = null;
  * brief, re-driven three times through this compile, 36,491 / 36,446 ms and
  * then **45,012 ms — the deadline** (`output/_shift121/drive-219.json`).
  *
- * What the deadline firing costs is the whole point: the call THROWS, the
- * compiler falls back to `fallbackIntent`, and the roll is charged 160
+ * What the deadline firing cost is the whole point: the call THROWS, the
+ * compiler fell back to `fallbackIntent`, and the roll was charged 160
  * credits for eight people cast from `briefText.slice(0, 80)` — sex null,
  * hair null, skin null, ink null, register house. That is roll 219's row
  * exactly (`interpreted: false`, no `interpreterModel`): "a young woman with
  * an intense cyber-goth aesthetic" delivered men and women, and the founder
  * called it a complete failure. A deadline that fires on one in three of the
- * richest briefs is not a safety, it is the defect.
+ * richest briefs is not a safety, it is the defect. (Since #126 the thrown
+ * deadline REFUSES FREE at the compiler instead of charging — the deadline
+ * below is what keeps that refusal rare, not what makes it safe.)
  *
  * 120 s is ~3× the measured rich-brief median and ~2.7× the worst observed
  * success. It is per CALL (`TextRequest.timeoutMs`), so the shared engine and
@@ -895,11 +914,15 @@ export function resetInterpreterForTests(): void {
  *   - `unsupported_cohort` — a real answer. The brief asks for something no
  *     certified adapter can cast, so the caller refuses for free rather than
  *     producing a photograph of someone vaguely anime-adjacent;
- *   - `unavailable` — the transport failed, or the reply was unreadable. Not
- *     the user's problem and not a reason to lose their roll: the caller falls
- *     back to compiling from the sentence itself. This is the house's
- *     fail-open policy for checkers (catalog H30) — an interpreter outage must
- *     never block a paid run.
+ *   - `unavailable` — the transport failed, or the reply was unreadable, and
+ *     `cause` says which. Not the user's problem — and since #126 (founder:
+ *     "refuse-free") not a reason to charge them either: a brief that was
+ *     NEVER READ (`thrown`, `unconfigured`) is refused free by the compiler,
+ *     because a sheet cast from the first 80 characters is a sheet that
+ *     ignored the customer's words (roll 219, 160 credits). H30's fail-open
+ *     policy for CHECKERS never fit a reader that produces what is rendered.
+ *     A reply the provider gave and we could not parse (`unparsed`) still
+ *     falls back, as it always has.
  */
 /**
  * THE REASON A ROLL'S CHARACTER DETAIL WAS SHORTENED — one string, so the count
@@ -1112,8 +1135,8 @@ export async function interpretBrief(input: {
   const notesMax = input.fidelity === true ? NOTES_MAX_FIDELITY : NOTES_MAX;
   const textEngine = input.engine ?? interpreterEngine();
   if (!textEngine) {
-    log.warn({}, "[interpreter] no OPENROUTER_API_KEY — compiling without interpretation");
-    return { ok: false, reason: "unavailable", latencyMs: 0 };
+    log.warn({}, "[interpreter] no OPENROUTER_API_KEY — the brief cannot be read");
+    return { ok: false, reason: "unavailable", latencyMs: 0, cause: "unconfigured" };
   }
 
   const startedAt = Date.now();
@@ -1287,7 +1310,7 @@ export async function interpretBrief(input: {
         { latencyMs: result.latencyMs, truncated: result.truncated === true },
         "[interpreter] reply could not be read as an intent — falling back",
       );
-      return { ok: false, reason: "unavailable", latencyMs: result.latencyMs };
+      return { ok: false, reason: "unavailable", latencyMs: result.latencyMs, cause: "unparsed" };
     }
 
     /*
@@ -1431,8 +1454,8 @@ export async function interpretBrief(input: {
     };
   } catch (error) {
     const latencyMs = Date.now() - startedAt;
-    log.warn({ err: error, latencyMs }, "[interpreter] unavailable — compiling without it");
-    return { ok: false, reason: "unavailable", latencyMs };
+    log.warn({ err: error, latencyMs }, "[interpreter] unavailable — the brief was not read");
+    return { ok: false, reason: "unavailable", latencyMs, cause: "thrown" };
   }
 }
 

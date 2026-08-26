@@ -165,7 +165,7 @@ vi.mock("../casting/directOperation", () => ({
 const OPERATION_ID = "33333333-3333-4333-8333-333333333333";
 
 const { createRoll, cancelRoll } = await import("./rollService");
-const { deterministicBriefCompiler } = await import("./briefCompiler");
+const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const { candidateChargeReference } = await import("./rollRecovery");
 const { ProviderError } = await import("../providers/types");
 
@@ -862,5 +862,40 @@ describe("the two paths, at the wire", () => {
         expect(compilerInput.inheritedWardrobe).toEqual({ path: null, line: null });
       });
     });
+  });
+});
+
+describe("a reader outage on a roll is free (#126 — founder, Crew reply #7: 'refuse-free')", () => {
+  /*
+    The REAL compiler on the REAL service, with only the text engine doubled —
+    and doubled to THROW, the way the deadline, the transport or the provider
+    reach the catch branch (law 3). What this arm proves is the ordering the
+    refusal's freedom rests on: the compile runs before the claim, so the
+    money is never touched. Roll 219 went the other way and cost 160 credits.
+  */
+  it("refuses BAD_REQUEST with the outage sentence, and nothing is claimed or charged", async () => {
+    const compileBrief = (compilerInput: Record<string, unknown>) =>
+      castingBriefCompiler({
+        ...(compilerInput as never as Parameters<typeof castingBriefCompiler>[0]),
+        engine: {
+          id: "test:interpreter-down",
+          complete: async () => {
+            throw new Error("TimeoutError: the brief interpreter exceeded its deadline");
+          },
+        },
+      });
+    await expect(
+      createRoll(
+        { ...(baseDependencies() as object), compileBrief } as never,
+        {
+          ...INPUT,
+          briefText: "a young woman with an intense cyber-goth aesthetic, platinum-silver asymmetric shaved hair, pale porcelain skin, a leather harness and a choker",
+        },
+      ),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: READER_OUTAGE_MESSAGE });
+    expect(journal).not.toContain("claim");
+    expect(journal).not.toContain("charge");
+    expect(journal).not.toContain("dispatch");
+    expect(dbCalls.createRoll).not.toHaveBeenCalled();
   });
 });
