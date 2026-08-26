@@ -1,7 +1,7 @@
 {
-  "edition": 21,
-  "updatedAt": "2026-08-26T14:20:00+10:00",
-  "shift": "foreman-18",
+  "edition": 22,
+  "updatedAt": "2026-08-26T17:55:00+10:00",
+  "shift": "foreman-19",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -34,11 +34,11 @@
           "state": "done"
         },
         {
-          "title": "YOUR RE-RULING OF THE ROLL ROAD (this afternoon, verbatim in docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md): your words go to the engine first; an AUTHOR adds what an expert would; the outfit toggle is retired; no variance card. Step one: THE PROMPT AUTHOR COURT (#125) — estimate on the card first, your eye judges",
-          "state": "in-progress"
+          "title": "YOUR RE-RULING OF THE ROLL ROAD (verbatim in docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md): your words to the engine first; an AUTHOR adds what an expert would; the outfit toggle retired; no variance card. Step one, THE PROMPT AUTHOR COURT (#125) — RUN this evening for $7.12: five strips are in your eye gallery below, record in docs/specs/PROMPT_AUTHOR_COURT_2026-08-26.md. Your eye on the strips decides what the author becomes",
+          "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling, dark",
+          "title": "The register rebuilt to your ruling, dark — waits on your eye on the court strips (which of LOW / MAX / raw is the sheet you want, and whether MAX should mean one face or eight)",
           "state": "waiting"
         },
         {
@@ -119,6 +119,33 @@
   },
   "needsYou": [
     {
+      "id": "prompt-author-court-eye",
+      "title": "Your eye on the Prompt Author court: which of these sheets is the studio you want — and should MAX imagination mean one face or eight?",
+      "productImpact": "This decides what the new author writes for every roll. On your 73-word cyber-goth prompt: sent RAW, the engine gave eight different women with the framing held (your four-women result, at eight). With the author at LOW (it only added studio/framing sentences), the same: different women, the look kept, a steadier chest-up frame. With the author at MAX (your own instruction, word for word), it gave one striking woman EIGHT TIMES — same cut, same latex, same choker — because the author had stated everything and left the engine nothing to vary. Today's studio, for comparison, put your 73 words through the compiler and delivered seven of eight in the grey house tee, and put 'goth woman mid 30s' through it and delivered eight women with no goth styling at all.",
+      "workedExample": "Type 'goth woman mid 30s'. LOW author → six distinct goth women who read as their thirties, black lips, chokers, lace, clean studio (two of eight refused by the engine). MAX author → the same spiky-haired woman eight times. Raw, with no author at all → the engine refused it 17 times out of 18. Your call: is LOW the default and MAX a per-sheet choice, or should MAX be rewritten to leave hair/makeup/clothes open so it invents eight faces?",
+      "recommendation": "Build the author verbatim-first as you ruled, with LOW as the default; rewrite the MAX instruction so it names what it leaves to the engine (otherwise MAX = one face); never let the preset say 'sternum' (that one word flipped a passing prompt to eight refusals); and run #93's rewrite-and-retry on your full cyber-goth brief, which the engine refused 63 of 64 times in every form — raw included.",
+      "state": "open",
+      "filedAt": "2026-08-26T17:55:00+10:00",
+      "issueNumber": 125,
+      "options": [
+        {
+          "key": "low-default",
+          "label": "LOW author is the default; MAX is a per-sheet choice as it stands (one face, eight times)",
+          "consequence": "Basic users get spread and the look; MAX becomes a 'lock this face' mode."
+        },
+        {
+          "key": "max-open",
+          "label": "Rewrite MAX so it names what it leaves to the engine and invents eight faces",
+          "consequence": "MAX keeps the Midjourney flavour AND the spread; needs one more court on the rewritten instruction."
+        },
+        {
+          "key": "raw-plus-preset",
+          "label": "No imagination meter yet — author = your words + the photoreal preset only",
+          "consequence": "Smallest build; thin briefs lean on the engine's own invention."
+        }
+      ]
+    },
+    {
       "id": "rich-brief-outage-refuse",
       "title": "When the studio genuinely cannot read a long brief, should it refuse for free instead of charging for a sheet that ignored it?",
       "productImpact": "Your cyber-goth roll (219) cost 160 credits and delivered men and women because the brief-reader was cut off by a 45-second clock and the studio then cast from the first 80 characters of your brief — no sex, no hair, no skin, no tattoos, no register. The clock is fixed in PR #124 (long briefs measurably need ~36 s and get 120 s now). What is left is the rule underneath: today, if the reader fails for ANY reason, the studio still rolls and still charges. For a 30-character brief that is the right call — the fallback looks like what you typed. For a 1,500-character brief the fallback is exactly the failure you saw.",
@@ -140,8 +167,8 @@
           "consequence": "The clock fix in PR #124 covers ordinary days; on a real outage a long brief is still charged for a sheet that ignored it."
         }
       ],
-      "recommendation": "refuse-free. A customer who wrote a paragraph should never pay for a sheet that read none of it; a customer who wrote five words loses nothing by the fallback.",
-      "state": "open",
+      "recommendation": "refuse-free. A customer who wrote a paragraph should never pay for a sheet that read none of it; a customer who wrote five words loses nothing by the fallback. — YOUR ANSWER: refuse-free (reply #7) — filed as #126 (urgent): when the brief-reader is genuinely down, a long brief is refused for free before any charge, instead of being charged for a sheet that ignored it.",
+      "state": "answered",
       "filedAt": "2026-08-26T13:45:00+10:00",
       "issueNumber": 121
     },
@@ -269,6 +296,41 @@
   ],
   "eyeItems": [
     {
+      "id": "prompt-author-court",
+      "title": "The Prompt Author court — raw vs LOW author vs MAX author vs today's compiler, on your three briefs",
+      "question": "Which row is the studio you want for a basic user, and for a rich brief? And should MAX imagination give one face eight times (as your instruction does today) or eight different inventions?",
+      "state": "open",
+      "filedAt": "2026-08-26T17:55:00+10:00",
+      "issueNumber": 125,
+      "frames": [
+        {
+          "key": "crew-eye/33ab5d58-69bc-471a-92e1-de6d6c09a797.png",
+          "caption": "Your 73-word prompt, eight frames per row. A = sent raw (your four-women result, at eight). C = author at MAX, your words first — one woman, eight times. Cr = the same MAX author allowed to rewrite — again one woman. D = today's studio (the compiler): grey tees on seven of eight. B and F rows are refused because of one word in the house framing sentence ('sternum') — see the next strip for the fix.",
+          "arm": "73-word · full court"
+        },
+        {
+          "key": "crew-eye/f2cb31aa-f310-44fc-a029-2de1f207f99d.png",
+          "caption": "Your 73-word prompt again, with the framing sentence re-worded ('collarbones'). A = raw (six delivered). B = author at LOW — different women, the look kept, a steadier chest-up frame. F400/F800/F1600 = B padded with 400/800/1,600 words of office-memo filler: nothing changes and the engine refused LESS. No length cliff from inert text.",
+          "arm": "73-word · re-run"
+        },
+        {
+          "key": "crew-eye/52b2b5fd-be01-4d14-8c0b-e42b0e7dae2b.png",
+          "caption": "'goth woman mid 30s', eight per row. A = raw: refused seven of eight, and the one delivered is a living-room scene. C = author at MAX: committed goth, one woman eight times. Cr = MAX rewriting: one woman. D = today's studio: eight women in grey tees with no goth styling at all — this is the complaint you made, on film.",
+          "arm": "thin brief · full court"
+        },
+        {
+          "key": "crew-eye/358a60e2-a322-4827-a3db-5001966ab0eb.png",
+          "caption": "'goth woman mid 30s' with the re-worded preset. A = raw: refused eight of eight. B = author at LOW: six distinct goth women in their thirties, clean studio — the basic user's sheet. F rows: B padded to 400/800/1,600 words — nothing lost.",
+          "arm": "thin brief · re-run"
+        },
+        {
+          "key": "crew-eye/5a7e2d87-d466-4cea-9b46-a8ab95259c1d.png",
+          "caption": "Your FULL cyber-goth brief (roll 219's text). The engine's own content checker refused it 63 times out of 64 — raw, with the author, and through today's compiler alike. Your beautiful results came through ChatGPT's door; fal's door says no to these words. This is #93's job: the author must re-word it to pass, and this brief is the specimen.",
+          "arm": "full brief · refused"
+        }
+      ]
+    },
+    {
       "id": "creative-register-roll-217",
       "title": "Roll 217 — your cyborg brief through the creative register, on your account, through the real entrance",
       "question": "Does this sheet reach your raw prompt's conviction (jaw plate present and prominent, amber eye, porcelain skin committed, no beard, no bodybuilder) — and is the spread across the eight enough? The sheet first, then each face with the one line of variation it was given.",
@@ -385,6 +447,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "prompt-author-court-125",
+      "title": "THE PROMPT AUTHOR COURT (#125) — RUN, $7.12, five strips in your gallery",
+      "status": "waiting-founder",
+      "note": "272 renders dispatched, 152 refused by the engine's checker (unpaid), 120 delivered; the fact-reader and the frame-pointer were proven on controls before a cent; framing calibrated on your 'this framing is perfect' frame (head 28% of frame height, top of head at 6.8%). Record: docs/specs/PROMPT_AUTHOR_COURT_2026-08-26.md.",
+      "prNumber": null
+    },
     {
       "id": "interpreter-deadline-121",
       "title": "The cyber-goth roll (219): why every word of your brief was lost, and the fix (#121) — MERGED (PR #124)",
@@ -556,11 +625,18 @@
   ],
   "problems": [
     {
+      "id": "engine-refuses-lean-and-sternum",
+      "title": "The engine's own content checker refuses short prompts most of the time, and one house word ('sternum') reliably",
+      "detail": "'goth woman mid 30s' sent raw was refused 17 of 18 times; your full cyber-goth brief 63 of 64 in every form. A single added sentence with 'the crop just below the sternum' turned a prompt that passes 8/8 into 8/8 refused; the same sentence with 'collarbones' passes. The author's re-wording duty (your rule 16, #93) is not a corner case — it is the road for rich briefs. (issue #93)",
+      "state": "open",
+      "severity": "warning"
+    },
+    {
       "id": "rich-brief-fallback-charge",
       "title": "If the brief-reader is genuinely down, a long brief is still charged for a sheet that ignored it — your word asked on the card below",
-      "detail": "PR #124 stops this on ordinary days (the clock now fits long briefs). The rule underneath is untouched: on a real outage the studio falls back to casting from the first 80 characters and charges. Right for a five-word brief, wrong for a paragraph. Your ruling this afternoon keeps a reader beside the author, so the question survives the rebuild.",
+      "detail": "PR #124 stops this on ordinary days (the clock now fits long briefs). The rule underneath is untouched: on a real outage the studio falls back to casting from the first 80 characters and charges. Right for a five-word brief, wrong for a paragraph. Your ruling this afternoon keeps a reader beside the author, so the question survives the rebuild. — YOUR WORD (reply #7): refuse-free. Filed #126 (urgent) for the build.",
       "severity": "warning",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "founder-account-autofrozen",
@@ -606,6 +682,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T17:55:00+10:00",
+      "shift": "foreman-19",
+      "text": "The Prompt Author court ran tonight ($7.12 of house money) and the strips are in your gallery. In plain terms: your 73-word prompt sent raw gives eight different women with the framing held — exactly what you saw. Add the author at LOW (it only writes the studio and framing sentences) and you get the same spread with a steadier frame; that is the sheet a basic user should get, and on 'goth woman mid 30s' it gave six distinct goth women in their thirties. Add the author at MAX, using your own instruction word for word, and the engine paints ONE striking woman eight times — the author described everything, so there was nothing left to vary. Today's studio, for comparison, put your 73 words through the compiler and dressed seven of eight in the grey tee, and turned 'goth woman mid 30s' into eight women with no goth styling at all. Two things the engine did that you should know: it refused short prompts most of the time (the thin brief raw: 17 of 18), and it refused your FULL cyber-goth brief 63 of 64 times in every form, raw included — your beautiful results came through ChatGPT's door, and fal's door says no to those words; one house word, 'sternum', flipped a passing prompt to eight refusals on its own. Padding a prompt with 1,600 words of office-memo filler changed nothing, so length alone is not the enemy — competing instructions are. Your reply on the outage question ('refuse-free') is filed as #126 and will be built next. Nothing was built tonight; the court was the step, and your eye on the strips is what comes next."
+    },
     {
       "at": "2026-08-26T14:20:00+10:00",
       "shift": "foreman-18",
@@ -733,6 +814,7 @@
     3,
     4,
     5,
-    6
+    6,
+    7
   ]
 }
