@@ -101,7 +101,10 @@ const headMap = (dir: string) => armed(dir, "show", "HEAD:map.json").stdout;
 const workingMap = (dir: string) => readFileSync(join(dir, "map.json"), "utf8");
 const MERGED_TREE_MAP = "a.ts\nb.ts\nseed.ts\n"; // both sides' sources — neither branch's own map
 
-describe("the atlas merge driver", () => {
+/* Each arm is two to three seconds of real git on its own; under the full
+   suite's load that is three times slower, and vitest's 5 s default timed two
+   of them out on 2026-08-26 (the first full run of this file). */
+describe("the atlas merge driver", { timeout: 60_000 }, () => {
   beforeAll(() => {
     for (const hook of ["merge-atlas", "atlas-regenerate", "pre-merge-commit", "pre-commit"]) {
       const at = join(HOOKS_DIR, hook);
