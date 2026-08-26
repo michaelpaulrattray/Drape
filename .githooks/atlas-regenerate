@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# THE OTHER HALF OF RETRO GUARD R1 (docs/RETRO_LOG.md, card #100) — run by
+# `pre-merge-commit` and `pre-commit`, from the merged tree, which is the first
+# moment the merged sources exist on disk (see `.githooks/merge-atlas` for why
+# the driver itself cannot do this).
+#
+# No marker → nothing happens, so every ordinary commit is untouched. With a
+# marker: regenerate, stage every file carrying the `merge=atlas` attribute
+# (derived from .gitattributes, never a second list), clear the marker. A
+# generator that FAILS refuses the commit and keeps the marker — the placeholder
+# the driver left must never be committed as if it were the map (law 2's
+# negative control: a broken generator cannot "resolve" anything).
+#
+# `merge.atlas.regenerate` overrides the generation command; its only intended
+# use is the guard's own test, which drives real temporary repositories that
+# have no generator to run.
+#
+# Argument: `automatic` when called from pre-merge-commit (see the end).
+
+gitdir=$(git rev-parse --git-dir 2>/dev/null) || exit 0
+marker="$gitdir/DRAPE_ATLAS_REGENERATE"
+[ -f "$marker" ] || exit 0
+
+regenerate=$(git config merge.atlas.regenerate 2>/dev/null)
+[ -n "$regenerate" ] || regenerate="pnpm architecture:generate && pnpm capability:generate"
+
+echo "" >&2
+echo "atlas: a merge changed the generated map on both sides — regenerating on the merged tree." >&2
+if ! sh -c "$regenerate" >&2; then
+  echo "" >&2
+  echo "REFUSED — the atlas could not be regenerated on the merged tree, so the file" >&2
+  echo "on disk is still the placeholder the merge driver left. Fix the generator's" >&2
+  echo "complaint, then run:" >&2
+  echo "" >&2
+  echo "  pnpm architecture:generate && pnpm capability:generate" >&2
+  echo "" >&2
+  echo "and commit again. (docs/RETRO_LOG.md R1 — never --no-verify.)" >&2
+  echo "" >&2
+  exit 1
+fi
+
+# The files this applies to are the ones .gitattributes says it applies to.
+generated=$(git ls-files -z | git check-attr --stdin -z merge | tr '\0' '\n' | awk 'NR%3==1{p=$0} NR%3==0 && $0=="atlas"{print p}')
+if [ -z "$generated" ]; then
+  echo "REFUSED — no tracked file carries merge=atlas, yet the driver fired; .gitattributes and the driver disagree." >&2
+  exit 1
+fi
+printf '%s\n' "$generated" | while IFS= read -r file; do
+  git add -- "$file" || exit 1
+done || exit 1
+
+rm -f "$marker"
+
+# MEASURED, NOT ASSUMED (2026-08-26, scratch repository): `git merge` writes
+# its automatic merge commit from the index it holds IN MEMORY and never
+# re-reads the file this script just staged into — the commit carried the
+# placeholder and the regenerated map sat staged beside it. `git commit` does
+# re-read after pre-commit. So from pre-merge-commit the only honest move is to
+# stop the automatic commit with everything regenerated and staged, and hand
+# the last step back: the merge state is kept, and `git commit --no-edit`
+# finishes it through pre-commit, where the marker is already gone.
+if [ "$1" = "automatic" ]; then
+  echo "atlas: regenerated and staged on the merged tree. git cannot carry a" >&2
+  echo "hook-staged file into an AUTOMATIC merge commit, so finish the merge with:" >&2
+  echo "" >&2
+  echo "  git commit --no-edit" >&2
+  echo "" >&2
+  exit 1
+fi
+
+echo "atlas: regenerated and staged — this commit carries the map of the merged tree." >&2
+echo "" >&2
+exit 0

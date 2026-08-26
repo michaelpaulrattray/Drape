@@ -18,3 +18,12 @@
 # rule above already covers it; this line stays so the one file whose endings
 # are load-bearing says so by name.
 .githooks/** text eol=lf
+
+# THE GENERATED MAP IS NEVER MERGED BY HAND (Retro guard R1, card #100). Both
+# sides regenerated it, so the only correct content is a fresh generation on
+# the MERGED tree: .githooks/merge-atlas accepts a placeholder and queues that
+# regeneration for the merge commit's hook. Registered per clone by
+#   git config merge.atlas.driver '.githooks/merge-atlas %O %A %B %P'
+docs/architecture/drape-architecture.json merge=atlas
+docs/architecture/capability-atlas.json merge=atlas
+docs/architecture/capability-atlas.md merge=atlas
