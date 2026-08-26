@@ -242,7 +242,35 @@ export type BriefRefusalCode =
   /** The brief carries no subject the compiler can work with. */
   | "uninterpretable"
   /** A cohort exists in the sentence that no adapter is certified for (§I). */
-  | "unsupported_cohort";
+  | "unsupported_cohort"
+  /**
+   * The brief reader never read the brief — the call threw (deadline,
+   * transport, provider) or no engine is configured. Free, before the claim,
+   * by founder ruling (#126, Crew reply #7: "refuse-free").
+   */
+  | "reader_outage";
+
+/**
+ * The sentence a reader outage answers with. Exported so the test that drives
+ * the catch branch and the road note can cite the same words.
+ */
+export const READER_OUTAGE_MESSAGE =
+  "The studio couldn't read your brief just now — the reader that turns your words into a casting call did not answer. "
+  + "Nothing was cast and you have not been charged. Try again in a moment.";
+
+/**
+ * How much of a brief the fallback compile can carry: `fallbackIntent` makes
+ * the role `briefText.slice(0, FALLBACK_CARRIES_CHARS)`, so a brief no longer
+ * than this reaches the engine WHOLE on the fallback and one longer than it is
+ * CUT. That is the line between the two halves of the founder's ruling (#126,
+ * the option he chose, verbatim: *"A long brief (more than a sentence or two)
+ * whose reading fails is not rolled and not charged; a short brief keeps
+ * today's fallback"*) — read off the fallback's own arithmetic rather than
+ * invented, because the failure he saw IS the cut: roll 219's 1,494
+ * characters became 80. If he ever says "always", the comparison below is
+ * the one line that changes.
+ */
+export const FALLBACK_CARRIES_CHARS = 80;
 
 /**
  * A refusal, raised before anything is claimed or charged.
@@ -362,18 +390,32 @@ function normalizeBrief(briefText: string): string {
 }
 
 /**
- * The intent used when the interpreter could not be reached.
+ * The intent used when the interpreter answered and its reply could not be
+ * read as an intent (`cause: "unparsed"`) — and, through
+ * `deterministicBriefCompiler`, when no interpreter is asked at all.
  *
  * The user's sentence becomes the role and nothing is pinned, so the adapter
  * varies every axis. A sheet cast this way is less precisely targeted than an
  * interpreted one, and it is still eight distinct people photographed
- * identically — which is the promise. An interpreter outage must never cost
- * someone their roll (catalog H30's fail-open policy for checkers).
+ * identically — which is the promise.
+ *
+ * ⚠ It is NO LONGER the answer to an interpreter OUTAGE on a brief it would
+ * cut. Until #126 this docblock said "an interpreter outage must never cost
+ * someone their roll (catalog H30's fail-open policy for checkers)", and that
+ * sentence charged roll 219 160 credits for men and women against a
+ * cyber-goth brief: the deadline fired, the brief was never read, and eight
+ * people were cast from its first 80 characters. The founder's word on that
+ * (Crew reply #7, 2026-08-26) is "refuse-free" — a brief that was never read
+ * and is longer than `FALLBACK_CARRIES_CHARS` is refused before the claim
+ * (`castingBriefCompiler`, `reader_outage`); a brief this slice carries whole
+ * keeps the fallback, by the same ruling's text. H30's fail-open policy is
+ * for CHECKERS, whose failure removes a guard; the brief reader produces what
+ * is rendered, and its failure removes the customer's words.
  */
 function fallbackIntent(briefText: string): CastingIntent {
   return {
     cohort: "photoreal_human",
-    role: briefText.slice(0, 80),
+    role: briefText.slice(0, FALLBACK_CARRIES_CHARS),
     characterNotes: null,
     sex: null,
     ageBand: null,
@@ -918,8 +960,45 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   });
 
   /*
-    DEFENCE IN DEPTH: an interpreter outage must never become a photoreal
-    charge for a brief that asked for something else.
+    REFUSE FREE ON A READER OUTAGE (#126 — founder, Crew reply #7, 2026-08-26,
+    verbatim: "refuse-free").
+
+    A brief the reader NEVER READ — the call threw (the 120 s deadline, the
+    transport, the provider) or no engine is configured — and that the
+    fallback would CUT (longer than `FALLBACK_CARRIES_CHARS`) is refused here,
+    before anything is claimed, naming the outage. What it replaces is the
+    H30 fallback that charged roll 219 160 credits for a sheet cast from the
+    first 80 characters of a 1,494-character brief. Money is untouched by
+    construction: `rollService` compiles before it claims, so a throw here is
+    free the same way `uninterpretable` is.
+
+    Two things keep today's fallback, each by the ruling's own text. A SHORT
+    brief — one the fallback carries whole — still rolls on an outage: the
+    option he chose says so ("a short brief keeps today's fallback"), and the
+    sheet it produces is cast from the whole sentence he typed. And a reply
+    the provider GAVE that we could not parse (`cause: "unparsed"`) is a
+    different question — the card says so — and waits on his word; the
+    styled-brief screen below still stands guard over both.
+
+    Law 3: this branch is driven directly by a THROWING engine double in
+    `briefCompiler.test.ts` — never through a reader that usually behaves.
+  */
+  if (
+    !outcome.ok
+    && outcome.reason === "unavailable"
+    && outcome.cause !== "unparsed"
+    && briefText.length > FALLBACK_CARRIES_CHARS
+  ) {
+    log.warn(
+      { briefText: briefText.slice(0, 80), cause: outcome.cause, latencyMs: outcome.latencyMs },
+      "[briefCompiler] reader outage — refusing free rather than casting from the first 80 characters",
+    );
+    throw new BriefRefusal("reader_outage", READER_OUTAGE_MESSAGE);
+  }
+
+  /*
+    DEFENCE IN DEPTH: an unreadable interpreter reply must never become a
+    photoreal charge for a brief that asked for something else.
 
     Falling back to a photoreal compile is right for an ordinary brief — an
     outage should not cost someone their roll (catalog H30). It is wrong the
@@ -935,7 +1014,8 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     are asymmetric: refusing a photoreal brief that happens to say "cartoonish"
     costs the user nothing and is one edit away from working, while casting an
     anime brief as photoreal costs them money for something they did not ask
-    for. It only ever runs when the interpreter could not answer.
+    for. It only ever runs when the interpreter's reply could not be read —
+    an OUTAGE no longer reaches it (refused free above, #126).
   */
   /*
     Token membership rather than a regex. The first version of this line was

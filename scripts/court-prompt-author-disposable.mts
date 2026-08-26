@@ -689,7 +689,7 @@ for (const b of briefs) {
     composites.push({ input: Buffer.from(svg), left: 0, top: row * tileH });
     for (const r of readings.filter((x) => x.brief === b.id && x.arm === arm)) {
       if (!r.file) {
-        const ref = `<svg width="${TILE_W}" height="${tileH}"><rect width="100%" height="100%" fill="#2a1414"/><text x="20" y="${Math.round(tileH / 2)}" font-family="sans-serif" font-size="22" fill="#EBEBEB">REFUSED</text></svg>`;
+        const ref = `<svg width="${TILE_W}" height="${tileH}"><rect width="100%" height="100%" fill="#2a2a2a"/><text x="20" y="${Math.round(tileH / 2)}" font-family="sans-serif" font-size="22" fill="#EBEBEB">REFUSED</text></svg>`;
         composites.push({ input: Buffer.from(ref), left: GUTTER + r.slice * TILE_W, top: row * tileH });
         continue;
       }
@@ -704,3 +704,4 @@ for (const b of briefs) {
 say();
 say(report.join("\n"));
 writeFileSync(`${dir}/court.log`, log.join("\n"), "utf8");
+process.exit(0);
