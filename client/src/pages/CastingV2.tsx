@@ -17,7 +17,9 @@ import {
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
+import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
+import { ImaginationToggle } from "@/features/castingV2/components/ImaginationToggle";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
@@ -192,6 +194,8 @@ export default function CastingV2() {
     way the brief box does.
   */
   const [path, setPath] = useState<CastingPath>(DEFAULT_CASTING_PATH);
+  /* The imagination meter (#131 slice E): LOW is his default; drawn only on the author road. */
+  const [imagination, setImagination] = useState<Imagination>(DEFAULT_IMAGINATION);
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<RosterScope>("All");
   const [starting, setStarting] = useState(false);
@@ -381,6 +385,14 @@ export default function CastingV2() {
     field arriving as `undefined`.
   */
   const twoPathsEnabled = config.data.twoPathsEnabled === true;
+  /*
+    THE AUTHOR ROAD RETIRES THE PATH SWITCH (#131 slice E, ruling rule 11: "let
+    the engine decide the outfits based on the prompt") and draws the
+    IMAGINATION meter in its place. Server-owned like `twoPathsEnabled`: the
+    page asks, never decides.
+  */
+  const authorRoad = config.data.authorRoadEnabled === true;
+  const pathToggleVisible = twoPathsEnabled && !authorRoad;
 
   const startCasting = async () => {
     /*
@@ -444,7 +456,9 @@ export default function CastingV2() {
             outside the flag is ignored, read at `rollService`'s `bornPath`.
             This is the client not lying, not the client enforcing.
           */
-          ...(twoPathsEnabled ? { path } : {}),
+          ...(pathToggleVisible ? { path } : {}),
+          /* The meter travels only where it was drawn — the path's rule, one control over. */
+          ...(authorRoad ? { imagination } : {}),
         })
         .then(() => setStartingRoll(session.sessionId, false))
         .catch((error: unknown) =>
@@ -570,13 +584,21 @@ export default function CastingV2() {
               from, and two grey sentences under a control is the wall of small
               print that stops being read.
             */}
-            {twoPathsEnabled ? (
+            {pathToggleVisible ? (
               <PathToggle
                 idPrefix="dpc-hero-path"
                 label="How this cast is born"
                 value={path}
                 onChange={setPath}
                 note={CASTING_PATH_LINES[path]}
+              />
+            ) : null}
+            {authorRoad ? (
+              <ImaginationToggle
+                idPrefix="dpc-hero-imagination"
+                label="How far the author goes"
+                value={imagination}
+                onChange={setImagination}
               />
             ) : null}
             {/*

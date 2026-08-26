@@ -5,7 +5,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthoredPrompt, readChips } = await import(
+const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthoredPrompt, readChips, readImagination } = await import(
   "./rollProjection"
 );
 
@@ -133,6 +133,22 @@ describe("nothing internal crosses the boundary", () => {
 
     it("a house register (a follow or an edited roll under the flag) projects null — its prompt is the house composer's", () => {
       expect(readAuthoredPrompt({ register: { kind: "house", because: "anchored", prompt: "CASTING CATEGORY (ABSOLUTE) …" } })).toBeNull();
+    });
+
+    it("the sheet's imagination is projected from an author register and nowhere else (slice E)", () => {
+      expect(readImagination({ register: { kind: "author", imagination: "max" } })).toBe("max");
+      expect(readImagination({ register: { kind: "author", imagination: "low" } })).toBe("low");
+      expect(readImagination({ register: { kind: "author", imagination: "wild" } })).toBeNull();
+      expect(readImagination({ register: { kind: "house", imagination: "max" } })).toBeNull();
+      expect(readImagination({})).toBeNull();
+      const projected = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
+      expect(projected.imagination).toBeNull();
+      /* And on an AUTHOR roll the sheet gets the register's own value — the arm the sabotage needs. */
+      const authored = projectRoll({
+        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", register: { kind: "author", imagination: "max", prompt: "goth woman mid 30s, then the bundle" } } }),
+        candidates: [candidateRow()],
+      });
+      expect(authored.imagination).toBe("max");
     });
 
     it("anything that is not a bounded string on an author register is null, never forwarded", () => {

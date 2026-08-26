@@ -39,6 +39,7 @@ import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
+import type { Imagination } from "../../shared/imagination";
 import {
   captureCastingBornInkEnabled,
   captureCastingFramingTrimEnabled,
@@ -224,6 +225,14 @@ export type CreateRollInput = {
   clientRequestId: string;
   sessionPublicId: string;
   briefText: string;
+  /**
+   * THE IMAGINATION METER (#131 slice E) — how opinionated the author is on
+   * this roll. Absent means LOW (the author's own default). Handed to the
+   * compile and read there ONLY on the author road: for every other account
+   * the compiler never calls the author, so the value is inert by
+   * construction rather than by a check here.
+   */
+  imagination?: Imagination;
   /**
    * Facts the user unpinned by removing a chip. Rolls are immutable, so this
    * can only ever affect the roll being created — never the one the chip was
@@ -506,6 +515,7 @@ export async function createRoll(
       readInk,
       briefFidelity,
       creativeRegister,
+      imagination: input.imagination,
       followPersonaLine,
       followIdentity,
     });

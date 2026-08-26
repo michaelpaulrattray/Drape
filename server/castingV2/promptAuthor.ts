@@ -68,10 +68,14 @@ import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("promptAuthor");
 
-export type Imagination = "low" | "max";
-
-/** His word: LOW is the default; MAX is a per-sheet choice. */
-export const DEFAULT_IMAGINATION: Imagination = "low";
+/*
+  The meter's two positions live in `shared/imagination.ts` since slice E — the
+  client draws the control and this module reads the value, and a two-member
+  list copied twice is still a copy (working law 4). Re-exported so every
+  existing reader of this module keeps its import.
+*/
+export { DEFAULT_IMAGINATION, type Imagination } from "../../shared/imagination";
+import { DEFAULT_IMAGINATION, type Imagination } from "../../shared/imagination";
 
 /** Rule 14 — a tested constant, the court's own. */
 export const WORD_BUDGET = 400;

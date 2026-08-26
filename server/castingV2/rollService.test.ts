@@ -333,6 +333,35 @@ describe("the sequence", () => {
     }
   });
 
+  /*
+    THE IMAGINATION METER (#131 slice E) reaches the compile exactly as sent,
+    and absent stays absent — the author's own default is the compiler's to
+    apply, never a second copy of "low" written here.
+  */
+  const compileSpy = (seen: (string | undefined)[]) => {
+    const dependencies = baseDependencies();
+    const compileBrief = (dependencies as { compileBrief: (input: { imagination?: string }) => unknown }).compileBrief;
+    return {
+      ...(dependencies as object),
+      compileBrief: (input: { imagination?: string }) => {
+        seen.push(input.imagination);
+        return compileBrief(input);
+      },
+    } as never;
+  };
+
+  it("hands `imagination` to the compile as sent", async () => {
+    const seen: (string | undefined)[] = [];
+    await createRoll(compileSpy(seen), { ...INPUT, imagination: "max" });
+    expect(seen).toEqual(["max"]);
+  });
+
+  it("and absent stays absent — the author's default is the compiler's to apply, never a second copy here", async () => {
+    const seen: (string | undefined)[] = [];
+    await createRoll(compileSpy(seen), INPUT);
+    expect(seen).toEqual([undefined]);
+  });
+
   it("the bound keys on the ROAD, not the flag: a chip-edited roll under the flag composes house and stops at 2,000 (finding 2)", async () => {
     const long = "a wiry cyclist ".repeat(140);
     vi.stubEnv("CASTING_V2_SCOPE", "all");
