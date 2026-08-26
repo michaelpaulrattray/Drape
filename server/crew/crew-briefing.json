@@ -1,7 +1,7 @@
 {
-  "edition": 42,
-  "updatedAt": "2026-08-27T05:20:00+10:00",
-  "shift": "foreman-33",
+  "edition": 43,
+  "updatedAt": "2026-08-27T05:47:00+10:00",
+  "shift": "foreman-34",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -58,7 +58,7 @@
           "state": "done"
         },
         {
-          "title": "Softer wording on a refused tile (#93 / #122 shape 2) — DESIGNED, not built (docs/specs/CASTING_V2_SOFTER_WORDING_DESIGN.md): the court is priced (≤ $10, under the threshold) and runs next; two small questions for you on the card",
+          "title": "Softer wording on a refused tile (#93 / #122 shape 2) — COURTED and NOT BUILT: the softened prompt passed one more render in eight than the same text re-sent (4/8 vs 3/8 on your cyber-goth, 7/8 vs 6/8 on roll 222); the bar set before firing was four more. Your own hand rewrite scored the same 4/8. The engine's checker changes its mind night to night far more than any wording changes it (the same cyber-goth text: 1 pass in 64 two nights ago, 3 in 8 tonight). The honest button on a content-filter tile is the plain same-text Retry you already have on engine-error tiles — that question is on your desk. $3.62, record docs/specs/SOFTER_WORDING_COURT_2026-08-27.md",
           "state": "done"
         },
         {
@@ -144,28 +144,6 @@
   },
   "needsYou": [
     {
-      "id": "softer-wording-93",
-      "title": "Softer wording on a refused tile — two small questions before the court and the build (#93)",
-      "productImpact": "A tile refused by the engine's content filter gets a 'Softer wording' button. Tap it and the studio rewrites the prompt the way you rewrote your own cyber-goth brief by hand (harness → covering, 'sheer … reveals the skin' dropped, cyber-goth → cyberpunk) and shows you exactly what changed. 'Cast this · 20 credits' renders that one tile. Refused again: refunded and the button is gone from that tile.",
-      "workedExample": "Your Grok cyber-goth description refuses 63 of 64 renders. Tile 03 shows CONTENT FILTER · refunded and the button. Tap: the prompt opens with '~~harness~~ covering', '~~sheer~~ black lace ~~mesh~~ top ~~that reveals the skin underneath~~', 'cyber-goth → cyberpunk' marked, and one line: 'Renamed 1 item by how it's made; dropped 3 phrases about skin showing.' You tap Cast this · 20 credits; tile 03 casts; your sheet is 6 of 8 instead of 5.",
-      "recommendation": "(1) Two taps — show the softened prompt BEFORE the 20 credits are charged, because the softening drops words you typed and a paid render from words you have not seen is the silent change you ruled out. (2) Count it as a Retry with a 'softened' flag in the ledger, not a new operation kind — one money path. The court (≤ $10, under your threshold) runs without waiting on these; the build waits on them.",
-      "state": "open",
-      "filedAt": "2026-08-27T05:20:00+10:00",
-      "issueNumber": 93,
-      "options": [
-        {
-          "key": "two-taps",
-          "label": "Two taps: show the softer prompt, then Cast this · 20 credits",
-          "consequence": "You always see the change before paying; one extra tap."
-        },
-        {
-          "key": "one-tap",
-          "label": "One tap: reword and re-render immediately, show the change after",
-          "consequence": "Faster; the render goes out on words you see only afterwards."
-        }
-      ]
-    },
-    {
       "id": "family-clause-154",
       "title": "Should the author carry a Follow and chip edits? Three small questions before it is built (#154)",
       "productImpact": "Today on your account, tapping Follow on a face or changing a chip sends that roll back to the studio's old casting — eight separate prompts, the grey tee, no authored prompt to read. The build on #154 would keep the author on those rolls: one prompt, your words first, then a 'continue this family' paragraph written from the face you followed, then the author's art direction and the locked block.",
@@ -194,10 +172,10 @@
     },
     {
       "id": "retry-flip-122",
-      "title": "The Retry button is built and switched off — flip it on for your account? And should the content-filter tiles get a plain Retry too?",
+      "title": "The Retry button is built and switched off — flip it on for your account? And now with evidence: should content-filter tiles get the same plain Retry?",
       "productImpact": "Today a tile that fails on an engine error says 'Engine error · refunded' and that is the end of it — the only way to get that face back is to roll the whole sheet again (160 credits, eight new faces). With the switch on, that tile gets one button: Retry · 20 credits. It renders the same words again into the same slot. Nothing else on the sheet changes. Today the switch is off for everyone, including you; the button does not exist until it is flipped.",
-      "workedExample": "Roll 240, tile 05 fails on a fal timeout: chip 'Engine error · refunded', your balance is down 140 net. You tap Retry · 20 credits: 120 net, tile 05 goes back to 'Casting…' for about a minute, then the face lands and the sheet is 8 of 8. Had it failed again: the 20 come back, the chip and the button return, and you decide. Measured on the dev sheet six times: casting in 5 seconds, landed in 52. SECOND QUESTION, on the evidence from the refusal patrol: on your roll 222 the engine refused five of eight casts painted from the SAME words and delivered three — the filter is a coin per picture, not a verdict on the words. Your sentence puts those content-filter tiles on the softer-wording road, which is not built yet (#93/#129). A plain Retry on them today would win about 3 in 8 at 20 credits a go, refunded on each loss. Built exactly to your sentence for now: those tiles get no button.",
-      "recommendation": "Flip it on for your account (users:1) so you can try it on the next engine error — nothing else changes and it costs nobody anything until you tap. On the second question my recommendation is YES: a plain Retry on content-filter tiles too, one manual tap per tile with the odds said on the chip ('the filter is a coin — about 3 in 8 pass'), until softer wording lands. It is your call because it is a decision about charging people to be refused, which your rule forbids as a LOOP but not as a tap; if you say no, the softer-wording road stays the only answer for those tiles.",
+      "workedExample": "Roll 240, tile 05 fails on a fal timeout: chip 'Engine error · refunded', your balance is down 140 net. You tap Retry · 20 credits: 120 net, tile 05 goes back to 'Casting…' for about a minute, then the face lands and the sheet is 8 of 8. Had it failed again: the 20 come back, the chip and the button return, and you decide. Measured on the dev sheet six times: casting in 5 seconds, landed in 52. SECOND QUESTION, on the evidence from the refusal patrol: on your roll 222 the engine refused five of eight casts painted from the SAME words and delivered three — the filter is a coin per picture, not a verdict on the words. Your sentence puts those content-filter tiles on the softer-wording road, which is not built yet (#93/#129). A plain Retry on them today would win about 3 in 8 at 20 credits a go, refunded on each loss. Built exactly to your sentence for now: those tiles get no button. — And on a content-filter tile: roll 222, tile 04 shows 'Content filter · refunded'. You tap Retry · 20 credits with the same words; tonight's court says it lands about three times in four.",
+      "recommendation": "Flip it on for your account, AND widen it to content-filter tiles. The #93 court measured it tonight: re-sending the SAME words is worth as much as any rewording (your cyber-goth text passed 3/8 unchanged, 4/8 softened, 4/8 in your own hand rewrite; roll 222's text passed 6/8 unchanged tonight against 3/8 live). A plain 'Retry · 20 credits' on a CONTENT FILTER tile is honest — it says nothing about softer words — and it is the button that actually rescues a tile. The 'Softer wording' design (#93) is parked on its own numbers.",
       "state": "open",
       "filedAt": "2026-08-27T04:05:00+10:00",
       "issueNumber": 122,
@@ -695,10 +673,10 @@
   "pipeline": [
     {
       "id": "softer-wording-93",
-      "title": "Softer wording on a refused tile (#93) — designed; court priced and next",
-      "status": "waiting-founder",
+      "title": "Softer wording on a refused tile (#93) — courted; not built (bar not met)",
+      "status": "blocked",
       "prNumber": null,
-      "note": "When the engine's content filter refuses a tile, today the tile says so and refunds — and that is all. The design: the tile gets one button, Softer wording. Tap it (free) and the studio shows you the same prompt with the words that likely tripped the filter changed — a removed phrase struck through, a replacement underlined, a plain line saying what was done — and you can edit it. Then 'Cast this · 20 credits' renders that one tile with the softer words. Refused again: refunded, the tile says so, the button withdraws — once per tile, never a loop. Before it is built, a court measures whether the softening actually raises the pass rate against the same text re-sent (the checker is a coin per render — roll 222 refused 5 of 8 on one identical prompt). Nothing changes for anyone until it lands."
+      "note": "The court ran tonight ($3.62). Rewording a refused prompt the way you rewrote your cyber-goth brief by hand buys about one extra pass in eight — and your own hand rewrite scored exactly the same. What moves the pass rate is the night: the identical text went from 1 pass in 64 to 3 in 8 with nothing changed, and the thin 'goth woman mid 30s' from 1 in 18 to 8 in 8. So the softener road is not built, by the bar the design set before it fired. What a content-filter tile needs is the same plain Retry the engine-error tiles already have (built, PR #151, switched off) — widened to content-filter tiles. That is the question on the 'retry-flip-122' card."
     },
     {
       "id": "author-road-house-says-why-131",
@@ -1069,6 +1047,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T05:47:00+10:00",
+      "shift": "foreman-34",
+      "text": "No replies from you (nine acknowledged, none new at 05:06). I ran the #93 court your 'court first' asked for — does rewording a refused prompt the way you rewrote your cyber-goth brief by hand actually get it past the engine's content filter? Instrument proved first (a known-refused prompt refused 2/2, a known-passing one passed 2/2), then 100 renders: your cyber-goth description as refused passed 3 of 8 tonight, the studio's softened copy 4 of 8, your own hand rewrite 4 of 8; roll 222's text 6 of 8 as-is and 7 of 8 softened. The bar set before firing was four more passes in eight; the softener bought one. The real finding is the other one: the same text went from 1 pass in 64 two nights ago to 3 in 8 tonight, and 'goth woman mid 30s' from 1 in 18 to 8 in 8 — the checker's mood, not the words. Also learned: fal does not refuse orc / tusks / bare-chested at all (8 of 8), so your orc 'copyright' refusal was another checker's. Verdict by the design's own rule: the softer-wording road is NOT built; the button a content-filter tile needs is the plain Retry you already have on engine-error tiles, widened — that is now the one question on the Retry card, with tonight's numbers behind it. The two design questions I carded last shift are withdrawn. Spend: $3.62 house, 0 credits. Nothing changed in the product."
+    },
+    {
       "at": "2026-08-27T05:20:00+10:00",
       "shift": "foreman-33",
       "text": "No replies from you tonight (nine acknowledged, none new at 04:06 and 04:43 by the last shift, none at 05:06 by me). I took the next item in order: the design for #93 — what happens when the engine's content filter refuses a tile and you want to try again with softer words. It is your #122 shape 2 ('Retry with softer wording') designed end to end: a free preview of the softened prompt with every change marked, then Cast this · 20 credits for that one tile, refused again → refunded and the button withdraws. The rewrite follows the grammar of your own hand rewrite of the cyber-goth brief (refused 4/4 → passed 3/4): rename by how a thing is made, drop the 'skin showing' claims, never touch a body part, piercing, tattoo, age, sex or heritage. One correction on the record: your orc 'copyright' refusal happened in the OLD studio (Gemini) — fal's checker has no copyright class we can see, so whether it refuses creature words at all is now a court cell rather than an assumption. The court is priced at under $10 and runs next shift without waiting; two small questions for you are on the card. Spend tonight: nothing. Nothing changed in the product."
@@ -1262,11 +1245,6 @@
       "at": "2026-08-25T23:30:00+10:00",
       "shift": "foreman-4",
       "text": "Fixed your admin-entry complaint (#68): typing /admin was a dead end (a 404) — it now lands on the overview — and the account menu's own text was invisible in dark theme; both driven and photographed before and after. The same drive found the lobby's theme toggle is unclickable (filed as #73). Caught and repaired a record gap your go-live exposed: the test that guards the migration ledger wasn't updated when the ceremony ran, so every change's checks were failing; fix is in review (PR 76). Then rebuilt this page toward your UX feedback (#74): the chips at the top, the milestone progress bar, all eight ladder rungs, Recently landed, and the journal fold you are using now."
-    },
-    {
-      "at": "2026-08-25T22:45:00+10:00",
-      "shift": "foreman-3",
-      "text": "Built this page and proved it in the running app: a reply typed here landed in the database and came back through the crew's own read script, and with the flag off the tab vanishes entirely. Your two Desk taps are on the record — the ladder is signed (N1–N8 governs) and the face-scan pair is widened to everyone in the beta. Both cards below are marked done."
     }
   ],
   "acknowledgedReplyIds": [

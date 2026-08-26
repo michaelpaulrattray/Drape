@@ -1,6 +1,16 @@
 # Retry with softer wording — the rewrite road (#93, #122 shape 2)
 
-**Status:** DESIGN, 2026-08-27 (foreman-33). Nothing built, nothing spent.
+**Status:** COURTED AND NOT BUILT, 2026-08-27 (foreman-34) — §6's own
+else-branch. The court ran ($3.62; record
+`SOFTER_WORDING_COURT_2026-08-27.md`): A passed +1/8 over the same-text
+control on the cyber-goth and on roll 222 against a stated bar of +4/8, his
+own hand rewrite scored the same as A, and the checker's night-to-night
+drift (1/64 → 3/8 on identical text) dwarfs any wording change. §3–§5 stay
+as the record of a road measured and declined; §7's two questions are
+withdrawn. What a content-filter tile gets instead is the plain same-text
+Retry (PR #151) widened to `content_policy`, on his word (`retry-flip-122`).
+
+*Original status (foreman-33):* DESIGN, 2026-08-27. Nothing built, nothing spent.
 The court (§6) is priced on #93 and runs under THE SPEND THRESHOLD; the build
 (§3–§5) waits on the court's numbers and on the founder's answer to the two
 questions in §7. Dark behind `CASTING_SOFTEN_SCOPE` when it lands.
