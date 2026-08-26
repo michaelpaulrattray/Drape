@@ -12,7 +12,9 @@ Supersedes, explicitly: the "basics is the default birth state" law (2026-08-25,
 
 > "300-500 words is within gpt engine 2 limits for obeying prompts but pushing it outside that like our 13000 characters did causes gpt image 2 to disobey and degrade"
 
-Evidence he supplied: one 330-word raw prompt to GPT Image 2 → four distinct women, invented outfits/makeup/jewellery, consistent framing ("the prompt respected the framing without any cropping"), consistent studio. Our compile of the same brief (roll 219) → men and women, prompt ignored (#121). Our own court: C′ (2,000 → 500 words, same content) gained conviction; wrong answers survived — length AND authorship both matter.
+Evidence he supplied (corrected the same day — the first draft conflated his two prompts): a **73-word** raw prompt to GPT Image 2 — aesthetic, skin, framing, studio and lighting only, NOTHING about hair, outfit, makeup or jewellery — produced four distinct women with invented outfits, makeup, hair and jewellery, consistent framing ("the prompt respected the framing without any cropping") and a consistent studio. That is the stronger evidence: the engine invents everything unstated from a thin, well-formed prompt. Separately, his **~330-word** full cyber-goth prompt (harness, piercings, calligraphy tattoos) also "produced beautiful results" raw. The 73-word prompt, verbatim:
+
+> A photorealistic high-fashion portrait of a young woman with an intense cyber-goth aesthetic, facing the camera directly from the chest up. She has extremely pale porcelain skin and a sharp, androgynous face. Soft neutral gray studio background with seamless gradient. Dramatic yet soft frontal studio lighting that creates subtle specular highlights on the dark structured fabrics, intricate textures, and skin while keeping deep shadows. Ultra-detailed textures, sharp focus, cinematic high-fashion photography, 8k, photorealistic. Our compile of the same brief (roll 219) → men and women, prompt ignored (#121). Our own court: C′ (2,000 → 500 words, same content) gained conviction; wrong answers survived — length AND authorship both matter.
 
 ## 1. The user's words go to the engine
 
@@ -95,7 +97,7 @@ The reader's vocabulary grows from MEASURED MISSES, on a clock: facts in prompts
 
 Under the spend threshold; estimate posted on the issue before any paid arm; his eye judges.
 
-Briefs: (i) his cyber-goth brief (roll 219's text); (ii) "goth woman mid 30s" (thin). Eight slices each.
+Briefs: (i) his full cyber-goth brief (roll 219's text, ~330 words); (ii) his 73-word prompt above (the four-women specimen — arm A on it is a direct replication); (iii) "goth woman mid 30s" (thin). Eight slices each.
 Arms: A raw brief alone · B raw + author at LOW (photoreal default + framing/studio sentences) · C raw + author at MAX · D today's compile (control) · F length cliff — arm B padded to 400 / 800 / 1,600 words of neutral filler. (Arm E — one vs eight authored identities — was RULED, not measured: one prompt per sheet.)
 Read: fidelity (every stated fact on every slice — the reader is the instrument, his eye the verdict), quality (his eye), spread (his eye), framing (head-share spread vs the trim's bar), refusal count per arm.
 Result → the register's next revision is built DARK to this ruling, then `users:1`, then his eye — the milestone gate stays "not passing yet" until then.
