@@ -1,7 +1,7 @@
 {
-  "edition": 41,
-  "updatedAt": "2026-08-27T05:05:00+10:00",
-  "shift": "foreman-32",
+  "edition": 42,
+  "updatedAt": "2026-08-27T05:20:00+10:00",
+  "shift": "foreman-33",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -55,6 +55,10 @@
         },
         {
           "title": "Follow and chip edits on the author road — the honest half BUILT and MERGED (PR #153): a sheet that had to fall back to the studio's old casting now SAYS so, and the settings gear no longer promises settings such a roll ignores; the carry itself is designed and waits on your word (#154)",
+          "state": "done"
+        },
+        {
+          "title": "Softer wording on a refused tile (#93 / #122 shape 2) — DESIGNED, not built (docs/specs/CASTING_V2_SOFTER_WORDING_DESIGN.md): the court is priced (≤ $10, under the threshold) and runs next; two small questions for you on the card",
           "state": "done"
         },
         {
@@ -139,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "softer-wording-93",
+      "title": "Softer wording on a refused tile — two small questions before the court and the build (#93)",
+      "productImpact": "A tile refused by the engine's content filter gets a 'Softer wording' button. Tap it and the studio rewrites the prompt the way you rewrote your own cyber-goth brief by hand (harness → covering, 'sheer … reveals the skin' dropped, cyber-goth → cyberpunk) and shows you exactly what changed. 'Cast this · 20 credits' renders that one tile. Refused again: refunded and the button is gone from that tile.",
+      "workedExample": "Your Grok cyber-goth description refuses 63 of 64 renders. Tile 03 shows CONTENT FILTER · refunded and the button. Tap: the prompt opens with '~~harness~~ covering', '~~sheer~~ black lace ~~mesh~~ top ~~that reveals the skin underneath~~', 'cyber-goth → cyberpunk' marked, and one line: 'Renamed 1 item by how it's made; dropped 3 phrases about skin showing.' You tap Cast this · 20 credits; tile 03 casts; your sheet is 6 of 8 instead of 5.",
+      "recommendation": "(1) Two taps — show the softened prompt BEFORE the 20 credits are charged, because the softening drops words you typed and a paid render from words you have not seen is the silent change you ruled out. (2) Count it as a Retry with a 'softened' flag in the ledger, not a new operation kind — one money path. The court (≤ $10, under your threshold) runs without waiting on these; the build waits on them.",
+      "state": "open",
+      "filedAt": "2026-08-27T05:20:00+10:00",
+      "issueNumber": 93,
+      "options": [
+        {
+          "key": "two-taps",
+          "label": "Two taps: show the softer prompt, then Cast this · 20 credits",
+          "consequence": "You always see the change before paying; one extra tap."
+        },
+        {
+          "key": "one-tap",
+          "label": "One tap: reword and re-render immediately, show the change after",
+          "consequence": "Faster; the render goes out on words you see only afterwards."
+        }
+      ]
+    },
     {
       "id": "family-clause-154",
       "title": "Should the author carry a Follow and chip edits? Three small questions before it is built (#154)",
@@ -668,6 +694,13 @@
   ],
   "pipeline": [
     {
+      "id": "softer-wording-93",
+      "title": "Softer wording on a refused tile (#93) — designed; court priced and next",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "When the engine's content filter refuses a tile, today the tile says so and refunds — and that is all. The design: the tile gets one button, Softer wording. Tap it (free) and the studio shows you the same prompt with the words that likely tripped the filter changed — a removed phrase struck through, a replacement underlined, a plain line saying what was done — and you can edit it. Then 'Cast this · 20 credits' renders that one tile with the softer words. Refused again: refunded, the tile says so, the button withdraws — once per tile, never a loop. Before it is built, a court measures whether the softening actually raises the pass rate against the same text re-sent (the checker is a coin per render — roll 222 refused 5 of 8 on one identical prompt). Nothing changes for anyone until it lands."
+    },
+    {
       "id": "author-road-house-says-why-131",
       "title": "Follow / chip edits on the author road — the sheet says when the author sat out (PR #153, MERGED); the carry designed (#154)",
       "status": "merged",
@@ -1036,6 +1069,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T05:20:00+10:00",
+      "shift": "foreman-33",
+      "text": "No replies from you tonight (nine acknowledged, none new at 04:06 and 04:43 by the last shift, none at 05:06 by me). I took the next item in order: the design for #93 — what happens when the engine's content filter refuses a tile and you want to try again with softer words. It is your #122 shape 2 ('Retry with softer wording') designed end to end: a free preview of the softened prompt with every change marked, then Cast this · 20 credits for that one tile, refused again → refunded and the button withdraws. The rewrite follows the grammar of your own hand rewrite of the cyber-goth brief (refused 4/4 → passed 3/4): rename by how a thing is made, drop the 'skin showing' claims, never touch a body part, piercing, tattoo, age, sex or heritage. One correction on the record: your orc 'copyright' refusal happened in the OLD studio (Gemini) — fal's checker has no copyright class we can see, so whether it refuses creature words at all is now a court cell rather than an assumption. The court is priced at under $10 and runs next shift without waiting; two small questions for you are on the card. Spend tonight: nothing. Nothing changed in the product."
+    },
+    {
       "at": "2026-08-27T05:05:00+10:00",
       "shift": "foreman-32",
       "text": "No replies from you tonight, so I took the register's next open item (#131): what happens on your account when you tap Follow or change a chip. Those rolls quietly fall back to the studio's old casting — the author cannot carry a followed face or a chip edit yet — and until now the sheet said nothing: no prompt, no settings line, the author just gone, while the dock still showed a settings gear that roll would ignore. Fixed and merged (PR #153): the sheet says 'AUTHOR — Sat this one out …' at the top, and while a chip change is queued the gear is replaced by one line saying the author sits that roll out. I drove it on a dev sheet in both themes; the frame is in your gallery. The bigger piece — the author actually carrying a follow — is designed and on card #154 with three quick questions for you; it does not build until you answer. Spend tonight: nothing. Nothing changed for any other account."
@@ -1229,11 +1267,6 @@
       "at": "2026-08-25T22:45:00+10:00",
       "shift": "foreman-3",
       "text": "Built this page and proved it in the running app: a reply typed here landed in the database and came back through the crew's own read script, and with the flag off the tab vanishes entirely. Your two Desk taps are on the record — the ladder is signed (N1–N8 governs) and the face-scan pair is widened to everyone in the beta. Both cards below are marked done."
-    },
-    {
-      "at": "2026-08-25T22:40:00+10:00",
-      "shift": "foreman-3",
-      "text": "Closed the urgent refine double-charge question: the guard was built a week before it was filed as missing — a second tap on a paid edit has been refused free since 08-18. Merged the record fix and pinned the wire in the test suite (#54, PR 67). Designed and started building this page (#41)."
     }
   ],
   "acknowledgedReplyIds": [
