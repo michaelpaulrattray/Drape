@@ -133,9 +133,12 @@ export function CandidateTile({
    * `CASTING_RETRY_SCOPE` or the roll is not finished: the sheet passes it
    * only where the server's door would admit the tap, so a control that
    * refuses is never drawn. Drawn only on the kinds the door serves
-   * (`isRetryableFailure` — the same list the server reads, working law 4),
-   * never on a content-filter tile (his word puts those on the softer-wording
-   * road) and never on a cancelled roll's tile.
+   * (`isRetryableFailure` — the same list the server reads, working law 4):
+   * engine error, didn't arrive, and — since his reply #10 (2026-08-26,
+   * "widen it to content-filter tiles") — a content-filter refusal, because
+   * the filter is a coin per picture and re-sending the same words rescues
+   * it as often as any rewording. Never on a not-a-portrait or not-charged
+   * tile, never on a cancelled roll's tile.
    */
   onRetry?: () => void;
   /** The retry price, server-derived (`castingV2.config`) — printed on the button, D-15. */

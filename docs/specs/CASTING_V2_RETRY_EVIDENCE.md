@@ -40,3 +40,16 @@ button in the tile's action row's register.
 Mechanizable laws touched: the price is on the paid button (D-15); no
 control that refuses is drawn (`retryEnabled` + roll terminal + kind on the
 shared list); no success toast (D-110) — the tile landing is the answer.
+
+## Widening to content-filter tiles — 2026-08-27 (founder reply #10)
+
+His word, verbatim: *"Flip it on for your account, AND widen it to
+content-filter tiles."* `RETRYABLE_FAILURE_KINDS` gained `content_filter`;
+no user-visible string was added — the button is the same *Retry · 20 credits*
+under the same *Refused by the engine's content filter · refunded* line.
+Rendered on dev roll `0ec93715` (verify-bot 823, tile 07, a real refusal)
+from the worktree server with `CASTING_RETRY_SCOPE=all`, both themes read
+back off `document.documentElement.dataset.theme`:
+`evidence/retry-122/content-filter-tile-{dark,light}.png` — chip, line and
+button stack left-aligned, the button at its own width. Not tapped: a tap is
+a paid render and the population that matters is his account on production.

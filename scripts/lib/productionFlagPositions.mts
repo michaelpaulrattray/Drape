@@ -332,13 +332,14 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why: "evidence ingest on the private adapter, his account",
   },
   CASTING_RETRY_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
       "the Retry button (#122 shape 1) — one failed sheet slice rendered again for 20 credits, "
-      + "his own word (\"should we also allow a try option aswell?\" — yes, engine-error and "
-      + "didn't-arrive tiles). BUILT DARK 2026-08-27; users:1 on his word and not before. Its "
-      + "live population on production is zero (every failed slice ever is content_policy), "
-      + "which is why it is dark rather than urgent",
+      + "his own word (\"should we also allow a try option aswell?\" — yes). BUILT DARK "
+      + "2026-08-27; users:1 on his Crew reply #10 the same day (\"Flip it on for your account, "
+      + "AND widen it to content-filter tiles\"), which also put content-filter tiles on the "
+      + "button — so its live population on his account is every refused tile he has, not "
+      + "zero. Wider than users:1 on his eye and not before",
   },
   R7_EVIDENCE_COMPOSER_SCOPE: { position: "off", why: "the composer's runtime door, unopened" },
   R7_EVIDENCE_PACKAGE_SCOPE: {

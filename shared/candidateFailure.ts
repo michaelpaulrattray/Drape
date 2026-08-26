@@ -48,11 +48,19 @@ export type CandidateFailureKind = (typeof CANDIDATE_FAILURE_KINDS)[number];
 /**
  * THE KINDS A PLAIN RETRY SERVES (#122 shape 1) - the founder's own list,
  * verbatim: *"Retry on engine-error/didn't-arrive tiles - same prompt, one
- * slice, 20 credits, refunded again on failure"*. The other shape - *"Retry
- * with softer wording"* on content-filter tiles - is the rewrite road
- * (#129/#93) and is NOT this list; a content-filter tile gets no plain retry
- * until his word says otherwise (the patrol's coin-per-render finding is a
- * question on his desk, not a widening taken here).
+ * slice, 20 credits, refunded again on failure"* - WIDENED BY HIS OWN WORD
+ * to content-filter tiles (Crew reply #10, 2026-08-26 20:45Z, verbatim:
+ * *"Flip it on for your account, AND widen it to content-filter tiles"*).
+ *
+ * The evidence that bought the widening is the #93 court
+ * (`docs/specs/SOFTER_WORDING_COURT_2026-08-27.md`): the engine's filter is
+ * a COIN PER PICTURE, not a verdict on the words - roll 222's text was
+ * refused 5/8 live and passed 6/8 re-sent unchanged; the cyber-goth text
+ * passed 3/8 unchanged against 4/8 softened and 4/8 in his own hand rewrite.
+ * Re-sending the same words is worth as much as any rewording, so a plain
+ * Retry on a content-filter tile is the button that actually rescues it, and
+ * it is HONEST: it promises nothing about softer words. The "Retry with
+ * softer wording" road (#93) is parked on those same numbers.
  *
  * Declared ONCE and read by BOTH the server's admission door
  * (`retryService.ts`) and the tile that draws the button, so the button can
@@ -60,11 +68,11 @@ export type CandidateFailureKind = (typeof CANDIDATE_FAILURE_KINDS)[number];
  *
  * `render_fault` is deliberately absent: a contact sheet is the engine
  * misreading the prompt, and re-sending the same words is the same coin - his
- * sentence names engine errors, and this list says what his sentence says.
- * `unpaid` is absent because there is nothing to retry: that slice never ran
- * and was never charged.
+ * sentence names engine errors and (now) the filter, and this list says what
+ * his sentences say. `unpaid` is absent because there is nothing to retry:
+ * that slice never ran and was never charged.
  */
-export const RETRYABLE_FAILURE_KINDS = ["engine", "unknown"] as const satisfies readonly CandidateFailureKind[];
+export const RETRYABLE_FAILURE_KINDS = ["engine", "unknown", "content_filter"] as const satisfies readonly CandidateFailureKind[];
 
 export function isRetryableFailure(kind: CandidateFailureKind): boolean {
   return (RETRYABLE_FAILURE_KINDS as readonly CandidateFailureKind[]).includes(kind);
