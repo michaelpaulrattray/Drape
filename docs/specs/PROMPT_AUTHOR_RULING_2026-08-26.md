@@ -127,6 +127,15 @@ His low/max example pair:
 His framing of it: *"this isnt a bible i just worked with another ai agent who isnt familar with our studio and it told me to tell you this to diagnose our issue."* It is adopted as the author's spec because it names, precisely, the four defects the court and his eye both saw — the earlier §5 MAX instruction is superseded where the two differ (this one leaves the identity open; that one closed it). The LOW/MAX examples are the author's two reference outputs and belong in its test suite as golden SHAPES (structure, not byte-identity). A user's stated facts still ride verbatim first (rule 1) — the "seed" here is the customer's words.
 
 
+
+### 5c. THE LOCKED BLOCK IS CODE, NOT AUTHOR OUTPUT (founder, 2026-08-26 evening, verbatim)
+
+> "why was camera language, framing, world never locked in the prompt? our original studio produces amazingly high quality realistic casts because of all the locked micro-details, negatives, camera language, lighting, and so on these locked things only change when a user adjusts the to be created settings modal the author only changes the prompt content"
+
+Read at the shipped code (`promptAuthor.ts`): `PHOTOREAL_BUNDLE` existed as a constant but was handed to the author MODEL as an instruction ("add only the preset sentences for the things the request does not state"), so the model wrote, paraphrased, buried or dropped it. That is the defect.
+
+The rule: **the house block is appended by CODE, verbatim, on every roll — never written or edited by the author.** It is the old studio's locked block — camera language, framing, lighting, negatives, realism micro-details (the REALISM / CAPTURE / FRAMING / NEGATIVES material of `cohortPhotorealHuman.ts`; NOT the anatomy, identity, priority or dice blocks, which authored the person and are retired) — reviewed once for competing instructions and refusal words ("sternum"), calibrated to the reference frame (#130), and then a tested constant. It changes ONLY when the user changes the settings modal (style preset; advanced framing/lighting later). **The author changes the prompt CONTENT and nothing else**: seed + (at MAX) aesthetic language. Final prompt = user's words verbatim → author content → the locked house block. The B+R court (#128) becomes: author content + the FULL locked block vs + the distilled clause, his eye on realism, refusal count beside it.
+
 ## 6. The hard rules — ruled one by one
 
 KILL: the discard list (1); the register engagement gate (2); the notes cap and the 2,000-char brief cap → the word budget (3); the dice and anatomy blocks (4); **the content wall (6)** — the engine judges; **the stage wall (11)** — replaced by ONE wall: *this is a casting studio; a subject that is not a being refuses free before the charge* ("someone asking for an object should be refused like a car"); **the typo gate (12)**; **sex-coded facial hair (13)** — "the engine would never do it unless asked".
