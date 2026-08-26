@@ -112,18 +112,20 @@ export const COLOUR_LINE = "COLOUR: Neutral daylight, 5500K. Skin stays true to 
 
 /** §5d: logos/watermarks/captions/signage and props/environment/scene. Text on a garment is admissible. */
 export const NEGATIVE_LINES: readonly string[] = [
-  "NO logos, watermarks, captions, labels or signage anywhere in the frame.",
+  "NO logos, watermarks, captions or signage anywhere in the frame.",
   "NO props, furniture, environment, location or scene — the backdrop is empty studio paper.",
 ];
 
 /**
  * The photoreal PRESET's own sentences — the style ban lives here and not in
  * the universal block (§5d). Today's only preset and the default; #142's
- * modal is what makes it a choice.
+ * modal is what makes it a choice. The ban was MOVED, not re-ruled, so it is
+ * TAKEN from the cohort by name (law 4; review of #145 finding 1) — the day the
+ * modal forks the preset is the day this becomes its own text, declared.
  */
 export const PHOTOREAL_PRESET: readonly string[] = [
-  "STYLE: PHOTOREALISTIC ONLY — a real photograph from a real camera.",
-  "NO CGI, cartoon, anime, 3D render, illustration, plastic skin, doll look, wax figure, perfect symmetry, or beauty-app smoothing.",
+  `STYLE: ${take(PHOTOREAL_HUMAN_BLOCKS.negativeSentences, "PHOTOREALISTIC ONLY")}`,
+  take(PHOTOREAL_HUMAN_BLOCKS.negativeSentences, "NO CGI"),
 ];
 
 /** Rules 5/8: the block is the studio's defaults; a fact the description states beats any default or negative in it. */
