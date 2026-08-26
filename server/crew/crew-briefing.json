@@ -1,7 +1,7 @@
 {
-  "edition": 20,
-  "updatedAt": "2026-08-26T13:25:00+10:00",
-  "shift": "foreman-17",
+  "edition": 21,
+  "updatedAt": "2026-08-26T14:20:00+10:00",
+  "shift": "foreman-18",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -30,8 +30,20 @@
           "state": "done"
         },
         {
-          "title": "Your order, in your order: fix 219's class (#121, urgent), then per-slice fidelity and the spread of open features, then ONE re-roll for your eye",
+          "title": "219's failure (#121) — ROOT CAUSE FOUND, FIXED and MERGED (PR #124): the brief-reader was cut off by a 45-second clock sized for short briefs; 219 is now the specimen the next court must not reproduce",
+          "state": "done"
+        },
+        {
+          "title": "YOUR RE-RULING OF THE ROLL ROAD (this afternoon, verbatim in docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md): your words go to the engine first; an AUTHOR adds what an expert would; the outfit toggle is retired; no variance card. Step one: THE PROMPT AUTHOR COURT (#125) — estimate on the card first, your eye judges",
           "state": "in-progress"
+        },
+        {
+          "title": "The register rebuilt to your ruling, dark",
+          "state": "waiting"
+        },
+        {
+          "title": "On for your account, then your eye — the milestone gate",
+          "state": "waiting"
         }
       ]
     },
@@ -79,14 +91,19 @@
     ],
     "chips": [
       {
+        "label": "219 failed on a 45-second clock, not the register — fixed and MERGED (PR #124)",
+        "tone": "good",
+        "source": "roll 219 row interpreted=false; prod log 01:54:56Z '[interpreter] unavailable'; re-driven 3x: 36.5 s, 36.4 s, 45.012 s = the default deadline; merged de2f47f9, gate x3, review x2"
+      },
+      {
+        "label": "You re-ruled the roll road today (the PROMPT AUTHOR) — court #125 is next",
+        "tone": "neutral",
+        "source": "docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md (commits 8060d5d4/e9c4b800/df20b8cd); PROGRAM.md points at it; #120 and #92 superseded by its section 4"
+      },
+      {
         "label": "Register ON for your account — roll 217 is in your gallery, waiting for your eye",
         "tone": "good",
         "source": "CASTING_CREATIVE_REGISTER_SCOPE=users:1 read back by name 26 Aug 11:21; roll 217 row: register.kind=creative, card authored; pointers on #16"
-      },
-      {
-        "label": "Your account was auto-frozen for 22 h — unfrozen, cause filed (#119)",
-        "tone": "warn",
-        "source": "users.frozenAt 25 Aug 03:33Z → NULL 26 Aug 01:32Z via admin.unfreezeUser; audit rows 331 and the unfreeze; arithmetic on #119"
       },
       {
         "label": "Production healthy",
@@ -97,15 +114,37 @@
         "label": "This page is the Desk",
         "tone": "good",
         "source": "your switch-over word before bed; the artifact is a read-only mirror"
-      },
-      {
-        "label": "Night shifts running",
-        "tone": "good",
-        "source": "foreman-16 wrote this edition: the flip, the roll, #119 found, the atlas merge guard (#100) merged"
       }
     ]
   },
   "needsYou": [
+    {
+      "id": "rich-brief-outage-refuse",
+      "title": "When the studio genuinely cannot read a long brief, should it refuse for free instead of charging for a sheet that ignored it?",
+      "productImpact": "Your cyber-goth roll (219) cost 160 credits and delivered men and women because the brief-reader was cut off by a 45-second clock and the studio then cast from the first 80 characters of your brief — no sex, no hair, no skin, no tattoos, no register. The clock is fixed in PR #124 (long briefs measurably need ~36 s and get 120 s now). What is left is the rule underneath: today, if the reader fails for ANY reason, the studio still rolls and still charges. For a 30-character brief that is the right call — the fallback looks like what you typed. For a 1,500-character brief the fallback is exactly the failure you saw.",
+      "workedExample": "A customer types a 1,200-character brief for a scarred female pirate captain and the reading service is down for a minute. Today: 160 credits, eight generic people, half of them men. With refuse-free: \"We couldn't read your brief just now — nothing was charged. Try again in a moment.\" and the credits stay in her balance.",
+      "options": [
+        {
+          "key": "refuse-free",
+          "label": "Refuse for free when the reader is down and the brief is long (recommended)",
+          "consequence": "A long brief (more than a sentence or two) whose reading fails is not rolled and not charged; a short brief keeps today's fallback. One small PR behind the existing rule, with a test that drives the outage directly."
+        },
+        {
+          "key": "always-refuse",
+          "label": "Refuse for free on ANY reader failure, whatever the brief length",
+          "consequence": "Simplest rule; a customer with a five-word brief loses a roll they would otherwise have got during a reader outage."
+        },
+        {
+          "key": "keep",
+          "label": "Keep today's rule — always roll, always charge",
+          "consequence": "The clock fix in PR #124 covers ordinary days; on a real outage a long brief is still charged for a sheet that ignored it."
+        }
+      ],
+      "recommendation": "refuse-free. A customer who wrote a paragraph should never pay for a sheet that read none of it; a customer who wrote five words loses nothing by the fallback.",
+      "state": "open",
+      "filedAt": "2026-08-26T13:45:00+10:00",
+      "issueNumber": 121
+    },
     {
       "id": "autofreeze-founder-119",
       "title": "Your account was frozen for 22 hours by a dashboard read — you answered \"List-only\"; it is built, reviewed twice, MERGED (PR #123) and deploys with this edition",
@@ -347,6 +386,13 @@
   ],
   "pipeline": [
     {
+      "id": "interpreter-deadline-121",
+      "title": "The cyber-goth roll (219): why every word of your brief was lost, and the fix (#121) — MERGED (PR #124)",
+      "status": "merged",
+      "prNumber": 124,
+      "note": "Read at the row and the production log before touching code: the reader that turns a brief into casting facts was cut off by a 45-second clock meant for short reads, and the studio then cast from the first 80 characters of your brief — no sex, no hair, no skin, no tattoos — and charged 160 credits. Re-driven three times, text only (about 30 cents): 36 s, 36 s, then 45.012 s — the clock, to the millisecond. The reader now gets 120 s (long briefs measurably need ~36 s; the 553-character cyborg brief already ran up to 42 s), and the per-face variation card gets the same output budget as the reader because it had been spending its whole allowance thinking and writing nothing. The gate's reviewer ran twice; its one real finding (a long clock stacks three times on a retry) is fixed in the merge. Nothing charged; nothing flagged; the prompt bytes are unchanged."
+    },
+    {
       "id": "autofreeze-119",
       "title": "The dashboard scan that froze your account (#119) — list-only on your word, reads every charge source — MERGED (PR #123)",
       "status": "merged",
@@ -510,6 +556,13 @@
   ],
   "problems": [
     {
+      "id": "rich-brief-fallback-charge",
+      "title": "If the brief-reader is genuinely down, a long brief is still charged for a sheet that ignored it — your word asked on the card below",
+      "detail": "PR #124 stops this on ordinary days (the clock now fits long briefs). The rule underneath is untouched: on a real outage the studio falls back to casting from the first 80 characters and charges. Right for a five-word brief, wrong for a paragraph. Your ruling this afternoon keeps a reader beside the author, so the question survives the rebuild.",
+      "severity": "warning",
+      "state": "open"
+    },
+    {
       "id": "founder-account-autofrozen",
       "title": "Your account was auto-frozen 25 Aug 13:33 → unfrozen 26 Aug 11:32 — the cause is fixed and merged (PR #123, deploys with this edition)",
       "detail": "The dashboard card that froze you is now list-only, and its arithmetic reads every place a charge is recorded. Read against production before merging: you 7,505 → 1,050 (July's parked evidence experiment recording itself twice — nothing live), everyone else 0. The moderator dashboard is safe to open.",
@@ -553,6 +606,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T14:20:00+10:00",
+      "shift": "foreman-18",
+      "text": "Your cyber-goth roll (219) is explained and the cause is fixed and merged (PR #124). It was never the register failing to switch on and never the reader misreading you: the reader was cut off by a 45-second clock that was sized for short reads, and when that happens the studio casts from the first 80 characters of the brief and charges anyway — which is exactly why you got men and women. I re-ran your brief three times through the real reader: 36 s, 36 s, then 45.012 s, the clock to the millisecond. Long briefs now get 120 s, and the per-face variation card gets a proper output budget (it had been spending its whole allowance thinking and writing nothing, two tries out of three). Nothing about the prompt bytes changed and nothing was charged; about 30 cents of text calls. While I worked, your re-ruling of the whole roll road landed (the PROMPT AUTHOR — your words to the engine first, an author instead of a compiler, the outfit toggle retired): the program now points at it, the next step is the court on #125, and #120/#92 are superseded by it. One question for you on the card: when the reader is genuinely down, should a long brief be refused for free instead of charged?"
+    },
     {
       "at": "2026-08-26T13:25:00+10:00",
       "shift": "foreman-17",
