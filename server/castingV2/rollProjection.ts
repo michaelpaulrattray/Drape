@@ -126,6 +126,16 @@ export type RollProjection = {
    */
   authoredPrompt: string | null;
   /**
+   * WHAT *USE AS BRIEF* PUTS IN THE BOX — the customer's words plus the
+   * author's CONTENT, and never the locked house block (review of #141,
+   * finding 1): the block is appended by code on every roll, so a draft that
+   * carried it would send the block twice and hand the reader studio
+   * sentences as customer-stated facts. Null unless the author wrote content
+   * (a LOW or static sheet has nothing to offer back — its brief is already
+   * in the box). `authoredPrompt` above stays the WHOLE prompt, for showing.
+   */
+  authoredText: string | null;
+  /**
    * HOW FAR THE AUTHOR WENT on this sheet (#131 slice E) — `low` | `max` on an
    * author register, null everywhere else. The dock preselects the NEXT roll's
    * meter from it, the way the path switch preselects from the sheet's path:
@@ -510,6 +520,18 @@ export function readAuthoredPrompt(compiledBrief: unknown): string | null {
   return trimmed;
 }
 
+/** Brief + the author's content — what a customer may roll again with. Null without authored content. */
+export function readAuthoredText(briefText: string, compiledBrief: unknown): string | null {
+  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+  const register = (compiledBrief as { register?: unknown }).register;
+  if (!register || typeof register !== "object") return null;
+  const { kind, content } = register as { kind?: unknown; content?: unknown };
+  if (kind !== "author" || typeof content !== "string") return null;
+  const trimmed = content.trim();
+  if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
+  return `${briefText.trim()}\n\n${trimmed}`;
+}
+
 export function readImagination(compiledBrief: unknown): Imagination | null {
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;
@@ -603,6 +625,7 @@ export function projectRoll(input: {
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
     authoredPrompt: readAuthoredPrompt(input.roll.compiledBrief),
+    authoredText: readAuthoredText(input.roll.briefText, input.roll.compiledBrief),
     imagination: readImagination(input.roll.compiledBrief),
     /*
       THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.

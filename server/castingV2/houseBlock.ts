@@ -39,6 +39,24 @@
  * text contains none of its sentences; it carries no word from
  * `NEVER_WRITTEN`; it changes only with the settings modal (the style preset;
  * advanced framing/lighting later) — which today means it is a tested constant.
+ *
+ * # Two limits, declared rather than implied (review of #141)
+ *
+ *   - `containsHouseSentence` is a VERBATIM backstop: it catches a draft that
+ *     copies a block sentence and nothing else. A MAX draft that PARAPHRASES
+ *     camera language ("shot on a medium-format camera, grey backdrop") passes
+ *     it and competes with the block — the primary control against that is
+ *     the instruction (`NO_STUDIO_RULE`) and the gate is the founder's eye on
+ *     the frames; a reader for paraphrased studio language is not built and
+ *     is not claimed.
+ *   - The derivation ASSERTS AT MODULE LOAD (the two `throw`s below), and this
+ *     module is imported unconditionally through `promptAuthor.ts` →
+ *     `briefCompiler.ts`, so an edit to the cohort's framing/capture arrays
+ *     that breaks the named exclusion counts fails boot for EVERY account, not
+ *     just the flagged road. That is the house's fail-fast shape and every
+ *     suite run meets it first, but it is the one caveat on "off is
+ *     byte-identical": the next editor of those arrays meets this file here,
+ *     not in a production boot loop.
  */
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 

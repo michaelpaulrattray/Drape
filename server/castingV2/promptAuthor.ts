@@ -173,7 +173,8 @@ export function authorAllowance(briefText: string): number {
 
 /** The first of `NEVER_WRITTEN` found in `text` as a whole word or phrase, or null. */
 export function neverWrittenIn(text: string): string | null {
-  const lower = text.toLowerCase();
+  /* Whitespace normalised first, so a phrase split by a newline or a double space cannot slip (review of #141, finding 4). */
+  const lower = text.toLowerCase().replace(/\s+/g, " ");
   for (const { word } of NEVER_WRITTEN) {
     const re = new RegExp(`(^|[^a-z])${word.replace(/[-]/g, "\\-")}([^a-z]|$)`);
     if (re.test(lower)) return word;

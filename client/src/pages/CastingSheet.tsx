@@ -529,6 +529,8 @@ export default function CastingSheet() {
   const brief = displayText(draft, shownBrief);
   /* The prompt this sheet was painted from — null on every sheet off the author road (#131 slice D). */
   const authoredPrompt = roll.data?.authoredPrompt ?? null;
+  /* What USE AS BRIEF offers back: the brief + the author's content, never the locked block (review of #141). */
+  const authoredText = roll.data?.authoredText ?? null;
   const draftAnchor = useRef<string | null>(null);
   useEffect(() => {
     const rollId = roll.data?.rollId;
@@ -2317,31 +2319,37 @@ export default function CastingSheet() {
             <summary className="dpc-prompt__summary">The prompt this sheet was painted from</summary>
             <p className="dpc-prompt__text">{authoredPrompt}</p>
             {/*
-              NOT OFFERED on a prompt the entrance would refuse (review of #137,
-              finding 1): the prompt is at least as long as the brief it was
-              built from, so past the road's bound the button would fill the
-              box with something the next roll cannot take — a dead control
-              wearing a button. The bound is the server's, read from `shared`.
+              USE AS BRIEF offers the brief + the author's CONTENT — never the
+              locked block, which code appends again on every roll (review of
+              #141, finding 1). So the button exists only where the author
+              wrote content (a LOW or static sheet's brief is already the box),
+              and NOT on text the entrance would refuse (review of #137): past
+              the road's bound it would fill the box with something the next
+              roll cannot take. The bound is the server's, read from `shared`.
             */}
-            {authoredPrompt.length <= BRIEF_TEXT_MAX_AUTHOR_ROAD ? (
+            {authoredText && authoredText.length <= BRIEF_TEXT_MAX_AUTHOR_ROAD ? (
               <div className="dpc-prompt__row">
                 <button
                   type="button"
                   className="dpc-prompt__use"
                   onClick={() => {
-                    setDraft(typed(authoredPrompt));
+                    setDraft(typed(authoredText));
                     if (Object.keys(overrides).length > 0) clearOverrides();
                   }}
                 >
                   Use as brief
                 </button>
                 <span className="dpc-prompt__note">
-                  Your words first, then what the author added. Rolling with it keeps every word.
+                  Your words, then the author's art direction. The studio's locked block is added again at the roll.
                 </span>
               </div>
-            ) : (
+            ) : authoredText ? (
               <p className="dpc-prompt__note">
                 Too long to roll again as written — a brief stops at {BRIEF_TEXT_MAX_AUTHOR_ROAD.toLocaleString()} characters. Copy the part you want into the box.
+              </p>
+            ) : (
+              <p className="dpc-prompt__note">
+                Your words, then the studio's locked camera, light and grey seamless — the same block on every roll.
               </p>
             )}
           </details>
