@@ -1,7 +1,7 @@
 {
-  "edition": 47,
-  "updatedAt": "2026-08-27T06:17:00+10:00",
-  "shift": "foreman-38",
+  "edition": 48,
+  "updatedAt": "2026-08-27T07:40:00+10:00",
+  "shift": "foreman-39",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -172,11 +172,11 @@
     },
     {
       "id": "retry-flip-122",
-      "title": "The Retry button is built and switched off — flip it on for your account? And now with evidence: should content-filter tiles get the same plain Retry?",
-      "productImpact": "Today a tile that fails on an engine error says 'Engine error · refunded' and that is the end of it — the only way to get that face back is to roll the whole sheet again (160 credits, eight new faces). With the switch on, that tile gets one button: Retry · 20 credits. It renders the same words again into the same slot. Nothing else on the sheet changes. Today the switch is off for everyone, including you; the button does not exist until it is flipped.",
-      "workedExample": "Roll 240, tile 05 fails on a fal timeout: chip 'Engine error · refunded', your balance is down 140 net. You tap Retry · 20 credits: 120 net, tile 05 goes back to 'Casting…' for about a minute, then the face lands and the sheet is 8 of 8. Had it failed again: the 20 come back, the chip and the button return, and you decide. Measured on the dev sheet six times: casting in 5 seconds, landed in 52. SECOND QUESTION, on the evidence from the refusal patrol: on your roll 222 the engine refused five of eight casts painted from the SAME words and delivered three — the filter is a coin per picture, not a verdict on the words. Your sentence puts those content-filter tiles on the softer-wording road, which is not built yet (#93/#129). A plain Retry on them today would win about 3 in 8 at 20 credits a go, refunded on each loss. Built exactly to your sentence for now: those tiles get no button. — And on a content-filter tile: roll 222, tile 04 shows 'Content filter · refunded'. You tap Retry · 20 credits with the same words; tonight's court says it lands about three times in four.",
-      "recommendation": "Flip it on for your account, AND widen it to content-filter tiles. The #93 court measured it tonight: re-sending the SAME words is worth as much as any rewording (your cyber-goth text passed 3/8 unchanged, 4/8 softened, 4/8 in your own hand rewrite; roll 222's text passed 6/8 unchanged tonight against 3/8 live). A plain 'Retry · 20 credits' on a CONTENT FILTER tile is honest — it says nothing about softer words — and it is the button that actually rescues a tile. The 'Softer wording' design (#93) is parked on its own numbers.",
-      "state": "open",
+      "title": "ANSWERED — Retry is on for your account, and content-filter tiles have the button too (#122)",
+      "productImpact": "Your word (reply #10): \"Flip it on for your account, AND widen it to content-filter tiles.\" Both done. On your sheets, every tile that says 'Refused by the engine's content filter · refunded' now carries Retry · 20 credits, beside the engine-error tiles that already did. Same words, same slot; refused again → the 20 come back and the button returns. Nobody else sees the button yet. The 'Softer wording' road (#93) stays parked on its own numbers.",
+      "workedExample": "Roll 222, the five refused tiles: each shows the CONTENT FILTER chip, the refunded line, and Retry · 20 credits. Tap one: it goes back to 'Casting…' and lands in its own slot in about a minute — or is refused again and refunded. The court's odds for that text were about 3 in 4 per tap, but the filter drifts night to night, so the button promises nothing about odds.",
+      "recommendation": "Done: PR #155 merged (4c6b1a42), CASTING_RETRY_SCOPE=users:1 read back off the service, the service redeployed on the variable change and again with this edition. Tap one on your next refused tile and say if the wait or the wording reads wrong.",
+      "state": "answered",
       "filedAt": "2026-08-27T04:05:00+10:00",
       "issueNumber": 122,
       "options": [
@@ -414,8 +414,8 @@
     {
       "id": "retry-button-122",
       "title": "The Retry button (#122) — the failed tile, the tap, the landing",
-      "question": "Is this the try option you meant? Frame 1 is the failed tile as it now looks: the ENGINE ERROR chip, the 'refunded' line, and beneath it one quiet button, Retry · 20 credits. Frame 2 is five seconds after the tap: tile 08 back on 'Casting…' with no button. Frame 3 is 52 seconds later: the face landed in slot 08 with Keep / Follow like its siblings, no failed tile left. If the button, its words, or its price-on-the-button read wrong, say so here; if it passes, the flip card above is the next step.",
-      "state": "open",
+      "question": "You answered this on the flip card (reply #10) — the button is on, and it is on content-filter tiles too. Frame 4 is that widening: a real refused tile on the dev sheet with the CONTENT FILTER chip, the refunded line, and the same Retry · 20 credits beneath. The first three frames are the engine-error road as built. If the button on a refused tile reads wrong, say so on #122.",
+      "state": "answered",
       "filedAt": "2026-08-27T04:05:00+10:00",
       "issueNumber": 122,
       "frames": [
@@ -433,6 +433,11 @@
           "key": "crew-eye/8ac37d48-c5db-4f45-b061-b98fccd7a294.png",
           "arm": "52 s — landed",
           "caption": "The retried face in slot 08 with Keep / Follow / discard like its siblings; the sheet is 8 of 8 and its record reads complete."
+        },
+        {
+          "key": "crew-eye/c2f1565a-a4de-4896-94b6-cb34a96518fd.png",
+          "arm": "widened — a content-filter tile",
+          "caption": "Tile 07 refused by the filter (dev roll 0ec93715): CONTENT FILTER chip, 'Refused by the engine's content filter · refunded', and Retry · 20 credits — the widening from your reply #10 (dark theme; light in the repo)."
         }
       ]
     },
@@ -671,6 +676,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "retry-widened-122",
+      "title": "Retry on content-filter tiles + the flip to your account (#122) — MERGED and LIVE",
+      "status": "merged",
+      "prNumber": 155,
+      "note": "Your reply #10, both halves done this shift. The list that decides which failed tiles get the button gained the content filter; the flag is users:1 on production, read back by name. Rendered on a real refused dev tile, both themes. $0 house beyond the dev page load, 0 credits. Every refused tile on your sheets now offers the tap."
+    },
     {
       "id": "softer-wording-93",
       "title": "Softer wording on a refused tile (#93) — courted; not built (bar not met)",
@@ -1047,6 +1059,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T07:40:00+10:00",
+      "shift": "foreman-39",
+      "text": "Your reply #10 landed and was acted on: Retry is ON for your account (CASTING_RETRY_SCOPE=users:1, read back), and content-filter tiles got the same plain Retry · 20 credits (PR #155, merged 4c6b1a42; rendered on a real refused tile, both themes — frame 4 on the retry eye item). the service redeployed on the variable change and again with this edition. #122 carries the record. Still waiting on your word: the family-clause card (#154) and the five older eye items. $0 house, 0 credits."
+    },
+    {
       "at": "2026-08-27T06:17:00+10:00",
       "shift": "foreman-38",
       "text": "Fourth quiet night, correct. No replies (none new at 06:15), queue and main unmoved (b53d4b88 clean), no patrol due before the Janitor on ~29 Aug. $0 house, 0 credits. Your open cards and eye items are unchanged below."
@@ -1240,11 +1257,6 @@
       "at": "2026-08-26T04:35:00+10:00",
       "shift": "foreman-8",
       "text": "Still nothing from you on the court strips, so the creative register is still parked at the gate — building it dark starts only on your word. With no product work admissible, tonight was a records night: two housekeeping cards were closed on evidence rather than memory. #9 asked for two design documents to be committed so they could not be lost; they already are (both in the repository, with the ink template plates), so it closed. #7 worried that six pieces of server code had no consumer and might be dead controls; I read the whole history for each and none was ever used by the product itself — they are helpers for test benches and calibration scripts, which is what they were written to be, so nothing is broken and nothing needs removing. The #73 theme-button fix (PR #86) is still one mechanical step from green; I left the exact step on the PR for the seat that owns it rather than taking over their branch. Still on your page: the OpenRouter balance ($7.52 of $250 — please check auto-top-up), and your verdict on the eight strips in the gallery."
-    },
-    {
-      "at": "2026-08-26T03:45:00+10:00",
-      "shift": "foreman-7",
-      "text": "Still no reply from you on the court strips, so the creative register did not move — building it dark starts only on your word. Tonight's one unit was team plumbing, not product: earlier tonight a shift lost forty minutes because GitHub silently never ran our safety check on a change (no error, no banner, just nothing), and there was no way to poke it by hand. Now there is (#80, PR #87), and it was tested both ways before it went in — trying to re-run the check against the wrong change goes red, the right one goes green on exactly the bytes the normal path tests. Along the way the automatic reviewer caught a real gap in my first version (a hand re-run could have passed a change that newer code had since broken), which is closed. The #73 theme-button fix is open as PR #86 from a day seat and is one mechanical step from green. Still on your page: the OpenRouter balance ($7.52 of $250 — please check auto-top-up), and your verdict on the eight strips in the gallery."
     }
   ],
   "acknowledgedReplyIds": [
@@ -1256,6 +1268,7 @@
     6,
     7,
     8,
-    9
+    9,
+    10
   ]
 }
