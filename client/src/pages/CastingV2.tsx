@@ -18,8 +18,9 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
+import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
 import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
-import { ImaginationToggle } from "@/features/castingV2/components/ImaginationToggle";
+import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
@@ -194,7 +195,13 @@ export default function CastingV2() {
     way the brief box does.
   */
   const [path, setPath] = useState<CastingPath>(DEFAULT_CASTING_PATH);
-  /* The imagination meter (#131 slice E): LOW is his default; drawn only on the author road. */
+  /*
+    THE SETTINGS (#142): the style and the imagination meter, both set in the
+    modal the gear opens, both his defaults (photoreal, LOW), both drawn only
+    on the author road. Page state and nothing else — leaving the page resets
+    them, which is the design's ephemerality ruling by construction.
+  */
+  const [style, setStyle] = useState<CastStyle>(DEFAULT_CAST_STYLE);
   const [imagination, setImagination] = useState<Imagination>(DEFAULT_IMAGINATION);
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<RosterScope>("All");
@@ -457,8 +464,8 @@ export default function CastingV2() {
             This is the client not lying, not the client enforcing.
           */
           ...(pathToggleVisible ? { path } : {}),
-          /* The meter travels only where it was drawn — the path's rule, one control over. */
-          ...(authorRoad ? { imagination } : {}),
+          /* The settings travel only where the gear was drawn — the path's rule, one control over. */
+          ...(authorRoad ? { imagination, style } : {}),
         })
         .then(() => setStartingRoll(session.sessionId, false))
         .catch((error: unknown) =>
@@ -593,12 +600,18 @@ export default function CastingV2() {
                 note={CASTING_PATH_LINES[path]}
               />
             ) : null}
+            {/*
+              THE GEAR (#142) — the settings modal's one control on the surface,
+              where the meter's pills stood: it names what will apply
+              ("Photoreal · Low") and opens the modal that changes it.
+            */}
             {authorRoad ? (
-              <ImaginationToggle
-                idPrefix="dpc-hero-imagination"
-                label="How far the author goes"
-                value={imagination}
-                onChange={setImagination}
+              <CastSettingsButton
+                idPrefix="dpc-hero"
+                style={style}
+                imagination={imagination}
+                onStyle={setStyle}
+                onImagination={setImagination}
               />
             ) : null}
             {/*

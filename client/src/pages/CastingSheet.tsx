@@ -49,10 +49,12 @@ import {
   pathSwitchNote,
   wardrobeLineText,
 } from "@/features/castingV2/castingPathCopy";
-import { ImaginationToggle } from "@/features/castingV2/components/ImaginationToggle";
+import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
+import { castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
+import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
 import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "@shared/briefLength";
 import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
@@ -369,8 +371,9 @@ export default function CastingSheet() {
     holds only the user's own departure from it.
   */
   const [pathChoice, setPathChoice] = useState<CastingPath | null>(null);
-  /* The imagination meter for the NEXT roll (#131 slice E): her choice if she touched it, else the sheet's own, else LOW. */
+  /* The settings for the NEXT roll (#131 slice E, #142): her choice if she touched it, else the sheet's own, else the default. */
   const [imaginationChoice, setImaginationChoice] = useState<Imagination | null>(null);
+  const [styleChoice, setStyleChoice] = useState<CastStyle | null>(null);
 
   /** Closes synchronously on click; see `dispatchRoll` and `singleFlight.ts`. */
   const latchRef = useRef<DispatchLatch | null>(null);
@@ -820,6 +823,7 @@ export default function CastingSheet() {
           */
           ...(nextRollPath ? { path: nextRollPath } : {}),
           ...(nextImagination ? { imagination: nextImagination } : {}),
+          ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
       );
@@ -918,6 +922,10 @@ export default function CastingSheet() {
   */
   const nextImagination: Imagination | null = dockImaginationVisible
     ? (imaginationChoice ?? roll.data?.imagination ?? DEFAULT_IMAGINATION)
+    : null;
+  /* The style, the same way (#142): the sheet's own where it recorded one, else photoreal. */
+  const nextStyle: CastStyle | null = dockImaginationVisible
+    ? (styleChoice ?? roll.data?.style ?? DEFAULT_CAST_STYLE)
     : null;
 
   /*
@@ -2268,6 +2276,21 @@ export default function CastingSheet() {
             <span className="dpc-wardrobeline__line">{wardrobeLineText(sheetWardrobe)}</span>
           </p>
         ) : null}
+        {/*
+          THE SETTINGS THIS SHEET USED (#142: "shown on the sheet beside the
+          authored prompt — no hidden settings, ever"). The record line's own
+          shape, drawn off the ROW: an author register always recorded its
+          imagination, and records its style since the modal — an older author
+          row shows its imagination alone rather than a style it never stated.
+          A property of the roll, not of the account reading it, so like the
+          path line it is deliberately not behind the flag.
+        */}
+        {roll.data?.imagination ? (
+          <p className="dpc-wardrobeline">
+            <span className="dp-chrome">SETTINGS</span>
+            <span className="dpc-wardrobeline__line">{castSettingsRecord(roll.data.style, roll.data.imagination)}</span>
+          </p>
+        ) : null}
 
         {/*
           THE SHEET SAYS WHEN IT COULD NOT VARY.
@@ -2646,12 +2669,14 @@ export default function CastingSheet() {
               note={pathSwitchNote({ sheetPath, selected: nextRollPath })}
             />
           ) : null}
-          {nextImagination ? (
-            <ImaginationToggle
-              idPrefix="dpc-dock-imagination"
-              label="How far the author goes on the next roll"
-              value={nextImagination}
-              onChange={setImaginationChoice}
+          {/* THE GEAR (#142) for the next roll, where the meter's pills stood. */}
+          {nextImagination && nextStyle ? (
+            <CastSettingsButton
+              idPrefix="dpc-dock"
+              style={nextStyle}
+              imagination={nextImagination}
+              onStyle={setStyleChoice}
+              onImagination={setImaginationChoice}
             />
           ) : null}
           <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>

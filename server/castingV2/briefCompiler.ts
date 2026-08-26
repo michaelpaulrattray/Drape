@@ -71,6 +71,7 @@ import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief, interpreterEngine } from "./interpreter";
 import { authorPrompt, type Imagination } from "./promptAuthor";
+import type { CastStyle } from "../../shared/castStyles";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
 import { breakSignatureClusters, type VarianceReport } from "./varianceBudget";
@@ -396,6 +397,8 @@ export type BriefCompilerInput = {
    * invents an ownable look and leaves the face open. Ignored off the flag.
    */
   imagination?: Imagination;
+  /** The settings modal's style (#142) — read, like the meter, only on the author road. */
+  style?: CastStyle;
   /** Set on a follow roll; the sheet narrows around this candidate. */
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
@@ -1194,7 +1197,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     is what the row keeps and the sheet will show. Declared on #131 for his word.
   */
   const authored = authorEngine
-    ? await authorPrompt({ engine: authorEngine, briefText: scrubBrands(briefText) ?? briefText, imagination: input.imagination })
+    ? await authorPrompt({ engine: authorEngine, briefText: scrubBrands(briefText) ?? briefText, imagination: input.imagination, style: input.style })
     : null;
   const candidates = authored
     ? sheet.candidates.map((candidate) => ({ ...candidate, prompt: authored.prompt }))
@@ -1248,6 +1251,8 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
             register: {
               kind: "author",
               imagination: authored.imagination,
+              /* The style the block was chosen by (#142) — shown on the sheet beside the meter: no hidden settings, ever. */
+              style: authored.style,
               /*
                 `mode` says which of the three roads wrote this prompt (§5b/5c):
                 `seed` — LOW, no author call, the customer's words + the locked

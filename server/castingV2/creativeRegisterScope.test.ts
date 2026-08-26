@@ -26,6 +26,9 @@ import {
 } from "./castingV2Scope";
 import { INTERPRET_TIMEOUT_MS, interpreterSystemPrompt } from "./interpreter";
 import { castingBriefCompiler } from "./briefCompiler";
+import { houseBlockForStyle } from "./houseBlock";
+import { readCastStyle } from "./rollProjection";
+import { CAST_STYLES, CAST_STYLE_LINES, CAST_STYLE_NAMES, COMING_CAST_STYLES, DEFAULT_CAST_STYLE } from "../../shared/castStyles";
 import {
   AUTHOR_MAX_OUTPUT_TOKENS,
   authorAllowance,
@@ -840,5 +843,73 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
     });
     expect(sent(engine, "interpret")[0]?.system).toContain(COHORT_INSTRUCTION);
     expect(sent(engine, "interpret")[0]?.system).not.toContain(SUBJECT_INSTRUCTION);
+  });
+});
+
+/* ------------------------------------------------ the cast style (#142) */
+
+describe("the cast style (#142) — the settings modal's selector, one member today", () => {
+  it("the vocabulary: photoreal is the only style and the default; every style has a name and a line", () => {
+    expect([...CAST_STYLES]).toEqual(["photoreal"]);
+    expect(CAST_STYLES).toContain(DEFAULT_CAST_STYLE);
+    for (const style of CAST_STYLES) {
+      expect(CAST_STYLE_NAMES[style].length).toBeGreaterThan(0);
+      expect(CAST_STYLE_LINES[style].length).toBeGreaterThan(0);
+    }
+  });
+
+  it("coming-soon styles are his two, described and never a live style's name (§10b, rule 9)", () => {
+    expect(COMING_CAST_STYLES.map((c) => c.name)).toEqual(["Painted realism", "Glossy poster"]);
+    const live = new Set(Object.values(CAST_STYLE_NAMES).map((n) => n.toLowerCase()));
+    for (const coming of COMING_CAST_STYLES) {
+      expect(live.has(coming.name.toLowerCase()), coming.name).toBe(false);
+      expect(coming.line.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("the block is chosen by style, and today's one style is HOUSE_BLOCK byte for byte", () => {
+    expect(houseBlockForStyle("photoreal")).toBe(HOUSE_BLOCK);
+    expect(() => houseBlockForStyle("oil" as never)).toThrow(/no preset for style oil/);
+  });
+
+  it("the author records the style: absent means photoreal, given is kept — on LOW and on MAX alike", async () => {
+    const low = await authorPrompt({ engine: engineAnswering([]), briefText: THIN, imagination: "low" });
+    expect(low).toMatchObject({ style: "photoreal", mode: "seed", prompt: `${THIN}\n\n${HOUSE_BLOCK}` });
+    const max = await authorPrompt({ engine: engineAnswering([ADDITION]), briefText: THIN, imagination: "max", style: "photoreal" });
+    expect(max).toMatchObject({ style: "photoreal", mode: "authored", prompt: `${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}` });
+  });
+
+  it("the compile writes the style onto the register row, and the projection reads it back through a validator", async () => {
+    const on = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-style",
+      engine: engineAnswering([]),
+      creativeRegister: true,
+      imagination: "low",
+      style: "photoreal",
+    });
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", imagination: "low", style: "photoreal" });
+    expect(readCastStyle(on.compiledBrief)).toBe("photoreal");
+    /* An author row written BEFORE the style was recorded reads null — the sheet never back-fills a fact. */
+    expect(readCastStyle({ register: { kind: "author", imagination: "low" } })).toBeNull();
+    /* A house row, a garbage value, and no register at all all read null. */
+    expect(readCastStyle({ register: { kind: "house", style: "photoreal" } })).toBeNull();
+    expect(readCastStyle({ register: { kind: "author", style: "oil" } })).toBeNull();
+    expect(readCastStyle({})).toBeNull();
+    expect(readCastStyle(null)).toBeNull();
+  });
+
+  it("off the flag the row still carries no register — the style is inert off the author road by construction", async () => {
+    const off = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-style-off",
+      engine: engineAnswering([]),
+      creativeRegister: false,
+      style: "photoreal",
+    });
+    expect(off.compiledBrief.register).toBeUndefined();
+    expect(readCastStyle(off.compiledBrief)).toBeNull();
   });
 });

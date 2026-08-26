@@ -40,6 +40,7 @@ import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
 import type { Imagination } from "../../shared/imagination";
+import type { CastStyle } from "../../shared/castStyles";
 import {
   captureCastingBornInkEnabled,
   captureCastingFramingTrimEnabled,
@@ -233,6 +234,8 @@ export type CreateRollInput = {
    * construction rather than by a check here.
    */
   imagination?: Imagination;
+  /** The settings modal's style (#142); the meter's rule — inert off the author road by construction. */
+  style?: CastStyle;
   /**
    * Facts the user unpinned by removing a chip. Rolls are immutable, so this
    * can only ever affect the roll being created — never the one the chip was
@@ -522,6 +525,7 @@ export async function createRoll(
       briefFidelity,
       creativeRegister,
       imagination: input.imagination,
+      style: input.style,
       followPersonaLine,
       followIdentity,
     });

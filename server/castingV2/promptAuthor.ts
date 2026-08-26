@@ -61,7 +61,8 @@
 import type { TextEngine } from "../providers/types";
 import { INTERPRET_TIMEOUT_MS } from "./interpreter";
 import { createModuleLogger } from "../logging/logger";
-import { HOUSE_BLOCK, containsHouseSentence } from "./houseBlock";
+import { containsHouseSentence, houseBlockForStyle } from "./houseBlock";
+import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
 
 const log = createModuleLogger("promptAuthor");
 
@@ -187,22 +188,25 @@ export function neverWrittenIn(text: string): string | null {
  * byte: the brief first and unchanged, the author's content (MAX only), and
  * the locked house block LAST — each its own paragraph.
  */
-export function composeFinalPrompt(briefText: string, content: string | null): string {
+export function composeFinalPrompt(briefText: string, content: string | null, style: CastStyle = DEFAULT_CAST_STYLE): string {
   const parts = [briefText.trim()];
   if (content && content.trim().length > 0) parts.push(content.trim());
-  parts.push(HOUSE_BLOCK);
+  /* The block is the STYLE's (#142) — one member today, so these are `HOUSE_BLOCK`'s bytes. */
+  parts.push(houseBlockForStyle(style));
   return parts.join("\n\n");
 }
 
 /** Seed + block: what every LOW roll gets, and what a MAX roll falls back to. */
-export function staticPrompt(briefText: string): string {
-  return composeFinalPrompt(briefText, null);
+export function staticPrompt(briefText: string, style: CastStyle = DEFAULT_CAST_STYLE): string {
+  return composeFinalPrompt(briefText, null, style);
 }
 
 export type AuthoredPrompt = {
   /** The whole prompt the eight frames are painted from — brief, content, block. */
   prompt: string;
   imagination: Imagination;
+  /** Which locked bundle closed the prompt (#142) — the settings modal's style, photoreal unless told otherwise. */
+  style: CastStyle;
   /**
    * `seed` — LOW: no author call by design (seed + block is the whole spec);
    * `authored` — MAX: a text call wrote the content;
@@ -255,16 +259,19 @@ export async function authorPrompt(input: {
   engine: TextEngine;
   briefText: string;
   imagination?: Imagination;
+  /** The settings modal's style (#142). Absent means photoreal, the only style and the default. */
+  style?: CastStyle;
   signal?: AbortSignal;
 }): Promise<AuthoredPrompt> {
   const imagination = input.imagination ?? DEFAULT_IMAGINATION;
+  const style = input.style ?? DEFAULT_CAST_STYLE;
   const briefText = input.briefText.trim();
   const allowance = authorAllowance(briefText);
-  const houseBlockWords = countWords(HOUSE_BLOCK);
+  const houseBlockWords = countWords(houseBlockForStyle(style));
 
   if (imagination === "low") {
     return {
-      prompt: staticPrompt(briefText), imagination, mode: "seed", authored: false, content: null,
+      prompt: staticPrompt(briefText, style), imagination, style, mode: "seed", authored: false, content: null,
       addedWords: 0, houseBlockWords, allowance, model: null, latencyMs: null, attempts: 0,
     };
   }
@@ -290,7 +297,7 @@ export async function authorPrompt(input: {
   };
 
   const fallback = (latencyMs: number | null): AuthoredPrompt => ({
-    prompt: staticPrompt(briefText), imagination, mode: "static", authored: false, content: null,
+    prompt: staticPrompt(briefText, style), imagination, style, mode: "static", authored: false, content: null,
     addedWords: 0, houseBlockWords, allowance, model: null, latencyMs, attempts,
   });
 
@@ -313,7 +320,7 @@ export async function authorPrompt(input: {
       }
     }
     return {
-      prompt: composeFinalPrompt(briefText, content), imagination, mode: "authored", authored: true, content,
+      prompt: composeFinalPrompt(briefText, content, style), imagination, style, mode: "authored", authored: true, content,
       addedWords: countWords(content), houseBlockWords, allowance, model, latencyMs, attempts,
     };
   } catch (error) {

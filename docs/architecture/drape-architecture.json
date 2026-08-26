@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7902e272d11e6979"
+    "sourceFingerprint": "c14d338aefd09f11"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 43
+      "moduleCount": 45
     },
     {
       "id": "domain:client-shared",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 40
+      "moduleCount": 41
     },
     {
       "id": "domain:studio",
@@ -1479,6 +1479,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/castSettingsCopy.ts",
+      "path": "client/src/features/castingV2/castSettingsCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/castingPathCopy.ts",
       "path": "client/src/features/castingV2/castingPathCopy.ts",
       "domain": "castingV2",
@@ -1523,6 +1529,12 @@
     {
       "id": "module:client/src/features/castingV2/components/CardMenu.tsx",
       "path": "client/src/features/castingV2/components/CardMenu.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "path": "client/src/features/castingV2/components/CastSettingsModal.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -5573,6 +5585,12 @@
     {
       "id": "module:shared/candidateFailure.ts",
       "path": "shared/candidateFailure.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/castStyles.ts",
+      "path": "shared/castStyles.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -15422,6 +15440,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/castSettingsCopy.ts",
+      "to": "module:shared/castStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/castSettingsCopy.ts",
+      "to": "module:shared/imagination.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:client/src/features/castingV2/briefEcho.ts",
       "kind": "imports"
@@ -15459,6 +15487,31 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:client/src/features/castingV2/frameDecodes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "to": "module:client/src/features/castingV2/castSettingsCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "to": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "to": "module:shared/castStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "to": "module:shared/imagination.ts",
       "kind": "imports"
     },
     {
@@ -17883,6 +17936,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/castSettingsCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/chosenFrame.ts",
       "kind": "imports"
     },
@@ -17908,6 +17966,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/FacePanel.tsx",
       "kind": "imports"
     },
@@ -17919,11 +17982,6 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/faceSelection.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
       "kind": "imports"
     },
     {
@@ -18053,6 +18111,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:shared/castStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/clientRequestId.ts",
       "kind": "imports"
     },
@@ -18073,6 +18136,11 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
       "kind": "imports"
     },
@@ -18084,11 +18152,6 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/HeroMotion.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
       "kind": "imports"
     },
     {
@@ -18134,6 +18197,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:shared/castStyles.ts",
       "kind": "imports"
     },
     {
@@ -21872,6 +21940,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:shared/castStyles.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/briefLength.ts",
       "to": "module:shared/briefLength.ts",
       "kind": "imports"
@@ -22779,6 +22852,11 @@
     {
       "from": "module:server/castingV2/houseBlock.ts",
       "to": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/houseBlock.ts",
+      "to": "module:shared/castStyles.ts",
       "kind": "imports"
     },
     {
@@ -23904,6 +23982,11 @@
     {
       "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/promptAuthor.ts",
+      "to": "module:shared/castStyles.ts",
       "kind": "imports"
     },
     {
@@ -25578,6 +25661,11 @@
     },
     {
       "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:shared/castStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
       "to": "module:shared/imagination.ts",
       "kind": "imports"
     },
@@ -25744,6 +25832,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:shared/castStyles.ts",
       "kind": "imports"
     },
     {
@@ -29169,6 +29262,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/castStyles.ts",
       "kind": "imports"
     },
     {
@@ -33210,24 +33308,24 @@
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:245",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:253",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:245",
+      "subject": "server/castingV2/rollProjection.ts:253",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:219",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:220",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:219",
+      "subject": "server/castingV2/rollService.ts:220",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:275",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:278",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:275",
+      "subject": "server/castingV2/rollService.ts:278",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]
