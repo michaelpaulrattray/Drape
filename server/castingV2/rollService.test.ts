@@ -356,6 +356,30 @@ describe("the sequence", () => {
     expect(seen).toEqual(["max"]);
   });
 
+  it("on the author road NO path is born and no wardrobe pick is asked, even inside the two-paths flag (review of #138, finding 1)", async () => {
+    vi.stubEnv("CASTING_V2_SCOPE", "all");
+    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
+    try {
+      const seen: { path?: unknown; pickWardrobe?: unknown }[] = [];
+      const dependencies = baseDependencies();
+      const compileBrief = (dependencies as { compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => unknown }).compileBrief;
+      await createRoll(
+        {
+          ...(dependencies as object),
+          twoPathsEnabled: () => true,
+          compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => {
+            seen.push({ path: input.path, pickWardrobe: input.pickWardrobe });
+            return compileBrief(input);
+          },
+        } as never,
+        { ...INPUT, path: "wardrobe" as never },
+      );
+      expect(seen).toEqual([{ path: null, pickWardrobe: false }]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("and absent stays absent — the author's default is the compiler's to apply, never a second copy here", async () => {
     const seen: (string | undefined)[] = [];
     await createRoll(compileSpy(seen), INPUT);

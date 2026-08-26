@@ -401,8 +401,26 @@ export async function createRoll(
     above the insert, which was the right place while the only thing it decided
     was two columns.
   */
+  /*
+    THE AUTHOR ROAD, DECIDED FIRST (#131 slice E; review of PR #138, finding 1):
+    the register scope captured once, and the road predicate — flagged AND no
+    anchor AND no chip edit — stated here from the same inputs the compiler
+    reads (`houseBecause`). Two things below hang on it: the brief bound and
+    the PATH. On the author road the engine dresses the cast from the prompt
+    (ruling rule 11 — the switch is retired), so no path is born, no wardrobe
+    pick is asked, and no line is recorded that the authored prompt would only
+    discard; a sheet that drew "WARDROBE — <line>" over an outfit the engine
+    was never told about was the review's finding.
+  */
+  const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
+  const authorRoad =
+    creativeRegister
+    && !input.followCandidatePublicId
+    && (input.unlock ?? []).length === 0
+    && !Object.values(input.overrides ?? {}).some((value) => value != null);
+
   const twoPathsEnabled = dependencies.twoPathsEnabled ?? captureCastingTwoPathsEnabled;
-  const bornPath: CastingPath | null = twoPathsEnabled(input.userId)
+  const bornPath: CastingPath | null = twoPathsEnabled(input.userId) && !authorRoad
     ? input.path ?? DEFAULT_CASTING_PATH
     : null;
 
@@ -466,26 +484,14 @@ export async function createRoll(
   const briefFidelity = captureCastingBriefFidelityEnabled(input.userId);
 
   /*
-    THE CREATIVE REGISTER, captured once for the same reason. It governs WHICH
-    REGISTER the eight slices are written in, which is a property of the
-    compile, so it is read here and handed down. Off, the compiler's bytes on
-    the wire are byte-identical to today's — the design's own §1a.
-  */
-  const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
-  /*
     THE BRIEF BOUND, PER ROAD (#131 slice D, `briefLength.ts`). The entrance
     admits 4,000 so an authored prompt can come back as the next brief; this
     line is what keeps every HOUSE-composed roll exactly where it was — every
     unflagged account, and a flagged account's FOLLOW or chip-edited roll, which
     compose house (`briefCompiler`'s `houseBecause`; the review of PR #137,
-    finding 2). The predicate is the compiler's, from the same inputs. Free,
-    before the claim, on both roads.
+    finding 2). `authorRoad` is decided above the path, from the same inputs.
+    Free, before the claim, on both roads.
   */
-  const authorRoad =
-    creativeRegister
-    && !input.followCandidatePublicId
-    && (input.unlock ?? []).length === 0
-    && !Object.values(input.overrides ?? {}).some((value) => value != null);
   const tooLong = briefTooLong(input.briefText, authorRoad);
   if (tooLong) throw new TRPCError({ code: "BAD_REQUEST", message: tooLong });
 

@@ -1,5 +1,5 @@
 import { ScopePill } from "@/foundation";
-import { DEFAULT_IMAGINATION, IMAGINATION_LINES, IMAGINATION_NAMES, IMAGINATIONS, type Imagination } from "@shared/imagination";
+import { IMAGINATION_LINES, IMAGINATION_NAMES, IMAGINATIONS, type Imagination } from "@shared/imagination";
 
 /**
  * THE IMAGINATION METER (#131 slice E) — drawn ONLY for an account on the
@@ -45,4 +45,3 @@ export function ImaginationToggle({
   );
 }
 
-export { DEFAULT_IMAGINATION };
