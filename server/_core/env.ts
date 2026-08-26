@@ -33,6 +33,7 @@ import {
   CASTING_OPEN_LANE_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
+  CASTING_RETRY_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
@@ -65,6 +66,7 @@ import {
   validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRefineDispatchEnvironment,
+  validateCastingRetryEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
@@ -391,6 +393,16 @@ export function validateEnv(): void {
   */
   validateCastingRefineDispatchEnvironment({
     scope: process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    The Retry button (#122 shape 1). Parent is the CASTING scope alone: what a
+    retry re-renders is a slice of a roll, so a user with no roll has nothing
+    to retry, and nothing narrower is involved — the slice is painted by the
+    roll road's own dispatcher.
+  */
+  validateCastingRetryEnvironment({
+    scope: process.env[CASTING_RETRY_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*

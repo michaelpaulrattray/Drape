@@ -2781,3 +2781,86 @@ export function validateCastingCreativeRegisterEnvironment(input: {
   }
   return register;
 }
+
+/* --------------------------------------------------- the retry sub-flag */
+
+/**
+ * THE RETRY BUTTON (#122 shape 1) — whether one failed sheet slice may be
+ * rendered again, same words, for 20 credits, refunded again on failure.
+ *
+ * His own word (2026-08-26): *"should we also allow a try option aswell?"* —
+ * yes, on engine-error and didn't-arrive tiles. Off, and absent means off,
+ * `castingV2.retry` answers NOT_FOUND before a row is read and the config
+ * answers `retryEnabled: false`, so the tile never draws a button the door
+ * would refuse. Not one line of the road runs.
+ *
+ * Its parent is `CASTING_V2_SCOPE` and nothing narrower: what it re-renders
+ * is a slice of a ROLL, and a user outside casting has no roll to retry. It
+ * is a flag rather than a plain copy change because it is a new PAID
+ * procedure — and its live population on production is measured zero (every
+ * failed slice ever is `content_policy`, which this shape deliberately does
+ * not serve), so dark costs nobody anything and `users:1` is his to say.
+ */
+export const CASTING_RETRY_SCOPE_ENV = "CASTING_RETRY_SCOPE";
+
+export class CastingRetryScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_RETRY_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingRetryScopeConfigurationError";
+  }
+}
+
+export class CastingRetryCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_RETRY_SCOPE_ENV} ${detail}`);
+    this.name = "CastingRetryCoverageError";
+  }
+}
+
+export function parseCastingRetryScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingRetryScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user may retry a failed slice. An AND of the chain at the
+ * point of use, for its siblings' reason: the boot check refuses a scope
+ * reaching past its parent, and a boot check nobody invoked is the second way
+ * a flag pair goes wrong.
+ */
+export function captureCastingRetryEnabled(userId: number): boolean {
+  const child = parseCastingRetryScope(process.env[CASTING_RETRY_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingRetryEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingRetryScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingRetryCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no slice to retry`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingRetryCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingRetryCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

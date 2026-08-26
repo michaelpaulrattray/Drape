@@ -203,7 +203,8 @@ type OperationLedger = {
  * the moment one is not, it is a second refund. Reading is exact and cannot
  * pay anyone twice.
  */
-async function readOperationLedger(
+/** Exported for the retry adjudicator (`retryRecovery.ts`), which reads ONE row with the same rule. */
+export async function readOperationLedger(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   operation: { id: string; userId: number },
   candidates: readonly CandidateRow[],

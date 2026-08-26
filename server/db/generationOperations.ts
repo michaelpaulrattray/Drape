@@ -2117,3 +2117,28 @@ export async function getGenerationOperationOutcomeByClaim(
   }
   return outcomeFromExisting(operation);
 }
+
+/**
+ * The lock an operation holds, by operation — the RETRY adjudicator's link
+ * to its one candidate (`retryRecovery.ts`).
+ *
+ * A retry operation carries no payload and no roll points at it; what it does
+ * carry, from the claim and BEFORE any money, is the candidate lock
+ * (`casting-candidate:<id>`), deleted only by the finalizers — so for the whole
+ * window recovery cares about, the lock row is where the slice's identity
+ * lives. Null when the operation holds no lock, which the adjudicator treats
+ * as *cannot settle* rather than as *nothing to settle*.
+ */
+export async function getOperationLockByOperation(
+  operationId: string,
+): Promise<{ lockKey: string; kind: string } | null> {
+  assertOperationIdentity(operationId);
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [row] = await db
+    .select({ lockKey: generationOperationLocks.lockKey, kind: generationOperationLocks.kind })
+    .from(generationOperationLocks)
+    .where(eq(generationOperationLocks.operationId, operationId))
+    .limit(1);
+  return row ?? null;
+}

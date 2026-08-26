@@ -56,11 +56,14 @@ import {
   parseCastingRepaintScope,
   validateCastingRepaintEnvironment,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
+  CASTING_RETRY_SCOPE_ENV,
   CastingRefineDispatchScopeConfigurationError,
   CastingRefineDispatchCoverageError,
   parseCastingRefineDispatchScope,
   captureCastingRefineDispatchEnabled,
+  captureCastingRetryEnabled,
   validateCastingRefineDispatchEnvironment,
+  validateCastingRetryEnvironment,
 } from "./castingV2Scope";
 
 /**
@@ -866,5 +869,43 @@ describe("the refine dispatch scope — whether the paid half stops holding the 
        invoked is the second way a flag pair goes wrong. */
     process.env[CASTING_V2_SCOPE_ENV] = "off";
     expect(captureCastingRefineDispatchEnabled(1)).toBe(false);
+  });
+});
+
+describe("CASTING_RETRY_SCOPE — the Retry button (#122 shape 1)", () => {
+  it("is off by default and refuses a malformed value", () => {
+    expect(validateCastingRetryEnvironment({ scope: undefined, castingScope: "all" })).toEqual({ kind: "off" });
+    expect(validateCastingRetryEnvironment({ scope: "off", castingScope: "off" })).toEqual({ kind: "off" });
+    expect(() => validateCastingRetryEnvironment({ scope: "yes", castingScope: "all" }))
+      .toThrow(/CASTING_RETRY_SCOPE must be/);
+  });
+
+  it("refuses to reach past CASTING_V2_SCOPE — there is no slice to retry", () => {
+    expect(() => validateCastingRetryEnvironment({ scope: "all", castingScope: "off" }))
+      .toThrow(/no slice to retry/);
+    expect(() => validateCastingRetryEnvironment({ scope: "all", castingScope: "users:1" }))
+      .toThrow(/cannot be "all"/);
+    expect(() => validateCastingRetryEnvironment({ scope: "users:1,3", castingScope: "users:1,2" }))
+      .toThrow(/names users outside CASTING_V2_SCOPE: 3/);
+    expect(validateCastingRetryEnvironment({ scope: "users:1", castingScope: "users:1,2" }))
+      .toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingRetryEnvironment({ scope: "users:1", castingScope: "all" }))
+      .toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is enabled only when the whole chain names the user", () => {
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    process.env[CASTING_RETRY_SCOPE_ENV] = "users:1";
+    expect(captureCastingRetryEnabled(1)).toBe(true);
+    expect(captureCastingRetryEnabled(2)).toBe(false);
+
+    /* The point-of-use AND, driven on its own link. */
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
+    expect(captureCastingRetryEnabled(1)).toBe(false);
+
+    /* Absent means off — the default every account is on today. */
+    process.env[CASTING_V2_SCOPE_ENV] = "all";
+    delete process.env[CASTING_RETRY_SCOPE_ENV];
+    expect(captureCastingRetryEnabled(1)).toBe(false);
   });
 });

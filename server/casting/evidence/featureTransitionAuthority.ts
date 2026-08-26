@@ -49,6 +49,8 @@ export const FEATURE_TRANSITION_AUTHORITY:
     */
     "castingV2.sign": "not_applicable",
     "castingV2.refine": "not_applicable",
+    // Pre-Sign, like the roll it re-renders one slice of.
+    "castingV2.retry": "not_applicable",
   };
 
 export const FEATURE_BLIND_OPERATION_MESSAGE =

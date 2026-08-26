@@ -957,7 +957,14 @@ export async function setRollStatus(input: {
   userId: number;
   rollId: number;
   status: "generating" | "complete" | "partial" | "failed" | "cancelled";
-  from?: readonly ("pending" | "generating")[];
+  /*
+    The roll road moves a roll out of `pending`/`generating` and nowhere else.
+    A RETRY (#122 shape 1) is the one writer that moves a TERMINAL roll — a
+    rescued slice turns `failed` into `partial` and `partial` into `complete`
+    — and it says so by naming the terminal pair here, so the default keeps
+    the roll road's own guard byte for byte.
+  */
+  from?: readonly ("pending" | "generating" | "partial" | "failed")[];
 }): Promise<boolean> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.rollId, "rollId");
@@ -1538,4 +1545,164 @@ export async function deleteCandidateRowsIn(
       isNull(castingCandidates.keptAt),
     ));
   return affectedRows(result);
+}
+
+/* ------------------------------------------------------------ the retry */
+
+/**
+ * The slice a RETRY may act on — the candidate with its roll's state, in one
+ * owner-scoped statement (#122 shape 1; `CASTING_V2_RETRY_DESIGN.md`).
+ *
+ * Reads the row WHATEVER its status: the service's admission door refuses
+ * a non-failed row with a sentence, and a reader that filtered on `failed`
+ * would turn every wrong-state tap into "not found", which blames the
+ * customer for a race the sheet can lose honestly (a poll 2.5 s stale).
+ */
+export async function getOwnedCandidateForRetry(
+  userId: number,
+  candidatePublicId: string,
+): Promise<{
+  candidate: Pick<
+    CastingCandidate,
+    "id" | "publicId" | "position" | "status" | "pointsCost" | "failureClass" | "internalPrompt" | "attemptCount"
+  >;
+  roll: Pick<CastingRoll, "id" | "publicId" | "status" | "compiledBrief">;
+} | null> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      candidateId: castingCandidates.id,
+      candidatePublicId: castingCandidates.publicId,
+      position: castingCandidates.position,
+      candidateStatus: castingCandidates.status,
+      pointsCost: castingCandidates.pointsCost,
+      failureClass: castingCandidates.failureClass,
+      internalPrompt: castingCandidates.internalPrompt,
+      attemptCount: castingCandidates.attemptCount,
+      rollId: castingRolls.id,
+      rollPublicId: castingRolls.publicId,
+      rollStatus: castingRolls.status,
+      compiledBrief: castingRolls.compiledBrief,
+    })
+    .from(castingCandidates)
+    .innerJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
+    ))
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+    ))
+    .limit(1);
+  if (!row) return null;
+  return {
+    candidate: {
+      id: row.candidateId,
+      publicId: row.candidatePublicId,
+      position: row.position,
+      status: row.candidateStatus,
+      pointsCost: row.pointsCost,
+      failureClass: row.failureClass,
+      internalPrompt: row.internalPrompt,
+      attemptCount: row.attemptCount,
+    },
+    roll: { id: row.rollId, publicId: row.rollPublicId, status: row.rollStatus, compiledBrief: row.compiledBrief },
+  };
+}
+
+/**
+ * `failed → queued` — THE ONE TRANSITION OUT OF `failed`, and a retry is its
+ * only writer (#122 shape 1).
+ *
+ * One statement, CAS on `failed`: two taps, a sweep and a cancel all race
+ * for the same row and exactly one wins. `pointsCost` is set HERE, in the
+ * same statement as the status, because the row is the refund authority
+ * (`dispatchCandidate` refunds what the row says) and a slice whose cost
+ * and status could disagree is a refund that could be wrong. The failure
+ * class and provenance are cleared with it: the tile is casting again and
+ * must not carry yesterday's chip.
+ *
+ * The prior class is NOT kept on the row — the service holds it for the one
+ * path that needs it back (a charge that did not land,
+ * `restoreCandidateFailure`).
+ */
+export async function resetCandidateForRetry(input: {
+  userId: number;
+  candidateId: number;
+  pointsCost: number;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.candidateId, "candidateId");
+  if (!Number.isSafeInteger(input.pointsCost) || input.pointsCost < 0) {
+    throw new TypeError("pointsCost must be a non-negative integer");
+  }
+  const db = await requireDb();
+  const result = await db
+    .update(castingCandidates)
+    .set({
+      status: "queued",
+      pointsCost: input.pointsCost,
+      failureClass: null,
+      provider: null,
+      providerModel: null,
+      providerRef: null,
+    })
+    .where(and(
+      eq(castingCandidates.id, input.candidateId),
+      eq(castingCandidates.userId, input.userId),
+      eq(castingCandidates.status, "failed"),
+    ));
+  return affectedRows(result) === 1;
+}
+
+/**
+ * `queued → failed` WITH A NAMED CLASS — the retry's un-charge path.
+ *
+ * When the retry's deduct does not land, nothing was dispatched and the slice
+ * is exactly what it was before the tap: its ORIGINAL failure, already
+ * refunded. Writing `unpaid` here (the roll road's word for a slice that
+ * never ran) would make the tile say *"not charged"* about a slice whose
+ * first attempt WAS charged and refunded — so the original class goes back,
+ * and the tile keeps saying what was true.
+ *
+ * CAS on `queued`: only the row the reset just moved can be moved back.
+ */
+export async function restoreCandidateFailure(input: {
+  userId: number;
+  candidateId: number;
+  failureClass: string;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.candidateId, "candidateId");
+  const db = await requireDb();
+  const result = await db
+    .update(castingCandidates)
+    .set({ status: "failed", failureClass: input.failureClass.slice(0, 24) })
+    .where(and(
+      eq(castingCandidates.id, input.candidateId),
+      eq(castingCandidates.userId, input.userId),
+      eq(castingCandidates.status, "queued"),
+    ));
+  return affectedRows(result) === 1;
+}
+
+/**
+ * Every candidate status on a roll, for the retry's roll-status rewrite.
+ * A rescued slice makes a `failed` roll `partial` and a `partial` roll
+ * `complete`; the answer is read from the rows, never inferred from one
+ * settlement.
+ */
+export async function listRollCandidateStatuses(
+  userId: number,
+  rollId: number,
+): Promise<CastingCandidate["status"][]> {
+  assertPositiveId(userId, "userId");
+  assertPositiveId(rollId, "rollId");
+  const db = await requireDb();
+  const rows = await db
+    .select({ status: castingCandidates.status })
+    .from(castingCandidates)
+    .where(and(eq(castingCandidates.rollId, rollId), eq(castingCandidates.userId, userId)));
+  return rows.map((row) => row.status);
 }

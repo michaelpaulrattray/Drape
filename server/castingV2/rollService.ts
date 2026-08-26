@@ -949,7 +949,7 @@ export async function createRoll(
   };
 }
 
-type Settlement = {
+export type Settlement = {
   outcome: "ready" | "expired" | "failed" | "skipped";
   refundedCredits: number;
   refundUnrecorded?: boolean;
@@ -962,8 +962,15 @@ type Settlement = {
  *
  * Every exit is either delivered or refunded, never both and never neither —
  * which is the property the whole billing design rests on.
+ *
+ * EXPORTED for exactly one second caller — the RETRY (`retryService.ts`,
+ * #122 shape 1), which renders one failed slice again under an operation of
+ * its own. It is the same unit on purpose: the smoke alarm, the trim, the
+ * store, the landing CAS, the born-ink mint and the per-slice refund are what
+ * make a delivered frame a delivered frame, and a second copy of that list
+ * would be the parallel copy working law 4 is about.
  */
-async function dispatchCandidate(input: {
+export async function dispatchCandidate(input: {
   dependencies: RollServiceDependencies;
   engine: CreativeEngine;
   userId: number;

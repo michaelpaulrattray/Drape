@@ -46,6 +46,31 @@ export const CANDIDATE_FAILURE_KINDS = [
 export type CandidateFailureKind = (typeof CANDIDATE_FAILURE_KINDS)[number];
 
 /**
+ * THE KINDS A PLAIN RETRY SERVES (#122 shape 1) - the founder's own list,
+ * verbatim: *"Retry on engine-error/didn't-arrive tiles - same prompt, one
+ * slice, 20 credits, refunded again on failure"*. The other shape - *"Retry
+ * with softer wording"* on content-filter tiles - is the rewrite road
+ * (#129/#93) and is NOT this list; a content-filter tile gets no plain retry
+ * until his word says otherwise (the patrol's coin-per-render finding is a
+ * question on his desk, not a widening taken here).
+ *
+ * Declared ONCE and read by BOTH the server's admission door
+ * (`retryService.ts`) and the tile that draws the button, so the button can
+ * never be drawn on a tile the door would refuse (working law 4).
+ *
+ * `render_fault` is deliberately absent: a contact sheet is the engine
+ * misreading the prompt, and re-sending the same words is the same coin - his
+ * sentence names engine errors, and this list says what his sentence says.
+ * `unpaid` is absent because there is nothing to retry: that slice never ran
+ * and was never charged.
+ */
+export const RETRYABLE_FAILURE_KINDS = ["engine", "unknown"] as const satisfies readonly CandidateFailureKind[];
+
+export function isRetryableFailure(kind: CandidateFailureKind): boolean {
+  return (RETRYABLE_FAILURE_KINDS as readonly CandidateFailureKind[]).includes(kind);
+}
+
+/**
  * From the row's `failureClass` (the `ProviderFailureClass` union plus the
  * roll road's own `unpaid`, `unrecovered` and `provider_delivered_unlanded`)
  * to a kind. A string in, because the shared layer cannot import the server's
