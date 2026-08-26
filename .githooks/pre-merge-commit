@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# Runs before git creates an AUTOMATIC merge commit (a `git merge` with nothing
+# left to resolve by hand). Its one job is Retro guard R1: if the atlas merge
+# driver queued a regeneration, do it now, on the merged tree — see
+# .githooks/atlas-regenerate. A merge that stops on other conflicts never
+# reaches this hook; the commit that resolves it runs pre-commit, which calls
+# the same script.
+#
+# Installed by:  git config core.hooksPath .githooks
+
+exec "$(dirname "$0")/atlas-regenerate" automatic

@@ -28,6 +28,9 @@
 #
 # Installed by:  git config core.hooksPath .githooks
 
+# ---------------------------------------------------------------- ARM 0 (R1)
+"$(dirname "$0")/atlas-regenerate" || exit 1
+
 # ---------------------------------------------------------------- ARM 1 (R3)
 branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
 case "$branch" in

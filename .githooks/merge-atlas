@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# THE ATLAS MERGE DRIVER — half of Retro guard R1 (docs/RETRO_LOG.md, card
+# #100). The generated map (`docs/architecture/drape-architecture.json` and the
+# capability atlas pair) is regenerated on every branch, so any two branches
+# that both touched it CONFLICT the moment one merges. Resolving that by hand
+# is wrong by construction — the only correct content is a fresh generation on
+# the MERGED tree — and the stall it caused (#78/#79/#86, two rite refusals)
+# is the repeat this driver retires.
+#
+# WHAT IT DOES NOT DO: regenerate here. A merge driver runs while git's merge
+# is still in memory; the working tree does not yet hold the merged sources,
+# so a generator run from this process would read the wrong tree. Instead it
+# (1) accepts one side unchanged as a PLACEHOLDER so git sees no conflict, and
+# (2) leaves a marker in the git dir naming the path. `.githooks/atlas-regenerate`
+# — run by pre-merge-commit (an automatic merge commit) and by pre-commit (a
+# commit after other conflicts were resolved by hand) — is what regenerates on
+# the merged tree, stages the result and clears the marker. Until it runs the
+# file on disk is a placeholder, and the rite's freshness check refuses to
+# push one, so a placeholder cannot reach main.
+#
+# Arguments are git's: %O ancestor, %A ours (the result is written here),
+# %B theirs, %P the path. Registered per clone, like the hooks path:
+#
+#   git config merge.atlas.driver '.githooks/merge-atlas %O %A %B %P'
+#
+# .gitattributes names the files it applies to (`merge=atlas`). The rite
+# refuses to run when this config is absent, for the same reason it refuses
+# without core.hooksPath.
+
+pathname=$4
+[ -n "$pathname" ] || { echo "merge-atlas: called without a path (%P)" >&2; exit 1; }
+
+gitdir=$(git rev-parse --git-dir 2>/dev/null)
+[ -n "$gitdir" ] || { echo "merge-atlas: not inside a git repository" >&2; exit 1; }
+
+printf '%s\n' "$pathname" >> "$gitdir/DRAPE_ATLAS_REGENERATE" || exit 1
+echo "atlas: $pathname changed on both sides — placeholder kept, regeneration queued for the merge commit" >&2
+exit 0

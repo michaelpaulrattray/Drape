@@ -259,6 +259,22 @@ if (hooksPath !== ".githooks") {
   process.exit(1);
 }
 /*
+  The atlas merge driver is the same shape of local config (Retro guard R1,
+  #100): `.gitattributes` names the generated files, but the driver that
+  resolves them by regenerating on the merged tree is registered per clone.
+  Without it a merge leaves conflict markers in a file nobody should edit by
+  hand — the stall class this guard retires — so the rite says so here, where
+  the hooks path is already checked, rather than at the next stalled PR.
+*/
+const atlasDriver = git("config", "merge.atlas.driver");
+if (!/\.githooks\/merge-atlas %O %A %B %P/.test(atlasDriver)) {
+  console.log(
+    `REFUSED: merge.atlas.driver is ${atlasDriver || "unset"} — the generated map would be merged by hand.\n`
+    + "  git config merge.atlas.driver '.githooks/merge-atlas %O %A %B %P'",
+  );
+  process.exit(1);
+}
+/*
   THE CUSTODY CHECKS THAT ARE CHEAP ENOUGH TO RUN EVERY TIME (ruled fable-1320
   §1, from the census landing).
 
@@ -285,6 +301,10 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
     .trim().split(/\r?\n/).slice(-3).join(" · ");
   if (result.status !== 0) {
     console.log(`REFUSED: ${label} check is RED — the push does not fire. ${printed}`);
+    /* Both refusals on the night of #78/#79/#86 were LOCAL staleness — the
+       generated file on disk behind the source — and the repair is one line.
+       Printing it beside the refusal is the second half of Retro guard R1. */
+    console.log("  repair: pnpm architecture:generate && pnpm capability:generate — then review the diff and commit it");
     process.exit(1);
   }
   console.log(`  ${label}: ok`);
