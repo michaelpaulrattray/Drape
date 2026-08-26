@@ -140,14 +140,29 @@ describe("the author's instructions (the ruling, at the text)", () => {
     expect(low).toContain("at most 120 words");
   });
 
-  it("MAX carries his §5 instruction AND his casting-call amendment — the face and a few axes stay open", () => {
+  it("MAX carries his §5 instruction AND his casting-call amendment — as ONE PERSON, ONE FRAME: the open axes are left open by SILENCE", () => {
     const max = maxSystemPrompt(200);
     expect(max).toContain("Treat the user request only as a seed.");
     expect(max).toContain("Midjourney-level identity");
-    expect(max).toContain("THIS IS A CASTING CALL, NOT A PORTRAIT");
-    expect(max).toContain("LEAVE OPEN the face itself and a few axes");
+    expect(max).toContain("ONE PERSON, ONE FRAME");
+    expect(max).toContain("SAY NOTHING about the face itself and a few axes");
+    expect(max).toContain("never count the casts");
     expect(max).toContain("You may add; you may not take away.");
     expect(max).toContain("at most 200 words");
+  });
+
+  it("a draft that narrates the SET is refused by name and re-asked once (dev roll 95 — 7 of 8 tiles were contact-sheet grids)", async () => {
+    expect(neverWrittenIn("this is the signature that must repeat across all eight")).toBe("eight");
+    expect(neverWrittenIn("pick one direction per subject, never both")).toBe("per subject");
+    expect(neverWrittenIn("build ranges from lean to fuller, left open across the set")).toBe("across the set");
+    expect(neverWrittenIn("a fine black choker with a jet stone at the throat")).toBeNull();
+    const engine = engineAnswering(["Skin left open across the set, lips oxblood on every subject.", ADDITION]);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
+    const calls = sent(engine, "author");
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.system).toContain('used the word "across the set"');
+    expect(out).toMatchObject({ authored: true, attempts: 2 });
+    expect(out.prompt).toBe(`${THIN}\n\n${ADDITION}`);
   });
 
   it("the bundle says the prompt overrides it, and carries framing, background, lighting and quality", () => {

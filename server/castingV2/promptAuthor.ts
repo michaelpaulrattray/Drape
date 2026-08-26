@@ -108,6 +108,29 @@ export const PHOTOREAL_BUNDLE =
  */
 export const NEVER_WRITTEN: ReadonlyArray<{ word: string; because: string }> = [
   { word: "sternum", because: "refused 2/2 alone and 8/8 in a passing brief (court §4); 'collarbones' passes" },
+  /*
+    THE SET WORDS (2026-08-26, dev roll 95, the first MAX roll through the real
+    entrance): the casting-call clause as first written made the author DESCRIBE
+    THE SET — "pick one direction per subject", "must repeat across all eight",
+    "left open across the set", "some subjects … others" — and GPT Image 2
+    painted the set in one frame: 7 of 8 tiles were contact-sheet grids of one
+    woman (`output/_shift131c/e-sheet-dock-dark.png`). A prompt is ONE person
+    in ONE frame; a draft that narrates the set is refused and re-asked once,
+    exactly as a draft that says "sternum" is.
+  */
+  { word: "eight", because: "counting the casts made the engine paint them all in one frame (dev roll 95, 7/8 grids)" },
+  { word: "per subject", because: "set narration → contact-sheet grids (dev roll 95)" },
+  { word: "each subject", because: "set narration → contact-sheet grids (dev roll 95)" },
+  { word: "some subjects", because: "set narration → contact-sheet grids (dev roll 95)" },
+  { word: "across the set", because: "set narration → contact-sheet grids (dev roll 95)" },
+  { word: "across all", because: "set narration → contact-sheet grids (dev roll 95)" },
+  { word: "the set", because: "set narration → contact-sheet grids (dev roll 95)" },
+  { word: "left open", because: "narrating an omission is set language; an omission is silence (dev roll 95)" },
+  { word: "varies", because: "set narration → contact-sheet grids (dev roll 95)" },
+  { word: "lineup", because: "a lineup is a set in one frame" },
+  { word: "line-up", because: "a lineup is a set in one frame" },
+  { word: "contact sheet", because: "a contact sheet is a set in one frame" },
+  { word: "grid", because: "a grid is a set in one frame" },
 ];
 
 const APPEND_RULE =
@@ -159,7 +182,7 @@ export function maxSystemPrompt(allowance: number): string {
     "- Stay true to the core identity (age range, gender presentation, and the requested aesthetic direction).",
     "- Write a rich, detailed, opinionated prompt that feels like high-end Midjourney character design, but worded cleanly for GPT Image 2 (no NSFW triggers).",
     "",
-    "THIS IS A CASTING CALL, NOT A PORTRAIT. The engine will cast EIGHT different people from your one prompt, and they must be eight different people who share the look. So choose deliberately what to pin and what to leave open: pin the things that make the look ownable (a hair cut and colour, a makeup signature, a piece of jewellery, a bone-structure direction) and LEAVE OPEN the face itself and a few axes — some of hair, build, age within the band, expression — so no two of the eight are the same person. Never describe one specific individual so completely that the engine can only paint her once.",
+    "ONE PERSON, ONE FRAME. Your text describes a single person for a single photograph. The studio runs it several times, once per cast, and wherever your text is silent the engine paints a different person each run. So never write about a set, a series, a group, a range or alternatives; never count the casts; never say 'X or Y — pick one'; never narrate what you are leaving to the engine. To keep the casts from all being one person: pin the things that make the look ownable (a hair cut and colour, a makeup signature, a piece of jewellery, a bone-structure direction) and SAY NOTHING about the face itself and a few axes — the exact features, and some of build, age within the band, expression. Omission is how a thing stays open. Never describe one specific individual so completely that the engine can only paint her once.",
     "",
     "HOUSE RULES (the studio's, after the instruction above):",
     `- ${PHOTOREAL_BUNDLE}`,
