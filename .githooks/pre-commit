@@ -54,13 +54,26 @@ case "$branch" in
 esac
 
 # ---------------------------------------------------------------- ARM 2 (R4)
+# The scan needs grep's -P (Git for Windows and GNU grep have it; BSD grep
+# does not). A guard whose dependency is missing REFUSES rather than allows
+# (enforcement invariant 7) — otherwise a platform without -P would pass every
+# byte silently and read as clean.
+if ! printf 'a' | LC_ALL=C grep -q -P 'a' 2>/dev/null; then
+  echo "" >&2
+  echo "REFUSED — this grep has no -P, so the control-byte scan cannot run." >&2
+  echo "Install GNU grep (or run the commit from Git Bash) rather than bypassing." >&2
+  echo "" >&2
+  exit 1
+fi
+
 # Staged paths that will exist after the commit (added, copied, modified,
-# renamed) — a deletion has no blob to scan.
-git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | while IFS= read -r path; do
+# renamed) — a deletion has no blob to scan. One listing for the whole index:
+# `-` in the first numstat column is git's own verdict that the blob is
+# binary, honouring .gitattributes and its content heuristic alike.
+# --no-renames keeps the path column a plain path (no `old => new`).
+tab=$(printf '\t')
+git diff --cached --numstat --no-renames --diff-filter=ACMR 2>/dev/null | while IFS="$tab" read -r added _deleted path; do
   [ -n "$path" ] || continue
-  # `-` in the first numstat column is git's own verdict that the blob is
-  # binary, honouring .gitattributes and its content heuristic alike.
-  added=$(git diff --cached --numstat -- "$path" 2>/dev/null | awk 'NR==1 {print $1}')
   [ "$added" = "-" ] && continue
   hit=$(git show ":$path" 2>/dev/null | LC_ALL=C grep -a -o -b -m 1 -P '[\x00-\x08\x0B\x0C\x0E-\x1F]' 2>/dev/null | head -n 1)
   if [ -n "$hit" ]; then
