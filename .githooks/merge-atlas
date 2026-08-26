@@ -19,6 +19,11 @@
 # file on disk is a placeholder, and the rite's freshness check refuses to
 # push one, so a placeholder cannot reach main.
 #
+# STATED LIMIT: `git rebase` and `git cherry-pick` call merge drivers too but
+# make their commits without pre-commit, so a placeholder can land in a
+# rebased commit; the marker survives and the NEXT `git commit` regenerates
+# and stages the map. The rite's freshness check is the backstop either way.
+#
 # Arguments are git's: %O ancestor, %A ours (the result is written here),
 # %B theirs, %P the path. Registered per clone, like the hooks path:
 #
