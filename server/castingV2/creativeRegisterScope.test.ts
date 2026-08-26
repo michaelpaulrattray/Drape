@@ -171,19 +171,19 @@ describe("the locked house block — rebuilt to §5d + §5e (#144), code's, revi
     }
   });
 
-  it("§5f (#146): mood and skin temperature are the CAST layer's — the house block carries neither, and the guard names all four", () => {
+  it("§5f (#146): mood and skin temperature are the CAST layer's — the house block carries neither, and the guard names all six", () => {
     const lower = HOUSE_BLOCK.toLowerCase();
     /* "beauty-app grade" and not "beauty-app": the photoreal PRESET keeps its own "beauty-app smoothing" style ban (a kept cohort sentence). */
     for (const cast of ["self-possessed", "horror grimace", "broad smile", "5500k", "teal-orange", "beauty-app grade"]) {
       expect(lower).not.toContain(cast);
     }
     const guarded = DROPPED_FROM_BLOCK.map(({ phrase }) => phrase.toLowerCase());
-    for (const token of ["self-possessed", "horror grimace", "5500k", "teal-orange"]) expect(guarded).toContain(token);
+    for (const token of ["self-possessed", "horror grimace", "broad smile", "5500k", "teal-orange", "beauty-app grade"]) expect(guarded).toContain(token);
     /* The house guard reads the BLOCK only: the same words are legal in the cast layer (a seed that says "self-possessed" is not refused). */
     expect(containsHouseSentence("A self-possessed goth woman, severe, in neutral daylight.")).toBeNull();
-    /* Positive control: the words were in the §5e lines this arm replaced, so the arm could have failed. */
+    /* Positive control: all six were in the §5e lines this arm replaced, so the arm could have failed. */
     const fiveE = "EXPRESSION: Eyes into the lens, present, mouth closed. Self-possessed. No broad smile, no laugh, no blank stare, no horror grimace. COLOUR: Neutral daylight, 5500K. Skin stays true to the person. No teal-orange, no beauty-app grade.".toLowerCase();
-    expect(DROPPED_FROM_BLOCK.filter(({ phrase }) => fiveE.includes(phrase.toLowerCase())).length).toBe(4);
+    expect(DROPPED_FROM_BLOCK.filter(({ phrase }) => fiveE.includes(phrase.toLowerCase())).length).toBe(6);
   });
 
   it("the style ban lives in the PRESET, not the universal block (§5d) — and the preset is still appended today", () => {

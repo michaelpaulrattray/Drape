@@ -209,6 +209,10 @@ export const DROPPED_FROM_BLOCK: ReadonlyArray<{ phrase: string; from: string }>
   { phrase: "horror grimace", from: "EXPRESSION (§5f — mood is the cast's)" },
   { phrase: "5500K", from: "COLOUR (§5f — no temperature pin)" },
   { phrase: "teal-orange", from: "COLOUR (§5f — no house grade)" },
+  /* Review of #147: the other two §5f drops, so the guard holds the property its docblock claims, not the suite alone.
+     "beauty-app grade" and never "beauty-app": the preset KEEPS the cohort's "beauty-app smoothing" style ban by name. */
+  { phrase: "broad smile", from: "EXPRESSION (§5f — mood is the cast's)" },
+  { phrase: "beauty-app grade", from: "COLOUR (§5f — no house grade)" },
   { phrase: "open mouth", from: "NEGATIVES (§5d)" },
   { phrase: "showing teeth", from: "NEGATIVES (§5d)" },
   { phrase: "hand gestures", from: "NEGATIVES (§5d)" },
