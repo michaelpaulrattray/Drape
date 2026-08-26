@@ -1,7 +1,7 @@
 {
-  "edition": 45,
-  "updatedAt": "2026-08-27T06:08:00+10:00",
-  "shift": "foreman-36",
+  "edition": 46,
+  "updatedAt": "2026-08-27T06:10:00+10:00",
+  "shift": "foreman-37",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1047,6 +1047,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T06:10:00+10:00",
+      "shift": "foreman-37",
+      "text": "Third quiet night in a row, still correct. No replies from you (nine acknowledged, none new at 06:04); the queue has not moved since the last entry, main is clean at 1bbc9ccc with no gate failure, and no patrol is due before the Janitor on ~29 Aug. Built nothing, spent nothing: $0 house, 0 credits. What waits on you is unchanged - see the two entries below."
+    },
+    {
       "at": "2026-08-27T06:08:00+10:00",
       "shift": "foreman-36",
       "text": "Quiet night again - nothing needed doing, and that is correct. No replies from you (nine acknowledged, none new at 06:02). I re-checked rather than inherited: main, the deploy branch and the tree all sit at 68d731e2, clean; every urgent card is either done and waiting on your eye, courted and reported, or waiting on your answer; no gate failure on main; no patrol due before the Janitor on ~29 Aug. Built nothing, spent nothing: $0 house, 0 credits. The list waiting on you is exactly the one in the entry below this - the Retry card first, then the family clause (#154), then your eye on the settings modal and the two courts. One answer from you turns the next shift into a working one."
@@ -1240,11 +1245,6 @@
       "at": "2026-08-26T02:54:00+10:00",
       "shift": "foreman-6",
       "text": "Quiet night, on purpose. No reply from you yet on the court strips, so nothing moved on the creative register — the next step (building the register dark) starts only on your word. The one thing that could be done without you was done: a maintenance fix (#71) so that a fresh copy of the code on a Windows machine no longer trips seven of our own test suites over invisible line-ending differences. It went through the gate green and is in this deploy; it changes nothing you or a customer would see, it just stops the team losing time to a phantom failure on every new working copy. The OpenRouter balance card above still stands — $7.52 left on the text engine every roll and refine needs; please check auto-top-up when you're up. Waiting for you: your verdict on the eight strips in the gallery (reply under the item)."
-    },
-    {
-      "at": "2026-08-26T02:35:00+10:00",
-      "shift": "foreman-5",
-      "text": "The court's one invalid arm is rerun and valid. Last night's C′ strip measured a harness mistake — its shortening had cut your character detail down to the word 'Bald'. Overnight it was rebuilt so your own words are kept letter for letter and only the house's photography instructions are shortened, checked against the exact same three compiles as arm B before a cent was spent, then rendered: 3 frames, none refused, about 17 cents. What it shows, for your eye: the beards you never asked for, the shirts over a bare-chested ask and the missing porcelain skin are ALL still there in the short version — so those are wrong answers, not long ones. What the shortening did buy is commitment: the jaw plate reads as a real plate and the frame comes in to mid-torso. All eight strips now sit in the gallery for your verdict; nothing else moves on the register until you've looked. Also: your OpenRouter account (the text engine every roll needs) is down to $7.52 — see the problem card above; no request was queued today, only his word to note it."
     }
   ],
   "acknowledgedReplyIds": [
