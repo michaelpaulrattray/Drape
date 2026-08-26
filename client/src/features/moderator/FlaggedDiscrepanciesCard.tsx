@@ -175,8 +175,8 @@ interface FlaggedUserRowProps {
     userName: string | null;
     email: string | null;
     discrepancy: number;
-    netCost: number;
-    completedCost: number;
+    grossDeductions: number;
+    expectedCost: number;
     failedGenerations: number;
     totalGenerations: number;
   };
@@ -214,7 +214,7 @@ function FlaggedUserRow({ user, onSelect }: FlaggedUserRowProps) {
         </div>
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-[10px] text-[#999]">
-            Net: {user.netCost} | Completed: {user.completedCost}
+            Charged: {user.grossDeductions} | Recorded: {user.expectedCost}
           </span>
           {user.failedGenerations > 0 && (
             <span className="text-[10px] text-amber-600">

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "796ae3d0abe4fd4b"
+    "sourceFingerprint": "1fca060bac2b2709"
   },
   "domains": [
     {
@@ -9525,6 +9525,14 @@
       "file": "server/castingV2/castViewPackage.ts"
     },
     {
+      "id": "cost:server/db/discrepancyQueries.ts:OPERATION_COST_SQL",
+      "name": "OPERATION_COST_SQL",
+      "constant": "OPERATION_COST_SQL",
+      "credits": null,
+      "derivedFrom": "sql<number>`COALESCE(SUM(CASE WHEN ${generationOperations.chargedCredits} > 0 THEN ${generationOperations.chargedCredits} ELSE COALESCE((SELECT SUM(linked.pointsCost) FROM ${generations} AS linked WHERE linked.operationId = ${generationOperations}.id), 0) END), 0)`",
+      "file": "server/db/discrepancyQueries.ts"
+    },
+    {
       "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.garmentAnalyze",
       "name": "WARDROBE_CREDIT_COSTS.garmentAnalyze",
       "constant": "WARDROBE_CREDIT_COSTS",
@@ -11817,6 +11825,14 @@
     {
       "id": "test:server/discrepancyFlagging.test.ts",
       "path": "server/discrepancyFlagging.test.ts"
+    },
+    {
+      "id": "test:server/discrepancyOperationCostSql.test.ts",
+      "path": "server/discrepancyOperationCostSql.test.ts"
+    },
+    {
+      "id": "test:server/discrepancyScanListOnly.test.ts",
+      "path": "server/discrepancyScanListOnly.test.ts"
     },
     {
       "id": "test:server/export.test.ts",
@@ -30190,6 +30206,11 @@
     {
       "from": "module:server/routes/moderatorReconciliation.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorReconciliation.ts",
+      "to": "module:server/db/discrepancyQueries.ts",
       "kind": "imports"
     },
     {
