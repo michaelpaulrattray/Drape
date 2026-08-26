@@ -1,6 +1,6 @@
 {
-  "edition": 30,
-  "updatedAt": "2026-08-26T19:46:51+10:00",
+  "edition": 31,
+  "updatedAt": "2026-08-26T20:50:04+10:00",
   "shift": "foreman-22",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -38,8 +38,8 @@
           "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling — A+B (PR #132), C (PR #136) and D (PR #137) MERGED: one authored prompt per sheet, your words verbatim first, LOW default, MAX leaves the face open; creatures and sci-fi cast on this road, a likeness still refuses, an object refuses free; the prompt is shown on the sheet with 'Use as brief'. Still to build: the imagination control and the retired outfit toggle (E)",
-          "state": "in-progress"
+          "title": "The register rebuilt — A+B (PR #132), C (PR #136), D (PR #137), E (PR #138) and your §5b/§5c author spec (PR #141) MERGED: your words verbatim first, the author's content only (LOW none, MAX art direction), the old studio's locked block by code, creatures cast on this road, a likeness refused, an object refused free, the prompt shown on the sheet with 'Use as brief', Low/Max in your hand. Next: #128 (full block vs distilled clause, your eye), #130 (framing calibration), #129 (refusal patrol), then your eye = the gate",
+          "state": "done"
         },
         {
           "title": "On for your account, then your eye — the milestone gate",
@@ -485,6 +485,20 @@
   ],
   "pipeline": [
     {
+      "id": "author-spec-139",
+      "title": "YOUR STOP-THE-LINE (#139): the author rebuilt to your corrected spec — content only from the author, the old studio's locked block appended by code — MERGED (PR #141)",
+      "status": "merged",
+      "prNumber": 141,
+      "note": "Built to your words. LOW now makes no author call at all: your words, then the old studio's locked camera/lighting/realism/negatives block, appended by code — nothing invented. MAX makes one call and may only add art direction (mood, materials, makeup and hair language, lighting taste); it is told by name never to specify an exact face, hairstyle, eye colour, jewellery item, garment, body type or expression, never to write camera language, and never to write notes about the series ('across all eight', 'per subject', 'left open', 'pick one' are refused and re-asked, like 'sternum'). The locked block is the old studio's own sentences, derived from the house composer so it cannot drift, with the waist-up pair swapped for chest-up and three sentences left out by name. Your success test, driven on the dev bot before merge: MAX 'goth woman mid 30s' gave seven different women in one grey studio — updo, straight, loose curls, a fringe; lace, velvet, leather — no clones, no grids (one slice refused by the engine's checker, refunded). LOW gave eight, same studio. Merge 3552e83d. Spend: about 90 cents. Two things declared for you: the block is ~570 words (outside the ~400 budget by your own §5c word) — #128 is where the full block is weighed against the distilled clause; and slice E merged after your card landed, before it was read — its copy is corrected in this PR."
+    },
+    {
+      "id": "imagination-meter-131e",
+      "title": "The IMAGINATION meter is yours; the wardrobe/basics switch retired on the author road (#131 slice E) — MERGED (PR #138)",
+      "status": "merged",
+      "prNumber": 138,
+      "note": "On your account the start page and the sheet dock show IMAGINATION · Low / Max where the wardrobe/basics switch stood — the switch is gone on this road, as you ruled (the engine dresses the cast; no path is recorded). The dock preselects the sheet's own setting for the next roll. Merge c1d3bd45. What Low and Max DO is now the #139 spec above."
+    },
+    {
       "id": "prompt-on-cast-131d",
       "title": "The Prompt Author — the prompt shown on the sheet, with 'Use as brief' (#131 slice D) — MERGED (PR #137)",
       "status": "merged",
@@ -761,6 +775,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T20:50:04+10:00",
+      "shift": "foreman-22",
+      "text": "Your stop-the-line on the author landed while I was merging and is now built and live on your account: the author only writes content, the old studio's locked block is appended by code, LOW adds nothing, MAX adds taste and never a face. Your success test on the dev bot passed to my eye — seven different goth women in one grey studio at MAX, eight at LOW — the frames are in the PR. The night's record on your account: creatures cast (C), the prompt shown with 'Use as brief' (D), the Low/Max meter (E), and this. One honest note: E merged after your card landed and before I re-read the mailbox — its copy is corrected in this PR, and nothing it built conflicts with your spec. Next in order: #128 (the full block versus the distilled realism clause, for your eye), #130 (framing calibration), #129 (refusal patrol). OpenRouter is still at about $4."
+    },
     {
       "at": "2026-08-26T19:46:51+10:00",
       "shift": "foreman-22",
