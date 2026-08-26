@@ -187,9 +187,11 @@ the lock, fail closed. This road is that operation with THREE differences:
   `BRIEF_TEXT_MAX_AUTHOR_ROAD`, and `neverWrittenIn` clean.
 - **The refund class is kept honest**: refused again → `failureClass:
   content_policy` with `softened` on the row → the projection's line reads
-  *Refused again with softer wording · refunded* and `isRetryableFailure`
-  stays false, so no plain Retry appears either (the coin-per-render question
-  is his, #122).
+  *Refused again with softer wording · refunded*. ⚠ This line said
+  `isRetryableFailure` *"stays false, so no plain Retry appears either"* —
+  since 2026-08-27 it is TRUE for a content-filter tile (reply #10: *"widen it
+  to content-filter tiles"*), so a plain Retry DOES appear beside any softer
+  road that lands; this design is parked on the court's own numbers anyway.
 
 Kind: reuse `castingV2.retry` with `payload.softened: true` rather than a
 new operation kind — one money path, one recovery road, one census line;

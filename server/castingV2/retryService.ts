@@ -103,9 +103,14 @@ export const RETRY_NOT_AVAILABLE_MESSAGE = "Retrying a tile isn't available for 
  * content-filter tiles on the rewrite road and a plain retry here would be a
  * decision this door is not allowed to take.
  */
-export const RETRY_NOT_THIS_KIND_MESSAGE =
-  "This tile was refused by the engine's filter, not by an engine error — "
-  + "retrying the same words isn't offered here. Softer wording is coming.";
+/*
+  Said to a NOT A PORTRAIT or a NOT CHARGED tile. It used to name the content
+  filter as the case it refused; the filter is on the list since his reply #10
+  (2026-08-26, "widen it to content-filter tiles"), so the sentence stopped
+  naming it the same commit — a refusal that names a kind the door now admits
+  would be a lie on the one tile the sentence is never shown to anyway.
+*/
+export const RETRY_NOT_THIS_KIND_MESSAGE = "That tile isn't one a retry can serve.";
 
 /**
  * Prompt read back off the row. The roll road writes
@@ -187,9 +192,7 @@ export async function retryCandidate(
   if (!isRetryableFailure(kind)) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: kind === "content_filter"
-        ? RETRY_NOT_THIS_KIND_MESSAGE
-        : "That tile isn't one a retry can serve.",
+      message: RETRY_NOT_THIS_KIND_MESSAGE,
     });
   }
   if (!RETRYABLE_ROLL_STATUSES.has(roll.status)) {

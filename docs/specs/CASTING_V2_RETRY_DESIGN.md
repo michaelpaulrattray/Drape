@@ -23,8 +23,12 @@ credits, the tile goes back to *casting*, and one render runs with the SAME
 words that tile was painted from. It lands in the same slot — same number on
 the sheet — or it fails again and the 20 credits come back, with the chip
 saying why. A second tap while the first is running costs nothing and is told
-so. The button is never shown on a CONTENT FILTER tile, a NOT A PORTRAIT tile,
-a NOT CHARGED tile, or any tile of a cancelled roll.
+so. The button is never shown on a NOT A PORTRAIT tile, a NOT CHARGED tile, or
+any tile of a cancelled roll. ⚠ **A CONTENT FILTER tile was on that list until
+2026-08-27 and is now SERVED** — his word on the Crew tab, reply #10, 2026-08-26 20:45Z, verbatim: *"Flip it on for your account, AND widen it to content-filter tiles"*; the #93 court is the
+evidence (§below, "the patrol's own finding"). Sentences below that say the
+filter is refused describe the design as first built; the list that governs is
+`RETRYABLE_FAILURE_KINDS` in `shared/candidateFailure.ts`.
 
 Worked example: roll 240, slice 5 fails with a fal timeout → tile reads
 *Engine error · refunded*, 140 credits net. She taps *Retry · 20 credits* →
@@ -43,7 +47,8 @@ timeout, rate limit, provider account, capability, unknown, unrecovered) that a
 provider outage would fill overnight. The patrol's own finding — that a
 same-text retry rescues content-filter refusals 3/8 (roll 222) — is a
 QUESTION for him (a Desk card), not a widening this build takes on its own:
-his sentence puts content-filter tiles on shape (2).
+his sentence puts content-filter tiles on shape (2). **Asked and answered
+2026-08-27 (reply #10): widened.**
 
 ## The one design decision: the failed row IS the slot
 
@@ -99,9 +104,9 @@ at a new position it is a ninth tile, which is a different product.
    drawn for an account that would be refused.
 2. Candidate owned (in the WHERE), `status = failed`.
 3. Failure kind retryable: `isRetryableFailure(candidateFailureKind(row.failureClass))`
-   — **`engine` and `unknown`**, declared ONCE in `shared/candidateFailure.ts`
-   and read by both the server door and the tile (working law 4). Content
-   filter / render fault / unpaid refuse free with a sentence naming shape (2).
+   — **`engine`, `unknown` and (since reply #10, 2026-08-27) `content_filter`**,
+   declared ONCE in `shared/candidateFailure.ts` and read by both the server
+   door and the tile (working law 4). Render fault / unpaid refuse free.
 4. The roll is terminal and not cancelled (`complete` | `partial` | `failed`).
    A failed slice on a still-generating roll waits — the roll's own finalizer
    is about to write the roll status from its own settlements, and cancel is
@@ -168,7 +173,8 @@ Production lands `off` (`productionFlagPositions.mts`); `users:1` on his word.
 ## Tests (the arms that can fail)
 
 Service (`retryService.test.ts`, the roll suite's fakes): content-filter
-refused free with no claim; generating roll refused free; happy path
+SERVED (refused free before 2026-08-27; the arm flipped sign with the list);
+render fault and unpaid refused free with no claim; generating roll refused free; happy path
 (sequence, 20 charged, row ready, roll `partial → complete`, receipt
 succeeded); engine failure (20 charged, 20 refunded under the RETRY
 reference ≠ the roll's, row failed with class, roll status untouched); charge

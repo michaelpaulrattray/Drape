@@ -254,22 +254,23 @@ describe("the flag's door", () => {
 });
 
 describe("admission — free, before the claim", () => {
-  it("refuses a content-filter tile with the shape-two sentence, nothing claimed", async () => {
+  it("serves a content-filter tile — his reply #10 widened the list to it (was refused free before)", async () => {
     seed({ failureClass: "content_policy" });
-    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-      message: RETRY_NOT_THIS_KIND_MESSAGE,
-    });
-    expect(journal).not.toContain("claim");
-    expect(dbCalls.reset).not.toHaveBeenCalled();
+    const result = await retryCandidate(dependencies(), INPUT);
+    expect(result.outcome).toBe("ready");
+    expect(dbCalls.reset).toHaveBeenCalled();
   });
 
   it("refuses a not-a-portrait tile and an unpaid one — neither is on his list", async () => {
     for (const failureClass of ["render_fault", "unpaid"]) {
       seed({ failureClass });
-      await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+      await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: RETRY_NOT_THIS_KIND_MESSAGE,
+      });
     }
     expect(journal).not.toContain("claim");
+    expect(dbCalls.reset).not.toHaveBeenCalled();
   });
 
   it("serves the didn't-arrive tile (no class on the row) exactly like an engine error", async () => {
