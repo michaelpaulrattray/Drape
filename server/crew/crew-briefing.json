@@ -1,7 +1,7 @@
 {
-  "edition": 28,
-  "updatedAt": "2026-08-26T18:20:00+10:00",
-  "shift": "foreman-21",
+  "edition": 29,
+  "updatedAt": "2026-08-26T19:02:14+10:00",
+  "shift": "foreman-22",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,7 +38,7 @@
           "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E)",
+          "title": "The register rebuilt to your ruling — slices A+B MERGED (PR #132) and C MERGED (PR #136): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; on this road creatures and sci-fi cast, a likeness still refuses, an object refuses free. Still to build: the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E)",
           "state": "in-progress"
         },
         {
@@ -485,6 +485,13 @@
   ],
   "pipeline": [
     {
+      "id": "prompt-author-walls-131c",
+      "title": "The Prompt Author — the walls (#131 slice C) — MERGED (PR #136)",
+      "status": "merged",
+      "prNumber": 136,
+      "note": "On your account (the author road, users:1) the studio now casts what the mission says it should: a creature, an alien, a robot or an anime brief goes through and is painted from your words — the old 'photographic people only' wall is dead on this road. Two refusals remain and there is no third: a real person or a named character is still refused free ('Master Chief from Halo', 'someone who looks like Zendaya'), and a subject that is not a being at all — your example, 'a car' — is refused free before anything is charged: 'This is a casting studio — it casts people and creatures, not objects, vehicles or places.' Both are the reader's judgement taken twice, so a one-off wobble never walls a real ask. Worked example: 'a lizard man with emerald scales and a heavy brow' used to be refused; it now rolls. Driven at the real reader before merge, 9 of 9 the way you would expect plus a control proving everyone else's account is unchanged. Merge 290631ad. Spend: about 3 cents of text calls, no credits. Off the flag nothing moved, byte for byte. Still to build on #131: the prompt shown on the cast (D) and the imagination control (E)."
+    },
+    {
       "id": "crew-live-133",
       "title": "This page is live now (#133, your ask) — MERGED (PR #135)",
       "status": "merged",
@@ -747,6 +754,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T19:02:14+10:00",
+      "shift": "foreman-22",
+      "text": "No replies from you tonight (1–9 acknowledged), so the shift worked the focus's next step: the walls on the author road (#131 slice C), merged and live on your account. The short version — the studio now casts beings, not just photographic humans: creatures, aliens, robots and anime briefs go through on your account; a named person or character is still refused; 'a car' is refused free with a sentence that says why. Nine real asks were driven through the reader before merge and every one landed where you would put it. Next on the list: the prompt shown on the cast with 'use as brief' (D), then the imagination control (E), then the two small courts (#128 realism clause, #130 framing calibration). OpenRouter still sits at about $4 — the card is still open."
+    },
     {
       "at": "2026-08-26T18:20:00+10:00",
       "shift": "foreman-21",
