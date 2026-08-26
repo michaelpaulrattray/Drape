@@ -1,7 +1,7 @@
 {
-  "edition": 34,
-  "updatedAt": "2026-08-26T23:20:00+10:00",
-  "shift": "foreman-25",
+  "edition": 35,
+  "updatedAt": "2026-08-27T00:12:00+10:00",
+  "shift": "foreman-26",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -510,6 +510,13 @@
   ],
   "pipeline": [
     {
+      "id": "rite-watch-148",
+      "title": "The deploy rite no longer waits on the wrong service's deployments (#148) — MERGED (PR #149), and this edition is its first live run",
+      "status": "merged",
+      "prNumber": 149,
+      "note": "Nothing customer-facing. Last night's edition deployed fine, but the shift's own deploy checker waited ten minutes for a deployment that had already succeeded, then gave up without writing its receipt or running the after-deploy checks (are the flags where the record says? does the database match what the code declares?). Cause found by driving it, not guessing: the checker had been started inside a Railway 'MySQL' wrapper, which quietly makes every Railway command a MySQL command, so it was watching the database's deployment list (one row, unchanged since July) instead of the app's. Fixed three ways: it now refuses to start inside another service's wrapper and prints the right command; it names the app explicitly when it lists deployments; and it matches the deployment to the exact commit it pushed, scanning every row — so a redeploy you trigger from the dashboard mid-deploy is recognised as yours and skipped, never mistaken for ours. Review took two findings, both fixed before merge. 19 test arms, both real incidents as specimens. $0 house, 0 credits."
+    },
+    {
       "id": "house-block-5f-146",
       "title": "The two universal lines narrowed to your §5f layers (#146) — expression and colour are now studio geometry only — MERGED (PR #147), live on your account",
       "status": "merged",
@@ -821,6 +828,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-27T00:12:00+10:00",
+      "shift": "foreman-26",
+      "text": "Quiet night for the product; one tool fixed. The deploy checker that stalled last night was watching the wrong service — it had been started inside a Railway MySQL wrapper, so it saw the database's deployments instead of the app's (found by running it both ways). It now refuses that wrapper outright, lists the app's deployments by name, and matches the deployment to the exact commit it pushed across every row it fetches (#148, PR #149, merged). This edition is that fix's first live deploy, so the after-deploy checks that were skipped last night run again here. Nothing changed for customers; no spend. Still waiting on your eye for the light on roll 223 vs 221/222 (eye item 'house-block-rebuilt-144'). Next in order: the Retry button on failed tiles (#122, a paid per-slice re-render — design first, since it's a money path), then the minimal settings modal (#142), then the two small courts (#128, #130)."
+    },
     {
       "at": "2026-08-26T23:20:00+10:00",
       "shift": "foreman-25",
