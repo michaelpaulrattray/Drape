@@ -108,6 +108,23 @@ export type RollProjection = {
    */
   statedWardrobe: boolean;
   /**
+   * THE PROMPT THIS SHEET WAS PAINTED FROM — the author road only (#131 slice
+   * D; ruling rule 5, verbatim: *"The expanded prompt is shown on the cast,
+   * editable. No hidden prompt, ever."*).
+   *
+   * ⚠ This crosses the boundary DELIBERATELY where this file's header says no
+   * prompt does, and the reason it may is what the prompt IS on that road: the
+   * customer's own words, first and verbatim, then what the author appended —
+   * the photoreal bundle or an invented look — and nothing house-internal
+   * (`register.prompt`, written by `briefCompiler` for exactly this). The
+   * house-composed prompt of every other roll stays inside `compiledBrief`, and
+   * this is `null` there — an unflagged sheet is byte-identical to today's.
+   * Owner-scoped like the rest of the roll. "Editable" lands as *use as brief*:
+   * the sheet offers it back as the next roll's sentence, which is why the
+   * entrance admits `BRIEF_TEXT_MAX_AUTHOR_ROAD`.
+   */
+  authoredPrompt: string | null;
+  /**
    * WHAT THIS SHEET IS WEARING — the two paths (design §3.3, item 6).
    *
    * ⚠ **An EXPLICIT projection off the roll's own columns, and it is explicit
@@ -464,6 +481,25 @@ function readVarianceHeld(compiledBrief: unknown): boolean {
  * this field existed have no value, and "absent" is not "it fell back". An
  * unknown must never be reported as a failure.
  */
+/**
+ * The authored prompt, read through a validator like everything else lifted
+ * out of `compiledBrief`: a string, on an AUTHOR register, and no longer than
+ * the author road could have written — anything else is null rather than
+ * forwarded. `AUTHORED_PROMPT_MAX` is a validator bound, not a product one:
+ * the word budget keeps a real prompt well under it.
+ */
+export const AUTHORED_PROMPT_MAX = 8000;
+export function readAuthoredPrompt(compiledBrief: unknown): string | null {
+  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+  const register = (compiledBrief as { register?: unknown }).register;
+  if (!register || typeof register !== "object") return null;
+  const { kind, prompt } = register as { kind?: unknown; prompt?: unknown };
+  if (kind !== "author" || typeof prompt !== "string") return null;
+  const trimmed = prompt.trim();
+  if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
+  return trimmed;
+}
+
 function readFellBack(compiledBrief: unknown): boolean {
   if (!compiledBrief || typeof compiledBrief !== "object") return false;
   return (compiledBrief as { interpreted?: unknown }).interpreted === false;
@@ -547,6 +583,7 @@ export function projectRoll(input: {
       cannot drift from the sentence it describes.
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
+    authoredPrompt: readAuthoredPrompt(input.roll.compiledBrief),
     /*
       THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.
 

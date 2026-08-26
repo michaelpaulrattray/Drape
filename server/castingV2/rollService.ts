@@ -95,6 +95,7 @@ import {
   type LockOverrides,
   type UnlockableField,
 } from "./briefCompiler";
+import { BRIEF_TOO_LONG_MESSAGE, briefTooLongOffTheRoad } from "./briefLength";
 import type { ResolvedIdentity } from "./castingIntent";
 import { admitRoll, castingCreativeEngine, type AdmissionDecision } from "./rollEngine";
 import { candidateChargeReference, candidateUnseenChargeReference } from "./rollRecovery";
@@ -462,6 +463,15 @@ export async function createRoll(
     the wire are byte-identical to today's — the design's own §1a.
   */
   const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
+  /*
+    THE 2,000-CHARACTER BOUND, KEPT FOR EVERYONE OFF THE AUTHOR ROAD (#131
+    slice D, `briefLength.ts`). The entrance admits 4,000 so an authored
+    prompt can come back as the next brief; this line is what keeps the
+    unflagged product exactly where it was. Free, before the claim.
+  */
+  if (briefTooLongOffTheRoad(input.briefText, creativeRegister)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: BRIEF_TOO_LONG_MESSAGE });
+  }
 
   let compiled: CompiledRollBrief;
   try {

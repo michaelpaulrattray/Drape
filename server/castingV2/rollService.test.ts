@@ -165,6 +165,7 @@ vi.mock("../casting/directOperation", () => ({
 const OPERATION_ID = "33333333-3333-4333-8333-333333333333";
 
 const { createRoll, cancelRoll } = await import("./rollService");
+const { BRIEF_TEXT_MAX, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
 const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const { candidateChargeReference } = await import("./rollRecovery");
 const { ProviderError } = await import("../providers/types");
@@ -274,6 +275,47 @@ describe("the sequence", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(journal).not.toContain("claim");
     expect(journal).not.toContain("charge");
+  });
+
+  /*
+    THE 2,000-CHARACTER BOUND LIVES IN THE SERVICE NOW (#131 slice D,
+    `briefLength.ts`): the entrance admits 4,000 so an authored prompt can come
+    back as the next brief, and this is what keeps every account OFF the
+    author road exactly where it was. Free, before the claim.
+  */
+  it("refuses a brief over 2,000 characters for free off the author road, with the sentence that says so", async () => {
+    const long = "a wiry cyclist ".repeat(140);
+    expect(long.length).toBeGreaterThan(BRIEF_TEXT_MAX);
+    await expect(
+      createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: BRIEF_TOO_LONG_MESSAGE });
+    expect(journal).not.toContain("claim");
+    expect(journal).not.toContain("charge");
+  });
+
+  it("on the author road the same brief reaches the compiler untouched", async () => {
+    const long = "a wiry cyclist ".repeat(140);
+    vi.stubEnv("CASTING_V2_SCOPE", "all");
+    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
+    try {
+      const seen: string[] = [];
+      const dependencies = baseDependencies();
+      const compileBrief = (dependencies as { compileBrief: (input: { briefText: string }) => unknown }).compileBrief;
+      await createRoll(
+        {
+          ...(dependencies as object),
+          compileBrief: (input: { briefText: string }) => {
+            seen.push(input.briefText);
+            return compileBrief(input);
+          },
+        } as never,
+        { ...INPUT, briefText: long },
+      );
+      expect(seen).toEqual([long]);
+      expect(journal).toContain("claim");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

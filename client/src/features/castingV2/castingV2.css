@@ -1539,6 +1539,64 @@
 }
 
 /*
+  The prompt the sheet was painted from (author road only). A closed record in
+  the variance note's register; open, the text keeps the author's paragraph
+  break and reads as prose, never as code.
+*/
+.dpc-prompt {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+.dpc-prompt__summary {
+  cursor: pointer;
+  opacity: 0.62;
+  list-style: none;
+}
+.dpc-prompt__summary::-webkit-details-marker {
+  display: none;
+}
+.dpc-prompt__summary::before {
+  content: "\203A ";
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+.dpc-prompt[open] > .dpc-prompt__summary::before {
+  transform: rotate(90deg);
+}
+.dpc-prompt__text {
+  margin: 8px 0 0;
+  max-width: 68ch;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+.dpc-prompt__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.dpc-prompt__use {
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.dpc-prompt__use:hover {
+  background: var(--fill);
+}
+.dpc-prompt__note {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/*
   A tile winding down after a cancel. Quieter and slower than casting — the
   work is still coming, but nobody is waiting for it any more.
 */

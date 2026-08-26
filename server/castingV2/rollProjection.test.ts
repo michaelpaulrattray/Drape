@@ -5,7 +5,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { projectCandidate, projectCandidateStatus, projectRoll, readChips } = await import(
+const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthoredPrompt, readChips } = await import(
   "./rollProjection"
 );
 
@@ -108,6 +108,43 @@ describe("nothing internal crosses the boundary", () => {
     }
     // The user's own sentence comes back, because it is theirs.
     expect(JSON.parse(projected).briefText).toBe("a wiry cyclist in her 20s");
+    // And no prompt does, on a house roll: the field exists and is null.
+    expect(JSON.parse(projected).authoredPrompt).toBeNull();
+  });
+
+  /*
+    THE PROMPT THE SHEET WAS PAINTED FROM (#131 slice D, ruling rule 5: "no
+    hidden prompt, ever"). It crosses the boundary ONLY on an author register,
+    because there it is the customer's words plus the author's and nothing
+    house-internal; every other shape is null rather than forwarded.
+  */
+  describe("the authored prompt crosses the boundary on the author road and nowhere else", () => {
+    const AUTHORED = "goth woman mid 30s\n\nA photorealistic casting portrait, chest-up, neutral grey seamless studio background.";
+
+    it("an author register's prompt is projected, trimmed", () => {
+      const projected = projectRoll({
+        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", framingBlock: "internal framing text", register: { kind: "author", authored: true, prompt: `  ${AUTHORED}  ` } } }),
+        candidates: [candidateRow()],
+      });
+      expect(projected.authoredPrompt).toBe(AUTHORED);
+      // The rest of the boundary still holds beside it.
+      expect(JSON.stringify(projected)).not.toContain("internal framing text");
+    });
+
+    it("a house register (a follow or an edited roll under the flag) projects null — its prompt is the house composer's", () => {
+      expect(readAuthoredPrompt({ register: { kind: "house", because: "anchored", prompt: "CASTING CATEGORY (ABSOLUTE) …" } })).toBeNull();
+    });
+
+    it("anything that is not a bounded string on an author register is null, never forwarded", () => {
+      expect(readAuthoredPrompt(null)).toBeNull();
+      expect(readAuthoredPrompt({})).toBeNull();
+      expect(readAuthoredPrompt({ register: null })).toBeNull();
+      expect(readAuthoredPrompt({ register: { kind: "author" } })).toBeNull();
+      expect(readAuthoredPrompt({ register: { kind: "author", prompt: 42 } })).toBeNull();
+      expect(readAuthoredPrompt({ register: { kind: "author", prompt: "   " } })).toBeNull();
+      expect(readAuthoredPrompt({ register: { kind: "author", prompt: "x".repeat(AUTHORED_PROMPT_MAX + 1) } })).toBeNull();
+      expect(readAuthoredPrompt({ register: { kind: "author", prompt: "x".repeat(AUTHORED_PROMPT_MAX) } })).toHaveLength(AUTHORED_PROMPT_MAX);
+    });
   });
 
   it("reads chips through a validator rather than forwarding them", () => {

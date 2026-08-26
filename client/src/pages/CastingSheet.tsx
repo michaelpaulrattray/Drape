@@ -522,6 +522,8 @@ export default function CastingSheet() {
    */
   const shownBrief = roll.data?.briefText ?? "";
   const brief = displayText(draft, shownBrief);
+  /* The prompt this sheet was painted from — null on every sheet off the author road (#131 slice D). */
+  const authoredPrompt = roll.data?.authoredPrompt ?? null;
   const draftAnchor = useRef<string | null>(null);
   useEffect(() => {
     const rollId = roll.data?.rollId;
@@ -2269,6 +2271,43 @@ export default function CastingSheet() {
           <p className="dpc-variance-note">
             Most of this sheet is held — the eight will differ mainly in expression.
           </p>
+        ) : null}
+
+        {/*
+          THE PROMPT, SHOWN (#131 slice D; founder ruling rule 5: "the expanded
+          prompt is shown on the cast, editable. No hidden prompt, ever").
+
+          Only the author road has one to show — the server projects null
+          everywhere else, so an unflagged sheet draws nothing here. Closed by
+          default: it is the record of what the eight were painted from, in the
+          same quiet register as the variance note, not a second brief box.
+
+          "Editable" lands as USE AS BRIEF: one tap puts the whole prompt in the
+          brief box as a draft, and the next roll carries it verbatim (the brief
+          is the first paragraph BY CODE on this road). It takes the same road
+          as typing — the queued chip adjustments fall away, because the
+          sentence has been rewritten (the keystroke rule below the box).
+        */}
+        {authoredPrompt ? (
+          <details className="dpc-prompt">
+            <summary className="dpc-prompt__summary">The prompt this sheet was painted from</summary>
+            <p className="dpc-prompt__text">{authoredPrompt}</p>
+            <div className="dpc-prompt__row">
+              <button
+                type="button"
+                className="dpc-prompt__use"
+                onClick={() => {
+                  setDraft(typed(authoredPrompt));
+                  if (Object.keys(overrides).length > 0) clearOverrides();
+                }}
+              >
+                Use as brief
+              </button>
+              <span className="dpc-prompt__note">
+                Your words first, then what the author added. Rolling with it keeps every word.
+              </span>
+            </div>
+          </details>
         ) : null}
 
         {/*

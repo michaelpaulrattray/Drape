@@ -17,6 +17,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "../_core/env";
+import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "../castingV2/briefLength";
 import { issueReadToken } from "../castingV2/referenceProvenance";
 import { resolveAskReference } from "../castingV2/askReference";
 import { storageReadBytes } from "../storage";
@@ -1091,7 +1092,7 @@ export const castingV2Router = router({
         .object({
           clientRequestId: z.string(),
           sessionId: publicId,
-          briefText: z.string().min(1).max(2000),
+          briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
           unlock: unlockList,
           overrides: overrideObject,
           /*
@@ -1139,7 +1140,7 @@ export const castingV2Router = router({
           clientRequestId: z.string(),
           sessionId: publicId,
           candidateId: publicId,
-          briefText: z.string().min(1).max(2000),
+          briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
           unlock: unlockList,
           overrides: overrideObject,
         })
