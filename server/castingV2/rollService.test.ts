@@ -386,10 +386,19 @@ describe("the sequence", () => {
     expect(seen).toEqual([undefined]);
   });
 
-  it("the bound keys on the ROAD, not the flag: a chip-edited roll under the flag composes house and stops at 2,000 (finding 2)", async () => {
+  it("the bound keys on the ROAD: a chip-edited roll under the flag is the author road since #154 and admits 2,000+; off the flag the same roll stops at 2,000", async () => {
     const long = "a wiry cyclist ".repeat(140);
     vi.stubEnv("CASTING_V2_SCOPE", "all");
     vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
+    try {
+      await expect(
+        createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long, unlock: ["sex"] as never }),
+      ).resolves.toMatchObject({ ready: 8 });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    journal.length = 0;
+    vi.stubEnv("CASTING_V2_SCOPE", "all");
     try {
       await expect(
         createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long, unlock: ["sex"] as never }),

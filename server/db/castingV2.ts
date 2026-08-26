@@ -230,10 +230,15 @@ export type CreateRollInput = {
    *
    * ⚠ On a FOLLOW these are IGNORED and the parent roll's are inherited, in
    * the same statement that re-anchors the parent candidate to this user. A
-   * Follow deliberately wants the SHEET's outfit rather than this person's.
+   * Follow deliberately wants the SHEET's outfit rather than this person's —
+   * UNLESS the service says `inheritWardrobe: false` (#154): a follow on the
+   * author road is dressed by the engine from its prompt, so inheriting the
+   * parent's line would record an outfit the engine was never told about.
    */
   path?: CastingPath | null;
   wardrobeLine?: string | null;
+  /** Default true. False writes `path`/`wardrobeLine` as given on a follow too. */
+  inheritWardrobe?: boolean;
   candidates: readonly CandidateSeed[];
   now?: Date;
 };
@@ -373,8 +378,8 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
       parentVariantId,
       /* A follow wears the sheet it descends from; a fresh roll wears what the
          service resolved for it. Both columns move together or neither does. */
-      path: parentCandidateId === null ? input.path ?? null : inheritedPath,
-      wardrobeLine: parentCandidateId === null ? input.wardrobeLine ?? null : inheritedWardrobeLine,
+      path: parentCandidateId === null || input.inheritWardrobe === false ? input.path ?? null : inheritedPath,
+      wardrobeLine: parentCandidateId === null || input.inheritWardrobe === false ? input.wardrobeLine ?? null : inheritedWardrobeLine,
       status: "pending",
       priceCredits: CASTING_V2_COSTS.rollCandidate * input.candidates.length,
       operationId: input.operationId,

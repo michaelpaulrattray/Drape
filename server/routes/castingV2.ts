@@ -1136,9 +1136,9 @@ export const castingV2Router = router({
             THE IMAGINATION METER (#131 slice E). Optional for the path's
             reason: the control is drawn only on the author road, absent means
             the author's own default (LOW), and an account off the road has
-            nothing that reads it. `follow` does not take one — a follow
-            composes house under the flag until the author road can carry an
-            anchor.
+            nothing that reads it. `follow` takes one too since #154 — the
+            author carries a follow as the family clause, so the gear is drawn
+            on a standing follow and what it says must reach the roll.
           */
           imagination: z.enum(IMAGINATIONS).optional(),
           /* The settings modal's style (#142) — the meter's rule, one control over: optional, absent means photoreal. */
@@ -1180,6 +1180,16 @@ export const castingV2Router = router({
           briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
           unlock: unlockList,
           overrides: overrideObject,
+          /*
+            THE SETTINGS, ON A FOLLOW TOO (#154): the author road carries a
+            follow as the family clause, so the sheet draws the gear during a
+            standing follow and sends what it shows. Optional for `createRoll`'s
+            reason — absent means the author's defaults, and an account off the
+            road has nothing that reads either. No `path`: a follow is dressed
+            by the engine on the author road and inherits the sheet's path off it.
+          */
+          imagination: z.enum(IMAGINATIONS).optional(),
+          style: z.enum(CAST_STYLES).optional(),
         })
         .strict(),
     )
@@ -1197,6 +1207,8 @@ export const castingV2Router = router({
         // Re-anchored to this user's own candidates inside the roll
         // transaction; a foreign id can only fail to resolve.
         followCandidatePublicId: input.candidateId,
+        imagination: input.imagination,
+        style: input.style,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
     }),

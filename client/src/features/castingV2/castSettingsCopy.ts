@@ -23,27 +23,36 @@ export function castSettingsRecord(style: CastStyle | null, imagination: Imagina
 }
 
 /**
- * WHY THE AUTHOR SAT A SHEET OUT (#131's open item, the honest half).
+ * WHY THE AUTHOR SAT A SHEET OUT — rows written before the family clause.
  *
- * A follow or a chip-edited roll under the flag composes house — the studio's
- * own casting — because the author road cannot carry an anchor or a chip edit
- * yet (`CASTING_V2_AUTHOR_ROAD_FAMILY_CLAUSE_DESIGN.md`). The row has recorded
- * the reason since PR #132; these are the words the sheet and the dock say for
- * it, one owner for both. The vocabulary is the projection's
- * (`AUTHOR_SAT_OUT_REASONS`), so a reason the server adds and this map does
- * not know is a type error here rather than a blank line on his sheet.
+ * Until 2026-08-27 a follow or a chip-edited roll under the flag composed
+ * house because the author road could not carry an anchor or a chip edit;
+ * since #154 (`CASTING_V2_AUTHOR_ROAD_FAMILY_CLAUSE_DESIGN.md`) it carries
+ * both as words and no new row records a reason. The rows already written do,
+ * and the sheet still says so for them, in the past tense — the row is the
+ * artifact. The vocabulary is the projection's (`AUTHOR_SAT_OUT_REASONS`), so
+ * a reason this map does not know is a type error here rather than a blank
+ * line on his sheet.
  */
 export type AuthorSatOutReason = "anchored" | "edited";
 
 const AUTHOR_SAT_OUT_RECORD: Record<AuthorSatOutReason, string> = {
-  anchored: "Sat this one out — a follow is cast the studio's own way for now, so there is no authored prompt to show.",
-  edited: "Sat this one out — chip edits are cast the studio's own way for now, so there is no authored prompt to show.",
+  anchored: "Sat this one out — this follow was cast the studio's own way, before the author could carry a family, so there is no authored prompt to show.",
+  edited: "Sat this one out — these chip edits were cast the studio's own way, before the author could carry them, so there is no authored prompt to show.",
 };
 
 export function authorSatOutRecord(reason: AuthorSatOutReason): string {
   return AUTHOR_SAT_OUT_RECORD[reason];
 }
 
-/** The dock, in the gear's place, while a chip adjustment is queued. */
-export const AUTHOR_SITS_OUT_CHIP_EDITS =
-  "With chip edits queued, the next roll is cast the studio's own way — the author sits it out. Edit the sentence instead to keep the author.";
+/**
+ * READ-ONLY CHIPS ON AN AUTHORED SHEET (#154, his answer (2): *"read-only chips
+ * with the sentence"*). On the author road the brief goes to the engine word
+ * for word, so a pinned fact read out of the sentence cannot be let vary by
+ * removing it — the echo offers no "let it vary" there, and this line, drawn
+ * once under the echo, says why. (On a standing FOLLOW the three anchored axes
+ * — sex, age, heritage — can still be let vary, because there the anchor is
+ * what supplies them.)
+ */
+export const AUTHOR_CHIPS_ARE_A_RECORD =
+  "These are what the studio read in your words — edit the sentence to change them.";

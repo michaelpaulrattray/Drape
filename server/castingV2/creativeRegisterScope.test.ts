@@ -520,7 +520,7 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
   });
 });
 
-/* ------------------------- what the author road cannot carry yet (review of #132) */
+/* ------------------- the FAMILY CLAUSE: a follow and a chip edit CARRIED (#154) */
 
 const FOLLOW = {
   sex: "female",
@@ -542,8 +542,12 @@ const FOLLOW = {
   },
 } as const;
 
-describe("the WIRE — a roll the author road cannot carry composes HOUSE under the flag, and the row says why", () => {
-  it("a FOLLOW keeps its anchor: the author is never called, the eight prompts equal the unflagged follow compile, the row says 'anchored'", async () => {
+const FAMILY_CLAUSE =
+  "Continue this family: cast a close relative of one person — a woman, in their 20s, of Nordic heritage, blonde hair, with a severe minimal look. "
+  + "Same sex, same age, same heritage and same hair colour; the face itself is new.";
+
+describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road as the family clause (#154), and the unflagged compile does not move", () => {
+  it("a FOLLOW at LOW: one prompt on all eight — the brief verbatim, the family clause from the anchor, the block; no author call; the reader's record is the house follow's", async () => {
     const off = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -561,37 +565,123 @@ describe("the WIRE — a roll the author road cannot carry composes HOUSE under 
       creativeRegister: true,
     });
     expect(sent(engine, "author")).toHaveLength(0);
-    expect(on.candidates.map((c) => c.prompt)).toEqual(off.candidates.map((c) => c.prompt));
-    expect(on.candidates[0]?.prompt).toContain("low bun");
-    expect(on.compiledBrief.register).toEqual({ kind: "house", because: "anchored" });
+    /* The unflagged follow is the house road, byte for byte, as it always was. */
+    expect(off.candidates[0]?.prompt.startsWith("CASTING CATEGORY (ABSOLUTE)")).toBe(true);
+    expect(off.candidates[0]?.prompt).toContain("low bun");
+    expect(off.compiledBrief).not.toHaveProperty("register");
+    /* The flagged follow: ONE prompt, the clause between the brief and the block. */
+    const prompts = new Set(on.candidates.map((c) => c.prompt));
+    expect(prompts.size).toBe(1);
+    expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${FAMILY_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    /* Never the cut, never a realized axis, never a house sentence (his answer 3; law 4). */
+    expect(on.candidates[0]?.prompt).not.toContain("low bun");
+    expect(on.candidates[0]?.prompt).not.toContain("CASTING CATEGORY");
+    expect(neverWrittenIn(FAMILY_CLAUSE)).toBeNull();
+    /* The identities the sheet records are still the house follow's — the anchor biased the neighbourhood exactly as before. */
+    expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(off.candidates.map((c) => c.resolvedIdentity));
+    expect(on.compiledBrief.register).toMatchObject({
+      kind: "author",
+      mode: "seed",
+      prompt: `${RICH}\n\n${FAMILY_CLAUSE}\n\n${HOUSE_BLOCK}`,
+      carried: { follow: true, overrides: {}, clause: FAMILY_CLAUSE },
+    });
+    /* Chips on a follow: the three anchored axes stay removable, the rest are a record (his answer 2). */
+    const chips = on.chips.filter((chip) => chip.field);
+    for (const chip of chips) {
+      expect(chip.removable, chip.field).toBe(["sex", "ageBand", "heritage"].includes(chip.field ?? ""));
+    }
   });
 
-  it("a chip UNLOCK or OVERRIDE is an edit the engine must be told: house, 'edited'", async () => {
+  it("a FOLLOW at MAX: the author is asked once, sees the clause beneath the brief, and the clause sits before its content", async () => {
+    const engine = engineAnswering([ADDITION]);
+    const on = await castingBriefCompiler({
+      briefText: THIN,
+      candidateCount: 8,
+      rollSeed: "wire-follow-max",
+      engine,
+      followIdentity: FOLLOW as never,
+      creativeRegister: true,
+      imagination: "max",
+    });
+    expect(sent(engine, "author")).toHaveLength(1);
+    expect(sent(engine, "author")[0]?.user).toBe(`${THIN}\n\n${FAMILY_CLAUSE}`);
+    expect(on.candidates[0]?.prompt).toBe(`${THIN}\n\n${FAMILY_CLAUSE}\n\n${ADDITION}\n\n${HOUSE_BLOCK}`);
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "authored", content: ADDITION, carried: { follow: true } });
+  });
+
+  it("an UNLOCK on a follow strips the axis from the clause; an OVERRIDE becomes words — on a follow it replaces the axis, alone it is the whole clause", async () => {
     const unlocked = engineAnswering([ADDITION]);
     const a = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
-      rollSeed: "wire-unlock",
+      rollSeed: "wire-follow-unlock",
       engine: unlocked,
+      followIdentity: FOLLOW as never,
       unlock: ["sex"] as never,
       creativeRegister: true,
     });
     expect(sent(unlocked, "author")).toHaveLength(0);
-    expect(a.compiledBrief.register).toEqual({ kind: "house", because: "edited" });
-    expect(a.candidates[0]?.prompt.startsWith("CASTING CATEGORY (ABSOLUTE)")).toBe(true);
+    const aClause = (a.compiledBrief.register as { carried: { clause: string } }).carried.clause;
+    expect(aClause).not.toContain("woman");
+    expect(aClause).not.toContain("same sex");
+    expect(aClause).toContain("Same age, same heritage and same hair colour");
+    expect(a.candidates[0]?.prompt).toBe(`${RICH}\n\n${aClause}\n\n${HOUSE_BLOCK}`);
+
+    const overriddenFollow = engineAnswering([ADDITION]);
+    const b = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-follow-override",
+      engine: overriddenFollow,
+      followIdentity: FOLLOW as never,
+      overrides: { ageBand: "40s" } as never,
+      creativeRegister: true,
+    });
+    const bClause = (b.compiledBrief.register as { carried: { clause: string; overrides: unknown } }).carried.clause;
+    expect(bClause).toContain("a woman, in their 40s, of Nordic heritage");
+    expect(bClause).not.toContain("20s");
+    expect(b.compiledBrief.register).toMatchObject({ kind: "author", carried: { follow: true, overrides: { ageBand: "40s" } } });
 
     const overridden = engineAnswering([ADDITION]);
-    const b = await castingBriefCompiler({
+    const c = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
       rollSeed: "wire-override",
       engine: overridden,
-      overrides: { ageBand: "40s" } as never,
+      overrides: { ageBand: "40s", heritage: "Slavic" } as never,
       creativeRegister: true,
     });
     expect(sent(overridden, "author")).toHaveLength(0);
-    expect(b.compiledBrief.register).toEqual({ kind: "house", because: "edited" });
+    const OVERRIDE_CLAUSE = "Cast as a person, in their 40s, of Slavic heritage; where this differs from the request above, this wins.";
+    expect(c.candidates[0]?.prompt).toBe(`${RICH}\n\n${OVERRIDE_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    expect(c.compiledBrief.register).toMatchObject({
+      kind: "author",
+      carried: { follow: false, overrides: { ageBand: "40s", heritage: "Slavic" }, clause: OVERRIDE_CLAUSE },
+    });
+    /* The row never says "house" again — that vocabulary belongs to rows written before this landed. */
+    for (const compiled of [a, b, c]) expect((compiled.compiledBrief.register as { kind: string }).kind).toBe("author");
+  });
 
+  it("an UNLOCK on a plain authored roll reaches nothing the engine reads — no clause, the prompt is the plain one, and every derived chip is read-only", async () => {
+    const plain = engineAnswering([ADDITION]);
+    const on = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-unlock",
+      engine: plain,
+      unlock: ["sex"] as never,
+      creativeRegister: true,
+    });
+    expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${HOUSE_BLOCK}`);
+    expect(on.compiledBrief.register).not.toHaveProperty("carried");
+    expect(on.chips.some((chip) => chip.field)).toBe(true);
+    for (const chip of on.chips.filter((chip) => chip.field)) expect(chip.removable, chip.field).toBe(false);
+    /* Off the flag the same chips are removable, as they always were. */
+    const off = await castingBriefCompiler({ briefText: RICH, candidateCount: 8, rollSeed: "wire-unlock", engine: engineAnswering([]) });
+    for (const chip of off.chips.filter((chip) => chip.field)) expect(chip.removable, chip.field).toBe(true);
+  });
+
+  it("an EMPTY override object is not an edit — no clause, the author road exactly as before", async () => {
     /* An EMPTY override object is not an edit — the author road is taken (MAX, so a call is visible). */
     const empty = engineAnswering([ADDITION]);
     const c = await castingBriefCompiler({
@@ -836,13 +926,18 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
     expect(refusal.code).toBe("unsupported_cohort");
   });
 
-  it("a FOLLOW under the flag composes house and is asked today's question — the house composer cannot paint a being", async () => {
+  it("a FOLLOW under the flag is the author road too (#154) and is asked the four-valued subject question; off the flag it is asked today's", async () => {
     const engine = engineReading([intentWith("photoreal_human")]);
     await castingBriefCompiler({
       briefText: RICH, candidateCount: 8, rollSeed: "c-follow", engine, followIdentity: FOLLOW as never, creativeRegister: true,
     });
-    expect(sent(engine, "interpret")[0]?.system).toContain(COHORT_INSTRUCTION);
-    expect(sent(engine, "interpret")[0]?.system).not.toContain(SUBJECT_INSTRUCTION);
+    expect(sent(engine, "interpret")[0]?.system).toContain(SUBJECT_INSTRUCTION);
+    expect(sent(engine, "interpret")[0]?.system).not.toContain(COHORT_INSTRUCTION);
+
+    const off = engineReading([intentWith("photoreal_human")]);
+    await castingBriefCompiler({ briefText: RICH, candidateCount: 8, rollSeed: "c-follow-off", engine: off, followIdentity: FOLLOW as never });
+    expect(sent(off, "interpret")[0]?.system).toContain(COHORT_INSTRUCTION);
+    expect(sent(off, "interpret")[0]?.system).not.toContain(SUBJECT_INSTRUCTION);
   });
 });
 

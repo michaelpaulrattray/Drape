@@ -71,6 +71,7 @@ import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief, interpreterEngine } from "./interpreter";
 import { authorPrompt, type Imagination } from "./promptAuthor";
+import { familyClause } from "./familyClause";
 import type { CastStyle } from "../../shared/castStyles";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
@@ -615,8 +616,30 @@ function applyOverrides(intent: CastingIntent, overrides: LockOverrides | undefi
   return next;
 }
 
-function buildChips(intent: CastingIntent, followPersonaLine: string | null): CastingChip[] {
+/**
+ * The axes a chip can unpin on a FOLLOW — `withUnlocksApplied`'s own three, the
+ * only ones the anchor supplies and a chip can therefore strip. On the author
+ * road these are the only removable chips a follow sheet draws.
+ */
+const FOLLOW_UNPINNABLE: ReadonlySet<UnlockableField> = new Set<UnlockableField>(["sex", "ageBand", "heritage"]);
+
+function buildChips(
+  intent: CastingIntent,
+  followPersonaLine: string | null,
+  /**
+   * READ-ONLY CHIPS ON THE AUTHOR ROAD (#154, his answer (2)). The brief
+   * travels verbatim there, so a chip derived from the sentence cannot be
+   * unsaid by removing it: on a plain authored sheet every derived chip is a
+   * RECORD of what the reader saw and is drawn non-removable, with the sheet
+   * saying "edit the sentence to change them". On a FOLLOW the anchor is a
+   * second supplier a chip CAN strip, so the three anchored axes stay
+   * removable. Off the flag nothing here moves.
+   */
+  carry: { authorRoad: boolean; anchored: boolean },
+): CastingChip[] {
   const chips: CastingChip[] = [];
+  const removable = (field: UnlockableField): boolean =>
+    !carry.authorRoad || (carry.anchored && FOLLOW_UNPINNABLE.has(field));
 
   if (intent.role) {
     // The user's own words. Not removable, because removing the brief is not
@@ -633,13 +656,13 @@ function buildChips(intent: CastingIntent, followPersonaLine: string | null): Ca
   ];
   for (const [field, value] of derived) {
     if (!value) continue;
-    chips.push({ label: value, kind: field === "archetype" ? "direction" : "subject", removable: true, field });
+    chips.push({ label: value, kind: field === "archetype" ? "direction" : "subject", removable: removable(field), field });
   }
   if (intent.heritage.length > 0) {
     chips.push({
       label: intent.heritage.map((component) => component.heritage).join(" · "),
       kind: "subject",
-      removable: true,
+      removable: removable("heritage"),
       field: "heritage",
     });
   }
@@ -990,19 +1013,16 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
 
   /*
     WHICH ROAD THIS ROLL TAKES is known before the reader is asked, and the
-    reader is asked the question that road needs. A FOLLOW's anchor and a chip
-    unlock or override reach the engine only through the house composer (the
-    review of #132, below), so such a roll under the flag is asked today's
-    cohort question and walled today's way; every other flagged roll is the
-    author road, and its reader is asked the four-valued subject question.
+    reader is asked the question that road needs. Under the flag EVERY roll is
+    the author road and its reader is asked the four-valued subject question —
+    a FOLLOW's anchor and a chip unlock or override are carried as the FAMILY
+    CLAUSE (#154, below), where until 2026-08-27 they sent the roll back to the
+    house composer (`register: { kind: "house", because }`, the review of #132;
+    rows written that way still exist and the sheet still reads them).
   */
   const unlock = input.unlock ?? [];
   const anchor = anchorFrom(input.followIdentity ?? null);
-  const houseBecause: "anchored" | "edited" | null =
-    anchor ? "anchored"
-    : unlock.length > 0 || Object.values(input.overrides ?? {}).some((value) => value != null) ? "edited"
-    : null;
-  const authorRoad = input.creativeRegister === true && houseBecause === null;
+  const authorRoad = input.creativeRegister === true;
 
   const outcome = await interpretBrief({
     briefText,
@@ -1147,6 +1167,16 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   */
   const effectiveAnchor = anchor ? withUnlocksApplied(anchor, unlock) : null;
   /*
+    THE FAMILY CLAUSE (#154; his countersign, Crew reply #11): on the author
+    road a follow's anchor — AFTER unlocks, the same anchor the house resolver
+    reads — and the overrides become ONE paragraph written by code, placed
+    after the verbatim brief and before the author's content. Null on a plain
+    authored roll, so that prompt is byte-identical to what it was. On a plain
+    authored roll an UNLOCK reaches nothing the engine reads (the sentence is
+    verbatim), which is why `buildChips` draws those chips read-only.
+  */
+  const carried = authorRoad ? familyClause({ anchor: effectiveAnchor, overrides: input.overrides }) : null;
+  /*
     Brand names never reach the image engine (founder gate 21). The two
     free-text fields are the only things here that travel to the provider as
     the user's own words, so they are scrubbed last, after every other
@@ -1189,14 +1219,12 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     never the roll: the static bundle stands and the row says `authored: false`.
   */
   /*
-    ⚠ THREE THINGS REACH THE ENGINE ONLY THROUGH THE HOUSE COMPOSER, and the
-    author road carries none of them (Fable review of PR #132, finding 1): a
-    FOLLOW's anchor (its realized identity rides `composeCandidatePrompt`, so
-    an authored follow would paint eight strangers under a lineage pill), and
-    a chip UNLOCK or OVERRIDE (they mutate the intent and the locks, never the
-    brief text, so an authored sheet would record an edit the engine was never
-    told). Until the author road can carry them — a declared #131 slice — such
-    a roll composes HOUSE under the flag, and the row says why.
+    A FOLLOW's anchor and a chip UNLOCK or OVERRIDE used to reach the engine
+    only through the house composer (Fable review of PR #132, finding 1), so
+    such a roll composed HOUSE under the flag and the row said why. They ride
+    the family clause now (`carried`, above) — the anchor as words the engine
+    holds on every portrait, an override as the sentence the customer said
+    with a control, an unlock on a follow as an axis the clause stops naming.
   */
   const authorEngine = authorRoad ? (input.engine ?? interpreterEngine()) : null;
   /*
@@ -1206,7 +1234,13 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     is what the row keeps and the sheet will show. Declared on #131 for his word.
   */
   const authored = authorEngine
-    ? await authorPrompt({ engine: authorEngine, briefText: scrubBrands(briefText) ?? briefText, imagination: input.imagination, style: input.style })
+    ? await authorPrompt({
+        engine: authorEngine,
+        briefText: scrubBrands(briefText) ?? briefText,
+        imagination: input.imagination,
+        style: input.style,
+        clause: carried?.clause ?? null,
+      })
     : null;
   const candidates = authored
     ? sheet.candidates.map((candidate) => ({ ...candidate, prompt: authored.prompt }))
@@ -1242,7 +1276,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       briefText,
       intent,
       archetype,
-      chips: buildChips(intent, input.followPersonaLine ?? null),
+      chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad, anchored: effectiveAnchor !== null }),
       /*
         WHO WROTE THIS SHEET — present ONLY under the flag, so an unflagged
         roll's row is byte-identical to today's. `authored: false` is a sheet
@@ -1252,9 +1286,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         customer's words and the author's, nothing house-internal — and it is
         what the sheet will show (#131 slice D: no hidden prompt, ever).
       */
-      ...(input.creativeRegister === true && houseBecause !== null
-        ? { register: { kind: "house", because: houseBecause } }
-        : {}),
       ...(authored
         ? {
             register: {
@@ -1286,6 +1317,13 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
                 names the adapter that resolved the record, not this.
               */
               subject: outcome.ok ? outcome.subject : "unread",
+              /*
+                WHAT THE CLAUSE WAS WRITTEN FROM (#154, design §2d) — present
+                only where a follow or a chip edit was carried; the clause's
+                bytes sit inside `prompt` too, so the sheet's prompt record
+                shows it without a second reader (no hidden prompt, ever).
+              */
+              ...(carried ? { carried } : {}),
             },
           }
         : {}),
@@ -1294,7 +1332,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     cohortKey: intent.cohort,
     styleKey: null,
     styleProfile: null,
-    chips: buildChips(intent, input.followPersonaLine ?? null),
+    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad, anchored: effectiveAnchor !== null }),
     candidates,
     variance: sheet.variance,
     size: CANDIDATE_RENDER.size,
@@ -1354,7 +1392,8 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     cohortKey: "photoreal_human",
     styleKey: null,
     styleProfile: null,
-    chips: buildChips(intent, input.followPersonaLine ?? null),
+    /* No register here: this compiler never takes the author road, so every chip stays as it always was. */
+    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad: false, anchored: false }),
     candidates,
     variance,
     size: CANDIDATE_RENDER.size,

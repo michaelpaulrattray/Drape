@@ -85,5 +85,7 @@ block's text.
 - No persistence. The values are page state; leaving resets them (§10 ruling
   4). The sheet's dock preselects the SHOWN sheet's own recorded settings for
   the next roll, the meter's existing rule.
-- The `follow` mutation still takes no settings — a follow composes house
-  under the flag (#131 open item, unchanged).
+- ~~The `follow` mutation still takes no settings — a follow composes house
+  under the flag (#131 open item, unchanged).~~ **Superseded 2026-08-27 (#154):**
+  the author carries a follow as the family clause, `follow` takes
+  `imagination` and `style`, and the gear is drawn on a standing follow.

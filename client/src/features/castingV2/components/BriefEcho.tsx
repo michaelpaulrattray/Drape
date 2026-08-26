@@ -93,11 +93,29 @@ export type PendingAdjustments = {
   unlocked: readonly string[];
 };
 
+/**
+ * Which pinned facts may be LET VARY (#154). Off the author road, every one.
+ * On it the brief reaches the engine verbatim, so a fact read out of the
+ * sentence cannot be unsaid by a chip — only a standing FOLLOW's three
+ * anchored axes (the anchor being a second supplier the chip can strip) still
+ * can. The server draws the same rule into each chip's `removable`
+ * (`buildChips`); this is the echo's copy of it, keyed on the NEXT roll.
+ */
+export type VaryPolicy = { authorRoad: boolean; standingFollow: boolean };
+
+const FOLLOW_UNPINNABLE: ReadonlySet<EchoField> = new Set<EchoField>(["sex", "ageBand", "heritage"]);
+
+export function varyOffered(policy: VaryPolicy | undefined, field: EchoField): boolean {
+  if (!policy || !policy.authorRoad) return true;
+  return policy.standingFollow && FOLLOW_UNPINNABLE.has(field);
+}
+
 export function BriefEcho({
   facts,
   followLabel,
   terse,
   pending,
+  vary,
   onAdjust,
 }: {
   facts: BriefFacts;
@@ -105,6 +123,8 @@ export function BriefEcho({
   /** True on the second and later rolls of a session. */
   terse?: boolean;
   pending?: PendingAdjustments;
+  /** Absent means every pinned fact may be let vary (the house road). */
+  vary?: VaryPolicy;
   onAdjust: (adjustment: EchoAdjustment) => void;
 }) {
   const spans = composeEcho(facts, { terse, followLabel });
@@ -119,7 +139,7 @@ export function BriefEcho({
     */
     <p className="dpc-echo" aria-label={echoText(spans)}>
       {spans.map((span, index) => (
-        <EchoSpanView key={index} span={span} facts={facts} pending={pending} onAdjust={onAdjust} />
+        <EchoSpanView key={index} span={span} facts={facts} pending={pending} vary={vary} onAdjust={onAdjust} />
       ))}
     </p>
   );
@@ -129,11 +149,13 @@ function EchoSpanView({
   span,
   facts,
   pending,
+  vary,
   onAdjust,
 }: {
   span: EchoSpan;
   facts: BriefFacts;
   pending?: PendingAdjustments;
+  vary?: VaryPolicy;
   onAdjust: (adjustment: EchoAdjustment) => void;
 }) {
   if (span.kind === "text") return <span className="dpc-echo__prose">{span.text}</span>;
@@ -232,10 +254,12 @@ function EchoSpanView({
       /*
         "Let it vary" only exists where something is pinned. Offering it on an
         axis that is already varying would be a control whose only outcome is
-        nothing happening.
+        nothing happening — and on the author road (#154) the same is true of
+        a fact the verbatim sentence itself states, so `varyOffered` withholds
+        it there too and the sheet says why once, under the echo.
       */
       footer={
-        pinned
+        pinned && varyOffered(vary, field)
           ? {
               label: `Let ${HEADINGS[field].toLowerCase()} vary`,
               onSelect: () => onAdjust({ kind: "vary", field }),

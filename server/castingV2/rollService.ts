@@ -406,21 +406,21 @@ export async function createRoll(
   */
   /*
     THE AUTHOR ROAD, DECIDED FIRST (#131 slice E; review of PR #138, finding 1):
-    the register scope captured once, and the road predicate — flagged AND no
-    anchor AND no chip edit — stated here from the same inputs the compiler
-    reads (`houseBecause`). Two things below hang on it: the brief bound and
-    the PATH. On the author road the engine dresses the cast from the prompt
-    (ruling rule 11 — the switch is retired), so no path is born, no wardrobe
-    pick is asked, and no line is recorded that the authored prompt would only
-    discard; a sheet that drew "WARDROBE — <line>" over an outfit the engine
-    was never told about was the review's finding.
+    the register scope captured once, and the road predicate stated here from
+    the same input the compiler reads. It used to exclude a follow and a chip
+    edit; since #154 (the family clause) the flag alone decides — a follow's
+    anchor and the chip edits are carried as words. Two things below hang on
+    it: the brief bound and the PATH. On the author road the engine dresses the
+    cast from the prompt (ruling rule 11 — the switch is retired), so no path
+    is born, no wardrobe pick is asked, and no line is recorded that the
+    authored prompt would only discard; a sheet that drew "WARDROBE — <line>"
+    over an outfit the engine was never told about was the review's finding —
+    and on a FOLLOW that means the parent's pair is NOT inherited either
+    (`inheritWardrobe: false`, below), because an authored follow is dressed by
+    the engine exactly as an authored first roll is.
   */
   const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
-  const authorRoad =
-    creativeRegister
-    && !input.followCandidatePublicId
-    && (input.unlock ?? []).length === 0
-    && !Object.values(input.overrides ?? {}).some((value) => value != null);
+  const authorRoad = creativeRegister;
 
   const twoPathsEnabled = dependencies.twoPathsEnabled ?? captureCastingTwoPathsEnabled;
   const bornPath: CastingPath | null = twoPathsEnabled(input.userId) && !authorRoad
@@ -517,7 +517,8 @@ export async function createRoll(
         its nulls, because that is what the transaction is about to write.
       */
       path: bornPath,
-      inheritedWardrobe: inheritedWardrobe
+      /* On the author road the house prompts are discarded and the row inherits nothing, so the compiler is handed no pair. */
+      inheritedWardrobe: inheritedWardrobe && !authorRoad
         ? { path: inheritedWardrobe.path, line: inheritedWardrobe.wardrobeLine }
         : undefined,
       pickWardrobe,
@@ -606,6 +607,8 @@ export async function createRoll(
         pair inside the same transaction that re-anchors the parent candidate.
       */
       path: bornPath,
+      /* An authored follow is dressed by the engine (#154): the parent's pair stays with the parent. */
+      inheritWardrobe: !authorRoad,
       /*
         ⚠ WRITTEN, NOT RE-RESOLVED — and it used to be re-resolved here.
 

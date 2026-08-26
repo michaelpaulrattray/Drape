@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "aaba88e1e8d19d46"
+    "sourceFingerprint": "a42e58e7f5c09d01"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 178
+      "moduleCount": 179
     },
     {
       "id": "domain:castingV2",
@@ -3689,6 +3689,12 @@
     {
       "id": "module:server/castingV2/falRegionReader.ts",
       "path": "server/castingV2/falRegionReader.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/familyClause.ts",
+      "path": "server/castingV2/familyClause.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -11068,6 +11074,10 @@
     {
       "id": "test:server/castingV2/falRegionReader.test.ts",
       "path": "server/castingV2/falRegionReader.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/familyClause.test.ts",
+      "path": "server/castingV2/familyClause.test.ts"
     },
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
@@ -21939,6 +21949,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/familyClause.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/heritagePromotion.ts",
       "kind": "imports"
     },
@@ -22755,6 +22770,26 @@
     {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/security/trustedImageFetch.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:server/castingV2/briefCompiler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
