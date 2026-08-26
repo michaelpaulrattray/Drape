@@ -35,6 +35,7 @@ button in the tile's action row's register.
 | `Retrying a tile isn't available for this account yet.` | server, off the flag | adapted (the ink studio's shape) | `CASTING_RETRY_SCOPE` |
 | `That retry didn't make it. Your credits are back.` | recovery receipt | adapted from `RECOVERED_REFINE_SENTENCE` | a swept retry, refunded |
 | `That retry didn't start. You were not charged.` | recovery receipt | adapted from the roll's | a swept retry that never charged |
+| `That edit is already being made — it finishes before the next one starts. Nothing extra was charged.` | server, candidate lock busy (`directOperation.ts`) | **not added by this change, newly reachable from it**: a true concurrent double tap (second tab or device — the button itself is disabled on tap) meets the lock's existing sentence, written for a refine. It calls a retry an "edit". Recorded rather than reworded here: the sentence is shared with the refine road and changing it is that road's copy too (second review of #151, note 2) | `acquireCastingCandidateOperationLock` → `resource_busy` |
 
 Mechanizable laws touched: the price is on the paid button (D-15); no
 control that refuses is drawn (`retryEnabled` + roll terminal + kind on the

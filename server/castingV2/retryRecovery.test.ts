@@ -135,6 +135,27 @@ describe("the link", () => {
     expect(finalizers.finalizeSuccess).not.toHaveBeenCalled();
   });
 
+  it("closes a CLAIMED operation with no lock and no charge free — it died between the claim and the lock", async () => {
+    /* Second review of #151: the lock is taken in the statement after the
+       claim, so this state IS produced; the charge is operation-keyed, so
+       it is readable without the candidate, and nothing is owed. */
+    lockRow = null;
+    rows.ledger = [];
+    const outcome = await recover({ ...OPERATION, status: "claimed" });
+    expect(outcome).toMatchObject({ type: "free_failure" });
+    expect(refunds).toEqual([]);
+    expect(finalizers.finalizeClaimedFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it("still parks a RUNNING lockless operation, and a claimed one whose ledger shows a charge", async () => {
+    lockRow = null;
+    rows.ledger = [];
+    expect(await recover({ ...OPERATION, status: "running" })).toMatchObject({ type: "recovery_required" });
+    rows.ledger = [chargeRow()];
+    expect(await recover({ ...OPERATION, status: "claimed" })).toMatchObject({ type: "recovery_required" });
+    expect(refunds).toEqual([]);
+  });
+
   it("parks when the lock names something that is not a candidate", async () => {
     lockRow = { lockKey: "model:9", kind: "castingV2.retry" };
     expect(await recover()).toMatchObject({ type: "recovery_required" });

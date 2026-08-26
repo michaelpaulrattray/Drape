@@ -8,9 +8,12 @@
  * operation. The claim carries a payload (`candidatePublicId`, `attempt`),
  * and recovery deliberately does not trust it — only its hash is persisted.
  * What a retry operation DOES carry durably, from the claim and BEFORE any
- * money, is the candidate lock (`casting-candidate:<id>`), written in the
- * claim's own transaction and deleted only by the finalizers — so the lock
- * row is the link, for exactly the window recovery cares about.
+ * money, is the candidate lock (`casting-candidate:<id>`), taken in the
+ * statement AFTER the claim (`directOperation.ts`) and deleted only by the
+ * finalizers — so the lock row is the link for the whole window money is in
+ * play. A crash BETWEEN the claim and the lock leaves a claimed operation
+ * with no lock and no charge: the ledger is operation-keyed, so that one is
+ * read without a candidate and closed free (second review of #151).
  *
  * The rule is the roll's, over one row:
  *
@@ -105,11 +108,21 @@ async function adjudicateRetryOperation(
   const candidateId = lock ? candidateIdOfLockKey(lock.lockKey) : null;
   if (candidateId === null) {
     /*
-      A retry claims with the candidate lock BEFORE any money moves, and the
-      lock lives until a finalizer deletes it. No lock under a still-open
-      operation is a state this road does not produce — so nothing is
-      refunded on a guess, and support reads the operation.
+      The lock is taken in the statement after the claim, so a process death
+      between the two leaves a claimed operation with no lock — and, because
+      the deduct comes later still, with no charge. The charge is keyed on the
+      OPERATION, so it can be read without the candidate: no charge means
+      nothing is owed and the operation closes free, rather than sending
+      support to review a row that is provably empty. Anything else under a
+      lockless operation is a state this road does not produce, and stays
+      parked — nothing is refunded on a guess.
     */
+    if (operation.status === "claimed") {
+      const { charge } = await readOperationLedger(db, operation, []);
+      if (charge.kind === "not_charged") {
+        return { type: "free_failure", reason: "claimed, no lock, no charge — died before the lock" };
+      }
+    }
     return {
       type: "recovery_required",
       reason: lock ? "retry operation holds a lock that names no candidate" : "retry operation holds no candidate lock",

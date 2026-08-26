@@ -221,3 +221,12 @@ The second-failure path (refund under the retry reference, the chip back
 with the new class, the button back) is proven by the service suite's fakes
 and NOT at the real engine — a real engine cannot be told to fail one slice.
 Declared here rather than implied by the frames.
+
+## Known imprecisions (stated, not fixed)
+
+- A charge that does not land restores the original **class** but not the
+  original provider provenance (`provider`, `providerModel`, `providerRef`
+  are cleared by the reset and not restored). Chip and refund read the class
+  only; the loss is diagnostic (second review of #151, note 3).
+- A true concurrent double tap from a second tab meets the candidate lock's
+  shared sentence, which calls the retry an "edit" (evidence pack, last row).

@@ -2123,8 +2123,8 @@ export async function getGenerationOperationOutcomeByClaim(
  * to its one candidate (`retryRecovery.ts`).
  *
  * A retry operation's claim payload is hashed, never stored, and no roll
- * points at the operation; what it does carry durably, from the claim and
- * BEFORE any money, is the candidate lock
+ * points at the operation; what it does carry durably, from the statement
+ * after the claim and BEFORE any money, is the candidate lock
  * (`casting-candidate:<id>`), deleted only by the finalizers — so for the whole
  * window recovery cares about, the lock row is where the slice's identity
  * lives. Null when the operation holds no lock, which the adjudicator treats
