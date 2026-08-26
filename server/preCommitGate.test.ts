@@ -77,6 +77,22 @@ describe("the pre-commit gate", () => {
     expect(readFileSync(HOOK, "utf8")).not.toContain("\r");
   });
 
+  it("every hook in .githooks is executable IN THE INDEX, or a Linux clone never runs it", () => {
+    /* Found on the gate (run 32912700673): this hook was authored on Windows,
+       landed as mode 100644, and ubuntu's git skipped it silently — all three
+       refusal arms passed the commit. The pre-push was 100644 too, since its
+       test drives the file through `sh` and never asked git to. Windows runs a
+       non-executable hook anyway (core.filemode=false), so the index mode is
+       the only reading that is true on every machine that clones this. The
+       population is the directory, not a list. */
+    const listing = execFileSync("git", ["ls-files", "-s", "--", ".githooks"], { encoding: "utf8" });
+    const rows = listing.trim().split("\n").filter(Boolean);
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    for (const row of rows) {
+      expect(row, `${row} — fix with: git update-index --chmod=+x <path>`).toMatch(/^100755 /);
+    }
+  });
+
   describe("arm 1 — R3, a team/* branch committed from the MAIN working tree", () => {
     it("REFUSES the commit in the main tree, and names the worktree command", () => {
       const dir = freshRepo();
