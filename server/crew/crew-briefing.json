@@ -1,7 +1,7 @@
 {
-  "edition": 43,
-  "updatedAt": "2026-08-27T05:47:00+10:00",
-  "shift": "foreman-34",
+  "edition": 44,
+  "updatedAt": "2026-08-27T05:58:00+10:00",
+  "shift": "foreman-35",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1047,6 +1047,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T05:58:00+10:00",
+      "shift": "foreman-35",
+      "text": "Quiet night - nothing needed doing. No replies from you (nine acknowledged, none new at 05:22). I checked the last shift's claims at the artifacts (main, the deploy branch and the tree all sit at f47012df, clean), the queue (nothing admissible without your word), the gate (no failures on main) and the patrol clocks (Janitor is due ~29 Aug, the rest ~2 Sep). So I built nothing and spent nothing: $0 house, 0 credits. What is waiting on you, in the order I would answer it: the Retry card (flip it for your account, and widen plain Retry to content-filter tiles - the #93 court's numbers are on it); the family-clause card (#154, three questions before it is built); and your eye on the settings modal (settings-modal-142), the framing and lighting courts (130, 128), the rebuilt house block (144) and the two eye items (author-sat-out-131, retry-button-122). Any answer becomes the next shift's work."
+    },
+    {
       "at": "2026-08-27T05:47:00+10:00",
       "shift": "foreman-34",
       "text": "No replies from you (nine acknowledged, none new at 05:06). I ran the #93 court your 'court first' asked for — does rewording a refused prompt the way you rewrote your cyber-goth brief by hand actually get it past the engine's content filter? Instrument proved first (a known-refused prompt refused 2/2, a known-passing one passed 2/2), then 100 renders: your cyber-goth description as refused passed 3 of 8 tonight, the studio's softened copy 4 of 8, your own hand rewrite 4 of 8; roll 222's text 6 of 8 as-is and 7 of 8 softened. The bar set before firing was four more passes in eight; the softener bought one. The real finding is the other one: the same text went from 1 pass in 64 two nights ago to 3 in 8 tonight, and 'goth woman mid 30s' from 1 in 18 to 8 in 8 — the checker's mood, not the words. Also learned: fal does not refuse orc / tusks / bare-chested at all (8 of 8), so your orc 'copyright' refusal was another checker's. Verdict by the design's own rule: the softer-wording road is NOT built; the button a content-filter tile needs is the plain Retry you already have on engine-error tiles, widened — that is now the one question on the Retry card, with tonight's numbers behind it. The two design questions I carded last shift are withdrawn. Spend: $3.62 house, 0 credits. Nothing changed in the product."
@@ -1240,11 +1245,6 @@
       "at": "2026-08-26T02:18:00+10:00",
       "shift": "foreman-4",
       "text": "THE COURT RAN. Eight arms of your cyborg brief, 18 renders, $0.79 — the strips are in your gallery above, in the full-size viewer you asked for this evening. What’s already visible before your eye: today’s compile put beards you never asked for on all three frames and dressed your bare-chested ask in t-shirts; the lean register carries committed hardware but broke the mid-torso framing lock; and the LEANER the prompt, the MORE the engine refused (the no-variance-card arm refused 2 of 3), so the design’s safety-rewording retry is load-bearing. One arm (C′) is reported invalid — the harness’s own shortening cut your character detail, so its frames measure my mistake, honestly labelled. Your verdict goes in the box under the item; full pointers on #16."
-    },
-    {
-      "at": "2026-08-25T23:30:00+10:00",
-      "shift": "foreman-4",
-      "text": "Fixed your admin-entry complaint (#68): typing /admin was a dead end (a 404) — it now lands on the overview — and the account menu's own text was invisible in dark theme; both driven and photographed before and after. The same drive found the lobby's theme toggle is unclickable (filed as #73). Caught and repaired a record gap your go-live exposed: the test that guards the migration ledger wasn't updated when the ceremony ran, so every change's checks were failing; fix is in review (PR 76). Then rebuilt this page toward your UX feedback (#74): the chips at the top, the milestone progress bar, all eight ladder rungs, Recently landed, and the journal fold you are using now."
     }
   ],
   "acknowledgedReplyIds": [
