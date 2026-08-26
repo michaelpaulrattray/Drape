@@ -1,7 +1,7 @@
 {
-  "edition": 37,
-  "updatedAt": "2026-08-27T02:05:00+10:00",
-  "shift": "foreman-28",
+  "edition": 38,
+  "updatedAt": "2026-08-27T03:05:00+10:00",
+  "shift": "foreman-29",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -54,7 +54,7 @@
           "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E) — AND THE MINIMAL SETTINGS MODAL (#142, your 'do it'): MERGED PR #150, live on your account — the gear reading 'Photoreal · Low' opens the panel (Style, Imagination, Reset, the override line). N1's last built slice; what remains is #128/#130 (two small courts), #129 (patrol), then your eye = the gate — AND THE LIGHTING COURT (#128) RAN: four lights on the locked block + the distilled clause, your thin brief, 40 frames, $2.60; the two sheets are in your gallery and your eye picks the studio light. Left in N1: #130 (framing to 28%), #129 (patrol), then your eye = the gate",
+          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E) — AND THE MINIMAL SETTINGS MODAL (#142, your 'do it'): MERGED PR #150, live on your account — the gear reading 'Photoreal · Low' opens the panel (Style, Imagination, Reset, the override line). N1's last built slice; what remains is #128/#130 (two small courts), #129 (patrol), then your eye = the gate — AND THE LIGHTING COURT (#128) RAN: four lights on the locked block + the distilled clause, your thin brief, 40 frames, $2.60; the two sheets are in your gallery and your eye picks the studio light. Left in N1: #130 (framing to 28%), #129 (patrol), then your eye = the gate — AND THE FRAMING COURT (#130) RAN: four framing sentences on the locked block, your thin brief, 32 frames, $2.05. Words move the frame 3–4 points, not the 8 needed for 28% — and your 9:16 reference carried into our 2:3 frame is ~33%, which the best sentence already hits. Your pick between the two targets is on the eye item. Left in N1: #129 (patrol), then your eye = the gate",
           "state": "in-progress"
         }
       ]
@@ -330,6 +330,21 @@
   ],
   "eyeItems": [
     {
+      "id": "framing-court-130",
+      "title": "The frame (#130) — your reference is 9:16, we render 2:3: which target?",
+      "question": "Top row is your reference frame, shown at its own 9:16 shape. K is today's framing sentence (about 36% head share). F1 barely moves it. F2 says your reference's geometry in numbers and lands about 33% — the tightest of the four; F3 about 34%. No sentence gets to 28%, and here is why: carrying your reference's view into our 2:3 frame gives about 33%, not 28% — a 28% face in our frame would be a WIDER picture than your reference. So the choice is (a) 28% in our frame — a wider shot than your reference, which words cannot reach and would need a render-side build (render taller, crop to it), or (b) your reference's VIEW carried into our frame (~33%), which F2 delivers now. My recommendation: (b) with F2's sentence — it is your frame carried honestly into our shape, it sits above the trim's 31.6% so the trim and the sentence stop fighting, and it is one small PR. Say 'F2', 'K', or 'wider' — or say what is off in the crop. (Two things I saw: the numeric sentences refused 5 of 24 where K refused 0 of 8, and they drew chest tattoos nobody asked for — small numbers, both go to the refusal patrol.)",
+      "state": "open",
+      "filedAt": "2026-08-27T03:05:00+10:00",
+      "issueNumber": 130,
+      "frames": [
+        {
+          "key": "crew-eye/03124b19-b1e1-4654-ad8b-00a17fb54b06.jpg",
+          "arm": "the strip · reference + 4 rows × 8",
+          "caption": "Top: your reference frame, letterboxed at its own 9:16 shape (28.2%). Then K (today's sentence, 36.7%), F1 (a hand's width lower, 35.9%), F2 (face 'about a quarter of the frame's height', 32.6%), F3 ('a little under a third', 33.7%). Same brief, same block otherwise, the size the product renders at. Grey tiles are the engine's own refusals."
+        }
+      ]
+    },
+    {
       "id": "lighting-court-128",
       "title": "The studio light (#128) — four lights on the locked block, your thin brief, which one is the studio?",
       "question": "Row K is the light the block has today (roll 223's). L1 is your reference look — deeper open shadow under the jaw. L2 is your own sentence word for word. L3 is a clean, even light. R is the no-block version from reply #8 (brief + a short photographic clause) — it refused 3 of 8 and looks like a different room. Pick a row by letter, or say what is off in the light. If K, nothing moves and #128 closes; if L1/L2/L3, that sentence becomes the block's lighting line in a small PR and the other two go on the advanced-settings list for later. (All rows frame tighter than your 28% reference — that is #130, the next court, not this one.)",
@@ -549,6 +564,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "framing-court-130",
+      "title": "The framing court (#130) — RUN: four framing sentences on the locked block, your thin brief × 8 each — strip in your gallery, nothing moved",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "Your words: 'Calibrate the preset's framing to my reference frame (28% head share).' Last night's lighting court measured every arm at about 36% against your 28%, all on the same framing sentence — so tonight only that sentence moved. K = today's ('the crop just below the collarbones'); F1 = the crop said lower in anatomy (a hand's width below the collarbones); F2 = your reference's geometry said in numbers ('the face takes up about a quarter of the frame's height, the eyes about 30% down'); F3 = the same at 'a little under a third'. Same brief ('goth woman mid 30s'), same Low road, same block otherwise. What came back: K 36.7% (same as last night), F1 35.9% (no different), F2 32.6% with the tightest spread, F3 33.7%. No sentence reaches 28%. The reason is worth having: your reference frame is 9:16 and the product renders 2:3 — the SAME view carried into our frame reads about 33%, which F2 already hits; a 28% face in a 2:3 frame would be a wider picture than your reference (more torso, smaller head). Two costs to state: the numeric sentences refused 5 of 24 where today's refused 0 of 8 (small numbers, #129 will measure), and they drew chest tattoos the brief never asked for. One interaction: the framing trim on your account crops any frame under 31.6% back to 31.6%, so a 28% sentence would be undone on your own rolls — rule 15 (retire the trim?) waits on your target. Spend $2.05 house (estimated $2.12 first), no credits, no rows. Record: docs/specs/FRAMING_COURT_2026-08-27.md."
+    },
     {
       "id": "lighting-court-128",
       "title": "The lighting court (#128) — RUN: four lights on the locked block, plus the distilled clause, your thin brief × 8 each — sheets in your gallery",
@@ -882,6 +904,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-27T03:05:00+10:00",
+      "shift": "foreman-29",
+      "text": "The framing court is done and in your gallery (#130). Your thin brief was rolled eight times under four framing sentences on the locked block — today's, one saying the crop lower in anatomy, and two saying your reference's geometry in numbers. Words move the frame three or four points, not the eight needed to reach 28% — and the reason turned out to be the frame's shape, not the words: your reference is 9:16 and the product renders 2:3, so your reference's view carried into our frame is about 33%, which the best sentence (F2) already hits with the tightest spread. A 28% face in our frame would be a wider picture than your reference. That is your call, and it is on the eye item with my recommendation (F2). Nothing in the product moved. Two things seen on the way, both for the refusal patrol: the number-stated sentences refused 5 of 24 where today's refused none, and they drew chest tattoos nobody asked for. Cost $2.05 house (estimated first on the issue), no credits. Still open for your eye: the studio light (#128), the settings modal (#142), roll 223's block (#144). No replies from you tonight."
+    },
     {
       "at": "2026-08-27T02:05:00+10:00",
       "shift": "foreman-28",
