@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import fs from "fs";
+import path from "path";
 
 // ── Mock DB helpers ──
 const mockFreezeUser = vi.fn().mockResolvedValue({ success: true });
@@ -21,13 +23,14 @@ vi.mock("./auditLog", () => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
   AUDIT_ACTIONS: {
     ACCOUNT_AUTO_FROZEN: "account.auto_frozen",
+    ACCOUNT_FROZEN: "account.frozen",
     ACCOUNT_UNFROZEN: "account.unfrozen",
   },
 }));
 
 vi.mock("./slack/slackNotification", () => ({
   SlackAlerts: {
-    accountAutoFrozen: vi.fn().mockResolvedValue(undefined),
+    accountFrozenByStaff: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -157,35 +160,54 @@ describe("Account Freeze System", () => {
     });
   });
 
-  describe("Auto-freeze trigger logic", () => {
-    const AUTO_FREEZE_THRESHOLD = 2000;
+  /*
+   * ⚠ "Auto-freeze trigger logic" STOOD HERE — six arms over a LOCAL
+   * `shouldAutoFreeze(discrepancy, alreadyFrozen)` and a local `2000`. There is
+   * no such function in the product, and now there is no such behaviour: the
+   * discrepancy scan freezes nobody.
+   *
+   * It was removed on 2026-08-26 (#119) after it froze the founder's own
+   * account for 22 hours on a formula that was two rulings out of date.
+   * Founder ruling, Crew reply #5, verbatim:
+   *
+   *     "List-only. A control that can freeze a paying customer should have a
+   *      person's name on it."
+   *
+   * So the arms below assert the ABSENCE at the source, which is the only
+   * place an absence can be asserted — and with a positive control, because a
+   * `not.toContain` over the wrong text is green about everything.
+   */
+  describe("The discrepancy scan freezes nobody — founder ruling (#119)", () => {
+    const routeSource = fs.readFileSync(
+      path.join(__dirname, "routes", "moderatorReconciliation.ts"),
+      "utf8",
+    );
 
-    function shouldAutoFreeze(discrepancy: number, alreadyFrozen: boolean): boolean {
-      return Math.abs(discrepancy) >= AUTO_FREEZE_THRESHOLD && !alreadyFrozen;
+    /** The `getFlaggedUsers` procedure body: from its key to the next one. */
+    function getFlaggedUsersBody(): string {
+      const start = routeSource.indexOf("getFlaggedUsers:");
+      const end = routeSource.indexOf("getUserReconciliation:");
+      expect(start).toBeGreaterThan(-1);
+      expect(end).toBeGreaterThan(start);
+      return routeSource.slice(start, end);
     }
 
-    it("should auto-freeze when discrepancy >= 2000 and not already frozen", () => {
-      expect(shouldAutoFreeze(2500, false)).toBe(true);
+    it("getFlaggedUsers does not freeze anyone — it is a READ", () => {
+      expect(getFlaggedUsersBody()).not.toContain("freezeUser(");
     });
 
-    it("should NOT auto-freeze when discrepancy < 2000", () => {
-      expect(shouldAutoFreeze(1500, false)).toBe(false);
+    it("POSITIVE CONTROL — the file still freezes, by a moderator's hand", () => {
+      // Without this, the arm above passes on a file that was renamed, moved,
+      // or emptied. `freezeAccount` is the manual road and it stays.
+      expect(routeSource).toContain("freezeUser(");
+      expect(routeSource).toContain("freezeAccount:");
+      expect(routeSource).toContain("Manual freeze by moderator:");
     });
 
-    it("should NOT auto-freeze when already frozen", () => {
-      expect(shouldAutoFreeze(3000, true)).toBe(false);
-    });
-
-    it("should auto-freeze at exactly 2000", () => {
-      expect(shouldAutoFreeze(2000, false)).toBe(true);
-    });
-
-    it("should auto-freeze for negative discrepancies with abs >= 2000", () => {
-      expect(shouldAutoFreeze(-2500, false)).toBe(true);
-    });
-
-    it("should NOT auto-freeze for negative discrepancies with abs < 2000", () => {
-      expect(shouldAutoFreeze(-1000, false)).toBe(false);
+    it("POSITIVE CONTROL — the extracted slice is the procedure, not an empty string", () => {
+      const body = getFlaggedUsersBody();
+      expect(body.length).toBeGreaterThan(50);
+      expect(body).toContain("getUsersWithDiscrepancies");
     });
   });
 

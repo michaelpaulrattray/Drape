@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { moderatorProcedure, router } from "../_core/trpc";
 import { getDetailedCreditHistory, getDetailedGenerationHistory, getUsersWithDiscrepancies } from "../db/moderatorQueries";
+import { computeDiscrepancy, getUserRecordCosts, type DiscrepancyReading } from "../db/discrepancyQueries";
 import { freezeUser, unfreezeUser } from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
@@ -13,47 +14,61 @@ import { createModuleLogger } from "../logging/logger";
 import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "../../shared/inputLimits";
 const log = createModuleLogger("routes/moderatorReconciliation");
 
-/** Auto-freeze threshold: users with discrepancy >= this are frozen automatically. */
-const AUTO_FREEZE_THRESHOLD = 2000;
-
-/** Build a human-readable summary explaining the reconciliation result. */
-function buildSummary(ctx: {
-  hasDiscrepancy: boolean;
-  discrepancy: number;
+/**
+ * Build a human-readable summary explaining the reconciliation result.
+ *
+ * The rule it explains is `computeDiscrepancy` (`server/db/discrepancyQueries.ts`,
+ * header): charges against the records that recorded them. An unrefunded
+ * failure is NOT a discrepancy — failures refund only catastrophically by
+ * founder ruling — so it is named here as information, never as a cause.
+ */
+export function buildSummary(ctx: {
+  reading: DiscrepancyReading;
   failedCount: number;
-  totalRefunds: number;
-  creditsOnFailed: number;
+  pendingCount: number;
+  /** A date range is set — every figure is of the WINDOW, and a refund can land days after its charge. */
+  windowed?: boolean;
 }): string {
-  const { hasDiscrepancy, discrepancy, failedCount, totalRefunds, creditsOnFailed } = ctx;
+  const { reading, failedCount, pendingCount, windowed = false } = ctx;
+  const hasDiscrepancy = Math.abs(reading.discrepancy) > 0;
+  const anomalyNote = reading.refundAnomaly
+    ? windowed
+      ? ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed generation charges IN THIS DATE WINDOW (${reading.grossDeductions.toLocaleString()}) — a refund can land days after its charge, so clear the range before reading this as an all-time fact.`
+      : ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed every generation charge ever made (${reading.grossDeductions.toLocaleString()}) — this account has been credited more than it was charged; read the refund rows.`
+    : "";
+
+  const failureNote =
+    failedCount > 0
+      ? reading.unrefundedFailureCost > 0
+        ? ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} credits, ${reading.totalRefunds.toLocaleString()} refunded — failures refund only catastrophically by ruling, so the unrefunded ${reading.unrefundedFailureCost.toLocaleString()} is expected.`
+        : ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} credits, against ${reading.totalRefunds.toLocaleString()} refunded overall (not all of it for failures) — failures refund only catastrophically by ruling, so a smaller refund figure here would also be expected.`
+      : "";
 
   if (!hasDiscrepancy) {
-    if (failedCount > 0) {
-      return `No discrepancy. ${totalRefunds.toLocaleString()} credits refunded for ${failedCount} failed generation(s).`;
-    }
-    return "No discrepancies found. All credits align with generation records.";
+    return `No discrepancy. ${reading.grossDeductions.toLocaleString()} credits charged, ${reading.expectedCost.toLocaleString()} recorded.${anomalyNote}${failureNote}`;
   }
 
-  const absDisc = Math.abs(discrepancy).toLocaleString();
+  const absDisc = Math.abs(reading.discrepancy).toLocaleString();
+  const direction = reading.discrepancy > 0 ? "charged more than the records show" : "charged less than the records show";
+  const pendingNote =
+    pendingCount > 0
+      ? ` ${pendingCount} generation(s) still in flight — a charge can precede its record by minutes, so re-read once they settle.`
+      : "";
 
-  // Check if failed generations without refunds explain the gap
-  const unrefundedFailureCost = creditsOnFailed - totalRefunds;
-  if (failedCount > 0 && unrefundedFailureCost > 0 && Math.abs(discrepancy - unrefundedFailureCost) <= 1) {
-    return `Discrepancy of ${absDisc} credits — likely caused by ${failedCount} failed generation(s) without matching refunds (pre-atomic-credits or refund failure).`;
-  }
-
-  if (failedCount > 0 && totalRefunds === 0) {
-    return `Discrepancy of ${absDisc} credits. ${failedCount} failed generation(s) found with no refund transactions — credits may have been deducted before automatic refunds were enabled.`;
-  }
-
-  if (failedCount > 0 && unrefundedFailureCost > 0) {
-    return `Discrepancy of ${absDisc} credits. Partial refunds detected: ${totalRefunds.toLocaleString()} credits refunded but ${creditsOnFailed.toLocaleString()} expected for ${failedCount} failed generation(s).`;
-  }
-
-  return `Discrepancy of ${absDisc} credits detected between net credit cost and generation records.`;
+  return `Discrepancy of ${absDisc} credits — ${direction} (${reading.grossDeductions.toLocaleString()} charged against ${reading.expectedCost.toLocaleString()} recorded).${anomalyNote}${pendingNote}${failureNote}`;
 }
 
 export const moderatorReconciliationRouter = router({
-  /** Returns users whose credit discrepancy exceeds the given threshold. */
+  /**
+   * Returns users whose credit discrepancy exceeds the given threshold.
+   *
+   * A READ AND NOTHING ELSE. Until 2026-08-26 this query auto-froze every
+   * listed account at |discrepancy| >= 2000 — and its formula was two rulings
+   * out of date, so it froze the founder's own account for 22 hours (#119).
+   * His word (Crew reply #5): "List-only. A control that can freeze a paying
+   * customer should have a person's name on it." Freezing is `freezeAccount`
+   * below, with the moderator's id in the audit row.
+   */
   getFlaggedUsers: moderatorProcedure
     .input(
       z.object({
@@ -61,62 +76,7 @@ export const moderatorReconciliationRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const result = await getUsersWithDiscrepancies(input.threshold);
-
-      // Auto-freeze: freeze users with discrepancy >= AUTO_FREEZE_THRESHOLD who aren't already frozen
-      if (result.users.length > 0) {
-        const db = await getDb();
-        if (db) {
-          for (const flagged of result.users) {
-            if (Math.abs(flagged.discrepancy) >= AUTO_FREEZE_THRESHOLD) {
-              const [user] = await db
-                .select({ frozenAt: users.frozenAt, name: users.name })
-                .from(users)
-                .where(eq(users.id, flagged.userId))
-                .limit(1);
-
-              if (user && !user.frozenAt) {
-                const reason = `Auto-frozen: credit discrepancy of ${Math.abs(flagged.discrepancy)} credits detected (threshold: ${AUTO_FREEZE_THRESHOLD})`;
-                await freezeUser(flagged.userId, reason, "system");
-                await SlackAlerts.accountAutoFrozen(
-                  flagged.userId,
-                  flagged.userName || `User ${flagged.userId}`,
-                  Math.abs(flagged.discrepancy),
-                  AUTO_FREEZE_THRESHOLD
-                );
-                await logAuditEvent({
-                  userId: flagged.userId,
-                  action: AUDIT_ACTIONS.ACCOUNT_AUTO_FROZEN,
-                  resourceType: "user",
-                  resourceId: String(flagged.userId),
-                  metadata: {
-                    discrepancy: flagged.discrepancy,
-                    threshold: AUTO_FREEZE_THRESHOLD,
-                    trigger: "discrepancy_scan",
-                  },
-                });
-
-                // Send freeze notification email (non-blocking)
-                const [frozenUser] = await db
-                  .select({ email: users.email })
-                  .from(users)
-                  .where(eq(users.id, flagged.userId))
-                  .limit(1);
-                if (frozenUser?.email) {
-                  sendAccountFrozenEmail({
-                    userEmail: frozenUser.email,
-                    userName: flagged.userName || `User ${flagged.userId}`,
-                    freezeReason: reason,
-                    frozenBy: "system",
-                  }).catch((err) => log.error("[Klaviyo] Auto-freeze email failed:", err));
-                }
-              }
-            }
-          }
-        }
-      }
-
-      return result;
+      return getUsersWithDiscrepancies(input.threshold);
     }),
 
   getUserReconciliation: moderatorProcedure
@@ -148,6 +108,9 @@ export const moderatorReconciliationRouter = router({
         startDate: parsedStart,
         endDate: parsedEnd,
       });
+
+      // The record side of the rule, scoped the same way the scan scopes it.
+      const recordCosts = await getUserRecordCosts(userId, { startDate: parsedStart, endDate: parsedEnd });
 
       // ── Compute credit summaries from filtered rows ──
       let totalCreditsEarned = 0;
@@ -197,16 +160,20 @@ export const moderatorReconciliationRouter = router({
         ? Math.round((failedCount / totalGenerations) * 10000) / 100
         : 0;
 
-      // ── Discrepancy detection ──
+      // ── Discrepancy detection — THE RULE, not a copy of it ──
       const generationCreditTxn = creditsByType["generation"] || { count: 0, totalAmount: 0 };
-      const grossGenerationDeductions = Math.abs(generationCreditTxn.totalAmount);
-
       const refundCreditTxn = creditsByType["refund"] || { count: 0, totalAmount: 0 };
-      const totalRefunds = Math.max(0, refundCreditTxn.totalAmount);
 
-      const netGenerationCost = grossGenerationDeductions - totalRefunds;
-      const discrepancy = netGenerationCost - creditsOnCompleted - creditsOnPending;
-      const hasDiscrepancy = Math.abs(discrepancy) > 0;
+      const reading = computeDiscrepancy({
+        grossDeductions: Math.abs(generationCreditTxn.totalAmount),
+        totalRefunds: refundCreditTxn.totalAmount,
+        completedCost: creditsOnCompleted,
+        pendingCost: creditsOnPending,
+        failedCost: creditsOnFailed,
+        unlinkedCost: recordCosts.unlinkedCost,
+        operationCost: recordCosts.operationCost,
+      });
+      const hasDiscrepancy = Math.abs(reading.discrepancy) > 0;
 
       const genTypeBreakdown = Object.entries(gensByType).map(([type, data]) => ({
         type,
@@ -219,9 +186,9 @@ export const moderatorReconciliationRouter = router({
           totalEarned: totalCreditsEarned,
           totalSpent: totalCreditsSpent,
           byType: creditsByType,
-          grossGenerationDeductions,
-          totalRefunds,
-          netGenerationCost,
+          grossGenerationDeductions: reading.grossDeductions,
+          totalRefunds: reading.totalRefunds,
+          netGenerationCost: reading.netCost,
         },
         generations: {
           total: totalGenerations,
@@ -235,20 +202,20 @@ export const moderatorReconciliationRouter = router({
           byType: genTypeBreakdown,
         },
         reconciliation: {
-          grossGenerationDeductions,
-          totalRefunds,
-          netGenerationCost,
-          completedGenerationCost: creditsOnCompleted,
-          pendingGenerationCost: creditsOnPending,
-          discrepancy,
+          grossGenerationDeductions: reading.grossDeductions,
+          totalRefunds: reading.totalRefunds,
+          netGenerationCost: reading.netCost,
+          completedGenerationCost: reading.completedCost,
+          pendingGenerationCost: reading.pendingCost,
+          failedGenerationCost: reading.failedCost,
+          unrefundedFailureCost: reading.unrefundedFailureCost,
+          unlinkedRecordCost: reading.unlinkedCost,
+          operationRecordCost: reading.operationCost,
+          expectedCost: reading.expectedCost,
+          discrepancy: reading.discrepancy,
+          refundAnomaly: reading.refundAnomaly,
           hasDiscrepancy,
-          summary: buildSummary({
-            hasDiscrepancy,
-            discrepancy,
-            failedCount,
-            totalRefunds,
-            creditsOnFailed,
-          }),
+          summary: buildSummary({ reading, failedCount, pendingCount, windowed: Boolean(parsedStart || parsedEnd) }),
         },
       };
     }),
@@ -276,16 +243,16 @@ export const moderatorReconciliationRouter = router({
       const reason = `Manual freeze by moderator: ${input.reason}`;
       await freezeUser(input.userId, reason, String(ctx.user.id));
 
-      await SlackAlerts.accountAutoFrozen(
+      await SlackAlerts.accountFrozenByStaff(
         input.userId,
         user.name || `User ${input.userId}`,
-        0, // no discrepancy — manual freeze
-        0
+        ctx.user.name || `Moderator ${ctx.user.id}`,
+        input.reason
       );
 
       await logAuditEvent({
         userId: ctx.user.id,
-        action: AUDIT_ACTIONS.ACCOUNT_AUTO_FROZEN,
+        action: AUDIT_ACTIONS.ACCOUNT_FROZEN,
         resourceType: "user",
         resourceId: String(input.userId),
         metadata: {

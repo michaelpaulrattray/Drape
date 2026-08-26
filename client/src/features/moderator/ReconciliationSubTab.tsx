@@ -246,7 +246,7 @@ export function ReconciliationSubTab({
             </div>
             {credits.totalRefunds > 0 && (
               <div className="flex justify-between text-xs">
-                <span className="text-emerald-600">Refunds (failed gens)</span>
+                <span className="text-emerald-600">Refunds</span>
                 <span className="text-emerald-700 font-mono">+{formatNumber(credits.totalRefunds)}</span>
               </div>
             )}
@@ -285,7 +285,7 @@ export function ReconciliationSubTab({
               <span className="text-emerald-700 font-mono">{formatNumber(generations.completed)}</span>
             </div>
             <div className="flex justify-between text-xs items-center">
-              <span className="text-[#999]">Failed (refunded)</span>
+              <span className="text-[#999]">Failed</span>
               <span className="flex items-center gap-1">
                 {hasFailures ? (
                   <AlertTriangle className="w-3 h-3 text-amber-600" />
@@ -346,7 +346,7 @@ export function ReconciliationSubTab({
             </tr>
             {reconciliation.totalRefunds > 0 && (
               <tr>
-                <td className="py-1.5 text-emerald-600">Refunds for failed generations</td>
+                <td className="py-1.5 text-emerald-600">Refunds (failures, cancellations, corrections)</td>
                 <td className="py-1.5 text-right font-mono text-emerald-700">-{formatNumber(reconciliation.totalRefunds)}</td>
               </tr>
             )}
@@ -364,6 +364,10 @@ export function ReconciliationSubTab({
                 <td className="py-1.5 text-right font-mono text-amber-700">{formatNumber(reconciliation.pendingGenerationCost)}</td>
               </tr>
             )}
+            <tr>
+              <td className="py-1.5 text-[#999]">Recorded charges (all records)</td>
+              <td className="py-1.5 text-right font-mono text-[#0A0A0A]">{formatNumber(reconciliation.expectedCost)}</td>
+            </tr>
             <tr>
               <td className="py-1.5 text-[#666] font-medium">Discrepancy</td>
               <td className={`py-1.5 text-right font-mono font-medium ${

@@ -572,21 +572,26 @@ export const SlackAlerts = {
    * Alert when an account is auto-frozen due to credit discrepancy
    * → #billing-alerts (critical)
    */
-  accountAutoFrozen: async (
+  /**
+   * A freeze by a person. `accountAutoFrozen` stood here until 2026-08-26
+   * (#119): the discrepancy scan no longer freezes anyone — founder ruling,
+   * "a control that can freeze a paying customer should have a person's name
+   * on it" — so the alert carries the person's name.
+   */
+  accountFrozenByStaff: async (
     userId: number,
     userName: string,
-    discrepancy: number,
-    threshold: number
+    frozenByName: string,
+    reason: string
   ): Promise<boolean> => {
     return dispatchBillingAlert({
-      title: "🧊 Account Auto-Frozen: Credit Discrepancy",
-      description: `User *${userName}* (ID: ${userId}) has been automatically frozen due to a credit discrepancy of *${discrepancy} credits* (threshold: ${threshold}).`,
+      title: "🧊 Account Frozen by Staff",
+      description: `User *${userName}* (ID: ${userId}) was frozen by *${frozenByName}*: ${reason}`,
       severity: "critical",
       fields: [
         { title: "User", value: `${userName} (ID: ${userId})`, short: true },
-        { title: "Discrepancy", value: `${discrepancy} credits`, short: true },
-        { title: "Threshold", value: `${threshold} credits`, short: true },
-        { title: "Action Required", value: "Moderator review needed", short: true },
+        { title: "Frozen by", value: frozenByName, short: true },
+        { title: "Reason", value: reason, short: false },
       ],
     });
   },

@@ -24,6 +24,7 @@ interface AlertItem {
 
 const ACTION_CONFIG: Record<string, { icon: typeof AlertTriangle; label: string; color: string; bg: string }> = {
   "account.auto_frozen": { icon: Snowflake, label: "Auto-Frozen", color: "text-blue-600", bg: "bg-blue-50" },
+  "account.frozen": { icon: Snowflake, label: "Frozen by staff", color: "text-blue-600", bg: "bg-blue-50" },
   "account.unfrozen": { icon: Snowflake, label: "Unfrozen", color: "text-emerald-600", bg: "bg-emerald-50" },
   "admin.account_suspended": { icon: Ban, label: "Suspended", color: "text-red-600", bg: "bg-red-50" },
   "admin.account_unsuspended": { icon: Ban, label: "Unsuspended", color: "text-emerald-600", bg: "bg-emerald-50" },

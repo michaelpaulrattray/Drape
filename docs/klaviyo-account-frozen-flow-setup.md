@@ -6,13 +6,13 @@ This guide walks you through creating the **Account Frozen** Flow in Klaviyo so 
 
 ## Overview
 
-When FormaStudio freezes a user account (auto-freeze, moderator freeze, or admin freeze), the backend fires a Klaviyo event called **"Account Frozen"** with these template variables:
+When Drape freezes a user account (moderator freeze or admin freeze — the discrepancy scan is list-only since 2026-08-26, #119, and freezes nobody), the backend fires a Klaviyo event called **"Account Frozen"** with these template variables:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `{{ event.user_name }}` | User's display name | "Jane Smith" |
-| `{{ event.freeze_reason }}` | Why the account was frozen | "Auto-frozen: credit discrepancy of 2500 credits detected" |
-| `{{ event.frozen_by }}` | Who froze it | "system" / "Moderator Mike" / "Admin Sarah" |
+| `{{ event.freeze_reason }}` | Why the account was frozen | "Manual freeze by moderator: repeated chargeback" |
+| `{{ event.frozen_by }}` | Who froze it | "Moderator Mike" / "Admin Sarah" |
 | `{{ event.frozen_date }}` | Human-readable date | "February 8, 2026" |
 | `{{ event.support_url }}` | Support contact link | "https://formastudio.ai/support" |
 | `{{ event.app_name }}` | App name | "FormaStudio" |
