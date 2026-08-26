@@ -998,6 +998,8 @@ export default function CastingSheet() {
   */
   const chipEditQueued = unlocked.length > 0 || Object.keys(overrides).length > 0;
   const dockImaginationVisible = authorRoad && !viewingHistory && !standingFollowId && !chipEditQueued;
+  /* The note in the gear's place: the same terms, minus the chip one — named beside it so the pair cannot drift (review of #153, nit 1). */
+  const dockAuthorNoteVisible = authorRoad && !viewingHistory && !standingFollowId && chipEditQueued;
   /*
     Preselected from the SHEET (its `imagination` is the register's own record),
     the path switch's rule one control over: a MAX sheet whose Roll again went
@@ -2788,7 +2790,7 @@ export default function CastingSheet() {
               onStyle={setStyleChoice}
               onImagination={setImaginationChoice}
             />
-          ) : authorRoad && !viewingHistory && !standingFollowId && chipEditQueued ? (
+          ) : dockAuthorNoteVisible ? (
             /* Where the gear stood: the next roll is the studio's own casting, said in the gear's place rather than a gear that lies. */
             <p className="dp-small dpc-dock-authornote">{AUTHOR_SITS_OUT_CHIP_EDITS}</p>
           ) : null}
