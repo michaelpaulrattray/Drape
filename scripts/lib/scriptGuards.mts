@@ -111,7 +111,9 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
   const tree = path.join(dir, "tree");
   let junction: string | null = null;
   try {
-    git("worktree", "add", "--detach", tree, commit);
+    /* --quiet: the checkout otherwise streams sixty lines of progress into the
+       rite receipt, a durable record (seen on its first live firing). */
+    git("worktree", "add", "--quiet", "--detach", tree, commit);
     junction = path.join(tree, "node_modules");
     symlinkSync(path.join(root, "node_modules"), junction, "junction");
     const result = vitest(tree, suites);
