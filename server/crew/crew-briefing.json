@@ -1,7 +1,7 @@
 {
-  "edition": 31,
-  "updatedAt": "2026-08-26T20:50:04+10:00",
-  "shift": "foreman-22",
+  "edition": 32,
+  "updatedAt": "2026-08-26T21:36:18+10:00",
+  "shift": "foreman-23",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -485,6 +485,13 @@
   ],
   "pipeline": [
     {
+      "id": "refusal-chips-122",
+      "title": "Refusal chips (#122): a refused tile now says WHY — CONTENT FILTER on the card, the reason and the refund beneath — MERGED (PR #143)",
+      "status": "merged",
+      "prNumber": 143,
+      "note": "Your words on roll 220: '6/8 arrived other two were probably NSWF and refused by the engine — these cards need chips on them'. Built: when the engine's content filter refuses a slice, the empty tile now carries a small CONTENT FILTER chip at its corner and the line under it reads 'Refused by the engine's content filter · refunded' instead of 'Didn't arrive · refunded'. Two more chips exist for failures nobody has met yet (NOT A PORTRAIT when a render comes back as a contact sheet; ENGINE ERROR for a wire or provider fault), and NOT CHARGED when a roll's charge never went through. No 'copyright' chip on purpose: the engine tells us 'content refusal' and nothing finer, so that chip would be a guess. Counted on production before building: 12 refused tiles ever, every one the content filter — yours were 2 of 8 on roll 220, 1 of 8 on 221 and 5 of 8 on 222. Rendered on a real dev refusal, both themes, before merge. Merge 7fd06c82. Spend: nothing. Not in this PR: the Retry button you asked for — a paid per-slice re-render is its own small build on the same card and follows next; 'retry with softer wording' waits on the refusal-loop patrol (#129)."
+    },
+    {
       "id": "author-spec-139",
       "title": "YOUR STOP-THE-LINE (#139): the author rebuilt to your corrected spec — content only from the author, the old studio's locked block appended by code — MERGED (PR #141)",
       "status": "merged",
@@ -775,6 +782,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T21:36:18+10:00",
+      "shift": "foreman-23",
+      "text": "The refusal chips are live (#122, PR #143). From now on a refused slice on your sheet says CONTENT FILTER on the card and 'Refused by the engine's content filter · refunded' beneath it — no more guessing. While building it I counted your last three rolls: 220 lost 2 of 8 to the filter, 221 lost 1, and 222 lost 5 of 8 — the worst sheet on record, filed on the refusal-loop card (#129) as the patrol's first number. Nothing new waits on you tonight; the author road is live on your account exactly as e31 described, and your eye on it is still the gate. Next in order: the Retry button (same card), then the minimal settings modal (#142), then the two small courts (#128, #130)."
+    },
     {
       "at": "2026-08-26T20:50:04+10:00",
       "shift": "foreman-22",
