@@ -58,6 +58,15 @@
  * green one. The tidy read is `output/deploy-receipts/index.log`.
  *
  *   npx tsx scripts/deploy-rite.mts [--dry]
+ *
+ * PLAIN — NEVER under `railway run --service MySQL -- …`. That wrapper injects
+ * `RAILWAY_SERVICE_ID`/`RAILWAY_SERVICE_NAME` for MySQL, and an unscoped
+ * `railway deployment list` honours them over the linked service, so the watch
+ * read MySQL's one-row listing for ten minutes while Drape's deployment sat
+ * SUCCESS (#148, 2026-08-26 — foreman-25's rite, exit 143, no receipt). The
+ * rite needs no wrapper: it reads the production URL by name itself. It now
+ * refuses to start inside a foreign service context, scopes the listing with
+ * `--service`, and matches the deployment on the pushed COMMIT HASH.
  */
 /*
   THE RITE READS `.env` FOR ONE THING: the OpenRouter key, so the balance line
@@ -75,7 +84,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
-import { decideWatch, newestRow } from "./lib/deployWatch.mts";
+import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
 import {
   DECLARED_BUT_UNMIGRATED,
@@ -209,6 +218,13 @@ const die: (why: string) => never = (why: string): never => {
   process.exit(1);
 };
 
+/* The #148 guard, FIRST: inside `railway run --service MySQL` every unscoped
+   railway command is a MySQL command. Refuse before any check is spent on. */
+{
+  const foreign = foreignServiceContext(process.env, SERVICE);
+  if (foreign) die(foreign);
+}
+
 /*
   `shell` is not a style choice on Windows: `railway.cmd` is a batch file, and
   `execFileSync` without a shell cannot resolve one from PATH — it returns the
@@ -312,6 +328,10 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
 
 const railway = (...args: string[]) => run("railway.cmd", args, true);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Drape's own rows, newest first, with the commit each was built from. */
+const listDeployments = () =>
+  listedRows(railway("deployment", "list", "--service", SERVICE, "--json", "--limit", "5"));
 
 /** The production database's public URL, read by name and never printed. */
 function productionUrl(): string | undefined {
@@ -470,7 +490,7 @@ say("");
   were then read off the OLD process and were all true of it, which is what
   makes this class dangerous — nothing in the receipt looks wrong.
 */
-const priorDeployment = DRY ? null : (newestRow(railway("deployment", "list"))?.id ?? null);
+const priorDeployment = DRY ? null : (listDeployments()[0]?.id ?? null);
 
 if (!DRY) for (const branch of BRANCHES) say(`  push ${branch}: ${gitPush("origin", branch) || "ok"}`);
 
@@ -492,7 +512,7 @@ if (DRY) { say(""); say("DRY RUN — stopping before the watch."); process.exit(
 
 say("");
 const started = Date.now();
-let deployment: { id: string; status: string; at: string } | null = null;
+let deployment: { id: string; status: string } | null = null;
 for (let attempt = 0; attempt < 90; attempt += 1) {
   /*
     ONE LINE, PARSED AS A LINE. The watched-claim incident was a pattern that
@@ -503,18 +523,31 @@ for (let attempt = 0; attempt < 90; attempt += 1) {
     `lib/deployWatch.mts`, and the receipt it printed for somebody else's
     deployment on 2026-08-19.
   */
-  const newest = newestRow(railway("deployment", "list"));
-  const decision = decideWatch(priorDeployment, newest);
-  if (decision.kind === "settled" || decision.kind === "running") deployment = newest;
+  /* EVERY fetched row is searched for the pushed sha — a foreign row created
+     after mine sits at index 0 and would otherwise hide a settled own row
+     until the timeout (review of #149). */
+  const decision = decideWatch(priorDeployment, listDeployments(), sha);
+  if (decision.kind === "settled" || decision.kind === "running") {
+    deployment = { id: decision.id, status: decision.status };
+  }
   if (decision.kind === "settled") break;
-  if (decision.kind === "not-mine" && attempt % 6 === 5) {
-    say(`  waiting for Railway to create the deployment (${attempt * 20}s)`);
+  if (attempt % 6 === 5) {
+    if (decision.kind === "not-mine") say(`  waiting for Railway to create the deployment (${attempt * 20}s)`);
+    /* A NEW row on ANOTHER commit is somebody else's deploy — his own flag-flip
+       redeploy from the dashboard, typically. Say so and keep waiting for the
+       row built from THIS push rather than adopting his. */
+    if (decision.kind === "foreign") {
+      say(`  newest deployment ${decision.id.slice(0, 8)} is on ${decision.commitHash.slice(0, 8)}, not ${shortSha} — not mine, waiting (${attempt * 20}s)`);
+    }
+    if (decision.kind === "unattributed") {
+      say(`  newest deployment ${decision.id.slice(0, 8)} carries no commit hash — cannot be attributed to this push, waiting (${attempt * 20}s)`);
+    }
   }
   await wait(20_000);
 }
 if (!deployment) {
   die(priorDeployment
-    ? `Railway never created a deployment newer than ${priorDeployment.slice(0, 8)}. The push LANDED and the build did not start — nothing here may be reported as deployed.`
+    ? `Railway never created a deployment of ${shortSha} newer than ${priorDeployment.slice(0, 8)}. The push LANDED and no build of it was seen — nothing here may be reported as deployed.`
     : "no deployment row could be read at all");
 }
 const elapsed = Math.round((Date.now() - started) / 1000);
