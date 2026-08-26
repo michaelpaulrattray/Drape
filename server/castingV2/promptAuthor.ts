@@ -55,6 +55,12 @@
  * more than a tenth — then the sheet renders on the STATIC bundle with
  * `authored: false` recorded, because a prompt nobody authored must never be
  * mistaken for one somebody did.
+ *
+ * Worst case under the flag, serialized before the claim: the interpreter's
+ * 120 s plus two author calls of 120 s each, which can pass the ~305 s gateway
+ * wall the refine-dispatch design records — free by construction (nothing is
+ * claimed until the compile returns) but a visibly dead request. The deadline
+ * keeps that rare; it does not make it impossible.
  */
 import type { TextEngine } from "../providers/types";
 import { INTERPRET_TIMEOUT_MS } from "./interpreter";
@@ -240,6 +246,8 @@ export async function authorPrompt(input: {
   const allowance = authorAllowance(briefText);
   const system = systemPromptFor(imagination, allowance);
   let attempts = 0;
+  /** Latency the road has already spent, kept if a later call throws. */
+  let spentMs: number | null = null;
 
   const ask = (systemText: string, temperature: number) => {
     attempts += 1;
@@ -262,6 +270,7 @@ export async function authorPrompt(input: {
     let addition = cleanReply(first.text);
     let model = first.provenance.model;
     let latencyMs = first.latencyMs;
+    spentMs = latencyMs;
 
     const overrun = countWords(addition) > allowance * (1 + OVERRUN_TOLERANCE);
     const forbidden = neverWrittenIn(addition);
@@ -292,7 +301,7 @@ export async function authorPrompt(input: {
     log.warn({ error: String(error), imagination, attempts }, "[promptAuthor] the author call failed — the static bundle stands");
     return {
       prompt: staticPrompt(briefText), imagination, authored: false,
-      addedWords: countWords(PHOTOREAL_BUNDLE), allowance, model: null, latencyMs: null, attempts,
+      addedWords: countWords(PHOTOREAL_BUNDLE), allowance, model: null, latencyMs: spentMs, attempts,
     };
   }
 }

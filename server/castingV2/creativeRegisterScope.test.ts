@@ -382,3 +382,116 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", authored: false, model: null, attempts: 1 });
   });
 });
+
+/* ------------------------- what the author road cannot carry yet (review of #132) */
+
+const FOLLOW = {
+  sex: "female",
+  ageBand: "20s",
+  agePhase: "early",
+  heritage: [{ heritage: "Nordic", pct: 100 }],
+  energy: "warm",
+  hair: { family: "long", colour: "blonde" },
+  look: "severe minimal",
+  realized: {
+    eyeColour: "blue",
+    hairStyle: { name: "low bun", family: "long", worn: "worn up" },
+    facialHair: null,
+    hairTexture: "straight",
+    hairModifiers: null,
+    wornState: "worn up",
+    browStyle: "feathered",
+    skinCharacter: "plain",
+  },
+} as const;
+
+describe("the WIRE — a roll the author road cannot carry composes HOUSE under the flag, and the row says why", () => {
+  it("a FOLLOW keeps its anchor: the author is never called, the eight prompts equal the unflagged follow compile, the row says 'anchored'", async () => {
+    const off = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-follow",
+      engine: engineAnswering([]),
+      followIdentity: FOLLOW as never,
+    });
+    const engine = engineAnswering([ADDITION]);
+    const on = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-follow",
+      engine,
+      followIdentity: FOLLOW as never,
+      creativeRegister: true,
+    });
+    expect(sent(engine, "author")).toHaveLength(0);
+    expect(on.candidates.map((c) => c.prompt)).toEqual(off.candidates.map((c) => c.prompt));
+    expect(on.candidates[0]?.prompt).toContain("low bun");
+    expect(on.compiledBrief.register).toEqual({ kind: "house", because: "anchored" });
+  });
+
+  it("a chip UNLOCK or OVERRIDE is an edit the engine must be told: house, 'edited'", async () => {
+    const unlocked = engineAnswering([ADDITION]);
+    const a = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-unlock",
+      engine: unlocked,
+      unlock: ["sex"] as never,
+      creativeRegister: true,
+    });
+    expect(sent(unlocked, "author")).toHaveLength(0);
+    expect(a.compiledBrief.register).toEqual({ kind: "house", because: "edited" });
+    expect(a.candidates[0]?.prompt.startsWith("CASTING CATEGORY (ABSOLUTE)")).toBe(true);
+
+    const overridden = engineAnswering([ADDITION]);
+    const b = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-override",
+      engine: overridden,
+      overrides: { ageBand: "40s" } as never,
+      creativeRegister: true,
+    });
+    expect(sent(overridden, "author")).toHaveLength(0);
+    expect(b.compiledBrief.register).toEqual({ kind: "house", because: "edited" });
+
+    /* An EMPTY override object is not an edit — the author road is taken. */
+    const empty = engineAnswering([ADDITION]);
+    const c = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-empty-override",
+      engine: empty,
+      overrides: {},
+      unlock: [],
+      creativeRegister: true,
+    });
+    expect(sent(empty, "author")).toHaveLength(1);
+    expect(c.compiledBrief.register).toMatchObject({ kind: "author" });
+  });
+
+  it("a brand name never reaches the engine (founder gate 21): the brief is scrubbed before the author sees it and before the prompt is composed", async () => {
+    const engine = engineAnswering([ADDITION]);
+    const on = await castingBriefCompiler({
+      briefText: "a young male Mediterranean model inspired by Versace editorial",
+      candidateCount: 8,
+      rollSeed: "wire-brand",
+      engine,
+      creativeRegister: true,
+    });
+    const [request] = sent(engine, "author");
+    expect(request?.user.toLowerCase()).not.toContain("versace");
+    expect(request?.user).toContain("editorial");
+    for (const candidate of on.candidates) expect(candidate.prompt.toLowerCase()).not.toContain("versace");
+    expect(String((on.compiledBrief.register as { prompt: string }).prompt).toLowerCase()).not.toContain("versace");
+  });
+});
+
+describe("authorPrompt keeps the latency it already spent when the re-ask throws", () => {
+  it("first draft refused, second call throws: static bundle, attempts 2, latency of the first call kept", async () => {
+    const engine = engineAnswering(["the crop just below the sternum", new Error("ECONNRESET")]);
+    const out = await authorPrompt({ engine, briefText: THIN });
+    expect(out).toMatchObject({ authored: false, attempts: 2, model: null, latencyMs: 7 });
+    expect(out.prompt).toBe(staticPrompt(THIN));
+  });
+});

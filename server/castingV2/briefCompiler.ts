@@ -1093,13 +1093,12 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     role: guardRole(scrubBrands(adjusted.role)),
     characterNotes: scrubBrands(adjusted.characterNotes),
     /*
-      AN UNASKED REGISTER READING IS DISCARDED — the wardrobe pick's rule. A
-      model may volunteer a key it was never offered; the parse cannot tell an
-      answer from an offer, and this is the place that knows what was asked.
-      Outside the flag the field is null on the row, so a roll's record is
-      byte-identical to today's whatever the model volunteered.
+      AN UNASKED READING IS DISCARDED — the wardrobe pick's rule, and since
+      #131 the question is never asked at all (the interpreter's routing block
+      is deleted), so anything under this key is volunteered and the row is
+      null on both sides of the flag. The field itself goes with slice C.
     */
-    creativeRegister: input.creativeRegister === true ? adjusted.creativeRegister : null,
+    creativeRegister: null,
   };
   const locks: LockFacts = lockFactsOf(intent);
   const archetype = resolveArchetype(intent, input.rollSeed);
@@ -1139,9 +1138,30 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     are its and unchanged. An author outage costs the customer the author and
     never the roll: the static bundle stands and the row says `authored: false`.
   */
-  const authorEngine = input.creativeRegister === true ? (input.engine ?? interpreterEngine()) : null;
+  /*
+    ⚠ THREE THINGS REACH THE ENGINE ONLY THROUGH THE HOUSE COMPOSER, and the
+    author road carries none of them (Fable review of PR #132, finding 1): a
+    FOLLOW's anchor (its realized identity rides `composeCandidatePrompt`, so
+    an authored follow would paint eight strangers under a lineage pill), and
+    a chip UNLOCK or OVERRIDE (they mutate the intent and the locks, never the
+    brief text, so an authored sheet would record an edit the engine was never
+    told). Until the author road can carry them — a declared #131 slice — such
+    a roll composes HOUSE under the flag, and the row says why.
+  */
+  const houseBecause: "anchored" | "edited" | null =
+    effectiveAnchor ? "anchored"
+    : unlock.length > 0 || Object.values(input.overrides ?? {}).some((value) => value != null) ? "edited"
+    : null;
+  const authorEngine =
+    input.creativeRegister === true && houseBecause === null ? (input.engine ?? interpreterEngine()) : null;
+  /*
+    Brand names never reach the image engine (founder gate 21) — on this road
+    the brief itself travels to the provider as the customer's own words, so it
+    is scrubbed the way `role` and `characterNotes` are, and the scrubbed text
+    is what the row keeps and the sheet will show. Declared on #131 for his word.
+  */
   const authored = authorEngine
-    ? await authorPrompt({ engine: authorEngine, briefText, imagination: input.imagination })
+    ? await authorPrompt({ engine: authorEngine, briefText: scrubBrands(briefText) ?? briefText, imagination: input.imagination })
     : null;
   const candidates = authored
     ? sheet.candidates.map((candidate) => ({ ...candidate, prompt: authored.prompt }))
@@ -1187,6 +1207,9 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         customer's words and the author's, nothing house-internal — and it is
         what the sheet will show (#131 slice D: no hidden prompt, ever).
       */
+      ...(input.creativeRegister === true && houseBecause !== null
+        ? { register: { kind: "house", because: houseBecause } }
+        : {}),
       ...(authored
         ? {
             register: {
