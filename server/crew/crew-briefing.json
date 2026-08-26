@@ -1,7 +1,7 @@
 {
-  "edition": 22,
-  "updatedAt": "2026-08-26T17:55:00+10:00",
-  "shift": "foreman-19",
+  "edition": 23,
+  "updatedAt": "2026-08-26T16:55:00+10:00",
+  "shift": "foreman-21",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -44,6 +44,10 @@
         {
           "title": "On for your account, then your eye — the milestone gate",
           "state": "waiting"
+        },
+        {
+          "title": "Your 'refuse-free' ruling (#126) — BUILT and MERGED (PR #127): when the brief-reader is genuinely down, a brief longer than a sentence is refused for free before any charge; a short one still rolls on the fallback",
+          "state": "done"
         }
       ]
     },
@@ -142,6 +146,28 @@
           "key": "raw-plus-preset",
           "label": "No imagination meter yet — author = your words + the photoreal preset only",
           "consequence": "Smallest build; thin briefs lean on the engine's own invention."
+        }
+      ]
+    },
+    {
+      "id": "refuse-free-long-or-always",
+      "title": "Refuse-free is live for long briefs — did you mean ALWAYS, whatever the length?",
+      "productImpact": "Today: a brief longer than about a sentence (80 characters) that the reader never read is refused free. A shorter one — 'dad in his 30s, beard' — still rolls from the words as typed, and is charged, because the fallback carries a short brief whole. That is the option text you clicked ('a short brief keeps today's fallback'). If you would rather NOBODY is ever charged for a sheet the reader did not read, it is a one-line change.",
+      "workedExample": "Reader down for a minute. Customer A types a 1,200-character pirate captain brief → refused free, credits kept. Customer B types 'dad in his 30s, beard' → eight dads in their 30s with beards, 160 credits, same as before the outage.",
+      "recommendation": "Keep it as built (long refuses, short rolls) — a five-word brief loses nothing on the fallback. Say 'always' if you want the simpler rule.",
+      "state": "open",
+      "filedAt": "2026-08-26T16:55:00+10:00",
+      "issueNumber": 126,
+      "options": [
+        {
+          "key": "keep-long",
+          "label": "Keep it: long briefs refuse free, short briefs still roll",
+          "consequence": "Nothing changes; the question closes."
+        },
+        {
+          "key": "always",
+          "label": "Always refuse free on a reader outage, whatever the length",
+          "consequence": "One-line change, one PR; a short brief loses a roll it would have got during an outage."
         }
       ]
     },
@@ -448,6 +474,13 @@
   ],
   "pipeline": [
     {
+      "id": "refuse-free-126",
+      "title": "Refuse-free on a reader outage (#126) — MERGED (PR #127)",
+      "status": "merged",
+      "prNumber": 127,
+      "note": "Built by the shift before this one, checked by this one at the artifacts. When the reader that turns a brief into casting facts does not answer at all (its 120-second clock fires, the transport dies, the provider is down), the studio now refuses before it claims a single credit and says so: 'The studio couldn't read your brief just now … Nothing was cast and you have not been charged. Try again in a moment.' That is roll 219's failure closed at the rule, not just at the clock. The line between long and short is the fallback's own reach — 80 characters, the slice it used to cast from — so a five-word brief still rolls on an outage exactly as your chosen option said ('a short brief keeps today's fallback'). A reply the provider DID give that we could not read still falls back; the card said that was a different question. Proven by driving the outage directly with a reader that throws (56 tests green; deleting the refusal reddens exactly the four outage arms and nothing else). Gate green twice, Fable review passed with one doc fix. Merge 20ddc05c. No spend, no flag, no migration."
+    },
+    {
       "id": "prompt-author-court-125",
       "title": "THE PROMPT AUTHOR COURT (#125) — RUN, $7.12, five strips in your gallery",
       "status": "waiting-founder",
@@ -634,7 +667,7 @@
     {
       "id": "rich-brief-fallback-charge",
       "title": "If the brief-reader is genuinely down, a long brief is still charged for a sheet that ignored it — your word asked on the card below",
-      "detail": "PR #124 stops this on ordinary days (the clock now fits long briefs). The rule underneath is untouched: on a real outage the studio falls back to casting from the first 80 characters and charges. Right for a five-word brief, wrong for a paragraph. Your ruling this afternoon keeps a reader beside the author, so the question survives the rebuild. — YOUR WORD (reply #7): refuse-free. Filed #126 (urgent) for the build.",
+      "detail": "PR #124 stops this on ordinary days (the clock now fits long briefs). The rule underneath is untouched: on a real outage the studio falls back to casting from the first 80 characters and charges. Right for a five-word brief, wrong for a paragraph. Your ruling this afternoon keeps a reader beside the author, so the question survives the rebuild. — YOUR WORD (reply #7): refuse-free. Filed #126 (urgent) for the build. — BUILT and MERGED (PR #127): a long brief on a real outage now refuses free before any charge.",
       "severity": "warning",
       "state": "resolved"
     },
@@ -682,6 +715,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T16:55:00+10:00",
+      "shift": "foreman-21",
+      "text": "Your 'refuse-free' word is in the product. The shift before mine built it and pushed the PR, then its process died before it could write anything down — so I read its work at the artifacts instead of trusting it: ran the tests (56 green), broke the new rule on purpose to see exactly which tests catch it (the four outage tests and nothing else), read the gate and the reviewer's report, fixed the one stale paragraph the reviewer found, and merged. In plain terms: if the brief-reader is genuinely down, anyone who typed more than a sentence now gets 'we couldn't read your brief — nothing was charged, try again in a moment' and keeps every credit; that is roll 219's 160-credit failure closed at the rule itself. A five-word brief still rolls from the words as typed, because that is the option you clicked — a card above asks whether you meant 'always'. Still waiting on your eye for the Prompt Author strips; nothing on the register is built until you answer which sheet is the studio. No house money spent tonight."
+    },
     {
       "at": "2026-08-26T17:55:00+10:00",
       "shift": "foreman-19",
