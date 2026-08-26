@@ -823,6 +823,55 @@ let engine: TextEngine | null = null;
  * (M8) needs the SAME one: two engines would mean two credentials, two
  * queues, and a config change that silently applies to one of them.
  */
+/**
+ * THE BRIEF INTERPRETER'S DEADLINE — sized to its population, not to the
+ * transport's default (#121, roll 219).
+ *
+ * The OpenRouter text engine's default deadline is 45 s, and every other
+ * reader on the shared engine (a describer, a hair or ink take, a refine ask)
+ * fits inside it. The brief interpreter does not: it reads up to 2,000
+ * characters and answers a wide JSON schema, and its latency scales with the
+ * brief. Read at production's `interpreterLatencyMs`: short briefs 4–17 s;
+ * the founder's 553-character brief 21,221–41,995 ms across seven rolls
+ * (roll 206 was THREE SECONDS under the wire); his 1,494-character cyber-goth
+ * brief, re-driven three times through this compile, 36,491 / 36,446 ms and
+ * then **45,012 ms — the deadline** (`output/_shift121/drive-219.json`).
+ *
+ * What the deadline firing costs is the whole point: the call THROWS, the
+ * compiler falls back to `fallbackIntent`, and the roll is charged 160
+ * credits for eight people cast from `briefText.slice(0, 80)` — sex null,
+ * hair null, skin null, ink null, register house. That is roll 219's row
+ * exactly (`interpreted: false`, no `interpreterModel`): "a young woman with
+ * an intense cyber-goth aesthetic" delivered men and women, and the founder
+ * called it a complete failure. A deadline that fires on one in three of the
+ * richest briefs is not a safety, it is the defect.
+ *
+ * 120 s is ~3× the measured rich-brief median and ~2.7× the worst observed
+ * success. It is per CALL (`TextRequest.timeoutMs`), so the shared engine and
+ * every other reader keep the 45 s deadline they were sized for.
+ *
+ * ⚠ THE DEADLINE IS PER ATTEMPT AND STACKS UNDER RETRY (the gate's review of
+ * PR #124, finding 1). It sits inside the transport's retry loop and a timeout
+ * is retryable, so with the default two retries a HUNG provider would hold one
+ * interpretation for ~3 × 120 s ≈ 6 min. The interpreter therefore asks for
+ * ONE retry (`INTERPRET_RETRIES`): a transient 429 or 5xx is still re-tried,
+ * and the worst hang is ~2 × 120 s + backoff ≈ 4 min. That is still past the
+ * gateway's ~305 s wall once the card and the render follow — so on a genuinely
+ * hung provider the compile can outlive the socket. Money-safe: the compile
+ * runs before the roll's claim, so nothing is charged; the customer's retry
+ * re-runs the compile from scratch rather than replaying it.
+ *
+ * And the QUEUE is shared (finding 2): the text engine's queue serves every
+ * reader at concurrency 4, so four concurrent rich-brief interpretations can
+ * hold all four slots for up to 120 s each and a describer or a reference
+ * take waits behind them — the queue (depth 32) waits rather than refuses.
+ * Other readers keep their 45 s DEADLINE; their queue wait is now bounded by
+ * this number, not theirs.
+ */
+export const INTERPRET_TIMEOUT_MS = 120_000;
+/** One retry, not the transport's two — see the stacking paragraph above. */
+export const INTERPRET_RETRIES = 1;
+
 export function interpreterEngine(): TextEngine | null {
   if (engine) return engine;
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -1129,6 +1178,8 @@ export async function interpretBrief(input: {
       */
       maxOutputTokens: 5000,
       signal: input.signal,
+      timeoutMs: INTERPRET_TIMEOUT_MS,
+      retries: INTERPRET_RETRIES,
     });
 
   try {

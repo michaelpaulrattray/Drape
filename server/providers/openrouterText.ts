@@ -130,7 +130,10 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
           "openrouterText.complete",
           async () => {
             const startedAt = Date.now();
-            const timeout = AbortSignal.timeout(timeoutMs);
+            /* The call's own deadline outranks the engine's default — the
+               brief interpreter's population needs more than a describer's
+               (`TextRequest.timeoutMs`). */
+            const timeout = AbortSignal.timeout(request.timeoutMs ?? timeoutMs);
             const signal = request.signal
               ? AbortSignal.any([request.signal, timeout])
               : timeout;
@@ -262,7 +265,12 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
               },
             };
           },
-          { signal: request.signal },
+          {
+            signal: request.signal,
+            /* The deadline above is per attempt; a call that lengthened it
+               bounds how many attempts may pay it (`TextRequest.retries`). */
+            ...(request.retries === undefined ? {} : { retries: request.retries }),
+          },
         ),
         /* The tokens come off the REPLY and nothing else — this extractor is
            never handed the request, so it cannot become a route by which a

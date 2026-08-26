@@ -35,11 +35,12 @@ import {
   parseCastingCreativeRegisterScope,
   validateCastingCreativeRegisterEnvironment,
 } from "./castingV2Scope";
-import { interpreterSystemPrompt } from "./interpreter";
+import { INTERPRET_TIMEOUT_MS, interpreterSystemPrompt } from "./interpreter";
 import { parseCreativeRegister, CREATIVE_REASONS_LIMIT } from "./castingIntent";
 import { castingBriefCompiler } from "./briefCompiler";
 import {
   CANDIDATE_CARD_LABEL,
+  CARD_MAX_OUTPUT_TOKENS,
   CREATIVE_REGISTER_AUTHORITY,
   composeCreativeCandidatePrompt,
   INVITATION_MAX,
@@ -470,7 +471,10 @@ describe("the WIRE — on with a CREATIVE brief is the register", () => {
     const author = sent(engine, "author");
     expect(author).toHaveLength(1);
     expect(author[0]?.user).toBe(CYBORG);
-    expect(author[0]?.maxOutputTokens).toBe(2000);
+    expect(author[0]?.maxOutputTokens).toBe(CARD_MAX_OUTPUT_TOKENS);
+    expect(author[0]?.timeoutMs).toBe(INTERPRET_TIMEOUT_MS);
+    /* The author loops twice itself; an inner transport retry would multiply a hung provider. */
+    expect(author[0]?.retries).toBe(0);
     expect(author[0]?.temperature).toBe(0.8);
 
     const lines = new Set<string>();
