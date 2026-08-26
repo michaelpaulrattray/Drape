@@ -553,24 +553,17 @@ describe("a reader outage refuses free (#126 — founder, Crew reply #7: 'refuse
   });
 
   /*
-    THE RULING'S OTHER CLAUSE — "a short brief keeps today's fallback". The
-    line is the fallback's own carrying capacity: a brief the role slice
-    carries WHOLE reaches the engine as typed, so an outage costs it nothing
-    the ruling named. One character over that line and the same outage
-    refuses. Both arms are asserted so the boundary is a fact, not a belief.
+    "ALWAYS" — Crew reply #9. The first build kept a brief the fallback could
+    carry whole; asked whether he meant every length, he said always. So a
+    five-word brief on an outage refuses exactly as a paragraph does, and the
+    constant that used to be the line is asserted NOT to be one.
   */
-  it("a SHORT brief the fallback carries whole still rolls on an outage — and one character over refuses", async () => {
-    const short = "a".repeat(FALLBACK_CARRIES_CHARS - 20) + " dad in his 30s";
+  it("a SHORT brief refuses on an outage too — 'always' (reply #9); the old line is no line", async () => {
+    const short = "dad in his 30s";
     expect(short.length).toBeLessThanOrEqual(FALLBACK_CARRIES_CHARS);
-    const compiled = await castingBriefCompiler({
-      briefText: short,
-      candidateCount: 8,
-      rollSeed: "s",
-      engine: engineThrowing("ECONNRESET"),
-    });
-    expect(compiled.compiledBrief.interpreted).toBe(false);
-    expect((compiled.compiledBrief.intent as CastingIntent).role).toBe(short);
-
+    await expect(
+      castingBriefCompiler({ briefText: short, candidateCount: 8, rollSeed: "s", engine: engineThrowing("ECONNRESET") }),
+    ).rejects.toMatchObject({ code: "reader_outage", message: READER_OUTAGE_MESSAGE });
     const overByOne = "b".repeat(FALLBACK_CARRIES_CHARS - 14) + " dad in his 30s";
     expect(overByOne.length).toBe(FALLBACK_CARRIES_CHARS + 1);
     await expect(

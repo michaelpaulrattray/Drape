@@ -22,21 +22,19 @@
  *   refine   **dies, free.** `interpretRefinement` has no engine and returns
  *            `unreadable` — *"Fail CLOSED — refusing costs nobody anything"*
  *            (`refineInterpreter.ts`). Nobody is charged and nobody can edit.
- *   roll     **dies, free — for any brief longer than 80 characters.** Since
- *            #126 (founder, Crew reply #7, "refuse-free", PR #127) a thrown
- *            or unconfigured interpreter call is `cause: "thrown"` /
+ *   roll     **dies, free — at every brief length.** Since #126 (founder,
+ *            Crew reply #7 "refuse-free", then reply #9 "always") a thrown or
+ *            unconfigured interpreter call is `cause: "thrown"` /
  *            `"unconfigured"`, and `castingBriefCompiler` refuses it BEFORE the
- *            claim as `reader_outage` whenever the brief is longer than
- *            `FALLBACK_CARRIES_CHARS` (80). Only a brief the fallback carries
- *            WHOLE still rolls on `fallbackIntent(briefText)`, and only a reply
+ *            claim as `reader_outage` whatever the brief's length. Only a reply
  *            the provider GAVE that could not be parsed (`cause: "unparsed"`)
- *            still falls back at any length. A STYLED brief on that fallback
+ *            still falls back on `fallbackIntent(briefText)`. A STYLED brief on that fallback
  *            is refused free rather than cast photoreal (`briefCompiler.ts`,
  *            the `styledBrief` arm).
  *
  * So the outage is total on the edit surface and, since #126, VISIBLE and
- * blocking on the casting one too: every brief past a sentence refuses free
- * with a sentence naming the outage, and nobody is charged. Until #126 this
+ * blocking on the casting one too: every brief refuses free with a sentence
+ * naming the outage, and nobody is charged. Until #126 this
  * paragraph said the casting outage was *"invisible-but-worse"* — rolls kept
  * charging, cast from a sentence nothing interpreted — and that was true of
  * roll 219 (160 credits for men and women against a cyber-goth brief). A low
