@@ -34,6 +34,7 @@ Evidence he supplied (corrected the same day — the first draft conflated his t
 8. **Photoreal is the default style.** "UNLESS the prompt specifies a specific style its overidden. anything in the settings outlined in the prompt is overriden by the user prompt."
 9. **Styles are ART styles** in the settings modal — photoreal, painted-illustrative realism, glossy anime-poster, more later — **described**, never named after an IP (the copyright guard).
 10. **The imagination meter** (Midjourney-style) sets how opinionated the author is — his spec, verbatim, is §5.
+11a. **A style is a bundle.** His word, verbatim: *"those are more advanced settings but by default we set it on our best known settings e.g most people will just flick between styles we just need to ensure every style has a specific preset default setting but for now photoreal is our only and default style that goes into every prompt with waist up framing and the studio lighting and so on we can expand styles and settings later."* So: every style preset carries its own default framing, background and lighting; framing/background/lighting are ADVANCED settings, hidden by default; users flick between styles. **For now there is ONE style — photoreal — and its bundle goes into every prompt: waist-up framing, the studio lighting, the neutral seamless-gradient background, the photoreal quality clause.** The prompt overrides any of it (rule 8). Locked across all eight slices (one prompt per sheet). Styles and advanced settings expand later.
 
 ## 4. Outfits, variation, length, framing, refusals
 
