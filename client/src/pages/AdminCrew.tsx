@@ -151,7 +151,12 @@ export default function AdminCrew() {
             database, a malformed scope value), and telling the admin the page
             "isn't switched on" would be a configuration fault wearing the
             wrong sentence (PR #72 review, finding 3). */}
-        {stateQuery.isError && stateQuery.error.data?.code === "NOT_FOUND" && (
+        {/* Both fault cards render only when there is NO briefing to show: a
+            failed BACKGROUND poll (a deploy blip, once per new edition) keeps
+            the cached briefing and must not wear the sentence written for a
+            malformed scope — the stamp at the foot says the check failed and
+            the next tick retries (PR #135 review, findings 1–2). */}
+        {!stateQuery.data && stateQuery.isError && stateQuery.error.data?.code === "NOT_FOUND" && (
           <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
             <h2 className="text-sm font-semibold text-[#0A0A0A]">This page isn’t switched on yet</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#666]">
@@ -163,7 +168,7 @@ export default function AdminCrew() {
           </div>
         )}
 
-        {stateQuery.isError && stateQuery.error.data?.code !== "NOT_FOUND" && (
+        {!stateQuery.data && stateQuery.isError && stateQuery.error.data?.code !== "NOT_FOUND" && (
           <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
             <h2 className="text-sm font-semibold text-[#0A0A0A]">Something is wrong with this page</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#666]">
@@ -219,6 +224,7 @@ export default function AdminCrew() {
             <p className="pt-2 text-[11px] text-[#BBB] text-center" data-testid="crew-edition-stamp">
               Briefing edition {stateQuery.data.briefing.edition}, written by{" "}
               {stateQuery.data.briefing.shift} · checked {checkedAgo}
+              {stateQuery.isError && " · the last check failed — trying again"}
             </p>
           </>
         )}
