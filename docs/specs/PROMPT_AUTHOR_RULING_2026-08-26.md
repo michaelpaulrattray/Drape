@@ -96,7 +96,11 @@ His low/max example pair:
 
 > At max imagination the author is essentially acting as a creative director + Midjourney prompt engineer who is allowed to go hard on identity invention, while still delivering something that functions as a professional casting studio shot.
 
-**RULED (same afternoon, verbatim): "the answer is one prompt for a cast sheet not 8".** One authored prompt per sheet; the engine renders the eight — stated facts on every slice, everything else the engine's. There is no per-slice authoring.
+**RULED (same afternoon, verbatim): "the answer is one prompt for a cast sheet not 8".**
+
+**And the author writes a CASTING CALL, not a portrait (founder, verbatim): "the author should deliberately leave things open for interpretation sometimes e.g hairstyle etc so its not explicitly describing a specific individual which would produce the same cast across 8 generations".** Even at MAX, the author pins the LOOK (the aesthetic language — makeup register, jewellery register, styling, mood) and leaves the IDENTITY axes open unless the user stated them — face, exact hairstyle, build, age within the band — so the engine casts eight different people who share the look. The read: eight distinct faces on the sheet; if the sheet is one person eight times, the author over-specified. His MAX example ("severe asymmetrical bob…") is the ceiling of specificity for a look, not a licence to describe one individual.
+
+**Author model (founder, verbatim): "opus will be too expensive we should test against sonet 5 and the latest grok model".** The court's model arm is Sonnet 5 vs the latest Grok (xAI via OpenRouter — the slug is READ off OpenRouter's model list at run time, never assumed). Opus is out on cost. One authored prompt per sheet; the engine renders the eight — stated facts on every slice, everything else the engine's. There is no per-slice authoring.
 
 ## 6. The hard rules — ruled one by one
 
