@@ -34,6 +34,8 @@ import {
   freeTextOverflow,
   parseCastingIntent,
   type CastingIntent,
+  type SubjectReading,
+  type SubjectRefusal,
 } from "./castingIntent";
 import { BODY_ANCHOR_REGIONS } from "../../shared/bodyAnchorRegions";
 import { containsBrand } from "./brandScrub";
@@ -416,6 +418,73 @@ export const NOTES_CAP_RELEASED =
   + "and add nothing the brief does not contain.";
 
 /**
+ * THE SUBJECT QUESTION — one slot in the system prompt, two shapes (#131
+ * slice C, the ruling's §6).
+ *
+ * Outside `CASTING_CREATIVE_REGISTER_SCOPE` the reader is asked today's
+ * two-valued cohort question, and "other" walls the roll as
+ * `unsupported_cohort` — creature, anime, robot and named likeness alike,
+ * because the only certified adapter paints photographic humans and the house
+ * composer would bill for a photograph of someone vaguely anime-adjacent. On
+ * THE AUTHOR ROAD the customer's words reach the engine verbatim, so that
+ * premise is gone, and the ruling (`PROMPT_AUTHOR_RULING_2026-08-26.md` §6)
+ * kills the stage wall and keeps exactly two refusals: no likeness of a real
+ * person or a named character (KEPT), and ONE new wall — *this is a casting
+ * studio; a subject that is not a being refuses free before the charge*
+ * (founder, verbatim: "someone asking for an object should be refused like a
+ * car"). So the flagged reader is asked a FOUR-valued question in the SAME
+ * slot, and the compiler reads the four: `photoreal_human` and `being` cast,
+ * `likeness` and `not_a_being` refuse free.
+ *
+ * The unflagged prompt is composed from the SAME constants, so it is
+ * byte-identical to the text that stood here before they were named; the
+ * flagged one is made by `String.replace` that ASSERTS it applied — the
+ * fidelity swap's own reason, one block up. Both texts are exported so the
+ * suite asserts the swap at the request rather than at a constant near it.
+ */
+export const COHORT_SCHEMA_LINE = `"cohort": "photoreal_human" | "other",`;
+export const SUBJECT_SCHEMA_LINE = `"cohort": "photoreal_human" | "being" | "likeness" | "not_a_being",`;
+export const COHORT_INSTRUCTION = `- "cohort": "photoreal_human" for any real-looking human. Use "other" for
+  anime, illustration, animals, robots, fantasy creatures, or any brief that is
+  not a photograph of a person.
+  ALSO use "other" when the brief asks for a SPECIFIC PERSON OR CHARACTER —
+  a named actor, musician, athlete or public figure, or a named fictional
+  character from a game, film, comic or show. "Master Chief from Halo", "a
+  Spider-Man look-alike", "someone who looks like <name>" are all "other".
+  This holds however it is phrased: "look-alike", "inspired by", "in the style
+  of", "vibes of", "reminds me of" are the same request wearing softer words.
+  Two reasons, and both matter. We do not manufacture a likeness of a real
+  person or someone else's character — the same principle that says a
+  customer's own cast is theirs. And we cannot: the frame is a plain studio
+  portrait with no costume, armour, mask or props, so the thing that makes
+  that character recognisable is exactly what the frame strips away.
+  A GENRE is not a character. "a space marine", "a superhero type", "a fantasy
+  ranger" describe a kind of person and are ordinary photoreal briefs — cast
+  them normally.`;
+export const SUBJECT_INSTRUCTION = `- "cohort": WHAT KIND OF SUBJECT the brief asks to cast. This studio casts
+  BEINGS — photoreal humans first, and also sci-fi humans, creatures,
+  monsters, aliens, robots, androids, and illustrated or anime people. Use
+  "photoreal_human" for a real-looking human; "being" for any other kind of
+  creature or character that has a face or a body to cast (a lizard man, a
+  chrome android, an anime girl, a swamp monster, a talking fox); and
+  "not_a_being" when the brief asks for something that is NOT a being at all
+  — an object, a vehicle, a landscape, a building, a logo, food, a pattern, a
+  scene with nobody in it ("a red sports car", "a mountain at dawn", "a
+  kitchen"). A brief that names a being AND a setting or an object is a
+  being: cast the being.
+  Use "likeness" when the brief asks for a SPECIFIC PERSON OR CHARACTER —
+  a named actor, musician, athlete or public figure, or a named fictional
+  character from a game, film, comic or show. "Master Chief from Halo", "a
+  Spider-Man look-alike", "someone who looks like <name>" are all "likeness".
+  This holds however it is phrased: "look-alike", "inspired by", "in the style
+  of", "vibes of", "reminds me of" are the same request wearing softer words.
+  We do not manufacture a likeness of a real person or someone else's
+  character — the same principle that says a customer's own cast is theirs.
+  A GENRE is not a character. "a space marine", "a superhero type", "a fantasy
+  ranger", "an orc warlord", "a cyber-goth woman" describe a kind of being and
+  are cast normally.`;
+
+/**
  * The system prompt this roll will actually send.
  *
  * One composer, so there is no second copy of the base to drift. Each option is
@@ -430,7 +499,7 @@ export const NOTES_CAP_RELEASED =
  * than shipping a prompt nobody chose.
  */
 export function interpreterSystemPrompt(
-  options?: { wardrobe?: boolean; ink?: boolean; fidelity?: boolean },
+  options?: { wardrobe?: boolean; ink?: boolean; fidelity?: boolean; author?: boolean },
 ): string {
   let base = SYSTEM_PROMPT;
   if (options?.fidelity === true) {
@@ -442,6 +511,22 @@ export function interpreterSystemPrompt(
       );
     }
     base = base.replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED);
+  }
+  if (options?.author === true) {
+    /* The subject swap asserts it applied, for the fidelity swap's reason. */
+    for (const [from, to] of [
+      [COHORT_SCHEMA_LINE, SUBJECT_SCHEMA_LINE],
+      [COHORT_INSTRUCTION, SUBJECT_INSTRUCTION],
+    ] as const) {
+      if (!base.includes(from)) {
+        throw new Error(
+          `[interpreter] the cohort text beginning "${from.slice(0, 32)}" is not in the system prompt `
+          + "— the author-road subject swap cannot apply, and shipping the two-valued question to a "
+          + "flagged account would wall every creature brief silently",
+        );
+      }
+      base = base.replace(from, to);
+    }
   }
   const blocks: string[] = [];
   if (options?.fidelity === true) blocks.push(SKIN_LANE_BLOCK);
@@ -455,7 +540,7 @@ const SYSTEM_PROMPT = `You read a casting brief and extract only what it actuall
 Reply with a single JSON object and nothing else:
 
 {
-  "cohort": "photoreal_human" | "other",
+  ${COHORT_SCHEMA_LINE}
   "role": string | null,
   "characterNotes": string | null,
   "sex": ${SEXES.map((value) => `"${value}"`).join(" | ")} | null,
@@ -710,23 +795,7 @@ WHAT TO EXTRACT
   putting it here instead would weaken a thing the user actually said.
   Leave both null when the brief names no category, or names one that implies
   nothing. A tendency you invent narrows the casting for no reason.
-- "cohort": "photoreal_human" for any real-looking human. Use "other" for
-  anime, illustration, animals, robots, fantasy creatures, or any brief that is
-  not a photograph of a person.
-  ALSO use "other" when the brief asks for a SPECIFIC PERSON OR CHARACTER —
-  a named actor, musician, athlete or public figure, or a named fictional
-  character from a game, film, comic or show. "Master Chief from Halo", "a
-  Spider-Man look-alike", "someone who looks like <name>" are all "other".
-  This holds however it is phrased: "look-alike", "inspired by", "in the style
-  of", "vibes of", "reminds me of" are the same request wearing softer words.
-  Two reasons, and both matter. We do not manufacture a likeness of a real
-  person or someone else's character — the same principle that says a
-  customer's own cast is theirs. And we cannot: the frame is a plain studio
-  portrait with no costume, armour, mask or props, so the thing that makes
-  that character recognisable is exactly what the frame strips away.
-  A GENRE is not a character. "a space marine", "a superhero type", "a fantasy
-  ranger" describe a kind of person and are ordinary photoreal briefs — cast
-  them normally.
+${COHORT_INSTRUCTION}
 
 WHAT TO IGNORE COMPLETELY — the engine owns these, and anything you say about
 them is discarded before it reaches the image model:
@@ -769,8 +838,8 @@ JSON.`;
 export type InterpreterUnavailableCause = "thrown" | "unconfigured" | "unparsed";
 
 export type InterpretOutcome =
-  | { ok: true; intent: CastingIntent; latencyMs: number; model: string }
-  | { ok: false; reason: "unsupported_cohort" }
+  | { ok: true; intent: CastingIntent; subject: SubjectReading; latencyMs: number; model: string }
+  | { ok: false; reason: SubjectRefusal }
   | { ok: false; reason: "unavailable"; latencyMs: number; cause: InterpreterUnavailableCause };
 
 let engine: TextEngine | null = null;
@@ -1061,6 +1130,15 @@ export async function interpretBrief(input: {
    * takes it, which the budget court watched happen 3 drives out of 3.
    */
   fidelity?: boolean;
+  /**
+   * ASK THE FOUR-VALUED SUBJECT QUESTION — the author road (#131 slice C).
+   *
+   * Absent means no, and no means the cohort question and the wall it feeds
+   * are today's to the byte. On, the same slot asks `photoreal_human` /
+   * `being` / `likeness` / `not_a_being` (`SUBJECT_INSTRUCTION`), a `being`
+   * is cast, and the two refusals the ruling keeps come back by name.
+   */
+  author?: boolean;
 }): Promise<InterpretOutcome> {
   const notesMax = input.fidelity === true ? NOTES_MAX_FIDELITY : NOTES_MAX;
   const textEngine = input.engine ?? interpreterEngine();
@@ -1078,6 +1156,7 @@ export async function interpretBrief(input: {
         wardrobe: input.wardrobe === true,
         ink: input.ink === true,
         fidelity: input.fidelity === true,
+        author: input.author === true,
       }),
       user: input.briefText,
       json: true,
@@ -1136,7 +1215,8 @@ export async function interpretBrief(input: {
 
   try {
     const result = await runOnce();
-    let parsed = parseCastingIntent(result.text, input.briefText, notesMax);
+    const parseOptions = { author: input.author === true };
+    let parsed = parseCastingIntent(result.text, input.briefText, notesMax, parseOptions);
     recordParseOutcome(!parsed.ok, result.truncated === true);
 
     /*
@@ -1158,12 +1238,13 @@ export async function interpretBrief(input: {
         "[interpreter] reply was CUT OFF at the token ceiling — retrying rather than dropping the brief's locks",
       );
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax, parseOptions);
       recordParseOutcome(!reparsed.ok, retry.truncated === true);
       if (reparsed.ok) {
         return {
           ok: true,
           intent: reparsed.intent,
+          subject: reparsed.subject,
           latencyMs: result.latencyMs + retry.latencyMs,
           model: retry.provenance.servedModel ?? retry.provenance.model,
         };
@@ -1207,9 +1288,15 @@ export async function interpretBrief(input: {
           open      anything other than a clean second intent still WALLS.
                     Fail-closed, unchanged
       */
-      if (parsed.reason === "unsupported_cohort") {
+      /*
+        Since #131 slice C the wall has three names on the author road
+        (`likeness`, `not_a_being`) and one off it (`unsupported_cohort`); all
+        of them are a MODEL'S JUDGEMENT and all of them get the second read.
+        `unreadable` is not a judgement and never did.
+      */
+      if (parsed.reason !== "unreadable") {
         const second = await runOnce();
-        const reread = parseCastingIntent(second.text, input.briefText, notesMax);
+        const reread = parseCastingIntent(second.text, input.briefText, notesMax, parseOptions);
         const rescued = reread.ok;
         /*
           COUNTED WHATEVER HAPPENS, because the absence of a count is what let
@@ -1229,7 +1316,7 @@ export async function interpretBrief(input: {
             ? "[interpreter] cohortWallRetried — the second read cast it; the first refusal was a wobble"
             : "[interpreter] cohortWallRetried — both reads refused, and the brief is walled",
         );
-        if (!rescued) return { ok: false, reason: "unsupported_cohort" };
+        if (!reread.ok) return { ok: false, reason: reread.reason === "unreadable" ? parsed.reason : reread.reason };
         parsed = reread;
       }
     }
@@ -1341,7 +1428,7 @@ export async function interpretBrief(input: {
       roleStats.nullOnCompile += 1;
       roleStats.reaskRan += 1;
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax, parseOptions);
       recordParseOutcome(!reparsed.ok, retry.truncated === true);
       const rescuedRole = reparsed.ok ? reparsed.intent.role : null;
       if (rescuedRole !== null) {
@@ -1367,7 +1454,7 @@ export async function interpretBrief(input: {
     if (needsAestheticRetry(input.briefText, intent)) {
       log.info({ stage: "interpreter" }, "[interpreter] aesthetic reference landed nowhere — re-sampling once");
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax, parseOptions);
       // Counted like any other attempt. A denominator that skips the retries
       // is a rate nobody can act on — this one keeps the same brief's second
       // reply in the same window as its first.
@@ -1378,6 +1465,7 @@ export async function interpretBrief(input: {
     return {
       ok: true,
       intent,
+      subject: parsed.subject,
       latencyMs: result.latencyMs,
       model: result.provenance.servedModel ?? result.provenance.model,
     };

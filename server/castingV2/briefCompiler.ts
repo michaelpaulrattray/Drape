@@ -244,11 +244,32 @@ export type BriefRefusalCode =
   /** A cohort exists in the sentence that no adapter is certified for (§I). */
   | "unsupported_cohort"
   /**
+   * The brief asks for a real person or a named character — the one wall the
+   * author road KEEPS from the cohort question (ruling §6 rule 5; a
+   * customer's cast is theirs, and so is everyone else's).
+   */
+  | "likeness"
+  /**
+   * The brief asks for something that is not a being — an object, a vehicle,
+   * a scene. THE one wall the author road ADDS (ruling §6: "someone asking for
+   * an object should be refused like a car"). Free, before the claim.
+   */
+  | "not_a_being"
+  /**
    * The brief reader never read the brief — the call threw (deadline,
    * transport, provider) or no engine is configured. Free, before the claim,
    * by founder ruling (#126, Crew reply #7: "refuse-free").
    */
   | "reader_outage";
+
+/** The author road's two subject walls, in the customer's ear. Exported for the suite and the road note. */
+export const LIKENESS_MESSAGE =
+  "Casting makes people and creatures who are nobody in particular — not a named person, and not a "
+  + "character from a game, film or show. Describe the kind of face you want and we'll cast that. "
+  + "You have not been charged.";
+export const NOT_A_BEING_MESSAGE =
+  "This is a casting studio — it casts people and creatures, not objects, vehicles or places. "
+  + "Describe who you want in the frame and we'll cast them. You have not been charged.";
 
 /**
  * The sentence a reader outage answers with. Exported so the test that drives
@@ -465,7 +486,6 @@ function fallbackIntent(briefText: string): CastingIntent {
       model, so the picture is unaffected — only the record is.
     */
     statedInk: null,
-    creativeRegister: null,
     // No interpreter ran, so no category was read and nothing is implied.
     poolTendencies: NO_TENDENCIES,
     /*
@@ -954,12 +974,29 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     );
   }
 
+  /*
+    WHICH ROAD THIS ROLL TAKES is known before the reader is asked, and the
+    reader is asked the question that road needs. A FOLLOW's anchor and a chip
+    unlock or override reach the engine only through the house composer (the
+    review of #132, below), so such a roll under the flag is asked today's
+    cohort question and walled today's way; every other flagged roll is the
+    author road, and its reader is asked the four-valued subject question.
+  */
+  const unlock = input.unlock ?? [];
+  const anchor = anchorFrom(input.followIdentity ?? null);
+  const houseBecause: "anchored" | "edited" | null =
+    anchor ? "anchored"
+    : unlock.length > 0 || Object.values(input.overrides ?? {}).some((value) => value != null) ? "edited"
+    : null;
+  const authorRoad = input.creativeRegister === true && houseBecause === null;
+
   const outcome = await interpretBrief({
     briefText,
     engine: input.engine,
     wardrobe: input.pickWardrobe === true,
     ink: input.readInk === true,
     fidelity: input.briefFidelity === true,
+    author: authorRoad,
   });
 
   /*
@@ -1034,7 +1071,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .some((token) => STYLE_WORDS.has(token));
-  if (!outcome.ok && outcome.reason === "unavailable" && styledBrief) {
+  /*
+    KILLED ON THE AUTHOR ROAD (#131 slice C, ruling §6 rule 11): the screen's
+    premise is that the FALLBACK ignores a stated style and bills for it. On
+    the author road the brief reaches the engine verbatim, so an anime brief
+    whose reader reply could not be parsed still paints anime — there is
+    nothing to screen.
+  */
+  if (!outcome.ok && outcome.reason === "unavailable" && styledBrief && !authorRoad) {
     log.warn(
       { briefText: briefText.slice(0, 80) },
       "[briefCompiler] interpreter unavailable on a styled brief — refusing rather than casting photoreal",
@@ -1051,6 +1095,18 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       "Casting makes photographic people, and only ones who are nobody in particular — not a named person, not a character from a game or film, and not anime or illustration yet. Describe the kind of face you want and we'll cast that. You have not been charged.",
     );
   }
+  /*
+    THE AUTHOR ROAD'S TWO WALLS (#131 slice C). Both are the reader's
+    judgement taken twice (`cohortWallRetried`), both are free before the
+    claim, and there is no third: a creature, a robot, an anime girl, a sci-fi
+    human all CAST here, which is the mission's whole point.
+  */
+  if (!outcome.ok && outcome.reason === "likeness") {
+    throw new BriefRefusal("likeness", LIKENESS_MESSAGE);
+  }
+  if (!outcome.ok && outcome.reason === "not_a_being") {
+    throw new BriefRefusal("not_a_being", NOT_A_BEING_MESSAGE);
+  }
 
   const interpreted = outcome.ok ? outcome.intent : fallbackIntent(briefText);
   /*
@@ -1059,13 +1115,11 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   */
   const recovered = promoteStatedRole(promoteStatedHeritage(interpreted, briefText), briefText);
 
-  const anchor = anchorFrom(input.followIdentity ?? null);
   /*
     Sex is the only inherited fact that becomes a lock, because it is the only
     one the ruling makes absolute. It rides the intent so the validator checks
     it and the echo can say it; every other inherited trait rides the anchor.
   */
-  const unlock = input.unlock ?? [];
   const inherited: CastingIntent =
     anchor && !recovered.sex && anchor.sex ? { ...recovered, sex: anchor.sex } : recovered;
   const adjusted = applyOverrides(applyUnlocks(inherited, unlock), input.overrides);
@@ -1088,13 +1142,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     ...adjusted,
     role: guardRole(scrubBrands(adjusted.role)),
     characterNotes: scrubBrands(adjusted.characterNotes),
-    /*
-      AN UNASKED READING IS DISCARDED — the wardrobe pick's rule, and since
-      #131 the question is never asked at all (the interpreter's routing block
-      is deleted), so anything under this key is volunteered and the row is
-      null on both sides of the flag. The field itself goes with slice C.
-    */
-    creativeRegister: null,
   };
   const locks: LockFacts = lockFactsOf(intent);
   const archetype = resolveArchetype(intent, input.rollSeed);
@@ -1144,12 +1191,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     told). Until the author road can carry them — a declared #131 slice — such
     a roll composes HOUSE under the flag, and the row says why.
   */
-  const houseBecause: "anchored" | "edited" | null =
-    effectiveAnchor ? "anchored"
-    : unlock.length > 0 || Object.values(input.overrides ?? {}).some((value) => value != null) ? "edited"
-    : null;
-  const authorEngine =
-    input.creativeRegister === true && houseBecause === null ? (input.engine ?? interpreterEngine()) : null;
+  const authorEngine = authorRoad ? (input.engine ?? interpreterEngine()) : null;
   /*
     Brand names never reach the image engine (founder gate 21) — on this road
     the brief itself travels to the provider as the customer's own words, so it
@@ -1218,6 +1260,13 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
               model: authored.model,
               latencyMs: authored.latencyMs,
               prompt: authored.prompt,
+              /*
+                WHAT KIND OF BEING the reader said this is — `human`, `being`,
+                or `unread` when the reply could not be parsed and the sheet
+                went out on the verbatim brief. The intent's `cohort` above
+                names the adapter that resolved the record, not this.
+              */
+              subject: outcome.ok ? outcome.subject : "unread",
             },
           }
         : {}),
