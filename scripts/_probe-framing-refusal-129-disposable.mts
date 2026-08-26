@@ -114,3 +114,5 @@ writeFileSync(
   "utf8",
 );
 console.log("PROBE EXIT");
+/* The script guard: a disposable ends by ending the process (scriptExitDiscipline). */
+process.exit(0);

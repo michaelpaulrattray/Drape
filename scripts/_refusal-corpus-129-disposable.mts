@@ -129,3 +129,5 @@ for (const c of corpus) {
 const withRef = [...byPrompt].filter(([, e]) => e.refused > 0);
 console.log(`\ndistinct prompts ${byPrompt.size}; distinct prompts with a refusal ${withRef.length}; of those with n>=2 ${withRef.filter(([, e]) => e.n >= 2).length}`);
 for (const [h, e] of withRef) console.log(`  ${h}\tn=${e.n}\trefused=${e.refused}\tlen=${e.len}\trolls=${[...e.rolls].join(",")}`);
+/* The script guard: a disposable ends by ending the process (scriptExitDiscipline). */
+process.exit(0);
