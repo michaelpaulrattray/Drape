@@ -1,6 +1,6 @@
 {
-  "edition": 27,
-  "updatedAt": "2026-08-26T18:35:00+10:00",
+  "edition": 28,
+  "updatedAt": "2026-08-26T18:20:00+10:00",
   "shift": "foreman-21",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -485,6 +485,13 @@
   ],
   "pipeline": [
     {
+      "id": "crew-live-133",
+      "title": "This page is live now (#133, your ask) — MERGED (PR #135)",
+      "status": "merged",
+      "prNumber": 135,
+      "note": "No more hard refreshing: the page re-reads the briefing every minute while it is open and visible, and again whenever you come back to the tab. A new edition is swapped in from the new state — never a reload — and anything you have typed in a reply box stays where it is. The line at the foot says when the page last checked ('checked 12s ago'); if a check fails during a deploy it says so and tries again on the next tick rather than going quiet. Driven before merge: the page was open, a new edition was deployed underneath it, and it swapped in after 45 seconds with zero page loads and the draft still in the box. Also fixed the thing that made you notice: an eye item can no longer stay 'open' after its card is answered — the briefing refuses that shape. Merge dbfa897b. No spend, no flag, no migration."
+    },
+    {
       "id": "prompt-author-rebuild-131",
       "title": "The Prompt Author — the register rebuilt to your verdict, slices A+B (#131) — MERGED (PR #132)",
       "status": "merged",
@@ -740,6 +747,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T18:20:00+10:00",
+      "shift": "foreman-21",
+      "text": "Your auto-refresh ask is built and this is the first edition that should arrive on its own: leave the page open and it re-reads every minute and whenever you return to the tab; a new edition swaps in without a reload and keeps whatever you were typing. The foot of the page says when it last checked. That was the last thing this shift built; the night's record is three merges (the Prompt Author rebuild A+B, refuse-free at every length, and this), all live. Still waiting on nothing from you right now — the open cards are the OpenRouter balance ($4.09, not moving) and your word on whether 'verbatim' should override the brand scrub on the author road."
+    },
     {
       "at": "2026-08-26T18:35:00+10:00",
       "shift": "foreman-21",
