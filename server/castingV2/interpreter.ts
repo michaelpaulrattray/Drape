@@ -1362,6 +1362,8 @@ export async function interpretBrief(input: {
       wanted.
     */
     let intent = parsed.intent;
+    /* The subject travels WITH the intent that ships: a re-ask that replaces the intent replaces this too (review of #136, finding 2). */
+    let subject = parsed.subject;
 
     /*
       ⚠ THE DETAIL DID NOT FIT — compress it rather than let the cap eat it
@@ -1459,13 +1461,16 @@ export async function interpretBrief(input: {
       // is a rate nobody can act on — this one keeps the same brief's second
       // reply in the same window as its first.
       recordParseOutcome(!reparsed.ok, retry.truncated === true);
-      if (reparsed.ok && !needsAestheticRetry(input.briefText, reparsed.intent)) intent = reparsed.intent;
+      if (reparsed.ok && !needsAestheticRetry(input.briefText, reparsed.intent)) {
+        intent = reparsed.intent;
+        subject = reparsed.subject;
+      }
     }
 
     return {
       ok: true,
       intent,
-      subject: parsed.subject,
+      subject,
       latencyMs: result.latencyMs,
       model: result.provenance.servedModel ?? result.provenance.model,
     };

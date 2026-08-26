@@ -380,12 +380,14 @@ export type BriefCompilerInput = {
    */
   briefFidelity?: boolean;
   /**
-   * THE CREATIVE REGISTER — inside `CASTING_CREATIVE_REGISTER_SCOPE`, captured
-   * at the roll and handed down like the two above. On, the interpreter is
-   * asked which register the brief belongs in, and a brief it reads as
-   * creative has its eight slices composed by `creativeRegister.ts` instead of
-   * `composeCandidatePrompt`. Off, absent, or on with an ORDINARY brief: the
-   * eight prompts are byte-identical to today's.
+   * THE AUTHOR ROAD — inside `CASTING_CREATIVE_REGISTER_SCOPE`, captured at
+   * the roll and handed down like the two above (#131). On, EVERY roll that
+   * the road can carry (no anchor, no chip edit) is authored: the reader is
+   * asked the four-valued subject question, one text call writes ONE prompt
+   * for the sheet, and the two walls are the ruling's. A follow or an edited
+   * roll composes house and says why. Off, or absent: the eight prompts, the
+   * reader's question and the walls are byte-identical to today's. The name is
+   * the flag's, kept so the capture site and the row's `register` read alike.
    */
   creativeRegister?: boolean;
   /**
@@ -1158,18 +1160,11 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     pickWardrobe: input.pickWardrobe,
   });
   /*
-    THE REGISTER — decided once per roll, recorded once per roll.
-
-    Gated twice on purpose: on the FLAG (the question was put) and on the
-    READING (the answer was yes, with grounds in the brief's own words). An
-    ordinary brief under the flag takes the house road below to the byte, and
-    outside the flag `intent.creativeRegister` is null because the interpreter
-    was never asked, so nothing here can run.
-
-    The identities, the persona lines and the honest record are the HOUSE
-    resolver's, unchanged: the register rewrites what the engine is TOLD, not
-    what the sheet records about who was cast. The lock validator below still
-    runs over the same identities.
+    THE REGISTER — decided once per roll (`authorRoad`, above the reader
+    call), recorded once per roll. The identities, the persona lines and the
+    honest record are the HOUSE resolver's, unchanged: the author rewrites what
+    the engine is TOLD, not what the sheet records about who was cast. The lock
+    validator below still runs over the same identities.
   */
   /*
     THE AUTHOR ROAD (#131, his verdict on the court — "B is the studio"): under
