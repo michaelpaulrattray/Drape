@@ -50,7 +50,7 @@ import {
   wardrobeLineText,
 } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
-import { castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
+import { AUTHOR_SITS_OUT_CHIP_EDITS, authorSatOutRecord, castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
@@ -986,7 +986,18 @@ export default function CastingSheet() {
     follow composes house).
   */
   const authorRoad = config.data?.authorRoadEnabled === true;
-  const dockImaginationVisible = authorRoad && !viewingHistory && !standingFollowId;
+  /*
+    A CHIP EDIT SENDS THE NEXT ROLL DOWN THE HOUSE ROAD TOO (#131's open item):
+    `rollService` decides the road from the same three inputs the compiler
+    reads — no anchor, no unlock, no override — so a queued chip adjustment
+    makes the next roll a house roll exactly as a standing follow does, and the
+    gear stood here promising "Photoreal · Low" over a roll that would read
+    neither. Hidden while an adjustment is queued, and the dock says why in the
+    gear's place; the adjustments fall away on the keystroke, and the gear
+    comes back with them.
+  */
+  const chipEditQueued = unlocked.length > 0 || Object.keys(overrides).length > 0;
+  const dockImaginationVisible = authorRoad && !viewingHistory && !standingFollowId && !chipEditQueued;
   /*
     Preselected from the SHEET (its `imagination` is the register's own record),
     the path switch's rule one control over: a MAX sheet whose Roll again went
@@ -2364,6 +2375,20 @@ export default function CastingSheet() {
             <span className="dpc-wardrobeline__line">{castSettingsRecord(roll.data.style, roll.data.imagination)}</span>
           </p>
         ) : null}
+        {/*
+          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO (#131's open
+          item). A follow or a chip-edited roll under the flag composes house —
+          the row has recorded why since PR #132 — and until this line the
+          sheet showed the customer nothing: no prompt record, no settings
+          line, the author simply gone. Off the row like the two lines above
+          it, so a sheet that composed house says so whoever is reading it.
+        */}
+        {roll.data?.authorSatOut ? (
+          <p className="dpc-wardrobeline">
+            <span className="dp-chrome">AUTHOR</span>
+            <span className="dpc-wardrobeline__line">{authorSatOutRecord(roll.data.authorSatOut)}</span>
+          </p>
+        ) : null}
 
         {/*
           THE SHEET SAYS WHEN IT COULD NOT VARY.
@@ -2763,6 +2788,9 @@ export default function CastingSheet() {
               onStyle={setStyleChoice}
               onImagination={setImaginationChoice}
             />
+          ) : authorRoad && !viewingHistory && !standingFollowId && chipEditQueued ? (
+            /* Where the gear stood: the next roll is the studio's own casting, said in the gear's place rather than a gear that lies. */
+            <p className="dp-small dpc-dock-authornote">{AUTHOR_SITS_OUT_CHIP_EDITS}</p>
           ) : null}
           <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
             <Field className="dp-split__main dpc-briefrow">

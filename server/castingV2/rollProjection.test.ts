@@ -5,7 +5,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
+const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
   "./rollProjection"
 );
 
@@ -158,6 +158,27 @@ describe("nothing internal crosses the boundary", () => {
         candidates: [candidateRow()],
       });
       expect(authored.imagination).toBe("max");
+    });
+
+    it("why the author sat out reaches the SHEET from a house register, and nowhere else (#131's open item)", () => {
+      expect(readAuthorSatOut({ register: { kind: "house", because: "anchored" } })).toBe("anchored");
+      expect(readAuthorSatOut({ register: { kind: "house", because: "edited" } })).toBe("edited");
+      /* A reason this projection does not know is null, never forwarded as copy the sheet cannot say. */
+      expect(readAuthorSatOut({ register: { kind: "house", because: "moon" } })).toBeNull();
+      /* An author register has no reason to give; an unflagged roll has no register at all. */
+      expect(readAuthorSatOut({ register: { kind: "author", because: "anchored", imagination: "low", prompt: "x" } })).toBeNull();
+      expect(readAuthorSatOut({ compiler: "pathA-v1" })).toBeNull();
+      expect(readAuthorSatOut(null)).toBeNull();
+      const unflagged = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
+      expect(unflagged.authorSatOut).toBeNull();
+      /* The positive arm through the projection itself — the one a sabotage of the wire needs. */
+      const followed = projectRoll({
+        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", register: { kind: "house", because: "anchored" } } }),
+        candidates: [candidateRow()],
+      });
+      expect(followed.authorSatOut).toBe("anchored");
+      expect(followed.authoredPrompt).toBeNull();
+      expect(followed.imagination).toBeNull();
     });
 
     it("anything that is not a bounded string on an author register is null, never forwarded", () => {
