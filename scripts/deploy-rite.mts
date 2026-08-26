@@ -328,32 +328,6 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
   console.log(`  ${label}: ok`);
 }
 
-/*
-  AND THE SCRIPT GUARDS, OVER THE TREE BEING PUSHED (#152).
-
-  A shift's edition commit carries its court harnesses under `scripts/`, and
-  this rite pushes them without `pnpm test`. Seven suites hold every script to
-  a contract (exit, database door, world); none ran on this path, so two
-  disposables rode to main red on `scriptExitDiscipline` with e39 and the NEXT
-  pull request's gate was blamed for it. They run here now — in a throwaway
-  worktree of HEAD, because they read the disk and the shared tree carries
-  untracked litter that is not in the push (two breaching files the day this
-  landed). The suite list is derived from the suites themselves and REFUSES if
-  it loses its origin case; a worktree that cannot be made refuses too.
-  `scripts/lib/scriptGuards.mts` is the owner; `server/scriptGuards.test.ts`
-  the arms. Seconds, like the two checks above.
-*/
-{
-  const verdict = runScriptGuardsOnCommit(path.resolve(import.meta.dirname, ".."), "HEAD");
-  if (!verdict.ok) {
-    console.log(`REFUSED: the script guards are RED on the tree being pushed — the push does not fire.`);
-    console.log(verdict.printed.split("\n").map((line) => `    ${line}`).join("\n"));
-    console.log("  repair: fix the named script in the commit (the shape is scripts/SKELETON-disposable.mts), commit, re-run");
-    process.exit(1);
-  }
-  console.log(`  script guards: ok (${verdict.suites.length} suites on the pushed tree)`);
-}
-
 const railway = (...args: string[]) => run("railway.cmd", args, true);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -377,6 +351,34 @@ const subject = git("log", "-1", "--format=%s");
 const dirty = git("status", "--porcelain").split("\n").filter((line) => line && !line.startsWith("??"));
 if (dirty.length > 0) {
   die(`the working tree has ${dirty.length} uncommitted tracked change(s) — a deploy must carry a commit, not a desk:\n${dirty.join("\n")}`);
+}
+
+/*
+  AND THE SCRIPT GUARDS, OVER THE TREE BEING PUSHED (#152).
+
+  A shift's edition commit carries its court harnesses under `scripts/`, and
+  this rite pushes them without `pnpm test`. Seven suites hold every script to
+  a contract (exit, database door, world); none ran on this path, so two
+  disposables rode to main red on `scriptExitDiscipline` with e39 and the NEXT
+  pull request's gate was blamed for it. They run here now — in a throwaway
+  worktree of the commit being pushed, because they read the disk and the
+  shared tree carries untracked litter that is not in the push (two breaching
+  files the day this landed). The suite list is derived from the suites
+  themselves and REFUSES if it loses its origin case; a worktree that cannot be
+  made refuses too. It sits AFTER the dirty-tree refusal above so that the
+  tree the list is derived from and the tree the suites run in are the same
+  commit by construction (review of #157, finding 3).
+  `scripts/lib/scriptGuards.mts` is the owner; `server/scriptGuards.test.ts`
+  the arms. Seconds, like the atlas and capability checks.
+*/
+{
+  const verdict = runScriptGuardsOnCommit(path.resolve(import.meta.dirname, ".."), sha);
+  if (!verdict.ok) {
+    die(`the script guards are RED on ${shortSha}, the tree being pushed — the push does not fire.\n`
+      + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")
+      + "\n  repair: fix the named script in the commit (the shape is scripts/SKELETON-disposable.mts), commit, re-run");
+  }
+  say(`  script guards: ok (${verdict.suites.length} suites on ${shortSha})`);
 }
 
 /*

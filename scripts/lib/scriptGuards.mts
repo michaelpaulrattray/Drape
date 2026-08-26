@@ -27,17 +27,27 @@
  *
  * Naming the seven here would be a second list of "which suites read
  * scripts/", and the eighth suite would be written without anyone opening
- * this file (working law 4). The list is read off the suites themselves —
- * every non-integration `*.test.ts` under `server/` that names the `scripts`
- * directory — and the derivation is held to a floor it cannot fall through:
- * the origin case must be in it, or the guard REFUSES rather than running a
- * shorter list (invariant 7: refuse, never allow, when the instrument is
- * blind).
+ * this file (working law 4). The list is read off the suites themselves, and
+ * the derivation is held to a floor it cannot fall through: the origin case
+ * must be in it, or the guard REFUSES rather than running a shorter list
+ * (invariant 7: refuse, never allow, when the instrument is blind).
+ *
+ * **THE CONTRACT, STATED EXACTLY** (review of #157, finding 2): a suite is in
+ * the list when its source contains the bare double-quoted token `"scripts"`
+ * — the way a per-file sweeper names the directory it walks
+ * (`walk("scripts")`, `path.join(root, "scripts")`). It is NOT "mentions
+ * scripts/ somehow": ~80 suites cite one script by path (`"scripts/x.mts"`)
+ * and those are a suite about ONE file, which `pnpm test` covers and the rite
+ * deliberately does not. So a NEW sweep-guard over `scripts/` must name the
+ * directory with that exact token to be run here — under-inclusion is the
+ * silent direction, and the floor only protects the origin case. Over-
+ * inclusion (a suite that happens to hold the token) is the safe direction
+ * and costs a second.
  *
  * This is a MODULE (imported by the rite and by its suite) and it never exits.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmdirSync, symlinkSync } from "node:fs";
+import { mkdtempSync, rmdirSync, symlinkSync, unlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -111,9 +121,17 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
       printed: result.output.trim().split(/\r?\n/).filter((line) => line.trim() !== "").slice(-12).join("\n"),
     };
   } finally {
-    /* The junction goes FIRST and by rmdir: removing the tree recursively
-       through a live junction walks into the real node_modules. */
-    if (junction) { try { rmdirSync(junction); } catch { /* never made */ } }
+    /* The junction goes FIRST and as a LINK: removing the tree recursively
+       through a live junction walks into the real node_modules. On Windows a
+       junction is a directory reparse point and `rmdir` takes it; on POSIX the
+       "junction" type makes a plain symlink, which `rmdir` refuses (ENOTDIR)
+       and `unlink` takes — so both are tried, and only an absent link is
+       tolerated (review of #157, finding 1). */
+    if (junction) {
+      try { rmdirSync(junction); } catch {
+        try { unlinkSync(junction); } catch { /* never made */ }
+      }
+    }
     try { git("worktree", "remove", "--force", tree); } catch { /* never added */ }
     try { git("worktree", "prune"); } catch { /* best effort */ }
     try { rmdirSync(dir); } catch { /* the remove already took it */ }

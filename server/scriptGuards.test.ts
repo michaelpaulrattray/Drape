@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -58,7 +59,6 @@ describe("the verdict is the runner's exit status on the pushed tree", () => {
       expect(path.resolve(call.cwd)).not.toBe(ROOT);
       expect(call.suites).toEqual([ORIGIN_SUITE]);
     }
-    const { existsSync } = require("node:fs") as typeof import("node:fs");
     expect(seen.some((call) => existsSync(call.cwd))).toBe(false);
   });
 
