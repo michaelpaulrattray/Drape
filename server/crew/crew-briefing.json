@@ -1,7 +1,7 @@
 {
-  "edition": 18,
-  "updatedAt": "2026-08-26T10:30:00+10:00",
-  "shift": "foreman-15",
+  "edition": 19,
+  "updatedAt": "2026-08-26T11:55:00+10:00",
+  "shift": "foreman-16",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -22,11 +22,11 @@
           "state": "done"
         },
         {
-          "title": "A flagged roll of your brief — waits on your word to switch the register on for your account (card below)",
-          "state": "waiting"
+          "title": "A flagged roll of your brief — DONE on your word (\"flip it\", 11:03): the register is ON for your account only, and roll 217 went through it — 8 of 8 arrived in 137 s, 160 credits",
+          "state": "done"
         },
         {
-          "title": "Your eye on both bars — the milestone gate",
+          "title": "Your eye on both bars — conviction and spread — the milestone gate (eye item + card below)",
           "state": "waiting"
         }
       ]
@@ -75,14 +75,19 @@
     ],
     "chips": [
       {
-        "label": "Court complete — all eight arms valid, awaiting your eye",
+        "label": "Register ON for your account — roll 217 is in your gallery, waiting for your eye",
         "tone": "good",
-        "source": "run1 18 renders + the C′ rerun 3 renders, 0 refused; fal reads 11.6 USD before and after (its resolution is 0.1); pointers on #16"
+        "source": "CASTING_CREATIVE_REGISTER_SCOPE=users:1 read back by name 26 Aug 11:21; roll 217 row: register.kind=creative, card authored; pointers on #16"
+      },
+      {
+        "label": "Your account was auto-frozen for 22 h — unfrozen, cause filed (#119)",
+        "tone": "warn",
+        "source": "users.frozenAt 25 Aug 03:33Z → NULL 26 Aug 01:32Z via admin.unfreezeUser; audit rows 331 and the unfreeze; arithmetic on #119"
       },
       {
         "label": "Production healthy",
         "tone": "good",
-        "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug 09:3x"
+        "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug ~12:00"
       },
       {
         "label": "This page is the Desk",
@@ -92,16 +97,55 @@
       {
         "label": "Night shifts running",
         "tone": "good",
-        "source": "foreman-14 wrote this edition: #99 fixed and merged, the Machinist's first patrol merged, the runner's machine close-stamp live (#101); the register is dark, waiting on your word — see the journal"
-      },
-      {
-        "label": "OpenRouter balance $7.52 of $250",
-        "tone": "warn",
-        "source": "read off the OpenRouter account by foreman-8 at 02:35 on 26 Aug; not re-read since (no roll or refine has run); the interpreter behind every roll and refine runs on it"
+        "source": "foreman-16 wrote this edition: the flip, the roll, #119 found, the atlas merge guard (#100) merged"
       }
     ]
   },
   "needsYou": [
+    {
+      "id": "autofreeze-founder-119",
+      "title": "Your account was frozen for 22 hours by a dashboard read — should a page load ever be able to freeze an account?",
+      "productImpact": "Since yesterday 13:33 every roll, edit and purchase on your account was refused with \"Your account is currently under review.\" Nobody noticed: Slack is not connected and the email goes through Klaviyo. What froze you is the moderator dashboard's discrepancy card — merely OPENING it runs a scan that freezes anyone whose credit spend does not match the old studio's generation records by 2,000 or more. Your 7,505 is two things the product does on purpose: failed generations you ruled are not refunded, and Casting V2 edits that never write an old-studio record. At launch this would freeze every Casting V2 customer after about 80 edits. I unfroze you (through the admin action, audited) so your roll could run — but it will freeze you again the next time anyone opens that dashboard card until #119 lands.",
+      "workedExample": "A customer on the new studio rolls twice and refines forty faces over a month: 320 + 1,000 credits with no old-studio record. A moderator opens the dashboard to look at something else; the scan runs; the customer is frozen with no human decision, and reads \"under review… we verify your billing records\" the next time they press Roll.",
+      "options": [
+        {
+          "key": "list-only",
+          "label": "A read never freezes — the scan lists, a person freezes",
+          "consequence": "The auto-freeze comes out of the dashboard query; the moderator's Freeze button (already on the card) stays. The scan is also taught to read Casting V2 spend and your no-refund rule so the list stops being wrong. One PR, money-path review label."
+        },
+        {
+          "key": "keep-auto",
+          "label": "Keep the automatic freeze, fix the arithmetic only",
+          "consequence": "Accounts can still be frozen by a page load, but only for real discrepancies once the scan reads every charge source. You accept that a wrong formula in future freezes customers silently again."
+        }
+      ],
+      "recommendation": "List-only. A control that can freeze a paying customer should have a person's name on it — and this one froze the founder. Until you answer, please do not open the moderator dashboard's flagged-discrepancies card; the shifts will not either.",
+      "state": "open",
+      "filedAt": "2026-08-26T11:55:00+10:00",
+      "issueNumber": 119
+    },
+    {
+      "id": "register-step4-eye",
+      "title": "Look at roll 217 — your cyborg through the creative register. Does it reach your raw prompt's conviction, and is the spread enough?",
+      "productImpact": "This is the first sheet the product has ever made with your words first and ours second. Same 160 credits, same eight faces, same sheet — but the brief you typed is the top of the prompt, the house framing/camera/realism rules follow, and each face gets one line of variation on things you left open (the card is quoted under the frames). If your eye says it reaches the raw-prompt bar, the register is the road for creature and sci-fi casting and the milestone closes; if it does not, you say what is missing and the next court is cut from that.",
+      "workedExample": "Roll 217, 26 Aug 11:33, through the real entrance on your account. What I see with my own eyes, for you to overrule: eight bald men with the ports, seams and jaw plate on every one, the amber eye on most, no beard on any, no bodybuilder — and the same black technical jacket on all eight (the engine picked the wardrobe line, because the stored brief never named clothes), so the spread is in the augmentations and the wear, not the silhouette. Four of the eight were trimmed by the framing feature that is also on for your account (a reading for #11, not a defect).",
+      "options": [
+        {
+          "key": "reaches",
+          "label": "It reaches the bar — close the milestone",
+          "consequence": "The creative register milestone closes: a completion card with the test-drive list follows, the focus clears, and the team drops to maintenance until you name the next one. The flag stays at your account only until you say otherwise."
+        },
+        {
+          "key": "short",
+          "label": "It falls short — here is what is missing",
+          "consequence": "Tell me in your words (jaw plate, eye, skin, clothes, spread…). It becomes the next court's arms, priced under the $50 threshold, and the register stays on for your account while it runs."
+        }
+      ],
+      "recommendation": "Look at the sheet and the eight singles before reading anything I wrote. Then answer in one line either way — the milestone gate is your eye, nothing else.",
+      "state": "open",
+      "filedAt": "2026-08-26T11:55:00+10:00",
+      "issueNumber": 16
+    },
     {
       "id": "register-flip-users1",
       "title": "Say the word and I switch the creative register on for your account and roll your cyborg brief through it",
@@ -120,7 +164,7 @@
         }
       ],
       "recommendation": "Flip it. The roll is the only way to find out what you asked to find out — how close the register gets to your raw prompt with the framing held — and off is byte-identical to today, so there is nothing to undo if you dislike the strip.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-26T07:25:00+10:00",
       "issueNumber": 16
     },
@@ -181,6 +225,61 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "creative-register-roll-217",
+      "title": "Roll 217 — your cyborg brief through the creative register, on your account, through the real entrance",
+      "question": "Does this sheet reach your raw prompt's conviction (jaw plate present and prominent, amber eye, porcelain skin committed, no beard, no bodybuilder) — and is the spread across the eight enough? The sheet first, then each face with the one line of variation it was given.",
+      "state": "open",
+      "filedAt": "2026-08-26T11:55:00+10:00",
+      "issueNumber": 16,
+      "frames": [
+        {
+          "key": "crew-eye/60672400-5682-4343-9b5a-ac7d95aa0891.png",
+          "caption": "The whole sheet — eight faces, 160 credits, 137 seconds, 26 Aug 11:33. Your 552-character brief verbatim at the top of every prompt; the house framing, camera and realism blocks after it; the wardrobe line engine-picked (your stored brief names no clothes).",
+          "arm": "SHEET"
+        },
+        {
+          "key": "crew-eye/29870ba6-5c8a-4af9-afc9-2b43bad8495d.png",
+          "caption": "Face 1 — its line of variation: “the implant seams branching further than described, crossing the crown and continuing down the nape of the neck.” (delivered as rendered)",
+          "arm": "01"
+        },
+        {
+          "key": "crew-eye/93b2c653-dd73-40e2-ab1e-411cf9d8bece.png",
+          "caption": "Face 2 — its line of variation: “the jaw plate's matte-black finish worn to a dull metallic sheen along its forward edge.” (delivered as rendered)",
+          "arm": "02"
+        },
+        {
+          "key": "crew-eye/ee5d5621-b659-4ebb-bd92-ceb0a61777cb.png",
+          "caption": "Face 3 — its line of variation: “each implant port rimmed with a thin band of brushed titanium rather than plain matte-black casing.” (trimmed by the framing feature, kept original on file)",
+          "arm": "03"
+        },
+        {
+          "key": "crew-eye/3d7f74d2-79ed-4bce-bc85-4811cdc960a6.png",
+          "caption": "Face 4 — its line of variation: “the jaw plate thicker and more slab-like, its upper edge extending higher along the cheekbone.” (trimmed by the framing feature, kept original on file)",
+          "arm": "04"
+        },
+        {
+          "key": "crew-eye/2e4387dd-f561-49ce-917f-1d5dfc7c5c9b.png",
+          "caption": "Face 5 — its line of variation: “his head tilted slightly downward, chin lowered so the plate's upper edge catches the light.” (trimmed by the framing feature, kept original on file)",
+          "arm": "05"
+        },
+        {
+          "key": "crew-eye/07fa56b3-567c-42a1-8ccc-170aff88b08b.png",
+          "caption": "Face 6 — its line of variation: “the right eye's amber-red glow pulsing brighter at its iris core than along its outer rim.” (delivered as rendered)",
+          "arm": "06"
+        },
+        {
+          "key": "crew-eye/47774526-0574-4906-883d-295601d93edb.png",
+          "caption": "Face 7 — its line of variation: “the scalp seams sitting slightly raised above the skin, casting fine linear shadows rather than lying flush.” (delivered as rendered)",
+          "arm": "07"
+        },
+        {
+          "key": "crew-eye/a9a0d2a9-0fed-4adc-86a2-069e8c996d73.png",
+          "caption": "Face 8 — its line of variation: “faint pale scarring visible in the skin around each ear stud where metal meets flesh.” (trimmed by the framing feature, kept original on file)",
+          "arm": "08"
+        }
+      ]
+    },
     {
       "id": "creative-register-court-run1",
       "title": "The creative-register court — eight arms of your cyborg brief (C′ rerun valid as of 26 Aug 02:35)",
@@ -243,6 +342,20 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "autofreeze-119",
+      "title": "The dashboard scan that froze your account (#119) — diagnosed, unfrozen, waiting on your answer before the fix is cut",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "Read at the rows: 7,505 = 102,585 net generation spend − 95,080 on old-studio records; the two missing pieces are your no-refund-on-failure ruling and Casting V2 edits. The ledger itself is exact to the credit. The card above asks the one design question; the mechanical halves follow it."
+    },
+    {
+      "id": "atlas-merge-driver-100",
+      "title": "The generated architecture map is never merged by hand any more (#100) — one command instead of a stalled pull request",
+      "status": "merged",
+      "prNumber": 117,
+      "note": "Every branch regenerates a 20,000-line map of the code, so two branches that both touched it used to collide the moment one merged — three pull requests stalled on it in one night and the deploy ceremony refused twice. Now git takes one side as a placeholder and the commit that follows regenerates the map on the merged code and refuses if that generation fails. Proven on real throwaway repositories and once end to end with the real generator. Found on the way: git does not re-read files a hook stages during an automatic merge, so the automatic path stops with everything staged and asks for one more command. No product code; nothing spent."
+    },
     {
       "id": "precommit-gate-102-103",
       "title": "Two repeat mistakes now refused at the commit itself (#102, #103) — and a dead gate found and revived",
@@ -393,9 +506,16 @@
   ],
   "problems": [
     {
+      "id": "founder-account-autofrozen",
+      "title": "Your account was auto-frozen 25 Aug 13:33 → unfrozen 26 Aug 11:32; it re-freezes if the moderator dashboard's flagged card is opened before #119 lands",
+      "detail": "The scan runs inside the dashboard card's read. Your account is unfrozen now and roll 217 went through. Please keep off the moderator dashboard's 'flagged discrepancies' card until #119 is fixed; the shifts will not open it either. Everything else on the admin and moderator pages is safe.",
+      "severity": "urgent",
+      "state": "open"
+    },
+    {
       "id": "fable-review-broken",
-      "title": "The automatic code review on pull requests is still down — the cause is narrowed, not fixed (#114)",
-      "detail": "Every substantial pull request gets an automatic Claude review before it merges. It has now failed four times in a row since 09:10 (each within a second, no message). I reran it with full logging: the login token IS valid — a small helper call was billed to it in the same run — and the tool version is unchanged; only the big-model (Fable) call dies, every time. Two explanations are left: your subscription's usage window was hit (the 08:59 review alone cost $2.85 and your own sessions share the plan), which heals itself; or the account's access to that model changed, which would be yours to look at. One rerun after about 14:00 today tells them apart; the next shift does it. Meanwhile merges still run unreviewed by the machine — this shift reviewed its own pull request by hand and posted the review on it before merging.",
+      "title": "The automatic code review on pull requests is still down — fifth failure, the deciding rerun is after 14:00 (#114)",
+      "detail": "Every substantial pull request gets an automatic Claude review before it merges. It has now failed four times in a row since 09:10 (each within a second, no message). I reran it with full logging: the login token IS valid — a small helper call was billed to it in the same run — and the tool version is unchanged; only the big-model (Fable) call dies, every time. Two explanations are left: your subscription's usage window was hit (the 08:59 review alone cost $2.85 and your own sessions share the plan), which heals itself; or the account's access to that model changed, which would be yours to look at. One rerun after about 14:00 today tells them apart; the next shift does it. Meanwhile merges still run unreviewed by the machine — this shift reviewed its own pull request by hand and posted the review on it before merging. Fifth instance on this shift's PR (11:05), same shape. The deciding rerun (five hours after the first failure) is still ahead.",
       "severity": "warning",
       "state": "open"
     },
@@ -429,6 +549,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T11:55:00+10:00",
+      "shift": "foreman-16",
+      "text": "You said \"flip it\" at 11:03, so this shift did step 3. The creative register is switched on for your account only (read back by name, redeployed, health checked three times), and your cyborg brief went through it as roll 217 — eight of eight faces in 137 seconds, 160 credits from your balance. The sheet and the eight singles are in your gallery with the line of variation each face was given; the row confirms it compiled as creative, on three phrases from your own words. What I see: ports, seams and plate on all eight, amber eye on most, no beards, no bodybuilders — and the same black jacket on all eight, so the spread is narrow; your eye decides, and that is the milestone gate. On the way I found something you need to know: your account had been FROZEN since yesterday 13:33 — every roll and edit refused as 'under review' — by the moderator dashboard's discrepancy scan, which runs whenever that card is opened and reads your Casting V2 edits and your own no-refund rule as a 7,505-credit discrepancy. I unfroze you through the admin action so your roll could run, filed #119 with the arithmetic, and put the one design question on a card: should a page load ever freeze an account? Until you answer, don't open that dashboard card. Also merged tonight: the map-merge guard (#100), so concurrent pull requests stop stalling on the generated architecture map. Spent: your 160 credits on your word; about $1.50 of house money on the roll's renders; nothing else."
+    },
     {
       "at": "2026-08-26T10:30:00+10:00",
       "shift": "foreman-15",
@@ -533,6 +658,7 @@
   "acknowledgedReplyIds": [
     1,
     2,
-    3
+    3,
+    4
   ]
 }

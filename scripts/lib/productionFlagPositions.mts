@@ -222,15 +222,17 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "taken while it is narrow states which side it drove.",
   },
   CASTING_CREATIVE_REGISTER_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
       "the creative register (#16, rung N1 of the rebaseline) — BUILT DARK 2026-08-26 on the "
       + "founder's own verdict on the court (\"I think C is worth building to find out how close "
-      + "we can get\"). Off, the compile is byte-identical to today's. It flips to users:1 for "
-      + "step 3 of the design's §5 — a flagged roll of his cyborg brief — on his word, and his "
-      + "eye on both bars (conviction + spread) is the milestone gate. Not `all` before that: an "
-      + "ordinary brief under the flag still compiles house to the byte, but the creative "
-      + "population has not been seen at his eye through the built road yet.",
+      + "we can get\"), and FLIPPED TO users:1 2026-08-26 01:21Z on his word on the Crew tab, "
+      + "verbatim: \"flip it\" (reply #4 on card register-flip-users1; set by foreman-16 under "
+      + "the established variable procedure, read back by name). This is step 3 of the design's "
+      + "§5 — a flagged roll of his cyborg brief on his account — and his eye on both bars "
+      + "(conviction + spread) is the milestone gate. Not `all` before that: an ordinary brief "
+      + "under the flag still compiles house to the byte, but the creative population has not "
+      + "been seen at his eye through the built road yet.",
   },
   CASTING_TWO_PATHS_SCOPE: {
     position: "users:1",
