@@ -1,7 +1,7 @@
 {
-  "edition": 49,
-  "updatedAt": "2026-08-27T08:30:00+10:00",
-  "shift": "foreman-40",
+  "edition": 50,
+  "updatedAt": "2026-08-27T08:45:00+10:00",
+  "shift": "foreman-41",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -62,8 +62,8 @@
           "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E) — AND THE MINIMAL SETTINGS MODAL (#142, your 'do it'): MERGED PR #150, live on your account — the gear reading 'Photoreal · Low' opens the panel (Style, Imagination, Reset, the override line). N1's last built slice; what remains is #128/#130 (two small courts), #129 (patrol), then your eye = the gate — AND THE LIGHTING COURT (#128) RAN: four lights on the locked block + the distilled clause, your thin brief, 40 frames, $2.60; the two sheets are in your gallery and your eye picks the studio light. Left in N1: #130 (framing to 28%), #129 (patrol), then your eye = the gate — AND THE FRAMING COURT (#130) RAN: four framing sentences on the locked block, your thin brief, 32 frames, $2.05. Words move the frame 3–4 points, not the 8 needed for 28% — and your 9:16 reference carried into our 2:3 frame is ~33%, which the best sentence already hits. Your pick between the two targets is on the eye item. Left in N1: #129 (patrol), then your eye = the gate — AND THE RETRY BUTTON (#122 shape 1, your 'should we also allow a try option aswell?') is BUILT and MERGED (PR #151), switched off for everyone: a tile that failed on an engine error gets 'Retry · 20 credits' and renders again in the same slot. Your word flips it on for your account. Left in N1: your eye on the four open eye items = the gate",
-          "state": "in-progress"
+          "title": "The register rebuilt to your ruling — EVERY slice merged and live on your account: A+B (PR #132), C/D/E (#136/#137/#138), your author spec fix (#141), the sheet that says why it fell back (#153), the minimal settings modal (#150 — passed by your eye, reply #12), the family clause (#156). Nothing in N1 is left to build; the gate is your eye.",
+          "state": "done"
         }
       ]
     },
@@ -111,29 +111,29 @@
     ],
     "chips": [
       {
-        "label": "The Retry button (#122) is built and merged — off for everyone until your word",
+        "label": "Every N1 slice is built and live on your account — the gate is your eye",
         "tone": "good",
-        "source": "PR #151 merged b89d1a12 27 Aug 03:56; CASTING_RETRY_SCOPE recorded off in productionFlagPositions; driven six times on dev (frames in docs/specs/evidence/retry-122/)"
+        "source": "PRs #132, #136, #137, #138, #141, #150, #153, #156 all MERGED (gh, read 27 Aug 08:20); CASTING_CREATIVE_REGISTER_SCOPE=users:1 on production (rite 08:15)"
       },
       {
-        "label": "219 failed on a 45-second clock, not the register — fixed and MERGED (PR #124)",
+        "label": "Retry on refused tiles is ON for you, widened to content-filter tiles",
         "tone": "good",
-        "source": "roll 219 row interpreted=false; prod log 01:54:56Z '[interpreter] unavailable'; re-driven 3x: 36.5 s, 36.4 s, 45.012 s = the default deadline; merged de2f47f9, gate x3, review x2"
+        "source": "your reply #10; PR #155 merged 4c6b1a42; CASTING_RETRY_SCOPE=users:1 read back by name 27 Aug 07:10 and by the rite 08:15"
       },
       {
-        "label": "You re-ruled the roll road today (the PROMPT AUTHOR) — court #125 is next",
+        "label": "Waiting on your eye: Follow #154, framing #130, lighting #128, block #144",
         "tone": "neutral",
-        "source": "docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md (commits 8060d5d4/e9c4b800/df20b8cd); PROGRAM.md points at it; #120 and #92 superseded by its section 4"
+        "source": "the four open eye items below; no reply since #12 (21:11Z), read from the crew_replies table 27 Aug 08:22"
       },
       {
-        "label": "Register ON for your account — roll 217 is in your gallery, waiting for your eye",
-        "tone": "good",
-        "source": "CASTING_CREATIVE_REGISTER_SCOPE=users:1 read back by name 26 Aug 11:21; roll 217 row: register.kind=creative, card authored; pointers on #16"
+        "label": "Six finished cards closed in the queue — nothing built, records made true",
+        "tone": "neutral",
+        "source": "#121, #125, #142, #92, #93, #122 closed with the artifact each cites; #120 re-pointed at N2 (the constant it names is still read by the house road)"
       },
       {
         "label": "Production healthy",
         "tone": "good",
-        "source": "health checked 3× by the rite for this edition, all 200 — 26 Aug ~12:00"
+        "source": "last rite 27 Aug 08:15 — health 3× 200, db 6.68/3.83/3.35 ms, 35/35 flags where the record says, 61/61 tables"
       },
       {
         "label": "This page is the Desk",
@@ -1101,6 +1101,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T08:45:00+10:00",
+      "shift": "foreman-41",
+      "text": "A quiet morning: no new word from you since #12 last night, and nothing in N1 is left to build — every slice of the author road is merged and live on your account, so the milestone now waits on your eye. Four things are on this page for it: your first Follow on your own account (the family clause's real court — do the eight read as relatives of the face you tapped?), the framing strip (#130 — the 28% question is really a 9:16-versus-2:3 question, your pick), the lighting sheets (#128 — four rooms, your pick), and the rebuilt house block (#144). I spent the shift making the queue tell the truth: six cards whose work was already done and merged were still open (#121, #125, #142, #92, #93, #122) — each closed with the record it cites, and #120 re-pointed at the rung where its constant actually retires. No renders, no credits, $0 house. The service redeploys with this edition, nothing in it changes what you see in the studio."
+    },
+    {
       "at": "2026-08-27T08:30:00+10:00",
       "shift": "foreman-40",
       "text": "Two replies in. #11 — the family clause (#154) — built as you answered it and merged (PR #156, 56c7386c): on your account a Follow or a chip edit is now written by the author, with a 'continue this family' paragraph from the face you followed; chips on a plain authored sheet are a read-only record with one line saying why. Driven on dev through the real entrance (4 rolls — three landed 8/8, one was killed by my own dev-server restart mid-cast and settled by the recovery sweep, the known deploy-collision class; ~$3.20 house, 0 credits); five frames on the new eye item. #12 — the minimal settings modal passes on your word ('that's good'); 'imagination should be a slider' is recorded on #142 for the full N3 modal. the service redeploys with this edition. Your first Follow on your own account is the court."
@@ -1294,11 +1299,6 @@
       "at": "2026-08-26T06:10:00+10:00",
       "shift": "foreman-10",
       "text": "Still nothing from you on the court strips, so the creative register stays parked at its gate and tonight was maintenance. The lobby bug you would have hit next — the sun/moon theme button that opened the feedback menu instead of switching themes — is fixed and live (#73). A day seat had written the fix but left it stuck on a mechanical step; I finished that step and then did not take the fix on trust: I ran the app, measured that the two buttons now sit 14 pixels apart, clicked the sun/moon and watched the theme flip without the help menu appearing, opened the three-dot and saw Send feedback / Report a bug, pressed Esc and saw it close, and looked at both light and dark frames myself before merging. Nothing was spent. Two things still wait on you: the eight court strips in the gallery, and the one-click GitHub leak-blocker card."
-    },
-    {
-      "at": "2026-08-26T05:25:00+10:00",
-      "shift": "foreman-9",
-      "text": "Still nothing from you on the court strips, so the creative register stays parked at its gate. Tonight went to the team's first security instrument (#32): every proposed change is now scanned for leaked passwords and API keys before it can merge, and the entire code history is re-read every Monday. The one-time read of all 2,636 commits found no real credential anywhere — 34 look-alikes, every one opened and read (cast id numbers in old test scripts, never a key). I did not trust the scanner until it had been made to fail: a planted fake key turned the merge check red in 12 seconds, twice, on the exact version that shipped, and was then removed so it never reached the main history. The reviewer found real gaps across five rounds — one shape of the OpenRouter key would have slipped through, and a secret sharing a line with a cast id would have been hidden — and each was closed and re-proven. One thing for you: GitHub has its own upload-time blocker and it is switched off for the repository (card above, one click). The #73 theme-button fix is still one mechanical step from green on the day seat's branch; if it is still red next shift I will take it over."
     }
   ],
   "acknowledgedReplyIds": [
