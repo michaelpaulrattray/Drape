@@ -1,7 +1,7 @@
 {
-  "edition": 44,
-  "updatedAt": "2026-08-27T05:58:00+10:00",
-  "shift": "foreman-35",
+  "edition": 45,
+  "updatedAt": "2026-08-27T06:08:00+10:00",
+  "shift": "foreman-36",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1047,6 +1047,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T06:08:00+10:00",
+      "shift": "foreman-36",
+      "text": "Quiet night again - nothing needed doing, and that is correct. No replies from you (nine acknowledged, none new at 06:02). I re-checked rather than inherited: main, the deploy branch and the tree all sit at 68d731e2, clean; every urgent card is either done and waiting on your eye, courted and reported, or waiting on your answer; no gate failure on main; no patrol due before the Janitor on ~29 Aug. Built nothing, spent nothing: $0 house, 0 credits. The list waiting on you is exactly the one in the entry below this - the Retry card first, then the family clause (#154), then your eye on the settings modal and the two courts. One answer from you turns the next shift into a working one."
+    },
+    {
       "at": "2026-08-27T05:58:00+10:00",
       "shift": "foreman-35",
       "text": "Quiet night - nothing needed doing. No replies from you (nine acknowledged, none new at 05:22). I checked the last shift's claims at the artifacts (main, the deploy branch and the tree all sit at f47012df, clean), the queue (nothing admissible without your word), the gate (no failures on main) and the patrol clocks (Janitor is due ~29 Aug, the rest ~2 Sep). So I built nothing and spent nothing: $0 house, 0 credits. What is waiting on you, in the order I would answer it: the Retry card (flip it for your account, and widen plain Retry to content-filter tiles - the #93 court's numbers are on it); the family-clause card (#154, three questions before it is built); and your eye on the settings modal (settings-modal-142), the framing and lighting courts (130, 128), the rebuilt house block (144) and the two eye items (author-sat-out-131, retry-button-122). Any answer becomes the next shift's work."
@@ -1240,11 +1245,6 @@
       "at": "2026-08-26T02:35:00+10:00",
       "shift": "foreman-5",
       "text": "The court's one invalid arm is rerun and valid. Last night's C′ strip measured a harness mistake — its shortening had cut your character detail down to the word 'Bald'. Overnight it was rebuilt so your own words are kept letter for letter and only the house's photography instructions are shortened, checked against the exact same three compiles as arm B before a cent was spent, then rendered: 3 frames, none refused, about 17 cents. What it shows, for your eye: the beards you never asked for, the shirts over a bare-chested ask and the missing porcelain skin are ALL still there in the short version — so those are wrong answers, not long ones. What the shortening did buy is commitment: the jaw plate reads as a real plate and the frame comes in to mid-torso. All eight strips now sit in the gallery for your verdict; nothing else moves on the register until you've looked. Also: your OpenRouter account (the text engine every roll needs) is down to $7.52 — see the problem card above; no request was queued today, only his word to note it."
-    },
-    {
-      "at": "2026-08-26T02:18:00+10:00",
-      "shift": "foreman-4",
-      "text": "THE COURT RAN. Eight arms of your cyborg brief, 18 renders, $0.79 — the strips are in your gallery above, in the full-size viewer you asked for this evening. What’s already visible before your eye: today’s compile put beards you never asked for on all three frames and dressed your bare-chested ask in t-shirts; the lean register carries committed hardware but broke the mid-torso framing lock; and the LEANER the prompt, the MORE the engine refused (the no-variance-card arm refused 2 of 3), so the design’s safety-rewording retry is load-bearing. One arm (C′) is reported invalid — the harness’s own shortening cut your character detail, so its frames measure my mistake, honestly labelled. Your verdict goes in the box under the item; full pointers on #16."
     }
   ],
   "acknowledgedReplyIds": [
