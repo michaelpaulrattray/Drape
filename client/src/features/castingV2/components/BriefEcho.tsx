@@ -8,6 +8,7 @@ import {
   SEXES,
 } from "@shared/castingVocabularies";
 import { Popover } from "@/foundation/Popover";
+import { isFollowUnpinnable } from "@shared/followUnpinnable";
 
 import {
   composeEcho,
@@ -103,11 +104,9 @@ export type PendingAdjustments = {
  */
 export type VaryPolicy = { authorRoad: boolean; standingFollow: boolean };
 
-const FOLLOW_UNPINNABLE: ReadonlySet<EchoField> = new Set<EchoField>(["sex", "ageBand", "heritage"]);
-
 export function varyOffered(policy: VaryPolicy | undefined, field: EchoField): boolean {
   if (!policy || !policy.authorRoad) return true;
-  return policy.standingFollow && FOLLOW_UNPINNABLE.has(field);
+  return policy.standingFollow && isFollowUnpinnable(field);
 }
 
 export function BriefEcho({

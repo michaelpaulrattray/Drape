@@ -3,20 +3,23 @@
  *
  * `BRIEF_TEXT_MAX` (2,000) is the bound every roll has had since the entrance
  * existed, and it still binds every roll that COMPOSES HOUSE — every account
- * outside `CASTING_CREATIVE_REGISTER_SCOPE`, and, inside it, a FOLLOW or a
- * chip-edited roll (those compose house under the flag, `briefCompiler`'s
- * `houseBecause`). The service refuses a longer brief FREE, before the claim,
+ * outside `CASTING_CREATIVE_REGISTER_SCOPE`. (Inside it, a FOLLOW or a
+ * chip-edited roll composed house too until #154 — the family clause — and
+ * took this bound; since then every flagged roll is the author road and takes
+ * the other one.) The service refuses a longer brief FREE, before the claim,
  * with `BRIEF_TOO_LONG_MESSAGE`, so the house road is byte-identical to
  * today's even though the zod schema at the entrance now admits more.
  *
  * ⚠ The rule keys on the ROAD THE ROLL TAKES, not on the account's flag
  * (review of PR #137, finding 2): the first cut keyed on the flag alone, and a
- * flagged account's follow — which composes house — would have carried up to
- * 4,000 characters into a compile whose announced caps were sized for 2,000
- * (CLAUDE.md's brief-fidelity paragraph chose `NOTES_MAX_FIDELITY` on the
- * premise that the brief is bounded at 2,000 *by construction* where the roll
- * is accepted; that premise now holds per ROAD, and this is where it holds).
- * The predicate is the compiler's own, stated once here and once there.
+ * flagged account's follow — which composed house at the time — would have
+ * carried up to 4,000 characters into a compile whose announced caps were
+ * sized for 2,000 (CLAUDE.md's brief-fidelity paragraph chose
+ * `NOTES_MAX_FIDELITY` on the premise that the brief is bounded at 2,000 *by
+ * construction* where the roll is accepted; that premise holds per ROAD, and
+ * this is where it holds). The road and the flag coincide again since #154,
+ * and the rule still keys on the road so that the day they part they part
+ * here. The predicate is the compiler's own, stated once here and once there.
  *
  * `BRIEF_TEXT_MAX_AUTHOR_ROAD` (4,000) is what the entrance admits and what
  * the AUTHOR road is bounded at, and it exists for ONE reason: on that road the
@@ -43,8 +46,8 @@ export const BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE =
 /**
  * The sentence a brief is refused with, or null when it may roll.
  *
- * `authorRoad` is the ROAD: flagged AND no anchor AND no chip edit — the
- * compiler's `houseBecause === null`, decided here from the same inputs.
+ * `authorRoad` is the ROAD the compiler will take — since #154 the register
+ * flag alone (`rollService` and `briefCompiler` decide it from the same input).
  */
 export function briefTooLong(briefText: string, authorRoad: boolean): string | null {
   const bound = authorRoad ? BRIEF_TEXT_MAX_AUTHOR_ROAD : BRIEF_TEXT_MAX;

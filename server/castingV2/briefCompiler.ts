@@ -72,6 +72,7 @@ import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief, interpreterEngine } from "./interpreter";
 import { authorPrompt, type Imagination } from "./promptAuthor";
 import { familyClause } from "./familyClause";
+import { isFollowUnpinnable } from "../../shared/followUnpinnable";
 import type { CastStyle } from "../../shared/castStyles";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
@@ -392,13 +393,13 @@ export type BriefCompilerInput = {
   briefFidelity?: boolean;
   /**
    * THE AUTHOR ROAD — inside `CASTING_CREATIVE_REGISTER_SCOPE`, captured at
-   * the roll and handed down like the two above (#131). On, EVERY roll that
-   * the road can carry (no anchor, no chip edit) is authored: the reader is
-   * asked the four-valued subject question, one text call writes ONE prompt
-   * for the sheet, and the two walls are the ruling's. A follow or an edited
-   * roll composes house and says why. Off, or absent: the eight prompts, the
-   * reader's question and the walls are byte-identical to today's. The name is
-   * the flag's, kept so the capture site and the row's `register` read alike.
+   * the roll and handed down like the two above (#131). On, EVERY roll is
+   * authored: the reader is asked the four-valued subject question, one text
+   * call writes ONE prompt for the sheet, and the two walls are the ruling's;
+   * a follow's anchor and the chip edits ride the family clause (#154). Off,
+   * or absent: the eight prompts, the reader's question and the walls are
+   * byte-identical to today's. The name is the flag's, kept so the capture
+   * site and the row's `register` read alike.
    */
   creativeRegister?: boolean;
   /**
@@ -616,13 +617,6 @@ function applyOverrides(intent: CastingIntent, overrides: LockOverrides | undefi
   return next;
 }
 
-/**
- * The axes a chip can unpin on a FOLLOW — `withUnlocksApplied`'s own three, the
- * only ones the anchor supplies and a chip can therefore strip. On the author
- * road these are the only removable chips a follow sheet draws.
- */
-const FOLLOW_UNPINNABLE: ReadonlySet<UnlockableField> = new Set<UnlockableField>(["sex", "ageBand", "heritage"]);
-
 function buildChips(
   intent: CastingIntent,
   followPersonaLine: string | null,
@@ -639,7 +633,7 @@ function buildChips(
 ): CastingChip[] {
   const chips: CastingChip[] = [];
   const removable = (field: UnlockableField): boolean =>
-    !carry.authorRoad || (carry.anchored && FOLLOW_UNPINNABLE.has(field));
+    !carry.authorRoad || (carry.anchored && isFollowUnpinnable(field));
 
   if (intent.role) {
     // The user's own words. Not removable, because removing the brief is not

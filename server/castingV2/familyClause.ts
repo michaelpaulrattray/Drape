@@ -122,10 +122,18 @@ function axesOf(anchor: FollowAnchor | null, overrides: LockOverrides): ClauseAx
   const heritageOverride: HeritageComponent[] | null = overrides.heritage
     ? [{ heritage: overrides.heritage as Heritage, pct: 100 }]
     : null;
+  const ageBand = overrides.ageBand ?? anchor?.ageBand ?? null;
   return {
     sex: overrides.sex ?? anchor?.sex ?? null,
-    ageBand: overrides.ageBand ?? anchor?.ageBand ?? null,
-    agePhase: overrides.agePhase ?? null,
+    ageBand,
+    /*
+      A phase has no sentence without a band ("in their late …" of what?), so
+      it rides only beside one; the popover sends both together today, and a
+      phase-only override reaching here would otherwise be dropped silently
+      under a clause claiming precedence over an axis it never states (review
+      of PR #156). Stated rather than assumed: the arm in `familyClause.test.ts`.
+    */
+    agePhase: ageBand ? (overrides.agePhase ?? null) : null,
     heritage: heritageOverride ?? anchor?.heritage ?? [],
     build: overrides.build ?? null,
     energy: overrides.energy ?? null,
@@ -201,5 +209,7 @@ export function familyClause(input: {
     paragraph states for defaults — otherwise the engine meets two ages and
     picks one.
   */
+  /* Nothing stated (a phase with no band is the one way in) is nothing to carry. */
+  if (describe(axes).length <= 1) return null;
   return { follow: false, overrides, clause: `Cast as ${person}; where this differs from the request above, this wins.` };
 }

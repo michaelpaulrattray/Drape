@@ -2,7 +2,7 @@
 
 *Foreman-32, 2026-08-27. Status: **BUILT 2026-08-27 (foreman-40) on his countersign** — Crew reply #11, 2026-08-26 20:49Z, verbatim: *"Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court."* Built as recommended, with the amendments in §6 below.*
 *Governing ruling: `PROMPT_AUTHOR_RULING_2026-08-26.md` (rules 1–16, §5b/§5c);*
-*the road as built: `briefCompiler.ts` (`authorRoad`, `houseBecause`), `promptAuthor.ts`, `houseBlock.ts`.*
+*the road as it stood before this build: `briefCompiler.ts` (`authorRoad`, `houseBecause` — the latter deleted by the build, §6), `promptAuthor.ts`, `houseBlock.ts`.*
 
 ## 0. What the customer meets today (read at the code, HEAD `7fa16ad3`)
 

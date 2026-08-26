@@ -114,6 +114,12 @@ describe("phrasing", () => {
     });
   });
 
+  it("a phase-only override with no band anywhere carries nothing — no clause claims precedence over an axis it never states", () => {
+    expect(familyClause({ anchor: null, overrides: { agePhase: "late" } })).toBeNull();
+    /* Beside a band — from the anchor — the phase rides. */
+    expect(familyClause({ anchor: ANCHOR, overrides: { agePhase: "late" } })?.clause).toContain("in their late 30s");
+  });
+
   it("age reads the way a person says it", () => {
     expect(agePhrase("teens", null)).toBe("in their teens");
     expect(agePhrase("teens", "late")).toBe("in their late teens");

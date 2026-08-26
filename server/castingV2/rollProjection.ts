@@ -164,12 +164,14 @@ export type RollProjection = {
    */
   style: CastStyle | null;
   /**
-   * WHY THE AUTHOR SAT THIS SHEET OUT (#131's open item, the honest half).
+   * WHY THE AUTHOR SAT THIS SHEET OUT — rows written before #154.
    *
-   * Under `CASTING_CREATIVE_REGISTER_SCOPE` a roll the author road cannot yet
-   * carry — a FOLLOW (`anchored`) or a roll carrying a chip unlock or override
-   * (`edited`) — composes HOUSE, and `briefCompiler` records the reason on the
-   * row (`register: { kind: "house", because }`). Until this field the reason
+   * Until the family clause landed, a roll the author road could not carry
+   * under `CASTING_CREATIVE_REGISTER_SCOPE` — a FOLLOW (`anchored`) or a roll
+   * carrying a chip unlock or override (`edited`) — composed HOUSE, and
+   * `briefCompiler` recorded the reason on the row (`register: { kind:
+   * "house", because }`). No new row records one; the rows already written
+   * still project here. Until this field the reason
    * reached the ROW and never the SHEET: the customer saw an authored sheet,
    * tapped Follow or removed a chip, and got a sheet with no prompt record, no
    * settings line and no word about why — the author simply vanished. Null on
@@ -586,11 +588,12 @@ export function readCastStyle(compiledBrief: unknown): CastStyle | null {
 }
 
 /**
- * The two reasons the author road declines a roll under the flag — the
- * compiler's own `houseBecause` vocabulary, pinned here so the sheet's copy and
- * the row's record cannot drift apart (a reason the compiler adds that this
- * list does not know projects null, and the arm in `rollProjection.test.ts`
- * that reads a made-up reason is what keeps that honest rather than silent).
+ * The two reasons the author road USED TO decline a roll under the flag (before
+ * #154) — the vocabulary the compiler's former `houseBecause` wrote, pinned
+ * here so the sheet's copy and the rows already written cannot drift apart (a
+ * reason this list does not know projects null, and the arm in
+ * `rollProjection.test.ts` that reads a made-up reason is what keeps that
+ * honest rather than silent).
  */
 export const AUTHOR_SAT_OUT_REASONS = ["anchored", "edited"] as const;
 export type AuthorSatOutReason = (typeof AUTHOR_SAT_OUT_REASONS)[number];

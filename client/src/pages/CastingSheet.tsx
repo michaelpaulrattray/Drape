@@ -2371,12 +2371,13 @@ export default function CastingSheet() {
           </p>
         ) : null}
         {/*
-          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO (#131's open
-          item). A follow or a chip-edited roll under the flag composes house —
-          the row has recorded why since PR #132 — and until this line the
-          sheet showed the customer nothing: no prompt record, no settings
-          line, the author simply gone. Off the row like the two lines above
-          it, so a sheet that composed house says so whoever is reading it.
+          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO — for rows
+          written before #154. Until then a follow or a chip-edited roll under
+          the flag composed house (the row recorded why since PR #132), and
+          until this line the sheet showed the customer nothing about it. The
+          author carries both now (the family clause), so no new row records a
+          reason; the line stays for the rows that do, in the past tense. Off
+          the row like the two lines above it.
         */}
         {roll.data?.authorSatOut ? (
           <p className="dpc-wardrobeline">
