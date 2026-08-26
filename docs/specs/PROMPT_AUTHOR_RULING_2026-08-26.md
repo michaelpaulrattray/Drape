@@ -164,6 +164,20 @@ He read the prompt behind rolls 221/222 (the old block: flash lighting, "head st
 
 Everything else in the old block is kept as §5d rules it (posture line replaces "no tilt"; negatives: logos/watermarks/captions/signage + props/environment/scene, text allowed; photoreal-only bans move into the photoreal preset). **The merged `houseBlock.ts` (PR #141) still composes the OLD capture/negatives — it is rebuilt to §5d + §5e.**
 
+
+### 5f. Universal versus cast — the two layers (founder, relaying his agent, 2026-08-26 late; supersedes §5e's expression and colour lines where they differ)
+
+*"Only the studio geometry should be universal. The rest depends on the cast."*
+
+**UNIVERSAL — the house block, identical on every job:** single figure, chest-up, centred, square to camera · entire hair silhouette in frame · bright grey seamless, soft centre falloff · photoreal photograph, no scene, no props, no logos/watermarks/signage · the same camera language (medium-format feel, 85mm-class, f/5.6–f/8, sharp) · the same light placement (large soft frontal key just above the lens, high fill, open shadows, soft chin/jaw shadow, minimal rim, no gels, no coloured kicker) · REALISM micro-details · *the person decides specular vs matte* (kept — it is a rule about the light, not a pipeline note; never a forced flash sheen) · the authority line: **the seed says WHO, the house block says HOW.**
+
+**NOT universal — never hard-coded into the house block:**
+- **Skin temperature / finish.** Porcelain-pale is that goth brief's; "warm and dimensional" would fail a weathered man or a white orc. Universal line: *Neutral daylight. Skin colour and sheen come from the person, not from a house grade.* (§5e's "cool-neutral" is withdrawn as universal.)
+- **Expression mood.** "Never grim, sullen or severe" kills a war orc, a villain, a stern founder. Universal line is ONLY: *Eyes into the lens, present, mouth closed. No laugh, no speech, no blank CGI stare.* The seed/author adds "self-possessed", "severe", "warm" per cast. (§5e's "Self-possessed … no horror grimace" moves out of the universal block.)
+- **Makeup / wardrobe language** — smudged darkness, blackened-wine lip, matte leather/velvet/lace — is MAX styling for one brief; in the house block every cast becomes goth.
+
+**The rule for the author, verbatim:** *"Split the prompt into two layers: House block — same on every job. Framing, camera, backdrop, light position, realism, negatives, authority. Cast block — written from the seed + slider. Age, aesthetic, mood, styling language. At LOW this stays thin. At MAX this carries the art direction."*
+
 ## 6. The hard rules — ruled one by one
 
 KILL: the discard list (1); the register engagement gate (2); the notes cap and the 2,000-char brief cap → the word budget (3); the dice and anatomy blocks (4); **the content wall (6)** — the engine judges; **the stage wall (11)** — replaced by ONE wall: *this is a casting studio; a subject that is not a being refuses free before the charge* ("someone asking for an object should be refused like a car"); **the typo gate (12)**; **sex-coded facial hair (13)** — "the engine would never do it unless asked".
