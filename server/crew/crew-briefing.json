@@ -1,7 +1,7 @@
 {
-  "edition": 33,
-  "updatedAt": "2026-08-26T22:55:00+10:00",
-  "shift": "foreman-24",
+  "edition": 34,
+  "updatedAt": "2026-08-26T23:20:00+10:00",
+  "shift": "foreman-25",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -332,7 +332,7 @@
     {
       "id": "house-block-rebuilt-144",
       "title": "The locked block rebuilt to your lines (#144) — your thin brief on the NEW block (roll 223) beside 221/222 on the old one",
-      "question": "Is this the studio light you meant — soft frontal key, open shadows, brighter grey behind the head, no flash sheen? Roll 223 is 'goth woman mid 30s' at LOW on the rebuilt block, through your own account. If the light and frame pass, the block is done and #128's court takes your line as variant (2); if not, say what is off in the light and I re-roll.",
+      "question": "Is this the studio light you meant — soft frontal key, open shadows, brighter grey behind the head, no flash sheen? Roll 223 is 'goth woman mid 30s' at LOW on the rebuilt block, through your own account. If the light and frame pass, the block is done and #128's court takes your line as variant (2); if not, say what is off in the light and I re-roll. (Since this strip: #146 narrowed the block's EXPRESSION and COLOUR lines to your §5f layers — the LIGHT you are judging here is unchanged, so the question stands.)",
       "state": "open",
       "filedAt": "2026-08-26T22:55:00+10:00",
       "issueNumber": 144,
@@ -509,6 +509,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "house-block-5f-146",
+      "title": "The two universal lines narrowed to your §5f layers (#146) — expression and colour are now studio geometry only — MERGED (PR #147), live on your account",
+      "status": "merged",
+      "prNumber": 147,
+      "note": "Your late ruling, relaying your agent: 'Only the studio geometry should be universal. The rest depends on the cast.' PR #145 had merged your §5e lines minutes before it landed. Done: EXPRESSION is now only 'Eyes into the lens, present, mouth closed. No laugh, no speech, no blank CGI stare' — 'self-possessed' and the broad-smile/horror-grimace bans are out of the house block (a war orc or a stern founder may be severe; the seed or the author says so per cast). COLOUR is now 'Neutral daylight. Skin colour and sheen come from the person, not from a house grade' — the 5500K pin and the teal-orange/beauty-app grade language are out (porcelain-pale is that goth brief's; a weathered man or a white orc is his own). Everything else in the block is exactly #145's, including your lighting line. The boot-time guard now refuses those six phrases back into the house block and leaves them legal in the cast layer (proven: 'self-possessed' put back → refused to load; a seed saying 'self-possessed' passes). Review took one finding (two of the six were suite-only; now all six are the guard's). No roll — the next author-road roll carries it; $0 house."
+    },
     {
       "id": "house-block-144",
       "title": "The locked house block rebuilt to §5d + §5e (#144) — the flash studio out, your three lines in — MERGED (PR #145), live on your account",
@@ -814,6 +821,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T23:20:00+10:00",
+      "shift": "foreman-25",
+      "text": "Your §5f ruling is built and live on your account (#146, PR #147): the house block's expression and colour lines are now studio geometry only — eyes into the lens, mouth closed, no laugh, no speech, no blank CGI stare; neutral daylight with skin colour and sheen from the person. Mood words and skin temperature now belong to the seed and the author, per cast, so a war orc can be severe and a weathered man can be warm without the block fighting them. The guard that refuses old phrases back into the block gained the six §5f drops (the review caught that two were test-only; fixed before merge). No roll and no house spend — your next author-road roll carries it. Still waiting on your eye for the light on roll 223 vs 221/222. Next in order: the Retry button (#122), the minimal settings modal (#142), then the two small courts (#128, #130)."
+    },
     {
       "at": "2026-08-26T22:55:00+10:00",
       "shift": "foreman-24",
