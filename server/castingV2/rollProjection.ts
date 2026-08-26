@@ -164,6 +164,21 @@ export type RollProjection = {
    */
   style: CastStyle | null;
   /**
+   * WHY THE AUTHOR SAT THIS SHEET OUT (#131's open item, the honest half).
+   *
+   * Under `CASTING_CREATIVE_REGISTER_SCOPE` a roll the author road cannot yet
+   * carry — a FOLLOW (`anchored`) or a roll carrying a chip unlock or override
+   * (`edited`) — composes HOUSE, and `briefCompiler` records the reason on the
+   * row (`register: { kind: "house", because }`). Until this field the reason
+   * reached the ROW and never the SHEET: the customer saw an authored sheet,
+   * tapped Follow or removed a chip, and got a sheet with no prompt record, no
+   * settings line and no word about why — the author simply vanished. Null on
+   * every author register and on every unflagged roll (which has no register
+   * at all), so an unflagged sheet is byte-identical to today's. Read through a
+   * validator like `imagination`: an unknown reason is null, never forwarded.
+   */
+  authorSatOut: AuthorSatOutReason | null;
+  /**
    * WHAT THIS SHEET IS WEARING — the two paths (design §3.3, item 6).
    *
    * ⚠ **An EXPLICIT projection off the roll's own columns, and it is explicit
@@ -570,6 +585,25 @@ export function readCastStyle(compiledBrief: unknown): CastStyle | null {
   return (CAST_STYLES as readonly unknown[]).includes(style) ? (style as CastStyle) : null;
 }
 
+/**
+ * The two reasons the author road declines a roll under the flag — the
+ * compiler's own `houseBecause` vocabulary, pinned here so the sheet's copy and
+ * the row's record cannot drift apart (a reason the compiler adds that this
+ * list does not know projects null, and the arm in `rollProjection.test.ts`
+ * that reads a made-up reason is what keeps that honest rather than silent).
+ */
+export const AUTHOR_SAT_OUT_REASONS = ["anchored", "edited"] as const;
+export type AuthorSatOutReason = (typeof AUTHOR_SAT_OUT_REASONS)[number];
+
+export function readAuthorSatOut(compiledBrief: unknown): AuthorSatOutReason | null {
+  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+  const register = (compiledBrief as { register?: unknown }).register;
+  if (!register || typeof register !== "object") return null;
+  const { kind, because } = register as { kind?: unknown; because?: unknown };
+  if (kind !== "house") return null;
+  return (AUTHOR_SAT_OUT_REASONS as readonly unknown[]).includes(because) ? (because as AuthorSatOutReason) : null;
+}
+
 function readFellBack(compiledBrief: unknown): boolean {
   if (!compiledBrief || typeof compiledBrief !== "object") return false;
   return (compiledBrief as { interpreted?: unknown }).interpreted === false;
@@ -657,6 +691,7 @@ export function projectRoll(input: {
     authoredText: readAuthoredText(input.roll.briefText, input.roll.compiledBrief),
     imagination: readImagination(input.roll.compiledBrief),
     style: readCastStyle(input.roll.compiledBrief),
+    authorSatOut: readAuthorSatOut(input.roll.compiledBrief),
     /*
       THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.
 
