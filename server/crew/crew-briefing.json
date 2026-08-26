@@ -1,6 +1,6 @@
 {
-  "edition": 29,
-  "updatedAt": "2026-08-26T19:02:14+10:00",
+  "edition": 30,
+  "updatedAt": "2026-08-26T19:46:51+10:00",
   "shift": "foreman-22",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -38,7 +38,7 @@
           "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling — slices A+B MERGED (PR #132) and C MERGED (PR #136): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; on this road creatures and sci-fi cast, a likeness still refuses, an object refuses free. Still to build: the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E)",
+          "title": "The register rebuilt to your ruling — A+B (PR #132), C (PR #136) and D (PR #137) MERGED: one authored prompt per sheet, your words verbatim first, LOW default, MAX leaves the face open; creatures and sci-fi cast on this road, a likeness still refuses, an object refuses free; the prompt is shown on the sheet with 'Use as brief'. Still to build: the imagination control and the retired outfit toggle (E)",
           "state": "in-progress"
         },
         {
@@ -485,6 +485,13 @@
   ],
   "pipeline": [
     {
+      "id": "prompt-on-cast-131d",
+      "title": "The Prompt Author — the prompt shown on the sheet, with 'Use as brief' (#131 slice D) — MERGED (PR #137)",
+      "status": "merged",
+      "prNumber": 137,
+      "note": "Your rule 5, built: 'no hidden prompt, ever'. On your account every sheet the author wrote now carries a small closed line above the grid — 'The prompt this sheet was painted from' — that opens to the exact text the eight were painted from: your words first, unchanged, then what the author added. One button under it, USE AS BRIEF, puts the whole prompt in the brief box so your next roll carries it word for word (you can edit it there first). Worked example: a dev roll of 'a lizard man with emerald scales, a heavy brow and amber eyes, in his 40s' — the author added 68 words of framing, studio and lighting; the panel shows all 536 characters; one tap put them in the box. Two things underneath: the brief box now accepts up to 4,000 characters on your account because an authored prompt can run past 2,000 (the court's did, 5 of 11) — everyone off the author road still stops at 2,000, refused free with a sentence. And a hover bug in dark mode (the button went blank) was caught by eye before merge. Merge e5dd76a6. Spend: about 45 cents for the one dev roll. Still on #131: the imagination control and the retired outfit toggle (E)."
+    },
+    {
       "id": "prompt-author-walls-131c",
       "title": "The Prompt Author — the walls (#131 slice C) — MERGED (PR #136)",
       "status": "merged",
@@ -754,6 +761,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T19:46:51+10:00",
+      "shift": "foreman-22",
+      "text": "Second merge of the night: the prompt is on the sheet (#131 slice D). Open any sheet the author wrote on your account and the line above the grid opens to the exact prompt; USE AS BRIEF drops it into the box for the next roll. It was driven on a real dev roll — eight lizard men, if you want to know what the studio does with a plain creature brief now — and looked at in both themes before merge. Next in order: slice E (the imagination control), then the two small courts (#128 realism clause, #130 framing calibration). Nothing waits on you tonight beyond the open cards; OpenRouter is still at about $4."
+    },
     {
       "at": "2026-08-26T19:02:14+10:00",
       "shift": "foreman-22",
