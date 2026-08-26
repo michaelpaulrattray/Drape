@@ -122,12 +122,17 @@ describe("a rejected input speaks to a person", () => {
     const error = await callOverTheWire("createRoll", {
       clientRequestId: VALID_REQUEST_ID,
       sessionId: VALID_SESSION_ID,
-      briefText: "a".repeat(2001),
+      /*
+        The ENTRANCE admits 4,000 since #131 slice D (an authored prompt may
+        come back as the next brief); the 2,000 bound for a house-composed
+        roll is the SERVICE's and is driven in `rollService.test.ts`.
+      */
+      briefText: "a".repeat(4001),
     });
 
     expect(error.data?.code).toBe("BAD_REQUEST");
     expect(error.message).toBe(
-      "That's longer than we can take — please keep it to 2,000 characters or fewer.",
+      "That's longer than we can take — please keep it to 4,000 characters or fewer.",
     );
     expectNoMachineText(error.message ?? "");
 
