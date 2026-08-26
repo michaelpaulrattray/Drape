@@ -124,7 +124,7 @@ describe("the call — the brief interpreter asks for the deadline its populatio
       }),
     } as unknown as TextEngine;
 
-    const outcome = await interpretBrief({ briefText: "a nurse in her thirties", engine, register: true });
+    const outcome = await interpretBrief({ briefText: "a nurse in her thirties", engine });
     expect(outcome.ok).toBe(true);
     expect(seen.length).toBeGreaterThan(0);
     for (const request of seen) {

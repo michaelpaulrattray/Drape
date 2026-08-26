@@ -70,7 +70,7 @@ import { scrubBrands } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief, interpreterEngine } from "./interpreter";
-import { authorVarianceCard, composeCreativeCandidatePrompt } from "./creativeRegister";
+import { authorPrompt, type Imagination } from "./promptAuthor";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
 import { breakSignatureClusters, type VarianceReport } from "./varianceBudget";
@@ -369,6 +369,12 @@ export type BriefCompilerInput = {
    * eight prompts are byte-identical to today's.
    */
   creativeRegister?: boolean;
+  /**
+   * How opinionated the author is on the author road (#131): `low` (his
+   * default) adds only the photoreal bundle where the brief is silent; `max`
+   * invents an ownable look and leaves the face open. Ignored off the flag.
+   */
+  imagination?: Imagination;
   /** Set on a follow roll; the sheet narrows around this candidate. */
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
@@ -956,7 +962,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     wardrobe: input.pickWardrobe === true,
     ink: input.readInk === true,
     fidelity: input.briefFidelity === true,
-    register: input.creativeRegister === true,
   });
 
   /*
@@ -1124,22 +1129,22 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     what the sheet records about who was cast. The lock validator below still
     runs over the same identities.
   */
-  const creative = input.creativeRegister === true && intent.creativeRegister?.engaged === true;
-  const cardEngine = input.engine ?? interpreterEngine();
-  const card =
-    creative && cardEngine
-      ? await authorVarianceCard({ engine: cardEngine, briefText, count: input.candidateCount })
-      : null;
-  const candidates = creative
-    ? sheet.candidates.map((candidate) => ({
-        ...candidate,
-        prompt: composeCreativeCandidatePrompt({
-          briefText,
-          role: intent.role,
-          wardrobeLine: sheet.wardrobeLine,
-          invitation: card?.invitations[candidate.position] ?? null,
-        }),
-      }))
+  /*
+    THE AUTHOR ROAD (#131, his verdict on the court — "B is the studio"): under
+    the flag EVERY roll takes it; the engagement gate is gone (ruling rule 2).
+    One text call authors ONE prompt — the brief verbatim first, by code, then
+    what an expert adds — and all eight slices carry it; the engine varies
+    everything the prompt leaves open. The interpreter above still ran, as the
+    READER: the identities, locks, persona lines, born ink and the honest record
+    are its and unchanged. An author outage costs the customer the author and
+    never the roll: the static bundle stands and the row says `authored: false`.
+  */
+  const authorEngine = input.creativeRegister === true ? (input.engine ?? interpreterEngine()) : null;
+  const authored = authorEngine
+    ? await authorPrompt({ engine: authorEngine, briefText, imagination: input.imagination })
+    : null;
+  const candidates = authored
+    ? sheet.candidates.map((candidate) => ({ ...candidate, prompt: authored.prompt }))
     : sheet.candidates;
 
   const violations = candidates
@@ -1174,23 +1179,27 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       archetype,
       chips: buildChips(intent, input.followPersonaLine ?? null),
       /*
-        WHICH REGISTER WROTE THIS SHEET (design §2a) — present ONLY when the
-        flag put the question, so an unflagged roll's row is byte-identical to
-        today's. `card: null` with `cardAuthored: false` is a sheet that went
-        WITHOUT a card (the author refused twice), never one whose card was
-        empty; the two must stay distinguishable at the row.
+        WHO WROTE THIS SHEET — present ONLY under the flag, so an unflagged
+        roll's row is byte-identical to today's. `authored: false` is a sheet
+        that rendered on the STATIC bundle (the author failed or refused twice),
+        never one somebody authored; the two must stay distinguishable at the
+        row. `prompt` is the whole prompt the eight were painted from — the
+        customer's words and the author's, nothing house-internal — and it is
+        what the sheet will show (#131 slice D: no hidden prompt, ever).
       */
-      ...(input.creativeRegister === true
+      ...(authored
         ? {
-            register: creative
-              ? {
-                  kind: "creative",
-                  reasons: intent.creativeRegister?.reasons ?? [],
-                  cardAuthored: card !== null,
-                  card: card?.invitations ?? null,
-                  ...(card ? { cardModel: card.model, cardLatencyMs: card.latencyMs } : {}),
-                }
-              : { kind: "house", reasons: [] },
+            register: {
+              kind: "author",
+              imagination: authored.imagination,
+              authored: authored.authored,
+              addedWords: authored.addedWords,
+              allowance: authored.allowance,
+              attempts: authored.attempts,
+              model: authored.model,
+              latencyMs: authored.latencyMs,
+              prompt: authored.prompt,
+            },
           }
         : {}),
     },

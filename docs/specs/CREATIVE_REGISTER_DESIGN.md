@@ -5,6 +5,8 @@
 The dilution court (fable-1660) executes against this design; the enrichment
 design folds into it.**
 
+**⚠ SUPERSEDED AS THE ROLL ROAD'S DESIGN (2026-08-26, afternoon): §1a/§1b's compiler architecture, the engagement gate (§2) and the variance card are replaced by THE PROMPT AUTHOR — `docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md`, court record `PROMPT_AUTHOR_COURT_2026-08-26.md`, his verdict Crew reply #8 ("B is the studio"), build #131 (`server/castingV2/promptAuthor.ts`). PR #94's register is retired with its tests; what survives of this document is the diagnosis (§0), the refusal path (§1c-pre → #93) and the Phase-A framing (§5).**
+
 **⚠ STEP 1 JUDGED, STEP 2 BUILT DARK (2026-08-26).** The court (§3) ran
 2026-08-26 ($0.93 house money, run1 + the C′ rerun; frames in the Crew tab's
 eye gallery) and the founder judged it on #16 — verbatim: *"I think C is worth
