@@ -1,7 +1,7 @@
 {
-  "edition": 17,
-  "updatedAt": "2026-08-26T09:30:00+10:00",
-  "shift": "foreman-14",
+  "edition": 18,
+  "updatedAt": "2026-08-26T10:30:00+10:00",
+  "shift": "foreman-15",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -244,6 +244,20 @@
   ],
   "pipeline": [
     {
+      "id": "precommit-gate-102-103",
+      "title": "Two repeat mistakes now refused at the commit itself (#102, #103) — and a dead gate found and revived",
+      "status": "merged",
+      "prNumber": 116,
+      "note": "Two things that had gone wrong more than once with the rule already written down now get refused by git before a commit exists: a shift committing its branch from the shared working tree (which has landed other people's work on shift branches), and a file carrying an invisible control byte — the shape a Python script leaves when it turns \b into a backspace, which once made the secret scanner load nothing and report all green. Proven by real commits in throwaway repositories, both directions each, and by breaking each arm to see exactly that arm go red. Nothing changes for you: your own sessions commit on main and never meet it. While proving it on the build server I found the push gate (the one that stops anyone deploying without the ceremony) had never been marked executable, so on a Linux machine git had been silently skipping it since it landed. Fixed, and a test now reads that bit for every hook. Nothing spent; no product code touched."
+    },
+    {
+      "id": "knip-devdeps-107",
+      "title": "Seven packages nobody used are gone from the build (#107)",
+      "status": "merged",
+      "prNumber": 115,
+      "note": "The Janitor's first sweep found seven development packages the project never imports — two of them literally named \"add\" and \"pnpm\", from a mistyped install on day one. Removed, with the tool that finds unused things checked before and after (it named all seven before, none after), a full build and the whole test suite green. The Warden's scanner also stops being reported as an \"unlisted binary\" on every sweep. Nothing a customer sees; nothing spent."
+    },
+    {
       "id": "card-bound-99",
       "title": "The register's variation card can no longer vanish on a long line (#99)",
       "status": "merged",
@@ -380,8 +394,8 @@
   "problems": [
     {
       "id": "fable-review-broken",
-      "title": "The automatic code review on pull requests stopped working at 09:10 (#114)",
-      "detail": "Every pull request gets an automatic review by a Claude reviewer before it merges. From 09:10 this morning that job fails inside a second with no message and no cost (twice on the Machinist's PR; it had passed on the same PR at 08:59). The build checks themselves still run and still pass — only the reviewer is silent. It does not block merges (it was never a required check), which is the risk: the next substantial change would merge unreviewed. Most likely the reviewer's login token (it runs on your account); the card says what to check. Nothing needs your hand yet unless the token turns out to be yours to renew.",
+      "title": "The automatic code review on pull requests is still down — the cause is narrowed, not fixed (#114)",
+      "detail": "Every substantial pull request gets an automatic Claude review before it merges. It has now failed four times in a row since 09:10 (each within a second, no message). I reran it with full logging: the login token IS valid — a small helper call was billed to it in the same run — and the tool version is unchanged; only the big-model (Fable) call dies, every time. Two explanations are left: your subscription's usage window was hit (the 08:59 review alone cost $2.85 and your own sessions share the plan), which heals itself; or the account's access to that model changed, which would be yours to look at. One rerun after about 14:00 today tells them apart; the next shift does it. Meanwhile merges still run unreviewed by the machine — this shift reviewed its own pull request by hand and posted the review on it before merging.",
       "severity": "warning",
       "state": "open"
     },
@@ -415,6 +429,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T10:30:00+10:00",
+      "shift": "foreman-15",
+      "text": "Still no reply from you, so the register stays switched off and your cyborg roll waits on your word — another maintenance shift. Three things. The broken pull-request reviewer (#114): I reran it with full logging and can now say the login token is fine and only the Fable call fails, four times running; it is either your plan's usage window (heals itself) or the account's access to that model (yours) — one rerun this afternoon decides, and the card says which. Two clean-ups from the patrols merged: the Janitor's seven unused packages are out of the build (#107), and the Retro's two commit guards are live (#102, #103) — git now refuses a shift branch committed from the shared tree and any file carrying an invisible control byte, the mistake that once blinded the secret scanner. Proving those on the build server turned up something older: the push gate that stops anyone deploying without the ceremony had never been marked executable, so on a Linux machine git had quietly skipped it since it landed — fixed, and tested for every hook from now on. Nothing spent beyond half a cent on the rerun. OpenRouter unchanged at $7.52."
+    },
     {
       "at": "2026-08-26T09:28:00+10:00",
       "shift": "foreman-14",
