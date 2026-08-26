@@ -1,7 +1,7 @@
 {
-  "edition": 36,
-  "updatedAt": "2026-08-27T01:35:00+10:00",
-  "shift": "foreman-27",
+  "edition": 37,
+  "updatedAt": "2026-08-27T02:05:00+10:00",
+  "shift": "foreman-28",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -54,7 +54,7 @@
           "state": "done"
         },
         {
-          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E) — AND THE MINIMAL SETTINGS MODAL (#142, your 'do it'): MERGED PR #150, live on your account — the gear reading 'Photoreal · Low' opens the panel (Style, Imagination, Reset, the override line). N1's last built slice; what remains is #128/#130 (two small courts), #129 (patrol), then your eye = the gate",
+          "title": "The register rebuilt to your ruling — slices A+B BUILT and MERGED (PR #132): one authored prompt per sheet, your words verbatim first, LOW default, MAX rewritten to leave the face open, the reader beside it recording only; PR #94's register retired. Still to build: the not-a-being wall (C), the prompt shown on the cast (D), the imagination control and the retired outfit toggle (E) — AND THE MINIMAL SETTINGS MODAL (#142, your 'do it'): MERGED PR #150, live on your account — the gear reading 'Photoreal · Low' opens the panel (Style, Imagination, Reset, the override line). N1's last built slice; what remains is #128/#130 (two small courts), #129 (patrol), then your eye = the gate — AND THE LIGHTING COURT (#128) RAN: four lights on the locked block + the distilled clause, your thin brief, 40 frames, $2.60; the two sheets are in your gallery and your eye picks the studio light. Left in N1: #130 (framing to 28%), #129 (patrol), then your eye = the gate",
           "state": "in-progress"
         }
       ]
@@ -330,6 +330,26 @@
   ],
   "eyeItems": [
     {
+      "id": "lighting-court-128",
+      "title": "The studio light (#128) — four lights on the locked block, your thin brief, which one is the studio?",
+      "question": "Row K is the light the block has today (roll 223's). L1 is your reference look — deeper open shadow under the jaw. L2 is your own sentence word for word. L3 is a clean, even light. R is the no-block version from reply #8 (brief + a short photographic clause) — it refused 3 of 8 and looks like a different room. Pick a row by letter, or say what is off in the light. If K, nothing moves and #128 closes; if L1/L2/L3, that sentence becomes the block's lighting line in a small PR and the other two go on the advanced-settings list for later. (All rows frame tighter than your 28% reference — that is #130, the next court, not this one.)",
+      "state": "open",
+      "filedAt": "2026-08-27T02:05:00+10:00",
+      "issueNumber": 128,
+      "frames": [
+        {
+          "key": "crew-eye/b79757d4-d91e-457d-8906-f1d6c9c05ba1.jpg",
+          "arm": "close-up · 3 frames per light",
+          "caption": "The first three frames of each block arm at a size where the light reads: K (today's §5e line), L1 (reference look, deep jaw shadow), L2 (your candidate verbatim), L3 (clean even light). Same brief, same block otherwise, same size the product renders at."
+        },
+        {
+          "key": "crew-eye/9fb20852-3863-405a-b150-42e1d6340295.jpg",
+          "arm": "the strip · five rows × eight",
+          "caption": "All forty frames: K, L1, L2, L3 on the locked block (0 of 32 refused), and R — the brief plus a distilled photographic clause with no block — 3 of 8 refused by the engine's content filter and a visibly different room (darker grey, tighter crop)."
+        }
+      ]
+    },
+    {
       "id": "settings-modal-142",
       "title": "The minimal settings modal (#142) — the gear and the panel, on the casting page",
       "question": "Is this the settings surface you meant — one gear that says 'Photoreal · Low' and opens a small panel with just Style and Imagination, your two coming styles announced beneath, and the one-line rule that your brief overrides the defaults? It is live on your account now: open the casting page, tap the gear, pick Max, roll once. If it passes, N1 has its control surface and the remaining N1 work is the two small courts (#128, #130) and the refusal patrol (#129). If something is off — the words, the placement, what the panel should or should not show — say it here and the next shift changes it.",
@@ -529,6 +549,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "lighting-court-128",
+      "title": "The lighting court (#128) — RUN: four lights on the locked block, plus the distilled clause, your thin brief × 8 each — sheets in your gallery",
+      "status": "waiting-founder",
+      "note": "Your words: 'a few different options would be good to look at.' Done on 'goth woman mid 30s' at Low (no author call, so this is exactly what a Low roll sends): K = the block as it stands today (the §5e light, what roll 223 used); L1 = your reference look with a deeper open shadow under the jaw; L2 = your own candidate sentence word for word ('soft frontal beauty lighting, high fill, open shadows, grey seamless with a gentle centre falloff, minimal rim, photoreal fashion studio'); L3 = a clean, even light; R = the original idea from reply #8 — the brief plus a short three-sentence photographic clause and NO block. Everything else identical. What came back: the four block versions delivered 32 of 32 with no refusals and all read as one studio — the light differences are real but subtle, so there is a close-up sheet beside the strip. The no-block version refused 3 of 8 and is a different picture (darker grey, tighter, leather and tattoos invented). Every arm frames tighter than your reference (about 36% head share against your 28%) — that is #130's job, next. Spend: $2.60 house (estimated $2.65 on the issue first), no credits, no rows. Nothing changed in the product: your pick on the sheets is what moves the block's lighting line. Record: docs/specs/LIGHTING_COURT_2026-08-27.md.",
+      "prNumber": null
+    },
     {
       "id": "settings-modal-142",
       "title": "The minimal settings modal (#142) — MERGED (PR #150), live on your account: the gear where the Low/Max pills stood",
@@ -855,6 +882,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-27T02:05:00+10:00",
+      "shift": "foreman-28",
+      "text": "The lighting court you asked for is done and in your gallery (#128). Your thin brief 'goth woman mid 30s' was rolled eight times under each of four lights on the locked block — today's line, your reference look with a deeper jaw shadow, your own candidate sentence word for word, and a clean even light — plus once more with no block at all, just a short photographic clause (the original reply-#8 idea). The block versions all delivered with zero refusals and read as one studio; the differences in light are real but subtle, so there is a close-up sheet beside the strip. The no-block version refused 3 of 8 and looks like a different room. Nothing in the product moved — your pick on the sheets is what changes the block's lighting line. Cost $2.60 of house money (estimated first on the issue), no credits. Still open for your eye from earlier: the settings modal (#142) and roll 223's light (#144). Next shift: #130, calibrating the frame to your 28% reference — every row here sits around 36%. No replies from you tonight."
+    },
     {
       "at": "2026-08-27T01:35:00+10:00",
       "shift": "foreman-27",
