@@ -1,7 +1,7 @@
 {
-  "edition": 50,
-  "updatedAt": "2026-08-27T08:45:00+10:00",
-  "shift": "foreman-41",
+  "edition": 51,
+  "updatedAt": "2026-08-27T09:35:00+10:00",
+  "shift": "foreman-42",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -712,6 +712,13 @@
   ],
   "pipeline": [
     {
+      "id": "rite-script-guards-152",
+      "title": "The deploy rite runs the script checks on the commit it pushes (#152) — MERGED",
+      "status": "merged",
+      "prNumber": 157,
+      "note": "The gap: the rite pushes without the full test run, so a shift's helper script could reach main red on a guard the next PR then gets blamed for. Now the rite checks out the exact commit into a throwaway folder, runs every script-checking suite there (the list is read off the suites themselves and refuses if it ever loses the original one), and refuses the push on red. Reviewed by the gate (pass, four small findings, all applied). $0 house, 0 credits."
+    },
+    {
       "id": "family-clause-154",
       "title": "The author carries a Follow and chip edits — the family clause (#154) — MERGED and LIVE on your account",
       "status": "merged",
@@ -1037,9 +1044,9 @@
   "problems": [
     {
       "id": "rite-pushes-red-scripts-152",
-      "title": "The deploy rite can push a script to main that the test gate rejects — main was quietly red on one guard for a night",
-      "detail": "Two of last night's patrol helper scripts rode to main with the briefing and neither ended the way the script guard requires, so the guard was red on main and nobody saw it until the next pull request inherited the failure this morning. No customer effect — the guard is about how our own helper scripts exit — and it is fixed on main now (PR #151 carried the one-line fix). Filed as #152: the rite should run the two script guards before it pushes. (issue #152)",
-      "state": "open",
+      "title": "The deploy rite could push a script to main that the test gate rejects — FIXED: the rite now runs the script checks on the exact commit before it pushes",
+      "detail": "Two patrol helper scripts rode to main with briefing e39 and neither ended the way the script guard requires, so the guard was red on main for a night and the next pull request inherited the failure. No customer effect. Fixed (PR #157, foreman-42): before pushing, the rite checks out the commit into a throwaway folder and runs every suite that checks our scripts there — eight at today's tree, found by reading the suites rather than by a list — and refuses the push on any red. Proven green on today's tree (6 s) and red on a deliberate bad commit. (issue #152, closed)",
+      "state": "resolved",
       "severity": "info"
     },
     {
@@ -1100,6 +1107,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-27T09:35:00+10:00",
+      "shift": "foreman-42",
+      "text": "Still no new word from you (12 replies, all acknowledged), and nothing in N1 is left to build — the milestone waits on your eye, same four things as this morning: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). The one thing in the queue that needed no eye was #152: the deploy rite could push a helper script to main that our own test gate then rejects — it happened once, and the next pull request got blamed. Built and merged (PR #157): before it pushes, the rite now checks out the exact commit into a throwaway folder and runs every script-checking suite there, refusing the push if any is red. Checked out separately on purpose — the shared working folder is full of untracked leftovers, two of which would have refused a push they were not in. Proven both ways: green on today's tree in six seconds, red on a deliberate bad commit that named the offending file. No customer effect, no renders, no credits, $0 house."
+    },
     {
       "at": "2026-08-27T08:45:00+10:00",
       "shift": "foreman-41",
@@ -1294,11 +1306,6 @@
       "at": "2026-08-26T06:25:00+10:00",
       "shift": "foreman-11",
       "text": "Still no word from you on the court strips, so the creative register stays parked at its gate and tonight was maintenance again. The team now has a dead-code detector (#34): one command that lists every file, export and package nothing in the product uses. I did not trust it until it had been caught out both ways — I planted a dead file and a dead export and it found both; and it correctly left alone the five modules our older map once wrongly called unused, including both login routes. Its first reading: 51 unused files (40 are unused pieces of the UI component kit), 34 unused packages, 174 unused exports — and two packages sitting in the project since day one that look like a mistyped install. Nothing was deleted; it is a reader, and the Janitor's first patrol turns the reading into cards. Another seat opened the workflow-file checkers (#35) minutes before I started and its gate is red on two style notes — I left it to them. Nothing was spent. Still waiting on you: the eight court strips, the GitHub one-click, and the OpenRouter balance."
-    },
-    {
-      "at": "2026-08-26T06:10:00+10:00",
-      "shift": "foreman-10",
-      "text": "Still nothing from you on the court strips, so the creative register stays parked at its gate and tonight was maintenance. The lobby bug you would have hit next — the sun/moon theme button that opened the feedback menu instead of switching themes — is fixed and live (#73). A day seat had written the fix but left it stuck on a mechanical step; I finished that step and then did not take the fix on trust: I ran the app, measured that the two buttons now sit 14 pixels apart, clicked the sun/moon and watched the theme flip without the help menu appearing, opened the three-dot and saw Send feedback / Report a bug, pressed Esc and saw it close, and looked at both light and dark frames myself before merging. Nothing was spent. Two things still wait on you: the eight court strips in the gallery, and the one-click GitHub leak-blocker card."
     }
   ],
   "acknowledgedReplyIds": [
