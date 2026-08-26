@@ -26,6 +26,7 @@
  * cast's creative content — the composed prompt, the archetype thesis, the
  * character notes — stays inside `compiledBrief` and stays here.
  */
+import { IMAGINATIONS, type Imagination } from "../../shared/imagination";
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
 import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
@@ -124,6 +125,15 @@ export type RollProjection = {
    * entrance admits `BRIEF_TEXT_MAX_AUTHOR_ROAD`.
    */
   authoredPrompt: string | null;
+  /**
+   * HOW FAR THE AUTHOR WENT on this sheet (#131 slice E) — `low` | `max` on an
+   * author register, null everywhere else. The dock preselects the NEXT roll's
+   * meter from it, the way the path switch preselects from the sheet's path:
+   * a MAX sheet whose "Roll again" silently went out at LOW would be a wrong
+   * default on a paid action. Read through a validator like everything lifted
+   * out of `compiledBrief`.
+   */
+  imagination: Imagination | null;
   /**
    * WHAT THIS SHEET IS WEARING — the two paths (design §3.3, item 6).
    *
@@ -500,6 +510,15 @@ export function readAuthoredPrompt(compiledBrief: unknown): string | null {
   return trimmed;
 }
 
+export function readImagination(compiledBrief: unknown): Imagination | null {
+  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+  const register = (compiledBrief as { register?: unknown }).register;
+  if (!register || typeof register !== "object") return null;
+  const { kind, imagination } = register as { kind?: unknown; imagination?: unknown };
+  if (kind !== "author") return null;
+  return (IMAGINATIONS as readonly unknown[]).includes(imagination) ? (imagination as Imagination) : null;
+}
+
 function readFellBack(compiledBrief: unknown): boolean {
   if (!compiledBrief || typeof compiledBrief !== "object") return false;
   return (compiledBrief as { interpreted?: unknown }).interpreted === false;
@@ -584,6 +603,7 @@ export function projectRoll(input: {
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
     authoredPrompt: readAuthoredPrompt(input.roll.compiledBrief),
+    imagination: readImagination(input.roll.compiledBrief),
     /*
       THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.
 

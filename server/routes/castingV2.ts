@@ -36,9 +36,11 @@ import {
   captureCastingInkStudioEnabled,
   captureCastingReferenceAttachEnabled,
   captureCastingRepaintEnabled,
+  captureCastingCreativeRegisterEnabled,
   captureCastingTwoPathsEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
+import { IMAGINATIONS } from "../../shared/imagination";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_PROVENANCES } from "../../shared/inkProvenance";
 import { REFERENCE_INTENTS } from "../../shared/referenceIntents";
@@ -915,6 +917,15 @@ export const castingV2Router = router({
     */
     twoPathsEnabled: captureCastingTwoPathsEnabled(ctx.user.id),
     /*
+      WHETHER THIS ACCOUNT IS ON THE AUTHOR ROAD (#131 slice E) — and therefore
+      whether the IMAGINATION meter is drawn and the wardrobe/basics switch is
+      NOT (ruling rules 10 and 11: the engine dresses the cast on this road).
+      Same shape as the two above: the client asks so it does not offer a
+      control nobody's roll would read; `rollService` ignores an `imagination`
+      from an account the author does not serve, read at the compile site.
+    */
+    authorRoadEnabled: captureCastingCreativeRegisterEnabled(ctx.user.id),
+    /*
       AND WHETHER A GARMENT ASK IS ADMITTED FOR THIS ACCOUNT — the sixth gate,
       and the reason it exists is a sentence that becomes false on day one
       (design §10's FIFTH flip precondition; ruled fable-1490).
@@ -1108,6 +1119,15 @@ export const castingV2Router = router({
             inherits the sheet's path (§3.1) and is not offered the switch.
           */
           path: z.enum(CASTING_PATHS).optional(),
+          /*
+            THE IMAGINATION METER (#131 slice E). Optional for the path's
+            reason: the control is drawn only on the author road, absent means
+            the author's own default (LOW), and an account off the road has
+            nothing that reads it. `follow` does not take one — a follow
+            composes house under the flag until the author road can carry an
+            anchor.
+          */
+          imagination: z.enum(IMAGINATIONS).optional(),
         })
         .strict(),
     )
@@ -1123,6 +1143,7 @@ export const castingV2Router = router({
         unlock: input.unlock,
         overrides: input.overrides,
         path: input.path,
+        imagination: input.imagination,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
     }),

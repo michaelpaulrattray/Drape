@@ -49,8 +49,10 @@ import {
   pathSwitchNote,
   wardrobeLineText,
 } from "@/features/castingV2/castingPathCopy";
+import { ImaginationToggle } from "@/features/castingV2/components/ImaginationToggle";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
+import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "@shared/briefLength";
 import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
@@ -367,6 +369,8 @@ export default function CastingSheet() {
     holds only the user's own departure from it.
   */
   const [pathChoice, setPathChoice] = useState<CastingPath | null>(null);
+  /* The imagination meter for the NEXT roll (#131 slice E): her choice if she touched it, else the sheet's own, else LOW. */
+  const [imaginationChoice, setImaginationChoice] = useState<Imagination | null>(null);
 
   /** Closes synchronously on click; see `dispatchRoll` and `singleFlight.ts`. */
   const latchRef = useRef<DispatchLatch | null>(null);
@@ -813,6 +817,7 @@ export default function CastingSheet() {
             argument `refineSubjects.ts` makes about expression.
           */
           ...(nextRollPath ? { path: nextRollPath } : {}),
+          ...(nextImagination ? { imagination: nextImagination } : {}),
         },
         options,
       );
@@ -894,6 +899,24 @@ export default function CastingSheet() {
   */
   const sheetWardrobe = roll.data?.wardrobe ?? null;
   const twoPathsEnabled = config.data?.twoPathsEnabled === true;
+  /*
+    THE AUTHOR ROAD RETIRES THE PATH SWITCH on this account (#131 slice E,
+    ruling rule 11) and draws the IMAGINATION meter where it stood — under the
+    same two conditions the switch had (not while reading history, not during
+    a standing follow, because both are statements about the NEXT roll and a
+    follow composes house).
+  */
+  const authorRoad = config.data?.authorRoadEnabled === true;
+  const dockImaginationVisible = authorRoad && !viewingHistory && !standingFollowId;
+  /*
+    Preselected from the SHEET (its `imagination` is the register's own record),
+    the path switch's rule one control over: a MAX sheet whose Roll again went
+    out at LOW would be a wrong default on a paid action. Null exactly where no
+    control is drawn, so nothing is sent from a sheet that showed nothing.
+  */
+  const nextImagination: Imagination | null = dockImaginationVisible
+    ? (imaginationChoice ?? roll.data?.imagination ?? DEFAULT_IMAGINATION)
+    : null;
 
   /*
     ⚠ **AN UNPATHED SHEET IS OFFERED THE SWITCH TOO, AND THE LINE THAT DECIDES
@@ -918,7 +941,7 @@ export default function CastingSheet() {
     Hidden while reading history for the reason the FOLLOWING chip is: this says
     what Roll again will do, and Roll again always applies to the live sheet.
   */
-  const dockPathVisible = twoPathsEnabled && !viewingHistory && !standingFollowId;
+  const dockPathVisible = twoPathsEnabled && !authorRoad && !viewingHistory && !standingFollowId;
   /** The LIVE sheet's own path, or `null` when it predates the paths. */
   const sheetPath = dockPathVisible ? (sheetWardrobe?.path ?? null) : null;
   /*
@@ -2613,6 +2636,14 @@ export default function CastingSheet() {
               value={nextRollPath}
               onChange={setPathChoice}
               note={pathSwitchNote({ sheetPath, selected: nextRollPath })}
+            />
+          ) : null}
+          {nextImagination ? (
+            <ImaginationToggle
+              idPrefix="dpc-dock-imagination"
+              label="How far the author goes on the next roll"
+              value={nextImagination}
+              onChange={setImaginationChoice}
             />
           ) : null}
           <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
