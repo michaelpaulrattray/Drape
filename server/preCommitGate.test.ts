@@ -69,7 +69,9 @@ afterAll(() => {
   for (const dir of repos) rmSync(dir, { recursive: true, force: true });
 });
 
-describe("the pre-commit gate", () => {
+/* Real git, several commits per arm: under the full suite's load one arm
+   timed out at vitest's 5 s default (2026-08-26) while passing 3/3 alone. */
+describe("the pre-commit gate", { timeout: 60_000 }, () => {
   beforeAll(() => {
     expect(existsSync(HOOK)).toBe(true);
     /* Line endings: a CRLF shebang line is a hook sh cannot run. `.githooks/**`
