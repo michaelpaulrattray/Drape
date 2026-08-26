@@ -50,7 +50,7 @@ import {
   wardrobeLineText,
 } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
-import { AUTHOR_SITS_OUT_CHIP_EDITS, authorSatOutRecord, castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
+import { AUTHOR_CHIPS_ARE_A_RECORD, authorSatOutRecord, castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
@@ -855,6 +855,9 @@ export default function CastingSheet() {
           briefText: brief,
           unlock: unlocked.length > 0 ? unlocked : undefined,
           overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
+          /* The gear is drawn on a standing follow since #154 (the author carries it), so what it shows is sent — null exactly where no gear was drawn. */
+          ...(nextImagination ? { imagination: nextImagination } : {}),
+          ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
       );
@@ -980,26 +983,16 @@ export default function CastingSheet() {
   const twoPathsEnabled = config.data?.twoPathsEnabled === true;
   /*
     THE AUTHOR ROAD RETIRES THE PATH SWITCH on this account (#131 slice E,
-    ruling rule 11) and draws the IMAGINATION meter where it stood — under the
-    same two conditions the switch had (not while reading history, not during
-    a standing follow, because both are statements about the NEXT roll and a
-    follow composes house).
+    ruling rule 11) and draws the IMAGINATION meter where it stood — not while
+    reading history, because the gear is a statement about the NEXT roll. It
+    used to hide during a standing follow and while a chip edit was queued,
+    because both sent the next roll to the house composer; since #154 the
+    author carries a follow and the chip edits as the family clause, so the
+    gear is drawn on every live sheet on this road and reads what the next
+    roll will use.
   */
   const authorRoad = config.data?.authorRoadEnabled === true;
-  /*
-    A CHIP EDIT SENDS THE NEXT ROLL DOWN THE HOUSE ROAD TOO (#131's open item):
-    `rollService` decides the road from the same three inputs the compiler
-    reads — no anchor, no unlock, no override — so a queued chip adjustment
-    makes the next roll a house roll exactly as a standing follow does, and the
-    gear stood here promising "Photoreal · Low" over a roll that would read
-    neither. Hidden while an adjustment is queued, and the dock says why in the
-    gear's place; the adjustments fall away on the keystroke, and the gear
-    comes back with them.
-  */
-  const chipEditQueued = unlocked.length > 0 || Object.keys(overrides).length > 0;
-  const dockImaginationVisible = authorRoad && !viewingHistory && !standingFollowId && !chipEditQueued;
-  /* The note in the gear's place: the same terms, minus the chip one — named beside it so the pair cannot drift (review of #153, nit 1). */
-  const dockAuthorNoteVisible = authorRoad && !viewingHistory && !standingFollowId && chipEditQueued;
+  const dockImaginationVisible = authorRoad && !viewingHistory;
   /*
     Preselected from the SHEET (its `imagination` is the register's own record),
     the path switch's rule one control over: a MAX sheet whose Roll again went
@@ -2378,12 +2371,13 @@ export default function CastingSheet() {
           </p>
         ) : null}
         {/*
-          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO (#131's open
-          item). A follow or a chip-edited roll under the flag composes house —
-          the row has recorded why since PR #132 — and until this line the
-          sheet showed the customer nothing: no prompt record, no settings
-          line, the author simply gone. Off the row like the two lines above
-          it, so a sheet that composed house says so whoever is reading it.
+          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO — for rows
+          written before #154. Until then a follow or a chip-edited roll under
+          the flag composed house (the row recorded why since PR #132), and
+          until this line the sheet showed the customer nothing about it. The
+          author carries both now (the family clause), so no new row records a
+          reason; the line stays for the rows that do, in the past tense. Off
+          the row like the two lines above it.
         */}
         {roll.data?.authorSatOut ? (
           <p className="dpc-wardrobeline">
@@ -2525,6 +2519,7 @@ export default function CastingSheet() {
             // What the user has queued but the sheet in front of them cannot
             // show, because rolls are immutable.
             pending={{ overrides, unlocked }}
+            vary={{ authorRoad, standingFollow: standingFollowId !== null }}
             onAdjust={(adjustment) => {
               /*
                 NONE OF THESE TOAST ANY MORE (D-110), and this is the clearest
@@ -2549,6 +2544,16 @@ export default function CastingSheet() {
               setOverride(adjustment.field, adjustment.value as never);
             }}
           />
+        ) : null}
+        {/*
+          READ-ONLY CHIPS, SAID ONCE (#154, his answer (2)): on the author road
+          the sentence goes to the engine verbatim, so the echo offers no "let
+          it vary" on a plain authored sheet, and this line says why. A
+          standing follow keeps its three anchored axes adjustable, so the
+          line is not drawn there.
+        */}
+        {roll.data && authorRoad && !viewingHistory && !standingFollowId ? (
+          <p className="dp-small dpc-echo-note">{AUTHOR_CHIPS_ARE_A_RECORD}</p>
         ) : null}
 
         {/*
@@ -2790,9 +2795,6 @@ export default function CastingSheet() {
               onStyle={setStyleChoice}
               onImagination={setImaginationChoice}
             />
-          ) : dockAuthorNoteVisible ? (
-            /* Where the gear stood: the next roll is the studio's own casting, said in the gear's place rather than a gear that lies. */
-            <p className="dp-small dpc-dock-authornote">{AUTHOR_SITS_OUT_CHIP_EDITS}</p>
           ) : null}
           <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
             <Field className="dp-split__main dpc-briefrow">

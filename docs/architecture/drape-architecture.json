@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "aaba88e1e8d19d46"
+    "sourceFingerprint": "7159ca9f96e5e035"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 178
+      "moduleCount": 179
     },
     {
       "id": "domain:castingV2",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 41
+      "moduleCount": 42
     },
     {
       "id": "domain:studio",
@@ -3693,6 +3693,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/familyClause.ts",
+      "path": "server/castingV2/familyClause.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/framingTrim.ts",
       "path": "server/castingV2/framingTrim.ts",
       "domain": "casting-v2",
@@ -5669,6 +5675,12 @@
     {
       "id": "module:shared/exportViews.ts",
       "path": "shared/exportViews.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/followUnpinnable.ts",
+      "path": "shared/followUnpinnable.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -11070,6 +11082,10 @@
       "path": "server/castingV2/falRegionReader.test.ts"
     },
     {
+      "id": "test:server/castingV2/familyClause.test.ts",
+      "path": "server/castingV2/familyClause.test.ts"
+    },
+    {
       "id": "test:server/castingV2/followAnchor.test.ts",
       "path": "server/castingV2/followAnchor.test.ts"
     },
@@ -15520,6 +15536,11 @@
     {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
+      "to": "module:shared/followUnpinnable.ts",
       "kind": "imports"
     },
     {
@@ -21939,6 +21960,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/familyClause.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/heritagePromotion.ts",
       "kind": "imports"
     },
@@ -22000,6 +22026,11 @@
     {
       "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:shared/castStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:shared/followUnpinnable.ts",
       "kind": "imports"
     },
     {
@@ -22755,6 +22786,26 @@
     {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/security/trustedImageFetch.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:server/castingV2/briefCompiler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -33513,10 +33564,10 @@
       "message": "Names 5 of RecoverableRollOperation's 5 fields (server/castingV2/rollRecovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:268",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:270",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:268",
+      "subject": "server/castingV2/rollProjection.ts:270",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

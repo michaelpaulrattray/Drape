@@ -2483,7 +2483,7 @@ function heritageClause(components: HeritageComponent[]): string {
   return described === "" ? "" : `, ${described}`;
 }
 
-function describeHeritage(components: HeritageComponent[]): string {
+export function describeHeritage(components: HeritageComponent[]): string {
   if (components.length === 0) return "";
   if (components.length === 1) return `${components[0].heritage} heritage`;
   // A15: no raw numbers in the prompt. Percentages are control signal, and

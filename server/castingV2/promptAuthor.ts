@@ -185,20 +185,28 @@ export function neverWrittenIn(text: string): string | null {
 
 /**
  * THE ONE COMPOSITION on the author road, pure so the suite asserts it at the
- * byte: the brief first and unchanged, the author's content (MAX only), and
- * the locked house block LAST — each its own paragraph.
+ * byte: the brief first and unchanged, the FAMILY CLAUSE when a follow or a
+ * chip edit is carried (#154 — code's, from the anchor and the overrides,
+ * `familyClause.ts`), the author's content (MAX only), and the locked house
+ * block LAST — each its own paragraph.
  */
-export function composeFinalPrompt(briefText: string, content: string | null, style: CastStyle = DEFAULT_CAST_STYLE): string {
+export function composeFinalPrompt(
+  briefText: string,
+  content: string | null,
+  style: CastStyle = DEFAULT_CAST_STYLE,
+  clause: string | null = null,
+): string {
   const parts = [briefText.trim()];
+  if (clause && clause.trim().length > 0) parts.push(clause.trim());
   if (content && content.trim().length > 0) parts.push(content.trim());
   /* The block is the STYLE's (#142) — one member today, so these are `HOUSE_BLOCK`'s bytes. */
   parts.push(houseBlockForStyle(style));
   return parts.join("\n\n");
 }
 
-/** Seed + block: what every LOW roll gets, and what a MAX roll falls back to. */
-export function staticPrompt(briefText: string, style: CastStyle = DEFAULT_CAST_STYLE): string {
-  return composeFinalPrompt(briefText, null, style);
+/** Seed (+ the family clause when one is carried) + block: what every LOW roll gets, and what a MAX roll falls back to. */
+export function staticPrompt(briefText: string, style: CastStyle = DEFAULT_CAST_STYLE, clause: string | null = null): string {
+  return composeFinalPrompt(briefText, null, style, clause);
 }
 
 export type AuthoredPrompt = {
@@ -261,17 +269,27 @@ export async function authorPrompt(input: {
   imagination?: Imagination;
   /** The settings modal's style (#142). Absent means photoreal, the only style and the default. */
   style?: CastStyle;
+  /**
+   * THE FAMILY CLAUSE (#154) — a follow's anchor and the chip edits, already
+   * rendered to one paragraph by code. It sits between the brief and the
+   * author's content on every road (seed, authored, static), and the author
+   * SEES it beneath the brief as context so its art direction does not restate
+   * the identity — but it is code's paragraph, outside the author's word
+   * allowance the way the block is. Null on a plain authored roll.
+   */
+  clause?: string | null;
   signal?: AbortSignal;
 }): Promise<AuthoredPrompt> {
   const imagination = input.imagination ?? DEFAULT_IMAGINATION;
   const style = input.style ?? DEFAULT_CAST_STYLE;
   const briefText = input.briefText.trim();
+  const clause = input.clause?.trim() || null;
   const allowance = authorAllowance(briefText);
   const houseBlockWords = countWords(houseBlockForStyle(style));
 
   if (imagination === "low") {
     return {
-      prompt: staticPrompt(briefText, style), imagination, style, mode: "seed", authored: false, content: null,
+      prompt: staticPrompt(briefText, style, clause), imagination, style, mode: "seed", authored: false, content: null,
       addedWords: 0, houseBlockWords, allowance, model: null, latencyMs: null, attempts: 0,
     };
   }
@@ -285,7 +303,10 @@ export async function authorPrompt(input: {
     return input.engine.complete({
       about: "author",
       system: systemText,
-      user: briefText,
+      /* The clause rides beneath the brief so the author writes around the family, never a second description of it. */
+      user: clause ? `${briefText}
+
+${clause}` : briefText,
       temperature,
       maxOutputTokens: AUTHOR_MAX_OUTPUT_TOKENS,
       signal: input.signal,
@@ -297,7 +318,7 @@ export async function authorPrompt(input: {
   };
 
   const fallback = (latencyMs: number | null): AuthoredPrompt => ({
-    prompt: staticPrompt(briefText, style), imagination, style, mode: "static", authored: false, content: null,
+    prompt: staticPrompt(briefText, style, clause), imagination, style, mode: "static", authored: false, content: null,
     addedWords: 0, houseBlockWords, allowance, model: null, latencyMs, attempts,
   });
 
@@ -320,7 +341,7 @@ export async function authorPrompt(input: {
       }
     }
     return {
-      prompt: composeFinalPrompt(briefText, content, style), imagination, style, mode: "authored", authored: true, content,
+      prompt: composeFinalPrompt(briefText, content, style, clause), imagination, style, mode: "authored", authored: true, content,
       addedWords: countWords(content), houseBlockWords, allowance, model, latencyMs, attempts,
     };
   } catch (error) {

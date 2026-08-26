@@ -1,8 +1,8 @@
 # The author road carrying a follow or a chip edit — design (#131's open item)
 
-*Foreman-32, 2026-08-27. Status: DESIGN, not built. Countersign before build.*
+*Foreman-32, 2026-08-27. Status: **BUILT 2026-08-27 (foreman-40) on his countersign** — Crew reply #11, 2026-08-26 20:49Z, verbatim: *"Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court."* Built as recommended, with the amendments in §6 below.*
 *Governing ruling: `PROMPT_AUTHOR_RULING_2026-08-26.md` (rules 1–16, §5b/§5c);*
-*the road as built: `briefCompiler.ts` (`authorRoad`, `houseBecause`), `promptAuthor.ts`, `houseBlock.ts`.*
+*the road as it stood before this build: `briefCompiler.ts` (`authorRoad`, `houseBecause` — the latter deleted by the build, §6), `promptAuthor.ts`, `houseBlock.ts`.*
 
 ## 0. What the customer meets today (read at the code, HEAD `7fa16ad3`)
 
@@ -115,3 +115,48 @@ for his eye — 320 credits of his, on his word, nothing house.
 §0's honest half ships now (this PR). §2 builds dark on countersign, one
 PR, with the scope test's two "house under the flag" arms rewritten to
 assert the clause on the wire and the unflagged compile byte-identical.
+
+## 6. As built (2026-08-27, foreman-40) — where the build departs from §2, and why
+
+- **The clause never says "eight".** §2a's example (*"cast eight relatives"*)
+  would have been refused by the author's own `NEVER_WRITTEN` — "eight" is
+  on it because counting the casts painted 7 of 8 tiles as contact-sheet
+  grids on dev roll 95. The clause says *"cast a close relative of one
+  person"* and closes *"the face itself is new"*; no series word at all.
+  `familyClause.test.ts` sweeps every value the closed vocabularies can put
+  into a clause through `neverWrittenIn` and `containsHouseSentence`, with a
+  positive control.
+- **Hair is carried as COLOUR, not as the cut.** §2a's example named *"dark
+  hair worn in a low bun"*. The house follow holds colour on all eight
+  (`anchoredHairColour`, *"colour is the family signal"*) and deliberately
+  varies the cut (*"one family, not one barber"*); a named cut in words is
+  the clone stamp that ruling removed. So the clause says *"blonde hair"* and
+  nothing about the cut — which is also his answer (3) applied to hair.
+- **Build and energy are override-only.** `FollowAnchor` carries neither, so
+  a follow's clause cannot name them; an override does, in words.
+- **Phrasebook.** Heritage reads through `describeHeritage` (exported from
+  `cohortPhotorealHuman.ts`, law 4). Sex uses the house composer's nouns
+  (*"a woman" / "a man" / "an androgynous person"*). Age, energy and look are
+  short phrases of the clause's own (`agePhrase`, `ENERGY_PHRASE`) — the
+  house renderers for those are prompt blocks with anatomy guards, not
+  sentences a family clause can quote.
+- **The record is `register.carried = { follow, overrides, clause }`**
+  (§2d's `anchorOf` is not duplicated: the row's lineage columns already
+  name the parent). `houseBecause` is gone from the compiler; the projection's
+  `readAuthorSatOut` survives for rows already written and the sheet's copy
+  for them is in the past tense.
+- **Read-only chips** are the server's `removable` bit (`buildChips`: on the
+  author road, removable only where anchored AND one of sex/ageBand/heritage)
+  AND the echo's `varyOffered` policy on the client (the echo composes from
+  `facts`, not from chips) — the same rule at both ends, keyed on the NEXT
+  roll. The one line under the echo is `AUTHOR_CHIPS_ARE_A_RECORD`.
+- **Two things §2 did not name, found at the wire.** (a) An authored follow
+  must NOT inherit its parent's wardrobe pair — the engine dresses it — so
+  `createRollWithCandidates` takes `inheritWardrobe: false` on the author
+  road; otherwise the sheet would draw a WARDROBE line over an outfit the
+  engine was never told (PR #138 finding 1's class). (b) The `follow`
+  mutation took no `imagination`/`style`; with the gear now drawn on a
+  standing follow it would have been a control the roll ignored, so it takes
+  both, and the client sends them.
+- **The dock note is deleted** (`AUTHOR_SITS_OUT_CHIP_EDITS`): it can no
+  longer be true on this road.

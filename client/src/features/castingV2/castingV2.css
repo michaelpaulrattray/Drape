@@ -648,6 +648,13 @@
 
 .dpc-echo__prose { color: var(--metaStrong); }
 .dpc-echo__fact { color: var(--ink); }
+/*
+  READ-ONLY CHIPS, SAID ONCE (#154): under the echo on a plain authored sheet,
+  where "let it vary" is withheld because the sentence goes to the engine
+  verbatim. Meta weight, one line, no border — a note beneath the sentence,
+  never a second sentence competing with it.
+*/
+.dpc-echo-note { margin: 4px 0 0; color: var(--meta); }
 
 /* ---- the candidate viewer (item 18, view-only per D-52) ---- */
 
