@@ -36,7 +36,6 @@ const BASE: CastingIntent = {
   statedSkin: EMPTY_STATED_SKIN,
   statedAccessories: [],
   statedInk: null,
-      creativeRegister: null,
   poolTendencies: NO_TENDENCIES,
   wardrobe: null,
   characterNotes: null,

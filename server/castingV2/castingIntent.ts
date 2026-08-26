@@ -354,6 +354,25 @@ export const ARCHETYPE_KEYS = Object.keys(ARCHETYPES) as ArchetypeKey[];
 export const SUPPORTED_COHORTS = ["photoreal_human"] as const;
 export type CohortKey = (typeof SUPPORTED_COHORTS)[number];
 
+/**
+ * WHY A BRIEF WAS WALLED AT THE SUBJECT (#131 slice C). Off the author road
+ * there is one name, `unsupported_cohort`, and it covers everything the
+ * certified adapter cannot paint. On it there are two, and they are the two
+ * refusals the ruling KEEPS: `likeness` (a real person or a named character)
+ * and `not_a_being` (an object, a vehicle, a scene — "a car").
+ */
+export type SubjectRefusal = "unsupported_cohort" | "likeness" | "not_a_being";
+
+/**
+ * WHAT KIND OF BEING the author-road reader said the brief casts. `human` is
+ * the reader's `photoreal_human`; `being` is anything else with a face or a
+ * body. The intent's `cohort` stays `photoreal_human` either way, because it
+ * names the ADAPTER that resolved the reader's record (identities, locks,
+ * persona lines), not the subject — the reading itself is filed on the row's
+ * `register.subject`.
+ */
+export type SubjectReading = "human" | "being";
+
 /* ------------------------------------------------------------ the intent */
 
 export type HeritageComponent = { heritage: Heritage; pct: number };
@@ -371,23 +390,6 @@ export type HeritageComponent = { heritage: Heritage; pct: number };
  * Everything non-null is therefore, by construction, something the user said —
  * which is what makes `lockFactsOf` below a derivation rather than a guess.
  */
-/**
- * The interpreter's reading of which register a brief belongs in.
- *
- * `reasons` are the brief's own phrases, source-contained like every other
- * free-text field here — they are the RECORD of why a sheet was written in
- * the creative register, persisted with the compiled brief so a roll can
- * always say. They never reach a prompt.
- */
-export type CreativeRegisterReading = {
-  engaged: boolean;
-  reasons: string[];
-};
-
-/** A reason is a short quotation of the brief, never an essay. */
-export const CREATIVE_REASON_MAX = 80;
-export const CREATIVE_REASONS_LIMIT = 3;
-
 export type CastingIntent = {
   cohort: CohortKey;
   /**
@@ -476,16 +478,6 @@ export type CastingIntent = {
    * ahead of it and moving other fields' answers for nothing.
    */
   statedInk: StatedInk | null;
-  /**
-   * WHICH REGISTER THIS BRIEF BELONGS IN — the creative register's door
-   * (`CREATIVE_REGISTER_DESIGN.md` §2), `null` on every roll outside
-   * `CASTING_CREATIVE_REGISTER_SCOPE` because the interpreter was not asked.
-   *
-   * Null and `{ engaged: false }` both compile HOUSE; the difference is only
-   * whether the question was put. See `parseCreativeRegister` for the two
-   * ways a `true` is read back down to false.
-   */
-  creativeRegister: CreativeRegisterReading | null;
   /**
    * What the CATEGORY implies about axes the brief never stated.
    *
@@ -766,7 +758,6 @@ const wireSchema = z.object({
   statedAccessories: z.unknown().nullable().optional(),
   statedSkin: z.unknown().nullable().optional(),
   statedInk: z.unknown().nullable().optional(),
-  creativeRegister: z.unknown().nullable().optional(),
   poolTendencies: z.unknown().nullable().optional(),
   wardrobe: z.unknown().nullable().optional(),
   /*
@@ -1155,38 +1146,6 @@ export function parseStatedInk(raw: unknown, briefText: string): StatedInk | nul
   return { words, regions, readFailed: false };
 }
 
-/**
- * THE REGISTER READING — and the two ways a `true` is read down to false.
- *
- * Conservative twice over, because the design's §2b puts the whole burden on
- * one side: a creative brief mis-routed to house is today's known state, an
- * ordinary brief mis-routed to creative is an unmeasured one. So `engaged`
- * must be literally `true` (not truthy, not "yes"), and a `true` whose every
- * reason fails source containment is read as false — a verdict with no
- * grounds in the customer's own words is not a verdict this product acts on.
- *
- * Absent, null or malformed is `null` — the question was not answered — and
- * `null` compiles house exactly as false does. The distinction is kept for
- * the record only.
- */
-export function parseCreativeRegister(raw: unknown, briefText: string): CreativeRegisterReading | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const wire = raw as { engaged?: unknown; reasons?: unknown };
-  const reasons: string[] = [];
-  if (Array.isArray(wire.reasons)) {
-    for (const entry of wire.reasons) {
-      const cleaned = scrubBrands(cleanFreeText(entry, CREATIVE_REASON_MAX));
-      if (!cleaned) continue;
-      if (!tokensComeFromBrief(cleaned, briefText)) continue;
-      if (reasons.some((existing) => existing.toLowerCase() === cleaned.toLowerCase())) continue;
-      reasons.push(cleaned);
-      if (reasons.length >= CREATIVE_REASONS_LIMIT) break;
-    }
-  }
-  const engaged = wire.engaged === true && reasons.length > 0;
-  return { engaged, reasons: engaged ? reasons : [] };
-}
-
 export function parseStatedAccessories(raw: unknown, briefText: string): string[] {
   if (!Array.isArray(raw)) return [];
   const kept: string[] = [];
@@ -1309,8 +1268,10 @@ export type IntentParseResult =
      * roll id, so it is the caller that decides what to do and logs it.
      */
     notes: { raw: string | null; overflow: number };
+    /** The subject the reader named; `human` on every parse off the author road. */
+    subject: SubjectReading;
   }
-  | { ok: false; reason: "unreadable" | "unsupported_cohort" };
+  | { ok: false; reason: "unreadable" | SubjectRefusal };
 
 /**
  * Turn whatever came back into an intent, or say why not.
@@ -1332,6 +1293,12 @@ export function parseCastingIntent(
     parses of one request come to disagree with each other.
   */
   notesMax: number = NOTES_MAX,
+  /**
+   * `author` — read the four-valued subject answer (#131 slice C). A
+   * parameter for the same reason `notesMax` is: this function is pure and the
+   * flag is captured once at the roll.
+   */
+  options?: { author?: boolean },
 ): IntentParseResult {
   let payload = raw;
   if (typeof raw === "string") {
@@ -1349,7 +1316,19 @@ export function parseCastingIntent(
   const wire = parsed.data;
 
   const cohort = typeof wire.cohort === "string" ? wire.cohort.trim().toLowerCase() : "photoreal_human";
-  if (!SUPPORTED_COHORTS.includes(cohort as CohortKey)) {
+  let subject: SubjectReading = "human";
+  if (options?.author === true) {
+    /*
+      THE AUTHOR ROAD READS FOUR (#131 slice C). The two refusals the ruling
+      keeps come back by name; a `being` casts, and the record says so. An
+      answer outside the four is `unreadable` — the reader ignored the question
+      it was asked, and the compiler's fallback (verbatim brief, static bundle)
+      is the road that costs the customer nothing they did not ask for.
+    */
+    if (cohort === "likeness" || cohort === "not_a_being") return { ok: false, reason: cohort };
+    if (cohort === "being") subject = "being";
+    else if (!SUPPORTED_COHORTS.includes(cohort as CohortKey)) return { ok: false, reason: "unreadable" };
+  } else if (!SUPPORTED_COHORTS.includes(cohort as CohortKey)) {
     // Honest capability: a certified adapter exists for one cohort, so an
     // anime brief is refused for free rather than rendered as a photograph of
     // someone vaguely anime-adjacent.
@@ -1358,12 +1337,13 @@ export function parseCastingIntent(
 
   return {
     ok: true,
+    subject,
     notes: {
       raw: typeof wire.characterNotes === "string" ? wire.characterNotes : null,
       overflow: freeTextOverflow(wire.characterNotes, notesMax),
     },
     intent: {
-      cohort: cohort as CohortKey,
+      cohort: "photoreal_human",
       role: cleanFreeText(wire.role, ROLE_MAX),
       characterNotes: cleanFreeText(wire.characterNotes, notesMax),
       sex: wire.sex as Sex | null,
@@ -1381,7 +1361,6 @@ export function parseCastingIntent(
       statedSkin: parseStatedSkin(wire.statedSkin, briefText),
       statedAccessories: parseStatedAccessories(wire.statedAccessories, briefText),
       statedInk: parseStatedInk(wire.statedInk, briefText),
-      creativeRegister: parseCreativeRegister(wire.creativeRegister, briefText),
       poolTendencies: parsePoolTendencies(wire.poolTendencies),
       /*
         Not source-contained, by design and by declaration (§4.1). The door is

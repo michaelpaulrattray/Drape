@@ -495,3 +495,214 @@ describe("authorPrompt keeps the latency it already spent when the re-ask throws
     expect(out.prompt).toBe(staticPrompt(THIN));
   });
 });
+
+/* ================================================= slice C — the walls */
+
+import {
+  COHORT_INSTRUCTION,
+  COHORT_SCHEMA_LINE,
+  SUBJECT_INSTRUCTION,
+  SUBJECT_SCHEMA_LINE,
+  interpretBrief,
+} from "./interpreter";
+import { BriefRefusal, LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE } from "./briefCompiler";
+import { parseCastingIntent } from "./castingIntent";
+
+/**
+ * A stub transport whose INTERPRETER replies are given in order (a string is
+ * the reply text; an object is serialised), and whose AUTHOR reply is fixed.
+ * The suite reads which system prompt each interpreter call carried.
+ */
+function engineReading(interpretReplies: (string | Record<string, unknown>)[], authorReply: string = ADDITION): Engine {
+  let interpretCalls = 0;
+  const complete = vi.fn(async (request: TextRequest) => {
+    let text = authorReply;
+    if (request.about === "interpret") {
+      const answer = interpretReplies[Math.min(interpretCalls, interpretReplies.length - 1)] ?? INTENT;
+      interpretCalls += 1;
+      text = typeof answer === "string" ? answer : JSON.stringify(answer);
+    }
+    return {
+      text,
+      latencyMs: 7,
+      provenance: { provider: "openrouter" as const, model: "stub-model", servedModel: "stub-model" },
+    };
+  });
+  return { id: "stub", complete } as unknown as Engine;
+}
+
+const intentWith = (cohort: string): Record<string, unknown> => ({ ...JSON.parse(INTENT), cohort });
+
+async function refusalOf(run: () => Promise<unknown>): Promise<BriefRefusal> {
+  try {
+    await run();
+  } catch (error) {
+    if (error instanceof BriefRefusal) return error;
+    throw error;
+  }
+  throw new Error("expected a BriefRefusal");
+}
+
+describe("slice C — the subject question, at the prompt (working law 5)", () => {
+  it("off, the reader is asked today's two-valued cohort question — the swap's own constants are the unflagged text", () => {
+    const base = interpreterSystemPrompt();
+    expect(base).toContain(COHORT_SCHEMA_LINE);
+    expect(base).toContain(COHORT_INSTRUCTION);
+    expect(base).not.toContain(SUBJECT_SCHEMA_LINE);
+    expect(base).not.toContain(`"not_a_being"`);
+    expect(base).not.toContain(`"being"`);
+    expect(base).not.toContain(`"likeness"`);
+  });
+
+  it("on, the same slot asks the four-valued question, and only that slot moves", () => {
+    const off = interpreterSystemPrompt({ wardrobe: true, ink: true, fidelity: true });
+    const on = interpreterSystemPrompt({ wardrobe: true, ink: true, fidelity: true, author: true });
+    expect(on).toContain(SUBJECT_SCHEMA_LINE);
+    expect(on).toContain(SUBJECT_INSTRUCTION);
+    expect(on).not.toContain(COHORT_SCHEMA_LINE);
+    expect(on).not.toContain(COHORT_INSTRUCTION);
+    /* Everything else is byte-identical: put the old text back and the two are equal. */
+    expect(on.replace(SUBJECT_SCHEMA_LINE, COHORT_SCHEMA_LINE).replace(SUBJECT_INSTRUCTION, COHORT_INSTRUCTION)).toBe(off);
+    /* The four values are in the model's ear, and so is the founder's example. */
+    for (const value of ["photoreal_human", "being", "likeness", "not_a_being"]) expect(SUBJECT_INSTRUCTION).toContain(`"${value}"`);
+    expect(SUBJECT_INSTRUCTION).toContain("a red sports car");
+    expect(SUBJECT_INSTRUCTION).toContain("cast the being");
+  });
+});
+
+describe("slice C — parseCastingIntent reads four on the author road and two off it", () => {
+  it("off the author road, anything but photoreal_human is unsupported_cohort — 'being' included", () => {
+    for (const cohort of ["other", "being", "likeness", "not_a_being"]) {
+      expect(parseCastingIntent(intentWith(cohort), THIN)).toEqual({ ok: false, reason: "unsupported_cohort" });
+    }
+    const human = parseCastingIntent(intentWith("photoreal_human"), THIN);
+    expect(human.ok && human.subject).toBe("human");
+  });
+
+  it("on it, a being casts and says so, the two kept walls come back by name, and an answer outside the four is unreadable", () => {
+    const being = parseCastingIntent(intentWith("Being"), THIN, undefined, { author: true });
+    expect(being.ok && being.subject).toBe("being");
+    expect(being.ok && being.intent.cohort).toBe("photoreal_human");
+    const human = parseCastingIntent(intentWith("photoreal_human"), THIN, undefined, { author: true });
+    expect(human.ok && human.subject).toBe("human");
+    expect(parseCastingIntent(intentWith("likeness"), THIN, undefined, { author: true })).toEqual({ ok: false, reason: "likeness" });
+    expect(parseCastingIntent(intentWith("not_a_being"), THIN, undefined, { author: true })).toEqual({ ok: false, reason: "not_a_being" });
+    expect(parseCastingIntent(intentWith("other"), THIN, undefined, { author: true })).toEqual({ ok: false, reason: "unreadable" });
+  });
+
+  it("the parse never carries a creativeRegister key any more", () => {
+    const parsed = parseCastingIntent({ ...intentWith("photoreal_human"), creativeRegister: { engaged: true, reasons: ["goth"] } }, THIN);
+    expect(parsed.ok && Object.keys(parsed.intent)).not.toContain("creativeRegister");
+  });
+});
+
+describe("slice C — interpretBrief asks the question its caller named, and asks the wall twice", () => {
+  it("author: true puts the four-valued prompt on the wire; a 'being' reply is an intent with subject 'being'", async () => {
+    const engine = engineReading([intentWith("being")]);
+    const out = await interpretBrief({ briefText: "a lizard man with emerald scales", engine, author: true });
+    expect(sent(engine, "interpret")[0]?.system).toContain(SUBJECT_INSTRUCTION);
+    expect(out.ok && out.subject).toBe("being");
+  });
+
+  it("off, the wire carries today's question, and a 'being' reply walls as unsupported_cohort after a second read", async () => {
+    const engine = engineReading([intentWith("being"), intentWith("being")]);
+    const out = await interpretBrief({ briefText: "a lizard man with emerald scales", engine });
+    expect(sent(engine, "interpret")[0]?.system).toContain(COHORT_INSTRUCTION);
+    expect(sent(engine, "interpret")).toHaveLength(2);
+    expect(out).toEqual({ ok: false, reason: "unsupported_cohort" });
+  });
+
+  it("not_a_being twice is walled by that name; a first-read wobble rescued by the second read casts", async () => {
+    const walled = engineReading([intentWith("not_a_being"), intentWith("not_a_being")]);
+    expect(await interpretBrief({ briefText: "a red sports car", engine: walled, author: true })).toEqual({ ok: false, reason: "not_a_being" });
+    expect(sent(walled, "interpret")).toHaveLength(2);
+
+    const wobble = engineReading([intentWith("not_a_being"), intentWith("being")]);
+    const out = await interpretBrief({ briefText: "a red sports car with a face", engine: wobble, author: true });
+    expect(out.ok && out.subject).toBe("being");
+  });
+
+  it("likeness twice is walled by that name", async () => {
+    const engine = engineReading([intentWith("likeness"), intentWith("likeness")]);
+    expect(await interpretBrief({ briefText: "Master Chief from Halo", engine, author: true })).toEqual({ ok: false, reason: "likeness" });
+  });
+});
+
+describe("slice C — the WIRE through the compiler: two walls on the author road, free, and no third", () => {
+  it("'a red sports car' refuses free as not_a_being, in the founder's words, and the author is never called", async () => {
+    const engine = engineReading([intentWith("not_a_being")]);
+    const refusal = await refusalOf(() =>
+      castingBriefCompiler({ briefText: "a red sports car", candidateCount: 8, rollSeed: "c-car", engine, creativeRegister: true }),
+    );
+    expect(refusal.code).toBe("not_a_being");
+    expect(refusal.message).toBe(NOT_A_BEING_MESSAGE);
+    expect(refusal.message).toContain("You have not been charged");
+    expect(sent(engine, "author")).toHaveLength(0);
+  });
+
+  it("a named character refuses free as likeness — the wall the ruling KEEPS", async () => {
+    const engine = engineReading([intentWith("likeness")]);
+    const refusal = await refusalOf(() =>
+      castingBriefCompiler({ briefText: "a Spider-Man look-alike", candidateCount: 8, rollSeed: "c-likeness", engine, creativeRegister: true }),
+    );
+    expect(refusal.code).toBe("likeness");
+    expect(refusal.message).toBe(LIKENESS_MESSAGE);
+    expect(sent(engine, "author")).toHaveLength(0);
+  });
+
+  it("a creature CASTS on the author road — the stage wall is dead there — and the row records the reading", async () => {
+    const brief = "a swamp monster with moss-green skin and amber eyes";
+    const engine = engineReading([intentWith("being")]);
+    const on = await castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-creature", engine, creativeRegister: true });
+    expect(sent(engine, "author")).toHaveLength(1);
+    expect(on.candidates[0]?.prompt).toBe(`${brief}\n\n${ADDITION}`);
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", subject: "being" });
+    /* The adapter that resolved the reader's record is still the photoreal-human one, and the row says which. */
+    expect(on.cohortKey).toBe("photoreal_human");
+    expect(on.compiledBrief.intent).not.toHaveProperty("creativeRegister");
+  });
+
+  it("the same creature OFF the flag still walls as unsupported_cohort — byte-identical to today", async () => {
+    const engine = engineReading([intentWith("being"), intentWith("being")]);
+    const refusal = await refusalOf(() =>
+      castingBriefCompiler({ briefText: "a swamp monster with moss-green skin", candidateCount: 8, rollSeed: "c-creature-off", engine }),
+    );
+    expect(refusal.code).toBe("unsupported_cohort");
+    expect(sent(engine, "interpret")[0]?.system).not.toContain(SUBJECT_INSTRUCTION);
+  });
+
+  it("a human on the author road records subject 'human'; an unparsed reply records 'unread' and the sheet goes out on the verbatim brief", async () => {
+    const human = engineReading([intentWith("photoreal_human")]);
+    const a = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-human", engine: human, creativeRegister: true });
+    expect(a.compiledBrief.register).toMatchObject({ kind: "author", subject: "human" });
+
+    const garbage = engineReading(["not json at all", "still not json"]);
+    const b = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-unread", engine: garbage, creativeRegister: true });
+    expect(b.compiledBrief.interpreted).toBe(false);
+    expect(b.compiledBrief.register).toMatchObject({ kind: "author", subject: "unread" });
+    expect(b.candidates[0]?.prompt.startsWith(`${THIN}\n\n`)).toBe(true);
+  });
+
+  it("the styled-brief screen is not consulted on the author road: an anime brief with an unparsed reply paints from its own words; off, it still walls", async () => {
+    const brief = "an anime girl with silver twin-tails";
+    const on = await castingBriefCompiler({
+      briefText: brief, candidateCount: 8, rollSeed: "c-styled-on", engine: engineReading(["{ not: json"]), creativeRegister: true,
+    });
+    expect(on.candidates[0]?.prompt.startsWith(`${brief}\n\n`)).toBe(true);
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", subject: "unread" });
+
+    const refusal = await refusalOf(() =>
+      castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-styled-off", engine: engineReading(["{ not: json"]) }),
+    );
+    expect(refusal.code).toBe("unsupported_cohort");
+  });
+
+  it("a FOLLOW under the flag composes house and is asked today's question — the house composer cannot paint a being", async () => {
+    const engine = engineReading([intentWith("photoreal_human")]);
+    await castingBriefCompiler({
+      briefText: RICH, candidateCount: 8, rollSeed: "c-follow", engine, followIdentity: FOLLOW as never, creativeRegister: true,
+    });
+    expect(sent(engine, "interpret")[0]?.system).toContain(COHORT_INSTRUCTION);
+    expect(sent(engine, "interpret")[0]?.system).not.toContain(SUBJECT_INSTRUCTION);
+  });
+});

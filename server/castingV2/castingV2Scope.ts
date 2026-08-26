@@ -2703,7 +2703,14 @@ export function validateCastingBriefFidelityEnvironment(input: {
  * or an invented, ownable look that leaves the face open at MAX — and all
  * eight slices carry it, the engine varying everything it leaves open. No
  * engagement gate, no variance card, no house scaffolding. The register of PR
- * #94 (the selector, the card, `creativeRegister.ts`) is retired.
+ * #94 (the selector, the card, `creativeRegister.ts`) is retired. **And the
+ * walls are the ruling's two** (slice C): the reader is asked a four-valued
+ * subject question instead of the two-valued cohort one, a creature, robot,
+ * alien or anime brief CASTS (the stage wall is dead on this road), a named
+ * likeness still refuses free, and a subject that is not a being — "a car"
+ * — refuses free before the claim (`NOT_A_BEING_MESSAGE`). The styled-brief
+ * screen is not consulted: the brief reaches the engine verbatim, so there is
+ * nothing for a photoreal fallback to ignore.
  *
  * Its parent is `CASTING_V2_SCOPE` and nothing narrower: what it governs is
  * the COMPILE of a roll, the brief-fidelity scope's own reason one block up.
