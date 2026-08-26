@@ -79,7 +79,7 @@ His low/max example pair:
 
 > At max imagination the author is essentially acting as a creative director + Midjourney prompt engineer who is allowed to go hard on identity invention, while still delivering something that functions as a professional casting studio shot.
 
-**Open, for the court (§6 arm E):** at MAX, ONE authored identity rendered eight ways (the engine varies faces — his four goth frames) versus EIGHT authored identities. Not ruled; measured.
+**RULED (same afternoon, verbatim): "the answer is one prompt for a cast sheet not 8".** One authored prompt per sheet; the engine renders the eight — stated facts on every slice, everything else the engine's. There is no per-slice authoring.
 
 ## 6. The hard rules — ruled one by one
 
@@ -96,6 +96,6 @@ The reader's vocabulary grows from MEASURED MISSES, on a clock: facts in prompts
 Under the spend threshold; estimate posted on the issue before any paid arm; his eye judges.
 
 Briefs: (i) his cyber-goth brief (roll 219's text); (ii) "goth woman mid 30s" (thin). Eight slices each.
-Arms: A raw brief alone · B raw + author at LOW (photoreal default + framing/studio sentences) · C raw + author at MAX · D today's compile (control) · E (thin brief only) ONE authored identity ×8 vs EIGHT authored identities · F length cliff — arm B padded to 400 / 800 / 1,600 words of neutral filler.
+Arms: A raw brief alone · B raw + author at LOW (photoreal default + framing/studio sentences) · C raw + author at MAX · D today's compile (control) · F length cliff — arm B padded to 400 / 800 / 1,600 words of neutral filler. (Arm E — one vs eight authored identities — was RULED, not measured: one prompt per sheet.)
 Read: fidelity (every stated fact on every slice — the reader is the instrument, his eye the verdict), quality (his eye), spread (his eye), framing (head-share spread vs the trim's bar), refusal count per arm.
 Result → the register's next revision is built DARK to this ruling, then `users:1`, then his eye — the milestone gate stays "not passing yet" until then.
