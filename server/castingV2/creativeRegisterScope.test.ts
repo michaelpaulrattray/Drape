@@ -184,8 +184,7 @@ describe("the author's instruction (§5b, at the text)", () => {
     expect(neverWrittenIn("each cast member wears black")).toBe("cast member");
     expect(neverWrittenIn("the setting is a grey studio")).toBeNull();
     /* A phrase split by a newline or a double space is still the phrase (review of #141, finding 4). */
-    expect(neverWrittenIn("pick one direction per
-subject")).toBe("per subject");
+    expect(neverWrittenIn("pick one direction per" + String.fromCharCode(10) + "subject")).toBe("per subject");
     expect(neverWrittenIn("expression left  open")).toBe("left open");
     for (const { word } of NEVER_WRITTEN) expect(maxSystemPrompt(100).toLowerCase()).not.toMatch(new RegExp(`(^|[^a-z])${word.replace("-", "\\-")}([^a-z]|$)`));
   });
