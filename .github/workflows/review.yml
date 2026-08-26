@@ -15,6 +15,19 @@
 # The four mechanical checks in gate.yml run on EVERY PR regardless —
 # nothing merges broken just because it was too small to review.
 #
+# ONCE PER PR, NOT ONCE PER PUSH (founder ruling 2026-08-26, verbatim:
+# "keep it at fable because its been catching things, but reduce its
+# frequency so its not burning as much credits and usage"). Measured before
+# the change: 32 executed reviews in under eight hours — one per PUSH, so
+# the reviewer re-read every fix round it had itself asked for. Now:
+#   - `synchronize` (a push) does NOT trigger a review. The free gate does.
+#   - a review runs when the PR is OPENED non-draft or marked READY FOR
+#     REVIEW — the shift's own "this is finished" signal. Open as a DRAFT
+#     while iterating.
+#   - a second look is DELIBERATE: apply the `needs-fable` label. Any other
+#     label event is ignored (a `labeled` event for `urgent` or `parked`
+#     must not buy a full review).
+#
 # Runs on the founder's Claude subscription via CLAUDE_CODE_OAUTH_TOKEN.
 
 name: Fable Review
@@ -22,7 +35,7 @@ name: Fable Review
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, ready_for_review, labeled]
+    types: [opened, ready_for_review, labeled]
 
 concurrency:
   group: review-${{ github.event.pull_request.number }}
@@ -36,7 +49,9 @@ permissions:
 jobs:
   triage:
     name: triage
-    if: ${{ !github.event.pull_request.draft }}
+    # Drafts never review; a label event reviews only when the label applied
+    # is `needs-fable` (the deliberate second look).
+    if: ${{ !github.event.pull_request.draft && (github.event.action != 'labeled' || github.event.label.name == 'needs-fable') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
