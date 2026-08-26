@@ -569,12 +569,34 @@
   know is only that this one is gone and the credits came back.
 */
 .dpc-tile__failed {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--fill);
   border-style: dashed;
   border-color: var(--dashed);
+}
+
+/*
+  The reason, as a chip on the card (#122 — the founder: "these cards need
+  chips on them which tell the user something, like higgsfield"). The signed
+  badge's shape at the same corner, so a sheet reads one grammar for "what
+  became of this tile"; ink on surface rather than a colour, because a refusal
+  is a status and not an alarm — the line beneath carries the full sentence.
+*/
+.dpc-tile__chip {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font: 500 9.5px var(--font-mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /*

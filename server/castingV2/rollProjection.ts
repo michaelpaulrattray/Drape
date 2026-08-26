@@ -27,6 +27,7 @@
  * character notes — stays inside `compiledBrief` and stays here.
  */
 import { IMAGINATIONS, type Imagination } from "../../shared/imagination";
+import { candidateFailureKind, type CandidateFailureKind } from "../../shared/candidateFailure";
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
 import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
@@ -71,6 +72,16 @@ export type CandidateProjection = {
    * goes nowhere.
    */
   castId: string | null;
+  /**
+   * WHY THIS ONE DIDN'T ARRIVE — the customer-facing kind of a `failed` row's
+   * `failureClass` (#122; the founder: *"these cards need chips on them"*).
+   * Null on every status but `failed`: a cancelled or expired slice is the
+   * customer's own decision and the sheet says so from the roll's status, not
+   * from a class. The CLASS itself (a provider word) never crosses — the kind
+   * is derived through `shared/candidateFailure.ts`, the one vocabulary the
+   * tile speaks.
+   */
+  failure: { kind: CandidateFailureKind } | null;
 };
 
 export type RollProjection = {
@@ -466,6 +477,7 @@ export function projectCandidate(
       : storagePublicUrl(candidate.faceThumbKey),
     personaLine: candidate.personaLine,
     kept: candidate.keptAt !== null,
+    failure: candidate.status === "failed" ? { kind: candidateFailureKind(candidate.failureClass) } : null,
   };
 }
 

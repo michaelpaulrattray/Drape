@@ -2,6 +2,11 @@ import { useState } from "react";
 import { Check, RotateCcw, Sparkles, X } from "lucide-react";
 
 import { Button, Skeleton } from "@/foundation";
+import {
+  CANDIDATE_FAILURE_CHIPS,
+  CANDIDATE_FAILURE_LINES,
+  type CandidateFailureKind,
+} from "@shared/candidateFailure";
 
 /**
  * One candidate, one tile, arriving on its own.
@@ -26,6 +31,8 @@ export type TileCandidate = {
   kept: boolean;
   /** Set once this candidate became a Cast — the room's address. */
   castId: string | null;
+  /** Why a failed one didn't arrive (#122) — null unless the row says `failed`. */
+  failure?: { kind: CandidateFailureKind } | null;
 };
 
 export function CandidateTile({
@@ -188,19 +195,31 @@ export function CandidateTile({
   }
 
   if (candidate.status === "failed-refunded") {
+    /*
+      Three different events wearing one projection status, told apart in
+      this order. A candidate the user cancelled should not be told "didn't
+      arrive" — that blames us for their decision — so the roll's own status
+      wins. Then the ROW'S reason (#122): the founder watched two tiles of
+      eight say "Didn't arrive" while their rows said `content_policy`, and
+      had to guess it was the engine's filter. The chip on the card names the
+      class in customer words; the line beneath says it in full and keeps the
+      refund promise. No reason on the row keeps today's sentence.
+    */
+    const failure = rollWasCancelled ? null : candidate.failure ?? null;
+    const line = rollWasCancelled
+      ? "Cancelled · refunded"
+      : CANDIDATE_FAILURE_LINES[failure?.kind ?? "unknown"];
     return (
       <div className="dp-stack" style={{ gap: 9 }}>
         <div className="dp-media dpc-tile__failed">
           <span className="dp-metadata">{candidate.indexLabel}</span>
+          {failure && failure.kind !== "unknown" ? (
+            <span className="dpc-tile__chip" data-kind={failure.kind}>
+              {CANDIDATE_FAILURE_CHIPS[failure.kind]}
+            </span>
+          ) : null}
         </div>
-        {/*
-          Two different events wearing one projection status. A candidate the
-          user cancelled should not be told "didn't arrive" — that blames us
-          for their decision. The roll's own status is what tells them apart.
-        */}
-        <span className="dp-metadata">
-          {rollWasCancelled ? "Cancelled · refunded" : "Didn't arrive · refunded"}
-        </span>
+        <span className="dp-metadata">{line}</span>
       </div>
     );
   }
