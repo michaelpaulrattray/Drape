@@ -165,7 +165,7 @@ vi.mock("../casting/directOperation", () => ({
 const OPERATION_ID = "33333333-3333-4333-8333-333333333333";
 
 const { createRoll, cancelRoll } = await import("./rollService");
-const { BRIEF_TEXT_MAX, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
+const { BRIEF_TEXT_MAX, BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
 const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const { candidateChargeReference } = await import("./rollRecovery");
 const { ProviderError } = await import("../providers/types");
@@ -313,6 +313,35 @@ describe("the sequence", () => {
       );
       expect(seen).toEqual([long]);
       expect(journal).toContain("claim");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("on the author road, past 4,000 it is refused free with the road's own sentence (review of #137, finding 1)", async () => {
+    const long = "a wiry cyclist ".repeat(270);
+    expect(long.length).toBeGreaterThan(BRIEF_TEXT_MAX_AUTHOR_ROAD);
+    vi.stubEnv("CASTING_V2_SCOPE", "all");
+    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
+    try {
+      await expect(
+        createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE });
+      expect(journal).not.toContain("claim");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("the bound keys on the ROAD, not the flag: a chip-edited roll under the flag composes house and stops at 2,000 (finding 2)", async () => {
+    const long = "a wiry cyclist ".repeat(140);
+    vi.stubEnv("CASTING_V2_SCOPE", "all");
+    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
+    try {
+      await expect(
+        createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long, unlock: ["sex"] as never }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: BRIEF_TOO_LONG_MESSAGE });
+      expect(journal).not.toContain("claim");
     } finally {
       vi.unstubAllEnvs();
     }

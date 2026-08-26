@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4261785573c90ed2"
+    "sourceFingerprint": "74a232955e495985"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 37
+      "moduleCount": 38
     },
     {
       "id": "domain:studio",
@@ -5549,6 +5549,12 @@
     {
       "id": "module:shared/bodyAnchorRegions.ts",
       "path": "shared/bodyAnchorRegions.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/briefLength.ts",
+      "path": "shared/briefLength.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -17989,6 +17995,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
@@ -21795,6 +21806,11 @@
     {
       "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefLength.ts",
+      "to": "module:shared/briefLength.ts",
       "kind": "imports"
     },
     {

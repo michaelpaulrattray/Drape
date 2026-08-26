@@ -95,7 +95,7 @@ import {
   type LockOverrides,
   type UnlockableField,
 } from "./briefCompiler";
-import { BRIEF_TOO_LONG_MESSAGE, briefTooLongOffTheRoad } from "./briefLength";
+import { briefTooLong } from "./briefLength";
 import type { ResolvedIdentity } from "./castingIntent";
 import { admitRoll, castingCreativeEngine, type AdmissionDecision } from "./rollEngine";
 import { candidateChargeReference, candidateUnseenChargeReference } from "./rollRecovery";
@@ -464,14 +464,21 @@ export async function createRoll(
   */
   const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
   /*
-    THE 2,000-CHARACTER BOUND, KEPT FOR EVERYONE OFF THE AUTHOR ROAD (#131
-    slice D, `briefLength.ts`). The entrance admits 4,000 so an authored
-    prompt can come back as the next brief; this line is what keeps the
-    unflagged product exactly where it was. Free, before the claim.
+    THE BRIEF BOUND, PER ROAD (#131 slice D, `briefLength.ts`). The entrance
+    admits 4,000 so an authored prompt can come back as the next brief; this
+    line is what keeps every HOUSE-composed roll exactly where it was — every
+    unflagged account, and a flagged account's FOLLOW or chip-edited roll, which
+    compose house (`briefCompiler`'s `houseBecause`; the review of PR #137,
+    finding 2). The predicate is the compiler's, from the same inputs. Free,
+    before the claim, on both roads.
   */
-  if (briefTooLongOffTheRoad(input.briefText, creativeRegister)) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: BRIEF_TOO_LONG_MESSAGE });
-  }
+  const authorRoad =
+    creativeRegister
+    && !input.followCandidatePublicId
+    && (input.unlock ?? []).length === 0
+    && !Object.values(input.overrides ?? {}).some((value) => value != null);
+  const tooLong = briefTooLong(input.briefText, authorRoad);
+  if (tooLong) throw new TRPCError({ code: "BAD_REQUEST", message: tooLong });
 
   let compiled: CompiledRollBrief;
   try {

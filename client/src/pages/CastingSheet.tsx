@@ -51,6 +51,7 @@ import {
 } from "@/features/castingV2/castingPathCopy";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
+import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "@shared/briefLength";
 import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
   CandidateViewer,
@@ -2292,21 +2293,34 @@ export default function CastingSheet() {
           <details className="dpc-prompt">
             <summary className="dpc-prompt__summary">The prompt this sheet was painted from</summary>
             <p className="dpc-prompt__text">{authoredPrompt}</p>
-            <div className="dpc-prompt__row">
-              <button
-                type="button"
-                className="dpc-prompt__use"
-                onClick={() => {
-                  setDraft(typed(authoredPrompt));
-                  if (Object.keys(overrides).length > 0) clearOverrides();
-                }}
-              >
-                Use as brief
-              </button>
-              <span className="dpc-prompt__note">
-                Your words first, then what the author added. Rolling with it keeps every word.
-              </span>
-            </div>
+            {/*
+              NOT OFFERED on a prompt the entrance would refuse (review of #137,
+              finding 1): the prompt is at least as long as the brief it was
+              built from, so past the road's bound the button would fill the
+              box with something the next roll cannot take — a dead control
+              wearing a button. The bound is the server's, read from `shared`.
+            */}
+            {authoredPrompt.length <= BRIEF_TEXT_MAX_AUTHOR_ROAD ? (
+              <div className="dpc-prompt__row">
+                <button
+                  type="button"
+                  className="dpc-prompt__use"
+                  onClick={() => {
+                    setDraft(typed(authoredPrompt));
+                    if (Object.keys(overrides).length > 0) clearOverrides();
+                  }}
+                >
+                  Use as brief
+                </button>
+                <span className="dpc-prompt__note">
+                  Your words first, then what the author added. Rolling with it keeps every word.
+                </span>
+              </div>
+            ) : (
+              <p className="dpc-prompt__note">
+                Too long to roll again as written — a brief stops at {BRIEF_TEXT_MAX_AUTHOR_ROAD.toLocaleString()} characters. Copy the part you want into the box.
+              </p>
+            )}
           </details>
         ) : null}
 
