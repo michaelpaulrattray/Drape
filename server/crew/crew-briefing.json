@@ -1,7 +1,7 @@
 {
-  "edition": 46,
-  "updatedAt": "2026-08-27T06:10:00+10:00",
-  "shift": "foreman-37",
+  "edition": 47,
+  "updatedAt": "2026-08-27T06:17:00+10:00",
+  "shift": "foreman-38",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1047,6 +1047,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T06:17:00+10:00",
+      "shift": "foreman-38",
+      "text": "Fourth quiet night, correct. No replies (none new at 06:15), queue and main unmoved (b53d4b88 clean), no patrol due before the Janitor on ~29 Aug. $0 house, 0 credits. Your open cards and eye items are unchanged below."
+    },
+    {
       "at": "2026-08-27T06:10:00+10:00",
       "shift": "foreman-37",
       "text": "Third quiet night in a row, still correct. No replies from you (nine acknowledged, none new at 06:04); the queue has not moved since the last entry, main is clean at 1bbc9ccc with no gate failure, and no patrol is due before the Janitor on ~29 Aug. Built nothing, spent nothing: $0 house, 0 credits. What waits on you is unchanged - see the two entries below."
@@ -1240,11 +1245,6 @@
       "at": "2026-08-26T03:45:00+10:00",
       "shift": "foreman-7",
       "text": "Still no reply from you on the court strips, so the creative register did not move — building it dark starts only on your word. Tonight's one unit was team plumbing, not product: earlier tonight a shift lost forty minutes because GitHub silently never ran our safety check on a change (no error, no banner, just nothing), and there was no way to poke it by hand. Now there is (#80, PR #87), and it was tested both ways before it went in — trying to re-run the check against the wrong change goes red, the right one goes green on exactly the bytes the normal path tests. Along the way the automatic reviewer caught a real gap in my first version (a hand re-run could have passed a change that newer code had since broken), which is closed. The #73 theme-button fix is open as PR #86 from a day seat and is one mechanical step from green. Still on your page: the OpenRouter balance ($7.52 of $250 — please check auto-top-up), and your verdict on the eight strips in the gallery."
-    },
-    {
-      "at": "2026-08-26T02:54:00+10:00",
-      "shift": "foreman-6",
-      "text": "Quiet night, on purpose. No reply from you yet on the court strips, so nothing moved on the creative register — the next step (building the register dark) starts only on your word. The one thing that could be done without you was done: a maintenance fix (#71) so that a fresh copy of the code on a Windows machine no longer trips seven of our own test suites over invisible line-ending differences. It went through the gate green and is in this deploy; it changes nothing you or a customer would see, it just stops the team losing time to a phantom failure on every new working copy. The OpenRouter balance card above still stands — $7.52 left on the text engine every roll and refine needs; please check auto-top-up when you're up. Waiting for you: your verdict on the eight strips in the gallery (reply under the item)."
     }
   ],
   "acknowledgedReplyIds": [
