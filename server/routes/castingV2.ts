@@ -41,6 +41,7 @@ import {
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
 import { IMAGINATIONS } from "../../shared/imagination";
+import { CAST_STYLES } from "../../shared/castStyles";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_PROVENANCES } from "../../shared/inkProvenance";
 import { REFERENCE_INTENTS } from "../../shared/referenceIntents";
@@ -1128,6 +1129,8 @@ export const castingV2Router = router({
             anchor.
           */
           imagination: z.enum(IMAGINATIONS).optional(),
+          /* The settings modal's style (#142) — the meter's rule, one control over: optional, absent means photoreal. */
+          style: z.enum(CAST_STYLES).optional(),
         })
         .strict(),
     )
@@ -1144,6 +1147,7 @@ export const castingV2Router = router({
         overrides: input.overrides,
         path: input.path,
         imagination: input.imagination,
+        style: input.style,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
     }),

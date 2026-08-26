@@ -83,6 +83,7 @@
  *     editor of those arrays meets this file here, not in a production boot
  *     loop.
  */
+import type { CastStyle } from "../../shared/castStyles";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 
 /** Exactly one sentence of `from` starts with `prefix`, or the module refuses to load. */
@@ -184,6 +185,25 @@ export const HOUSE_BLOCK: string = [
   PHOTOREAL_PRESET.join(" "),
   AUTHORITY_LINE,
 ].join("\n");
+
+/**
+ * THE BLOCK, CHOSEN BY STYLE (#142, the minimal settings modal) — the style
+ * selector swaps the PRESET here and nowhere else (ruling §3 rule 11a: *"a
+ * style is a bundle"*). One member today, so every roll still receives
+ * `HOUSE_BLOCK` byte for byte; the exhaustive switch is what makes a second
+ * style a compile error at this one site until its preset is written,
+ * declared and courted — never a silent fall-through to the photoreal bytes.
+ */
+export function houseBlockForStyle(style: CastStyle): string {
+  switch (style) {
+    case "photoreal":
+      return HOUSE_BLOCK;
+    default: {
+      const never: never = style;
+      throw new Error(`[houseBlock] no preset for style ${String(never)}`);
+    }
+  }
+}
 
 /**
  * The phrases §5d/§5e/§5f took OUT, each with the sentence it lived in — the

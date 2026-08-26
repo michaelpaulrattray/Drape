@@ -27,6 +27,7 @@
  * character notes — stays inside `compiledBrief` and stays here.
  */
 import { IMAGINATIONS, type Imagination } from "../../shared/imagination";
+import { CAST_STYLES, type CastStyle } from "../../shared/castStyles";
 import { candidateFailureKind, type CandidateFailureKind } from "../../shared/candidateFailure";
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
@@ -155,6 +156,13 @@ export type RollProjection = {
    * out of `compiledBrief`.
    */
   imagination: Imagination | null;
+  /**
+   * WHICH STYLE's bundle closed the prompt (#142) — `photoreal` on an author
+   * register that recorded one, null everywhere else INCLUDING author rows
+   * written before the style was recorded: the sheet says what the row says
+   * and never back-fills a fact. Read through a validator like `imagination`.
+   */
+  style: CastStyle | null;
   /**
    * WHAT THIS SHEET IS WEARING — the two paths (design §3.3, item 6).
    *
@@ -553,6 +561,15 @@ export function readImagination(compiledBrief: unknown): Imagination | null {
   return (IMAGINATIONS as readonly unknown[]).includes(imagination) ? (imagination as Imagination) : null;
 }
 
+export function readCastStyle(compiledBrief: unknown): CastStyle | null {
+  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+  const register = (compiledBrief as { register?: unknown }).register;
+  if (!register || typeof register !== "object") return null;
+  const { kind, style } = register as { kind?: unknown; style?: unknown };
+  if (kind !== "author") return null;
+  return (CAST_STYLES as readonly unknown[]).includes(style) ? (style as CastStyle) : null;
+}
+
 function readFellBack(compiledBrief: unknown): boolean {
   if (!compiledBrief || typeof compiledBrief !== "object") return false;
   return (compiledBrief as { interpreted?: unknown }).interpreted === false;
@@ -639,6 +656,7 @@ export function projectRoll(input: {
     authoredPrompt: readAuthoredPrompt(input.roll.compiledBrief),
     authoredText: readAuthoredText(input.roll.briefText, input.roll.compiledBrief),
     imagination: readImagination(input.roll.compiledBrief),
+    style: readCastStyle(input.roll.compiledBrief),
     /*
       THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.
 

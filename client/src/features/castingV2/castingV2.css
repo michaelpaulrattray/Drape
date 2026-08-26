@@ -4404,3 +4404,118 @@
 /* The path name is a machine fact; the outfit beside it is a sentence. The
    mono law draws the line exactly there. */
 .dpc-wardrobeline__line { min-width: 0; }
+
+/* ------------------------------------------------------------------ */
+/* THE MINIMAL SETTINGS MODAL (#142) — the gear on the surface and the  */
+/* 440px single-column panel it opens. Shares `.dpc-signm`'s scrim.     */
+/* ------------------------------------------------------------------ */
+.dpc-setbtn {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-chip);
+  background: transparent;
+  color: var(--secondary);
+  font: 400 11.5px var(--font-sans);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+.dpc-setbtn:hover { border-color: var(--ink); color: var(--ink); }
+.dpc-setbtn__value { color: var(--ink); }
+
+.dpc-setm__card {
+  width: 100%;
+  max-width: 440px;
+  padding: 22px;
+  border: 1px solid var(--borderCard);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadowCard);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: dpc-signm-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.dpc-setm__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dpc-setm__title {
+  margin: 4px 0 0;
+  font: 500 15px var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.dpc-setm__headactions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.dpc-setm__reset {
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-chip);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+}
+.dpc-setm__reset:hover { border-color: var(--ink); color: var(--ink); }
+.dpc-setm__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--r-chip);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+}
+.dpc-setm__close:hover { color: var(--ink); border-color: var(--borderInput); }
+
+.dpc-setm__coming {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dpc-setm__coming-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.55;
+}
+.dpc-setm__coming-name { color: var(--ink); white-space: nowrap; }
+.dpc-setm__coming-line { min-width: 0; }
+.dpc-setm__coming-tag {
+  font: 500 9.5px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--meta);
+  white-space: nowrap;
+}
+.dpc-setm__foot {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--borderCard);
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.6;
+}
