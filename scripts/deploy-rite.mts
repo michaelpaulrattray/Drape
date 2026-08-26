@@ -84,7 +84,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
-import { decideWatch, foreignServiceContext, newestRow } from "./lib/deployWatch.mts";
+import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
 import {
   DECLARED_BUT_UNMIGRATED,
@@ -331,7 +331,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Drape's own rows, newest first, with the commit each was built from. */
 const listDeployments = () =>
-  newestRow(railway("deployment", "list", "--service", SERVICE, "--json", "--limit", "5"));
+  listedRows(railway("deployment", "list", "--service", SERVICE, "--json", "--limit", "5"));
 
 /** The production database's public URL, read by name and never printed. */
 function productionUrl(): string | undefined {
@@ -490,7 +490,7 @@ say("");
   were then read off the OLD process and were all true of it, which is what
   makes this class dangerous — nothing in the receipt looks wrong.
 */
-const priorDeployment = DRY ? null : (listDeployments()?.id ?? null);
+const priorDeployment = DRY ? null : (listDeployments()[0]?.id ?? null);
 
 if (!DRY) for (const branch of BRANCHES) say(`  push ${branch}: ${gitPush("origin", branch) || "ok"}`);
 
@@ -512,7 +512,7 @@ if (DRY) { say(""); say("DRY RUN — stopping before the watch."); process.exit(
 
 say("");
 const started = Date.now();
-let deployment: { id: string; status: string; at: string } | null = null;
+let deployment: { id: string; status: string } | null = null;
 for (let attempt = 0; attempt < 90; attempt += 1) {
   /*
     ONE LINE, PARSED AS A LINE. The watched-claim incident was a pattern that
@@ -523,9 +523,13 @@ for (let attempt = 0; attempt < 90; attempt += 1) {
     `lib/deployWatch.mts`, and the receipt it printed for somebody else's
     deployment on 2026-08-19.
   */
-  const newest = listDeployments();
-  const decision = decideWatch(priorDeployment, newest, sha);
-  if (decision.kind === "settled" || decision.kind === "running") deployment = newest;
+  /* EVERY fetched row is searched for the pushed sha — a foreign row created
+     after mine sits at index 0 and would otherwise hide a settled own row
+     until the timeout (review of #149). */
+  const decision = decideWatch(priorDeployment, listDeployments(), sha);
+  if (decision.kind === "settled" || decision.kind === "running") {
+    deployment = { id: decision.id, status: decision.status };
+  }
   if (decision.kind === "settled") break;
   if (attempt % 6 === 5) {
     if (decision.kind === "not-mine") say(`  waiting for Railway to create the deployment (${attempt * 20}s)`);
