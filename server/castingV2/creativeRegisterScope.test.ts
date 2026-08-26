@@ -126,12 +126,13 @@ const RICH =
   + "studio background with seamless gradient.";
 
 describe("the locked house block — rebuilt to §5d + §5e (#144), code's, reviewed once", () => {
-  it("carries his three §5e lines verbatim, and the block's own posture, negatives, preset and authority", () => {
+  it("carries his §5e lighting line and his §5f expression/colour lines verbatim, and the block's own posture, negatives, preset and authority", () => {
     expect(LIGHTING_LINE).toContain(
       "Large soft frontal key just above the lens, high fill, open shadows. Soft chin and jaw shadow only. Grey seamless slightly brighter behind the head, gentle falloff to the edges, no hard vignette. Minimal rim. No coloured gels. Speculars appear where the person's skin and wardrobe naturally catch the source — not as a forced flash sheen on every face.",
     );
-    expect(EXPRESSION_LINE).toContain("Eyes into the lens, present, mouth closed. Self-possessed. No broad smile, no laugh, no blank stare, no horror grimace.");
-    expect(COLOUR_LINE).toContain("Neutral daylight, 5500K. Skin stays true to the person. No teal-orange, no beauty-app grade.");
+    /* §5f (#146): only the geometry of an expression and the absence of a house grade are universal. */
+    expect(EXPRESSION_LINE).toBe("EXPRESSION: Eyes into the lens, present, mouth closed. No laugh, no speech, no blank CGI stare.");
+    expect(COLOUR_LINE).toBe("COLOUR: Neutral daylight. Skin colour and sheen come from the person, not from a house grade.");
     for (const line of [LIGHTING_LINE, EXPRESSION_LINE, COLOUR_LINE, POSTURE_LINE, ...NEGATIVE_LINES, ...PHOTOREAL_PRESET, ...AUTHOR_ROAD_FRAMING]) {
       expect(HOUSE_BLOCK).toContain(line);
     }
@@ -168,6 +169,21 @@ describe("the locked house block — rebuilt to §5d + §5e (#144), code's, revi
     for (const gone of ["NO open mouth", "no showing teeth", "NO text", "head straight", "Skin tones warm", "front flash"]) {
       expect(HOUSE_BLOCK).not.toContain(gone);
     }
+  });
+
+  it("§5f (#146): mood and skin temperature are the CAST layer's — the house block carries neither, and the guard names all four", () => {
+    const lower = HOUSE_BLOCK.toLowerCase();
+    /* "beauty-app grade" and not "beauty-app": the photoreal PRESET keeps its own "beauty-app smoothing" style ban (a kept cohort sentence). */
+    for (const cast of ["self-possessed", "horror grimace", "broad smile", "5500k", "teal-orange", "beauty-app grade"]) {
+      expect(lower).not.toContain(cast);
+    }
+    const guarded = DROPPED_FROM_BLOCK.map(({ phrase }) => phrase.toLowerCase());
+    for (const token of ["self-possessed", "horror grimace", "5500k", "teal-orange"]) expect(guarded).toContain(token);
+    /* The house guard reads the BLOCK only: the same words are legal in the cast layer (a seed that says "self-possessed" is not refused). */
+    expect(containsHouseSentence("A self-possessed goth woman, severe, in neutral daylight.")).toBeNull();
+    /* Positive control: the words were in the §5e lines this arm replaced, so the arm could have failed. */
+    const fiveE = "EXPRESSION: Eyes into the lens, present, mouth closed. Self-possessed. No broad smile, no laugh, no blank stare, no horror grimace. COLOUR: Neutral daylight, 5500K. Skin stays true to the person. No teal-orange, no beauty-app grade.".toLowerCase();
+    expect(DROPPED_FROM_BLOCK.filter(({ phrase }) => fiveE.includes(phrase.toLowerCase())).length).toBe(4);
   });
 
   it("the style ban lives in the PRESET, not the universal block (§5d) — and the preset is still appended today", () => {
