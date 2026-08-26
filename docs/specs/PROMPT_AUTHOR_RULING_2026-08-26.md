@@ -36,6 +36,20 @@ Evidence he supplied (corrected the same day — the first draft conflated his t
 10. **The imagination meter** (Midjourney-style) sets how opinionated the author is — his spec, verbatim, is §5.
 11a. **A style is a bundle.** His word, verbatim: *"those are more advanced settings but by default we set it on our best known settings e.g most people will just flick between styles we just need to ensure every style has a specific preset default setting but for now photoreal is our only and default style that goes into every prompt with waist up framing and the studio lighting and so on we can expand styles and settings later."* So: every style preset carries its own default framing, background and lighting; framing/background/lighting are ADVANCED settings, hidden by default; users flick between styles. **For now there is ONE style — photoreal — and its bundle goes into every prompt: **chest-up framing** (his word after the waist-up sentence: "chest up is fine" — matching his own test prompts), the studio lighting, the neutral seamless-gradient background, the photoreal quality clause.** The prompt overrides any of it (rule 8). Locked across all eight slices (one prompt per sheet). Styles and advanced settings expand later.
 
+
+### 3a. The house framing — his reference frame
+
+**"this framing is perfect"** (founder, 2026-08-26, on the frame filed at
+`docs/specs/references/prompt-author/house-framing-reference-chest-up.png`, one of the
+four women his 73-word prompt produced). Read off the frame, for the court's instrument
+and the author's framing sentence: portrait, roughly 9:16; chest-up crop with the
+shoulders running off both edges; the subject centred, facing the camera square-on; the
+eyes at about 30% of frame height, the top of the hair with a small margin of headroom
+(~8%), the crop line just below the sternum; neutral grey seamless gradient, lighter
+behind the face; soft frontal studio light with specular on the materials and deep but
+open shadows. THIS is what "chest up" means in the photoreal bundle, and the framing
+reading (head-share / headroom) is calibrated on this frame, not on a prose description.
+
 ## 4. Outfits, variation, length, framing, refusals
 
 11. **The wardrobe/basics toggle is retired.** "there is no way we could invent these types of outfits with words the engine just does it beautifully we should just let the engine decide the outfits based on the prompt". "Basics" is a word a user may type, not a mode or a default.
