@@ -564,4 +564,17 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.summary).toContain("650 refunded");
     });
   });
+  it("a refund anomaly read through a DATE WINDOW is worded as the window's, never as an all-time fact", () => {
+    // Charge on day 1, catastrophic refund on day 3, moderator filters from day 2:
+    // refunds > charges IN THE WINDOW while the all-time books are exact.
+    const reading = computeDiscrepancy({
+      grossDeductions: 0, totalRefunds: 300, completedCost: 0, pendingCost: 0, failedCost: 0, unlinkedCost: 0, operationCost: 0,
+    });
+    expect(reading.refundAnomaly).toBe(true);
+    const windowed = buildSummary({ reading, failedCount: 0, pendingCount: 0, windowed: true });
+    expect(windowed).toContain("IN THIS DATE WINDOW");
+    expect(windowed).not.toContain("ever made");
+    const allTime = buildSummary({ reading, failedCount: 0, pendingCount: 0 });
+    expect(allTime).toContain("ever made");
+  });
 });

@@ -26,11 +26,15 @@ export function buildSummary(ctx: {
   reading: DiscrepancyReading;
   failedCount: number;
   pendingCount: number;
+  /** A date range is set — every figure is of the WINDOW, and a refund can land days after its charge. */
+  windowed?: boolean;
 }): string {
-  const { reading, failedCount, pendingCount } = ctx;
+  const { reading, failedCount, pendingCount, windowed = false } = ctx;
   const hasDiscrepancy = Math.abs(reading.discrepancy) > 0;
   const anomalyNote = reading.refundAnomaly
-    ? ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed every generation charge ever made (${reading.grossDeductions.toLocaleString()}) — this account has been credited more than it was charged; read the refund rows.`
+    ? windowed
+      ? ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed generation charges IN THIS DATE WINDOW (${reading.grossDeductions.toLocaleString()}) — a refund can land days after its charge, so clear the range before reading this as an all-time fact.`
+      : ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed every generation charge ever made (${reading.grossDeductions.toLocaleString()}) — this account has been credited more than it was charged; read the refund rows.`
     : "";
 
   const failureNote =
@@ -211,7 +215,7 @@ export const moderatorReconciliationRouter = router({
           discrepancy: reading.discrepancy,
           refundAnomaly: reading.refundAnomaly,
           hasDiscrepancy,
-          summary: buildSummary({ reading, failedCount, pendingCount }),
+          summary: buildSummary({ reading, failedCount, pendingCount, windowed: Boolean(parsedStart || parsedEnd) }),
         },
       };
     }),
