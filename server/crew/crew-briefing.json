@@ -362,7 +362,8 @@
           "caption": "Your FULL cyber-goth brief (roll 219's text). The engine's own content checker refused it 63 times out of 64 — raw, with the author, and through today's compiler alike. Your beautiful results came through ChatGPT's door; fal's door says no to these words. This is #93's job: the author must re-word it to pass, and this brief is the specimen.",
           "arm": "full brief · refused"
         }
-      ]
+      ],
+      "cardId": "prompt-author-court-eye"
     },
     {
       "id": "creative-register-roll-217",
@@ -417,7 +418,8 @@
           "caption": "Face 8 — its line of variation: “faint pale scarring visible in the skin around each ear stud where metal meets flesh.” (trimmed by the framing feature, kept original on file)",
           "arm": "08"
         }
-      ]
+      ],
+      "cardId": "register-step4-eye"
     },
     {
       "id": "creative-register-court-run1",
@@ -477,7 +479,8 @@
           "caption": "The same thin brief through today’s compile — the control for the writer’s room.",
           "arm": "W-today"
         }
-      ]
+      ],
+      "cardId": "creative-court-funding"
     }
   ],
   "pipeline": [

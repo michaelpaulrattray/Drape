@@ -14,17 +14,34 @@ import { useAuth } from "@/_core/hooks/useAuth";
 /** How often the briefing is re-read. It only changes on a deploy. */
 const CREW_STALE_MS = 30_000;
 
-export function useCrewState(enabled: boolean) {
+/**
+ * How often the PAGE re-reads it while it is open and visible (#133 — his
+ * ask, verbatim: *"is there a way to have the desk page auto refresh on every
+ * update or whatever to make it feel more live? because i keep hard
+ * refreshing it"*). A deploy lands about every few minutes at the busiest;
+ * a minute is the coarsest interval that still beats his hand on F5.
+ */
+export const CREW_LIVE_INTERVAL_MS = 60_000;
+
+export function useCrewState(enabled: boolean, options?: { live?: boolean }) {
+  const live = options?.live === true;
   return trpc.crew.getState.useQuery(undefined, {
     enabled,
     retry: false,
     staleTime: CREW_STALE_MS,
-    /* staleTime only governs SUCCESSFUL data — a NOT_FOUND is always stale,
-       so with the default focus refetch on, a dark flag would refire this on
-       every window focus for every admin, which is the repeat `retry: false`
-       exists to avoid. The nav updates on mount and on send; focus adds
-       nothing a briefing needs. */
-    refetchOnWindowFocus: false,
+    /*
+      THE DARK FLAG NEVER POLLS. staleTime only governs SUCCESSFUL data — a
+      NOT_FOUND is always stale, so an unconditional focus refetch or interval
+      would refire this on every window focus for every admin outside the
+      scope, which is the repeat `retry: false` exists to avoid. Both are
+      therefore gated on the query having SUCCEEDED, and on the page asking
+      to be live (the shared admin header asks only for the nav gate).
+    */
+    refetchInterval: (query) => (live && query.state.status === "success" ? CREW_LIVE_INTERVAL_MS : false),
+    /* Paused while the tab is hidden — a briefing nobody is looking at needs
+       no re-reading, and it resumes on the next visible tick. */
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: (query) => live && query.state.status === "success",
   });
 }
 
