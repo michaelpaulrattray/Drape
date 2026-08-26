@@ -60,6 +60,18 @@ export const CASTING_V2_ROLL_PRICE_CREDITS =
 export const CASTING_V2_REFINE_PRICE_CREDITS = 25;
 
 /**
+ * One RETRY of one failed sheet slice (#122 shape 1, founder 2026-08-26:
+ * *"same prompt, one slice, 20 credits, refunded again on failure"*).
+ *
+ * His "20 credits" IS one slice, so this is DERIVED from the slice price and
+ * never a second literal: if the slice ever moves, the retry moves with it,
+ * and the row's `pointsCost` - the refund authority - is set to this value at
+ * the moment the slice is reset, so what is refunded is exactly what was
+ * charged.
+ */
+export const CASTING_V2_RETRY_PRICE_CREDITS = CASTING_V2_COSTS.rollCandidate;
+
+/**
  * Sign (§H.4/H.10, founder-decided 2026-07-30): one price, one operation,
  * **decomposed** — because a failed view has to refund its exact slice under
  * the same charge reference, and a slice you cannot name is a slice you cannot

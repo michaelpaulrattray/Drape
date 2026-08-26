@@ -1,5 +1,6 @@
 import { recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
 import { recoverCastingV2RefineOperation } from "../castingV2/refineRecovery";
+import { recoverCastingV2RetryOperation } from "../castingV2/retryRecovery";
 import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import {
@@ -97,6 +98,8 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   "castingV2.sign": "not_reconstructable",
   /* A refine is a paid picture, not a public result the sweep can rebuild. */
   "castingV2.refine": "not_reconstructable",
+  /* A retry is one slice of a sheet the roll projection already knows how to show. */
+  "castingV2.retry": "not_reconstructable",
 };
 
 type StaleRecoveryStrategy =
@@ -104,6 +107,7 @@ type StaleRecoveryStrategy =
   | "castingv2_roll"
   | "castingv2_sign"
   | "castingv2_refine"
+  | "castingv2_retry"
   | "ink_evidence"
   | "evidence_fork"
   | "evidence_mint";
@@ -157,6 +161,15 @@ const STALE_RECOVERY_BY_KIND: Readonly<
     status — ready means delivered, anything else means refund the one unit.
   */
   "castingV2.refine": "castingv2_refine",
+  /*
+    Bespoke, and the generic path is wrong for it twice over: there is no
+    `modelId` (a sheet slice has no Cast), and no roll row points at a retry
+    operation, so the adjudicator finds its ONE candidate through the
+    operation's own candidate lock. The fork variable is the candidate's
+    status — ready with bytes means delivered, anything else means the one
+    slice is refunded under the retry's own reference.
+  */
+  "castingV2.retry": "castingv2_retry",
 };
 
 const LANDING_RECOVERY_BY_KIND: Readonly<
@@ -195,6 +208,7 @@ const LANDING_RECOVERY_BY_KIND: Readonly<
   // the session's own origin and is handled by the room, not by this receipt.
   "castingV2.sign": null,
   "castingV2.refine": null,
+  "castingV2.retry": null,
 };
 
 function assertNever(value: never): never {
@@ -935,6 +949,27 @@ export async function adjudicateStaleGenerationOperation(
         { operationId: operation.id, reason: recovered.reason },
         "[OperationRecovery] a refinement needs support review",
       );
+      return "recovery_required";
+    }
+  }
+  if (operation.kind === "castingV2.retry") {
+    const recovered = await recoverCastingV2RetryOperation({
+      ...operation,
+      // Narrowed by the gate above; the row's column type is a bare string.
+      status: operation.status === "claimed" ? "claimed" : "running",
+    });
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage:
+          `This retry needs support review before it can be settled. Operation ${operation.id}.`,
+        chargedCredits: recovered.chargedCredits,
+        refundedCredits: recovered.refundedCredits,
+      });
       return "recovery_required";
     }
   }

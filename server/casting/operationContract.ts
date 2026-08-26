@@ -49,6 +49,16 @@ export const GENERATION_OPERATION_KINDS = [
     be ceremony with nothing to reconcile.
   */
   "castingV2.refine",
+  /*
+    Retry (#122 shape 1): ONE failed sheet slice rendered again with the same
+    words, under an operation of its own — so its charge and its refund carry
+    references that can never collide with the roll's (the slice's original
+    refund is keyed on the ROLL's operation). The roll's per-slice money
+    pattern, applied to one slice: the row is the refund authority, the
+    candidate lock is the double-tap cover, and recovery finds the slice
+    through that lock because no roll points at this operation.
+  */
+  "castingV2.retry",
 ] as const;
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];

@@ -5,6 +5,7 @@ import { Button, Skeleton } from "@/foundation";
 import {
   CANDIDATE_FAILURE_CHIPS,
   CANDIDATE_FAILURE_LINES,
+  isRetryableFailure,
   type CandidateFailureKind,
 } from "@shared/candidateFailure";
 
@@ -50,6 +51,8 @@ export function CandidateTile({
   onFollow,
   onOpenCast,
   onOpenViewer,
+  onRetry,
+  retryPriceCredits,
 }: {
   candidate: TileCandidate;
   /**
@@ -124,6 +127,19 @@ export function CandidateTile({
   onFollow: () => void;
   /** Client-side navigation to a signed candidate's room. */
   onOpenCast?: (castId: string) => void;
+  /**
+   * THE RETRY BUTTON (#122 shape 1) — render THIS failed tile again with its
+   * own words, for one slice's price. Absent when the account is outside
+   * `CASTING_RETRY_SCOPE` or the roll is not finished: the sheet passes it
+   * only where the server's door would admit the tap, so a control that
+   * refuses is never drawn. Drawn only on the kinds the door serves
+   * (`isRetryableFailure` — the same list the server reads, working law 4),
+   * never on a content-filter tile (his word puts those on the softer-wording
+   * road) and never on a cancelled roll's tile.
+   */
+  onRetry?: () => void;
+  /** The retry price, server-derived (`castingV2.config`) — printed on the button, D-15. */
+  retryPriceCredits?: number;
 }) {
   // Declared before any early return — a hook after a conditional return is a
   // hook that sometimes does not run.
@@ -220,6 +236,26 @@ export function CandidateTile({
           ) : null}
         </div>
         <span className="dp-metadata">{line}</span>
+        {onRetry && failure && isRetryableFailure(failure.kind) ? (
+          /*
+            One slice, priced on the button. The roll's price left every tile's
+            Follow button for the dock (founder ruling, 2026-08-02) because it
+            appeared eight times on one sheet; this appears only on a tile
+            that failed, so the price sits where the tap is.
+          */
+          <Button
+            variant="quiet"
+            size="small"
+            disabled={busy || paidBusy}
+            onClick={onRetry}
+            /* A stack child stretches to the column; the gear needed the same
+               line (foreman-27, caught at the frame). */
+            style={{ alignSelf: "flex-start" }}
+          >
+            <RotateCcw size={12} aria-hidden="true" />
+            {retryPriceCredits !== undefined ? `Retry · ${retryPriceCredits} credits` : "Retry"}
+          </Button>
+        ) : null}
       </div>
     );
   }

@@ -66,6 +66,7 @@ export { getUserDraftModelsWithThumbnail } from "./models";
 export {
   claimGenerationOperation,
   acquireCastingCandidateOperationLock,
+  getOperationLockByOperation,
   acquireGenerationOperationLock,
   markGenerationOperationRunning,
   handoffGenerationOperationToRecovery,

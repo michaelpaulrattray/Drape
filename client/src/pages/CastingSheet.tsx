@@ -277,6 +277,18 @@ export default function CastingSheet() {
     address.
   */
   const [shownCut, setShownCut] = useState<string | null>(null);
+  /*
+    Tiles with a RETRY in flight (#122 shape 1). Deliberately NOT the store's
+    `pending`: a tile listed there ignores poll data for its own state until
+    its mutation settles (right for a keep, whose poll can only be stale), and
+    a retry's whole point is that the tile CHANGES state mid-flight — failed →
+    casting → ready — while the request is still held. Measured on the first
+    drive: under `beginMutation` the sheet refetched every two seconds, the
+    server said `casting`, and the tile sat on its failed face for the whole
+    render. This set only disables the button.
+  */
+  const [retrying, setRetrying] = useState<Record<string, number>>({});
+  const retryInFlight = Object.keys(retrying).length > 0;
   /* Balance context for the cost line — the question a price actually raises. */
   const balance = trpc.credits.getBalance.useQuery(undefined, {
     staleTime: 30_000,
@@ -496,6 +508,17 @@ export default function CastingSheet() {
       refetchInterval: (query) => {
         const data = query.state.data;
         if (!data) return POLL_MS;
+        /*
+          A RETRY IN FLIGHT (#122 shape 1) re-opens a finished sheet: the row
+          goes failed → queued → dispatched → ready while the request is held,
+          and until the first poll sees `casting` the rule below would stop.
+          Polled from HERE rather than nudged by `invalidate()`: `getRoll` is
+          ~2.2 s against the remote database, and an invalidate every two
+          seconds CANCELS the refetch in flight and starts another, so none
+          ever lands — measured, the tile sat on its failed face until the
+          nudging stopped and the last refetch completed (26 s).
+        */
+        if (retryInFlight) return POLL_MS;
         if (!TERMINAL_ROLL_STATUSES.has(data.status)) return POLL_MS;
         const stillArriving = data.candidates.some(
           (candidate) => candidate.status === "casting",
@@ -577,6 +600,7 @@ export default function CastingSheet() {
   const sign = trpc.castingV2.sign.useMutation();
   const refine = trpc.castingV2.refine.useMutation();
   const chooseVariant = trpc.castingV2.selectVariant.useMutation();
+  const retry = trpc.castingV2.retry.useMutation();
 
   const onKeep = (candidateId: string, kept: boolean) => {
     // Paint first, ask second (D-38). The ring appears on the click, not on
@@ -637,6 +661,43 @@ export default function CastingSheet() {
     // puts it back and says why.
     setOptimisticDiscarded(candidateId);
     void discardMutation(candidateId, { candidateId });
+  };
+
+  /**
+   * THE RETRY BUTTON (#122 shape 1) — one failed tile rendered again.
+   *
+   * Not `guardedMutation`, and the difference is the wait. That helper
+   * cancels the poll in the air and invalidates only when the server has
+   * spoken — right for a keep, wrong for a paid render the request HOLDS for
+   * a minute: the sheet is finished, so nothing is polling, and the tile
+   * would sit on its failed face while the engine paints. So `retrying`
+   * re-opens the roll query's own poll (see `refetchInterval`) for the life
+   * of the request: the first poll that sees `casting` puts the tile back on
+   * its skeleton, and the ordinary "still arriving" rule carries it to the
+   * frame or the second failure. The button itself is disabled for the
+   * request's whole life, so a second tap costs nothing even before the
+   * server's own lock would refuse it.
+   *
+   * No success toast (D-110): the tile landing IS the answer. A refusal — the
+   * filter's kind, a cancelled roll, not enough credits, a second failure with
+   * its refund — keeps its toast, because the tile alone cannot say why.
+   */
+  const onRetry = (candidateId: string) => {
+    setRetrying((current) => ({ ...current, [candidateId]: Date.now() }));
+    retry
+      .mutateAsync({ clientRequestId: crypto.randomUUID(), candidateId })
+      .catch((error: Error) => {
+        toast(readableFailure(error, "That tile didn't arrive again. Your credits are back."));
+      })
+      .finally(() => {
+        void invalidate().finally(() => {
+          setRetrying((current) => {
+            const next = { ...current };
+            delete next[candidateId];
+            return next;
+          });
+        });
+      });
   };
 
   const onUndo = async () => {
@@ -892,6 +953,18 @@ export default function CastingSheet() {
   const price = config.data?.rollPriceCredits ?? 0;
   const signPrice = config.data?.signPriceCredits ?? 0;
   const refinePrice = config.data?.refinePriceCredits ?? 0;
+  /*
+    Server-owned, like every gate on this page: the button is drawn only where
+    `castingV2.retry` would admit the tap — the account inside the flag AND the
+    sheet finished (a slice on a roll still casting is the roll road's to
+    settle; a cancelled roll's tiles are cancelled, not failed).
+  */
+  const retryPrice = config.data?.retryPriceCredits;
+  const retryOffered =
+    (config.data?.retryEnabled ?? false)
+    && roll.data !== undefined
+    && TERMINAL_ROLL_STATUSES.has(roll.data.status)
+    && roll.data.status !== "cancelled";
 
   /*
     ─────────────────────────────────────────────────────────────────────────
@@ -2612,8 +2685,18 @@ export default function CastingSheet() {
                     back to plain "Casting…".
                   */
                   windingDown={(rollWasCancelled || cancelRequested) && !cancel.isPending}
-                  overdue={rollIsOverdue}
-                  busy={isPending(candidate.candidateId)}
+                  /*
+                    A retried tile is on its OWN clock: the roll's age is what
+                    makes the sheet overdue, and a retry on yesterday's sheet
+                    would read "taking longer than usual" from its first second
+                    (seen at the frame on the first drive).
+                  */
+                  overdue={
+                    retrying[candidate.candidateId] !== undefined
+                      ? Date.now() - retrying[candidate.candidateId] > ROLL_OVERDUE_MS
+                      : rollIsOverdue
+                  }
+                  busy={isPending(candidate.candidateId) || Boolean(retrying[candidate.candidateId])}
                   // Follow is a paid roll. Every tile's Follow locks the
                   // moment any one of them is clicked, or the sheet offers
                   // eight ways to buy the same thing twice.
@@ -2628,6 +2711,8 @@ export default function CastingSheet() {
                   onDiscard={() => onDiscard(candidate.candidateId)}
                   onFollow={() => dispatchRoll("follow", candidate.candidateId)}
                   onOpenCast={(castId) => navigate(`/casting/cast/${castId}`)}
+                  onRetry={retryOffered ? () => onRetry(candidate.candidateId) : undefined}
+                  retryPriceCredits={retryPrice}
                 />
               ))}
         </div>

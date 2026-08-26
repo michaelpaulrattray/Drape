@@ -72,12 +72,12 @@ describe("the Atlas's operation kinds", () => {
     ).toEqual(declared);
   });
 
-  it("holds the three castingV2 kinds — the ones a digit in the namespace hid", () => {
+  it("holds the four castingV2 kinds — the ones a digit in the namespace hid", () => {
     /* Named specimens rather than left to the equality above, because these are
        the kinds the whole Casting V2 program is made of and their absence was
        invisible for the life of the collector. */
     const inAtlas = new Set(atlas.operationKinds.map((entry) => entry.kind));
-    for (const kind of ["castingV2.roll", "castingV2.sign", "castingV2.refine"]) {
+    for (const kind of ["castingV2.roll", "castingV2.sign", "castingV2.refine", "castingV2.retry"]) {
       expect(inAtlas.has(kind), kind).toBe(true);
     }
   });

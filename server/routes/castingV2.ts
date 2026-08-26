@@ -30,7 +30,9 @@ import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremo
 import { assertFinalModelDeleteEnabled } from "./models";
 import { storagePublicUrl } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
-import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS,
+  CASTING_V2_RETRY_PRICE_CREDITS,
+} from "../casting/castingCreditCosts";
 import {
   captureCastingHairReferenceEnabled,
   captureCastingInkStudioEnabled,
@@ -112,6 +114,8 @@ import {
 /** `z.enum` wants a non-empty tuple; these three are derived key arrays. */
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
+import { retryCandidate } from "../castingV2/retryService";
+import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
 import { CASTING_PATHS } from "../../shared/castingPaths";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
@@ -856,6 +860,14 @@ export const castingV2Router = router({
     // Same law, one surface down: the refine box states its price before the
     // button fires, from here rather than from a literal in the client.
     refinePriceCredits: CASTING_V2_REFINE_PRICE_CREDITS,
+    /*
+      THE RETRY BUTTON (#122 shape 1). Same law as the three above: the price
+      is on the paid affordance before it fires, server-derived; and the gate
+      is server-owned — a tile draws the button only where the door would
+      admit the tap, so the client never learns of a control that refuses.
+    */
+    retryEnabled: captureCastingRetryEnabled(ctx.user.id),
+    retryPriceCredits: CASTING_V2_RETRY_PRICE_CREDITS,
     packageViewCount: CAST_PACKAGE_VIEWS.length,
     /*
       WHETHER THE REPAINT ROAD SERVES THIS ACCOUNT — and therefore whether the
@@ -2188,6 +2200,27 @@ export const castingV2Router = router({
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */
+  /**
+   * THE RETRY BUTTON (#122 shape 1): one failed slice rendered again with its
+   * own words, 20 credits, refunded again on failure. A PAID procedure, so it
+   * sits in the paid bucket with `createRoll` and `refine`; the flag's own
+   * door is inside the service (NOT_FOUND off the flag, before any row is
+   * read). `clientRequestId` is the idempotency key; the candidate lock inside
+   * the service is the double-tap cover at the wire.
+   */
+  retry: protectedProcedure
+    .input(z.object({ clientRequestId: z.string(), candidateId: publicId }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.generation);
+      assertClientRequestId(input.clientRequestId);
+      return retryCandidate({}, {
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        candidatePublicId: input.candidateId,
+      });
+    }),
+
   cancel: protectedProcedure
     .input(z.object({ rollId: publicId }).strict())
     .mutation(async ({ ctx, input }) => {

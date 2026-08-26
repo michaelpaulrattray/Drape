@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c14d338aefd09f11"
+    "sourceFingerprint": "ae75e3d8a841f4f5"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 176
+      "moduleCount": 178
     },
     {
       "id": "domain:castingV2",
@@ -4311,6 +4311,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/retryRecovery.ts",
+      "path": "server/castingV2/retryRecovery.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/retryService.ts",
+      "path": "server/castingV2/retryService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/rollEngine.ts",
       "path": "server/castingV2/rollEngine.ts",
       "domain": "casting-v2",
@@ -7037,6 +7049,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.retry",
+      "namespace": "castingV2",
+      "name": "retry",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.roster",
       "namespace": "castingV2",
       "name": "roster",
@@ -8739,6 +8761,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_RETRY_SCOPE",
+      "name": "CASTING_RETRY_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_SCAN_TABLE_SCOPE",
       "name": "CASTING_SCAN_TABLE_SCOPE",
       "valueRecorded": false
@@ -9136,6 +9163,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_RETRY_SCOPE",
+      "name": "CASTING_RETRY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_SCAN_TABLE_SCOPE",
       "name": "CASTING_SCAN_TABLE_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -9305,6 +9337,11 @@
       "contract": "server/casting/operationContract.ts"
     },
     {
+      "id": "operation:castingV2.retry",
+      "kind": "castingV2.retry",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
       "id": "operation:castingV2.roll",
       "kind": "castingV2.roll",
       "contract": "server/casting/operationContract.ts"
@@ -9450,6 +9487,14 @@
       "name": "CASTING_V2_REFINE_PRICE_CREDITS",
       "constant": "CASTING_V2_REFINE_PRICE_CREDITS",
       "credits": 25,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_RETRY_PRICE_CREDITS",
+      "name": "CASTING_V2_RETRY_PRICE_CREDITS",
+      "constant": "CASTING_V2_RETRY_PRICE_CREDITS",
+      "credits": 20,
+      "derivedFrom": "CASTING_V2_COSTS.rollCandidate",
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -11591,6 +11636,14 @@
     {
       "id": "test:server/castingV2/retentionExemption.test.ts",
       "path": "server/castingV2/retentionExemption.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/retryRecovery.test.ts",
+      "path": "server/castingV2/retryRecovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/retryService.test.ts",
+      "path": "server/castingV2/retryService.test.ts"
     },
     {
       "id": "test:server/castingV2/roleNameGuard.test.ts",
@@ -21071,6 +21124,11 @@
     },
     {
       "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:server/castingV2/retryRecovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationRecovery.ts",
       "to": "module:server/castingV2/rollRecovery.ts",
       "kind": "imports"
     },
@@ -25595,6 +25653,141 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:server/castingV2/rollRecovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryRecovery.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/casting/directOperation.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/briefCompiler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/callCensus.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/framingTrimStep.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/rollEngine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/rollRecovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/rollService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/castingV2/spendGuards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:shared/candidateFailure.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -29147,6 +29340,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/refineService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/retryService.ts",
       "kind": "imports"
     },
     {
@@ -33306,6 +33504,13 @@
       "kind": "redeclared-shape",
       "subject": "server/castingV2/refineService.ts:875",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/retryRecovery.ts:57",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/retryRecovery.ts:57",
+      "message": "Names 5 of RecoverableRollOperation's 5 fields (server/castingV2/rollRecovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:253",

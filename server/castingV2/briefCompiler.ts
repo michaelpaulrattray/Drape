@@ -114,6 +114,15 @@ import { stylingResolutionFor, type StylingResolution } from "./stylingResolutio
 const log = createModuleLogger("castingV2/briefCompiler");
 
 /** A removable interpretation chip, the sheet's only view of the brief (§J). */
+/**
+ * THE RENDER BOX every sheet slice is painted in — one declaration, read by
+ * both compile sites here and by the retry (`retryService.ts`), which renders
+ * one slice again and must ask the engine for exactly the frame its siblings
+ * got. Two literals in two compile sites were the copy working law 4 forbids;
+ * a retry that stated a third would be the drift.
+ */
+export const CANDIDATE_RENDER = { size: "1024x1536", quality: "medium" } as const;
+
 export type CastingChip = {
   label: string;
   kind: "subject" | "style" | "direction" | "lineage";
@@ -1288,8 +1297,8 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     chips: buildChips(intent, input.followPersonaLine ?? null),
     candidates,
     variance: sheet.variance,
-    size: "1024x1536",
-    quality: "medium",
+    size: CANDIDATE_RENDER.size,
+    quality: CANDIDATE_RENDER.quality,
     /* What the brief said about ink, handed on from the intent the sheet was
        compiled from. Null on every roll outside the flag, because the
        interpreter was not asked. */
@@ -1348,8 +1357,8 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     chips: buildChips(intent, input.followPersonaLine ?? null),
     candidates,
     variance,
-    size: "1024x1536",
-    quality: "medium",
+    size: CANDIDATE_RENDER.size,
+    quality: CANDIDATE_RENDER.quality,
     /* No interpreter runs here at all, so the brief said nothing this compiler
        could hear — `fallbackIntent` answers null and this hands that on rather
        than composing a second null beside it. */
