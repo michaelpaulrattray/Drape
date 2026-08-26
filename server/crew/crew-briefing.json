@@ -1,7 +1,7 @@
 {
-  "edition": 38,
-  "updatedAt": "2026-08-27T03:05:00+10:00",
-  "shift": "foreman-29",
+  "edition": 39,
+  "updatedAt": "2026-08-27T02:00:00+10:00",
+  "shift": "foreman-30 (Lexicographer — refusal patrol #1)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -332,7 +332,7 @@
     {
       "id": "framing-court-130",
       "title": "The frame (#130) — your reference is 9:16, we render 2:3: which target?",
-      "question": "Top row is your reference frame, shown at its own 9:16 shape. K is today's framing sentence (about 36% head share). F1 barely moves it. F2 says your reference's geometry in numbers and lands about 33% — the tightest of the four; F3 about 34%. No sentence gets to 28%, and here is why: carrying your reference's view into our 2:3 frame gives about 33%, not 28% — a 28% face in our frame would be a WIDER picture than your reference. So the choice is (a) 28% in our frame — a wider shot than your reference, which words cannot reach and would need a render-side build (render taller, crop to it), or (b) your reference's VIEW carried into our frame (~33%), which F2 delivers now. My recommendation: (b) with F2's sentence — it is your frame carried honestly into our shape, it sits above the trim's 31.6% so the trim and the sentence stop fighting, and it is one small PR. Say 'F2', 'K', or 'wider' — or say what is off in the crop. (Two things I saw: the numeric sentences refused 5 of 24 where K refused 0 of 8, and they drew chest tattoos nobody asked for — small numbers, both go to the refusal patrol.)",
+      "question": "Top row is your reference frame, shown at its own 9:16 shape. K is today's framing sentence (about 36% head share). F1 barely moves it. F2 says your reference's geometry in numbers and lands about 33% — the tightest of the four; F3 about 34%. No sentence gets to 28%, and here is why: carrying your reference's view into our 2:3 frame gives about 33%, not 28% — a 28% face in our frame would be a WIDER picture than your reference. So the choice is (a) 28% in our frame — a wider shot than your reference, which words cannot reach and would need a render-side build (render taller, crop to it), or (b) your reference's VIEW carried into our frame (~33%), which F2 delivers now. My recommendation: (b) with F2's sentence — it is your frame carried honestly into our shape, it sits above the trim's 31.6% so the trim and the sentence stop fighting, and it is one small PR. Say 'F2', 'K', or 'wider' — or say what is off in the crop. (Two things I saw: the numeric sentences refused 5 of 24 where K refused 0 of 8, and they drew chest tattoos nobody asked for — small numbers, both go to the refusal patrol.) UPDATE from the refusal patrol: F2 was rolled eight more times tonight — 8 of 8 delivered, no refusal; the 5-of-24 was the filter's coin, not the sentence.",
       "state": "open",
       "filedAt": "2026-08-27T03:05:00+10:00",
       "issueNumber": 130,
@@ -564,6 +564,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "refusal-patrol-129",
+      "title": "The refusal patrol, run #1 (#129) — RUN on the real rows plus one probe: no trigger word is attributable, the checker is a coin per render; nothing built",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "Your words: 'log every refused and passed prompt, find trigger words, measured word-to-replacement pairs into the author's rewrite list.' First finding: the log already exists — every cast the roll road ever painted carries the exact prompt it was painted from, beside the reason it failed, so nothing had to be built for step one. Read tonight: 144 casts on your account, 13 refused, every refusal ever the engine's content filter. Second finding, the one that changes the plan: on the author road all eight casts of a sheet are painted from ONE identical text — roll 222 had 5 refused and 3 delivered on the SAME words. So there is no 'refused vs passed' difference to find in the rows; the filter is a coin toss per picture on the same text. Probe: the number-stated framing sentences from last night (5 of 24 refused vs 0 of 40 for today's sentence) re-rolled under three swaps — F2, the one recommended on your #130 eye item, delivered 8 of 8 tonight; both swaps 8 of 8. No word attributable; no pair added. The list still holds one measured pair (the 'sternum' word, 8/8 refused, 'collarbones' 0/56), and it guards only the author's own draft — a customer typing that word on Low goes straight to the engine (noted on #93). What this means for you: the cheapest rescue on the evidence is a plain RETRY of the same words before any rewording — the Retry button (#122) and #93's retry-then-reword both rest on it. $0.98 house (estimated first), no credits. Record: docs/specs/REFUSAL_PATROL_2026-08-27.md."
+    },
     {
       "id": "framing-court-130",
       "title": "The framing court (#130) — RUN: four framing sentences on the locked block, your thin brief × 8 each — strip in your gallery, nothing moved",
@@ -849,7 +856,7 @@
     {
       "id": "engine-refuses-lean-and-sternum",
       "title": "The engine's own content checker refuses short prompts most of the time, and one house word ('sternum') reliably",
-      "detail": "'goth woman mid 30s' sent raw was refused 17 of 18 times; your full cyber-goth brief 63 of 64 in every form. A single added sentence with 'the crop just below the sternum' turned a prompt that passes 8/8 into 8/8 refused; the same sentence with 'collarbones' passes. The author's re-wording duty (your rule 16, #93) is not a corner case — it is the road for rich briefs. (issue #93)",
+      "detail": "'goth woman mid 30s' sent raw was refused 17 of 18 times; your full cyber-goth brief 63 of 64 in every form. A single added sentence with 'the crop just below the sternum' turned a prompt that passes 8/8 into 8/8 refused; the same sentence with 'collarbones' passes. The author's re-wording duty (your rule 16, #93) is not a corner case — it is the road for rich briefs. (issue #93) UPDATE (refusal patrol #1, 2026-08-27): the filter is a coin per picture on identical text — roll 222 refused 5 and delivered 3 from ONE prompt; the numeric framing sentence went 2/8 last night and 0/8 tonight. No second trigger word is attributable yet; a plain same-words retry is the cheapest rescue (#122, #93).",
       "state": "open",
       "severity": "warning"
     },
@@ -904,6 +911,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-27T02:00:00+10:00",
+      "shift": "foreman-30 (Lexicographer — refusal patrol #1)",
+      "text": "The refusal patrol ran for the first time (#129), on the real rows. Good news first: the log you asked for already exists — every cast the studio has painted carries the exact words it was painted from, next to why it failed, so step one needed no build. Then the finding that changes the plan: on the new author road all eight casts of a sheet come from ONE identical text, and roll 222 had five refused and three delivered from the same words. The engine's filter is a coin toss per picture, not a judgement of the text — so there is no 'refused vs passed' difference to find in the rows, and trigger words can only ever be found by swap tests, one word at a time. I ran one: last night's number-stated framing sentences (5 of 24 refused) re-rolled under three swaps came back 24 of 24 delivered, F2 included — so F2 costs you nothing on refusals, and no word is to blame. The rewrite list still holds exactly one measured pair ('sternum' refused 8/8, 'collarbones' passes 0/56), and it only checks the author's draft — a word you type yourself on Low goes straight to the engine; that is #93's road and is noted there. Practical upshot: the cheapest rescue for a refused cast is a plain retry of the same words, which is what the Retry button (#122) would do. Cost $0.98 house (estimated on the issue first), no credits, nothing in the product moved. Still open for your eye: the frame (#130 — F2 or K), the light (#128), the settings modal (#142), roll 223's block (#144). No replies from you tonight."
+    },
     {
       "at": "2026-08-27T03:05:00+10:00",
       "shift": "foreman-29",
