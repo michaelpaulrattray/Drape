@@ -5,10 +5,12 @@
  * A retry is one candidate under an operation of its own
  * (`retryService.ts`), and the roll adjudicator cannot see it: that one finds
  * its rows through `casting_rolls.operationId`, and no roll points at a retry
- * operation. What a retry operation DOES carry, from the claim and BEFORE any
- * money, is the candidate lock (`casting-candidate:<id>`), deleted only by the
- * finalizers — so the lock row is the link, for exactly the window recovery
- * cares about.
+ * operation. The claim carries a payload (`candidatePublicId`, `attempt`),
+ * and recovery deliberately does not trust it — only its hash is persisted.
+ * What a retry operation DOES carry durably, from the claim and BEFORE any
+ * money, is the candidate lock (`casting-candidate:<id>`), written in the
+ * claim's own transaction and deleted only by the finalizers — so the lock
+ * row is the link, for exactly the window recovery cares about.
  *
  * The rule is the roll's, over one row:
  *

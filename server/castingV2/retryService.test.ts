@@ -417,6 +417,35 @@ describe("when the engine fails again", () => {
     }));
   });
 
+  it("refunds a slice that LANDED NOWHERE under the retry's reference — the sweep can take the CAS, and nobody else pays it back", async () => {
+    /* Review of #151, finding 1: the dispatch CAS lost to the retention sweep
+       is a `skipped` settlement with nothing refunded; on the roll road a
+       cancel already paid it, here nothing did. */
+    vi.mocked(db.markCandidateDispatched).mockResolvedValueOnce(false);
+    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: `That tile didn't arrive again. ${CASTING_V2_RETRY_PRICE_CREDITS} credits were refunded.`,
+    });
+    expect(refunds).toEqual([{
+      amount: CASTING_V2_RETRY_PRICE_CREDITS,
+      reference: candidateChargeReference(RETRY_OPERATION_ID, "cand-5"),
+    }]);
+    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({
+      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      refundedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+    }));
+    expect(dbCalls.setRollStatus).not.toHaveBeenCalled();
+  });
+
+  it("never seals a landed-nowhere slice as '0 credits were refunded' when that refund did not record", async () => {
+    vi.mocked(db.markCandidateDispatched).mockResolvedValueOnce(false);
+    refundRecords = false;
+    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+      message: expect.stringContaining(`quote operation ${RETRY_OPERATION_ID}`),
+    });
+    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({ refundedCredits: 0 }));
+  });
+
   it("never says 'refunded' when the refund did not record — it names the operation for support", async () => {
     refundRecords = false;
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
@@ -474,5 +503,13 @@ describe("the readers", () => {
     expect(rollStatusAfterRetry(["ready", "failed"])).toBe("partial");
     expect(rollStatusAfterRetry(["ready", "cancelled"])).toBe("partial");
     expect(rollStatusAfterRetry(["ready", "expired"])).toBe("partial");
+  });
+
+  it("counts a sibling retry IN FLIGHT as undelivered — two taps must never seal the roll complete over a failure", () => {
+    /* Review of #151, finding 2: A lands while B is still dispatched; if A
+       read B as delivered it would write `complete`, B's failure never writes
+       roll status, and the from-guard can never move `complete` back. */
+    expect(rollStatusAfterRetry(["ready", "dispatched"])).toBe("partial");
+    expect(rollStatusAfterRetry(["ready", "queued"])).toBe("partial");
   });
 });

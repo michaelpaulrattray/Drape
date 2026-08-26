@@ -40,6 +40,8 @@ import {
   failClaimedDirectOperation,
 } from "../casting/directOperation";
 import { operationChargeReference } from "../casting/operationContract";
+import { recordRefund } from "../casting/atomicCredits";
+import { candidateChargeReference } from "./rollRecovery";
 import { deductCredits } from "../db/credits";
 import { markGenerationOperationRunning } from "../db/generationOperations";
 import {
@@ -136,9 +138,18 @@ export function statedInkOfCompiledBrief(compiledBrief: unknown): StatedInk | nu
  * The roll's status after a rescued slice, read from every row: all `ready`
  * (or already signed/kept-and-discarded — the delivered set) means `complete`,
  * anything still failed means `partial`.
+ *
+ * A sibling IN FLIGHT (`queued`/`dispatched` — another retry running on the
+ * same sheet) is undelivered too. Nothing serialises retries per roll — the
+ * lock is per slice — so two taps seconds apart are both admitted; the first
+ * to land must write `partial` and leave the last word to the second's own
+ * settlement, because the failure path never writes roll status and the
+ * from-guard can never move a `complete` roll back (review of #151, finding 2).
  */
 export function rollStatusAfterRetry(statuses: readonly string[]): "complete" | "partial" {
-  const undelivered = statuses.filter((status) => status === "failed" || status === "cancelled" || status === "expired");
+  const undelivered = statuses.filter((status) =>
+    status === "failed" || status === "cancelled" || status === "expired"
+    || status === "queued" || status === "dispatched");
   return undelivered.length === 0 ? "complete" : "partial";
 }
 
@@ -367,14 +378,34 @@ export async function retryCandidate(
   }
 
   /*
-    Failed again (or, on a terminal roll, the two outcomes that cannot happen —
-    `skipped` and `expired` both mean a cancel raced us, and cancel is a no-op
-    on a terminal roll — handled as a failure anyway rather than assumed
-    away). The slice refunded itself under THIS operation's reference inside
-    `dispatchCandidate`; the receipt carries the figure and the sentence.
+    Failed again — or landed nowhere. A `failed` settlement refunded itself
+    under THIS operation's reference inside `dispatchCandidate`. A `skipped`
+    one did NOT: it means the dispatch CAS or the landing CAS was lost, and
+    on the roll road that is a cancel that already refunded the slice. Here
+    it is not — cancel is a no-op on a terminal roll — but the RETENTION
+    SWEEP expires `queued`/`dispatched` rows too, so a retry on a sheet at
+    the edge of its seven days can lose its CAS to the sweep mid-render
+    (review of #151, finding 1). Nobody else refunds a retry's charge, so
+    this road does: under its own reference, once, and a refund that does
+    not record is said so rather than sealed as "0 credits were refunded".
   */
-  const refunded = settlement.refundedCredits;
-  const refundSentence = settlement.refundUnrecorded
+  let refunded = settlement.refundedCredits;
+  let refundUnrecorded = settlement.refundUnrecorded === true;
+  if (settlement.outcome !== "failed" && refunded === 0 && !refundUnrecorded) {
+    const refund = await recordRefund(
+      input.userId,
+      price,
+      "Casting retry landed nowhere",
+      candidateChargeReference(operationId, candidate.publicId),
+    );
+    refunded = refund.recorded ? refund.amount : 0;
+    refundUnrecorded = !refund.recorded;
+    log.warn(
+      { operationId, candidate: candidate.publicId, outcome: settlement.outcome, recorded: refund.recorded },
+      "[retryService] the retried tile landed nowhere — refunded under the retry's own reference",
+    );
+  }
+  const refundSentence = refundUnrecorded
     ? `The refund could not be recorded — quote operation ${operationId} and support will restore the balance.`
     : `${refunded} credits were refunded.`;
   log.warn(
