@@ -191,6 +191,14 @@ const eyeItemSchema = z.object({
   filedAt: isoDateTime,
   issueNumber: z.number().int().positive().nullable(),
   frames: z.array(eyeFrameSchema).min(1).max(24),
+  /**
+   * The needs-you card that asks the question these frames answer, when one
+   * does. It exists so the two cannot disagree: his verdict answers the CARD,
+   * and the eye item stayed `open` after it (roll 217, edition 25 — he
+   * noticed, `5dae3df0`; #133). The refinement below refuses that shape at
+   * the parse.
+   */
+  cardId: z.string().max(64).nullable().optional(),
 }).strict();
 
 /**
@@ -258,6 +266,21 @@ export const crewBriefingSchema = z.object({
       ...briefing.eyeItems,
     ]),
   "needsYou[].id and eyeItems[].id share one reply namespace and must be unique across both",
+).refine(
+  /*
+    AN EYE ITEM CANNOT OUTLIVE ITS CARD (#133): where an eye item names the
+    card that asks its question, that card must exist, and an `open` eye item
+    needs an `open` card — an answered card with open frames beside it is the
+    page telling him it is still waiting for a verdict he already gave.
+  */
+  (briefing) =>
+    briefing.eyeItems.every((item) => {
+      if (item.cardId == null) return true;
+      const card = briefing.needsYou.find((candidate) => candidate.id === item.cardId);
+      if (!card) return false;
+      return item.state !== "open" || card.state === "open";
+    }),
+  "an eye item's cardId must name a needsYou card, and an open eye item needs an open card (#133)",
 );
 
 export type CrewBriefing = z.infer<typeof crewBriefingSchema>;

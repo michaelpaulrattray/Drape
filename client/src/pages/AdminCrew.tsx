@@ -16,7 +16,7 @@
  * `crew.getState` is `adminProcedure` behind `CREW_TAB_SCOPE` on the server.
  * The client guard is a redirect for the person; the server one is the boundary.
  */
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Redirect } from "wouter";
 import { toast } from "sonner";
 
@@ -32,11 +32,37 @@ import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
+/**
+ * "checked 12s ago" — coarse on purpose. It re-renders every ten seconds,
+ * which is enough for a stamp whose job is to say the page is alive, and
+ * far too slow to read as a clock.
+ */
+function useCheckedAgo(dataUpdatedAt: number): string {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 10_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    setNow(Date.now());
+  }, [dataUpdatedAt]);
+  if (!dataUpdatedAt) return "just now";
+  const seconds = Math.max(0, Math.round((now - dataUpdatedAt) / 1000));
+  if (seconds < 10) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  return `${Math.round(seconds / 60)} min ago`;
+}
+
 export default function AdminCrew() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const isAdmin = isAuthenticated && user?.role === "admin";
 
-  const stateQuery = useCrewState(isAdmin);
+  /* Live (#133): re-read every minute while visible and on focus. A new
+     edition re-renders from the new state — never a reload — and every reply
+     box keeps its draft, because the boxes are keyed by card id and only
+     re-render. The stamp at the foot says when the page last checked. */
+  const stateQuery = useCrewState(isAdmin, { live: true });
+  const checkedAgo = useCheckedAgo(stateQuery.dataUpdatedAt);
   const utils = trpc.useUtils();
 
   const replyMutation = trpc.crew.reply.useMutation({
@@ -125,7 +151,12 @@ export default function AdminCrew() {
             database, a malformed scope value), and telling the admin the page
             "isn't switched on" would be a configuration fault wearing the
             wrong sentence (PR #72 review, finding 3). */}
-        {stateQuery.isError && stateQuery.error.data?.code === "NOT_FOUND" && (
+        {/* Both fault cards render only when there is NO briefing to show: a
+            failed BACKGROUND poll (a deploy blip, once per new edition) keeps
+            the cached briefing and must not wear the sentence written for a
+            malformed scope — the stamp at the foot says the check failed and
+            the next tick retries (PR #135 review, findings 1–2). */}
+        {!stateQuery.data && stateQuery.isError && stateQuery.error.data?.code === "NOT_FOUND" && (
           <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
             <h2 className="text-sm font-semibold text-[#0A0A0A]">This page isn’t switched on yet</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#666]">
@@ -137,7 +168,7 @@ export default function AdminCrew() {
           </div>
         )}
 
-        {stateQuery.isError && stateQuery.error.data?.code !== "NOT_FOUND" && (
+        {!stateQuery.data && stateQuery.isError && stateQuery.error.data?.code !== "NOT_FOUND" && (
           <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
             <h2 className="text-sm font-semibold text-[#0A0A0A]">Something is wrong with this page</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#666]">
@@ -188,10 +219,12 @@ export default function AdminCrew() {
             />
 
             {/* The edition number, said plainly — there is no history UI and git
-                holds the old ones (design §10). */}
-            <p className="pt-2 text-[11px] text-[#BBB] text-center">
+                holds the old ones (design §10) — and when the page last checked
+                for a new one (#133): an honest liveness signal, not a spinner. */}
+            <p className="pt-2 text-[11px] text-[#BBB] text-center" data-testid="crew-edition-stamp">
               Briefing edition {stateQuery.data.briefing.edition}, written by{" "}
-              {stateQuery.data.briefing.shift}
+              {stateQuery.data.briefing.shift} · checked {checkedAgo}
+              {stateQuery.isError && " · the last check failed — trying again"}
             </p>
           </>
         )}

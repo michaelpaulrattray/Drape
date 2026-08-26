@@ -66,6 +66,35 @@ describe("the briefing file", () => {
     ).toThrow();
   });
 
+  it("⚠ an eye item cannot outlive its card (#133): an open eye item beside an answered card is refused at the parse", () => {
+    const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
+    const eye = valid.eyeItems.find((item: { cardId?: string }) => item.cardId);
+    expect(eye).toBeTruthy();
+    const card = valid.needsYou.find((c: { id: string }) => c.id === eye.cardId);
+    expect(card).toBeTruthy();
+    // The incident's shape: the card answered, the frames still open.
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        needsYou: valid.needsYou.map((c: { id: string }) => (c.id === card.id ? { ...c, state: "answered" } : c)),
+        eyeItems: valid.eyeItems.map((item: { id: string }) => (item.id === eye.id ? { ...item, state: "open" } : item)),
+      }),
+    ).toThrow(/open eye item needs an open card/);
+    // A cardId naming no card is a typo, refused.
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        eyeItems: valid.eyeItems.map((item: { id: string }) => (item.id === eye.id ? { ...item, cardId: "no-such-card" } : item)),
+      }),
+    ).toThrow(/cardId must name a needsYou card/);
+    // Both open together is the ordinary waiting state, admitted.
+    crewBriefingSchema.parse({
+      ...valid,
+      needsYou: valid.needsYou.map((c: { id: string }) => (c.id === card.id ? { ...c, state: "open" } : c)),
+      eyeItems: valid.eyeItems.map((item: { id: string }) => (item.id === eye.id ? { ...item, state: "open" } : item)),
+    });
+  });
+
   it("⚠ a duplicated identity fails the PARSE, never degrades at render (PR #78 review, law 7)", () => {
     /* React keys on these ids and replies point at them — an edition carrying
        a duplicate would render one row where two claims were written. The
