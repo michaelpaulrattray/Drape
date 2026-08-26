@@ -2687,7 +2687,7 @@ export function validateCastingBriefFidelityEnvironment(input: {
  * close we can get"*).
  *
  * Off, and absent means off, the product is BYTE-IDENTICAL to today's: the
- * interpreter is not asked whether a brief is creative, no field is parsed,
+ * interpreter is not asked whether a brief is creative, no author is called,
  * no variance card is authored, and every slice composes through
  * `composeCandidatePrompt` exactly as it does now. That is the design's own
  * §1a made structural — the population the engine is already great at never
@@ -2695,15 +2695,15 @@ export function validateCastingBriefFidelityEnvironment(input: {
  * context once raised the stage wall twice as often as its superset) is why
  * the gating is the point rather than caution.
  *
- * On, the interpreter is asked one more key (`creativeRegister`), and a brief
- * it reads as creative — with its grounds in the brief's own words — has its
- * eight slices composed by `creativeRegister.ts`: the ask verbatim first, the
- * house framing / capture / realism / negatives scaffolding (his condition:
- * *"C with the framing fixed"*), and a per-slice variance card on open axes
- * only. An ORDINARY brief under the flag still compiles house, to the byte —
- * the selector is conservative by design (§2b): a creative brief mis-routed
- * to house is today's known state, an ordinary one mis-routed to creative is
- * an unmeasured one.
+ * On, EVERY roll takes THE AUTHOR ROAD (#131, his verdict on the Prompt
+ * Author court, Crew reply #8 2026-08-26: *"B is the studio … build the author
+ * verbatim-first with LOW as the default"*): the interpreter still runs, as
+ * the READER only; one text call (`promptAuthor.ts`) writes ONE prompt — the
+ * customer's words verbatim first, by code, then the photoreal bundle at LOW
+ * or an invented, ownable look that leaves the face open at MAX — and all
+ * eight slices carry it, the engine varying everything it leaves open. No
+ * engagement gate, no variance card, no house scaffolding. The register of PR
+ * #94 (the selector, the card, `creativeRegister.ts`) is retired.
  *
  * Its parent is `CASTING_V2_SCOPE` and nothing narrower: what it governs is
  * the COMPILE of a roll, the brief-fidelity scope's own reason one block up.

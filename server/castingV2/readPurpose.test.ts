@@ -54,7 +54,7 @@ describe("the read stage's purpose vocabulary", () => {
   */
   /*
     TWELVE since 2026-08-26: `author` joined with the creative register's
-    variance card (`creativeRegister.ts`). Every other member is a READING of
+    variance card, and since #131 it is the prompt author (`promptAuthor.ts`). Every other member is a READING of
     a sentence or a picture; a card is prose WRITTEN for a slice, and a census
     that filed it under `interpret` would price the interpreter for work it
     never did.

@@ -376,8 +376,8 @@ export type ReadPurpose =
   | "gate"
   /**
    * PROSE WRITTEN FOR A SLICE rather than a fact read out of a sentence — the
-   * creative register's variance card (`creativeRegister.ts`), and the
-   * writer's room when it lands. Its own word because every other purpose
+   * prompt author (`promptAuthor.ts`, one prompt per sheet since #131), and
+   * the writer's room when it lands. Its own word because every other purpose
    * here is a READING, and a census that filed an authored card under
    * `interpret` would price the interpreter for work it never did.
    */
