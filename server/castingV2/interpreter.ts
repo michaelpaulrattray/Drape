@@ -823,6 +823,37 @@ let engine: TextEngine | null = null;
  * (M8) needs the SAME one: two engines would mean two credentials, two
  * queues, and a config change that silently applies to one of them.
  */
+/**
+ * THE BRIEF INTERPRETER'S DEADLINE — sized to its population, not to the
+ * transport's default (#121, roll 219).
+ *
+ * The OpenRouter text engine's default deadline is 45 s, and every other
+ * reader on the shared engine (a describer, a hair or ink take, a refine ask)
+ * fits inside it. The brief interpreter does not: it reads up to 2,000
+ * characters and answers a wide JSON schema, and its latency scales with the
+ * brief. Read at production's `interpreterLatencyMs`: short briefs 4–17 s;
+ * the founder's 553-character brief 21,221–41,995 ms across seven rolls
+ * (roll 206 was THREE SECONDS under the wire); his 1,494-character cyber-goth
+ * brief, re-driven three times through this compile, 36,491 / 36,446 ms and
+ * then **45,012 ms — the deadline** (`output/_shift121/drive-219.json`).
+ *
+ * What the deadline firing costs is the whole point: the call THROWS, the
+ * compiler falls back to `fallbackIntent`, and the roll is charged 160
+ * credits for eight people cast from `briefText.slice(0, 80)` — sex null,
+ * hair null, skin null, ink null, register house. That is roll 219's row
+ * exactly (`interpreted: false`, no `interpreterModel`): "a young woman with
+ * an intense cyber-goth aesthetic" delivered men and women, and the founder
+ * called it a complete failure. A deadline that fires on one in three of the
+ * richest briefs is not a safety, it is the defect.
+ *
+ * 120 s is ~3× the measured rich-brief median and ~2.7× the worst observed
+ * success; it leaves room for the variance card (20–60 s) and the aesthetic
+ * re-sample inside the gateway's ~305 s wall. It is per CALL
+ * (`TextRequest.timeoutMs`), so the shared engine, its queue and every other
+ * reader keep the 45 s they were sized for.
+ */
+export const INTERPRET_TIMEOUT_MS = 120_000;
+
 export function interpreterEngine(): TextEngine | null {
   if (engine) return engine;
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -1129,6 +1160,7 @@ export async function interpretBrief(input: {
       */
       maxOutputTokens: 5000,
       signal: input.signal,
+      timeoutMs: INTERPRET_TIMEOUT_MS,
     });
 
   try {

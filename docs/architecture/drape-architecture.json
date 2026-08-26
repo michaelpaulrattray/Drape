@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a3e6344fcd66e5a9"
+    "sourceFingerprint": "898ee973196da81b"
   },
   "domains": [
     {
@@ -11207,6 +11207,10 @@
       "path": "server/castingV2/inkWordsScope.test.ts"
     },
     {
+      "id": "test:server/castingV2/interpreterDeadline.test.ts",
+      "path": "server/castingV2/interpreterDeadline.test.ts"
+    },
+    {
       "id": "test:server/castingV2/inventionDoor.test.ts",
       "path": "server/castingV2/inventionDoor.test.ts"
     },
@@ -22206,6 +22210,11 @@
     {
       "from": "module:server/castingV2/creativeRegister.ts",
       "to": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creativeRegister.ts",
+      "to": "module:server/castingV2/interpreter.ts",
       "kind": "imports"
     },
     {

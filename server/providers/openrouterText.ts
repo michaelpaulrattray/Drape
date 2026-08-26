@@ -130,7 +130,10 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
           "openrouterText.complete",
           async () => {
             const startedAt = Date.now();
-            const timeout = AbortSignal.timeout(timeoutMs);
+            /* The call's own deadline outranks the engine's default — the
+               brief interpreter's population needs more than a describer's
+               (`TextRequest.timeoutMs`). */
+            const timeout = AbortSignal.timeout(request.timeoutMs ?? timeoutMs);
             const signal = request.signal
               ? AbortSignal.any([request.signal, timeout])
               : timeout;

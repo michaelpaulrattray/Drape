@@ -51,6 +51,7 @@
  *     concern.
  */
 import type { TextEngine } from "../providers/types";
+import { INTERPRET_TIMEOUT_MS } from "./interpreter";
 import { createModuleLogger } from "../logging/logger";
 import { creativeRegisterFrameBlocks } from "./cohortPhotorealHuman";
 
@@ -196,6 +197,24 @@ export function parseVarianceCard(raw: string, count: number): string[] | null {
  * and the compiler records that it went without, so a sheet with no card is
  * never mistaken for a sheet whose card was empty.
  */
+/**
+ * THE CARD'S OUTPUT BUDGET — and why 2,000 was not enough (#121's sibling,
+ * found on the same three drives).
+ *
+ * The first figure was sized for CONTENT: eight lines of `INVITATION_WORDS_MAX`
+ * words is a few hundred tokens, and 2,000 read as generous. It was not,
+ * because on the served model the REASONING tokens count against the same
+ * budget: drive 2 of `output/_shift121/drive-219.json` came back `finish_reason:
+ * length` with `reasoning_tokens: 1999`, `completion_tokens: 2000` and an
+ * EMPTY completion — the model spent the whole allowance thinking and wrote
+ * nothing — and its first attempt was cut at 1,168 characters for the same
+ * reason. Two attempts, no card, and the sheet rendered without one on the
+ * richest brief the register has seen. The brief interpreter already carries
+ * 5,000 for the same reason (`interpreter.ts`, its own docblock); the author
+ * now matches it. A cap is not a reservation — an unused token is not billed.
+ */
+export const CARD_MAX_OUTPUT_TOKENS = 5000;
+
 export async function authorVarianceCard(input: {
   engine: TextEngine;
   briefText: string;
@@ -213,8 +232,11 @@ export async function authorVarianceCard(input: {
       /* Explicit, never the transport default — the W arm's 900 cut a reply
          mid-word at concept four (foreman-6). Eight sentences of INVITATION_WORDS_MAX words is
          well inside this, and an unused token is not billed. */
-      maxOutputTokens: 2000,
+      maxOutputTokens: CARD_MAX_OUTPUT_TOKENS,
       signal: input.signal,
+      /* Measured 20–60 s per attempt on a 1,494-character brief — the same
+         population argument as the interpreter's own deadline. */
+      timeoutMs: INTERPRET_TIMEOUT_MS,
     });
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {

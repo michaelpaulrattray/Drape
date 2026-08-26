@@ -442,6 +442,19 @@ export type TextRequest = {
   temperature?: number;
   maxOutputTokens?: number;
   signal?: AbortSignal;
+  /**
+   * A per-call deadline, overriding the engine's default for THIS call only.
+   *
+   * The engine's default (45 s on the OpenRouter transport) is sized for a
+   * short read — a describer, a take, a refine ask. The brief interpreter
+   * reads a customer's whole brief, up to 2,000 characters, and its latency
+   * scales with the brief: measured on production, a 553-character brief runs
+   * 21–42 s and a 1,494-character one 36 s twice and PAST 45 s once — which
+   * is roll 219 (#121): the deadline fired, the call threw, and the compiler
+   * fell back to an uninterpreted sheet that lost every fact the customer
+   * typed. One engine, one queue, and the call that needs longer says so.
+   */
+  timeoutMs?: number;
 };
 
 export type TextResult = {
