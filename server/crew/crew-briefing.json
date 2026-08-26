@@ -1,7 +1,7 @@
 {
-  "edition": 48,
-  "updatedAt": "2026-08-27T07:40:00+10:00",
-  "shift": "foreman-39",
+  "edition": 49,
+  "updatedAt": "2026-08-27T08:30:00+10:00",
+  "shift": "foreman-40",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -54,7 +54,7 @@
           "state": "done"
         },
         {
-          "title": "Follow and chip edits on the author road — the honest half BUILT and MERGED (PR #153): a sheet that had to fall back to the studio's old casting now SAYS so, and the settings gear no longer promises settings such a roll ignores; the carry itself is designed and waits on your word (#154)",
+          "title": "Follow and chip edits on the author road — the honest half (PR #153) and then THE CARRY (#154, your reply #11): the family clause, MERGED and live on your account",
           "state": "done"
         },
         {
@@ -145,11 +145,11 @@
   "needsYou": [
     {
       "id": "family-clause-154",
-      "title": "Should the author carry a Follow and chip edits? Three small questions before it is built (#154)",
-      "productImpact": "Today on your account, tapping Follow on a face or changing a chip sends that roll back to the studio's old casting — eight separate prompts, the grey tee, no authored prompt to read. The build on #154 would keep the author on those rolls: one prompt, your words first, then a 'continue this family' paragraph written from the face you followed, then the author's art direction and the locked block.",
-      "workedExample": "You roll 'goth woman mid 30s' at MAX, like #03, tap Follow. Today: eight house-cast relatives, no prompt shown. After: the prompt reads your words, then 'Continue this family: cast eight relatives of one person — a woman, mid 30s, of Korean heritage, slight build, black hair in a blunt bob, still and grave. Same sex, same age, same heritage on every one; faces differ.' — then the author's content and the studio block, and the whole prompt is on the sheet as usual.\n\nThe three questions: (1) A house follow varies each relative's second heritage a little ('cousins, not clones'); one prompt can only say 'relatives' and let the engine vary — enough? (2) On an authored sheet that is NOT a follow, removing a chip cannot change anything, because your sentence goes to the engine word for word — so the chips would become a read-only record with 'edit the sentence to change them'. OK? (3) Should a follow carry the fine facial details (eye colour, brows, skin) as words? Our recommendation is no — sex, age, heritage, build, hair and look only, or the author drifts toward one portrait eight times.",
-      "recommendation": "Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court.",
-      "state": "open",
+      "title": "ANSWERED — the author now carries a Follow and chip edits (#154), built to your three answers",
+      "productImpact": "Your word (reply #11): \"Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court.\" Built and merged. On your account, tapping Follow or changing a chip no longer drops the roll back to the studio's old casting: the author writes it, with one 'continue this family' paragraph from the face you followed placed between your words and the locked block. The whole prompt is on the sheet as before. Nobody else sees any of this.",
+      "workedExample": "Dev sheet, 'a fitness creator in their 30s, close-cropped hair', Follow on 01: the prompt read your words, then 'Continue this family: cast a close relative of one person — a man, in their 30s, of Mediterranean heritage, black hair. Same sex, same age, same heritage and same hair colour; the face itself is new.' then the block — 8 of 8 landed. Chip edit 30s → 40s on a plain sheet: 'Cast as a person, in their 40s; where this differs from the request above, this wins.' On a plain authored sheet the underlined facts no longer offer 'let it vary' (your sentence goes to the engine word for word) and one line says so under the echo; on a Follow, sex/age/heritage still can.",
+      "recommendation": "Done: PR #156 merged (56c7386c), the service redeploys with this edition. Your first Follow on your own account is the court — tap Follow on a face you like and say on #154 whether the relatives read as one family.",
+      "state": "answered",
       "filedAt": "2026-08-27T05:05:00+10:00",
       "issueNumber": 154,
       "options": [
@@ -397,10 +397,45 @@
   ],
   "eyeItems": [
     {
+      "id": "family-clause-154",
+      "title": "The family clause (#154) — a Follow and a chip edit written by the author, on a dev sheet",
+      "question": "Five frames from the dev drive (verify-bot, fallback fonts — the worktree server could not serve the real ones). Frame 1: a plain authored sheet — the SETTINGS gear, and the new line under the sentence: 'These are what the studio read in your words — edit the sentence to change them.' Frame 2: FOLLOWING 01 standing — the gear stays, the line goes, and sex/age can still be let vary. Frames 3–4 (dark, light): the follow's finished sheet with the prompt record open — your words, then the 'Continue this family' paragraph, then the block. Two things for your eye: does the paragraph say what you would say to a photographer about a family, and is the line under the sentence where you would look for it? The real court is your own first Follow: do the eight read as relatives of the face you tapped?",
+      "state": "open",
+      "filedAt": "2026-08-27T08:30:00+10:00",
+      "issueNumber": 154,
+      "frames": [
+        {
+          "key": "crew-eye/24a1253e-ae85-4342-9d28-aa4f2aec373e.png",
+          "arm": "plain authored sheet",
+          "caption": "Dev roll 99 (dark): SETTINGS gear in the dock, and under the sentence the read-only line — on this road the underlined facts no longer offer 'let it vary'."
+        },
+        {
+          "key": "crew-eye/2a283dff-ada3-458c-b439-10733a2351f9.png",
+          "arm": "Follow standing",
+          "caption": "FOLLOWING 01 tapped: the gear stays (the author carries a follow now), the read-only line is gone, and the family's own three axes are still adjustable; roll 2 casting."
+        },
+        {
+          "key": "crew-eye/d286eae3-89d8-46f4-892a-8748295757a7.png",
+          "arm": "the follow's prompt · dark",
+          "caption": "Roll 3 (a follow of 01, 8 of 8): the prompt record open — 'a fitness creator in their 30s, close-cropped hair', then the family clause written from face 01, then the locked block."
+        },
+        {
+          "key": "crew-eye/b90187b4-af0b-4959-82b8-bf5663b2179d.png",
+          "arm": "the follow's prompt · light",
+          "caption": "The same sheet in the light theme."
+        },
+        {
+          "key": "crew-eye/38a4a666-4a4c-4e7e-8418-b827ca3ed2b9.png",
+          "arm": "a chip edit · 30s → 40s",
+          "caption": "Roll 5 (8 of 8): the follow cleared, age changed to 40s with the chip, rolled — the prompt record shows your words, then 'Cast as a person, in their 40s; where this differs from the request above, this wins.', then the block. Whether the faces read as 40s is your eye's call."
+        }
+      ]
+    },
+    {
       "id": "author-sat-out-131",
       "title": "The sheet that says the author sat it out (#131) — record line and dock note",
-      "question": "One frame, dev, dark theme: at the top, 'AUTHOR — Sat this one out — a follow is cast the studio's own way for now, so there is no authored prompt to show.' in the WARDROBE/SETTINGS grammar; a chip change is queued (a woman → male · next roll) so the dock shows no gear and instead the line 'With chip edits queued, the next roll is cast the studio's own way — the author sits it out. Edit the sentence instead to keep the author.' Do the two sentences read right to you, and is the line where you would look for it?",
-      "state": "open",
+      "question": "Overtaken by #154 (your reply #11): the author no longer sits a follow or a chip edit out, so the dock note is gone and the record line only appears on the handful of sheets rolled before today, in the past tense. Nothing to judge here any more — the family-clause item below is where your eye goes.",
+      "state": "answered",
       "filedAt": "2026-08-27T05:05:00+10:00",
       "issueNumber": 131,
       "frames": [
@@ -479,8 +514,8 @@
     {
       "id": "settings-modal-142",
       "title": "The minimal settings modal (#142) — the gear and the panel, on the casting page",
-      "question": "Is this the settings surface you meant — one gear that says 'Photoreal · Low' and opens a small panel with just Style and Imagination, your two coming styles announced beneath, and the one-line rule that your brief overrides the defaults? It is live on your account now: open the casting page, tap the gear, pick Max, roll once. If it passes, N1 has its control surface and the remaining N1 work is the two small courts (#128, #130) and the refusal patrol (#129). If something is off — the words, the placement, what the panel should or should not show — say it here and the next shift changes it.",
-      "state": "open",
+      "question": "You answered (reply #12): \"imagination should be a slider, but yes as a minimal version for now that's good.\" Taken as the gate passed for the minimal modal, and the slider recorded on #142 as the shape the full N3 modal gives the meter. Nothing changes on your page from this.",
+      "state": "answered",
       "filedAt": "2026-08-27T01:35:00+10:00",
       "issueNumber": 142,
       "frames": [
@@ -676,6 +711,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "family-clause-154",
+      "title": "The author carries a Follow and chip edits — the family clause (#154) — MERGED and LIVE on your account",
+      "status": "merged",
+      "prNumber": 156,
+      "note": "Your reply #11, built as recommended. One paragraph written by code from the face you followed (sex, age, heritage, hair colour, look — never the cut, never eye colour or skin) sits between your words and the block; chip changes become a sentence that says it wins over the request above; on a plain authored sheet the chips are a read-only record with one line saying so. Driven on dev: two follow rolls and two chip-edit rolls through the real entrance — three landed 8 of 8 (the fourth was cut by my own dev-server restart and settled by the recovery sweep), the clause on the wire and no wardrobe line inherited. About $3.20 house on dev renders, 0 credits."
+    },
     {
       "id": "retry-widened-122",
       "title": "Retry on content-filter tiles + the flip to your account (#122) — MERGED and LIVE",
@@ -1059,6 +1101,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T08:30:00+10:00",
+      "shift": "foreman-40",
+      "text": "Two replies in. #11 — the family clause (#154) — built as you answered it and merged (PR #156, 56c7386c): on your account a Follow or a chip edit is now written by the author, with a 'continue this family' paragraph from the face you followed; chips on a plain authored sheet are a read-only record with one line saying why. Driven on dev through the real entrance (4 rolls — three landed 8/8, one was killed by my own dev-server restart mid-cast and settled by the recovery sweep, the known deploy-collision class; ~$3.20 house, 0 credits); five frames on the new eye item. #12 — the minimal settings modal passes on your word ('that's good'); 'imagination should be a slider' is recorded on #142 for the full N3 modal. the service redeploys with this edition. Your first Follow on your own account is the court."
+    },
+    {
       "at": "2026-08-27T07:40:00+10:00",
       "shift": "foreman-39",
       "text": "Your reply #10 landed and was acted on: Retry is ON for your account (CASTING_RETRY_SCOPE=users:1, read back), and content-filter tiles got the same plain Retry · 20 credits (PR #155, merged 4c6b1a42; rendered on a real refused tile, both themes — frame 4 on the retry eye item). the service redeployed on the variable change and again with this edition. #122 carries the record. Still waiting on your word: the family-clause card (#154) and the five older eye items. $0 house, 0 credits."
@@ -1252,11 +1299,6 @@
       "at": "2026-08-26T05:25:00+10:00",
       "shift": "foreman-9",
       "text": "Still nothing from you on the court strips, so the creative register stays parked at its gate. Tonight went to the team's first security instrument (#32): every proposed change is now scanned for leaked passwords and API keys before it can merge, and the entire code history is re-read every Monday. The one-time read of all 2,636 commits found no real credential anywhere — 34 look-alikes, every one opened and read (cast id numbers in old test scripts, never a key). I did not trust the scanner until it had been made to fail: a planted fake key turned the merge check red in 12 seconds, twice, on the exact version that shipped, and was then removed so it never reached the main history. The reviewer found real gaps across five rounds — one shape of the OpenRouter key would have slipped through, and a secret sharing a line with a cast id would have been hidden — and each was closed and re-proven. One thing for you: GitHub has its own upload-time blocker and it is switched off for the repository (card above, one click). The #73 theme-button fix is still one mechanical step from green on the day seat's branch; if it is still red next shift I will take it over."
-    },
-    {
-      "at": "2026-08-26T04:35:00+10:00",
-      "shift": "foreman-8",
-      "text": "Still nothing from you on the court strips, so the creative register is still parked at the gate — building it dark starts only on your word. With no product work admissible, tonight was a records night: two housekeeping cards were closed on evidence rather than memory. #9 asked for two design documents to be committed so they could not be lost; they already are (both in the repository, with the ink template plates), so it closed. #7 worried that six pieces of server code had no consumer and might be dead controls; I read the whole history for each and none was ever used by the product itself — they are helpers for test benches and calibration scripts, which is what they were written to be, so nothing is broken and nothing needs removing. The #73 theme-button fix (PR #86) is still one mechanical step from green; I left the exact step on the PR for the seat that owns it rather than taking over their branch. Still on your page: the OpenRouter balance ($7.52 of $250 — please check auto-top-up), and your verdict on the eight strips in the gallery."
     }
   ],
   "acknowledgedReplyIds": [
@@ -1269,6 +1311,8 @@
     7,
     8,
     9,
-    10
+    10,
+    11,
+    12
   ]
 }
