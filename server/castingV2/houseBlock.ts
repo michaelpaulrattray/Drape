@@ -25,10 +25,18 @@
  *     RESPONDS to this light"* (it addresses the flash block by name), *"Specular
  *     highlights sit … where the flash strikes"*, and the BACKGROUND's flash
  *     falloff sentence — his line carries the falloff itself.
- *   - EXPRESSION → his line verbatim (§5e). OUT: the four cohort expression
- *     sentences (the one naming *"the DIRECTION block"* has no referent here).
- *   - COLOUR → his line verbatim (§5e). OUT: *"5500–5800K … warm and
- *     dimensional"* — one skin temperature, cool-neutral.
+ *   - EXPRESSION → his line verbatim (§5e, NARROWED by §5f, #146). OUT: the
+ *     four cohort expression sentences (the one naming *"the DIRECTION
+ *     block"* has no referent here) — and then, by §5f, *"Self-possessed"*
+ *     and *"no broad smile … no horror grimace"*: mood is the CAST layer's
+ *     (*"'Never grim, sullen or severe' kills a war orc, a villain, a stern
+ *     founder"*). What stays universal is the geometry of an expression.
+ *   - COLOUR → his line verbatim (§5e, NARROWED by §5f, #146). OUT: *"5500–5800K
+ *     … warm and dimensional"* — and then, by §5f, the 5500K pin and the
+ *     teal-orange / beauty-app grade language: skin temperature and finish
+ *     come from the person (*"porcelain-pale is that goth brief's; 'warm and
+ *     dimensional' would fail a weathered man or a white orc"*). §5e's
+ *     "cool-neutral" is withdrawn as universal.
  *   - POSTURE → §5d's rule, one line: faces the camera, still, casting
  *     presence — not a pose. OUT: *"head straight with no tilt"*, *"Shoulders
  *     level, spine straight … Arms relaxed at the sides. Mouth closed."* A hand
@@ -58,8 +66,8 @@
  * Present byte-identical at the END of every authored prompt; the author's
  * text contains none of its sentences; it carries no word from
  * `NEVER_WRITTEN`; it contains none of the dropped phrases (the forbidden-
- * token arm — the thing #144 exists for); his three §5e lines appear in it
- * verbatim; the universal block carries no style word.
+ * token arm — the thing #144 exists for); his §5e lighting line and his §5f expression and colour lines appear
+ * in it verbatim; the universal block carries no style word.
  *
  * # Two limits, declared rather than implied (review of #141, still true)
  *
@@ -103,12 +111,15 @@ export const POSTURE_LINE =
 export const LIGHTING_LINE =
   "LIGHTING: Large soft frontal key just above the lens, high fill, open shadows. Soft chin and jaw shadow only. Grey seamless slightly brighter behind the head, gentle falloff to the edges, no hard vignette. Minimal rim. No coloured gels. Speculars appear where the person's skin and wardrobe naturally catch the source — not as a forced flash sheen on every face.";
 
-/** §5e, verbatim (the label is the block's own convention; his words are untouched after it). */
-export const EXPRESSION_LINE =
-  "EXPRESSION: Eyes into the lens, present, mouth closed. Self-possessed. No broad smile, no laugh, no blank stare, no horror grimace.";
+/**
+ * §5f, verbatim (the label is the block's own convention; his words are
+ * untouched after it). ONLY the geometry of an expression is universal —
+ * "self-possessed", "severe", "warm" are the seed's or the author's, per cast.
+ */
+export const EXPRESSION_LINE = "EXPRESSION: Eyes into the lens, present, mouth closed. No laugh, no speech, no blank CGI stare.";
 
-/** §5e, verbatim (same convention). */
-export const COLOUR_LINE = "COLOUR: Neutral daylight, 5500K. Skin stays true to the person. No teal-orange, no beauty-app grade.";
+/** §5f, verbatim (same convention). No temperature pin, no grade language: the person decides. */
+export const COLOUR_LINE = "COLOUR: Neutral daylight. Skin colour and sheen come from the person, not from a house grade.";
 
 /** §5d: logos/watermarks/captions/signage and props/environment/scene. Text on a garment is admissible. */
 export const NEGATIVE_LINES: readonly string[] = [
@@ -175,9 +186,11 @@ export const HOUSE_BLOCK: string = [
 ].join("\n");
 
 /**
- * The phrases §5d/§5e took OUT, each with the sentence it lived in — the
+ * The phrases §5d/§5e/§5f took OUT, each with the sentence it lived in — the
  * forbidden-token arm reads this list, so a re-derivation from the cohort
- * cannot bring one back unnoticed (#144).
+ * cannot bring one back unnoticed (#144). The §5f entries guard the HOUSE
+ * layer only: this list is read against `HOUSE_BLOCK`, never against the
+ * seed or the author's text, where "self-possessed" stays legal (#146).
  */
 export const DROPPED_FROM_BLOCK: ReadonlyArray<{ phrase: string; from: string }> = [
   { phrase: "no tilt", from: "FRAMING (§5d posture)" },
@@ -191,6 +204,15 @@ export const DROPPED_FROM_BLOCK: ReadonlyArray<{ phrase: string; from: string }>
   { phrase: "warm and dimensional", from: "COLOUR (§5e)" },
   { phrase: "5800K", from: "COLOUR (§5e)" },
   { phrase: "cool clinical", from: "COLOUR (§5e)" },
+  /* §5f (#146): mood and skin temperature belong to the CAST layer. */
+  { phrase: "self-possessed", from: "EXPRESSION (§5f — mood is the cast's)" },
+  { phrase: "horror grimace", from: "EXPRESSION (§5f — mood is the cast's)" },
+  { phrase: "5500K", from: "COLOUR (§5f — no temperature pin)" },
+  { phrase: "teal-orange", from: "COLOUR (§5f — no house grade)" },
+  /* Review of #147: the other two §5f drops, so the guard holds the property its docblock claims, not the suite alone.
+     "beauty-app grade" and never "beauty-app": the preset KEEPS the cohort's "beauty-app smoothing" style ban by name. */
+  { phrase: "broad smile", from: "EXPRESSION (§5f — mood is the cast's)" },
+  { phrase: "beauty-app grade", from: "COLOUR (§5f — no house grade)" },
   { phrase: "open mouth", from: "NEGATIVES (§5d)" },
   { phrase: "showing teeth", from: "NEGATIVES (§5d)" },
   { phrase: "hand gestures", from: "NEGATIVES (§5d)" },
@@ -204,7 +226,7 @@ export const DROPPED_FROM_BLOCK: ReadonlyArray<{ phrase: string; from: string }>
 ];
 
 /*
-  THE FORBIDDEN-TOKEN GUARD, at module load (#144): if any dropped phrase is
+  THE FORBIDDEN-TOKEN GUARD, at module load (#144, widened #146): if any dropped phrase is
   back in the block — a re-derivation from the cohort, a pasted old line —
   the module refuses to load, on every account, before a single roll composes
   the flash studio again. The suite's arm proves the list reads real sentences
@@ -214,7 +236,7 @@ export const DROPPED_FROM_BLOCK: ReadonlyArray<{ phrase: string; from: string }>
   const lower = HOUSE_BLOCK.toLowerCase();
   for (const { phrase, from } of DROPPED_FROM_BLOCK) {
     if (lower.includes(phrase.toLowerCase())) {
-      throw new Error(`[houseBlock] "${phrase}" is back in the locked block (dropped from ${from} by §5d/§5e, #144)`);
+      throw new Error(`[houseBlock] "${phrase}" is back in the locked block (dropped from ${from} by §5d/§5e/§5f, #144/#146)`);
     }
   }
 }
