@@ -292,7 +292,7 @@ function framingBlock(wardrobeLine: string | null): string {
  * craft — a named sensor class and aperture produce a lens signature that
  * "high quality photo" does not.
  */
-const CAPTURE = [
+const CAPTURE_SENTENCES: readonly string[] = [
   "CAMERA: Medium-format sensor, Hasselblad class. 85mm equivalent, f/5.6–f/8, sensor ratio 2:3. Subject sharp front to back.",
   "Fine luminance-dominant noise, barely visible, like fine sand. No colour noise.",
   "LIGHTING: Direct on-camera or slightly off-axis front flash. Sharp, honest, bright and even light with shadows falling directly behind the subject. No gels, no diffusion.",
@@ -309,7 +309,8 @@ const CAPTURE = [
   "Eight candidates must not share one skin. A weathered outdoor face and a groomed indoor one respond to the same flash completely differently, and that difference must be visible.",
   "Specular highlights sit on the forehead, nose and cheekbones where the flash strikes.",
   "COLOUR: Neutral daylight, 5500–5800K. Skin tones warm and dimensional with visible subsurface scattering. No stylized grading, no teal-orange, no filter look, no cool clinical cast.",
-].join(" ");
+];
+const CAPTURE = CAPTURE_SENTENCES.join(" ");
 
 /**
  * A5–A10. The macro protocols are the difference between a face and a render:
@@ -317,7 +318,13 @@ const CAPTURE = [
  * sees first, and each needs naming individually or the model averages them
  * away.
  */
-const SKIN_AND_FEATURES = [
+/**
+ * The three skin-REALISM sentences, named apart from the anatomy that follows
+ * them because the author road's locked block (`houseBlock.ts`) takes exactly
+ * these and none of the rest (ruling §5c). Joined below into the same string
+ * as before — the house prompt's bytes do not move.
+ */
+const REALISM_SENTENCES: readonly string[] = [
   "REALISM: RAW skin with high micro-contrast — visible pores, vellus fuzz, uneven tone, real blemishes and asymmetry.",
   /*
     A1's operative half, which this file had compressed away. "High
@@ -328,6 +335,9 @@ const SKIN_AND_FEATURES = [
   */
   "Skin, vellus hair and fine texture carry tactile, three-dimensional local contrast that makes the surface feel physical — a face you could touch, not a surface that has been rendered.",
   "No beauty retouching, no surface smoothing, no CGI sheen, no painterly softness, no excessive symmetry.",
+];
+const SKIN_AND_FEATURES = [
+  ...REALISM_SENTENCES,
   "EYES: the iris is not a flat disc — render radial striations and fibre-like collagen structure, lighter near the pupil and deepening to richer saturation toward the outer edge, closed by a distinct dark limbal ring where the iris meets the sclera.",
   "CATCHLIGHTS: one or two small, sharp specular reflections of the studio flash, high on the cornea. Without them the eyes read dead. Render the wet corneal gloss over the whole eye surface — visible, not glassy.",
   "SCLERA: never pure white — a faint warm undertone with subtle vascularity toward the corners. A perfectly white sclera looks synthetic.",
@@ -558,13 +568,14 @@ const PRIORITY = [
  * Okayest Handyman", so text is named in the negative list as well as being
  * structurally excluded upstream.
  */
-const NEGATIVES = [
+const NEGATIVE_SENTENCES: readonly string[] = [
   "PHOTOREALISTIC ONLY — a real photograph from a real camera.",
   "NO text, letters, numbers, words, logos, captions, labels, watermarks or signage anywhere in the frame.",
   "NO props, furniture, environment, location or scene — the backdrop is empty studio paper.",
   "NO open mouth, no showing teeth, no laughing, no acted expression, no hand gestures near the face.",
   "NO CGI, cartoon, anime, 3D render, illustration, plastic skin, doll look, wax figure, perfect symmetry, or beauty-app smoothing.",
-].join(" ");
+];
+const NEGATIVES = NEGATIVE_SENTENCES.join(" ");
 
 /**
  * The override sentence.
@@ -687,6 +698,16 @@ export const PHOTOREAL_HUMAN_BLOCKS = {
   realism: SKIN_AND_FEATURES,
   identityIntegrity: IDENTITY_INTEGRITY,
   negatives: NEGATIVES,
+  /*
+    THE SENTENCES, for the author road's locked block (`houseBlock.ts`, ruling
+    §5c): it derives from these rather than copying them, and names each
+    sentence it leaves out. The joined strings above are what the house
+    composer sends and they are unchanged.
+  */
+  framingSentences: FRAMING_FIXED as readonly string[],
+  captureSentences: CAPTURE_SENTENCES,
+  realismSentences: REALISM_SENTENCES,
+  negativeSentences: NEGATIVE_SENTENCES,
   /*
     The signed package's authority paragraph, and it takes the UNPATHED form
     deliberately for now: the package composes its own wardrobe spec

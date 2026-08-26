@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "addc3fcfc07bb9cf"
+    "sourceFingerprint": "887d4cb3cd73f048"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 175
+      "moduleCount": 176
     },
     {
       "id": "domain:castingV2",
@@ -3749,6 +3749,12 @@
     {
       "id": "module:server/castingV2/heritagePromotion.ts",
       "path": "server/castingV2/heritagePromotion.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/houseBlock.ts",
+      "path": "server/castingV2/houseBlock.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -22760,6 +22766,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/houseBlock.ts",
+      "to": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/inheritedVerdict.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -23862,6 +23873,11 @@
     {
       "from": "module:server/castingV2/presentationState.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/promptAuthor.ts",
+      "to": "module:server/castingV2/houseBlock.ts",
       "kind": "imports"
     },
     {
@@ -33087,10 +33103,10 @@
       "message": "Names 4 of SegmentExclusion's 4 fields (server/castingV2/segmentAssembly.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:944",
+      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:965",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cohortPhotorealHuman.ts:944",
+      "subject": "server/castingV2/cohortPhotorealHuman.ts:965",
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

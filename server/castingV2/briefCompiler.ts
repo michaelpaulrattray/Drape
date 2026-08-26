@@ -1248,8 +1248,18 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
             register: {
               kind: "author",
               imagination: authored.imagination,
+              /*
+                `mode` says which of the three roads wrote this prompt (§5b/5c):
+                `seed` — LOW, no author call, the customer's words + the locked
+                block; `authored` — MAX, a text call wrote the content;
+                `static` — MAX, the author failed twice, seed + block stands.
+                `authored` is kept beside it for the rows already written.
+              */
+              mode: authored.mode,
               authored: authored.authored,
+              content: authored.content,
               addedWords: authored.addedWords,
+              houseBlockWords: authored.houseBlockWords,
               allowance: authored.allowance,
               attempts: authored.attempts,
               model: authored.model,

@@ -1,78 +1,74 @@
 /**
- * THE PROMPT AUTHOR — the user's words go to the engine verbatim, and ONE text
- * call adds what an expert prompter would (founder ruling,
- * `docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md`; his verdict on the court,
- * Crew reply #8, 2026-08-26: *"B is the studio, for both the rich prompt and
- * the thin one — build the author verbatim-first with LOW as the default. MAX
- * as written gives one face eight times; rewrite the MAX instruction so it
- * always leaves the face and a few axes open (casting call, not a portrait)
- * … Never say 'sternum'."*; issue #131).
+ * THE PROMPT AUTHOR — the user's words go to the engine verbatim, the author
+ * writes CONTENT and nothing else, and CODE appends the locked house block
+ * (founder ruling, `docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md` — his
+ * verdict on the court (Crew reply #8) and then, watching the first live rolls,
+ * his corrected spec in §5b and §5c; issues #131 and #139).
  *
- * # What it replaces
+ * # The pipeline, in his words (§5b)
  *
- * The creative register of PR #94 composed eight slices from house scaffolding
- * plus a per-slice variance card. The court (`PROMPT_AUTHOR_COURT_2026-08-26.md`)
- * measured that road losing the ask (arm D: "goth woman mid 30s" → eight women
- * with no goth styling; his 73-word brief → the grey tee on 7/8) and measured
- * arm B — the brief verbatim plus a LOW author — delivering the sheet he
- * described: six distinct goth women in their thirties, clean studio, the
- * spread intact. So this module is arm B as a product: one prompt per sheet,
- * the eight frames the engine's to vary.
+ * > User seed + imagination slider → Author writes one image prompt → that
+ * > exact prompt is sent to GPT Image 2 8 times → 8 different cast portraits.
+ * > Anything stated is locked across all 8. Anything unstated is left to GPT
+ * > Image 2. That is how we get 8 different people.
  *
- * # The three things that are STRUCTURAL rather than promised
+ * # The four defects the first build had, and what closes each (§5b)
  *
- * 1. **Verbatim first, by code.** The customer's brief is the first paragraph
- *    of the prompt and the author is told to write ONLY what follows it. The
- *    court's one free-reword arm (Cr) contradicted a stated fact 2 of 2; the
- *    append-only arms held 33/33, 19/19, 3/3. Rule 4's "facts must survive"
- *    is therefore satisfied by construction, and no fact-comparison reader
- *    stands between the author and the engine.
- * 2. **One prompt per sheet.** Ruled the same afternoon ("the answer is one
- *    prompt for a cast sheet not 8"). Spread is the engine's on everything
- *    the prompt leaves open — and at MAX the author is told, in his words, to
- *    leave the face and a few axes open, because MAX as first specified
- *    produced one identity eight times (court §0 item 2).
- * 3. **Never "sternum".** The word alone flipped a passing prompt to 8/8
- *    refused at fal's content checker (court §4, probe 2/2); "collarbones"
- *    passes 2/2. It is absent from every instruction here, and a reply that
- *    carries it is refused and re-asked once — the suite asserts both.
+ * 1. **It locked a person, not a camera** (exact bob, septum ring, lipstick →
+ *    8 clones). MAX now writes aesthetic LANGUAGE only — mood, materials,
+ *    makeup language, hair language, lighting taste — and is told by name
+ *    never to specify an exact face, hairstyle, eye colour, jewellery item,
+ *    garment, body type or expression.
+ * 2. **The camera/studio block was missing or buried.** It was handed to the
+ *    MODEL as an instruction ("add the preset sentences…"), so the model
+ *    paraphrased, buried or dropped it (§5c). Now `HOUSE_BLOCK` is appended by
+ *    CODE, verbatim, last, on every roll — `houseBlock.ts`, derived from the
+ *    old studio's locked block. The author never sees a studio sentence.
+ * 3. **Pipeline notes leaked into the image prompt** ("expression left unset",
+ *    "across all eight", "per subject", "left open", "pick one" — and on dev
+ *    roll 95 the engine painted the set in one frame: 7 of 8 contact-sheet
+ *    grids). They are `NEVER_WRITTEN` now: a draft carrying one is refused and
+ *    re-asked once, the sternum guard's shape.
+ * 4. **The slider was ignored** (LOW invented looks; MAX invented one
+ *    identity). LOW = seed + camera/studio ONLY — so at LOW there is NO author
+ *    call at all: the seed is the customer's words, already first and
+ *    verbatim, and the block is code. MAX = seed + camera/studio + art
+ *    direction, and *"MAX must not leave the studio. More taste, not more
+ *    world."*
  *
- * # What it does NOT do, and where each lives
+ * # What is STRUCTURAL rather than promised
  *
- *   - it never READS the brief for facts — the interpreter runs beside it as
- *     the reader (panel, locks, born ink, coverage) and never authors;
- *   - it does not rewrite the customer's words to pass the checker — that is
- *     #93's rewrite-and-retry on a `content_policy` refusal, disclosed;
- *   - the framing sentence's numbers are #130's to calibrate (his 28% head
- *     share); the realism clause from arm D is #128's to court before it
- *     enters the bundle. Both change WORDS in `PHOTOREAL_BUNDLE` and nothing
- *     else here.
+ *   - Verbatim first, by code: the brief is the first paragraph; the author is
+ *     told to write only what follows (the court's free-reword arm lost a fact
+ *     2/2; append-only held 33/33, 19/19, 3/3).
+ *   - The house block is last, by code, byte-identical on every roll.
+ *   - One prompt per sheet ("the answer is one prompt for a cast sheet not 8").
+ *   - Never "sternum" (refused 8/8 at fal's checker), never a pipeline note,
+ *     never a house sentence in the author's text — all three refused at the
+ *     reply and re-asked once, then the static prompt (seed + block) stands
+ *     with `mode: "static"` recorded, because a prompt nobody authored must
+ *     never be mistaken for one somebody did.
  *
  * # Budget (rule 14)
  *
- * ~400 words to the engine in total. The brief is never cut; the author gets
- * what is left (floor 40) and is asked once to trim itself if it overruns by
- * more than a tenth — then the sheet renders on the STATIC bundle with
- * `authored: false` recorded, because a prompt nobody authored must never be
- * mistaken for one somebody did.
- *
- * Worst case under the flag, serialized before the claim: the interpreter's
- * 120 s plus two author calls of 120 s each, which can pass the ~305 s gateway
- * wall the refine-dispatch design records — free by construction (nothing is
- * claimed until the compile returns) but a visibly dead request. The deadline
- * keeps that rare; it does not make it impossible.
+ * The author's allowance is ~400 words minus the brief (floor 40), re-asked
+ * once to trim itself. The locked block is OUTSIDE that budget — his §5c word
+ * is the full old block, and the B+R court (#128) is where the full block is
+ * measured against the distilled clause, on his eye, with the refusal count
+ * beside it. The total is recorded on the row (`houseBlockWords`) so the
+ * census can read it rather than anyone assuming it.
  */
 import type { TextEngine } from "../providers/types";
 import { INTERPRET_TIMEOUT_MS } from "./interpreter";
 import { createModuleLogger } from "../logging/logger";
+import { HOUSE_BLOCK, containsHouseSentence } from "./houseBlock";
 
 const log = createModuleLogger("promptAuthor");
 
 /*
-  The meter's two positions live in `shared/imagination.ts` since slice E — the
-  client draws the control and this module reads the value, and a two-member
-  list copied twice is still a copy (working law 4). Re-exported so every
-  existing reader of this module keeps its import.
+  The meter's two positions live in `shared/imagination.ts` (slice E) — the
+  client draws the control and this module reads the value. Re-exported so
+  every existing reader keeps its import.
 */
 export { DEFAULT_IMAGINATION, type Imagination } from "../../shared/imagination";
 import { DEFAULT_IMAGINATION, type Imagination } from "../../shared/imagination";
@@ -85,29 +81,38 @@ export const AUTHOR_ALLOWANCE_FLOOR = 40;
 export const OVERRUN_TOLERANCE = 0.1;
 
 /**
- * THE PHOTOREAL BUNDLE — the one style and its defaults (ruling §3 rule 11a,
- * §3a), in the court's arm-B wording. The prompt overrides any of it (rule 8):
- * the sentence says so to the engine in its own first clause.
- *
- * ⚠ "collarbones", never "sternum" — see the header. #130 calibrates the
- * framing words to his reference frame; until it reports, this is the text
- * that measured 93–96% fact fidelity and the spread he wants on arm B.
- */
-export const PHOTOREAL_BUNDLE =
-  "STYLE PRESET (photoreal — the default; anything the user's request states overrides it): "
-  + "A photorealistic high-fashion casting portrait. Chest-up framing: the subject centred and facing the camera "
-  + "square-on, shoulders running off both edges of the frame, the crop just below the collarbones, a small margin of "
-  + "headroom above the hair. Neutral grey seamless studio background with a soft gradient, lighter behind the face. "
-  + "Soft frontal studio lighting with subtle specular highlights on skin and materials and deep but open shadows. "
-  + "Ultra-detailed textures, sharp focus, photorealistic.";
-
-/**
  * Words this studio never sends to the engine, each with its measurement.
  * A reply carrying one is refused and re-asked once (the author is told which
- * word), then the static bundle stands. Lower-cased, matched as whole words.
+ * word), then the static prompt stands. Lower-cased, matched as whole words
+ * (a multi-word entry matches as a phrase).
  */
 export const NEVER_WRITTEN: ReadonlyArray<{ word: string; because: string }> = [
   { word: "sternum", because: "refused 2/2 alone and 8/8 in a passing brief (court §4); 'collarbones' passes" },
+  /*
+    PIPELINE NOTES (§5b rule: "Do not put pipeline notes in the image prompt")
+    and SET WORDS — dev roll 95, the first MAX roll through the real entrance:
+    "pick one direction per subject", "must repeat across all eight", "left
+    open across the set" → 7 of 8 tiles were contact-sheet grids of one woman.
+  */
+  { word: "across all eight", because: "pipeline note (§5b); set narration painted grids (dev roll 95)" },
+  { word: "eight", because: "counting the casts made the engine paint them all in one frame (dev roll 95)" },
+  { word: "per subject", because: "pipeline note (§5b)" },
+  { word: "each subject", because: "pipeline note; set narration (dev roll 95)" },
+  { word: "some subjects", because: "set narration (dev roll 95)" },
+  { word: "across the set", because: "set narration (dev roll 95)" },
+  { word: "the set", because: "set narration (dev roll 95)" },
+  { word: "left open", because: "pipeline note (§5b)" },
+  { word: "left unset", because: "pipeline note (§5b): 'expression left unset'" },
+  { word: "unspecified", because: "pipeline note (§5b): 'build unspecified'" },
+  { word: "pick one", because: "pipeline note (§5b)" },
+  { word: "cast member", because: "pipeline note (§5b)" },
+  { word: "cast members", because: "pipeline note (§5b)" },
+  { word: "leans toward", because: "pipeline note (§5b): 'bone structure direction leans toward…'" },
+  { word: "varies", because: "set narration (dev roll 95)" },
+  { word: "lineup", because: "a lineup is a set in one frame" },
+  { word: "line-up", because: "a lineup is a set in one frame" },
+  { word: "contact sheet", because: "a contact sheet is a set in one frame" },
+  { word: "grid", because: "a grid is a set in one frame" },
 ];
 
 const APPEND_RULE =
@@ -115,35 +120,23 @@ const APPEND_RULE =
   + "do not repeat, paraphrase or restate the request itself.";
 
 const FILTER_RULE =
-  "Filter-safe wording only: no nudity, no sexual language, no gore, no named real person or named character. "
-  + "Name the crop line by the collarbones, never by the breastbone.";
+  "Keep wording GPT Image 2 safe: no nudity, no sexual language, no gore, no named real person or named character, "
+  + "and avoid explicit sheer or revealing clothing language. Never name the breastbone.";
 
-/** Arm B's instruction (court §2), the sheet he judged the studio. */
-export function lowSystemPrompt(allowance: number): string {
-  return [
-    "You are the prompt author for a casting studio image engine.",
-    "",
-    "Imagination level: LOW",
-    "",
-    "Your job at LOW imagination:",
-    "- Do not invent anything about the person. No new hair, makeup, clothing, jewellery, features or expression.",
-    "- Add ONLY the studio's style preset sentences (framing, background, lighting, photoreal quality), and only for the things the user's request is silent about. Where the request already states a framing, background, lighting or style, add nothing on that point.",
-    `- Word allowance for your text: at most ${allowance} words.`,
-    `- ${FILTER_RULE}`,
-    `- ${APPEND_RULE}`,
-    "",
-    PHOTOREAL_BUNDLE,
-    "",
-    "Output only your text.",
-  ].join("\n");
-}
+const NO_STUDIO_RULE =
+  "Do NOT write any camera, lens, framing, crop, lighting, background, resolution or realism language — the studio "
+  + "appends its own locked camera/studio block after your text, on every roll, and yours would compete with it.";
+
+const NO_NOTES_RULE =
+  "Do NOT write notes about the series or the process — nothing about how many portraits will be made, what is "
+  + "unstated or undecided, what changes between them, or which option to choose. Write only what the picture should contain.";
 
 /**
- * His MAX instruction (ruling §5) with his own amendment written into it — the
- * author writes a CASTING CALL, not a portrait: it chooses what to pin and
- * deliberately leaves the face and a few axes open, so eight different people
- * share the look. The court measured why the amendment is load-bearing: the
- * instruction as first written produced one woman eight times on both briefs.
+ * His MAX instruction, §5b verbatim where it speaks: seed + studio/camera +
+ * invented aesthetic LANGUAGE — mood, materials, makeup language, hair
+ * language, lighting taste — and never an exact face, hairstyle, eye colour,
+ * jewellery item, garment, body type or expression. "MAX must not leave the
+ * studio. More taste, not more world." The studio/camera half is code's.
  */
 export function maxSystemPrompt(allowance: number): string {
   return [
@@ -151,29 +144,20 @@ export function maxSystemPrompt(allowance: number): string {
     "",
     "Imagination level: MAX",
     "",
-    "Your job at MAX imagination:",
-    "- Treat the user request only as a seed.",
-    "- Invent a highly distinctive, memorable, Midjourney-level identity around that seed.",
-    "- Maximise visual uniqueness: specific hair architecture, intense but coherent makeup, interesting facial structure, strong texture, deliberate asymmetry, and atmospheric lighting.",
-    "- Keep the shot as a clean casting studio portrait (plain or softly graded background, character-focused, no environments or storytelling scenes).",
-    "- Stay true to the core identity (age range, gender presentation, and the requested aesthetic direction).",
-    "- Write a rich, detailed, opinionated prompt that feels like high-end Midjourney character design, but worded cleanly for GPT Image 2 (no NSFW triggers).",
-    "",
-    "THIS IS A CASTING CALL, NOT A PORTRAIT. The engine will cast EIGHT different people from your one prompt, and they must be eight different people who share the look. So choose deliberately what to pin and what to leave open: pin the things that make the look ownable (a hair cut and colour, a makeup signature, a piece of jewellery, a bone-structure direction) and LEAVE OPEN the face itself and a few axes — some of hair, build, age within the band, expression — so no two of the eight are the same person. Never describe one specific individual so completely that the engine can only paint her once.",
-    "",
-    "HOUSE RULES (the studio's, after the instruction above):",
-    `- ${PHOTOREAL_BUNDLE}`,
-    "- Every fact the user states (sex, age, skin, hair, features, clothing, jewellery, tattoos, expression, framing, lighting, style) must survive exactly — never dropped, softened or contradicted. You may add; you may not take away.",
+    "The user's request is the seed. Your text adds ART DIRECTION to it — aesthetic language only:",
+    "- Invent mood, materials, makeup language, hair language and lighting taste that belong to the seed's world (an editorial line, a universe of styling).",
+    "- Do NOT specify an exact face, exact hairstyle, exact eye colour, exact jewellery item, exact garment, exact body type or exact expression. Anything you state is locked on every portrait; anything you leave unsaid the engine decides differently each time — that is how the casting stays a cast and not one person. Never lock a repeating signature item.",
+    "- Stay in the studio: more taste, not more world. No scene, no story, no environment, no props.",
+    "- Stay true to the seed's core: its sex, age, and the aesthetic direction it names.",
+    `- ${NO_STUDIO_RULE}`,
+    `- ${NO_NOTES_RULE}`,
+    "- Every fact the user states must survive exactly — never dropped, softened or contradicted. You may add; you may not take away.",
     `- Word allowance for YOUR text: at most ${allowance} words. If you are over, cut your own additions first — never the user's facts.`,
     `- ${FILTER_RULE}`,
     `- ${APPEND_RULE}`,
     "",
-    "Output only your text.",
+    "Output only your text: two to four sentences of art direction, in clean prose, nothing else.",
   ].join("\n");
-}
-
-export function systemPromptFor(imagination: Imagination, allowance: number): string {
-  return imagination === "max" ? maxSystemPrompt(allowance) : lowSystemPrompt(allowance);
 }
 
 /** Whitespace-delimited words; the same count the court used. */
@@ -187,38 +171,51 @@ export function authorAllowance(briefText: string): number {
   return Math.max(AUTHOR_ALLOWANCE_FLOOR, WORD_BUDGET - countWords(briefText));
 }
 
-/** The first of `NEVER_WRITTEN` found in `text` as a whole word, or null. */
+/** The first of `NEVER_WRITTEN` found in `text` as a whole word or phrase, or null. */
 export function neverWrittenIn(text: string): string | null {
   const lower = text.toLowerCase();
   for (const { word } of NEVER_WRITTEN) {
-    const re = new RegExp(`(^|[^a-z])${word}([^a-z]|$)`);
+    const re = new RegExp(`(^|[^a-z])${word.replace(/[-]/g, "\\-")}([^a-z]|$)`);
     if (re.test(lower)) return word;
   }
   return null;
 }
 
 /**
- * The prompt as sent: the brief first and unchanged, one blank line, then the
- * author's text (or the static bundle). This is the ONE composition on the
- * author road, and it is pure so the suite can assert it at the byte.
+ * THE ONE COMPOSITION on the author road, pure so the suite asserts it at the
+ * byte: the brief first and unchanged, the author's content (MAX only), and
+ * the locked house block LAST — each its own paragraph.
  */
-export function composeAuthoredPrompt(briefText: string, addition: string): string {
-  return `${briefText.trim()}\n\n${addition.trim()}`;
+export function composeFinalPrompt(briefText: string, content: string | null): string {
+  const parts = [briefText.trim()];
+  if (content && content.trim().length > 0) parts.push(content.trim());
+  parts.push(HOUSE_BLOCK);
+  return parts.join("\n\n");
 }
 
-/** The sheet a roll gets when nobody authored — the brief and the bundle. */
+/** Seed + block: what every LOW roll gets, and what a MAX roll falls back to. */
 export function staticPrompt(briefText: string): string {
-  return composeAuthoredPrompt(briefText, PHOTOREAL_BUNDLE);
+  return composeFinalPrompt(briefText, null);
 }
 
 export type AuthoredPrompt = {
-  /** The whole prompt the eight frames are painted from. */
+  /** The whole prompt the eight frames are painted from — brief, content, block. */
   prompt: string;
   imagination: Imagination;
-  /** True when a text call wrote the addition; false when the static bundle stands. */
+  /**
+   * `seed` — LOW: no author call by design (seed + block is the whole spec);
+   * `authored` — MAX: a text call wrote the content;
+   * `static` — MAX: the author failed or was refused twice, seed + block stands.
+   */
+  mode: "seed" | "authored" | "static";
+  /** True only for `authored` — kept so a census reading the older rows still means the same thing. */
   authored: boolean;
-  /** Words the author added (the bundle's count when `authored` is false). */
+  /** The author's content alone, null unless `authored`. */
+  content: string | null;
+  /** Words the author added (0 unless `authored`). */
   addedWords: number;
+  /** Words the locked block adds, recorded so the total is read and never assumed. */
+  houseBlockWords: number;
   allowance: number;
   model: string | null;
   latencyMs: number | null;
@@ -233,11 +230,25 @@ function cleanReply(raw: string): string {
   return raw.replace(/^```[a-z]*\n?|```$/g, "").replace(/\r\n/g, "\n").trim();
 }
 
+/** Why a draft is refused, or null when it may stand. */
+export function draftRefusal(addition: string, allowance: number): string | null {
+  if (addition.length === 0) return "Your previous reply was empty.";
+  if (countWords(addition) > allowance * (1 + OVERRUN_TOLERANCE)) {
+    return `Your previous draft was ${countWords(addition)} words; the allowance is ${allowance}. Rewrite it within ${allowance} words, cutting your own additions and never the user's facts.`;
+  }
+  const forbidden = neverWrittenIn(addition);
+  if (forbidden) return `Your previous draft used the word "${forbidden}", which this studio never sends. Rewrite it without that word — and without any note about the series or the process.`;
+  const house = containsHouseSentence(addition);
+  if (house) return "Your previous draft contained camera/studio language. The studio appends its own locked block; write only the art direction for the person.";
+  return null;
+}
+
 /**
- * Author the prompt: at most two text calls (a draft, and one re-ask when the
- * draft overruns its allowance or carries a word this studio never sends),
- * then the static bundle. Never throws — the caller is a paid roll's compile,
- * and an author outage must cost the customer the AUTHOR, not the roll.
+ * Author the prompt. LOW makes NO text call (§5b: seed + camera/studio only).
+ * MAX makes at most two — a draft, and one re-ask when the draft is empty,
+ * overruns, carries a word this studio never sends, or writes studio language
+ * — then the static prompt stands. Never throws: the caller is a paid roll's
+ * compile, and an author outage must cost the customer the AUTHOR, not the roll.
  */
 export async function authorPrompt(input: {
   engine: TextEngine;
@@ -248,11 +259,19 @@ export async function authorPrompt(input: {
   const imagination = input.imagination ?? DEFAULT_IMAGINATION;
   const briefText = input.briefText.trim();
   const allowance = authorAllowance(briefText);
-  const system = systemPromptFor(imagination, allowance);
+  const houseBlockWords = countWords(HOUSE_BLOCK);
+
+  if (imagination === "low") {
+    return {
+      prompt: staticPrompt(briefText), imagination, mode: "seed", authored: false, content: null,
+      addedWords: 0, houseBlockWords, allowance, model: null, latencyMs: null, attempts: 0,
+    };
+  }
+
+  const system = maxSystemPrompt(allowance);
   let attempts = 0;
   /** Latency the road has already spent, kept if a later call throws. */
   let spentMs: number | null = null;
-
   const ask = (systemText: string, temperature: number) => {
     attempts += 1;
     return input.engine.complete({
@@ -269,43 +288,35 @@ export async function authorPrompt(input: {
     });
   };
 
+  const fallback = (latencyMs: number | null): AuthoredPrompt => ({
+    prompt: staticPrompt(briefText), imagination, mode: "static", authored: false, content: null,
+    addedWords: 0, houseBlockWords, allowance, model: null, latencyMs, attempts,
+  });
+
   try {
-    const first = await ask(system, imagination === "max" ? 0.8 : 0.3);
-    let addition = cleanReply(first.text);
+    const first = await ask(system, 0.8);
+    let content = cleanReply(first.text);
     let model = first.provenance.model;
     let latencyMs = first.latencyMs;
     spentMs = latencyMs;
-
-    const overrun = countWords(addition) > allowance * (1 + OVERRUN_TOLERANCE);
-    const forbidden = neverWrittenIn(addition);
-    if (addition.length === 0 || overrun || forbidden) {
-      const why = addition.length === 0
-        ? "Your previous reply was empty."
-        : overrun
-          ? `Your previous draft was ${countWords(addition)} words; the allowance is ${allowance}. Rewrite it within ${allowance} words, cutting your own additions and never the user's facts.`
-          : `Your previous draft used the word "${forbidden}", which this studio never sends. Rewrite it without that word.`;
-      log.warn({ imagination, allowance, overrun, forbidden, empty: addition.length === 0 }, "[promptAuthor] re-asking once");
-      const second = await ask(`${system}\n\n${why}\n\nPREVIOUS DRAFT:\n${addition}`, 0.3);
-      addition = cleanReply(second.text);
+    const why = draftRefusal(content, allowance);
+    if (why) {
+      log.warn({ imagination, allowance, why }, "[promptAuthor] re-asking once");
+      const second = await ask(`${system}\n\n${why}\n\nPREVIOUS DRAFT:\n${content}`, 0.3);
+      content = cleanReply(second.text);
       model = second.provenance.model;
       latencyMs += second.latencyMs;
-      if (addition.length === 0 || countWords(addition) > allowance * (1 + OVERRUN_TOLERANCE) || neverWrittenIn(addition)) {
-        log.warn({ imagination, allowance }, "[promptAuthor] second draft refused too — the static bundle stands");
-        return {
-          prompt: staticPrompt(briefText), imagination, authored: false,
-          addedWords: countWords(PHOTOREAL_BUNDLE), allowance, model: null, latencyMs, attempts,
-        };
+      if (draftRefusal(content, allowance)) {
+        log.warn({ imagination, allowance }, "[promptAuthor] second draft refused too — the static prompt stands");
+        return fallback(latencyMs);
       }
     }
     return {
-      prompt: composeAuthoredPrompt(briefText, addition), imagination, authored: true,
-      addedWords: countWords(addition), allowance, model, latencyMs, attempts,
+      prompt: composeFinalPrompt(briefText, content), imagination, mode: "authored", authored: true, content,
+      addedWords: countWords(content), houseBlockWords, allowance, model, latencyMs, attempts,
     };
   } catch (error) {
-    log.warn({ error: String(error), imagination, attempts }, "[promptAuthor] the author call failed — the static bundle stands");
-    return {
-      prompt: staticPrompt(briefText), imagination, authored: false,
-      addedWords: countWords(PHOTOREAL_BUNDLE), allowance, model: null, latencyMs: spentMs, attempts,
-    };
+    log.warn({ error: String(error), imagination, attempts }, "[promptAuthor] the author call failed — the static prompt stands");
+    return fallback(spentMs);
   }
 }

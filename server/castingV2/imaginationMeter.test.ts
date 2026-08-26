@@ -17,9 +17,9 @@ describe("the imagination meter", () => {
 
   it("the lines are honest about today: no style picker, no promise the author does not keep", () => {
     for (const line of Object.values(IMAGINATION_LINES)) {
-      expect(line.toLowerCase()).not.toContain("style");
+      expect(line.toLowerCase()).not.toMatch(/(^|[^a-z])style(s|\s|$)/);
       expect(line.toLowerCase()).not.toContain("sternum");
     }
-    expect(IMAGINATION_LINES.max).toContain("leaves the face open");
+    expect(IMAGINATION_LINES.max).toContain("never an exact face");
   });
 });
