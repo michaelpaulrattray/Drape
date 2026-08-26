@@ -148,6 +148,22 @@ Read against the old studio's NEGATIVES / CAPTURE / REALISM / FRAMING (recorded 
 - **Photoreal-only negatives belong to the photoreal preset.** *"yes photoreal is default for photoreal not everything we design those blocks once the settings modal is built."* The universal block carries no style ban; each style preset carries its own.
 - **Text.** *"text can be allowed just no logos/watermarks/props and so on."* The negative becomes: no logos, watermarks, captions or signage; no props, furniture, environment or scene. Text on a garment or as part of a look is admissible.
 
+
+### 5e. The block's replacement lines — his text, verbatim (2026-08-26 late evening)
+
+He read the prompt behind rolls 221/222 (the old block: flash lighting, "head straight with no tilt", the mouth/teeth/hand bans, "skin tones warm and dimensional", pipeline notes) and ruled: *"Keep everything except lighting + those two conflicts."* His verdict on the old block as a house look: *"it will reproduce your current flash studio, not the two editorials."*
+
+**LIGHTING (replaces the flash block, verbatim):**
+> LIGHTING: Large soft frontal key just above the lens, high fill, open shadows. Soft chin and jaw shadow only. Grey seamless slightly brighter behind the head, gentle falloff to the edges, no hard vignette. Minimal rim. No coloured gels. Speculars appear where the person's skin and wardrobe naturally catch the source — not as a forced flash sheen on every face.
+
+**EXPRESSION (softened, verbatim):**
+> Eyes into the lens, present, mouth closed. Self-possessed. No broad smile, no laugh, no blank stare, no horror grimace.
+
+**COLOUR (one skin temperature — cool-neutral; drop "skin tones warm and dimensional", verbatim):**
+> Neutral daylight, 5500K. Skin stays true to the person. No teal-orange, no beauty-app grade.
+
+Everything else in the old block is kept as §5d rules it (posture line replaces "no tilt"; negatives: logos/watermarks/captions/signage + props/environment/scene, text allowed; photoreal-only bans move into the photoreal preset). **The merged `houseBlock.ts` (PR #141) still composes the OLD capture/negatives — it is rebuilt to §5d + §5e.**
+
 ## 6. The hard rules — ruled one by one
 
 KILL: the discard list (1); the register engagement gate (2); the notes cap and the 2,000-char brief cap → the word budget (3); the dice and anatomy blocks (4); **the content wall (6)** — the engine judges; **the stage wall (11)** — replaced by ONE wall: *this is a casting studio; a subject that is not a being refuses free before the charge* ("someone asking for an object should be refused like a car"); **the typo gate (12)**; **sex-coded facial hair (13)** — "the engine would never do it unless asked".
