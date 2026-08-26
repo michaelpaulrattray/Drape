@@ -1,7 +1,7 @@
 {
-  "edition": 40,
-  "updatedAt": "2026-08-27T04:05:00+10:00",
-  "shift": "foreman-31",
+  "edition": 41,
+  "updatedAt": "2026-08-27T05:05:00+10:00",
+  "shift": "foreman-32",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -51,6 +51,10 @@
         },
         {
           "title": "YOUR VERDICT ON THE PROMPT AUTHOR COURT (reply #8, 16:31): \"B is the studio … build the author verbatim-first with LOW as the default … Never say 'sternum'\" — the register is now rebuilt to this, dark, with the B+R realism court (#128), the refusal loop (#129) and the framing calibration (#130) beside it",
+          "state": "done"
+        },
+        {
+          "title": "Follow and chip edits on the author road — the honest half BUILT and MERGED (PR #153): a sheet that had to fall back to the studio's old casting now SAYS so, and the settings gear no longer promises settings such a roll ignores; the carry itself is designed and waits on your word (#154)",
           "state": "done"
         },
         {
@@ -135,6 +139,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "family-clause-154",
+      "title": "Should the author carry a Follow and chip edits? Three small questions before it is built (#154)",
+      "productImpact": "Today on your account, tapping Follow on a face or changing a chip sends that roll back to the studio's old casting — eight separate prompts, the grey tee, no authored prompt to read. The build on #154 would keep the author on those rolls: one prompt, your words first, then a 'continue this family' paragraph written from the face you followed, then the author's art direction and the locked block.",
+      "workedExample": "You roll 'goth woman mid 30s' at MAX, like #03, tap Follow. Today: eight house-cast relatives, no prompt shown. After: the prompt reads your words, then 'Continue this family: cast eight relatives of one person — a woman, mid 30s, of Korean heritage, slight build, black hair in a blunt bob, still and grave. Same sex, same age, same heritage on every one; faces differ.' — then the author's content and the studio block, and the whole prompt is on the sheet as usual.\n\nThe three questions: (1) A house follow varies each relative's second heritage a little ('cousins, not clones'); one prompt can only say 'relatives' and let the engine vary — enough? (2) On an authored sheet that is NOT a follow, removing a chip cannot change anything, because your sentence goes to the engine word for word — so the chips would become a read-only record with 'edit the sentence to change them'. OK? (3) Should a follow carry the fine facial details (eye colour, brows, skin) as words? Our recommendation is no — sex, age, heritage, build, hair and look only, or the author drifts toward one portrait eight times.",
+      "recommendation": "Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court.",
+      "state": "open",
+      "filedAt": "2026-08-27T05:05:00+10:00",
+      "issueNumber": 154,
+      "options": [
+        {
+          "key": "build-as-recommended",
+          "label": "Build it as recommended: the engine varies the relatives, chips become read-only on a non-follow authored sheet, no fine facial details in words",
+          "consequence": "Built dark behind the register flag; your first Follow on your account is the court, 160 credits of yours when you take it."
+        },
+        {
+          "key": "build-with-changes",
+          "label": "Build it, but answer one or more of the three differently (say which on #154)",
+          "consequence": "The design is amended to your answers before a line is written."
+        },
+        {
+          "key": "leave-as-is",
+          "label": "Leave it: a Follow or chip edit keeps using the studio's old casting, and the sheet keeps saying so",
+          "consequence": "Nothing is built; the AUTHOR record line from PR #153 stays as the honest state."
+        }
+      ]
+    },
     {
       "id": "retry-flip-122",
       "title": "The Retry button is built and switched off — flip it on for your account? And should the content-filter tiles get a plain Retry too?",
@@ -361,6 +392,21 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "author-sat-out-131",
+      "title": "The sheet that says the author sat it out (#131) — record line and dock note",
+      "question": "One frame, dev, dark theme: at the top, 'AUTHOR — Sat this one out — a follow is cast the studio's own way for now, so there is no authored prompt to show.' in the WARDROBE/SETTINGS grammar; a chip change is queued (a woman → male · next roll) so the dock shows no gear and instead the line 'With chip edits queued, the next roll is cast the studio's own way — the author sits it out. Edit the sentence instead to keep the author.' Do the two sentences read right to you, and is the line where you would look for it?",
+      "state": "open",
+      "filedAt": "2026-08-27T05:05:00+10:00",
+      "issueNumber": 131,
+      "frames": [
+        {
+          "key": "crew-eye/1ca90050-dfda-4e56-a3ff-4da75ca77a81.png",
+          "caption": "Dev sheet, author road on, one chip change queued: the AUTHOR record line at the top, the dock note in the gear's place.",
+          "arm": null
+        }
+      ]
+    },
     {
       "id": "retry-button-122",
       "title": "The Retry button (#122) — the failed tile, the tap, the landing",
@@ -621,6 +667,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "author-road-house-says-why-131",
+      "title": "Follow / chip edits on the author road — the sheet says when the author sat out (PR #153, MERGED); the carry designed (#154)",
+      "status": "merged",
+      "prNumber": 153,
+      "note": "On your account every roll is written by the author — except two: tap Follow on a face, or change a chip and roll again, and that roll quietly went back to the studio's old per-face casting with no authored prompt, no settings line and no word about why. Now the sheet says it at the top in the same grammar as WARDROBE and SETTINGS: 'AUTHOR — Sat this one out — a follow is cast the studio's own way for now, so there is no authored prompt to show.' And while a chip change is queued the settings gear (Photoreal · Low) is gone from the dock — it was promising settings that roll would never read — and one line stands in its place saying so. Nothing changes for any other account. Carrying a follow or a chip edit THROUGH the author is designed, not built: card #154 has three questions for you."
+    },
     {
       "id": "retry-122",
       "title": "The Retry button (#122 shape 1) — BUILT, reviewed twice, MERGED (PR #151); dark until your word",
@@ -983,6 +1036,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T05:05:00+10:00",
+      "shift": "foreman-32",
+      "text": "No replies from you tonight, so I took the register's next open item (#131): what happens on your account when you tap Follow or change a chip. Those rolls quietly fall back to the studio's old casting — the author cannot carry a followed face or a chip edit yet — and until now the sheet said nothing: no prompt, no settings line, the author just gone, while the dock still showed a settings gear that roll would ignore. Fixed and merged (PR #153): the sheet says 'AUTHOR — Sat this one out …' at the top, and while a chip change is queued the gear is replaced by one line saying the author sits that roll out. I drove it on a dev sheet in both themes; the frame is in your gallery. The bigger piece — the author actually carrying a follow — is designed and on card #154 with three quick questions for you; it does not build until you answer. Spend tonight: nothing. Nothing changed for any other account."
+    },
+    {
       "at": "2026-08-27T04:05:00+10:00",
       "shift": "foreman-31",
       "text": "The Retry button you asked for on #122 ('should we also allow a try option aswell?') is built, reviewed twice and merged — and switched off for everyone until your word. What it does: a tile that failed on an engine error gets 'Retry · 20 credits'; tap it and the same words render again into the same slot, or it fails again and the 20 come back. Content-filter tiles get no button, exactly as your sentence put them on the softer-wording road. I drove it six times on the dev sheet: tap, casting in 5 seconds, the face landed in 52, eight of eight, 20 charged and nothing refunded — the ledger agrees every time. Four things were wrong the first time and only visible with a real render in front of me (the button stretched across the tile; the sheet did not notice the tile had gone back to casting because it was asking too often for a slow answer; a retried tile on an old sheet said 'taking longer than usual' from its first second) — all fixed and re-driven, about $0.39 of house money over seven renders. The reviewer found two real money races and both were closed before the merge. Two things for you: flip it on for your account, and a real question the refusal patrol raised — the engine's filter is a coin per picture (five refused and three delivered from the SAME words on your roll 222), so should a refused tile get a plain Retry too, before softer wording exists? Cards above. Also found: two of last night's helper scripts had made main red on a script guard; fixed, and #152 asks the rite to check before it pushes."
@@ -1176,11 +1234,6 @@
       "at": "2026-08-25T22:40:00+10:00",
       "shift": "foreman-3",
       "text": "Closed the urgent refine double-charge question: the guard was built a week before it was filed as missing — a second tap on a paid edit has been refused free since 08-18. Merged the record fix and pinned the wire in the test suite (#54, PR 67). Designed and started building this page (#41)."
-    },
-    {
-      "at": "2026-08-25T23:14:00+10:00",
-      "shift": "relay",
-      "text": "FOUNDER RULING — THE SPEND THRESHOLD, verbatim: “i thought we established it doesnt need my permission to do this unless it plans to spend a massive amount of money like $50+”. In the Program: under-$50 courts/measurements run without asking (estimate and actual recorded on the issue); $50+ comes to him priced. The creative-register court is therefore FUNDED. Also filed on his eye: #74, Crew tab UX parity with the Desk (progress bars, full ladder, chips, Done section) — urgent-labelled."
     }
   ],
   "acknowledgedReplyIds": [
