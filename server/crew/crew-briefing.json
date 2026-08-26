@@ -1,7 +1,7 @@
 {
-  "edition": 32,
-  "updatedAt": "2026-08-26T21:36:18+10:00",
-  "shift": "foreman-23",
+  "edition": 33,
+  "updatedAt": "2026-08-26T22:55:00+10:00",
+  "shift": "foreman-24",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -330,6 +330,31 @@
   ],
   "eyeItems": [
     {
+      "id": "house-block-rebuilt-144",
+      "title": "The locked block rebuilt to your lines (#144) — your thin brief on the NEW block (roll 223) beside 221/222 on the old one",
+      "question": "Is this the studio light you meant — soft frontal key, open shadows, brighter grey behind the head, no flash sheen? Roll 223 is 'goth woman mid 30s' at LOW on the rebuilt block, through your own account. If the light and frame pass, the block is done and #128's court takes your line as variant (2); if not, say what is off in the light and I re-roll.",
+      "state": "open",
+      "filedAt": "2026-08-26T22:55:00+10:00",
+      "issueNumber": 144,
+      "frames": [
+        {
+          "key": "crew-eye/b28f6124-781f-48bd-b7d7-be07f49bb01a.png",
+          "arm": "223 · NEW block",
+          "caption": "Roll 223, your account, tonight: 'goth woman mid 30s' at LOW on the rebuilt block — your LIGHTING, EXPRESSION and COLOUR lines word for word, posture not pose, text allowed, the photoreal ban in its own preset line, and an authority that says the block is a default your words override. 7 of 8 delivered, 1 refused by the content filter. Light-grey seamless brighter behind the head, soft chin/jaw shadow, hair fully in frame."
+        },
+        {
+          "key": "crew-eye/6db2320c-477d-4ca1-b75a-734723fa1b4f.png",
+          "arm": "221 · OLD block",
+          "caption": "Roll 221 (yesterday), the same brief on the block you read and ruled on — front flash, 'head straight with no tilt', the mouth/teeth bans, 'skin tones warm and dimensional'. 7 of 8 delivered. The darker, flatter flash look you called 'your current flash studio'."
+        },
+        {
+          "key": "crew-eye/d3aef70d-e365-47c4-a67c-22d294618cf3.png",
+          "arm": "222 · OLD block",
+          "caption": "Roll 222 (yesterday), your 73-word cyber-goth prompt at LOW on the old block — only 3 of 8 delivered (5 refused). Here for the light comparison; the refusals are #129's."
+        }
+      ]
+    },
+    {
       "id": "prompt-author-court",
       "title": "The Prompt Author court — raw vs LOW author vs MAX author vs today's compiler, on your three briefs",
       "question": "Which row is the studio you want for a basic user, and for a rich brief? And should MAX imagination give one face eight times (as your instruction does today) or eight different inventions?",
@@ -484,6 +509,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "house-block-144",
+      "title": "The locked house block rebuilt to §5d + §5e (#144) — the flash studio out, your three lines in — MERGED (PR #145), live on your account",
+      "status": "merged",
+      "prNumber": 145,
+      "note": "Your ruling on the prompt behind 221/222: 'Keep everything except lighting + those two conflicts' — 'it will reproduce your current flash studio, not the two editorials.' Done: the block now carries your LIGHTING, EXPRESSION and COLOUR lines word for word; 'head straight with no tilt' and the shoulders/arms pose line are replaced by one posture line (faces the camera, holds still, casting presence not a pose, no turned-away heads); the mouth/teeth/laugh/hand bans are gone; text is allowed (only logos, watermarks, captions, signage, props and scenes are banned); the photoreal-only ban moved into the photoreal preset's own line (still sent today — it is the only style until the settings modal); and the authority paragraph now says the block is the studio's DEFAULT that anything you state overrides, instead of 'it always wins'. A guard refuses to boot if any dropped phrase ever comes back into the block (proven by putting 'front flash' back: refused). Probe before your roll: the new block refused 0 of 6 renders (old block 1 of 6), $0.67 house. Then your thin brief rolled on your account (roll 223, 160 credits, as the card ordered): 7 of 8, one content-filter refusal — strip in your gallery beside 221/222."
+    },
     {
       "id": "refusal-chips-122",
       "title": "Refusal chips (#122): a refused tile now says WHY — CONTENT FILTER on the card, the reason and the refund beneath — MERGED (PR #143)",
@@ -782,6 +814,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T22:55:00+10:00",
+      "shift": "foreman-24",
+      "text": "Your block ruling is built and live on your account (#144, PR #145). The locked block behind every author-road roll now uses your lighting, expression and colour lines word for word, drops the flash studio, the no-tilt line and the mouth bans, allows text, and treats itself as a default your words override. I probed it first (0 of 6 refused, $0.67), then rolled 'goth woman mid 30s' on your account: roll 223, 7 of 8, one content-filter refusal — the strip sits in your gallery beside 221 and 222 on the old block so you can judge the light side by side. One honest note from my own look: the seven faces on 223 are close cousins (long dark hair, black lips on all) — that is the spread question on open features, not the block's. Next in order: the Retry button (#122), the minimal settings modal (#142), then the two small courts (#128 lighting with your line as variant 2, #130 framing)."
+    },
     {
       "at": "2026-08-26T21:36:18+10:00",
       "shift": "foreman-23",
