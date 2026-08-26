@@ -1,7 +1,7 @@
 {
-  "edition": 19,
-  "updatedAt": "2026-08-26T11:55:00+10:00",
-  "shift": "foreman-16",
+  "edition": 20,
+  "updatedAt": "2026-08-26T13:25:00+10:00",
+  "shift": "foreman-17",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -26,8 +26,12 @@
           "state": "done"
         },
         {
-          "title": "Your eye on both bars — conviction and spread — the milestone gate (eye item + card below)",
-          "state": "waiting"
+          "title": "Your eye on both bars — JUDGED at 12:13: \"Not passing the gate yet\" — 217 landed the cybernetics but varied too little; 220 (basics) carried them on 1 of 8 with framing all over the place; 219 (cyber-goth) failed completely",
+          "state": "done"
+        },
+        {
+          "title": "Your order, in your order: fix 219's class (#121, urgent), then per-slice fidelity and the spread of open features, then ONE re-roll for your eye",
+          "state": "in-progress"
         }
       ]
     },
@@ -104,9 +108,9 @@
   "needsYou": [
     {
       "id": "autofreeze-founder-119",
-      "title": "Your account was frozen for 22 hours by a dashboard read — should a page load ever be able to freeze an account?",
-      "productImpact": "Since yesterday 13:33 every roll, edit and purchase on your account was refused with \"Your account is currently under review.\" Nobody noticed: Slack is not connected and the email goes through Klaviyo. What froze you is the moderator dashboard's discrepancy card — merely OPENING it runs a scan that freezes anyone whose credit spend does not match the old studio's generation records by 2,000 or more. Your 7,505 is two things the product does on purpose: failed generations you ruled are not refunded, and Casting V2 edits that never write an old-studio record. At launch this would freeze every Casting V2 customer after about 80 edits. I unfroze you (through the admin action, audited) so your roll could run — but it will freeze you again the next time anyone opens that dashboard card until #119 lands.",
-      "workedExample": "A customer on the new studio rolls twice and refines forty faces over a month: 320 + 1,000 credits with no old-studio record. A moderator opens the dashboard to look at something else; the scan runs; the customer is frozen with no human decision, and reads \"under review… we verify your billing records\" the next time they press Roll.",
+      "title": "Your account was frozen for 22 hours by a dashboard read — you answered \"List-only\"; it is built, reviewed twice, MERGED (PR #123) and deploys with this edition",
+      "productImpact": "You said: \"List-only. A control that can freeze a paying customer should have a person's name on it.\" Done that way: opening the moderator dashboard can no longer freeze anyone — the card lists, a moderator freezes with their name on it. And the list stops being wrong: it now reads every place a charge is recorded (the old studio's records AND the new studio's operations), and treats a failed generation you ruled is not refunded as exactly that. Read against production before building: your number goes 7,505 → 1,050 and every other account reads 0. The 1,050 left is five July evidence-composer syncs that recorded themselves twice (the parked #6 family) — one account, nothing live. Until PR #123 merges, the flagged card still freezes on open; after it, it cannot.",
+      "workedExample": "The same customer as before — two rolls and forty edits on the new studio, then a moderator opens the dashboard. Yesterday: frozen, no human decision. After this PR: the card shows \"Charged 1,320 | Recorded 1,320, discrepancy 0\" and nothing happens to them. If a real mismatch ever appears, a moderator reads it and presses Freeze themselves, and the audit row carries their name.",
       "options": [
         {
           "key": "list-only",
@@ -119,8 +123,8 @@
           "consequence": "Accounts can still be frozen by a page load, but only for real discrepancies once the scan reads every charge source. You accept that a wrong formula in future freezes customers silently again."
         }
       ],
-      "recommendation": "List-only. A control that can freeze a paying customer should have a person's name on it — and this one froze the founder. Until you answer, please do not open the moderator dashboard's flagged-discrepancies card; the shifts will not either.",
-      "state": "open",
+      "recommendation": "Done. From this deploy, opening the moderator dashboard cannot freeze anyone; a freeze is a button a moderator presses with their name on the audit row. Nothing more needed from you.",
+      "state": "done",
       "filedAt": "2026-08-26T11:55:00+10:00",
       "issueNumber": 119
     },
@@ -141,8 +145,8 @@
           "consequence": "Tell me in your words (jaw plate, eye, skin, clothes, spread…). It becomes the next court's arms, priced under the $50 threshold, and the register stays on for your account while it runs."
         }
       ],
-      "recommendation": "Look at the sheet and the eight singles before reading anything I wrote. Then answer in one line either way — the milestone gate is your eye, nothing else.",
-      "state": "open",
+      "recommendation": "Answered 12:13 — \"Not passing the gate yet: fix 219's class (#121), per-slice fidelity and spread, then re-roll for my eye.\" That is the order of work now; nothing more needed from you until the re-roll lands in your gallery.",
+      "state": "answered",
       "filedAt": "2026-08-26T11:55:00+10:00",
       "issueNumber": 16
     },
@@ -344,10 +348,10 @@
   "pipeline": [
     {
       "id": "autofreeze-119",
-      "title": "The dashboard scan that froze your account (#119) — diagnosed, unfrozen, waiting on your answer before the fix is cut",
-      "status": "waiting-founder",
-      "prNumber": null,
-      "note": "Read at the rows: 7,505 = 102,585 net generation spend − 95,080 on old-studio records; the two missing pieces are your no-refund-on-failure ruling and Casting V2 edits. The ledger itself is exact to the credit. The card above asks the one design question; the mechanical halves follow it."
+      "title": "The dashboard scan that froze your account (#119) — list-only on your word, reads every charge source — MERGED (PR #123)",
+      "status": "merged",
+      "prNumber": 123,
+      "note": "Driven against production read-only before it was believed: 7,505 → 1,050 for you (the July evidence residue, #6), 0 for everyone else. Two test suites had been mirroring the formula and stayed green across its change — rewritten to drive the real thing. One drizzle trap caught on the way (an unqualified subquery read 5,160) and pinned by a test. Reviewed twice by the gate's reviewer; its four findings (a refund-lane bound, a distinct \"frozen by staff\" audit action so a moderator's freeze never reads as automatic, two wording fixes) are in the merge."
     },
     {
       "id": "atlas-merge-driver-100",
@@ -507,17 +511,17 @@
   "problems": [
     {
       "id": "founder-account-autofrozen",
-      "title": "Your account was auto-frozen 25 Aug 13:33 → unfrozen 26 Aug 11:32; it re-freezes if the moderator dashboard's flagged card is opened before #119 lands",
-      "detail": "The scan runs inside the dashboard card's read. Your account is unfrozen now and roll 217 went through. Please keep off the moderator dashboard's 'flagged discrepancies' card until #119 is fixed; the shifts will not open it either. Everything else on the admin and moderator pages is safe.",
-      "severity": "urgent",
-      "state": "open"
+      "title": "Your account was auto-frozen 25 Aug 13:33 → unfrozen 26 Aug 11:32 — the cause is fixed and merged (PR #123, deploys with this edition)",
+      "detail": "The dashboard card that froze you is now list-only, and its arithmetic reads every place a charge is recorded. Read against production before merging: you 7,505 → 1,050 (July's parked evidence experiment recording itself twice — nothing live), everyone else 0. The moderator dashboard is safe to open.",
+      "severity": "warning",
+      "state": "resolved"
     },
     {
       "id": "fable-review-broken",
-      "title": "The automatic code review on pull requests is still down — fifth failure, the deciding rerun is after 14:00 (#114)",
+      "title": "The automatic code review was failing in under a second (#114) — it healed by itself once the account's usage window passed; two full reviews ran on PR #123 today",
       "detail": "Every substantial pull request gets an automatic Claude review before it merges. It has now failed four times in a row since 09:10 (each within a second, no message). I reran it with full logging: the login token IS valid — a small helper call was billed to it in the same run — and the tool version is unchanged; only the big-model (Fable) call dies, every time. Two explanations are left: your subscription's usage window was hit (the 08:59 review alone cost $2.85 and your own sessions share the plan), which heals itself; or the account's access to that model changed, which would be yours to look at. One rerun after about 14:00 today tells them apart; the next shift does it. Meanwhile merges still run unreviewed by the machine — this shift reviewed its own pull request by hand and posted the review on it before merging. Fifth instance on this shift's PR (11:05), same shape. The deciding rerun (five hours after the first failure) is still ahead.",
       "severity": "warning",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "shift-report-before-artifacts",
@@ -549,6 +553,16 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-26T13:25:00+10:00",
+      "shift": "foreman-17",
+      "text": "Two things landed after the last entry. Your freeze fix is MERGED (PR #123) and deploys with this edition — the reviewer ran twice and asked for four things, all in: an account whose refunds ever exceed its charges is still flagged (the one thing the old formula could see that the new one could not), and a freeze by a moderator now shows as \"Frozen by staff\" with their name, never as \"Auto-Frozen\". And you judged the register at 12:13: not passing yet. I have written your order into the program exactly as you gave it — fix the cyber-goth failure first (#121: the register never engaged on that brief and the reader lost every stated feature, which is why men appeared), then per-slice fidelity and the spread of open features, then one re-roll for your eye. The next shift starts on #121. Nothing was spent this shift beyond the gate's reviews."
+    },
+    {
+      "at": "2026-08-26T12:40:00+10:00",
+      "shift": "foreman-17",
+      "text": "You answered the freeze card at 11:49 — \"List-only\" — and this shift built it. The moderator dashboard's discrepancy card now only lists; freezing is a button a moderator presses, with their name on the audit row. The arithmetic behind the list was read at the real rows first: it had been counting your ruled no-refund failures and every new-studio edit as \"missing\" money. Against production, read-only, your number falls from 7,505 to 1,050 (the leftover is July's parked evidence experiment recording itself twice — nothing live) and every other account reads 0. Two things caught on the way: the code's own tests had been copying the formula instead of testing it, so they stayed green while it was wrong — rewritten; and the first version of the new query silently read 5,160 on production because of how the database library writes a sub-question — found by running it against the real database before trusting it, and now pinned by a test. PR #123 is in the gate; nothing spent. Your eye on roll 217 (the register) is still the milestone gate — I saw you rolling 218 and 219 while I worked, so you may be on it."
+    },
     {
       "at": "2026-08-26T11:55:00+10:00",
       "shift": "foreman-16",
@@ -659,6 +673,8 @@
     1,
     2,
     3,
-    4
+    4,
+    5,
+    6
   ]
 }

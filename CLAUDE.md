@@ -549,6 +549,17 @@ one from whoever owns its road.
   and he reversed the goal — closeness is now the point. What replaces it is his
   own surviving condition, *"just need to make sure the hair is fully in the
   image"*, encoded as the per-frame headroom rule, plus his eye on strips
+  ✅ **AND IT IS `users:1` ON PRODUCTION SINCE 2026-08-25 — the sentence
+  above that says "the flag is still off" was overtaken by his own order**
+  (fable-1654, verbatim: *"flip everything on thats currently off so i can
+  check the rolls myself"*), and the retargeted version (`a0a988f8`, T=0.316,
+  clause out) is what flipped on, which satisfies this entry's own condition.
+  Read off the service by foreman-16 (2026-08-26; roll 217 trimmed 4 of 8)
+  and recorded in `scripts/lib/productionFlagPositions.mts`, which the rite
+  compares to the service on every push — so the record, not this paragraph,
+  is where the position lives. The widening condition past `users:1` (his eye
+  on strips from his own flagged rolls, with the untrimmed rate and the
+  per-sheet wall-clock beside them) still stands; #11 holds the readings
 - `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
   account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
   5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is
