@@ -102,6 +102,31 @@ His low/max example pair:
 
 **Author model (founder, verbatim): "opus will be too expensive we should test against sonet 5 and the latest grok model".** The court's model arm is Sonnet 5 vs the latest Grok (xAI via OpenRouter — the slug is READ off OpenRouter's model list at run time, never assumed). Opus is out on cost. One authored prompt per sheet; the engine renders the eight — stated facts on every slice, everything else the engine's. There is no per-slice authoring.
 
+## 5b. THE AUTHOR SPEC — corrected by the founder watching the first live rolls (2026-08-26 evening, verbatim)
+
+> Author agent is writing the wrong kind of prompt. Fix the author spec.
+>
+> **Pipeline.** User seed (e.g. goth woman mid 30s) + imagination slider → Author writes one image prompt → that exact prompt is sent to GPT Image 2 8 times → 8 different cast portraits.
+>
+> **Rules:** Anything stated is locked across all 8. Anything unstated is left to GPT Image 2. That is how we get 8 different people. Do not put pipeline notes in the image prompt. No "across all eight", "per subject", "left open", "pick one", "expression left unset", "cast member", etc.
+>
+> **Shot grammar is locked at every slider level.** These are studio casting shots, not scenes. Every prompt must include a clear camera/house-style block: photorealistic · high-fashion studio photography · chest-up, centred, single figure only · plain cool grey seamless background with soft gradient · controlled frontal studio lighting · sharp focus · ultra-detailed skin and fabric texture · cinematic fashion photography, 8k · no environmental props, no narrative context. This block is what makes every cast land in the same studio as the reference look. Do not treat that reference as a character to clone. It is the room and the camera, not the face.
+>
+> **What the Author is doing wrong.** 1. Locking a person instead of a camera — it specifies exact bob, exact fringe, exact septum ring, exact lipstick, exact collar, exact brows, exact nails. Result: 8 clones. 2. Missing or burying the camera block — prompts must clearly say photorealistic / studio / lens-and-light language up front or as a consistent closing block; do not assume the engine will default to our house look. 3. Putting series-direction inside the prompt — "Expression left unset", "build unspecified", "bone structure direction leans toward…" are author notes. Delete them. 4. Ignoring the slider — LOW is inventing looks. MAX is inventing one identity. Both are wrong.
+>
+> **Correct Author behaviour.** Every prompt, LOW or MAX, must contain: subject class from the seed (woman, mid-30s, goth) + studio/camera block. Nothing else at LOW. Aesthetic language only at MAX.
+>
+> **LOW** — seed + studio/camera only. No invented hair, makeup recipe, jewellery, or outfit. Example: *Photorealistic high-fashion casting portrait of a woman in her mid-30s with goth styling, facing camera, chest-up, single figure. Plain cool grey seamless studio background with a soft gradient. Soft frontal studio lighting, sharp focus, ultra-detailed skin texture, cinematic fashion photography, 8k, photorealistic. No environmental props, no narrative context.*
+>
+> **MAX** — seed + studio/camera + invented aesthetic language. Invent mood, materials, makeup language, hair language, lighting taste. Do not specify exact face, exact hairstyle, exact eye colour, exact jewellery item, exact garment, exact body type, or exact expression. Example: *Photorealistic high-fashion casting portrait of a woman in her mid-30s from a severe modern-goth editorial line. Pale cool-toned skin, intense black makeup language, sculpted black hair, and dark structured fashion built from patent, mesh, lace, high collars, and metal hardware. Still, confrontational studio presence. Chest-up, centred, single figure, plain cool grey seamless background, controlled frontal studio lighting with soft highlights on gloss and skin, deep shadow under the jaw, ultra-detailed texture, sharp focus, cinematic high-fashion photography, 8k, photorealistic. No environmental props, no narrative context.*
+>
+> **Hard rules.** Output only the final image prompt. One prompt per request, reused 8 times. Always include the camera/studio block. Never lock a repeating signature item if we want cast diversity. LOW = seed + camera/studio. MAX = seed + camera/studio + art direction. MAX must not leave the studio. More taste, not more world. Keep wording GPT Image 2 safe. Avoid explicit sheer/revealing clothing language.
+>
+> **Success test.** Same MAX prompt × 8 should look like: 8 different mid-30s goth women, same camera, same grey studio, same editorial universe, not the same face/hair/jewellery eight times. If they look like clones, identity was over-specified. If they leave the grey seamless studio, the camera/studio block was missing or the Author added a world.
+
+His framing of it: *"this isnt a bible i just worked with another ai agent who isnt familar with our studio and it told me to tell you this to diagnose our issue."* It is adopted as the author's spec because it names, precisely, the four defects the court and his eye both saw — the earlier §5 MAX instruction is superseded where the two differ (this one leaves the identity open; that one closed it). The LOW/MAX examples are the author's two reference outputs and belong in its test suite as golden SHAPES (structure, not byte-identity). A user's stated facts still ride verbatim first (rule 1) — the "seed" here is the customer's words.
+
+
 ## 6. The hard rules — ruled one by one
 
 KILL: the discard list (1); the register engagement gate (2); the notes cap and the 2,000-char brief cap → the word budget (3); the dice and anatomy blocks (4); **the content wall (6)** — the engine judges; **the stage wall (11)** — replaced by ONE wall: *this is a casting studio; a subject that is not a being refuses free before the charge* ("someone asking for an object should be refused like a car"); **the typo gate (12)**; **sex-coded facial hair (13)** — "the engine would never do it unless asked".
