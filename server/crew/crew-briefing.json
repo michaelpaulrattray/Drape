@@ -1,7 +1,7 @@
 {
-  "edition": 66,
-  "updatedAt": "2026-08-28T00:45:00+10:00",
-  "shift": "foreman-56",
+  "edition": 67,
+  "updatedAt": "2026-08-28T01:55:00+10:00",
+  "shift": "foreman-57",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,10 +145,10 @@
   "needsYou": [
     {
       "id": "follow-court-pick-177",
-      "title": "The Follow court is on your desk — pick a row (#177)",
+      "title": "ANSWERED - Row A is built and live on your account (#177 closed, PR #184)",
       "productImpact": "Your three rulings tonight are now the plan: a Follow attaches the photo of the cast you followed (words alone can't carry likeness — your hand test), facts change at the roll (chip → brief rewrites → new sheet → follow one of those), and the one open dial is how close the new faces stay. The court ran on dev, house money (~$1.63): the anchor's own brief + his photo, eight fresh renders per row, only the closeness sentence changing. Whichever row you pick becomes the Follow that ships.",
       "workedExample": "Row A is your exact hand-test sentence (keep sex, age range, heritage, hair-colour family; don't copy the face). Row B tells the engine the photo is the BOOKING, not a person to resemble — cast a clearly different man of the same type. Row C keeps the photo and almost no words. One honest note: your B/C wording said 'eight clearly different men' — sent per-picture that paints an eight-face collage inside every frame (we proved it, twice per row), so each render carries the same sentence in the singular and the eight vary by the engine's own dice, exactly like a normal roll.",
-      "recommendation": "Row B. Against your own bar — clones too tight, strangers too loose — A comes back as near-clones on several tiles (brothers at best), and C drifts wide: with almost no words the photo alone did NOT hold heritage, several faces leave his type entirely. B holds the type while every face reads as a different man. If you sometimes want A's closeness too, that's the two-buttons answer.",
+      "recommendation": "Done as you ordered: Follow = the photo of the face you picked + your brief + your Row A sentence, dice never consulted, facts change at the roll never at the follow. Row B stays recorded as a possible second button - not built, per your 'for now'. Your next Follow tap is the live check.",
       "state": "answered",
       "filedAt": "2026-08-27T22:45:00+10:00",
       "issueNumber": 177,
@@ -1242,6 +1242,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T01:55:00+10:00",
+      "shift": "foreman-57",
+      "text": "Your Row A pick is built, merged (#184) and deploying to your account now. Tap Follow on a face you like and the studio sends that face's own photo to the engine with your brief and your exact sentence - the eight come back as close variations held by the picture, not by a paragraph describing a record (the ghost that misfiled the fitness creator's heritage has no channel left at all). Nothing else rides a follow any more: no chip adjustments, no imagination call - the chips read as a record, the settings panel says 'a follow holds the look of the face you picked' instead of showing a meter that does nothing, and to change a fact you edit the sentence and roll. If a follow's photo can't be loaded, you're refused free before any charge; a retried tile re-attaches the same photo or refuses free too. Row B (the shortlist) stays on the record as a possible second button later, per your 'for now'. YOUR NEXT FOLLOW TAP IS THE LIVE CHECK - one honest note: the court's frames were rendered at the delivered size, while your rolls render larger under the framing trim, so if a follow sheet's framing reads off, that combination is the first suspect. Review gate found one real hole (a follow whose photo is missing would have quietly cast strangers for money) - fixed before merge. House spend this shift: $0."
+    },
+    {
       "at": "2026-08-28T00:45:00+10:00",
       "shift": "foreman-56",
       "text": "Two of your orders landed while you slept. (1) The framing: your 2:3 mid-torso reference was measured (22% face height), a court ran K (today's sentence) against M (a sentence written to your frame's numbers) — 16 renders plus a same-words second pass to separate the content-checker's coin from the sentence — and the winner shipped with the head-size trim retargeted in the same PR (#183), your sequencing followed to the letter. The strip is first in your gallery. (2) Your Row A pick on the Follow court is logged and acknowledged (#177): Follow = your photo + your brief + the close-variations clause, identity dice never consulted. Building it is the next shift's first brief — it was not rushed into the framing PR. House spend this shift: ~$1.55 on the court."
@@ -1435,11 +1440,6 @@
       "at": "2026-08-26T16:55:00+10:00",
       "shift": "foreman-21",
       "text": "Your 'refuse-free' word is in the product. The shift before mine built it and pushed the PR, then its process died before it could write anything down — so I read its work at the artifacts instead of trusting it: ran the tests (56 green), broke the new rule on purpose to see exactly which tests catch it (the four outage tests and nothing else), read the gate and the reviewer's report, fixed the one stale paragraph the reviewer found, and merged. In plain terms: if the brief-reader is genuinely down, anyone who typed more than a sentence now gets 'we couldn't read your brief — nothing was charged, try again in a moment' and keeps every credit; that is roll 219's 160-credit failure closed at the rule itself. A five-word brief still rolls from the words as typed, because that is the option you clicked — a card above asks whether you meant 'always'. Still waiting on your eye for the Prompt Author strips; nothing on the register is built until you answer which sheet is the studio. No house money spent tonight."
-    },
-    {
-      "at": "2026-08-26T17:55:00+10:00",
-      "shift": "foreman-19",
-      "text": "The Prompt Author court ran tonight ($7.12 of house money) and the strips are in your gallery. In plain terms: your 73-word prompt sent raw gives eight different women with the framing held — exactly what you saw. Add the author at LOW (it only writes the studio and framing sentences) and you get the same spread with a steadier frame; that is the sheet a basic user should get, and on 'goth woman mid 30s' it gave six distinct goth women in their thirties. Add the author at MAX, using your own instruction word for word, and the engine paints ONE striking woman eight times — the author described everything, so there was nothing left to vary. Today's studio, for comparison, put your 73 words through the compiler and dressed seven of eight in the grey tee, and turned 'goth woman mid 30s' into eight women with no goth styling at all. Two things the engine did that you should know: it refused short prompts most of the time (the thin brief raw: 17 of 18), and it refused your FULL cyber-goth brief 63 of 64 times in every form, raw included — your beautiful results came through ChatGPT's door, and fal's door says no to those words; one house word, 'sternum', flipped a passing prompt to eight refusals on its own. Padding a prompt with 1,600 words of office-memo filler changed nothing, so length alone is not the enemy — competing instructions are. Your reply on the outage question ('refuse-free') is filed as #126 and will be built next. Nothing was built tonight; the court was the step, and your eye on the strips is what comes next."
     }
   ],
   "acknowledgedReplyIds": [
