@@ -1,7 +1,7 @@
 {
-  "edition": 60,
-  "updatedAt": "2026-08-27T18:40:00+10:00",
-  "shift": "foreman-50",
+  "edition": 61,
+  "updatedAt": "2026-08-27T20:10:00+10:00",
+  "shift": "foreman-51",
   "program": {
     "mission": "The Midjourney of casting \u2014 photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -707,6 +707,13 @@
   ],
   "pipeline": [
     {
+      "id": "author-guardrails-171",
+      "title": "Author guardrails (#171, \u00a75g) \u2014 seed facts immutable incl. paraphrase; MAX yields on a finished seed; the MAX-sheet checklist owned",
+      "status": "merged",
+      "prNumber": 174,
+      "note": "Age is compared as a VALUE the reader recorded, never a substring \u2014 \u201cin her mid-thirties\u201d passes a mid-30s seed, \u201cyoung\u201d reddens and the author is re-asked naming your stated value. The finished-seed yield was MEASURED, not promised: your porcelain specimen went from a second 126-word wardrobe bible to one 29-word pressure clause with zero new nouns. Review found one real edge (era decades read as ages), fixed pre-merge with arms both ways."
+    },
+    {
       "id": "role-family-166",
       "title": "The Follow casts a ROLE family (#166) \u2014 'close relative' is dead, the expression-only sheet line killed",
       "status": "merged",
@@ -1138,6 +1145,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T20:10:00+10:00",
+      "shift": "foreman-51",
+      "text": "Your author guardrails are in (#171, PR #174 merged). Three things now hold: a stated age can never be rewritten \u2014 the studio compares the VALUE the reader recorded against the author's text, so \u201cmid 30s\u201d may come back \u201cin her mid-thirties\u201d but never \u201cyoung\u201d, and a drifting draft is refused and re-asked naming your stated value; MAX now yields on a finished seed \u2014 measured at the real author on your own 73-word porcelain prompt: the first wording still wrote four sentences (126 then 96 words), the rebuilt instruction wrote ONE 29-word pressure clause with zero new nouns, while the thin seed kept its full look paragraph; and your MAX-sheet checklist is now a single owned constant the next MAX sheet's caption will quote verbatim. The review caught one real edge pre-merge: \u201clate 70s disco\u201d is a genre, \u201cin her late 70s\u201d is an age \u2014 the matchers know the difference now, with arms both ways. Nothing on this road spends anything new; drive cost \u2248 $0.06 house. The family-clause grids from last shift are still waiting on your eye \u2014 if both pass, your first Follow on your own account is the court."
+    },
+    {
       "at": "2026-08-27T18:40:00+10:00",
       "shift": "foreman-50",
       "text": "All three of your answers are executed. K keeps the light \u2014 nothing moved, #128 closed, and L2+'s 2-of-8 refusal count went to the refusal patrol as a lead. The block chapter is closed on your reply #16. And the role-family re-strip you were waiting on is in the gallery: the Follow clause is rebuilt to your photographer sentence (PR #172, merged \u2014 'close relative' and the expression-only sheet line are dead, with guards so neither can come back), and chip edits now rewrite the brief in place with no tie-breaker sentence (PR #173, with the shown-prompt fix: your locked block never prints on the sheet \u2014 competitors see your words and the author's, never the framework). Driven on dev on your own specimen brief before any of it goes near your account: my eye passes both grids; yours is the gate, and your first Follow on your own account is the court. Also closed: #167 (the rite already refuses an unparseable briefing \u2014 proven live on e58/e59)."
@@ -1331,11 +1343,6 @@
       "at": "2026-08-26T10:30:00+10:00",
       "shift": "foreman-15",
       "text": "Still no reply from you, so the register stays switched off and your cyborg roll waits on your word \u2014 another maintenance shift. Three things. The broken pull-request reviewer (#114): I reran it with full logging and can now say the login token is fine and only the Fable call fails, four times running; it is either your plan's usage window (heals itself) or the account's access to that model (yours) \u2014 one rerun this afternoon decides, and the card says which. Two clean-ups from the patrols merged: the Janitor's seven unused packages are out of the build (#107), and the Retro's two commit guards are live (#102, #103) \u2014 git now refuses a shift branch committed from the shared tree and any file carrying an invisible control byte, the mistake that once blinded the secret scanner. Proving those on the build server turned up something older: the push gate that stops anyone deploying without the ceremony had never been marked executable, so on a Linux machine git had quietly skipped it since it landed \u2014 fixed, and tested for every hook from now on. Nothing spent beyond half a cent on the rerun. OpenRouter unchanged at $7.52."
-    },
-    {
-      "at": "2026-08-26T09:28:00+10:00",
-      "shift": "foreman-14",
-      "text": "No reply from you yet, so the register stays switched off and your flagged roll waits on your word. A maintenance shift, three things. First, the last thing standing between your word and that roll is gone: the register's variation card could silently vanish if the writer obeyed its own instruction in long words (told \"12\u201335 words\", checked at 240 characters) \u2014 fixed, tested with a real 35-word line that used to be refused, merged (#99). Second, the Machinist's first patrol is in: the performance ledger is built from what production already records, and its worst number is that one paid edit in seven fails and refunds \u2014 about $0.30 of house money out per failure and two minutes of a customer's wait \u2014 with the failure's cause not recorded anywhere durable; naming those causes is the next card (#111). Its seat died twice mid-close, and this time I found why: a shift that ends its turn to wait for a build result simply exits and never returns. So the runner now stamps every shift's report by machine after the process is gone \u2014 receipt present, no placeholder, every \"merged\" checked against GitHub, an unverified close marked in red for the next shift to read first (#101). Third, a warning: the automatic reviewer on pull requests stopped answering at 09:10 (fails in under a second, no message) \u2014 merges still run, reviews don't; card #114 says what to check, likely its login token. Nothing spent. OpenRouter still $7.52."
     }
   ],
   "acknowledgedReplyIds": [
