@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0b03116157539b1d"
+    "sourceFingerprint": "ef55975e251689d6"
   },
   "domains": [
     {
@@ -10452,6 +10452,10 @@
     {
       "id": "test:server/boardsCasting.test.ts",
       "path": "server/boardsCasting.test.ts"
+    },
+    {
+      "id": "test:server/briefingConformance.test.ts",
+      "path": "server/briefingConformance.test.ts"
     },
     {
       "id": "test:server/bulkRefreshDialog.test.ts",
