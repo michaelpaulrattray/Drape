@@ -101,6 +101,16 @@ export function createOpenRouterCreativeEngine(config: OpenRouterConfig): Creati
          banned engine reached through OpenRouter is the same banned engine. */
       assertEngineNotBanned(model, "openrouter image dispatch");
 
+      /*
+        An image-anchored request (#177 Row A) REFUSES here rather than
+        rendering without its attachment: this transport has no reference
+        input, and the prompt says "the attached look" — see
+        `CandidateRequest.references`.
+      */
+      if ((request.references ?? []).length > 0) {
+        throw new ProviderError("capability", "openrouter image dispatch cannot attach an image reference");
+      }
+
       /* Counted at the transport, like every other paid call — the image
          fallback is rare and a census that quietly omitted it would understate
          exactly the renders that went wrong. */

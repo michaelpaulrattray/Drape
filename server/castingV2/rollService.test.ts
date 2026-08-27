@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * The roll service's money and its ordering (plan §F, §H).
@@ -44,9 +44,9 @@ const dbCalls = {
 
 vi.mock("../db/castingV2", () => ({
   CastingV2OwnershipError: class extends Error {},
-  createRollWithCandidates: vi.fn(async () => {
+  createRollWithCandidates: vi.fn(async (input: unknown) => {
     journal.push("rows");
-    dbCalls.createRoll();
+    dbCalls.createRoll(input);
     return {
       session: { id: 10 },
       roll: { id: 100, publicId: "roll-public", sessionId: 10, operationId: OPERATION_ID, priceCredits: 160 },
@@ -65,6 +65,8 @@ vi.mock("../db/castingV2", () => ({
   getOwnedCandidateWithSelectedFace: vi.fn(async () => ({
     candidate: { id: 1, publicId: "66666666-6666-4666-8666-666666666666", position: 3 },
     internalPrompt: null,
+    /* The SELECTED face's frame — what a Row A follow attaches (#177). */
+    imageKey: "casting-v2/candidates/parent-frame.png",
   })),
   /* The parent ROLL's compiled brief, read by the honest follow source (#176).
      No `register` = a house-road parent, which keeps these arms on the road
@@ -130,6 +132,24 @@ vi.mock("../db/connection", () => ({
   }),
 }));
 
+/*
+  THE ANCHOR FRAME'S STORE (#177 Row A): an authored follow reads the followed
+  face's bytes before the claim, and refuses free when they cannot be read.
+  `storagePut`/`storageDelete` are stubbed because the module binds them at
+  load; every arm's stores go through the injected `storeImage` dependency.
+*/
+let anchorBytesAvailable = true;
+const anchorReads: string[] = [];
+vi.mock("../storage", () => ({
+  storagePut: vi.fn(async (key: string) => ({ key, url: `https://public/${key}` })),
+  storageDelete: vi.fn(async () => undefined),
+  storageReadBytes: vi.fn(async (key: string) => {
+    anchorReads.push(key);
+    if (!anchorBytesAvailable) throw new Error("NoSuchKey");
+    return { bytes: Buffer.from("anchor-frame"), contentType: "image/png" };
+  }),
+}));
+
 vi.mock("../db/generations", () => ({
   createGeneration: vi.fn(async () => ({ success: true, generationId: 1 })),
   updateGeneration: vi.fn(async () => ({ success: true })),
@@ -188,12 +208,16 @@ function seedCandidates(count = 8) {
   }));
 }
 
+/** What each dispatch handed the engine — the anchored arms read `references` off it. */
+const engineSent: Array<{ prompt: string; references?: readonly { bytes: Buffer }[] }> = [];
+
 /** An engine whose per-candidate outcome the test dictates. */
 function engineWhere(fails: (position: number) => boolean) {
   let call = 0;
   return () => ({
     id: "fal:test",
-    generateCandidate: vi.fn(async () => {
+    generateCandidate: vi.fn(async (request: { prompt: string; references?: readonly { bytes: Buffer }[] }) => {
+      engineSent.push({ prompt: request.prompt, references: request.references });
       const position = call++;
       if (fails(position)) throw new ProviderError("transport", "provider blew up");
       journal.push("dispatch");
@@ -245,6 +269,9 @@ const INPUT = {
 beforeEach(() => {
   journal.length = 0;
   refunds.length = 0;
+  anchorReads.length = 0;
+  engineSent.length = 0;
+  anchorBytesAvailable = true;
   refundRecords = true;
   chargeSucceeds = true;
   seedCandidates();
@@ -1038,5 +1065,115 @@ describe("a reader outage on a roll is free (#126 — founder, Crew reply #7: 'r
     expect(journal).not.toContain("charge");
     expect(journal).not.toContain("dispatch");
     expect(dbCalls.createRoll).not.toHaveBeenCalled();
+  });
+});
+
+describe("the ROW A follow (#177) — on the author road the photo rides, or the roll refuses free", () => {
+  const PARENT_FRAME = "casting-v2/candidates/parent-frame.png";
+  const FOLLOW_PARENT = "66666666-6666-4666-8666-666666666666";
+  const saved: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    saved.CASTING_V2_SCOPE = process.env.CASTING_V2_SCOPE;
+    saved.CASTING_CREATIVE_REGISTER_SCOPE = process.env.CASTING_CREATIVE_REGISTER_SCOPE;
+    process.env.CASTING_V2_SCOPE = "all";
+    process.env.CASTING_CREATIVE_REGISTER_SCOPE = "all";
+  });
+  afterEach(() => {
+    for (const [name, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  });
+
+  async function followRoll(overridesAndUnlock: Record<string, unknown> = {}) {
+    const seen: Record<string, unknown>[] = [];
+    const result = createRoll(
+      {
+        ...(baseDependencies() as object),
+        compileBrief: async (compilerInput: Record<string, unknown>) => {
+          seen.push(compilerInput);
+          return deterministicBriefCompiler(compilerInput as never);
+        },
+      } as never,
+      { ...INPUT, followCandidatePublicId: FOLLOW_PARENT, ...overridesAndUnlock },
+    );
+    return { seen, result };
+  }
+
+  it("reads the anchor's bytes BEFORE the claim and hands them to all eight renders; the compiler is told the photo rides", async () => {
+    const { seen, result } = await followRoll();
+    await result;
+    expect(anchorReads).toEqual([PARENT_FRAME]);
+    /* The read happened before any money word entered the journal. */
+    expect(journal.indexOf("claim")).toBeGreaterThan(-1);
+    expect(seen[0]?.anchorImageAttached).toBe(true);
+    expect(engineSent).toHaveLength(8);
+    for (const dispatch of engineSent) {
+      expect(dispatch.references?.[0]?.bytes.toString()).toBe("anchor-frame");
+    }
+  });
+
+  it("drops adjustments — facts change at the roll, never at the follow (his build order, verbatim on #177)", async () => {
+    const { seen, result } = await followRoll({ unlock: ["sex"], overrides: { ageBand: "40s" } });
+    await result;
+    expect(seen[0]?.unlock).toEqual([]);
+    expect(seen[0]?.overrides).toBeUndefined();
+  });
+
+  it("writes the anchor's key into every candidate's internalPrompt, so a retry can re-attach the same photograph", async () => {
+    const { result } = await followRoll();
+    await result;
+    const written = dbCalls.createRoll.mock.calls[0]?.[0] as {
+      candidates: Array<{ internalPrompt: { anchorImageKey?: string } }>;
+    };
+    expect(written.candidates).toHaveLength(8);
+    for (const candidate of written.candidates) {
+      expect(candidate.internalPrompt.anchorImageKey).toBe(PARENT_FRAME);
+    }
+  });
+
+  it("refuses FREE when the parent's frame KEY is null — a ready row with no key must not become a paid unanchored roll (review of #184, finding 1)", async () => {
+    const castingDb = await import("../db/castingV2");
+    (castingDb.getOwnedCandidateWithSelectedFace as any).mockResolvedValueOnce({
+      candidate: { id: 1, publicId: FOLLOW_PARENT, position: 3 },
+      internalPrompt: null,
+      imageKey: null,
+    });
+    const { result } = await followRoll();
+    await expect(result).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("nothing was charged"),
+    });
+    expect(anchorReads).toEqual([]);
+    expect(journal).not.toContain("claim");
+    expect(dbCalls.createRoll).not.toHaveBeenCalled();
+  });
+
+  it("refuses FREE — before the claim, before any row — when the anchor frame cannot be read", async () => {
+    anchorBytesAvailable = false;
+    const { result } = await followRoll();
+    await expect(result).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("nothing was charged"),
+    });
+    expect(journal).not.toContain("claim");
+    expect(journal).not.toContain("charge");
+    expect(dbCalls.createRoll).not.toHaveBeenCalled();
+  });
+
+  it("off the author road a follow reads no storage and the engine receives no references — the house wire is what it always was", async () => {
+    process.env.CASTING_CREATIVE_REGISTER_SCOPE = "off";
+    const { seen, result } = await followRoll();
+    await result;
+    expect(anchorReads).toEqual([]);
+    expect(seen[0]?.anchorImageAttached).toBe(false);
+    for (const dispatch of engineSent) expect(dispatch.references).toBeUndefined();
+    const written = dbCalls.createRoll.mock.calls[0]?.[0] as {
+      candidates: Array<{ internalPrompt: { anchorImageKey?: string } }>;
+    };
+    for (const candidate of written.candidates) {
+      expect(candidate.internalPrompt).not.toHaveProperty("anchorImageKey");
+    }
   });
 });

@@ -56,6 +56,7 @@ import { FRAMING_TRIM_RENDER } from "./framingTrimStep";
 import { castingCreativeEngine } from "./rollEngine";
 import { dispatchCandidate, type RollServiceDependencies, type Settlement } from "./rollService";
 import { assertNotFrozen } from "./spendGuards";
+import { storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { candidateFailureKind, isRetryableFailure } from "../../shared/candidateFailure";
 import type { StatedInk } from "./castingIntent";
@@ -122,6 +123,20 @@ export function promptOfInternal(internalPrompt: unknown): string | null {
   if (!internalPrompt || typeof internalPrompt !== "object") return null;
   const prompt = (internalPrompt as { prompt?: unknown }).prompt;
   return typeof prompt === "string" && prompt.trim().length > 0 ? prompt : null;
+}
+
+/**
+ * The frame this render was ANCHORED to (#177 Row A), read back off the row.
+ * Non-null exactly on an authored follow's candidates — the roll road records
+ * the key beside the prompt so a retry can re-attach the same photograph. A
+ * retry that finds one and cannot produce the bytes REFUSES free: the prompt
+ * says "the attached look", and rendering it unattached would paint a
+ * stranger against a sentence about a photograph that never arrived.
+ */
+export function anchorKeyOfInternal(internalPrompt: unknown): string | null {
+  if (!internalPrompt || typeof internalPrompt !== "object") return null;
+  const key = (internalPrompt as { anchorImageKey?: unknown }).anchorImageKey;
+  return typeof key === "string" && key.trim().length > 0 ? key : null;
 }
 
 /**
@@ -209,6 +224,26 @@ export async function retryCandidate(
       code: "PRECONDITION_FAILED",
       message: "That tile has no recorded prompt to retry with.",
     });
+  }
+
+  /*
+    AN ANCHORED TILE RETRIES WITH ITS PHOTOGRAPH (#177 Row A) — fetched here,
+    before the claim, so a frame that has gone away (the followed cast
+    discarded, purged past its floor) is a free refusal rather than a charged
+    render of "the attached look" with nothing attached.
+  */
+  const anchorKey = anchorKeyOfInternal(candidate.internalPrompt);
+  let anchor: { bytes: Buffer; contentType: string } | null = null;
+  if (anchorKey) {
+    try {
+      const source = await storageReadBytes(anchorKey);
+      anchor = { bytes: source.bytes, contentType: source.contentType };
+    } catch {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "This tile was cast from a followed face whose frame is no longer available, so it can't be retried. Nothing was charged.",
+      });
+    }
   }
 
   /* ---- the claim, with the candidate lock as the double-tap cover ---- */
@@ -309,6 +344,7 @@ export async function retryCandidate(
     operationId,
     candidate: { id: candidate.id, publicId: candidate.publicId, position: candidate.position, pointsCost: price },
     prompt,
+    anchor,
     size: trimEnabled ? `${FRAMING_TRIM_RENDER.width}x${FRAMING_TRIM_RENDER.height}` : CANDIDATE_RENDER.size,
     trimEnabled,
     quality: CANDIDATE_RENDER.quality,

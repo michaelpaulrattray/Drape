@@ -122,6 +122,25 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
   };
 });
 
+/*
+  THE ANCHOR FRAME'S STORE (#177 Row A): an anchored tile's retry re-reads the
+  followed face's bytes before the claim, and refuses free when they are gone.
+  `storagePut`/`storageDelete` are stubbed because `rollService` (imported for
+  `dispatchCandidate`) binds them at module level; the retry's own store goes
+  through the injected `storeImage` dependency.
+*/
+let anchorBytesAvailable = true;
+const anchorReads: string[] = [];
+vi.mock("../storage", () => ({
+  storagePut: vi.fn(async (key: string) => ({ key, url: `https://public/${key}` })),
+  storageDelete: vi.fn(async () => undefined),
+  storageReadBytes: vi.fn(async (key: string) => {
+    anchorReads.push(key);
+    if (!anchorBytesAvailable) throw new Error("NoSuchKey");
+    return { bytes: Buffer.from("anchor-frame"), contentType: "image/png" };
+  }),
+}));
+
 const receipts = {
   success: vi.fn(async (_input: unknown) => undefined),
   failure: vi.fn(async (input: { error: unknown }) => {
@@ -149,6 +168,7 @@ const {
   retryCandidate,
   rollStatusAfterRetry,
   promptOfInternal,
+  anchorKeyOfInternal,
   statedInkOfCompiledBrief,
   RETRY_NOT_AVAILABLE_MESSAGE,
   RETRY_NOT_THIS_KIND_MESSAGE,
@@ -160,14 +180,14 @@ const { CANDIDATE_RENDER } = await import("./briefCompiler");
 const directOperation = await import("../casting/directOperation");
 const db = await import("../db/castingV2");
 
-/** What reached the engine — the prompt and the box, asserted at the wire. */
-const sent: Array<{ prompt: string; size: string; quality: string }> = [];
+/** What reached the engine — the prompt, the box and the attachment, asserted at the wire. */
+const sent: Array<{ prompt: string; size: string; quality: string; references?: readonly { bytes: Buffer }[] }> = [];
 
 function engineThat(outcome: "delivers" | "fails") {
   return () => ({
     id: "fal:test",
-    generateCandidate: vi.fn(async (input: { prompt: string; size: string; quality: string }) => {
-      sent.push({ prompt: input.prompt, size: input.size, quality: input.quality });
+    generateCandidate: vi.fn(async (input: { prompt: string; size: string; quality: string; references?: readonly { bytes: Buffer }[] }) => {
+      sent.push({ prompt: input.prompt, size: input.size, quality: input.quality, references: input.references });
       if (outcome === "fails") throw new ProviderError("timeout", "the engine timed out");
       journal.push("dispatch");
       return {
@@ -234,6 +254,8 @@ beforeEach(() => {
   journal.length = 0;
   sent.length = 0;
   refunds.length = 0;
+  anchorReads.length = 0;
+  anchorBytesAvailable = true;
   refundRecords = true;
   chargeSucceeds = true;
   claimAnswer = { type: "execute", operationId: RETRY_OPERATION_ID };
@@ -512,5 +534,43 @@ describe("the readers", () => {
        roll status, and the from-guard can never move `complete` back. */
     expect(rollStatusAfterRetry(["ready", "dispatched"])).toBe("partial");
     expect(rollStatusAfterRetry(["ready", "queued"])).toBe("partial");
+  });
+});
+
+describe("the anchored tile (#177 Row A) — a retried follow slice carries its photograph, or refuses free", () => {
+  it("re-attaches the recorded frame: the bytes are read back and the engine receives them as references", async () => {
+    seed({ internalPrompt: { prompt: "brief\n\nSame casting brief as the attached look.", anchorImageKey: "casting-v2/candidates/anchor.png" } });
+    const result = await retryCandidate(dependencies(), INPUT);
+    expect(result.outcome).toBe("ready");
+    expect(anchorReads).toEqual(["casting-v2/candidates/anchor.png"]);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.references?.[0]?.bytes.toString()).toBe("anchor-frame");
+  });
+
+  it("refuses FREE — before the claim, before the reset — when the frame is gone", async () => {
+    anchorBytesAvailable = false;
+    seed({ internalPrompt: { prompt: "brief\n\nSame casting brief as the attached look.", anchorImageKey: "casting-v2/candidates/anchor.png" } });
+    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("followed face"),
+    });
+    expect(journal).not.toContain("claim");
+    expect(journal).not.toContain("charge");
+    expect(dbCalls.reset).not.toHaveBeenCalled();
+  });
+
+  it("an ordinary tile reads no storage and the engine receives no references — the unanchored wire is what it always was", async () => {
+    const result = await retryCandidate(dependencies(), INPUT);
+    expect(result.outcome).toBe("ready");
+    expect(anchorReads).toEqual([]);
+    expect(sent[0]?.references).toBeUndefined();
+  });
+
+  it("anchorKeyOfInternal reads the recorded key and nothing else", () => {
+    expect(anchorKeyOfInternal({ prompt: "p", anchorImageKey: "k.png" })).toBe("k.png");
+    expect(anchorKeyOfInternal({ prompt: "p" })).toBeNull();
+    expect(anchorKeyOfInternal({ prompt: "p", anchorImageKey: "   " })).toBeNull();
+    expect(anchorKeyOfInternal({ prompt: "p", anchorImageKey: 7 })).toBeNull();
+    expect(anchorKeyOfInternal(null)).toBeNull();
   });
 });

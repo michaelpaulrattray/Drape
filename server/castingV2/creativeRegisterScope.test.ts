@@ -26,6 +26,7 @@ import {
 } from "./castingV2Scope";
 import { INTERPRET_TIMEOUT_MS, interpreterSystemPrompt } from "./interpreter";
 import { castingBriefCompiler } from "./briefCompiler";
+import { FOLLOW_ANCHOR_CLAUSE } from "./familyClause";
 import { houseBlockForStyle } from "./houseBlock";
 import { readCastStyle } from "./rollProjection";
 import { CAST_STYLES, CAST_STYLE_LINES, CAST_STYLE_NAMES, COMING_CAST_STYLES, DEFAULT_CAST_STYLE } from "../../shared/castStyles";
@@ -655,14 +656,8 @@ const FOLLOW = {
   },
 } as const;
 
-const FAMILY_CLAUSE =
-  "Continue this family: same casting brief, new person — a woman, in their 20s, of Nordic heritage, blonde hair, with a severe minimal look. "
-  + "Keep the same sex, age range, heritage, hair-colour family and grooming world. "
-  + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
-  + "Cast a different person who could be booked for the same role.";
-
-describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road as the family clause (#154), and the unflagged compile does not move", () => {
-  it("a FOLLOW at LOW: one prompt on all eight — the brief verbatim, the family clause from the anchor, the block; no author call; the reader's record is the house follow's", async () => {
+describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the clause is his courted sentence, and the unflagged compile does not move", () => {
+  it("a FOLLOW with the photo riding: one prompt on all eight — the brief verbatim, the Row A clause, the block; no author call; the reader's record is the house follow's, marked unsent", async () => {
     const off = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -678,20 +673,22 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
       engine,
       followIdentity: FOLLOW as never,
       creativeRegister: true,
+      anchorImageAttached: true,
     });
     expect(sent(engine, "author")).toHaveLength(0);
     /* The unflagged follow is the house road, byte for byte, as it always was. */
     expect(off.candidates[0]?.prompt.startsWith("CASTING CATEGORY (ABSOLUTE)")).toBe(true);
     expect(off.candidates[0]?.prompt).toContain("low bun");
     expect(off.compiledBrief).not.toHaveProperty("register");
-    /* The flagged follow: ONE prompt, the clause between the brief and the block. */
+    /* The flagged follow: ONE prompt, the fixed clause between the brief and the block. */
     const prompts = new Set(on.candidates.map((c) => c.prompt));
     expect(prompts.size).toBe(1);
-    expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${FAMILY_CLAUSE}\n\n${HOUSE_BLOCK}`);
-    /* Never the cut, never a realized axis, never a house sentence (his answer 3; law 4). */
+    expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    /* Never the cut, never a realized axis, never an anchor word AT ALL — the photograph carries the look (#177). */
     expect(on.candidates[0]?.prompt).not.toContain("low bun");
+    expect(on.candidates[0]?.prompt).not.toContain("Nordic");
     expect(on.candidates[0]?.prompt).not.toContain("CASTING CATEGORY");
-    expect(neverWrittenIn(FAMILY_CLAUSE)).toBeNull();
+    expect(neverWrittenIn(FOLLOW_ANCHOR_CLAUSE)).toBeNull();
     /* The identities the sheet records are still the house follow's — the
        anchor biased the neighbourhood exactly as before — and they are marked
        unsent (#176), because the one authored prompt never carried them. */
@@ -701,17 +698,17 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     expect(on.compiledBrief.register).toMatchObject({
       kind: "author",
       mode: "seed",
-      prompt: `${RICH}\n\n${FAMILY_CLAUSE}\n\n${HOUSE_BLOCK}`,
-      carried: { follow: true, overrides: {}, clause: FAMILY_CLAUSE },
+      prompt: `${RICH}\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`,
+      carried: { follow: true, overrides: {}, clause: FOLLOW_ANCHOR_CLAUSE },
     });
-    /* Chips on a follow: the three anchored axes stay removable, the rest are a record (his answer 2). */
+    /* Chips on a follow are a RECORD like every author-road chip (#177: a chip
+       cannot strip a photograph) — the #154 three-axis exception is dead. */
     const chips = on.chips.filter((chip) => chip.field);
-    for (const chip of chips) {
-      expect(chip.removable, chip.field).toBe(["sex", "ageBand", "heritage"].includes(chip.field ?? ""));
-    }
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) expect(chip.removable, chip.field).toBe(false);
   });
 
-  it("a FOLLOW at MAX: the author is asked once, sees the clause beneath the brief, and the clause sits before its content", async () => {
+  it("a FOLLOW at MAX makes NO author call — the courted formula is exhaustive (photo + brief + clause + block), recorded as seed", async () => {
     const engine = engineAnswering([ADDITION]);
     const on = await castingBriefCompiler({
       briefText: THIN,
@@ -721,55 +718,76 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
       followIdentity: FOLLOW as never,
       creativeRegister: true,
       imagination: "max",
+      anchorImageAttached: true,
     });
-    expect(sent(engine, "author")).toHaveLength(1);
-    expect(sent(engine, "author")[0]?.user).toBe(`${THIN}\n\n${FAMILY_CLAUSE}`);
-    expect(on.candidates[0]?.prompt).toBe(`${THIN}\n\n${FAMILY_CLAUSE}\n\n${ADDITION}\n\n${HOUSE_BLOCK}`);
-    expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "authored", content: ADDITION, carried: { follow: true } });
+    expect(sent(engine, "author")).toHaveLength(0);
+    expect(on.candidates[0]?.prompt).toBe(`${THIN}\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    expect(on.compiledBrief.register).toMatchObject({
+      kind: "author",
+      mode: "seed",
+      authored: false,
+      content: null,
+      carried: { follow: true },
+    });
   });
 
-  it("an UNLOCK on a follow strips the axis from the clause; an OVERRIDE lands in the brief itself — on a follow the clause also states it, alone there is no clause at all (#164)", async () => {
-    const unlocked = engineAnswering([ADDITION]);
-    const a = await castingBriefCompiler({
+  it("no record can reach the clause — the #176 ghost class is structurally dead: dice AND stated anchor supplied, the clause is the fixed bytes", async () => {
+    const engine = engineAnswering([ADDITION]);
+    const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
-      rollSeed: "wire-follow-unlock",
-      engine: unlocked,
+      rollSeed: "wire-follow-ghostproof",
+      engine,
       followIdentity: FOLLOW as never,
-      unlock: ["sex"] as never,
+      followStatedAnchor: FOLLOW as never,
       creativeRegister: true,
+      anchorImageAttached: true,
     });
-    expect(sent(unlocked, "author")).toHaveLength(0);
-    const aClause = (a.compiledBrief.register as { carried: { clause: string } }).carried.clause;
-    expect(aClause).not.toContain("woman");
-    expect(aClause).not.toContain("same sex");
-    expect(aClause).toContain("Keep the same age range, heritage, hair-colour family and grooming world");
-    expect(a.candidates[0]?.prompt).toBe(`${RICH}\n\n${aClause}\n\n${HOUSE_BLOCK}`);
+    const clause = (on.compiledBrief.register as { carried: { clause: string } }).carried.clause;
+    expect(clause).toBe(FOLLOW_ANCHOR_CLAUSE);
+    for (const recordWord of ["Nordic", "blonde", "severe minimal", "20s", "woman"]) {
+      expect(clause, recordWord).not.toContain(recordWord);
+    }
+    /* Positive control for the reader above: a planted record word IS caught. */
+    expect(`${clause} of Nordic heritage`).toContain("Nordic");
+  });
 
-    const overriddenFollow = engineAnswering([ADDITION]);
-    const b = await castingBriefCompiler({
+  it("adjustments handed in WITH an anchored follow do not move the prompt — the compiler's half of 'facts change at the roll, never at the follow' (the entrance drops them; this is the belt)", async () => {
+    const engine = engineAnswering([ADDITION]);
+    const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
-      rollSeed: "wire-follow-override",
-      engine: overriddenFollow,
+      rollSeed: "wire-follow-belt",
+      engine,
       followIdentity: FOLLOW as never,
       overrides: { ageBand: "40s" } as never,
       creativeRegister: true,
+      anchorImageAttached: true,
     });
-    const bClause = (b.compiledBrief.register as { carried: { clause: string; overrides: unknown } }).carried.clause;
-    expect(bClause).toContain("a woman, in their 40s, of Nordic heritage");
-    expect(bClause).not.toContain("20s");
-    expect(b.compiledBrief.register).toMatchObject({ kind: "author", carried: { follow: true, overrides: { ageBand: "40s" } } });
-    /*
-      AT THE WIRE (law 5; review of #173, finding 5): RICH states no decade,
-      so the edit APPENDS — the declared consistent repetition is the brief
-      and the clause stating the same 40s, with no tie-breaker anywhere.
-    */
-    expect((b.compiledBrief.register as { briefSent: string }).briefSent).toBe(`${RICH} In their 40s.`);
-    expect(b.candidates[0]?.prompt.startsWith(`${RICH} In their 40s.\n\n${bClause}`)).toBe(true);
-    expect(b.candidates[0]?.prompt).not.toContain("this wins");
-    expect(b.candidates[0]?.prompt).not.toContain("20s");
+    /* No rewrite, no axis in the clause, the wire is the courted bytes. */
+    expect((on.compiledBrief.register as { briefSent: string }).briefSent).toBe(RICH);
+    expect(on.compiledBrief.register).not.toHaveProperty("rewrites");
+    expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    expect(on.candidates[0]?.prompt).not.toContain("40s");
+  });
 
+  it("a follow WITHOUT the photo attached carries no clause at all — 'the attached look' is never said to an engine with no attachment", async () => {
+    const engine = engineAnswering([ADDITION]);
+    const on = await castingBriefCompiler({
+      briefText: RICH,
+      candidateCount: 8,
+      rollSeed: "wire-follow-unattached",
+      engine,
+      followIdentity: FOLLOW as never,
+      creativeRegister: true,
+      /* anchorImageAttached deliberately absent. */
+    });
+    expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${HOUSE_BLOCK}`);
+    expect(on.candidates[0]?.prompt).not.toContain("attached look");
+    expect(on.compiledBrief.register).not.toHaveProperty("carried");
+  });
+
+  it("an OVERRIDE without a follow lands in the brief itself — no clause, no tie-breaker (#164, unchanged by Row A)", async () => {
     const overridden = engineAnswering([ADDITION]);
     const c = await castingBriefCompiler({
       briefText: RICH,
@@ -796,8 +814,7 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
         { field: "heritage", mode: "appended", to: "Of Slavic heritage." },
       ],
     });
-    /* The row never says "house" again — that vocabulary belongs to rows written before this landed. */
-    for (const compiled of [a, b, c]) expect((compiled.compiledBrief.register as { kind: string }).kind).toBe("author");
+    expect(c.candidates[0]?.prompt).not.toContain("this wins");
   });
 
   it("an UNLOCK on a plain authored roll reaches nothing the engine reads — no clause, the prompt is the plain one, and every derived chip is read-only", async () => {

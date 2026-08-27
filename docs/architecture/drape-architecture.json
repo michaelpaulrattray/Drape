@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9d3fd61c7c45ef14"
+    "sourceFingerprint": "7f82805266f5ec7d"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 42
+      "moduleCount": 41
     },
     {
       "id": "domain:studio",
@@ -5681,12 +5681,6 @@
     {
       "id": "module:shared/exportViews.ts",
       "path": "shared/exportViews.ts",
-      "domain": "shared",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:shared/followUnpinnable.ts",
-      "path": "shared/followUnpinnable.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12152,6 +12146,10 @@
       "path": "server/providers/bannedEngines.test.ts"
     },
     {
+      "id": "test:server/providers/falImagesAnchored.test.ts",
+      "path": "server/providers/falImagesAnchored.test.ts"
+    },
+    {
       "id": "test:server/providers/providerContract.test.ts",
       "path": "server/providers/providerContract.test.ts"
     },
@@ -15566,11 +15564,6 @@
     {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:shared/castingVocabularies.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
-      "to": "module:shared/followUnpinnable.ts",
       "kind": "imports"
     },
     {
@@ -22064,11 +22057,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/briefCompiler.ts",
-      "to": "module:shared/followUnpinnable.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/briefLength.ts",
       "to": "module:shared/briefLength.ts",
       "kind": "imports"
@@ -22846,16 +22834,6 @@
     {
       "from": "module:server/castingV2/familyClause.ts",
       "to": "module:server/castingV2/castingIntent.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/familyClause.ts",
-      "to": "module:server/castingV2/cohortPhotorealHuman.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/familyClause.ts",
-      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -25886,6 +25864,11 @@
     {
       "from": "module:server/castingV2/retryService.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
@@ -33639,6 +33622,13 @@
       "kind": "redeclared-shape",
       "subject": "server/castingV2/rollProjection.ts:277",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1139",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/rollService.ts:1139",
+      "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/rollService.ts:263",
