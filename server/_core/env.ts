@@ -55,6 +55,8 @@ import {
   CASTING_CREATIVE_REGISTER_SCOPE_ENV,
   validateCastingBriefFidelityEnvironment,
   validateCastingCreativeRegisterEnvironment,
+  CASTING_CONCEPT_UPLOAD_SCOPE_ENV,
+  validateCastingConceptUploadEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -527,6 +529,18 @@ export function validateEnv(): void {
   validateCastingCreativeRegisterEnvironment({
     scope: process.env[CASTING_CREATIVE_REGISTER_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+
+  /*
+    UPLOAD A CONCEPT (#185), and its parent is the REGISTER rather than casting
+    — the only sub-flag in this file whose parent is not `CASTING_V2_SCOPE`.
+    What the description it produces must not contradict is the locked house
+    block, and that block is appended by code on the author road alone, so a
+    describer armed off that road would be writing against nothing.
+  */
+  validateCastingConceptUploadEnvironment({
+    scope: process.env[CASTING_CONCEPT_UPLOAD_SCOPE_ENV],
+    registerScope: process.env[CASTING_CREATIVE_REGISTER_SCOPE_ENV],
   });
 
   /*

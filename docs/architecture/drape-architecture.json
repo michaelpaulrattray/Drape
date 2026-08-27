@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "21563a62746d5cb2"
+    "sourceFingerprint": "79f46d0fd4ccff0b"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 180
+      "moduleCount": 181
     },
     {
       "id": "domain:castingV2",
@@ -3621,6 +3621,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/conceptDescribe.ts",
+      "path": "server/castingV2/conceptDescribe.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/declarativeState.ts",
       "path": "server/castingV2/declarativeState.ts",
       "domain": "casting-v2",
@@ -6881,6 +6887,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.concept.describe",
+      "namespace": "castingV2.concept",
+      "name": "describe",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.config",
       "namespace": "castingV2",
       "name": "config",
@@ -8693,6 +8709,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_CONCEPT_UPLOAD_SCOPE",
+      "name": "CASTING_CONCEPT_UPLOAD_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_CREATIVE_REGISTER_SCOPE",
       "name": "CASTING_CREATIVE_REGISTER_SCOPE",
       "valueRecorded": false
@@ -9092,6 +9113,11 @@
     {
       "id": "flag:CASTING_BRIEF_FIDELITY_SCOPE",
       "name": "CASTING_BRIEF_FIDELITY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_CONCEPT_UPLOAD_SCOPE",
+      "name": "CASTING_CONCEPT_UPLOAD_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -11024,6 +11050,14 @@
     {
       "id": "test:server/castingV2/compositeIntegrity.test.ts",
       "path": "server/castingV2/compositeIntegrity.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/conceptDescribe.test.ts",
+      "path": "server/castingV2/conceptDescribe.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/conceptUploadScope.test.ts",
+      "path": "server/castingV2/conceptUploadScope.test.ts"
     },
     {
       "id": "test:server/castingV2/creativeRegisterScope.test.ts",
@@ -22497,6 +22531,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/conceptDescribe.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/conceptDescribe.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/conceptDescribe.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/deliveryCourt.ts",
       "to": "module:server/castingV2/maskGeometry.ts",
       "kind": "imports"
@@ -29364,6 +29413,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/conceptDescribe.ts",
       "kind": "imports"
     },
     {

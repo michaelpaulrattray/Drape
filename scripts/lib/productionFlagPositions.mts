@@ -341,6 +341,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "button — so its live population on his account is every refused tile he has, not "
       + "zero. Wider than users:1 on his eye and not before",
   },
+  CASTING_CONCEPT_UPLOAD_SCOPE: {
+    position: "off",
+    why:
+      "UPLOAD A CONCEPT (#185, his order 2026-08-28) — a picture in, a description of the "
+      + "PERSON out, into her own brief box. BUILT DARK 2026-08-28 and off everywhere: "
+      + "the client tile is still the inert placeholder, so the door has no surface to be "
+      + "reached from yet. Its parent is CASTING_CREATIVE_REGISTER_SCOPE (the description "
+      + "is written for the AUTHOR). Widening past users:1 re-opens the vendor-exposure "
+      + "question, since the upload rides whole to the describer",
+  },
   R7_EVIDENCE_COMPOSER_SCOPE: { position: "off", why: "the composer's runtime door, unopened" },
   R7_EVIDENCE_PACKAGE_SCOPE: {
     position: "off",

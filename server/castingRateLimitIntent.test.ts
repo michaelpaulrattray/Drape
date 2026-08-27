@@ -187,6 +187,12 @@ describe("which bucket each casting procedure was handed", () => {
          shared bucket would let either road spend the other's allowance while
          nobody could tell from the counter which had done it. */
       attach: "castingReferenceAttach",
+      /* UPLOAD A CONCEPT (#185) — its OWN bucket, and NOT the attach door's
+         beside it. That door keeps bytes and spends nothing; this one keeps
+         nothing and spends HOUSE MONEY on every call (one describer read with
+         the picture inline), so a shared window would let a free write exhaust
+         a paid read's allowance with nothing in the counter to say which. */
+      describe: "castingConceptDescribe",
       /* Reading the hair colour off a picture she ALREADY attached — the same
          bucket as the makeup read and for the same reason: it keeps nothing,
          and what it spends is one text call on house money with no credit path

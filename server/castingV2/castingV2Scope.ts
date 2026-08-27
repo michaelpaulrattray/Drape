@@ -2782,6 +2782,110 @@ export function validateCastingCreativeRegisterEnvironment(input: {
   return register;
 }
 
+/* ------------------------------------------ the concept-upload sub-flag */
+
+/**
+ * UPLOAD A CONCEPT (#185) — `CASTING_CONCEPT_UPLOAD_SCOPE`.
+ *
+ * Whether a customer may hand the studio a PICTURE and get back a description
+ * of the person in it, in her own brief box, to cast from. The founder's own
+ * order, 2026-08-28: *"if you have a model already or concept or image you can
+ * upload it the image analyzer will analyze and describe it to the authour and
+ * cast it with the description ... that way its easy for someone to upload an
+ * image and get a prompt to create someone similar without having to type it
+ * all out."*
+ *
+ * Off, and absent means off, `castingV2.concept.describe` answers NOT_FOUND
+ * before a byte is decoded, the config answers `conceptUploadEnabled: false`,
+ * and the start page's tile stays the honest inert placeholder it is today. No
+ * describer is called and no picture is read.
+ *
+ * **Its parent is `CASTING_CREATIVE_REGISTER_SCOPE`, not the casting scope, and
+ * the difference is his sentence rather than caution.** What the description
+ * must not contradict is the LOCKED HOUSE BLOCK, and `houseBlock.ts` is
+ * appended by code only on the author road; off that road there is no block for
+ * a description to argue with, and *"describe it to the authour"* names the
+ * road outright. The casting and cleanup-worker parents ride in through the
+ * register's own check.
+ *
+ * It spends **house money and never a customer's credits** — one text call with
+ * the picture inline (cents), no engine render, no segmenter read, no stored
+ * byte, no table and no migration, so `assertFalBudget` is untouched. The
+ * photograph is dropped when the call returns: there is nothing kept, so there
+ * is nothing to purge and no stranger's picture ever reaches a public URL.
+ *
+ * ⚠ **The upload does ride WHOLE to the describer vendor** — the same exposure
+ * the ink studio's widening tripwire governs, and acceptable on the same ground
+ * while the population is his own account. **Widening past `users:1` re-opens
+ * that question explicitly**, and it is named here so the next seat finds it
+ * rather than deriving it.
+ */
+export const CASTING_CONCEPT_UPLOAD_SCOPE_ENV = "CASTING_CONCEPT_UPLOAD_SCOPE";
+
+export class CastingConceptUploadScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_CONCEPT_UPLOAD_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingConceptUploadScopeConfigurationError";
+  }
+}
+
+export class CastingConceptUploadCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_CONCEPT_UPLOAD_SCOPE_ENV} ${detail}`);
+    this.name = "CastingConceptUploadCoverageError";
+  }
+}
+
+export function parseCastingConceptUploadScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingConceptUploadScopeConfigurationError();
+  });
+}
+
+/**
+ * Captured ONCE at the door. The PARENT is captured here too rather than
+ * trusted to boot — its siblings' reason: a boot check nobody invoked is the
+ * second way a flag pair goes wrong, and this one's parent is not the casting
+ * scope, so inheriting the sibling habit of calling `captureCastingV2Enabled`
+ * alone would open the door to an account off the author road.
+ */
+export function captureCastingConceptUploadEnabled(userId: number): boolean {
+  const child = parseCastingConceptUploadScope(process.env[CASTING_CONCEPT_UPLOAD_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingCreativeRegisterEnabled(userId);
+}
+
+export function validateCastingConceptUploadEnvironment(input: {
+  scope: string | undefined;
+  registerScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingConceptUploadScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingCreativeRegisterScope(input.registerScope);
+  if (parent.kind === "off") {
+    throw new CastingConceptUploadCoverageError(
+      `cannot be enabled while ${CASTING_CREATIVE_REGISTER_SCOPE_ENV} is off — the description is written `
+      + "for the AUTHOR, and off that road there is no house block for it to avoid contradicting",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingConceptUploadCoverageError(
+      `cannot be "all" while ${CASTING_CREATIVE_REGISTER_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingConceptUploadCoverageError(
+      `names users outside ${CASTING_CREATIVE_REGISTER_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 /* --------------------------------------------------- the retry sub-flag */
 
 /**

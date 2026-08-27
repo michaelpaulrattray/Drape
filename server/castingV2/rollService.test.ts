@@ -61,9 +61,21 @@ vi.mock("../db/castingV2", () => ({
     operationId: OPERATION_ID,
   })),
   /* A follow's parent. Only the pick arms roll a follow, and all they need is
-     for the read to succeed — the lineage itself is `followAnchor`'s suite. */
+     for the read to succeed — the lineage itself is `followAnchor`'s suite.
+
+     ⚠ THE TWO KEYS DIFFER ON PURPOSE (#185 half 2). `candidate.imageKey` is the
+     PRISTINE MASTER and the top-level `imageKey` is THE SELECTED FACE — which
+     is a refinement's frame whenever one is selected, because that is what
+     `getOwnedCandidateWithSelectedFace` resolves. A fixture carrying only one
+     of them cannot tell the two apart, so an anchor that quietly went back to
+     the master would still have measured green. */
   getOwnedCandidateWithSelectedFace: vi.fn(async () => ({
-    candidate: { id: 1, publicId: "66666666-6666-4666-8666-666666666666", position: 3 },
+    candidate: {
+      id: 1,
+      publicId: "66666666-6666-4666-8666-666666666666",
+      position: 3,
+      imageKey: "casting-v2/candidates/parent-MASTER.png",
+    },
     internalPrompt: null,
     /* The SELECTED face's frame — what a Row A follow attaches (#177). */
     imageKey: "casting-v2/candidates/parent-frame.png",
@@ -1070,6 +1082,8 @@ describe("a reader outage on a roll is free (#126 — founder, Crew reply #7: 'r
 
 describe("the ROW A follow (#177) — on the author road the photo rides, or the roll refuses free", () => {
   const PARENT_FRAME = "casting-v2/candidates/parent-frame.png";
+  /** The parent's OWN column — what an anchor must never fall back to (#185). */
+  const PARENT_MASTER = "casting-v2/candidates/parent-MASTER.png";
   const FOLLOW_PARENT = "66666666-6666-4666-8666-666666666666";
   const saved: Record<string, string | undefined> = {};
 
@@ -1111,6 +1125,38 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
     expect(engineSent).toHaveLength(8);
     for (const dispatch of engineSent) {
       expect(dispatch.references?.[0]?.bytes.toString()).toBe("anchor-frame");
+    }
+  });
+
+  /*
+    THE VERSION YOU ARE ON, not the version you started from (#185 half 2).
+
+    The founder asked: *"if we refine an image and then follow the refined
+    version ... will it use that version we are on as the reference image for
+    the follow"*. The answer is yes and it always was — `parent` here is
+    `getOwnedCandidateWithSelectedFace`, whose whole job is to resolve the
+    SELECTED face, and a landed refine selects itself (`landVariant` moves the
+    pointer in the same transaction). The issue reported it as a gap because
+    `parent.imageKey` READS like a candidate's own column; it is not.
+
+    Driven at the real dev database before this arm was written — five
+    candidates with a selected variant all resolved to the VARIANT's frame, and
+    the negative control (deselect, re-read, restore) resolved to the master —
+    so this arm pins the half of the chain a unit suite can hold: that the roll
+    attaches whatever the selected face resolved to, and never the master
+    beside it.
+  */
+  it("anchors THE SELECTED FACE — a follow of a refined version attaches that version's frame, not the pristine master (#185)", async () => {
+    const { result } = await followRoll();
+    await result;
+    expect(anchorReads).toEqual([PARENT_FRAME]);
+    expect(anchorReads).not.toContain(PARENT_MASTER);
+    const written = dbCalls.createRoll.mock.calls[0]?.[0] as {
+      candidates: Array<{ internalPrompt: { anchorImageKey?: string } }>;
+    };
+    for (const candidate of written.candidates) {
+      expect(candidate.internalPrompt.anchorImageKey).toBe(PARENT_FRAME);
+      expect(candidate.internalPrompt.anchorImageKey).not.toBe(PARENT_MASTER);
     }
   });
 
