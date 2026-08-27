@@ -40,6 +40,7 @@ import { randomUUID } from "node:crypto";
 import { recordRefund } from "../casting/atomicCredits";
 import { castWardrobeLine, currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
 import { readStoredDelta } from "./refineLegacy";
+import { rollComposedOnAuthorRoad } from "./rollProjection";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { withUniqueCastPublicId } from "../casting/castPublicId";
 import {
@@ -285,9 +286,26 @@ function identityDocumentsFor(source: SignableCandidate): {
   const masterPrompt = typeof internal?.prompt === "string" && internal.prompt.trim()
     ? internal.prompt
     : source.roll.briefText;
-  const resolved = internal?.resolved && typeof internal.resolved === "object"
+  const resolvedRaw = internal?.resolved && typeof internal.resolved === "object"
     ? (internal.resolved as Record<string, unknown>)
     : {};
+  /*
+    AN UNSENT RECORD NEVER BECOMES AN IDENTITY DOCUMENT (#176). On the author
+    road one authored prompt paints all eight, so the per-slice `resolved`
+    record is the house dice's unsent fiction — candidate 578's claims 100%
+    South Asian heritage and a goatee about a clean-shaven Mediterranean-looking
+    man. Snapshotting that here would stamp the fiction into `identityText`
+    under "THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY" and send every
+    later identity render a description that contradicts its own reference
+    image, permanently. Gated BOTH ways because rows exist both ways: the
+    compiler marks new author-road records `unsent: true`, and rows written
+    before the mark are caught by the roll's own register kind. The reference
+    image and the authored `masterPrompt` remain the identity — they are what
+    was actually sent and delivered.
+  */
+  const resolved = resolvedRaw.unsent === true || rollComposedOnAuthorRoad(source.roll.compiledBrief)
+    ? {}
+    : resolvedRaw;
   /*
     WHAT THIS CAST IS WEARING, SNAPSHOTTED AT SIGN (design §3.1 and condition
     (v), §3.1a).

@@ -175,6 +175,13 @@ export type SignableCandidate = {
     cohortKey: string | null;
     styleKey: string | null;
     styleProfile: unknown;
+    /**
+     * The roll's compiled brief, on the join this statement already makes —
+     * Sign consults `register.kind` before snapshotting the face's `resolved`
+     * record, because an author-road roll's per-slice records are unsent
+     * fiction (#176) and a Cast's identity documents are permanent.
+     */
+    compiledBrief: unknown;
     createdAt: Date;
     /**
      * THE TWO PATHS, arriving on a join this statement already makes (§3.1).
@@ -223,6 +230,7 @@ export async function getSignableCandidate(
       cohortKey: castingRolls.cohortKey,
       styleKey: castingRolls.styleKey,
       styleProfile: castingRolls.styleProfile,
+      rollCompiledBrief: castingRolls.compiledBrief,
       rollCreatedAt: castingRolls.createdAt,
       rollPath: castingRolls.path,
       rollWardrobeLine: castingRolls.wardrobeLine,
@@ -298,6 +306,7 @@ export async function getSignableCandidate(
       cohortKey: row.cohortKey,
       styleKey: row.styleKey,
       styleProfile: row.styleProfile,
+      compiledBrief: row.rollCompiledBrief,
       createdAt: row.rollCreatedAt,
       path: row.rollPath ?? null,
       wardrobeLine: row.rollWardrobeLine ?? null,

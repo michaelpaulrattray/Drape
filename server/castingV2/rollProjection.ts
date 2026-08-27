@@ -558,6 +558,25 @@ function readVarianceHeld(compiledBrief: unknown): boolean {
  * not a product one: the word budget keeps a real prompt well under it.
  */
 export const AUTHORED_PROMPT_MAX = 8000;
+
+/**
+ * Did this roll compose its prompts on the AUTHOR ROAD? Read off the roll's
+ * own record (`compiledBrief.register.kind`), validated rather than trusted.
+ *
+ * Only `"author"` counts. The superseded PR #94 register (`kind: "creative"`)
+ * and a `kind: "house"` fallback row both composed per-candidate prompts from
+ * the resolved identities through the house composer, so their records were
+ * genuinely sent; the author road is the one road where they were not — its
+ * per-slice `resolved` records are unsent fiction (#176), which is why the
+ * follow anchor and the Sign snapshot both consult this before reading one.
+ */
+export function rollComposedOnAuthorRoad(compiledBrief: unknown): boolean {
+  if (!compiledBrief || typeof compiledBrief !== "object") return false;
+  const register = (compiledBrief as { register?: unknown }).register;
+  if (!register || typeof register !== "object") return false;
+  return (register as { kind?: unknown }).kind === "author";
+}
+
 export function readAuthoredPrompt(briefText: string, compiledBrief: unknown): string | null {
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;

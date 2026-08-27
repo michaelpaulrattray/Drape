@@ -70,6 +70,7 @@ import {
   cancelQueuedCandidate,
   createRollWithCandidates,
   failCandidate,
+  getBriefForOwnedCandidate,
   getOwnedCandidateWithSelectedFace,
   getRollWardrobeForOwnedCandidate,
   getOwnedRoll,
@@ -92,11 +93,14 @@ import type { CreativeEngine } from "../providers/types";
 import {
   BriefRefusal,
   castingBriefCompiler,
+  statedAnchorFrom,
   type BriefCompiler,
   type CompiledRollBrief,
   type LockOverrides,
   type UnlockableField,
 } from "./briefCompiler";
+import type { FollowAnchor } from "./cohortPhotorealHuman";
+import { rollComposedOnAuthorRoad } from "./rollProjection";
 import { briefTooLong } from "./briefLength";
 import type { ResolvedIdentity } from "./castingIntent";
 import { admitRoll, castingCreativeEngine, type AdmissionDecision } from "./rollEngine";
@@ -117,6 +121,19 @@ export function readResolvedIdentity(internalPrompt: unknown): ResolvedIdentity 
   const resolved = (internalPrompt as { resolved?: unknown }).resolved;
   if (!resolved || typeof resolved !== "object") return null;
   const candidate = resolved as Record<string, unknown>;
+  /*
+    AN UNSENT RECORD IS NOT A DELIVERED FACT (#176). The author road paints all
+    eight from one authored prompt, so its per-slice dice output never reaches
+    the wire; the compiler marks those records `unsent: true` and this reader —
+    the one validated door every consumer uses — answers null for them, exactly
+    as it does for a row with no record at all. Every consumer already carries
+    the null road ("they" pronouns, no facet value, no anchor), which is the
+    honest degradation. Rows written on the author road BEFORE the mark existed
+    still hold unmarked fiction; the follow — the consumer the founder caught —
+    additionally gates on the parent roll's register kind (`honestFollowSource`),
+    and the residual data repair is filed on the queue.
+  */
+  if (candidate.unsent === true) return null;
   /*
     ONLY the fields that are genuinely always present (founder gate 16).
 
@@ -147,6 +164,32 @@ export function readResolvedIdentity(internalPrompt: unknown): ResolvedIdentity 
     return null;
   }
   return resolved as ResolvedIdentity;
+}
+
+/**
+ * THE HONEST FOLLOW SOURCE (#176). A follow inherits from exactly one of two
+ * records, decided by which one was actually sent:
+ *
+ *   - a HOUSE-road parent's per-slice `resolved` record — its prompt was
+ *     composed from it, so it describes the person in the frame;
+ *   - an AUTHOR-road parent's compiled BRIEF — its stated facts travelled
+ *     verbatim as the prompt's first paragraph, while the per-slice record is
+ *     the dice's unsent fiction (candidate 578: a Mediterranean-looking man
+ *     whose record claimed 100% South Asian heritage, and eight faithful
+ *     strangers on the founder's desk).
+ *
+ * Never both, and never the dice on the author road — including rows written
+ * before the compiler marked them `unsent`, which is why this gates on the
+ * parent ROLL's register kind rather than on the record itself.
+ */
+export function honestFollowSource(parent: {
+  compiledBrief: unknown;
+  internalPrompt: unknown;
+}): { identity: ResolvedIdentity | null; statedAnchor: FollowAnchor | null } {
+  if (rollComposedOnAuthorRoad(parent.compiledBrief)) {
+    return { identity: null, statedAnchor: statedAnchorFrom(parent.compiledBrief) };
+  }
+  return { identity: readResolvedIdentity(parent.internalPrompt), statedAnchor: null };
 }
 
 /** Objects live under one namespace so cleanup and audit can find them. */
@@ -326,6 +369,7 @@ export async function createRoll(
   */
   let followPersonaLine: string | null = null;
   let followIdentity: ResolvedIdentity | null = null;
+  let followStatedAnchor: FollowAnchor | null = null;
   let inheritedWardrobe: { path: CastingPath | null; wardrobeLine: string | null } | null = null;
   if (input.followCandidatePublicId) {
     /*
@@ -371,7 +415,24 @@ export async function createRoll(
       refuse — is a product question with the founder, and this comment is here
       so the next reader finds a known hole rather than a surprise.
     */
-    followIdentity = readResolvedIdentity(parent.internalPrompt);
+    /*
+      WHICH RECORD WAS ACTUALLY SENT decides what a follow inherits (#176).
+      The parent ROLL's compiled brief is read through the owned candidate in
+      one owner-scoped statement (invariant 1), because the candidate row alone
+      cannot say which road composed it — and on the author road the per-slice
+      record is unsent fiction that put "keep South Asian heritage" into a
+      family clause about a man who is not.
+    */
+    const parentBrief = await getBriefForOwnedCandidate(
+      input.userId,
+      input.followCandidatePublicId,
+    );
+    const honest = honestFollowSource({
+      compiledBrief: parentBrief?.compiledBrief ?? null,
+      internalPrompt: parent.internalPrompt,
+    });
+    followIdentity = honest.identity;
+    followStatedAnchor = honest.statedAnchor;
     /*
       WHAT THE SHEET THIS FOLLOW DESCENDS FROM IS WEARING (design §3.1).
 
@@ -529,6 +590,7 @@ export async function createRoll(
       style: input.style,
       followPersonaLine,
       followIdentity,
+      followStatedAnchor,
     });
   } catch (error) {
     if (error instanceof BriefRefusal) {

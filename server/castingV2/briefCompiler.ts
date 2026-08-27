@@ -41,6 +41,9 @@ import {
   EMPTY_STATED_HAIR,
   EMPTY_STATED_SKIN,
   NO_TENDENCIES,
+  HERITAGES,
+  LOOK_KEYS,
+  SEXES,
   lockFactsOf,
   validateLocks,
   type AgeBand,
@@ -50,6 +53,7 @@ import {
   type CastingIntent,
   type EnergyKey,
   type Heritage,
+  type HeritageComponent,
   type LockFacts,
   type LookKey,
   type ResolvedIdentity,
@@ -57,6 +61,7 @@ import {
   type StatedInk,
 } from "./castingIntent";
 import {
+  AGE_BANDS,
   composeCandidatePrompt,
   personaLineFor,
   resolveArchetype,
@@ -185,8 +190,17 @@ export type CandidateSpec = {
   position: number;
   prompt: string;
   personaLine: string | null;
-  /** Structured, so the validator compares values instead of grepping prose. */
-  resolvedIdentity: ResolvedIdentity;
+  /**
+   * Structured, so the validator compares values instead of grepping prose.
+   *
+   * `unsent: true` marks a record the PROMPT never carried (#176): on the
+   * author road one authored prompt paints all eight and the per-slice dice
+   * never reach the wire, so their output is a description of what was ROLLED,
+   * not of what was DELIVERED. `readResolvedIdentity` refuses an unsent record,
+   * which is how every downstream consumer — the follow anchor, the refine
+   * pronouns, the facet values — is kept from reading fiction as fact.
+   */
+  resolvedIdentity: ResolvedIdentity & { unsent?: true };
 };
 
 export type CompiledRollBrief = {
@@ -416,6 +430,19 @@ export type BriefCompilerInput = {
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
   /**
+   * THE HONEST ANCHOR for a follow of an AUTHOR-ROAD candidate (#176). An
+   * author-road parent's per-slice identity record is unsent fiction — the
+   * founder followed a visibly Mediterranean man and the clause held the
+   * record's `heritage: South Asian`, so all eight relatives were faithful
+   * strangers. When the parent roll composed on the author road the caller
+   * passes this instead of `followIdentity`: an anchor built from the parent
+   * BRIEF's stated facts (they were sent verbatim) and nothing else. An axis
+   * the brief never stated is UNHELD — refuse honestly until read — so the
+   * clause only ever repeats what the prompt already says. Takes precedence
+   * over `followIdentity` when both are supplied.
+   */
+  followStatedAnchor?: FollowAnchor | null;
+  /**
    * Test seam. Supplying an engine is how a test drives the interpreter's
    * exact output — including output built to misbehave, which is the only way
    * to prove the precedence fix rather than assert it. Production never sets
@@ -563,6 +590,56 @@ function withUnlocksApplied(anchor: FollowAnchor, unlock: readonly UnlockableFie
     ageBand: unlock.includes("ageBand") ? null : anchor.ageBand,
     heritage: unlock.includes("heritage") ? [] : anchor.heritage,
   };
+}
+
+/**
+ * The follow anchor for an AUTHOR-ROAD parent: the parent BRIEF's stated
+ * facts, and nothing else (#176).
+ *
+ * An author-road candidate's stored `resolved` record is the house dice's
+ * output on a roll whose one authored prompt never carried it — a description
+ * of what was ROLLED, consumed for weeks as a fact about what was DELIVERED.
+ * The specimen is dev candidate 578: brief "a fitness creator in their 30s,
+ * close-cropped hair", record claiming `heritage: 100% South Asian`, and a
+ * family of eight faithful strangers on the founder's desk. So a follow of
+ * such a parent anchors on the roll's compiled INTENT instead: a non-null
+ * intent field means "the brief said it" (see `anchorFrom`'s docblock), and a
+ * brief-stated fact was genuinely sent — verbatim, in the brief's own first
+ * paragraph. An axis the brief never stated is UNHELD, not guessed: reading it
+ * off the delivered frame is a design question on #176, not a default.
+ *
+ * Validated rather than trusted, like every read of a json column. `hair` is
+ * always null here — `statedHair.colour` is the customer's words rather than
+ * the `HairColour` vocabulary, and the brief text repeats them verbatim anyway.
+ * `realized` is always null: no realized axis of an author-road parent was
+ * ever sent.
+ */
+export function statedAnchorFrom(compiledBrief: unknown): FollowAnchor | null {
+  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+  const intent = (compiledBrief as { intent?: unknown }).intent;
+  if (!intent || typeof intent !== "object") return null;
+  const record = intent as Record<string, unknown>;
+  const sex =
+    typeof record.sex === "string" && (SEXES as readonly string[]).includes(record.sex)
+      ? (record.sex as Sex)
+      : null;
+  const ageBand =
+    typeof record.ageBand === "string" && (AGE_BANDS as readonly string[]).includes(record.ageBand)
+      ? (record.ageBand as AgeBand)
+      : null;
+  const look =
+    typeof record.look === "string" && (LOOK_KEYS as readonly string[]).includes(record.look)
+      ? (record.look as LookKey)
+      : null;
+  const heritage = Array.isArray(record.heritage)
+    ? (record.heritage as unknown[]).filter((component): component is HeritageComponent =>
+        component != null
+        && typeof component === "object"
+        && typeof (component as { heritage?: unknown }).heritage === "string"
+        && (HERITAGES as readonly string[]).includes((component as { heritage: string }).heritage)
+        && typeof (component as { pct?: unknown }).pct === "number")
+    : [];
+  return { sex, ageBand, heritage, hair: null, look, realized: null };
 }
 
 function applyUnlocks(intent: CastingIntent, unlock: readonly UnlockableField[]): CastingIntent {
@@ -1017,7 +1094,13 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     rows written that way still exist and the sheet still reads them).
   */
   const unlock = input.unlock ?? [];
-  const anchor = anchorFrom(input.followIdentity ?? null);
+  /*
+    THE HONEST SOURCE WINS (#176): a follow of an author-road parent anchors on
+    the brief's stated facts (`followStatedAnchor`, built by the caller from
+    the parent roll's compiled intent), never on the per-slice dice record —
+    which on that road was never sent and describes nobody in the frames.
+  */
+  const anchor = input.followStatedAnchor ?? anchorFrom(input.followIdentity ?? null);
   const authorRoad = input.creativeRegister === true;
 
   const outcome = await interpretBrief({
@@ -1259,8 +1342,24 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         statedAge: intent.ageBand ? { band: intent.ageBand, phase: intent.agePhase } : null,
       })
     : null;
+  /*
+    ON THE AUTHOR ROAD THE PER-SLICE RECORD IS MARKED UNSENT AND THE CAPTION IS
+    DROPPED (#176). One authored prompt paints all eight, so the dice's
+    identities and the per-position captions describe what was ROLLED, not what
+    was DELIVERED — the founder followed a Mediterranean-looking man whose
+    record claimed South Asian heritage, and the family clause repeated the
+    fiction to the engine as fact. The record is still written (it documents
+    what the dice rolled, which is how rows like the 578 specimen were
+    diagnosed) but `readResolvedIdentity` refuses it, and a null `personaLine`
+    draws the tile's index label instead of a disposition nobody cast.
+  */
   const candidates = authored
-    ? sheet.candidates.map((candidate) => ({ ...candidate, prompt: authored.prompt }))
+    ? sheet.candidates.map((candidate) => ({
+        ...candidate,
+        prompt: authored.prompt,
+        personaLine: null,
+        resolvedIdentity: { ...candidate.resolvedIdentity, unsent: true as const },
+      }))
     : sheet.candidates;
 
   const violations = candidates
