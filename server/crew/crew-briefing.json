@@ -1,5 +1,5 @@
 {
-  "edition": 55,
+  "edition": 56,
   "updatedAt": "2026-08-27T14:20:00+10:00",
   "shift": "foreman-49",
   "program": {
@@ -1131,6 +1131,11 @@
     {
       "at": "2026-08-27T14:20:00+10:00",
       "shift": "foreman-49",
+      "text": "Your second reply on the frame (\"your recommendation: (b) with F2's sentence\") — seen, and it is the same pick as your \"F2\": already executed, merged and live in the deploy just before this one. Nothing further moved."
+    },
+    {
+      "at": "2026-08-27T14:20:00+10:00",
+      "shift": "foreman-49",
       "text": "Your \"F2\" landed and is executed: the locked block's framing sentence is F2's word for word (PR #162, merged, deployed) — your reference's view carried into our 2:3 frame, ~33% head share against the old 36.7%. Your next roll frames this way; nothing else in the block moved. The trim question it raises (retire it, now that the sentence holds head size above the trim's own bar?) is filed on #11 with the readings it needs, not decided. And your reviewer's diet (#161) is built the same shift: ordinary PR reviews now read a 15KB charter instead of the full 157KB law book — same Fable, same priorities, about a tenth of the reading on your token — while money/auth diffs keep the full reading, and a drift guard reddens if the charter ever falls behind the law. Found on the way and carded (#165): a PR that edits the review workflow itself silently gets no review while the check reads green — three repair options on the card. Still waiting on your eye: the light (#128, pick a row by letter), the rebuilt block's frames (#144), and your first Follow (#154 — tap Follow on a face you like; that roll is the court). $2.05-course spend was last night's; this shift spent $0 house, 0 credits."
     },
     {
@@ -1347,6 +1352,7 @@
     10,
     11,
     12,
-    13
+    13,
+    14
   ]
 }
