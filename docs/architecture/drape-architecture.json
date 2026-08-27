@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b13922e53a671535"
+    "sourceFingerprint": "a4f086772a7f5b82"
   },
   "domains": [
     {
@@ -24117,6 +24117,11 @@
     {
       "from": "module:server/castingV2/presentationState.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/promptAuthor.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },
     {

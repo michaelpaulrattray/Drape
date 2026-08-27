@@ -30,6 +30,7 @@ import { houseBlockForStyle } from "./houseBlock";
 import { readCastStyle } from "./rollProjection";
 import { CAST_STYLES, CAST_STYLE_LINES, CAST_STYLE_NAMES, COMING_CAST_STYLES, DEFAULT_CAST_STYLE } from "../../shared/castStyles";
 import {
+  ageContradictionIn,
   AUTHOR_MAX_OUTPUT_TOKENS,
   authorAllowance,
   authorPrompt,
@@ -38,12 +39,14 @@ import {
   countWords,
   DEFAULT_IMAGINATION,
   draftRefusal,
+  MAX_SHEET_CHECKLIST,
   maxSystemPrompt,
   NEVER_WRITTEN,
   neverWrittenIn,
   staticPrompt,
   WORD_BUDGET,
 } from "./promptAuthor";
+import { IMAGINATIONS } from "../../shared/imagination";
 import {
   AUTHOR_ROAD_FRAMING,
   AUTHORITY_LINE,
@@ -236,7 +239,8 @@ describe("the author's instruction (§5b, at the text)", () => {
       "more taste, not more world",
       "Do NOT write any camera, lens, framing",
       "Do NOT write notes about the series",
-      "You may add; you may not take away.",
+      /* §5g (#171) superseded the house wording ("You may add; you may not take away") with his own. */
+      "Taste can be added. Facts cannot be rewritten.",
       "at most 200 words",
       "avoid explicit sheer or revealing clothing language",
       "placed VERBATIM before your text",
@@ -284,6 +288,88 @@ describe("the budget (rule 14) — the brief is never cut, the author fits in wh
     expect(draftRefusal(`Pale skin. ${NEGATIVE_LINES[1]}`, 100)).toContain("camera/studio language");
     expect(draftRefusal(`Pale skin. ${LIGHTING_LINE}`, 100)).toContain("camera/studio language");
     expect(draftRefusal("Pale cool-toned skin, intense black makeup language, sculpted black hair.", 100)).toBeNull();
+  });
+});
+
+/* ------------------------------------------- the §5g guardrails (#171) */
+
+describe("§5g — seed facts cannot move, including paraphrase (the check compares VALUES)", () => {
+  const MID_30S = { band: "30s", phase: "mid" } as const;
+
+  it("his own specimen: 'in her mid-thirties' passes on a mid-30s seed; 'young' is a contradiction", () => {
+    expect(ageContradictionIn("Severe editorial styling; she reads in her mid-thirties.", MID_30S)).toBeNull();
+    expect(ageContradictionIn("A young woman in blackened velvet.", MID_30S)).toBe("young");
+    expect(ageContradictionIn("The styling reads youthful and soft.", MID_30S)).toBe("youthful");
+  });
+
+  it("a different stated decade reddens in BOTH directions, in any age-stating wording", () => {
+    expect(ageContradictionIn("in her early 20s, luminous", MID_30S)).toBeTruthy();
+    expect(ageContradictionIn("she is aged 25", MID_30S)).toBeTruthy();
+    expect(ageContradictionIn("a fifty-something presence", MID_30S)).toBeTruthy();
+    expect(ageContradictionIn("in their 50s, silvering", MID_30S)).toBeTruthy();
+    expect(ageContradictionIn("a teenage softness", MID_30S)).toBeTruthy();
+    /* The same value in any wording passes. */
+    expect(ageContradictionIn("35 years old, self-possessed", MID_30S)).toBeNull();
+    expect(ageContradictionIn("in her thirties", MID_30S)).toBeNull();
+    expect(ageContradictionIn("early 30s energy", MID_30S)).toBeNull();
+  });
+
+  it("era styling is NOT an age claim — the matchers anchor to age-stating shapes (the #173 lesson)", () => {
+    expect(ageContradictionIn("70s disco styling: sequins, lamé, mirrored texture language.", MID_30S)).toBeNull();
+    expect(ageContradictionIn("an 80s-inspired matte grade over 90s minimalism", MID_30S)).toBeNull();
+  });
+
+  it("QUALIFIED era phrases pass too, and the possessive elder claim still reddens (Fable review of #174, finding 1)", () => {
+    expect(ageContradictionIn("late 70s disco styling with mirrored lamé", MID_30S)).toBeNull();
+    expect(ageContradictionIn("an early 90s minimalist grade", MID_30S)).toBeNull();
+    expect(ageContradictionIn("mid-80s synth styling, chrome and neon texture language", MID_30S)).toBeNull();
+    /* The possessive shape is an AGE shape, not an era one — it keeps catching real elder claims. */
+    expect(ageContradictionIn("a man in his late 70s", MID_30S)).toBeTruthy();
+    /* Word forms are age claims in any shape. */
+    expect(ageContradictionIn("late seventies, silver and weathered", MID_30S)).toBeTruthy();
+  });
+
+  it("'young' on a teens/20s seed states nothing the seed did not — no drift", () => {
+    expect(ageContradictionIn("young, luminous styling", { band: "20s", phase: null })).toBeNull();
+    expect(ageContradictionIn("youthful energy", { band: "teens", phase: null })).toBeNull();
+  });
+
+  it("driven: an author draft that ages the seed down is refused and re-asked once, naming the stated value; the clean second draft stands", async () => {
+    const engine = engineAnswering(["A young woman in blackened velvet.", ADDITION]);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max", statedAge: { band: "30s", phase: "mid" } });
+    const calls = sent(engine, "author");
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.system).toContain("moves the user's stated age (mid 30s)");
+    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
+  });
+
+  it("the MAX instruction states both §5g rules: facts cannot be rewritten; a finished seed gets pressure only, never new nouns", () => {
+    const prompt = maxSystemPrompt(100);
+    expect(prompt).toContain("Facts cannot be rewritten");
+    expect(prompt).toContain('"mid 30s" must never surface as "young woman"');
+    expect(prompt).toContain("the decision is by CONTENT, never length");
+    expect(prompt).toContain("your ENTIRE output is one short intensity clause");
+    expect(prompt).toContain("more severe, more editorial, denser texture, stronger mood");
+    expect(prompt).toContain("a named haircut, a younger age, a sharper named face");
+  });
+
+  it("no third button (§5g): the imagination input is exactly the two endpoints until N3's slider", () => {
+    expect(IMAGINATIONS).toEqual(["low", "max"]);
+  });
+
+  it("the MAX-sheet checklist carries his five clauses and three failure readings verbatim (item 4 — the eye caption quotes this)", () => {
+    for (const clause of [
+      "Facts intact",
+      "same studio",
+      "same designed universe across all eight",
+      "eight different faces",
+      "bookable for one lookbook",
+      "Clones = too tight",
+      "Eight unrelated genres = too loose",
+      "They got younger = author rewrote the seed",
+    ]) {
+      expect(MAX_SHEET_CHECKLIST, clause).toContain(clause);
+    }
   });
 });
 
@@ -502,6 +588,23 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     expect(sent(engine, "author")[0]?.user).toBe(THIN);
     expect(on.candidates[0]?.prompt).toBe(`${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}`);
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", imagination: "max", mode: "authored", authored: true, content: ADDITION, prompt: `${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}` });
+  });
+
+  it("the WIRE of §5g (#171): the compiler hands the READER's recorded age to the author — an aged-down draft is re-asked at the real call site", async () => {
+    /* The stub INTENT records ageBand "30s"; the first draft says "young". */
+    const engine = engineAnswering(["A young woman in blackened velvet.", ADDITION]);
+    const on = await castingBriefCompiler({
+      briefText: THIN,
+      candidateCount: 8,
+      rollSeed: "wire-age-drift",
+      engine,
+      creativeRegister: true,
+      imagination: "max",
+    });
+    const calls = sent(engine, "author");
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.system).toContain("moves the user's stated age");
+    expect(on.compiledBrief.register).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
   });
 
   it("the author down at MAX, the sheet still rolls on seed + block and the row says nobody authored it", async () => {
