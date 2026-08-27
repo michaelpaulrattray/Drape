@@ -185,8 +185,10 @@ Everything else in the old block is kept as §5d rules it (posture line replaces
 
 **Add:**
 - **Seed facts cannot move.** *"mid 30s must not become young woman. Age, sex, and other stated facts stay. Taste can be added. Facts cannot be rewritten."* (At every level — this is rule 4's containment, now explicitly including PARAPHRASE drift: a stated fact appears in the final prompt in a form that preserves its value.)
-- **If the user already wrote the look, don't write a second one.** *"Intense user copy at LOW passes through. MAX must not stack another wardrobe bible on a finished seed."* A seed that carries its own aesthetic language gets little or nothing added at MAX.
+- **If the user already wrote the look, don't write a second one.** *"Intense user copy at LOW passes through. MAX must not stack another wardrobe bible on a finished seed."* **AMENDED same day (verbatim): a finished seed is judged by CONTENT, never word count** — *"If the user already specified the world — aesthetic, skin language, face language — treat it as finished."* The specimen is his 73-word prompt (*"a young woman with an intense cyber-goth aesthetic … extremely pale porcelain skin and a sharp, androgynous face"*). The rule: thin seed + MAX → the full look paragraph. Finished look-seed + MAX → **a short intensity clause only** — *"Allowed on a finished seed: pressure only — more severe, more editorial, denser texture, stronger mood. Forbidden: new nouns — new garment, jewellery, named haircut, younger age, sharper named face."* User text intact, studio block still last.
 - **The two buttons are the intensity control.** *"LOW = engine's taste. MAX = author's editorial taste. No third button."*
+
+**His tests (verbatim):** *"goth woman mid 30s + MAX → full look language. The porcelain / cyber-goth seed + MAX → user text intact, at most a short intensity clause, no new named items. That same finished seed at MAX must not come back more same-faced than LOW. If it clones, MAX added inventory."*
 
 **Check on the next MAX sheet (his checklist, the eye-item caption's shape):** facts intact · same studio · same designed universe across all eight · eight different faces · bookable for one lookbook. **Clones = too tight. Eight unrelated genres = too loose. They got younger = author rewrote the seed.**
 
