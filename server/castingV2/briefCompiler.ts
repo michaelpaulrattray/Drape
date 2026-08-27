@@ -202,8 +202,9 @@ export type CompiledRollBrief = {
    * How varied this sheet actually is, and what was done about it.
    *
    * Persisted with the compiled brief because it is the evidence for a taste
-   * decision the user is paying for: when the echo confesses that the eight
-   * will differ mainly in expression, this is the count that said so.
+   * decision the user is paying for. The sheet's expression-only confession
+   * line was killed by #166 (it described the clone as the product); the
+   * count stays because it is the evidence a future held-axes surface reads.
    */
   variance: VarianceReport;
   /** Sheet candidates render at 1K, medium quality (§H.10). */

@@ -2991,6 +2991,15 @@ queues its second half as a follow-up sentence) — filed fable-069.
 
 ## 2b. The variance confession is told AFTER the roll — a line, not a card
 
+> ⚠ **CLOSED BY DELETION, NOT BY THE MOVE THIS ITEM PROPOSED (#166, founder
+> verbatim, 2026-08-27):** *"That is an instruction to clone. Expression-only
+> variation is one actor, eight moods. Kill that line on Follow sheets."* The
+> confession line no longer renders anywhere — the sentence described the
+> clone as the intended product, and a forbidden-token arm in
+> `familyClause.test.ts` keeps it from coming back. Nothing below is pending;
+> the pre-roll-move cost analysis is kept as the record of why it was after
+> the roll while it lived.
+
 Filed by the cleanup milestone (triage §16a, ruled fable-988 §3) because the
 place it was written down was a dead constant, and deleting that would have
 deleted the only record of the intent.

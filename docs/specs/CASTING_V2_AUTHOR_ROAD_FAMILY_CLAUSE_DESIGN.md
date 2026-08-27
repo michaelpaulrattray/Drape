@@ -1,6 +1,19 @@
 # The author road carrying a follow or a chip edit — design (#131's open item)
 
 *Foreman-32, 2026-08-27. Status: **BUILT 2026-08-27 (foreman-40) on his countersign** — Crew reply #11, 2026-08-26 20:49Z, verbatim: *"Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court."* Built as recommended, with the amendments in §6 below.*
+
+> ⚠ **THE CLAUSE'S WORDING IN THIS DESIGN IS SUPERSEDED (#166, founder
+> verbatim, 2026-08-27, on the shipped clause):** *"Image models read 'close
+> relative' as same skull, slight remix … That's not a fork of the look.
+> That's a reprint of the person."* Every specimen below that says *"cast a
+> close relative of one person … the face itself is new"* describes the FIRST
+> shape, not the product. The shipping clause casts a ROLE family — *same
+> casting brief, new person; keep sex, age range, heritage, hair-colour
+> family, grooming world; do not copy this face, this exact hairline, this
+> exact bone structure, or this exact expression* — and the sheet's
+> expression-only confession line is deleted. `familyClause.ts` and its suite
+> are the authority; the carry MECHANICS in this design (what is held, when
+> the clause is written, precedence, read-only chips) are unchanged.
 *Governing ruling: `PROMPT_AUTHOR_RULING_2026-08-26.md` (rules 1–16, §5b/§5c);*
 *the road as it stood before this build: `briefCompiler.ts` (`authorRoad`, `houseBecause` — the latter deleted by the build, §6), `promptAuthor.ts`, `houseBlock.ts`.*
 
