@@ -66,6 +66,14 @@ vi.mock("../db/castingV2", () => ({
     candidate: { id: 1, publicId: "66666666-6666-4666-8666-666666666666", position: 3 },
     internalPrompt: null,
   })),
+  /* The parent ROLL's compiled brief, read by the honest follow source (#176).
+     No `register` = a house-road parent, which keeps these arms on the road
+     they were written for; the author-road gate is `followGhost`'s suite. */
+  getBriefForOwnedCandidate: vi.fn(async () => ({
+    compiledBrief: {},
+    lockContract: {},
+    briefText: "",
+  })),
   /* The parent SHEET's born pair. Its default is the honest one for a fixture
      whose parent predates the paths: both NULL, which must keep the follow's
      prompt unpathed. The follow arms override it. */

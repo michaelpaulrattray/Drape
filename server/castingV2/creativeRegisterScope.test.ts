@@ -555,10 +555,18 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     for (const houseOnly of ["CASTING CATEGORY (ABSOLUTE)", "SUBJECT:", "PHYSIQUE:", "DIRECTION:", "THIS CANDIDATE:", "WARDROBE"]) {
       expect(prompt, houseOnly).not.toContain(houseOnly);
     }
-    /* The reader's record did not move. */
+    /* The reader's record did not move — but on the author road it is MARKED
+       UNSENT (#176): one authored prompt paints all eight, so the per-slice
+       dice never reach the wire and their record may not be read as a
+       delivered fact. The caption is dropped for the same reason — a
+       disposition nobody cast must not sit under a tile. */
     expect(on.lockContract).toEqual(off.lockContract);
-    expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(off.candidates.map((c) => c.resolvedIdentity));
-    expect(on.candidates.map((c) => c.personaLine)).toEqual(off.candidates.map((c) => c.personaLine));
+    expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(
+      off.candidates.map((c) => ({ ...c.resolvedIdentity, unsent: true })),
+    );
+    expect(on.candidates.every((c) => c.personaLine === null)).toBe(true);
+    /* The house road's captions did not move (positive control for the drop). */
+    expect(off.candidates.every((c) => typeof c.personaLine === "string" && c.personaLine.length > 0)).toBe(true);
     /* The row says who wrote it, and carries the whole prompt for the sheet to show. */
     expect(on.compiledBrief.register).toMatchObject({
       kind: "author",
@@ -682,8 +690,12 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     expect(on.candidates[0]?.prompt).not.toContain("low bun");
     expect(on.candidates[0]?.prompt).not.toContain("CASTING CATEGORY");
     expect(neverWrittenIn(FAMILY_CLAUSE)).toBeNull();
-    /* The identities the sheet records are still the house follow's — the anchor biased the neighbourhood exactly as before. */
-    expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(off.candidates.map((c) => c.resolvedIdentity));
+    /* The identities the sheet records are still the house follow's — the
+       anchor biased the neighbourhood exactly as before — and they are marked
+       unsent (#176), because the one authored prompt never carried them. */
+    expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(
+      off.candidates.map((c) => ({ ...c.resolvedIdentity, unsent: true })),
+    );
     expect(on.compiledBrief.register).toMatchObject({
       kind: "author",
       mode: "seed",

@@ -41,6 +41,13 @@ let rollWardrobe: { path: "wardrobe" | "basics" | null; line: string | null } = 
   line: null,
 };
 
+/**
+ * The roll's compiled brief, as the Sign gate reads it (#176). `{}` — no
+ * register — is a HOUSE-road roll, which is every fixture in this file unless
+ * an arm says otherwise; the author-road arms move it.
+ */
+let rollCompiledBrief: unknown = {};
+
 let chargeSucceeds = true;
 let refundRecords = true;
 
@@ -135,6 +142,8 @@ vi.mock("../db/castingV2Sign", () => ({
            was cast before the paths existed. Overridden by the arms that care. */
         path: rollWardrobe.path,
         wardrobeLine: rollWardrobe.line,
+        /* The Sign gate's read (#176) — house-shaped unless an arm moves it. */
+        compiledBrief: rollCompiledBrief,
       },
       session: { id: 10, publicId: "session-public" },
     };
@@ -336,6 +345,7 @@ beforeEach(() => {
   /* A stateful fixture re-establishes its state in front of every row it is
      asked about — the census corpus's own first law, arriving in a unit suite. */
   rollWardrobe = { path: null, line: null };
+  rollCompiledBrief = {};
   packageInputs.length = 0;
   copyThrows = false;
   manifestThrows = false;
@@ -657,6 +667,69 @@ describe("the Cast's wardrobe snapshot", () => {
     /* CONTROL — the same string DOES carry the identity, so the arm above is
        reading an exclusion and not an empty field. */
     expect(boundary.identityText).toContain("IDENTITY");
+  });
+});
+
+/**
+ * THE IDENTITY DOCUMENTS NEVER HOLD AN UNSENT RECORD (#176).
+ *
+ * An author-road roll's per-slice `resolved` record is the house dice's output
+ * on a roll whose ONE authored prompt never carried it — candidate 578's
+ * claims 100% South Asian heritage and a goatee about a clean-shaven
+ * Mediterranean-looking man. Snapshotting it at Sign would stamp the fiction
+ * into `identityText` under "THIS PERSON MUST MATCH THE REFERENCE IMAGE
+ * EXACTLY", permanently, against a reference image showing none of it. The
+ * gate reads BOTH signals because rows exist both ways: the `unsent: true`
+ * mark on records written after the fix, and the roll's own `register.kind`
+ * for rows written before it. (Fable review of PR #178, finding 1: this gate
+ * shipped untested and the mock's roll carried no `compiledBrief` at all, so
+ * every arm exercised only the house path.)
+ */
+describe("the identity documents refuse the unsent record (#176)", () => {
+  const FICTION = {
+    sex: "male",
+    heritage: [{ pct: 100, heritage: "South Asian" }],
+    realized: { facialHair: "goatee", beardGrey: "salt and pepper" },
+  };
+
+  it("an AUTHOR-road roll's record is snapshotted as {} and no fiction word reaches the fingerprint", async () => {
+    rollCompiledBrief = { register: { kind: "author", mode: "seed" }, intent: {} };
+    candidateRow.internalPrompt = { prompt: "the authored prompt", resolved: FICTION };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    const boundary = boundaryInputs.at(-1)!;
+    expect(boundary.technicalSchema).toMatchObject({ subject: {} });
+    expect((boundary.technicalSchema as { subject: object }).subject).toEqual({});
+    for (const word of ["South Asian", "goatee", "salt and pepper"]) {
+      expect(boundary.identityText, word).not.toContain(word);
+    }
+    /* The authored prompt IS the identity's casting spec — that half stays. */
+    expect(boundary.masterPrompt).toBe("the authored prompt");
+    expect(boundary.identityText).toContain("Full casting spec: the authored prompt");
+  });
+
+  it("a record marked `unsent: true` is refused even when the roll's brief cannot say which road", async () => {
+    rollCompiledBrief = {};
+    candidateRow.internalPrompt = { prompt: "the authored prompt", resolved: { ...FICTION, unsent: true } };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    expect((boundaryInputs.at(-1)!.technicalSchema as { subject: object }).subject).toEqual({});
+  });
+
+  it("positive control — a HOUSE-road sign still snapshots the record whole", async () => {
+    rollCompiledBrief = {};
+    candidateRow.internalPrompt = { prompt: "the composed casting instruction", resolved: FICTION };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    const boundary = boundaryInputs.at(-1)!;
+    expect(boundary.technicalSchema).toMatchObject({
+      subject: { heritage: [{ pct: 100, heritage: "South Asian" }] },
+    });
+    expect(boundary.identityText).toContain("South Asian");
+  });
+
+  it("positive control — the superseded creative register (`kind: creative`) is a sent record and keeps it", async () => {
+    rollCompiledBrief = { register: { kind: "creative" } };
+    candidateRow.internalPrompt = { prompt: "the composed casting instruction", resolved: FICTION };
+    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
+    expect(boundaryInputs.at(-1)!.identityText).toContain("South Asian");
   });
 });
 
