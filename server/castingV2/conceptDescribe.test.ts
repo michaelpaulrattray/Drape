@@ -51,6 +51,11 @@ function engineSaying(...replies: string[]): TextEngine & { sent: { system: stri
 
 const said = (description: string | null) => JSON.stringify({ description });
 
+/** Transports fence their JSON; `parse` strips it, and that must keep working. */
+const NL = String.fromCharCode(10);
+const FENCE = "```json" + NL;
+const FENCE_END = NL + "```";
+
 describe("the sweep — words about the picture, not about the person", () => {
   /*
     THE NEGATIVE CONTROL, and it is the arm that matters (law 2). A sweep that
@@ -81,6 +86,10 @@ describe("the sweep — words about the picture, not about the person", () => {
     "features reminiscent of South Asian ancestry",
     "a build resembling a swimmer's",
     "hair that looks like it was cut at home",
+    /* The review's finding 2 — every form of `cropped` belongs to hair too. */
+    "hair cropped at the nape and longer on top",
+    "tightly cropped hair going grey at the sides",
+    "a cropped denim jacket over a tee",
   ])("leaves a person word alone: %s", (phrase) => {
     expect(notAboutThePersonIn(`A man with ${phrase}, standing squarely.`)).toBeNull();
   });
@@ -137,6 +146,31 @@ describe("the reader", () => {
       .toEqual({ ok: false, reason: "no_person", attempts: 1 });
     expect(await describeConcept({ ...PICTURE, engine: engineSaying("") }))
       .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+  });
+
+  /*
+    REVIEW OF #187, FINDING 1 — and it is the arm that catches OUR fault being
+    told to the customer as HERS. Every one of these is a reply we could not
+    read; none of them is the reader saying there is nobody in the picture, and
+    the sentence the route writes for those two is different.
+  */
+  it.each([
+    ["prose instead of JSON", "Sure! Here is a description of the person in the image."],
+    ["JSON truncated at the token ceiling", '{"description": "A woman in her ear'],
+    ["an object we did not ask for", '{"caption": "a woman"}'],
+    ["a bare string", '"a woman in her thirties"'],
+    ["the wrong type", '{"description": 42}'],
+  ])("calls a NON-EMPTY reply it cannot read 'unreadable', never 'no_person' — %s", async (_name, reply) => {
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(reply) }))
+      .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+  });
+
+  it("still reads a description the transport wrapped in a fenced code block", async () => {
+    const outcome = await describeConcept({
+      ...PICTURE,
+      engine: engineSaying(FENCE + said(CLEAN) + FENCE_END),
+    });
+    expect(outcome).toEqual({ ok: true, description: CLEAN, attempts: 1 });
   });
 
   it("degrades to a refusal, never an exception, when the transport throws", async () => {

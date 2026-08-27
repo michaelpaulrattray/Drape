@@ -122,15 +122,17 @@ export const NOT_ABOUT_THE_PERSON: ReadonlyArray<{ word: string; because: string
   /* Frame — his sentence names it third, and #182 fixed the framing in code. */
   { word: "framing", because: "the block owns the frame (his sentence: 'not the framing')" },
   { word: "framed", because: "a frame claim" },
-  /* ⚠ BARE `cropped` IS NOT ON THIS LIST AND THAT IS MEASURED, NOT AN
-     OVERSIGHT. It was, until its own positive-control arm caught it sweeping
-     "close-cropped stubble" — a hair word, and "a cropped jacket" is a garment.
-     The typo gate owned "shave" the same way and blocked the founder's own bald
-     ask. The photographic sense is banned as a PHRASE instead; the declared
-     gap is that a bare "cropped" used about the frame and nowhere near another
-     frame word would pass, which is what the instruction is for. */
-  { word: "cropped at", because: "a frame claim; bare 'cropped' is a hair and garment word and stays" },
-  { word: "tightly cropped", because: "a frame claim" },
+  /* ⚠ NO FORM OF `cropped` IS ON THIS LIST, AND IT TOOK THREE GOES TO ADMIT IT.
+     Bare `cropped` swept "close-cropped stubble"; the narrowed `cropped at`
+     still sweeps "cropped at the nape"; `tightly cropped` is what everyone
+     calls short hair. The word belongs to hair and to garments at least as much
+     as to a frame, so every ban wide enough to catch the photographic sense
+     also refuses a good description of a person — the typo gate owning "shave"
+     for the third time in one sitting. THE DECLARED GAP: a description saying
+     "cropped at the chest" and nothing else photographic passes this sweep. The
+     category is carried by the ten frame words around it and by {@link RULES};
+     one uncatchable phrase is a better price than a ban that refuses haircuts.
+     (Review of #187, finding 2 — and the class, not the instance.) */
   { word: "close-up", because: "a frame claim" },
   { word: "closeup", because: "a frame claim" },
   { word: "headshot", because: "a frame claim" },
@@ -232,19 +234,38 @@ export type ConceptDescribeOutcome =
   /** Every refusal a customer may be shown, named. None of them is an exception. */
   | { ok: false; reason: "no_person" | "unreadable" | "not_about_the_person" | "no_transport"; attempts: number };
 
-function parse(raw: string): string | null {
+/**
+ * THREE ANSWERS, NOT TWO (review of #187, finding 1).
+ *
+ * This returned `string | null` and the caller separated the two meanings of
+ * that `null` by asking whether the reply was non-empty — so ANY unparseable
+ * non-empty reply (prose instead of JSON, or JSON truncated at the token
+ * ceiling) was read as *"there is nobody in your picture"*, which is our fault
+ * told to the customer as hers. The reader saying **nobody is here** and the
+ * transport handing back **something we cannot read** are different facts and
+ * they get different names.
+ */
+type Parsed =
+  | { kind: "described"; description: string }
+  | { kind: "said_none" }
+  | { kind: "unparseable" };
+
+function parse(raw: string): Parsed {
+  let parsed: unknown;
   try {
-    const parsed: unknown = JSON.parse(
-      raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim(),
-    );
-    if (!parsed || typeof parsed !== "object") return null;
-    const value = (parsed as Record<string, unknown>).description;
-    if (typeof value !== "string") return null;
-    const plain = value.replace(/\s+/g, " ").trim();
-    return plain.length > 0 ? plain : null;
+    parsed = JSON.parse(raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim());
   } catch {
-    return null;
+    return { kind: "unparseable" };
   }
+  if (!parsed || typeof parsed !== "object") return { kind: "unparseable" };
+  const value = (parsed as Record<string, unknown>).description;
+  /* The documented "nobody here" shape is an explicit null. A MISSING key is
+     not that answer — it is an object we did not ask for. */
+  if (value === null) return { kind: "said_none" };
+  if (typeof value !== "string") return { kind: "unparseable" };
+  const plain = value.replace(/\s+/g, " ").trim();
+  /* An empty string is the same shrug as a null, said differently. */
+  return plain.length > 0 ? { kind: "described", description: plain } : { kind: "said_none" };
 }
 
 /**
@@ -286,13 +307,16 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
       return { ok: false, reason: "unreadable", attempts: attempt };
     }
 
-    const description = parse(reply.text ?? "");
+    const read = parse(reply.text ?? "");
     /* `{"description": null}` is the reader saying there is no person here, and
        it is a different answer from a read that failed — only one of the two is
        worth telling her to try a different picture about. */
-    if (description === null) {
-      return { ok: false, reason: reply.text ? "no_person" : "unreadable", attempts: attempt };
+    if (read.kind === "said_none") return { ok: false, reason: "no_person", attempts: attempt };
+    if (read.kind === "unparseable") {
+      log.warn({ attempt }, "[conceptDescribe] the reply was not a description we could read");
+      return { ok: false, reason: "unreadable", attempts: attempt };
     }
+    const { description } = read;
     if (description.length < CONCEPT_DESCRIPTION_MIN || description.length > CONCEPT_DESCRIPTION_MAX) {
       log.warn(
         { attempt, length: description.length },

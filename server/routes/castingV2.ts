@@ -805,9 +805,21 @@ const conceptRouter = router({
       const refusal = referenceAttachBytesRefusal({ byteSize: bytes.byteLength, decoded });
       if (refusal) throw spokenError({ code: "BAD_REQUEST", message: refusal.message });
 
+      /*
+        THROUGH THE OWNER OF THE MAPPING, never composed here (law 4, review of
+        #187 finding 3): `inkDesignContentType` already knows what `image/x` a
+        format is, and a second author of that mapping is free to drift from it.
+        The narrowing also retires a non-null assertion — the door above admits
+        only a decoded image whose format is one of the three, and this asks
+        rather than asserts it.
+      */
+      const format = decoded?.format;
+      if (!isInkDesignFormat(format)) {
+        throw spokenError({ code: "BAD_REQUEST", message: "That file isn't an image we can read." });
+      }
       const outcome = await describeConcept({
         bytes,
-        contentType: `image/${decoded!.format}`,
+        contentType: inkDesignContentType(format),
       });
       if (outcome.ok) return { description: outcome.description };
 
