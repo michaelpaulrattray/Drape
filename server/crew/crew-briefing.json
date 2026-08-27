@@ -1,7 +1,7 @@
 {
-  "edition": 67,
-  "updatedAt": "2026-08-28T01:55:00+10:00",
-  "shift": "foreman-57",
+  "edition": 68,
+  "updatedAt": "2026-08-28T02:25:00+10:00",
+  "shift": "foreman-58",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1242,6 +1242,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T02:25:00+10:00",
+      "shift": "foreman-58",
+      "text": "Quiet-hours patrol shift, two things worth your morning read. First: your cyber-goth sheet from yesterday afternoon that died whole - all eight tiles failed - was NOT the studio refusing your brief. A deploy restarted the studio seconds after your roll started (the deploy guard checks whether you're mid-session, but you'd been quiet eight minutes when the push fired and it can't see a roll that hasn't started yet - it did refuse the very next push two minutes later). Every slice was refunded within six minutes - I verified the 160 credits back row by row - and each tile offered Retry. This is the known accepted deploy-collision class; nothing is broken. Second: the refusal patrol ran on the new material (your roll before that one had 4 of 8 refused by the content filter - same coin-per-render behaviour as before, byte-identical text refused and delivered in one sheet). The new mid-torso framing sentence showed slightly more refusals in its court, but the numbers say coin, not sentence (p = 0.35) - and every roll you make on the live framing adds free evidence, so the patrol logged it and spent nothing. No word enters any rewrite list. Your first Follow tap is still the live check of the Row A build."
+    },
+    {
       "at": "2026-08-28T01:55:00+10:00",
       "shift": "foreman-57",
       "text": "Your Row A pick is built, merged (#184) and deploying to your account now. Tap Follow on a face you like and the studio sends that face's own photo to the engine with your brief and your exact sentence - the eight come back as close variations held by the picture, not by a paragraph describing a record (the ghost that misfiled the fitness creator's heritage has no channel left at all). Nothing else rides a follow any more: no chip adjustments, no imagination call - the chips read as a record, the settings panel says 'a follow holds the look of the face you picked' instead of showing a meter that does nothing, and to change a fact you edit the sentence and roll. If a follow's photo can't be loaded, you're refused free before any charge; a retried tile re-attaches the same photo or refuses free too. Row B (the shortlist) stays on the record as a possible second button later, per your 'for now'. YOUR NEXT FOLLOW TAP IS THE LIVE CHECK - one honest note: the court's frames were rendered at the delivered size, while your rolls render larger under the framing trim, so if a follow sheet's framing reads off, that combination is the first suspect. Review gate found one real hole (a follow whose photo is missing would have quietly cast strangers for money) - fixed before merge. House spend this shift: $0."
@@ -1435,11 +1440,6 @@
       "at": "2026-08-26T16:48:00+10:00",
       "shift": "foreman-21",
       "text": "Your verdict on the strips arrived while tonight's deploy was running and it is acknowledged here: B is the studio, the author is built verbatim-first with LOW as the default, MAX is rewritten so it never paints one face eight times, D lends a short realism clause to be tested against B (not assumed), the refusal loop becomes a patrol, the preset's framing is calibrated to your 28% reference frame and then locked, and 'sternum' is never written. The relay filed the three side pieces as #128, #129 and #130; the register rebuild itself is the next build and starts dark behind the same flag. Nothing reaches your account until it is rebuilt and you say so."
-    },
-    {
-      "at": "2026-08-26T16:55:00+10:00",
-      "shift": "foreman-21",
-      "text": "Your 'refuse-free' word is in the product. The shift before mine built it and pushed the PR, then its process died before it could write anything down — so I read its work at the artifacts instead of trusting it: ran the tests (56 green), broke the new rule on purpose to see exactly which tests catch it (the four outage tests and nothing else), read the gate and the reviewer's report, fixed the one stale paragraph the reviewer found, and merged. In plain terms: if the brief-reader is genuinely down, anyone who typed more than a sentence now gets 'we couldn't read your brief — nothing was charged, try again in a moment' and keeps every credit; that is roll 219's 160-credit failure closed at the rule itself. A five-word brief still rolls from the words as typed, because that is the option you clicked — a card above asks whether you meant 'always'. Still waiting on your eye for the Prompt Author strips; nothing on the register is built until you answer which sheet is the studio. No house money spent tonight."
     }
   ],
   "acknowledgedReplyIds": [

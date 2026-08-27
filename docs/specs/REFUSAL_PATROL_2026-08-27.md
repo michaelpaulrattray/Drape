@@ -105,3 +105,50 @@ it is not this patrol's to build.
 - Not re-run until material exists: new refusals on the rows (`SELECT …
   failureClass = 'content_policy'` with `id > 1784`), or a court that adds
   n. A patrol that finds nothing writes one line.
+
+---
+
+# Run #2 (2026-08-28 ~02:00 AEST, foreman-58)
+
+**Status: RUN, $0 house, 0 credits, no rows written, nothing enters the
+list.** Material condition met two ways: refusal rows 1787–1790 (> 1784),
+and the #182 framing court adding n (foreman-56 logged it for this patrol).
+Corpus re-read at production (same reader): **168 candidates, 17
+`content_policy` (was 13)**.
+
+## 1. The new rows — roll 224, the coin again, no new words
+
+Roll 224 (author LOW, block era, one prompt across the eight, len 2,899):
+**4 refused / 4 delivered on byte-identical text** — the roll-222 shape
+exactly (5/8 on one prompt), on the same cyber-goth brief family. One prompt
+means nothing to diff (run #1 §2); the family's per-word scores cannot
+separate from the brief. No candidate advances.
+
+Roll 225 (same brief, 04:10Z) is **excluded from this corpus**: all 8
+`unrecovered`, not filter — foreman-49's 04:07:58Z push restarted the
+service at ~04:10 while the roll was being created (his own activity read
+~8 min quiet at push time; the rite's active-session refusal DID fire on
+the NEXT push at 04:12, receipt on disk). Charge 160, refunds 8 × 20 at
+04:16 under the per-candidate references (verified through
+`candidateRefundReference` — the keys hash past 64 chars, so a LIKE on the
+opId cannot see them). Accepted class (D-85), money conserved, tiles map
+`unrecovered → engine` so all eight offered Retry.
+
+## 2. The framing-sentence lead — quantified, and it dies at this n
+
+The #182 court swapped only the framing pair on the same brief, same block:
+mid-torso **6/16 refused** vs collar-up K **1/8**. Exact Fisher two-tailed
+**p = 0.352**; the court's own pass1-vs-pass2 on identical M bytes (4/8 vs
+2/8, p = 0.61) is the coin restated. A +8/+8 court at the observed rates
+would still sit near p ≈ 0.15 — chasing it is paying for noise. **The
+mid-torso sentence is house CODE, founder-chosen on his eye ("run it"), not
+customer words** — even a confirmed delta would be an #182 eye-item datum,
+never a rewrite-list pair. The lead stays logged here; his own live rolls on
+the mid-torso block accrue n at $0, and the next run re-pools when they
+have.
+
+## 3. Next run
+
+Same condition, moved: new `content_policy` rows with **id > 1800**, or a
+court adding n. Re-pool the M-block refusal rate from his live rolls against
+the pre-M rolls (confounded by brief, as ever — say so when quoting it).
