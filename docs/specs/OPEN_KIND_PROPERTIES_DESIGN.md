@@ -1,6 +1,6 @@
 # The kind-property design — what the catalogue would have known
 
-> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+> **Status: PARTIALLY BUILT (verified at the code 2026-08-28, #69).** Stage A — the store — is built exactly as §9 below records: `castingOpenKindProperties` in `drizzle/schema.ts`, the db module `server/db/castingV2OpenKindProperties.ts`, and `server/castingV2/openKindPolicy.ts`, which is consulted by `refineService.ts`, `signService.ts` and `openLaneKind.ts`. Stages past the store were not re-verified — §9 and the modules' own docblocks are the record.
 
 
 *Ordered as ONE design, costed together: fable-871 §3 (how-does-the-code-know,

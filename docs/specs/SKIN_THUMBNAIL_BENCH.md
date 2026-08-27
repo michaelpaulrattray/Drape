@@ -1,6 +1,6 @@
 # Does a patch of her skin read as SKIN at thumbnail size? — bench design
 
-> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+> **Status: ✅ RUN 2026-08-13, shift 70 (commit `2ca71ade`) — the result is §"THE RESULT" in this very document (verified 2026-08-28, #69).** Bar 1 passed 6/6, bar 2 FAILED 3/6, so skin stays words — a result, per §4's own rule. ⚠ Two later records call this bench "never run" (`CASTING_V2_SWEEP2_WORK_ITEM_LIST.md` and issue #24's framing); they are wrong and corrected as of this stamp.
 
 
 *Owed by fable-360 ruling 2: "skin is words until the texture-patch measurement

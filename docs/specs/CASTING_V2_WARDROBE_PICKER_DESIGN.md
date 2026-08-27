@@ -1,6 +1,6 @@
 # The wardrobe picker — taking the boredom clause out
 
-> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** And note the author road (PROMPT_AUTHOR_RULING_2026-08-26.md) has since moved how flagged rolls dress a cast; re-derive before building.
+> **Status: ✅ BUILT (verified at the code 2026-08-28, #69).** The costume-designer direction is live in `server/castingV2/interpreter.ts` (*"OTHERWISE DRESS THEM FOR THEIR OWN SHOOT. You are the costume designer on this…"*, ~line 280) and the safety rails are pinned by `wardrobePick.test.ts` (*"the picker's rails survived the boredom clause coming out"*). Note the author road (PROMPT_AUTHOR_RULING_2026-08-26.md) has since moved how FLAGGED rolls dress a cast — the engine dresses those; this picker governs the unflagged road.
 
 
 **Founder order, relayed fable-1595, verbatim:** *"whats up with the wardrobe

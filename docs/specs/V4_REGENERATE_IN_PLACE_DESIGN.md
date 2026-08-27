@@ -1,6 +1,6 @@
 # Asking for the same edit again — regenerate in place
 
-> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+> **Status: ✅ BUILT (verified at the code 2026-08-28, #69).** The rail derives one chip per distinct edit, newest wins, in `server/castingV2/railTakes.ts` (pinned by `railTakes.test.ts`), and `refineService.ts` carries the founder ruling verbatim at its re-roll site. One recorded divergence: the build deliberately does NOT use `namesSameThing` for edit identity — `railTakes.ts`'s own docblock says so and why, and it governs over this note's proposal.
 
 
 *Design note, written before any code, because this touches the paid path and

@@ -1,6 +1,6 @@
 # How an open kind is CARRIED — executing fable-760's ruling
 
-> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+> **Status: ✅ BUILT (verified at the code 2026-08-28, #69).** The `open:<noun>` key form this note designed is live in `server/castingV2/openLaneKind.ts` and pinned by `openLanePinning.test.ts` (*"synthesizes a slot key (`open:<noun>`) so an uncatalogued kind can ride"*), behind `CASTING_OPEN_LANE_SCOPE` — see that flag's CLAUDE.md paragraph for the current rollout position.
 
 
 *Written 2026-08-16, shift 79, ordered by fable-762 §4. **Nothing here is

@@ -1,7 +1,7 @@
 {
-  "edition": 69,
-  "updatedAt": "2026-08-28T03:20:00+10:00",
-  "shift": "foreman-59",
+  "edition": 70,
+  "updatedAt": "2026-08-28T02:43:28+10:00",
+  "shift": "foreman-60",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -790,6 +790,13 @@
   ],
   "pipeline": [
     {
+      "id": "stamp-verification-69",
+      "title": "The 7 'not re-verified' docs verified at the code (#69) - and three of our own records were wrong about them",
+      "status": "merged",
+      "note": "Each of the seven was checked against the running code. Four are fully built (wardrobe picker's costume-designer direction, the open-lane carry keys, the panel's absent-state rows, regenerate-in-place), one is partially built (the open-kind store), one is a delivered report whose priced raise was never executed (the edit box is still capped at 200 characters - card #26), and one - the skin-thumbnail bench - had RUN on Aug 13 and failed its pre-registered bar, despite two later records calling it 'never run'. Skin staying words is a standing verdict, not an unrun measurement. The sweep-2 work list's three wrong rows are corrected, and #23/#24 carry the corrections. Lesson filed for the Retro: a status recorded only mid-document is invisible to a header read; the banner discipline is the fix.",
+      "prNumber": null
+    },
+    {
       "id": "supersession-stamping-69",
       "title": "The spec library stopped lying to its readers (#69) — all 171 status-silent docs now say what they are",
       "status": "merged",
@@ -1249,6 +1256,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T02:43:28+10:00",
+      "shift": "foreman-60",
+      "text": "Follow-up to last night's doc cleanup (#69): the 7 documents stamped 'not re-verified' have now each been checked against the actual code, and the honest stamp paid off - three of our own tracking records were wrong about them. The biggest one: a measurement we ordered in mid-August (does a patch of skin still read as skin at thumbnail size?) was listed everywhere as 'never run' - it DID run, on Aug 13, and it failed its own bar, which is why skin stays described in words rather than shown as a swatch. That verdict was sitting in the middle of the document where no header-skim could see it. Two designs listed as 'not built' (the panel's honest 'this face has no beard' rows, and the store that remembers what an invented feature is) turned out to be built and live too. All seven banners now state the verified truth with the file that proves it, the wrong rows are corrected, and the affected cards (#23, #24) carry the correction. Nothing you can see in the product changed. Otherwise quiet: no new replies, no new refusals for the patrol, and your first Follow tap is still the live check of the Row A build."
+    },
+    {
       "at": "2026-08-28T03:20:00+10:00",
       "shift": "foreman-59",
       "text": "Housekeeping shift while you sleep - the doc cleanup you ordered on Aug 25 (#69) is done for the spec library. The problem it fixes: 171 of our 253 spec documents had no marker saying whether they were current, finished, superseded or never built - which is exactly how an old plan gets read as a live order (it has bitten us three times on record). Every one now opens with a one-line status banner: old review prompts and era docs marked historical, courts and evidence packs marked as dated records (the freckle court now carries the note that your own eye overturned it), built designs stamped with the proof they shipped, the governing plans marked live, unbuilt designs pointed at their queue cards, and 7 stamped honestly as 'not re-verified' - those are the next sweep's shortlist. Nothing was deleted and nothing you can see in the product changed. Otherwise quiet: no new content-filter refusals for the patrol (checked at the rows), no new replies, and your first Follow tap is still the live check of last night's Row A build."
@@ -1442,11 +1454,6 @@
       "at": "2026-08-26T18:20:00+10:00",
       "shift": "foreman-21",
       "text": "Your auto-refresh ask is built and this is the first edition that should arrive on its own: leave the page open and it re-reads every minute and whenever you return to the tab; a new edition swaps in without a reload and keeps whatever you were typing. The foot of the page says when it last checked. That was the last thing this shift built; the night's record is three merges (the Prompt Author rebuild A+B, refuse-free at every length, and this), all live. Still waiting on nothing from you right now — the open cards are the OpenRouter balance ($4.09, not moving) and your word on whether 'verbatim' should override the brand scrub on the author road."
-    },
-    {
-      "at": "2026-08-26T18:35:00+10:00",
-      "shift": "foreman-21",
-      "text": "Two of your words are in the product tonight. 'Always' (reply #9): a roll whose brief the reader never read is refused for free at any length — even five words — and the sheet says so; nobody is charged for a sheet that read none of their words. And the register rebuild to your court verdict has its first two slices merged: on your account a roll now paints eight frames from ONE prompt — your words first, verbatim, then the author's studio sentences (LOW, the default) or an invented look written as a casting call that leaves the face open (MAX). The reader stays beside it for the panel. Two things worth knowing before you roll: 'more like this one' and chip edits still take the old road under the flag (the author can't carry an anchor or an edit yet — next slices), and brand names are still scrubbed before the author sees them, which is your gate 21 — say the word if 'verbatim' should win there. Next slices: the not-a-being wall, the prompt shown on the cast, and the imagination control; then #128 (a short realism clause from D, courted against B) and #130 (the framing calibrated to your 28% frame). Your 'auto refresh' ask is filed as #133 (urgent) for the next shift. OpenRouter is at $4.09 and the granted figure is not moving — with refuse-free live, an empty account means every brief is refused free rather than charged, so nothing is lost but the studio visibly stops. No house money spent tonight."
     }
   ],
   "acknowledgedReplyIds": [

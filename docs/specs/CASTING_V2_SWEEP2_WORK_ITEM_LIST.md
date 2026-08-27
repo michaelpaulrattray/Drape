@@ -69,11 +69,11 @@ which had a governing flag, and therefore none of which sweep #1 could see:
 | Dense-brief rationing | awaiting countersign; **supersedes a countersigned design** | `CASTING_V2_DENSE_BRIEF_RATIONING_DESIGN.md` | **#21** |
 | Creative Casts research | research only, gated on his own sentence | `CREATIVE_CASTS_RESEARCH.md` | **#22** |
 | The auto-scan prefill (3 OPEN decisions) | not built | `AUTO_SCAN_PANEL_DESIGN.md` | **#23** |
-| The panel's absent state — **a founder ruling with an unbuilt executor** | not built | `PANEL_ABSENT_STATE_DESIGN.md` | **#23** |
-| Open-kind properties | not built | `OPEN_KIND_PROPERTIES_DESIGN.md` | **#23** |
+| The panel's absent state — ~~not built~~ **⚠ ROW WAS WRONG: BUILT shift 83 (2026-08-17), before this sweep was written** — verified at `faceScanService.ts`/`facePanel.ts` (#69, 2026-08-28) | built | `PANEL_ABSENT_STATE_DESIGN.md` | **#23** |
+| Open-kind properties — ~~not built~~ **⚠ ROW WAS WRONG: Stage A (the store) BUILT 2026-08-17** — verified at `drizzle/schema.ts` + `openKindPolicy.ts`, consulted by `refineService`/`signService` (#69, 2026-08-28); later stages unverified | partially built | `OPEN_KIND_PROPERTIES_DESIGN.md` | **#23** |
 | Removal universality | not built | `V3_REMOVAL_UNIVERSALITY.md` | **#23** |
 | Retro-mint evaluation | delivered, no decision attached | `RETRO_MINT_EVALUATION.md` | **#24** |
-| The skin-thumbnail bench — **a PRE-REGISTERED BAR that was never run** | not run | `SKIN_THUMBNAIL_BENCH.md` | **#24** |
+| The skin-thumbnail bench — ~~never run~~ **⚠ ROW WAS WRONG: RUN 2026-08-13, shift 70 (`2ca71ade`)** — bar 1 passed, bar 2 FAILED 3/6, skin stays words; result recorded in the bench doc's own §THE RESULT (#69, 2026-08-28) | run, failed bar 2, verdict standing | `SKIN_THUMBNAIL_BENCH.md` | **#24** |
 | The R7-7D ink/add pilot plan | plan for review | `CASTING_SYSTEM_R7_7D_INK_ADD_PILOT_PLAN.md` | #6 (R7 family) |
 
 **And ten roadmap rows**, which the register also could not see because the
