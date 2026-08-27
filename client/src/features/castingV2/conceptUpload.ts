@@ -68,13 +68,6 @@ export const CONCEPT_FAILED_FALLBACK = "That picture couldn't be read just now. 
 /** Said when the browser itself could not read the chosen file. */
 export const CONCEPT_FILE_UNREADABLE = "That file couldn't be read. Try another picture.";
 
-/**
- * The three the door accepts, for the picker's own filter. The BYTES are judged
- * server-side either way (`referenceAttachBytesRefusal`, format sniffed from
- * what they are rather than from what the payload claimed) — this only spares
- * her choosing a file that will be refused.
- */
-export const CONCEPT_ACCEPTED_FILES = "image/png,image/jpeg,image/webp";
 
 /**
  * WHERE THE DESCRIPTION LANDS — appended, never on top of her own words.

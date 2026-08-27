@@ -133,6 +133,36 @@ are independent — a different count fails each time:
 | `BriefField` drops its internal ref | **1 failed** / 18 passed |
 | the hero goes back to `<Input>` | **1 failed** / 18 passed |
 
+## 5b. The one thing the swap nearly cost, and the drive that closes it
+
+The gate's Fable review found what the source reading above did not: **the
+shadcn `Input` this box used to be carries an IME composition guard**
+(`components/ui/input.tsx`) — an Enter pressed to confirm a Japanese, Chinese or
+Korean conversion never reached the caller's `onKeyDown`. On this page that
+handler dispatches a **160-credit roll**. The swap to a raw `<textarea>` took
+the guard with it, left no failing test, and the only other `BriefField` caller
+(the sheet) rolls from a BUTTON — so the one surface where the guard mattered
+was the one that lost it. Working law 7's second half, caught in review.
+
+It is repaired **on the box, not at the call site**, through the same
+`useComposition` hook the whole client already uses, so the next surface to put
+a submit on Enter does not have to rediscover this. `isComposing()` as well as
+the native flag: Safari fires `compositionend` BEFORE the keydown that ended it,
+so the native flag alone is already false on the very event that must not
+submit.
+
+**Driven, with the paid calls intercepted so a failing guard would be measured
+rather than bought** — every `createSession`/`createRoll` request counted and
+aborted:
+
+| arm | roll dispatches |
+|---|---|
+| Enter while composing (`compositionstart`, then Enter with `isComposing`) | **0** |
+| **the positive control** — the same Enter, not composing | **1** (`castingV2.createSession`, aborted) |
+
+Without the second row the first proves nothing: an unwired handler is silent
+both ways.
+
 ## 6. What this does NOT change
 
 - **No flag moves.** `CASTING_CONCEPT_UPLOAD_SCOPE` is `off` on production and

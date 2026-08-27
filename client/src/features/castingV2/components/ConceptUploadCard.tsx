@@ -2,10 +2,9 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
-import { asBase64 } from "../pictureBytes";
-import { readableFailure } from "@/lib/failureSentence";
+import { ACCEPTED_PICTURE_FILES, asBase64 } from "../pictureBytes";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import {
-  CONCEPT_ACCEPTED_FILES,
   CONCEPT_CARD_COMING,
   CONCEPT_CARD_LINE,
   CONCEPT_CARD_TITLE,
@@ -61,7 +60,14 @@ export function ConceptUploadCard({
     let imageBase64: string;
     try {
       imageBase64 = await asBase64(file);
-    } catch {
+    } catch (error) {
+      /*
+        THE RAW TEXT IS MOVED, NOT LOST — `failureSentence.ts`'s own contract.
+        Replacing a message for the screen and keeping it nowhere is what makes
+        the next incident unreadable: every customer sees the same sentence and
+        no console anywhere can tell a decode failure from a vendor 502.
+      */
+      logRawFailure("concept-upload/read-file", error);
       toast(CONCEPT_FILE_UNREADABLE);
       return;
     }
@@ -71,8 +77,10 @@ export function ConceptUploadCard({
       /*
         OUR SENTENCE, NEVER THE ERROR'S. The door's own refusals are written
         for a reader ("I couldn't find a person in that picture") and pass
-        through untouched; a transport or a parser gets the fallback.
+        through untouched; a transport or a parser gets the fallback — and its
+        own words go to the console rather than into the void.
       */
+      logRawFailure("concept-upload/describe", error);
       toast(readableFailure(error, CONCEPT_FAILED_FALLBACK));
     }
   };
@@ -96,7 +104,7 @@ export function ConceptUploadCard({
       <input
         ref={picker}
         type="file"
-        accept={CONCEPT_ACCEPTED_FILES}
+        accept={ACCEPTED_PICTURE_FILES}
         className="dpc-entry__file"
         onChange={(event) => {
           const file = event.target.files?.[0];

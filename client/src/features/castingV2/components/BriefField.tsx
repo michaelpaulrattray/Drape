@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type ComponentPropsWithRef } from "react";
 
+import { useComposition } from "@/hooks/useComposition";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,10 +22,29 @@ import { cn } from "@/lib/utils";
  * It grows from one line rather than starting at four: an empty four-line box
  * is a form, and the resting state of this control should look like a place to
  * write a sentence.
+ *
+ * # AN ENTER PRESSED TO CONFIRM AN IME CONVERSION IS NOT AN ENTER
+ *
+ * The guard below is here because it was nearly LOST. The start page's hero was
+ * the shadcn `Input`, which wraps its caller's `onKeyDown` in exactly this check
+ * (`components/ui/input.tsx`) — so on that page, where Enter dispatches a
+ * **160-credit roll**, a Japanese, Chinese or Korean customer pressing Enter to
+ * accept a candidate mid-sentence never reached the page's handler. Swapping the
+ * element for this one took the guard with it and left no failing test, because
+ * the only other caller (the sheet) rolls from a BUTTON and so was never exposed.
+ * That is working law 7's second half — a live control orphaned by a change
+ * aimed at something else — caught in review rather than by a customer.
+ *
+ * So it lives HERE rather than at the one call site that needs it today: the box
+ * is the thing that knows a composition is in progress, and the next surface to
+ * put a submit on Enter should not have to rediscover this.
  */
 export function BriefField({
   className,
   value,
+  onKeyDown,
+  onCompositionStart,
+  onCompositionEnd,
   /*
     THE CALLER MAY HOLD IT TOO, and the box keeps its own hold either way.
 
@@ -42,6 +62,25 @@ export function BriefField({
   ...rest
 }: ComponentPropsWithRef<"textarea">) {
   const ref = useRef<HTMLTextAreaElement>(null);
+
+  /*
+    The IME guard, on the hook that already owns this for the whole client.
+
+    `isComposing()` rather than the native flag alone: Safari fires
+    `compositionend` BEFORE the keydown that ended it, so the native flag is
+    already false on the very event that must not submit. The hook holds the
+    just-ended window open across that gap; `input.tsx` learned it the hard way
+    and it is the reason this is not one line of `event.nativeEvent.isComposing`.
+  */
+  const composition = useComposition<HTMLTextAreaElement>({
+    onKeyDown: (event) => {
+      const composing = event.nativeEvent.isComposing || composition.isComposing();
+      if (event.key === "Enter" && composing) return;
+      onKeyDown?.(event);
+    },
+    onCompositionStart,
+    onCompositionEnd,
+  });
 
   /*
     Measured, not guessed, and re-measured on every value change.
@@ -77,6 +116,9 @@ export function BriefField({
       value={value}
       rows={1}
       className={cn("dp-input", "dpc-brieffield", className)}
+      onKeyDown={composition.onKeyDown}
+      onCompositionStart={composition.onCompositionStart}
+      onCompositionEnd={composition.onCompositionEnd}
       {...rest}
     />
   );

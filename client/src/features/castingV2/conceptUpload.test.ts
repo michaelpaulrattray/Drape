@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 import {
-  CONCEPT_ACCEPTED_FILES,
   CONCEPT_CARD_COMING,
   CONCEPT_CARD_LINE,
   CONCEPT_CARD_TITLE,
@@ -10,6 +9,7 @@ import {
   CONCEPT_READING_LABEL,
   briefWithDescription,
 } from "./conceptUpload";
+import { ACCEPTED_PICTURE_FILES } from "./pictureBytes";
 
 /**
  * UPLOAD A CONCEPT'S SURFACE, driven rather than reviewed (#185 slice two).
@@ -103,10 +103,19 @@ describe("the card claims what the road does and nothing more", () => {
     expect(CONCEPT_CARD_COMING.toLowerCase()).toContain("picture");
   });
 
-  it("offers the three formats the door actually admits", async () => {
+  it("offers the three formats the door admits, from ONE client home", async () => {
     /* The picker's filter is a courtesy; the BYTES are judged server-side. It
-       still must not offer a format the door refuses. */
-    expect(CONCEPT_ACCEPTED_FILES).toBe("image/png,image/jpeg,image/webp");
+       still must not offer a format the door refuses — and it must not be a
+       third copy of the list, which is what it was until the review of #188
+       (law 4). The literal now lives once and both pickers import it. */
+    expect(ACCEPTED_PICTURE_FILES).toBe("image/png,image/jpeg,image/webp");
+    const panel = withoutProse(
+      await readFile(new URL("./components/RefinePanel.tsx", import.meta.url), "utf8"),
+    );
+    expect(panel).toContain("accept={ACCEPTED_PICTURE_FILES}");
+    expect(panel).not.toContain('accept="image/png');
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).not.toContain('accept="image/png');
   });
 
   it("keeps the fallback about the picture, never about the plumbing", () => {
@@ -185,6 +194,34 @@ describe("the box the description lands in can be read", () => {
     */
     expect(page).not.toContain('querySelector<HTMLInputElement>(\'input[aria-label');
     expect(page).toContain("briefField.current");
+  });
+
+  it("KEEPS THE IME GUARD Enter-to-cast would otherwise have lost", async () => {
+    const field = withoutProse(await readFile(FIELD, "utf8"));
+    /*
+      THE FINDING THIS ARM EXISTS FOR (review of #188, working law 7's second
+      half). The hero box was the shadcn `Input`, which wraps its caller's
+      onKeyDown in a composition check — so a Japanese, Chinese or Korean
+      customer pressing Enter to accept an IME candidate never reached the
+      handler that dispatches a 160-CREDIT ROLL. Swapping the element for a raw
+      textarea took that live control with it and left no failing test, because
+      the only other caller rolls from a button.
+
+      The guard lives on the BOX rather than at the call site, so the next
+      surface to put a submit on Enter cannot rediscover this the expensive way.
+    */
+    expect(field).toContain("useComposition");
+    expect(field).toContain("event.nativeEvent.isComposing || composition.isComposing()");
+    expect(field).toContain('event.key === "Enter" && composing');
+    /*
+      And the three handlers are destructured OUT of the props, so `{...rest}`
+      cannot spread a caller's raw onKeyDown over the guarded one — the same
+      overwrite trap the ref comment names, on the prop that spends money.
+    */
+    expect(field).toContain("onKeyDown,");
+    expect(field).toContain("onCompositionStart,");
+    expect(field).toContain("onCompositionEnd,");
+    expect(field).toContain("onKeyDown={composition.onKeyDown}");
   });
 
   it("MERGES a forwarded ref rather than letting it overwrite the measurement", async () => {
