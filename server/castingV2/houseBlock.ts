@@ -112,6 +112,15 @@ function take(from: readonly string[], prefix: string): string {
  * The trim's T moved to 0.230 with it (interplay declared on the card);
  * the mid-torso sentence refused 6/16 vs K's 1/8 on the goth brief — the
  * per-render coin (#93), recorded for #129.
+ *
+ * RATIFIED at his eye, so this pair is settled rather than provisional —
+ * Crew reply #19, 2026-08-27 20:53:16Z, verbatim: *"M — the framing is
+ * right, keep it as the default. The refusal rate on M needs figuring out
+ * (fewer on the second pass, so it smells like the coin again) — put it on
+ * the refusal patrol, but don't hold the framing on it."* #182 closed on
+ * that word. The revert the court held in reserve is off the table, and the
+ * refusal number is #129's, NOT a reason to touch these two sentences: he
+ * said so in the same breath he approved them.
  */
 export const AUTHOR_ROAD_FRAMING: readonly string[] = [
   "FRAMING: Single figure only, mid-torso up, centred, square to camera.",
