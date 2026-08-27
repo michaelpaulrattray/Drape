@@ -72,6 +72,7 @@ import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief, interpreterEngine } from "./interpreter";
 import { authorPrompt, type Imagination } from "./promptAuthor";
 import { familyClause } from "./familyClause";
+import { rewriteBrief } from "./briefRewrite";
 import { isFollowUnpinnable } from "../../shared/followUnpinnable";
 import type { CastStyle } from "../../shared/castStyles";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
@@ -1172,6 +1173,17 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   */
   const carried = authorRoad ? familyClause({ anchor: effectiveAnchor, overrides: input.overrides }) : null;
   /*
+    THE CHIP EDIT, WRITTEN INTO THE SENTENCE ITSELF (#164, his ruling on the
+    fighting prompt): on the author road an override rewrites the brief —
+    every span stating the old fact says the new one, or one plain sentence
+    is appended where the brief never stated it. The engine receives ONE
+    self-consistent prompt; the row's `briefText` stays what she typed, the
+    chips stay the record of what was read and changed, and the register
+    records what was sent (`briefSent`) and how each edit landed.
+  */
+  const rewritten = authorRoad ? rewriteBrief(briefText, input.overrides) : null;
+  const briefSent = rewritten?.text ?? briefText;
+  /*
     Brand names never reach the image engine (founder gate 21). The two
     free-text fields are the only things here that travel to the provider as
     the user's own words, so they are scrubbed last, after every other
@@ -1231,7 +1243,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   const authored = authorEngine
     ? await authorPrompt({
         engine: authorEngine,
-        briefText: scrubBrands(briefText) ?? briefText,
+        briefText: scrubBrands(briefSent) ?? briefSent,
         imagination: input.imagination,
         style: input.style,
         clause: carried?.clause ?? null,
@@ -1319,6 +1331,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
                 shows it without a second reader (no hidden prompt, ever).
               */
               ...(carried ? { carried } : {}),
+              /*
+                THE EDIT AS SENT (#164) — present only when a chip edit
+                rewrote the brief: `briefSent` is the first paragraph the
+                eight were painted from (the row's `briefText` stays what
+                she typed), and `rewrites` says how each field landed
+                (replaced in place, or appended as one plain sentence).
+              */
+              ...(rewritten ? { briefSent: rewritten.text, rewrites: rewritten.edits } : {}),
             },
           }
         : {}),

@@ -654,11 +654,21 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
       creativeRegister: true,
     });
     expect(sent(overridden, "author")).toHaveLength(0);
-    const OVERRIDE_CLAUSE = "Cast as a person, in their 40s, of Slavic heritage; where this differs from the request above, this wins.";
-    expect(c.candidates[0]?.prompt).toBe(`${RICH}\n\n${OVERRIDE_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    /*
+      #164: the edit is written into the sentence itself — RICH states neither
+      a decade nor a heritage word, so both land as plain appended sentences,
+      and there is no override clause and no tie-breaker anywhere.
+    */
+    const REWRITTEN = `${RICH} In their 40s. Of Slavic heritage.`;
+    expect(c.candidates[0]?.prompt).toBe(`${REWRITTEN}\n\n${HOUSE_BLOCK}`);
+    expect(c.compiledBrief.register).not.toHaveProperty("carried");
     expect(c.compiledBrief.register).toMatchObject({
       kind: "author",
-      carried: { follow: false, overrides: { ageBand: "40s", heritage: "Slavic" }, clause: OVERRIDE_CLAUSE },
+      briefSent: REWRITTEN,
+      rewrites: [
+        { field: "ageBand", mode: "appended", to: "In their 40s." },
+        { field: "heritage", mode: "appended", to: "Of Slavic heritage." },
+      ],
     });
     /* The row never says "house" again — that vocabulary belongs to rows written before this landed. */
     for (const compiled of [a, b, c]) expect((compiled.compiledBrief.register as { kind: string }).kind).toBe("author");

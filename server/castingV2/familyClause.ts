@@ -196,51 +196,43 @@ function joinHeld(held: string[]): string {
 }
 
 /**
- * The clause, or null when there is nothing to carry — no anchor and no
- * override — so a plain authored roll's prompt is exactly what it is today.
+ * The clause, or null when there is no follow to carry.
  *
  * `anchor` is the follow's anchor AFTER unlocks (`withUnlocksApplied`); an
  * anchor with every carried axis stripped still says "continue this family"
  * because the roll still IS a follow, and the engine is told what it may vary.
+ *
+ * A chip edit WITHOUT an anchor carries nothing here any more (#164): it used
+ * to become "Cast as {person}; where this differs from the request above,
+ * this wins." — the original plus an override plus a tie-breaker, the
+ * fighting prompt his ruling kills. The edit is applied to the brief itself
+ * now (`rewriteBrief`), so with no anchor there is nothing for a clause to
+ * say. On a follow the overrides still replace their axes below, and the
+ * clause states the same fact the rewritten brief states — consistent
+ * repetition, never a fight, and no precedence sentence anywhere.
  */
 export function familyClause(input: {
   anchor: FollowAnchor | null;
   overrides: LockOverrides | undefined;
 }): CarriedIdentity | null {
+  if (!input.anchor) return null;
   const overrides = nonNullOverrides(input.overrides);
-  const edited = Object.keys(overrides).length > 0;
-  if (!input.anchor && !edited) return null;
 
   const axes = axesOf(input.anchor, overrides);
   const person = describe(axes).join(", ");
 
-  if (input.anchor) {
-    /*
-      His photographer sentence, shape for shape (#166): keep the booking
-      brief's axes, release the person. The closer is per-picture ("a
-      different person", never a count) because a clause that counts the
-      casts paints a contact sheet — the "eight" ban, measured on roll 95.
-    */
-    const held = joinHeld(holds(axes, input.anchor));
-    const keep = held.length > 0 ? `Keep the same ${held}. ` : "";
-    const precedence = edited ? " Where this differs from the request above, this wins." : "";
-    const clause =
-      `Continue this family: same casting brief, new person — ${person}. `
-      + keep
-      + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
-      + `Cast a different person who could be booked for the same role.${precedence}`;
-    return { follow: true, overrides, clause };
-  }
-
   /*
-    PRECEDENCE, IN WORDS. On the house road a hand adjustment runs LAST and
-    beats the reader (`applyOverrides`: "vary this" then "no, make it 40s" is
-    40s). Here the brief above still says "in their 30s" verbatim and cannot
-    be edited, so the clause states the same precedence the block's AUTHORITY
-    paragraph states for defaults — otherwise the engine meets two ages and
-    picks one.
+    His photographer sentence, shape for shape (#166): keep the booking
+    brief's axes, release the person. The closer is per-picture ("a
+    different person", never a count) because a clause that counts the
+    casts paints a contact sheet — the "eight" ban, measured on roll 95.
   */
-  /* Nothing stated (a phase with no band is the one way in) is nothing to carry. */
-  if (describe(axes).length <= 1) return null;
-  return { follow: false, overrides, clause: `Cast as ${person}; where this differs from the request above, this wins.` };
+  const held = joinHeld(holds(axes, input.anchor));
+  const keep = held.length > 0 ? `Keep the same ${held}. ` : "";
+  const clause =
+    `Continue this family: same casting brief, new person — ${person}. `
+    + keep
+    + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
+    + "Cast a different person who could be booked for the same role.";
+  return { follow: true, overrides, clause };
 }
