@@ -81,7 +81,7 @@ import {
   setRollStatus,
   touchCastingSession,
 } from "../db/castingV2";
-import { storageDelete, storagePut } from "../storage";
+import { storageDelete, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
@@ -370,6 +370,8 @@ export async function createRoll(
   let followPersonaLine: string | null = null;
   let followIdentity: ResolvedIdentity | null = null;
   let followStatedAnchor: FollowAnchor | null = null;
+  /** The SELECTED face's frame key (#177 Row A) — the picture the customer is pointing at, resolved through selection like everything a follow inherits. */
+  let followAnchorImageKey: string | null = null;
   let inheritedWardrobe: { path: CastingPath | null; wardrobeLine: string | null } | null = null;
   if (input.followCandidatePublicId) {
     /*
@@ -433,6 +435,7 @@ export async function createRoll(
     });
     followIdentity = honest.identity;
     followStatedAnchor = honest.statedAnchor;
+    followAnchorImageKey = parent.imageKey;
     /*
       WHAT THE SHEET THIS FOLLOW DESCENDS FROM IS WEARING (design §3.1).
 
@@ -482,6 +485,53 @@ export async function createRoll(
   */
   const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
   const authorRoad = creativeRegister;
+
+  /*
+    THE ANCHOR PHOTO (#177; the founder's pick verbatim: "i chose row a on my
+    desk for now" — Row A: Follow = anchor photo + anchor's brief + the A
+    clause). On the author road a follow attaches the followed face's own
+    delivered frame to every render, which is what actually holds the family
+    — the #177 court measured that words alone drift and the photo alone
+    drops heritage; Row A is the photo plus his courted sentence.
+
+    Fetched HERE, before the compile and long before the claim, for the same
+    reason the parent read is: a follow whose photograph cannot be produced
+    must refuse FREE — the clause says "the attached look", and a roll that
+    rendered without the attachment would paint eight strangers against a
+    sentence about a photograph that never arrived. The engine layer refuses
+    the same combination independently (`CandidateRequest.references`).
+  */
+  let anchorImage: { bytes: Buffer; contentType: string; imageKey: string } | null = null;
+  if (authorRoad && input.followCandidatePublicId && followAnchorImageKey) {
+    try {
+      const source = await storageReadBytes(followAnchorImageKey);
+      anchorImage = { bytes: source.bytes, contentType: source.contentType, imageKey: followAnchorImageKey };
+    } catch (error) {
+      log.warn(
+        { err: String(error).slice(0, 200), imageKey: followAnchorImageKey },
+        "[rollService] a follow's anchor frame would not load — refusing free before the claim",
+      );
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "The face you followed couldn't be loaded just now, so nothing was cast and nothing was charged. Try again in a moment.",
+      });
+    }
+  }
+  /*
+    FACTS CHANGE AT THE ROLL, NEVER AT THE FOLLOW (#177, his build order). On
+    an anchored roll the chip adjustments are not consulted: the photograph
+    holds the family, a chip cannot strip a photograph, and the echo offers
+    no adjustment on this road any more (`varyOffered`). Dropped HERE, before
+    the compile, so nothing downstream has to remember the rule — a stale
+    control's leftovers are logged rather than silently woven in.
+  */
+  const anchored = anchorImage !== null;
+  if (anchored && ((input.unlock?.length ?? 0) > 0 || Object.keys(input.overrides ?? {}).length > 0)) {
+    log.info(
+      { unlock: input.unlock ?? [], overrides: Object.keys(input.overrides ?? {}) },
+      "[rollService] adjustments arrived with an anchored follow — dropped: facts change at the roll, never at the follow (#177)",
+    );
+  }
 
   const twoPathsEnabled = dependencies.twoPathsEnabled ?? captureCastingTwoPathsEnabled;
   const bornPath: CastingPath | null = twoPathsEnabled(input.userId) && !authorRoad
@@ -568,8 +618,9 @@ export async function createRoll(
       // while a genuine second roll of the same sentence casts eight new
       // people. Idempotency and variety from one value.
       rollSeed: input.clientRequestId,
-      unlock: input.unlock ?? [],
-      overrides: input.overrides,
+      unlock: anchored ? [] : (input.unlock ?? []),
+      overrides: anchored ? undefined : input.overrides,
+      anchorImageAttached: anchored,
       /*
         THE LINE REACHES THE EIGHT PROMPTS FROM HERE (§3.3, item 5).
 
@@ -690,7 +741,15 @@ export async function createRoll(
         // The resolved identity rides along with the prompt: it is what a
         // follow roll conditions on, and what a later validator compares
         // against. Internal, like everything in this column (§J).
-        internalPrompt: { prompt: spec.prompt, resolved: spec.resolvedIdentity },
+        // `anchorImageKey` (#177 Row A) records WHICH frame this render was
+        // anchored to, so a retry can re-attach the same photograph — or
+        // refuse when it is gone — rather than rendering the clause without
+        // its attachment.
+        internalPrompt: {
+          prompt: spec.prompt,
+          resolved: spec.resolvedIdentity,
+          ...(anchorImage ? { anchorImageKey: anchorImage.imageKey } : {}),
+        },
       })),
     });
   } catch (error) {
@@ -839,6 +898,8 @@ export async function createRoll(
         size: trimEnabled ? `${FRAMING_TRIM_RENDER.width}x${FRAMING_TRIM_RENDER.height}` : compiled.size,
         trimEnabled,
         quality: compiled.quality,
+        /* The followed face's frame (#177 Row A) — one fetch, attached to all eight. Null on everything but an authored follow. */
+        anchor: anchorImage ? { bytes: anchorImage.bytes, contentType: anchorImage.contentType } : null,
         /* Handed on from the compile that produced these eight prompts, so the
            row written and the sheet compiled cannot disagree about what the
            brief said. Null outside the flag. */
@@ -1053,6 +1114,14 @@ export async function dispatchCandidate(input: {
   trimEnabled: boolean;
   quality: "low" | "medium" | "high";
   /**
+   * THE ANCHOR PHOTO (#177 Row A) — the followed face's delivered frame,
+   * attached to this render as an image reference. Null on every render that
+   * is not an authored follow. The engine routes an anchored request to its
+   * EDIT sibling and refuses if it has none (`CandidateRequest.references`),
+   * so a prompt saying "the attached look" can never render unattached.
+   */
+  anchor?: { bytes: Buffer; contentType: string } | null;
+  /**
    * Trips the moment our provider ACCOUNT refuses (401/403).
    *
    * Not an abort of work in flight — it stops candidates that have not yet
@@ -1122,6 +1191,7 @@ export async function dispatchCandidate(input: {
       prompt: input.prompt,
       size: input.size,
       quality: input.quality,
+      ...(input.anchor ? { references: [input.anchor] } : {}),
     });
 
     /*

@@ -8,7 +8,7 @@ import {
   SEXES,
 } from "@shared/castingVocabularies";
 import { Popover } from "@/foundation/Popover";
-import { isFollowUnpinnable } from "@shared/followUnpinnable";
+
 
 import {
   composeEcho,
@@ -95,18 +95,19 @@ export type PendingAdjustments = {
 };
 
 /**
- * Which pinned facts may be LET VARY (#154). Off the author road, every one.
- * On it the brief reaches the engine verbatim, so a fact read out of the
- * sentence cannot be unsaid by a chip — only a standing FOLLOW's three
- * anchored axes (the anchor being a second supplier the chip can strip) still
- * can. The server draws the same rule into each chip's `removable`
- * (`buildChips`); this is the echo's copy of it, keyed on the NEXT roll.
+ * Which pinned facts may be LET VARY. Off the author road, every one. On it,
+ * NONE (#177 Row A): the brief reaches the engine verbatim, so a fact read
+ * out of the sentence cannot be unsaid by a chip — and a follow is held by
+ * the anchor PHOTOGRAPH now, which a chip cannot strip either. Facts change
+ * at the roll, never at the follow (his build order); the standing-follow
+ * exception #154 carved out died with the axis clause. The server draws the
+ * same rule into each chip's `removable` (`buildChips`); this is the echo's
+ * copy of it, keyed on the NEXT roll.
  */
-export type VaryPolicy = { authorRoad: boolean; standingFollow: boolean };
+export type VaryPolicy = { authorRoad: boolean };
 
-export function varyOffered(policy: VaryPolicy | undefined, field: EchoField): boolean {
-  if (!policy || !policy.authorRoad) return true;
-  return policy.standingFollow && isFollowUnpinnable(field);
+export function varyOffered(policy: VaryPolicy | undefined, _field: EchoField): boolean {
+  return !policy || !policy.authorRoad;
 }
 
 export function BriefEcho({

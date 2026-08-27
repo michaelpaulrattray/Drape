@@ -76,9 +76,8 @@ import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief, interpreterEngine } from "./interpreter";
 import { authorPrompt, type Imagination } from "./promptAuthor";
-import { familyClause } from "./familyClause";
+import { followClause } from "./familyClause";
 import { rewriteBrief } from "./briefRewrite";
-import { isFollowUnpinnable } from "../../shared/followUnpinnable";
 import type { CastStyle } from "../../shared/castStyles";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";
@@ -443,6 +442,14 @@ export type BriefCompilerInput = {
    */
   followStatedAnchor?: FollowAnchor | null;
   /**
+   * THE ANCHOR PHOTO IS RIDING (#177 Row A): set by the roll service exactly
+   * when it holds the followed face's delivered bytes for every render on
+   * this roll. The follow clause — which says "the attached look" — is keyed
+   * on THIS and never on whether a stated anchor could be built, so the
+   * sentence and the photograph cannot part company.
+   */
+  anchorImageAttached?: boolean;
+  /**
    * Test seam. Supplying an engine is how a test drives the interpreter's
    * exact output — including output built to misbehave, which is the only way
    * to prove the precedence fix rather than assert it. Production never sets
@@ -702,17 +709,18 @@ function buildChips(
   /**
    * READ-ONLY CHIPS ON THE AUTHOR ROAD (#154, his answer (2)). The brief
    * travels verbatim there, so a chip derived from the sentence cannot be
-   * unsaid by removing it: on a plain authored sheet every derived chip is a
-   * RECORD of what the reader saw and is drawn non-removable, with the sheet
-   * saying "edit the sentence to change them". On a FOLLOW the anchor is a
-   * second supplier a chip CAN strip, so the three anchored axes stay
-   * removable. Off the flag nothing here moves.
+   * unsaid by removing it: every derived chip is a RECORD of what the reader
+   * saw and is drawn non-removable, with the sheet saying "edit the sentence
+   * to change them". A FOLLOW's three anchored axes used to stay removable
+   * because the axis-clause anchor was a second supplier a chip could strip;
+   * since #177 (Row A) the anchor is the PHOTOGRAPH — a chip cannot strip a
+   * photograph, and facts change at the roll, never at the follow — so the
+   * exception is gone. Off the flag nothing here moves.
    */
-  carry: { authorRoad: boolean; anchored: boolean },
+  carry: { authorRoad: boolean },
 ): CastingChip[] {
   const chips: CastingChip[] = [];
-  const removable = (field: UnlockableField): boolean =>
-    !carry.authorRoad || (carry.anchored && isFollowUnpinnable(field));
+  const removable = (): boolean => !carry.authorRoad;
 
   if (intent.role) {
     // The user's own words. Not removable, because removing the brief is not
@@ -729,13 +737,13 @@ function buildChips(
   ];
   for (const [field, value] of derived) {
     if (!value) continue;
-    chips.push({ label: value, kind: field === "archetype" ? "direction" : "subject", removable: removable(field), field });
+    chips.push({ label: value, kind: field === "archetype" ? "direction" : "subject", removable: removable(), field });
   }
   if (intent.heritage.length > 0) {
     chips.push({
       label: intent.heritage.map((component) => component.heritage).join(" · "),
       kind: "subject",
-      removable: removable("heritage"),
+      removable: removable(),
       field: "heritage",
     });
   }
@@ -1246,15 +1254,19 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   */
   const effectiveAnchor = anchor ? withUnlocksApplied(anchor, unlock) : null;
   /*
-    THE FAMILY CLAUSE (#154; his countersign, Crew reply #11): on the author
-    road a follow's anchor — AFTER unlocks, the same anchor the house resolver
-    reads — and the overrides become ONE paragraph written by code, placed
-    after the verbatim brief and before the author's content. Null on a plain
-    authored roll, so that prompt is byte-identical to what it was. On a plain
-    authored roll an UNLOCK reaches nothing the engine reads (the sentence is
-    verbatim), which is why `buildChips` draws those chips read-only.
+    THE ROW A FOLLOW (#177; the founder's pick verbatim: "i chose row a on my
+    desk for now"): on the author road a follow is carried by the followed
+    face ITSELF — the roll attaches the anchor's delivered frame to every
+    render — and the clause is his courted hand-test sentence, fixed bytes,
+    keyed on the photo actually riding (`anchorImageAttached`) and never on
+    whether a stated anchor could be built. The identity dice are never
+    consulted for it (#176), and neither are the chip edits: facts change at
+    the roll, never at the follow — the entrance drops unlock/overrides on an
+    anchored roll before this compile, and `buildChips` draws every derived
+    chip read-only on this road. Null on a plain authored roll, so that
+    prompt is byte-identical to what it was.
   */
-  const carried = authorRoad ? familyClause({ anchor: effectiveAnchor, overrides: input.overrides }) : null;
+  const carried = authorRoad && input.anchorImageAttached ? followClause() : null;
   /*
     THE CHIP EDIT, WRITTEN INTO THE SENTENCE ITSELF (#164, his ruling on the
     fighting prompt): on the author road an override rewrites the brief —
@@ -1262,9 +1274,12 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     is appended where the brief never stated it. The engine receives ONE
     self-consistent prompt; the row's `briefText` stays what she typed, the
     chips stay the record of what was read and changed, and the register
-    records what was sent (`briefSent`) and how each edit landed.
+    records what was sent (`briefSent`) and how each edit landed. Never on an
+    anchored follow (#177: facts change at the roll, never at the follow) —
+    the entrance drops the overrides there, and this line is the structural
+    half of the same rule.
   */
-  const rewritten = authorRoad ? rewriteBrief(briefText, input.overrides) : null;
+  const rewritten = authorRoad && !carried ? rewriteBrief(briefText, input.overrides) : null;
   /*
     THE BYTES SENT, recorded as sent (review of #173, finding 2): the scrub
     runs BEFORE the record is taken, so the sheet's prompt record can never
@@ -1335,7 +1350,16 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         engine: authorEngine,
         /* Already scrubbed at the record above — the record IS the wire. */
         briefText: briefSent,
-        imagination: input.imagination,
+        /*
+          THE COURTED FORMULA IS EXHAUSTIVE ON AN ANCHORED FOLLOW (#177 Row A:
+          "anchor photo + anchor's brief + the A clause"): no author call, so
+          the prompt is exactly the bytes the court judged — brief, clause,
+          block. Forcing LOW here rides the seed branch (no text call, mode
+          "seed") and records the imagination the roll actually had; the
+          author never saw the photograph, so its art direction on top of one
+          would be an unmeasured addition fighting the attached look.
+        */
+        imagination: carried ? "low" : input.imagination,
         style: input.style,
         clause: carried?.clause ?? null,
         /* §5g (#171): the reader's recorded age is the fidelity check's value — "mid 30s" may never come back "young". */
@@ -1392,7 +1416,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       briefText,
       intent,
       archetype,
-      chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad, anchored: effectiveAnchor !== null }),
+      chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad }),
       /*
         WHO WROTE THIS SHEET — present ONLY under the flag, so an unflagged
         roll's row is byte-identical to today's. `authored: false` is a sheet
@@ -1458,7 +1482,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     cohortKey: intent.cohort,
     styleKey: null,
     styleProfile: null,
-    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad, anchored: effectiveAnchor !== null }),
+    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad }),
     candidates,
     variance: sheet.variance,
     size: CANDIDATE_RENDER.size,
@@ -1519,7 +1543,7 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     styleKey: null,
     styleProfile: null,
     /* No register here: this compiler never takes the author road, so every chip stays as it always was. */
-    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad: false, anchored: false }),
+    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad: false }),
     candidates,
     variance,
     size: CANDIDATE_RENDER.size,

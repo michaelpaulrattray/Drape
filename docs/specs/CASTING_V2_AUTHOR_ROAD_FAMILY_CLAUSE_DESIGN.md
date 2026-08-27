@@ -2,6 +2,21 @@
 
 *Foreman-32, 2026-08-27. Status: **BUILT 2026-08-27 (foreman-40) on his countersign** — Crew reply #11, 2026-08-26 20:49Z, verbatim: *"Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court."* Built as recommended, with the amendments in §6 below.*
 
+> ⚠ **THE FOLLOW HALF OF THIS DESIGN IS SUPERSEDED WHOLESALE — 2026-08-28,
+> THE ROW A BUILD (#177).** His court ran (three clause arms on his own
+> anchor, 24/24 delivered) and his pick is verbatim on #177: *"i chose row a
+> on my desk for now."* A follow no longer carries the anchor as a
+> words-clause built from axes: it attaches the followed face's own delivered
+> FRAME to every render (the edit endpoint, `image_urls`), the clause is his
+> courted hand-test sentence as fixed bytes (`FOLLOW_ANCHOR_CLAUSE`,
+> `familyClause.ts`), the author is never called on an anchored roll, and
+> overrides/unlocks never ride one — facts change at the roll, never at the
+> follow. The three-axis removable-chips exception below is dead
+> (`shared/followUnpinnable.ts` deleted). **The CHIP-EDIT half (#164, the
+> brief rewrite on a plain authored roll) stands.** Row B — the shortlist
+> clause — stays on #177's record as a possible second mode, not built
+> ("for now", his words).
+
 > ⚠ **THE CLAUSE'S WORDING IN THIS DESIGN IS SUPERSEDED (#166, founder
 > verbatim, 2026-08-27, on the shipped clause):** *"Image models read 'close
 > relative' as same skull, slight remix … That's not a fork of the look.

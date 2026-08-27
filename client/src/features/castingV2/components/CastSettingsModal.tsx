@@ -60,18 +60,27 @@ import { ImaginationToggle } from "./ImaginationToggle";
 export function CastSettingsModal({
   style,
   imagination,
+  followHeld,
   onStyle,
   onImagination,
   onDismiss,
 }: {
   style: CastStyle;
   imagination: Imagination;
+  /**
+   * TRUE DURING A STANDING FOLLOW (#177 Row A): an anchored roll never calls
+   * the author — the followed photograph holds the family — so the
+   * imagination row yields to a sentence saying so rather than standing as a
+   * meter that reads nothing (a dead control, the no-dead-controls ruling).
+   * The style row stays live: the style still picks the locked block.
+   */
+  followHeld?: boolean;
   onStyle: (style: CastStyle) => void;
   onImagination: (imagination: Imagination) => void;
   onDismiss: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const isDefault = style === DEFAULT_CAST_STYLE && imagination === DEFAULT_IMAGINATION;
+  const isDefault = style === DEFAULT_CAST_STYLE && (followHeld || imagination === DEFAULT_IMAGINATION);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -121,7 +130,7 @@ export function CastSettingsModal({
                 className="dpc-setm__reset"
                 onClick={() => {
                   onStyle(DEFAULT_CAST_STYLE);
-                  onImagination(DEFAULT_IMAGINATION);
+                  if (!followHeld) onImagination(DEFAULT_IMAGINATION);
                 }}
               >
                 Reset
@@ -165,12 +174,24 @@ export function CastSettingsModal({
           </ul>
         </div>
 
-        <ImaginationToggle
-          idPrefix="dpc-settings-imagination"
-          label="How far the author goes"
-          value={imagination}
-          onChange={onImagination}
-        />
+        {followHeld ? (
+          /* #177 Row A: a follow is held by the photograph of the face you picked; the author sits it out, so there is no meter to set. */
+          <div className="dpc-paths">
+            <div className="dpc-paths__row" role="group" aria-label="Imagination">
+              <span className="dp-chrome">IMAGINATION</span>
+            </div>
+            <p className="dpc-paths__note">
+              A follow holds the look of the face you picked — imagination applies to fresh casts.
+            </p>
+          </div>
+        ) : (
+          <ImaginationToggle
+            idPrefix="dpc-settings-imagination"
+            label="How far the author goes"
+            value={imagination}
+            onChange={onImagination}
+          />
+        )}
 
         <p className="dpc-setm__foot">
           These are the studio's defaults. Anything you type in the brief overrides them.
@@ -191,12 +212,15 @@ export function CastSettingsModal({
 export function CastSettingsButton({
   style,
   imagination,
+  followHeld,
   onStyle,
   onImagination,
   idPrefix,
 }: {
   style: CastStyle;
   imagination: Imagination;
+  /** See `CastSettingsModal.followHeld` — during a standing follow the summary names the style alone, because that is all the next roll reads. */
+  followHeld?: boolean;
   onStyle: (style: CastStyle) => void;
   onImagination: (imagination: Imagination) => void;
   idPrefix: string;
@@ -214,12 +238,15 @@ export function CastSettingsButton({
       >
         <Settings2 size={13} strokeWidth={1.9} aria-hidden="true" />
         <span className="dp-chrome">SETTINGS</span>
-        <span className="dpc-setbtn__value">{castSettingsSummary(style, imagination)}</span>
+        <span className="dpc-setbtn__value">
+          {followHeld ? CAST_STYLE_NAMES[style] : castSettingsSummary(style, imagination)}
+        </span>
       </button>
       {open ? (
         <CastSettingsModal
           style={style}
           imagination={imagination}
+          followHeld={followHeld}
           onStyle={onStyle}
           onImagination={onImagination}
           onDismiss={() => setOpen(false)}

@@ -31,6 +31,7 @@ import type { TextEngine, TextRequest } from "../providers/types";
 import { castingBriefCompiler, statedAnchorFrom } from "./briefCompiler";
 import { honestFollowSource, readResolvedIdentity } from "./rollService";
 import { rollComposedOnAuthorRoad } from "./rollProjection";
+import { FOLLOW_ANCHOR_CLAUSE } from "./familyClause";
 import { HOUSE_BLOCK } from "./houseBlock";
 
 /* ------------------------------------------------------- the 578 specimen */
@@ -193,8 +194,8 @@ describe("honestFollowSource — which record was actually sent decides what a f
 
 /* ----------------------------------------------------- the WIRE, both arms */
 
-describe("the WIRE — a follow of 578 composes a family prompt with NOTHING from the resolved record", () => {
-  it("the fixed road: the clause holds the brief's stated facts alone; every fiction word is absent from the whole prompt", async () => {
+describe("the WIRE — a follow of 578 composes the Row A prompt with NOTHING from the resolved record (#177)", () => {
+  it("the road: the clause is the fixed courted sentence — no stated fact, no dice word — and every fiction word is absent from the whole prompt", async () => {
     const engine = interpreterOnly();
     const compiled = await castingBriefCompiler({
       briefText: SPECIMEN_BRIEF_TEXT,
@@ -204,16 +205,12 @@ describe("the WIRE — a follow of 578 composes a family prompt with NOTHING fro
       creativeRegister: true,
       followPersonaLine: "08",
       followStatedAnchor: statedAnchorFrom(SPECIMEN_COMPILED_BRIEF),
+      anchorImageAttached: true,
     });
     const prompts = new Set(compiled.candidates.map((candidate) => candidate.prompt));
     expect(prompts.size).toBe(1);
     const [prompt] = prompts;
-    const clause =
-      "Continue this family: same casting brief, new person — a person, in their 40s. "
-      + "Keep the same age range. "
-      + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
-      + "Cast a different person who could be booked for the same role.";
-    expect(prompt).toBe(`${SPECIMEN_BRIEF_TEXT}\n\n${clause}\n\n${HOUSE_BLOCK}`);
+    expect(prompt).toBe(`${SPECIMEN_BRIEF_TEXT}\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`);
     for (const word of FICTION_WORDS) {
       expect(prompt, word).not.toContain(word);
     }
@@ -224,7 +221,7 @@ describe("the WIRE — a follow of 578 composes a family prompt with NOTHING fro
     }
   });
 
-  it("positive control — the defect reproduces: handed the dice record the way the pre-fix wiring did, the clause says South Asian", async () => {
+  it("the ghost class is structurally dead: handed the dice record the way the pre-fix wiring was, the clause STILL carries no fiction word — there is no channel", async () => {
     const engine = interpreterOnly();
     const compiled = await castingBriefCompiler({
       briefText: SPECIMEN_BRIEF_TEXT,
@@ -234,12 +231,18 @@ describe("the WIRE — a follow of 578 composes a family prompt with NOTHING fro
       creativeRegister: true,
       followPersonaLine: "08",
       followIdentity: SPECIMEN_RESOLVED as never,
+      anchorImageAttached: true,
     });
-    expect(compiled.candidates[0]?.prompt).toContain("of South Asian heritage");
-    expect(compiled.candidates[0]?.prompt).toContain("Keep the same");
+    const prompt = compiled.candidates[0]?.prompt ?? "";
+    expect(prompt).toBe(`${SPECIMEN_BRIEF_TEXT}\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    for (const word of FICTION_WORDS) {
+      expect(prompt, word).not.toContain(word);
+    }
+    /* Positive control for the FICTION_WORDS reader: a planted word IS caught. */
+    expect(`${prompt} of South Asian heritage`).toContain(FICTION_WORDS[0]);
   });
 
-  it("precedence: with both supplied, the honest anchor wins and the dice are never read", async () => {
+  it("with both records supplied, neither is read — the clause is the same fixed bytes", async () => {
     const engine = interpreterOnly();
     const compiled = await castingBriefCompiler({
       briefText: SPECIMEN_BRIEF_TEXT,
@@ -250,6 +253,7 @@ describe("the WIRE — a follow of 578 composes a family prompt with NOTHING fro
       followPersonaLine: "08",
       followIdentity: SPECIMEN_RESOLVED as never,
       followStatedAnchor: statedAnchorFrom(SPECIMEN_COMPILED_BRIEF),
+      anchorImageAttached: true,
     });
     for (const word of FICTION_WORDS) {
       expect(compiled.candidates[0]?.prompt, word).not.toContain(word);

@@ -853,10 +853,23 @@ export default function CastingSheet() {
           sessionId,
           candidateId: anchorId,
           briefText: brief,
-          unlock: unlocked.length > 0 ? unlocked : undefined,
-          overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
-          /* The gear is drawn on a standing follow since #154 (the author carries it), so what it shows is sent — null exactly where no gear was drawn. */
-          ...(nextImagination ? { imagination: nextImagination } : {}),
+          /*
+            NOTHING BUT THE BRIEF RIDES AN AUTHORED FOLLOW (#177 Row A, his
+            build order: facts change at the roll, never at the follow). The
+            anchor photograph holds the family, so adjustments and the
+            imagination meter have nothing to reach — the server drops them
+            anyway, and a client that sent them would be posting controls the
+            product ignores. The STYLE still rides: it picks the locked block.
+            Off the author road the adjustments ride exactly as before — and
+            no imagination ever rides a follow, because the meter is only
+            drawn on the author road in the first place.
+          */
+          ...(authorRoad
+            ? {}
+            : {
+                unlock: unlocked.length > 0 ? unlocked : undefined,
+                overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
+              }),
           ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
@@ -2503,7 +2516,7 @@ export default function CastingSheet() {
             // What the user has queued but the sheet in front of them cannot
             // show, because rolls are immutable.
             pending={{ overrides, unlocked }}
-            vary={{ authorRoad, standingFollow: standingFollowId !== null }}
+            vary={{ authorRoad }}
             onAdjust={(adjustment) => {
               /*
                 NONE OF THESE TOAST ANY MORE (D-110), and this is the clearest
@@ -2532,11 +2545,12 @@ export default function CastingSheet() {
         {/*
           READ-ONLY CHIPS, SAID ONCE (#154, his answer (2)): on the author road
           the sentence goes to the engine verbatim, so the echo offers no "let
-          it vary" on a plain authored sheet, and this line says why. A
-          standing follow keeps its three anchored axes adjustable, so the
-          line is not drawn there.
+          it vary", and this line says why. Drawn on a standing follow too
+          since #177 (Row A): the follow is held by the anchor photograph now,
+          so its axes stopped being adjustable — facts change at the roll,
+          never at the follow.
         */}
-        {roll.data && authorRoad && !viewingHistory && !standingFollowId ? (
+        {roll.data && authorRoad && !viewingHistory ? (
           <p className="dp-small dpc-echo-note">{AUTHOR_CHIPS_ARE_A_RECORD}</p>
         ) : null}
 
@@ -2770,12 +2784,17 @@ export default function CastingSheet() {
               note={pathSwitchNote({ sheetPath, selected: nextRollPath })}
             />
           ) : null}
-          {/* THE GEAR (#142) for the next roll, where the meter's pills stood. */}
+          {/* THE GEAR (#142) for the next roll, where the meter's pills stood.
+              During a standing follow the imagination row yields to a note
+              (#177 Row A: an anchored roll never calls the author, and a
+              meter that read nothing would be a dead control) — the style
+              row stays live, because the style still picks the locked block. */}
           {nextImagination && nextStyle ? (
             <CastSettingsButton
               idPrefix="dpc-dock"
               style={nextStyle}
               imagination={nextImagination}
+              followHeld={standingFollowId !== null}
               onStyle={setStyleChoice}
               onImagination={setImaginationChoice}
             />

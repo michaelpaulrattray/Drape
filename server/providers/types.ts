@@ -286,12 +286,24 @@ export type ImageResult = {
 
 /* ------------------------------------------------------------- capabilities */
 
+/** An image handed to the engine alongside the prompt, as bytes we already hold. */
+export type ImageReference = { bytes: Buffer; contentType: string };
+
 export type CandidateRequest = {
   /** The compiled instruction. Internal — never leaves the server. */
   prompt: string;
   /** Portrait by default for sheet candidates (§H.10: 1K sheet). */
   size: `${number}x${number}`;
   quality: "low" | "medium" | "high";
+  /**
+   * THE ANCHOR PHOTO (#177 Row A): when present the render is IMAGE-ANCHORED —
+   * the roll road's follow attaches the followed face's delivered frame. An
+   * engine that cannot attach references MUST refuse, never render without
+   * them: the prompt these requests carry says "the attached look", and a
+   * render that quietly dropped the attachment would paint eight strangers
+   * against a sentence about a photograph that never arrived.
+   */
+  references?: readonly ImageReference[];
   /** Abort signal so a cancelled roll stops dispatching. */
   signal?: AbortSignal;
 };

@@ -50,9 +50,10 @@ export function authorSatOutRecord(reason: AuthorSatOutReason): string {
  * with the sentence"*). On the author road the brief goes to the engine word
  * for word, so a pinned fact read out of the sentence cannot be let vary by
  * removing it — the echo offers no "let it vary" there, and this line, drawn
- * once under the echo, says why. (On a standing FOLLOW the three anchored axes
- * — sex, age, heritage — can still be let vary, because there the anchor is
- * what supplies them.)
+ * once under the echo, says why. A standing FOLLOW's three anchored axes used
+ * to stay adjustable; since #177 (Row A) the follow is held by the anchor
+ * PHOTOGRAPH, which a chip cannot strip, so the line is drawn there too —
+ * facts change at the roll, never at the follow.
  */
 export const AUTHOR_CHIPS_ARE_A_RECORD =
   "These are what the studio read in your words — edit the sentence to change them.";

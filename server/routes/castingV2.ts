@@ -1181,12 +1181,15 @@ export const castingV2Router = router({
           unlock: unlockList,
           overrides: overrideObject,
           /*
-            THE SETTINGS, ON A FOLLOW TOO (#154): the author road carries a
-            follow as the family clause, so the sheet draws the gear during a
-            standing follow and sends what it shows. Optional for `createRoll`'s
-            reason — absent means the author's defaults, and an account off the
-            road has nothing that reads either. No `path`: a follow is dressed
-            by the engine on the author road and inherits the sheet's path off it.
+            THE SETTINGS ON A FOLLOW, since Row A (#177): only `style` is
+            read — it picks the locked block — because an anchored roll never
+            calls the author, so the client stops sending `imagination` with a
+            follow and the compile forces the no-call road regardless. The
+            field STAYS in the schema: this input is `.strict()`, and deleting
+            it in the commit that stops sending it would BAD_REQUEST every
+            in-flight bundle mid-deploy (the removal contract). No `path`: a
+            follow is dressed by the engine on the author road and inherits
+            the sheet's path off it.
           */
           imagination: z.enum(IMAGINATIONS).optional(),
           style: z.enum(CAST_STYLES).optional(),

@@ -139,15 +139,41 @@ export function createFalCreativeEngine(config: FalCreativeConfig): CreativeEngi
         throw new ProviderError("capability", "fal requires both dimensions to be multiples of 16");
       }
 
+      /*
+        THE ANCHOR PHOTO (#177 Row A): a request carrying references is an
+        IMAGE-ANCHORED render and goes to the same model's EDIT endpoint —
+        the wire the #177 court measured (24/24 delivered, the anchor as a
+        data URI in `image_urls`). Only GPT Image 2 has that sibling here;
+        any other configured model REFUSES rather than rendering without the
+        attachment, because these prompts say "the attached look" and a
+        dropped attachment would paint strangers against a sentence about a
+        photograph that never arrived (`CandidateRequest.references`).
+      */
+      const references = request.references ?? [];
+      if (references.length > 0 && model !== FAL_GPT_IMAGE_2) {
+        throw new ProviderError(
+          "capability",
+          `engine ${model} has no edit sibling to attach an image reference to`,
+        );
+      }
+      const endpoint = references.length > 0 ? FAL_GPT_IMAGE_2_EDIT : model;
+
       return queue.run("generateCandidate", () =>
         withRetry(
           "fal.generateCandidate",
           async () => {
             const job = await runFalImageJob({
               apiKey: config.apiKey,
-              endpoint: model,
+              endpoint,
               body: {
                 prompt: request.prompt,
+                ...(references.length > 0
+                  ? {
+                      image_urls: references.map(
+                        (reference) => `data:${reference.contentType};base64,${reference.bytes.toString("base64")}`,
+                      ),
+                    }
+                  : {}),
                 image_size: { width, height },
                 quality: request.quality,
                 num_images: 1,
@@ -166,7 +192,8 @@ export function createFalCreativeEngine(config: FalCreativeConfig): CreativeEngi
               latencyMs: job.latencyMs,
               provenance: {
                 provider: "fal",
-                model,
+                /* The endpoint actually called: an anchored render's row says the edit sibling, never the base model. */
+                model: endpoint,
                 providerRef: job.requestId,
               },
             };
