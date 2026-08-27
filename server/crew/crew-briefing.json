@@ -1,7 +1,7 @@
 {
-  "edition": 52,
-  "updatedAt": "2026-08-27T09:55:00+10:00",
-  "shift": "foreman-43",
+  "edition": 53,
+  "updatedAt": "2026-08-27T10:30:00+10:00",
+  "shift": "foreman-44",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1108,6 +1108,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T10:30:00+10:00",
+      "shift": "foreman-44",
+      "text": "Quiet shift — nothing needed doing. Still no new word from you (12 replies, all acknowledged) and nothing in N1 is left to build; the milestone waits on your eye, the same four things: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). Read at the artifacts, not assumed: last shift's claims hold (main matches production at b053645d), every urgent card's last comment is unchanged, no patrol is due until the 29th. No renders, no credits, $0 house."
+    },
+    {
       "at": "2026-08-27T09:55:00+10:00",
       "shift": "foreman-43",
       "text": "Quiet shift — nothing needed doing. Still no new word from you (12 replies, all acknowledged) and nothing in N1 is left to build; the milestone waits on your eye, same four things: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). I checked the queue rather than assuming: every urgent card waits on you or on N2, no patrol is due until the 29th, the gate is green and main matches production. No renders, no credits, $0 house."
@@ -1301,11 +1306,6 @@
       "at": "2026-08-26T07:14:00+10:00",
       "shift": "foreman-13",
       "text": "Your verdict on the court arrived overnight and I read it first: build C with the framing fixed, every face carries what you stated, vary only the open things, beards fine because you never said clean-shaven, fix refusals by rewording. So tonight was the register itself, and it is built — switched off for everyone, which means the product you use this morning is byte-for-byte yesterday's. When switched on for your account, your cyborg brief will be sent as your own words first, then the same framing and camera rules that made sheet B look real, then one short line per candidate that varies only what you left open. Ordinary briefs never take that road. It needs one thing from you: the word to switch it on for your account so I can roll your brief through it (160 credits) and put the strip beside the court's in your gallery — that roll is step 3 and your eye on it is the gate. Two smaller things: I turned on GitHub's leak-blocker for the repository on your \"Turn it on\" (checked it reads enabled), and I merged the night's workflow-hardening change that was green and waiting. Nothing spent. OpenRouter is still at $7.52 — please top it up or check auto-top-up, or the roll above cannot read your brief."
-    },
-    {
-      "at": "2026-08-26T06:50:00+10:00",
-      "shift": "foreman-12",
-      "text": "Still no word from you on the court strips, so the creative register stays parked at its gate and this was maintenance again. The team now has a second automatic security reader (#33): every proposed change is scanned for the classic dangerous code shapes — user text run as code, queries built from text, user text written straight into a page. As with last night's dead-code detector, I made it prove itself first: two planted dangerous lines were both caught, a plant in a throw-away folder was correctly ignored, and one planted shape it MISSED (a shell command run from a web request) is written on its record page so nobody trusts it for that. Its first read of the product came back with four notes, all one harmless pattern in the homepage image route — and opening that file to explain them turned up a small real bug: asking for a hero image named 'constructor' produced a server error instead of a plain 'not found'. Fixed, with a test that fails on the old code, and checked that the two similar routes were already safe. Another seat's workflow-checker change (#35) went green at 06:17 and is still waiting to be merged; if it is still sitting there the next shift merges it. One of the automatic dependency updates is failing for a real reason (a type change in the image library), noted for the next shift. Nothing was spent. Still waiting on you: the eight court strips, the GitHub one-click, and the OpenRouter balance."
     }
   ],
   "acknowledgedReplyIds": [
