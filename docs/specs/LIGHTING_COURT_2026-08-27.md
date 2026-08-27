@@ -1,6 +1,6 @@
 # THE LIGHTING / REALISM COURT — record, 2026-08-27 (foreman-28, issue #128)
 
-**Status: RUN. The two sheets are in the Crew tab's eye gallery (edition 37, item `lighting-court-128`); his eye is the verdict. Nothing built, no constant moved.** Harness `scripts/_court-lighting-128-disposable.mts` (disposable; `--instrument` law-2 controls, `--dry-run`). Frames and readings under `output/_shift128/court/` (`readings.json`, `court.log`, `prompt-<arm>.txt`).
+**Status: RUN, and EXTENDED by the L2+ arm (foreman-50, same day — §6 below). The sheets are in the Crew tab's eye gallery (editions 37 and 59, item `lighting-court-128`); his eye is the verdict. Nothing built, no constant moved.** Harness `scripts/_court-lighting-128-disposable.mts` (disposable; `--instrument` law-2 controls, `--dry-run`). Frames and readings under `output/_shift128/court/` (`readings.json`, `court.log`, `prompt-<arm>.txt`). ⚠ The L2+ run overwrote `readings.json`/`court.log` with its own arm's data; the original five-arm summary survives in §3 and the frames on disk.
 
 Under test: ruling `docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md` §5c (the locked block is code; *"the B+R court becomes: author content + the FULL locked block vs + the distilled clause"*) and his lighting words (§5 line 145–146: *"a few different options would be good to look at"*; his own candidate as the lead variant).
 
@@ -56,3 +56,17 @@ The refusals are fal's content checker (`422 … could not be processed because 
 - **K** — nothing moves; #128 closes.
 - **L1 / L2 / L3** — `LIGHTING_LINE` in `server/castingV2/houseBlock.ts` takes the chosen sentence verbatim (the guard arm asserting his §5e line verbatim moves with it, declared), one small PR, the next gallery roll carries it. The other two are candidates for the advanced-settings lighting list (N3), recorded here.
 - **R's look** (the darker, contrastier room) — that is not a light, it is the absence of the block; the honest path is to say which of its qualities he wants and write THAT into the block's BACKGROUND/LIGHTING lines, then re-court.
+
+## 6. The L2+ arm (foreman-50, 2026-08-27 — his superseding block, verbatim)
+
+He answered the strip with a block of his own and then superseded his first fold-in instruction (*"Use this as one block. Don't append it as a second thought — replace L2 with this"*). **L2+ is that block byte-for-byte as the LIGHTING clause** — asserted against the issue comment's bytes before a cent — swapped into **today's shipping block, which since PR #162 carries the F2 framing sentence (his own pick, reply #13)**. That is the one declared difference from the K/L1/L2/L3 rows: if he picks L2+, the judged combination is exactly what ships; the head-share numbers are therefore not comparable to §3's rows (F2's population sits ~33% against K's 36.7%).
+
+Same thin brief, LOW = seed + block, ×8, dev `.env`, no rows, no credits. Instrument re-proven first (positive 28.2% ✓, negative NO FACE ✓, all guards pass, swap-back asserts L2+ differs from K in the lighting line only).
+
+| arm | delivered | refused | head share median (min–max) | headroom med | gap med |
+|---|---|---|---|---|---|
+| L2+ his block verbatim, on the F2-framed block | 6 | **2** | 34.0% (32.6–35.9) | 0.76 | 0.57 |
+
+**The finding beside the look: L2+ is the first BLOCK arm to refuse.** 2 of 8 at the engine's content filter (`422 … contained material`), the same door as R's 3/8, where K/L1/L2/L3 passed 0 of 32. The refusal-per-render coin (roll 222's class) means 2/8 is a count, not a verdict — but 0/32 vs 2/8 is worth his eye, and if L2+ ships, #129's patrol owns finding which word trips the checker. The delivered light reads as his words: wrapped soft key, luminous grey brighter behind the head, soft jaw shadow, no oily speculars (my eye; his is the gate).
+
+Spend: 8 renders × $0.0557 = $0.45 + 12 court region reads × $0.005 = $0.06 + 4 instrument reads $0.02 ≈ **$0.53** (estimate on the issue: $0.54). fal $22.65 → $22.33 read at both ends. Strip and close-up in the gallery (edition 59, same eye item), the letter question re-asked with L2+ in the list.
