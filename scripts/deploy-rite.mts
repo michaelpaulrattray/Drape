@@ -387,7 +387,12 @@ if (dirty.length > 0) {
       return result.status === 0 ? result.stdout : null;
     };
     const head = show(`${sha}:${BRIEFING_PATH}`);
-    verdict = head === null
+    /* A tip the fetch could not bring home is UNREAD, said as such — not "the
+       briefing is new on origin/main", which is a reading nobody took
+       (review of #160, note 2). */
+    verdict = !git("cat-file", "-t", remoteMain).startsWith("commit")
+      ? { quiet: false, why: "(unread — origin/main's tip could not be fetched)" }
+      : head === null
       ? { quiet: false, why: "the pushed commit carries no briefing" }
       : judgeQuietEdition({
         changedFiles: git("diff", "--name-only", remoteMain, sha).split(/\r?\n/),
