@@ -229,15 +229,26 @@ function bandOfYears(years: number): AgeBand | null {
   return "70s+";
 }
 
-/** Age-stating shapes; each captures the one token `BAND_OF_WORD` or `bandOfYears` reads. */
-const AGE_CLAIM_SHAPES: ReadonlyArray<RegExp> = [
-  /\bin (?:her|his|their) (?:(?:early|mid|late)[ -])?([a-z0-9]+)\b/g,
-  /\b(?:early|mid|late)[ -]([a-z0-9]+)\b/g,
-  /\b([a-z]+)-something\b/g,
-  /\baged? (\d{1,3})\b/g,
-  /\b(\d{1,3})[ -]years?[ -]old\b/g,
-  /\b(teenage[dr]?|teenager)\b/g,
+/**
+ * Age-stating shapes; each captures the one token `BAND_OF_WORD` or
+ * `bandOfYears` reads. The non-possessive early/mid/late shape is marked
+ * `eraAmbiguous`: "late 70s disco" / "early 90s minimalism" are genre names in
+ * exactly the aesthetic language MAX is told to write (Fable review of #174,
+ * finding 1), so in THAT shape alone a numeric decade above 60s is declined —
+ * the possessive shape ("in her late 70s") still catches a real elder-age
+ * claim, and the word forms ("late seventies") stay age claims everywhere.
+ */
+const AGE_CLAIM_SHAPES: ReadonlyArray<{ shape: RegExp; eraAmbiguous?: true }> = [
+  { shape: /\bin (?:her|his|their) (?:(?:early|mid|late)[ -])?([a-z0-9]+)\b/g },
+  { shape: /\b(?:early|mid|late)[ -]([a-z0-9]+)\b/g, eraAmbiguous: true },
+  { shape: /\b([a-z]+)-something\b/g },
+  { shape: /\baged? (\d{1,3})\b/g },
+  { shape: /\b(\d{1,3})[ -]years?[ -]old\b/g },
+  { shape: /\b(teenage[dr]?|teenager)\b/g },
 ];
+
+/** Numeric decades that double as era genres; declined only in the `eraAmbiguous` shape. */
+const ERA_DECADES = new Set(["70s", "80s", "90s"]);
 
 /**
  * Words that age a seed DOWN without naming a decade — the measured failure
@@ -252,9 +263,10 @@ const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
 /** The phrase in `content` that claims an age other than `stated`, or null. */
 export function ageContradictionIn(content: string, stated: StatedAge): string | null {
   const lower = content.toLowerCase().replace(/\s+/g, " ");
-  for (const shape of AGE_CLAIM_SHAPES) {
+  for (const { shape, eraAmbiguous } of AGE_CLAIM_SHAPES) {
     for (const match of Array.from(lower.matchAll(shape))) {
       const token = match[1] ?? match[0];
+      if (eraAmbiguous && ERA_DECADES.has(token)) continue;
       const claimed = /^\d+$/.test(token) ? bandOfYears(Number(token)) : BAND_OF_WORD[token] ?? null;
       if (claimed !== null && claimed !== stated.band) return match[0];
     }

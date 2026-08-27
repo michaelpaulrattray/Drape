@@ -319,6 +319,16 @@ describe("§5g — seed facts cannot move, including paraphrase (the check compa
     expect(ageContradictionIn("an 80s-inspired matte grade over 90s minimalism", MID_30S)).toBeNull();
   });
 
+  it("QUALIFIED era phrases pass too, and the possessive elder claim still reddens (Fable review of #174, finding 1)", () => {
+    expect(ageContradictionIn("late 70s disco styling with mirrored lamé", MID_30S)).toBeNull();
+    expect(ageContradictionIn("an early 90s minimalist grade", MID_30S)).toBeNull();
+    expect(ageContradictionIn("mid-80s synth styling, chrome and neon texture language", MID_30S)).toBeNull();
+    /* The possessive shape is an AGE shape, not an era one — it keeps catching real elder claims. */
+    expect(ageContradictionIn("a man in his late 70s", MID_30S)).toBeTruthy();
+    /* Word forms are age claims in any shape. */
+    expect(ageContradictionIn("late seventies, silver and weathered", MID_30S)).toBeTruthy();
+  });
+
   it("'young' on a teens/20s seed states nothing the seed did not — no drift", () => {
     expect(ageContradictionIn("young, luminous styling", { band: "20s", phase: null })).toBeNull();
     expect(ageContradictionIn("youthful energy", { band: "teens", phase: null })).toBeNull();
