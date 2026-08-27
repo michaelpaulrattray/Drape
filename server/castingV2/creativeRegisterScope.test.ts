@@ -611,7 +611,7 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "authored", content: ADDITION, carried: { follow: true } });
   });
 
-  it("an UNLOCK on a follow strips the axis from the clause; an OVERRIDE becomes words — on a follow it replaces the axis, alone it is the whole clause", async () => {
+  it("an UNLOCK on a follow strips the axis from the clause; an OVERRIDE lands in the brief itself — on a follow the clause also states it, alone there is no clause at all (#164)", async () => {
     const unlocked = engineAnswering([ADDITION]);
     const a = await castingBriefCompiler({
       briefText: RICH,
@@ -643,6 +643,15 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     expect(bClause).toContain("a woman, in their 40s, of Nordic heritage");
     expect(bClause).not.toContain("20s");
     expect(b.compiledBrief.register).toMatchObject({ kind: "author", carried: { follow: true, overrides: { ageBand: "40s" } } });
+    /*
+      AT THE WIRE (law 5; review of #173, finding 5): RICH states no decade,
+      so the edit APPENDS — the declared consistent repetition is the brief
+      and the clause stating the same 40s, with no tie-breaker anywhere.
+    */
+    expect((b.compiledBrief.register as { briefSent: string }).briefSent).toBe(`${RICH} In their 40s.`);
+    expect(b.candidates[0]?.prompt.startsWith(`${RICH} In their 40s.\n\n${bClause}`)).toBe(true);
+    expect(b.candidates[0]?.prompt).not.toContain("this wins");
+    expect(b.candidates[0]?.prompt).not.toContain("20s");
 
     const overridden = engineAnswering([ADDITION]);
     const c = await castingBriefCompiler({

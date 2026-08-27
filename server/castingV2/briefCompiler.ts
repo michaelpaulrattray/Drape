@@ -1182,7 +1182,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     records what was sent (`briefSent`) and how each edit landed.
   */
   const rewritten = authorRoad ? rewriteBrief(briefText, input.overrides) : null;
-  const briefSent = rewritten?.text ?? briefText;
+  /*
+    THE BYTES SENT, recorded as sent (review of #173, finding 2): the scrub
+    runs BEFORE the record is taken, so the sheet's prompt record can never
+    show a brand word the engine was not given. Rule 5's honesty cuts both
+    ways — the record is the wire, not the draft.
+  */
+  const rewrittenOrTyped = rewritten?.text ?? briefText;
+  const briefSent = authorRoad ? (scrubBrands(rewrittenOrTyped) ?? rewrittenOrTyped) : rewrittenOrTyped;
   /*
     Brand names never reach the image engine (founder gate 21). The two
     free-text fields are the only things here that travel to the provider as
@@ -1243,7 +1250,8 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   const authored = authorEngine
     ? await authorPrompt({
         engine: authorEngine,
-        briefText: scrubBrands(briefSent) ?? briefSent,
+        /* Already scrubbed at the record above — the record IS the wire. */
+        briefText: briefSent,
         imagination: input.imagination,
         style: input.style,
         clause: carried?.clause ?? null,
@@ -1332,13 +1340,15 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
               */
               ...(carried ? { carried } : {}),
               /*
-                THE EDIT AS SENT (#164) — present only when a chip edit
-                rewrote the brief: `briefSent` is the first paragraph the
-                eight were painted from (the row's `briefText` stays what
-                she typed), and `rewrites` says how each field landed
-                (replaced in place, or appended as one plain sentence).
+                THE BRIEF AS SENT (#164) — always recorded on an author row,
+                post-scrub, so the sheet's prompt record and *use as brief*
+                offer the bytes the engine actually received (the row's
+                `briefText` stays what she typed). `rewrites` rides only when
+                a chip edit rewrote the sentence, and says how each field
+                landed (replaced in place, or appended as one plain sentence).
               */
-              ...(rewritten ? { briefSent: rewritten.text, rewrites: rewritten.edits } : {}),
+              briefSent,
+              ...(rewritten ? { rewrites: rewritten.edits } : {}),
             },
           }
         : {}),

@@ -26,8 +26,22 @@ describe("replacement in place", () => {
   });
 
   it("a fact stated twice is said right twice — leaving one behind is the contradiction this exists to kill", () => {
-    const out = rewriteBrief("a 30s man, definitely 30s energy", { ageBand: "40s" });
-    expect(out?.text).toBe("a 40s man, definitely 40s energy");
+    const out = rewriteBrief("a man in his 30s — yes, in his 30s", { ageBand: "40s" });
+    expect(out?.text).toBe("a man in his 40s — yes, in his 40s");
+  });
+
+  it("a decade outside a fact-stating shape is some other fact's era and is never touched (review of #173, finding 1)", () => {
+    /* The styling era survives; the subject's stated age is the one rewritten. */
+    expect(rewriteBrief("a woman in her 30s with a 60s bouffant hairstyle", { ageBand: "40s" })?.text)
+      .toBe("a woman in her 40s with a 60s bouffant hairstyle");
+    /* Age never stated: the bouffant is untouched AND the append branch fires. */
+    expect(rewriteBrief("a fitness creator with a 60s bouffant", { ageBand: "40s" })?.text)
+      .toBe("a fitness creator with a 60s bouffant. In their 40s.");
+  });
+
+  it("'70s+' is consumed whole — the plus never survives into the rewritten text (review of #173, 4a)", () => {
+    expect(rewriteBrief("a matriarch in her 70s+", { ageBand: "40s" })?.text).toBe("a matriarch in her 40s");
+    expect(rewriteBrief("a rock climber", { ageBand: "70s+" })?.text).toBe("a rock climber. In their seventies or older.");
   });
 
   it("a gender noun is replaced; 'female' is not a match for 'male'", () => {
@@ -36,8 +50,17 @@ describe("replacement in place", () => {
     expect(out?.text).toBe("a male pilot");
   });
 
-  it("a heritage vocabulary word is replaced, multiword included", () => {
+  it("two people in frame make the subject ambiguous — a gender edit falls to APPEND, never rewrites both (review of #173, finding 1)", () => {
+    const out = rewriteBrief("a woman posing beside an older man", { sex: "male" });
+    expect(out?.text).toBe("a woman posing beside an older man. Cast a man.");
+    expect(out?.edits).toEqual([{ field: "sex", mode: "appended", to: "Cast a man." }]);
+  });
+
+  it("a heritage word counts only against a person — scenery keeps its sea (review of #173, finding 1)", () => {
     expect(rewriteBrief("a South Asian man in his 40s", { heritage: "West African" })?.text).toBe("a West African man in his 40s");
+    expect(rewriteBrief("a model of Nordic heritage", { heritage: "East Asian" })?.text).toBe("a model of East Asian heritage");
+    expect(rewriteBrief("shot on a Mediterranean rooftop", { heritage: "Slavic" })?.text)
+      .toBe("shot on a Mediterranean rooftop. Of Slavic heritage.");
   });
 
   it("a build adjective is replaced only where it is anchored to the word 'build'", () => {
@@ -46,6 +69,10 @@ describe("replacement in place", () => {
     const bare = rewriteBrief("a broad smile and warm eyes", { build: "slim" });
     expect(bare?.text).toBe("a broad smile and warm eyes. Slim build.");
     expect(bare?.edits).toEqual([{ field: "build", mode: "appended", to: "Slim build." }]);
+  });
+
+  it("sentence case survives an article edit (review of #173, 4b)", () => {
+    expect(rewriteBrief("An athletic build carries the outfit", { build: "broad" })?.text).toBe("A broad build carries the outfit");
   });
 });
 

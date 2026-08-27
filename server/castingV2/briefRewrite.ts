@@ -15,20 +15,31 @@
  * How the edit lands, per field:
  *
  *   - **REPLACED** where the brief states the fact in a form the matchers
- *     recognise — every span stating it is rewritten to the new value, and
+ *     recognise — every recognised span is rewritten to the new value, and
  *     every byte outside those spans is untouched (asserted in the suite).
  *     A brief that says the fact twice gets both said right, because leaving
  *     one behind is the contradiction this module exists to kill.
  *   - **APPENDED** as one plain sentence where the brief never states it.
  *     No precedence clause — there is nothing to take precedence over.
  *
- * The matchers are deliberately conservative: a decade token, a gender noun,
- * a heritage vocabulary word, a build adjective anchored to the word "build",
- * a look key's own phrase. A fact stated in words they cannot see falls to
- * APPEND — which can leave the old wording standing beside the new sentence.
- * That is the declared limit (the alternative, a model rewriting his words,
- * is the author-drift the verbatim law forbids), and the drive on #164 is
- * where its rate is read rather than guessed at.
+ * The matchers are ANCHORED TO FACT-STATING SHAPES, not bare tokens (review
+ * of PR #173, finding 1): a decade counts only inside "in her/his/their
+ * <decade>" or "aged <decade>", so a "60s bouffant" is a hairstyle era and
+ * never rewritten; a heritage word counts only against a person shape ("of
+ * Nordic heritage", "a Nordic woman"), so a Mediterranean rooftop keeps its
+ * sea; a build adjective only against the word "build". A gender noun cannot
+ * be anchored by shape, so it is replaced only when the brief holds exactly
+ * ONE — a second person in frame ("a woman beside an older man") makes the
+ * subject ambiguous and the edit falls to APPEND.
+ *
+ * TWO DECLARED LIMITS, one per branch. A fact stated in words the anchors
+ * cannot see falls to APPEND — which can leave the old wording standing
+ * beside the new sentence. And an anchored span can still belong to a
+ * NON-subject person ("a woman in her 30s beside a man in his 50s" + an age
+ * chip rewrites both) — this product frames a single figure, so a second
+ * aged person is rare, but the class exists. The alternative to both — a
+ * model rewriting his words — is the author-drift the verbatim law forbids;
+ * the drive on #164 is where these rates are read rather than guessed at.
  *
  * Author road only: the house road composes per-candidate prose from the
  * intent, which `applyOverrides` already edits structurally — its prompts
@@ -62,11 +73,25 @@ function articleFor(word: string): string {
 }
 
 /**
- * Decade spans, digit or spelled, with an optional phase prefix — the whole
- * span is replaced so "mid 30s" becomes "late 40s" rather than "mid late 40s".
+ * A decade with its optional phase, as the tail of an ANCHORED age statement.
+ * `70s\+` is listed before `70s` and the close is `(?!\w)` rather than `\b`,
+ * because a word boundary after "+" never matches and the regex would
+ * silently backtrack to "70s", leaving "+" behind in the rewritten text
+ * (review of PR #173, finding 4a).
  */
-const AGE_SPAN =
-  /\b(?:(?:early|mid|late)[ -])?(?:teens|20s|30s|40s|50s|60s|70s\+?|twenties|thirties|forties|fifties|sixties|seventies)\b/gi;
+const DECADE =
+  "(?:(?:early|mid|late)[ -])?(?:teens|20s|30s|40s|50s|60s|70s\\+|70s|twenties|thirties|forties|fifties|sixties|seventies)(?!\\w)";
+
+/**
+ * The decade only inside a fact-stating shape — "in her 30s", "in their
+ * early 40s", "aged 50s". A bare token ("a 60s bouffant") is some other
+ * fact's era and is never touched; the subject's age then lands by APPEND.
+ * The anchor words are kept; only the decade tail is replaced.
+ */
+const AGE_SPAN = new RegExp(`\\b(?:in (?:her|his|their)|aged)\\s+${DECADE}`, "gi");
+
+/** The decade tail alone, for swapping inside an anchored span. */
+const DECADE_TAIL = new RegExp(DECADE, "i");
 
 const GENDER_NOUN = /\b(?:woman|man|female|male|lady|gentleman|guy|girl|boy)\b/gi;
 
@@ -79,6 +104,17 @@ function escapeRegExp(value: string): string {
 
 function anyOf(values: readonly string[]): RegExp {
   return new RegExp(`\\b(?:${values.map(escapeRegExp).join("|")})\\b`, "gi");
+}
+
+/**
+ * A heritage word only where it describes a PERSON — "of Nordic heritage",
+ * "South Asian descent", "a Mediterranean man" — never scenery ("a
+ * Mediterranean rooftop" keeps its sea; the chip's heritage then APPENDS).
+ */
+function heritageSpan(values: readonly string[]): RegExp {
+  const words = values.map(escapeRegExp).join("|");
+  const person = "heritage|descent|man|woman|person|male|female|lady|gentleman|guy|girl|boy";
+  return new RegExp(`\\b(?:${words})(?=\\s+(?:${person})\\b)|(?<=\\bof\\s)(?:${words})\\b`, "gi");
 }
 
 /** "in their late 40s" without the leading "in their" — the token that sits where "30s" sat. */
@@ -97,6 +133,12 @@ type FieldWriter = {
   to: string;
   /** The plain sentence appended when no span exists. */
   appended: string;
+  /**
+   * Replace only when the brief holds exactly ONE span — for a fact whose
+   * matcher cannot be anchored by shape (a gender noun), a second match means
+   * a second person and an ambiguous subject, so the edit falls to APPEND.
+   */
+  requireSingle?: boolean;
 };
 
 function writersOf(overrides: LockOverrides): FieldWriter[] {
@@ -106,7 +148,8 @@ function writersOf(overrides: LockOverrides): FieldWriter[] {
     writers.push({
       field: "ageBand",
       matcher: AGE_SPAN,
-      replacement: token,
+      /* The anchor words are hers; only the decade tail is swapped. */
+      replacement: (matched) => matched.replace(DECADE_TAIL, token),
       to: token,
       appended: `${agePhrase(overrides.ageBand, overrides.agePhase ?? null).replace(/^in their/, "In their")}.`,
     });
@@ -120,12 +163,13 @@ function writersOf(overrides: LockOverrides): FieldWriter[] {
       replacement: (matched) => (ADJECTIVE_GENDER_WORDS.has(matched.toLowerCase()) ? SEX_ADJECTIVE[sex] : BARE_NOUN[sex]),
       to: BARE_NOUN[sex],
       appended: `Cast ${SUBJECT_NOUN[sex]}.`,
+      requireSingle: true,
     });
   }
   if (overrides.heritage) {
     writers.push({
       field: "heritage",
-      matcher: anyOf(HERITAGES),
+      matcher: heritageSpan(HERITAGES),
       replacement: overrides.heritage as Heritage,
       to: overrides.heritage as Heritage,
       appended: `Of ${overrides.heritage} heritage.`,
@@ -196,13 +240,19 @@ export function rewriteBrief(briefText: string, overrides: LockOverrides | undef
     const composed = writer.matcher
       ? new RegExp(`\\b(a|an)(\\s+)(${writer.matcher.source})|${writer.matcher.source}`, writer.matcher.flags)
       : null;
-    if (composed && composed.test(text)) {
+    const matches = composed ? Array.from(text.matchAll(new RegExp(composed.source, composed.flags))) : [];
+    const replaceable = matches.length > 0 && (!writer.requireSingle || matches.length === 1);
+    if (composed && replaceable) {
       text = text.replace(
         new RegExp(composed.source, composed.flags),
         (whole, article: string | undefined, spacing: string | undefined, articled: string | undefined) => {
           const core = articled ?? whole;
           const replaced = typeof writer.replacement === "function" ? writer.replacement(core) : writer.replacement;
-          return article ? `${articleFor(replaced)}${spacing}${replaced}` : replaced;
+          if (!article) return replaced;
+          /* Sentence case survives the edit: "An athletic…" stays "A broad…" (review of #173, 4b). */
+          const agreed = articleFor(replaced);
+          const cased = article.charAt(0) === "A" ? `${agreed.charAt(0).toUpperCase()}${agreed.slice(1)}` : agreed;
+          return `${cased}${spacing}${replaced}`;
         },
       );
       edits.push({ field: writer.field, mode: "replaced", to: writer.to });
