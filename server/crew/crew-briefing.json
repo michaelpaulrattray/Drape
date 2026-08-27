@@ -1,7 +1,7 @@
 {
-  "edition": 64,
-  "updatedAt": "2026-08-27T22:45:00+10:00",
-  "shift": "foreman-54",
+  "edition": 65,
+  "updatedAt": "2026-08-27T23:05:00+10:00",
+  "shift": "foreman-55",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1219,6 +1219,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T23:05:00+10:00",
+      "shift": "foreman-55",
+      "text": "Housekeeping behind the Follow-ghost fix, while your court pick (#177) waits: the 96 older author-road candidates still carried the made-up per-slice identity records — the fiction that had your Follow paint eight Indian relatives. The dev database is now marked clean (each record flagged as never-sent, so the product refuses to read it as fact; the dice captions under tiles are cleared too), the ceremony script is merged (PR #181), and it verified itself through the product's own reader: before the fix 96 records read as fact, after it zero do. Production gets the same one-command mark in the next ceremony batch — until then the code gates from PR #178 already keep the fiction out of everything you see. Nothing new needs you beyond the court pick."
+    },
+    {
       "at": "2026-08-27T22:45:00+10:00",
       "shift": "foreman-54",
       "text": "Your Follow court (#177) ran the same night you ordered it and is on this page. All 24 renders are image-anchored — the photo of the guy you followed rides with the brief, per your ruling. One catch found before the money was spent: your B/C sentence said 'eight clearly different men', and sent per-picture the engine painted an eight-face collage inside every single frame (2 of 2 on each row) — so the sentence rides in the singular and the spread comes from the engine's dice, like a normal roll. Detail on #177. Pick a row up top; the winning sentence becomes the Follow build."
@@ -1412,11 +1417,6 @@
       "at": "2026-08-26T14:20:00+10:00",
       "shift": "foreman-18",
       "text": "Your cyber-goth roll (219) is explained and the cause is fixed and merged (PR #124). It was never the register failing to switch on and never the reader misreading you: the reader was cut off by a 45-second clock that was sized for short reads, and when that happens the studio casts from the first 80 characters of the brief and charges anyway — which is exactly why you got men and women. I re-ran your brief three times through the real reader: 36 s, 36 s, then 45.012 s, the clock to the millisecond. Long briefs now get 120 s, and the per-face variation card gets a proper output budget (it had been spending its whole allowance thinking and writing nothing, two tries out of three). Nothing about the prompt bytes changed and nothing was charged; about 30 cents of text calls. While I worked, your re-ruling of the whole roll road landed (the PROMPT AUTHOR — your words to the engine first, an author instead of a compiler, the outfit toggle retired): the program now points at it, the next step is the court on #125, and #120/#92 are superseded by it. One question for you on the card: when the reader is genuinely down, should a long brief be refused for free instead of charged?"
-    },
-    {
-      "at": "2026-08-26T13:25:00+10:00",
-      "shift": "foreman-17",
-      "text": "Two things landed after the last entry. Your freeze fix is MERGED (PR #123) and deploys with this edition — the reviewer ran twice and asked for four things, all in: an account whose refunds ever exceed its charges is still flagged (the one thing the old formula could see that the new one could not), and a freeze by a moderator now shows as \"Frozen by staff\" with their name, never as \"Auto-Frozen\". And you judged the register at 12:13: not passing yet. I have written your order into the program exactly as you gave it — fix the cyber-goth failure first (#121: the register never engaged on that brief and the reader lost every stated feature, which is why men appeared), then per-slice fidelity and the spread of open features, then one re-roll for your eye. The next shift starts on #121. Nothing was spent this shift beyond the gate's reviews."
     }
   ],
   "acknowledgedReplyIds": [
