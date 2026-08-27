@@ -50,11 +50,12 @@ const ANCHOR: FollowAnchor = {
 };
 
 describe("phrasing", () => {
-  it("nothing to carry is no clause at all — a plain authored roll's prompt does not move", () => {
+  it("no anchor is no clause at all — a chip edit without a follow rewrites the brief instead (#164)", () => {
     expect(familyClause({ anchor: null, overrides: undefined })).toBeNull();
     expect(familyClause({ anchor: null, overrides: {} })).toBeNull();
-    /* A null-valued override is not an edit (the compiler's own rule). */
     expect(familyClause({ anchor: null, overrides: { ageBand: undefined } })).toBeNull();
+    /* The override paragraph is dead: an anchor-less edit lands in the brief itself (`briefRewrite.test.ts`). */
+    expect(familyClause({ anchor: null, overrides: { sex: "male", ageBand: "50s" } })).toBeNull();
   });
 
   it("a FOLLOW casts a ROLE family (#166): same brief, new person — holds the booking axes, releases the face", () => {
@@ -101,31 +102,23 @@ describe("phrasing", () => {
     );
   });
 
-  it("an OVERRIDE on a follow REPLACES that axis in the family clause (hand adjustments run last, as on the house road)", () => {
+  it("an OVERRIDE on a follow REPLACES that axis in the family clause — and NEVER carries a precedence sentence (#164)", () => {
     const carried = familyClause({ anchor: ANCHOR, overrides: { ageBand: "40s", agePhase: "late", heritage: "West African" } });
     expect(carried?.follow).toBe(true);
     expect(carried?.overrides).toEqual({ ageBand: "40s", agePhase: "late", heritage: "West African" });
     expect(carried?.clause).toContain("a woman, in their late 40s, of West African heritage, blonde hair, with a severe minimal look.");
     expect(carried?.clause).not.toContain("30s");
     expect(carried?.clause).not.toContain("Nordic");
-    /* An override says it wins, because the verbatim brief above may still say the old value; a plain follow does not. */
-    expect(carried?.clause.endsWith("booked for the same role. Where this differs from the request above, this wins.")).toBe(true);
+    /*
+      The brief itself now states the new value (`rewriteBrief`), so the
+      clause and the brief agree and there is nothing to tie-break — an
+      edited follow ends exactly like a plain one.
+    */
+    expect(carried?.clause.endsWith("booked for the same role.")).toBe(true);
     expect(familyClause({ anchor: ANCHOR, overrides: undefined })?.clause.endsWith("booked for the same role.")).toBe(true);
   });
 
-  it("chip edits on a plain authored roll are ONE sentence — what the customer said with a control instead of the keyboard", () => {
-    const carried = familyClause({
-      anchor: null,
-      overrides: { sex: "male", ageBand: "50s", build: "broad", energy: "grave", look: "quiet luxury", archetype: "screen presence" },
-    });
-    expect(carried).toEqual({
-      follow: false,
-      overrides: { sex: "male", ageBand: "50s", build: "broad", energy: "grave", look: "quiet luxury", archetype: "screen presence" },
-      clause: "Cast as a man, in their 50s, broad build, with a quiet luxury look, a still, grave presence, cast in the screen presence direction; where this differs from the request above, this wins.",
-    });
-  });
-
-  it("a phase-only override with no band anywhere carries nothing — no clause claims precedence over an axis it never states", () => {
+  it("a phase-only override rides only beside a band the anchor supplies", () => {
     expect(familyClause({ anchor: null, overrides: { agePhase: "late" } })).toBeNull();
     /* Beside a band — from the anchor — the phase rides. */
     expect(familyClause({ anchor: ANCHOR, overrides: { agePhase: "late" } })?.clause).toContain("in their late 30s");
@@ -161,11 +154,12 @@ describe("vocabulary sweep — nothing the closed vocabularies can produce is a 
       if (clause) clauses.push(clause);
     }
   }
+  /* Overrides reach a clause only on a FOLLOW now (#164) — swept on the anchor. */
   for (const build of BUILDS) {
     for (const energy of ENERGY_KEYS) {
       for (const archetype of ARCHETYPE_KEYS) {
         for (const agePhase of AGE_PHASES) {
-          const clause = familyClause({ anchor: null, overrides: { build, energy, archetype, agePhase, ageBand: "30s" } })?.clause;
+          const clause = familyClause({ anchor: ANCHOR, overrides: { build, energy, archetype, agePhase, ageBand: "30s" } })?.clause;
           if (clause) clauses.push(clause);
         }
       }
@@ -196,7 +190,15 @@ describe("vocabulary sweep — nothing the closed vocabularies can produce is a 
     closed vocabularies can produce, with a positive control so a green run
     means the reader was looking.
   */
-  const CLONE_STAMPS: RegExp[] = [/\bclose relative\b/i, /\brelatives?\b/i, /\bdiffer mainly in expression\b/i, /\bfamily of one person\b/i];
+  const CLONE_STAMPS: RegExp[] = [
+    /\bclose relative\b/i,
+    /\brelatives?\b/i,
+    /\bdiffer mainly in expression\b/i,
+    /\bfamily of one person\b/i,
+    /* #164: the tie-breaker is dead — a clause describing a fight inside the prompt is the defect itself. */
+    /\bthis wins\b/i,
+    /\bdiffers from the request above\b/i,
+  ];
   it("never a clone-stamp phrase, in any clause (#166)", () => {
     const offenders = clauses.filter((clause) => CLONE_STAMPS.some((re) => re.test(clause)));
     expect(offenders).toEqual([]);
@@ -206,6 +208,7 @@ describe("vocabulary sweep — nothing the closed vocabularies can produce is a 
     const oldShape = "Continue this family: cast a close relative of one person — a woman.";
     expect(CLONE_STAMPS.some((re) => re.test(oldShape))).toBe(true);
     expect(CLONE_STAMPS.some((re) => re.test("the eight will differ mainly in expression"))).toBe(true);
+    expect(CLONE_STAMPS.some((re) => re.test("where this differs from the request above, this wins."))).toBe(true);
   });
 
   it("the sheet no longer renders the expression-only line (#166: 'Kill that line on Follow sheets')", () => {
