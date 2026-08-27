@@ -1,5 +1,8 @@
 # The auto-scan — evidence pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *For the founder, before `CASTING_FACE_SCAN_SCOPE` is offered for his own
 account. Written 2026-08-13, shift 69; **re-driven and rewritten shift 71**
 after his first light on the panel (fable-382), against the UI milestone

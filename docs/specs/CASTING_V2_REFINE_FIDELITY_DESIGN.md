@@ -1,5 +1,8 @@
 # THE INSPIRED EDIT — §10 item 3e's design report
 
+> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+
+
 Ordered fable-1603, from the founder's own question — *"when refining an image
 do we have any composer issues"*. GO for this report at fable-1614.
 

@@ -1,5 +1,8 @@
 # The horns specimen — what a static frame can and cannot calibrate
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-15 after the enrolment (fable-566 §3, then §4's order: calibration
 before the court). **6 segmenter reads, about three cents.** No generations, no
 credits. Artifacts: `output/horns-specimen/`.*

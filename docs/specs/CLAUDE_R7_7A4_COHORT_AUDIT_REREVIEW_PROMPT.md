@@ -1,5 +1,8 @@
 # Fable re-review — R7-7A4 cohort-audit surface mapping correction
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Read-only re-review of the single blocking correction. Do not edit, stage, commit, push, deploy, run a database audit, run convergence/backfill, or enable snapshot reads.
 
 Baseline remains `3e6a354`. The staged set must remain the same eight R7-7A4 cohort-audit files.

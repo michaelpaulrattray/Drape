@@ -1,5 +1,8 @@
 # Fable Review Prompt — R7-7B Snapshot Reader Cutover and Pin Retirement
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are reviewing a planning document, not implementation.
 
 Read:

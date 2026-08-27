@@ -1,5 +1,8 @@
 # The supersession map — artifacts a later ruling overtook
 
+> **Status: live.** The standing supersession record; append when a ruling overtakes an artifact (#69 stamping sweep, 2026-08-28).
+
+
 Ordered fable-1675 §3: **every design doc and shipped surface that a later ruling
 has overtaken but whose artifact still stands un-annotated.**
 
@@ -25,11 +28,11 @@ and never reaches the one the next seat acts from.
 | `CASTING_SETTINGS_MODAL_DESIGN.md` | fable-1673, fable-1674: one grammar with the creative register; the row is named IMAGINATION | the cross-reference and the row map, both directions | ✅ |
 | `wardrobeCards.ts` docblock — fable-1459's example was `shirtless` | the swap | the example moved, the ruling untouched | ✅ |
 | `CASTING_V2_DILUTION_COURT.md` §3 — my own four arms | fable-1668/1670: the design's arms are `CREATIVE_REGISTER_DESIGN.md` §3's, and D changed meaning | a header pointing at the owning doc, and the build sheet keeping only what it owns | ✅ |
-| ⚠ `realizedAxes.ts`'s `applySheetTaste` docblock — its **NAMED LIMIT** paragraph says a sheet of WOMEN whose hair is stated cannot be separated, and offers that as the one limit the design cannot fix | the taste-pass census, 2026-08-25 | **the MALE mirror**: the fallback DOES fire for men, moves 22.8% of facial-hair values, and makes the axis LESS varied (5.27 → 4.98 distinct, `short beard` 17.0% → 27.4%). The docblock reads as though the male case is the healthy one | ⚠ **OPEN** |
+| `realizedAxes.ts`'s `applySheetTaste` docblock — its **NAMED LIMIT** paragraph says a sheet of WOMEN whose hair is stated cannot be separated, and offers that as the one limit the design cannot fix | the taste-pass census, 2026-08-25 | **the MALE mirror**: the fallback DOES fire for men, moves 22.8% of facial-hair values, and makes the axis LESS varied (5.27 → 4.98 distinct, `short beard` 17.0% → 27.4%). The docblock reads as though the male case is the healthy one | ✅ verified at the file 2026-08-28 (#69 sweep): the docblock carries the MALE MIRROR paragraph with the 22.8% figure (`realizedAxes.ts:671`); the repair itself is queue #12 |
 | ⏳ `interpreter.ts`'s role docblock — *"a difference of p = 0.45, which is noise"* | the production reading (0/4 vs 3/3) | the re-take — **deliberately pending on court E1**, per fable-1670 §4: moving a bar on the strength of the data that failed it is optional stopping | ⏳ |
-| ⚠ `scripts/court-skin-tone-expression-disposable.mts` — its header says *ordered fable-1658 §2 at $0.48* and reads as pending dispatch | fable-1668/opus-1277: **subsumed by arm C** and folded | a header note saying it is folded and what would revive it (C winning while porcelain stays timid) | ⚠ **OPEN** |
-| ⚠ `CASTING_V2_TWO_PATHS_DESIGN.md` | plausibly by the basics-default design plus register selection — if a register is chosen from the brief, a user-facing Wardrobe/Basics toggle is a second control over one axis | **a founder question, not an annotation.** Raised in the rollout-debt register; recorded here so it is not lost between the two pages | ⚠ **OPEN — his call** |
-| ⚠ `docs/specs/CREATIVE_CASTS_RESEARCH.md` and `CREATIVE_REGISTER_DESIGN.md` | nothing — they are UNTRACKED | **committing.** The litter manifest's first classifier called the research doc deletable, which is how an uncommitted design dies | ⚠ **OPEN — commit them** |
+| `scripts/court-skin-tone-expression-disposable.mts` — its header says *ordered fable-1658 §2 at $0.48* and reads as pending dispatch | fable-1668/opus-1277: **subsumed by arm C** and folded | a header note saying it is folded and what would revive it (C winning while porcelain stays timid) | ✅ verified at the file 2026-08-28 (#69 sweep): the header opens *"FOLDED, NOT PENDING — DO NOT DISPATCH"* and names the revival condition |
+| `CASTING_V2_TWO_PATHS_DESIGN.md` | plausibly by the basics-default design plus register selection — if a register is chosen from the brief, a user-facing Wardrobe/Basics toggle is a second control over one axis | **a founder question, not an annotation.** Raised in the rollout-debt register; recorded here so it is not lost between the two pages | ⏳ recorded at its owner 2026-08-28: the retire-or-fold question is N2's on the rebaseline ladder, pointer #120 (foreman-41's comment) — still his call, at N2 |
+| `docs/specs/CREATIVE_CASTS_RESEARCH.md` and `CREATIVE_REGISTER_DESIGN.md` | nothing — they are UNTRACKED | **committing.** The litter manifest's first classifier called the research doc deletable, which is how an uncommitted design dies | ✅ verified 2026-08-28 (#69 sweep): both tracked (`git ls-files`) |
 
 ---
 
@@ -58,3 +61,31 @@ bare-chested swap's code, the colour ruling, the `insufficient-headroom` rename,
 the `IMAGINATION` name. **They are the majority**, and the discipline that put
 them there is the mailbox protocol's *"a ruled edit is discharged in the sitting
 that rules it."* This page is the remainder.
+
+---
+
+## The #69 stamping sweep — 2026-08-28 (foreman-59)
+
+Part 2 of issue #69 executed: **all 171 status-silent docs in `docs/specs/`**
+(of 253 total; the other 82 already carried a status marker in their first
+twelve lines) now open with a one-line `**Status:**` banner. Classes, counted:
+
+- **78** — `CLAUDE_*` one-shot review prompts/handoffs (R6/R7 era) → historical record
+- **18** — historical era docs, each with its own supersession note
+- **42** — courts, verdicts, readings, benches, evidence packs, walks → dated
+  record (V3B_FRECKLE_COURT_VERDICT carries its own overturned-at-the-frames
+  note, law 9's origin)
+- **1** — dated record, delivered and never acted on (RETRO_MINT_EVALUATION → #24)
+- **13** — built designs, each stamped with the CLAUDE.md flag or sentence that
+  proves the feature shipped
+- **9** — live/governing documents (roadmap, debt register, doctrine, this map…)
+- **3** — design-unbuilt with their queue card (#19, #14) or self-declared
+  vision note
+- **7** — design records whose build state this sweep did NOT re-verify,
+  stamped exactly that way (the honest unknown: REFINE_FIDELITY,
+  WARDROBE_PICKER, OPEN_KIND_PROPERTIES, OPEN_LANE_CARRY, PANEL_ABSENT_STATE,
+  REGENERATE_IN_PLACE, SKIN_THUMBNAIL_BENCH)
+
+Counts read back off the stamped files, not off the plan (78+18+42+1+13+9+3+7
+= 171). The 7-doc unverified remainder is the next census's worklist; nothing
+else in `docs/specs` is status-silent as of this date.

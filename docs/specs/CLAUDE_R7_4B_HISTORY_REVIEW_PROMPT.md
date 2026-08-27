@@ -1,5 +1,8 @@
 # Fable review — R7-4B shared Cast view history
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the **currently staged R7-4B diff** read-only against the codebase and the ratified R7 plan. Do not edit files, stage, commit, push, deploy, run paid generation, or contact production.
 
 Baseline: `f3dc310` (`R7 Casting UX: strip-first package care`).

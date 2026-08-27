@@ -1,5 +1,8 @@
 # Post-M7 recovered-queue sweep — evidence pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 Commit `71c3dd53`. Surfaces touched: the casting sheet's brief box, its notice
 slot, and the lobby's unsigned-sheets strip. Advisor-reviewed **before** any code
 was written; every ruling below that changed my intended design is marked.

@@ -1,5 +1,8 @@
 # Retention confession — copy audit
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Date:** 2026-08-01 · **Surfaces:** 3 · **Strings:** 9
 **Classification:** every string is **INVENTED**. No prototype covers retention;
 the design handoff has no expiry surface at all. Nothing here is prototype-

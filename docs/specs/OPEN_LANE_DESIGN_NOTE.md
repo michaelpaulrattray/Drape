@@ -1,5 +1,8 @@
 # The open lane — design note
 
+> **Status: built.** Design-time record — the feature shipped (the open lane, CASTING_OPEN_LANE_SCOPE — CLAUDE.md cites this note's §9.13); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Owed to Fable per fable-364's sequencing ("the executor's next design
 deliverable after those: the OPEN-LANE DESIGN NOTE"). Written 2026-08-13,
 shift 70. **Nothing here is built.***

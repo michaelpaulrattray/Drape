@@ -1,5 +1,8 @@
 # 7a-bis — the reader that answers coverage for an outfit nobody wrote down
 
+> **Status: design-unbuilt (countersigned).** Queued as #19 — builds when `surfaceCoverageUnread` produces its number; nothing here is built (#69 stamping sweep, 2026-08-28).
+
+
 ✅ **COUNTERSIGNED 2026-08-24 (fable-1491)** on shape (a), with §3.1's open
 question RULED as **(ii), lazily at the ask** — *"the advisor's aesthetic loses
 to the stale-box receipts"* — and §7's sequence endorsed as **the recommendation

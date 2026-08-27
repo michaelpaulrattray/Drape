@@ -1,5 +1,8 @@
 # Polish round — evidence pack (items 1–6)
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Gate:** D-101. Render-first: every claim below was measured in a headless
 browser against the running build, not inferred from the diff.
 

@@ -1,5 +1,8 @@
 # M12 close-out — the plan's spec beside the road that was actually built
 
+> **Status: historical record.** M12's close-out reconciliation; the M-ladder it reconciles against is superseded by the rebaseline (#69 stamping sweep, 2026-08-28).
+
+
 *First pass, shift 81 (2026-08-17). Opened by fable-784 §5, shaped by fable-707
 §1 (the founder's own sequencing: finish Refine → close M12 completely → only
 then think about Takes) and fable-711 (his ruling that M12 does not close

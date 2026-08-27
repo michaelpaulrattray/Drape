@@ -1,5 +1,8 @@
 # Fable review — R7-3A minted Cast Profile
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a read-only review of the currently staged R7-3A Cast Profile diff against the codebase and the ratified R7 plan.
 
 Baseline: `4940766` on `main`.

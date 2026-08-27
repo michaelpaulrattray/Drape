@@ -1,5 +1,8 @@
 # BUILD TWO — the universal reference road (arrow 5)
 
+> **Status: built.** Design-time record — the feature shipped (the attach door and hair takes; CASTING_REFERENCE_ATTACH_SCOPE / CASTING_HAIR_REFERENCE_SCOPE); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Design filed for review before any code (fable-1055 §2). Spec is the founder's
 own, across fable-1047 / 1048 / 1050 / 1051.*
 

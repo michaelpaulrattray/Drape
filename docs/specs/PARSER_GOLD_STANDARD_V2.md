@@ -1,5 +1,8 @@
 # Parser Gold Standard v2 — Simulated Outputs
 
+> **Status: historical record.** The legacy studio parser's gold standard; it predates Casting V2's interpreter (#69 stamping sweep, 2026-08-28).
+
+
 **Purpose:** these are the expected outputs for every test prompt from `PARSER_PROMPT_V2.md`, produced by Claude acting as the parser while strictly following the v2 system prompt. Use them as ground truth when validating your chosen production model (Gemini Flash, Gemini Pro, Claude Sonnet, GPT-4o — whichever you pick).
 
 **Key differences from v1 gold standard:**

@@ -1,5 +1,8 @@
 # The Softer-Wording Court — 2026-08-27 (#93, design §6)
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 Run by foreman-34, 2026-08-27 05:40–06:35 AEST. Harness
 `scripts/_court93-softer-wording-disposable.mts`; rows, prompts, softened
 texts and every delivered frame under `output/_shift93/court/`

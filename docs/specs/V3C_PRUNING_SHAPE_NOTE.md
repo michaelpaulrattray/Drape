@@ -1,5 +1,8 @@
 # V3(c) — pruning: the shape note
 
+> **Status: built.** Design-time record — the feature shipped (pruning; the prune road is live product); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Written 2026-08-15 by the executor. The review calls this **the largest single
 build in the program**, so it gets a note before a line of code, the way V3 did.
 Every claim about today's behaviour carries the file it was read from, and the

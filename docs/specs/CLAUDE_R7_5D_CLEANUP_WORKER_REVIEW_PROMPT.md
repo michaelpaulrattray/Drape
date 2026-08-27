@@ -1,5 +1,8 @@
 # R7-5D cleanup worker — bounded staged-diff review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the staged R7-5D diff read-only against the current codebase, the ratified R7-5 execution plan, D-64, the R7-5A writer/storage inventory, and the already committed R7-5B/R7-5C contracts.
 
 Baseline: `36930ad` (`R7-5C: atomic final Cast deletion and writer fences`).

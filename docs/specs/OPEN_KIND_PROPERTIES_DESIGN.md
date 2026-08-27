@@ -1,5 +1,8 @@
 # The kind-property design — what the catalogue would have known
 
+> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+
+
 *Ordered as ONE design, costed together: fable-871 §3 (how-does-the-code-know,
 answered once for the view-carry clause and the does-it-extend door), fable-872
 §2 ("is this kind paired" joins that list), fable-877 §4.2 (the successor's

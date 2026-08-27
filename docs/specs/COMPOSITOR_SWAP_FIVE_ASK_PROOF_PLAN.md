@@ -1,5 +1,8 @@
 # The five-ask dark proof — costed, before any spend
 
+> **Status: historical record.** The dark-proof costing plan for the compositor swap, which shipped (CASTING_REPAINT_SCOPE) (#69 stamping sweep, 2026-08-28).
+
+
 **Plan, owed before the run** (fable-283: the dark-proof plan comes to Fable
 BEFORE any spend; fable-296/297: reference dimensions carried on the accessory
 steps, the painter-scale question named as an instrument). Shift 57.

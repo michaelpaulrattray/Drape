@@ -1,5 +1,8 @@
 # Claude prompt — FR-1 founder ratification handoff
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 The founder has now answered and approved the remaining FR-1 policy rulings.
 
 This task is **documentation only**. Fold the decisions into the policy, perform a consistency review, report the result, and stop.

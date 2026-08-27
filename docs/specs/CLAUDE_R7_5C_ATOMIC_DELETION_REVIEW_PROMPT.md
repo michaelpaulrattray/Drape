@@ -1,5 +1,8 @@
 # Fable review — R7-5C atomic final Cast deletion
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a read-only review of the **complete staged R7-5C diff** against baseline commit `6492bdb`.
 
 This is a high-risk deletion, privacy, concurrency, and data-integrity review. Do not rely on the executor's summary or green tests. Read the staged implementation, the surrounding unchanged production code, and the governing documents directly:

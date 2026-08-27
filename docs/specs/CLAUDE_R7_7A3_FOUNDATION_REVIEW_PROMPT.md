@@ -1,5 +1,8 @@
 # Fable review — R7-7A3 foundation slice
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the staged diff only. This is a bounded foundation slice of R7-7A3, not the complete dual-writer phase.
 
 Baseline: `0ae9fa4` (`R7-7A2: add convergent snapshot bootstrap`)

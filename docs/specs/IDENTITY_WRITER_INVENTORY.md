@@ -1,5 +1,8 @@
 # Identity-writer inventory — Batch 0 deliverable (R6 execution plan §Batch 0.7)
 
+> **Status: historical record.** A dated inventory (R6 Batch 0, 2026-07-15); the Architecture Atlas is the current authority on writers and edges (#69 stamping sweep, 2026-08-28).
+
+
 **Date:** 2026-07-15, revised after the founder's Batch 0 review round (fixes 1–8) AND the final-items round (mint-transition invariant, archived-placement degradation, deletion ruling, UI drive). Input to Batch C's shared guard and the FR-1 policy report. Every writer of model identity (`masterPrompt` / `technicalSchema` / `preferences`), model `status`, model `name`, and asset selection, with its guard state AFTER both rounds. Claims below are backed by `server/batch0-authority.test.ts` (48 behavioral tests), `scripts/drive-batch0-authority.mts` (E6–E10, 15 raw-tRPC legs), and `scripts/drive-batch0-ui.mts` (UI1–UI2, browser) unless marked otherwise.
 
 ## A. Identity-document writers (`masterPrompt` / `technicalSchema` / `preferences`)

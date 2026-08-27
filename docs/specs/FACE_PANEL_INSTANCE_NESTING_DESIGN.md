@@ -1,5 +1,8 @@
 # Instance nesting on the face panel — design note
 
+> **Status: built.** Design-time record — the feature shipped (the panel's instance rows — FaceRegions); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Founder ruling, 2026-08-14, via fable-452, with a Grok screenshot as the
 reference and the verdict "theirs is a little over complicated too". Written
 before the build, as the ruling asks.*

@@ -1,5 +1,8 @@
 # Fable re-review prompt — R7-5A blocking corrections
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Re-review only the corrections to the currently staged R7-5A diff after your `REQUEST CHANGES` verdict. Read-only review: do not edit, stage, commit, run any database audit, contact production, or call storage.
 
 Verify both original blockers are closed:

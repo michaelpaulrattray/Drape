@@ -1,5 +1,8 @@
 # The chip's "take this step back" — evidence pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Built 2026-08-15 under the UI evidence contract. Every state below was
 photographed in the running app, both themes, and every mechanizable law is a
 driven assertion rather than review memory: `output/chip-remove/`,

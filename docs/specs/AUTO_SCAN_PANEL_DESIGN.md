@@ -1,5 +1,8 @@
 # The auto-scan prefill — design note
 
+> **Status: built.** Design-time record — the feature shipped (the auto-scan is live behind CASTING_FACE_SCAN_SCOPE); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Owed before the build. Written 2026-08-13, shift 68, against fable-352 (the
 founder's report), opus-293 (the costing), fable-358 (the payload item and the
 512px boundary) and fable-360 (his three rulings that closed the design fork).

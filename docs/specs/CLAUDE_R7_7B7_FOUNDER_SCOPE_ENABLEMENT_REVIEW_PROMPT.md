@@ -1,5 +1,8 @@
 # Fable Run Review — R7-7B7 Founder-Only Scope Enablement
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are the independent, read-only reviewer for R7-7B7 rollout step 3.
 
 Review the exact production operation below and decide whether it is safe to

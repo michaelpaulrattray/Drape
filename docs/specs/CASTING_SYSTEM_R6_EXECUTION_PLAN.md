@@ -1,5 +1,8 @@
 # R6 recovery and closure — FINAL execution plan (founder-ruled 2026-07-15)
 
+> **Status: historical record.** R6 execution planning; R6 shipped and closed (released 2026-07-16) (#69 stamping sweep, 2026-08-28).
+
+
 ## Context
 
 R6's ratification object is the D-55 walkable loop. The audit mapped 15 divergences; the first addendum (bench, 2026-07-14) added V16–V22 and the canon proposal; the revised addendum (2026-07-15) corrected it (C1–C11), found blockers B0.1–B0.5 (all code-verified this session), and gated canon behind a design milestone. The stabilization wrap (11 uncommitted files + state note) is verified accurate; `pnpm check` and the casting suite re-ran green. This plan incorporates the founder's revision directives and final rulings (2026-07-15). **Milestone stays R6.**

@@ -1,5 +1,8 @@
 # Fable review — R7-7A3 slot-version restore snapshot adoption
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a read-only review of the staged R7-7A3 slot-version restore adoption against baseline `a4ce839`.
 
 Do not edit, stage, commit, push, deploy, run migrations, contact production, enable any feature flag, or run any paid generation. You may run local read-only checks and tests. Do not run the disposable Railway MySQL driver during this review; its exact result is recorded below and the test/runner code is available for inspection.

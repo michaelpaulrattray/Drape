@@ -1,5 +1,8 @@
 # Casting V2 — M5 evidence pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 Produced under the UI milestone completion contract (founder, 2026-08-01):
 side-by-sides per surface in both themes, plus a copy audit classifying every
 user-visible string, posted to Fable for a law skim **before** the founder

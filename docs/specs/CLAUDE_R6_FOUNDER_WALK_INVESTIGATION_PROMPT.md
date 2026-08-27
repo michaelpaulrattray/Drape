@@ -1,5 +1,8 @@
 # R6 live founder-walk investigation and final-corrections plan
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are reviewing the results of the founder's complete live-production R6 Casting walk. A small creation-payload hotfix has already been deployed and the founder then exercised the full draft, view, stale, refresh, mint, fork, reference, export, version, pin, deletion and background-generation flows.
 
 This turn is **read-only investigation and planning**. Do not edit source files, create implementation documents, stage, commit, push, deploy, change Railway, run migrations, contact production, create data or spend credits. Inspect the current code, tests, decision records and Git state, then stop with an evidence-backed correction plan for founder/Codex review.

@@ -1,5 +1,8 @@
 # Casting System R6 — W5 Execution Plan
 
+> **Status: historical record.** R6 execution planning; R6 shipped and closed (released 2026-07-16) (#69 stamping sweep, 2026-08-28).
+
+
 **Author:** Fable 5 (investigation + plan). **Executor:** Codex. **Date:** 2026-07-17. **Verified at:** `9799dbe` (R6 W4).
 **Revision 2 (2026-07-17):** founder corrections applied per `CLAUDE_R6_W5_PLAN_CORRECTIONS.md` — the identity gate now covers the structured door (`executeApplyModelEdit`), validation runs **before** R2 upload, the retry is conversation-isolated, protected dimensions are exact-leaf and frame-aware with a per-dimension verdict schema, and the W5-A proof uses a fixed calibration matrix. The strip-first Package Health direction (§4, W5-B, §9.1) is founder-approved as written.
 **Revision 3 (2026-07-18):** founder clarified the product contract after calibration. The structured panel is an explicit **recast** surface: it creates a new draft identity from the selected casting settings and may change the person. It is not a same-person surgical editor and must not be judged against the old anchor. Free-text, reference-assisted, and surgical iteration remain same-person operations and retain the strict post-generation identity gate. The UI must state the distinction; the larger interaction redesign remains R7.

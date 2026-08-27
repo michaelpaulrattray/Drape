@@ -1,5 +1,8 @@
 # R6 Batch C — Codex review corrections
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Continue in the **current terminal** with the existing uncommitted Batch C working tree. Do not restart Batch C and do not discard any existing work.
 
 ## Stop conditions and scope

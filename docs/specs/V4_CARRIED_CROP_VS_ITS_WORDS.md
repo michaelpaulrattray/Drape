@@ -1,5 +1,8 @@
 # The crop rode, and the words argued with it
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Read 2026-08-15 on the founder's own production rows, read-only, no spend. The
 chase of fable-585→596, answered by a column that already existed.*
 

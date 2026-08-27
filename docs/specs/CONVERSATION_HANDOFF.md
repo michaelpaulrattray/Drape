@@ -1,5 +1,8 @@
 # Conversation Handoff — Drape / Michael Rattray
 
+> **Status: historical record.** Superseded as onboarding — a fresh session reads CLAUDE.md, .agents/foreman/PROGRAM.md and the governing plans instead; kept as the pre-team-era handoff (#69 stamping sweep, 2026-08-28).
+
+
 **Purpose:** this doc lets a fresh AI conversation (claude.ai chat or a Claude Code session) pick up mid-stride with full context of the project, the working patterns, and the founder's style. It was written at the end of a long-running strategy conversation that carried the project from "should I port this to Lovable?" through full platform independence and deep into Canvas Pass 1. Read this first, then the repo docs it points to.
 
 ---

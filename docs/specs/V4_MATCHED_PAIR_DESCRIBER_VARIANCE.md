@@ -1,5 +1,8 @@
 # One cross, two descriptions — the describer's per-side variance
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Read 2026-08-15 on the founder's own production crops, read-only, no spend.
 Ordered by fable-590 §2 and sharpened by his eyewitness (fable-591): he says the
 pair was matched. Artifact: `output/earring-crops/pair.png`.*

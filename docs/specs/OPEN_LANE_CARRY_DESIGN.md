@@ -1,5 +1,8 @@
 # How an open kind is CARRIED — executing fable-760's ruling
 
+> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+
+
 *Written 2026-08-16, shift 79, ordered by fable-762 §4. **Nothing here is
 built**, and nothing here re-opens a decision: fable-760 §2 ruled the shape and
 this note executes it — the key form, the one dynamic branch, the tests that pin

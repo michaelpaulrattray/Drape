@@ -1,5 +1,8 @@
 # R6 W5-A calibration report
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Date:** 2026-07-18
 **Target:** local Drape app on `http://localhost:3011`, development database, `verify-bot-local` only
 **Production:** not contacted

@@ -1,5 +1,8 @@
 # A slot's words are the state of the object at that site
 
+> **Status: built.** Design-time record — the feature shipped (slot words are live in the shipped library — slotWordsRefusal et al.); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 **Design, owed before code** (fable-285 §shape, fable-286 rulings 2–4). One page.
 Shift 56. Zero credits spent producing it.
 

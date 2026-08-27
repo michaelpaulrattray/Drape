@@ -1,5 +1,8 @@
 # Claude correction prompt — R6 Batch A-coupled angle preservation
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Do not stage or commit yet. Codex review found one important V14 defect in the otherwise sound Batch A-coupled implementation.
 
 ## Finding

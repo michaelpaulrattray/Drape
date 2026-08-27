@@ -1,5 +1,8 @@
 # M5 evidence pack — round 5 (founder items 16–19)
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 Per the UI milestone completion contract: evidence before dogfood. Sheets and
 crops are in `.calibration/follow-run/`.
 

@@ -1,5 +1,8 @@
 # Fable re-review — R7-5 deletion-plan corrections
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Re-review the corrected staged R7-5 planning documents read-only. This is not implementation.
 
 Primary document: `docs/specs/CASTING_SYSTEM_R7_5_FINAL_DELETION_EXECUTION_PLAN.md`

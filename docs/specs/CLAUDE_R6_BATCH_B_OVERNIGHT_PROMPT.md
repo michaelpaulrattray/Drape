@@ -1,5 +1,8 @@
 # Claude prompt — R6 Batch B overnight implementation
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 The founder authorizes one bounded unattended implementation batch: **R6 Batch B only**.
 
 Implement Batch B from `docs/specs/CASTING_SYSTEM_R6_EXECUTION_PLAN.md`, add/update its tests and local verification drive, run all required local gates, self-review the completed diff, write a full handoff, and stop.

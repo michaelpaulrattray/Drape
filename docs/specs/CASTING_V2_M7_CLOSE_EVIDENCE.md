@@ -1,5 +1,8 @@
 # M7 close — evidence pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Closing Sign:** `KI-QNW6-37KK-RVS9-XMKD` ("Jericho"), 2026-08-02.
 **Five of five landed. 450 charged, nothing refunded.** The flagship six-tile
 room, in one Sign.

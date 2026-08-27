@@ -1,5 +1,8 @@
 # Claude prompt — final identity-edit interim policy revision
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Revise `docs/specs/IDENTITY_EDIT_INTERIM_POLICY.md` one final time using the founder direction below.
 
 This remains a report-only Batch C-prep task. Do not implement code, modify any other file, stage, commit, push, deploy, contact production, or begin Batch A-coupled/Batch C implementation.

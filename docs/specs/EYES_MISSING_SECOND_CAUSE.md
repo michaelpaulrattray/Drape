@@ -1,5 +1,8 @@
 # The missing Eyes row, second cause — a damaged reading was kept
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Investigated 2026-08-15 on the founder's own specimen (candidate 1603,
 "Quietly confident", heavy-framed glasses), ordered by fable-547. **$0.15 of
 house money**, no user credits, nothing written. Every number below is from a

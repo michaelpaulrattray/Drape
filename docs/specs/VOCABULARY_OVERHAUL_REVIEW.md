@@ -1,5 +1,8 @@
 # The vocabulary system — Fable review and overhaul program plan
 
+> **Status: historical record.** The V1–V4 vocabulary overhaul program plan, executed across 2026-08-14/15 — the V*_ court and verdict records sit beside it (#69 stamping sweep, 2026-08-28).
+
+
 *Per fable-393 §1 (founder: "a full vocabulary system overhaul kicking off with
 a fable review — makeup is too narrow"), with rulings 2 ("anything should be
 removable") and 3 ("auto detect should be a full system") as the program's

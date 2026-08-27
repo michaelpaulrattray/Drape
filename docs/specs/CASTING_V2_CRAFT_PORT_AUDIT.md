@@ -1,5 +1,8 @@
 # Craft-port audit — V2 photoreal cohort constant vs. the legacy catalog
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Founder-directed, 2026-08-01.** Item 14 found that legacy's A5 eye protocol had
 been compressed from six named sub-rules into a single line, losing the catchlight
 count, the iris gradient direction and the pupil sizing rules. The founder's

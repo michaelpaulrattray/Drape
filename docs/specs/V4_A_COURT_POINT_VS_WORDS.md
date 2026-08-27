@@ -1,5 +1,8 @@
 # A's court — pointing vs describing, and the noise floor that swallowed it
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Ordered:** fable-598 §4 ("his exact case as the arm … against the words-argued
 baseline his own #194 provides", ~$1 house).
 **Run:** 2026-08-15, dev fixture, 125 dev credits, five delivered renders and

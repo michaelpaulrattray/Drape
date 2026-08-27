@@ -1,5 +1,8 @@
 # R6 Batch B — status read-model unification: implementation handoff
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 **Date:** 2026-07-16 (overnight batch per `CLAUDE_R6_BATCH_B_OVERNIGHT_PROMPT.md`; **review-corrections round — see §13 — and the FINAL review round's three blockers — see §14 — applied same day per `CLAUDE_R6_BATCH_B_REVIEW_CORRECTIONS.md`**)
 **State: COMPLETE including all review corrections and final-round blockers A/B/C, all gates green. NOTHING staged, committed, pushed, or deployed. Awaiting founder/Codex review.**
 **Start-state gate:** passed — HEAD `f5e489b` (FR-1 ratification docs) above `7e97cf6`, tracked worktree clean.

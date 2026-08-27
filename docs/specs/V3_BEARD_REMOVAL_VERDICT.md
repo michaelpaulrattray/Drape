@@ -1,5 +1,8 @@
 # A beard comes off — V3 slice (b)'s court
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-15 against a design pre-registered in the script's own header
 before the first call, ordered by fable-531 §4a. **Total spend: $1.09 of house
 money** (10 renders, 10 reads). Ledger read at both ends: 96 rows → 96 rows, net

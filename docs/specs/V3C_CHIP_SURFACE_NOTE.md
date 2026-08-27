@@ -1,5 +1,8 @@
 # The chip surface — what she sees when a step goes
 
+> **Status: built.** Design-time record — the feature shipped (the chip surface; its evidence pack sits beside this note); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Written 2026-08-15 for fable-540 §4's GO. The rulings that decide most of this
 already exist (D-121, D-155, D-109); what is genuinely open is the SERVER shape,
 and that is the part this note asks to be ruled before it is built.*

@@ -1,5 +1,8 @@
 # The wardrobe picker — taking the boredom clause out
 
+> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** And note the author road (PROMPT_AUTHOR_RULING_2026-08-26.md) has since moved how flagged rolls dress a cast; re-derive before building.
+
+
 **Founder order, relayed fable-1595, verbatim:** *"whats up with the wardrobe
 choosing the aboslute lamest uninspired outfits?"* — and the order that came
 with it: keep every safety rail (no brands or logos, no props, weapons or

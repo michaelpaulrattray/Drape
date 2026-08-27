@@ -1,5 +1,8 @@
 # A removal is a slot going vacant, and the recipe says so
 
+> **Status: built.** Design-time record — the feature shipped (a flip precondition of the repaint, which shipped — CASTING_REPAINT_SCOPE); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 **Design, owed before code** (chunk 3 of the compositor swap; fable-284 promoted
 it to a FLIP PRECONDITION and asked for a proposal rather than a diff). Shift 57.
 Zero credits spent producing it.

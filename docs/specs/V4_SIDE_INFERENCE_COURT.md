@@ -1,5 +1,8 @@
 # The side-inference court — the parse is right, and the PAINT is the problem
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Ordered:** fable-604 §3b — n≥6 per side, mirrored arms, an edit and its
 control, the opus-275/342 precedent read before the bars are set.
 **Run:** 2026-08-15, dev fixture, 14 renders, 350 dev credits, ~$5 house.

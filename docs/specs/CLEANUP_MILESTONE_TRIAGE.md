@@ -1,5 +1,8 @@
 # The cleanup milestone — the reasoning. THE INDEX IS ELSEWHERE.
 
+> **Status: live.** The reasoning record; the deletion door is docs/specs/cleanup-dispositions.yaml (fable-992 §2c) (#69 stamping sweep, 2026-08-28).
+
+
 > **THIS DOCUMENT IS NOT THE DELETION DOOR** (ruled fable-992 §2c). The door is
 > `docs/specs/cleanup-dispositions.yaml`, checked by
 > `scripts/check-cleanup-dispositions.mts`, which runs inside `pnpm check` —

@@ -1,5 +1,8 @@
 # BUILD ONE — the sign views carry the words for what the anchor cannot show
 
+> **Status: built.** Design-time record — the feature shipped (package views carry feature words; fable-1006 §3); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Design filed for review before any code (fable-1055 §1, ordered under the
 founder's go: "go with your reccomended order nothing lands on my desk until
 these are switched from a no or partly to a fully yes"). This is arrow 6 of his

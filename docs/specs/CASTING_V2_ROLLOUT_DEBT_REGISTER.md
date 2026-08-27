@@ -1,5 +1,8 @@
 # The rollout-debt register — every flag, what it waits on, and a recommendation
 
+> **Status: live.** A governing plan (PROGRAM.md) — the honest map of what is half-rolled-out (#69 stamping sweep, 2026-08-28).
+
+
 Ordered fable-1675 §2 from the founder's own *"i feel like we have made so many
 scope changes and interations my brain literally cant keep up."* **This is the
 answer to "what is half-finished and why."**

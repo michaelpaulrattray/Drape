@@ -1,5 +1,8 @@
 # V3(b) — the ink slot story and the marks vocabulary: design note
 
+> **Status: historical record.** Pre-build ink-program design note; the ink studio has since been built and re-ruled — current law is CLAUDE.md's ink paragraphs and the capability atlas (#69 stamping sweep, 2026-08-28).
+
+
 *Written 2026-08-16 by the executor, ordered by fable-648 §3, BEFORE any build.
 Nothing here has been driven. The ink half is founder-adjacent at every corner —
 placement, flash sheets, and what a tattoo IS in this product — so the questions

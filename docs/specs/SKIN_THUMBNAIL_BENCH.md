@@ -1,5 +1,8 @@
 # Does a patch of her skin read as SKIN at thumbnail size? — bench design
 
+> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+
+
 *Owed by fable-360 ruling 2: "skin is words until the texture-patch measurement
 says a patch reads as skin at thumbnail size — a measurement, not a decision."
 Written 2026-08-13, shift 69. Nothing is built; this is the design and its

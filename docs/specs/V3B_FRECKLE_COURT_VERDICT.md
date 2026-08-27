@@ -1,5 +1,8 @@
 # Freckles — the court, and why the door stayed shut
 
+> **Status: dated record — and its verdicts were OVERTURNED at the frames.** Both arms fell in one sitting to the founder's own eye (fable-714/715/716; working law 9's origin): the reader called freckles absent on frames that visibly held them, after the tan-drift figure fell to a moving-mask measurement artifact. Kept as the record of the court that taught the law (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-15 against arms pre-registered in the script's header, ordered by
 fable-537 §2/§3. **$1.09 of house money**, ledger unmoved at 108 rows. The
 sentence under test was imported from the shipped module, never retyped.*

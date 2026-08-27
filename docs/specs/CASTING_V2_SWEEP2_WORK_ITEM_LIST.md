@@ -1,5 +1,8 @@
 # Sweep #2 — every work item not yet live, on the CORRECTED population
 
+> **Status: live.** A governing plan (PROGRAM.md) (#69 stamping sweep, 2026-08-28).
+
+
 **Ordered by the founder, verbatim** (2026-08-25, relayed fable-1680):
 
 > *"do another full sweep make sure nothing else like this is missed clearly the

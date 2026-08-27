@@ -1,5 +1,8 @@
 # The body row — design note
 
+> **Status: built.** Design-time record — the feature shipped (built shift 71 — its own §7 records what shipped); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Owed to Fable before any build, per fable-360 ruling 3. Written 2026-08-13,
 shift 67. **BUILT shift 71** — see §7 at the end for what shipped, what was
 measured on the way, and the two things the note got wrong.*

@@ -1,5 +1,8 @@
 # Fable review — R7-7B3 iteration/refinement execution authority
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the staged diff read-only against the ratified R7-7B snapshot-reader cutover plan and the surrounding production code. Challenge the implementation rather than trusting the executor summary or test names.
 
 Do not edit, stage, commit, push, deploy, run a database, change Railway variables, enable snapshot reads, or contact production.

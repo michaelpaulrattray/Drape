@@ -1,5 +1,8 @@
 # R7-7B4 live-consumer and cross-tab cache closure — independent review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are the independent, read-only reviewer. Review the staged diff at baseline
 `51f3acb` against the ratified R7-7B cutover plan and the surrounding production
 code. Do not edit, stage, commit, run a database/browser driver, contact

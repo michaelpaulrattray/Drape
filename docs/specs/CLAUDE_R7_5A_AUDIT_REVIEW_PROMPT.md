@@ -1,5 +1,8 @@
 # Fable review prompt — R7-5A Cast deletion audit and writer inventory
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the currently staged R7-5A diff read-only against:
 
 - `docs/specs/CASTING_SYSTEM_R7_5_FINAL_DELETION_EXECUTION_PLAN.md`, especially §3, §4.4–4.6, R7-5A, and verification items 9/20/21/30–32;

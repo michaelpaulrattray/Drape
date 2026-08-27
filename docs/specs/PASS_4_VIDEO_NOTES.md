@@ -1,5 +1,8 @@
 # Pass 4 — Video / animation nodes (vision note, not a spec)
 
+> **Status: vision note — nothing built.** Kept so the earlier passes don't foreclose the end-state (#69 stamping sweep, 2026-08-28).
+
+
 **Purpose:** capture the founder's intended end-state so passes 1–3 are architected with it in view. Nothing here is built in pass 1; pass 1 must simply not foreclose it.
 
 > **PLANNING POINTER (founder-directed at VC-R5, 2026-07-12 — read before planning pass 4):** the founder holds hands-on Seedance prompting experience from a prior project (segment discipline, reference conventions incl. single-sheet-per-character, continuity-ledger patterns for multi-segment consistency). Do NOT treat any pre-written conventions in this file as current at pass-4 time — video models move fast and this knowledge is a snapshot. Pass-4 planning starts with **(1)** a fresh capability review of the then-current Seedance version, and **(2)** a working session with the founder to extract which of his conventions still hold. The video node's aesthetic layer builds from `TOOL_PROTOTYPES_NOTES.md`'s Set/Moment/Technique vocabularies (fashion-film direction language) regardless — the mechanical layer gets re-derived fresh.

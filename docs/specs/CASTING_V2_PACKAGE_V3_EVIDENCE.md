@@ -1,5 +1,8 @@
 # Package v3 — evidence pack (items 2, 4, 5, 6)
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Gate:** D-101's exit condition for the close-out batch. One paid production
 Sign, both themes, every user-visible string classified.
 

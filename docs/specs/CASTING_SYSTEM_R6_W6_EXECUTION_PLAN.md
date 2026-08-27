@@ -1,5 +1,8 @@
 # Casting System R6 — W6 Execution Plan
 
+> **Status: historical record.** R6 execution planning; R6 shipped and closed (released 2026-07-16) (#69 stamping sweep, 2026-08-28).
+
+
 **Author:** Fable 5 (investigation + plan). **Date:** 2026-07-18. **Verified at:** `3448ce5` (R6 W5-F, current production HEAD).
 **Scope source:** founder's focused W5 production drive — eight confirmed live findings. Investigation only at this point; no code or documentation beyond this plan has been touched.
 **Boundaries for the executor:** implement exactly these batches; do not stage/commit/push/deploy/migrate/contact production without founder approval; never touch `.agents/`, `.codex/`, `CLAUDE.local.md`, `.claude/settings.local.json`, or `docs/specs/CLAUDE_*.md`; stop at each review gate (§11).

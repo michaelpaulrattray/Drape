@@ -1,5 +1,8 @@
 # The signed flow, walked from outside the founder's account
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Driven 2026-08-15 as the standing outsider, approved in fable-568 §2.
 **450 dev credits and five house generations**, on the dev database; production
 untouched. Shots: `output/outsider-sign/`.*

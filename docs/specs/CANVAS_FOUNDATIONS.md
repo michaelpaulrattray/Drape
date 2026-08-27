@@ -1,5 +1,8 @@
 # Canvas Foundations — Drape Boards (revised)
 
+> **Status: historical record.** Design-era spec for the boards rebuild, which shipped (R6, released 2026-07-16); divergences and ratifications live in DECISION_LOG.md — the code and the Atlas govern current truth (#69 stamping sweep, 2026-08-28).
+
+
 **Audience:** engineering (including coding agents). This is the authoritative spec for the canvas boards rebuild. Read this document end to end before writing any code. Read `DESIGN_SYSTEM.md` alongside it for visual and component specifications, `CANVAS_AUDIT_ADDENDUM_V2.md` for verified code facts, and `DECISION_LOG.md` for the record of every divergence from the original drafts and its ratification status.
 
 **Revision note:** this is the post-migration revision of the original foundations doc. The founder-locked content — the reference-asset framing (§1.5), inline-first invocation, the root/view node model, edges-as-lineage, the four-verb grammar — is unchanged in substance. What changed: verified code facts replace stale ones, and the open design areas (identity semantics on rerun, provenance truthfulness, library integration, cost visibility, keyboard/undo) are now designed rather than deferred. Milestone-level build sequencing has moved to `PASS_1_BUILD_PLAN.md` (written after decision-log ratification); §7 here describes pass-level scope only.

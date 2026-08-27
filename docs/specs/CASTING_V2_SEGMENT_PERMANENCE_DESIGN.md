@@ -1,5 +1,8 @@
 # Segment permanence — the implementation design
 
+> **Status: built.** Design-time record — the feature shipped (the segment store, CASTING_SEGMENTS_SCOPE); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Design document. No code has been written. Ordered by the founder
 (fable-073/075) and ruled directionally by him (fable-076): **"this is the way
 — the segments path: edits can never drift, are always editable through precise

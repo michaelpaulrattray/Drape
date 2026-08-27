@@ -1,5 +1,8 @@
 # A tan — the kit's negative control
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-14 against a design pre-registered in fable-523 §3, on the same
 face horns passed on. **Total spend: $0.87 of house money.** Ledger read at both
 ends: 706 rows → 706 rows, net unchanged.*

@@ -1,5 +1,8 @@
 # A tone carried from BELOW HER CHIN — the pre-flight
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-15 on the tan court's own frames, already on disk. **$0.09 of house
 money**, 18 segmenter calls, no generations, no user credits, nothing written.
 Every bar below was written in the script's header before the first call.*

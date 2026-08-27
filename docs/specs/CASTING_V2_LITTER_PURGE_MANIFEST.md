@@ -1,5 +1,8 @@
 # The litter purge — the manifest the deletion commit carries
 
+> **Status: live.** The purge manifest — scripts/ complete, output/ partial; the remainder is queued as #8 (#69 stamping sweep, 2026-08-28).
+
+
 Ordered fable-1675 §1 from the founder's own words — *"i feel like we have made so
 many scope changes and interations my brain literally cant keep up… maybe do a full
 sweet to figure out how bad our mess is"* — and authorized fable-1676 §3 with two

@@ -1,5 +1,8 @@
 # Post-Sign Roadmap — founder-ruled items awaiting their slot
 
+> **Status: live.** The canonical post-Sign queue home, named a governing plan in .agents/foreman/PROGRAM.md (#69 stamping sweep, 2026-08-28).
+
+
 Canonical home for roadmap rulings and deferred commitments. Each item
 cites its ruling. Nothing here is built before its stated gate;
 nothing here may be silently dropped. Session memory and the mailbox

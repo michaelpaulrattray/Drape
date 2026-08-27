@@ -1,5 +1,8 @@
 # Package v3.1 — evidence pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Gate:** D-101. One paid dev Sign against the new close-up band, rendered and
 measured, both themes.
 

@@ -1,5 +1,8 @@
 # V3(b) — the two owed slot stories: marks, then ink
 
+> **Status: historical record.** Pre-build ink-program design note; the ink studio has since been built and re-ruled — current law is CLAUDE.md's ink paragraphs and the capability atlas (#69 stamping sweep, 2026-08-28).
+
+
 *Written 2026-08-15, after `facialHair`'s court reported (fable-531 §4c: each
 kind earns its own run, no verdict spreading). Today's behaviour is DRIVEN, not
 read: the three deltas below were put through the shipped `repaintAsksFor`.*

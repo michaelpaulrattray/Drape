@@ -1,5 +1,8 @@
 # R7-5D blocker-only re-review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Re-review the currently staged R7-5D diff read-only, focusing on the two blockers from your first review and the small repair-evidence hardening made alongside them.
 
 Baseline remains `36930ad`. Do not edit, stage, commit, push, deploy, contact production, or access/list/delete real R2 objects. Do not rerun the disposable database driver; inspect its guards and the test evidence instead.

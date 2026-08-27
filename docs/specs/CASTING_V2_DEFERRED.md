@@ -1,5 +1,8 @@
 # Casting V2 — deferred, by decision
 
+> **Status: live.** A standing register of parked-by-decision items (#69 stamping sweep, 2026-08-28).
+
+
 Things ruled out *for now* with a reason and a shape, rather than dropped. The
 distinction matters: an item here has been thought about and parked, so a later
 session can pick it up without re-deriving the argument, and nobody mistakes it

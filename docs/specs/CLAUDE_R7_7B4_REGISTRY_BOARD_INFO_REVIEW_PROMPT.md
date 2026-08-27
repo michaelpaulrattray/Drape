@@ -1,5 +1,8 @@
 # Fable review prompt — R7-7B4 registry and board-info projections
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are Fable acting as the independent, read-only reviewer for the staged
 R7-7B4 registry and board-info projection slice in:
 

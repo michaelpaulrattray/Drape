@@ -1,5 +1,8 @@
 # Claude prompt — R6 Batch C implementation
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 The founder authorizes **R6 Batch C only**: implement the founder-ratified interim identity-edit policy in `docs/specs/IDENTITY_EDIT_INTERIM_POLICY.md`, complete its M1–M22 verification matrix, self-review the full result, leave everything unstaged and uncommitted, report, and stop.
 
 This is an implementation task, not another policy-writing round. The policy is already founder-ratified. Perform a short evidence-based preflight, then code in coherent internal phases.

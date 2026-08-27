@@ -1,5 +1,8 @@
 # THE CREW TAB — the Desk moves into the product (issue #41)
 
+> **Status: built.** Design-time record — the feature shipped (/admin/crew is live, CREW_TAB_SCOPE=all since 2026-08-25); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 Designed by the Foreman's Fable seat, 2026-08-25 (shift 3), against issue #41
 (founder, verbatim: the Desk artifact belongs to his Claude account; he swaps
 to the co-founder's account within the week, so shifts could not update the

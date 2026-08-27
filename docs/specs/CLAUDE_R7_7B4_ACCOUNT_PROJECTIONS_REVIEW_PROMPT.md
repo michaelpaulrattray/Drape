@@ -1,5 +1,8 @@
 # R7-7B4 account-owned projections — Fable review prompt
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are reviewing the staged R7-7B4 account-owned model/profile/library projection slice in `C:\Users\Admin\Drape`.
 
 This is a read-only, adversarial review. Inspect the staged diff and the surrounding production paths rather than trusting the executor summary or source-string tests. Do not edit, stage, commit, push, deploy, change environment variables, contact production, or run any database. The guarded disposable-MySQL evidence below is recorded evidence; do not rerun it.

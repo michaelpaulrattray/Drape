@@ -1,5 +1,8 @@
 # Retro-minting pre-promotion features — the evaluation
 
+> **Status: dated record — delivered and never acted on.** Queued as #24 (its production counts are stale by its own header's standard); nothing here was built (#69 stamping sweep, 2026-08-28).
+
+
 *Ordered by fable-737 §1 (**"size it, name the risks, bring the shape"**),
 re-queued by fable-764 §3. Written 2026-08-16, shift 79. **Evaluation only —
 nothing is built and nothing is spent.** The one production read below is a

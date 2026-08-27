@@ -1,5 +1,8 @@
 # The casting room — per-element reconciliation against the drawing
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **Source of truth:** `docs/specs/Casting-ui-ux-design/design_handoff_studio/Klieg Studio.dc.html`,
 rendered in headless Edge at 1440×1150 and measured from the DOM. Not read, not
 described — rendered. Every number below is measured, not estimated.

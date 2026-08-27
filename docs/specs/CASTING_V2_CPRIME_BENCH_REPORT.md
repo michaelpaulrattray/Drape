@@ -1,5 +1,8 @@
 # The C′ bench — does a reference make the item the SAME, or only SIMILAR?
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Ordered by fable-153, framed by fable-154/155/156, narrowed by fable-157/158,
 extended by fable-159. Run 2026-08-10 on the Unfussed cast (`f9e9cb81`,
 ratified fixture). Fixture lane: provider dollars only, no user credits,

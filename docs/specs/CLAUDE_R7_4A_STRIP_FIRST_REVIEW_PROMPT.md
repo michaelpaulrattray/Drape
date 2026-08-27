@@ -1,5 +1,8 @@
 # Fable review — R7-4A strip-first package care
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a read-only review of the staged R7-4A diff against the current codebase and the ratified R7 plan.
 
 Baseline: `a716a05` on `main`.

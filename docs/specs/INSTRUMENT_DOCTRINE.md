@@ -1,5 +1,8 @@
 # Instrument doctrine — what this program has learned about measuring things
 
+> **Status: live.** Standing doctrine — read before building any report or bench (#69 stamping sweep, 2026-08-28).
+
+
 **Ordered:** fable-662 §3, from opus-504 §4 — *"build
 `docs/specs/INSTRUMENT_DOCTRINE.md`, with the charter below."*
 

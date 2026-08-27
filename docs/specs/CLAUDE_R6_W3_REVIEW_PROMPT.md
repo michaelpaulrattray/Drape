@@ -1,5 +1,8 @@
 # R6 W3 — final staged-diff review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Act as the sole substantive reviewer for the currently staged R6 W3 diff in `C:\Users\Admin\Drape`.
 
 This is a **read-only review**. Do not edit files, stage, commit, push, deploy, run migrations, or contact production. Do not invoke another advisor. Inspect `AGENTS.md`, the complete staged diff, relevant surrounding code, and the current plan authority at `C:\Users\Admin\.claude\plans\rosy-jingling-gizmo.md`.

@@ -1,5 +1,8 @@
 # R6 W5-A — bounded Fable re-review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Re-review the staged W5-A diff after your `REQUEST CHANGES` report. This is a
 read-only review. Do not edit, stage, commit, push, deploy, contact production,
 or run the paid calibration drive.

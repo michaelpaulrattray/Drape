@@ -1,5 +1,8 @@
 # Two ways to make an edit stick — one page, for the founder
 
+> **Status: historical record.** Written for the founder's D-86 anchoring choice; base anchoring stands (every render anchors on the pristine master) — not a live question (#69 stamping sweep, 2026-08-28).
+
+
 *Ordered by fable-120 half 2. The founder chose base anchoring (D-86) before
 this class of evidence existed; this puts the two options beside each other so
 the choice is made against measurements rather than against a fear and a fact.*

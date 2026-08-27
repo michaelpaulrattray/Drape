@@ -1,5 +1,8 @@
 # Fable read-only review — R7-7A3 Canvas recast/reroll snapshot adoption
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the **staged diff only** against the current codebase and the ratified R7-6/R7-7 snapshot design. Do not edit, stage, commit, push, deploy, run migrations, contact production, or enable any feature. You may run local read-only/type/test/build commands. Do not run the disposable database driver during this review; the executor has already recorded its guarded dev-MySQL evidence below.
 
 Baseline before this slice: `ac07472 R7-7A3: adopt headshot snapshot writes`.

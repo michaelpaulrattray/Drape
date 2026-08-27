@@ -1,5 +1,8 @@
 # The frames gate — the walk, its artifacts, and the amendment it carries
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **fable-919 §3's founder gate, bought 2026-08-21.** This file is the gate's own
 artifact. It records what was produced, what was measured, and — first, because
 it changes what the gate is about — the amendment under which it ran.

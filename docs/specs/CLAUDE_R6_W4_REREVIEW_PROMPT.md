@@ -1,5 +1,8 @@
 # R6 W4 — final correction re-review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a **read-only review of the complete staged W4 diff**. Do not edit, stage, commit, push, deploy, or contact production.
 
 This is the re-review after your earlier `REQUEST CHANGES`. Inspect the code itself and challenge the correction if its behavior, tests, or scope are unsound. Do not approve merely because the listed gates are green.

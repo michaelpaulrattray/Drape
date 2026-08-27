@@ -1,5 +1,8 @@
 # Drape Canvas — Design System & Implementation Spec (revised)
 
+> **Status: historical record.** Design-era visual spec for the canvas rebuild, which shipped; tokens live in client/src/styles/tokens.css and divergences in DECISION_LOG.md (#69 stamping sweep, 2026-08-28).
+
+
 **Audience:** engineering (including coding agents). This is the visual and component spec for the canvas boards rebuild — every component on `/app/board/:id` and in the refinement studio, with tokens, code, states, and interaction behavior. Read `CANVAS_FOUNDATIONS.md` first for architecture, `CANVAS_AUDIT_ADDENDUM_V2.md` for verified code facts, and `DECISION_LOG.md` for the ratification status of every divergence from the original draft.
 
 **Revision note:** the ten non-negotiables and the anti-patterns list are founder-locked and unchanged except where explicitly argued and logged (the destructive-red rule, D-8). New in this revision: the zoom & density strategy (§12), color-as-information position (§2.1), empty states & first-run (§11), the lifted-component redesign folded in as normative spec (§13), corrected field names and formatters throughout, and cost-display rules wired to real `CREDIT_COSTS`.

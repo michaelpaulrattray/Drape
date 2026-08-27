@@ -1,5 +1,8 @@
 # Fable Review Prompt — R7-7B7 Pre-Deploy Copy Correction
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the staged diff read-only against baseline `c2f8135`.
 
 Do not edit, stage, commit, push, deploy, contact Railway, query a database, or

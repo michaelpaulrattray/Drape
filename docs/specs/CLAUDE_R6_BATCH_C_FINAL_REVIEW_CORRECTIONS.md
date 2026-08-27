@@ -1,5 +1,8 @@
 # R6 Batch C — final Codex review corrections
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Continue in the **current terminal** from the existing uncommitted Batch C worktree. This is a bounded final correction pass; do not restart or redesign Batch C.
 
 Do not stage, commit, push, deploy, apply migrations, contact production, or run paid image generation. Preserve all local-only files. Use Claude's Edit tool for source edits. Challenge any finding you disagree with using exact code evidence and plain-English reasoning.

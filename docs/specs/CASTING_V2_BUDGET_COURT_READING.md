@@ -1,5 +1,8 @@
 # HIS BRIEF, THREE WAYS — the budget court's reading
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 Ordered by the founder, 2026-08-24, verbatim: *"run the budget court with my
 cyborg breif."* Relayed fable-1598; option 1 of
 `CASTING_V2_DENSE_BRIEF_RATIONING_DESIGN.md`, countersigned fable-1595.

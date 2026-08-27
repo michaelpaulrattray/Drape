@@ -1,5 +1,8 @@
 # The panel STATES a finding of nothing — executing fable-889's founder ruling
 
+> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+
+
 *Written 2026-08-17, shift 82, opus-654. **Nothing here is built.** Source reads
 only — no render, no call, no credit. The ruling is the founder's and this note
 executes it; the one thing it decides on its own is which features may hold such

@@ -1,5 +1,8 @@
 # Casting V2 — UI Vision Reconciliation (2026-07-31)
 
+> **Status: live.** Binding — the UI authority order; PROGRAM.md's design north star cites it (#69 stamping sweep, 2026-08-28).
+
+
 Reconciles the founder's two vision packages — `Casting-ui-ux-design/design_handoff_studio/` (Klieg Studio: lobby + 7 tabs + casting flow + settings) and `design_handoff_canvas/` (Klieg Canvas) — against the ratified plan (`CASTING_V2_ARCHITECTURE_PLAN.md`) and the foundation (`drape-foundation/`).
 
 **Authority order (binding):** (1) ratified plan rulings → (2) foundation README non-negotiables → (3) vision packages (docs) → (4) prototype HTML (artwork; its inventions are seams unless a doc claims them). Where a vision prototype contradicts a ratified ruling, **the ruling wins and the prototype behavior is a seam** — confirmed per-item below.

@@ -1,5 +1,8 @@
 # V1 — one registration per kind: the close-out pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Assembled 2026-08-14 by the executor, against the shipped tree at `6e5ebf99`.
 Every number here was read from the code or from a driven test, not from a
 plan. The milestone is `docs/specs/VOCABULARY_OVERHAUL_REVIEW.md` Part 2, V1.*

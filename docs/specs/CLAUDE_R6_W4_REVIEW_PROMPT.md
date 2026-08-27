@@ -1,5 +1,8 @@
 # R6 W4 final bounded review — staged diff only
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Act as the read-only Fable 5 reviewer for the final R6 founder-walk correction batch, W4. Do not edit files, stage, commit, push, deploy, contact production, or run paid generation.
 
 Repository: `C:\Users\Admin\Drape`

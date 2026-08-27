@@ -1,5 +1,8 @@
 # Fable Review — R7-7B7 Snapshot Pin-Retirement Copy Correction
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are the independent, read-only reviewer for the small corrective slice
 found during the founder-only production browser verification.
 

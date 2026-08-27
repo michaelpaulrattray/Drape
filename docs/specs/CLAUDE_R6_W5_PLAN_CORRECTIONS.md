@@ -1,5 +1,8 @@
 # Fable 5 — required corrections to the W5 execution plan
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Revise `docs/specs/CASTING_SYSTEM_R6_W5_EXECUTION_PLAN.md` only. Do not implement product code, stage, commit, push, deploy, contact production, or spend credits.
 
 The revised strip-first Package Health direction is approved. Keep it as written:

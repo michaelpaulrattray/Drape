@@ -1,5 +1,8 @@
 # R6 Batch B — review corrections before commit
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Codex reviewed the actual Batch B diff and the repository advisor independently challenged it. **Batch B is not ready to stage or commit yet.** The shared lifecycle contract and legacy `locked` handling are broadly correct, but the following gaps must be fixed.
 
 Work only inside Batch B. Do not stage, commit, push, deploy, contact production, run migrations, or start Batch A-coupled/Batch C. Challenge any finding you disagree with using exact code and test evidence; do not silently accept or dismiss it.

@@ -1,5 +1,8 @@
 # The face that resisted every arm was not resisting — she was being mismeasured
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-15, ordered in fable-555 §4 (reads before renders, quote before
 hypothesis). **~20 segmenter reads, about ten cents of house money. No
 generations.** Artifacts: `output/skin-carrier/why-one-face.json`,

@@ -1,5 +1,8 @@
 # Asking for the same edit again — regenerate in place
 
+> **Status: design record — build state NOT re-verified in this sweep (#69, 2026-08-28).** Before acting on this, check the rollout-debt register, the queue, and CLAUDE.md's flag paragraphs.
+
+
 *Design note, written before any code, because this touches the paid path and
 the version tree (fable-567 §5). Founder ruling 2026-08-15, confirmed the same
 day.*

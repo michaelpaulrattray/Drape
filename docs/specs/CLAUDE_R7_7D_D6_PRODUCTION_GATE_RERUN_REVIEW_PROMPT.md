@@ -1,5 +1,8 @@
 # R7-7D D6 production gate rerun — narrow review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a fresh, read-only review of the corrected one-shot wrapper in
 `docs/specs/CLAUDE_R7_7D_D6_PRODUCTION_GATE_REVIEW_PROMPT.md`.
 Use repository and read-only Railway tools as needed in auto mode. Do not edit,

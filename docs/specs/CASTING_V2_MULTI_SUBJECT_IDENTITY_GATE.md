@@ -1,5 +1,8 @@
 # Multi-subject identity gate (2026-08-01)
 
+> **Status: historical record.** A pre-M7 condition; M7 closed 2026-08-02 — kept as the record of the gate (#69 stamping sweep, 2026-08-28).
+
+
 The pre-M7 condition named in plan §I's heritage ruling: identity retention
 verified **across demographics, not just one**. M3 established retention on a
 single anchor — a photoreal adult male — and its own report says a

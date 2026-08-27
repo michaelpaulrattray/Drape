@@ -1,5 +1,8 @@
 # The placement vocabulary — the killer question, answered
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-16 by the executor, ordered by fable-649 §3 and approved
 pre-emptively, BEFORE any placement table was designed. House money: 56
 segmenter reads, no credits, no ledger rows, no writes to any table.

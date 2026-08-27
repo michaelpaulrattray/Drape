@@ -1,5 +1,8 @@
 # V3 — Removal universality: the shape note
 
+> **Status: historical record.** Pre-build shape note; removal has since shipped and been re-ruled (the prune road) (#69 stamping sweep, 2026-08-28).
+
+
 *Written 2026-08-15 by the executor, ordered in fable-528 §b. Every claim about
 today's behaviour carries the file it was read from; nothing here is from
 memory. Nothing is built yet — this note is what gets ruled on before anything

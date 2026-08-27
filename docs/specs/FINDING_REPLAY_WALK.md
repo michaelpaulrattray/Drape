@@ -1,5 +1,8 @@
 # The finding-replay walk — the founder's own four findings, driven back
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Drafted 2026-08-10 (fable-126 §3, fable-128); the driver built the same day
 (fable-134). **HELD** until the STOPLINE lifts: every delivering step is a real
 25-credit refine on a real account. The controls and the dry run are not held and

@@ -1,5 +1,8 @@
 # V2 — the promotion kit: the shape note
 
+> **Status: historical record.** Shape note from the vocabulary overhaul era; see VOCABULARY_OVERHAUL_REVIEW.md and the V2_* records beside it (#69 stamping sweep, 2026-08-28).
+
+
 *Written 2026-08-14 by the executor, before the first court runs. Approved shape
 per fable-516; the milestone is `docs/specs/VOCABULARY_OVERHAUL_REVIEW.md` Part
 2, V2. Nothing here has been driven with a transport yet — what HAS been built

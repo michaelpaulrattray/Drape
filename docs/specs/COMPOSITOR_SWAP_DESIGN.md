@@ -1,5 +1,8 @@
 # The compositor swap — design
 
+> **Status: built.** Design-time record — the feature shipped (the repaint, CASTING_REPAINT_SCOPE; D-241); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+
+
 *Written 2026-08-10, shift 21, against the rulings listed at the foot. This is
 the build document for fable-171's queue item 3 / fable-172's item 4. Nothing
 here is new judgment: every rule below traces to a founder ruling or a Fable

@@ -1,5 +1,8 @@
 # A tone that stays — the court, and the law it found
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Run 2026-08-15, ordered in fable-552 and continued under opus-422's
 pre-registration. **6 generations and ~65 segmenter reads, about $0.75 of house
 money.** No user credits, no ledger rows, nothing written to any table. Frames,

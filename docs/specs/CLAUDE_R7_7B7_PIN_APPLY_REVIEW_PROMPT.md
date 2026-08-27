@@ -1,5 +1,8 @@
 # R7-7B7 bounded founder pin-convergence apply review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are the independent reviewer. Review the exact bounded production write operation below read-only. Do not edit, stage, commit, deploy, change variables, contact the database, run the wrapper, or clear any pin.
 
 Return exactly one verdict:

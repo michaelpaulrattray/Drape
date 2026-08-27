@@ -1,5 +1,8 @@
 # R7-7B7 founder pin-convergence plan — observed count 4 review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 You are the independent reviewer. Review the exact bounded production operation below read-only. Do not edit, stage, commit, deploy, change variables, contact the database, or run the wrapper.
 
 Return exactly one verdict:

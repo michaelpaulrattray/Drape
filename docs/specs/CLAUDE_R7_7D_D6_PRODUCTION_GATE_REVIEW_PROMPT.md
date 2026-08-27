@@ -1,5 +1,8 @@
 # R7-7D D6 production migration + disabled deployment gate — review
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a read-only, independent cumulative review. Use repository tools in
 auto mode and inspect all D1–D6 code needed to challenge the ceremony. Do not
 edit, stage, commit, push, deploy, run a migration, contact any database or

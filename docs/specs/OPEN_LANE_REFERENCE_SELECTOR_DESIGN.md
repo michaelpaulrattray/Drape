@@ -1,5 +1,8 @@
 # ITEM 8 — THE OPEN-LANE REFERENCE ROAD AND ITS SELECTOR
 
+> **Status: design-unbuilt.** Queued as #14; nothing here is built (#69 stamping sweep, 2026-08-28).
+
+
 *Design report for countersign. Written 2026-08-24 under fable-1503 §2's
 **decides-nothing contract**: the selector's shape, its vocabulary, and anything
 that would touch a prompt or a surface come back to review as open questions

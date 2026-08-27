@@ -1,5 +1,8 @@
 # D-110 duplicate-toast pass — evidence
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 The second half of D-110: *no toast duplicates an owned notice.* Six removed,
 four kept-after-measuring, three kept-by-argument, and one measurement that
 reversed a removal I had already made.

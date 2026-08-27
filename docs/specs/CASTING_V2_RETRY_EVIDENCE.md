@@ -1,5 +1,8 @@
 # Evidence pack — the Retry button (#122 shape 1), 2026-08-27
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 Frames in `docs/specs/evidence/retry-122/`, captured on the worktree dev
 server (`:3122`, `CASTING_RETRY_SCOPE=all`, `verify-bot-local`, dev database),
 every one opened and read by the shift before filing. Design:

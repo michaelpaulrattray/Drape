@@ -1,5 +1,8 @@
 # The refining wait, shipped — evidence pack
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 **D-169 (loader) and D-180 (chips), wired 2026-08-05** after the founder's r3
 sign-off on `docs/specs/mocks/casting-refine-wait.html`. Posted for the Fable
 law skim before the founder's verification pass, per the UI milestone contract.

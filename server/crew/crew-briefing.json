@@ -1,7 +1,7 @@
 {
-  "edition": 68,
-  "updatedAt": "2026-08-28T02:25:00+10:00",
-  "shift": "foreman-58",
+  "edition": 69,
+  "updatedAt": "2026-08-28T03:20:00+10:00",
+  "shift": "foreman-59",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -790,6 +790,13 @@
   ],
   "pipeline": [
     {
+      "id": "supersession-stamping-69",
+      "title": "The spec library stopped lying to its readers (#69) — all 171 status-silent docs now say what they are",
+      "status": "merged",
+      "note": "Your Aug 25 cleanup order, part 2 executed: every design doc, court record and old review prompt in docs/specs that carried no status marker now opens with a one-line banner saying whether it is live, historical, a dated record, built, or designed-but-never-built. 78 old review prompts and 18 era docs marked historical; 43 courts and evidence packs marked dated records — including the freckle court, now stamped with the fact your own eye overturned it; 13 designs stamped built with the proof cited; 9 marked live and governing; 3 marked designed-not-built with their queue card; 7 honestly stamped 'not re-verified' as the next sweep's shortlist. Nothing deleted, nothing user-visible changed. The supersession map's four open items were also verified discharged at their artifacts and its record updated.",
+      "prNumber": null
+    },
+    {
       "id": "framing-midtorso-182",
       "title": "Mid-torso framing (#182) — courted on your 2:3 reference, sentence + trim retargeted in one PR",
       "status": "merged",
@@ -1242,6 +1249,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T03:20:00+10:00",
+      "shift": "foreman-59",
+      "text": "Housekeeping shift while you sleep - the doc cleanup you ordered on Aug 25 (#69) is done for the spec library. The problem it fixes: 171 of our 253 spec documents had no marker saying whether they were current, finished, superseded or never built - which is exactly how an old plan gets read as a live order (it has bitten us three times on record). Every one now opens with a one-line status banner: old review prompts and era docs marked historical, courts and evidence packs marked as dated records (the freckle court now carries the note that your own eye overturned it), built designs stamped with the proof they shipped, the governing plans marked live, unbuilt designs pointed at their queue cards, and 7 stamped honestly as 'not re-verified' - those are the next sweep's shortlist. Nothing was deleted and nothing you can see in the product changed. Otherwise quiet: no new content-filter refusals for the patrol (checked at the rows), no new replies, and your first Follow tap is still the live check of last night's Row A build."
+    },
+    {
       "at": "2026-08-28T02:25:00+10:00",
       "shift": "foreman-58",
       "text": "Quiet-hours patrol shift, two things worth your morning read. First: your cyber-goth sheet from yesterday afternoon that died whole - all eight tiles failed - was NOT the studio refusing your brief. A deploy restarted the studio seconds after your roll started (the deploy guard checks whether you're mid-session, but you'd been quiet eight minutes when the push fired and it can't see a roll that hasn't started yet - it did refuse the very next push two minutes later). Every slice was refunded within six minutes - I verified the 160 credits back row by row - and each tile offered Retry. This is the known accepted deploy-collision class; nothing is broken. Second: the refusal patrol ran on the new material (your roll before that one had 4 of 8 refused by the content filter - same coin-per-render behaviour as before, byte-identical text refused and delivered in one sheet). The new mid-torso framing sentence showed slightly more refusals in its court, but the numbers say coin, not sentence (p = 0.35) - and every roll you make on the live framing adds free evidence, so the patrol logged it and spent nothing. No word enters any rewrite list. Your first Follow tap is still the live check of the Row A build."
@@ -1435,11 +1447,6 @@
       "at": "2026-08-26T18:35:00+10:00",
       "shift": "foreman-21",
       "text": "Two of your words are in the product tonight. 'Always' (reply #9): a roll whose brief the reader never read is refused for free at any length — even five words — and the sheet says so; nobody is charged for a sheet that read none of their words. And the register rebuild to your court verdict has its first two slices merged: on your account a roll now paints eight frames from ONE prompt — your words first, verbatim, then the author's studio sentences (LOW, the default) or an invented look written as a casting call that leaves the face open (MAX). The reader stays beside it for the panel. Two things worth knowing before you roll: 'more like this one' and chip edits still take the old road under the flag (the author can't carry an anchor or an edit yet — next slices), and brand names are still scrubbed before the author sees them, which is your gate 21 — say the word if 'verbatim' should win there. Next slices: the not-a-being wall, the prompt shown on the cast, and the imagination control; then #128 (a short realism clause from D, courted against B) and #130 (the framing calibrated to your 28% frame). Your 'auto refresh' ask is filed as #133 (urgent) for the next shift. OpenRouter is at $4.09 and the granted figure is not moving — with refuse-free live, an empty account means every brief is refused free rather than charged, so nothing is lost but the studio visibly stops. No house money spent tonight."
-    },
-    {
-      "at": "2026-08-26T16:48:00+10:00",
-      "shift": "foreman-21",
-      "text": "Your verdict on the strips arrived while tonight's deploy was running and it is acknowledged here: B is the studio, the author is built verbatim-first with LOW as the default, MAX is rewritten so it never paints one face eight times, D lends a short realism clause to be tested against B (not assumed), the refusal loop becomes a patrol, the preset's framing is calibrated to your 28% reference frame and then locked, and 'sternum' is never written. The relay filed the three side pieces as #128, #129 and #130; the register rebuild itself is the next build and starts dark behind the same flag. Nothing reaches your account until it is rebuilt and you say so."
     }
   ],
   "acknowledgedReplyIds": [

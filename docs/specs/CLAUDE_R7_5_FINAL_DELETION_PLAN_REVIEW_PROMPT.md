@@ -1,5 +1,8 @@
 # Fable review — R7-5 permanent Cast deletion plan
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Perform a read-only architecture and code-evidence review of the proposed R7-5 deletion policy and execution plan.
 
 Read completely:

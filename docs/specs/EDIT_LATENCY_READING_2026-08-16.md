@@ -1,5 +1,8 @@
 # Where a paid edit's three minutes go — the reading
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 Ordered by the founder in person, 2026-08-16: *"3 minutes is very long for a
 render — have we looked at why?"* (fable-678 §5). **Measurement only. Nothing
 in this document has been changed in the product**; the cut list needs Fable's

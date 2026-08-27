@@ -1,5 +1,8 @@
 # Are they the same horns? — the axis the survival court never judged
 
+> **Status: dated record.** A measurement/evidence/court document from the date it states — it records what was true then; individual verdicts may since have been superseded. Current law: CLAUDE.md, the capability atlas, `DECISION_LOG.md` (#69 stamping sweep, 2026-08-28).
+
+
 *Read 2026-08-15 on frames already rendered and paid for, ordered by fable-566
 §1. **$0.09 of house money, 18 segmenter reads, no generations.** Artifacts:
 `output/horn-constancy/`.*

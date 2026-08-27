@@ -1,5 +1,8 @@
 # Fable review prompt — R7-7A3 atomic transition foundation
 
+> **Status: historical record.** A one-shot working prompt/handoff from the R6/R7 review era; not current guidance. Current law lives in CLAUDE.md and the governing plans in `docs/specs/` (#69 stamping sweep, 2026-08-28).
+
+
 Review the **staged diff only** against the live codebase, the ratified R7-6 design, and:
 
 - `docs/specs/CASTING_SYSTEM_R7_7A_EXECUTION_PLAN.md`
