@@ -178,6 +178,20 @@ Everything else in the old block is kept as §5d rules it (posture line replaces
 
 **The rule for the author, verbatim:** *"Split the prompt into two layers: House block — same on every job. Framing, camera, backdrop, light position, realism, negatives, authority. Cast block — written from the seed + slider. Age, aesthetic, mood, styling language. At LOW this stays thin. At MAX this carries the art direction."*
 
+
+### 5g. The author guardrails (founder, 2026-08-27, verbatim — "Right now only add the guardrails")
+
+**Already correct, leave it:** One prompt, eight renders. User words first. Studio block last. LOW: author adds nothing about the person. Seed + studio. Engine invents the rest per render. Wide goth-genre spread is allowed. MAX: author writes look language only. Pin materials, makeup language, hair language, mood. Never pin exact face, haircut, jewellery, or expression. Do not go back to naming a bob or a septum ring.
+
+**Add:**
+- **Seed facts cannot move.** *"mid 30s must not become young woman. Age, sex, and other stated facts stay. Taste can be added. Facts cannot be rewritten."* (At every level — this is rule 4's containment, now explicitly including PARAPHRASE drift: a stated fact appears in the final prompt in a form that preserves its value.)
+- **If the user already wrote the look, don't write a second one.** *"Intense user copy at LOW passes through. MAX must not stack another wardrobe bible on a finished seed."* A seed that carries its own aesthetic language gets little or nothing added at MAX.
+- **The two buttons are the intensity control.** *"LOW = engine's taste. MAX = author's editorial taste. No third button."*
+
+**Check on the next MAX sheet (his checklist, the eye-item caption's shape):** facts intact · same studio · same designed universe across all eight · eight different faces · bookable for one lookbook. **Clones = too tight. Eight unrelated genres = too loose. They got younger = author rewrote the seed.**
+
+**The slider (N3):** *"LOW and MAX stay the endpoints. Mid positions only change how much look-language gets written in between. Do not invent a new system for that yet."*
+
 ## 6. The hard rules — ruled one by one
 
 KILL: the discard list (1); the register engagement gate (2); the notes cap and the 2,000-char brief cap → the word budget (3); the dice and anatomy blocks (4); **the content wall (6)** — the engine judges; **the stage wall (11)** — replaced by ONE wall: *this is a casting studio; a subject that is not a being refuses free before the charge* ("someone asking for an object should be refused like a car"); **the typo gate (12)**; **sex-coded facial hair (13)** — "the engine would never do it unless asked".
