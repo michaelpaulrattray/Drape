@@ -1,7 +1,7 @@
 {
-  "edition": 65,
-  "updatedAt": "2026-08-27T23:05:00+10:00",
-  "shift": "foreman-55",
+  "edition": 66,
+  "updatedAt": "2026-08-28T00:45:00+10:00",
+  "shift": "foreman-56",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -149,7 +149,7 @@
       "productImpact": "Your three rulings tonight are now the plan: a Follow attaches the photo of the cast you followed (words alone can't carry likeness — your hand test), facts change at the roll (chip → brief rewrites → new sheet → follow one of those), and the one open dial is how close the new faces stay. The court ran on dev, house money (~$1.63): the anchor's own brief + his photo, eight fresh renders per row, only the closeness sentence changing. Whichever row you pick becomes the Follow that ships.",
       "workedExample": "Row A is your exact hand-test sentence (keep sex, age range, heritage, hair-colour family; don't copy the face). Row B tells the engine the photo is the BOOKING, not a person to resemble — cast a clearly different man of the same type. Row C keeps the photo and almost no words. One honest note: your B/C wording said 'eight clearly different men' — sent per-picture that paints an eight-face collage inside every frame (we proved it, twice per row), so each render carries the same sentence in the singular and the eight vary by the engine's own dice, exactly like a normal roll.",
       "recommendation": "Row B. Against your own bar — clones too tight, strangers too loose — A comes back as near-clones on several tiles (brothers at best), and C drifts wide: with almost no words the photo alone did NOT hold heritage, several faces leave his type entirely. B holds the type while every face reads as a different man. If you sometimes want A's closeness too, that's the two-buttons answer.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-27T22:45:00+10:00",
       "issueNumber": 177,
       "options": [
@@ -429,10 +429,26 @@
   ],
   "eyeItems": [
     {
+      "id": "framing-court-2-182",
+      "title": "The mid-torso framing you ordered is in — the court strip (#182)",
+      "question": "Your call tonight: 'chest up is far too tight we need to see the outfit more. run it.' Done — court first, then the sentence and the trim retargeted in one PR, exactly as you sequenced it. Top row is your 2:3 reference (it measures 22% face height). K is what the studio said until tonight — every frame crops at the collar. M and M2 are the new sentence, written to your frame's measured numbers: the outfit's upper body is in every delivered picture, faces land at 21–28% of frame height (middle 23%, against K's 32%). The head-size trim was moved with it — left alone it would have quietly cropped every sheet back toward the tight look you just refused. Grey tiles are the engine's content checker refusing the exact same words it accepted next door — the per-render coin we have measured before, logged for the refusal patrol (#129), not a property of the new sentence you need to trade against. Your next roll carries this framing. If the look reads wrong to your eye, say so — the old sentence is one revert away.",
+      "state": "open",
+      "filedAt": "2026-08-28T00:45:00+10:00",
+      "issueNumber": 182,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/fb224eb2-5e7c-402f-a7b5-4777b121f092.jpg",
+          "arm": null,
+          "caption": "REF = your 2:3 frame, the ask. K = today, face and collar. M / M2 = the new sentence, two passes of the same words — see the outfit. Grey = the checker refused that render (identical words to its neighbours)."
+        }
+      ]
+    },
+    {
       "id": "follow-court-177",
       "title": "The Follow court you ordered: brothers vs shortlist — pick a row (#177)",
       "question": "Your word tonight: 'try both and put it on my desk so i can judge.' Done. Every picture below was made the same way — your fitness-creator brief plus the photo of the guy you followed, attached to the engine so his type carries by PICTURE (the thing your own hand test proved words can't do). The only difference between the rows is the one sentence telling the engine how close to stay. When you tap Follow on a cast you like, which of these should come back? Pick a row — or say if you want two buttons (close variations / more of this type).",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-27T22:45:00+10:00",
       "issueNumber": 177,
       "frames": [
@@ -773,6 +789,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "framing-midtorso-182",
+      "title": "Mid-torso framing (#182) — courted on your 2:3 reference, sentence + trim retargeted in one PR",
+      "status": "merged",
+      "prNumber": 183,
+      "note": "Your reference measured first (22% face height), the sentence written to that number, then proven on 16 paid frames before it shipped: new framing lands at 21–28% (middle 23%) with the outfit visible everywhere; the old sentence replicated at 32%, collar-up. The trim's target moved 31.6% → 23% in the same change so it stops fighting the sentence; 'mid-torso' came off the forbidden-words list because the rule that banned it is the rule you reversed. Both flags are your account only — nobody else's rolls change."
+    },
     {
       "id": "review-selfskip-guard-165",
       "title": "Gate honesty (#165) — a PR that edits the reviewer can no longer wear a green “reviewed” check",
@@ -1219,6 +1242,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T00:45:00+10:00",
+      "shift": "foreman-56",
+      "text": "Two of your orders landed while you slept. (1) The framing: your 2:3 mid-torso reference was measured (22% face height), a court ran K (today's sentence) against M (a sentence written to your frame's numbers) — 16 renders plus a same-words second pass to separate the content-checker's coin from the sentence — and the winner shipped with the head-size trim retargeted in the same PR (#183), your sequencing followed to the letter. The strip is first in your gallery. (2) Your Row A pick on the Follow court is logged and acknowledged (#177): Follow = your photo + your brief + the close-variations clause, identity dice never consulted. Building it is the next shift's first brief — it was not rushed into the framing PR. House spend this shift: ~$1.55 on the court."
+    },
+    {
       "at": "2026-08-27T23:05:00+10:00",
       "shift": "foreman-55",
       "text": "Housekeeping behind the Follow-ghost fix, while your court pick (#177) waits: the 96 older author-road candidates still carried the made-up per-slice identity records — the fiction that had your Follow paint eight Indian relatives. The dev database is now marked clean (each record flagged as never-sent, so the product refuses to read it as fact; the dice captions under tiles are cleared too), the ceremony script is merged (PR #181), and it verified itself through the product's own reader: before the fix 96 records read as fact, after it zero do. Production gets the same one-command mark in the next ceremony batch — until then the code gates from PR #178 already keep the fiction out of everything you see. Nothing new needs you beyond the court pick."
@@ -1412,11 +1440,6 @@
       "at": "2026-08-26T17:55:00+10:00",
       "shift": "foreman-19",
       "text": "The Prompt Author court ran tonight ($7.12 of house money) and the strips are in your gallery. In plain terms: your 73-word prompt sent raw gives eight different women with the framing held — exactly what you saw. Add the author at LOW (it only writes the studio and framing sentences) and you get the same spread with a steadier frame; that is the sheet a basic user should get, and on 'goth woman mid 30s' it gave six distinct goth women in their thirties. Add the author at MAX, using your own instruction word for word, and the engine paints ONE striking woman eight times — the author described everything, so there was nothing left to vary. Today's studio, for comparison, put your 73 words through the compiler and dressed seven of eight in the grey tee, and turned 'goth woman mid 30s' into eight women with no goth styling at all. Two things the engine did that you should know: it refused short prompts most of the time (the thin brief raw: 17 of 18), and it refused your FULL cyber-goth brief 63 of 64 times in every form, raw included — your beautiful results came through ChatGPT's door, and fal's door says no to those words; one house word, 'sternum', flipped a passing prompt to eight refusals on its own. Padding a prompt with 1,600 words of office-memo filler changed nothing, so length alone is not the enemy — competing instructions are. Your reply on the outage question ('refuse-free') is filed as #126 and will be built next. Nothing was built tonight; the court was the step, and your eye on the strips is what comes next."
-    },
-    {
-      "at": "2026-08-26T14:20:00+10:00",
-      "shift": "foreman-18",
-      "text": "Your cyber-goth roll (219) is explained and the cause is fixed and merged (PR #124). It was never the register failing to switch on and never the reader misreading you: the reader was cut off by a 45-second clock that was sized for short reads, and when that happens the studio casts from the first 80 characters of the brief and charges anyway — which is exactly why you got men and women. I re-ran your brief three times through the real reader: 36 s, 36 s, then 45.012 s, the clock to the millisecond. Long briefs now get 120 s, and the per-face variation card gets a proper output budget (it had been spending its whole allowance thinking and writing nothing, two tries out of three). Nothing about the prompt bytes changed and nothing was charged; about 30 cents of text calls. While I worked, your re-ruling of the whole roll road landed (the PROMPT AUTHOR — your words to the engine first, an author instead of a compiler, the outfit toggle retired): the program now points at it, the next step is the court on #125, and #120/#92 are superseded by it. One question for you on the card: when the reader is genuinely down, should a long brief be refused for free instead of charged?"
     }
   ],
   "acknowledgedReplyIds": [
@@ -1436,6 +1459,7 @@
     14,
     15,
     16,
-    17
+    17,
+    18
   ]
 }
