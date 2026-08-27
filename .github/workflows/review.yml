@@ -40,6 +40,19 @@
 #   conflict, and server/reviewerCharter.test.ts reddens when CLAUDE.md
 #   gains or renames a law/invariant the charter lacks.
 #
+# SELF-SKIP HONESTY (issue #165): claude-code-action refuses to run on any
+# PR whose diff modifies THIS file — workflow validation on ITS side, a
+# legitimate anti-exfiltration control — and that skip used to exit 0: a
+# green check named `review` while no review ran (found at the artifact on
+# PR #163). Triage now detects review.yml in the diff and FORCES the review
+# job, whose first step fails naming the reason — the check goes red,
+# honestly, on every such PR. The founder-gate job (gate.yml) is the
+# second, always-runs half: it labels the PR `review-skipped` and posts one
+# comment naming the hand-review obligation, so the fact survives even a
+# `skip-review` label (which still short-circuits triage here, on purpose —
+# that label's meaning is unchanged). The PR that shipped this guard
+# demonstrated it on itself: its own `review` check went red by design.
+#
 # Runs on the founder's Claude subscription via CLAUDE_CODE_OAUTH_TOKEN.
 
 name: Fable Review
@@ -71,6 +84,9 @@ jobs:
       # "yes" when the diff touches money/auth surfaces: the review then reads
       # CLAUDE.md in full instead of the charter (#161).
       deep: ${{ steps.decide.outputs.deep }}
+      # "yes" when the diff modifies review.yml itself: the action will
+      # self-skip, so the review job is forced and fails honestly (#165).
+      selfskip: ${{ steps.decide.outputs.selfskip }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -93,6 +109,21 @@ jobs:
           # still read CLAUDE.md in full, not the charter.
           git fetch origin "$BASE" --depth=1
           CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
+
+          # Before the money check, because a money PR that also edits
+          # review.yml cannot be reviewed either — the action self-skips on
+          # any diff touching this workflow file, whatever else it touches.
+          # Forcing review=yes here makes the review job run its refusal
+          # step, so the check reddens instead of lying green (issue #165).
+          if echo "$CHANGED" | grep -qxF '.github/workflows/review.yml'; then
+            echo "This diff modifies review.yml — claude-code-action will self-skip, so no review can run (issue #165)."
+            {
+              echo "selfskip=yes"
+              echo "review=yes"
+              echo "deep=no"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           MONEY='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^shared/const\.ts$|^drizzle/'
           if echo "$CHANGED" | grep -qE "$MONEY"; then
@@ -137,6 +168,15 @@ jobs:
       issues: write # PR comments are issue comments on GitHub's API
       id-token: write # OIDC, used by the action to exchange its token
     steps:
+      # A pass this job cannot earn must not be reported (issue #165): when
+      # the PR modifies review.yml, claude-code-action skips itself with
+      # exit 0, which used to leave this job green having reviewed nothing.
+      - name: Refuse a pass the action cannot earn
+        if: ${{ needs.triage.outputs.selfskip == 'yes' }}
+        run: |
+          echo "::error::This PR modifies review.yml, so claude-code-action self-skips (workflow validation) and NO review can run. A green pass here would have reviewed nothing — failing instead. Review the reviewer change by hand (label: review-skipped, issue #165)."
+          exit 1
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0

@@ -244,6 +244,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write # `gh pr edit --add-label founder-review` on money/auth diffs
+      issues: write # `gh pr comment` posts an issue comment on GitHub's API (reviewer-change visibility, #165)
     steps:
       # A failed resolve must redden this required check, never skip it.
       - name: Refuse unless resolve succeeded
@@ -291,4 +292,40 @@ jobs:
           echo "$HITS"
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label founder-review || true
           echo "::notice::This PR touches billing/credits/auth/session surfaces — labelled founder-review for the digest and full Fable review."
+          exit 0
+
+      # The reviewer cannot review its own change (issue #165):
+      # claude-code-action self-skips on any PR whose diff modifies
+      # review.yml, and that skip used to read as a green `review` check.
+      # review.yml's own triage now reddens that check; THIS step is the
+      # always-runs half — every pull_request event including synchronize,
+      # and even under a skip-review label — so the fact is visible on the
+      # PR itself: a `review-skipped` label plus one comment naming the
+      # hand-review obligation. Label first, comment only when the label was
+      # absent, so pushes to the branch do not repeat the comment.
+      - name: Reviewer-change visibility (review.yml in diff)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ needs.resolve.outputs.pr }}
+          BASE: ${{ needs.resolve.outputs.base }}
+        run: |
+          # Base already fetched in full by the step above; refresh is cheap
+          # and keeps this step self-contained.
+          git fetch origin "$BASE"
+          if git diff --quiet "origin/$BASE"...HEAD -- .github/workflows/review.yml; then
+            echo "review.yml untouched — the Fable review can run normally."
+            # The label is DERIVED from the diff, never left to drift (law 4):
+            # a push that reverts the review.yml edit takes the label with it.
+            gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label review-skipped 2>/dev/null || true
+            exit 0
+          fi
+
+          echo "This PR modifies review.yml — claude-code-action will self-skip, so NO Fable review runs here."
+          if gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json labels --jq '.labels[].name' | grep -qxF review-skipped; then
+            echo "Already labelled review-skipped; comment not repeated."
+          else
+            gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label review-skipped || true
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "**The Fable review DID NOT RUN on this PR.** The diff modifies \`.github/workflows/review.yml\`, and claude-code-action refuses to run when the workflow file invoking it differs from the default branch (its own anti-exfiltration control) — so its skip cannot produce a real review. The \`review\` check on this PR is forced red for the same reason. **Review the reviewer change by hand before merging** (issue #165)." || true
+          fi
+          echo "::notice::review.yml modified — no Fable review possible; labelled review-skipped (issue #165)."
           exit 0
