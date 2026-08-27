@@ -70,6 +70,16 @@ const L3_LINE =
   "LIGHTING: Clean, even studio light — a large soft frontal source with near-full fill, shadows lifted almost flat, only a faint shadow under the jaw. Grey seamless evenly lit behind the head, soft falloff to the edges. No rim. No coloured gels.";
 
 /**
+ * L2+ — his superseding block, VERBATIM (issue #128, 2026-08-27: "Use this as
+ * one block. Don't append it as a second thought — replace L2 with this").
+ * Byte-for-byte from the comment; no composing, no rewording. NOTE: the block
+ * it swaps into is TODAY'S shipping block, which since PR #162 carries the F2
+ * framing sentence (his pick, reply #13) — declared in the record and caption.
+ */
+const L2P_LINE =
+  "LIGHTING: Large diffused soft frontal key just above the lens, high fill, face wrapped, open shadows. Soft chin and jaw shadow only — no hard neck cut. Grey seamless luminous but not white: slightly brighter behind the head, gentle falloff to the edges, no hard vignette. Minimal rim. No coloured gels. No on-camera flash. No hard shadow dumped on the paper behind the head. No oily flash specular stamped on the forehead, nose or cheeks. Speculars appear only where that person's skin and wardrobe naturally catch the soft source";
+
+/**
  * R — the ORIGINAL B+R shape: PHOTOGRAPHIC language only, distilled from the
  * cohort's CAMERA / noise / REALISM sentences and his lighting; nothing about
  * the face's styling (realism words can fight styling words — #128 body).
@@ -108,6 +118,7 @@ function buildArms(): Arm[] {
     { id: "L1", label: "L1 · reference look, deep jaw shadow", prompt: withBlock(swapLighting(L1_LINE)), lightingLine: L1_LINE },
     { id: "L2", label: "L2 · his candidate verbatim", prompt: withBlock(swapLighting(L2_LINE)), lightingLine: L2_LINE },
     { id: "L3", label: "L3 · clean even light", prompt: withBlock(swapLighting(L3_LINE)), lightingLine: L3_LINE },
+    { id: "L2P", label: "L2+ · his block verbatim", prompt: withBlock(swapLighting(L2P_LINE)), lightingLine: L2P_LINE },
     { id: "R", label: "R · distilled clause, no block", prompt: `${BRIEF}\n\n${DISTILLED_CLAUSE}`, lightingLine: null },
   ];
   for (const a of arms) guard(a.id, a.prompt);
