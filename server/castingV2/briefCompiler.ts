@@ -1255,6 +1255,8 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         imagination: input.imagination,
         style: input.style,
         clause: carried?.clause ?? null,
+        /* §5g (#171): the reader's recorded age is the fidelity check's value — "mid 30s" may never come back "young". */
+        statedAge: intent.ageBand ? { band: intent.ageBand, phase: intent.agePhase } : null,
       })
     : null;
   const candidates = authored

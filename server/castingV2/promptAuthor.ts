@@ -63,6 +63,7 @@ import { INTERPRET_TIMEOUT_MS } from "./interpreter";
 import { createModuleLogger } from "../logging/logger";
 import { containsHouseSentence, houseBlockForStyle } from "./houseBlock";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
+import { AGE_BANDS, type AgeBand, type AgePhase } from "./castingIntent";
 
 const log = createModuleLogger("promptAuthor");
 
@@ -145,19 +146,24 @@ export function maxSystemPrompt(allowance: number): string {
     "",
     "Imagination level: MAX",
     "",
-    "The user's request is the seed. Your text adds ART DIRECTION to it — aesthetic language only:",
+    "The user's request is the seed. FIRST decide what kind of seed it is — the decision is by CONTENT, never length: if the user already specified the world (the aesthetic, the skin language, the face language), the seed is FINISHED; otherwise it is thin.",
+    "",
+    "On a FINISHED seed, do not write a second look on top of the user's: your ENTIRE output is one short intensity clause — pressure only (more severe, more editorial, denser texture, stronger mood). Forbidden on a finished seed: new nouns — a new garment, a jewellery item, a named haircut, a younger age, a sharper named face, any material or item the user did not name.",
+    "",
+    "On a thin seed, your text adds ART DIRECTION to it — aesthetic language only:",
     "- Invent mood, materials, makeup language, hair language and lighting taste that belong to the seed's world (an editorial line, a universe of styling).",
     "- Do NOT specify an exact face, exact hairstyle, exact eye colour, exact jewellery item, exact garment, exact body type or exact expression. Anything you state is locked on every portrait; anything you leave unsaid the engine decides differently each time — that is how the casting stays a cast and not one person. Never lock a repeating signature item.",
     "- Stay in the studio: more taste, not more world. No scene, no story, no environment, no props.",
-    "- Stay true to the seed's core: its sex, age, and the aesthetic direction it names.",
+    /* §5g (#171), his words: facts cannot be rewritten — including as a paraphrase. */
+    "- Seed facts cannot move, at any level and in any wording: \"mid 30s\" must never surface as \"young woman\". Age, sex, and every other stated fact stay exactly as stated — never dropped, softened, contradicted or re-described. Taste can be added. Facts cannot be rewritten.",
     `- ${NO_STUDIO_RULE}`,
     `- ${NO_NOTES_RULE}`,
-    "- Every fact the user states must survive exactly — never dropped, softened or contradicted. You may add; you may not take away.",
     `- Word allowance for YOUR text: at most ${allowance} words. If you are over, cut your own additions first — never the user's facts.`,
     `- ${FILTER_RULE}`,
     `- ${APPEND_RULE}`,
     "",
-    "Output only your text: two to four sentences of art direction, in clean prose, nothing else.",
+    /* The format line must not out-argue the finished-seed rule (measured: four full sentences on the specimen finished seed, #171 drive). */
+    "Output only your text, in clean prose, nothing else: two to four sentences of art direction on a thin seed — on a FINISHED seed, the single short intensity clause and nothing more.",
   ].join("\n");
 }
 
@@ -182,6 +188,98 @@ export function neverWrittenIn(text: string): string | null {
   }
   return null;
 }
+
+/**
+ * §5g (#171) — SEED FACTS CANNOT MOVE, and the check compares VALUES, never
+ * substrings: the READER already recorded the brief's age (`intent.ageBand`),
+ * and this asks whether the author's addition claims a DIFFERENT one. "mid
+ * 30s" → "in her mid-thirties" passes; → "young" is a contradiction (his own
+ * specimen). The seed itself is verbatim-first by code, so the only place an
+ * age can drift is the author's own text — which is all this reads.
+ */
+export type StatedAge = { band: AgeBand; phase: AgePhase | null };
+
+/**
+ * Decade words → the band they claim. Consulted ONLY inside an age-stating
+ * shape ("in her …", "early/mid/late …", "…-something", "aged NN") — a bare
+ * "70s" or "80s" is era styling ("70s disco"), not an age claim, which is the
+ * anchored-matcher lesson the review of #173 taught `briefRewrite.ts`.
+ * Decades past the vocabulary's top band claim "70s+".
+ */
+const BAND_OF_WORD: Readonly<Record<string, AgeBand>> = {
+  teens: "teens", teenage: "teens", teenaged: "teens", teenager: "teens",
+  "20s": "20s", twenties: "20s", twenty: "20s",
+  "30s": "30s", thirties: "30s", thirty: "30s",
+  "40s": "40s", forties: "40s", forty: "40s",
+  "50s": "50s", fifties: "50s", fifty: "50s",
+  "60s": "60s", sixties: "60s", sixty: "60s",
+  "70s": "70s+", seventies: "70s+", seventy: "70s+",
+  "80s": "70s+", eighties: "70s+", eighty: "70s+",
+  "90s": "70s+", nineties: "70s+", ninety: "70s+",
+};
+
+function bandOfYears(years: number): AgeBand | null {
+  if (years < 13 || years > 120) return null;
+  if (years < 20) return "teens";
+  if (years < 30) return "20s";
+  if (years < 40) return "30s";
+  if (years < 50) return "40s";
+  if (years < 60) return "50s";
+  if (years < 70) return "60s";
+  return "70s+";
+}
+
+/** Age-stating shapes; each captures the one token `BAND_OF_WORD` or `bandOfYears` reads. */
+const AGE_CLAIM_SHAPES: ReadonlyArray<RegExp> = [
+  /\bin (?:her|his|their) (?:(?:early|mid|late)[ -])?([a-z0-9]+)\b/g,
+  /\b(?:early|mid|late)[ -]([a-z0-9]+)\b/g,
+  /\b([a-z]+)-something\b/g,
+  /\baged? (\d{1,3})\b/g,
+  /\b(\d{1,3})[ -]years?[ -]old\b/g,
+  /\b(teenage[dr]?|teenager)\b/g,
+];
+
+/**
+ * Words that age a seed DOWN without naming a decade — the measured failure
+ * direction ("mid 30s" must never become "young woman"). They contradict a
+ * stated band of 30s or older; on a teens/20s seed "young" states nothing the
+ * seed did not. UP-drift is caught only in the decade-stating shapes above —
+ * elder adjectives ("aged", "mature") double as material/styling words and a
+ * guard that refuses "aged leather" would be the typo gate owning a real word.
+ */
+const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
+
+/** The phrase in `content` that claims an age other than `stated`, or null. */
+export function ageContradictionIn(content: string, stated: StatedAge): string | null {
+  const lower = content.toLowerCase().replace(/\s+/g, " ");
+  for (const shape of AGE_CLAIM_SHAPES) {
+    for (const match of Array.from(lower.matchAll(shape))) {
+      const token = match[1] ?? match[0];
+      const claimed = /^\d+$/.test(token) ? bandOfYears(Number(token)) : BAND_OF_WORD[token] ?? null;
+      if (claimed !== null && claimed !== stated.band) return match[0];
+    }
+  }
+  if (AGE_BANDS.indexOf(stated.band) >= AGE_BANDS.indexOf("30s")) {
+    for (const word of YOUTH_WORDS) {
+      if (new RegExp(`\\b${word}\\b`).test(lower)) return word;
+    }
+  }
+  return null;
+}
+
+/**
+ * §5g item 4 — the founder's checklist for judging any MAX sheet, verbatim.
+ * ONE owner: the eye caption of every MAX sheet filed to his gallery QUOTES
+ * this string beside the frames (the briefing is hand-written prose, so the
+ * wiring is this constant plus the arm that keeps its clauses verbatim — a
+ * caption is quotation, and this is the thing it quotes). It is judging
+ * language for his eye, never engine-bound text, so `NEVER_WRITTEN` does not
+ * apply to it.
+ */
+export const MAX_SHEET_CHECKLIST =
+  "Facts intact · same studio · same designed universe across all eight · eight different faces · "
+  + "bookable for one lookbook. Clones = too tight. Eight unrelated genres = too loose. "
+  + "They got younger = author rewrote the seed.";
 
 /**
  * THE ONE COMPOSITION on the author road, pure so the suite asserts it at the
@@ -244,7 +342,7 @@ function cleanReply(raw: string): string {
 }
 
 /** Why a draft is refused, or null when it may stand. */
-export function draftRefusal(addition: string, allowance: number): string | null {
+export function draftRefusal(addition: string, allowance: number, statedAge?: StatedAge | null): string | null {
   if (addition.length === 0) return "Your previous reply was empty.";
   if (countWords(addition) > allowance * (1 + OVERRUN_TOLERANCE)) {
     return `Your previous draft was ${countWords(addition)} words; the allowance is ${allowance}. Rewrite it within ${allowance} words, cutting your own additions and never the user's facts.`;
@@ -253,6 +351,14 @@ export function draftRefusal(addition: string, allowance: number): string | null
   if (forbidden) return `Your previous draft used the word "${forbidden}", which this studio never sends. Rewrite it without that word — and without any note about the series or the process.`;
   const house = containsHouseSentence(addition);
   if (house) return "Your previous draft contained camera/studio language. The studio appends its own locked block; write only the art direction for the person.";
+  /* §5g (#171): the reader's recorded value against the author's text — an aged-down seed reddens here. */
+  if (statedAge) {
+    const drifted = ageContradictionIn(addition, statedAge);
+    if (drifted) {
+      const statedValue = `${statedAge.phase ? `${statedAge.phase} ` : ""}${statedAge.band}`;
+      return `Your previous draft said "${drifted}", which moves the user's stated age (${statedValue}). Stated facts cannot be rewritten, even as a paraphrase — rewrite without changing or re-describing the age.`;
+    }
+  }
   return null;
 }
 
@@ -278,6 +384,13 @@ export async function authorPrompt(input: {
    * allowance the way the block is. Null on a plain authored roll.
    */
   clause?: string | null;
+  /**
+   * The READER's record of the brief's stated age (§5g, #171) — the value the
+   * fidelity check compares the author's text against. Null when the brief
+   * states none; at LOW it is unused by construction, since the author writes
+   * nothing that could drift.
+   */
+  statedAge?: StatedAge | null;
   signal?: AbortSignal;
 }): Promise<AuthoredPrompt> {
   const imagination = input.imagination ?? DEFAULT_IMAGINATION;
@@ -328,14 +441,14 @@ ${clause}` : briefText,
     let model = first.provenance.model;
     let latencyMs = first.latencyMs;
     spentMs = latencyMs;
-    const why = draftRefusal(content, allowance);
+    const why = draftRefusal(content, allowance, input.statedAge);
     if (why) {
       log.warn({ imagination, allowance, why }, "[promptAuthor] re-asking once");
       const second = await ask(`${system}\n\n${why}\n\nPREVIOUS DRAFT:\n${content}`, 0.3);
       content = cleanReply(second.text);
       model = second.provenance.model;
       latencyMs += second.latencyMs;
-      if (draftRefusal(content, allowance)) {
+      if (draftRefusal(content, allowance, input.statedAge)) {
         log.warn({ imagination, allowance }, "[promptAuthor] second draft refused too — the static prompt stands");
         return fallback(latencyMs);
       }

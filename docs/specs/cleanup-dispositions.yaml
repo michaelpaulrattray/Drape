@@ -1243,3 +1243,9 @@
   verdict: KEEP
   why: "the ONLY definition of 'seen by the crew' (CREW_TAB_DESIGN.md §1) — a pure function extracted so acknowledgement has somewhere to be tested (§9 arm 6). The client renders the same rule from the same deployed list; a drift between them is caught at the page, and the export is the server-side home of the meaning"
   argued: 6a
+
+- symbol: MAX_SHEET_CHECKLIST
+  file: server/castingV2/promptAuthor.ts
+  verdict: KEEP
+  why: "the founder's judging checklist for any MAX sheet, verbatim (§5g item 4, #171) — its consumer is the EYE CAPTION of every MAX sheet filed to his gallery, which is hand-written prose quoting this constant; a code importer will never exist by design, and the arm in creativeRegisterScope.test.ts keeps its clauses verbatim so the quoted copies have one source"
+  argued: "PROMPT_AUTHOR_RULING_2026-08-26.md §5g item 4 (#171)"
