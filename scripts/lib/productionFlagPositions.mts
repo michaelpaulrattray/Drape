@@ -345,9 +345,11 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "off",
     why:
       "UPLOAD A CONCEPT (#185, his order 2026-08-28) — a picture in, a description of the "
-      + "PERSON out, into her own brief box. BUILT DARK 2026-08-28 and off everywhere: "
-      + "the client tile is still the inert placeholder, so the door has no surface to be "
-      + "reached from yet. Its parent is CASTING_CREATIVE_REGISTER_SCOPE (the description "
+      + "PERSON out, into her own brief box. BUILT DARK 2026-08-28 and off everywhere — BOTH "
+      + "slices: the door, and (the same day) the start page card it is reached from, which "
+      + "draws the honest coming-state for every account while this stands off. The flip "
+      + "waits on his answer to briefing edition 72's description-length eye item. Its "
+      + "parent is CASTING_CREATIVE_REGISTER_SCOPE (the description "
       + "is written for the AUTHOR). Widening past users:1 re-opens the vendor-exposure "
       + "question, since the upload rides whole to the describer",
   },

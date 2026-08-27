@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type TextareaHTMLAttributes } from "react";
+import { useLayoutEffect, useRef, type ComponentPropsWithRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -25,8 +25,22 @@ import { cn } from "@/lib/utils";
 export function BriefField({
   className,
   value,
+  /*
+    THE CALLER MAY HOLD IT TOO, and the box keeps its own hold either way.
+
+    Two surfaces now put the caret in this box from somewhere else on the page
+    (the start page's New-cast-member tile, and the concept card that fills it),
+    and they should not have to find it by tag name — the selector that used to
+    do that broke the day this stopped being an `<input>`.
+
+    Merged rather than passed through: a forwarded `ref` landing in `...rest`
+    would overwrite the internal one, and the internal one is what measures the
+    height. The auto-grow would stop, silently, on exactly the long briefs it
+    exists for.
+  */
+  ref: forwarded,
   ...rest
-}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: ComponentPropsWithRef<"textarea">) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   /*
@@ -55,7 +69,11 @@ export function BriefField({
 
   return (
     <textarea
-      ref={ref}
+      ref={(node) => {
+        ref.current = node;
+        if (typeof forwarded === "function") forwarded(node);
+        else if (forwarded) forwarded.current = node;
+      }}
       value={value}
       rows={1}
       className={cn("dp-input", "dpc-brieffield", className)}
