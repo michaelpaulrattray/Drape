@@ -111,6 +111,7 @@ import {
   readFalTraffic,
 } from "./lib/falSpend.mts";
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
+import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 
 const DRY = process.argv.includes("--dry");
 /*
@@ -351,6 +352,57 @@ const subject = git("log", "-1", "--format=%s");
 const dirty = git("status", "--porcelain").split("\n").filter((line) => line && !line.startsWith("??"));
 if (dirty.length > 0) {
   die(`the working tree has ${dirty.length} uncommitted tracked change(s) — a deploy must carry a commit, not a desk:\n${dirty.join("\n")}`);
+}
+
+/*
+  A QUIET EDITION DOES NOT DEPLOY (#159).
+
+  The standing orders say a quiet shift ships no edition and runs no rite —
+  and two quiet shifts deployed anyway on the morning of 2026-08-27, each a
+  production deploy for one "nothing needed doing" journal line, on the
+  founder's Fable credits. An order the model does not follow needs a
+  mechanical guard. This reads the COMMITTED bytes of the push — what changes
+  between origin/main and HEAD, and what the briefing gains — and refuses a
+  push that is only a quiet journal line. A quiet line beside anything else
+  (a card, a step, a chip, an eye item, an acknowledged reply, a file) passes.
+  `scripts/lib/quietEdition.mts` is the owner and states the verdict exactly;
+  `server/quietEdition.test.ts` the arms, including the two real editions.
+  Under `--dry` the verdict is reported and the run continues — a dry run
+  never pushes anyway. Before the script guards, so a quiet edition costs no
+  worktree.
+*/
+{
+  const remoteMain = git("ls-remote", "origin", "refs/heads/main").split(/\s+/)[0] ?? "";
+  let verdict: QuietVerdict;
+  if (!/^[0-9a-f]{40}$/.test(remoteMain)) {
+    verdict = { quiet: false, why: "(unread — origin/main could not be resolved)" };
+  } else if (remoteMain === sha) {
+    verdict = { quiet: false, why: "nothing to push — origin/main already holds this commit" };
+  } else {
+    /* The remote tip may not be local yet (his own push, another seat's
+       merge); fetch it by name so the diff is against what the push replaces. */
+    if (!git("cat-file", "-t", remoteMain).startsWith("commit")) git("fetch", "--quiet", "origin", "main");
+    const show = (spec: string): string | null => {
+      const result = spawnSync("git", ["show", spec], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+      return result.status === 0 ? result.stdout : null;
+    };
+    const head = show(`${sha}:${BRIEFING_PATH}`);
+    /* A tip the fetch could not bring home is UNREAD, said as such — not "the
+       briefing is new on origin/main", which is a reading nobody took
+       (review of #160, note 2). */
+    verdict = !git("cat-file", "-t", remoteMain).startsWith("commit")
+      ? { quiet: false, why: "(unread — origin/main's tip could not be fetched)" }
+      : head === null
+      ? { quiet: false, why: "the pushed commit carries no briefing" }
+      : judgeQuietEdition({
+        changedFiles: git("diff", "--name-only", remoteMain, sha).split(/\r?\n/),
+        generatedFiles: generatedFilesFrom(readFileSync(path.resolve(import.meta.dirname, "..", ".gitattributes"), "utf8")),
+        parentBriefing: show(`${remoteMain}:${BRIEFING_PATH}`),
+        headBriefing: head,
+      });
+  }
+  if (verdict.quiet && !DRY) die(`${QUIET_REFUSAL} — ${verdict.why}. Write the mailbox entry and exit; no edition, no rite.`);
+  say(`  quiet edition: ${verdict.quiet ? `WOULD REFUSE (dry run) — ${verdict.why}` : `no — ${verdict.why}`}`);
 }
 
 /*

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "33c8afb89cb3bdfd"
+    "sourceFingerprint": "daabbed51cb8cc6d"
   },
   "domains": [
     {
@@ -12148,6 +12148,10 @@
     {
       "id": "test:server/queueOrdinalDiscipline.test.ts",
       "path": "server/queueOrdinalDiscipline.test.ts"
+    },
+    {
+      "id": "test:server/quietEdition.test.ts",
+      "path": "server/quietEdition.test.ts"
     },
     {
       "id": "test:server/r7-7f-live-rehydration.test.ts",
