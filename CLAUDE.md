@@ -569,7 +569,17 @@ one from whoever owns its road.
   look he refused — the interplay the card declared. T = 0.230 is the #182
   court's delivered population's median (20.7–28.1%, n=10,
   `docs/specs/FRAMING_COURT_2_2026-08-27.md`); "mid-torso" came OFF
-  `DROPPED_FROM_BLOCK` in the same commit
+  `DROPPED_FROM_BLOCK` in the same commit.
+  ✅ **AND HE JUDGED IT — the change is RATIFIED rather than in flight**
+  (Crew reply #19, 2026-08-27 20:53:16Z, verbatim: *"M — the framing is
+  right, keep it as the default. The refusal rate on M needs figuring out
+  (fewer on the second pass, so it smells like the coin again) — put it on
+  the refusal patrol, but don't hold the framing on it."*). #182 is closed
+  on that word; mid-torso is the studio's default framing and the revert
+  the court held in reserve is off the table. ⚠ **His second clause went to
+  #129 and NOT to this entry, by his own instruction** — the mid-torso pair
+  refused 6/16 against the collar-up pair's 1/8, and the framing does not
+  wait on that number
 - `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
   account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
   5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is

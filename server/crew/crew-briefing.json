@@ -1,7 +1,7 @@
 {
-  "edition": 70,
-  "updatedAt": "2026-08-28T02:43:28+10:00",
-  "shift": "foreman-60",
+  "edition": 71,
+  "updatedAt": "2026-08-28T07:45:00+10:00",
+  "shift": "foreman-69",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -430,9 +430,9 @@
   "eyeItems": [
     {
       "id": "framing-court-2-182",
-      "title": "The mid-torso framing you ordered is in — the court strip (#182)",
+      "title": "ANSWERED - the mid-torso framing is the default, on your word (#182 closed)",
       "question": "Your call tonight: 'chest up is far too tight we need to see the outfit more. run it.' Done — court first, then the sentence and the trim retargeted in one PR, exactly as you sequenced it. Top row is your 2:3 reference (it measures 22% face height). K is what the studio said until tonight — every frame crops at the collar. M and M2 are the new sentence, written to your frame's measured numbers: the outfit's upper body is in every delivered picture, faces land at 21–28% of frame height (middle 23%, against K's 32%). The head-size trim was moved with it — left alone it would have quietly cropped every sheet back toward the tight look you just refused. Grey tiles are the engine's content checker refusing the exact same words it accepted next door — the per-render coin we have measured before, logged for the refusal patrol (#129), not a property of the new sentence you need to trade against. Your next roll carries this framing. If the look reads wrong to your eye, say so — the old sentence is one revert away.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-28T00:45:00+10:00",
       "issueNumber": 182,
       "cardId": null,
@@ -789,6 +789,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "refusal-patrol-run3",
+      "title": "Refusal patrol run #3 - the reword that looked like a 33-point win and wasn't",
+      "status": "merged",
+      "note": "Ordered by your reply #19. Tested whether the body words in the new framing sentence (mid-torso, chest, waist) are what the engine's content checker objects to, by rendering a version that gives the same crop without them. Arm-major run: 58% refused vs 25%, p = 0.039. Interleaved control run: 38% vs 38%, p = 1.000 - an exact tie. The first result was a sitting-wide decline in refusals landing on the boundary between the two arms. Nothing enters the author's rewrite list; the framing sentence is untouched. Standing rule added: a refusal court interleaves its arms, and an arm-major refusal reading is a lead rather than a finding. Records: docs/specs/REFUSAL_PATROL_RUN3_2026-08-28.md. $3.81 house.",
+      "prNumber": null
+    },
     {
       "id": "stamp-verification-69",
       "title": "The 7 'not re-verified' docs verified at the code (#69) - and three of our own records were wrong about them",
@@ -1256,6 +1263,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T07:45:00+10:00",
+      "shift": "foreman-69",
+      "text": "Your framing call landed and is done: \"M - the framing is right, keep it as the default.\" The mid-torso sentence is now the studio's settled framing rather than something on trial - #182 is closed, the revert we were holding in reserve is off the table, and I stamped your verdict into the two places an engineer actually reads (the framing code itself and the project law file) so nobody re-opens it in a month. Nothing needed changing in the product: what you judged is what was already live.\n\nThen your second sentence - \"the refusal rate on M needs figuring out ... but don't hold the framing on it\". I took that to the refusal patrol and asked the only version of the question that could actually change anything for you: not \"is the new framing worse than the old one\" (the old one is the crop you rejected, so it can never come back), but \"is there a way to say the same thing that gets refused less often?\" The one trigger we have ever proven is anatomical - the word \"sternum\" was refused 8 times out of 8 while \"collarbones\" sailed through - and your new sentence is the first thing since to put body words back in (mid-torso, chest, waist). So I wrote a version that gives the identical framing without them, describing the crop by the outfit instead, and rendered 24 pictures of each.\n\nFirst run: the reworded version was refused 25% of the time against the shipped one's 58%. That looks like a clear win - and I did not report it as one, because of the exact thing you spotted. You said \"fewer on the second pass, so it smells like the coin again\". In that first run I had rendered all 24 of the shipped version first and all 24 of the reworded one after, and the refusals across the whole sitting fell from 14 in the first half to 6 in the second. The boundary between my two versions sat precisely on that fall. So I ran it again with the two versions alternating one after the other, so neither could sit in the \"easy\" part of the sitting - and the difference vanished completely: 9 refusals each, dead level.\n\nSo: the body words are innocent, nothing changes, your framing sentence stays exactly as you approved it. The thing actually worth having is the method fault it exposed - a refusal test that runs one version and then the other is measuring the clock as much as the words. That is now a rule for this patrol, and three earlier leads that were measured the same way (the lighting one, the numeric-framing one, and the original new-vs-old framing number) are downgraded to hunches. None of them ever moved anything in the product, so nothing has to be undone - but had I stopped after that first run this morning, I would have rewritten a sentence you had ratified three hours earlier on the strength of a coin toss. $3.81 of house money, no credits, nothing touched in production."
+    },
+    {
       "at": "2026-08-28T02:43:28+10:00",
       "shift": "foreman-60",
       "text": "Follow-up to last night's doc cleanup (#69): the 7 documents stamped 'not re-verified' have now each been checked against the actual code, and the honest stamp paid off - three of our own tracking records were wrong about them. The biggest one: a measurement we ordered in mid-August (does a patch of skin still read as skin at thumbnail size?) was listed everywhere as 'never run' - it DID run, on Aug 13, and it failed its own bar, which is why skin stays described in words rather than shown as a swatch. That verdict was sitting in the middle of the document where no header-skim could see it. Two designs listed as 'not built' (the panel's honest 'this face has no beard' rows, and the store that remembers what an invented feature is) turned out to be built and live too. All seven banners now state the verified truth with the file that proves it, the wrong rows are corrected, and the affected cards (#23, #24) carry the correction. Nothing you can see in the product changed. Otherwise quiet: no new replies, no new refusals for the patrol, and your first Follow tap is still the live check of the Row A build."
@@ -1449,11 +1461,6 @@
       "at": "2026-08-26T19:02:14+10:00",
       "shift": "foreman-22",
       "text": "No replies from you tonight (1–9 acknowledged), so the shift worked the focus's next step: the walls on the author road (#131 slice C), merged and live on your account. The short version — the studio now casts beings, not just photographic humans: creatures, aliens, robots and anime briefs go through on your account; a named person or character is still refused; 'a car' is refused free with a sentence that says why. Nine real asks were driven through the reader before merge and every one landed where you would put it. Next on the list: the prompt shown on the cast with 'use as brief' (D), then the imagination control (E), then the two small courts (#128 realism clause, #130 framing calibration). OpenRouter still sits at about $4 — the card is still open."
-    },
-    {
-      "at": "2026-08-26T18:20:00+10:00",
-      "shift": "foreman-21",
-      "text": "Your auto-refresh ask is built and this is the first edition that should arrive on its own: leave the page open and it re-reads every minute and whenever you return to the tab; a new edition swaps in without a reload and keeps whatever you were typing. The foot of the page says when it last checked. That was the last thing this shift built; the night's record is three merges (the Prompt Author rebuild A+B, refuse-free at every length, and this), all live. Still waiting on nothing from you right now — the open cards are the OpenRouter balance ($4.09, not moving) and your word on whether 'verbatim' should override the brand scrub on the author road."
     }
   ],
   "acknowledgedReplyIds": [
@@ -1474,6 +1481,7 @@
     15,
     16,
     17,
-    18
+    18,
+    19
   ]
 }

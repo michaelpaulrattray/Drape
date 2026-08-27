@@ -152,3 +152,27 @@ have.
 Same condition, moved: new `content_policy` rows with **id > 1800**, or a
 court adding n. Re-pool the M-block refusal rate from his live rolls against
 the pre-M rolls (confounded by brief, as ever — say so when quoting it).
+
+---
+
+## Run #3 (2026-08-28, foreman-69) — pointer
+
+Run #3 has its own record: **`REFUSAL_PATROL_RUN3_2026-08-28.md`**. Fired on
+the founder's order (Crew reply #19: *"The refusal rate on M needs figuring
+out … put it on the refusal patrol, but don't hold the framing on it"*).
+
+**Result in one line: nothing entered the rewrite list, and the finding is
+about this seat's own method.** The torso-anatomy hypothesis (`mid-torso`,
+`chest`, `waist` out of the shipped framing sentence) measured p = 0.0392 in
+favour of the reword on an ARM-MAJOR queue, and **p = 1.0000 — an exact tie,
+9/24 vs 9/24 — when the same arms were INTERLEAVED**. The 3a effect was a
+sitting-level refusal decline (14/24 → 6/24 across the run) landing on the
+arm boundary.
+
+**Standing rule from it: a refusal court interleaves its arms; an arm-major
+refusal reading is a LEAD, never a finding.** Run #1's own probe and the
+#128/#130/#182 leads recorded above were all arm-major and are re-classed as
+leads (none moved a constant, so nothing needs unwinding). $3.81 house.
+
+**Next-run condition (unchanged from run #2, plus one):** new `content_policy`
+rows with id > 1800, or a court adding n — and any such court interleaves.
