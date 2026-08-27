@@ -482,6 +482,7 @@
         "kind": "interpreter-refusal",
         "pinnedBy": [
           "server/castingV2/cohortWallRetry.test.ts",
+          "server/castingV2/conceptDescribe.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts",
           "server/castingV2/hairColourFromReference.test.ts",
           "server/castingV2/hairReferenceCutter.test.ts",
@@ -505,6 +506,8 @@
           "server/castingV2/castingIntent.ts:1310",
           "server/castingV2/castingIntent.ts:1315",
           "server/castingV2/castingIntent.ts:1330",
+          "server/castingV2/conceptDescribe.ts:286",
+          "server/castingV2/conceptDescribe.ts:302",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:161",
           "server/castingV2/openLaneKind.ts:219",
@@ -647,6 +650,7 @@
     "flags": [
       "CASTING_BORN_INK_SCOPE",
       "CASTING_BRIEF_FIDELITY_SCOPE",
+      "CASTING_CONCEPT_UPLOAD_SCOPE",
       "CASTING_CREATIVE_REGISTER_SCOPE",
       "CASTING_FACE_SCAN_SCOPE",
       "CASTING_FRAMING_TRIM_SCOPE",

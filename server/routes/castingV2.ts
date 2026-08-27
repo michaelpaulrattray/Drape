@@ -37,6 +37,7 @@ import {
   captureCastingHairReferenceEnabled,
   captureCastingInkStudioEnabled,
   captureCastingReferenceAttachEnabled,
+  captureCastingConceptUploadEnabled,
   captureCastingRepaintEnabled,
   captureCastingCreativeRegisterEnabled,
   captureCastingTwoPathsEnabled,
@@ -66,7 +67,11 @@ import {
 import { uploadInkDesign } from "../castingV2/inkUploadService";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { attachReference } from "../castingV2/referenceAttachService";
-import { REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL } from "../castingV2/referenceAttachDoor";
+import { describeConcept } from "../castingV2/conceptDescribe";
+import {
+  REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL,
+  referenceAttachBytesRefusal,
+} from "../castingV2/referenceAttachDoor";
 import {
   ReferenceAttachmentCapError,
   ReferenceAttachmentOwnershipError,
@@ -249,6 +254,21 @@ function decodeUploadedImage(value: string): Buffer {
     throw spokenError({ code: "BAD_REQUEST", message: "That file isn't an image we can read." });
   }
   return Buffer.from(payload, "base64");
+}
+
+/**
+ * WHAT THESE BYTES ACTUALLY ARE — sharp's own reading, or null.
+ *
+ * Deliberately the same shape the reference-attach service reads with, so the
+ * door it feeds is answering about the same thing it always answers about.
+ */
+async function readImageBytes(bytes: Buffer): Promise<{ format?: string; width?: number; height?: number } | null> {
+  try {
+    const meta = await sharp(bytes).metadata();
+    return { format: meta.format, width: meta.width, height: meta.height };
+  } catch {
+    return null;
+  }
 }
 
 function ownershipRefusal(error: unknown): never {
@@ -731,6 +751,86 @@ const inkRouter = router({
  * Behind the same flag, deliberately (fable-940 §4): the class stays dark until
  * the founder has looked at the first sentence read off a real person.
  */
+/**
+ * UPLOAD A CONCEPT — a picture in, a description of the PERSON out (#185).
+ *
+ * The founder's own order, 2026-08-28: *"if you have a model already or concept
+ * or image you can upload it the image analyzer will analyze and describe it to
+ * the authour and cast it with the description ... that way its easy for someone
+ * to upload an image and get a prompt to create someone similar without having
+ * to type it all out."*
+ *
+ * **Nothing is kept.** The bytes ride one describer call inline and are dropped;
+ * what comes back is WORDS, which land in her own brief box where she reads and
+ * edits them before she spends anything. So there is no row, no table, no
+ * migration, no storage write and no purge path — and no stranger's photograph
+ * at a permanently public URL, which is what makes this road smaller than the
+ * attach door beside it rather than a variant of it.
+ *
+ * It is NOT on the reference router: that one mints a handle scoped to a
+ * candidate, and this door is reached from the start page, before any cast
+ * exists to hang a handle from.
+ */
+const conceptRouter = router({
+  describe: protectedProcedure
+    .input(z.object({
+      /* The same coarse wire bound the attach door uses, and for the same
+         reason: this stops a payload too large to be worth decoding, while
+         whether the BYTES are usable is decided after decoding. */
+      imageBase64: z.string().max(Math.ceil(INK_DESIGN_MAX_BYTES * 4 / 3) + 256),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      /*
+        THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside the scope
+        there is no such capability, and a code that says "not yet" advertises
+        one. The AND of the chain (register, then casting) is inside this call.
+      */
+      if (!captureCastingConceptUploadEnabled(ctx.user.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
+      }
+      /* HOUSE MONEY on every call, so the limit is checked before the decode. */
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingConceptDescribe);
+
+      const bytes = decodeUploadedImage(input.imageBase64);
+      /*
+        THE FORMAT IS WHAT THE BYTES ARE, never what the payload claimed — the
+        ink door's rule, reused rather than restated. It matters here for a
+        second reason the keeping doors do not have: the picture rides to the
+        describer as a `data:<mime>;base64,` URI, so a JPEG announced as a PNG
+        is a malformed request to the vendor rather than a bad row in our
+        database. The same door also refuses a file too large, too small, or
+        not an image at all, with the sentences that door already writes.
+      */
+      const decoded = await readImageBytes(bytes);
+      const refusal = referenceAttachBytesRefusal({ byteSize: bytes.byteLength, decoded });
+      if (refusal) throw spokenError({ code: "BAD_REQUEST", message: refusal.message });
+
+      const outcome = await describeConcept({
+        bytes,
+        contentType: `image/${decoded!.format}`,
+      });
+      if (outcome.ok) return { description: outcome.description };
+
+      /*
+        EVERY REFUSAL IS A SENTENCE SHE CAN ACT ON, and they are different
+        sentences on purpose: "there is nobody in this picture" and "the reader
+        did not answer" ask her to do different things, and telling her the
+        wrong one sends her looking for a better photograph of a problem that
+        was ours.
+      */
+      throw spokenError({
+        code: "BAD_REQUEST",
+        message: {
+          no_person: "I couldn't find a person in that picture — try one with someone in it.",
+          not_about_the_person:
+            "I could only describe the picture, not the person in it. Try a clearer shot of them.",
+          unreadable: "I couldn't read that picture just now. Try again in a moment.",
+          no_transport: "I couldn't read that picture just now. Try again in a moment.",
+        }[outcome.reason],
+      });
+    }),
+});
+
 const referenceRouter = router({
   /**
    * ATTACHING A PICTURE — build two's door (design §2, countersigned fable-1063
@@ -908,6 +1008,17 @@ export const castingV2Router = router({
       business knowing which environment variable governs it.
     */
     attachReferenceEnabled: captureCastingReferenceAttachEnabled(ctx.user.id),
+    /*
+      AND WHETHER SHE MAY UPLOAD A CONCEPT (#185). Same law as every gate above
+      it: the scope is server-owned and the client asks rather than decides, so
+      the start page draws a live upload only where the door would admit it —
+      and outside the flag the tile stays the honest inert placeholder it has
+      been since F5, which is a labelled coming-state rather than a control that
+      looks functional and does nothing.
+
+      Named for the capability rather than for the flag.
+    */
+    conceptUploadEnabled: captureCastingConceptUploadEnabled(ctx.user.id),
     /*
       AND WHETHER THIS ACCOUNT CHOOSES THE PATH ITS CASTS ARE BORN ON — the
       two paths' toggle (design §6, item 5's last slice).
@@ -2259,4 +2370,5 @@ export const castingV2Router = router({
 
   ink: inkRouter,
   reference: referenceRouter,
+  concept: conceptRouter,
 });

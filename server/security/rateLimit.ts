@@ -256,6 +256,19 @@ export const RATE_LIMITS = {
     maxRequests: 24,
     keyPrefix: 'casting_reference_attach',
   },
+  /*
+    UPLOAD A CONCEPT (#185). Its own bucket, not the attach door's: this one
+    spends HOUSE money on every call (one describer read with the picture
+    inline) while the attach door spends none, so sharing a window would let a
+    cheap write and a paid read exhaust each other. Tighter than the attach cap
+    for the same reason — a customer trying pictures until one reads well is
+    the ordinary use, and 12 an hour is more of that than anyone does.
+  */
+  castingConceptDescribe: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 12,
+    keyPrefix: 'casting_concept_describe',
+  },
 } as const;
 
 /**
