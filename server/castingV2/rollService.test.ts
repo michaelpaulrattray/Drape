@@ -1133,6 +1133,23 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
     }
   });
 
+  it("refuses FREE when the parent's frame KEY is null — a ready row with no key must not become a paid unanchored roll (review of #184, finding 1)", async () => {
+    const castingDb = await import("../db/castingV2");
+    (castingDb.getOwnedCandidateWithSelectedFace as any).mockResolvedValueOnce({
+      candidate: { id: 1, publicId: FOLLOW_PARENT, position: 3 },
+      internalPrompt: null,
+      imageKey: null,
+    });
+    const { result } = await followRoll();
+    await expect(result).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("nothing was charged"),
+    });
+    expect(anchorReads).toEqual([]);
+    expect(journal).not.toContain("claim");
+    expect(dbCalls.createRoll).not.toHaveBeenCalled();
+  });
+
   it("refuses FREE — before the claim, before any row — when the anchor frame cannot be read", async () => {
     anchorBytesAvailable = false;
     const { result } = await followRoll();

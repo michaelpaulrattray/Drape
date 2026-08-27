@@ -502,7 +502,23 @@ export async function createRoll(
     the same combination independently (`CandidateRequest.references`).
   */
   let anchorImage: { bytes: Buffer; contentType: string; imageKey: string } | null = null;
-  if (authorRoad && input.followCandidatePublicId && followAnchorImageKey) {
+  if (authorRoad && input.followCandidatePublicId) {
+    /*
+      BOTH photograph-unavailable states get the same free refusal (Fable
+      review of #184, finding 1): a ready parent whose `imageKey` is NULL —
+      the schema permits it even though no current writer produces it — must
+      not silently degrade into a PAID unanchored roll wearing a lineage pill.
+    */
+    if (!followAnchorImageKey) {
+      log.warn(
+        { parent: input.followCandidatePublicId },
+        "[rollService] a follow's parent has no frame key — refusing free before the claim",
+      );
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "The face you followed couldn't be loaded just now, so nothing was cast and nothing was charged. Try again in a moment.",
+      });
+    }
     try {
       const source = await storageReadBytes(followAnchorImageKey);
       anchorImage = { bytes: source.bytes, contentType: source.contentType, imageKey: followAnchorImageKey };
