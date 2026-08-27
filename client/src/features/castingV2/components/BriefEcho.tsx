@@ -95,19 +95,30 @@ export type PendingAdjustments = {
 };
 
 /**
- * Which pinned facts may be LET VARY. Off the author road, every one. On it,
- * NONE (#177 Row A): the brief reaches the engine verbatim, so a fact read
- * out of the sentence cannot be unsaid by a chip — and a follow is held by
- * the anchor PHOTOGRAPH now, which a chip cannot strip either. Facts change
- * at the roll, never at the follow (his build order); the standing-follow
- * exception #154 carved out died with the axis clause. The server draws the
- * same rule into each chip's `removable` (`buildChips`); this is the echo's
- * copy of it, keyed on the NEXT roll.
+ * Which pinned facts may be LET VARY, and whether the facts are adjustable at
+ * all. Off the author road, everything as it always was. On it, NO fact may
+ * be let vary (#177 Row A): the brief reaches the engine verbatim, so a fact
+ * read out of the sentence cannot be unsaid by a chip — and a follow is held
+ * by the anchor PHOTOGRAPH now, which a chip cannot strip either; the
+ * standing-follow exception #154 carved out died with the axis clause. The
+ * SET pickers are a different question: on a plain authored roll they stay,
+ * because #164 writes an override into the sentence itself — but during a
+ * standing follow (`followHeld`) the whole span goes read-only, since the
+ * server drops adjustments on an anchored roll (facts change at the roll,
+ * never at the follow) and a picker whose choice evaporates is the H8
+ * failure wearing a control. The server draws the same rule into each chip's
+ * `removable` (`buildChips`); this is the echo's copy of it, keyed on the
+ * NEXT roll.
  */
-export type VaryPolicy = { authorRoad: boolean };
+export type VaryPolicy = { authorRoad: boolean; followHeld?: boolean };
 
 export function varyOffered(policy: VaryPolicy | undefined, _field: EchoField): boolean {
   return !policy || !policy.authorRoad;
+}
+
+/** True when the NEXT roll is an anchored follow — nothing about a fact is offerable there. */
+export function factsHeld(policy: VaryPolicy | undefined): boolean {
+  return policy?.authorRoad === true && policy.followHeld === true;
 }
 
 export function BriefEcho({
@@ -178,6 +189,17 @@ function EchoSpanView({
   const { field } = span;
   const current = currentValue(facts, field);
   const pinned = span.kind === "fact";
+
+  /*
+    A STANDING FOLLOW HOLDS ITS FACTS (#177 Row A): the next roll is anchored
+    on a photograph, the server drops any adjustment sent with it, so no
+    picker is offered — the span reads at full ink like the category, and the
+    line under the echo says how to change things (edit the sentence, which
+    genuinely rides). A queued leftover is deliberately NOT drawn as
+    "→ next roll" here: that would promise a future the anchored roll will
+    not deliver.
+  */
+  if (factsHeld(vary)) return <span className="dpc-echo__role">{span.text}</span>;
 
   /*
     An override that has LANDED is not pending any more.

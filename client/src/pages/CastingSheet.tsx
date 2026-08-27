@@ -2516,7 +2516,7 @@ export default function CastingSheet() {
             // What the user has queued but the sheet in front of them cannot
             // show, because rolls are immutable.
             pending={{ overrides, unlocked }}
-            vary={{ authorRoad }}
+            vary={{ authorRoad, followHeld: standingFollowId !== null }}
             onAdjust={(adjustment) => {
               /*
                 NONE OF THESE TOAST ANY MORE (D-110), and this is the clearest
