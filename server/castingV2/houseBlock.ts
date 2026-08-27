@@ -98,10 +98,18 @@ function take(from: readonly string[], prefix: string): string {
 /**
  * Chest-up, his word — the framing pair. Calibrated by #130; "collarbones",
  * never the breastbone. *"head straight with no tilt"* is out (§5d).
+ *
+ * The second sentence is the court's F2 arm, HIS PICK (Crew reply #13,
+ * 2026-08-27, verbatim: "F2") — his 9:16 reference's view carried into the
+ * product's 2:3 frame (~33% head share, tightest spread of the four arms;
+ * `docs/specs/FRAMING_COURT_2026-08-27.md` §3/§6). The old sentence (K)
+ * measured 36.7%. F2's population (30.2–35.0%) sits above the trim's
+ * T = 31.6%, so the sentence and the trim stop fighting; rule 15's
+ * retire-the-trim question rides #11, not this constant.
  */
 export const AUTHOR_ROAD_FRAMING: readonly string[] = [
   "FRAMING: Single figure only, chest-up, centred, square to camera.",
-  "Frame from the chest up in a 2:3 portrait: the crop just below the collarbones, shoulders running off both edges of the frame, a small margin of headroom above the hair.",
+  "Frame from the chest up in a 2:3 portrait: the face takes up about a quarter of the frame's height, the eyes about 30% of the way down from the top edge, a small margin of headroom above the hair, the crop line across the chest below the collarbones, shoulders running off both edges of the frame.",
 ];
 
 /** §5d, his words paraphrased into one rule: *"casting posture communicates energy/vibe not a pose."* */
