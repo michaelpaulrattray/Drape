@@ -420,11 +420,20 @@ if (dirty.length > 0) {
   push whatever else the commit carries, because the deploy serves the whole
   bundle and a red briefing degrades his page no matter which file the push
   was for. Under `--dry` the verdict is reported and the run continues.
+
+  One branch is pre-empted and said so rather than left to be believed
+  (review of #170, finding 2): the judge's "not JSON" arm is unreachable in
+  THIS process, because importing the schema statically imports
+  `crew-briefing.json` itself — a HEAD briefing that is not JSON crashes the
+  rite at module load, before the receipt handler registers. Still
+  fail-closed (no push fires), but receiptless; the arm stays in the suite
+  because the judge is a module and other callers do not share this import.
 */
 {
   const shown = spawnSync("git", ["show", `${sha}:${BRIEFING_PATH}`], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
-  if (shown.status !== 0) die(`the pushed commit carries no briefing at ${BRIEFING_PATH} — the push does not fire.`);
-  const conformance = judgeBriefingConformance(shown.stdout);
+  const conformance = shown.status !== 0
+    ? { ok: false, why: `the pushed commit carries no briefing at ${BRIEFING_PATH}` }
+    : judgeBriefingConformance(shown.stdout);
   if (!conformance.ok && !DRY) {
     die(`the briefing does not parse against server/crew/crewBriefing.ts — the push does not fire; his page would fall to the degraded state (#169).\n    ${conformance.why}\n  repair: fix ${BRIEFING_PATH} against the schema, commit, re-run`);
   }
