@@ -112,6 +112,7 @@ import {
 } from "./lib/falSpend.mts";
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
+import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
 
 const DRY = process.argv.includes("--dry");
 /*
@@ -403,6 +404,40 @@ if (dirty.length > 0) {
   }
   if (verdict.quiet && !DRY) die(`${QUIET_REFUSAL} — ${verdict.why}. Write the mailbox entry and exit; no edition, no rite.`);
   say(`  quiet edition: ${verdict.quiet ? `WOULD REFUSE (dry run) — ${verdict.why}` : `no — ${verdict.why}`}`);
+}
+
+/*
+  AND THE BRIEFING PARSES, AT THE COMMIT BEING PUSHED (#169).
+
+  Edition 55 shipped `status: "done"` (not in the pipeline enum) and a
+  42-entry journal against the 40 cap; every check above was green, the
+  deploy was SUCCESS, and the founder's Crew page served its DEGRADED state
+  for ~15 minutes until the next edition trimmed it. The parse arm lives in
+  `server/crew/crewBriefing.test.ts` and runs on every PR — but an edition
+  push never rides a PR, so on this path nothing parsed the briefing at all.
+  `scripts/lib/briefingConformance.mts` is the owner (the schema IMPORTED
+  from `server/crew/crewBriefing.ts`, never copied); a red parse refuses the
+  push whatever else the commit carries, because the deploy serves the whole
+  bundle and a red briefing degrades his page no matter which file the push
+  was for. Under `--dry` the verdict is reported and the run continues.
+
+  One branch is pre-empted and said so rather than left to be believed
+  (review of #170, finding 2): the judge's "not JSON" arm is unreachable in
+  THIS process, because importing the schema statically imports
+  `crew-briefing.json` itself — a HEAD briefing that is not JSON crashes the
+  rite at module load, before the receipt handler registers. Still
+  fail-closed (no push fires), but receiptless; the arm stays in the suite
+  because the judge is a module and other callers do not share this import.
+*/
+{
+  const shown = spawnSync("git", ["show", `${sha}:${BRIEFING_PATH}`], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  const conformance = shown.status !== 0
+    ? { ok: false, why: `the pushed commit carries no briefing at ${BRIEFING_PATH}` }
+    : judgeBriefingConformance(shown.stdout);
+  if (!conformance.ok && !DRY) {
+    die(`the briefing does not parse against server/crew/crewBriefing.ts — the push does not fire; his page would fall to the degraded state (#169).\n    ${conformance.why}\n  repair: fix ${BRIEFING_PATH} against the schema, commit, re-run`);
+  }
+  say(`  briefing parse: ${conformance.ok ? `ok — ${conformance.why}` : `WOULD REFUSE (dry run) — ${conformance.why}`}`);
 }
 
 /*
