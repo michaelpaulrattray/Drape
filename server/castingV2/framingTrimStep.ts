@@ -98,9 +98,27 @@ export const FRAMING_TRIM_RENDER = { width: 1536, height: 2304 } as const;
  * than as a near miss. A build constant, arbitrary within a range, and the range
  * is wide: the tightest slack on the no-clause population is 0.111 face-heights
  * (it was 0.088 on the clause cells, so the retarget loosens this too).
+ *
+ * ⚠ **IT WAS 0.316 UNTIL 2026-08-27, AND THE MOVE IS THE FOUNDER'S SECOND
+ * RETARGET — the mid-torso framing (#182,
+ * `docs/specs/FRAMING_COURT_2_2026-08-27.md`).** His word, verbatim: *"chest
+ * up is far too tight we need to see the outfit more. run it"*, with his own
+ * 2:3 reference measuring **22.0%** face share. The house sentence
+ * (`AUTHOR_ROAD_FRAMING`) now asks for mid-torso, and its courted population
+ * is **20.7–28.1% (median 23.0%, n=10)** — nearly all of it BELOW the old
+ * `T`, so leaving 0.316 in place would have quietly cropped every sheet back
+ * to the chest-up look the founder just refused (the interplay the card named
+ * rather than discovered). `T = 0.230` is the population's own median and the
+ * closest reachable value to his reference's 22.0% — a crop only tightens, so
+ * `T` can never sit below what the engine paints. It serves 6/10 of the
+ * courted frames; the 4 untrimmed (24.7–28.1%) were looked at by eye and all
+ * show the outfit — the spread his eye reads on strips (#11) is what moves
+ * `T` next, exactly as before. The alternative, `T = 0.251` (serves 9/10),
+ * was weighed and declined: it normalizes 3 points TIGHTER than the reference
+ * he sent, and tightness is the thing he refused.
  */
 export const FRAMING_TRIM_TARGET: TrimTarget = {
-  headShare: 0.316,
+  headShare: 0.230,
   houseHeadroom: 0.35,
   clearance: 0.05,
 };

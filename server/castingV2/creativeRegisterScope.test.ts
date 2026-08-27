@@ -159,7 +159,9 @@ describe("the locked house block — rebuilt to §5d + §5e (#144), code's, revi
     expect(HOUSE_BLOCK).toContain("Fine luminance-dominant noise");
     expect(PHOTOREAL_HUMAN_BLOCKS.realismSentences).toHaveLength(3);
     for (const sentence of PHOTOREAL_HUMAN_BLOCKS.realismSentences) expect(HOUSE_BLOCK).toContain(sentence);
-    expect(HOUSE_BLOCK).toContain("collarbones");
+    /* The framing token: mid-torso since #182 (founder, 2026-08-27 — "chest
+       up is far too tight we need to see the outfit more"); was "collarbones". */
+    expect(HOUSE_BLOCK).toContain("mid-torso");
     /* The anatomy blocks stay retired on this road. */
     for (const retired of ["EYES:", "SCLERA:", "CATCHLIGHTS:", "IDENTITY", "PRIORITY"]) expect(HOUSE_BLOCK).not.toContain(retired);
   });
