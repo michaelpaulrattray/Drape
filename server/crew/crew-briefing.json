@@ -1,7 +1,7 @@
 {
-  "edition": 63,
-  "updatedAt": "2026-08-27T23:20:00+10:00",
-  "shift": "foreman-53",
+  "edition": 64,
+  "updatedAt": "2026-08-27T22:45:00+10:00",
+  "shift": "foreman-54",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,38 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "follow-court-pick-177",
+      "title": "The Follow court is on your desk — pick a row (#177)",
+      "productImpact": "Your three rulings tonight are now the plan: a Follow attaches the photo of the cast you followed (words alone can't carry likeness — your hand test), facts change at the roll (chip → brief rewrites → new sheet → follow one of those), and the one open dial is how close the new faces stay. The court ran on dev, house money (~$1.63): the anchor's own brief + his photo, eight fresh renders per row, only the closeness sentence changing. Whichever row you pick becomes the Follow that ships.",
+      "workedExample": "Row A is your exact hand-test sentence (keep sex, age range, heritage, hair-colour family; don't copy the face). Row B tells the engine the photo is the BOOKING, not a person to resemble — cast a clearly different man of the same type. Row C keeps the photo and almost no words. One honest note: your B/C wording said 'eight clearly different men' — sent per-picture that paints an eight-face collage inside every frame (we proved it, twice per row), so each render carries the same sentence in the singular and the eight vary by the engine's own dice, exactly like a normal roll.",
+      "recommendation": "Row B. Against your own bar — clones too tight, strangers too loose — A comes back as near-clones on several tiles (brothers at best), and C drifts wide: with almost no words the photo alone did NOT hold heritage, several faces leave his type entirely. B holds the type while every face reads as a different man. If you sometimes want A's closeness too, that's the two-buttons answer.",
+      "state": "open",
+      "filedAt": "2026-08-27T22:45:00+10:00",
+      "issueNumber": 177,
+      "options": [
+        {
+          "key": "row-a",
+          "label": "Row A — stays close: they read as his brothers",
+          "consequence": "Follow ships as close variations of the person you followed."
+        },
+        {
+          "key": "row-b",
+          "label": "Row B — his type, clearly different men",
+          "consequence": "Follow ships as a shortlist for the same role: type held, faces genuinely new."
+        },
+        {
+          "key": "row-c",
+          "label": "Row C — same as B with fewer words",
+          "consequence": "Same shortlist behaviour, leaning on the photo; fewer words for the engine to misread."
+        },
+        {
+          "key": "two-buttons",
+          "label": "Two buttons — close variations AND more of this type",
+          "consequence": "Follow becomes a pair of actions; both clauses ship, each behind its own button."
+        }
+      ]
+    },
     {
       "id": "family-clause-154",
       "title": "ANSWERED — the author now carries a Follow and chip edits (#154), built to your three answers",
@@ -397,10 +429,40 @@
   ],
   "eyeItems": [
     {
+      "id": "follow-court-177",
+      "title": "The Follow court you ordered: brothers vs shortlist — pick a row (#177)",
+      "question": "Your word tonight: 'try both and put it on my desk so i can judge.' Done. Every picture below was made the same way — your fitness-creator brief plus the photo of the guy you followed, attached to the engine so his type carries by PICTURE (the thing your own hand test proved words can't do). The only difference between the rows is the one sentence telling the engine how close to stay. When you tap Follow on a cast you like, which of these should come back? Pick a row — or say if you want two buttons (close variations / more of this type).",
+      "state": "open",
+      "filedAt": "2026-08-27T22:45:00+10:00",
+      "issueNumber": 177,
+      "frames": [
+        {
+          "key": "crew-eye/e2978626-e9f7-47e3-a5c5-1bc6b0c107a6.png",
+          "arm": "THE ANCHOR",
+          "caption": "THE GUY THAT WAS FOLLOWED — every row below was made from this photo and his brief."
+        },
+        {
+          "key": "crew-eye/9ed561dc-73ea-448b-bc48-679f2f39617c.jpg",
+          "arm": "Row A",
+          "caption": "Stays close to him — comes back looking like his brothers."
+        },
+        {
+          "key": "crew-eye/9a56f38c-26b1-4f6b-9003-7cca61e14aa3.jpg",
+          "arm": "Row B",
+          "caption": "His type, but clearly different men — a shortlist for the same role."
+        },
+        {
+          "key": "crew-eye/41e7adfa-e900-4ce4-a9fe-5047d4141199.jpg",
+          "arm": "Row C",
+          "caption": "Same as B but we tell the engine less and let the photo do the work."
+        }
+      ]
+    },
+    {
       "id": "family-clause-frames-154",
       "title": "The role family, RE-STRIPPED after the ghost you caught (#176) — the grids you saw were invalid",
       "question": "You were right, and the grids you were being asked to judge were thrown out. Why they all looked Indian: when a sheet is authored, one prompt paints all eight — but the old studio's per-face dice still ran quietly and wrote their invented identities into the record, and the family clause read that record as fact. The man you followed had a record claiming '100% South Asian heritage, goatee, mid-length hair' — none of it ever sent to the engine, none of it on his frame — so every 'relative' faithfully inherited a fiction. Fixed and live with this edition (#176, PR #178): those records are now marked as never-sent and nothing may read them as fact; a Follow holds only what your brief actually stated (those words genuinely went to the engine), and anything your brief didn't state is left open rather than invented. These grids are the same two drives re-run on the fixed road: grid 1 a plain Follow of the anchor, grid 2 the same Follow with the 30s→40s chip edit (your sentence rewritten in place, '30s' nowhere on the wire). Your success test is unchanged: different talent on the same shortlist — not siblings, not clones. One spec question, yours to answer whenever: with heritage unstated in the brief, the family now varies freely (grid 1 has one East Asian face, one Nordic). If you'd rather a Follow match the LOOK of the person you followed, that means reading his apparent heritage off the delivered frame — a small build we'd court first. Say the word and it gets designed; silence keeps the honest-variation behaviour.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-27T23:20:00+10:00",
       "issueNumber": 154,
       "frames": [
@@ -1157,6 +1219,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T22:45:00+10:00",
+      "shift": "foreman-54",
+      "text": "Your Follow court (#177) ran the same night you ordered it and is on this page. All 24 renders are image-anchored — the photo of the guy you followed rides with the brief, per your ruling. One catch found before the money was spent: your B/C sentence said 'eight clearly different men', and sent per-picture the engine painted an eight-face collage inside every single frame (2 of 2 on each row) — so the sentence rides in the singular and the spread comes from the engine's dice, like a normal roll. Detail on #177. Pick a row up top; the winning sentence becomes the Follow build."
+    },
+    {
       "at": "2026-08-27T23:20:00+10:00",
       "shift": "foreman-53",
       "text": "Your ghost find (#176) is fixed, merged and live. What you caught at the frames was real and bigger than one bad sheet: on authored rolls the old studio's per-face dice still wrote invented identities into every record, and three things read those records as fact — the Follow (your eight Indian 'relatives'), the pronouns and current-value readers on edits, and worst, Sign, which would have stamped the fiction into a Cast's permanent identity papers under 'THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY'. Measured before the fix landed: no Cast and no edit had ever consumed the fiction yet, in dev or production — caught in time. Now the records are marked never-sent and refused everywhere, a Follow holds only what the brief stated, and captions on authored tiles show the tile number instead of a disposition nobody cast. Your invalid grids were re-stripped on the fixed road the same night — on the eye item, with the anchor frame first as you asked. The remaining tidy-up (marking the ~96 already-written records per database) is carded as #179."
@@ -1350,11 +1417,6 @@
       "at": "2026-08-26T13:25:00+10:00",
       "shift": "foreman-17",
       "text": "Two things landed after the last entry. Your freeze fix is MERGED (PR #123) and deploys with this edition — the reviewer ran twice and asked for four things, all in: an account whose refunds ever exceed its charges is still flagged (the one thing the old formula could see that the new one could not), and a freeze by a moderator now shows as \"Frozen by staff\" with their name, never as \"Auto-Frozen\". And you judged the register at 12:13: not passing yet. I have written your order into the program exactly as you gave it — fix the cyber-goth failure first (#121: the register never engaged on that brief and the reader lost every stated feature, which is why men appeared), then per-slice fidelity and the spread of open features, then one re-roll for your eye. The next shift starts on #121. Nothing was spent this shift beyond the gate's reviews."
-    },
-    {
-      "at": "2026-08-26T12:40:00+10:00",
-      "shift": "foreman-17",
-      "text": "You answered the freeze card at 11:49 — \"List-only\" — and this shift built it. The moderator dashboard's discrepancy card now only lists; freezing is a button a moderator presses, with their name on the audit row. The arithmetic behind the list was read at the real rows first: it had been counting your ruled no-refund failures and every new-studio edit as \"missing\" money. Against production, read-only, your number falls from 7,505 to 1,050 (the leftover is July's parked evidence experiment recording itself twice — nothing live) and every other account reads 0. Two things caught on the way: the code's own tests had been copying the formula instead of testing it, so they stayed green while it was wrong — rewritten; and the first version of the new query silently read 5,160 on production because of how the database library writes a sub-question — found by running it against the real database before trusting it, and now pinned by a test. PR #123 is in the gate; nothing spent. Your eye on roll 217 (the register) is still the milestone gate — I saw you rolling 218 and 219 while I worked, so you may be on it."
     }
   ],
   "acknowledgedReplyIds": [
