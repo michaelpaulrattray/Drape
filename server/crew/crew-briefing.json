@@ -1,7 +1,7 @@
 {
-  "edition": 53,
-  "updatedAt": "2026-08-27T10:30:00+10:00",
-  "shift": "foreman-44",
+  "edition": 54,
+  "updatedAt": "2026-08-27T11:40:00+10:00",
+  "shift": "foreman-45",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -712,6 +712,13 @@
   ],
   "pipeline": [
     {
+      "id": "quiet-edition-refusal-159",
+      "title": "The deploy rite refuses a QUIET edition (#159) — MERGED",
+      "status": "merged",
+      "prNumber": 160,
+      "note": "Your morning finding: quiet shifts were burning your credits, and two of them deployed anyway after the orders said not to — a production deploy each for one \"nothing needed doing\" line. Now the rite itself reads what is being pushed: if the only thing that changed is the briefing, and the only change in it is a quiet journal line, it refuses and tells the shift to write its mailbox note and stop. A quiet line beside anything real (a card, a step, a reply of yours, any file) still deploys. Proven both ways at the real rite before it landed: a throw-away quiet edition was refused, this branch was not; and the two deploys you paid for this morning are judged quiet by the same code in its test. Reviewed by the gate (pass, two small notes, one applied). $0 house, 0 credits."
+    },
+    {
       "id": "rite-script-guards-152",
       "title": "The deploy rite runs the script checks on the commit it pushes (#152) — MERGED",
       "status": "merged",
@@ -1043,6 +1050,13 @@
   ],
   "problems": [
     {
+      "id": "quiet-shifts-deploy-159",
+      "title": "Quiet shifts were deploying — FIXED: the rite now refuses a briefing whose only change is a quiet journal line",
+      "detail": "Two quiet shifts this morning (09:45, 10:23) each ran a full production deploy for one journal line, after the standing orders had said a quiet shift ships nothing. The runner backs off 30 minutes after a quiet shift, and the deploy rite now refuses the quiet edition itself (PR #160) — so the order is a mechanical guard, not a sentence. No customer effect. (issue #159, closed)",
+      "state": "resolved",
+      "severity": "info"
+    },
+    {
       "id": "rite-pushes-red-scripts-152",
       "title": "The deploy rite could push a script to main that the test gate rejects — FIXED: the rite now runs the script checks on the exact commit before it pushes",
       "detail": "Two patrol helper scripts rode to main with briefing e39 and neither ended the way the script guard requires, so the guard was red on main for a night and the next pull request inherited the failure. No customer effect. Fixed (PR #157, foreman-42): before pushing, the rite checks out the commit into a throwaway folder and runs every suite that checks our scripts there — eight at today's tree, found by reading the suites rather than by a list — and refuses the push on any red. Proven green on today's tree (6 s) and red on a deliberate bad commit. (issue #152, closed)",
@@ -1107,6 +1121,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-27T11:40:00+10:00",
+      "shift": "foreman-45",
+      "text": "Your morning finding became a guard: the deploy rite now refuses a quiet edition (#159, PR #160, merged). Before it pushes, it reads what is actually being pushed — if the only change is the briefing and the only change in the briefing is a \"nothing needed doing\" line, it refuses and tells the shift to write its note and stop; anything real beside it still deploys. Proven both ways at the real rite before merging (a throw-away quiet edition refused, the working branch not), and the two quiet deploys you paid for this morning are judged quiet by the same code in its test. Still no new word from you (12 replies, all acknowledged); the milestone still waits on your eye — your first Follow, the framing strip, the lighting sheets, the rebuilt block. $0 house, 0 credits, no renders."
+    },
     {
       "at": "2026-08-27T10:30:00+10:00",
       "shift": "foreman-44",
@@ -1301,11 +1320,6 @@
       "at": "2026-08-26T07:40:00+10:00",
       "shift": "retro — patrol #1",
       "text": "First Retro patrol, on your \"do it\". Two things. First, the register you asked for is now genuinely merged and switched off — the 07:00 shift had reported it merged, your page updated and its workspace cleaned, and none of that had happened: its process died mid-close with a blank where the deploy receipt goes. I checked the build was green and reviewed, merged it myself, and filed the one real note the automatic review left (#99: the line-writer is told \"12–35 words\" while the checker counts 240 characters, so an obedient long line could drop the whole card — fixed before your flagged roll). Second, I audited five of the night's reports against the actual commits, receipts and test runs: four were exactly true; one was the case above. The cure is mechanical, not another rule — the shift runner will stamp every close after the shift ends and check each \"merged\" against GitHub (#101). Four other repeats from the night got a guard card each: the stale-map stalls that silently held up three changes (#100), two sessions committing into one folder (#102), a hidden byte that quietly switched off a security scanner's config (#103), and a Windows cleanup quirk (noted on #96). Also checked: every security tool added overnight traces to a card filed hours earlier — nobody was building out of boredom. Nothing spent. Still waiting on your word to switch the register on for your account, and OpenRouter is still at $7.52."
-    },
-    {
-      "at": "2026-08-26T07:14:00+10:00",
-      "shift": "foreman-13",
-      "text": "Your verdict on the court arrived overnight and I read it first: build C with the framing fixed, every face carries what you stated, vary only the open things, beards fine because you never said clean-shaven, fix refusals by rewording. So tonight was the register itself, and it is built — switched off for everyone, which means the product you use this morning is byte-for-byte yesterday's. When switched on for your account, your cyborg brief will be sent as your own words first, then the same framing and camera rules that made sheet B look real, then one short line per candidate that varies only what you left open. Ordinary briefs never take that road. It needs one thing from you: the word to switch it on for your account so I can roll your brief through it (160 credits) and put the strip beside the court's in your gallery — that roll is step 3 and your eye on it is the gate. Two smaller things: I turned on GitHub's leak-blocker for the repository on your \"Turn it on\" (checked it reads enabled), and I merged the night's workflow-hardening change that was green and waiting. Nothing spent. OpenRouter is still at $7.52 — please top it up or check auto-top-up, or the roll above cannot read your brief."
     }
   ],
   "acknowledgedReplyIds": [
