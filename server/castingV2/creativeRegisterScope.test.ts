@@ -543,8 +543,10 @@ const FOLLOW = {
 } as const;
 
 const FAMILY_CLAUSE =
-  "Continue this family: cast a close relative of one person — a woman, in their 20s, of Nordic heritage, blonde hair, with a severe minimal look. "
-  + "Same sex, same age, same heritage and same hair colour; the face itself is new.";
+  "Continue this family: same casting brief, new person — a woman, in their 20s, of Nordic heritage, blonde hair, with a severe minimal look. "
+  + "Keep the same sex, age range, heritage, hair-colour family and grooming world. "
+  + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
+  + "Cast a different person who could be booked for the same role.";
 
 describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road as the family clause (#154), and the unflagged compile does not move", () => {
   it("a FOLLOW at LOW: one prompt on all eight — the brief verbatim, the family clause from the anchor, the block; no author call; the reader's record is the house follow's", async () => {
@@ -624,7 +626,7 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     const aClause = (a.compiledBrief.register as { carried: { clause: string } }).carried.clause;
     expect(aClause).not.toContain("woman");
     expect(aClause).not.toContain("same sex");
-    expect(aClause).toContain("Same age, same heritage and same hair colour");
+    expect(aClause).toContain("Keep the same age range, heritage, hair-colour family and grooming world");
     expect(a.candidates[0]?.prompt).toBe(`${RICH}\n\n${aClause}\n\n${HOUSE_BLOCK}`);
 
     const overriddenFollow = engineAnswering([ADDITION]);

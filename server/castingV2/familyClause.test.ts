@@ -10,6 +10,9 @@
  * The sweep has a positive control (a clause forced to say "eight" is caught),
  * so a green run means the reader was looking.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { agePhrase, familyClause } from "./familyClause";
@@ -54,14 +57,16 @@ describe("phrasing", () => {
     expect(familyClause({ anchor: null, overrides: { ageBand: undefined } })).toBeNull();
   });
 
-  it("a FOLLOW carries sex, age, heritage, hair COLOUR and look — never the cut, never the realized axes (his answer 3)", () => {
+  it("a FOLLOW casts a ROLE family (#166): same brief, new person — holds the booking axes, releases the face", () => {
     const carried = familyClause({ anchor: ANCHOR, overrides: undefined });
     expect(carried).toEqual({
       follow: true,
       overrides: {},
       clause:
-        "Continue this family: cast a close relative of one person — a woman, in their 30s, of Nordic heritage, blonde hair, with a severe minimal look. "
-        + "Same sex, same age, same heritage and same hair colour; the face itself is new.",
+        "Continue this family: same casting brief, new person — a woman, in their 30s, of Nordic heritage, blonde hair, with a severe minimal look. "
+        + "Keep the same sex, age range, heritage, hair-colour family and grooming world. "
+        + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
+        + "Cast a different person who could be booked for the same role.",
     });
     for (const fineDetail of ["low bun", "blue", "feathered", "straight", "worn up", "plain"]) {
       expect(carried?.clause).not.toContain(fineDetail);
@@ -79,15 +84,21 @@ describe("phrasing", () => {
   it("an UNLOCK on a follow strips the axis — the anchor arrives with `withUnlocksApplied` already run", () => {
     const unlockedSex = familyClause({ anchor: { ...ANCHOR, sex: null }, overrides: undefined });
     expect(unlockedSex?.clause).toBe(
-      "Continue this family: cast a close relative of one person — a person, in their 30s, of Nordic heritage, blonde hair, with a severe minimal look. "
-        + "Same age, same heritage and same hair colour; the face itself is new.",
+      "Continue this family: same casting brief, new person — a person, in their 30s, of Nordic heritage, blonde hair, with a severe minimal look. "
+        + "Keep the same age range, heritage, hair-colour family and grooming world. "
+        + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
+        + "Cast a different person who could be booked for the same role.",
     );
     expect(unlockedSex?.clause).not.toContain("woman");
     expect(unlockedSex?.clause).not.toContain("same sex");
 
     const everything = familyClause({ anchor: { ...ANCHOR, sex: null, ageBand: null, heritage: [], hair: null, look: null }, overrides: undefined });
-    /* Still a follow, so the engine is still told to continue the family — with nothing held. */
-    expect(everything?.clause).toBe("Continue this family: cast a close relative of one person — a person. The face itself is new.");
+    /* Still a follow, so the engine is still told to continue the family — with nothing held, the release sentences stand alone. */
+    expect(everything?.clause).toBe(
+      "Continue this family: same casting brief, new person — a person. "
+        + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
+        + "Cast a different person who could be booked for the same role.",
+    );
   });
 
   it("an OVERRIDE on a follow REPLACES that axis in the family clause (hand adjustments run last, as on the house road)", () => {
@@ -98,8 +109,8 @@ describe("phrasing", () => {
     expect(carried?.clause).not.toContain("30s");
     expect(carried?.clause).not.toContain("Nordic");
     /* An override says it wins, because the verbatim brief above may still say the old value; a plain follow does not. */
-    expect(carried?.clause.endsWith("the face itself is new. Where this differs from the request above, this wins.")).toBe(true);
-    expect(familyClause({ anchor: ANCHOR, overrides: undefined })?.clause.endsWith("the face itself is new.")).toBe(true);
+    expect(carried?.clause.endsWith("booked for the same role. Where this differs from the request above, this wins.")).toBe(true);
+    expect(familyClause({ anchor: ANCHOR, overrides: undefined })?.clause.endsWith("booked for the same role.")).toBe(true);
   });
 
   it("chip edits on a plain authored roll are ONE sentence — what the customer said with a control instead of the keyboard", () => {
@@ -177,5 +188,31 @@ describe("vocabulary sweep — nothing the closed vocabularies can produce is a 
 
   it("positive control: the reader catches a clause that counts the casts", () => {
     expect(neverWrittenIn(`${clauses[0]} Paint eight of them.`)).toBe("eight");
+  });
+
+  /*
+    THE CLONE-STAMP WORDS (#166, founder verbatim: "Image models read 'close
+    relative' as same skull, slight remix"). Forbidden in any clause the
+    closed vocabularies can produce, with a positive control so a green run
+    means the reader was looking.
+  */
+  const CLONE_STAMPS: RegExp[] = [/\bclose relative\b/i, /\brelatives?\b/i, /\bdiffer mainly in expression\b/i, /\bfamily of one person\b/i];
+  it("never a clone-stamp phrase, in any clause (#166)", () => {
+    const offenders = clauses.filter((clause) => CLONE_STAMPS.some((re) => re.test(clause)));
+    expect(offenders).toEqual([]);
+  });
+
+  it("positive control: the clone-stamp reader catches the old clause's own words", () => {
+    const oldShape = "Continue this family: cast a close relative of one person — a woman.";
+    expect(CLONE_STAMPS.some((re) => re.test(oldShape))).toBe(true);
+    expect(CLONE_STAMPS.some((re) => re.test("the eight will differ mainly in expression"))).toBe(true);
+  });
+
+  it("the sheet no longer renders the expression-only line (#166: 'Kill that line on Follow sheets')", () => {
+    const sheet = readFileSync(join(__dirname, "../../client/src/pages/CastingSheet.tsx"), "utf8");
+    /* Positive control that this arm read the real sheet, not an empty path. */
+    expect(sheet).toContain("THE PROMPT, SHOWN");
+    expect(sheet).not.toContain("differ mainly in expression");
+    expect(sheet).not.toContain("close relative");
   });
 });

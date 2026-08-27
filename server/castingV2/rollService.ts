@@ -580,10 +580,10 @@ export async function createRoll(
       operationId: gate.operationId,
       briefText: input.briefText,
       /*
-        The variance plan rides with the compiled brief so the sheet can say,
-        after the fact, why eight faces differ mainly in expression. It is
-        internal like the rest of `compiledBrief`; only the confession flag is
-        projected.
+        The variance plan rides with the compiled brief as the evidence for
+        how varied the sheet could be. The sheet's expression-only confession
+        line is dead (#166); only the `varianceHeld` flag is projected, and
+        nothing renders it today.
       */
       compiledBrief: { ...(compiled.compiledBrief as object), variance: compiled.variance },
       lockContract: compiled.lockContract,
