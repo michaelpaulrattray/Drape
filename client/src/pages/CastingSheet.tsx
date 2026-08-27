@@ -2387,34 +2387,18 @@ export default function CastingSheet() {
         ) : null}
 
         {/*
-          THE SHEET SAYS WHEN IT COULD NOT VARY.
-
-          Every rule that produced the eight-way tie was individually correct —
-          the follow anchored sex, heritage and colour, the captured direction
-          locked the look, the stated age locked the band, the category put hair
-          at silhouette tier. Their intersection left nothing alive that
-          separates two faces at arm's length, and the sheet cost the same as a
-          good one.
-
-          Said plainly rather than hidden: a user looking at eight near-copies
-          should be told it was the locks, not the engine having a bad day.
-
-          AND IT IS SAID AFTER THE ROLL, WHICH IS NOT WHERE IT WAS MEANT TO GO.
-          The sentence lived twice — here, and as a dead `VARIANCE_CONFESSION`
-          on the server whose own docblock said "before the roll, not after…
-          while it is still a decision". Only this copy ever ran, so the server
-          one was removed rather than left to drift; the intent it carried is
-          written here instead of being deleted with it. Moving the line
-          earlier is not a copy change: the variance plan is computed by the
-          brief compiler INSIDE roll creation (`rollService`, "so the sheet can
-          say, after the fact"), so a pre-roll confession needs the brief
-          compiled at echo time — a second text call, before anyone has paid.
+          THE EXPRESSION-ONLY CONFESSION IS DEAD (#166, founder verbatim:
+          "That is an instruction to clone. Expression-only variation is one
+          actor, eight moods. Kill that line on Follow sheets."). The line that
+          rendered here on `varianceHeld` — "Most of this sheet is held…"
+          with the expression-only closer — described the clone as the
+          intended product, so it went with the clone-stamp clause it
+          described. The flag itself still rides the projection (the variance
+          plan is still computed and persisted with the compiled brief), so a
+          future surface that says WHAT is held — rather than promising a
+          clone — has its evidence waiting; a forbidden-token arm in
+          `familyClause.test.ts` keeps the sentence from coming back.
         */}
-        {roll.data?.varianceHeld ? (
-          <p className="dpc-variance-note">
-            Most of this sheet is held — the eight will differ mainly in expression.
-          </p>
-        ) : null}
 
         {/*
           THE PROMPT, SHOWN (#131 slice D; founder ruling rule 5: "the expanded

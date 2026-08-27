@@ -14,6 +14,21 @@
  * ONE paragraph, written by CODE from the anchor (after unlocks) and the
  * overrides, placed after the verbatim brief and before the author's content.
  *
+ * ⚠ REWRITTEN TO THE ROLE-FAMILY SPEC (#166, founder verbatim, 2026-08-27):
+ * the first shape said *"cast a close relative of one person … Same sex, same
+ * age … the face itself is new"*, and he read it at the sheet for what it is —
+ * *"Image models read 'close relative' as same skull, slight remix. … That's
+ * not a fork of the look. That's a reprint of the person."* The clause now
+ * casts A ROLE FAMILY, his photographer sentence's shape: same casting brief,
+ * new person; KEEP sex, age range, heritage, hair-colour family and the
+ * grooming world; DO NOT COPY the face, the exact hairline, the bone
+ * structure, or the expression. His success test binds the drive: *"you could
+ * believe they are different talent on the same shortlist — not siblings, not
+ * clones."* The words "close relative" and "relative" are forbidden in any
+ * clause (arm in the suite), and his "Cast eight different people" closer is
+ * adapted to per-picture language because a clause may never count the casts
+ * (the "eight" ban below).
+ *
  * What it says, and what it deliberately does not:
  *
  *   - A FOLLOW carries sex, age band, heritage, hair COLOUR and look — the
@@ -22,10 +37,11 @@
  *     CUT is not carried: the house road's own taste ruling is *"one family,
  *     not one barber"*, and a named cut in words is a clone stamp. The realized
  *     axes (eye colour, brows, skin) are not carried — his answer (3).
- *   - "Cousins, not clones" is his answer (1): the house follow varies the
- *     second heritage component per candidate and one prompt cannot, so the
- *     clause names the primary heritage through the one renderer the house
- *     composer uses (`describeHeritage`, law 4) and lets the engine vary.
+ *   - "Cousins, not clones" is his answer (1), sharpened by #166 to the role
+ *     family: the house follow varies the second heritage component per
+ *     candidate and one prompt cannot, so the clause names the primary
+ *     heritage through the one renderer the house composer uses
+ *     (`describeHeritage`, law 4) and lets the engine vary.
  *   - An OVERRIDE is a sentence the customer said with a control instead of
  *     the keyboard, so it becomes words — on a follow it REPLACES that axis in
  *     the family clause; on a plain authored roll it is the whole clause.
@@ -40,8 +56,8 @@
  * `familyClause.test.ts` over every value the closed vocabularies can produce:
  * the clause must never say "eight" (the first MAX roll painted 7 of 8 tiles
  * as contact-sheet grids when the author counted the casts) and never narrate
- * the series. It says "the face itself is new" for
- * that reason — and never "each time", which narrates the series too.
+ * the series. Its closer says "a different person", per picture, for that
+ * reason — and never "each time", which narrates the series too.
  */
 import type { LockOverrides } from "./briefCompiler";
 import { describeHeritage, type FollowAnchor } from "./cohortPhotorealHuman";
@@ -157,13 +173,20 @@ function describe(axes: ClauseAxes): string[] {
   return parts;
 }
 
-/** What holds on every portrait of a family: the axes the anchor still supplies after unlocks. */
+/**
+ * What holds on every portrait of a role family: the axes the anchor still
+ * supplies after unlocks, in his list's own order (#166: *"Follow should hold:
+ * sex, age band, heritage, hair-colour family, brief"* — plus the grooming
+ * world, his own parenthesis, which is the look axis's name here). "Hair-colour
+ * family", not "hair colour": the exact shade is a released detail.
+ */
 function holds(axes: ClauseAxes, anchor: FollowAnchor): string[] {
   const held: string[] = [];
-  if (axes.sex) held.push("same sex");
-  if (axes.ageBand) held.push("same age");
-  if (axes.heritage.length > 0) held.push("same heritage");
-  if (anchor.hair?.colour) held.push("same hair colour");
+  if (axes.sex) held.push("sex");
+  if (axes.ageBand) held.push("age range");
+  if (axes.heritage.length > 0) held.push("heritage");
+  if (anchor.hair?.colour) held.push("hair-colour family");
+  if (axes.look) held.push("grooming world");
   return held;
 }
 
@@ -173,43 +196,43 @@ function joinHeld(held: string[]): string {
 }
 
 /**
- * The clause, or null when there is nothing to carry — no anchor and no
- * override — so a plain authored roll's prompt is exactly what it is today.
+ * The clause, or null when there is no follow to carry.
  *
  * `anchor` is the follow's anchor AFTER unlocks (`withUnlocksApplied`); an
  * anchor with every carried axis stripped still says "continue this family"
  * because the roll still IS a follow, and the engine is told what it may vary.
+ *
+ * A chip edit WITHOUT an anchor carries nothing here any more (#164): it used
+ * to become "Cast as {person}; where this differs from the request above,
+ * this wins." — the original plus an override plus a tie-breaker, the
+ * fighting prompt his ruling kills. The edit is applied to the brief itself
+ * now (`rewriteBrief`), so with no anchor there is nothing for a clause to
+ * say. On a follow the overrides still replace their axes below, and the
+ * clause states the same fact the rewritten brief states — consistent
+ * repetition, never a fight, and no precedence sentence anywhere.
  */
 export function familyClause(input: {
   anchor: FollowAnchor | null;
   overrides: LockOverrides | undefined;
 }): CarriedIdentity | null {
+  if (!input.anchor) return null;
   const overrides = nonNullOverrides(input.overrides);
-  const edited = Object.keys(overrides).length > 0;
-  if (!input.anchor && !edited) return null;
 
   const axes = axesOf(input.anchor, overrides);
   const person = describe(axes).join(", ");
 
-  if (input.anchor) {
-    const held = joinHeld(holds(axes, input.anchor));
-    const second = held.length > 0 ? `${held}; the face itself is new.` : "the face itself is new.";
-    const precedence = edited ? " Where this differs from the request above, this wins." : "";
-    const clause =
-      `Continue this family: cast a close relative of one person — ${person}. `
-      + `${second.charAt(0).toUpperCase()}${second.slice(1)}${precedence}`;
-    return { follow: true, overrides, clause };
-  }
-
   /*
-    PRECEDENCE, IN WORDS. On the house road a hand adjustment runs LAST and
-    beats the reader (`applyOverrides`: "vary this" then "no, make it 40s" is
-    40s). Here the brief above still says "in their 30s" verbatim and cannot
-    be edited, so the clause states the same precedence the block's AUTHORITY
-    paragraph states for defaults — otherwise the engine meets two ages and
-    picks one.
+    His photographer sentence, shape for shape (#166): keep the booking
+    brief's axes, release the person. The closer is per-picture ("a
+    different person", never a count) because a clause that counts the
+    casts paints a contact sheet — the "eight" ban, measured on roll 95.
   */
-  /* Nothing stated (a phase with no band is the one way in) is nothing to carry. */
-  if (describe(axes).length <= 1) return null;
-  return { follow: false, overrides, clause: `Cast as ${person}; where this differs from the request above, this wins.` };
+  const held = joinHeld(holds(axes, input.anchor));
+  const keep = held.length > 0 ? `Keep the same ${held}. ` : "";
+  const clause =
+    `Continue this family: same casting brief, new person — ${person}. `
+    + keep
+    + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
+    + "Cast a different person who could be booked for the same role.";
+  return { follow: true, overrides, clause };
 }

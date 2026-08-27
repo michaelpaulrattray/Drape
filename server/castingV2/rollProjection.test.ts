@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+import { HOUSE_BLOCK, containsHouseSentence } from "./houseBlock";
 
 vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
@@ -118,21 +119,50 @@ describe("nothing internal crosses the boundary", () => {
     because there it is the customer's words plus the author's and nothing
     house-internal; every other shape is null rather than forwarded.
   */
-  describe("the authored prompt crosses the boundary on the author road and nowhere else", () => {
-    const AUTHORED = "goth woman mid 30s\n\nA photorealistic casting portrait, chest-up, neutral grey seamless studio background.";
-
-    it("an author register's prompt is projected, trimmed", () => {
+  describe("the authored prompt crosses the boundary on the author road and nowhere else — and never the locked block (#168)", () => {
+    it("the shown prompt is REBUILT from the customer's parts: brief, clause, content — the block's text never crosses the wire", () => {
       const projected = projectRoll({
-        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", framingBlock: "internal framing text", register: { kind: "author", authored: true, prompt: `  ${AUTHORED}  ` } } }),
+        roll: rollRow({
+          briefText: "goth woman mid 30s",
+          compiledBrief: {
+            compiler: "pathA-v1",
+            framingBlock: "internal framing text",
+            register: {
+              kind: "author",
+              authored: true,
+              content: "Pale skin, black lace.",
+              carried: { follow: true, overrides: {}, clause: "Continue this family: same casting brief, new person — a woman." },
+              prompt: `goth woman mid 30s\n\nPale skin, black lace.\n\n${HOUSE_BLOCK}`,
+            },
+          },
+        }),
         candidates: [candidateRow()],
       });
-      expect(projected.authoredPrompt).toBe(AUTHORED);
-      // The rest of the boundary still holds beside it.
+      expect(projected.authoredPrompt).toBe(
+        "goth woman mid 30s\n\nContinue this family: same casting brief, new person — a woman.\n\nPale skin, black lace.",
+      );
+      /* The whole projection, not just the field: no house sentence anywhere (invariant 8's shape). */
+      expect(containsHouseSentence(JSON.stringify(projected))).toBeNull();
       expect(JSON.stringify(projected)).not.toContain("internal framing text");
+      /* Positive control: the raw register field DOES hold the block, so forwarding it would have been caught. */
+      expect(containsHouseSentence(`goth woman mid 30s\n\n${HOUSE_BLOCK}`)).not.toBeNull();
+    });
+
+    it("the brief AS SENT wins over the typed brief when a chip edit rewrote it (#164)", () => {
+      const register = {
+        kind: "author",
+        content: "Pale skin.",
+        briefSent: "a fitness creator in their 40s, close-cropped hair",
+        prompt: "irrelevant here",
+      };
+      expect(readAuthoredPrompt("a fitness creator in their 30s, close-cropped hair", { register }))
+        .toBe("a fitness creator in their 40s, close-cropped hair\n\nPale skin.");
+      expect(readAuthoredText("a fitness creator in their 30s, close-cropped hair", { register }))
+        .toBe("a fitness creator in their 40s, close-cropped hair\n\nPale skin.");
     });
 
     it("a house register (a follow or an edited roll under the flag) projects null — its prompt is the house composer's", () => {
-      expect(readAuthoredPrompt({ register: { kind: "house", because: "anchored", prompt: "CASTING CATEGORY (ABSOLUTE) …" } })).toBeNull();
+      expect(readAuthoredPrompt("x", { register: { kind: "house", because: "anchored", prompt: "CASTING CATEGORY (ABSOLUTE) …" } })).toBeNull();
     });
 
     it("use-as-brief gets the brief + the author's CONTENT and never the block (review of #141): null on a seed/static sheet", () => {
@@ -181,15 +211,18 @@ describe("nothing internal crosses the boundary", () => {
       expect(followed.imagination).toBeNull();
     });
 
-    it("anything that is not a bounded string on an author register is null, never forwarded", () => {
-      expect(readAuthoredPrompt(null)).toBeNull();
-      expect(readAuthoredPrompt({})).toBeNull();
-      expect(readAuthoredPrompt({ register: null })).toBeNull();
-      expect(readAuthoredPrompt({ register: { kind: "author" } })).toBeNull();
-      expect(readAuthoredPrompt({ register: { kind: "author", prompt: 42 } })).toBeNull();
-      expect(readAuthoredPrompt({ register: { kind: "author", prompt: "   " } })).toBeNull();
-      expect(readAuthoredPrompt({ register: { kind: "author", prompt: "x".repeat(AUTHORED_PROMPT_MAX + 1) } })).toBeNull();
-      expect(readAuthoredPrompt({ register: { kind: "author", prompt: "x".repeat(AUTHORED_PROMPT_MAX) } })).toHaveLength(AUTHORED_PROMPT_MAX);
+    it("anything that is not a bounded author register is null, never forwarded", () => {
+      expect(readAuthoredPrompt("brief", null)).toBeNull();
+      expect(readAuthoredPrompt("brief", {})).toBeNull();
+      expect(readAuthoredPrompt("brief", { register: null })).toBeNull();
+      /* No recorded whole prompt means the row never painted — nothing to show. */
+      expect(readAuthoredPrompt("brief", { register: { kind: "author" } })).toBeNull();
+      expect(readAuthoredPrompt("brief", { register: { kind: "author", prompt: 42 } })).toBeNull();
+      /* An empty rebuild (blank brief, no clause, no content) is null, not an empty record. */
+      expect(readAuthoredPrompt("   ", { register: { kind: "author", prompt: "x" } })).toBeNull();
+      /* Past the validator bound the field is withheld, exactly as before. */
+      expect(readAuthoredPrompt("x".repeat(AUTHORED_PROMPT_MAX + 1), { register: { kind: "author", prompt: "x" } })).toBeNull();
+      expect(readAuthoredPrompt("x".repeat(AUTHORED_PROMPT_MAX), { register: { kind: "author", prompt: "x" } })).toHaveLength(AUTHORED_PROMPT_MAX);
     });
   });
 

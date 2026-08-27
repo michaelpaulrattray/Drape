@@ -125,16 +125,23 @@ export type RollProjection = {
    * D; ruling rule 5, verbatim: *"The expanded prompt is shown on the cast,
    * editable. No hidden prompt, ever."*).
    *
-   * ⚠ This crosses the boundary DELIBERATELY where this file's header says no
-   * prompt does, and the reason it may is what the prompt IS on that road: the
-   * customer's own words, first and verbatim, then what the author appended —
-   * the photoreal bundle or an invented look — and nothing house-internal
-   * (`register.prompt`, written by `briefCompiler` for exactly this). The
-   * house-composed prompt of every other roll stays inside `compiledBrief`, and
-   * this is `null` there — an unflagged sheet is byte-identical to today's.
-   * Owner-scoped like the rest of the roll. "Editable" lands as *use as brief*:
-   * the sheet offers it back as the next roll's sentence, which is why the
-   * entrance admits `BRIEF_TEXT_MAX_AUTHOR_ROAD`.
+   * ⚠ AND THE LOCKED HOUSE BLOCK IS NOT IN IT — #168, his ruling refining
+   * rule 5 (verbatim: *"the framing hair camera language realism is all our
+   * personal prompting styles that i dont want competitors to be able to
+   * steal … just not our locked settings prompting"*). Rule 5's purpose was
+   * honesty about what the AUTHOR did with the customer's words, never
+   * disclosure of the studio's craft. So this is REBUILT FROM THE CUSTOMER'S
+   * OWN PARTS — the brief as sent (`register.briefSent` when a chip edit
+   * rewrote it, else the row's `briefText`), the family clause where one was
+   * carried, and the author's content — and the block's text never crosses
+   * the wire at all (invariant-8 shape: out by construction, not omitted by
+   * the renderer). The sheet's footer line still says a locked block exists.
+   * The house-composed prompt of every other roll stays inside
+   * `compiledBrief`, and this is `null` there — an unflagged sheet is
+   * byte-identical to today's. Owner-scoped like the rest of the roll.
+   * "Editable" lands as *use as brief*: the sheet offers it back as the next
+   * roll's sentence, which is why the entrance admits
+   * `BRIEF_TEXT_MAX_AUTHOR_ROAD`.
    */
   authoredPrompt: string | null;
   /**
@@ -539,22 +546,40 @@ function readVarianceHeld(compiledBrief: unknown): boolean {
  * unknown must never be reported as a failure.
  */
 /**
- * The authored prompt, read through a validator like everything else lifted
- * out of `compiledBrief`: a string, on an AUTHOR register, and no longer than
- * the author road could have written — anything else is null rather than
- * forwarded. `AUTHORED_PROMPT_MAX` is a validator bound, not a product one:
- * the word budget keeps a real prompt well under it.
+ * The authored prompt as SHOWN, read through a validator like everything else
+ * lifted out of `compiledBrief` — and REBUILT from the customer's own parts
+ * rather than sliced out of `register.prompt` (#168): the brief as sent, the
+ * family clause where one was carried, the author's content. The locked house
+ * block sits at the end of `register.prompt` and is the studio's framework
+ * (his ruling), so the whole-prompt field is never forwarded — a block
+ * sentence structurally cannot appear here because no part this function
+ * assembles ever contained one (`containsHouseSentence` proves it in the
+ * suite, with a sabotage arm). `AUTHORED_PROMPT_MAX` is a validator bound,
+ * not a product one: the word budget keeps a real prompt well under it.
  */
 export const AUTHORED_PROMPT_MAX = 8000;
-export function readAuthoredPrompt(compiledBrief: unknown): string | null {
+export function readAuthoredPrompt(briefText: string, compiledBrief: unknown): string | null {
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;
   if (!register || typeof register !== "object") return null;
-  const { kind, prompt } = register as { kind?: unknown; prompt?: unknown };
+  const { kind, prompt, content, briefSent, carried } = register as {
+    kind?: unknown;
+    prompt?: unknown;
+    content?: unknown;
+    briefSent?: unknown;
+    carried?: unknown;
+  };
+  /* An author row always records the whole prompt; a row without one never painted. */
   if (kind !== "author" || typeof prompt !== "string") return null;
-  const trimmed = prompt.trim();
-  if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
-  return trimmed;
+  const parts: string[] = [];
+  const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
+  if (brief.trim().length > 0) parts.push(brief.trim());
+  const clause = carried && typeof carried === "object" ? (carried as { clause?: unknown }).clause : null;
+  if (typeof clause === "string" && clause.trim().length > 0) parts.push(clause.trim());
+  if (typeof content === "string" && content.trim().length > 0) parts.push(content.trim());
+  const shown = parts.join("\n\n");
+  if (shown.length === 0 || shown.length > AUTHORED_PROMPT_MAX) return null;
+  return shown;
 }
 
 /** Brief + the author's content — what a customer may roll again with. Null without authored content. */
@@ -562,11 +587,14 @@ export function readAuthoredText(briefText: string, compiledBrief: unknown): str
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;
   if (!register || typeof register !== "object") return null;
-  const { kind, content } = register as { kind?: unknown; content?: unknown };
+  const { kind, content, briefSent } = register as { kind?: unknown; content?: unknown; briefSent?: unknown };
   if (kind !== "author" || typeof content !== "string") return null;
   const trimmed = content.trim();
   if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
-  return `${briefText.trim()}\n\n${trimmed}`;
+  /* The brief AS SENT (#164): a chip edit rewrote the sentence, and rolling
+     again with the pre-edit text would silently undo the customer's own change. */
+  const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
+  return `${brief.trim()}\n\n${trimmed}`;
 }
 
 export function readImagination(compiledBrief: unknown): Imagination | null {
@@ -690,7 +718,7 @@ export function projectRoll(input: {
       cannot drift from the sentence it describes.
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
-    authoredPrompt: readAuthoredPrompt(input.roll.compiledBrief),
+    authoredPrompt: readAuthoredPrompt(input.roll.briefText, input.roll.compiledBrief),
     authoredText: readAuthoredText(input.roll.briefText, input.roll.compiledBrief),
     imagination: readImagination(input.roll.compiledBrief),
     style: readCastStyle(input.roll.compiledBrief),

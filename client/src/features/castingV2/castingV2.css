@@ -1558,18 +1558,8 @@
 }
 
 /*
-  The variance confession. Quiet, in the echo's register — it is a statement
-  about the sheet, not a warning about a failure.
-*/
-.dpc-variance-note {
-  margin: 8px 0 0;
-  font-size: 13px;
-  opacity: 0.62;
-}
-
-/*
   The prompt the sheet was painted from (author road only). A closed record in
-  the variance note's register; open, the text keeps the author's paragraph
+  the quiet 0.62-opacity register; open, the text keeps the author's paragraph
   break and reads as prose, never as code.
 */
 .dpc-prompt {

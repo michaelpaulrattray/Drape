@@ -543,8 +543,10 @@ const FOLLOW = {
 } as const;
 
 const FAMILY_CLAUSE =
-  "Continue this family: cast a close relative of one person — a woman, in their 20s, of Nordic heritage, blonde hair, with a severe minimal look. "
-  + "Same sex, same age, same heritage and same hair colour; the face itself is new.";
+  "Continue this family: same casting brief, new person — a woman, in their 20s, of Nordic heritage, blonde hair, with a severe minimal look. "
+  + "Keep the same sex, age range, heritage, hair-colour family and grooming world. "
+  + "Do not copy this face, this exact hairline, this exact bone structure, or this exact expression. "
+  + "Cast a different person who could be booked for the same role.";
 
 describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road as the family clause (#154), and the unflagged compile does not move", () => {
   it("a FOLLOW at LOW: one prompt on all eight — the brief verbatim, the family clause from the anchor, the block; no author call; the reader's record is the house follow's", async () => {
@@ -609,7 +611,7 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "authored", content: ADDITION, carried: { follow: true } });
   });
 
-  it("an UNLOCK on a follow strips the axis from the clause; an OVERRIDE becomes words — on a follow it replaces the axis, alone it is the whole clause", async () => {
+  it("an UNLOCK on a follow strips the axis from the clause; an OVERRIDE lands in the brief itself — on a follow the clause also states it, alone there is no clause at all (#164)", async () => {
     const unlocked = engineAnswering([ADDITION]);
     const a = await castingBriefCompiler({
       briefText: RICH,
@@ -624,7 +626,7 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     const aClause = (a.compiledBrief.register as { carried: { clause: string } }).carried.clause;
     expect(aClause).not.toContain("woman");
     expect(aClause).not.toContain("same sex");
-    expect(aClause).toContain("Same age, same heritage and same hair colour");
+    expect(aClause).toContain("Keep the same age range, heritage, hair-colour family and grooming world");
     expect(a.candidates[0]?.prompt).toBe(`${RICH}\n\n${aClause}\n\n${HOUSE_BLOCK}`);
 
     const overriddenFollow = engineAnswering([ADDITION]);
@@ -641,6 +643,15 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
     expect(bClause).toContain("a woman, in their 40s, of Nordic heritage");
     expect(bClause).not.toContain("20s");
     expect(b.compiledBrief.register).toMatchObject({ kind: "author", carried: { follow: true, overrides: { ageBand: "40s" } } });
+    /*
+      AT THE WIRE (law 5; review of #173, finding 5): RICH states no decade,
+      so the edit APPENDS — the declared consistent repetition is the brief
+      and the clause stating the same 40s, with no tie-breaker anywhere.
+    */
+    expect((b.compiledBrief.register as { briefSent: string }).briefSent).toBe(`${RICH} In their 40s.`);
+    expect(b.candidates[0]?.prompt.startsWith(`${RICH} In their 40s.\n\n${bClause}`)).toBe(true);
+    expect(b.candidates[0]?.prompt).not.toContain("this wins");
+    expect(b.candidates[0]?.prompt).not.toContain("20s");
 
     const overridden = engineAnswering([ADDITION]);
     const c = await castingBriefCompiler({
@@ -652,11 +663,21 @@ describe("the WIRE — a FOLLOW and a chip edit are CARRIED on the author road a
       creativeRegister: true,
     });
     expect(sent(overridden, "author")).toHaveLength(0);
-    const OVERRIDE_CLAUSE = "Cast as a person, in their 40s, of Slavic heritage; where this differs from the request above, this wins.";
-    expect(c.candidates[0]?.prompt).toBe(`${RICH}\n\n${OVERRIDE_CLAUSE}\n\n${HOUSE_BLOCK}`);
+    /*
+      #164: the edit is written into the sentence itself — RICH states neither
+      a decade nor a heritage word, so both land as plain appended sentences,
+      and there is no override clause and no tie-breaker anywhere.
+    */
+    const REWRITTEN = `${RICH} In their 40s. Of Slavic heritage.`;
+    expect(c.candidates[0]?.prompt).toBe(`${REWRITTEN}\n\n${HOUSE_BLOCK}`);
+    expect(c.compiledBrief.register).not.toHaveProperty("carried");
     expect(c.compiledBrief.register).toMatchObject({
       kind: "author",
-      carried: { follow: false, overrides: { ageBand: "40s", heritage: "Slavic" }, clause: OVERRIDE_CLAUSE },
+      briefSent: REWRITTEN,
+      rewrites: [
+        { field: "ageBand", mode: "appended", to: "In their 40s." },
+        { field: "heritage", mode: "appended", to: "Of Slavic heritage." },
+      ],
     });
     /* The row never says "house" again — that vocabulary belongs to rows written before this landed. */
     for (const compiled of [a, b, c]) expect((compiled.compiledBrief.register as { kind: string }).kind).toBe("author");
