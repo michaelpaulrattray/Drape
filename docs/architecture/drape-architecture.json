@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0d536f8f5285925a"
+    "sourceFingerprint": "0b03116157539b1d"
   },
   "domains": [
     {
@@ -12468,6 +12468,10 @@
     {
       "id": "test:server/reset-look.test.ts",
       "path": "server/reset-look.test.ts"
+    },
+    {
+      "id": "test:server/reviewerCharter.test.ts",
+      "path": "server/reviewerCharter.test.ts"
     },
     {
       "id": "test:server/roleManagement.test.ts",

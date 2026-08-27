@@ -28,6 +28,18 @@
 #     label event is ignored (a `labeled` event for `urgent` or `parked`
 #     must not buy a full review).
 #
+# THE READING IS TIERED (#161, founder-approved 2026-08-27: reviews on his
+# token used ~10% of his cap; Fable stays the reviewer — "it finds things
+# opus would miss" — the cut comes from the READING, not the model):
+#   - ordinary reviews read docs/REVIEWER_CHARTER.md (~15KB), the distilled
+#     project law, instead of the full ~157KB CLAUDE.md;
+#   - money/auth diffs still read CLAUDE.md IN FULL — that is where the
+#     deep context has paid. Triage computes this (the same MONEY pattern
+#     that forces their review) and hands it to the prompt as `deep`.
+#   The charter is DERIVED, never a second authority; CLAUDE.md wins on any
+#   conflict, and server/reviewerCharter.test.ts reddens when CLAUDE.md
+#   gains or renames a law/invariant the charter lacks.
+#
 # Runs on the founder's Claude subscription via CLAUDE_CODE_OAUTH_TOKEN.
 
 name: Fable Review
@@ -56,6 +68,9 @@ jobs:
     timeout-minutes: 5
     outputs:
       review: ${{ steps.decide.outputs.review }}
+      # "yes" when the diff touches money/auth surfaces: the review then reads
+      # CLAUDE.md in full instead of the charter (#161).
+      deep: ${{ steps.decide.outputs.deep }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -72,17 +87,23 @@ jobs:
             echo "Label skip-review — no AI review."
             echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          if echo ",$LABELS," | grep -q ",needs-fable,"; then
-            echo "Label needs-fable — full review."
-            echo "review=yes" >> "$GITHUB_OUTPUT"; exit 0
-          fi
 
+          # The money check runs BEFORE the needs-fable early exit, because it
+          # now also decides the READING (#161): an escalated money PR must
+          # still read CLAUDE.md in full, not the charter.
           git fetch origin "$BASE" --depth=1
           CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
 
           MONEY='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^shared/const\.ts$|^drizzle/'
           if echo "$CHANGED" | grep -qE "$MONEY"; then
-            echo "Money/auth surfaces touched — full review, always."
+            echo "Money/auth surfaces touched — full review, always, reading CLAUDE.md in full."
+            echo "review=yes" >> "$GITHUB_OUTPUT"
+            echo "deep=yes" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "deep=no" >> "$GITHUB_OUTPUT"
+
+          if echo ",$LABELS," | grep -q ",needs-fable,"; then
+            echo "Label needs-fable — full review (charter reading)."
             echo "review=yes" >> "$GITHUB_OUTPUT"; exit 0
           fi
 
@@ -133,9 +154,8 @@ jobs:
           # the progress and the final report.
           track_progress: true
           prompt: |
-            You are the Drape Gatekeeper reviewing this pull request. Read
-            CLAUDE.md in full first — it is project law and defines what a
-            defect is here.
+            You are the Drape Gatekeeper reviewing this pull request.
+            ${{ needs.triage.outputs.deep == 'yes' && 'This diff touches money/auth surfaces: read CLAUDE.md in full first — it is project law, it defines what a defect is here, and money/auth is where its deep context pays.' || 'Read docs/REVIEWER_CHARTER.md in full first — the distilled project law for reviews; it defines what a defect is here. CLAUDE.md remains the authority: open the specific section the charter names whenever a finding turns on detail the charter compresses, but do not read it end to end.' }}
 
             Review the diff for, in priority order:
             1. Correctness bugs — concrete inputs/state that produce wrong
