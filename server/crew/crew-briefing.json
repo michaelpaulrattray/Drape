@@ -1,7 +1,7 @@
 {
-  "edition": 62,
-  "updatedAt": "2026-08-27T21:20:00+10:00",
-  "shift": "foreman-52",
+  "edition": 63,
+  "updatedAt": "2026-08-27T23:20:00+10:00",
+  "shift": "foreman-53",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -398,21 +398,26 @@
   "eyeItems": [
     {
       "id": "family-clause-frames-154",
-      "title": "The ROLE family (#166) + chip edits in the sentence (#164) — the re-strip you asked for",
-      "question": "You said (reply #17) you are waiting on the role-family re-strip — here it is, from the dev drive on your own specimen brief (\"a fitness creator, close-cropped hair\"). Grid 1: a Follow under the REBUILT clause — same casting brief, new person; keep sex, age range, heritage, hair-colour family; do not copy this face, this hairline, this bone structure, this expression. Your success test is the question: different talent on the same shortlist — not siblings, not clones? Grid 2: the same Follow with a 30s→40s chip edit — the edit is now written into the sentence itself (your \"fighting prompt\" ruling, #164): the wire says 40s, says 30s nowhere, and carries no tie-breaker sentence. Do all eight read as 40s? One honest note from my eye on grid 1: four of eight wore hair longer than the brief's \"close-cropped\" — the do-not-copy sentence may be out-arguing a stated hair fact; say if that bothers you and it gets its own small court. If both grids pass your eye, your first Follow on your own account is the court, as you ruled on #154 — it will run under this clause once this deploy lands.",
+      "title": "The role family, RE-STRIPPED after the ghost you caught (#176) — the grids you saw were invalid",
+      "question": "You were right, and the grids you were being asked to judge were thrown out. Why they all looked Indian: when a sheet is authored, one prompt paints all eight — but the old studio's per-face dice still ran quietly and wrote their invented identities into the record, and the family clause read that record as fact. The man you followed had a record claiming '100% South Asian heritage, goatee, mid-length hair' — none of it ever sent to the engine, none of it on his frame — so every 'relative' faithfully inherited a fiction. Fixed and live with this edition (#176, PR #178): those records are now marked as never-sent and nothing may read them as fact; a Follow holds only what your brief actually stated (those words genuinely went to the engine), and anything your brief didn't state is left open rather than invented. These grids are the same two drives re-run on the fixed road: grid 1 a plain Follow of the anchor, grid 2 the same Follow with the 30s→40s chip edit (your sentence rewritten in place, '30s' nowhere on the wire). Your success test is unchanged: different talent on the same shortlist — not siblings, not clones. One spec question, yours to answer whenever: with heritage unstated in the brief, the family now varies freely (grid 1 has one East Asian face, one Nordic). If you'd rather a Follow match the LOOK of the person you followed, that means reading his apparent heritage off the delivered frame — a small build we'd court first. Say the word and it gets designed; silence keeps the honest-variation behaviour.",
       "state": "open",
-      "filedAt": "2026-08-27T08:30:00+10:00",
+      "filedAt": "2026-08-27T23:20:00+10:00",
       "issueNumber": 154,
       "frames": [
         {
-          "key": "crew-eye/74e73030-9cc6-44ad-abc1-882601be1bae.jpg",
-          "arm": "role family · plain Follow",
-          "caption": "Eight from one Follow under the rebuilt clause: heritage, age band and hair colour hold; faces, hairlines and bone structure move. Dev drive, bot account, your specimen brief."
+          "key": "crew-eye/e2978626-e9f7-47e3-a5c5-1bc6b0c107a6.png",
+          "arm": "THE ANCHOR",
+          "caption": "THE ANCHOR — the candidate that was followed (dev roll 103, tile 08). The grids should read as eight others on his shortlist."
         },
         {
-          "key": "crew-eye/36317f45-94f3-4884-afe1-28ac267c18f5.jpg",
-          "arm": "chip edit · 30s→40s",
-          "caption": "The same Follow with the age chip set to 40s: the brief itself now reads \"in their 40s\" (rewritten in place, recorded on the row), no tie-breaker sentence anywhere, and the eight read as men in their 40s."
+          "key": "crew-eye/a2501eb4-a4d8-4e86-94a8-0a6f38f2bf3c.jpg",
+          "arm": "role family · plain Follow · fixed road",
+          "caption": "Eight from one Follow on the FIXED road: the clause holds only the brief's stated facts (age range), heritage left open rather than invented. Wire checked: no word from the old record reaches the engine."
+        },
+        {
+          "key": "crew-eye/c3971789-9964-46c3-bd2f-c8a492f291a7.jpg",
+          "arm": "chip edit · 30s→40s · fixed road",
+          "caption": "The same Follow with the age chip set to 40s: the brief itself reads 'in their 40s' on the wire, '30s' nowhere, no tie-breaker sentence. All eight read as men in their 40s, close-cropped."
         }
       ]
     },
@@ -1152,6 +1157,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T23:20:00+10:00",
+      "shift": "foreman-53",
+      "text": "Your ghost find (#176) is fixed, merged and live. What you caught at the frames was real and bigger than one bad sheet: on authored rolls the old studio's per-face dice still wrote invented identities into every record, and three things read those records as fact — the Follow (your eight Indian 'relatives'), the pronouns and current-value readers on edits, and worst, Sign, which would have stamped the fiction into a Cast's permanent identity papers under 'THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY'. Measured before the fix landed: no Cast and no edit had ever consumed the fiction yet, in dev or production — caught in time. Now the records are marked never-sent and refused everywhere, a Follow holds only what the brief stated, and captions on authored tiles show the tile number instead of a disposition nobody cast. Your invalid grids were re-stripped on the fixed road the same night — on the eye item, with the anchor frame first as you asked. The remaining tidy-up (marking the ~96 already-written records per database) is carded as #179."
+    },
+    {
       "at": "2026-08-27T21:20:00+10:00",
       "shift": "foreman-52",
       "text": "Quiet on your desk (no new replies; the family grids still wait on your eye), so this shift closed a hole in the team’s own review gate (#165). The automatic Fable review physically cannot run on any PR that edits the review workflow itself — the review tool refuses to run a modified copy of itself, a sensible safety rule on its side — but on our side that refusal was showing up as a GREEN check named “review”, as if the review had run and passed. So a change that weakened the reviewer could have merged looking reviewed. Now: any PR touching that file gets a RED review check naming the reason, a “review-skipped” label, and a comment saying plainly “no review ran — review this by hand”. The fix proved itself on its own PR (#175): it edits that very file, so its own review check went red and the label and comment appeared by themselves. Nothing about your product changed — this is the team keeping its own instruments honest."
@@ -1345,11 +1355,6 @@
       "at": "2026-08-26T12:40:00+10:00",
       "shift": "foreman-17",
       "text": "You answered the freeze card at 11:49 — \"List-only\" — and this shift built it. The moderator dashboard's discrepancy card now only lists; freezing is a button a moderator presses, with their name on the audit row. The arithmetic behind the list was read at the real rows first: it had been counting your ruled no-refund failures and every new-studio edit as \"missing\" money. Against production, read-only, your number falls from 7,505 to 1,050 (the leftover is July's parked evidence experiment recording itself twice — nothing live) and every other account reads 0. Two things caught on the way: the code's own tests had been copying the formula instead of testing it, so they stayed green while it was wrong — rewritten; and the first version of the new query silently read 5,160 on production because of how the database library writes a sub-question — found by running it against the real database before trusting it, and now pinned by a test. PR #123 is in the gate; nothing spent. Your eye on roll 217 (the register) is still the milestone gate — I saw you rolling 218 and 219 while I worked, so you may be on it."
-    },
-    {
-      "at": "2026-08-26T11:55:00+10:00",
-      "shift": "foreman-16",
-      "text": "You said \"flip it\" at 11:03, so this shift did step 3. The creative register is switched on for your account only (read back by name, redeployed, health checked three times), and your cyborg brief went through it as roll 217 — eight of eight faces in 137 seconds, 160 credits from your balance. The sheet and the eight singles are in your gallery with the line of variation each face was given; the row confirms it compiled as creative, on three phrases from your own words. What I see: ports, seams and plate on all eight, amber eye on most, no beards, no bodybuilders — and the same black jacket on all eight, so the spread is narrow; your eye decides, and that is the milestone gate. On the way I found something you need to know: your account had been FROZEN since yesterday 13:33 — every roll and edit refused as 'under review' — by the moderator dashboard's discrepancy scan, which runs whenever that card is opened and reads your Casting V2 edits and your own no-refund rule as a 7,505-credit discrepancy. I unfroze you through the admin action so your roll could run, filed #119 with the arithmetic, and put the one design question on a card: should a page load ever freeze an account? Until you answer, don't open that dashboard card. Also merged tonight: the map-merge guard (#100), so concurrent pull requests stop stalling on the generated architecture map. Spent: your 160 credits on your word; about $1.50 of house money on the roll's renders; nothing else."
     }
   ],
   "acknowledgedReplyIds": [
