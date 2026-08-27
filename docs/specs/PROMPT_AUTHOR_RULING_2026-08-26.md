@@ -25,7 +25,7 @@ Evidence he supplied (corrected the same day — the first draft conflated his t
 
 3. One text call **authors** the final prompt: the user's words plus what an expert prompter would add — style, framing, background, lighting, and (per the imagination level) invented specifics. Prose in, prose out. No schema between user and engine.
 4. **The author may reword and restructure freely; FACTS must survive** ("female 30's goth chick with pale skin" → an expert sentence). The reader compares stated facts before and after; a rewording that drops or contradicts one is refused.
-5. **The expanded prompt is shown on the cast, editable.** No hidden prompt, ever.
+5. **The expanded prompt is shown on the cast, editable.** No hidden prompt, ever — **refined 2026-08-27 (founder, verbatim: "its okay to show the prompt … just not our locked settings prompting i dont want competitors stealing our frameworks")**: SHOWN means the customer's words plus the author's content; the locked house block is the studio's trade secret, never displayed and never sent to the client — in its place the one-line disclosure that a locked studio block rides on every roll.
 6. The **reader** keeps running beside the prompt — recording facts for the feature panel, tattoo rows, coverage and rules — and **never authors, never gates, never invents**.
 7. Retired from the roll prompt: the anatomy blocks (SKIN/EYES/SCLERA/PUPILS/CATCHLIGHTS/LASHES/BROWS/LIPS/HAIR/HERITAGE IS BONE), IDENTITY_INTEGRITY, PRIORITY, SPECIFICITY, NEGATIVES, the age/build/grey dice, the 25-word/180-char notes cap, the discard list.
 
