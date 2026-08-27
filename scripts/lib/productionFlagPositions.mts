@@ -181,7 +181,7 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   CASTING_FRAMING_TRIM_SCOPE: {
     position: "users:1",
     why:
-      "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). The retargeted version (a0a988f8, T=0.316, clause out) is what flipped on, satisfying the entry's own condition. ⚠ OFF SINCE 2026-08-24 11:12:46Z AND IT IS NOT A ROLLBACK — the founder RETARGETED the "
+      "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). The retargeted version (a0a988f8, T=0.316, clause out) is what flipped on, satisfying the entry's own condition. ⚠ T MOVED AGAIN 2026-08-27 (#182): the founder reversed the framing itself ('chest up is far too tight we need to see the outfit more') — the house sentence is mid-torso now and T is 0.230, the #182 court's population median (FRAMING_COURT_2_2026-08-27.md). Position unchanged: users:1. ⚠ OFF SINCE 2026-08-24 11:12:46Z AND IT IS NOT A ROLLBACK — the founder RETARGETED the "
       + "feature the same hour, at his own eye (fable-1593). It went on, served exactly one sheet "
       + "(roll 209: 6 of 8 trimmed, 50s, kept originals written), and came off. Two things "
       + "happened in that window and only the second decides this row. (a) A DEFECT: an untrimmed "

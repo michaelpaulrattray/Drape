@@ -96,20 +96,26 @@ function take(from: readonly string[], prefix: string): string {
 }
 
 /**
- * Chest-up, his word — the framing pair. Calibrated by #130; "collarbones",
- * never the breastbone. *"head straight with no tilt"* is out (§5d).
+ * Mid-torso, his word — the framing pair. Founder (terminal, 2026-08-27,
+ * verbatim): *"our pictures are 2:3 the one i sent you was 9:16 i wanted to
+ * test the framing on 2:3 same as our cards it works. chest up is far too
+ * tight we need to see the outfit more. run it"* — with his own 2:3 reference
+ * filed at `docs/specs/references/prompt-author/framing-reference-midtorso-2x3.png`
+ * (measured: face share 22.0%). This REVERSES §3a's chest-up ruling and
+ * supersedes his reply-#13 F2 pick, so "mid-torso" comes OFF the
+ * forbidden-token list in the same commit (#182).
  *
- * The second sentence is the court's F2 arm, HIS PICK (Crew reply #13,
- * 2026-08-27, verbatim: "F2") — his 9:16 reference's view carried into the
- * product's 2:3 frame (~33% head share, tightest spread of the four arms;
- * `docs/specs/FRAMING_COURT_2026-08-27.md` §3/§6). The old sentence (K)
- * measured 36.7%. F2's population (30.2–35.0%) sits above the trim's
- * T = 31.6%, so the sentence and the trim stop fighting; rule 15's
- * retire-the-trim question rides #11, not this constant.
+ * The second sentence is written to the reference's MEASURED geometry and
+ * courted (#182, `docs/specs/FRAMING_COURT_2_2026-08-27.md`): delivered
+ * median 23.0% face share (20.7–28.1, n=10) against the old pair's 32.1%
+ * replication — the outfit's upper body visible on every delivered frame.
+ * The trim's T moved to 0.230 with it (interplay declared on the card);
+ * the mid-torso sentence refused 6/16 vs K's 1/8 on the goth brief — the
+ * per-render coin (#93), recorded for #129.
  */
 export const AUTHOR_ROAD_FRAMING: readonly string[] = [
-  "FRAMING: Single figure only, chest-up, centred, square to camera.",
-  "Frame from the chest up in a 2:3 portrait: the face takes up about a quarter of the frame's height, the eyes about 30% of the way down from the top edge, a small margin of headroom above the hair, the crop line across the chest below the collarbones, shoulders running off both edges of the frame.",
+  "FRAMING: Single figure only, mid-torso up, centred, square to camera.",
+  "Frame from mid-torso up in a 2:3 portrait: the face takes up about a fifth of the frame's height, the eyes about a third of the way down from the top edge, a small margin of headroom above the hair, the crop line at mid-torso between the chest and the waist so the outfit's upper body is fully visible, both shoulders fully inside the frame with air at both sides.",
 ];
 
 /** §5d, his words paraphrased into one rule: *"casting posture communicates energy/vibe not a pose."* */
@@ -248,8 +254,11 @@ export const DROPPED_FROM_BLOCK: ReadonlyArray<{ phrase: string; from: string }>
   { phrase: "DIRECTION block", from: "EXPRESSION (dangling referent)" },
   { phrase: "Eight candidates", from: "CAPTURE (set narration, §5b)" },
   { phrase: "always wins", from: "AUTHORITY (rule 8)" },
-  { phrase: "waist-up", from: "FRAMING (chest-up, §3a)" },
-  { phrase: "mid-torso", from: "FRAMING (chest-up, §3a)" },
+  /* "mid-torso" was on this list under §3a's chest-up ruling and came OFF it
+     2026-08-27 when the founder reversed the framing itself ("chest up is far
+     too tight we need to see the outfit more", #182) — the block now SAYS
+     mid-torso. "waist-up" stays out: the crop is mid-torso, never the waist. */
+  { phrase: "waist-up", from: "FRAMING (mid-torso, #182)" },
   { phrase: "sternum", from: "FRAMING (court §4)" },
 ];
 

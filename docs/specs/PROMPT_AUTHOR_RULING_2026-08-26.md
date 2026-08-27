@@ -50,6 +50,19 @@ behind the face; soft frontal studio light with specular on the materials and de
 open shadows. THIS is what "chest up" means in the photoreal bundle, and the framing
 reading (head-share / headroom) is calibrated on this frame, not on a prose description.
 
+> ⚠ **THE CROP HALF OF THIS SECTION IS SUPERSEDED (founder, 2026-08-27, #182,
+> verbatim: *"our pictures are 2:3 the one i sent you was 9:16 i wanted to test
+> the framing on 2:3 same as our cards it works. chest up is far too tight we
+> need to see the outfit more. run it"*).** The FRAMING reference is now his own
+> 2:3 frame at
+> `docs/specs/references/prompt-author/framing-reference-midtorso-2x3.png`
+> (1280×1928 — the product's shape; measured face share 22.0%, crop at
+> mid-torso between chest and waist, shoulders fully inside the frame), courted
+> in `FRAMING_COURT_2_2026-08-27.md` and shipped as `AUTHOR_ROAD_FRAMING` with
+> the trim's T at 0.230. The two 9:16 chest-up frames above remain the LOOK
+> reference — light, mood, grey seamless, specular — and are no longer the
+> crop's authority.
+
 ## 4. Outfits, variation, length, framing, refusals
 
 11. **The wardrobe/basics toggle is retired.** "there is no way we could invent these types of outfits with words the engine just does it beautifully we should just let the engine decide the outfits based on the prompt". "Basics" is a word a user may type, not a mode or a default.

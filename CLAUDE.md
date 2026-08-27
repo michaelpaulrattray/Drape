@@ -560,7 +560,16 @@ one from whoever owns its road.
   compares to the service on every push — so the record, not this paragraph,
   is where the position lives. The widening condition past `users:1` (his eye
   on strips from his own flagged rolls, with the untrimmed rate and the
-  per-sheet wall-clock beside them) still stands; #11 holds the readings
+  per-sheet wall-clock beside them) still stands; #11 holds the readings.
+  ⚠ **T MOVED A SECOND TIME 2026-08-27 (#182): 31.6% → 23.0%.** The founder
+  reversed the framing itself (*"chest up is far too tight we need to see the
+  outfit more. run it"*, with his own 2:3 reference measuring 22.0% face
+  share): the house sentence (`AUTHOR_ROAD_FRAMING`) is mid-torso now, and at
+  the old T the trim would have cropped every sheet back toward the chest-up
+  look he refused — the interplay the card declared. T = 0.230 is the #182
+  court's delivered population's median (20.7–28.1%, n=10,
+  `docs/specs/FRAMING_COURT_2_2026-08-27.md`); "mid-torso" came OFF
+  `DROPPED_FROM_BLOCK` in the same commit
 - `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
   account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
   5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is
