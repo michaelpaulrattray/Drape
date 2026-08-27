@@ -1,7 +1,7 @@
 {
-  "edition": 54,
-  "updatedAt": "2026-08-27T11:40:00+10:00",
-  "shift": "foreman-45",
+  "edition": 55,
+  "updatedAt": "2026-08-27T14:20:00+10:00",
+  "shift": "foreman-49",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -478,9 +478,9 @@
     },
     {
       "id": "framing-court-130",
-      "title": "The frame (#130) — your reference is 9:16, we render 2:3: which target?",
-      "question": "Top row is your reference frame, shown at its own 9:16 shape. K is today's framing sentence (about 36% head share). F1 barely moves it. F2 says your reference's geometry in numbers and lands about 33% — the tightest of the four; F3 about 34%. No sentence gets to 28%, and here is why: carrying your reference's view into our 2:3 frame gives about 33%, not 28% — a 28% face in our frame would be a WIDER picture than your reference. So the choice is (a) 28% in our frame — a wider shot than your reference, which words cannot reach and would need a render-side build (render taller, crop to it), or (b) your reference's VIEW carried into our frame (~33%), which F2 delivers now. My recommendation: (b) with F2's sentence — it is your frame carried honestly into our shape, it sits above the trim's 31.6% so the trim and the sentence stop fighting, and it is one small PR. Say 'F2', 'K', or 'wider' — or say what is off in the crop. (Two things I saw: the numeric sentences refused 5 of 24 where K refused 0 of 8, and they drew chest tattoos nobody asked for — small numbers, both go to the refusal patrol.) UPDATE from the refusal patrol: F2 was rolled eight more times tonight — 8 of 8 delivered, no refusal; the 5-of-24 was the filter's coin, not the sentence.",
-      "state": "open",
+      "title": "ANSWERED — the frame (#130): you said F2, and F2 is now the block's framing sentence",
+      "question": "You answered (reply #13): \"F2\". Done — the locked block's framing sentence is now F2's, word for word: the face about a quarter of the frame's height, the eyes about 30% down, the crop below the collarbones. It is your reference's view carried into our 2:3 shape (~33% head share, the tightest spread of the four rows you judged), live on your account with this deploy — your next roll frames this way. Two riders filed where they belong: whether the trim retires now that the sentence holds head size above the trim's own bar is on #11 with your flagged rolls' readings, and the numeric sentence's refusals stay #129's to measure.",
+      "state": "answered",
       "filedAt": "2026-08-27T03:05:00+10:00",
       "issueNumber": 130,
       "frames": [
@@ -712,6 +712,13 @@
   ],
   "pipeline": [
     {
+      "id": "reviewer-diet-161",
+      "title": "The reviewer's diet (#161) — BUILT: ordinary PR reviews read a 15KB charter instead of the 157KB law book; money/auth reviews keep the full reading",
+      "status": "done",
+      "prNumber": 163,
+      "note": "Your approval this morning (#161): Fable stays the reviewer, the cut comes from the reading. Built: docs/REVIEWER_CHARTER.md distils what reviews actually cite (the laws, the nine invariants, the access grid, the money/auth map, the flag rules — 15KB against 157KB, roughly a tenth of the reading and the token spend per ordinary review); review.yml sends ordinary reviews to it while any money/auth diff still reads the full law book; and a drift guard derives the law/invariant headings from CLAUDE.md itself, so the charter cannot silently fall behind (proven able to fail: renaming one heading reddens exactly that arm). The week-out measurement — findings per review, before and after, so the diet is proven not to have dulled the eyes — is the Retro's on its clock (~09-02). One thing found on the way, filed as #165: a PR that edits the review workflow itself gets NO review while the check still reads green (the action's own safety skip) — this PR was exactly that shape, so the skip is recorded on it and the hole has a card with three repair options."
+    },
+    {
       "id": "quiet-edition-refusal-159",
       "title": "The deploy rite refuses a QUIET edition (#159) — MERGED",
       "status": "merged",
@@ -769,10 +776,10 @@
     },
     {
       "id": "framing-court-130",
-      "title": "The framing court (#130) — RUN: four framing sentences on the locked block, your thin brief × 8 each — strip in your gallery, nothing moved",
-      "status": "waiting-founder",
-      "prNumber": null,
-      "note": "Your words: 'Calibrate the preset's framing to my reference frame (28% head share).' Last night's lighting court measured every arm at about 36% against your 28%, all on the same framing sentence — so tonight only that sentence moved. K = today's ('the crop just below the collarbones'); F1 = the crop said lower in anatomy (a hand's width below the collarbones); F2 = your reference's geometry said in numbers ('the face takes up about a quarter of the frame's height, the eyes about 30% down'); F3 = the same at 'a little under a third'. Same brief ('goth woman mid 30s'), same Low road, same block otherwise. What came back: K 36.7% (same as last night), F1 35.9% (no different), F2 32.6% with the tightest spread, F3 33.7%. No sentence reaches 28%. The reason is worth having: your reference frame is 9:16 and the product renders 2:3 — the SAME view carried into our frame reads about 33%, which F2 already hits; a 28% face in a 2:3 frame would be a wider picture than your reference (more torso, smaller head). Two costs to state: the numeric sentences refused 5 of 24 where today's refused 0 of 8 (small numbers, #129 will measure), and they drew chest tattoos the brief never asked for. One interaction: the framing trim on your account crops any frame under 31.6% back to 31.6%, so a 28% sentence would be undone on your own rolls — rule 15 (retire the trim?) waits on your target. Spend $2.05 house (estimated $2.12 first), no credits, no rows. Record: docs/specs/FRAMING_COURT_2026-08-27.md."
+      "title": "The framing court (#130) — JUDGED BY YOU (\"F2\") and BUILT: F2 is the block's framing sentence, merged and deployed",
+      "status": "done",
+      "prNumber": 162,
+      "note": "Your word (reply #13): \"F2\". Executed exactly as the court record's own F2 branch wrote it: the second framing sentence of the locked block is F2's, verbatim — nothing else moved, suite green (61 register arms + 12 family-clause arms), PR #162 through the gate. What it buys: every roll on the author road now asks for your reference's view in our 2:3 frame (~33% head share, measured 30.2–35.0 with the tightest spread of the four arms) instead of today's 36.7%. Rule 15 (does the framing trim retire now that the sentence holds head size above the trim's 31.6% bar?) is filed on #11 beside the readings it needs; the numeric sentence's 2-in-8 refusal reading is #129's. #130 is closed with the verdict recorded. Record: docs/specs/FRAMING_COURT_2026-08-27.md §6."
     },
     {
       "id": "lighting-court-128",
@@ -1122,6 +1129,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-27T14:20:00+10:00",
+      "shift": "foreman-49",
+      "text": "Your \"F2\" landed and is executed: the locked block's framing sentence is F2's word for word (PR #162, merged, deployed) — your reference's view carried into our 2:3 frame, ~33% head share against the old 36.7%. Your next roll frames this way; nothing else in the block moved. The trim question it raises (retire it, now that the sentence holds head size above the trim's own bar?) is filed on #11 with the readings it needs, not decided. And your reviewer's diet (#161) is built the same shift: ordinary PR reviews now read a 15KB charter instead of the full 157KB law book — same Fable, same priorities, about a tenth of the reading on your token — while money/auth diffs keep the full reading, and a drift guard reddens if the charter ever falls behind the law. Found on the way and carded (#165): a PR that edits the review workflow itself silently gets no review while the check reads green — three repair options on the card. Still waiting on your eye: the light (#128, pick a row by letter), the rebuilt block's frames (#144), and your first Follow (#154 — tap Follow on a face you like; that roll is the court). $2.05-course spend was last night's; this shift spent $0 house, 0 credits."
+    },
+    {
       "at": "2026-08-27T11:40:00+10:00",
       "shift": "foreman-45",
       "text": "Your morning finding became a guard: the deploy rite now refuses a quiet edition (#159, PR #160, merged). Before it pushes, it reads what is actually being pushed — if the only change is the briefing and the only change in the briefing is a \"nothing needed doing\" line, it refuses and tells the shift to write its note and stop; anything real beside it still deploys. Proven both ways at the real rite before merging (a throw-away quiet edition refused, the working branch not), and the two quiet deploys you paid for this morning are judged quiet by the same code in its test. Still no new word from you (12 replies, all acknowledged); the milestone still waits on your eye — your first Follow, the framing strip, the lighting sheets, the rebuilt block. $0 house, 0 credits, no renders."
@@ -1334,6 +1346,7 @@
     9,
     10,
     11,
-    12
+    12,
+    13
   ]
 }
