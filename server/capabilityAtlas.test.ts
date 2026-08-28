@@ -8,7 +8,7 @@
  * the library recomputes from the same data, so a stale census fails the suite
  * the way a stale Atlas does.
  */
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
 
@@ -16,7 +16,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildStaticAtlas, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings, listFiles, outcomeId,
-  pinningTests, readCommittedAtlas, reasonOfNote,
+  pinningTests, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
+  CAPABILITY_MD, type Finding,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
@@ -200,5 +201,90 @@ describe("the committed census is fresh", () => {
   it("its static half matches a fresh build of this tree (regenerate if this is red)", () => {
     if (!committed) return;
     expect(JSON.stringify(committed.static)).toEqual(JSON.stringify(buildStaticAtlas(CORPUS)));
+  });
+
+  /*
+    ⚠ #195's SWEEP — THE PAGE IS GENERATED TOO AND NOTHING COMPARED IT.
+
+    `writeAtlas` writes two files, the JSON and `capability-atlas.md`, and both
+    the CLI check and this suite read only the first. So a hand-edited or stale
+    committed PAGE — the artifact a human actually reads — shipped green.
+
+    It is the mirror of the defect this shift fixed in `check-architecture.mts`:
+    there, an UNTRACKED derived file was refused over; here, a TRACKED one was
+    never looked at. The rule both now follow: a freshness verdict is a finding
+    exactly where a reviewable committed copy exists. This file is tracked, and
+    `server/atlasMergeDriver.test.ts` pins that `.gitattributes` names it.
+
+    Compared on CONTENT: the generator writes LF and a Windows checkout can
+    hand it back with CRLF (fable-1366 §3c, paid for once already).
+  */
+  /* The path the WRITER uses, imported rather than retyped beside it — a
+     second spelling of a path is a second source of truth (working law 4).
+     `lfOnly` and the comparison itself come from the library for the same
+     reason: the CLI check and this suite must not be two opinions about one
+     artifact, which is how they came to disagree (PR #201's review). */
+  const pagePath = CAPABILITY_MD;
+
+  it("⚠ its PAGE matches a render of the committed census (regenerate if this is red)", () => {
+    if (!committed) return;
+    expect(existsSync(pagePath), "the committed page exists").toBe(true);
+    expect(committedPageIsFresh(committed, buildStaticAtlas(CORPUS), readFileSync(pagePath, "utf8"))).toBe(true);
+  });
+
+  it("CONTROL — a hand-edited page does NOT match, and a CRLF checkout does", () => {
+    /* Without this, the arm above is satisfied by a comparison that returns
+       true for anything. One appended line must break it; a line-ending smudge
+       must not — the two failure modes the architecture checker learned to tell
+       apart the hard way. */
+    if (!committed) return;
+    const fresh = renderCapabilityPage({ ...committed, static: buildStaticAtlas(CORPUS) });
+    expect(committedPageIsFresh(committed, buildStaticAtlas(CORPUS), `${fresh}hand edited\n`)).toBe(false);
+    /* ⚠ THE CRLF HALF IS DRIVEN THROUGH THE COMPARISON, NOT THROUGH THE
+       NORMALIZER (second review of #201). Asserting `lfOnly(crlf(x)) ===
+       lfOnly(x)` exercises `lfOnly` in isolation: delete the `lfOnly(pageText)`
+       call from `committedPageIsFresh` and every arm in both suites stays green
+       while a CRLF working copy gets the false "stale" verdict fable-1366 §3c
+       already paid for once. A normalizer that is correct and never consulted
+       is the failure this whole file is the opposite of. */
+    expect(committedPageIsFresh(
+      committed,
+      buildStaticAtlas(CORPUS),
+      fresh.split("\n").join(String.fromCharCode(13) + "\n"),
+    )).toBe(true);
+  });
+
+  it("⚠ A ROUTE-CHANGED FINDING DOES NOT MAKE ITS OWN PAGE STALE (PR #201's review, finding 1)", () => {
+    /*
+      The defect the review caught before it could fire. `drivenFindings` emits
+      `changed:*` rows ONLY when handed a prior census — which `--drive` does
+      and `--check` deliberately does not. So the first spelling of this check
+      compared the committed page against a FRESHLY COMPUTED atlas, and a page
+      written by a legitimate re-drive after a route moved would have been
+      called "stale or hand-edited" on every machine, forever: the exact class
+      of misleading refusal #195 exists to remove, planted one checker over.
+
+      Driven on a SYNTHETIC census rather than waiting for a real route change:
+      today's committed census carries no `changed:*` row, so an arm resting on
+      the real one would pass whatever the comparison did.
+    */
+    if (!committed) return;
+    const routeChanged: Finding = {
+      id: "changed:probe", severity: "error", kind: "route-changed", subject: "probe",
+      message: '"a probe ask" — committed refusal_a, now refusal_b',
+    };
+    const afterDrive = { ...committed, findings: [...committed.findings, routeChanged] };
+    const staticAtlas = buildStaticAtlas(CORPUS);
+    const page = renderCapabilityPage({ ...afterDrive, static: staticAtlas });
+
+    /* The page prints severity/kind/subject/message, not the id — read off the
+       renderer rather than assumed, which is what the first spelling of this
+       line got wrong and this population control caught. */
+    expect(page, "the finding really does reach the page").toContain("`route-changed` probe");
+    expect(committedPageIsFresh(afterDrive, staticAtlas, page), "its own census renders it").toBe(true);
+    /* CONTROL — and it is only true because the COMMITTED findings are the
+       target. A census without that row (what a recomputing check holds) does
+       not reproduce the page, which is precisely the false refusal. */
+    expect(committedPageIsFresh(committed, staticAtlas, page)).toBe(false);
   });
 });

@@ -734,6 +734,45 @@ export function readCommittedAtlas(): CapabilityAtlas | null {
   return JSON.parse(fs.readFileSync(CAPABILITY_JSON, "utf8")) as CapabilityAtlas;
 }
 
+/**
+ * A line ending is a fact about the checkout, never about what the generator
+ * produced — the generator writes LF and a Windows checkout hands it back with
+ * CRLF (fable-1366 §3c, which cost one false "stale" verdict already). Named
+ * and exported rather than inlined at each bite site, because that ruling's
+ * whole content was that an inline copy beside one comparison is the defect
+ * shape. `check-architecture.mts` keeps its own `LF_ONLY` on purpose: it is a
+ * named function in its own module, and importing the capability library into
+ * the architecture checker would couple two maps that share nothing else.
+ */
+export const lfOnly = (text: string): string => text.split("\r\n").join("\n");
+
+/**
+ * ⚠ IS THE COMMITTED PAGE A FAITHFUL RENDER OF THE COMMITTED CENSUS — and note
+ * WHICH census (PR #201's review, finding 1).
+ *
+ * `writeAtlas` writes the JSON and the page together, so the invariant owed is
+ * *the page derives from the committed census*. The obvious spelling —
+ * comparing against a render of a FRESHLY COMPUTED atlas — is wrong here and
+ * would have refused a page nobody touched: `drivenFindings` emits its
+ * `changed:*` (route-changed) rows ONLY when handed a prior census, which
+ * `--check` deliberately does not do, while `--drive` does. So a legitimate
+ * re-drive after a route moves bakes `changed:*` into the page, and every later
+ * check would recompute without them and report "stale or hand-edited" — the
+ * exact class of misleading refusal #195 was opened to remove, planted one
+ * checker over.
+ *
+ * The static half is NOT taken from the committed census: it is the one thing
+ * a check must recompute, and the line above this call already reports it
+ * separately when it drifts.
+ */
+export function committedPageIsFresh(
+  committed: CapabilityAtlas,
+  staticAtlas: StaticAtlas,
+  pageText: string,
+): boolean {
+  return lfOnly(pageText) === lfOnly(renderCapabilityPage({ ...committed, static: staticAtlas }));
+}
+
 export function writeAtlas(atlas: CapabilityAtlas): void {
   fs.mkdirSync(CAPABILITY_OUT_DIR, { recursive: true });
   fs.writeFileSync(CAPABILITY_JSON, `${JSON.stringify(atlas, null, 2)}\n`);

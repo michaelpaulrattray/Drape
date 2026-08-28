@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -136,6 +137,129 @@ describe("architecture atlas", () => {
     const { ok, problems } = checkArchitecture({ readFile: tampered });
     expect(ok).toBe(false);
     expect(problems.join(" ")).toContain("drape-architecture.json is stale");
+  }, 60_000);
+
+  /*
+    #195 — THE EXPLORER IS UNTRACKED, SO ITS STALENESS IS NOT A FINDING.
+
+    `docs/architecture/index.html` is gitignored (`.gitignore:21`). Merging a
+    PR that regenerated the Atlas and fast-forwarding `main` brings a new
+    `drape-architecture.json` and CANNOT bring the explorer, so the local copy
+    is stale BY CONSTRUCTION — and the checker refused over it, on a file whose
+    only writer is `pnpm architecture:generate` and whose "diff" nobody can
+    review. Three consecutive deploy rites paid for it.
+
+    All four arms are driven through INJECTED dependencies rather than by
+    touching git's index: `git add -f` on an ignored file to prove a tracked
+    arm would be a test that mutates the repository to observe itself.
+  */
+  const realTracked = (): ReadonlySet<string> => new Set(
+    execFileSync("git", ["ls-files"], { cwd: repoRoot, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 })
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => line.trim()),
+  );
+  const EXPLORER = "docs/architecture/index.html";
+  const SCHEMA_FILE = "docs/architecture/drape-architecture.schema.json";
+  /* A reader that answers `answer` for one repo-relative path and the real
+     bytes for everything else. `null` means "this file is not there". */
+  const readerFor = (relative: string, answer: string | null) => (at: string): string => {
+    if (at.split("\\").join("/").endsWith(relative)) {
+      if (answer === null) throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+      return answer;
+    }
+    return fs.readFileSync(at, "utf8");
+  };
+
+  it("⚠ #195 — AN UNTRACKED EXPLORER THAT DISAGREES WITH THE ATLAS IS NOT A PROBLEM", () => {
+    /* foreman-78's scenario, reproduced exactly: the file on disk holds an
+       older render. Today's population is the REAL index, in which the
+       explorer is ignored — so if this ever goes red, either the file was
+       tracked or the rule was removed. */
+    expect(realTracked().has(EXPLORER), "the explorer is gitignored today").toBe(false);
+    const { ok, problems } = checkArchitecture({ readFile: readerFor(EXPLORER, "<html>an older render</html>") });
+    expect(problems.join(" | ")).not.toContain("index.html");
+    expect(ok, `problems: ${problems.join(" | ")}`).toBe(true);
+  }, 60_000);
+
+  it("CONTROL — the same disagreement on a TRACKED explorer still refuses", () => {
+    /* Without this the arm above is satisfied by a checker that stopped
+       comparing. The only difference between the two is what git says. */
+    const tracked = new Set([...realTracked(), EXPLORER]);
+    const { ok, problems } = checkArchitecture({
+      trackedFiles: () => tracked,
+      readFile: readerFor(EXPLORER, "<html>an older render</html>"),
+    });
+    expect(ok).toBe(false);
+    expect(problems.join(" | ")).toContain(`${EXPLORER} is stale or hand-edited`);
+  }, 60_000);
+
+  it("CONTROL — a TRACKED generated file missing from the working tree refuses", () => {
+    /* The state step 3 already reports for the Atlas itself. */
+    const tracked = new Set([...realTracked(), EXPLORER]);
+    const { ok, problems } = checkArchitecture({
+      trackedFiles: () => tracked,
+      readFile: readerFor(EXPLORER, null),
+    });
+    expect(ok).toBe(false);
+    expect(problems.join(" | ")).toContain(`${EXPLORER} is tracked but is not in the working tree`);
+  }, 60_000);
+
+  it("CONTROL — the secret sweep REPORTS a file it cannot open rather than skipping it", () => {
+    /*
+      ⚠ THIS WAS THE SECOND HALF OF THE ARM ABOVE AND CI CAUGHT IT. Pinned
+      there on `index.html`, it passed locally and failed on the gate: on a
+      fresh clone that file DOES NOT EXIST, so `readdirSync` never lists it and
+      step 6 never tries to read it. Two behaviours through one fixture whose
+      population differs between worlds — the arm could not be right in both.
+
+      Driven on `annotations.yaml` instead: tracked, present in every world,
+      inside `docs/architecture/`, and read by step 6 alone — so this arm says
+      exactly one thing and says it everywhere. A swallowed read is the silent
+      green invariant 7 exists against.
+    */
+    const { ok, problems } = checkArchitecture({
+      readFile: readerFor("docs/architecture/annotations.yaml", null),
+    });
+    expect(ok).toBe(false);
+    expect(problems.join(" | ")).toContain("annotations.yaml: could not be read for the secret sweep");
+  }, 60_000);
+
+  it("CONTROL — a tracked file that is UNREADABLE is not reported as missing (review of #201)", () => {
+    /*
+      A catch-all mapped every read failure — EACCES, EISDIR, anything — onto
+      "is not in the working tree — run pnpm architecture:generate", which
+      cannot fix either of those. That is the send-them-at-the-wrong-hypothesis
+      failure this whole change was opened to remove, so it may not be
+      reintroduced two lines below the docblock that names it.
+    */
+    const tracked = new Set([...realTracked(), EXPLORER]);
+    const denied = (at: string): string => {
+      if (at.split("\\").join("/").endsWith(EXPLORER)) {
+        throw Object.assign(new Error("EACCES"), { code: "EACCES" });
+      }
+      return fs.readFileSync(at, "utf8");
+    };
+    const { ok, problems } = checkArchitecture({ trackedFiles: () => tracked, readFile: denied });
+    expect(ok).toBe(false);
+    expect(problems.join(" | ")).toContain(`${EXPLORER} is tracked but could not be read (EACCES)`);
+    expect(problems.join(" | ")).not.toContain("is not in the working tree");
+  }, 60_000);
+
+  it("⚠ #195 SWEEP — the committed SCHEMA is generated too, and nothing compared it", () => {
+    /*
+      `writeAtlas` writes three files; this check only ever read two of them.
+      `drape-architecture.schema.json` IS tracked, so a hand-edited or stale
+      one is exactly the reviewable finding the explorer is not — and it
+      shipped green until now. Same class as the arms above with the sign
+      flipped, which is why both go through one comparison.
+    */
+    expect(realTracked().has(SCHEMA_FILE), "the schema is committed").toBe(true);
+    const { ok, problems } = checkArchitecture({
+      readFile: readerFor(SCHEMA_FILE, '{\n  "hand": "edited"\n}\n'),
+    });
+    expect(ok).toBe(false);
+    expect(problems.join(" | ")).toContain(`${SCHEMA_FILE} is stale or hand-edited`);
   }, 60_000);
 
   it("lives outside the client tree so Vite never bundles it", () => {
