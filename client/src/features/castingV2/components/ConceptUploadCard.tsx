@@ -3,7 +3,8 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { ACCEPTED_PICTURE_FILES, asBase64 } from "../pictureBytes";
-import { logRawFailure, readableFailure } from "@/lib/failureSentence";
+import { logRawFailure } from "@/lib/failureSentence";
+import { readableGatedFailure } from "../failureCopy";
 import {
   CONCEPT_CARD_COMING,
   CONCEPT_CARD_LINE,
@@ -78,10 +79,12 @@ export function ConceptUploadCard({
         OUR SENTENCE, NEVER THE ERROR'S. The door's own refusals are written
         for a reader ("I couldn't find a person in that picture") and pass
         through untouched; a transport or a parser gets the fallback — and its
-        own words go to the console rather than into the void.
+        own words go to the console rather than into the void. `Gated` because
+        this control can be drawn live and then find the scope closed under it:
+        the door's flag-first "No such thing." is a probe answer, never copy.
       */
       logRawFailure("concept-upload/describe", error);
-      toast(readableFailure(error, CONCEPT_FAILED_FALLBACK));
+      toast(readableGatedFailure(error, CONCEPT_FAILED_FALLBACK));
     }
   };
 

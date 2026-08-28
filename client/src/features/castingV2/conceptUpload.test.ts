@@ -10,6 +10,7 @@ import {
   briefWithDescription,
 } from "./conceptUpload";
 import { ACCEPTED_PICTURE_FILES } from "./pictureBytes";
+import { readableGatedFailure } from "./failureCopy";
 
 /**
  * UPLOAD A CONCEPT'S SURFACE, driven rather than reviewed (#185 slice two).
@@ -151,10 +152,12 @@ describe("the card is absent-or-live, never drawn as a control that can only ref
 
   it("shows our sentence and never the error's", async () => {
     const source = withoutProse(await readFile(CARD, "utf8"));
-    expect(source).toContain("readableFailure(error, CONCEPT_FAILED_FALLBACK)");
+    expect(source).toContain("readableGatedFailure(error, CONCEPT_FAILED_FALLBACK)");
     /* The two failures are separate: the browser's read and the door's refusal
        ask her to do different things. */
     expect(source).toContain("CONCEPT_FILE_UNREADABLE");
+    /* And neither is discarded — the raw text is moved to the console, not lost. */
+    expect(source).toContain("logRawFailure(");
   });
 
   it("fills the box and stops — nothing is rolled and nothing is charged", async () => {
@@ -234,5 +237,50 @@ describe("the box the description lands in can be read", () => {
     expect(field).toContain("ref: forwarded");
     expect(field).toContain("ref.current = node;");
     expect(field).toMatch(/forwarded\.current = node/);
+  });
+});
+
+describe("a scope that closes under a live control never speaks to the customer", () => {
+  /*
+    The review of #188's LOW finding, fixed as the CLASS. Every flag-gated
+    procedure answers outside its scope with NOT_FOUND: "No such thing." — right
+    for a probe, and passed straight through by `readableFailure`, because
+    NOT_FOUND is on its OURS list. On a control that was DRAWN LIVE (stale
+    config, scope narrowed while the page was open) that reaches the screen.
+  */
+  const notFound = { data: { code: "NOT_FOUND" }, message: "No such thing." };
+
+  it("swallows the flag-first probe sentence", () => {
+    expect(readableGatedFailure(notFound, CONCEPT_FAILED_FALLBACK)).toBe(CONCEPT_FAILED_FALLBACK);
+    expect(readableGatedFailure(notFound, CONCEPT_FAILED_FALLBACK)).not.toContain("No such thing");
+  });
+
+  it("STILL PASSES our own authored refusals — the arm that stops this becoming a gag", () => {
+    /*
+      The positive control, and the one that matters: a helper that returned the
+      fallback for everything would pass the arm above and silently replace the
+      door's real sentences ("I couldn't find a person in that picture"), which
+      is the exact defect `readableFailure` exists to prevent, inverted.
+    */
+    const spoken = {
+      data: { code: "BAD_REQUEST" },
+      message: "I couldn't find a person in that picture — try one with someone in it.",
+    };
+    expect(readableGatedFailure(spoken, CONCEPT_FAILED_FALLBACK)).toBe(spoken.message);
+  });
+
+  it("still replaces what a gateway or a parser wrote", () => {
+    const parser = { message: "Unexpected token 'u', \"upstream error\" is not valid JSON" };
+    expect(readableGatedFailure(parser, CONCEPT_FAILED_FALLBACK)).toBe(CONCEPT_FAILED_FALLBACK);
+  });
+
+  it("is used at BOTH flag-gated call sites, not just the one that found it", async () => {
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).toContain("readableGatedFailure(error, CONCEPT_FAILED_FALLBACK)");
+    const sheet = withoutProse(
+      await readFile(new URL("../../pages/CastingSheet.tsx", import.meta.url), "utf8"),
+    );
+    /* Retry is behind CASTING_RETRY_SCOPE and is LIVE on his account today. */
+    expect(sheet).toContain(`readableGatedFailure(error, "That tile didn't arrive again.`);
   });
 });

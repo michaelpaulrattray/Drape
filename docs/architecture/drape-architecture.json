@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e5e3dea5100a99d0"
+    "sourceFingerprint": "516dd8c3c67c5119"
   },
   "domains": [
     {
@@ -15669,6 +15669,11 @@
     {
       "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
       "to": "module:client/src/features/castingV2/conceptUpload.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "to": "module:client/src/features/castingV2/failureCopy.ts",
       "kind": "imports"
     },
     {

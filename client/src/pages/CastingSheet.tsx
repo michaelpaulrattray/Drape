@@ -19,7 +19,11 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
-import { readableFailure, refineFailureMessage } from "@/features/castingV2/failureCopy";
+import {
+  readableFailure,
+  readableGatedFailure,
+  refineFailureMessage,
+} from "@/features/castingV2/failureCopy";
 import { failureIsOurs } from "@/lib/failureSentence";
 import { markOutcomeShown } from "@/features/operations/outcomeShown";
 import {
@@ -687,7 +691,9 @@ export default function CastingSheet() {
     retry
       .mutateAsync({ clientRequestId: crypto.randomUUID(), candidateId })
       .catch((error: Error) => {
-        toast(readableFailure(error, "That tile didn't arrive again. Your credits are back."));
+        /* Gated: Retry is behind CASTING_RETRY_SCOPE, so a scope that closes
+           under an open sheet would otherwise toast "No such thing." */
+        toast(readableGatedFailure(error, "That tile didn't arrive again. Your credits are back."));
       })
       .finally(() => {
         void invalidate().finally(() => {
