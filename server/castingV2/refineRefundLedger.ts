@@ -193,6 +193,22 @@ export const REFINE_REFUND_COPY: Readonly<Record<RefineRefundReason, RefundSente
  * or absent detail takes the sentence's `withoutDetail` half, which is what the
  * inline chain did.
  */
+/*
+  ⚠ TOTAL OVER THE TYPE, NOT OVER RUNTIME STRINGS — the one behaviour this move
+  does change, recorded here rather than left to be discovered (gate review of
+  PR #215, observation 2).
+
+  The inline chain fell through to *"the generation failed"* for ANY unmatched
+  value; this indexes the table and would throw on a `failureClass` outside the
+  union. Verified unreachable today — every `ProviderError` construction in the
+  product passes a typed literal or a value from a function typed to the closed
+  union — and it is left that way ON PURPOSE: a silent fallback is how a class
+  nobody declared reaches a customer's receipt wearing another class's words,
+  which is the whole defect this module exists to end. If it ever did fire, the
+  throw lands in `refineService`'s own catch, the operation stays leased and
+  the recovery sweep refunds it: money conserved, at the cost of the ~6-minute
+  wait the deploy-collision class already carries.
+*/
 export function refineRefundDescription(reason: RefineRefundReason, detail?: string): string {
   const sentence = REFINE_REFUND_COPY[reason];
   if (sentence.kind === "exact") return sentence.text;
