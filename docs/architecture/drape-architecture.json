@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e4068e72b25af6bc"
+    "sourceFingerprint": "e5e3dea5100a99d0"
   },
   "domains": [
     {
@@ -15614,6 +15614,11 @@
     {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/BriefField.tsx",
+      "to": "module:client/src/hooks/useComposition.ts",
       "kind": "imports"
     },
     {
