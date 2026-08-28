@@ -583,7 +583,7 @@ const RULES = [
   "Write the genre being a casting director could actually book \u2014 that is what the customer can cast.",
   "A drawing or a render is a picture OF somebody: describe the being, never the medium or its style.",
   "",
-  "WRITE, in one or two plain sentences: apparent sex; an age BAND, never an exact age",
+  "WRITE, in a few plain sentences: apparent sex; an age BAND, never an exact age",
   "(\"mid-to-late forties\"); the heritage family, but ONLY if it is genuinely visible — never guess one;",
   "the build FAMILY (\"athletic\", \"broad\", \"solid\"); the hair WORLD (\"short dark hair going grey\",",
   "\"sculpted platinum\"); where they are part of the look, the skin and marking WORLD (\"pale skin\",",
@@ -626,7 +626,7 @@ const RULES = [
   "It is wrong because it locks a body size, one exact haircut and three named garments onto all eight",
   "faces, and because garment names like those are refused outright by the image engine.",
   "",
-  `Write TWO SENTENCES, about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters in total.`,
+  `Write TWO OR THREE SHORT SENTENCES, about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters in total.`,
   'Reply with JSON: {"description": "..."} — or {"description": null} if there is no BEING in the picture at all, only an object, a place or a thing.',
 ].join("\n");
 

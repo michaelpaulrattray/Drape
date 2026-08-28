@@ -835,13 +835,21 @@ const conceptRouter = router({
         message: {
           /*
              #204 — HIS OWN CARD, after a creature upload met "try one with
-             someone in it." The sentence names what the studio DOES cast, in
-             the same words `NOT_A_BEING_MESSAGE` uses on the roll road, so the
-             two doors tell one story about the same boundary.
+             someone in it." The sentence names what the studio DOES cast, on
+             the same three nouns `NOT_A_BEING_MESSAGE` uses on the roll road
+             (`briefCompiler.ts`), so the two doors tell one story about one
+             boundary.
+
+             ⚠ THE GAP IS DECLARED RATHER THAN IMPLIED: what an arm holds
+             together is the two INSTRUCTIONS, not these two customer sentences
+             — this one is composed inline here and is not exported, so either
+             could be reworded later and nothing would go red. Said plainly
+             because a comment asserting a sameness no test keeps is the shape
+             this repository has been burned by.
           */
           no_being:
             "I couldn't find anyone in that picture — this reads people and creatures, "
-            + "not objects, places or things. Try one with someone in it.",
+            + "not objects, vehicles or places. Try one with someone in it.",
           not_about_the_person:
             "I could only describe the picture, not the person in it. Try a clearer shot of them.",
           /* OURS, not her picture's — the read came back as an inventory twice

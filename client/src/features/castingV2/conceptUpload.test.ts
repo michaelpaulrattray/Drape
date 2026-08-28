@@ -944,7 +944,7 @@ describe("a refused read keeps her picture and offers a way on", () => {
 
   it("offers TWO ways on, because the refusals mean different things", async () => {
     /*
-      A gateway blip is worth the same picture again; *"I couldn't find a person
+      A gateway blip is worth the same picture again; *"I couldn't find anyone
       in that picture"* is deterministic, and a bare retry on the same file
       would spend house money to be told the same thing. So the wall gets an
       answer that can actually clear it.
