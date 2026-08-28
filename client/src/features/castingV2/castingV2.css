@@ -2584,9 +2584,22 @@
 
   ⚠ `object-position` is RE-STATED here and it is load-bearing, not decoration.
   The cascade resolves each property on its own: this rule wins `object-fit`
-  because it comes later at equal specificity, but it would INHERIT the `top`
-  above for `object-position` and hang the letterbox entirely below the picture.
-  Contain-centred is what #196 shipped and what he has seen.
+  because it comes later at equal specificity, but where it says NOTHING about
+  `object-position` the base rule above — which matches this same element — is
+  the winning declaration, and the letterbox would hang entirely below the
+  picture. Contain-centred is what #196 shipped and what he has seen.
+
+  Not INHERITANCE, which is a different mechanism and the wrong word for it:
+  `object-position` is not an inherited property, and nothing here is reading a
+  value off a parent. This is cascade fallthrough between two rules matching one
+  element (caught in review of #198 — the surrounding reasoning was right and the
+  term would have sent the next reader to the wrong half of the spec).
+
+  ⚠ One latent conflict recorded rather than left to be rediscovered: it
+  PREDATES this rule and nothing exercises it. A consumer passing `--whole` and
+  `__muted` together would hand `object-fit: cover` to `.dpc-signm__muted > img`
+  on order, beating this rule's `contain`. No caller does; `ConceptReviewModal`
+  is the only `portraitWhole` and it never mutes.
 */
 .dpc-signm__portrait--whole img {
   width: 100%;
@@ -2861,8 +2874,9 @@
   ⚠ `object-position: center` is RE-STATED for the reason #198's repair gives in
   full above the sign portrait's rule: the cascade resolves each property
   separately, so without this the delete portrait would keep its own
-  `object-fit` and inherit the sign portrait's `top` — moving the one dialog
-  this repair exists to leave alone. Centre is what it has always drawn.
+  `object-fit` and take the sign portrait's `top` — the base rule matches this
+  element too and would be the only declaration left standing — moving the one
+  dialog this repair exists to leave alone. Centre is what it has always drawn.
 */
 .dpc-signm__muted > img {
   width: 100%;

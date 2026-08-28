@@ -296,12 +296,18 @@ describe("all three portraits lay out by ONE mechanism", () => {
   it("⚠ both neighbours RE-STATE object-position, or the base rule moves them", async () => {
     /*
       THE ARM THAT MATTERS. The cascade resolves each property independently:
-      `--whole` and `__muted` come later and win `object-fit` on order, but a
-      rule that does not declare `object-position` INHERITS the base rule's
-      `top` — hanging the concept review's letterbox entirely below the picture,
-      and moving the delete portrait, which is the one surface this repair
-      exists to leave untouched. Deleting either declaration is silent at the
-      source and visible only in a frame nobody re-opens.
+      `--whole` and `__muted` come later and win `object-fit` on order, but
+      where they declare no `object-position` the base rule — which matches the
+      same element — is the winning declaration, and its `top` applies. That
+      hangs the concept review's letterbox entirely below the picture and moves
+      the delete portrait, which is the one surface this repair exists to leave
+      untouched. Deleting either declaration is silent at the source and visible
+      only in a frame nobody re-opens.
+
+      Cascade fallthrough, NOT inheritance — `object-position` is not an
+      inherited property and no parent's value is being read. The distinction
+      matters here because it decides where a future reader looks when this
+      breaks (review of #198).
     */
     const css = await readFile(CSS, "utf8");
     for (const selector of [".dpc-signm__portrait--whole img", ".dpc-signm__muted > img"]) {
