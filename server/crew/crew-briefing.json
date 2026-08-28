@@ -1,7 +1,7 @@
 {
-  "edition": 85,
-  "updatedAt": "2026-08-29T01:30:00+10:00",
-  "shift": "foreman-82",
+  "edition": 86,
+  "updatedAt": "2026-08-29T02:20:00+10:00",
+  "shift": "foreman-83",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -482,6 +482,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "portrait-crop-198",
+      "title": "The Sign and Delete dialogs were cropping their portrait two different ways (#198)",
+      "question": "A small one, and the only reason it needs your eye is that the obvious fix would have moved faces.\n\nWHAT WAS WRONG. Sign and Delete are the same dialog with different words. The instruction that sizes the portrait in that dialog had a typo-shaped mistake in it — it was written to point at the picture, and it pointed one level off, so for as long as it has existed it has applied to NOTHING. The Sign portrait was being sized by the browser's default and then simply cut off at the bottom by the frame around it. The Delete portrait, by an accident of where its grey-out lives, DID get the instruction. So the same face in the same dialog shell was being cropped two different ways depending on which button you pressed.\n\nIt has never looked broken, and that is exactly why it survived: our own renders are all the same shape, so cutting the bottom off and cropping properly happen to land in the same place.\n\nWHY IT NEEDED YOU. Making the instruction work as written centres the crop — which slides the face about 27 pixels. That is a change to two dialogs you have already accepted, so the card for this was filed rather than fixed, months ago, waiting for someone to put frames in front of you.\n\nWHAT I DID INSTEAD. Anchored the crop to the TOP, which is where the browser was already cutting. Then measured it rather than trusting my own eye: the Delete portrait is pixel-for-pixel identical, not one pixel of 57,620 changed. The Sign portrait is not quite byte-identical — the picture is scaled by a very slightly different route now — but there is no movement in it, and I proved that by ALSO building the version that does move and measuring both through the same instrument. That is the third panel.\n\n⚠ AND THE THIRD PANEL IS NOT HYPOTHETICAL, WHICH IS THE PART WORTH SEEING. Centred is exactly what your DELETE dialog does today. On a standard 1024x1536 render the Delete portrait shows source rows 128 to 1408 — it takes 128 pixels off the top and 128 off the bottom — while the Sign portrait shows rows 0 to 1280, dropping 256 off the bottom and nothing off the top. So panel three is not a mock-up of a bad idea; it is a photograph of the other half of your own product, and the gap between panel one and panel three is the bug.\n\nTHE QUESTION: the left and middle panels should look the same to you. Do they? And now that you can see both crops side by side — is TOP the one you want in both dialogs, or would you rather I brought Sign across to Delete's centred crop instead? Either is one line; I chose the one that changes nothing you have already approved.",
+      "state": "open",
+      "filedAt": "2026-08-29T02:20:00+10:00",
+      "issueNumber": 198,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/79190064-8a2a-4eb7-b85b-7e352dd13c53.png",
+          "arm": "THE THREE CROPS — today, what shipped, and what was NOT shipped",
+          "caption": "Same candidate, same dialog, three ways. LEFT is what the Sign dialog draws today. MIDDLE is what it draws after tonight. RIGHT is the version I did not ship — the obvious repair, which centres the crop; it is a simulation of that rule applied to THIS face, labelled on the frame so it can never be mistaken for a shipped screen. But the mechanism in it is real and live — it is precisely what your Delete dialog does. Left and middle should be indistinguishable to you. Right should not be, and that difference is the bug itself."
+        },
+        {
+          "key": "crew-eye/90e8069d-c3c6-422d-91a9-7be850137a15.png",
+          "arm": "THE WHOLE DIALOG — light",
+          "caption": "For context rather than judgement: the actual Sign dialog after the change, in light. Nothing in it moved but the mechanism behind the picture."
+        }
+      ]
+    },
     {
       "id": "concept-reader-gold-line-185-204",
       "title": "Your reader notes are both done — the goth reads as a type, and creatures read at all (#185, #204)",
@@ -979,6 +1000,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "portrait-mechanism-198",
+      "title": "Sign and Delete stop cropping their portrait two different ways",
+      "status": "merged",
+      "prNumber": 212,
+      "note": "A CSS instruction in the shared Sign/Delete dialog pointed one level away from the picture it was written for, so it applied to nothing — while its neighbour, by accident, applied to the Delete portrait. Two dialogs, one shell, two crops. Fixed so that nothing you can see moves: the Delete portrait is pixel-identical and the Sign portrait does not shift. Frames in your eye gallery. It also ran the sweep the card ordered, which came back clean — this was the only live instance of that mistake in the whole casting stylesheet."
+    },
     {
       "id": "roll-walls-on-the-map-206",
       "title": "The casting brief's own walls — including the likeness one — were missing from the same map",
@@ -1544,6 +1572,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T02:20:00+10:00",
+      "shift": "foreman-83",
+      "text": "Third quiet maintenance night. No reply from you (25 of 25, read at both ends), the Janitor is not due until 07:35 this morning, and I checked the refusal patrol's trigger against production rather than assuming — no new content-filter refusals since it last ran, so it does not fire. That left the queue, and I took #198.\n\nWHAT IT WAS, in plain terms. Sign and Delete are the same dialog wearing different words. The line of styling that sizes the portrait in it was aimed one level away from the actual picture, so it has applied to nothing for as long as it has existed — the Sign portrait was just being cut off at the bottom by the frame around it. The Delete portrait, because its grey-out sits in a slightly different place, DID get the instruction. So the same face was cropped two different ways depending on which button you pressed. Nobody noticed because all our renders are the same shape and the two happen to land in nearly the same place.\n\nWHY IT HAD BEEN SITTING THERE. The shift that found it, months of work ago, deliberately did not fix it: the obvious repair moves the face about 27 pixels, and moving faces in two dialogs you have already signed off is your call. That was the right instinct.\n\nWHAT CHANGED TONIGHT IS THAT THE PREMISE TURNED OUT TO BE WRONG. There is a version of the fix where nothing moves at all — anchor the crop to the top, which is where the browser was already cutting. I did not want to take my own word for that, so I measured it: the Delete portrait is identical to the last pixel, and for the Sign portrait I built the version that DOES move and put both through the same measurement, so 'looks the same' is a number with a control behind it rather than an impression. Frames are in your gallery. If you would rather have the centred crop after looking, it is one line.\n\nTHE ONE RISK IN IT, said out loud because it is the part that could have bitten. Fixing this rule meant it also reaches two neighbours it did not reach before — including the concept review you looked at yesterday. Left alone, that would have shoved your uploaded picture to the top of its frame with all the empty space underneath. I found it before shipping, pinned it, and proved it at the screen by building the broken version on purpose and photographing it.\n\nTWO THINGS FILED AND NOT WORKED, because the rule here is that a shift with no brief does not invent one. The sweep this card ordered found four styling rules pointing at things that no longer exist anywhere in the app — dead weight, nothing you would see, filed for the cleanup patrol. And our colour checker turned out to read a three-digit ISSUE NUMBER as a colour code, which is the fourth time this studio has built a checker that owns a word it was never aimed at. Both are cards.\n\nCost: no credits, no renders. Two cents of house money — the concept dialog's reader, because checking that neighbour properly meant opening the real dialog rather than faking it."
+    },
+    {
       "at": "2026-08-29T01:30:00+10:00",
       "shift": "foreman-82",
       "text": "Second quiet maintenance night. You had not replied, no patrol was due, so I took the item last night's shift measured and filed rather than rushing.\n\nWHAT IT WAS. The studio keeps a map of every door it can refuse you at, and a rule that a new refusal cannot ship without appearing on it. Last night we found the upload reader's five refusals missing. Tonight it is the casting brief's own walls — all five of them, including the two that matter most to you: the wall that refuses a real person or a named character, and the wall that refuses something that is not a being. The likeness wall answers a real customer every time somebody types a famous name, and the map had never heard of it. Its twin — the same boundary drawn at the upload reader — went onto the map last night, so until tonight the map showed you exactly one half of one rule.\n\nThe reason is dull and worth one sentence: the map looks for refusals written in three particular shapes, and the casting brief writes its refusals in a fourth. Nothing was broken; it was unseen.\n\nTHREE THINGS FELL OUT OF DOING IT, and they are the part worth your attention.\n\nOne. The \"we can't cast anime or illustration yet\" sentence had been TYPED OUT TWICE, word for word, in two different places in the code, and nothing checked that the two copies still matched. Either one could have been reworded and the studio would have quietly started saying two different things to two sets of customers. One copy now, and a test holds its exact wording.\n\nTwo. The map has been telling us a door is \"unreachable by design\" for doors people walk into every day. What it actually means is narrower — that our automated test run cannot reach that door, which is a fact about our testing and not about your customers. It now says that instead. Small, but it is the map's whole job not to say things that are not true.\n\nThree, and this one is about YOUR product rather than our tooling: the map's note on the Retry button still said it was switched off for everyone with \"live population zero\", when you switched it on for your account on the 27th. So the map was carrying a false claim about what the studio does today. Corrected, and I swept the rest of that file for the same mistake — that was the only one.\n\nI ALSO BROKE THE MAP FOR TEN MINUTES AND IT IS THE BEST FINDING OF THE NIGHT. Writing the new code, I explained in a comment what shape the map searches for — and the map read my explanation as a real refusal and invented a door that does not exist. The tool was reading its own documentation as if it were the product. It now ignores comments the way its sibling reader already did, and I measured that the change removes exactly the phantom and no real door.\n\nONE THING I FOUND AND DELIBERATELY DID NOT CHANGE. Four of the five walls end with \"you have not been charged\". The fifth — the one for a brief too short to cast from — does not. It is defensible and probably fine, but it is your call and not mine, so it is recorded rather than quietly \"fixed\".\n\nCost: nothing. No credits, no renders, no reader calls, no flags moved. Not one customer-visible sentence moved a single character, and the two walls you care about are now pinned letter by letter so that claim is checkable rather than something I am asking you to take on trust."
@@ -1732,11 +1765,6 @@
       "at": "2026-08-27T05:20:00+10:00",
       "shift": "foreman-33",
       "text": "No replies from you tonight (nine acknowledged, none new at 04:06 and 04:43 by the last shift, none at 05:06 by me). I took the next item in order: the design for #93 — what happens when the engine's content filter refuses a tile and you want to try again with softer words. It is your #122 shape 2 ('Retry with softer wording') designed end to end: a free preview of the softened prompt with every change marked, then Cast this · 20 credits for that one tile, refused again → refunded and the button withdraws. The rewrite follows the grammar of your own hand rewrite of the cyber-goth brief (refused 4/4 → passed 3/4): rename by how a thing is made, drop the 'skin showing' claims, never touch a body part, piercing, tattoo, age, sex or heritage. One correction on the record: your orc 'copyright' refusal happened in the OLD studio (Gemini) — fal's checker has no copyright class we can see, so whether it refuses creature words at all is now a court cell rather than an assumption. The court is priced at under $10 and runs next shift without waiting; two small questions for you are on the card. Spend tonight: nothing. Nothing changed in the product."
-    },
-    {
-      "at": "2026-08-27T05:05:00+10:00",
-      "shift": "foreman-32",
-      "text": "No replies from you tonight, so I took the register's next open item (#131): what happens on your account when you tap Follow or change a chip. Those rolls quietly fall back to the studio's old casting — the author cannot carry a followed face or a chip edit yet — and until now the sheet said nothing: no prompt, no settings line, the author just gone, while the dock still showed a settings gear that roll would ignore. Fixed and merged (PR #153): the sheet says 'AUTHOR — Sat this one out …' at the top, and while a chip change is queued the gear is replaced by one line saying the author sits that roll out. I drove it on a dev sheet in both themes; the frame is in your gallery. The bigger piece — the author actually carrying a follow — is designed and on card #154 with three quick questions for you; it does not build until you answer. Spend tonight: nothing. Nothing changed for any other account."
     },
     {
       "at": "2026-08-28T15:45:00+10:00",
