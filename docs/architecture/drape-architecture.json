@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4b763973040b963c"
+    "sourceFingerprint": "38fa1b951a24d31f"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 41
+      "moduleCount": 42
     },
     {
       "id": "domain:studio",
@@ -5795,6 +5795,12 @@
     {
       "id": "module:shared/modelRegistry.ts",
       "path": "shared/modelRegistry.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/pictureFormats.ts",
+      "path": "shared/pictureFormats.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -15827,6 +15833,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/pictureBytes.ts",
+      "to": "module:shared/pictureFormats.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/referenceAttachCopy.ts",
       "to": "module:shared/inkProvenance.ts",
       "kind": "imports"
@@ -23633,6 +23644,11 @@
     },
     {
       "from": "module:server/castingV2/inkUploadDoor.ts",
+      "to": "module:shared/pictureFormats.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadDoor.ts",
       "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
@@ -30954,6 +30970,11 @@
     {
       "from": "module:server/routes/referenceDelivery.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referenceDelivery.ts",
+      "to": "module:shared/pictureFormats.ts",
       "kind": "imports"
     },
     {

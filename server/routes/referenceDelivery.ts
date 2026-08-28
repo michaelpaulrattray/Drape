@@ -5,6 +5,7 @@ import {
   REFERENCE_IMAGE_PATH_PREFIX,
   REFERENCE_READS_PER_MINUTE,
 } from "../../shared/referenceDelivery";
+import { INK_DESIGN_FORMATS, inkDesignContentType } from "../../shared/pictureFormats";
 import { sdk } from "../_core/sdk";
 import { readOwnedReferenceAttachment } from "../db/castingV2ReferenceAttachments";
 import { createModuleLogger } from "../logging/logger";
@@ -89,9 +90,23 @@ const REFERENCE_ID_PATTERN =
  * or webp and its mime is stored from that decision, so a row naming anything
  * else is a row this route refuses rather than serves under a guessed type.
  * There is no script-in-an-image question to answer here because none of the
- * three can carry one.
+ * three can carry one — and since this list DERIVES, that sentence is a claim
+ * about whatever the vocabulary holds rather than about three names. It is
+ * armed where the vocabulary is declared, not here, because
+ * `inkDesignDelivery.ts` rests on the same sentence and a guard in one route
+ * would leave the other on prose (`inkUploadDoor.test.ts`, "admits no format
+ * that can carry a script").
+ *
+ * ⚠ IT SAID THAT AND THEN TYPED THE THREE OUT BY HAND, which is #27's class on
+ * a SERVING ALLOWLIST — the one place a stale copy is a security answer rather
+ * than a convenience. Its sibling one file over (`inkDesignDelivery.ts`) has
+ * always derived; this one did not, and the docblock naming the door as its
+ * source is what made the copy look settled. Derived now, so a format added at
+ * the door reaches both routes: the values are byte-identical today, which is
+ * the point — nothing about what is served changes.
  */
-const SERVABLE_CONTENT_TYPES: readonly string[] = ["image/png", "image/jpeg", "image/webp"];
+const SERVABLE_CONTENT_TYPES: readonly string[] =
+  INK_DESIGN_FORMATS.map(inkDesignContentType);
 
 type DeliveryUser = {
   id: number;

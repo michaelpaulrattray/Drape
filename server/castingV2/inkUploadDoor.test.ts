@@ -106,6 +106,70 @@ describe("what may be uploaded as a design", () => {
     }
   });
 
+  it("admits no format that can carry a script — the sentence two SERVING routes rest on", () => {
+    /*
+      THE ONE THING THE MOVE CHANGED THAT IS NOT ABOUT CONVENIENCE (#27, review
+      of PR #189, finding 2).
+
+      Before the vocabulary was shared, `referenceDelivery.ts` — the route that
+      hands a customer back her OWN photograph — kept its own typed list of what
+      it would serve, so adding a format at the door did not widen it until
+      somebody consciously edited that line. Deriving it is the correct law-4
+      shape and it is what the PR did, but it means the route's own surviving
+      sentence — "there is no script-in-an-image question to answer here because
+      none of the three can carry one" — stopped being a claim about three named
+      mimes and became a claim about WHATEVER THIS LIST HOLDS, with nothing
+      arming it.
+
+      This is that arm, and it lives with the vocabulary rather than in either
+      route, because both routes derive from here and a guard in one of them
+      would leave the other resting on prose. `svg` is the specimen: an SVG is a
+      document that executes, and it is the format a well-meaning "customers
+      keep asking for it" commit would add without meeting this sentence.
+
+      A format arriving here needs a decoder to learn it too, so the risk today
+      is nil — that is exactly why this is worth pinning now rather than after.
+    */
+    const CAN_CARRY_A_SCRIPT = ["svg", "svg+xml", "xml", "html"];
+    for (const format of INK_DESIGN_FORMATS) {
+      expect(
+        CAN_CARRY_A_SCRIPT,
+        `${format} executes — two delivery routes serve this list under a sentence saying nothing here can`,
+      ).not.toContain(format);
+    }
+    /* The control: the ban is asked of a list that has instances to ban. */
+    expect(INK_DESIGN_FORMATS.length).toBeGreaterThan(0);
+    expect(CAN_CARRY_A_SCRIPT).toContain("svg");
+  });
+
+  it("the sentence she READS names every format the door takes", () => {
+    /*
+      THE THIRD COPY OF THE LIST, AND THE ONLY ONE A CUSTOMER EVER SEES (#27).
+
+      "Designs come as PNG, JPEG or WebP." is prose, so it cannot derive — the
+      alternative is a machine-composed sentence, and copy this product writes
+      by hand should stay written by hand. What it must not do is go stale: add
+      a fourth format at the vocabulary and the refusal keeps naming three, so
+      the one person who needs the list is told the old one. This arm is the
+      cheap half of that — it does not write the sentence, it refuses to let the
+      sentence forget a format.
+
+      `jpeg`→JPEG, `webp`→WebP: the spelling is the copy's own and only the
+      LETTERS are compared, case-insensitively, so a rewrite is free.
+    */
+    const refusal = inkDesignBytesRefusal({
+      ...good,
+      decoded: { ...good.decoded, format: "pdf" },
+    });
+    expect(refusal?.code).toBe("unsupportedFormat");
+    for (const format of INK_DESIGN_FORMATS) {
+      expect(
+        refusal?.message.toLowerCase(),
+        `the refusal does not name ${format} — a format was added and the sentence was not`,
+      ).toContain(format.toLowerCase());
+    }
+  });
+
   it("refuses a picture with no dimensions read", () => {
     expect(inkDesignBytesRefusal({ ...good, decoded: { format: "png", width: 0, height: 0 } }))
       .toMatchObject({ code: "tooSmall" });
