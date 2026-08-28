@@ -59,7 +59,13 @@ Every check records what it SAW (D-235). `scripts/_drive196b-disposable.mts`.
 | the primary | **"Choose a picture"** |
 | description field | **absent** |
 | cost row | **empty** — no price on a dialog that cannot yet spend |
+| the action row | **`["Cancel", "Choose a picture"]`** — *Cancel*, never *Discard*: nothing has been chosen yet to discard |
+| focus on mount | **Cancel** |
 | a drop INSIDE the empty dialog | reads identically, **273 characters** |
+
+The empty state was re-driven in both themes after its way-out was corrected
+(`scripts/_drive196b-empty-disposable.mts`, 4 checks, 0 failing). It is **free** —
+a tap makes no describer call at all.
 
 ### The refusals
 
@@ -103,13 +109,27 @@ Every user-visible string this PR adds or changes, classified per the founder's
 | **"That isn't a picture we can read. Try a PNG, JPEG or WebP."** | invented | names the formats rather than the refusal — *"unsupported file type"* says what happened and not what to do. |
 | **"We couldn't read that one"** | invented | the refused heading. Says *that one* rather than *your picture*, because the picture is still on screen and the next act may be a different one. |
 | **"Try again"** / **"Choose another picture"** | founder-derived | his build note: *"a failed read gets a plain retry inside the modal"*. Two, because a gateway blip is worth the same picture and *"I couldn't find a person"* is not. |
-| **"Cancel"** (during the read) | founder-derived | his *"honest progress line … with cancel"*. Same button, same handler; only the label tracks what the tap does. |
+| **"Cancel"** (during the read, AND in the empty state) | founder-derived | his *"honest progress line … with cancel"*. Same button, same handler; only the label tracks what the tap does. It says **Discard** only where there is something to throw away — a picture, or a picture and its words. |
 | **"That brief is too short to cast from. Describe the person in a sentence."** | **pre-existing, server's own** | not written here. `briefCompiler.ts` has thrown it all along; the client now says the same words instead of returning silently. |
 
 **Nothing added claims a likeness.** The suite proves it on every string
 (`conceptUpload.test.ts`): no *likeness*, no *same face*, no *their face*.
 
 ---
+
+## 3b. Three states caught claiming something untrue about themselves
+
+All three were found by LOOKING at a frame or at what a walk printed, not by
+reading source, and they are one class: a state inheriting a sentence written for
+a different state.
+
+| state | said | why it was false |
+|---|---|---|
+| refused | *"This is what we'll cast"* + *"Edit anything. We cast from these words…"* | there were no words — nothing had been read |
+| empty | *"Discard"* | nothing had been chosen to discard |
+| reading (pre-existing, kept) | — | already said *"Cancel"*, which is what made the other two visible as wrong |
+
+Each has its own arm and its own negative control.
 
 ## 4. What is NOT in the frames, and is a judgement call
 
@@ -134,7 +154,7 @@ the refused state got photographed the first time. `assertFalBudget` untouched.
 
 ## 6. Frames
 
-`output/_shift196b/` — 18 frames. In his eye gallery (edition 79), off the FINAL
+`output/_shift196b/` — 19 frames. In his eye gallery (edition 79), off the FINAL
 build: `crew-eye/dfe5f592…` (the cast, dark) · `crew-eye/e04f4d2f…` (the cast,
-light) · `crew-eye/9436c62a…` (tap → empty, dark) · `crew-eye/e392b31e…` (the
-real no-person refusal, light).
+light) · `crew-eye/56d9b2a4…` (tap → empty, dark — the corrected one) ·
+`crew-eye/e392b31e…` (the real no-person refusal, light).
