@@ -36,11 +36,115 @@
  * two different men come back as two different types**, and eight renders of
  * one upload are eight different faces in that type.
  *
+ * # ⚠ AND THEN HE RULED AGAIN, BECAUSE THE PRODUCT HAD TAKEN THE LENGTH FOR
+ * THE FIX (2026-08-28, evening, after trying the shipped modal)
+ *
+ * The ruling above arrived with numbers in it (*"~150–250 characters, not
+ * 1,000"*) and this module built the numbers. He came back to a read that was
+ * **243 characters and still an inventory**, and closed that reading off,
+ * verbatim on #185:
+ *
+ * > *"You keep calling 243 characters a type. Length is not the test. Content
+ * > is."*
+ *
+ * > *"Age band, build family, hair world, garment world, presence. No packing
+ * > list."*
+ *
+ * > *"Keep: sex, age band, type, hair world, skin language, piercings, sparse
+ * > face-and-arm tattoos, materials. Drop: slight build, blunt bangs, bodysuit,
+ * > choker, eye harness, fetish, camera, exact ink."*
+ *
+ * **The acceptance is GRANULARITY, and the rule is WORLDS, NEVER ITEMS** — the
+ * hair world and never the cut, the build family and never a body size, the
+ * wardrobe as MATERIALS and never as garments, markings as a world and never
+ * as an inventory. {@link GOLDEN_NOTES} and {@link INVENTORY_NOTE} carry it,
+ * because a line between two granularities is shown far better than it is
+ * stated.
+ *
+ * ⚠ **AND IT IS CARRIED BY THE INSTRUCTION AND THE SPECIMENS, NOT BY A NEW
+ * SWEEP — that is the one judgement call in this change and it is declared
+ * rather than assumed.** The obvious build is a word ban on his drop list
+ * (*bodysuit*, *choker*, *harness*, *slight*), in the shape
+ * {@link ABSENCE_CLAIMS} already has. It is refused on this module's own
+ * recorded test, which {@link ABSENCE_CLAIMS} states outright: **a ban is
+ * admissible only where the banned thing has no second sense.** Every word on
+ * his drop list has one, and HIS OWN PASSING EXAMPLES USE THEM — *"fitted
+ * dark crew-neck top"* is a named garment, *"athletic muscular build"* is
+ * build language, and his corrected goth line keeps *"lace, leather and
+ * metal"* while dropping *"lace bodysuit"*. The difference is granularity,
+ * which is not a lexical shape, so a word ban would be the FOURTH instance of
+ * the class this file has recorded three times already (bare `cropped`,
+ * `reminiscent of`, `cropped at`). Where content IS asserted in code it is in
+ * the acceptance DRIVE, against known pictures — a claim about one photograph
+ * rather than a rule pointed at every customer.
+ *
+ * His success test for this ruling is the same shape as the last: the goth
+ * upload comes back as {@link GOLDEN_NOTES}.styled rather than as
+ * {@link INVENTORY_NOTE}, and the two men keep passing.
+ *
  * ⚠ **MATCH THIS FACE IS A NAMED SECOND MODE AND IT IS NOT BUILT** — recorded
  * here so it does not vanish into a closed issue. It is not a describer mode
  * at all when it comes: a lookalike is an IMAGE-anchored road (the Follow's
  * own mechanism, #177), and this reader has one job. Nothing below is a step
  * toward it.
+ *
+ * ⚠ # AND THE SUBJECT IS A BEING, NOT A PERSON — #204, his own card, one
+ * minute after the ruling above
+ *
+ * He uploaded a stylized humanoid creature (a purple feline deity figure) and
+ * was told *"I couldn't find a person in that picture — try one with someone
+ * in it."* Read at the code, the door was doing exactly what it was built to
+ * do: the reader was asked about *the person*, answered that there was none,
+ * and that verdict is deliberately never re-asked. **The SCOPE was the defect,
+ * not the door.**
+ *
+ * It is also the mission's own sentence, in his words: *"we want to be able to
+ * cast photoreal humans and sci-fi humans and creatures like monsters etc."* A
+ * concept reader that admits only humans is narrower than the studio it feeds.
+ *
+ * So the subject is **the being in the picture** — human, sci-fi human,
+ * creature, robot — and `no_being` fires only on things that are not beings at
+ * all: an object, a vehicle, a landscape, a product. That population is not
+ * invented here: it is the SAME line the roll road's own wall draws
+ * (`interpreter.ts`'s `SUBJECT_INSTRUCTION`, refused by `briefCompiler.ts` as
+ * `not_a_being`), and the two are asserted to agree rather than left to drift
+ * — a customer who is told a creature can be cast, then told her creature
+ * picture has nobody in it, has met two doors that do not.
+ *
+ * The taxonomy above is unchanged and simply applies: a creature has a kind
+ * and a type ("a lean feline humanoid"), a build family, a surface world
+ * ("smooth violet skin") where a human has a skin world, a feature world
+ * ("tall upright ears, gold ornamentation") where a human has hair, and the
+ * same wardrobe-as-materials rule. **Worlds, never items, whatever it is.**
+ *
+ * # ⚠ THE IP GUARD IS INSTRUCTIONAL, AND THAT IS A DECLARED LIMIT
+ *
+ * Opening the door to drawn and fantastical subjects lets a recognizable
+ * copyrighted character through it, which a human-only reader mostly refused
+ * by accident. The rule is his: **a known character comes back as a TYPE,
+ * never named, and never described so exhaustively that the description
+ * reconstructs it.** It is carried by the instruction and by the granularity
+ * rule (an exhaustive reconstruction is an inventory, which is already
+ * forbidden) — and NOT by a vision gate asking *"is this a famous
+ * character"*, for the reason already recorded above: a reader's verdict that
+ * turns a customer away is what law 9 and the fable-1052 class forbid, and
+ * #204 asks for none.
+ *
+ * The structural protection is unchanged and is elsewhere, which is why an
+ * instructional guard is enough here: the picture never rides to an engine,
+ * what reaches the engine is WORDS, and `briefCompiler.ts`'s likeness wall
+ * stands in front of the compile for a description exactly as for a brief she
+ * typed. ⚠ **Its honest limit, stated because the widening genuinely narrows
+ * the position**: that wall keys on a NAME, so an unnamed but distinctive
+ * description passes it. The describer not writing one is the control.
+ *
+ * # AN ILLUSTRATED UPLOAD DESCRIBES THE BEING, NOT THE MEDIUM
+ *
+ * A drawing is a picture of somebody, and the medium is a fact about the
+ * PICTURE — which this reader has never been allowed to describe. The
+ * customer casts photoreal by default and picks a style elsewhere. This is the
+ * drawn-hairstyle precedent applied to a new reader: a medium verdict may
+ * ROUTE and must never REFUSE.
  *
  * # THE PHOTOGRAPH IS NEVER KEPT AND NEVER RENDERED
  *
@@ -121,7 +225,7 @@
  * from is unknown and is not asserted here**. Covering both is what makes that
  * not matter.
  *
- * What is NOT re-asked, and each for its own reason: `no_person` (a real
+ * What is NOT re-asked, and each for its own reason: `no_being` (a real
  * answer, not a failure — re-asking it is asking a reader to change a correct
  * verdict); `transport`, `rate_limit` and `timeout` (the transport's own
  * `withRetry` has already burned three attempts, and a fourth would put a
@@ -152,11 +256,18 @@ const log = createModuleLogger("castingV2/conceptDescribe");
  * entrance's brief cap (it was already far under it). **Every detail the
  * description names is a detail all eight faces are forced to share**, because
  * the words go to the engine verbatim as the first paragraph of the prompt. A
- * casting note fits in a couple of sentences; an inventory does not. The
- * length is therefore the one control here that is STRUCTURAL — provable in
- * code, unable to over-refuse a legitimate word — and it carries what a word
- * ban cannot (see {@link ABSENCE_CLAIMS}'s note on what is deliberately NOT
- * banned).
+ * casting note fits in a couple of sentences; an inventory does not.
+ *
+ * ⚠ **BUT IT IS A SANITY RAIL AND NOT THE ACCEPTANCE, AND THIS PARAGRAPH SAID
+ * OTHERWISE FOR A DAY.** It called the length *"the one control here that is
+ * STRUCTURAL"* and left the impression that fitting under it was the test. He
+ * answered that directly — *"You keep calling 243 characters a type. Length is
+ * not the test. Content is."* — and {@link INVENTORY_NOTE} is the proof at
+ * 243: under this ceiling, over the floor, clean through both sweeps, and
+ * exactly the read he refused. The sentence was true about what the ceiling
+ * DOES (a 1,082-character police report cannot fit through it) and false about
+ * what it PROVES. What the ceiling still earns is its own narrow claim: it is
+ * the one bound here that cannot over-refuse a legitimate word.
  *
  * Announced and enforced are different numbers on purpose. The instruction
  * asks for **~150–250** (his own figures — an announced cap is a brief, and a
@@ -210,8 +321,30 @@ export const NOT_ABOUT_THE_PERSON: ReadonlyArray<{ word: string; because: string
   { word: "studio", because: "a set claim, and the block already says it" },
   { word: "seamless", because: "a set claim (a seamless paper sweep)" },
   /* Frame — his sentence names it third, and #182 fixed the framing in code. */
-  { word: "framing", because: "the block owns the frame (his sentence: 'not the framing')" },
-  { word: "framed", because: "a frame claim" },
+  /* ⚠ BARE `framing` AND BARE `framed` ARE GONE — THE FOURTH INSTANCE OF THE
+     CLASS THIS FILE ALREADY RECORDS THREE TIMES, and this one was live rather
+     than caught in review. Measured while driving #204: the reader wrote *"a
+     coarse dark beard FRAMING a jagged-toothed mouth"* and had a perfectly good
+     casting note sent back — and when the second ask came back as noise, the
+     customer was told *"I couldn't read that picture just now."* So an
+     over-broad ban did not merely refuse a word here, it spent a second call
+     and then said something untrue about her picture.
+
+     A beard framing a mouth, a face framed by dark hair: both are ordinary
+     prose about a PERSON, and they were reachable before #204 — the widening
+     only made the shape more common, because a creature is described by its
+     structure. The photographic senses that CANNOT describe a subject are kept
+     as PHRASES, the shape this list already uses for `sharp focus`.
+
+     THE DECLARED GAP, in the `cropped` precedent's own words: *"framed by long
+     hair"* and *"framed at the chest"* now pass this sweep. The category is
+     carried by the ten frame words below it and by {@link RULES}, and one
+     uncatchable phrase is a better price than a ban that refuses descriptions
+     of faces. */
+  { word: "the framing", because: "his own phrase ('not the framing'); a subject is never 'the framing'" },
+  { word: "tightly framed", because: "a frame claim" },
+  { word: "loosely framed", because: "a frame claim" },
+  { word: "framed from", because: "a frame claim ('framed from the chest up')" },
   /* ⚠ NO FORM OF `cropped` IS ON THIS LIST, AND IT TOOK THREE GOES TO ADMIT IT.
      Bare `cropped` swept "close-cropped stubble"; the narrowed `cropped at`
      still sweeps "cropped at the nape"; `tightly cropped` is what everyone
@@ -337,20 +470,91 @@ export function absenceClaimIn(text: string): string | null {
 }
 
 /**
- * HIS EXAMPLE, VERBATIM — and it is shown to the reader rather than described
- * to it.
+ * ⚠ HIS SPECIMENS — TWO THAT PASS AND ONE THAT FAILS, all four sentences his
+ * own, and they are SHOWN to the reader rather than described to it.
  *
- * *"What should land in the brief box"*, his words on #185, from the picture
- * whose 1,082-character read produced the ruling. It is the single most useful
- * sentence in the instruction: an announced number tells a model what to aim
- * at, but a specimen tells it what LEVEL of detail means, and detail level is
- * the whole of what he corrected. It doubles as the suite's golden fixture —
- * whatever it must pass, a real read must pass.
+ * # LENGTH WAS NEVER THE TEST, AND THE PRODUCT BELIEVED IT WAS
+ *
+ * The first ruling capped the read at 300 characters and this module took the
+ * cap for the fix. He came back to a 243-character read and said so, verbatim
+ * on #185:
+ *
+ * > *"You keep calling 243 characters a type. Length is not the test. Content
+ * > is. This is inventory: A woman in her twenties, slight build, long straight
+ * > platinum hair with blunt bangs, multiple facial piercings and forearm
+ * > tattoos. Dark-fashion / gothic-alternative model type, styled with lace
+ * > bodysuit, leather choker and spiked eye harness. What that locks: body size
+ * > · exact hair · named garments · a harness. That will reprint this girl, and
+ * > lace bodysuit / spiked eye harness / fetish-fashion will refuse on GPT
+ * > Image 2."*
+ *
+ * That box is {@link INVENTORY_NOTE}, and it fits inside every bound this file
+ * enforces — under the ceiling, over the floor, clean through both sweeps. So
+ * the bounds are a **sanity rail** from here on and not the acceptance: what
+ * separates it from {@link GOLDEN_NOTES}.styled is GRANULARITY, and granularity
+ * is not a length.
+ *
+ * # WHY THE FAILING ONE IS SHOWN TOO
+ *
+ * A specimen teaches a LEVEL of detail in a way an announced number cannot —
+ * that is why one has been here since the first ruling. But two good notes
+ * cannot show where the line is, only which side of it to be on, and every word
+ * he struck (*slight*, *blunt bangs*, *bodysuit*, *choker*, *harness*) is a word
+ * a describer would otherwise think was doing its job. The pair puts the line
+ * itself in front of the reader — his own instruction, verbatim: *"Use the men
+ * as the passing examples. Use the current goth box as the failing example."*
+ *
+ * ⚠ **AND THIS IS WHY THE GOTH PICTURE IS A POSITIVE CONTROL AND NOT A TEST.**
+ * The corrected note for it is now IN the instruction, so a read of that same
+ * photograph is measuring recall, not reading — the specimen-joins-the-
+ * vocabulary trap, arriving one day after it was written down. The acceptance
+ * drive therefore carries heavily-styled subjects the instruction has never
+ * seen, and the goth frames prove only that the shape is reachable at all.
+ *
+ * # THE PAIR IS PLAIN AND STYLED, NOT TWO MEN
+ *
+ * He gave two passing men and they are near-identical in shape, so showing both
+ * teaches the same lesson twice — and this product has MEASURED that prompt
+ * context is not additive. {@link GOLDEN_NOTES} is one man and his own
+ * corrected goth line instead: the two ENDS of the range a casting reader sees,
+ * an ordinary person and a heavily-styled one. Both his men stay in the suite
+ * as fixtures, where redundancy costs nothing.
  */
-export const GOLDEN_NOTE =
-  "A man in his mid-to-late forties, European heritage, rugged athletic build, "
-  + "short dark hair with grey, fitted dark crew-neck. Rugged, no-nonsense fitness / "
-  + "ex-military type.";
+export const GOLDEN_NOTES = {
+  /** His passing example, man 1 — an ordinary subject with nothing styled about him. */
+  plain:
+    "A man in his mid-forties, European heritage, athletic muscular build, "
+    + "close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness presence.",
+  /** His own correction of the failing box — *"This goth upload should come back as"*. */
+  styled:
+    "Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted "
+    + "platinum hair, facial piercings, sparse fine-line tattoos on the face and arms. "
+    + "Dark structured fashion in lace, leather and metal.",
+  /**
+   * His second passing man, and it is NOT shown to the reader — it teaches the
+   * same lesson as {@link GOLDEN_NOTES.plain}, and context is not additive here.
+   * It lives in the specimens rather than beside them because three exports for
+   * one idea is how a fixture drifts away from the thing it is a fixture for.
+   */
+  secondMan:
+    "A man in his mid-to-late forties, South Asian heritage, athletic solid build, "
+    + "short dark textured hair, fitted charcoal crew-neck. Serious, composed, "
+    + "authoritative professional type.",
+} as const;
+
+/**
+ * THE FAILING BOX, his words, as it came back to him — the counter-example.
+ *
+ * Reproduced live on a delivered frame of the same class before this change
+ * landed, at 267 characters: *"…slight build, with long straight platinum hair
+ * … a black lace top with a leather harness collar and spiked eye-mask
+ * accessory, giving an edgy alt-goth/fetish-fashion model type."* So this is a
+ * shape the shipped reader genuinely produces, not a shape imagined for a test.
+ */
+export const INVENTORY_NOTE =
+  "A woman in her twenties, slight build, long straight platinum hair with blunt bangs, "
+  + "multiple facial piercings and forearm tattoos. Dark-fashion / gothic-alternative model "
+  + "type, styled with lace bodysuit, leather choker and spiked eye harness.";
 
 /**
  * ⚠ THE INSTRUCTION IS THE PRIMARY CONTROL AND IT IS HIS RULING, CLAUSE BY
@@ -364,14 +568,44 @@ export const GOLDEN_NOTE =
  */
 const RULES = [
   "You are a casting director's reader. You are shown one picture and you write a SHORT CASTING NOTE",
-  "about the person in it: their TYPE, so that eight DIFFERENT people who could all replace them",
-  "could be cast from your words alone. You are not writing a description of this individual.",
+  "about the BEING in it: their TYPE, so that eight DIFFERENT ones who could all replace them could be",
+  "cast from your words alone. You are not writing a description of this individual.",
   "",
-  "WRITE, in one or two plain sentences: apparent sex; an age BAND, never an exact age",
+  "THIS STUDIO CASTS BEINGS, not people only: photoreal humans first, and equally sci-fi humans,",
+  "creatures, monsters, aliens, robots and androids, drawn or photographed. A creature gets the same",
+  "note a person does \u2014 its kind and type, its build family, its surface (skin, scales, fur, plating),",
+  "its features (ears, horns, ornamentation) where a person has hair, and its wardrobe as materials.",
+  "There is NOBODY in the picture only when there is no being in it at all: an object, a vehicle, a",
+  "landscape, a building, a product, food, a pattern, an empty room.",
+  "",
+  "IF THE BEING IS A RECOGNIZABLE CHARACTER from a film, game, comic or show, write its TYPE and",
+  "NEVER its name, its franchise, or so much exact detail that your words rebuild that character.",
+  "Write the genre being a casting director could actually book \u2014 that is what the customer can cast.",
+  "A drawing or a render is a picture OF somebody: describe the being, never the medium or its style.",
+  "",
+  "WRITE, in a few plain sentences: apparent sex; an age BAND, never an exact age",
   "(\"mid-to-late forties\"); the heritage family, but ONLY if it is genuinely visible — never guess one;",
-  "build language (\"athletic\", \"broad\", \"slight\"); the hair WORLD (\"short crop, dark going grey\");",
-  "the wardrobe WORLD (\"fitted dark crew-neck\"); and the TYPE itself",
-  "(\"rugged, no-nonsense fitness / ex-military presence\").",
+  "the build FAMILY (\"athletic\", \"broad\", \"solid\"); the hair WORLD (\"short dark hair going grey\",",
+  "\"sculpted platinum\"); where they are part of the look, the skin and marking WORLD (\"pale skin\",",
+  "\"facial piercings\", \"sparse fine-line tattoos on the face and arms\"); the wardrobe WORLD, given as",
+  "MATERIALS and mood (\"fitted dark crew-neck\", \"dark structured fashion in lace, leather and metal\");",
+  "and the TYPE itself (\"rugged, no-nonsense fitness presence\", \"dark-fashion / cyber-goth model type\").",
+  "",
+  "WORLDS, NEVER ITEMS. This is the whole difference between a casting note and a packing list,",
+  "and each rule below is a RULE rather than a list of banned words \u2014 apply it to whatever you are looking at:",
+  "- HAIR: name the world it belongs to, never the cut. \"Sculpted platinum\" \u2014 not the length, the parting,",
+  "  the fringe or the fade. If you could take it to a barber and get it copied, it is too exact.",
+  "- BUILD: choose from this CLOSED list and nothing else — athletic, muscular, solid, broad, wiry,",
+  "  stocky, heavy-set, average. You may pair two of them (\"athletic muscular\", \"solid athletic\").",
+  "  A body SIZE or weight is never one of them: \"slight\", \"slender\", \"petite\", \"skinny\", \"curvy\",",
+  "  \"trim\" and anything like them are out, alone or as a modifier. A size is the fastest way to reprint",
+  "  one person, and eight different people do not share one.",
+  "- WARDROBE: ONE phrase, never a list of pieces. If the clothing is plain, the phrase can name it",
+  "  (\"fitted dark crew-neck\"). If it is styled or elaborate, the phrase is MATERIALS AND MOOD",
+  "  (\"dark structured fashion in lace, leather and metal\"). Never itemise, and never name a single",
+  "  accessory \u2014 no harness, no mask, no collar, no glove, no piece of jewellery, whatever it is made of.",
+  "- MARKINGS: a world, never an inventory. \"Facial piercings\", \"sparse fine-line tattoos on the face",
+  "  and arms\" \u2014 never each piece, its design, or where exactly it sits.",
   "",
   "DO NOT CATALOGUE. Leave out exact eye colour, brow shape, the exact cut, fade or hairline,",
   "seams and garment construction, and anything you only noticed by staring. Never say what the person",
@@ -384,13 +618,19 @@ const RULES = [
   "Never name a real person or character, and never say who the subject looks like or resembles.",
   "Do not write a prompt, a list, a heading or a preamble — write the note and nothing else.",
   "",
-  `Write about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters.`,
-  "This is the length and the level of detail to aim for:",
-  `"${GOLDEN_NOTE}"`,
-  'Reply with JSON: {"description": "..."} — or {"description": null} if there is no person in the picture.',
+  "THIS IS THE LEVEL OF DETAIL TO AIM FOR. Two notes that are RIGHT:",
+  `  "${GOLDEN_NOTES.plain}"`,
+  `  "${GOLDEN_NOTES.styled}"`,
+  "And one that is WRONG — the same woman as the second note, written as a packing list:",
+  `  "${INVENTORY_NOTE}"`,
+  "It is wrong because it locks a body size, one exact haircut and three named garments onto all eight",
+  "faces, and because garment names like those are refused outright by the image engine.",
+  "",
+  `Write TWO OR THREE SHORT SENTENCES, about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters in total.`,
+  'Reply with JSON: {"description": "..."} — or {"description": null} if there is no BEING in the picture at all, only an object, a place or a thing.',
 ].join("\n");
 
-const ASK = "Describe the person in this picture.";
+const ASK = "Describe the person or creature in this picture.";
 
 export type ConceptDescribeInput = {
   bytes: Buffer;
@@ -405,7 +645,7 @@ export type ConceptDescribeOutcome =
   /** Every refusal a customer may be shown, named. None of them is an exception. */
   | {
       ok: false;
-      reason: "no_person" | "unreadable" | "not_about_the_person" | "not_a_casting_note" | "no_transport";
+      reason: "no_being" | "unreadable" | "not_about_the_person" | "not_a_casting_note" | "no_transport";
       attempts: number;
     };
 
@@ -477,7 +717,7 @@ function reAsk(fault: Fault): string {
     case "absence":
       return `Your previous answer said "${fault.phrase}". Never say what the person does NOT have — describe only what is there. Write it again without that.`;
     case "long":
-      return `Your previous answer was ${fault.length} characters — that is an inventory, not a casting note. Write it again in about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters, keeping only sex, age band, heritage if visible, build, hair world, wardrobe world and type.`;
+      return `Your previous answer was ${fault.length} characters — that is an inventory, not a casting note. Write it again in about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters, keeping only sex, age band, heritage if visible, build family, hair world, skin and marking world, wardrobe materials and type.`;
     case "brief":
       return `Your previous answer was only ${fault.length} characters and says too little to cast from. Write it again at about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters.`;
   }
@@ -501,7 +741,7 @@ function faultIn(description: string): Fault | null {
  * that `null` by asking whether the reply was non-empty — so ANY unparseable
  * non-empty reply (prose instead of JSON, or JSON truncated at the token
  * ceiling) was read as *"there is nobody in your picture"*, which is our fault
- * told to the customer as hers. The reader saying **nobody is here** and the
+ * told to the customer as hers. The reader saying **there is no being here** and the
  * transport handing back **something we cannot read** are different facts and
  * they get different names.
  */
@@ -579,10 +819,11 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
     }
 
     const parsed = parse(reply.text ?? "");
-    /* `{"description": null}` is the reader saying there is no person here, and
-       it is a different answer from a read that failed — only one of the two is
-       worth telling her to try a different picture about. */
-    if (parsed.kind === "said_none") return { ok: false, reason: "no_person", attempts: attempt };
+    /* `{"description": null}` is the reader saying there is no BEING here — an
+       object, a place, a thing — and it is a different answer from a read that
+       failed. Only one of the two is worth telling her to try a different
+       picture about. */
+    if (parsed.kind === "said_none") return { ok: false, reason: "no_being", attempts: attempt };
     if (parsed.kind === "unparseable") {
       /* `truncated` is the provider's own `finish_reason === "length"` — the
          reply is a FRAGMENT, which is one of the shapes that lands here, and

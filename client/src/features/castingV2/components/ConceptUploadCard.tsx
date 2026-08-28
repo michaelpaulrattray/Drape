@@ -202,7 +202,7 @@ export function ConceptUploadCard({
     } catch (error) {
       /*
         OUR SENTENCE, NEVER THE ERROR'S. The door's own refusals are written
-        for a reader ("I couldn't find a person in that picture") and pass
+        for a reader ("I couldn't find anyone in that picture") and pass
         through untouched; a transport or a parser gets the fallback — and its
         own words go to the console rather than into the void. `Gated` because
         this control can be drawn live and then find the scope closed under it:

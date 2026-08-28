@@ -323,12 +323,12 @@ describe("a scope that closes under a live control never speaks to the customer"
     /*
       The positive control, and the one that matters: a helper that returned the
       fallback for everything would pass the arm above and silently replace the
-      door's real sentences ("I couldn't find a person in that picture"), which
+      door's real sentences ("I couldn't find anyone in that picture"), which
       is the exact defect `readableFailure` exists to prevent, inverted.
     */
     const spoken = {
       data: { code: "BAD_REQUEST" },
-      message: "I couldn't find a person in that picture — try one with someone in it.",
+      message: "I couldn't find anyone in that picture — this reads people and creatures, not objects, places or things. Try one with someone in it.",
     };
     expect(readableGatedFailure(spoken, CONCEPT_FAILED_FALLBACK)).toBe(spoken.message);
   });
@@ -944,7 +944,7 @@ describe("a refused read keeps her picture and offers a way on", () => {
 
   it("offers TWO ways on, because the refusals mean different things", async () => {
     /*
-      A gateway blip is worth the same picture again; *"I couldn't find a person
+      A gateway blip is worth the same picture again; *"I couldn't find anyone
       in that picture"* is deterministic, and a bare retry on the same file
       would spend house money to be told the same thing. So the wall gets an
       answer that can actually clear it.

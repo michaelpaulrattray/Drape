@@ -41,7 +41,7 @@ export const CONCEPT_CARD_TITLE = "Upload a concept";
 
 /** The live line. Two facts, both load-bearing; see the header. */
 export const CONCEPT_CARD_LINE =
-  "A picture in, a description of the person out — yours to read and edit before you cast, "
+  "A picture in, a description of who is in it out — yours to read and edit before you cast, "
   + "so you can cast someone similar. We never keep the picture.";
 
 /**
@@ -49,8 +49,8 @@ export const CONCEPT_CARD_LINE =
  * built and waiting rather than the one the prototype promised.
  */
 export const CONCEPT_CARD_COMING =
-  "Reading a person out of a picture you already have is coming. "
-  + "For now, describe the person and cast them.";
+  "Reading a person or creature out of a picture you already have is coming. "
+  + "For now, describe them and cast them.";
 
 /** Said on the card itself while the one describer call is in flight. */
 export const CONCEPT_READING_LABEL = "Reading the picture…";
@@ -70,7 +70,7 @@ export const CONCEPT_CARD_DROP = "Drop it here — we'll read it straight away."
  * OUR SENTENCE WHEN THE SERVER'S NEVER ARRIVED (`readableFailure`'s fallback).
  *
  * The door's own refusals are written for a reader and pass through untouched —
- * "I couldn't find a person in that picture", and the two that are honestly
+ * "I couldn't find anyone in that picture", and the two that are honestly
  * about us. This one covers a transport or a parser, which knows nothing about
  * her picture and must not pretend to.
  */
@@ -210,7 +210,7 @@ export const CONCEPT_NOT_A_PICTURE = "That isn't a picture we can read. Try a PN
  * picture away, so recovering from a transport blip meant finding the file
  * again. Two exits are offered rather than one, because the refusals differ in
  * what they mean — a gateway blip is worth the same picture again, while
- * *"I couldn't find a person in that picture"* is deterministic and a bare
+ * *"I couldn't find anyone in that picture"* is deterministic and a bare
  * retry would just spend house money to be told the same thing.
  */
 export const CONCEPT_REVIEW_RETRY = "Try again";
