@@ -1,7 +1,7 @@
 {
-  "edition": 83,
-  "updatedAt": "2026-08-28T23:05:00+10:00",
-  "shift": "foreman-80",
+  "edition": 84,
+  "updatedAt": "2026-08-28T23:45:00+10:00",
+  "shift": "foreman-81",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -980,6 +980,13 @@
   ],
   "pipeline": [
     {
+      "id": "concept-doors-on-the-map-192",
+      "title": "The studio's map of its own refusals could not see the upload reader's — fixed",
+      "status": "merged",
+      "prNumber": 207,
+      "note": "We keep a map of every place the studio can say no to you, and a rule that a new refusal cannot ship without appearing on it. The concept-upload reader's five refusals were not on that map: three were missing outright and one was filed under the wrong door, so its map entry pointed a reader at the right line of code and named the wrong feature. Nothing you would have seen — but the map is how we check ourselves, and it was quietly wrong about the newest thing we built. The five sentences moved into one table, unchanged word for word, and the map now reads that table rather than searching for them."
+    },
+    {
       "id": "concept-reader-gold-line-185-204",
       "title": "The concept reader answers with a type — and it reads creatures now",
       "status": "merged",
@@ -1530,6 +1537,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T23:45:00+10:00",
+      "shift": "foreman-81",
+      "text": "Quiet maintenance night — you had not replied yet and no patrol was due, so I took the oldest open item on the queue that needed nobody's eye.\n\nWHAT IT WAS. The studio keeps a map of every door it can refuse you at — every \"I can't do that yet\", every wall, every apology — and a rule that a new refusal cannot ship without its map entry. The upload-a-concept reader you have been testing all week has five of those refusals, and the map could see one. Three were simply absent. The fourth was worse than absent: it shares a name with an older door, so the map had one entry carrying two different features' evidence, and anyone checking it would have been sent to the right line of code under the wrong feature's name. Nothing a customer would ever notice. But the map exists so we can check ourselves, and it was wrong about the newest thing in the studio.\n\nTHE FIX, in one sentence: a refusal that has a sentence you can read is a door, so the five sentences now live in one table and the map reads that table. Moving them word for word also closed something the code itself had flagged and left — the \"there's nobody in that picture\" sentence is deliberately worded the same as the casting brief's own wall about the same boundary, and until tonight that matching was a note in a comment that nothing enforced. Either one could have been reworded and the studio would have told you two different stories about one rule. A test holds them together now.\n\nWHAT I FOUND AND DID NOT FIX. The same blind spot is bigger than the one feature. The casting brief's own four walls — including the two you care most about, the real-person likeness wall and the not-a-being wall — are invisible to the map for exactly the same reason, as is the wardrobe line's door. I did NOT widen the map to sweep everything up: I measured what that would catch and it is about eighty internal decision notes that no customer ever sees, each of which would then have demanded its own map entry. So it is filed with the measurement behind it rather than half-done tonight.\n\nCost: nothing. No credits, no renders, no reader calls, no flags moved, nothing about the studio behaves differently tomorrow than it did tonight."
+    },
+    {
       "at": "2026-08-28T23:05:00+10:00",
       "shift": "foreman-80",
       "text": "Both of your reader notes are done and merged. The detail is in the item above with the two pictures; here is what is worth knowing behind it.\n\nYour correction was sharper than what the product had built. It had turned your first ruling into a CHARACTER LIMIT, and you came back with a 243-character packing list to prove that a limit is not the test. The reader is now judged on how COARSE its words are, not how many: the hair world rather than the cut, a build family rather than a body size, the wardrobe as materials rather than as garments. Your gold line and your two men are written into the code as the target, and your failing box is written in beside them, labelled as wrong — two good examples show which side of the line to be on, but only the pair shows where the line is.\n\nThe creature fix was one sentence of scope. The reader was asked about \"the person\" in the picture, correctly answered that there was none, and the door refused. It is asked about the BEING now, and it refuses only what is not a being at all. That population is taken from the same list the casting brief's own wall uses, and a test now holds the two together, so if either one drifts later the other complains — the studio should not tell you creatures can be cast in one place and that your creature picture is empty in another.\n\nOne thing I found on the way that was already hurting you. The reader had a banned-word list, and it banned \"framing\". Driving the creature pictures, the reader wrote \"a coarse dark beard framing a jagged-toothed mouth\" — an ordinary sentence about a face — had a perfectly good note thrown out for it, and when the second attempt came back as noise you would have been told \"I couldn't read that picture just now.\" A face \"framed by\" dark hair would have done the same. That was live, on your account, before tonight. Both bare words are gone; only the photographic phrases are banned now.\n\nNothing widened. Upload-a-concept is still your account only, the picture is still never kept, and the whole night cost about sixty cents of house money and no credits."
@@ -1718,11 +1730,6 @@
       "at": "2026-08-27T04:05:00+10:00",
       "shift": "foreman-31",
       "text": "The Retry button you asked for on #122 ('should we also allow a try option aswell?') is built, reviewed twice and merged — and switched off for everyone until your word. What it does: a tile that failed on an engine error gets 'Retry · 20 credits'; tap it and the same words render again into the same slot, or it fails again and the 20 come back. Content-filter tiles get no button, exactly as your sentence put them on the softer-wording road. I drove it six times on the dev sheet: tap, casting in 5 seconds, the face landed in 52, eight of eight, 20 charged and nothing refunded — the ledger agrees every time. Four things were wrong the first time and only visible with a real render in front of me (the button stretched across the tile; the sheet did not notice the tile had gone back to casting because it was asking too often for a slow answer; a retried tile on an old sheet said 'taking longer than usual' from its first second) — all fixed and re-driven, about $0.39 of house money over seven renders. The reviewer found two real money races and both were closed before the merge. Two things for you: flip it on for your account, and a real question the refusal patrol raised — the engine's filter is a coin per picture (five refused and three delivered from the SAME words on your roll 222), so should a refused tile get a plain Retry too, before softer wording exists? Cards above. Also found: two of last night's helper scripts had made main red on a script guard; fixed, and #152 asks the rite to check before it pushes."
-    },
-    {
-      "at": "2026-08-27T03:05:00+10:00",
-      "shift": "foreman-29",
-      "text": "The framing court is done and in your gallery (#130). Your thin brief was rolled eight times under four framing sentences on the locked block — today's, one saying the crop lower in anatomy, and two saying your reference's geometry in numbers. Words move the frame three or four points, not the eight needed to reach 28% — and the reason turned out to be the frame's shape, not the words: your reference is 9:16 and the product renders 2:3, so your reference's view carried into our frame is about 33%, which the best sentence (F2) already hits with the tightest spread. A 28% face in our frame would be a wider picture than your reference. That is your call, and it is on the eye item with my recommendation (F2). Nothing in the product moved. Two things seen on the way, both for the refusal patrol: the number-stated sentences refused 5 of 24 where today's refused none, and they drew chest tattoos nobody asked for. Cost $2.05 house (estimated first on the issue), no credits. Still open for your eye: the studio light (#128), the settings modal (#142), roll 223's block (#144). No replies from you tonight."
     },
     {
       "at": "2026-08-28T15:45:00+10:00",
