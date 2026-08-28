@@ -1,7 +1,7 @@
 {
-  "edition": 82,
-  "updatedAt": "2026-08-28T21:10:00+10:00",
-  "shift": "foreman-79",
+  "edition": 83,
+  "updatedAt": "2026-08-28T23:05:00+10:00",
+  "shift": "foreman-80",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -483,6 +483,27 @@
   ],
   "eyeItems": [
     {
+      "id": "concept-reader-gold-line-185-204",
+      "title": "Your reader notes are both done — the goth reads as a type, and creatures read at all (#185, #204)",
+      "question": "Two things you sent an hour apart, both fixed and both worth your eye, because the test you set is whether these words would cast EIGHT different people of that type rather than reprint the one in the picture.\n\nFRAME 1 is the goth. What the reader used to say about it: \"A woman in her twenties, slight build, long straight platinum hair with blunt bangs, multiple facial piercings and forearm tattoos. Dark-fashion / gothic-alternative model type, styled with lace bodysuit, leather choker and spiked eye harness.\" What it says now: \"Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted platinum hair, facial piercings and fine-line facial markings, script tattoos on both arms. Athletic build, dark structured fashion in lace, leather and spiked metal accents.\" Your two men still read the way you approved them.\n\nFRAME 2 is a creature from your own reference folder. It used to be answered \"I couldn't find a person in that picture.\" It now reads: \"Reptilian humanoid being of adult presence, solid muscular build, dark pebbled scaled skin with bony ridged crests along the face. Bone-toned spinal ornamentation breaks the scales. Menacing creature-alien performance type.\" A picture with no BEING in it — an object, a place — is still refused, and I kept a control for that in the test run.\n\nTWO THINGS I OWE YOU STRAIGHT.\n\nOne. I did NOT add a code ban on the words you struck (bodysuit, choker, harness, slight), and that was a judgement call I could be wrong about. The reason is that your own PASSING examples use those same kinds of words — \"fitted dark crew-neck top\" is a named garment and \"athletic muscular build\" is build language — so a ban wide enough to catch the bad use also refuses your good ones. It is the \"shave\"/\"shape\" problem this studio has hit three times. So the rule lives in the reader's instruction, and the proof lives in running it on real pictures rather than in a test that can only check itself. If you would rather have the hard ban and accept that it will sometimes refuse a good description, say so and it is one change.\n\nTwo. Across fourteen reads, none used any word on your drop list and every build word came from the short list of families. About one read in three still slips in a single named item — \"a buckled choker\", \"a mechanical eye-piece\". That is the honest remaining gap, not something I am claiming is finished.\n\nTHE QUESTION: do these two read as TYPES you could cast eight different people from, or is there still inventory in them?",
+      "state": "open",
+      "filedAt": "2026-08-28T23:05:00+10:00",
+      "issueNumber": 185,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/ce0cdab7-4493-44b0-b95e-5e32d696e23a.jpg",
+          "arm": "THE GOTH — your failing box's picture",
+          "caption": "The picture the packing-list read was of. Read the OLD words and the NEW words in the question against this face: the old one locks her body size, her exact fringe and three named garments onto all eight; the new one gives the world they come from."
+        },
+        {
+          "key": "crew-eye/f5ee1abc-3fc0-4d50-8db0-da5b7ef66ffd.jpg",
+          "arm": "THE CREATURE — your own reference",
+          "caption": "This is the class of upload that was answered \"I couldn't find a person in that picture.\" It is one of your own creature references rather than the exact deity figure you tried, which I do not have — the reader never keeps an upload, by design. Same road, same answer."
+        }
+      ]
+    },
+    {
       "id": "concept-cast-it-196",
       "title": "Upload a concept now casts from the modal — and you can drag a picture straight onto the card (#196)",
       "question": "Both of the things you asked for after seeing the review step. FRAME 1 is the new one to judge: the button says Cast it and it casts straight from here into the normal roll flow — same settings, same charge, same sheet — with the price sitting above it rather than on it. That last bit is the one call I made against the wording of the card: the card says \"with the price on it\", your own sentence says only \"the button should be cast it\", and our own pricing rule (D-109) names Cast it by name and says a price belongs above a button and never inside one — it was tried inside a confirm's button once and reversed the same day. Use this brief stays as the quiet second option for when you want to keep editing in the box. FRAME 2 is the same thing in light. FRAME 3 is the second entrance: tap the card instead of dropping on it and you get an empty dialog with a drop zone — drop a picture on the CARD and it skips this and starts reading immediately. FRAME 4 is what a failed read looks like now: it keeps your picture and offers Try again or Choose another picture, instead of closing and making you find the file again — that one is a real refusal, from dropping a plain grey square on it. THE QUESTION: does the three-button row read right to you, or is Discard one thing too many?",
@@ -958,6 +979,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "concept-reader-gold-line-185-204",
+      "title": "The concept reader answers with a type — and it reads creatures now",
+      "status": "merged",
+      "prNumber": 205,
+      "note": "Your two notes on the reader, both done. The goth upload used to come back \"slight build, long straight platinum hair with blunt bangs … lace bodysuit, leather choker and spiked eye harness\" — a packing list that reprints one girl and half of whose words the engine refuses. It now comes back \"Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted platinum hair, facial piercings and fine-line facial markings, script tattoos on both arms. Athletic build, dark structured fashion in lace, leather and spiked metal accents.\" And the creature you uploaded, which used to be told there was nobody in the picture, now reads as a type."
+    },
     {
       "id": "atlas-check-trackedness-195",
       "title": "The deploy check stops refusing over a file that can never be current",
@@ -1502,6 +1530,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T23:05:00+10:00",
+      "shift": "foreman-80",
+      "text": "Both of your reader notes are done and merged. The detail is in the item above with the two pictures; here is what is worth knowing behind it.\n\nYour correction was sharper than what the product had built. It had turned your first ruling into a CHARACTER LIMIT, and you came back with a 243-character packing list to prove that a limit is not the test. The reader is now judged on how COARSE its words are, not how many: the hair world rather than the cut, a build family rather than a body size, the wardrobe as materials rather than as garments. Your gold line and your two men are written into the code as the target, and your failing box is written in beside them, labelled as wrong — two good examples show which side of the line to be on, but only the pair shows where the line is.\n\nThe creature fix was one sentence of scope. The reader was asked about \"the person\" in the picture, correctly answered that there was none, and the door refused. It is asked about the BEING now, and it refuses only what is not a being at all. That population is taken from the same list the casting brief's own wall uses, and a test now holds the two together, so if either one drifts later the other complains — the studio should not tell you creatures can be cast in one place and that your creature picture is empty in another.\n\nOne thing I found on the way that was already hurting you. The reader had a banned-word list, and it banned \"framing\". Driving the creature pictures, the reader wrote \"a coarse dark beard framing a jagged-toothed mouth\" — an ordinary sentence about a face — had a perfectly good note thrown out for it, and when the second attempt came back as noise you would have been told \"I couldn't read that picture just now.\" A face \"framed by\" dark hair would have done the same. That was live, on your account, before tonight. Both bare words are gone; only the photographic phrases are banned now.\n\nNothing widened. Upload-a-concept is still your account only, the picture is still never kept, and the whole night cost about sixty cents of house money and no credits."
+    },
+    {
       "at": "2026-08-28T21:10:00+10:00",
       "shift": "foreman-79",
       "text": "Your three replies came in while tonight's deploy was running, so they are answered here rather than in the edition above.\n\n\"Cast it and drag-and-drop both work as I asked. Done.\" — closed, nothing owed there.\n\nThe reader. You are right and the correction is sharper than the one I was working to: I had been treating LENGTH as the test, and 243 characters of packing list is still a packing list. Your goth box locks a body size, an exact fringe, three named garments and a harness — that reprints one girl instead of casting a type, and half those words are the ones the engine refuses anyway. Your gold line is now the specification, your two men are the passing examples, and the current goth box is the failing one. In practice that means named garments and body-size adjectives become forbidden in the output, the way \"no tattoos\" already is, and piercings and ink come back as worlds rather than as an inventory.\n\nI have not started it tonight, deliberately. It is a real piece of work rather than a wording tweak — it needs live reads of your own three photographs to prove the new instruction actually lands on your shape rather than on my opinion of your shape — and tonight's shift had already spent itself on the tooling fix in the entry below. It is the next shift's first job, with your words as the spec, and nothing is queued ahead of it."
@@ -1690,11 +1723,6 @@
       "at": "2026-08-27T03:05:00+10:00",
       "shift": "foreman-29",
       "text": "The framing court is done and in your gallery (#130). Your thin brief was rolled eight times under four framing sentences on the locked block — today's, one saying the crop lower in anatomy, and two saying your reference's geometry in numbers. Words move the frame three or four points, not the eight needed to reach 28% — and the reason turned out to be the frame's shape, not the words: your reference is 9:16 and the product renders 2:3, so your reference's view carried into our frame is about 33%, which the best sentence (F2) already hits with the tightest spread. A 28% face in our frame would be a wider picture than your reference. That is your call, and it is on the eye item with my recommendation (F2). Nothing in the product moved. Two things seen on the way, both for the refusal patrol: the number-stated sentences refused 5 of 24 where today's refused none, and they drew chest tattoos nobody asked for. Cost $2.05 house (estimated first on the issue), no credits. Still open for your eye: the studio light (#128), the settings modal (#142), roll 223's block (#144). No replies from you tonight."
-    },
-    {
-      "at": "2026-08-27T02:05:00+10:00",
-      "shift": "foreman-28",
-      "text": "The lighting court you asked for is done and in your gallery (#128). Your thin brief 'goth woman mid 30s' was rolled eight times under each of four lights on the locked block — today's line, your reference look with a deeper jaw shadow, your own candidate sentence word for word, and a clean even light — plus once more with no block at all, just a short photographic clause (the original reply-#8 idea). The block versions all delivered with zero refusals and read as one studio; the differences in light are real but subtle, so there is a close-up sheet beside the strip. The no-block version refused 3 of 8 and looks like a different room. Nothing in the product moved — your pick on the sheets is what changes the block's lighting line. Cost $2.60 of house money (estimated first on the issue), no credits. Still open for your eye from earlier: the settings modal (#142) and roll 223's light (#144). Next shift: #130, calibrating the frame to your 28% reference — every row here sits around 36%. No replies from you tonight."
     },
     {
       "at": "2026-08-28T15:45:00+10:00",
