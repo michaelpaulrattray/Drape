@@ -35,6 +35,16 @@ import {
   CONCEPT_DESCRIPTION_MAX,
   describeConcept,
 } from "../server/castingV2/conceptDescribe";
+import { assertOneWorld } from "./lib/worldGuard.mts";
+
+/*
+  THE WORLD, DECLARED. The rows come from the database and the BYTES come from
+  the bucket, so a half-production process would read production frames' keys
+  out of the dev bucket and report a describer failure that is really a 404.
+  Only these two discriminate: the R2 endpoint and credential hold the same
+  value in both worlds, so declaring them would buy a false refusal.
+*/
+assertOneWorld(["DATABASE_URL", "R2_BUCKET"]);
 
 const OUT = "output/_shift185-type/concept-drive";
 mkdirSync(OUT, { recursive: true });
