@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "297248a7a94a9494"
+    "sourceFingerprint": "195c38888339148a"
   },
   "domains": [
     {
@@ -10172,6 +10172,10 @@
     {
       "id": "test:client/src/features/castingV2/castingPathCopy.test.ts",
       "path": "client/src/features/castingV2/castingPathCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/castingV2CssEmitters.test.ts",
+      "path": "client/src/features/castingV2/castingV2CssEmitters.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/chosenFrame.test.ts",

@@ -104,6 +104,16 @@ empty, and that the server's own input schema refuses an absent name — three
 places, because a rule that lives only in the dialog is a rule the next caller
 skips.
 
+> ⚠ **Stamp, 2026-08-29 (#210).** The paragraph above is the reading as it stood
+> on its own date and is left as written. Two things have moved since: the pin is
+> no longer on a CLASS but on a PROP (`portrait={imageUrl}`, the shared dialog
+> shell), and `dpc-sign__portrait` — the pre-rename ancestor of the live
+> `dpc-signm__portrait` — was deleted with the other twenty dead classes in this
+> stylesheet. **The pin itself still stands**; only the mechanism it reads
+> changed. Stamped rather than corrected because an evidence pack records what
+> was verified on its date, and this is the last citation of a class name that no
+> longer exists.
+
 ---
 
 ## Item 6 — room media interactions
