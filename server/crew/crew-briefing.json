@@ -1,7 +1,7 @@
 {
-  "edition": 77,
-  "updatedAt": "2026-08-28T15:40:00+10:00",
-  "shift": "foreman-75",
+  "edition": 78,
+  "updatedAt": "2026-08-28T15:45:00+10:00",
+  "shift": "foreman-76",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -166,7 +166,7 @@
         }
       ],
       "recommendation": "rebase",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-28T15:40:00+10:00",
       "issueNumber": 190
     },
@@ -193,7 +193,7 @@
         }
       ],
       "recommendation": "Flip it. The thing you objected to is fixed and measured — five reads, every one inside your 150–250, two clearly different types, none of them naming an eye colour or a seam — and the only reading left that a drive cannot buy is what EIGHT RENDERS off one of these notes actually look like. That needs a real roll on your account, which needs the flip.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-28T14:20:00+10:00",
       "issueNumber": 185
     },
@@ -486,7 +486,7 @@
       "id": "trigger-cluster-court-190-strip",
       "title": "56 sends, 53 refusals, 3 pictures — the wall your edgy briefs are hitting (#190)",
       "question": "This is the whole test in one image: seven rows, one per wording, eight sends each, left to right in the order they were sent. Every grey tile is a refusal from the engine's content checker. Row B1 and row B2 are THE SAME TEXT sent twice — they came back 7 refused and 8 refused, which is the measurement of how much this varies for no reason at all, and it is the number every other row has to beat. None of them beats it. THE QUESTION is on the card, not here: whether to try once more on a brief that isn't already at the ceiling, or to call it and lean on Retry. But look at the second frame first — that is one of the three that got through, and it is your brief almost sentence for sentence: the shaved side with the scalp crosses, the spiked eye harness with her hand raised to it, the lace glove, the septum and lip piercings, the cross under the eye, the buckled choker and the strap down the front, the calligraphy on both arms. The engine can absolutely cast this. The checker is the whole problem.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-28T15:40:00+10:00",
       "issueNumber": 190,
       "cardId": "trigger-cluster-court-190",
@@ -507,7 +507,7 @@
       "id": "concept-upload-flip-185",
       "title": "Upload a concept — read the two notes, then say flip it (#185)",
       "question": "The only thing left on this feature is your word. Tap a picture on the casting page and what lands in your brief box is now a short casting note you can read in one breath, yours to edit before you spend anything. Six reads went through the shipped reader this afternoon: 173, 182, 220, 210 and 233 characters — every one of them inside the 150–250 you asked for, every one first attempt, and the sixth came back as \"couldn't read that just now\" on a perfectly good photograph (see the last paragraph of the journal — filed, small, not a reason to wait). Nothing about light, set, frame or camera. Nothing about what the person does NOT have. THE QUESTION: read the two notes under the frames below against the two faces. If they are the briefs you would have typed, say so and it goes on for your account. If a note is still saying more than a casting director would, say which words and I will cut them. Nothing is live: the switch is off for everyone including you.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-28T14:20:00+10:00",
       "issueNumber": 185,
       "cardId": "concept-upload-flip-card-185",
@@ -903,6 +903,27 @@
         }
       ],
       "cardId": "creative-court-funding"
+    },
+    {
+      "id": "concept-review-modal",
+      "title": "Upload a concept now opens a review — is this the check you wanted?",
+      "question": "You asked for the description to open in a modal instead of dropping into the small prompt box. This is it: your picture on the left, the words on the right in a box you can edit, one button that puts them in your brief. Two things to judge. First — is the note the right SIZE and shape now? These reads are 243 characters, a type rather than an inventory, which is the cut you asked for. Second — is seeing the photograph beside the words actually useful, or is it a step in your way? Discard and Escape both cost nothing, and nothing is charged either way; the credits still go at the roll, as they always have.",
+      "state": "open",
+      "filedAt": "2026-08-28T15:45:00+10:00",
+      "issueNumber": 196,
+      "frames": [
+        {
+          "key": "crew-eye/40d37c1f-26fc-428c-b5c1-b589353dc1c9.png",
+          "caption": "The review, dark. Your uploaded picture is shown WHOLE — it was being cropped, which on a tall photo cut away the part the words were describing. The read: \"A young woman, slight build, with long straight platinum hair and heavy fringe, multiple facial piercings and forearm script tattoos. Alt-goth/fetish-fashion type…\" — 243 characters.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/68686b6e-59f4-4876-ab59-cc25ac657c4f.png",
+          "caption": "The same thing in light. Same picture, a second read of it — also 243 characters, and a different wording, which is the describer being asked once per upload rather than remembering.",
+          "arm": "light"
+        }
+      ],
+      "cardId": null
     }
   ],
   "pipeline": [
@@ -1339,6 +1360,13 @@
       "status": "merged",
       "prNumber": 76,
       "note": null
+    },
+    {
+      "id": "concept-review-modal-196",
+      "title": "Upload a concept opens a review — your picture beside the words, one confirm (#196)",
+      "status": "merged",
+      "prNumber": 197,
+      "note": "Live on your account. Two rounds of review findings fixed and measured at the running app."
     }
   ],
   "problems": [
@@ -1414,11 +1442,6 @@
     }
   ],
   "journal": [
-    {
-      "at": "2026-08-28T15:40:00+10:00",
-      "shift": "foreman-75",
-      "text": "You asked last night whether we could find wording that gets provocative casts past the engine, and said it was not worth building without proof. I went looking for the proof tonight and there isn't any — which is a real answer, and it cost 17 cents.\n\nThe test: your cyber-goth brief, sent 56 times in seven different wordings, 8 sends each, all shuffled together so that the checker being in a better mood later in the night could not make one wording look good. The four families your agent named each got a row: the age word, the mesh-and-lace words, every mention of the chest, and our own house line about \"a face you could touch\". A fifth row was the base text sent a second time, unchanged, as the measure of pure luck.\n\n53 of the 56 were refused. The identical-text row came back 7 refused against the base's 8 — so a whole render's worth of difference happens for no reason at all, and not one of the four families beat that. Statistically every single one lands on p = 1.0000, which is what you get when two things cannot be told apart.\n\nThe bigger thing I found is about the brief itself, not the words. It was refused 63 times out of 64 on the 26th, 5 times out of 8 on the 27th, and 53 out of 56 tonight — and nothing about the product changed between the first two. That swing is larger than any effect we were hunting for, which is why tonight's test carried its own control in the same sitting, and why comparing two nights would have told us nothing. It also means tonight had almost no room to detect a small win: at 95% refused, a wording that helps a bit is invisible. That is the honest limit of what I bought, and it is why the card recommends one more sitting on a version of your brief that isn't already at the ceiling — your own hand-rewrite scored 4 out of 8 back on the 27th and would give a word somewhere to move.\n\nTwo corrections to the test plan, said plainly because they change what was actually measured. There is no \"patent\" anywhere in your brief, so the fabric family was tested as mesh and lace only. And the chest hypothesis as written pointed at the lighting line — but the shipped lighting line contains no \"chest\" at all, and the block that did was never turned on. So I tested the strongest version of the question instead: every mention of the chest anywhere in what gets sent, the framing one becoming \"collarbones\", which is the one word we know passes.\n\nWorth ending on the good news, because the strip is mostly grey. The three that got through are gorgeous and they are your brief almost sentence for sentence — and none of them bought its way through by casting something tamer. The engine can serve this look. It is the doorman, not the photographer, and the thing that already beats a doorman flipping a coin is the Retry button, which is on your account."
-    },
     {
       "at": "2026-08-28T14:20:00+10:00",
       "shift": "foreman-74",
@@ -1613,6 +1636,11 @@
       "at": "2026-08-26T23:20:00+10:00",
       "shift": "foreman-25",
       "text": "Your §5f ruling is built and live on your account (#146, PR #147): the house block's expression and colour lines are now studio geometry only — eyes into the lens, mouth closed, no laugh, no speech, no blank CGI stare; neutral daylight with skin colour and sheen from the person. Mood words and skin temperature now belong to the seed and the author, per cast, so a war orc can be severe and a weathered man can be warm without the block fighting them. The guard that refuses old phrases back into the block gained the six §5f drops (the review caught that two were test-only; fixed before merge). No roll and no house spend — your next author-road roll carries it. Still waiting on your eye for the light on roll 223 vs 221/222. Next in order: the Retry button (#122), the minimal settings modal (#142), then the two small courts (#128, #130)."
+    },
+    {
+      "at": "2026-08-28T15:45:00+10:00",
+      "shift": "foreman-76",
+      "text": "Both of your replies acted on. \"Flip it\" — Upload a concept is ON for your account on production (one variable, read back by name, redeploy SUCCESS, health x3 200); every other account still sees the coming-state. Then your next sentence about it got built the same night: it opens in a REVIEW MODAL now, your picture beside the editable words with one \"Use this brief\" button, and nothing is charged whichever way you leave it (#196, PR #197, merged). Frames for your eye above. Two things I changed by LOOKING at it rather than reading the code: your picture was being cropped, and the \"Reading the picture…\" line was printed twice. The gate's reviewer then found a real one I had missed twice — while the picture is being read, pressing Tab walked focus out of the dialog and into the page behind it. Fixed for this dialog and for every dialog in the studio, and measured both ways at the running app. \"Park the word test\" — #190 is parked, nothing from it implemented, and the re-run is now automatic: when the refusal patrol next measures that brief in a middle mood (roughly 15-85% refused, in its own sitting) it re-fires the four word families then and there. Retry stays the remedy meanwhile. Nothing waits on you tonight except the frames."
     }
   ],
   "acknowledgedReplyIds": [
@@ -1635,6 +1663,8 @@
     17,
     18,
     19,
-    20
+    20,
+    21,
+    22
   ]
 }
