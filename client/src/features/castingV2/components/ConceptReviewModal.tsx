@@ -20,7 +20,7 @@ import {
   CONCEPT_REVIEW_USE,
   conceptCountLabel,
 } from "../conceptUpload";
-import { ACCEPTED_PICTURE_FILES, firstPictureFrom } from "../pictureBytes";
+import { ACCEPTED_PICTURE_FILES } from "../pictureBytes";
 import { CastingModal } from "./CastingModal";
 
 /**
@@ -82,8 +82,9 @@ export function ConceptReviewModal({
   file,
   description,
   failure,
+  notAPicture,
   priceCredits,
-  onFile,
+  onFiles,
   onRetry,
   onUse,
   onCast,
@@ -95,10 +96,19 @@ export function ConceptReviewModal({
   description: string | null;
   /** The door's own refusal sentence, or `null`. Never an error object's text. */
   failure: string | null;
+  /**
+   * WHETHER THE LAST FILE OFFERED WAS NOT A PICTURE.
+   *
+   * Handed down rather than decided here: the card judges every file for all
+   * three entrances, so a PDF dropped on the CARD reaches this dialog with its
+   * sentence already true. Owned locally, it could not — and that was a silent
+   * open with nothing said.
+   */
+  notAPicture: boolean;
   /** Server-derived, passed down — never a constant on this side (D-15). */
   priceCredits: number;
-  /** A picture arrived here rather than at the card. The card owns the read. */
-  onFile: (file: File) => void;
+  /** Files arrived here rather than at the card. The card judges and reads them. */
+  onFiles: (files: FileList | null) => void;
   /** Read the SAME picture again — the plain retry his build notes ask for. */
   onRetry: () => void;
   /** Put the words in the brief box and stop. The card decides where they go. */
@@ -109,8 +119,6 @@ export function ConceptReviewModal({
 }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [text, setText] = useState("");
-  /** Said inline when a dropped file declares itself something other than a picture. */
-  const [refusedFile, setRefusedFile] = useState(false);
   /** Whether a drag is currently over the dialog. Depth-counted; see `onDragEnter`. */
   const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
@@ -163,22 +171,6 @@ export function ConceptReviewModal({
   }, [description]);
 
   /*
-    ONE FILE HANDLER FOR BOTH ENTRANCES INSIDE THE DIALOG — the drop zone and
-    the picker — and it never encodes or calls the door: the card owns the read
-    for all THREE entrances, so a fix to the read is a fix everywhere.
-  */
-  const take = (files: FileList | null) => {
-    const picture = firstPictureFrom(files);
-    /*
-      A refusal is INLINE and not a toast: she is looking at a dialog, the
-      dialog is where the answer belongs, and a toast behind a scrim is the
-      product talking past the thing it is talking about.
-    */
-    setRefusedFile(!picture);
-    if (picture) onFile(picture);
-  };
-
-  /*
     DEPTH-COUNTED, because `dragleave` fires every time the pointer crosses into
     a CHILD element — a naive pair of enter/leave handlers flickers the drop
     state on and off as the cursor moves over the text inside the zone.
@@ -206,7 +198,7 @@ export function ConceptReviewModal({
     event.stopPropagation();
     dragDepth.current = 0;
     setDragging(false);
-    take(event.dataTransfer?.files ?? null);
+    onFiles(event.dataTransfer?.files ?? null);
   };
   const dropHandlers = { onDragEnter, onDragOver, onDragLeave, onDrop };
 
@@ -277,11 +269,10 @@ export function ConceptReviewModal({
           className="dpc-entry__file"
           onChange={(event) => {
             const files = event.target.files;
-            /* Cleared first, so choosing the SAME file twice fires again. */
-            const chosen = firstPictureFrom(files);
+            /* Cleared AFTER the hand-off, so choosing the SAME file twice fires
+               again — a picker that ignores a repeat looks broken. */
+            onFiles(files);
             event.target.value = "";
-            setRefusedFile(!chosen);
-            if (chosen) onFile(chosen);
           }}
         />
 
@@ -345,8 +336,13 @@ export function ConceptReviewModal({
           </>
         )}
 
-        {/* Said inline, next to the zone she dropped on. */}
-        {refusedFile ? (
+        {/*
+          Said inline, next to the zone she dropped on — never a toast: she is
+          looking at a dialog, the dialog is where the answer belongs, and a
+          toast behind a scrim is the product talking past the thing it is
+          talking about.
+        */}
+        {notAPicture ? (
           <p className="dpc-signm__note" role="status">
             {CONCEPT_NOT_A_PICTURE}
           </p>

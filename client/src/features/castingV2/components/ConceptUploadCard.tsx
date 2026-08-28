@@ -95,6 +95,16 @@ export function ConceptUploadCard({
   const [description, setDescription] = useState<string | null>(null);
   /** The refusal to show HER, already passed through `readableGatedFailure`. */
   const [failure, setFailure] = useState<string | null>(null);
+  /**
+   * WHETHER THE LAST FILE OFFERED WAS NOT A PICTURE.
+   *
+   * ⚠ It lived in the MODAL first, and that was a silent failure on one of the
+   * three entrances: a PDF dropped on the CARD opened the dialog with nothing
+   * said, because the modal's own copy of this could not know about a file the
+   * card had judged. The card owns every piece of state on this road — that is
+   * what its header claims — and this was the one piece it did not.
+   */
+  const [notAPicture, setNotAPicture] = useState(false);
   /** Whether a file is being dragged over the card. Depth-counted; see below. */
   const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
@@ -135,6 +145,7 @@ export function ConceptUploadCard({
     setPicture(null);
     setDescription(null);
     setFailure(null);
+    setNotAPicture(false);
   };
 
   /*
@@ -197,10 +208,29 @@ export function ConceptUploadCard({
     if (!describe) return;
     readId.current += 1;
     setOpen(true);
+    setNotAPicture(false);
     setPicture(file);
     setDescription(null);
     setFailure(null);
     void read(file, describe);
+  };
+
+  /*
+    THE ONE PLACE A FILE IS JUDGED, for all three entrances — the card's drop,
+    the dialog's drop, and the dialog's picker. `firstPictureFrom` is called
+    here and nowhere else, so the three cannot disagree about what a picture is,
+    and a file that is not one always OPENS THE DIALOG AND SAYS SO: the dialog
+    is where the drop zone, the sentence and the picker all are, so she lands on
+    the surface that can take her next act.
+  */
+  const offerFile = (files: FileList | null) => {
+    const picture = firstPictureFrom(files);
+    if (picture) {
+      beginRead(picture);
+      return;
+    }
+    setNotAPicture(true);
+    setOpen(true);
   };
 
   /*
@@ -232,15 +262,7 @@ export function ConceptUploadCard({
     dragDepth.current = 0;
     setDragging(false);
     if (open) return;
-    /*
-      A file that positively declares itself something else OPENS THE DIALOG
-      EMPTY rather than being refused in a toast out here: the dialog is where
-      the drop zone, the sentence and the picker all are, so she lands on the
-      surface that can actually take her next act.
-    */
-    const dropped = firstPictureFrom(event.dataTransfer?.files ?? null);
-    if (dropped) beginRead(dropped);
-    else setOpen(true);
+    offerFile(event.dataTransfer?.files ?? null);
   };
 
   if (!describe) {
@@ -301,8 +323,9 @@ export function ConceptUploadCard({
           file={picture}
           description={description}
           failure={failure}
+          notAPicture={notAPicture}
           priceCredits={priceCredits}
-          onFile={beginRead}
+          onFiles={offerFile}
           onRetry={() => {
             if (picture) beginRead(picture);
           }}

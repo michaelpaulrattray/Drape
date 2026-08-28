@@ -761,6 +761,10 @@ describe("two entrances, one read", () => {
     const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
     expect(review).toContain("file: File | null;");
     expect(review).toContain("const empty = file === null;");
+    /* The dialog's own drop and picker hand the files UP rather than judging them. */
+    expect(review).toContain("onFiles(event.dataTransfer?.files ?? null);");
+    expect(review).toContain("onFiles(files);");
+    expect(review).toContain("notAPicture: boolean;");
     /* The drop zone stands in the picture's own slot, so nothing moves when one arrives. */
     expect(review).toContain("portraitFallback={");
     expect(review).toContain("dpc-signm__drop");
@@ -777,8 +781,28 @@ describe("two entrances, one read", () => {
       card.indexOf("const onDrop = (event: DragEvent) => {"),
       card.indexOf("if (!describe) {"),
     );
-    expect(drop).toContain("beginRead(dropped)");
-    expect(drop).toContain("firstPictureFrom(");
+    expect(drop).toContain("offerFile(event.dataTransfer?.files ?? null)");
+    /*
+      ⚠ AND `offerFile` IS THE ONE JUDGEMENT FOR ALL THREE ENTRANCES. It was
+      three: the card judged its own drop and the dialog judged its own two, and
+      that split had a silent failure in it — a PDF dropped on the CARD opened
+      the dialog with NOTHING SAID, because the sentence lived in the dialog's
+      own state and could not know about a file the card had already rejected.
+      One judgement, and a file that is not a picture always opens the dialog
+      and says why.
+    */
+    const offer = card.slice(
+      card.indexOf("const offerFile = (files: FileList | null) => {"),
+      card.indexOf("const onDragEnter"),
+    );
+    expect(offer).toContain("firstPictureFrom(files)");
+    expect(offer).toContain("beginRead(picture)");
+    expect(offer).toContain("setNotAPicture(true);");
+    expect(offer).toContain("setOpen(true);");
+    /* Called in exactly one place in the whole feature. */
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    expect(review).not.toContain("firstPictureFrom");
+    expect(card.split("firstPictureFrom(").length - 1).toBe(1);
   });
 
   it("SWALLOWS A DROP THE PAGE DID NOT CLAIM — or the browser eats her brief", async () => {
