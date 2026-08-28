@@ -1176,7 +1176,6 @@
   sentence has to say that without pretending the current sheet changed. The
   old value recedes, the new one takes full ink, and the timing is chrome.
 */
-.dpc-echo__pending { white-space: nowrap; }
 .dpc-echo__was { color: var(--meta); text-decoration: line-through; text-decoration-thickness: 1px; }
 .dpc-echo__will { color: var(--ink); border-bottom: 1px solid var(--accentSolid); }
 .dpc-echo__when { color: var(--faint); font-size: 10.5px; letter-spacing: 0.06em; }
@@ -1396,13 +1395,6 @@
 
 .dpc-cardmenu__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }
 
-.dpc-sheetmenu__ask {
-  display: block;
-  padding: 7px 9px 5px;
-  font: 400 12px/1.45 var(--font-sans);
-  color: var(--metaStrong);
-}
-
 /* ---- destructive confirmation ---- */
 
 .dpc-confirm {
@@ -1441,22 +1433,6 @@
   margin: 0;
   font: 400 13.5px/1.55 var(--font-sans);
   color: var(--metaStrong);
-}
-
-/*
-  The confirm's cost, directly above the button it prices.
-
-  Same treatment as every other cost line in the product — muted, mono, machine
-  facts in machine type — and right-aligned so it sits over the primary button
-  rather than floating between the two.
-*/
-.dpc-confirm__cost {
-  display: block;
-  margin-top: 12px;
-  text-align: right;
-  font: 400 10.5px/1.4 var(--font-mono);
-  letter-spacing: 0.02em;
-  color: var(--meta);
 }
 
 .dpc-confirm__actions {
@@ -1695,43 +1671,6 @@
   opacity: 0.62;
 }
 
-/* ---- Sign: the weighty confirmation, and the room it opens ------------- */
-
-.dpc-sign__label {
-  margin-top: 6px;
-  font: 400 11.5px/1.4 var(--font-sans);
-  letter-spacing: 0.02em;
-  color: var(--meta);
-}
-
-/*
-  Accent, not error red. Signing is weighty but it is not destructive — it is
-  the thing the customer came here to do, and dressing it in the delete colour
-  would be the product flinching at its own good news.
-*/
-.dpc-confirm__sign {
-  font: 500 13px var(--font-sans);
-  padding: 8px 15px;
-  border-radius: var(--r-btn);
-  cursor: pointer;
-  background: var(--accentSolid);
-  border: 1px solid var(--accentSolid);
-  /* `--onAccent` was never a token — it is defined nowhere, so this rule has
-     always been painted by its own fallback. Same value, but a dangling
-     reference reads as tokenised while being a literal. */
-  color: var(--onWash);
-}
-
-.dpc-confirm__sign:hover { filter: brightness(0.94); }
-.dpc-confirm__sign:disabled { opacity: 0.6; cursor: default; }
-.dpc-confirm__sign:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
-
-/* The sign affordance on a candidate: quiet, full width, always priced. */
-.dpc-card__sign {
-  width: 100%;
-  margin-top: 6px;
-}
-
 /* ---- the casting room -------------------------------------------------- */
 
 .dpc-room__hero {
@@ -1745,61 +1684,11 @@
   .dpc-room__hero { grid-template-columns: minmax(0, 1fr); }
 }
 
-.dpc-room__anchor {
-  aspect-ratio: 4 / 5;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--media);
-}
-
-.dpc-room__anchor > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .dpc-room__name {
   margin: 0;
   font: 500 22px/1.2 var(--font-sans);
   letter-spacing: -0.015em;
   color: var(--ink);
-}
-
-.dpc-room__id {
-  font: 400 11px var(--font-mono);
-  letter-spacing: 0.06em;
-  color: var(--meta);
-}
-
-.dpc-room__slots {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
-  gap: 16px;
-  align-items: start;
-}
-
-.dpc-slot {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.dpc-slot__frame {
-  position: relative;
-  aspect-ratio: 4 / 5;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--media);
-}
-
-.dpc-slot__frame > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 /*
@@ -1831,22 +1720,9 @@
   color: var(--meta);
 }
 
-.dpc-slot__caption {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-
 .dpc-slot__label {
   font: 400 12px var(--font-sans);
   color: var(--secondary);
-}
-
-.dpc-slot__note {
-  margin: 0;
-  font: 400 11.5px/1.45 var(--font-sans);
-  color: var(--meta);
 }
 
 /* ---- signed: the state whose absence lost a Cast ----------------------- */
@@ -1919,32 +1795,6 @@
   font: 400 12.5px var(--font-sans);
   color: var(--ink);
 }
-
-/* ---- the dock's Sign: where the drawing always put it ------------------ */
-
-.dpc-dock__sign {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: none;
-}
-
-.dpc-dock__stack { display: flex; gap: 4px; }
-
-.dpc-dock__thumb {
-  width: 30px;
-  height: 38px;
-  padding: 0;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--media);
-  cursor: pointer;
-}
-
-.dpc-dock__thumb > img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.dpc-dock__thumb.is-selected { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
-.dpc-dock__thumb:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
 
 /* ---- the room, measured from the drawing -------------------------------
    Every number here was read off the rendered prototype at 1440x1150 and
@@ -2264,10 +2114,6 @@
 
 .dpc-sib__tiles { display: flex; gap: 8px; padding-top: 2px; flex-wrap: wrap; }
 .dpc-sib__tile { width: 52px; height: 64px; border: 1px solid var(--border); border-radius: 7px; background: var(--media); }
-.dpc-sib__tile--add {
-  border-style: dashed; background: transparent;
-  display: flex; align-items: center; justify-content: center; color: var(--faint);
-}
 
 /* ---- the package: a quiet strip, not the show ---- */
 
@@ -2288,26 +2134,6 @@
 .dpc-sib__tile--face > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .dpc-sib__tile--face:hover { border-color: var(--lineStrong); }
 .dpc-sib__tile--face:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
-
-/* ---- the Sign ceremony: her first ---- */
-
-.dpc-sign__portrait {
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  max-height: 340px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--media);
-  border: 1px solid var(--border);
-}
-
-.dpc-sign__portrait > img { display: block; width: 100%; height: 100%; object-fit: cover; }
-
-.dpc-sign__caption {
-  font: 400 11.5px var(--font-sans);
-  color: var(--meta);
-  padding-top: 2px;
-}
 
 /* ---- room: inline rename + quiet media actions ---- */
 
@@ -3542,50 +3368,10 @@
   nothing — and the price law runs the other way too. A control that costs
   nothing must not wear the weight of one that does.
 */
-.dpc-refine__read {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-}
-
 /* The picker itself is never seen; the button is the door. */
 .dpc-refine__readInput {
   display: none;
 }
-
-/*
-  CENTRED WITH THE META LINES, AND NOT UNDERLINED AT REST.
-
-  Photographed in the running app first: left-aligned and underlined, it read as
-  a raw hyperlink pinned to the left edge of a stack whose every other line is
-  centred — the generic-web look the house style exists to avoid. It belongs to
-  the quiet family beneath the box, one step brighter than those lines because
-  it is the only door onto the feature, with the underline arriving on hover to
-  say it can be pressed.
-*/
-.dpc-refine__readAction {
-  align-self: center;
-  background: none;
-  border: 0;
-  padding: 0;
-  font-family: var(--font-sans);
-  letter-spacing: normal;
-  font-size: 11.5px;
-  line-height: 1.35;
-  color: var(--onScrim);
-  opacity: 0.72;
-  cursor: pointer;
-  text-decoration: none;
-  text-underline-offset: 3px;
-}
-
-.dpc-refine__readAction:hover:not(:disabled) {
-  opacity: 0.95;
-  text-decoration: underline;
-}
-.dpc-refine__readAction:disabled { opacity: 0.3; cursor: default; }
 
 .dpc-refine__readResult {
   display: flex;
@@ -4292,19 +4078,6 @@
   overflow: hidden;
 }
 
-/*
-  WHAT THE ROW STATES WHEN THERE IS NOTHING THERE — "bald" (founder, fable-889).
-
-  Deliberately NOT dimmer than her words: a finding of nothing is a look, not a
-  lesser fact, and greying it would say "we could not read this" — the one thing
-  it must never be confused with. It is one word, so it never wraps; the class
-  exists so the state is assertable from a browser drive rather than by eye.
-*/
-.dpc-face__words--absent {
-  color: color-mix(in srgb, var(--onScrim) 72%, transparent);
-  white-space: nowrap;
-}
-
 .dpc-face__from {
   font-size: 11.5px;
   color: color-mix(in srgb, var(--onScrim) 58%, transparent);
@@ -4319,8 +4092,9 @@
   Deliberately the SAME weight as `.dpc-face__from`, not dimmer. It is a label
   and never a hedge: the row is not less accurate on the Wardrobe path, it is
   accurate about something smaller, and dimming a true statement is how it
-  starts reading as "we could not read this" — the argument
-  `.dpc-face__words--absent` already makes one row up.
+  starts reading as "we could not read this" — the argument the retired "bald"
+  row used to make one row up (fable-889; the row itself was taken out by
+  fable-904, and its rule with it — #210).
 
   One or two words, so it never wraps; the class exists so a browser drive can
   assert the state rather than someone judging it by eye.
