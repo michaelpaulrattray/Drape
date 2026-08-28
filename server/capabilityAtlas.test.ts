@@ -240,7 +240,18 @@ describe("the committed census is fresh", () => {
     if (!committed) return;
     const fresh = renderCapabilityPage({ ...committed, static: buildStaticAtlas(CORPUS) });
     expect(committedPageIsFresh(committed, buildStaticAtlas(CORPUS), `${fresh}hand edited\n`)).toBe(false);
-    expect(lfOnly(fresh.split("\n").join(String.fromCharCode(13) + "\n"))).toEqual(lfOnly(fresh));
+    /* ⚠ THE CRLF HALF IS DRIVEN THROUGH THE COMPARISON, NOT THROUGH THE
+       NORMALIZER (second review of #201). Asserting `lfOnly(crlf(x)) ===
+       lfOnly(x)` exercises `lfOnly` in isolation: delete the `lfOnly(pageText)`
+       call from `committedPageIsFresh` and every arm in both suites stays green
+       while a CRLF working copy gets the false "stale" verdict fable-1366 §3c
+       already paid for once. A normalizer that is correct and never consulted
+       is the failure this whole file is the opposite of. */
+    expect(committedPageIsFresh(
+      committed,
+      buildStaticAtlas(CORPUS),
+      fresh.split("\n").join(String.fromCharCode(13) + "\n"),
+    )).toBe(true);
   });
 
   it("⚠ A ROUTE-CHANGED FINDING DOES NOT MAKE ITS OWN PAGE STALE (PR #201's review, finding 1)", () => {
