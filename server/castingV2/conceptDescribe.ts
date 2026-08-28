@@ -99,10 +99,42 @@
  * famous person" vision gate is deliberately NOT built: a reader's verdict
  * turning a customer away is what law 9 and the fable-1052 class forbid, and
  * nothing in his order asks for one.
+ *
+ * # A READ THAT NEVER ARRIVED IS ASKED AGAIN — #193, and the measurement
+ *
+ * Six live reads on production frames, one came back `unreadable`, and **the
+ * frame that refused answered cleanly three times out of three immediately
+ * afterwards** (`scripts/_e76-unreadable-probe-disposable.mts`). So the refusal
+ * was the coin and not the picture — and the one outcome this module declined
+ * to re-ask was the one that is provably transient, while the outcomes it did
+ * re-ask (a read forty characters too long) are the ones a second ask is least
+ * likely to change.
+ *
+ * ⚠ **THE CARD NAMED ONE BRANCH AND THERE ARE THREE, so the repair is the
+ * CLASS** (law 7). `{ reason: "unreadable", attempts: 1 }` is returned from an
+ * unparseable reply, from a transport that threw, and — the one nobody had
+ * counted — from `openrouterText.ts`'s **empty completion on a 200**, which
+ * throws `ProviderError("unknown")` and is NOT in `RETRYABLE_FAILURES`, so it
+ * gets exactly one shot where a timeout gets three. The two are
+ * indistinguishable at the outcome: both branches return the same object, and
+ * the original run's log is gone, **so which one the measured refusal came
+ * from is unknown and is not asserted here**. Covering both is what makes that
+ * not matter.
+ *
+ * What is NOT re-asked, and each for its own reason: `no_person` (a real
+ * answer, not a failure — re-asking it is asking a reader to change a correct
+ * verdict); `transport`, `rate_limit` and `timeout` (the transport's own
+ * `withRetry` has already burned three attempts, and a fourth would put a
+ * customer through ~4x a dead provider's deadline on a synchronous route);
+ * `capability`, which is a CANCEL; a throw that is not a `ProviderError` at
+ * all, so a bug in our own code cannot be retried into invisibility; and a
+ * second failure of any of these, which keeps today's sentence, because a read
+ * that comes back as noise twice is the one case where *try a different
+ * picture* is honest advice.
  */
 import { createModuleLogger } from "../logging/logger";
 import { interpreterEngine } from "./interpreter";
-import type { TextEngine } from "../providers/types";
+import { ProviderError, type TextEngine } from "../providers/types";
 
 const log = createModuleLogger("castingV2/conceptDescribe");
 
@@ -394,12 +426,48 @@ export type ConceptDescribeOutcome =
  * same shape (working law 7): `packageOrchestrator`'s second attempt is a
  * re-RENDER, and `refineInterpreter`'s echo pass re-asks with a constrained
  * vocabulary. One instance, and it is this one.
+ *
+ * ⚠ **AND THE RE-READ ABOVE IS A BYTE-IDENTICAL SECOND ASK ON PURPOSE — it is
+ * NOT that defect coming back, and the next seat must not "fix" it.** That
+ * defect was *the answer was wrong and the model was told nothing new*: a
+ * `Fault` is a thing the reader SAID, and asking again in silence could only
+ * produce the sentence we already have. A read that never arrived has nothing
+ * to quote and nothing to correct — there is no fault to name — and the
+ * measurement is that an unchanged second ask is exactly what fixes it (3 of 3
+ * on the refusing frame). That is why the retry carries `fault: null` rather
+ * than a fifth `Fault` member: this union's contract is *what can be SAID to
+ * the reader*, and "your previous answer" is a claim about an answer we may
+ * never have received.
  */
 type Fault =
   | { kind: "picture"; word: string }
   | { kind: "absence"; phrase: string }
   | { kind: "long"; length: number }
   | { kind: "brief"; length: number };
+
+/**
+ * WAS THAT A FAILURE WORTH ASKING AGAIN — read off the provider's own published
+ * taxonomy, never re-derived here.
+ *
+ * `unknown` is the empty-200: a real 200 carrying no completion, which
+ * `openrouterText.ts` logs with the provider's own finish reasons and throws
+ * as `unknown` precisely because a ceiling hit, a stop sequence and a silent
+ * upstream refusal are indistinguishable from here. It is deliberately absent
+ * from `RETRYABLE_FAILURES` — widening THAT set would change every `withRetry`
+ * caller in the product, including the paid image paths, to repair one text
+ * read (`providerContract.test.ts` pins the set for exactly this reason). So
+ * the second ask is bought HERE, by the one caller that wants it, and every
+ * other class stays terminal.
+ *
+ * Read at the layers rather than assumed: nothing between the throw and this
+ * catch re-wraps it — `withRetry` rethrows `lastError` as it stands,
+ * `ProviderQueue.run` records the failure and rethrows, and `throughCensus`
+ * does the same. So the error arrives whole and `instanceof` is enough; there
+ * is no `cause` chain to walk.
+ */
+function worthAskingAgain(error: unknown): boolean {
+  return error instanceof ProviderError && error.failureClass === "unknown";
+}
 
 /** The sentence the reader is given on the second ask. It always names the fault. */
 function reAsk(fault: Fault): string {
@@ -474,10 +542,14 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
   const engine = input.engine === undefined ? interpreterEngine() : input.engine;
   if (!engine) return { ok: false, reason: "no_transport", attempts: 0 };
 
-  /** One read. Either an outcome the customer gets, or the fault to re-ask on. */
+  /**
+   * One read. Either an outcome the customer gets, or an ask to go again —
+   * naming the fault where there IS one, and `null` where no usable answer
+   * arrived at all.
+   */
   const read = async (attempt: number, previous: Fault | null):
-    Promise<ConceptDescribeOutcome | { ok: "retry"; fault: Fault }> => {
-    let reply: { text?: string | null };
+    Promise<ConceptDescribeOutcome | { ok: "retry"; fault: Fault | null }> => {
+    let reply: { text?: string | null; truncated?: boolean };
     try {
       reply = await engine.complete({
         about: "describe",
@@ -494,8 +566,16 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
         ...(input.signal ? { signal: input.signal } : {}),
       });
     } catch (error) {
-      log.warn({ err: error, attempt }, "[conceptDescribe] the reader did not answer");
-      return { ok: false, reason: "unreadable", attempts: attempt };
+      /* The signal is checked as well as the class: a customer who has
+         navigated away is not waiting for a second opinion. */
+      const again = worthAskingAgain(error) && input.signal?.aborted !== true;
+      log.warn(
+        { err: error, attempt, again },
+        "[conceptDescribe] the reader did not answer",
+      );
+      return again
+        ? { ok: "retry", fault: null }
+        : { ok: false, reason: "unreadable", attempts: attempt };
     }
 
     const parsed = parse(reply.text ?? "");
@@ -504,8 +584,17 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
        worth telling her to try a different picture about. */
     if (parsed.kind === "said_none") return { ok: false, reason: "no_person", attempts: attempt };
     if (parsed.kind === "unparseable") {
-      log.warn({ attempt }, "[conceptDescribe] the reply was not a description we could read");
-      return { ok: false, reason: "unreadable", attempts: attempt };
+      /* `truncated` is the provider's own `finish_reason === "length"` — the
+         reply is a FRAGMENT, which is one of the shapes that lands here, and
+         it was being dropped. Logged rather than branched on: a named "write
+         it shorter" re-ask is worth building when the number says it happens,
+         and at a 900-token ceiling against a 300-character target it should be
+         near zero. Buy the incidence before the branch. */
+      log.warn(
+        { attempt, truncated: reply.truncated === true },
+        "[conceptDescribe] the reply was not a description we could read",
+      );
+      return { ok: "retry", fault: null };
     }
     const { description } = parsed;
     const fault = faultIn(description);
@@ -519,6 +608,10 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
   if (first.ok !== "retry") return first;
   const second = await read(2, first.fault);
   if (second.ok !== "retry") return second;
+  /* No usable answer, twice. Today's sentence, unchanged — it already says
+     "just now", and a reader that comes back as noise twice is the one case
+     where looking for a different picture is honest advice. */
+  if (second.fault === null) return { ok: false, reason: "unreadable", attempts: 2 };
   /*
     TWO FAMILIES OF SECOND FAILURE, and they are different sentences to her
     because they are different facts. A read that keeps describing the PICTURE,
