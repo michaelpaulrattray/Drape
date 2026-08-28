@@ -371,9 +371,12 @@ export function ConceptReviewModal({
         <div className="dpc-signm__actions">
           {/*
             The way out, always in the same place. Its LABEL tracks what the tap
-            actually does — there is nothing to discard while the read is still
-            running, and his build note asks for the progress line to come "with
-            cancel".
+            actually does, which is the third state on this dialog caught saying
+            something untrue about itself: there is nothing to DISCARD before a
+            picture exists, and nothing yet while the read is still running —
+            his build note asks for the progress line to come "with cancel". It
+            says Discard only where there is something to throw away: a picture,
+            or a picture and the words read off it.
           */}
           <button
             ref={firstAction}
@@ -381,7 +384,7 @@ export function ConceptReviewModal({
             className="dpc-signm__ghost"
             onClick={onDismiss}
           >
-            {reading ? CONCEPT_REVIEW_CANCEL : CONCEPT_REVIEW_DISCARD}
+            {empty || reading ? CONCEPT_REVIEW_CANCEL : CONCEPT_REVIEW_DISCARD}
           </button>
 
           {/*

@@ -769,6 +769,13 @@ describe("two entrances, one read", () => {
     /* The drop zone stands in the picture's own slot, so nothing moves when one arrives. */
     expect(review).toContain("portraitFallback={");
     expect(review).toContain("dpc-signm__drop");
+    /*
+      ⚠ AND IT SAYS CANCEL, NOT DISCARD — the third state on this dialog caught
+      saying something untrue about itself, and the same class as the refusal's
+      heading. There is nothing to DISCARD before a picture exists; the word is
+      earned only once there is something to throw away.
+    */
+    expect(review).toContain("{empty || reading ? CONCEPT_REVIEW_CANCEL : CONCEPT_REVIEW_DISCARD}");
   });
 
   it("reads a DROPPED picture straight away — the drop IS the upload", async () => {
