@@ -1,7 +1,7 @@
 {
-  "edition": 78,
-  "updatedAt": "2026-08-28T15:45:00+10:00",
-  "shift": "foreman-76",
+  "edition": 79,
+  "updatedAt": "2026-08-28T17:55:00+10:00",
+  "shift": "foreman-77",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -483,6 +483,37 @@
   ],
   "eyeItems": [
     {
+      "id": "concept-cast-it-196",
+      "title": "Upload a concept now casts from the modal — and you can drag a picture straight onto the card (#196)",
+      "question": "Both of the things you asked for after seeing the review step. FRAME 1 is the new one to judge: the button says Cast it and it casts straight from here into the normal roll flow — same settings, same charge, same sheet — with the price sitting above it rather than on it. That last bit is the one call I made against the wording of the card: the card says \"with the price on it\", your own sentence says only \"the button should be cast it\", and our own pricing rule (D-109) names Cast it by name and says a price belongs above a button and never inside one — it was tried inside a confirm's button once and reversed the same day. Use this brief stays as the quiet second option for when you want to keep editing in the box. FRAME 2 is the same thing in light. FRAME 3 is the second entrance: tap the card instead of dropping on it and you get an empty dialog with a drop zone — drop a picture on the CARD and it skips this and starts reading immediately. FRAME 4 is what a failed read looks like now: it keeps your picture and offers Try again or Choose another picture, instead of closing and making you find the file again — that one is a real refusal, from dropping a plain grey square on it. THE QUESTION: does the three-button row read right to you, or is Discard one thing too many?",
+      "state": "open",
+      "filedAt": "2026-08-28T17:55:00+10:00",
+      "issueNumber": 196,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/dfe5f592-097e-4c12-bfb8-196c1d46e414.png",
+          "arm": "THE CAST — dark",
+          "caption": "Your picture on the left, the description you can edit on the right, the character count and ~160 credits above the buttons. Cast it goes straight to the sheet."
+        },
+        {
+          "key": "crew-eye/e04f4d2f-3ef6-488f-93da-169ac30aee52.png",
+          "arm": "THE CAST — light",
+          "caption": "The same object in light. Nothing about it changes but the paper."
+        },
+        {
+          "key": "crew-eye/56d9b2a4-bc14-46ad-8a57-4e9f6b690fc7.png",
+          "arm": "ENTRANCE 2 — tap, not drop",
+          "caption": "Tapping the card opens this: a drop zone where the picture will go, and a picker button. Dropping a picture ON the card skips this screen entirely and starts reading. The way out says Cancel rather than Discard here, because nothing has been chosen yet to discard."
+        },
+        {
+          "key": "crew-eye/e392b31e-27dc-4993-8a2a-9f1cf019491e.png",
+          "arm": "WHEN A READ FAILS — light",
+          "caption": "It keeps the picture and says what actually happened. This is the real wall: I dropped a plain grey square on it, and it answers \"I couldn't find a person in that picture — try one with someone in it.\" Try again is for a blip; Choose another picture is for when the answer is about the picture itself. Before this it closed and threw your picture away."
+        }
+      ]
+    },
+    {
       "id": "trigger-cluster-court-190-strip",
       "title": "56 sends, 53 refusals, 3 pictures — the wall your edgy briefs are hitting (#190)",
       "question": "This is the whole test in one image: seven rows, one per wording, eight sends each, left to right in the order they were sent. Every grey tile is a refusal from the engine's content checker. Row B1 and row B2 are THE SAME TEXT sent twice — they came back 7 refused and 8 refused, which is the measurement of how much this varies for no reason at all, and it is the number every other row has to beat. None of them beats it. THE QUESTION is on the card, not here: whether to try once more on a brief that isn't already at the ceiling, or to call it and lean on Retry. But look at the second frame first — that is one of the three that got through, and it is your brief almost sentence for sentence: the shaved side with the scalp crosses, the spiked eye harness with her hand raised to it, the lace glove, the septum and lip piercings, the cross under the eye, the buckled choker and the strap down the front, the calligraphy on both arms. The engine can absolutely cast this. The checker is the whole problem.",
@@ -927,6 +958,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "concept-cast-it-196",
+      "title": "Cast it from the concept modal, and two ways to get a picture into it",
+      "status": "merged",
+      "prNumber": 199,
+      "note": "Your two amendments on #196, both of which were filed before the previous PR merged without them. The modal's button casts now — through the same roll flow the prompt box uses, so the gear settings, the charge and the sheet are identical and there is still only one piece of code in the product that starts a roll. And there are two entrances: drop a picture on the card and the dialog opens with it already in and the read running; tap the card and it opens empty with a drop zone. Three things came out of looking at the running app rather than reading the code — a dropped file that MISSED the card would have made the browser open the file and throw away a brief you had just typed (now swallowed), the dialog's focus could get stuck on one button (a bug in the shared dialog, fixed for every dialog not just this one), and a failed read used to say \"This is what we'll cast\" over a screen with nothing on it."
+    },
     {
       "id": "concept-type-not-inventory-185",
       "title": "The uploaded concept comes back as a type, not a police report",
@@ -1442,6 +1480,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-28T17:55:00+10:00",
+      "shift": "foreman-77",
+      "text": "You wrote two follow-ups on the concept upload card and the shift that built the modal did not have them yet — they landed three minutes after your \"Flip it\", and the PR was already in flight. Both are in now.\n\nThe button casts. Tap Cast it in the modal and it goes to the sheet exactly as if you had typed that brief in the box and pressed the button there — same settings from the gear, same 160 credits, same everything. It is not a second casting path: I changed the one we already had to take the words as an argument, so there is still exactly one piece of code in the product that starts a roll. Use this brief is still there, quieter, for when you want to keep typing.\n\nOne thing I did against the letter of your card: the price is ABOVE the button, not on it. Your own sentence only says the button should say Cast it; the card's write-up added \"with the price on it\". Our pricing rule from August names Cast it by name and says cost is metadata, never button text — and records that we once put a price inside a confirm's button and reversed it the same day. So the number sits directly above, where you cannot tap without seeing it. Say the word if you want it on the button and I will move it.\n\nAnd you can drag a picture straight onto the card now. That opens the dialog with the picture already in it and the read already running — one gesture. Tapping the card instead opens an empty dialog with a drop zone, which is the other half of what you asked for.\n\nThree things came from actually driving it rather than reading the code. A file dropped NEAR the card but not on it would have made the browser navigate away to that file — taking a brief you had just typed with it, with no undo. That is swallowed now everywhere on the page. The dialog's keyboard focus could get STUCK on one button; the walk I wrote to check it passed, because it only asked whether focus escaped, and I caught it by reading what the walk actually printed. That one was a bug in the shared dialog, so the fix covers sign and delete too. And a failed read was still headed \"This is what we'll cast\" over a screen holding nothing.\n\nOne more, which I found re-reading my own work rather than by testing it: a file that is not a picture, dropped on the CARD, opened the dialog saying nothing at all — the sentence explaining it lived in the dialog and the dialog could not know about a file the card had already turned down. There is one place that judges a file now, and all three ways in use it.\n\nNothing on the server moved and no credits were spent — the test cost about two dozen describer reads of house money, which is cents."
+    },
     {
       "at": "2026-08-28T14:20:00+10:00",
       "shift": "foreman-74",
