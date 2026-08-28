@@ -88,6 +88,64 @@
  * own mechanism, #177), and this reader has one job. Nothing below is a step
  * toward it.
  *
+ * ⚠ # AND THE SUBJECT IS A BEING, NOT A PERSON — #204, his own card, one
+ * minute after the ruling above
+ *
+ * He uploaded a stylized humanoid creature (a purple feline deity figure) and
+ * was told *"I couldn't find a person in that picture — try one with someone
+ * in it."* Read at the code, the door was doing exactly what it was built to
+ * do: the reader was asked about *the person*, answered that there was none,
+ * and that verdict is deliberately never re-asked. **The SCOPE was the defect,
+ * not the door.**
+ *
+ * It is also the mission's own sentence, in his words: *"we want to be able to
+ * cast photoreal humans and sci-fi humans and creatures like monsters etc."* A
+ * concept reader that admits only humans is narrower than the studio it feeds.
+ *
+ * So the subject is **the being in the picture** — human, sci-fi human,
+ * creature, robot — and `no_being` fires only on things that are not beings at
+ * all: an object, a vehicle, a landscape, a product. That population is not
+ * invented here: it is the SAME line the roll road's own wall draws
+ * (`interpreter.ts`'s `SUBJECT_INSTRUCTION`, refused by `briefCompiler.ts` as
+ * `not_a_being`), and the two are asserted to agree rather than left to drift
+ * — a customer who is told a creature can be cast, then told her creature
+ * picture has nobody in it, has met two doors that do not.
+ *
+ * The taxonomy above is unchanged and simply applies: a creature has a kind
+ * and a type ("a lean feline humanoid"), a build family, a surface world
+ * ("smooth violet skin") where a human has a skin world, a feature world
+ * ("tall upright ears, gold ornamentation") where a human has hair, and the
+ * same wardrobe-as-materials rule. **Worlds, never items, whatever it is.**
+ *
+ * # ⚠ THE IP GUARD IS INSTRUCTIONAL, AND THAT IS A DECLARED LIMIT
+ *
+ * Opening the door to drawn and fantastical subjects lets a recognizable
+ * copyrighted character through it, which a human-only reader mostly refused
+ * by accident. The rule is his: **a known character comes back as a TYPE,
+ * never named, and never described so exhaustively that the description
+ * reconstructs it.** It is carried by the instruction and by the granularity
+ * rule (an exhaustive reconstruction is an inventory, which is already
+ * forbidden) — and NOT by a vision gate asking *"is this a famous
+ * character"*, for the reason already recorded above: a reader's verdict that
+ * turns a customer away is what law 9 and the fable-1052 class forbid, and
+ * #204 asks for none.
+ *
+ * The structural protection is unchanged and is elsewhere, which is why an
+ * instructional guard is enough here: the picture never rides to an engine,
+ * what reaches the engine is WORDS, and `briefCompiler.ts`'s likeness wall
+ * stands in front of the compile for a description exactly as for a brief she
+ * typed. ⚠ **Its honest limit, stated because the widening genuinely narrows
+ * the position**: that wall keys on a NAME, so an unnamed but distinctive
+ * description passes it. The describer not writing one is the control.
+ *
+ * # AN ILLUSTRATED UPLOAD DESCRIBES THE BEING, NOT THE MEDIUM
+ *
+ * A drawing is a picture of somebody, and the medium is a fact about the
+ * PICTURE — which this reader has never been allowed to describe. The
+ * customer casts photoreal by default and picks a style elsewhere. This is the
+ * drawn-hairstyle precedent applied to a new reader: a medium verdict may
+ * ROUTE and must never REFUSE.
+ *
  * # THE PHOTOGRAPH IS NEVER KEPT AND NEVER RENDERED
  *
  * This is the whole shape of the feature and everything else follows from it.
@@ -167,7 +225,7 @@
  * from is unknown and is not asserted here**. Covering both is what makes that
  * not matter.
  *
- * What is NOT re-asked, and each for its own reason: `no_person` (a real
+ * What is NOT re-asked, and each for its own reason: `no_being` (a real
  * answer, not a failure — re-asking it is asking a reader to change a correct
  * verdict); `transport`, `rate_limit` and `timeout` (the transport's own
  * `withRetry` has already burned three attempts, and a fourth would put a
@@ -263,8 +321,30 @@ export const NOT_ABOUT_THE_PERSON: ReadonlyArray<{ word: string; because: string
   { word: "studio", because: "a set claim, and the block already says it" },
   { word: "seamless", because: "a set claim (a seamless paper sweep)" },
   /* Frame — his sentence names it third, and #182 fixed the framing in code. */
-  { word: "framing", because: "the block owns the frame (his sentence: 'not the framing')" },
-  { word: "framed", because: "a frame claim" },
+  /* ⚠ BARE `framing` AND BARE `framed` ARE GONE — THE FOURTH INSTANCE OF THE
+     CLASS THIS FILE ALREADY RECORDS THREE TIMES, and this one was live rather
+     than caught in review. Measured while driving #204: the reader wrote *"a
+     coarse dark beard FRAMING a jagged-toothed mouth"* and had a perfectly good
+     casting note sent back — and when the second ask came back as noise, the
+     customer was told *"I couldn't read that picture just now."* So an
+     over-broad ban did not merely refuse a word here, it spent a second call
+     and then said something untrue about her picture.
+
+     A beard framing a mouth, a face framed by dark hair: both are ordinary
+     prose about a PERSON, and they were reachable before #204 — the widening
+     only made the shape more common, because a creature is described by its
+     structure. The photographic senses that CANNOT describe a subject are kept
+     as PHRASES, the shape this list already uses for `sharp focus`.
+
+     THE DECLARED GAP, in the `cropped` precedent's own words: *"framed by long
+     hair"* and *"framed at the chest"* now pass this sweep. The category is
+     carried by the ten frame words below it and by {@link RULES}, and one
+     uncatchable phrase is a better price than a ban that refuses descriptions
+     of faces. */
+  { word: "the framing", because: "his own phrase ('not the framing'); a subject is never 'the framing'" },
+  { word: "tightly framed", because: "a frame claim" },
+  { word: "loosely framed", because: "a frame claim" },
+  { word: "framed from", because: "a frame claim ('framed from the chest up')" },
   /* ⚠ NO FORM OF `cropped` IS ON THIS LIST, AND IT TOOK THREE GOES TO ADMIT IT.
      Bare `cropped` swept "close-cropped stubble"; the narrowed `cropped at`
      still sweeps "cropped at the nape"; `tightly cropped` is what everyone
@@ -484,8 +564,20 @@ export const INVENTORY_NOTE =
  */
 const RULES = [
   "You are a casting director's reader. You are shown one picture and you write a SHORT CASTING NOTE",
-  "about the person in it: their TYPE, so that eight DIFFERENT people who could all replace them",
-  "could be cast from your words alone. You are not writing a description of this individual.",
+  "about the BEING in it: their TYPE, so that eight DIFFERENT ones who could all replace them could be",
+  "cast from your words alone. You are not writing a description of this individual.",
+  "",
+  "THIS STUDIO CASTS BEINGS, not people only: photoreal humans first, and equally sci-fi humans,",
+  "creatures, monsters, aliens, robots and androids, drawn or photographed. A creature gets the same",
+  "note a person does \u2014 its kind and type, its build family, its surface (skin, scales, fur, plating),",
+  "its features (ears, horns, ornamentation) where a person has hair, and its wardrobe as materials.",
+  "There is NOBODY in the picture only when there is no being in it at all: an object, a vehicle, a",
+  "landscape, a building, a product, food, a pattern, an empty room.",
+  "",
+  "IF THE BEING IS A RECOGNIZABLE CHARACTER from a film, game, comic or show, write its TYPE and",
+  "NEVER its name, its franchise, or so much exact detail that your words rebuild that character.",
+  "Write the genre being a casting director could actually book \u2014 that is what the customer can cast.",
+  "A drawing or a render is a picture OF somebody: describe the being, never the medium or its style.",
   "",
   "WRITE, in one or two plain sentences: apparent sex; an age BAND, never an exact age",
   "(\"mid-to-late forties\"); the heritage family, but ONLY if it is genuinely visible — never guess one;",
@@ -531,10 +623,10 @@ const RULES = [
   "faces, and because garment names like those are refused outright by the image engine.",
   "",
   `Write TWO SENTENCES, about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters in total.`,
-  'Reply with JSON: {"description": "..."} — or {"description": null} if there is no person in the picture.',
+  'Reply with JSON: {"description": "..."} — or {"description": null} if there is no BEING in the picture at all, only an object, a place or a thing.',
 ].join("\n");
 
-const ASK = "Describe the person in this picture.";
+const ASK = "Describe the person or creature in this picture.";
 
 export type ConceptDescribeInput = {
   bytes: Buffer;
@@ -549,7 +641,7 @@ export type ConceptDescribeOutcome =
   /** Every refusal a customer may be shown, named. None of them is an exception. */
   | {
       ok: false;
-      reason: "no_person" | "unreadable" | "not_about_the_person" | "not_a_casting_note" | "no_transport";
+      reason: "no_being" | "unreadable" | "not_about_the_person" | "not_a_casting_note" | "no_transport";
       attempts: number;
     };
 
@@ -645,7 +737,7 @@ function faultIn(description: string): Fault | null {
  * that `null` by asking whether the reply was non-empty — so ANY unparseable
  * non-empty reply (prose instead of JSON, or JSON truncated at the token
  * ceiling) was read as *"there is nobody in your picture"*, which is our fault
- * told to the customer as hers. The reader saying **nobody is here** and the
+ * told to the customer as hers. The reader saying **there is no being here** and the
  * transport handing back **something we cannot read** are different facts and
  * they get different names.
  */
@@ -723,10 +815,11 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
     }
 
     const parsed = parse(reply.text ?? "");
-    /* `{"description": null}` is the reader saying there is no person here, and
-       it is a different answer from a read that failed — only one of the two is
-       worth telling her to try a different picture about. */
-    if (parsed.kind === "said_none") return { ok: false, reason: "no_person", attempts: attempt };
+    /* `{"description": null}` is the reader saying there is no BEING here — an
+       object, a place, a thing — and it is a different answer from a read that
+       failed. Only one of the two is worth telling her to try a different
+       picture about. */
+    if (parsed.kind === "said_none") return { ok: false, reason: "no_being", attempts: attempt };
     if (parsed.kind === "unparseable") {
       /* `truncated` is the provider's own `finish_reason === "length"` — the
          reply is a FRAGMENT, which is one of the shapes that lands here, and

@@ -28,6 +28,7 @@ import {
   describeConcept,
   notAboutThePersonIn,
 } from "./conceptDescribe";
+import { SUBJECT_INSTRUCTION } from "./interpreter";
 import { ProviderError, type ProviderFailureClass, type TextEngine } from "../providers/types";
 
 const PICTURE = { bytes: Buffer.from("a-picture"), contentType: "image/png" };
@@ -138,8 +139,31 @@ describe("the sweep — words about the picture, not about the person", () => {
     "hair cropped at the nape and longer on top",
     "tightly cropped hair going grey at the sides",
     "a cropped denim jacket over a tee",
+    /*
+      ⚠ THE FOURTH INSTANCE, AND IT WAS LIVE — measured on a real read while
+      driving #204, not imagined for this arm. The reader wrote "a coarse dark
+      beard framing a jagged-toothed mouth", the bare `framing` ban sent the
+      note back, and a noisy second ask then told the customer we could not read
+      her picture. `framed by` is the same shape and just as ordinary.
+    */
+    "a coarse dark beard framing a jagged-toothed mouth",
+    "a face framed by long dark hair",
+    "a jaw framed with heavy stubble",
   ])("leaves a person word alone: %s", (phrase) => {
     expect(notAboutThePersonIn(`A man with ${phrase}, standing squarely.`)).toBeNull();
+  });
+
+  /*
+    AND THE PHOTOGRAPHIC SENSE IS STILL CAUGHT — the pair that makes the
+    narrowing a narrowing rather than a deletion. Without this arm the entry
+    above could be dropped altogether and nothing would go red.
+  */
+  it.each([
+    ["the framing is tight on her face", "the framing"],
+    ["tightly framed on the shoulders", "tightly framed"],
+    ["framed from the chest up", "framed from"],
+  ])("still catches the frame CLAIM: %s", (phrase, word) => {
+    expect(notAboutThePersonIn(`A woman with dark hair, ${phrase}.`)).toBe(word);
   });
 
   it("does not fire on a substring — 'lighting' is banned, 'delighting' is not a word about the picture", () => {
@@ -341,9 +365,9 @@ describe("the reader", () => {
     expect(outcome).toEqual({ ok: false, reason: "not_about_the_person", attempts: 2 });
   });
 
-  it("tells 'there is nobody in this picture' apart from 'the read failed'", async () => {
+  it("tells 'there is no being in this picture' apart from 'the read failed'", async () => {
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(null)) }))
-      .toEqual({ ok: false, reason: "no_person", attempts: 1 });
+      .toEqual({ ok: false, reason: "no_being", attempts: 1 });
     /* ⚠ `attempts` MOVED 1 -> 2 HERE AND IN THE ARM BELOW, and it is the whole
        of #193: a reply we could not read is now asked again once. The two
        REASONS are what this arm is about and neither moved. */
@@ -351,17 +375,17 @@ describe("the reader", () => {
       .toEqual({ ok: false, reason: "unreadable", attempts: 2 });
   });
 
-  it("never re-asks 'there is nobody in this picture' — a real answer is not a failure", async () => {
+  it("never re-asks 'there is no being in this picture' — a real answer is not a failure", async () => {
     const engine = engineSaying(said(null), said(CLEAN));
     expect(await describeConcept({ ...PICTURE, engine }))
-      .toEqual({ ok: false, reason: "no_person", attempts: 1 });
+      .toEqual({ ok: false, reason: "no_being", attempts: 1 });
     expect(engine.sent).toHaveLength(1);
   });
 
   /*
     REVIEW OF #187, FINDING 1 — and it is the arm that catches OUR fault being
     told to the customer as HERS. Every one of these is a reply we could not
-    read; none of them is the reader saying there is nobody in the picture, and
+    read; none of them is the reader saying there is no being in the picture, and
     the sentence the route writes for those two is different.
   */
   it.each([
@@ -370,7 +394,7 @@ describe("the reader", () => {
     ["an object we did not ask for", '{"caption": "a woman"}'],
     ["a bare string", '"a woman in her thirties"'],
     ["the wrong type", '{"description": 42}'],
-  ])("calls a NON-EMPTY reply it cannot read 'unreadable', never 'no_person' — %s", async (_name, reply) => {
+  ])("calls a NON-EMPTY reply it cannot read 'unreadable', never 'no_being' — %s", async (_name, reply) => {
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(reply) }))
       .toEqual({ ok: false, reason: "unreadable", attempts: 2 });
   });
@@ -639,5 +663,96 @@ describe("the reader", () => {
     expect(system).toContain("never guess");
     /* The announced target is a brief in itself, so it must actually be said. */
     expect(system).toContain(`${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters`);
+  });
+});
+
+/**
+ * #204 — THE SUBJECT IS A BEING, NOT A PERSON.
+ *
+ * His own card, filed after a creature upload was told *"I couldn't find a
+ * person in that picture."* These arms pin the two halves a unit suite can
+ * actually hold: that the instruction says so, and that this door and the roll
+ * road's wall draw the SAME line. What a suite cannot answer — whether a real
+ * creature photograph now reads — is the drive's job, and it is on the record.
+ */
+describe("the being, not the person (#204)", () => {
+  const systemOf = async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    return engine.sent[0]!.system;
+  };
+
+  it("asks about a creature as well as a person, in the ask itself", async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    expect(engine.sent[0]!.user.toLowerCase()).toContain("creature");
+  });
+
+  it("tells the reader the studio casts beings, and how to write one", async () => {
+    const system = (await systemOf()).toLowerCase();
+    for (const kind of ["creatures", "aliens", "robots"]) {
+      expect(system, kind).toContain(kind);
+    }
+    /* A creature's note is the same note: the taxonomy applies rather than a
+       second vocabulary being invented for it. */
+    for (const world of ["scales", "horns", "build family"]) {
+      expect(system, world).toContain(world);
+    }
+  });
+
+  /*
+    ⚠ THE ARM THAT KEEPS TWO DOORS TELLING ONE STORY.
+
+    This reader and the roll road's own wall answer the same question about the
+    same boundary, in two files, from two instructions. A customer told by the
+    compiler that creatures can be cast, and by this reader that her creature
+    picture has nobody in it, has met a product that disagrees with itself —
+    which is exactly the state #204 was filed from, with the disagreement
+    sitting between this door and the mission.
+
+    It is a COMPARISON rather than a copied literal: the nouns are asserted
+    present in BOTH texts, so either one drifting reddens it (law 4 — a second
+    list shadowing a source of truth always drifts from it; here neither is the
+    source, so the arm holds them together instead).
+  */
+  it("draws the same line the roll road's wall draws — beings in, things out", async () => {
+    const describer = (await systemOf()).toLowerCase();
+    const wall = SUBJECT_INSTRUCTION.toLowerCase();
+    for (const being of ["creature", "robot", "alien"]) {
+      expect(describer, `describer: ${being}`).toContain(being);
+      expect(wall, `wall: ${being}`).toContain(being);
+    }
+    for (const thing of ["object", "vehicle", "landscape", "building"]) {
+      expect(describer, `describer: ${thing}`).toContain(thing);
+      expect(wall, `wall: ${thing}`).toContain(thing);
+    }
+  });
+
+  /*
+    THE IP GUARD, and the arm says out loud that it is INSTRUCTIONAL. There is
+    no vision gate asking "is this a famous character" and there must not be —
+    a reader's verdict that turns a customer away is what law 9 and the
+    fable-1052 class forbid, and #204 asks for none. So this arm proves the
+    instruction carries the rule; it cannot prove the model obeys it, and a
+    green suite here is not evidence that it does.
+  */
+  it("carries the IP rule — a known character comes back as a type, never a name", async () => {
+    const system = (await systemOf()).toLowerCase();
+    expect(system).toContain("recognizable character");
+    expect(system).toContain("never its name");
+    expect(system).toContain("franchise");
+  });
+
+  it("describes the being and never the medium — a drawing is a picture OF somebody", async () => {
+    const system = (await systemOf()).toLowerCase();
+    expect(system).toContain("never the medium");
+  });
+
+  /* The one thing that must NOT have widened: a picture with no being in it. */
+  it("still refuses a picture with no being in it, and does not re-ask it", async () => {
+    const engine = engineSaying(said(null), said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: false, reason: "no_being", attempts: 1 });
+    expect(engine.sent).toHaveLength(1);
   });
 });

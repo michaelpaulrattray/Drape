@@ -833,7 +833,15 @@ const conceptRouter = router({
       throw spokenError({
         code: "BAD_REQUEST",
         message: {
-          no_person: "I couldn't find a person in that picture — try one with someone in it.",
+          /*
+             #204 — HIS OWN CARD, after a creature upload met "try one with
+             someone in it." The sentence names what the studio DOES cast, in
+             the same words `NOT_A_BEING_MESSAGE` uses on the roll road, so the
+             two doors tell one story about the same boundary.
+          */
+          no_being:
+            "I couldn't find anyone in that picture — this reads people and creatures, "
+            + "not objects, places or things. Try one with someone in it.",
           not_about_the_person:
             "I could only describe the picture, not the person in it. Try a clearer shot of them.",
           /* OURS, not her picture's — the read came back as an inventory twice

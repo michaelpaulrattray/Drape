@@ -389,7 +389,7 @@ export function ConceptReviewModal({
 
           {/*
             THE SECOND WAY ON FROM A REFUSAL. It is the honest answer to the
-            honest wall — *"I couldn't find a person in that picture"* is
+            honest wall — *"I couldn't find anyone in that picture"* is
             deterministic, and a bare retry on the same file would spend house
             money to be told the same thing.
           */}
