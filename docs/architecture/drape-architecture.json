@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8c7750762f6e98a7"
+    "sourceFingerprint": "0087f15283a9393e"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:client-shared",
@@ -1541,6 +1541,12 @@
     {
       "id": "module:client/src/features/castingV2/components/CastingModal.tsx",
       "path": "client/src/features/castingV2/components/CastingModal.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "path": "client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -15670,6 +15676,21 @@
     {
       "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
       "to": "module:shared/imagination.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:client/src/features/castingV2/conceptUpload.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "to": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "kind": "imports"
     },
     {
