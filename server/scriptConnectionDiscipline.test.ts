@@ -131,7 +131,9 @@ function rawConnectionSites(text: string, fileName = "probe.mts"): Array<{ calle
   return sites;
 }
 
-describe("scripts open their database through one door", () => {
+/* 60s because this suite WALKS THE TREE and vitest's default is 5s (#216's class,
+   measured 2026-08-29 under a full `pnpm test`: this suite's slowest arm 3265ms). */
+describe("scripts open their database through one door", { timeout: 60_000 }, () => {
   /*
     THE INSTRUMENT FIRST, because a checker that cannot fail proves nothing about
     the tree it sweeps (working law 2). These two are the exact pair of mistakes

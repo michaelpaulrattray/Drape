@@ -277,7 +277,9 @@ async function walkRoot(root: string): Promise<Array<{ path: string; text: strin
   return out;
 }
 
-describe("castingV2.css declares no class the product never emits", () => {
+/* 60s because this suite WALKS THE TREE and vitest's default is 5s (#216's class,
+   measured 2026-08-29 under a full `pnpm test`: this suite's slowest arm TIMED OUT; 248ms alone). */
+describe("castingV2.css declares no class the product never emits", { timeout: 60_000 }, () => {
   it("has no dead class outside the tolerated list", async () => {
     const css = await readFile(SHEET, "utf8");
     const sources = await collect(CLIENT_SRC);

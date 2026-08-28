@@ -60,7 +60,20 @@ describe("the verdict is the runner's exit status on the pushed tree", () => {
       expect(call.suites).toEqual([ORIGIN_SUITE]);
     }
     expect(seen.some((call) => existsSync(call.cwd))).toBe(false);
-  });
+    /*
+      SIXTY SECONDS, BECAUSE THE SUBJECT IS REAL GIT (#216, second finding).
+      This `it()` checks out TWO detached worktrees of HEAD and tears them down.
+      Alone on this bench it takes 4823ms against vitest's 5000ms default — a
+      177ms margin — so it reddened the Janitor's full `pnpm test` and passed
+      alone immediately after, which costs a shift a diagnosis for a red it did
+      not cause. The number here is NOT that margin, though: measured inside a
+      full 680-file run on 2026-08-29 the same arm took **20547ms**, so a budget
+      chosen from the solo timing would have been the same bug again. 60s is the
+      house figure for tree-and-git suites (`atlasMergeDriver`, `preCommitGate`,
+      whose own arms reach 48.9s under that load). Making the test cheaper is
+      the wrong repair: the worktree checkout IS the thing it proves.
+    */
+  }, 60_000);
 
   it("throws when the commit cannot be checked out — blind refuses, never allows", () => {
     expect(() => runScriptGuardsOnCommit(ROOT, "no-such-commit-0000", {

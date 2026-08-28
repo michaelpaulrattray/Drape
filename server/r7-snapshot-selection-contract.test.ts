@@ -15,7 +15,9 @@ import {
   PACKAGE_SNAPSHOT_REASONS,
 } from "../drizzle/schema";
 
-describe("R7-7A1 snapshot-selection schema contract", () => {
+/* 60s because this suite WALKS THE TREE and vitest's default is 5s (#216's class,
+   measured 2026-08-29 under a full `pnpm test`: this suite's slowest arm 6557ms, already OVER the default). */
+describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () => {
   async function runtimeSources(root: string): Promise<string[]> {
     const entries = await readdir(root, { withFileTypes: true });
     const nested = await Promise.all(entries.map(async (entry) => {

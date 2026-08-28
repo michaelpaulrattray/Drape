@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -60,15 +61,34 @@ const codeLines = (raw: string): string[] => raw
  * The last TOP-LEVEL statement, whole — not the last line. A promise chain
  * spans lines and its final line is `});`, which says nothing on its own; the
  * statement it closes says everything.
+ *
+ * # Why this asks the parser (#216, 2026-08-29)
+ *
+ * It read the LINES until this commit: walk back to the last line beginning
+ * with an identifier and take everything from there. A semicolon does not start
+ * a new line, so a file ending `await db.end(); process.exit(0);` was refused
+ * while exiting perfectly — the Janitor's patrol #2 hit it on
+ * `_shift83-tables-disposable.mts` and split the line to get past it, which is
+ * how a guard that falsely refuses starts getting worked around (#8 is carrying
+ * fifteen files of exactly that).
+ *
+ * The repository has already paid for this lesson once, in this guard's own
+ * sibling: `scriptConnectionDiscipline.test.ts`'s header records that its first
+ * version was a grep and was *"wrong in both directions"* until it asked the
+ * TypeScript parser where the CALLS are. A regex standing in for something the
+ * code already states is working law 4 inverted.
+ *
+ * So the statement boundary comes from `ts.createSourceFile`, and the comment
+ * strip stays: `getText` keeps a comment sitting INSIDE a multi-line chain, and
+ * `exitContract`'s chain reading is a regex over that text, so the statement is
+ * passed through `codeLines` exactly as the whole file used to be. What the
+ * parse buys is the boundary, not a second opinion about comments.
  */
-export const terminalStatement = (raw: string): string => {
-  const lines = codeLines(raw);
-  if (lines.length === 0) return "";
-  let start = lines.length - 1;
-  for (let i = lines.length - 1; i >= 0; i -= 1) {
-    if (/^[A-Za-z_$]/.test(lines[i]!)) { start = i; break; }
-  }
-  return lines.slice(start).join("\n").trim();
+export const terminalStatement = (raw: string, fileName = "probe.mts"): string => {
+  const source = ts.createSourceFile(fileName, raw, ts.ScriptTarget.ESNext, true);
+  const last = source.statements.at(-1);
+  if (!last) return "";
+  return codeLines(last.getText(source)).join("\n").trim();
 };
 
 /**
@@ -83,9 +103,18 @@ export const terminalStatement = (raw: string): string => {
  * A terminal chain that only sets `process.exitCode` is NOT accepted: the code
  * is recorded and the process then waits forever on the pool it opened, which
  * is the same defect moved to the failure path.
+ *
+ * AND A CONDITIONAL TERMINAL EXIT IS NOT ACCEPTED — `if (ok) process.exit(0);`
+ * stays refused, deliberately, and #216 named it beside the semicolon case as
+ * though the two were one finding. They are not: the semicolon-joined exit
+ * always runs, and the conditional one leaves the `!ok` path sitting on the
+ * open pool, which is the resident-script defect in this guard's own header,
+ * arriving through the branch nobody watched. The accepted spelling already
+ * exists and is already in the tree — `process.exit(ok ? 0 : 1)` — so the
+ * refusal names a remedy rather than a wall. The control below pins it.
  */
-export const exitContract = (raw: string): { ok: boolean; reason: string } => {
-  const statement = terminalStatement(raw);
+export const exitContract = (raw: string, fileName = "probe.mts"): { ok: boolean; reason: string } => {
+  const statement = terminalStatement(raw, fileName);
   if (statement === "") return { ok: false, reason: "empty file" };
   if (/^process\.exit\(/.test(statement)) return { ok: true, reason: "terminal process.exit" };
 
@@ -174,14 +203,14 @@ describe("a script ends by ending the process", () => {
     const modules = scriptFiles.filter((rel) => /\.m?ts$/.test(rel) && importedSomewhere.has(rel));
     expect(modules.length).toBeGreaterThan(10);
     for (const rel of modules) {
-      expect(terminalStatement(sourceOf.get(rel)!), `${rel} is imported by something and must not exit`)
+      expect(terminalStatement(sourceOf.get(rel)!, rel), `${rel} is imported by something and must not exit`)
         .not.toMatch(/^process\.exit\(/);
     }
   });
 
   it("holds for every one of them", () => {
     const breaches = entrypoints
-      .map((rel) => ({ rel, verdict: exitContract(sourceOf.get(rel)!) }))
+      .map((rel) => ({ rel, verdict: exitContract(sourceOf.get(rel)!, rel) }))
       .filter(({ verdict }) => !verdict.ok)
       .map(({ rel, verdict }) => `${rel}: ${verdict.reason}`);
     /*
@@ -227,6 +256,15 @@ describe("a script ends by ending the process", () => {
     /* And a comment is not an exit. */
     expect(exitContract("await run();\n/* process.exit(0); */").ok).toBe(false);
     expect(exitContract("await run();\n// process.exit(0);").ok).toBe(false);
+
+    /* A CONDITIONAL terminal exit stays refused — the judgement call of #216,
+       pinned here rather than left to the next reader of the docblock. The
+       `!ok` path reaches the end of the work and sits on the open pool, which
+       is the defect this guard was written for; the parser can see this shape
+       for the first time, so it is the first commit that could accept it by
+       accident. */
+    expect(exitContract("const ok = await run();\nif (ok) process.exit(0);").ok).toBe(false);
+    expect(exitContract("const ok = await run();\nif (!ok) { process.exit(1); }").ok).toBe(false);
   });
 
   it("CAN PASS FOR THE RIGHT REASON — the four shapes that are actually correct", () => {
@@ -250,6 +288,43 @@ describe("a script ends by ending the process", () => {
       "  },",
       ");",
     ].join("\n")).ok).toBe(true);
+
+    /* THE FIFTH SHAPE, and the one this commit exists for (#216): the exit
+       shares a line with the statement before it. It always runs, so it is an
+       exit; the line-reading version refused it. */
+    const semicolonJoined = "const db = await openDatabase();\nawait db.end(); process.exit(0);\n";
+    expect(exitContract(semicolonJoined).ok).toBe(true);
+    expect(exitContract(semicolonJoined).reason).toBe("terminal process.exit");
+  });
+
+  it("READS THE STATEMENT, NOT THE LINE — the extractor driven directly", () => {
+    /* The arm above ("must NOT exit") is absence-only: it asserts a string does
+       NOT match, so an extractor that returned "" for everything would pass it
+       over nothing. These are the positive half — the extractor is asked what
+       it FOUND, and the answer is pinned. */
+    expect(terminalStatement("const a = 1;\nprocess.exit(0);\n")).toBe("process.exit(0);");
+    expect(terminalStatement("await db.end(); process.exit(0);\n")).toBe("process.exit(0);");
+    expect(terminalStatement("await run();\n")).toBe("await run();");
+    expect(terminalStatement("")).toBe("");
+    expect(terminalStatement("// nothing but a comment\n")).toBe("");
+
+    /* A trailing comment is trivia and belongs to nothing; a comment INSIDE the
+       terminal chain is stripped, because `exitContract` reads that text with a
+       regex and a `//` note between the arms would break the chain match. */
+    expect(terminalStatement("process.exit(0);\n// done\n")).toBe("process.exit(0);");
+    expect(terminalStatement([
+      "main().then(() => process.exit(0)) // happy",
+      "  .catch(() => process.exit(1));",
+    ].join("\n"))).toBe("main().then(() => process.exit(0))\n  .catch(() => process.exit(1));");
+
+    /* And the whole point of asking the parser: a multi-line statement comes
+       back whole, so the chain reading still sees both of its arms. */
+    expect(terminalStatement([
+      "const x = 1;",
+      "main().then(() => process.exit(0)).catch(() => {",
+      "  process.exit(1);",
+      "});",
+    ].join("\n")).startsWith("main()")).toBe(true);
   });
 
   it("CAN FAIL ON SCOPE — the entrypoint/module split, driven directly", () => {
