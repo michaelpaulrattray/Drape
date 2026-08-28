@@ -20,7 +20,9 @@ import {
   CONCEPT_DESCRIPTION_MAX,
   CONCEPT_DESCRIPTION_MIN,
   CONCEPT_DESCRIPTION_TARGET,
-  GOLDEN_NOTE,
+  GOLDEN_NOTES,
+  GOLDEN_NOTE_SECOND_MAN,
+  INVENTORY_NOTE,
   NOT_ABOUT_THE_PERSON,
   absenceClaimIn,
   describeConcept,
@@ -32,15 +34,23 @@ const PICTURE = { bytes: Buffer.from("a-picture"), contentType: "image/png" };
 
 /**
  * A casting note that clears the floor with no forbidden word in it — and it is
- * a WOMAN so that it is not a paraphrase of {@link GOLDEN_NOTE}, which is a man.
+ * a WOMAN so that it is not a paraphrase of {@link GOLDEN_NOTES}.plain, a man.
  *
  * ⚠ IT USED TO BE AN INVENTORY, and that is the point of this whole change. The
  * fixture it replaces named the cheekbones, the brows, the mouth, the earrings
  * and the exact hair cut in 292 characters — a perfectly good description of one
  * individual, and the thing his ruling calls a police report.
+ *
+ * ⚠ **AND IT THEN SAID "slight build" FOR A DAY — the exact phrase his second
+ * ruling strikes first** (*"Drop: slight build, blunt bangs, bodysuit…"*). A
+ * suite whose model of a GOOD note carries a shape the founder refuses teaches
+ * every later seat the wrong target, and no arm could have caught it: nothing
+ * in this module bans a body-size word, deliberately (see the module's own note
+ * on why a word ban is refused here). It reads "compact, athletic" now — a build
+ * FAMILY, which is what he asked for.
  */
 const CLEAN =
-  "A woman in her early thirties, Mediterranean heritage, slight build, dark hair "
+  "A woman in her early thirties, Mediterranean heritage, compact athletic build, dark hair "
   + "worn to the jaw, plain black crew-neck. Still, direct, unadorned — a quiet "
   + "gallerist or architect type.";
 
@@ -203,28 +213,88 @@ describe("the absence sweep — what the person does NOT have", () => {
   measured against it. If a rule here would refuse the sentence he wrote as the
   target, the rule is wrong and not the sentence — this is the arm that says so.
 */
-describe("the golden note — his own example of what should land in the brief box", () => {
-  it("passes both sweeps", () => {
-    expect(notAboutThePersonIn(GOLDEN_NOTE)).toBeNull();
-    expect(absenceClaimIn(GOLDEN_NOTE)).toBeNull();
+describe("his specimens — the two shapes that pass and the one that fails", () => {
+  const passing: ReadonlyArray<readonly [string, string]> = [
+    ["plain — his passing man", GOLDEN_NOTES.plain],
+    ["styled — his corrected goth line", GOLDEN_NOTES.styled],
+    ["his second passing man (a fixture, not shown to the reader)", GOLDEN_NOTE_SECOND_MAN],
+  ];
+
+  it.each(passing)("%s passes both sweeps", (_name, note) => {
+    expect(notAboutThePersonIn(note)).toBeNull();
+    expect(absenceClaimIn(note)).toBeNull();
   });
 
-  it("sits inside the enforced bound AND inside the announced target", () => {
-    expect(GOLDEN_NOTE.length).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_MIN);
-    expect(GOLDEN_NOTE.length).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_MAX);
-    expect(GOLDEN_NOTE.length).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_TARGET.low);
-    expect(GOLDEN_NOTE.length).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_TARGET.high);
+  it.each(passing)("%s sits inside the enforced bound AND the announced target", (_name, note) => {
+    expect(note.length).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_MIN);
+    expect(note.length).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_MAX);
+    expect(note.length).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_TARGET.low);
+    expect(note.length).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_TARGET.high);
   });
 
-  it("is what the reader is shown, not merely what it is told", async () => {
+  /*
+    SHOWN, NOT DESCRIBED. A specimen teaches a level of detail an announced
+    number cannot, and the whole of his second ruling is about level of detail.
+  */
+  it("shows the reader BOTH passing shapes — a plain subject and a styled one", async () => {
     const engine = engineSaying(said(CLEAN));
     await describeConcept({ ...PICTURE, engine });
-    expect(engine.sent[0]!.system).toContain(GOLDEN_NOTE);
+    expect(engine.sent[0]!.system).toContain(GOLDEN_NOTES.plain);
+    expect(engine.sent[0]!.system).toContain(GOLDEN_NOTES.styled);
   });
 
-  it("is accepted by the reader end to end", async () => {
-    expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(GOLDEN_NOTE)) }))
-      .toEqual({ ok: true, description: GOLDEN_NOTE, attempts: 1 });
+  /*
+    AND THE FAILING ONE, LABELLED. Two good notes show which side of the line to
+    be on; only the pair shows where the line IS — his own instruction, verbatim:
+    "Use the men as the passing examples. Use the current goth box as the failing
+    example."
+  */
+  it("shows the reader the failing box too, and says it is wrong", async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    const system = engine.sent[0]!.system;
+    expect(system).toContain(INVENTORY_NOTE);
+    const at = system.indexOf(INVENTORY_NOTE);
+    /* Directly labelled, not merely present — an unlabelled bad specimen is a
+       specimen. The word "WRONG" precedes it and the reason follows it. */
+    expect(system.slice(Math.max(0, at - 260), at)).toContain("WRONG");
+    expect(system.slice(at)).toContain("locks a body size");
+  });
+
+  it.each(passing)("%s is accepted by the reader end to end", async (_name, note) => {
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(note)) }))
+      .toEqual({ ok: true, description: note, attempts: 1 });
+  });
+
+  /*
+    ⚠ THE ARM THAT KEEPS THIS HONEST, and it asserts a NON-catch on purpose.
+
+    His whole second ruling is that LENGTH IS NOT THE TEST, and the proof is his
+    own failing box: it is 243 characters, over the floor, under the ceiling, and
+    clean through both sweeps. **Nothing this module enforces at runtime can tell
+    it from a good note** — which is exactly why the acceptance lives in the
+    drive against known pictures and why a word ban was refused here.
+
+    A future seat reading a green suite must not conclude the reader is fixed.
+    This arm is where the suite says so out loud, and it goes RED the day someone
+    adds the tempting word ban — at which point they have to come and read the
+    module's reason rather than discover it afterwards.
+  */
+  it("CANNOT catch his failing box at runtime — the acceptance is the drive, not a bound", async () => {
+    expect(INVENTORY_NOTE.length).toBeGreaterThan(CONCEPT_DESCRIPTION_MIN);
+    expect(INVENTORY_NOTE.length).toBeLessThan(CONCEPT_DESCRIPTION_MAX);
+    expect(notAboutThePersonIn(INVENTORY_NOTE)).toBeNull();
+    expect(absenceClaimIn(INVENTORY_NOTE)).toBeNull();
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(INVENTORY_NOTE)) }))
+      .toEqual({ ok: true, description: INVENTORY_NOTE, attempts: 1 });
+  });
+
+  /* And it is the shape he refused, not a paraphrase of it — every word he
+     struck by name is in it, so the fixture cannot quietly soften over time. */
+  it("keeps the failing box as the words he actually struck", () => {
+    for (const struck of ["slight build", "blunt bangs", "bodysuit", "choker", "eye harness"]) {
+      expect(INVENTORY_NOTE.toLowerCase(), struck).toContain(struck);
+    }
   });
 
   /*
@@ -539,11 +609,29 @@ describe("the reader", () => {
     const engine = engineSaying(said(CLEAN));
     await describeConcept({ ...PICTURE, engine });
     const system = engine.sent[0]!.system.toLowerCase();
-    for (const kept of ["age band", "heritage", "build", "hair world", "wardrobe world", "type"]) {
+    for (const kept of ["age band", "heritage", "build family", "hair world", "wardrobe world", "type"]) {
       expect(system, kept).toContain(kept);
     }
     for (const dropped of ["eye colour", "brow shape", "staring", "does not", "no tattoos"]) {
       expect(system, dropped).toContain(dropped);
+    }
+    /*
+      HIS SECOND RULING'S KEEP LIST — skin language, piercings, sparse tattoos
+      and materials. They are what a STYLED subject is made of, and the first
+      instruction had none of them, which is how a goth read came back as a
+      packing list of the only nouns it had been given permission to use.
+    */
+    for (const kept of ["skin", "piercings", "tattoos", "materials"]) {
+      expect(system, kept).toContain(kept);
+    }
+    /*
+      AND THE GRANULARITY RULE ITSELF, with his own contrasts. This is the
+      sentence that carries the whole second ruling — there is no sweep behind
+      it, so an edit here changes the product with nothing else going red.
+    */
+    expect(system).toContain("worlds, never items");
+    for (const rule of ["never the cut", "body size", "materials and mood", "never itemise"]) {
+      expect(system, rule).toContain(rule);
     }
     /* The reason, which is what covers the cases his list could not enumerate. */
     expect(system).toContain("locked on every face");
