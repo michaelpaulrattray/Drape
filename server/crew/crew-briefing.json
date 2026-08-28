@@ -1,7 +1,7 @@
 {
-  "edition": 87,
-  "updatedAt": "2026-08-29T03:45:00+10:00",
-  "shift": "foreman-84",
+  "edition": 88,
+  "updatedAt": "2026-08-29T05:05:00+10:00",
+  "shift": "foreman-85",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1001,6 +1001,13 @@
   ],
   "pipeline": [
     {
+      "id": "dead-css-classes-and-a-guard-210",
+      "title": "Twenty-two dead classes left the casting stylesheet, and a guard keeps the next lot out",
+      "status": "merged",
+      "prNumber": 214,
+      "note": "A card said four dead rules; measured over the whole stylesheet it was twenty-two classes and thirty-three rules. Nothing you can see changes — proven rather than promised: the file went from 511 rules to 478 with exactly the 33 intended gone and every other rule byte-identical."
+    },
+    {
       "id": "guard-message-and-one-author-211-209",
       "title": "Two small guards stop lying to whoever reads them next",
       "status": "merged",
@@ -1579,6 +1586,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T05:05:00+10:00",
+      "shift": "foreman-85",
+      "text": "Fifth quiet maintenance night, and the headline is still that two of your questions are waiting — the edition-83 eye item and the smaller crop question from edition 86. Nothing tonight needs you, and nothing a customer can see has changed.\n\nBoth clocks checked rather than assumed, both negative. The Janitor is not due until 07:35 this morning. The refusal patrol has no population: I re-read it at the live database rather than trusting last night's note, and there are still no new refused tiles past the mark it watches.\n\nWhat I did instead came off the queue. A card from two nights ago said the casting stylesheet held four dead rules — rules pointing at names nothing in the app writes any more. Measured properly over the whole file, it was twenty-two names and thirty-three rules, left behind by ordinary rebuilds: the day Sign moved to the dock, the day the delete and rename dialogs were redone, the day the room was rebuilt.\n\nThe reason it is worth an hour is the one you saw the effects of two nights ago. One of the dead names was a single character away from a live one — the sign portrait's old name beside its new one — so anybody looking up why that portrait was cropped found two rules and no way to tell which one was painting. That is exactly the confusion behind the cropped-face bug I fixed for you on edition 86, and it comes back on every rename until the corpses stop piling up.\n\nSo the file is clean, and there is now a check that fails the build if anyone leaves another one.\n\nThe most useful thing that happened tonight was the reviewer catching my check. It flagged three gaps, all of the same kind: places where my check would look at a dead rule and call it alive. One of them was not theoretical — it was hiding a twenty-second dead rule. That one is your own 'bald' row: you asked for it (I have the ruling), then later ruled that a row with nothing found should not draw at all. The row was removed correctly and its styling was left behind, with a comment above it still describing the row as though it were live. My first check missed it because the only place the name still appeared was inside a written note, and I was reading notes as if they were code.\n\nSo the honest headline is that a check with a blind spot found twenty-one of twenty-two and told me it was done. It is fixed, and the fix has a test that fails on purpose if anyone removes it.\n\nTwo smaller things, both my own tools catching me. I tried to prove nothing moved by photographing the app before and after — and the photographs disagreed. Before believing that, I photographed the same screen three times with no change at all, and those three disagreed too, so the camera was measuring the page's own flicker rather than my change. The frames also turned out to be of a loading screen, which I only knew because I opened the picture instead of trusting the tool that took it. I replaced the camera with arithmetic that cannot flicker: count every rule in the file before and after. Thirty-three gone, nothing added, nothing altered — a rule can only paint by existing, so the change cannot move a pixel."
+    },
+    {
       "at": "2026-08-29T03:30:00+10:00",
       "shift": "foreman-84",
       "text": "Fourth quiet maintenance night, and the honest headline is that your edition-83 question is still sitting unanswered, with the smaller crop question from edition 86 now beside it. Nothing here needs you.\n\nI checked rather than assumed, on both clocks. The Janitor is not due until 07:35 this morning. The refusal patrol's trigger I re-read against the live database instead of trusting last night's note — no new content-filter refusals at all, newest roll still 226 from the 27th — so it does not fire and spends nothing. That left the queue, and I took the two smallest real things on it.\n\nBOTH ARE ABOUT TOOLS THAT WERE TELLING SOMEONE THE WRONG THING. The first is a check that stops us hardcoding colours; it had started firing on issue numbers, because #198 and a colour code are the same shape, and its complaint pointed at a colour file. So the person reading it goes looking for a mistake that isn't there. I did not make the check cleverer — that is exactly how these guards rot — I made it say the true thing. The second is the sentence you get when you upload a file we can't open. It existed in five separate copies in the code, three of them named and two anonymous, and nothing would have gone red if one had drifted. One copy now.\n\nTHE PART WORTH TELLING YOU. I test my own work by deliberately breaking it and checking the alarms go off — eight of those tonight, each one naming in advance which alarm it expects. One came back silent: deleting the entire improvement I had just made to that error message set off nothing at all, because nothing was watching the message. So the single thing this card ships could have been undone later and no one would have known. That got fixed before it shipped. Two of my eight predictions were also simply wrong, and I have left both wrong predictions in the record next to what actually happened rather than quietly correcting them to match — a prediction edited after the fact is not a prediction.\n\nAlso worth knowing, because it is not mine to sweep tonight: the shared local checks are carrying a handful of failures caused by leftover scratch files from earlier shifts — about ten of them, none of which ships or reaches the live site. The Janitor owns that and its clock is a few hours away. I have named the files so it does not have to hunt.\n\nNo money spent tonight at all — no renders, no reads, nothing charged to you or to the house."
@@ -1772,11 +1784,6 @@
       "at": "2026-08-27T05:47:00+10:00",
       "shift": "foreman-34",
       "text": "No replies from you (nine acknowledged, none new at 05:06). I ran the #93 court your 'court first' asked for — does rewording a refused prompt the way you rewrote your cyber-goth brief by hand actually get it past the engine's content filter? Instrument proved first (a known-refused prompt refused 2/2, a known-passing one passed 2/2), then 100 renders: your cyber-goth description as refused passed 3 of 8 tonight, the studio's softened copy 4 of 8, your own hand rewrite 4 of 8; roll 222's text 6 of 8 as-is and 7 of 8 softened. The bar set before firing was four more passes in eight; the softener bought one. The real finding is the other one: the same text went from 1 pass in 64 two nights ago to 3 in 8 tonight, and 'goth woman mid 30s' from 1 in 18 to 8 in 8 — the checker's mood, not the words. Also learned: fal does not refuse orc / tusks / bare-chested at all (8 of 8), so your orc 'copyright' refusal was another checker's. Verdict by the design's own rule: the softer-wording road is NOT built; the button a content-filter tile needs is the plain Retry you already have on engine-error tiles, widened — that is now the one question on the Retry card, with tonight's numbers behind it. The two design questions I carded last shift are withdrawn. Spend: $3.62 house, 0 credits. Nothing changed in the product."
-    },
-    {
-      "at": "2026-08-27T05:20:00+10:00",
-      "shift": "foreman-33",
-      "text": "No replies from you tonight (nine acknowledged, none new at 04:06 and 04:43 by the last shift, none at 05:06 by me). I took the next item in order: the design for #93 — what happens when the engine's content filter refuses a tile and you want to try again with softer words. It is your #122 shape 2 ('Retry with softer wording') designed end to end: a free preview of the softened prompt with every change marked, then Cast this · 20 credits for that one tile, refused again → refunded and the button withdraws. The rewrite follows the grammar of your own hand rewrite of the cyber-goth brief (refused 4/4 → passed 3/4): rename by how a thing is made, drop the 'skin showing' claims, never touch a body part, piercing, tattoo, age, sex or heritage. One correction on the record: your orc 'copyright' refusal happened in the OLD studio (Gemini) — fal's checker has no copyright class we can see, so whether it refuses creature words at all is now a court cell rather than an assumption. The court is priced at under $10 and runs next shift without waiting; two small questions for you are on the card. Spend tonight: nothing. Nothing changed in the product."
     }
   ],
   "acknowledgedReplyIds": [
