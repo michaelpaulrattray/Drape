@@ -342,16 +342,18 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "zero. Wider than users:1 on his eye and not before",
   },
   CASTING_CONCEPT_UPLOAD_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
       "UPLOAD A CONCEPT (#185, his order 2026-08-28) — a picture in, a description of the "
-      + "PERSON out, into her own brief box. BUILT DARK 2026-08-28 and off everywhere — BOTH "
-      + "slices: the door, and (the same day) the start page card it is reached from, which "
-      + "draws the honest coming-state for every account while this stands off. The flip "
-      + "waits on his answer to briefing edition 72's description-length eye item. Its "
-      + "parent is CASTING_CREATIVE_REGISTER_SCOPE (the description "
-      + "is written for the AUTHOR). Widening past users:1 re-opens the vendor-exposure "
-      + "question, since the upload rides whole to the describer",
+      + "PERSON out, into her own brief box. BUILT DARK 2026-08-28 — BOTH slices: the door, "
+      + "and (the same day) the start page card it is reached from, which draws the honest "
+      + "coming-state for every account outside this scope. FLIPPED to users:1 2026-08-28 on "
+      + "his Crew reply #22, verbatim and entire: \"Flip it.\" — answering the "
+      + "concept-upload-flip card, whose own condition (his type-not-inventory ruling, "
+      + "re-cut and re-driven) was discharged first. Its parent is "
+      + "CASTING_CREATIVE_REGISTER_SCOPE (the description is written for the AUTHOR). "
+      + "Widening past users:1 re-opens the vendor-exposure question, since the upload rides "
+      + "whole to the describer",
   },
   R7_EVIDENCE_COMPOSER_SCOPE: { position: "off", why: "the composer's runtime door, unopened" },
   R7_EVIDENCE_PACKAGE_SCOPE: {

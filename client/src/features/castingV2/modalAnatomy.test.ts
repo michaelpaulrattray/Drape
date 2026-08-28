@@ -156,3 +156,180 @@ describe("the rename dialog", () => {
     expect(css).toContain(".dpc-signm__cost + .dpc-signm__actions { margin-top: 0; }");
   });
 });
+
+/**
+ * THE THIRD CONSUMER (#196) — the concept review, which neither spends nor
+ * destroys.
+ *
+ * The shell's docblock described itself as "built for spending and destroying"
+ * and the `busy` latch is written to that: it blocks Esc, because walking out
+ * of a charge mid-flight is worse than waiting. A free review is the opposite
+ * case and his order says so — *abandons cleanly, nothing charged either way*.
+ * So the two arms below are the ones that would catch this dialog quietly
+ * acquiring a dialog-for-spending's manners, and the one that would catch the
+ * focus trap failing in the only dialog with something worth typing in.
+ */
+const REVIEW = new URL("./components/ConceptReviewModal.tsx", import.meta.url);
+
+describe("the concept review shares the shell without inheriting its latch", () => {
+  it("renders through the shell rather than building a third scrim", async () => {
+    expect(await readFile(REVIEW, "utf8")).toContain("<CastingModal");
+    expect(await readFile(REVIEW, "utf8")).not.toContain("createPortal");
+  });
+
+  it("never goes busy, so Esc is always a way out", async () => {
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain("busy={false}");
+    /* `aria-busy={reading}` is legitimate and must not answer this question. */
+    expect(review).not.toMatch(/(?<!aria-)busy=\{(reading|true)\}/);
+  });
+
+  it("KEEPS TEXTAREA IN THE FOCUS TRAP — the arm the widening exists for", async () => {
+    /*
+      The trap queried `"button, input"`. The concept review's whole body is a
+      textarea: leave it out and Tab walks straight out of the field she is
+      editing into the page behind the scrim — the trap failing in the one
+      dialog that has something worth typing in, and silently, because every
+      other consumer's field is an `input`.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    expect(shell).toContain("textarea:not(:disabled)");
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain("<textarea");
+  });
+
+  it("dresses the textarea in the house field rather than a new box", async () => {
+    /*
+      Same wrapper, same focus treatment: the box is drawn by the wrapper and
+      the control inside it is bare (the foundation law), which is why the
+      focus rules had to learn `textarea` alongside `input` — a rule scoped to
+      one of them leaves the browser's own ring drawing inside the other.
+    */
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain('className="dpc-signm__field"');
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-signm__field textarea:focus-visible { outline: none; box-shadow: none; }");
+    const field = css.slice(
+      css.indexOf(".dpc-signm__field textarea {"),
+      css.indexOf(".dpc-signm__field textarea::placeholder"),
+    );
+    /* No drag handle: it could push the body past the portrait it sits beside. */
+    expect(field).toContain("resize: none");
+  });
+});
+
+describe("the concept review shows the WHOLE picture she chose", () => {
+  it("asks for it, rather than inheriting the crop our own renders can take", async () => {
+    /*
+      The other two consumers show OUR renders, every one of them already 4:5.
+      This one shows a picture the CUSTOMER chose, of unknown proportions, and
+      its whole job is letting her check a description against it — a crop can
+      remove the very thing the words describe.
+    */
+    expect(await readFile(REVIEW, "utf8")).toContain("portraitWhole");
+    expect(await readFile(SHELL, "utf8")).toContain("dpc-signm__portrait--whole");
+  });
+
+  it("styles it as a DESCENDANT, because a child selector is inert here", async () => {
+    /*
+      ⚠ THE FINDING THIS ARM EXISTS FOR, measured at the running app rather than
+      read: `CastingModal` wraps the image in a `<span>`, so `.dpc-signm__portrait
+      > img` matches NOTHING — the sign and delete portraits are sized by the
+      browser and clipped by `overflow: hidden` instead. Written the same way,
+      this rule computed `object-fit: fill` (the initial value) and looked
+      exactly as though it had worked. A future tidy-up that "consistently"
+      restores the child combinator here would put it back to inert, silently.
+    */
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-signm__portrait--whole img {");
+    expect(css).not.toContain(".dpc-signm__portrait--whole > img");
+  });
+});
+
+describe("the trap holds in the state where every end of the list is disabled", () => {
+  it("excludes disabled elements, or the wrap can never fire", async () => {
+    /*
+      ⚠ THE REVIEW OF #196's FIRST FINDING. The wrap only fires when the active
+      element is the FIRST or LAST of the list — so a list whose ends are
+      DISABLED can never match it, the trap never engages, and Tab falls through
+      to the browser default, which skips disabled elements and leaves the card.
+
+      This is not an edge case: it is the concept review's OPENING state on
+      every single use — `[textarea disabled, Discard, primary disabled]` for
+      the ~9 s of the read — and Enter behind an open scrim reaches a live
+      control, because a scrim stops clicks and not keys.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    expect(shell).toContain("button:not(:disabled)");
+    expect(shell).toContain("input:not(:disabled)");
+    expect(shell).toContain("textarea:not(:disabled)");
+    /* The bare list is what shipped and what the review caught. */
+    expect(shell).not.toContain('querySelectorAll<HTMLElement>("button, input, textarea")');
+  });
+
+  it("SWALLOWS Tab when nothing inside can take focus — the class, not the instance", async () => {
+    /*
+      A dialog whose every control is disabled has the same escape, and it
+      pre-existed this PR: a sign or a delete mid-commit (`busy`) disables all
+      of its controls while also refusing Esc and the scrim, so returning early
+      would hand Tab back to the browser at exactly the moment the dialog is
+      refusing to be dismissed. Preventing the default keeps focus where it is,
+      which is what a modal means.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    const empty = shell.slice(
+      shell.indexOf("if (!focusable || focusable.length === 0)"),
+      shell.indexOf("const first = focusable[0]"),
+    );
+    expect(empty).toContain("event.preventDefault();");
+    expect(empty).toContain("return;");
+  });
+});
+
+describe("focus is INSIDE the card, which is what the trap has always assumed", () => {
+  it("the concept review takes focus on mount, like every other dialog here", async () => {
+    /*
+      ⚠ THE SECOND REVIEW OF #196, and it is the sharper half of the first
+      finding. The trap only ever acts once focus is inside the card — and this
+      modal's opener DISABLES itself on the pick, so the browser drops focus to
+      `body` before the dialog mounts. Every other dialog in the feature focuses
+      something on mount (`ConfirmDialog` focuses its cancel, and sign, delete,
+      rename and the viewer all do the same), so the shell has always leaned on
+      a precondition none of them wrote down; this was the first consumer that
+      did not meet it.
+
+      DISCARD and not the field: the textarea is disabled for the whole read,
+      which is exactly the window that matters, and Discard is the safe option.
+    */
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain("discardRef.current?.focus();");
+    expect(review).toContain("ref={discardRef}");
+    /* On mount, once — not keyed on the read arriving. */
+    expect(review).toMatch(/discardRef\.current\?\.focus\(\);\s*\n\s*\}, \[\]\);/);
+  });
+
+  it("and the SHELL pulls focus back in for any consumer that forgets — the sweep", async () => {
+    /*
+      The instance is the mount-focus above; this is the class. With focus
+      outside the card and the focusable list non-empty, neither wrap branch can
+      match, so Tab fell through to the browser and into the page behind the
+      scrim. Driven at the running app both ways, during the read:
+
+        pre-fix   BODY → INPUT.dp-input → BUTTON.dp-scopepill → …   (escaped)
+        fixed     Discard → Discard → Discard → Discard            (held)
+
+      With the mount-focus removed but this guard in place, the dialog opens on
+      `body` and the FIRST Tab brings focus back to Discard — so the two halves
+      are independent, and that is deliberate: the next consumer to forget its
+      mount-focus is covered by the shell rather than by memory.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    expect(shell).toContain("!cardRef.current.contains(document.activeElement)");
+    const guard = shell.slice(
+      shell.indexOf("!cardRef.current.contains(document.activeElement)"),
+      shell.indexOf("const first = focusable[0]"),
+    );
+    expect(guard).toContain("event.preventDefault();");
+    expect(guard).toContain("focusable[0].focus();");
+  });
+});

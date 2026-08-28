@@ -2525,6 +2525,31 @@
 
 .dpc-signm__portrait > img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/*
+  THE WHOLE PICTURE, NOT A CROP OF IT (#196). The two dialogs that show OUR OWN
+  renders can crop freely — every one of them is already 4:5. The concept review
+  shows a picture the CUSTOMER chose, of unknown proportions, and its entire job
+  is letting her check a description against it: a crop can remove the very thing
+  the words are describing. Found by looking at the frame — a 2:3 upload lost its
+  lower half. The letterbox is `--media`, the same fill the empty portrait slot
+  uses, so it reads as the frame rather than as a gap.
+
+  ⚠ DESCENDANT, NOT CHILD, and that is not a style choice — `CastingModal` wraps
+  the image in a `<span>` (the mute treatment's hook), so `.dpc-signm__portrait
+  > img` above never matches anything and the sign and delete portraits are
+  sized by the browser and CLIPPED by `overflow: hidden` instead. Written as a
+  child selector here, this rule was measured inert at the running app
+  (`object-fit: fill`, the initial value) and looked exactly like it had worked.
+  The dead rule above is deliberately left alone: making it live would change
+  how two dialogs he has already accepted look, which is his eye and not this
+  issue's — filed rather than fixed in passing.
+*/
+.dpc-signm__portrait--whole img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .dpc-signm__body { flex: 999 1 300px; min-width: 0; }
 
 .dpc-signm__eyebrow {
@@ -2568,13 +2593,30 @@
 }
 
 /* The wrapper draws the box; the input itself is bare (the foundation law). */
-.dpc-signm__field input {
+.dpc-signm__field input,
+.dpc-signm__field textarea {
   width: 100%;
   border: 0;
   background: none;
   font: 400 12.5px var(--font-sans);
   color: var(--ink);
 }
+
+/*
+  THE CONCEPT REVIEW'S FIELD (#196) — the same box, given a body's worth of
+  room. `resize: none` because the card is a two-column layout with a fixed
+  portrait beside it: a drag handle that can push the body past the picture
+  would break the pairing the modal exists to show. The height holds his own
+  ~150–250 character target comfortably and scrolls past it rather than growing.
+*/
+.dpc-signm__field textarea {
+  display: block;
+  min-height: 118px;
+  line-height: 1.55;
+  resize: none;
+}
+
+.dpc-signm__field textarea::placeholder { color: var(--faint); }
 
 /*
   NO `.dp-root` PREFIX HERE, and that is the whole point.
@@ -2586,7 +2628,9 @@
   draws inside the field instead. The wrapper shows focus; the input never does.
 */
 .dpc-signm__field input:focus,
-.dpc-signm__field input:focus-visible { outline: none; box-shadow: none; }
+.dpc-signm__field input:focus-visible,
+.dpc-signm__field textarea:focus,
+.dpc-signm__field textarea:focus-visible { outline: none; box-shadow: none; }
 .dpc-signm__field:focus-within { border-color: var(--ink); }
 
 .dpc-signm__cost {

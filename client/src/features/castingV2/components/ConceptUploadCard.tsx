@@ -13,6 +13,7 @@ import {
   CONCEPT_FILE_UNREADABLE,
   CONCEPT_READING_LABEL,
 } from "../conceptUpload";
+import { ConceptReviewModal } from "./ConceptReviewModal";
 
 /**
  * UPLOAD A CONCEPT — the start page's first entry card (#185 slice two).
@@ -33,11 +34,28 @@ import {
  * # NOTHING IS SPENT AND NOTHING IS KEPT
  *
  * The call costs the house cents and the customer nothing — no credits, no
- * render, no row. The bytes ride the describer inline and are dropped, so this
- * component holds the chosen file only long enough to encode it and never
- * builds an object URL for it: there is no preview here because there is
- * nothing to preview a decision about. The DESCRIPTION is the artifact, and it
- * lands where she can read and edit it before she spends anything.
+ * render, no row. The bytes ride the describer inline and are dropped. The
+ * DESCRIPTION is the artifact, and it lands where she can read and edit it
+ * before she spends anything.
+ *
+ * ⚠ **THE WORDS NO LONGER LAND IN THE BRIEF BOX ON ARRIVAL — #196, his
+ * direction 2026-08-28.** They land in a REVIEW MODAL with the photograph
+ * beside them, and reach the box only when she taps *Use this brief*. This
+ * paragraph used to end *"never builds an object URL for it: there is no
+ * preview here because there is nothing to preview a decision about"* — the
+ * decision now exists (use these words, or not), and the promise that sentence
+ * was protecting is untouched: an object URL is a handle to bytes already in
+ * this browser, created and revoked inside `ConceptReviewModal`, and no byte is
+ * uploaded or written anywhere to draw it.
+ *
+ * # WHO OWNS WHAT, now that there are two pieces
+ *
+ * This card keeps the picker, the encode, the door call and the pending file;
+ * the modal is presentational and hands back the words she settled on. The page
+ * keeps `onDescribed` unchanged — it still decides where words go — so the one
+ * thing that moved is WHEN it fires. And because the modal is only ever
+ * rendered inside this component's live branch, the absent-or-live gate above
+ * holds by construction: an account outside the scope cannot reach it at all.
  */
 export function ConceptUploadCard({
   describe,
@@ -50,6 +68,36 @@ export function ConceptUploadCard({
 }) {
   const picker = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState(false);
+  /** The picture under review, and the words for it — `null` while they are in flight. */
+  const [picture, setPicture] = useState<File | null>(null);
+  const [description, setDescription] = useState<string | null>(null);
+  /*
+    WHICH READ IS STILL THE CURRENT ONE. She can Discard mid-read and pick
+    another picture immediately; without this, the abandoned call's answer
+    arrives later and fills the new modal with the old picture's words — a
+    description silently describing something she is not looking at, which is
+    the exact defect this modal exists to make impossible.
+  */
+  const readId = useRef(0);
+
+  const close = () => {
+    readId.current += 1;
+    setPicture(null);
+    setDescription(null);
+    /*
+      THE CARD IS RELEASED THE MOMENT SHE WALKS AWAY, not when the abandoned
+      call settles (review of #196). `reading` disables the entry card and puts
+      "Reading the picture…" on it, so leaving it latched meant that after
+      Discard the card sat disabled, claiming to be reading a picture she had
+      just thrown away, for the rest of the call's life — and the very thing
+      `readId` exists for, picking another picture immediately, was unreachable
+      because the button was disabled and a re-entrant pick hits the `reading`
+      early return. A disabled control describing something untrue is D-180's
+      shape wearing a spinner. The `finally` below is staleness-aware for the
+      same reason: it must not clear a flag that a NEWER read has since set.
+    */
+    setReading(false);
+  };
 
   /*
     THE TWO FAILURES ARE CAUGHT SEPARATELY, because they ask her to do
@@ -58,6 +106,7 @@ export function ConceptUploadCard({
     silently wrong the day that module rewrites its sentence.
   */
   const read = async (file: File, door: (imageBase64: string) => Promise<string>) => {
+    const mine = readId.current;
     let imageBase64: string;
     try {
       imageBase64 = await asBase64(file);
@@ -69,11 +118,28 @@ export function ConceptUploadCard({
         no console anywhere can tell a decode failure from a vendor 502.
       */
       logRawFailure("concept-upload/read-file", error);
+      /*
+        THE SAME STALENESS RULE AS THE DOOR'S FAILURE BELOW, and it was
+        half-applied here until the review of #196: the guard covered `close()`
+        and not the toast, so a file she had already discarded could still
+        speak. The window is small — a decode is fast — and the asymmetry
+        between two catch blocks four lines apart is how the next reader learns
+        the wrong rule.
+      */
+      if (readId.current !== mine) return;
+      close();
       toast(CONCEPT_FILE_UNREADABLE);
       return;
     }
     try {
-      onDescribed(await door(imageBase64));
+      const words = await door(imageBase64);
+      /*
+        A read she walked away from says nothing to the screen. The toast is
+        skipped on the failure path for the same reason: she has already moved
+        on, and a sentence about a picture she discarded is noise.
+      */
+      if (readId.current !== mine) return;
+      setDescription(words);
     } catch (error) {
       /*
         OUR SENTENCE, NEVER THE ERROR'S. The door's own refusals are written
@@ -82,8 +148,14 @@ export function ConceptUploadCard({
         own words go to the console rather than into the void. `Gated` because
         this control can be drawn live and then find the scope closed under it:
         the door's flag-first "No such thing." is a probe answer, never copy.
+
+        The modal CLOSES on a refusal rather than holding an empty field with a
+        toast over it: there is nothing to review, and an in-modal retry is the
+        "extra options" his one-modal-one-confirm order rules out.
       */
       logRawFailure("concept-upload/describe", error);
+      if (readId.current !== mine) return;
+      close();
       toast(readableGatedFailure(error, CONCEPT_FAILED_FALLBACK));
     }
   };
@@ -119,7 +191,25 @@ export function ConceptUploadCard({
           event.target.value = "";
           if (!file || reading) return;
           setReading(true);
-          void read(file, describe).finally(() => setReading(false));
+          /*
+            THE MODAL OPENS ON THE PICK, not on the answer — the picture is
+            there immediately and the words fill in beside it. Opening only
+            once the read returns would mean several silent seconds after the
+            file chooser closes, which reads as nothing having happened.
+          */
+          readId.current += 1;
+          const mine = readId.current;
+          setDescription(null);
+          setPicture(file);
+          /*
+            STALENESS-AWARE, because `close()` now clears `reading` itself: an
+            abandoned call settling later must not switch off a flag that a
+            NEWER pick has since switched on, which would leave the second read
+            drawn as idle while it is still running.
+          */
+          void read(file, describe).finally(() => {
+            if (readId.current === mine) setReading(false);
+          });
         }}
       />
       <button
@@ -139,6 +229,23 @@ export function ConceptUploadCard({
           </span>
         </span>
       </button>
+
+      {/*
+        THE REVIEW STEP (#196). Rendered inside the live branch, which is what
+        makes the gate structural: an account the server did not hand a door to
+        never mounts this at all.
+      */}
+      {picture ? (
+        <ConceptReviewModal
+          file={picture}
+          description={description}
+          onUse={(words) => {
+            close();
+            onDescribed(words);
+          }}
+          onDismiss={close}
+        />
+      ) : null}
     </>
   );
 }
