@@ -90,7 +90,12 @@ const REFERENCE_ID_PATTERN =
  * or webp and its mime is stored from that decision, so a row naming anything
  * else is a row this route refuses rather than serves under a guessed type.
  * There is no script-in-an-image question to answer here because none of the
- * three can carry one.
+ * three can carry one — and since this list DERIVES, that sentence is a claim
+ * about whatever the vocabulary holds rather than about three names. It is
+ * armed where the vocabulary is declared, not here, because
+ * `inkDesignDelivery.ts` rests on the same sentence and a guard in one route
+ * would leave the other on prose (`inkUploadDoor.test.ts`, "admits no format
+ * that can carry a script").
  *
  * ⚠ IT SAID THAT AND THEN TYPED THE THREE OUT BY HAND, which is #27's class on
  * a SERVING ALLOWLIST — the one place a stale copy is a security answer rather

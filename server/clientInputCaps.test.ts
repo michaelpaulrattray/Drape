@@ -195,10 +195,25 @@ describe("no picture picker types its own copy of the door's format list", () =>
   const NAMES_A_SUBTYPE = /image\/[a-z0-9.+-]+/i;
   const SUBTYPES_EVERYWHERE = /image\/[a-z0-9.+-]+/gi;
 
+  /*
+    ⚠ BACKTICKS COUNT, and they did not in the first draft (review of PR #189,
+    finding 1). Both shapes read only `"…"` and `'…'`, so the most natural JSX
+    re-typing of all — accept={`image/png,image/jpeg,image/webp`} — walked
+    through both of them green. That is the SAME escape shape B exists to close
+    for constants, one quote character along, which is why it is fixed here
+    rather than written into the declared limits.
+
+    A template literal with a `${}` in it is still scanned: what is compared is
+    how many subtypes the literal NAMES, and an interpolated data URI
+    (`data:image/svg+xml;…${…}`) names one, so it does not trip the
+    two-or-more rule. Measured, not assumed — the population did not move.
+  */
   const acceptLiterals = (code: string): string[] => {
     const found: string[] = [];
-    for (const hit of code.matchAll(/accept=(?:"([^"]*)"|'([^']*)'|\{\s*"([^"]*)"\s*\})/g)) {
-      const value = hit[1] ?? hit[2] ?? hit[3] ?? "";
+    for (const hit of code.matchAll(
+      /accept=(?:"([^"]*)"|'([^']*)'|`([^`]*)`|\{\s*(?:"([^"]*)"|'([^']*)'|`([^`]*)`)\s*\})/g,
+    )) {
+      const value = hit.slice(1).find((group) => group !== undefined) ?? "";
       if (NAMES_A_SUBTYPE.test(value)) found.push(value);
     }
     return found;
@@ -206,7 +221,7 @@ describe("no picture picker types its own copy of the door's format list", () =>
 
   const listLiterals = (code: string): string[] => {
     const found: string[] = [];
-    for (const hit of code.matchAll(/["'][^"']*["']/g)) {
+    for (const hit of code.matchAll(/"[^"]*"|'[^']*'|`[^`]*`/g)) {
       if ((hit[0].match(SUBTYPES_EVERYWHERE) ?? []).length >= 2) found.push(hit[0]);
     }
     return found;
