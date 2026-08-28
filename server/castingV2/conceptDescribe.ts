@@ -12,6 +12,36 @@
  * > locks. that way its easy for someone to upload an image and get a prompt
  * > to create someone similar without having to type it all out."*
  *
+ * # A TYPE, NOT AN INVENTORY — his ruling on the first live read (2026-08-28)
+ *
+ * The road shipped, he looked at what came back, and he corrected the reader's
+ * whole job. Verbatim, on #185:
+ *
+ * > *"Too much inventory. For a cast studio it should come back as a type, not
+ * > a police report. That 1,082-character read will lock eye colour, exact
+ * > buzz, temple grey, brow shape, shirt cut, 'no tattoos.' Then eight renders
+ * > of the same man. That's the old MAX-clone problem, just coming from the
+ * > uploader instead of the author."*
+ *
+ * > *"Upload-a-concept has two jobs. Default to the first: **Cast this role**
+ * > — eight different people who could replace the photo. **Match this face**
+ * > — only if the user later asks for a lookalike. Right now the reader is
+ * > doing job 2 by accident."*
+ *
+ * KEEP (his list): sex · age BAND · heritage family if actually visible ·
+ * build language · hair world · wardrobe world · type. DROP: exact eye colour ·
+ * exact brow · exact fade or temple map · seams and garment construction ·
+ * *"no jewellery, makeup, or tattoos"* · anything you only noticed by staring.
+ * His success test, which is the acceptance drive: **two different uploads of
+ * two different men come back as two different types**, and eight renders of
+ * one upload are eight different faces in that type.
+ *
+ * ⚠ **MATCH THIS FACE IS A NAMED SECOND MODE AND IT IS NOT BUILT** — recorded
+ * here so it does not vanish into a closed issue. It is not a describer mode
+ * at all when it comes: a lookalike is an IMAGE-anchored road (the Follow's
+ * own mechanism, #177), and this reader has one job. Nothing below is a step
+ * toward it.
+ *
  * # THE PHOTOGRAPH IS NEVER KEPT AND NEVER RENDERED
  *
  * This is the whole shape of the feature and everything else follows from it.
@@ -77,18 +107,46 @@ import type { TextEngine } from "../providers/types";
 const log = createModuleLogger("castingV2/conceptDescribe");
 
 /**
- * The description's own ceiling.
+ * THE CEILING IS THE ANTI-CLONE CONTROL — 300, and it was 1,200 (his ruling,
+ * 2026-08-28).
  *
- * Well under the entrance's `BRIEF_TEXT_MAX_AUTHOR_ROAD` (4,000) and under the
- * house road's 2,000 as well, so a customer can never be refused at the roll
- * on text SHE DID NOT WRITE — she still has room to add her own sentence to
- * what came back. A longer read is not truncated mid-word: it is refused and
- * re-asked, because half a sentence about a person is a claim nobody made.
+ * The first live read came back at **1,082 characters** and he named exactly
+ * what that buys, verbatim: *"That 1,082-character read will lock eye colour,
+ * exact buzz, temple grey, brow shape, shirt cut, 'no tattoos.' Then eight
+ * renders of the same man. That's the old MAX-clone problem, just coming from
+ * the uploader instead of the author."*
+ *
+ * So the bound is not a formatting preference and it is not about the
+ * entrance's brief cap (it was already far under it). **Every detail the
+ * description names is a detail all eight faces are forced to share**, because
+ * the words go to the engine verbatim as the first paragraph of the prompt. A
+ * casting note fits in a couple of sentences; an inventory does not. The
+ * length is therefore the one control here that is STRUCTURAL — provable in
+ * code, unable to over-refuse a legitimate word — and it carries what a word
+ * ban cannot (see {@link ABSENCE_CLAIMS}'s note on what is deliberately NOT
+ * banned).
+ *
+ * Announced and enforced are different numbers on purpose. The instruction
+ * asks for **~150–250** (his own figures — an announced cap is a brief, and a
+ * stated target writes the answer rather than filtering it); the code refuses
+ * at 300, so an honest read that runs a little over its target is not thrown
+ * away for a rounding. A longer read is never truncated mid-word — half a
+ * sentence about a person is a claim nobody made.
  */
-export const CONCEPT_DESCRIPTION_MAX = 1200;
+export const CONCEPT_DESCRIPTION_MAX = 300;
 
-/** Below this there is no description, only a shrug wearing one. */
-export const CONCEPT_DESCRIPTION_MIN = 40;
+/** The target the reader is ASKED for, in his own numbers. Announced, not enforced. */
+export const CONCEPT_DESCRIPTION_TARGET = { low: 150, high: 250 } as const;
+
+/**
+ * Below this there is no description, only a shrug wearing one.
+ *
+ * 100 rather than the target's 150: heritage is named only when it is actually
+ * visible and the drop list takes several nouns out, so a legitimately sparse
+ * read lands near 120 — and refusing a customer who is holding good type
+ * language, over a floor his ruling never made hard, is over-enforcement.
+ */
+export const CONCEPT_DESCRIPTION_MIN = 100;
 
 /**
  * WORDS ABOUT THE PICTURE, NOT ABOUT THE PERSON — swept out of the reply.
@@ -201,21 +259,102 @@ export function notAboutThePersonIn(text: string): string | null {
   return null;
 }
 
+/**
+ * WHAT THE PERSON DOES NOT HAVE — swept, and it is the ONE inventory habit
+ * worth banning by shape (his drop list names it: *"no jewellery, makeup, or
+ * tattoos"*).
+ *
+ * ⚠ THIS IS NOT A FOURTH INSTANCE OF THE TYPO-GATE CLASS, and the difference
+ * is the reason it exists rather than being declined like the ones below. Every
+ * ban that has burned this road was a ban on a word that describes a person in
+ * one sense and a picture in another — `cropped` (a haircut AND a frame),
+ * `reminiscent of` (an ancestry AND a likeness). **An absence claim has no
+ * second sense.** A type is what somebody IS; "no tattoos" describes nobody,
+ * and it does real harm downstream — it reaches the engine verbatim as a
+ * negative in the first paragraph of the prompt, forcing all eight faces to
+ * share a thing that was never in the picture to begin with, which is the
+ * library's own presence-not-absence doctrine arriving from a new direction.
+ *
+ * The noun list is HIS THREE plus the one obvious sibling, and it stops there:
+ * a wider list ("no facial hair", "no glasses") starts catching sentences that
+ * a casting director would legitimately write.
+ *
+ * ⚠ WHAT IS DELIBERATELY **NOT** BANNED, so the next seat does not add it: the
+ * rest of his drop list — exact eye colour, brow shape, the fade or temple map,
+ * seams and garment construction. Those are ordinary person words, and a list
+ * holding `brow`, `eyes` or `cut` would refuse good descriptions on the day it
+ * shipped. They are carried by the INSTRUCTION and by
+ * {@link CONCEPT_DESCRIPTION_MAX}, which is the honest division of labour here:
+ * the length bound makes an inventory structurally impossible to fit, so the
+ * nouns it would have carried have nowhere to go.
+ */
+export const ABSENCE_CLAIMS = {
+  /** `no` / `without` / `free of` / `lacking`, optionally hedged with `visible` or `any`. */
+  lead: "(?:no|without|free of|lacking)",
+  nouns: ["tattoos?", "jewell?e?ry", "make-?up", "piercings?"],
+} as const;
+
+/** The absence claim in `text` (as written), or null. */
+export function absenceClaimIn(text: string): string | null {
+  const lower = text.toLowerCase().replace(/\s+/g, " ");
+  const re = new RegExp(
+    `(^|[^a-z0-9])(${ABSENCE_CLAIMS.lead}\\s+(?:visible\\s+|any\\s+)*(?:${ABSENCE_CLAIMS.nouns.join("|")}))([^a-z0-9]|$)`,
+  );
+  const hit = re.exec(lower);
+  return hit ? hit[2]! : null;
+}
+
+/**
+ * HIS EXAMPLE, VERBATIM — and it is shown to the reader rather than described
+ * to it.
+ *
+ * *"What should land in the brief box"*, his words on #185, from the picture
+ * whose 1,082-character read produced the ruling. It is the single most useful
+ * sentence in the instruction: an announced number tells a model what to aim
+ * at, but a specimen tells it what LEVEL of detail means, and detail level is
+ * the whole of what he corrected. It doubles as the suite's golden fixture —
+ * whatever it must pass, a real read must pass.
+ */
+export const GOLDEN_NOTE =
+  "A man in his mid-to-late forties, European heritage, rugged athletic build, "
+  + "short dark hair with grey, fitted dark crew-neck. Rugged, no-nonsense fitness / "
+  + "ex-military type.";
+
+/**
+ * ⚠ THE INSTRUCTION IS THE PRIMARY CONTROL AND IT IS HIS RULING, CLAUSE BY
+ * CLAUSE — the keep list, the drop list, the numbers and the example are all
+ * quoted from #185 rather than paraphrased.
+ *
+ * The one sentence here that is neither a keep nor a drop is the one that says
+ * WHY (*"everything you name is locked on every face"*). A reader told the
+ * reason for a rule holds it in the cases the rule did not enumerate, and the
+ * drop list can never enumerate *"anything you only noticed by staring"*.
+ */
 const RULES = [
-  "You are a casting director's reader. You are shown one picture and you describe THE PERSON IN IT",
-  "so that a different person of the same type could be cast from your words alone.",
+  "You are a casting director's reader. You are shown one picture and you write a SHORT CASTING NOTE",
+  "about the person in it: their TYPE, so that eight DIFFERENT people who could all replace them",
+  "could be cast from your words alone. You are not writing a description of this individual.",
   "",
-  "DESCRIBE, in plain prose, only: apparent sex, apparent age, apparent heritage or ancestry, build, face and bone structure,",
-  "hair (colour, length, cut, texture), skin character, facial hair, eyes and brows, expression and bearing,",
-  "visible styling — garments, jewellery, makeup, tattoos — and any distinctive feature that makes this",
-  "person recognisable as a TYPE.",
+  "WRITE, in one or two plain sentences: apparent sex; an age BAND, never an exact age",
+  "(\"mid-to-late forties\"); the heritage family, but ONLY if it is genuinely visible — never guess one;",
+  "build language (\"athletic\", \"broad\", \"slight\"); the hair WORLD (\"short crop, dark going grey\");",
+  "the wardrobe WORLD (\"fitted dark crew-neck\"); and the TYPE itself",
+  "(\"rugged, no-nonsense fitness / ex-military presence\").",
+  "",
+  "DO NOT CATALOGUE. Leave out exact eye colour, brow shape, the exact cut, fade or hairline,",
+  "seams and garment construction, and anything you only noticed by staring. Never say what the person",
+  "does NOT have — no \"no tattoos\", no \"no jewellery\", no \"no makeup\".",
+  "EVERYTHING YOU NAME IS LOCKED ON EVERY FACE THAT GETS CAST, so each detail you list is a detail",
+  "eight different people are forced to share.",
   "",
   "NEVER mention: the lighting, the background or set, the framing, crop or pose direction, the camera,",
   "lens, focus or depth of field, the resolution or quality of the picture, or the picture itself.",
   "Never name a real person or character, and never say who the subject looks like or resembles.",
-  "Do not write a prompt, a list, a heading or a preamble — write the description and nothing else.",
+  "Do not write a prompt, a list, a heading or a preamble — write the note and nothing else.",
   "",
-  `Keep it under ${CONCEPT_DESCRIPTION_MAX} characters.`,
+  `Write about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters.`,
+  "This is the length and the level of detail to aim for:",
+  `"${GOLDEN_NOTE}"`,
   'Reply with JSON: {"description": "..."} — or {"description": null} if there is no person in the picture.',
 ].join("\n");
 
@@ -232,7 +371,60 @@ export type ConceptDescribeInput = {
 export type ConceptDescribeOutcome =
   | { ok: true; description: string; attempts: number }
   /** Every refusal a customer may be shown, named. None of them is an exception. */
-  | { ok: false; reason: "no_person" | "unreadable" | "not_about_the_person" | "no_transport"; attempts: number };
+  | {
+      ok: false;
+      reason: "no_person" | "unreadable" | "not_about_the_person" | "not_a_casting_note" | "no_transport";
+      attempts: number;
+    };
+
+/**
+ * WHY A READ WAS SENT BACK — and every one of them can be SAID to the reader.
+ *
+ * ⚠ THIS TYPE EXISTS BECAUSE OF A DEFECT, and the defect is worth naming: the
+ * length branch used to set `lastViolation = null` and re-ask with a
+ * BYTE-IDENTICAL system and user message at temperature 0. That is a call
+ * bought to receive the answer we already have — the model has been told
+ * nothing new, so the second read is the first read, and the refusal was
+ * decided before the call was made. It was nearly invisible at a 1,200
+ * ceiling, where almost nothing ran over. At 300 it is the COMMON path.
+ *
+ * Its sibling one file over already had this right — `promptAuthor`'s trim
+ * re-ask carries the reason AND the previous draft and drops the temperature —
+ * so this is the pattern copied rather than invented. Swept for others in the
+ * same shape (working law 7): `packageOrchestrator`'s second attempt is a
+ * re-RENDER, and `refineInterpreter`'s echo pass re-asks with a constrained
+ * vocabulary. One instance, and it is this one.
+ */
+type Fault =
+  | { kind: "picture"; word: string }
+  | { kind: "absence"; phrase: string }
+  | { kind: "long"; length: number }
+  | { kind: "brief"; length: number };
+
+/** The sentence the reader is given on the second ask. It always names the fault. */
+function reAsk(fault: Fault): string {
+  switch (fault.kind) {
+    case "picture":
+      return `Your previous answer used "${fault.word}", which describes the picture rather than the person. Write it again without that.`;
+    case "absence":
+      return `Your previous answer said "${fault.phrase}". Never say what the person does NOT have — describe only what is there. Write it again without that.`;
+    case "long":
+      return `Your previous answer was ${fault.length} characters — that is an inventory, not a casting note. Write it again in about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters, keeping only sex, age band, heritage if visible, build, hair world, wardrobe world and type.`;
+    case "brief":
+      return `Your previous answer was only ${fault.length} characters and says too little to cast from. Write it again at about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters.`;
+  }
+}
+
+/** The first fault in a read, in the order a customer would care about them. */
+function faultIn(description: string): Fault | null {
+  if (description.length > CONCEPT_DESCRIPTION_MAX) return { kind: "long", length: description.length };
+  if (description.length < CONCEPT_DESCRIPTION_MIN) return { kind: "brief", length: description.length };
+  const word = notAboutThePersonIn(description);
+  if (word) return { kind: "picture", word };
+  const phrase = absenceClaimIn(description);
+  if (phrase) return { kind: "absence", phrase };
+  return null;
+}
 
 /**
  * THREE ANSWERS, NOT TWO (review of #187, finding 1).
@@ -282,16 +474,15 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
   const engine = input.engine === undefined ? interpreterEngine() : input.engine;
   if (!engine) return { ok: false, reason: "no_transport", attempts: 0 };
 
-  let lastViolation: string | null = null;
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  /** One read. Either an outcome the customer gets, or the fault to re-ask on. */
+  const read = async (attempt: number, previous: Fault | null):
+    Promise<ConceptDescribeOutcome | { ok: "retry"; fault: Fault }> => {
     let reply: { text?: string | null };
     try {
       reply = await engine.complete({
         about: "describe",
         system: RULES,
-        user: lastViolation
-          ? `${ASK} Your previous answer used "${lastViolation}", which describes the picture rather than the person. Write it again without that.`
-          : ASK,
+        user: previous ? `${ASK} ${reAsk(previous)}` : ASK,
         images: [{ bytes: input.bytes, contentType: input.contentType }],
         json: true,
         temperature: 0,
@@ -307,31 +498,37 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
       return { ok: false, reason: "unreadable", attempts: attempt };
     }
 
-    const read = parse(reply.text ?? "");
+    const parsed = parse(reply.text ?? "");
     /* `{"description": null}` is the reader saying there is no person here, and
        it is a different answer from a read that failed — only one of the two is
        worth telling her to try a different picture about. */
-    if (read.kind === "said_none") return { ok: false, reason: "no_person", attempts: attempt };
-    if (read.kind === "unparseable") {
+    if (parsed.kind === "said_none") return { ok: false, reason: "no_person", attempts: attempt };
+    if (parsed.kind === "unparseable") {
       log.warn({ attempt }, "[conceptDescribe] the reply was not a description we could read");
       return { ok: false, reason: "unreadable", attempts: attempt };
     }
-    const { description } = read;
-    if (description.length < CONCEPT_DESCRIPTION_MIN || description.length > CONCEPT_DESCRIPTION_MAX) {
-      log.warn(
-        { attempt, length: description.length },
-        "[conceptDescribe] the description was outside the bound — not truncated, re-asked",
-      );
-      lastViolation = null;
-      if (attempt === 2) return { ok: false, reason: "unreadable", attempts: attempt };
-      continue;
-    }
+    const { description } = parsed;
+    const fault = faultIn(description);
+    if (!fault) return { ok: true, description, attempts: attempt };
+    log.warn({ attempt, fault, length: description.length }, "[conceptDescribe] the read was sent back");
+    /* NEVER truncated and never stripped — re-asked, naming the fault. */
+    return { ok: "retry", fault };
+  };
 
-    const violation = notAboutThePersonIn(description);
-    if (!violation) return { ok: true, description, attempts: attempt };
-
-    log.warn({ attempt, violation }, "[conceptDescribe] the description described the picture");
-    lastViolation = violation;
-  }
-  return { ok: false, reason: "not_about_the_person", attempts: 2 };
+  const first = await read(1, null);
+  if (first.ok !== "retry") return first;
+  const second = await read(2, first.fault);
+  if (second.ok !== "retry") return second;
+  /*
+    TWO FAMILIES OF SECOND FAILURE, and they are different sentences to her
+    because they are different facts. A read that keeps describing the PICTURE,
+    or keeps CATALOGUING, is ours — she should try again rather than go looking
+    for a better photograph of our problem. A read that keeps coming back as a
+    shrug is the only one where a different picture is the honest advice, and it
+    takes `unreadable`'s sentence, which already says "just now".
+  */
+  const reason = second.fault.kind === "picture"
+    ? "not_about_the_person"
+    : second.fault.kind === "brief" ? "unreadable" : "not_a_casting_note";
+  return { ok: false, reason, attempts: 2 };
 }

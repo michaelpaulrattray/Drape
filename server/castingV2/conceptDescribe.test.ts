@@ -19,7 +19,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   CONCEPT_DESCRIPTION_MAX,
   CONCEPT_DESCRIPTION_MIN,
+  CONCEPT_DESCRIPTION_TARGET,
+  GOLDEN_NOTE,
   NOT_ABOUT_THE_PERSON,
+  absenceClaimIn,
   describeConcept,
   notAboutThePersonIn,
 } from "./conceptDescribe";
@@ -27,12 +30,19 @@ import type { TextEngine } from "../providers/types";
 
 const PICTURE = { bytes: Buffer.from("a-picture"), contentType: "image/png" };
 
-/** A description long enough to clear the floor, with no forbidden word in it. */
+/**
+ * A casting note that clears the floor with no forbidden word in it — and it is
+ * a WOMAN so that it is not a paraphrase of {@link GOLDEN_NOTE}, which is a man.
+ *
+ * ⚠ IT USED TO BE AN INVENTORY, and that is the point of this whole change. The
+ * fixture it replaces named the cheekbones, the brows, the mouth, the earrings
+ * and the exact hair cut in 292 characters — a perfectly good description of one
+ * individual, and the thing his ruling calls a police report.
+ */
 const CLEAN =
-  "A woman in her early thirties, slight build, with a narrow face and high cheekbones, "
-  + "dark brown hair cut to the jaw and worn straight, olive skin, thick unshaped brows, "
-  + "a level unsmiling mouth and a still, direct bearing. She wears a plain black crew-neck "
-  + "and small gold hoops.";
+  "A woman in her early thirties, Mediterranean heritage, slight build, dark hair "
+  + "worn to the jaw, plain black crew-neck. Still, direct, unadorned — a quiet "
+  + "gallerist or architect type.";
 
 function engineSaying(...replies: string[]): TextEngine & { sent: { system: string; user: string }[] } {
   const sent: { system: string; user: string }[] = [];
@@ -108,6 +118,98 @@ describe("the sweep — words about the picture, not about the person", () => {
     for (const entry of NOT_ABOUT_THE_PERSON) {
       expect(entry.because.length, entry.word).toBeGreaterThan(5);
     }
+  });
+});
+
+/*
+  THE ABSENCE SWEEP (#185, his drop list: *"no jewellery, makeup, or tattoos"*).
+
+  The negative control is every shape a describer would actually write it in;
+  the positive control is the arm that matters, because this list is one wrong
+  word away from being the fourth typo-gate instance. HIS OWN EXAMPLE contains
+  "no-nonsense" — a ban that fires on it would refuse the sentence he wrote as
+  the target.
+*/
+describe("the absence sweep — what the person does NOT have", () => {
+  it.each([
+    "no tattoos",
+    "no visible tattoos",
+    "no jewellery",
+    "no jewelry",
+    "no makeup",
+    "no make-up",
+    "no piercings",
+    "without tattoos",
+    "free of tattoos",
+    "lacking makeup",
+    "no any visible tattoos",
+  ])("catches %s", (phrase) => {
+    expect(absenceClaimIn(`A man in his forties, broad, ${phrase}, a labourer type.`)).toBe(phrase);
+  });
+
+  it.each([
+    /* HIS OWN WORDS — the arm this list would have broken first. */
+    "rugged, no-nonsense fitness type",
+    "clean-shaven with a heavy jaw",
+    /* A PRESENT tattoo is the road's own subject and must never be swept. */
+    "visible tattoos on both forearms",
+    "a tattooed sleeve and heavy silver jewellery",
+    "hair going grey without a parting",
+    "an unadorned, plain-dressing type",
+    "no-frills workwear",
+  ])("leaves a present-tense person word alone: %s", (phrase) => {
+    expect(absenceClaimIn(`A woman in her thirties, ${phrase}, slight build.`)).toBeNull();
+  });
+
+  it("catches an absence claim split across lines, the way one would actually slip", () => {
+    expect(absenceClaimIn("A broad man in his fifties, no\ntattoos, dark hair.")).toBe("no tattoos");
+  });
+
+  it("does not fire on a substring — 'nobody' is not 'no'", () => {
+    expect(absenceClaimIn("A face nobody forgets, tattoos across the knuckles.")).toBeNull();
+  });
+});
+
+/*
+  HIS GOLDEN NOTE IS THE SUITE'S FIXTURE, and every bound in the file is
+  measured against it. If a rule here would refuse the sentence he wrote as the
+  target, the rule is wrong and not the sentence — this is the arm that says so.
+*/
+describe("the golden note — his own example of what should land in the brief box", () => {
+  it("passes both sweeps", () => {
+    expect(notAboutThePersonIn(GOLDEN_NOTE)).toBeNull();
+    expect(absenceClaimIn(GOLDEN_NOTE)).toBeNull();
+  });
+
+  it("sits inside the enforced bound AND inside the announced target", () => {
+    expect(GOLDEN_NOTE.length).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_MIN);
+    expect(GOLDEN_NOTE.length).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_MAX);
+    expect(GOLDEN_NOTE.length).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_TARGET.low);
+    expect(GOLDEN_NOTE.length).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_TARGET.high);
+  });
+
+  it("is what the reader is shown, not merely what it is told", async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    expect(engine.sent[0]!.system).toContain(GOLDEN_NOTE);
+  });
+
+  it("is accepted by the reader end to end", async () => {
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(GOLDEN_NOTE)) }))
+      .toEqual({ ok: true, description: GOLDEN_NOTE, attempts: 1 });
+  });
+
+  /*
+    THE FIXTURE THAT PRODUCED THE RULING. A 1,082-character read is what he saw
+    and refused; the bound exists to make it unshippable, and this arm is the
+    negative control that proves the bound can fire on the real specimen shape.
+  */
+  it("refuses the 1,082-character shape that produced the ruling", async () => {
+    const inventory = ("A man in his mid-forties with pale blue eyes, a heavy squared brow, "
+      + "a number-two fade tight at the temples with grey coming in above the ears, ").repeat(8);
+    expect(inventory.length).toBeGreaterThan(1000);
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(inventory), said(inventory)) }))
+      .toEqual({ ok: false, reason: "not_a_casting_note", attempts: 2 });
   });
 });
 
@@ -200,12 +302,73 @@ describe("the reader", () => {
   it("re-asks rather than truncating an over-long read, and refuses if it comes back long again", async () => {
     const long = said(`${"a tall man with cropped grey hair and a heavy brow, ".repeat(40)}`);
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(long, long) }))
+      .toEqual({ ok: false, reason: "not_a_casting_note", attempts: 2 });
+  });
+
+  /*
+    ⚠ THE ARM THAT WOULD HAVE CAUGHT THE BLIND RE-ASK, and it is the reason the
+    fault type exists. The length branch used to re-ask with a BYTE-IDENTICAL
+    system and user message at temperature 0 — a call bought to receive the
+    answer we already had, with the refusal decided before it was made. Nothing
+    went red, because a re-ask that says nothing still returns a string.
+
+    So the assertion is on THE WORDS THAT GO OUT (assert at the wire, invariant
+    5's shape): the second ask must differ from the first AND name the fault.
+  */
+  it("re-asks an over-long read by NAMING the length and the target, never with the same words again", async () => {
+    const long = "a tall man with cropped grey hair and a heavy brow, ".repeat(40);
+    const engine = engineSaying(said(long), said(CLEAN));
+    const outcome = await describeConcept({ ...PICTURE, engine });
+    expect(outcome).toEqual({ ok: true, description: CLEAN, attempts: 2 });
+    expect(engine.sent[1]!.user).not.toBe(engine.sent[0]!.user);
+    /* The read is whitespace-normalised before it is measured, so the number
+       the reader is told is the length of what we ACTUALLY judged. */
+    expect(engine.sent[1]!.user).toContain(String(long.trim().length));
+    expect(engine.sent[1]!.user).toContain(String(CONCEPT_DESCRIPTION_TARGET.high));
+    expect(engine.sent[1]!.user.toLowerCase()).toContain("inventory");
+  });
+
+  it("re-asks a too-short read by naming that too, rather than asking again in silence", async () => {
+    const engine = engineSaying(said("A man."), said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine })).toEqual({ ok: true, description: CLEAN, attempts: 2 });
+    expect(engine.sent[1]!.user).not.toBe(engine.sent[0]!.user);
+    expect(engine.sent[1]!.user).toContain("6 characters");
+  });
+
+  it("re-asks an ABSENCE claim naming the phrase, and takes the clean second answer", async () => {
+    const engine = engineSaying(said(`${CLEAN} She wears no jewellery.`), said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine })).toEqual({ ok: true, description: CLEAN, attempts: 2 });
+    expect(engine.sent[1]!.user).toContain("no jewellery");
+  });
+
+  it("refuses an absence claim that comes back twice — as OUR fault, not her picture's", async () => {
+    const dirty = said(`${CLEAN} No tattoos.`);
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(dirty, dirty) }))
+      .toEqual({ ok: false, reason: "not_a_casting_note", attempts: 2 });
+  });
+
+  it("keeps a second-shrug on 'unreadable' — the one refusal where a different picture IS the advice", async () => {
+    const shrug = said("A man.");
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(shrug, shrug) }))
       .toEqual({ ok: false, reason: "unreadable", attempts: 2 });
   });
 
   it("keeps the bound under the entrance's own brief cap, so she is never refused on text she did not write", () => {
     expect(CONCEPT_DESCRIPTION_MAX).toBeLessThan(2000);
     expect(CONCEPT_DESCRIPTION_MIN).toBeLessThan(CONCEPT_DESCRIPTION_MAX);
+  });
+
+  /*
+    HIS NUMBERS, PINNED. ~150–250 announced, and the ceiling is what stops an
+    inventory — a bound that drifted back up would restore the defect silently,
+    since nothing else in the product measures the length of this text.
+  */
+  it("holds the anti-clone ceiling at a casting note's size, not a police report's", () => {
+    expect(CONCEPT_DESCRIPTION_MAX).toBeLessThanOrEqual(300);
+    expect(CONCEPT_DESCRIPTION_TARGET.low).toBe(150);
+    expect(CONCEPT_DESCRIPTION_TARGET.high).toBe(250);
+    expect(CONCEPT_DESCRIPTION_TARGET.low).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_MIN);
+    expect(CONCEPT_DESCRIPTION_TARGET.high).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_MAX);
   });
 
   it("tells the reader what it may not say — the instruction is the primary control, the sweep is the provable one", async () => {
@@ -215,5 +378,30 @@ describe("the reader", () => {
     for (const category of ["lighting", "background", "framing", "camera", "resembles"]) {
       expect(system, category).toContain(category);
     }
+  });
+
+  /*
+    HIS KEEP AND DROP LISTS ARE THE INSTRUCTION (#185). The sweeps cannot carry
+    the drop list — banning `brow`, `eyes` or `cut` by word would refuse good
+    descriptions of people on the day it shipped — so the instruction is the
+    only thing standing behind most of his ruling, and a silent edit to it is
+    the whole feature drifting back. This arm makes that edit go red.
+  */
+  it("carries his keep and drop lists, and the REASON — a rule without its why does not generalise", async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    const system = engine.sent[0]!.system.toLowerCase();
+    for (const kept of ["age band", "heritage", "build", "hair world", "wardrobe world", "type"]) {
+      expect(system, kept).toContain(kept);
+    }
+    for (const dropped of ["eye colour", "brow shape", "staring", "does not", "no tattoos"]) {
+      expect(system, dropped).toContain(dropped);
+    }
+    /* The reason, which is what covers the cases his list could not enumerate. */
+    expect(system).toContain("locked on every face");
+    /* Never guess a heritage — his sentence, and it is a claim about a person. */
+    expect(system).toContain("never guess");
+    /* The announced target is a brief in itself, so it must actually be said. */
+    expect(system).toContain(`${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters`);
   });
 });

@@ -836,6 +836,11 @@ const conceptRouter = router({
           no_person: "I couldn't find a person in that picture — try one with someone in it.",
           not_about_the_person:
             "I could only describe the picture, not the person in it. Try a clearer shot of them.",
+          /* OURS, not her picture's — the read came back as an inventory twice
+             (#185, his ruling: a type, not a police report). So the sentence
+             does not send her looking for a better photograph. */
+          not_a_casting_note:
+            "That came back as a list of details rather than a casting note. Try again, or describe them in your own words.",
           unreadable: "I couldn't read that picture just now. Try again in a moment.",
           no_transport: "I couldn't read that picture just now. Try again in a moment.",
         }[outcome.reason],
