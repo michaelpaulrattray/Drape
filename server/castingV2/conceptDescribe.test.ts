@@ -21,7 +21,6 @@ import {
   CONCEPT_DESCRIPTION_MIN,
   CONCEPT_DESCRIPTION_TARGET,
   GOLDEN_NOTES,
-  GOLDEN_NOTE_SECOND_MAN,
   INVENTORY_NOTE,
   NOT_ABOUT_THE_PERSON,
   absenceClaimIn,
@@ -241,7 +240,7 @@ describe("his specimens — the two shapes that pass and the one that fails", ()
   const passing: ReadonlyArray<readonly [string, string]> = [
     ["plain — his passing man", GOLDEN_NOTES.plain],
     ["styled — his corrected goth line", GOLDEN_NOTES.styled],
-    ["his second passing man (a fixture, not shown to the reader)", GOLDEN_NOTE_SECOND_MAN],
+    ["his second passing man (a fixture, not shown to the reader)", GOLDEN_NOTES.secondMan],
   ];
 
   it.each(passing)("%s passes both sweeps", (_name, note) => {

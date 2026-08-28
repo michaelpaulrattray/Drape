@@ -530,13 +530,17 @@ export const GOLDEN_NOTES = {
     "Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted "
     + "platinum hair, facial piercings, sparse fine-line tattoos on the face and arms. "
     + "Dark structured fashion in lace, leather and metal.",
+  /**
+   * His second passing man, and it is NOT shown to the reader — it teaches the
+   * same lesson as {@link GOLDEN_NOTES.plain}, and context is not additive here.
+   * It lives in the specimens rather than beside them because three exports for
+   * one idea is how a fixture drifts away from the thing it is a fixture for.
+   */
+  secondMan:
+    "A man in his mid-to-late forties, South Asian heritage, athletic solid build, "
+    + "short dark textured hair, fitted charcoal crew-neck. Serious, composed, "
+    + "authoritative professional type.",
 } as const;
-
-/** His second passing man. Not shown to the reader (see above); a suite fixture. */
-export const GOLDEN_NOTE_SECOND_MAN =
-  "A man in his mid-to-late forties, South Asian heritage, athletic solid build, "
-  + "short dark textured hair, fitted charcoal crew-neck. Serious, composed, "
-  + "authoritative professional type.";
 
 /**
  * THE FAILING BOX, his words, as it came back to him — the counter-example.
