@@ -117,7 +117,9 @@ async function sitesFor(fn: string, required: string): Promise<Site[]> {
   return sites;
 }
 
-describe("the resource lock reaches the wire", () => {
+/* 60s because this suite WALKS THE TREE and vitest's default is 5s (#216's class,
+   measured 2026-08-29 under a full `pnpm test`: this suite's slowest arm 2884ms). */
+describe("the resource lock reaches the wire", { timeout: 60_000 }, () => {
   it("every model-claiming beginDirectOperation passes a lockKey", async () => {
     const sites = await sitesFor("beginDirectOperation", "lockKey");
     const claiming = sites.filter((site) => site.namesModel);
