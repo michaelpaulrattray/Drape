@@ -115,7 +115,7 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   {
     match: "toast(readableGatedFailure(error, CONCEPT_FAILED_FALLBACK))",
     because:
-      "The door refused, or the transport did. Same absence: the card goes back to its line and the box does not change, so the surface shows that nothing happened and never why — and the reasons differ in what she should do (a picture with a person in it, versus try again in a moment). The server's own sentences pass through; the fallback is for a gateway or a parser, which knows nothing about her picture — and for the flag-first NOT_FOUND, which is a probe answer rather than copy (readableGatedFailure, review of #188).",
+      "The door refused, or the transport did. Same absence: the card goes back to its line and the box does not change, so the surface shows that nothing happened and never why — and the reasons differ in what she should do (a picture with a person in it, versus try again in a moment). The server's own sentences pass through; the fallback is for a gateway or a parser, which knows nothing about her picture — and for the flag-first NOT_FOUND, which is a probe answer rather than copy (readableGatedFailure, review of PR 188).",
   },
 ];
 
