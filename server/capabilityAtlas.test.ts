@@ -8,7 +8,7 @@
  * the library recomputes from the same data, so a stale census fails the suite
  * the way a stale Atlas does.
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
 
@@ -105,6 +105,27 @@ describe("the static half reads what the source declares", () => {
         (f) => f.kind === "unpinned-refusal" && f.subject === entry.id,
       );
       expect(reported).toBe(entry.pinnedBy.length === 0);
+    }
+  });
+
+  it("NEGATIVE CONTROL — a door EXPLAINED in a docblock is not CITED there", () => {
+    /*
+      The map cited two comment lines as raise sites: `refusalTag.ts`'s own
+      docblock showing `refusal("removal_absent", {...})` as an EXAMPLE, and a
+      `conceptDescribe.ts` docblock quoting `reason: "unreadable"` while naming
+      which branches produce it. In the artifact a citation pointing at prose
+      is indistinguishable from one pointing at the throw — which is the whole
+      thing these citations exist to let a reader check.
+
+      Asserted over the WHOLE map rather than on the two specimens, because the
+      next docblock to name a door has not been written yet.
+    */
+    for (const entry of buildStaticAtlas(CORPUS).declared) {
+      for (const site of entry.sites) {
+        const at = site.lastIndexOf(":");
+        const line = readFileSync(site.slice(0, at), "utf8").split("\n")[Number(site.slice(at + 1)) - 1] ?? "";
+        expect(`${site} :: ${line.trim()}`).not.toMatch(/:: (\*|\/\/|\/\*)/);
+      }
     }
   });
 

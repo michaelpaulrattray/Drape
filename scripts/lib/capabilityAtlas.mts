@@ -210,13 +210,35 @@ export function pinningTests(ids: string[]): Map<string, string[]> {
  * extracted so every door can be double-checked against the codebase without
  * trusting this file (founder order, fable-1357 / "double check your work
  * against the codebase").
+ *
+ * ⚠ **A COMMENT IS NOT A RAISE SITE, and the map cited two of them.** These
+ * are LINE REGEXES over source — the shape-match class CLAUDE.md's Atlas
+ * section names — so a docblock quoting `reason: "x"` while EXPLAINING a door
+ * became a citation for it, indistinguishable in the artifact from the line
+ * that actually throws. Measured at the tree the hour it was fixed: **2 of 160
+ * sites** — `refusal("removal_absent", ...)` inside `refusalTag.ts`'s own
+ * docblock, there since that docblock was written and never noticed, and a
+ * `conceptDescribe.ts` docblock added the same day. Neither door loses its
+ * LAST site, so the repair orphans nothing; it only stops a citation pointing
+ * at prose when it claims to point at the throw.
+ *
+ * ⚠ **ITS LIMIT IS DECLARED RATHER THAN IMPLIED**: this skips a line whose
+ * first non-space character OPENS a comment, which is every docblock body and
+ * every whole-line `//`. A trailing comment on a line of code still counts —
+ * and should, the code is there — and an id inside a string literal always
+ * did. A real tokenizer is not bought for two lines.
  */
+function isCommentLine(line: string): boolean {
+  return /^\s*(\*|\/\/|\/\*)/.test(line);
+}
+
 export function raiseSites(): Map<string, string[]> {
   const sites = new Map<string, string[]>();
   const add = (id: string, site: string) => sites.set(id, [...(sites.get(id) ?? []), site]);
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
     const lines = fs.readFileSync(file, "utf8").split("\n");
     lines.forEach((line, at) => {
+      if (isCommentLine(line)) return;
       for (const match of line.matchAll(/\brefusal\(\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
       for (const match of line.matchAll(/\breason:\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
       for (const match of line.matchAll(/"(gate_[a-z_]+)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
@@ -225,6 +247,7 @@ export function raiseSites(): Map<string, string[]> {
   /* union members declared in the refusal type: the type line is the site. */
   const deltaFile = path.join(SOURCE_DIR, "refineDelta.ts");
   fs.readFileSync(deltaFile, "utf8").split("\n").forEach((line, at) => {
+    if (isCommentLine(line)) return;
     for (const match of line.matchAll(/\|\s*\{\s*reason:\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(deltaFile)}:${at + 1}`);
   });
   /* cannot-say members: the line their key opens on in the copy table. */
