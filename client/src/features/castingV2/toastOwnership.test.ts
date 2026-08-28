@@ -94,6 +94,12 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     because:
       "Fires BEFORE the navigation to the sheet, so the sheet's own failure banner never gets the chance. The lobby has no other channel.",
   },
+  // ---- CastingV2.tsx (the lobby's one roll flow, 196 / gate review of PR 199)
+  {
+    match: "toast(BRIEF_TOO_SHORT_MESSAGE)",
+    because:
+      "The dispatch gate refuses a brief under three characters, and until PR 199 it did so with a SILENT return. Nothing on screen changes when it fires: the page does not navigate, the box keeps exactly what she typed, and there is no other surface — which is indistinguishable from the button being broken. It became worth saying out loud when the concept modal made this reachable from behind a PRICE: the dialog closes, her words land in the box, and this sentence explains why no sheet appeared. It is the SERVER's own wording (shared/briefLength.ts, thrown by briefCompiler.ts), so a customer never meets two versions of one rule.",
+  },
   {
     match: '"Link copied"',
     because: "The clipboard has no surface at all. Nothing on screen changes.",

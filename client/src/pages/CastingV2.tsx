@@ -19,6 +19,7 @@ import { createClientRequestId } from "@shared/clientRequestId";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
+import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
 import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import { BriefField } from "@/features/castingV2/components/BriefField";
@@ -451,7 +452,27 @@ export default function CastingV2() {
       state-based guard and both create a session and a paid roll. The ref
       closes on the click that opened it.
     */
-    if (briefText.trim().length < 3) return;
+    /*
+      ⚠ IT SPEAKS NOW — the gate review's finding 2, and the repair is the CLASS
+      rather than the instance. This was a silent `return`, which was survivable
+      while the only way to reach it was the hero button beside a nearly-empty
+      box; #196's modal made it reachable from behind a PRICE, and a priced
+      button that closes its dialog and does nothing is D-180 exactly.
+
+      Aligning the modal's own threshold instead would have been the cheaper
+      repair and the wrong one: what the entrance refuses is the MERGED text,
+      which the dialog cannot see, so the dialog would have had to be told how
+      long her existing brief is — page state leaking into a presentational
+      component to answer a question the page already knows.
+
+      The number and the sentence are the SERVER'S (`shared/briefLength.ts`,
+      read by `briefCompiler.ts`'s own refusal), so the two sides cannot drift
+      and a customer never meets two wordings of one rule.
+    */
+    if (briefText.trim().length < BRIEF_TEXT_MIN) {
+      toast(BRIEF_TOO_SHORT_MESSAGE);
+      return;
+    }
     // No session exists yet, so there is no id to wait on — the latch here is
     // purely "one ceremony at a time", released only on failure.
     if (!castLatch.tryAcquire(null)) return;

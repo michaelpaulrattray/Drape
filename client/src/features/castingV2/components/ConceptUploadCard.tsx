@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+/* Aliased, because the WINDOW listener below takes the DOM DragEvent and this
+   module also handles React's synthetic one — same name, different objects, and
+   the shadowing is exactly what made the first form of the Files filter fail to
+   compile in a way that reads like a type quibble rather than a real difference. */
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { Upload } from "lucide-react";
 
 import { asBase64, firstPictureFrom } from "../pictureBytes";
@@ -130,7 +134,19 @@ export function ConceptUploadCard({
   */
   useEffect(() => {
     if (!describe) return;
-    const swallow = (event: Event) => event.preventDefault();
+    /*
+      ⚠ FILES ONLY — the gate review's finding 1, and it was a real regression
+      for everyone inside the flag. A bare `preventDefault` here cancels EVERY
+      drop on the page, so dragging selected TEXT into the brief textarea did
+      nothing at all, silently, with no sentence anywhere. His build note is
+      about files ("no accidental uploads") and so is the hazard; the same
+      `Files` test the card's own handlers apply four functions below is the
+      whole of the fix.
+    */
+    const swallow = (event: Event) => {
+      if (!(event as DragEvent).dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+    };
     window.addEventListener("dragover", swallow);
     window.addEventListener("drop", swallow);
     return () => {
@@ -239,7 +255,7 @@ export function ConceptUploadCard({
     pair flickers the card's drop state on and off as the cursor moves across
     its own text.
   */
-  const onDragEnter = (event: DragEvent) => {
+  const onDragEnter = (event: ReactDragEvent) => {
     if (!event.dataTransfer?.types?.includes("Files")) return;
     dragDepth.current += 1;
     setDragging(true);
@@ -253,11 +269,11 @@ export function ConceptUploadCard({
     it the browser refuses the drop, and the window guard above then swallows
     it — so the card would look like a drop target and silently eat every file.
   */
-  const onDragOver = (event: DragEvent) => {
+  const onDragOver = (event: ReactDragEvent) => {
     if (!event.dataTransfer?.types?.includes("Files")) return;
     event.preventDefault();
   };
-  const onDrop = (event: DragEvent) => {
+  const onDrop = (event: ReactDragEvent) => {
     event.preventDefault();
     dragDepth.current = 0;
     setDragging(false);

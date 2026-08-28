@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "eb76faa350534d78"
+    "sourceFingerprint": "a3858e160809aea7"
   },
   "domains": [
     {
@@ -18420,6 +18420,11 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
@@ -22166,6 +22171,11 @@
     {
       "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:shared/briefLength.ts",
       "kind": "imports"
     },
     {

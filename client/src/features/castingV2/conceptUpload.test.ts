@@ -24,6 +24,7 @@ import {
   conceptCountLabel,
 } from "./conceptUpload";
 import { ACCEPTED_PICTURE_FILES, firstPictureFrom } from "./pictureBytes";
+import { BRIEF_TEXT_MIN } from "@shared/briefLength";
 import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
 import { readableGatedFailure } from "./failureCopy";
 
@@ -778,7 +779,7 @@ describe("two entrances, one read", () => {
     */
     const card = withoutProse(await readFile(CARD, "utf8"));
     const drop = card.slice(
-      card.indexOf("const onDrop = (event: DragEvent) => {"),
+      card.indexOf("const onDrop = (event:"),
       card.indexOf("if (!describe) {"),
     );
     expect(drop).toContain("offerFile(event.dataTransfer?.files ?? null)");
@@ -823,6 +824,19 @@ describe("two entrances, one read", () => {
     expect(card).toContain('window.addEventListener("drop", swallow);');
     expect(card).toContain('window.removeEventListener("dragover", swallow);');
     expect(card).toContain('window.removeEventListener("drop", swallow);');
+    /*
+      ⚠ FILES ONLY — the gate review of PR #199, finding 1, and it was a real
+      regression for everyone inside the flag. A bare `preventDefault` here
+      cancels EVERY drop on the page, so dragging selected TEXT into the brief
+      textarea did nothing at all, silently, with no sentence anywhere. His build
+      note is about FILES and so is the hazard.
+    */
+    const swallow = card.slice(
+      card.indexOf("const swallow = (event: Event) => {"),
+      card.indexOf('window.addEventListener("dragover", swallow);'),
+    );
+    expect(swallow).toContain('dataTransfer?.types?.includes("Files")');
+    expect(swallow).toContain("return;");
     /* Mounted with the LIVE card only — an account outside the scope keeps the
        browser's own behaviour, which is the absent-or-live gate again. */
     const guard = card.slice(card.indexOf("useEffect(() => {"));
@@ -838,9 +852,13 @@ describe("two entrances, one read", () => {
         the one that MAKES the element a drop target reddened nothing. A window
         measured in characters is a window that grows into its neighbour.
       */
+      /* Anchored on the NAME, not the parameter type: the card aliases React's
+         DragEvent (its window listener takes the DOM one) and the dialog does
+         not, so a type-bearing anchor reads one file and returns "" for the
+         other — which is an empty slice quietly passing as a clean one. */
       const over = source.slice(
-        source.indexOf("const onDragOver = (event: DragEvent) => {"),
-        source.indexOf("const onDrop = (event: DragEvent) => {"),
+        source.indexOf("const onDragOver = (event:"),
+        source.indexOf("const onDrop = (event:"),
       );
       expect(over).toContain("event.preventDefault();");
     }
@@ -961,6 +979,35 @@ describe("a refused read keeps her picture and offers a way on", () => {
     /* And the accessible name follows the heading rather than staying behind. */
     const label = review.slice(review.indexOf("label={"), review.indexOf("portrait={preview}"));
     expect(label).toContain("CONCEPT_REVIEW_REFUSED_TITLE");
+  });
+
+  it("SPEAKS when the merged brief is too short, rather than closing on nothing", async () => {
+    /*
+      ⚠ THE GATE REVIEW OF PR #199, FINDING 2, repaired as the CLASS. The lobby's
+      dispatch gate was a silent `return` under three characters — survivable
+      while the only way to reach it was the hero button beside a nearly-empty
+      box, and D-180's dead control the moment #196's modal made it reachable
+      from behind a PRICE.
+
+      Aligning the DIALOG's own threshold would have been cheaper and wrong:
+      what the entrance refuses is the MERGED text, which the dialog cannot see,
+      so it would have had to be told how long her existing brief is — page
+      state leaking into a presentational component to answer a question the
+      page already knows.
+    */
+    expect(BRIEF_TEXT_MIN).toBe(3);
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    expect(page).toContain("if (briefText.trim().length < BRIEF_TEXT_MIN) {");
+    expect(page).toContain("toast(BRIEF_TOO_SHORT_MESSAGE);");
+    /* Never a second wording of one rule: the compiler throws THIS sentence. */
+    const compiler = withoutProse(
+      await readFile(new URL("../../../../server/castingV2/briefCompiler.ts", import.meta.url), "utf8"),
+    );
+    expect(compiler).toContain('throw new BriefRefusal("uninterpretable", BRIEF_TOO_SHORT_MESSAGE);');
+    expect(compiler).not.toContain("briefText.length < 3");
+    expect(compiler).not.toContain("That brief is too short to cast from.");
+    /* And the number is not re-typed on either side. */
+    expect(page).not.toContain("trim().length < 3");
   });
 
   it("names the formats when a file is not a picture, rather than the refusal", () => {
