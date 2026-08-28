@@ -40,6 +40,22 @@
  * the sentence now has one author, and the id remains #209's open remainder
  * with the sizing recorded on that card.
  *
+ * ⚠ **AND THE CONFLATION REASON 1 DESCRIBES HAS ALREADY ARRIVED BY A SIDE
+ * DOOR — through the PIN reader, not the door declaration** (gate review of
+ * PR #213, verified at the artifact). `uploadRefusalCopy.test.ts` drives both
+ * byte doors and therefore writes `code: "unreadable"` as a quoted literal, and
+ * the atlas counts a test that names an id as a test that PINS it. So the
+ * interpreter's `unreadable` door went from 20 pinning tests to 21, and the
+ * 21st proves nothing whatever about the interpreter — it is an upload door's
+ * arm wearing the same word.
+ *
+ * Nothing is done about it here on purpose: the pin reader is working as
+ * designed at its current granularity, and narrowing it is the per-entrance
+ * qualification this module declined to build tonight. It is written down so
+ * the count is not later read as 21 tests of the interpreter's sentence — and
+ * because it is the cheapest possible demonstration that reason 1 is a real
+ * hazard rather than a cautious one.
+ *
  * # The one structural rule
  *
  * **This file imports nothing.** Not because the atlas reads it — it does not —
