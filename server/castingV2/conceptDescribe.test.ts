@@ -26,7 +26,7 @@ import {
   describeConcept,
   notAboutThePersonIn,
 } from "./conceptDescribe";
-import type { TextEngine } from "../providers/types";
+import { ProviderError, type ProviderFailureClass, type TextEngine } from "../providers/types";
 
 const PICTURE = { bytes: Buffer.from("a-picture"), contentType: "image/png" };
 
@@ -60,6 +60,34 @@ function engineSaying(...replies: string[]): TextEngine & { sent: { system: stri
 }
 
 const said = (description: string | null) => JSON.stringify({ description });
+
+/**
+ * A transport that throws what it is given, then answers — and COUNTS.
+ *
+ * The count is the arm, not a convenience: the whole risk of asking again after
+ * a throw is that it is bought on top of `withRetry`'s own three attempts, so
+ * "did it call twice" is the only question that separates a repair from a
+ * latency regression on a synchronous route (advisor, this shift).
+ */
+function engineThrowing(error: unknown, ...then: string[]):
+  TextEngine & { calls: () => number; sent: { system: string; user: string }[] } {
+  let index = 0;
+  const sent: { system: string; user: string }[] = [];
+  const engine = {
+    id: "fake",
+    sent,
+    calls: () => index,
+    complete: vi.fn(async (request: { system: string; user: string }) => {
+      sent.push({ system: request.system, user: request.user });
+      index += 1;
+      if (index === 1) throw error;
+      const text = then[Math.min(index - 2, then.length - 1)];
+      if (text === undefined) throw error;
+      return { text, provenance: { provider: "fake", model: "fake" } as never, latencyMs: 1 };
+    }),
+  };
+  return engine as never;
+}
 
 /** Transports fence their JSON; `parse` strips it, and that must keep working. */
 const NL = String.fromCharCode(10);
@@ -246,8 +274,18 @@ describe("the reader", () => {
   it("tells 'there is nobody in this picture' apart from 'the read failed'", async () => {
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(null)) }))
       .toEqual({ ok: false, reason: "no_person", attempts: 1 });
+    /* ⚠ `attempts` MOVED 1 -> 2 HERE AND IN THE ARM BELOW, and it is the whole
+       of #193: a reply we could not read is now asked again once. The two
+       REASONS are what this arm is about and neither moved. */
     expect(await describeConcept({ ...PICTURE, engine: engineSaying("") }))
-      .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+      .toEqual({ ok: false, reason: "unreadable", attempts: 2 });
+  });
+
+  it("never re-asks 'there is nobody in this picture' — a real answer is not a failure", async () => {
+    const engine = engineSaying(said(null), said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: false, reason: "no_person", attempts: 1 });
+    expect(engine.sent).toHaveLength(1);
   });
 
   /*
@@ -264,7 +302,7 @@ describe("the reader", () => {
     ["the wrong type", '{"description": 42}'],
   ])("calls a NON-EMPTY reply it cannot read 'unreadable', never 'no_person' — %s", async (_name, reply) => {
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(reply) }))
-      .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+      .toEqual({ ok: false, reason: "unreadable", attempts: 2 });
   });
 
   it("still reads a description the transport wrapped in a fenced code block", async () => {
@@ -282,6 +320,116 @@ describe("the reader", () => {
     } as never as TextEngine;
     expect(await describeConcept({ ...PICTURE, engine }))
       .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+  });
+
+  /*
+    #193 — A READ THAT NEVER ARRIVED IS ASKED AGAIN, AND ONLY THAT CLASS IS.
+
+    The measurement behind it: one refusal in six on production frames, and the
+    frame that refused then read cleanly 3 of 3. The card named the unparseable
+    branch; there are THREE branches returning that same object and the original
+    log is gone, so both plausible ones are covered and the third — the classes
+    the transport has already retried three times — is proven NOT to be, because
+    a fourth attempt on a dead provider is the latency regression this repair
+    could have been.
+  */
+  it("asks again ONCE when the reply is one we cannot read, and takes a clean second answer", async () => {
+    const engine = engineSaying("Sure! Here is the description:", said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: true, description: CLEAN, attempts: 2 });
+  });
+
+  it("asks that second time with the ORIGINAL words — there is no fault to name", async () => {
+    const engine = engineSaying("not json at all", said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    expect(engine.sent).toHaveLength(2);
+    expect(engine.sent[1]!.user).toBe(engine.sent[0]!.user);
+    expect(engine.sent[1]!.system).toBe(engine.sent[0]!.system);
+  });
+
+  it("asks again on an EMPTY COMPLETION ON A 200 — the one-shot the transport does not retry", async () => {
+    const engine = engineThrowing(
+      new ProviderError("unknown", "The interpreter returned nothing"),
+      said(CLEAN),
+    );
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: true, description: CLEAN, attempts: 2 });
+    expect(engine.calls()).toBe(2);
+  });
+
+  /*
+    ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE REDDENED NOTHING. The control that
+    makes the re-read invent a fault to name was aimed at the CATCH path, and
+    every arm asserting "the second ask is the original words" reached the
+    module through the UNPARSEABLE path — so the two re-reads were a fixture
+    family sharing a property, and one of them was unproven. The outcome and
+    the call count cannot see it: a re-read carrying an invented fault still
+    returns a clean description on the second call.
+  */
+  it("asks that second time with the ORIGINAL words after a throw, too", async () => {
+    const engine = engineThrowing(
+      new ProviderError("unknown", "The interpreter returned nothing"),
+      said(CLEAN),
+    );
+    await describeConcept({ ...PICTURE, engine });
+    expect(engine.sent).toHaveLength(2);
+    expect(engine.sent[1]!.user).toBe(engine.sent[0]!.user);
+    expect(engine.sent[1]!.system).toBe(engine.sent[0]!.system);
+  });
+
+  /*
+    THE ARM THAT PROVES THE LINE, and it is the one the advisor asked for by
+    name. `withRetry` has already spent three attempts on a timeout before this
+    module ever sees it; a fourth would put a customer through roughly four
+    times a dead provider's deadline on a synchronous route. The COUNT is the
+    assertion — the outcome alone cannot tell one call from two.
+  */
+  it.each<ProviderFailureClass>([
+    "timeout",
+    "transport",
+    "rate_limit",
+    /* Not a retried one — a CANCEL. Nobody is waiting for a second opinion. */
+    "capability",
+  ])("calls ONCE on a failure the transport already retried, or a cancel — %s", async (failureClass) => {
+    const engine = engineThrowing(new ProviderError(failureClass, "already retried"), said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+    expect(engine.calls()).toBe(1);
+  });
+
+  it("calls ONCE on a throw that is not a ProviderError — our own bug is not retried into invisibility", async () => {
+    const engine = engineThrowing(new TypeError("cannot read properties of undefined"), said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+    expect(engine.calls()).toBe(1);
+  });
+
+  it("does not ask again once she has navigated away — an aborted read has nobody waiting", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const engine = engineThrowing(
+      new ProviderError("unknown", "The interpreter returned nothing"),
+      said(CLEAN),
+    );
+    expect(await describeConcept({ ...PICTURE, engine, signal: controller.signal }))
+      .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+    expect(engine.calls()).toBe(1);
+  });
+
+  it("keeps today's sentence when the read comes back as noise TWICE", async () => {
+    const engine = engineSaying("still not json", "still not json");
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: false, reason: "unreadable", attempts: 2 });
+    expect(engine.sent).toHaveLength(2);
+  });
+
+  it("spends its ONE second ask on the re-read — an unreadable then a fault is still terminal", async () => {
+    const engine = engineSaying("not json", said("A person."), said(CLEAN));
+    /* The re-read buys the second ask; that second answer is a FAULT (too
+       short). The module allows exactly two reads, so the third reply is never
+       fetched and the shrug is terminal — a re-read does not buy a third. */
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: false, reason: "unreadable", attempts: 2 });
   });
 
   it("says so when there is no transport at all, rather than pretending", async () => {
