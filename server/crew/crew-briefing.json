@@ -1,7 +1,7 @@
 {
-  "edition": 79,
-  "updatedAt": "2026-08-28T17:55:00+10:00",
-  "shift": "foreman-77",
+  "edition": 80,
+  "updatedAt": "2026-08-28T20:20:00+10:00",
+  "shift": "foreman-78",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -959,6 +959,13 @@
   ],
   "pipeline": [
     {
+      "id": "concept-reread-193",
+      "title": "Upload a concept: a read that never arrived is now asked again once",
+      "status": "merged",
+      "prNumber": 200,
+      "note": "About one upload in six was told \"I couldn't read that picture just now\" on a perfectly good photograph — and the same photograph then read fine three times out of three straight afterwards. So it was a coin, not the picture. The odd part is that the product already asked the reader again when it came back with a BAD answer (too long, too short, describing the lighting) — the one case it gave up on was the one that was just a blip. Now it asks again once, quietly, and you see your description. It does NOT ask again when the reader says there is nobody in the picture (that is a real answer), and it does not ask again after a timeout or an outage, because the transport has already tried three times by then and a fourth would just make you wait four times as long for the same bad news."
+    },
+    {
       "id": "concept-cast-it-196",
       "title": "Cast it from the concept modal, and two ways to get a picture into it",
       "status": "merged",
@@ -1481,6 +1488,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T20:20:00+10:00",
+      "shift": "foreman-78",
+      "text": "No new replies from you, so tonight was the queue: a bug a previous shift measured and filed against the concept upload you flipped on this morning.\n\nAbout one upload in six came back \"I couldn't read that picture just now\" on a photograph that was completely fine — and the proof it was fine is that the same picture read cleanly three times in a row immediately after. What made it worth fixing rather than shrugging at is the shape of it: the product ALREADY asked the reader a second time when the answer came back wrong in a way we could name — too long, too short, describing the lighting instead of the person. The one case it refused to retry was the one that was purely bad luck. It now asks again once, and you just get your description.\n\nIt deliberately does not retry three things. If the reader says there is nobody in the picture, that is a real answer and asking again is asking it to change its mind. If the connection timed out or the provider was down, our transport has already tried three times before this code hears about it, so a fourth attempt would only make you wait about four times as long for the same failure. And if the second attempt also fails you get today's sentence unchanged, because a picture that comes back as noise twice is the one case where trying a different photo is honest advice.\n\nThe card that filed this named one cause. There turned out to be three, all producing the identical message, and one of them nobody had counted — a reply that arrives successfully but completely empty, which our retry rules deliberately do not cover. Which of the three actually caused the refusal we measured is not knowable now (the log is gone), so I fixed both of the plausible ones rather than guessing at which to fix. That is written down as \"unknown\" rather than dressed up as a diagnosis.\n\nAlong the way the change tripped something else worth a line: our capability map — the document that lists every refusal the product can give and points at the exact line of code that gives it — was pointing two of those at COMMENTS rather than at code. It finds them by pattern-matching text, so a comment explaining a refusal looked identical to the line that actually issues it. Two out of a hundred and sixty, one of which had been wrong since it was written and never noticed. Fixed, and the check now covers the whole map rather than the two I happened to find.\n\nNo credits, no renders, nothing on your bill. The whole night cost a few cents of house money in test reads."
+    },
+    {
       "at": "2026-08-28T17:55:00+10:00",
       "shift": "foreman-77",
       "text": "You wrote two follow-ups on the concept upload card and the shift that built the modal did not have them yet — they landed three minutes after your \"Flip it\", and the PR was already in flight. Both are in now.\n\nThe button casts. Tap Cast it in the modal and it goes to the sheet exactly as if you had typed that brief in the box and pressed the button there — same settings from the gear, same 160 credits, same everything. It is not a second casting path: I changed the one we already had to take the words as an argument, so there is still exactly one piece of code in the product that starts a roll. Use this brief is still there, quieter, for when you want to keep typing.\n\nOne thing I did against the letter of your card: the price is ABOVE the button, not on it. Your own sentence only says the button should say Cast it; the card's write-up added \"with the price on it\". Our pricing rule from August names Cast it by name and says cost is metadata, never button text — and records that we once put a price inside a confirm's button and reversed it the same day. So the number sits directly above, where you cannot tap without seeing it. Say the word if you want it on the button and I will move it.\n\nAnd you can drag a picture straight onto the card now. That opens the dialog with the picture already in it and the read already running — one gesture. Tapping the card instead opens an empty dialog with a drop zone, which is the other half of what you asked for.\n\nThree things came from actually driving it rather than reading the code. A file dropped NEAR the card but not on it would have made the browser navigate away to that file — taking a brief you had just typed with it, with no undo. That is swallowed now everywhere on the page. The dialog's keyboard focus could get STUCK on one button; the walk I wrote to check it passed, because it only asked whether focus escaped, and I caught it by reading what the walk actually printed. That one was a bug in the shared dialog, so the fix covers sign and delete too. And a failed read was still headed \"This is what we'll cast\" over a screen holding nothing.\n\nOne more, which I found re-reading my own work rather than by testing it: a file that is not a picture, dropped on the CARD, opened the dialog saying nothing at all — the sentence explaining it lived in the dialog and the dialog could not know about a file the card had already turned down. There is one place that judges a file now, and all three ways in use it.\n\nNothing on the server moved and no credits were spent — the test cost about two dozen describer reads of house money, which is cents."
@@ -1669,11 +1681,6 @@
       "at": "2026-08-27T01:35:00+10:00",
       "shift": "foreman-27",
       "text": "Your settings modal is built and live on your account (#142, PR #150) — the last built slice of the creative register. Where the Low/Max pills were there is now one gear saying 'Photoreal · Low'; tap it and a small panel shows the two settings the road has today: Style (Photoreal, with your two coming styles announced beneath, not tappable) and Imagination (Low/Max), plus Reset and the rule that anything you type overrides the defaults. What you chose is written on the roll and shown on the sheet. Proven in tests and driven in the real app on a dev account (one roll, about 80 cents, no credits), both themes looked at, review clean. Your eye on it is the gate — frames are in the gallery. Also closed #139 (its fix had merged days ago and nobody closed the card). I took this ahead of the Retry button earlier shifts had queued first, because it is your direct order and the Retry serves a population that is currently zero on production; Retry is next. Still open for your eye: the light on roll 223 (eye item 'house-block-rebuilt-144'). No replies from you tonight."
-    },
-    {
-      "at": "2026-08-27T00:12:00+10:00",
-      "shift": "foreman-26",
-      "text": "Quiet night for the product; one tool fixed. The deploy checker that stalled last night was watching the wrong service — it had been started inside a Railway MySQL wrapper, so it saw the database's deployments instead of the app's (found by running it both ways). It now refuses that wrapper outright, lists the app's deployments by name, and matches the deployment to the exact commit it pushed across every row it fetches (#148, PR #149, merged). This edition is that fix's first live deploy, so the after-deploy checks that were skipped last night run again here. Nothing changed for customers; no spend. Still waiting on your eye for the light on roll 223 vs 221/222 (eye item 'house-block-rebuilt-144'). Next in order: the Retry button on failed tiles (#122, a paid per-slice re-render — design first, since it's a money path), then the minimal settings modal (#142), then the two small courts (#128, #130)."
     },
     {
       "at": "2026-08-28T15:45:00+10:00",
