@@ -69,6 +69,7 @@ import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { attachReference } from "../castingV2/referenceAttachService";
 import { describeConcept } from "../castingV2/conceptDescribe";
 import { conceptDescribeSentence } from "../castingV2/conceptDescribeCopy";
+import { BYTES_NOT_AN_IMAGE_MESSAGE } from "../castingV2/uploadRefusalCopy";
 import {
   REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL,
   referenceAttachBytesRefusal,
@@ -252,7 +253,7 @@ function enforceRateLimit(userId: number, config: (typeof RATE_LIMITS)[keyof typ
 function decodeUploadedImage(value: string): Buffer {
   const payload = value.replace(/^data:image\/[a-z+]+;base64,/, "");
   if (payload.length === 0 || payload.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(payload)) {
-    throw spokenError({ code: "BAD_REQUEST", message: "That file isn't an image we can read." });
+    throw spokenError({ code: "BAD_REQUEST", message: BYTES_NOT_AN_IMAGE_MESSAGE });
   }
   return Buffer.from(payload, "base64");
 }
@@ -816,7 +817,7 @@ const conceptRouter = router({
       */
       const format = decoded?.format;
       if (!isInkDesignFormat(format)) {
-        throw spokenError({ code: "BAD_REQUEST", message: "That file isn't an image we can read." });
+        throw spokenError({ code: "BAD_REQUEST", message: BYTES_NOT_AN_IMAGE_MESSAGE });
       }
       const outcome = await describeConcept({
         bytes,

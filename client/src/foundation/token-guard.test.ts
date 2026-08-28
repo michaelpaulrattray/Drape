@@ -30,6 +30,30 @@ import { describe, expect, it } from "vitest";
  * The rule to apply by hand: **if a colour would need a different value in the
  * other theme, it is semantic and belongs in `tokens.css`** — whatever notation
  * it is written in. The grep only covers the half it can see.
+ *
+ * # ⚠ The trap that costs ten minutes: AN ISSUE NUMBER IS A VALID HEX (#211)
+ *
+ * If this guard failed and you cannot find a colour you wrote, **look for a
+ * `#NNN` issue reference inside a STRING**. `code()` below strips comments, and
+ * the controls prove it — so `/* founder shot #303 *\/` is spared. **A test
+ * title, a thrown message or any other string literal is not a comment**, so
+ * the stripper never reaches it, and every digit 0–9 is a hex digit.
+ *
+ * Measured rather than assumed (2026-08-29): the matcher is `{3,8}`, so the
+ * trap is **every issue number from `#100` to `#99999999`** — not the `#100`–
+ * `#999` band #211 was filed with. `#12` is too short to match and `#123456789`
+ * is too long for the `\b`; everything between them is caught. This queue is in
+ * the 200s and climbing, so this is a live trap, not a curiosity.
+ *
+ * **The fix is to move the reference into a comment, not to exempt `#NNN`.**
+ * The strength of this guard is that its matcher is dumb and its controls are
+ * sharp; an exemption is where a real `#4a4` starts slipping through. That
+ * choice is pinned by an arm below, so implementing the exemption is a decision
+ * someone makes on purpose rather than a drift.
+ *
+ * Fourth instance of a class this repo keeps meeting — a pattern that
+ * legitimately owns a string it was never aimed at (`shave`/`shape` in the typo
+ * gate, the `cropped` ban, `framing` in the concept describer).
  */
 
 const clientSrc = path.resolve(__dirname, "..");
@@ -81,6 +105,21 @@ const HEX_CARVE_OUTS: Record<string, string> = {
 };
 
 const HEX_LITERAL = /#[0-9a-fA-F]{3,8}\b/g;
+
+/**
+ * WHAT THE GUARD SAYS WHEN IT CATCHES ONE — a constant so it can be pinned.
+ *
+ * ⚠ **It was written inline, and a sabotage control measured that deleting the
+ * trap clause reddened NOTHING** (#211). The clause IS the whole shipped change
+ * of that card: the guard catches exactly what it caught before, and the only
+ * thing that moved is what the reader is told. An unpinned sentence is a change
+ * that can be reverted silently, which is the one failure mode a message-only
+ * fix has.
+ */
+const HEX_FAILURE_MESSAGE =
+  "Use a token from foundation/tokens.css instead of a hex literal"
+  + " — but if that looks like an issue number (#100 and up are all valid hex),"
+  + " it is one: move the reference into a comment, which this guard strips";
 
 /**
  * THE GUARD READS CODE, NOT PROSE.
@@ -173,6 +212,56 @@ describe("foundation colours live only in tokens.css", () => {
     expect(code(".x { color: [#123456] }").match(ARBITRARY_COLOR)).toEqual(["[#123456"]);
   });
 
+  /**
+   * ⚠ THE ISSUE-NUMBER TRAP, PINNED RATHER THAN DESCRIBED (#211).
+   *
+   * The docblock's claim is that an issue reference in a STRING is caught while
+   * the same reference in a COMMENT is not. That is a statement about the
+   * product of `code()` and `HEX_LITERAL`, so it is driven here — otherwise the
+   * next reader has prose where they need a fact, which is how the docblock
+   * came to describe a `#100`–`#999` band the matcher never had.
+   *
+   * **This arm is also the lock on the fix nobody should make.** Exempting
+   * `#NNN` is tempting and would redden this; that is the point. It turns the
+   * exemption from a quiet drift into a decision with this comment attached.
+   */
+  it("catches an issue number in a string, and not in a comment", () => {
+    const title = code('describe("modalAnatomy #198", () => {});');
+    expect(
+      title.match(HEX_LITERAL),
+      "a string literal is not a comment — the stripper never reaches it",
+    ).toEqual(["#198"]);
+
+    const referenced = code('// the sign portrait, #198\nconst a = 1;');
+    expect(
+      referenced.match(HEX_LITERAL),
+      "and the documented workaround must actually work",
+    ).toBeNull();
+
+    /* The measured edges of the band, so the docblock's numbers are artifacts. */
+    const caught = (n: string) => code(`const s = "${n}";`).match(HEX_LITERAL);
+    expect(caught("#12"), "two digits is below the {3,8} floor").toBeNull();
+    expect(caught("#100"), "the lowest issue number that trips it").toEqual(["#100"]);
+    expect(caught("#12345678"), "eight digits still trips it").toEqual(["#12345678"]);
+    expect(caught("#123456789"), "nine digits fails the trailing \\b").toBeNull();
+  });
+
+  /**
+   * THE SENTENCE THE READER ACTUALLY GETS (#211).
+   *
+   * A failure message is only read when the arm fails, so nothing exercises it
+   * on a green run — which is exactly how it could be reverted unnoticed. This
+   * asserts the two things that make it worth having: that it still points at
+   * the token source (the original guidance, unchanged), and that it names the
+   * issue-number trap (the change). Not a byte pin — the wording may improve;
+   * what may not vanish is either half of the job.
+   */
+  it("tells a reader whose 'colour' is an issue number what happened", () => {
+    expect(HEX_FAILURE_MESSAGE).toContain("foundation/tokens.css");
+    expect(HEX_FAILURE_MESSAGE).toMatch(/issue number/i);
+    expect(HEX_FAILURE_MESSAGE).toMatch(/comment/i);
+  });
+
   it("allows a hex only in the carved-out files", () => {
     const offenders = guardedFiles
       .filter(({ relative }) => !(relative in HEX_CARVE_OUTS))
@@ -180,10 +269,13 @@ describe("foundation colours live only in tokens.css", () => {
         (code(source).match(HEX_LITERAL) ?? []).map((hex) => `${relative}: ${hex}`),
       );
 
-    expect(
-      offenders,
-      "Use a token from foundation/tokens.css instead of a hex literal",
-    ).toEqual([]);
+    /*
+      THE MESSAGE NAMES THE TRAP (#211). The old sentence said "hex literal" and
+      pointed at `tokens.css`, so a reader whose real offence was `#198` in a
+      test title went hunting for a colour they never wrote. The guard catches
+      exactly what it caught before — this is a sentence, not a narrowing.
+    */
+    expect(offenders, HEX_FAILURE_MESSAGE).toEqual([]);
   });
 
   it("rejects Tailwind arbitrary colour values", () => {

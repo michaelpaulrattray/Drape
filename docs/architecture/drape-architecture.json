@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "61492cb45e5e661f"
+    "sourceFingerprint": "9e9144515dc055bc"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 183
+      "moduleCount": 184
     },
     {
       "id": "domain:castingV2",
@@ -4505,6 +4505,12 @@
     {
       "id": "module:server/castingV2/thumbnails.ts",
       "path": "server/castingV2/thumbnails.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/uploadRefusalCopy.ts",
+      "path": "server/castingV2/uploadRefusalCopy.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -11894,6 +11900,10 @@
     {
       "id": "test:server/castingV2/typecheckGate.test.ts",
       "path": "server/castingV2/typecheckGate.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/uploadRefusalCopy.test.ts",
+      "path": "server/castingV2/uploadRefusalCopy.test.ts"
     },
     {
       "id": "test:server/castingV2/vacancyPin.test.ts",
@@ -23700,6 +23710,11 @@
     },
     {
       "from": "module:server/castingV2/inkUploadDoor.ts",
+      "to": "module:server/castingV2/uploadRefusalCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadDoor.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
       "kind": "imports"
     },
@@ -23761,6 +23776,11 @@
     {
       "from": "module:server/castingV2/inkUploadService.ts",
       "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadService.ts",
+      "to": "module:server/castingV2/uploadRefusalCopy.ts",
       "kind": "imports"
     },
     {
@@ -24551,6 +24571,11 @@
     {
       "from": "module:server/castingV2/referenceAttachService.ts",
       "to": "module:server/castingV2/referenceAttachDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachService.ts",
+      "to": "module:server/castingV2/uploadRefusalCopy.ts",
       "kind": "imports"
     },
     {
@@ -29680,6 +29705,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/uploadRefusalCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
@@ -33761,17 +33791,17 @@
       "message": "Names 3 of InkUpscaleResult's 5 fields (server/castingV2/inkReferenceUpscale.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:193",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:194",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:193",
+      "subject": "server/castingV2/inkUploadService.ts:194",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:251",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:252",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:251",
+      "subject": "server/castingV2/inkUploadService.ts:252",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
