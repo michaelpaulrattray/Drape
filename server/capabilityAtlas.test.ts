@@ -15,12 +15,14 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  buildStaticAtlas, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings, listFiles, outcomeId,
+  buildStaticAtlas, declaredConceptRefusals, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings,
+  duplicateDoorFindings, listFiles, outcomeId,
   pinningTests, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
   CAPABILITY_MD, type Finding,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
+import { CONCEPT_DESCRIBE_COPY } from "./castingV2/conceptDescribeCopy";
 
 describe("the static half reads what the source declares", () => {
   it("POSITIVE CONTROL — finds doors known to exist", () => {
@@ -138,6 +140,113 @@ describe("the static half reads what the source declares", () => {
     for (const entry of atlas.declared) {
       expect(entry.pinnedBy).not.toContain("server/capabilityAtlas.test.ts");
     }
+  });
+});
+
+/*
+  #192 — THE CONCEPT UPLOAD IS THE MAP'S SECOND ENTRANCE, and until 2026-08-28
+  three of its five doors were invisible while the fourth wore the interpreter's
+  label. These arms hold the reader that fixed it.
+*/
+describe("the concept upload's doors are on the map", () => {
+  it("POSITIVE CONTROL — every member of the copy table is a declared door", () => {
+    const declared = declaredConceptRefusals();
+    expect(declared).toContain("concept.no_being");
+    expect(declared).toContain("concept.no_transport");
+    expect(declared).toContain("concept.not_a_casting_note");
+    expect(declared).toContain("concept.not_about_the_person");
+    expect(declared).toContain("concept.unreadable");
+    expect(declared.length).toEqual(Object.keys(CONCEPT_DESCRIBE_COPY).length);
+    const atlas = buildStaticAtlas(CORPUS);
+    const ids = atlas.declared.map((d) => d.id);
+    for (const id of declared) expect(ids).toContain(id);
+    /*
+      AND THE PINS RESOLVE. `pinningTests` searches for a QUOTED literal and a
+      test quotes what the product returns (`"no_being"`), never this file's
+      `concept.no_being` — so searching the qualified id finds nothing and
+      reports five doors as proven by no test, a finding manufactured entirely
+      by the atlas's own naming choice. Written as its own assertion because
+      the `unpinned-refusal` arm below compares findings to `pinnedBy` and is
+      therefore green whether the pins resolve or not.
+    */
+    for (const id of declared) {
+      const entry = atlas.declared.find((d) => d.id === id)!;
+      expect(entry.pinnedBy, id).toContain("server/castingV2/conceptDescribe.test.ts");
+    }
+  });
+
+  it("NEGATIVE CONTROL — the pre-#204 name is absent, so the reader reads the declaration", () => {
+    /*
+      `no_person` was this door's name until #204 renamed it `no_being` the same
+      day the map was found blind to it. A reader working off a remembered list
+      — which is what the population was, one source list short — would still
+      carry it. This is the arm that says the population comes from the live
+      table: it goes red the moment anyone reintroduces a hand-typed list here.
+    */
+    const declared = declaredConceptRefusals();
+    expect(declared).not.toContain("concept.no_person");
+    expect(declared.join(" ")).not.toMatch(/no_person/);
+  });
+
+  it("cites its raise sites in the entrance's own files, and takes NONE from the interpreter's door", () => {
+    /*
+      The defect this repairs, asserted directly: `conceptDescribe.ts:835` used
+      to be filed under the INTERPRETER's `unreadable`, a citation pointing at
+      the right line and naming the wrong door. Two of the five reasons are also
+      chosen by a ternary that no `reason:`-shaped regex sees, so their only
+      site is the copy table's key line — which is why the key lines are sites.
+    */
+    const atlas = buildStaticAtlas(CORPUS);
+    for (const entry of atlas.declared.filter((d) => d.id.startsWith("concept."))) {
+      expect(entry.sites.length, entry.id).toBeGreaterThan(0);
+      for (const site of entry.sites) {
+        expect(site, entry.id).toMatch(/server\/castingV2\/conceptDescribe(Copy)?\.ts:/);
+      }
+    }
+    for (const entry of atlas.declared.filter((d) => !d.id.startsWith("concept."))) {
+      for (const site of entry.sites) {
+        expect(`${entry.id} :: ${site}`).not.toMatch(/conceptDescribe\.ts:/);
+      }
+    }
+  });
+
+  it("each concept door is documented unreachable — the corpus drives sentences, not pictures", () => {
+    /*
+      Failability is not assumed here: the `unreached`/`documented` join is
+      already driven both ways by the `scope_unknown` arm above, which drops a
+      corpus row and watches the finding appear. What this adds is that the five
+      new ids landed on the DOCUMENTED side rather than the `unmapped` ERROR
+      side — the state the founder law's teeth produce for a door with no entry.
+    */
+    const atlas = buildStaticAtlas(CORPUS);
+    for (const id of declaredConceptRefusals()) {
+      const found = atlas.findings.filter((f) => f.subject === id);
+      expect(found.map((f) => f.kind), id).toEqual(["documented-unreachable"]);
+    }
+    expect(atlas.findings.filter((f) => f.severity === "error")).toEqual([]);
+  });
+
+  it("THE CLASS ARM — no two declared sources claim one id", () => {
+    /*
+      The collision that hid this whole defect: `unreadable` is a door on the
+      refine road AND on the concept upload, and one map row carried both
+      doors' pins and citations while every downstream check read it as one
+      well-covered door. Nothing could go red, because nothing was looking.
+
+      Driven rather than asserted off the live tree: a live-tree uniqueness
+      check passes today whatever the finding does, so the finding itself is
+      produced from a deliberately colliding list.
+    */
+    const live = buildStaticAtlas(CORPUS).declared.map((d) => d.id);
+    expect(new Set(live).size).toEqual(live.length);
+    expect(buildStaticAtlas(CORPUS).findings.some((f) => f.kind === "duplicate-door-id")).toBe(false);
+
+    const colliding = [
+      { id: "unreadable", kind: "interpreter-refusal" as const, pinnedBy: [], sites: [] },
+      { id: "unreadable", kind: "concept-refusal" as const, pinnedBy: [], sites: [] },
+    ];
+    expect(duplicateDoorFindings(colliding).map((f) => f.subject)).toEqual(["unreadable"]);
+    expect(duplicateDoorFindings(colliding)[0]!.severity).toEqual("error");
   });
 });
 

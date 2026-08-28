@@ -56,6 +56,7 @@ import { fileURLToPath } from "node:url";
 import { CORPUS, UNREACHABLE_DOORS, KNOWN_DEBTS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
 import { ROADS, LAWS, type Road } from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
+import { CONCEPT_DESCRIBE_COPY } from "../../server/castingV2/conceptDescribeCopy";
 import { FREE_SUBJECT_KEYS } from "../../server/castingV2/subjectCards";
 import { refusalTagOf } from "../../server/castingV2/refusalTag";
 
@@ -71,7 +72,7 @@ export const CAPABILITY_MD = path.join(CAPABILITY_OUT_DIR, "capability-atlas.md"
 export type DeclaredId = {
   id: string;
   /** Where the id comes from. */
-  kind: "service-refusal" | "interpreter-refusal" | "cannot-say";
+  kind: "service-refusal" | "interpreter-refusal" | "cannot-say" | "concept-refusal";
   /** For a `cannot-say` member: whether the sentence is free or after a refund. */
   charge?: "free" | "refunded";
   /** Test files that name the id as a quoted literal. */
@@ -103,6 +104,7 @@ export type Finding = {
     | "unreached"                 // an id no corpus row expects, and no reason on file
     | "documented-unreachable"    // an id UNREACHABLE_DOORS carries a reason for
     | "coverage-contradiction"    // an id both documented-unreachable AND expected by a row
+    | "duplicate-door-id"         // two declared sources claiming one id — see #192
     | "stale-unreachable-doc"     // a drive PRODUCED an id documented as unreachable
     | "road-cites-unknown-door"   // the roads map names a door the source does not declare
     | "belief-mismatch"           // observed ≠ expect
@@ -171,6 +173,54 @@ export function declaredInterpreterRefusals(): string[] {
   return [...ids].sort();
 }
 
+/**
+ * THE CONCEPT-UPLOAD ENTRANCE'S DOORS (#192) — the third declared source, and
+ * the first one that is not the refine road.
+ *
+ * ⚠ **THE POPULATION IS THE COPY TABLE'S KEYS, IMPORTED — NEVER A GREP.** That
+ * is the whole repair. The two readers above visit files: `refusal("id"`
+ * anywhere in `server/castingV2`, and `reason: "id"` in `refineInterpreter.ts`
+ * ALONE. A `reason:`-shaped refusal declared in any other module is invisible to
+ * both, and `conceptDescribe.ts` is exactly that shape — so three of this
+ * entrance's five doors were absent from the map and the fourth
+ * (`unreadable`) had its raise sites attributed to the INTERPRETER's
+ * identically-named door. `CONCEPT_DESCRIBE_COPY` is
+ * `Record<ConceptDescribeRefusal, string>`, so the compiler refuses a member
+ * with no sentence and this reader sees the key the same hour — the way
+ * `CANNOT_SAY_COPY` is already consumed below.
+ *
+ * ⚠ **THE IDS ARE ENTRANCE-QUALIFIED, AND THE COVERAGE CONTRACT FORCES IT.**
+ * `unreadable` is a door on BOTH entrances. Declared bare, the refine corpus
+ * row that expects `unreadable` would put it in `expectedIds`, and this
+ * entrance's `UNREACHABLE_DOORS` line for the same string would fire
+ * `coverage-contradiction` at error severity — two rows claiming one id, the
+ * price reader's class (CLAUDE.md, Atlas section). So they are `concept.<member>`
+ * and a uniqueness arm keeps the whole declared list collision-free.
+ *
+ * ⚠ **WHAT THIS DOES NOT FIX, said out loud**: which tables count as
+ * customer-facing refusal vocabularies is still a judgement written down here.
+ * "Customer-facing" is semantic; no regex knows it. The other entrances still
+ * invisible for the original reason are enumerated on #192 with a verdict each.
+ */
+/**
+ * The one file whose `reason:` raises belong to the concept entrance.
+ *
+ * ⚠ **NAMED IN ONE PLACE AND CHECKED AT DISK, because a split is the hazard
+ * here** (review of #207, finding 1). A rename is caught — `raiseSites` throws.
+ * A SPLIT is not, and that is declared rather than implied: move one raise into
+ * a new `conceptDescribeSomething.ts` and its sites re-file under the
+ * interpreter's `unreadable` with nothing going red, since a door losing sites
+ * it never needed to have is invisible to every arm here. This is `routers.ts`'s
+ * class (a 4,209-line file split that dropped a control), and the honest
+ * mitigation for now is that the constant is one line and this paragraph is
+ * beside it. Filed on #206.
+ */
+const CONCEPT_ENTRANCE_FILE = "conceptDescribe.ts";
+
+export function declaredConceptRefusals(): string[] {
+  return Object.keys(CONCEPT_DESCRIBE_COPY).sort().map((id) => `concept.${id}`);
+}
+
 /** The scope flags, read off their own `_SCOPE_ENV` constants. */
 export function declaredFlags(): string[] {
   const text = fs.readFileSync(path.join(SOURCE_DIR, "castingV2Scope.ts"), "utf8");
@@ -235,13 +285,53 @@ function isCommentLine(line: string): boolean {
 export function raiseSites(): Map<string, string[]> {
   const sites = new Map<string, string[]>();
   const add = (id: string, site: string) => sites.set(id, [...(sites.get(id) ?? []), site]);
+  /*
+    #192 — A SITE INSIDE THE CONCEPT ENTRANCE BELONGS TO THE CONCEPT ENTRANCE.
+    `unreadable` is a door on two roads, and before this every raise site in
+    `conceptDescribe.ts` was filed under the INTERPRETER's door of that name —
+    a citation pointing at the right line and naming the wrong door, which is
+    worse than an absent one. The qualification is DERIVED from the copy table's
+    keys, not from a list of names typed here.
+  */
+  const conceptMembers = new Set(Object.keys(CONCEPT_DESCRIBE_COPY));
+  const conceptFile = path.join(SOURCE_DIR, CONCEPT_ENTRANCE_FILE);
+  /*
+    ⚠ AND IT REFUSES RATHER THAN QUALIFYING NOTHING (review of #207, finding 1).
+    The qualification keys on ONE path. If that file is renamed, every site in
+    it silently re-files under the interpreter's door — the exact defect this
+    repair exists to remove, returning behind a green suite, because a scan that
+    matches nothing looks identical to a scan with nothing to match. The repo's
+    own rule for collectors that can come up empty: throw.
+  */
+  if (!fs.existsSync(conceptFile)) {
+    throw new Error(
+      `capability atlas: the concept entrance's file ${CONCEPT_ENTRANCE_FILE} is not on disk — `
+      + "its raise sites would silently re-file under the interpreter's identically-named doors. "
+      + "Point CONCEPT_ENTRANCE_FILE at the file that raises them.",
+    );
+  }
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
+    const inConcept = file === conceptFile;
+    const qualify = (id: string) => (inConcept && conceptMembers.has(id) ? `concept.${id}` : id);
     const lines = fs.readFileSync(file, "utf8").split("\n");
     lines.forEach((line, at) => {
       if (isCommentLine(line)) return;
-      for (const match of line.matchAll(/\brefusal\(\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
-      for (const match of line.matchAll(/\breason:\s*"([a-z][a-z0-9_]*)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
+      for (const match of line.matchAll(/\brefusal\(\s*"([a-z][a-z0-9_]*)"/g)) add(qualify(match[1]!), `${rel(file)}:${at + 1}`);
+      for (const match of line.matchAll(/\breason:\s*"([a-z][a-z0-9_]*)"/g)) add(qualify(match[1]!), `${rel(file)}:${at + 1}`);
       for (const match of line.matchAll(/"(gate_[a-z_]+)"/g)) add(match[1]!, `${rel(file)}:${at + 1}`);
+    });
+  }
+  /*
+    THE COPY TABLE'S KEY LINES ARE SITES TOO, and for this entrance they are not
+    a nicety: two of its five reasons are chosen by a ternary
+    (`? "not_about_the_person" : …`), which no `reason:`-shaped regex sees. The
+    `CANNOT_SAY_COPY` block below is the same pattern for the same reason.
+  */
+  const conceptCopyFile = path.join(SOURCE_DIR, "conceptDescribeCopy.ts");
+  const conceptCopyLines = fs.readFileSync(conceptCopyFile, "utf8").split("\n");
+  for (const id of conceptMembers) {
+    conceptCopyLines.forEach((line, at) => {
+      if (new RegExp(`^\\s{2}${id}:`).test(line)) add(`concept.${id}`, `${rel(conceptCopyFile)}:${at + 1}`);
     });
   }
   /* union members declared in the refusal type: the type line is the site. */
@@ -261,11 +351,52 @@ export function raiseSites(): Map<string, string[]> {
   return sites;
 }
 
+/**
+ * #192 — TWO DECLARED SOURCES MAY NOT CLAIM ONE ID.
+ *
+ * This exists because one pair silently did, for as long as the concept
+ * entrance has been live. `unreadable` is a door on the refine road AND on the
+ * concept upload, and the map carried ONE row for it wearing the interpreter's
+ * label and the concept entrance's citations. **Nothing went red**, and nothing
+ * could: every downstream check — pins, coverage, roads — reads by id, so a
+ * collision reads as one well-covered door instead of two half-covered ones.
+ *
+ * The entrance-qualification that fixed it is a naming convention, and a
+ * convention with no arm is a habit. It refuses at generate time, so the deploy
+ * rite carries it; it is a separate function so its arm can DRIVE it with a
+ * colliding list rather than assert a property of a tree that happens to be
+ * clean today (working law 2 — a checker that cannot fail is not a checker).
+ */
+export function duplicateDoorFindings(declared: readonly DeclaredId[]): Finding[] {
+  const findings: Finding[] = [];
+  const seen = new Map<string, DeclaredId>();
+  for (const entry of declared) {
+    const prior = seen.get(entry.id);
+    if (prior) {
+      findings.push({
+        id: `duplicate:${entry.id}`, severity: "error", kind: "duplicate-door-id", subject: entry.id,
+        message: `"${entry.id}" is declared by two sources (${prior.kind} and ${entry.kind}) — one map row would carry both doors' pins and citations; qualify one of them`,
+      });
+    } else seen.set(entry.id, entry);
+  }
+  return findings;
+}
+
 export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticAtlas {
   const service = declaredServiceRefusals();
   const interpreter = declaredInterpreterRefusals().filter((id) => !service.includes(id));
   const cannot = Object.keys(CANNOT_SAY_COPY).sort() as CannotSayReason[];
-  const pins = pinningTests([...service, ...interpreter, ...cannot]);
+  const concept = declaredConceptRefusals();
+  /*
+    #192 — PINS ARE SEARCHED ON THE BARE MEMBER NAME AND ATTACHED TO THE
+    QUALIFIED ENTRY. `pinningTests` looks for a QUOTED literal, and a test
+    quotes what the product returns (`"no_being"`), never the atlas's own
+    `concept.no_being`. Searching the qualified id would have found nothing and
+    reported five doors as proven by no test — a finding manufactured entirely
+    by this file's naming choice.
+  */
+  const conceptBare = concept.map((id) => id.slice("concept.".length));
+  const pins = pinningTests([...service, ...interpreter, ...cannot, ...conceptBare]);
   const sites = raiseSites();
   const declared: DeclaredId[] = [
     ...service.map((id) => ({ id, kind: "service-refusal" as const, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [] })),
@@ -273,9 +404,15 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     ...cannot.map((id) => ({
       id, kind: "cannot-say" as const, charge: CANNOT_SAY_COPY[id].charge, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [],
     })),
+    ...concept.map((id) => ({
+      id,
+      kind: "concept-refusal" as const,
+      pinnedBy: pins.get(id.slice("concept.".length)) ?? [],
+      sites: sites.get(id) ?? [],
+    })),
   ].sort((a, b) => a.id.localeCompare(b.id));
 
-  const findings: Finding[] = [];
+  const findings: Finding[] = [...duplicateDoorFindings(declared)];
   for (const entry of declared) {
     if (entry.pinnedBy.length === 0) {
       findings.push({

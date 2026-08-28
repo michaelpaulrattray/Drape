@@ -310,6 +310,33 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "gate_ink_unkeepable",
     reason: "item 7a's split of gate_ink_uncarried: the surface is BARE and the words road cannot crop a result there. Its population was `upperChest`, the one measured placement the words road did not serve — and the Basics chest court (2026-08-23) put the chest on the road, so `uncarriedInkPlaces` is EMPTY and no measured surface is seen-but-unkept. The refusal is kept because it is the only true thing to say about a placement in that state, which the next measured surface will be in on the day it is added",
     becomesReachable: "the day INK_PLACEMENTS gains a fourth surface — it lands unserved by the words road, which is exactly this door's state, before any court opens it" },
+  /* ── #192: THE CONCEPT UPLOAD'S FIVE DOORS — the map's first entrance that is
+     not `refine`. The corpus drives ONE entrance: it sends a SENTENCE at a
+     Cast. `castingV2.concept.describe` takes a PICTURE and no sentence at all,
+     so no corpus row can be one of these — the same shape as the request-shape
+     block below, and the same discharge: each is pinned by its own arm in
+     `server/castingV2/conceptDescribe.test.ts` (verified at the file, not
+     assumed), and each reason states the STATE that reaches the door rather
+     than the loop that raises it.
+
+     Ids are entrance-qualified because `unreadable` is a door on both roads;
+     bare, the refine corpus row expecting it would collide with this line and
+     fire `coverage-contradiction`. ── */
+  { id: "concept.no_being",
+    reason: "answers an upload whose read found no BEING in the picture at all — an object, a vehicle, a landscape, a product. It is the concept entrance's own edge of the same boundary the roll road draws at `not_a_being`, and #204 narrowed it there: a creature, a robot or an alien is a subject, so this fires only outside all four",
+    becomesReachable: "a corpus row that carries a fixture PICTURE through the real concept entrance — cents of describer reads, the class of money the corpus already spends on text; nothing in the row grammar carries an image today" },
+  { id: "concept.not_about_the_person",
+    reason: "answers a read that came back describing the FRAME instead of the subject — the light, the set, the camera, a resemblance — twice in a row. It is a fault of our reader's output, not of her photograph, which is why it has its own sentence",
+    becomesReachable: "the same picture-carrying corpus row, plus a fixture whose read reliably lands on the frame; the model's answer is the variable, so it is a probe rather than a fixture" },
+  { id: "concept.not_a_casting_note",
+    reason: "answers a read that came back as an inventory rather than a type — #185's ruling in code, and the door is OURS by construction: the granularity rule is judged on our own reply, never on her picture",
+    becomesReachable: "the same picture-carrying corpus row; the fault is in the reply, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture" },
+  { id: "concept.unreadable",
+    reason: "answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one",
+    becomesReachable: "deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own arm, which is the shape `removal_uncheckable` is documented with above" },
+  { id: "concept.no_transport",
+    reason: "answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence",
+    becomesReachable: "deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm" },
   { id: "unplacedInk",
     reason: "raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door",
     becomesReachable: "a reference-attached fixture whose take carries no placement" },

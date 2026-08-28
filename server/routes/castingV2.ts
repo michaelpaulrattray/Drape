@@ -68,6 +68,7 @@ import { uploadInkDesign } from "../castingV2/inkUploadService";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { attachReference } from "../castingV2/referenceAttachService";
 import { describeConcept } from "../castingV2/conceptDescribe";
+import { conceptDescribeSentence } from "../castingV2/conceptDescribeCopy";
 import {
   REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL,
   referenceAttachBytesRefusal,
@@ -829,37 +830,20 @@ const conceptRouter = router({
         did not answer" ask her to do different things, and telling her the
         wrong one sends her looking for a better photograph of a problem that
         was ours.
+
+        ⚠ THE SENTENCES MOVED OUT OF HERE ON 2026-08-28 (#192) and the gap that
+        used to be declared in this spot is CLOSED rather than restated: they
+        were composed inline and not exported, so the `no_being` sentence's
+        deliberate alignment with the roll road's `NOT_A_BEING_MESSAGE` rested on
+        a comment no test kept — and, the reason the move was forced, the
+        capability atlas's door population could not see three of this
+        entrance's five refusals at all. They live in `CONCEPT_DESCRIBE_COPY`
+        now: exhaustive over the union by type, arm-held against the roll road's
+        wording, and the atlas's declared source for this entrance's doors.
       */
       throw spokenError({
         code: "BAD_REQUEST",
-        message: {
-          /*
-             #204 — HIS OWN CARD, after a creature upload met "try one with
-             someone in it." The sentence names what the studio DOES cast, on
-             the same three nouns `NOT_A_BEING_MESSAGE` uses on the roll road
-             (`briefCompiler.ts`), so the two doors tell one story about one
-             boundary.
-
-             ⚠ THE GAP IS DECLARED RATHER THAN IMPLIED: what an arm holds
-             together is the two INSTRUCTIONS, not these two customer sentences
-             — this one is composed inline here and is not exported, so either
-             could be reworded later and nothing would go red. Said plainly
-             because a comment asserting a sameness no test keeps is the shape
-             this repository has been burned by.
-          */
-          no_being:
-            "I couldn't find anyone in that picture — this reads people and creatures, "
-            + "not objects, vehicles or places. Try one with someone in it.",
-          not_about_the_person:
-            "I could only describe the picture, not the person in it. Try a clearer shot of them.",
-          /* OURS, not her picture's — the read came back as an inventory twice
-             (#185, his ruling: a type, not a police report). So the sentence
-             does not send her looking for a better photograph. */
-          not_a_casting_note:
-            "That came back as a list of details rather than a casting note. Try again, or describe them in your own words.",
-          unreadable: "I couldn't read that picture just now. Try again in a moment.",
-          no_transport: "I couldn't read that picture just now. Try again in a moment.",
-        }[outcome.reason],
+        message: conceptDescribeSentence(outcome.reason),
       });
     }),
 });

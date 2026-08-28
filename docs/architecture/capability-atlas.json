@@ -69,6 +69,84 @@
         ]
       },
       {
+        "id": "concept.no_being",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribe.ts:844",
+          "server/castingV2/conceptDescribeCopy.ts:79"
+        ]
+      },
+      {
+        "id": "concept.no_transport",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts",
+          "server/castingV2/hairColourFromReference.test.ts",
+          "server/castingV2/refineService.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribe.ts:801",
+          "server/castingV2/conceptDescribeCopy.ts:90"
+        ]
+      },
+      {
+        "id": "concept.not_a_casting_note",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribeCopy.ts:87"
+        ]
+      },
+      {
+        "id": "concept.not_about_the_person",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/conceptDescribe.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribeCopy.ts:82"
+        ]
+      },
+      {
+        "id": "concept.unreadable",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/cohortWallRetry.test.ts",
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts",
+          "server/castingV2/creativeRegisterScope.test.ts",
+          "server/castingV2/hairColourFromReference.test.ts",
+          "server/castingV2/hairReferenceCutter.test.ts",
+          "server/castingV2/inkReferenceCutter.test.ts",
+          "server/castingV2/inkUploadDoor.test.ts",
+          "server/castingV2/inkUploadService.test.ts",
+          "server/castingV2/makeupFromReference.test.ts",
+          "server/castingV2/openLaneAccept.test.ts",
+          "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/referenceAttachService.test.ts",
+          "server/castingV2/referenceClassGate.test.ts",
+          "server/castingV2/referenceMediumDoor.test.ts",
+          "server/castingV2/referenceWordsLane.test.ts",
+          "server/castingV2/refineInterpreterCeiling.test.ts",
+          "server/castingV2/refineService.test.ts",
+          "server/db/referenceReadDemand.test.ts",
+          "server/deployWatchDecision.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribe.ts:836",
+          "server/castingV2/conceptDescribe.ts:873",
+          "server/castingV2/conceptDescribeCopy.ts:89"
+        ]
+      },
+      {
         "id": "departure",
         "kind": "cannot-say",
         "charge": "refunded",
@@ -482,6 +560,7 @@
         "pinnedBy": [
           "server/castingV2/cohortWallRetry.test.ts",
           "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts",
           "server/castingV2/hairColourFromReference.test.ts",
           "server/castingV2/hairReferenceCutter.test.ts",
@@ -505,8 +584,6 @@
           "server/castingV2/castingIntent.ts:1310",
           "server/castingV2/castingIntent.ts:1315",
           "server/castingV2/castingIntent.ts:1330",
-          "server/castingV2/conceptDescribe.ts:818",
-          "server/castingV2/conceptDescribe.ts:855",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:161",
           "server/castingV2/openLaneKind.ts:219",
@@ -1521,6 +1598,41 @@
         "kind": "documented-unreachable",
         "subject": "candidate_missing",
         "message": "unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm"
+      },
+      {
+        "id": "documented:concept.no_being",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.no_being",
+        "message": "unreachable by design: answers an upload whose read found no BEING in the picture at all — an object, a vehicle, a landscape, a product. It is the concept entrance's own edge of the same boundary the roll road draws at `not_a_being`, and #204 narrowed it there: a creature, a robot or an alien is a subject, so this fires only outside all four — becomes reachable via: a corpus row that carries a fixture PICTURE through the real concept entrance — cents of describer reads, the class of money the corpus already spends on text; nothing in the row grammar carries an image today"
+      },
+      {
+        "id": "documented:concept.no_transport",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.no_transport",
+        "message": "unreachable by design: answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence — becomes reachable via: deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm"
+      },
+      {
+        "id": "documented:concept.not_a_casting_note",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.not_a_casting_note",
+        "message": "unreachable by design: answers a read that came back as an inventory rather than a type — #185's ruling in code, and the door is OURS by construction: the granularity rule is judged on our own reply, never on her picture — becomes reachable via: the same picture-carrying corpus row; the fault is in the reply, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
+      },
+      {
+        "id": "documented:concept.not_about_the_person",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.not_about_the_person",
+        "message": "unreachable by design: answers a read that came back describing the FRAME instead of the subject — the light, the set, the camera, a resemblance — twice in a row. It is a fault of our reader's output, not of her photograph, which is why it has its own sentence — becomes reachable via: the same picture-carrying corpus row, plus a fixture whose read reliably lands on the frame; the model's answer is the variable, so it is a probe rather than a fixture"
+      },
+      {
+        "id": "documented:concept.unreadable",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.unreadable",
+        "message": "unreachable by design: answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one — becomes reachable via: deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own arm, which is the shape `removal_uncheckable` is documented with above"
       },
       {
         "id": "documented:gate_ink_unkeepable",
@@ -2543,6 +2655,41 @@
       "kind": "documented-unreachable",
       "subject": "candidate_missing",
       "message": "unreachable by design: answers a request naming a cast the account does not own — request shape — becomes reachable via: deliberately never as a corpus row; pinned by its C5 service arm"
+    },
+    {
+      "id": "documented:concept.no_being",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.no_being",
+      "message": "unreachable by design: answers an upload whose read found no BEING in the picture at all — an object, a vehicle, a landscape, a product. It is the concept entrance's own edge of the same boundary the roll road draws at `not_a_being`, and #204 narrowed it there: a creature, a robot or an alien is a subject, so this fires only outside all four — becomes reachable via: a corpus row that carries a fixture PICTURE through the real concept entrance — cents of describer reads, the class of money the corpus already spends on text; nothing in the row grammar carries an image today"
+    },
+    {
+      "id": "documented:concept.no_transport",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.no_transport",
+      "message": "unreachable by design: answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence — becomes reachable via: deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm"
+    },
+    {
+      "id": "documented:concept.not_a_casting_note",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.not_a_casting_note",
+      "message": "unreachable by design: answers a read that came back as an inventory rather than a type — #185's ruling in code, and the door is OURS by construction: the granularity rule is judged on our own reply, never on her picture — becomes reachable via: the same picture-carrying corpus row; the fault is in the reply, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
+    },
+    {
+      "id": "documented:concept.not_about_the_person",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.not_about_the_person",
+      "message": "unreachable by design: answers a read that came back describing the FRAME instead of the subject — the light, the set, the camera, a resemblance — twice in a row. It is a fault of our reader's output, not of her photograph, which is why it has its own sentence — becomes reachable via: the same picture-carrying corpus row, plus a fixture whose read reliably lands on the frame; the model's answer is the variable, so it is a probe rather than a fixture"
+    },
+    {
+      "id": "documented:concept.unreadable",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.unreadable",
+      "message": "unreachable by design: answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one — becomes reachable via: deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own arm, which is the shape `removal_uncheckable` is documented with above"
     },
     {
       "id": "documented:gate_ink_unkeepable",
