@@ -16,7 +16,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildStaticAtlas, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings, listFiles, outcomeId,
-  pinningTests, readCommittedAtlas, reasonOfNote, renderCapabilityPage, CAPABILITY_MD,
+  pinningTests, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
+  CAPABILITY_MD, type Finding,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
@@ -218,26 +219,61 @@ describe("the committed census is fresh", () => {
     Compared on CONTENT: the generator writes LF and a Windows checkout can
     hand it back with CRLF (fable-1366 §3c, paid for once already).
   */
-  const lfOnly = (text: string): string => text.split(String.fromCharCode(13) + "\n").join("\n");
   /* The path the WRITER uses, imported rather than retyped beside it — a
-     second spelling of a path is a second source of truth (working law 4). */
+     second spelling of a path is a second source of truth (working law 4).
+     `lfOnly` and the comparison itself come from the library for the same
+     reason: the CLI check and this suite must not be two opinions about one
+     artifact, which is how they came to disagree (PR #201's review). */
   const pagePath = CAPABILITY_MD;
 
-  it("⚠ its PAGE matches a fresh render (regenerate if this is red)", () => {
+  it("⚠ its PAGE matches a render of the committed census (regenerate if this is red)", () => {
     if (!committed) return;
     expect(existsSync(pagePath), "the committed page exists").toBe(true);
-    expect(lfOnly(readFileSync(pagePath, "utf8")))
-      .toEqual(lfOnly(renderCapabilityPage({ ...committed, static: buildStaticAtlas(CORPUS) })));
+    expect(committedPageIsFresh(committed, buildStaticAtlas(CORPUS), readFileSync(pagePath, "utf8"))).toBe(true);
   });
 
   it("CONTROL — a hand-edited page does NOT match, and a CRLF checkout does", () => {
-    /* Without this, the arm above is satisfied by a renderer that returns
-       whatever it was handed. One appended line must break it; a line-ending
-       smudge must not — the two failure modes the architecture checker learned
-       to tell apart the hard way. */
+    /* Without this, the arm above is satisfied by a comparison that returns
+       true for anything. One appended line must break it; a line-ending smudge
+       must not — the two failure modes the architecture checker learned to tell
+       apart the hard way. */
     if (!committed) return;
     const fresh = renderCapabilityPage({ ...committed, static: buildStaticAtlas(CORPUS) });
-    expect(lfOnly(`${fresh}hand edited\n`)).not.toEqual(lfOnly(fresh));
+    expect(committedPageIsFresh(committed, buildStaticAtlas(CORPUS), `${fresh}hand edited\n`)).toBe(false);
     expect(lfOnly(fresh.split("\n").join(String.fromCharCode(13) + "\n"))).toEqual(lfOnly(fresh));
+  });
+
+  it("⚠ A ROUTE-CHANGED FINDING DOES NOT MAKE ITS OWN PAGE STALE (PR #201's review, finding 1)", () => {
+    /*
+      The defect the review caught before it could fire. `drivenFindings` emits
+      `changed:*` rows ONLY when handed a prior census — which `--drive` does
+      and `--check` deliberately does not. So the first spelling of this check
+      compared the committed page against a FRESHLY COMPUTED atlas, and a page
+      written by a legitimate re-drive after a route moved would have been
+      called "stale or hand-edited" on every machine, forever: the exact class
+      of misleading refusal #195 exists to remove, planted one checker over.
+
+      Driven on a SYNTHETIC census rather than waiting for a real route change:
+      today's committed census carries no `changed:*` row, so an arm resting on
+      the real one would pass whatever the comparison did.
+    */
+    if (!committed) return;
+    const routeChanged: Finding = {
+      id: "changed:probe", severity: "error", kind: "route-changed", subject: "probe",
+      message: '"a probe ask" — committed refusal_a, now refusal_b',
+    };
+    const afterDrive = { ...committed, findings: [...committed.findings, routeChanged] };
+    const staticAtlas = buildStaticAtlas(CORPUS);
+    const page = renderCapabilityPage({ ...afterDrive, static: staticAtlas });
+
+    /* The page prints severity/kind/subject/message, not the id — read off the
+       renderer rather than assumed, which is what the first spelling of this
+       line got wrong and this population control caught. */
+    expect(page, "the finding really does reach the page").toContain("`route-changed` probe");
+    expect(committedPageIsFresh(afterDrive, staticAtlas, page), "its own census renders it").toBe(true);
+    /* CONTROL — and it is only true because the COMMITTED findings are the
+       target. A census without that row (what a recomputing check holds) does
+       not reproduce the page, which is precisely the false refusal. */
+    expect(committedPageIsFresh(committed, staticAtlas, page)).toBe(false);
   });
 });

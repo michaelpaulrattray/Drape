@@ -225,6 +225,27 @@ describe("architecture atlas", () => {
     expect(problems.join(" | ")).toContain("annotations.yaml: could not be read for the secret sweep");
   }, 60_000);
 
+  it("CONTROL — a tracked file that is UNREADABLE is not reported as missing (review of #201)", () => {
+    /*
+      A catch-all mapped every read failure — EACCES, EISDIR, anything — onto
+      "is not in the working tree — run pnpm architecture:generate", which
+      cannot fix either of those. That is the send-them-at-the-wrong-hypothesis
+      failure this whole change was opened to remove, so it may not be
+      reintroduced two lines below the docblock that names it.
+    */
+    const tracked = new Set([...realTracked(), EXPLORER]);
+    const denied = (at: string): string => {
+      if (at.split("\\").join("/").endsWith(EXPLORER)) {
+        throw Object.assign(new Error("EACCES"), { code: "EACCES" });
+      }
+      return fs.readFileSync(at, "utf8");
+    };
+    const { ok, problems } = checkArchitecture({ trackedFiles: () => tracked, readFile: denied });
+    expect(ok).toBe(false);
+    expect(problems.join(" | ")).toContain(`${EXPLORER} is tracked but could not be read (EACCES)`);
+    expect(problems.join(" | ")).not.toContain("is not in the working tree");
+  }, 60_000);
+
   it("⚠ #195 SWEEP — the committed SCHEMA is generated too, and nothing compared it", () => {
     /*
       `writeAtlas` writes three files; this check only ever read two of them.

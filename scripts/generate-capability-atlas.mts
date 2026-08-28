@@ -26,7 +26,7 @@ import fs from "node:fs";
 
 import {
   buildStaticAtlas, driveRow, drivenFindings, readCommittedAtlas, writeAtlas, declaredFlags,
-  renderCapabilityPage,
+  committedPageIsFresh,
   CAPABILITY_SCHEMA_VERSION, CAPABILITY_JSON, CAPABILITY_MD,
   type CapabilityAtlas, type DrivenAtlas, type Observation,
 } from "./lib/capabilityAtlas.mts";
@@ -218,10 +218,9 @@ async function main(): Promise<number> {
         writes LF and a Windows checkout hands it back with CRLF, which is the
         same trap `check-architecture.mts`'s `sameContent` exists for.
       */
-      const lfOnly = (text: string): string => text.split("\r\n").join("\n");
       if (!fs.existsSync(CAPABILITY_MD)) problems.push(`no committed page at ${CAPABILITY_MD} — run pnpm capability:generate`);
-      else if (lfOnly(fs.readFileSync(CAPABILITY_MD, "utf8")) !== lfOnly(renderCapabilityPage(atlas))) {
-        problems.push("the PAGE is stale or hand-edited — docs/architecture/capability-atlas.md does not match a fresh render; regenerate and review the diff");
+      else if (!committedPageIsFresh(committed, atlas.static, fs.readFileSync(CAPABILITY_MD, "utf8"))) {
+        problems.push("the PAGE is stale or hand-edited — docs/architecture/capability-atlas.md does not match a render of the committed census; regenerate and review the diff");
       }
       if (WANT_DRIVE && JSON.stringify(committed.driven?.observations.map((o) => [o.id, o.observed])) !== JSON.stringify(driven?.observations.map((o) => [o.id, o.observed]))) {
         problems.push("the DRIVEN half moved — see the route-changed findings");

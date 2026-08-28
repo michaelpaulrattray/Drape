@@ -239,12 +239,21 @@ export function checkArchitecture(
        asserted there, not assumed here. */
     if (!tracked.has(relative)) return;
     let onDisk: string | null = null;
+    let unreadable: string | null = null;
     try {
       onDisk = readFile(path.join(repoRoot, relative));
-    } catch {
-      onDisk = null;
+    } catch (error) {
+      /* ⚠ ABSENT AND UNREADABLE ARE DIFFERENT ERRANDS (PR #201's review). A
+         catch-all told a permission-broken or directory-shaped checkout to
+         "run pnpm architecture:generate", which cannot fix either — the
+         send-them-at-the-wrong-hypothesis failure this very file was opened to
+         remove. The code is read off the error rather than guessed at. */
+      const code = (error as { code?: unknown } | null)?.code;
+      unreadable = code === "ENOENT" ? null : `${typeof code === "string" ? code : "unreadable"}`;
     }
-    if (onDisk === null) {
+    if (unreadable !== null) {
+      problems.push(`${relative} is tracked but could not be read (${unreadable}) — this is not a staleness problem`);
+    } else if (onDisk === null) {
       problems.push(`${relative} is tracked but is not in the working tree — run pnpm architecture:generate`);
     } else if (!sameContent(onDisk, expected)) {
       problems.push(`${relative} is stale or hand-edited — run pnpm architecture:generate and review the diff`);
