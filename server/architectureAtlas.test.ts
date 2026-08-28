@@ -195,9 +195,7 @@ describe("architecture atlas", () => {
   }, 60_000);
 
   it("CONTROL — a TRACKED generated file missing from the working tree refuses", () => {
-    /* The state step 3 already reports for the Atlas itself. The reader
-       throws, which is also how the secret sweep meets it — it reports the
-       unreadable file rather than skipping it, so both lines appear. */
+    /* The state step 3 already reports for the Atlas itself. */
     const tracked = new Set([...realTracked(), EXPLORER]);
     const { ok, problems } = checkArchitecture({
       trackedFiles: () => tracked,
@@ -205,7 +203,26 @@ describe("architecture atlas", () => {
     });
     expect(ok).toBe(false);
     expect(problems.join(" | ")).toContain(`${EXPLORER} is tracked but is not in the working tree`);
-    expect(problems.join(" | ")).toContain("index.html: could not be read for the secret sweep");
+  }, 60_000);
+
+  it("CONTROL — the secret sweep REPORTS a file it cannot open rather than skipping it", () => {
+    /*
+      ⚠ THIS WAS THE SECOND HALF OF THE ARM ABOVE AND CI CAUGHT IT. Pinned
+      there on `index.html`, it passed locally and failed on the gate: on a
+      fresh clone that file DOES NOT EXIST, so `readdirSync` never lists it and
+      step 6 never tries to read it. Two behaviours through one fixture whose
+      population differs between worlds — the arm could not be right in both.
+
+      Driven on `annotations.yaml` instead: tracked, present in every world,
+      inside `docs/architecture/`, and read by step 6 alone — so this arm says
+      exactly one thing and says it everywhere. A swallowed read is the silent
+      green invariant 7 exists against.
+    */
+    const { ok, problems } = checkArchitecture({
+      readFile: readerFor("docs/architecture/annotations.yaml", null),
+    });
+    expect(ok).toBe(false);
+    expect(problems.join(" | ")).toContain("annotations.yaml: could not be read for the secret sweep");
   }, 60_000);
 
   it("⚠ #195 SWEEP — the committed SCHEMA is generated too, and nothing compared it", () => {
