@@ -164,3 +164,70 @@ words are shown — and both occurrences are counted.
   words, never on top of them (founder record, #185). A review step that quietly
   started replacing her typing would be the review step doing the thing it
   exists to prevent; it has its own arm.
+
+## 8. The review found three, and the first one was a real escape — measured both ways
+
+The gate's Fable review (PR #197) returned three findings. All three are fixed
+in the same PR, and the first was **driven at the running app with a negative
+control**, because a reviewer's reading is a claim like any other.
+
+### Finding 1 — the focus trap escaped during the reading state, on every use
+
+`CastingModal`'s trap wraps only when the active element is the **first or last**
+of `querySelectorAll(...)`, and that list included **disabled** elements. During
+the read the concept review's controls are `[textarea (disabled), Discard,
+primary (disabled)]` — measured at the DOM, exactly that — so both ends are
+disabled, the wrap can never fire, and Tab falls through to the browser default,
+which skips disabled elements and leaves the card. A scrim stops clicks, not
+keys.
+
+**Driven, both ways, with the same three Tab presses from Discard:**
+
+| selector | walk during the read |
+|---|---|
+| `"button, input, textarea"` (as shipped in the first commit) | `BODY` **← escaped** → `A.dp-rail__item` → `A.dp-rail__item` — **the page's own left nav, live behind the scrim** |
+| `"button:not(:disabled), …"` (the fix) | `Discard` → `Discard` → `Discard` — it never leaves |
+
+⚠ **THE EVIDENCE PACK'S OWN FOCUS WALK COULD NOT SEE THIS.** §1's walk ran
+*after* the words arrived, when all three controls are enabled — the one state
+in which the defect does not exist. **An arm taken in the state where a defect
+cannot appear is not a reading of the state where it can**, and the honest
+lesson is that "the focus walk never leaves the dialog" was true of what it
+measured and false of the feature.
+
+**Fixed as the class, not the instance.** A dialog whose every control is
+disabled had the same escape and it pre-existed this PR — a sign or a delete
+mid-commit (`busy`) disables everything while also refusing Esc and the scrim,
+so an early return would hand Tab back to the browser at the exact moment the
+dialog is refusing to be dismissed. An empty focusable list now **swallows** the
+key instead.
+
+### Finding 2 — Discard mid-read left the card latched
+
+`reading` was cleared only in the promise's `finally`, and the entry card is
+`disabled={reading}` with *"Reading the picture…"* on it. So after Discard the
+card sat disabled, describing a picture she had just thrown away, for the rest
+of the abandoned call's life — and the scenario `readId` exists for (discard,
+then immediately pick another) was **unreachable**, because the button was
+disabled and a re-entrant pick hits the `reading` early return.
+
+`close()` clears `reading` now, and the `finally` is staleness-aware so a late
+call cannot switch off a flag a newer read has since switched on. Driven:
+
+| reading | value |
+|---|---|
+| card after Esc mid-read | **enabled**, line back to *"A picture in, a description of the person out…"* |
+| second pick immediately after | **modal opens** — the scenario is reachable |
+
+### Finding 3 — a stale decode-failure toast
+
+On the `asBase64` failure path the staleness guard covered `close()` but not the
+toast, so a file she had already discarded could still speak. The describe path
+four lines below states the rule and enforces it; this one half-enforced it.
+Guarded the same way.
+
+**What the review checked and passed** is worth recording too: the confirm/
+abandon flow, the object-URL lifecycle, the seed-once effect, flag discipline
+(the modal renders only inside the live branch; `portraitWhole` defaults false
+so the two other consumers are byte-identical), the append rule surviving with
+its arm, and the bare count being law-4-correct.

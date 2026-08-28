@@ -491,8 +491,25 @@ describe("the words reach the box on her confirm, and never before", () => {
       before the words are shown — and both occurrences are counted, because a
       guard that survives only where it is cheap is not the guard.
     */
+    /*
+      ⚠ PINNED BY POSITION AT EVERY EXIT, never by a COUNT. The count form said
+      `toBe(2)` and went red the moment the review of #196 added the guard to
+      the decode-failure path as well — a magic number pinning today's shape
+      rather than the property, which is the arm getting in the way of the fix
+      it should have been indifferent to. Each exit is named instead, so a new
+      exit is caught by being unnamed and an extra guard is simply fine.
+    */
     expect(card).toContain("if (readId.current !== mine) return;\n      setDescription(words);");
-    expect(card.split("if (readId.current !== mine) return;").length - 1).toBe(2);
+    expect(card).toContain(
+      "if (readId.current !== mine) return;\n      close();\n      toast(CONCEPT_FILE_UNREADABLE);",
+    );
+    expect(card).toContain(
+      "if (readId.current !== mine) return;\n      close();\n      toast(readableGatedFailure(",
+    );
+    /* And nothing may speak or land without one: every exit is on the list above. */
+    expect(card.split("if (readId.current !== mine) return;").length - 1).toBe(
+      card.split("toast(").length - 1 + 1,
+    );
   });
 
   it("leaves the merge rule alone — the modal never replaces what she typed", async () => {
@@ -506,5 +523,37 @@ describe("the words reach the box on her confirm, and never before", () => {
     expect(card).not.toContain("briefWithDescription");
     const page = withoutProse(await readFile(PAGE, "utf8"));
     expect(page).toContain("briefWithDescription(current, description)");
+  });
+});
+
+describe("walking away releases the card, rather than latching it to a dead call", () => {
+  it("clears the reading flag in close(), not only when the abandoned call settles", async () => {
+    /*
+      THE GATE REVIEW OF #196's SECOND FINDING. `reading` disables the entry
+      card and puts "Reading the picture…" on it, and it was cleared only in the
+      promise's `finally` — so after Discard the card sat disabled, describing a
+      picture she had just thrown away, for the rest of the abandoned call's
+      life. Worse, the scenario `readId` exists for — discard, then immediately
+      pick another picture — was UNREACHABLE, because the button was disabled
+      and a re-entrant pick hits the `reading` early return.
+
+      ⚠ This arm exists because the fix PASSED its own sabotage: removing
+      `setReading(false)` from `close()` reddened nothing, so the repair was
+      protected by no test at all until this one.
+    */
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    const close = card.slice(card.indexOf("const close = () => {"), card.indexOf("const read = async"));
+    expect(close).toContain("setReading(false);");
+  });
+
+  it("keeps the late settle from switching OFF a newer read", async () => {
+    /*
+      The other half: once `close()` clears the flag, an abandoned call's
+      `finally` must not clear one a NEWER pick has since set, or the second
+      read draws as idle while it is still running.
+    */
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).toContain("if (readId.current === mine) setReading(false);");
+    expect(card).not.toContain(".finally(() => setReading(false));");
   });
 });

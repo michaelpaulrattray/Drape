@@ -193,7 +193,7 @@ describe("the concept review shares the shell without inheriting its latch", () 
       other consumer's field is an `input`.
     */
     const shell = await readFile(SHELL, "utf8");
-    expect(shell).toContain('querySelectorAll<HTMLElement>("button, input, textarea")');
+    expect(shell).toContain("textarea:not(:disabled)");
     const review = await readFile(REVIEW, "utf8");
     expect(review).toContain("<textarea");
   });
@@ -243,5 +243,45 @@ describe("the concept review shows the WHOLE picture she chose", () => {
     const css = await readFile(CSS, "utf8");
     expect(css).toContain(".dpc-signm__portrait--whole img {");
     expect(css).not.toContain(".dpc-signm__portrait--whole > img");
+  });
+});
+
+describe("the trap holds in the state where every end of the list is disabled", () => {
+  it("excludes disabled elements, or the wrap can never fire", async () => {
+    /*
+      ⚠ THE REVIEW OF #196's FIRST FINDING. The wrap only fires when the active
+      element is the FIRST or LAST of the list — so a list whose ends are
+      DISABLED can never match it, the trap never engages, and Tab falls through
+      to the browser default, which skips disabled elements and leaves the card.
+
+      This is not an edge case: it is the concept review's OPENING state on
+      every single use — `[textarea disabled, Discard, primary disabled]` for
+      the ~9 s of the read — and Enter behind an open scrim reaches a live
+      control, because a scrim stops clicks and not keys.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    expect(shell).toContain("button:not(:disabled)");
+    expect(shell).toContain("input:not(:disabled)");
+    expect(shell).toContain("textarea:not(:disabled)");
+    /* The bare list is what shipped and what the review caught. */
+    expect(shell).not.toContain('querySelectorAll<HTMLElement>("button, input, textarea")');
+  });
+
+  it("SWALLOWS Tab when nothing inside can take focus — the class, not the instance", async () => {
+    /*
+      A dialog whose every control is disabled has the same escape, and it
+      pre-existed this PR: a sign or a delete mid-commit (`busy`) disables all
+      of its controls while also refusing Esc and the scrim, so returning early
+      would hand Tab back to the browser at exactly the moment the dialog is
+      refusing to be dismissed. Preventing the default keeps focus where it is,
+      which is what a modal means.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    const empty = shell.slice(
+      shell.indexOf("if (!focusable || focusable.length === 0)"),
+      shell.indexOf("const first = focusable[0]"),
+    );
+    expect(empty).toContain("event.preventDefault();");
+    expect(empty).toContain("return;");
   });
 });

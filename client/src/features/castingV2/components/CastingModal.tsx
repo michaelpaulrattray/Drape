@@ -79,9 +79,37 @@ export function CastingModal({
         concept review's whole body is one — omit it and Tab walks straight out
         of the field she is editing into the page behind the scrim, which is
         the trap failing in the one dialog that has something worth typing in.
+
+        ⚠ `:not(:disabled)` IS LOAD-BEARING, and the review of #196 found why.
+        The wrap only fires when the active element is the FIRST or LAST of this
+        list — so a list whose ends are DISABLED can never match, the trap never
+        engages, and Tab falls through to the browser default, which skips
+        disabled elements and walks straight out of the card. That is not an
+        edge case: it is the concept review's OPENING state on every single use
+        (`[textarea disabled, Discard, primary disabled]`, ~9 s), and Enter
+        behind an open scrim reaches a live control, because a scrim stops
+        clicks and not keys.
+
+        The evidence pack's focus walk could not see it — that walk ran AFTER
+        the words arrived, when all three are enabled. An arm taken in the state
+        where the defect does not exist is not a reading of the state where it
+        does.
       */
-      const focusable = cardRef.current?.querySelectorAll<HTMLElement>("button, input, textarea");
-      if (!focusable || focusable.length === 0) return;
+      const focusable = cardRef.current?.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), input:not(:disabled), textarea:not(:disabled)",
+      );
+      /*
+        NOTHING TO FOCUS IS STILL THE TRAP'S PROBLEM — the class fix, not just
+        this dialog's instance. A dialog whose every control is disabled (a sign
+        or a delete mid-commit, `busy`) had the same escape, and returning early
+        here would hand Tab back to the browser at exactly the moment the dialog
+        is refusing to be dismissed. Swallowing the key keeps focus where it is,
+        which is what a modal means.
+      */
+      if (!focusable || focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) {

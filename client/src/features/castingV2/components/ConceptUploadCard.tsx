@@ -84,6 +84,19 @@ export function ConceptUploadCard({
     readId.current += 1;
     setPicture(null);
     setDescription(null);
+    /*
+      THE CARD IS RELEASED THE MOMENT SHE WALKS AWAY, not when the abandoned
+      call settles (review of #196). `reading` disables the entry card and puts
+      "Reading the picture…" on it, so leaving it latched meant that after
+      Discard the card sat disabled, claiming to be reading a picture she had
+      just thrown away, for the rest of the call's life — and the very thing
+      `readId` exists for, picking another picture immediately, was unreachable
+      because the button was disabled and a re-entrant pick hits the `reading`
+      early return. A disabled control describing something untrue is D-180's
+      shape wearing a spinner. The `finally` below is staleness-aware for the
+      same reason: it must not clear a flag that a NEWER read has since set.
+    */
+    setReading(false);
   };
 
   /*
@@ -105,7 +118,16 @@ export function ConceptUploadCard({
         no console anywhere can tell a decode failure from a vendor 502.
       */
       logRawFailure("concept-upload/read-file", error);
-      if (readId.current === mine) close();
+      /*
+        THE SAME STALENESS RULE AS THE DOOR'S FAILURE BELOW, and it was
+        half-applied here until the review of #196: the guard covered `close()`
+        and not the toast, so a file she had already discarded could still
+        speak. The window is small — a decode is fast — and the asymmetry
+        between two catch blocks four lines apart is how the next reader learns
+        the wrong rule.
+      */
+      if (readId.current !== mine) return;
+      close();
       toast(CONCEPT_FILE_UNREADABLE);
       return;
     }
@@ -176,9 +198,18 @@ export function ConceptUploadCard({
             file chooser closes, which reads as nothing having happened.
           */
           readId.current += 1;
+          const mine = readId.current;
           setDescription(null);
           setPicture(file);
-          void read(file, describe).finally(() => setReading(false));
+          /*
+            STALENESS-AWARE, because `close()` now clears `reading` itself: an
+            abandoned call settling later must not switch off a flag that a
+            NEWER pick has since switched on, which would leave the second read
+            drawn as idle while it is still running.
+          */
+          void read(file, describe).finally(() => {
+            if (readId.current === mine) setReading(false);
+          });
         }}
       />
       <button
