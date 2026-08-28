@@ -46,8 +46,17 @@
  * the studio DOES cast) and #185 (*"a type, not a police report"* — which is
  * why `not_a_casting_note` is about OUR read and does not send her looking for
  * a better photograph).
+ *
+ * ⚠ **THIS MODULE IMPORTS NOTHING, AND THAT IS STRUCTURAL RATHER THAN TIDY**
+ * (review of #207, finding 2). The capability atlas imports this table, and the
+ * Atlas's charter is that it never runs app code. The first cut had the union
+ * declared in `conceptDescribe.ts` and imported here — which reaches the
+ * interpreter engine and the whole provider layer, and was safe ONLY because
+ * `import type` is erased. A convention held that line. Reversed: **the table
+ * IS the vocabulary**, the union is `keyof` it, and `conceptDescribe.ts` takes
+ * the type from here. Now the generator cannot pull app code in even if someone
+ * later drops the word `type` from an import.
  */
-import type { ConceptDescribeRefusal } from "./conceptDescribe";
 
 /**
  * EVERY REFUSAL IS A SENTENCE SHE CAN ACT ON, and they are different sentences
@@ -59,7 +68,7 @@ import type { ConceptDescribeRefusal } from "./conceptDescribe";
  * `no_transport` differ only in whose fault it was, which is our fact and not
  * hers, and she is asked to do the identical thing by both.
  */
-export const CONCEPT_DESCRIBE_COPY: Readonly<Record<ConceptDescribeRefusal, string>> = {
+export const CONCEPT_DESCRIBE_COPY = {
   /*
      #204 — HIS OWN CARD, after a creature upload met "try one with someone in
      it." The sentence names what the studio DOES cast, on the same three nouns
@@ -79,7 +88,17 @@ export const CONCEPT_DESCRIBE_COPY: Readonly<Record<ConceptDescribeRefusal, stri
     "That came back as a list of details rather than a casting note. Try again, or describe them in your own words.",
   unreadable: "I couldn't read that picture just now. Try again in a moment.",
   no_transport: "I couldn't read that picture just now. Try again in a moment.",
-};
+} as const satisfies Readonly<Record<string, string>>;
+
+/**
+ * Every refusal a customer of the concept entrance may be shown, named.
+ *
+ * DERIVED FROM THE TABLE rather than declared beside it: the sentence is what
+ * makes a reason a door, so the table is the vocabulary and this is a reading
+ * of it. A member cannot exist without copy because there is nowhere else to
+ * put it.
+ */
+export type ConceptDescribeRefusal = keyof typeof CONCEPT_DESCRIBE_COPY;
 
 /** The sentence for a refusal this entrance raised. */
 export function conceptDescribeSentence(reason: ConceptDescribeRefusal): string {

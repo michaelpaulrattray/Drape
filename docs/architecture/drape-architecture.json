@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3d92852226a14c66"
+    "sourceFingerprint": "23e6edceaa6f35ae"
   },
   "domains": [
     {
@@ -22645,6 +22645,11 @@
     },
     {
       "from": "module:server/castingV2/conceptDescribe.ts",
+      "to": "module:server/castingV2/conceptDescribeCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/conceptDescribe.ts",
       "to": "module:server/castingV2/interpreter.ts",
       "kind": "imports"
     },
@@ -22656,11 +22661,6 @@
     {
       "from": "module:server/castingV2/conceptDescribe.ts",
       "to": "module:server/providers/types.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/conceptDescribeCopy.ts",
-      "to": "module:server/castingV2/conceptDescribe.ts",
       "kind": "imports"
     },
     {

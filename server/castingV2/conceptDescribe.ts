@@ -643,20 +643,21 @@ export type ConceptDescribeInput = {
 /**
  * Every refusal a customer may be shown, named. None of them is an exception.
  *
- * ⚠ **THIS IS A DOOR VOCABULARY AND IT IS READ AS ONE** (#192). Its members are
- * the keys of `CONCEPT_DESCRIBE_COPY`, and the capability atlas derives this
- * entrance's doors from that table rather than from a grep — so a member added
- * here without a customer sentence is a TypeScript error, and a member added
- * WITH one appears on the map (as `concept.<member>`) the same hour. Before
+ * ⚠ **THIS IS A DOOR VOCABULARY AND IT IS READ AS ONE** (#192), which is why it
+ * is DECLARED IN `conceptDescribeCopy.ts` and re-exported here rather than the
+ * other way round. Its members are that table's keys, and the capability atlas
+ * derives this entrance's doors from the table rather than from a grep — so a
+ * member added without a customer sentence cannot exist, and one added with a
+ * sentence appears on the map (as `concept.<member>`) the same hour. Before
  * this, three of the five were invisible to the map and the fourth was
  * attributed to the interpreter's identically-named `unreadable` door.
+ *
+ * The direction matters for one reason beyond tidiness: the atlas's charter is
+ * that it never runs app code, and THIS module reaches the provider layer.
+ * Declaring the union here made that safe only by `import type`'s erasure.
  */
-export type ConceptDescribeRefusal =
-  | "no_being"
-  | "unreadable"
-  | "not_about_the_person"
-  | "not_a_casting_note"
-  | "no_transport";
+export type { ConceptDescribeRefusal } from "./conceptDescribeCopy";
+import type { ConceptDescribeRefusal } from "./conceptDescribeCopy";
 
 export type ConceptDescribeOutcome =
   | { ok: true; description: string; attempts: number }

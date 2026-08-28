@@ -333,7 +333,7 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
     becomesReachable: "the same picture-carrying corpus row; the fault is in the reply, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture" },
   { id: "concept.unreadable",
     reason: "answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one",
-    becomesReachable: "deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own service arm — the shape `removal_uncheckable` is documented with above" },
+    becomesReachable: "deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own arm, which is the shape `removal_uncheckable` is documented with above" },
   { id: "concept.no_transport",
     reason: "answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence",
     becomesReachable: "deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm" },

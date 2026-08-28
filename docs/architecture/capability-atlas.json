@@ -76,8 +76,8 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:843",
-          "server/castingV2/conceptDescribeCopy.ts:70"
+          "server/castingV2/conceptDescribe.ts:844",
+          "server/castingV2/conceptDescribeCopy.ts:79"
         ]
       },
       {
@@ -90,8 +90,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:800",
-          "server/castingV2/conceptDescribeCopy.ts:81"
+          "server/castingV2/conceptDescribe.ts:801",
+          "server/castingV2/conceptDescribeCopy.ts:90"
         ]
       },
       {
@@ -102,7 +102,7 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:78"
+          "server/castingV2/conceptDescribeCopy.ts:87"
         ]
       },
       {
@@ -112,7 +112,7 @@
           "server/castingV2/conceptDescribe.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:73"
+          "server/castingV2/conceptDescribeCopy.ts:82"
         ]
       },
       {
@@ -141,9 +141,9 @@
           "server/deployWatchDecision.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:835",
-          "server/castingV2/conceptDescribe.ts:872",
-          "server/castingV2/conceptDescribeCopy.ts:80"
+          "server/castingV2/conceptDescribe.ts:836",
+          "server/castingV2/conceptDescribe.ts:873",
+          "server/castingV2/conceptDescribeCopy.ts:89"
         ]
       },
       {
@@ -1632,7 +1632,7 @@
         "severity": "info",
         "kind": "documented-unreachable",
         "subject": "concept.unreadable",
-        "message": "unreachable by design: answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one — becomes reachable via: deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own service arm — the shape `removal_uncheckable` is documented with above"
+        "message": "unreachable by design: answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one — becomes reachable via: deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own arm, which is the shape `removal_uncheckable` is documented with above"
       },
       {
         "id": "documented:gate_ink_unkeepable",
@@ -2689,7 +2689,7 @@
       "severity": "info",
       "kind": "documented-unreachable",
       "subject": "concept.unreadable",
-      "message": "unreachable by design: answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one — becomes reachable via: deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own service arm — the shape `removal_uncheckable` is documented with above"
+      "message": "unreachable by design: answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one — becomes reachable via: deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own arm, which is the shape `removal_uncheckable` is documented with above"
     },
     {
       "id": "documented:gate_ink_unkeepable",

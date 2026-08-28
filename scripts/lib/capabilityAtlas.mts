@@ -202,6 +202,21 @@ export function declaredInterpreterRefusals(): string[] {
  * "Customer-facing" is semantic; no regex knows it. The other entrances still
  * invisible for the original reason are enumerated on #192 with a verdict each.
  */
+/**
+ * The one file whose `reason:` raises belong to the concept entrance.
+ *
+ * ⚠ **NAMED IN ONE PLACE AND CHECKED AT DISK, because a split is the hazard
+ * here** (review of #207, finding 1). A rename is caught — `raiseSites` throws.
+ * A SPLIT is not, and that is declared rather than implied: move one raise into
+ * a new `conceptDescribeSomething.ts` and its sites re-file under the
+ * interpreter's `unreadable` with nothing going red, since a door losing sites
+ * it never needed to have is invisible to every arm here. This is `routers.ts`'s
+ * class (a 4,209-line file split that dropped a control), and the honest
+ * mitigation for now is that the constant is one line and this paragraph is
+ * beside it. Filed on #206.
+ */
+const CONCEPT_ENTRANCE_FILE = "conceptDescribe.ts";
+
 export function declaredConceptRefusals(): string[] {
   return Object.keys(CONCEPT_DESCRIBE_COPY).sort().map((id) => `concept.${id}`);
 }
@@ -278,8 +293,23 @@ export function raiseSites(): Map<string, string[]> {
     worse than an absent one. The qualification is DERIVED from the copy table's
     keys, not from a list of names typed here.
   */
-  const conceptFile = path.join(SOURCE_DIR, "conceptDescribe.ts");
   const conceptMembers = new Set(Object.keys(CONCEPT_DESCRIBE_COPY));
+  const conceptFile = path.join(SOURCE_DIR, CONCEPT_ENTRANCE_FILE);
+  /*
+    ⚠ AND IT REFUSES RATHER THAN QUALIFYING NOTHING (review of #207, finding 1).
+    The qualification keys on ONE path. If that file is renamed, every site in
+    it silently re-files under the interpreter's door — the exact defect this
+    repair exists to remove, returning behind a green suite, because a scan that
+    matches nothing looks identical to a scan with nothing to match. The repo's
+    own rule for collectors that can come up empty: throw.
+  */
+  if (!fs.existsSync(conceptFile)) {
+    throw new Error(
+      `capability atlas: the concept entrance's file ${CONCEPT_ENTRANCE_FILE} is not on disk — `
+      + "its raise sites would silently re-file under the interpreter's identically-named doors. "
+      + "Point CONCEPT_ENTRANCE_FILE at the file that raises them.",
+    );
+  }
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
     const inConcept = file === conceptFile;
     const qualify = (id: string) => (inConcept && conceptMembers.has(id) ? `concept.${id}` : id);
