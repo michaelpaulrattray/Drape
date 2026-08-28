@@ -493,8 +493,8 @@
       "frames": [
         {
           "key": "crew-eye/79190064-8a2a-4eb7-b85b-7e352dd13c53.png",
-          "arm": "THE THREE CROPS — today, what shipped, and what was NOT shipped",
-          "caption": "Same candidate, same dialog, three ways. LEFT is what the Sign dialog draws today. MIDDLE is what it draws after tonight. RIGHT is the version I did not ship — the obvious repair, which centres the crop; it is a simulation of that rule applied to THIS face, labelled on the frame so it can never be mistaken for a shipped screen. But the mechanism in it is real and live — it is precisely what your Delete dialog does. Left and middle should be indistinguishable to you. Right should not be, and that difference is the bug itself."
+          "arm": "THE THREE CROPS",
+          "caption": "Same candidate, three ways. LEFT is what the Sign dialog draws today. MIDDLE is what it draws after tonight. RIGHT is the version I did NOT ship — the centred crop — a simulation of that rule on this face, labelled on the frame so it is never mistaken for a shipped screen. But the mechanism in it is live: it is exactly what your Delete dialog does. Left and middle should be indistinguishable to you. Right should not be, and that gap is the bug."
         },
         {
           "key": "crew-eye/90e8069d-c3c6-422d-91a9-7be850137a15.png",
