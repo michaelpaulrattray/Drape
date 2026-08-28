@@ -285,3 +285,51 @@ describe("the trap holds in the state where every end of the list is disabled", 
     expect(empty).toContain("return;");
   });
 });
+
+describe("focus is INSIDE the card, which is what the trap has always assumed", () => {
+  it("the concept review takes focus on mount, like every other dialog here", async () => {
+    /*
+      ⚠ THE SECOND REVIEW OF #196, and it is the sharper half of the first
+      finding. The trap only ever acts once focus is inside the card — and this
+      modal's opener DISABLES itself on the pick, so the browser drops focus to
+      `body` before the dialog mounts. Every other dialog in the feature focuses
+      something on mount (`ConfirmDialog` focuses its cancel, and sign, delete,
+      rename and the viewer all do the same), so the shell has always leaned on
+      a precondition none of them wrote down; this was the first consumer that
+      did not meet it.
+
+      DISCARD and not the field: the textarea is disabled for the whole read,
+      which is exactly the window that matters, and Discard is the safe option.
+    */
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain("discardRef.current?.focus();");
+    expect(review).toContain("ref={discardRef}");
+    /* On mount, once — not keyed on the read arriving. */
+    expect(review).toMatch(/discardRef\.current\?\.focus\(\);\s*\n\s*\}, \[\]\);/);
+  });
+
+  it("and the SHELL pulls focus back in for any consumer that forgets — the sweep", async () => {
+    /*
+      The instance is the mount-focus above; this is the class. With focus
+      outside the card and the focusable list non-empty, neither wrap branch can
+      match, so Tab fell through to the browser and into the page behind the
+      scrim. Driven at the running app both ways, during the read:
+
+        pre-fix   BODY → INPUT.dp-input → BUTTON.dp-scopepill → …   (escaped)
+        fixed     Discard → Discard → Discard → Discard            (held)
+
+      With the mount-focus removed but this guard in place, the dialog opens on
+      `body` and the FIRST Tab brings focus back to Discard — so the two halves
+      are independent, and that is deliberate: the next consumer to forget its
+      mount-focus is covered by the shell rather than by memory.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    expect(shell).toContain("!cardRef.current.contains(document.activeElement)");
+    const guard = shell.slice(
+      shell.indexOf("!cardRef.current.contains(document.activeElement)"),
+      shell.indexOf("const first = focusable[0]"),
+    );
+    expect(guard).toContain("event.preventDefault();");
+    expect(guard).toContain("focusable[0].focus();");
+  });
+});

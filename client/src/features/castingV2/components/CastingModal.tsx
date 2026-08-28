@@ -110,6 +110,25 @@ export function CastingModal({
         event.preventDefault();
         return;
       }
+      /*
+        ⚠ AND FOCUS MAY NOT EVEN BE INSIDE THE CARD — the second review of #196,
+        and it is the sharper half of the same defect. The wrap below fires only
+        when the active element is this list's first or last member; with focus
+        OUTSIDE the card and the list non-empty, neither branch matches and Tab
+        falls through to the browser, straight into the page behind the scrim.
+
+        That is not hypothetical for the concept review: its opener DISABLES
+        itself on the pick, so the browser drops focus to `body` before the
+        dialog has mounted. Every other consumer takes focus on mount and so
+        never exposed it — the shell has always relied on a precondition none of
+        them wrote down. Pulling focus back in is the sweep; the mount-focus in
+        the consumer is the instance.
+      */
+      if (cardRef.current && !cardRef.current.contains(document.activeElement)) {
+        event.preventDefault();
+        focusable[0].focus();
+        return;
+      }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) {

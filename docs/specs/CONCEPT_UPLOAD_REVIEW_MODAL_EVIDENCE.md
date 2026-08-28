@@ -231,3 +231,55 @@ abandon flow, the object-URL lifecycle, the seed-once effect, flag discipline
 (the modal renders only inside the live branch; `portraitWhole` defaults false
 so the two other consumers are byte-identical), the append rule surviving with
 its arm, and the bare count being law-4-correct.
+
+## 9. The second review found the sharper half, and it was right
+
+The `needs-fable` second look at `888c28d1` returned one finding, and it is the
+residue of exactly the class the first round set out to close:
+
+> **the trap only ever acts once focus is INSIDE the card.** The wrap fires when
+> the active element is the list's first or last member, and the new empty-list
+> swallow fires when the list is empty — **neither does anything while focus
+> sits outside the card with the list non-empty**, which is this modal's real
+> opening state on every use.
+
+The mechanism is the surface's own: the entry card **disables itself** on the
+pick (`disabled={reading}`), so the browser drops focus to `body` before the
+dialog mounts. And nothing inside the dialog ever took focus — **every other
+dialog in the feature does** (`ConfirmDialog` focuses its cancel button;
+`SignConfirm`, `DeleteCastConfirm`, `RenameCastDialog` and `CandidateViewer` all
+focus something on mount), so the shell has always leaned on a precondition none
+of them wrote down, and this was the first consumer that failed it.
+
+**And its own lesson applied to my own verification: round one's fix drive
+started "from Discard" — a focus state the real opening never has.**
+
+### Driven at the running app, the real path, during the read
+
+The opener is focused and the pick made without a click (a click opens the OS
+chooser), which is precisely what drops focus out of the card. Four Tab presses:
+
+| build | focus at open | walk |
+|---|---|---|
+| **pre-fix** (no mount focus, no containment guard) | `BODY` | `INPUT.dp-input` → `BUTTON.dp-scopepill` → `dp-scopepill` → `dp-scopepill` — **all escaped**, the page's own search and filters behind the scrim |
+| **mount focus removed, shell guard in place** | `BODY` | `Discard` → `Discard` → `Discard` → `Discard` — the shell pulls it back on the first Tab |
+| **shipped** | **`Discard`** | `Discard` ×4 — it never leaves |
+
+The middle row is why both halves shipped: they are **independent**, and the
+shell's half covers the next consumer that forgets its mount-focus.
+
+### What shipped
+
+- **The instance:** `ConceptReviewModal` focuses **Discard** on mount — the
+  house pattern, and Discard rather than the field because the textarea is
+  disabled for the whole read, which is exactly the window that matters.
+- **The class:** on Tab, if the card does not contain the active element, the
+  shell prevents the default and pulls focus to the first focusable.
+
+Two more negative controls, each reddening its own arm; restored run **60/60**.
+
+### The review's own caveat, kept
+
+It could not run the suites in its environment, so its green figures rest on
+this PR's record and the CI gate. Everything it found was read at the source —
+and then measured here.

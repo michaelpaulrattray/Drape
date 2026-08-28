@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   CONCEPT_REVIEW_DISCARD,
@@ -66,6 +66,23 @@ export function ConceptReviewModal({
 }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const discardRef = useRef<HTMLButtonElement>(null);
+
+  /*
+    SOMETHING INSIDE THE CARD TAKES FOCUS ON MOUNT — the house pattern
+    (`ConfirmDialog`, `SignConfirm`, `DeleteCastConfirm`, `RenameCastDialog`,
+    `CandidateViewer` all do it), and the second review of #196 found this modal
+    was the first consumer without it. The shell's trap only engages once focus
+    is INSIDE the card, and this dialog's opener disables itself on the pick, so
+    the browser drops focus to `body` and the first Tab left the page entirely.
+
+    DISCARD rather than the field: the textarea is disabled while the read runs,
+    which is exactly when this matters, and Discard is the safe option — the
+    same reasoning that puts focus on Cancel in the delete dialog.
+  */
+  useEffect(() => {
+    discardRef.current?.focus();
+  }, []);
 
   /*
     CREATED AND REVOKED BY ONE EFFECT — never in render, which leaks a handle
@@ -147,7 +164,7 @@ export function ConceptReviewModal({
       </span>
 
       <div className="dpc-signm__actions">
-        <button type="button" className="dpc-signm__secondary" onClick={onDismiss}>
+        <button ref={discardRef} type="button" className="dpc-signm__secondary" onClick={onDismiss}>
           {CONCEPT_REVIEW_DISCARD}
         </button>
         <button
