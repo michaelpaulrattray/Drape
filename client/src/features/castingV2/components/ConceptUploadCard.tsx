@@ -1,12 +1,16 @@
-import { useRef, useState } from "react";
+/* Aliased, because the WINDOW listener below takes the DOM DragEvent and this
+   module also handles React's synthetic one — same name, different objects, and
+   the shadowing is exactly what made the first form of the Files filter fail to
+   compile in a way that reads like a type quibble rather than a real difference. */
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { Upload } from "lucide-react";
-import { toast } from "sonner";
 
-import { ACCEPTED_PICTURE_FILES, asBase64 } from "../pictureBytes";
+import { asBase64, firstPictureFrom } from "../pictureBytes";
 import { logRawFailure } from "@/lib/failureSentence";
 import { readableGatedFailure } from "../failureCopy";
 import {
   CONCEPT_CARD_COMING,
+  CONCEPT_CARD_DROP,
   CONCEPT_CARD_LINE,
   CONCEPT_CARD_TITLE,
   CONCEPT_FAILED_FALLBACK,
@@ -20,8 +24,8 @@ import { ConceptReviewModal } from "./ConceptReviewModal";
  *
  * One card, two states, and which one is drawn is the SERVER's answer:
  *
- *   - `describe` supplied → the live control. Tap, pick a picture, one
- *     describer call, and the words land in the brief box above.
+ *   - `describe` supplied → the live control. Drop a picture on it or tap it,
+ *     one describer call, and the words arrive in a modal she reads and casts.
  *   - `describe` absent → the honest coming-state the card has been since F5,
  *     with the copy pointed at the capability that is actually queued.
  *
@@ -31,48 +35,85 @@ import { ConceptReviewModal } from "./ConceptReviewModal";
  * wearing a tap target; a labelled coming-state is not, which is why the inert
  * card keeps its shape and loses its affordances rather than disappearing.
  *
- * # NOTHING IS SPENT AND NOTHING IS KEPT
+ * # NOTHING IS SPENT BY THE READ, AND NOTHING IS KEPT
  *
- * The call costs the house cents and the customer nothing — no credits, no
- * render, no row. The bytes ride the describer inline and are dropped. The
+ * The describer call costs the house cents and the customer nothing — no
+ * credits, no render, no row. The bytes ride it inline and are dropped. The
  * DESCRIPTION is the artifact, and it lands where she can read and edit it
  * before she spends anything.
  *
- * ⚠ **THE WORDS NO LONGER LAND IN THE BRIEF BOX ON ARRIVAL — #196, his
- * direction 2026-08-28.** They land in a REVIEW MODAL with the photograph
- * beside them, and reach the box only when she taps *Use this brief*. This
- * paragraph used to end *"never builds an object URL for it: there is no
- * preview here because there is nothing to preview a decision about"* — the
- * decision now exists (use these words, or not), and the promise that sentence
- * was protecting is untouched: an object URL is a handle to bytes already in
- * this browser, created and revoked inside `ConceptReviewModal`, and no byte is
- * uploaded or written anywhere to draw it.
+ * ⚠ **A ROLL CAN NOW BE BOUGHT FROM THE MODAL — his first amendment on #196**
+ * (*"the button should be cast it and it automatically casts the prompt the
+ * same flow the original prompt and casting takes just through the modal"*).
+ * Nothing about the money moves: `onCast` goes to the PAGE's one roll flow —
+ * same entrance, same gear settings, same charge, same sheet — so there is
+ * exactly one dispatch implementation and one double-submit latch in the
+ * product, and this card holds neither.
  *
- * # WHO OWNS WHAT, now that there are two pieces
+ * # THREE ENTRANCES, ONE READ — his second amendment
  *
- * This card keeps the picker, the encode, the door call and the pending file;
- * the modal is presentational and hands back the words she settled on. The page
- * keeps `onDescribed` unchanged — it still decides where words go — so the one
- * thing that moved is WHEN it fires. And because the modal is only ever
+ * *"i want to be able to drag and drop the image into the upload concept card
+ * and it will auto open up the modal with the reference image in it
+ * alternatively i can click the card and it opens up the modal and then i can
+ * upload or drag and drop the reference image in"*. So:
+ *
+ *   1. a DROP on this card — the modal opens with the picture in it and the
+ *      read already running (the drop IS the upload; there is no second
+ *      gesture);
+ *   2. a TAP on this card — the modal opens EMPTY on its drop zone;
+ *   3. a drop or a pick INSIDE the modal.
+ *
+ * All three land on `beginRead`, and the picker now lives in the modal rather
+ * than here, because entrance 2 must be able to open a dialog with no file at
+ * all — a card that opened the OS file chooser first could never do that.
+ *
+ * # WHO OWNS WHAT
+ *
+ * This card owns every piece of STATE — the picture, the words, the refusal,
+ * the staleness counter — and the one `beginRead`. The modal is presentational:
+ * it draws what it is handed, hands back a file, and hands back the words she
+ * settled on. The page keeps `onDescribed` and gains `onCast`; it still decides
+ * where words go and it alone starts rolls. And because the modal is only ever
  * rendered inside this component's live branch, the absent-or-live gate above
  * holds by construction: an account outside the scope cannot reach it at all.
  */
 export function ConceptUploadCard({
   describe,
+  priceCredits,
   onDescribed,
+  onCast,
 }: {
   /** The door, or nothing. See the header — this is the whole gate. */
   describe?: ((imageBase64: string) => Promise<string>) | null;
+  /** Server-derived, straight through to the modal's cost line (D-15). */
+  priceCredits: number;
   /** Called with the words. The page decides where they go. */
   onDescribed: (description: string) => void;
+  /** Called with the words to CAST. The page owns the one roll flow. */
+  onCast: (description: string) => void;
 }) {
-  const picker = useRef<HTMLInputElement>(null);
-  const [reading, setReading] = useState(false);
+  /** Whether the dialog is up. Its own flag, because a tap opens it with no file. */
+  const [open, setOpen] = useState(false);
   /** The picture under review, and the words for it — `null` while they are in flight. */
   const [picture, setPicture] = useState<File | null>(null);
   const [description, setDescription] = useState<string | null>(null);
+  /** The refusal to show HER, already passed through `readableGatedFailure`. */
+  const [failure, setFailure] = useState<string | null>(null);
+  /**
+   * WHETHER THE LAST FILE OFFERED WAS NOT A PICTURE.
+   *
+   * ⚠ It lived in the MODAL first, and that was a silent failure on one of the
+   * three entrances: a PDF dropped on the CARD opened the dialog with nothing
+   * said, because the modal's own copy of this could not know about a file the
+   * card had judged. The card owns every piece of state on this road — that is
+   * what its header claims — and this was the one piece it did not.
+   */
+  const [notAPicture, setNotAPicture] = useState(false);
+  /** Whether a file is being dragged over the card. Depth-counted; see below. */
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
   /*
-    WHICH READ IS STILL THE CURRENT ONE. She can Discard mid-read and pick
+    WHICH READ IS STILL THE CURRENT ONE. She can cancel mid-read and drop
     another picture immediately; without this, the abandoned call's answer
     arrives later and fills the new modal with the old picture's words — a
     description silently describing something she is not looking at, which is
@@ -80,23 +121,47 @@ export function ConceptUploadCard({
   */
   const readId = useRef(0);
 
+  /*
+    ⚠ A MISSED DROP NAVIGATES THE TAB TO THE FILE, and takes her typed brief
+    with it. That is the browser's default for a drop anywhere the page has not
+    claimed, and it is the single worst outcome on this page — a 160-credit
+    brief replaced by a JPEG in a viewer, with no undo.
+
+    Swallowing it at the window is also the whole of his build note *"a drop
+    anywhere else on the page does NOT trigger it (no accidental uploads)"*:
+    nothing is uploaded and nothing is navigated to. Mounted with the LIVE card
+    only, so an account outside the scope keeps the browser's own behaviour.
+  */
+  useEffect(() => {
+    if (!describe) return;
+    /*
+      ⚠ FILES ONLY — the gate review's finding 1, and it was a real regression
+      for everyone inside the flag. A bare `preventDefault` here cancels EVERY
+      drop on the page, so dragging selected TEXT into the brief textarea did
+      nothing at all, silently, with no sentence anywhere. His build note is
+      about files ("no accidental uploads") and so is the hazard; the same
+      `Files` test the card's own handlers apply four functions below is the
+      whole of the fix.
+    */
+    const swallow = (event: Event) => {
+      if (!(event as DragEvent).dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+    };
+    window.addEventListener("dragover", swallow);
+    window.addEventListener("drop", swallow);
+    return () => {
+      window.removeEventListener("dragover", swallow);
+      window.removeEventListener("drop", swallow);
+    };
+  }, [describe]);
+
   const close = () => {
     readId.current += 1;
+    setOpen(false);
     setPicture(null);
     setDescription(null);
-    /*
-      THE CARD IS RELEASED THE MOMENT SHE WALKS AWAY, not when the abandoned
-      call settles (review of #196). `reading` disables the entry card and puts
-      "Reading the picture…" on it, so leaving it latched meant that after
-      Discard the card sat disabled, claiming to be reading a picture she had
-      just thrown away, for the rest of the call's life — and the very thing
-      `readId` exists for, picking another picture immediately, was unreachable
-      because the button was disabled and a re-entrant pick hits the `reading`
-      early return. A disabled control describing something untrue is D-180's
-      shape wearing a spinner. The `finally` below is staleness-aware for the
-      same reason: it must not clear a flag that a NEWER read has since set.
-    */
-    setReading(false);
+    setFailure(null);
+    setNotAPicture(false);
   };
 
   /*
@@ -104,6 +169,13 @@ export function ConceptUploadCard({
     different things and because the alternative is comparing an error's
     message text to a string another module authored — a coupling that goes
     silently wrong the day that module rewrites its sentence.
+
+    ⚠ **BOTH NOW SPEAK IN THE DIALOG RATHER THAN IN A TOAST, and that reverses
+    what PR #197 shipped** — his build note: *"a failed read gets a plain retry
+    inside the modal, nothing charged"*. Closing the dialog on a refusal threw
+    her picture away, so recovering from a transport blip meant finding the file
+    again; and a toast behind a scrim is the product talking past the thing it
+    is talking about.
   */
   const read = async (file: File, door: (imageBase64: string) => Promise<string>) => {
     const mine = readId.current;
@@ -118,26 +190,13 @@ export function ConceptUploadCard({
         no console anywhere can tell a decode failure from a vendor 502.
       */
       logRawFailure("concept-upload/read-file", error);
-      /*
-        THE SAME STALENESS RULE AS THE DOOR'S FAILURE BELOW, and it was
-        half-applied here until the review of #196: the guard covered `close()`
-        and not the toast, so a file she had already discarded could still
-        speak. The window is small — a decode is fast — and the asymmetry
-        between two catch blocks four lines apart is how the next reader learns
-        the wrong rule.
-      */
+      /* A read she walked away from says nothing to the screen. */
       if (readId.current !== mine) return;
-      close();
-      toast(CONCEPT_FILE_UNREADABLE);
+      setFailure(CONCEPT_FILE_UNREADABLE);
       return;
     }
     try {
       const words = await door(imageBase64);
-      /*
-        A read she walked away from says nothing to the screen. The toast is
-        skipped on the failure path for the same reason: she has already moved
-        on, and a sentence about a picture she discarded is noise.
-      */
       if (readId.current !== mine) return;
       setDescription(words);
     } catch (error) {
@@ -148,16 +207,78 @@ export function ConceptUploadCard({
         own words go to the console rather than into the void. `Gated` because
         this control can be drawn live and then find the scope closed under it:
         the door's flag-first "No such thing." is a probe answer, never copy.
-
-        The modal CLOSES on a refusal rather than holding an empty field with a
-        toast over it: there is nothing to review, and an in-modal retry is the
-        "extra options" his one-modal-one-confirm order rules out.
       */
       logRawFailure("concept-upload/describe", error);
       if (readId.current !== mine) return;
-      close();
-      toast(readableGatedFailure(error, CONCEPT_FAILED_FALLBACK));
+      setFailure(readableGatedFailure(error, CONCEPT_FAILED_FALLBACK));
     }
+  };
+
+  /*
+    THE ONE ROAD IN, for all three entrances. A read that starts here always
+    opens the dialog: the picture is on screen immediately and the words fill in
+    beside it, because several silent seconds after a drop or a file chooser
+    reads as nothing having happened.
+  */
+  const beginRead = (file: File) => {
+    if (!describe) return;
+    readId.current += 1;
+    setOpen(true);
+    setNotAPicture(false);
+    setPicture(file);
+    setDescription(null);
+    setFailure(null);
+    void read(file, describe);
+  };
+
+  /*
+    THE ONE PLACE A FILE IS JUDGED, for all three entrances — the card's drop,
+    the dialog's drop, and the dialog's picker. `firstPictureFrom` is called
+    here and nowhere else, so the three cannot disagree about what a picture is,
+    and a file that is not one always OPENS THE DIALOG AND SAYS SO: the dialog
+    is where the drop zone, the sentence and the picker all are, so she lands on
+    the surface that can take her next act.
+  */
+  const offerFile = (files: FileList | null) => {
+    const picture = firstPictureFrom(files);
+    if (picture) {
+      beginRead(picture);
+      return;
+    }
+    setNotAPicture(true);
+    setOpen(true);
+  };
+
+  /*
+    DEPTH-COUNTED, because `dragleave` fires every time the pointer crosses into
+    a CHILD element — the icon, the title, the line — so a naive enter/leave
+    pair flickers the card's drop state on and off as the cursor moves across
+    its own text.
+  */
+  const onDragEnter = (event: ReactDragEvent) => {
+    if (!event.dataTransfer?.types?.includes("Files")) return;
+    dragDepth.current += 1;
+    setDragging(true);
+  };
+  const onDragLeave = () => {
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragging(false);
+  };
+  /*
+    `preventDefault` on dragover is what MAKES an element a drop target. Without
+    it the browser refuses the drop, and the window guard above then swallows
+    it — so the card would look like a drop target and silently eat every file.
+  */
+  const onDragOver = (event: ReactDragEvent) => {
+    if (!event.dataTransfer?.types?.includes("Files")) return;
+    event.preventDefault();
+  };
+  const onDrop = (event: ReactDragEvent) => {
+    event.preventDefault();
+    dragDepth.current = 0;
+    setDragging(false);
+    if (open) return;
+    offerFile(event.dataTransfer?.files ?? null);
   };
 
   if (!describe) {
@@ -174,50 +295,28 @@ export function ConceptUploadCard({
     );
   }
 
+  const reading = picture !== null && description === null && failure === null;
+
   return (
     <>
-      <input
-        ref={picker}
-        type="file"
-        accept={ACCEPTED_PICTURE_FILES}
-        className="dpc-entry__file"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          /*
-            Cleared before anything else, so choosing the SAME file twice fires
-            again — a picker that ignores a repeat looks broken (the refine
-            panel's attach input learned this first).
-          */
-          event.target.value = "";
-          if (!file || reading) return;
-          setReading(true);
-          /*
-            THE MODAL OPENS ON THE PICK, not on the answer — the picture is
-            there immediately and the words fill in beside it. Opening only
-            once the read returns would mean several silent seconds after the
-            file chooser closes, which reads as nothing having happened.
-          */
-          readId.current += 1;
-          const mine = readId.current;
-          setDescription(null);
-          setPicture(file);
-          /*
-            STALENESS-AWARE, because `close()` now clears `reading` itself: an
-            abandoned call settling later must not switch off a flag that a
-            NEWER pick has since switched on, which would leave the second read
-            drawn as idle while it is still running.
-          */
-          void read(file, describe).finally(() => {
-            if (readId.current === mine) setReading(false);
-          });
-        }}
-      />
       <button
         type="button"
-        className="dpc-entry"
+        className={dragging ? "dpc-entry dpc-entry--drop" : "dpc-entry"}
         aria-busy={reading}
-        disabled={reading}
-        onClick={() => picker.current?.click()}
+        /*
+          NOT TAPPABLE WHILE ITS OWN DIALOG IS UP — it is behind a scrim, and
+          leaving it in the tab order gives the focus trap somewhere to leak to.
+          It is released the moment she walks away, because `close()` clears
+          `open` itself: the earlier shape latched the card to the abandoned
+          CALL, so after a discard it sat disabled describing a picture she had
+          just thrown away.
+        */
+        disabled={open}
+        onClick={() => setOpen(true)}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
       >
         <span className="dpc-entry__icon">
           <Upload size={14} strokeWidth={1.9} aria-hidden="true" />
@@ -225,7 +324,7 @@ export function ConceptUploadCard({
         <span className="dp-stack" style={{ gap: 4, minWidth: 0 }}>
           <span className="dp-label">{CONCEPT_CARD_TITLE}</span>
           <span className="dp-secondary">
-            {reading ? CONCEPT_READING_LABEL : CONCEPT_CARD_LINE}
+            {dragging ? CONCEPT_CARD_DROP : reading ? CONCEPT_READING_LABEL : CONCEPT_CARD_LINE}
           </span>
         </span>
       </button>
@@ -235,13 +334,24 @@ export function ConceptUploadCard({
         makes the gate structural: an account the server did not hand a door to
         never mounts this at all.
       */}
-      {picture ? (
+      {open ? (
         <ConceptReviewModal
           file={picture}
           description={description}
+          failure={failure}
+          notAPicture={notAPicture}
+          priceCredits={priceCredits}
+          onFiles={offerFile}
+          onRetry={() => {
+            if (picture) beginRead(picture);
+          }}
           onUse={(words) => {
             close();
             onDescribed(words);
+          }}
+          onCast={(words) => {
+            close();
+            onCast(words);
           }}
           onDismiss={close}
         />

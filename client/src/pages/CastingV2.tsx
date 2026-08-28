@@ -19,6 +19,7 @@ import { createClientRequestId } from "@shared/clientRequestId";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
+import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
 import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import { BriefField } from "@/features/castingV2/components/BriefField";
@@ -432,14 +433,46 @@ export default function CastingV2() {
   const authorRoad = config.data.authorRoadEnabled === true;
   const pathToggleVisible = twoPathsEnabled && !authorRoad;
 
-  const startCasting = async () => {
+  /*
+    THE ONE ROLL FLOW — and it takes its brief as an ARGUMENT now (#196, his
+    first amendment: *"it automatically casts the prompt the same flow the
+    original prompt and casting takes just through the modal"*).
+
+    The concept modal casts words she has just edited inside a dialog, and those
+    words are not in `brief` yet. Reading them out of state would mean a
+    `setBrief` immediately followed by a read of the value it has not committed
+    — React's oldest race, on the money path. So the text is passed in, and
+    there is still exactly ONE function in the product that starts a roll: same
+    session, same latch, same gear settings, same charge, same sheet.
+  */
+  const startCasting = async (briefText: string) => {
     /*
       The latch is a ref because `setStarting(true)` does not take effect until
       the next render — two clicks (or two Enters) in one frame both pass a
       state-based guard and both create a session and a paid roll. The ref
       closes on the click that opened it.
     */
-    if (brief.trim().length < 3) return;
+    /*
+      ⚠ IT SPEAKS NOW — the gate review's finding 2, and the repair is the CLASS
+      rather than the instance. This was a silent `return`, which was survivable
+      while the only way to reach it was the hero button beside a nearly-empty
+      box; #196's modal made it reachable from behind a PRICE, and a priced
+      button that closes its dialog and does nothing is D-180 exactly.
+
+      Aligning the modal's own threshold instead would have been the cheaper
+      repair and the wrong one: what the entrance refuses is the MERGED text,
+      which the dialog cannot see, so the dialog would have had to be told how
+      long her existing brief is — page state leaking into a presentational
+      component to answer a question the page already knows.
+
+      The number and the sentence are the SERVER'S (`shared/briefLength.ts`,
+      read by `briefCompiler.ts`'s own refusal), so the two sides cannot drift
+      and a customer never meets two wordings of one rule.
+    */
+    if (briefText.trim().length < BRIEF_TEXT_MIN) {
+      toast(BRIEF_TOO_SHORT_MESSAGE);
+      return;
+    }
     // No session exists yet, so there is no id to wait on — the latch here is
     // purely "one ceremony at a time", released only on failure.
     if (!castLatch.tryAcquire(null)) return;
@@ -478,7 +511,7 @@ export default function CastingV2() {
         .mutateAsync({
           clientRequestId: createClientRequestId(),
           sessionId: session.sessionId,
-          briefText: brief.trim(),
+          briefText: briefText.trim(),
           /*
             THE PATH TRAVELS ONLY WHEN THE CONTROL WAS DRAWN (design §6).
 
@@ -604,7 +637,7 @@ export default function CastingV2() {
                   */
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
-                    void startCasting();
+                    void startCasting(brief);
                   }
                 }}
                 /*
@@ -622,7 +655,12 @@ export default function CastingV2() {
                 placeholder="a fitness creator in their 30s, close-cropped hair"
                 aria-label="Casting brief"
               />
-              <Button variant="primary" size="small" onClick={startCasting} disabled={starting}>
+              <Button
+                variant="primary"
+                size="small"
+                onClick={() => void startCasting(brief)}
+                disabled={starting}
+              >
                 {starting ? "Casting…" : "Cast it"}
                 {starting ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
               </Button>
@@ -748,6 +786,32 @@ export default function CastingV2() {
                   (await describeConcept.mutateAsync({ imageBase64 })).description
                 : null
             }
+            /* Server-derived, straight through to the modal's cost line (D-15). */
+            priceCredits={price}
+            /*
+              CAST FROM THE MODAL — his first amendment on #196, verbatim:
+              *"the button should be cast it and it automatically casts the
+              prompt the same flow the original prompt and casting takes just
+              through the modal"*.
+
+              What casts is EXACTLY what "Use this brief" would have put in the
+              box — the same merge, so the two actions can never disagree about
+              what her brief is, and the append rule (founder record on #185:
+              the description lands beside her words, never on top of them)
+              governs the paid road as well as the free one.
+
+              ⚠ `setBrief` FIRST, and it is not the dispatch source — the
+              explicit argument is. It is the safety net: the dialog has already
+              closed by the time this runs, so if the session or the roll is
+              refused, her edited words would otherwise be gone with it. This
+              way they are sitting in the box under the failure toast, one tap
+              from trying again.
+            */
+            onCast={(description) => {
+              const text = briefWithDescription(brief, description);
+              setBrief(text);
+              void startCasting(text);
+            }}
             onDescribed={(description) => {
               /*
                 It fills the box and STOPS. Nothing is rolled, nothing is

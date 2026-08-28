@@ -36,6 +36,7 @@ export function CastingModal({
   portrait,
   portraitMuted = false,
   portraitWhole = false,
+  portraitFallback,
   busy,
   onDismiss,
   children,
@@ -60,6 +61,22 @@ export function CastingModal({
    * a 2:3 upload whose lower half was cropped away.
    */
   portraitWhole?: boolean;
+  /**
+   * WHAT STANDS IN THE PORTRAIT SLOT WHEN THERE IS NO PICTURE YET (#196,
+   * amendment 2).
+   *
+   * Every consumer until now had its subject before the dialog existed — you
+   * cannot sign or delete a candidate you have not chosen. The concept review
+   * can now be opened by tapping the card with no file at all (his second
+   * amendment: *"i can click the card and it opens up the modal and then i can
+   * upload or drag and drop the reference image in"*), and the empty slot is
+   * exactly where the drop zone belongs — it is the picture-shaped hole the
+   * picture is about to fill.
+   *
+   * Absent, the slot stays what it has always been: the `--media` fill, which
+   * is the right answer for a portrait that is merely still loading.
+   */
+  portraitFallback?: ReactNode;
   busy: boolean;
   onDismiss: () => void;
   children: ReactNode;
@@ -95,9 +112,27 @@ export function CastingModal({
         where the defect does not exist is not a reading of the state where it
         does.
       */
-      const focusable = cardRef.current?.querySelectorAll<HTMLElement>(
-        "button:not(:disabled), input:not(:disabled), textarea:not(:disabled)",
-      );
+      /*
+        ⚠ AND A MATCH IS NOT NECESSARILY FOCUSABLE — the third finding of this
+        kind on one selector, and it arrived with #196's amendments. The concept
+        review's file picker is an `<input type="file">` styled `display: none`,
+        which matches `input:not(:disabled)` and CANNOT take focus: calling
+        `.focus()` on it is a no-op, so the wrap fired, moved nothing, and left
+        focus frozen on whichever control it started from. The trap "held" — Tab
+        never left the dialog — which is why the walk that only asks *did focus
+        escape* passed it. It was caught by reading what the walk actually
+        printed: `dpc-signm__primary` five times, never the field beside it.
+
+        `getClientRects()` is the standard rendered test and is right where
+        `offsetParent` is not: the card's own children are static, but a fixed
+        or transformed consumer would report `offsetParent === null` while being
+        perfectly focusable.
+      */
+      const focusable = Array.from(
+        cardRef.current?.querySelectorAll<HTMLElement>(
+          "button:not(:disabled), input:not(:disabled), textarea:not(:disabled)",
+        ) ?? [],
+      ).filter((element) => element.getClientRects().length > 0);
       /*
         NOTHING TO FOCUS IS STILL THE TRAP'S PROBLEM — the class fix, not just
         this dialog's instance. A dialog whose every control is disabled (a sign
@@ -106,7 +141,7 @@ export function CastingModal({
         is refusing to be dismissed. Swallowing the key keeps focus where it is,
         which is what a modal means.
       */
-      if (!focusable || focusable.length === 0) {
+      if (focusable.length === 0) {
         event.preventDefault();
         return;
       }
@@ -168,7 +203,7 @@ export function CastingModal({
             <span className={portraitMuted ? "dpc-signm__muted" : undefined}>
               <img src={portrait} alt="" />
             </span>
-          ) : null}
+          ) : (portraitFallback ?? null)}
         </div>
         <div className="dpc-signm__body">{children}</div>
       </div>

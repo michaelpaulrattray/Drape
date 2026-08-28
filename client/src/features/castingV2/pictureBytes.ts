@@ -10,7 +10,11 @@
  * blows the stack on a large image through `String.fromCharCode(...bytes)`, and
  * a customer's photograph is exactly the size that finds it.
  */
-import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
+import {
+  INK_DESIGN_FORMATS,
+  inkDesignContentType,
+  type InkDesignFormat,
+} from "@shared/pictureFormats";
 
 /**
  * THE FORMATS A PICKER OFFERS — DERIVED from the door's own vocabulary.
@@ -42,4 +46,37 @@ export function asBase64(file: File): Promise<string> {
     };
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * THE ONE PLACE A CHOSEN OR DROPPED FILE IS JUDGED (#196, amendment 2).
+ *
+ * The concept upload now has THREE entrances — the card's drop target, the
+ * modal's drop zone, and the modal's file picker — and three copies of "is this
+ * a picture?" is working law 4 with a UI accent: the copy that drifts is the one
+ * that silently refuses a customer's photograph, and nothing anywhere says why.
+ *
+ * ⚠ **AN UNKNOWN TYPE IS ACCEPTED, NOT REFUSED, and that is deliberate.** This
+ * check is a COURTESY — every door judges the BYTES (`pictureBytes` is only the
+ * carriage), and the describer's own refusal is written for a reader. A drop
+ * can arrive with an empty `file.type` (the OS told the browser nothing), and a
+ * client-side guess that turns away a valid PNG is strictly worse than passing
+ * it to a door that will read it properly and say something true. So the only
+ * thing refused here is a file that positively declares itself something else —
+ * a PDF, a text file, a video — which is the case worth catching before a
+ * multi-megabyte encode.
+ *
+ * Extensions are deliberately NOT consulted: `jpg` is not derivable from
+ * `INK_DESIGN_FORMATS` and inventing that alias here would be a second
+ * vocabulary, which is the thing this module exists to avoid.
+ */
+export function firstPictureFrom(files: FileList | null | undefined): File | null {
+  const file = files?.[0];
+  if (!file) return null;
+  if (!file.type) return file;
+  return (INK_DESIGN_FORMATS as readonly string[])
+    .map((format) => inkDesignContentType(format as InkDesignFormat))
+    .includes(file.type)
+    ? file
+    : null;
 }

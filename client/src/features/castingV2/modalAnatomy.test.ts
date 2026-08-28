@@ -267,6 +267,39 @@ describe("the trap holds in the state where every end of the list is disabled", 
     expect(shell).not.toContain('querySelectorAll<HTMLElement>("button, input, textarea")');
   });
 
+  it("⚠ AND DROPS MATCHES THAT CANNOT TAKE FOCUS — the third finding on one selector", async () => {
+    /*
+      #196's amendments put a `<input type="file">` styled `display: none`
+      inside the dialog, so the picker could live where the empty state needs
+      it. It matches `input:not(:disabled)` and CANNOT be focused: `.focus()` on
+      an unrendered element is a no-op, so the wrap fired, moved nothing, and
+      left focus frozen on whichever control it started from.
+
+      The trap still "held" — Tab never left the dialog — which is exactly why
+      the walk that asks only *did focus escape* passed it. It was caught by
+      reading what that walk PRINTED: `dpc-signm__primary` five times, never the
+      field beside it. Same selector, third time: disabled ends, focus outside
+      the card, and now matched-but-unrendered.
+
+      `getClientRects()` rather than `offsetParent`, which is null for a fixed
+      or transformed element that is perfectly focusable.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    expect(shell).toContain("element.getClientRects().length > 0");
+    const list = shell.slice(
+      shell.indexOf("const focusable = Array.from("),
+      shell.indexOf("if (focusable.length === 0)"),
+    );
+    expect(list).toContain(".filter(");
+    /* And the review really does put an unrendered input inside the card. */
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain('type="file"');
+    expect(review).toContain('className="dpc-entry__file"');
+    const css = await readFile(CSS, "utf8");
+    const picker = css.slice(css.indexOf(".dpc-entry__file {"));
+    expect(picker.slice(0, 60)).toContain("display: none;");
+  });
+
   it("SWALLOWS Tab when nothing inside can take focus — the class, not the instance", async () => {
     /*
       A dialog whose every control is disabled has the same escape, and it
@@ -278,7 +311,7 @@ describe("the trap holds in the state where every end of the list is disabled", 
     */
     const shell = await readFile(SHELL, "utf8");
     const empty = shell.slice(
-      shell.indexOf("if (!focusable || focusable.length === 0)"),
+      shell.indexOf("if (focusable.length === 0)"),
       shell.indexOf("const first = focusable[0]"),
     );
     expect(empty).toContain("event.preventDefault();");
@@ -302,10 +335,28 @@ describe("focus is INSIDE the card, which is what the trap has always assumed", 
       which is exactly the window that matters, and Discard is the safe option.
     */
     const review = await readFile(REVIEW, "utf8");
-    expect(review).toContain("discardRef.current?.focus();");
-    expect(review).toContain("ref={discardRef}");
+    /*
+      ⚠ The ref is named for its POSITION rather than for its label since #196's
+      amendments — the first action's word is "Cancel" while the read runs and
+      "Discard" once it has finished, and a ref called `discardRef` pointing at
+      a button that says Cancel is the name outliving the thing.
+    */
+    expect(review).toContain("firstAction.current?.focus();");
+    expect(review).toContain("ref={firstAction}");
     /* On mount, once — not keyed on the read arriving. */
-    expect(review).toMatch(/discardRef\.current\?\.focus\(\);\s*\n\s*\}, \[\]\);/);
+    expect(review).toMatch(/firstAction\.current\?\.focus\(\);\s*\n\s*\}, \[\]\);/);
+    /*
+      AND IT IS THE FIRST BUTTON IN THE ROW, which is what makes it reachable in
+      the EMPTY state his second amendment added: a dialog opened by a tap has no
+      picture, no field and no words, so the only focusable things in it are the
+      way out and the picker — and the trap's own wrap needs one of them to hold
+      focus before Tab can be caught at all.
+    */
+    const actions = review.slice(review.indexOf('className="dpc-signm__actions"'));
+    expect(actions.indexOf("ref={firstAction}")).toBeGreaterThan(0);
+    expect(actions.indexOf("ref={firstAction}")).toBeLessThan(
+      actions.indexOf('className="dpc-signm__primary"'),
+    );
   });
 
   it("and the SHELL pulls focus back in for any consumer that forgets — the sweep", async () => {

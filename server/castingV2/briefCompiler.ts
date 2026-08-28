@@ -36,6 +36,7 @@
  * turn on.
  */
 import { createModuleLogger } from "../logging/logger";
+import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
 import type { TextEngine } from "../providers/types";
 import {
   EMPTY_STATED_HAIR,
@@ -1085,11 +1086,8 @@ function resolveSheet(input: {
  */
 export const castingBriefCompiler: BriefCompiler = async (input) => {
   const briefText = normalizeBrief(input.briefText);
-  if (briefText.length < 3) {
-    throw new BriefRefusal(
-      "uninterpretable",
-      "That brief is too short to cast from. Describe the person in a sentence.",
-    );
+  if (briefText.length < BRIEF_TEXT_MIN) {
+    throw new BriefRefusal("uninterpretable", BRIEF_TOO_SHORT_MESSAGE);
   }
 
   /*
@@ -1505,11 +1503,8 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
  */
 export const deterministicBriefCompiler: BriefCompiler = async (input) => {
   const briefText = normalizeBrief(input.briefText);
-  if (briefText.length < 3) {
-    throw new BriefRefusal(
-      "uninterpretable",
-      "That brief is too short to cast from. Describe the person in a sentence.",
-    );
+  if (briefText.length < BRIEF_TEXT_MIN) {
+    throw new BriefRefusal("uninterpretable", BRIEF_TOO_SHORT_MESSAGE);
   }
   const intent = applyUnlocks(fallbackIntent(briefText), input.unlock ?? []);
   const archetype = resolveArchetype(intent, input.rollSeed);
