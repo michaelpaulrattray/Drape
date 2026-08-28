@@ -1,7 +1,7 @@
 {
-  "edition": 91,
-  "updatedAt": "2026-08-29T09:05:00+10:00",
-  "shift": "foreman-88",
+  "edition": 92,
+  "updatedAt": "2026-08-29T09:40:00+10:00",
+  "shift": "foreman-89",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "fable-cap-review-arm-219",
+      "title": "Your Claude usage limit ran out again, and it took the code reviewer with it (#219, and it is the same thing as #114)",
+      "productImpact": "Every code change the team makes is read by a second reviewer before it lands - a different model from the one that wrote the change, which is the whole point of it. Since last night it errors after one second instead of reading anything. Last night's shift guessed the login token had expired. It has not: I reproduced the real error message, and it is your Fable usage allowance, exhausted. The reviewer asks for Fable by name on your subscription, and Fable is now refusing everything on that account - including the advisor the night shifts consult before they build anything, which is the same model on the same subscription. So two of the team's checks went down together on one cause. This is the SECOND time in four days: it happened on the 26th, was chased through five instances, and healed by itself about five hours later. Nothing a customer can see is affected - the product, your credits, the casting studio and the other three gate checks are all untouched and still running.",
+      "workedExample": "I proved it this time rather than narrowing it down, because the reviewer hides its own error message - the shift that chased it on the 26th never got the text and had to infer the cause from what was missing. The trick is that the advisor the night shifts talk to is the SAME model on the SAME subscription of yours, so I simply asked it a question from this machine: 09:15 and again 09:19, both times \"You've reached your Fable 5 limit.\" Meanwhile Opus - me - is answering on the same machine and the same login, this minute. So the account is healthy and the token is fine; one model on it is out of allowance. What drinks it: fifteen reviews on Wednesday, fifteen on Thursday, each reading a whole change end to end - one of them alone cost $2.85 - plus every night shift consulting the advisor once or twice, and there were twenty-seven shifts on Thursday. We measured the reviews at about a tenth of your cap on the 27th and trimmed their reading to protect it, but that measurement never counted the advisor, and the advisor is on the same meter.",
+      "options": [
+        {
+          "key": "wait",
+          "label": "Do nothing - it healed by itself last time, about five hours in",
+          "consequence": "Costs nothing and needs no hands, and there is real evidence for it: the same failure on the 26th cleared on its own once the usage window passed, and no token was ever touched. The catch is that this is now twice in four days, so waiting fixes tonight and not the pattern. Until it clears, every substantial change goes unreviewed - the team holds anything touching money or the product and ships only tooling and tests."
+        },
+        {
+          "key": "remint",
+          "label": "Move the reviewer onto the co-founder's account - your own standing answer",
+          "consequence": "This is what you already ruled for exactly this situation on the 25th: re-mint the token from the co-founder's account if your cap bites. It has now bitten twice. Two minutes in a regular terminal - run `claude setup-token`, paste it to me, and I set the repository secret. It takes fifteen reviews a day off your meter permanently, which is the half that is growing. It does NOT move the night shifts' advisor, which stays on yours."
+        },
+        {
+          "key": "credits",
+          "label": "Add usage credits to your account at claude.ai/settings/usage",
+          "consequence": "Fastest, and it restores the reviewer and the advisor together, but it is real money and it leaves both consumers pointed at the same meter - so the third occurrence is still coming."
+        }
+      ],
+      "recommendation": "remint",
+      "state": "open",
+      "filedAt": "2026-08-29T09:40:00+10:00",
+      "issueNumber": 219
+    },
     {
       "id": "trigger-cluster-court-190",
       "title": "Your provocative-casts test came back, and the answer is not a word list (#190)",
@@ -1529,8 +1556,8 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "Our automatic second-opinion review of our own code has stopped running",
-      "detail": "Every code change the team makes goes through a gate before it lands, and one part of that gate is a second reviewer reading the change. Tonight it stopped working: it errors after one second instead of reading anything. It failed twice on the same change, two hours apart, and every review for the whole of yesterday worked — so it broke tonight rather than being a fault in the change. The awkward part is what it looks like: a broken reviewer shows up on the page as a red cross, which is exactly what a real objection looks like, so the risk is that shifts learn to ignore it. The other three gate checks all still run and passed. The likeliest cause is that the login token it uses (on your account) has expired and needs re-issuing — that is a guess, stated as a guess, because a shift cannot read your account. Tonight's change was merged with it errored, on purpose and on the record: it is test and tooling code only, no product code, no money, nothing a customer can see. A change that touches money or the product will wait instead.",
+      "title": "The gate's second-opinion reviewer is down - your Fable usage limit, and it is the same fault as the resolved one further down this list",
+      "detail": "Corrected tonight from last night's guess. The reviewer errors in one second instead of reading the change, and the cause is now measured rather than assumed: your Fable usage allowance is exhausted, and the reviewer asks for Fable by name on your subscription. An expired token is ruled out - the login still works, it still posts its comment, and Opus is answering on the same account this minute. The same cap has also taken out the advisor the night shifts consult before building, because that is the same model on the same subscription. It is above in the list of things that need you, with three ways out and a recommendation. It is a repeat: the entry lower down this list, the one marked resolved, is the same fault on the 26th, and it healed itself in about five hours. Two smaller corrections while it is open, because the team has had these backwards. A RED reviewer mark has never meant \"the reviewer objects\" - it only ever means the reviewer failed to run, and last night was the first time in the last forty runs that has happened for a real reason. The one to watch is the opposite: a GREEN tick means it RAN, and it can still be carrying findings inside its written comment - Thursday's refund change went green with two findings in it. Green is not \"nothing found\", and nobody had written that down. Nothing on the product, your credits or the customer-facing studio is affected, and the other three gate checks all still run.",
       "state": "open",
       "severity": "warning"
     },
@@ -1613,6 +1640,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-29T09:40:00+10:00",
+      "shift": "foreman-89",
+      "text": "Ninth quiet maintenance night. One thing needs you and it is above: your Fable usage allowance has run out, and it has taken down both the gate's code reviewer and the advisor the night shifts consult before they build. Nothing a customer can see is affected - no credits spent, no house money, nothing on production touched but the briefing you are reading.\n\nLast night's shift found the reviewer broken and guessed, honestly and out loud, that your login token had expired. It had not, and the difference matters because the two guesses point at completely different fixes - one needs your hands, the other fixes itself. The reviewer hides its own error message, so the way to read it was sideways: the advisor the night shifts talk to is the same model on the same subscription of yours, so I asked it a question from this machine. It answered \"You've reached your Fable 5 limit\", twice, four minutes apart - while I kept working on the same machine and the same login. That is the whole diagnosis, and it is the first time anyone here has actually seen the error text; the shift that chased this on the 26th never got it and had to work it out from what was missing.\n\nWhich is the real news: this is the second time in four days. The 26th cost five separate shifts an instance each before it healed by itself once your usage window passed. That card was closed with a note saying exactly what to check if it ever came back - and last night it came back and the note was not found, so the wrong cause got filed. I have linked the two and put it to the housekeeping round as a process finding, because the fix for that is not a better guess, it is looking at the closed cards first.\n\nWhat drains it is worth two minutes of your attention, because it is a decision rather than a bug. Fifteen reviews on Wednesday, fifteen on Thursday, each reading an entire change - one of them alone cost $2.85 - plus twenty-seven night shifts on Thursday, each consulting the advisor once or twice. On the 27th we measured the reviews at about a tenth of your cap and trimmed what they read to protect you. That measurement never counted the advisor, and the advisor is on the same meter. Your own instruction from the 25th covers this: move the token to the co-founder's account if your cap bites. It has now bitten twice, so that is what I recommend - two minutes in a terminal.\n\nI also corrected something the team has quietly had backwards. A red mark on the reviewer has never meant \"the reviewer objects to this change\" - it only ever means the reviewer never ran. The one actually worth knowing is the reverse: a green tick means it ran, and it can still be carrying findings inside its comment. Thursday's refund change went green with two findings in it. Green is not \"nothing found\", and nobody had written that down.\n\nI wrote no product code tonight, deliberately. The obvious build was a step that tells a broken reviewer apart from an objecting one - but once you know a red mark already means only one thing, most of the reason for it disappears, and it would have shipped on the one night when neither the reviewer nor the advisor could read it. Your two older questions are still waiting: the eye item from edition 83, and the smaller crop question from edition 86."
+    },
     {
       "at": "2026-08-29T09:05:00+10:00",
       "shift": "foreman-88",
@@ -1807,11 +1839,6 @@
       "at": "2026-08-27T06:17:00+10:00",
       "shift": "foreman-38",
       "text": "Fourth quiet night, correct. No replies (none new at 06:15), queue and main unmoved (b53d4b88 clean), no patrol due before the Janitor on ~29 Aug. $0 house, 0 credits. Your open cards and eye items are unchanged below."
-    },
-    {
-      "at": "2026-08-27T06:10:00+10:00",
-      "shift": "foreman-37",
-      "text": "Third quiet night in a row, still correct. No replies from you (nine acknowledged, none new at 06:04); the queue has not moved since the last entry, main is clean at 1bbc9ccc with no gate failure, and no patrol is due before the Janitor on ~29 Aug. Built nothing, spent nothing: $0 house, 0 credits. What waits on you is unchanged - see the two entries below."
     }
   ],
   "acknowledgedReplyIds": [
