@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "892e8830186c6aa8"
+    "sourceFingerprint": "eb76faa350534d78"
   },
   "domains": [
     {
@@ -15686,6 +15686,11 @@
     {
       "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "to": "module:client/src/features/castingV2/conceptUpload.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:client/src/features/castingV2/pictureBytes.ts",
       "kind": "imports"
     },
     {

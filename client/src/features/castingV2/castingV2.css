@@ -164,6 +164,27 @@
 }
 
 /*
+  A FILE IS OVER THE CARD (#196, amendment 2). His build note: the drop target
+  has to be discoverable, so the card takes the same treatment its hover already
+  has and turns its border solid-strong — the line inside it changes at the same
+  moment, so the state is said as well as drawn.
+
+  The dashed icon frame goes solid too: it is the only picture-shaped thing on
+  the card, and it is what the eye is aiming at while a file is in the hand.
+*/
+.dpc-entry--drop,
+.dpc-entry--drop:hover {
+  border-color: var(--ink);
+  background: var(--raised);
+}
+
+.dpc-entry--drop .dpc-entry__icon {
+  border-style: solid;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/*
   Drawn, but not yet real. It keeps its shape and loses its affordances: no
   pointer, no hover, no tab stop. The copy carries the truth — the card is not
   relying on being greyed out to say it.
@@ -2550,6 +2571,47 @@
   object-fit: contain;
 }
 
+/*
+  THE DROP ZONE STANDS WHERE THE PICTURE WILL (#196, amendment 2) — the portrait
+  slot itself, so the dialog does not change shape when a picture arrives. Its
+  border is dashed for the same reason the entry card's icon frame is: dashed
+  means *something goes here*, and it is the one place in this feature that
+  already says it.
+*/
+.dpc-signm__drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border: 1px dashed var(--dashed);
+  border-radius: 12px;
+  font: 400 12px var(--font-sans);
+  color: var(--meta);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.dpc-signm__drop--over {
+  border-style: solid;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/*
+  The body's own drop target, so aiming at the middle of the dialog works —
+  which is where a hand actually aims. It is layout-neutral on purpose: it
+  wraps what was already the body's children and must not become a second box
+  between them and the card.
+*/
+.dpc-signm__bodydrop {
+  display: block;
+  min-width: 0;
+}
+
 .dpc-signm__body { flex: 999 1 300px; min-width: 0; }
 
 .dpc-signm__eyebrow {
@@ -2649,6 +2711,62 @@
 .dpc-signm__tilde { color: var(--muted); }
 
 /*
+  COUNT LEFT, PRICE RIGHT, one row (#196). D-109 puts cost above the button as
+  right-aligned muted mono, and the concept review has a second number to say —
+  how long her description is. Two stacked lines would cost a row for metadata,
+  which is the fault D-109 names; on one baseline they read as one meta line,
+  the way the sheet dock's `160 credits · 449,920 left` does.
+*/
+.dpc-signm__costrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dpc-signm__count {
+  font: 400 11.5px var(--font-mono);
+  color: var(--meta);
+  padding: 13px 0 11px;
+}
+
+/* Inside the row the cost has already been given its own padding. */
+.dpc-signm__costrow > .dpc-signm__cost { padding-left: 0; }
+
+/*
+  AN ANSWER SHE HAS TO ACT ON, said where she is looking (#196, amendment 2:
+  *"a failed read gets a plain retry inside the modal"*). Not the accent — this
+  is not a warning about something irreversible, it is the door telling her
+  what it could not do, and the two buttons under it are the point.
+*/
+.dpc-signm__note {
+  margin: 0;
+  padding: 12px 0 2px;
+  font: 400 12.5px/1.5 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+/*
+  THE WAY OUT, QUIETER THAN THE WAYS ON. With three actions in the row — leave,
+  keep the words, cast them — two bordered buttons side by side read as a pair
+  of equals and the eye has nowhere to start. Borderless is the house's own
+  answer for a dismissal that costs nothing.
+*/
+.dpc-signm__ghost {
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: none;
+  font: 500 12px var(--font-sans);
+  color: var(--meta);
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.dpc-signm__ghost:hover { color: var(--ink); }
+.dpc-signm__ghost:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/*
   The actions need air above them. The sign modal gets it from the cost line
   sitting between field and buttons; the delete dialog has no cost line, so
   without this the buttons butt straight against the type row and read as part
@@ -2659,10 +2777,16 @@
   justify-content: flex-end;
   gap: 9px;
   margin-top: 18px;
+  /* The concept review can draw THREE — leave, keep the words, cast them — and
+     the card stacks to one column below ~560px. Wrapping is the only thing
+     between that and a button off the edge of the dialog. */
+  flex-wrap: wrap;
 }
 
 /* The cost line already supplies the gap where there is one. */
 .dpc-signm__cost + .dpc-signm__actions { margin-top: 0; }
+/* And the concept review's row, which is that line with a count beside it. */
+.dpc-signm__costrow + .dpc-signm__actions { margin-top: 0; }
 
 .dpc-signm__secondary {
   padding: 10px 15px;

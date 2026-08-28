@@ -12,10 +12,18 @@ import {
   CONCEPT_REVIEW_EYEBROW,
   CONCEPT_REVIEW_TITLE,
   CONCEPT_REVIEW_USE,
+  CONCEPT_CARD_DROP,
+  CONCEPT_DROP_LINE,
+  CONCEPT_NOT_A_PICTURE,
+  CONCEPT_REVIEW_ANOTHER,
+  CONCEPT_REVIEW_CAST,
+  CONCEPT_REVIEW_EMPTY_EXPLAINER,
+  CONCEPT_REVIEW_REFUSED_TITLE,
+  CONCEPT_REVIEW_RETRY,
   briefWithDescription,
   conceptCountLabel,
 } from "./conceptUpload";
-import { ACCEPTED_PICTURE_FILES } from "./pictureBytes";
+import { ACCEPTED_PICTURE_FILES, firstPictureFrom } from "./pictureBytes";
 import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
 import { readableGatedFailure } from "./failureCopy";
 
@@ -34,6 +42,7 @@ import { readableGatedFailure } from "./failureCopy";
  * silently destroy something a customer typed.
  */
 const CARD = new URL("./components/ConceptUploadCard.tsx", import.meta.url);
+const REVIEW_SOURCE = new URL("./components/ConceptReviewModal.tsx", import.meta.url);
 const PAGE = new URL("../../pages/CastingV2.tsx", import.meta.url);
 const FIELD = new URL("./components/BriefField.tsx", import.meta.url);
 
@@ -137,6 +146,16 @@ describe("the card claims what the road does and nothing more", () => {
     expect(panel).not.toContain('accept="image/png');
     const card = withoutProse(await readFile(CARD, "utf8"));
     expect(card).not.toContain('accept="image/png');
+    /*
+      ⚠ THE PICKER MOVED INTO THE DIALOG (#196, amendment 2) — a card that
+      opened the OS file chooser on a tap could never open an EMPTY dialog with
+      a drop zone in it, which is what his second entrance is. So the arm
+      follows the control rather than staying pointed at the file it used to
+      live in, which is how a derivation check quietly stops checking anything.
+    */
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    expect(review).toContain("accept={ACCEPTED_PICTURE_FILES}");
+    expect(review).not.toContain('accept="image/png');
   });
 
   it("keeps the fallback about the picture, never about the plumbing", () => {
@@ -164,10 +183,31 @@ describe("the card is absent-or-live, never drawn as a control that can only ref
     expect(page).toMatch(/conceptUploadEnabled[\s\S]{0,200}: null/);
   });
 
-  it("cannot fire twice while one read is in flight", async () => {
+  it("cannot start a second read behind its own dialog", async () => {
+    /*
+      ⚠ THE GUARD MOVED WITH THE ENTRANCES (#196, amendment 2). It used to be
+      `if (!file || reading) return;` on the picker's change handler, which was
+      the only way in. There are three ways in now — a drop on the card, a tap
+      on the card, and a drop or a pick inside the dialog — so the property is
+      no longer "the picker cannot re-fire": it is that the CARD is not a
+      control at all while its dialog is up.
+
+      Which is stronger, not weaker: the card is behind a scrim, and leaving it
+      in the tab order gives the shell's focus trap somewhere to leak to.
+    */
     const source = withoutProse(await readFile(CARD, "utf8"));
-    expect(source).toContain("if (!file || reading) return;");
-    expect(source).toContain("disabled={reading}");
+    expect(source).toContain("disabled={open}");
+    /* And a drop that lands on it anyway is ignored rather than queued. */
+    expect(source).toContain("if (open) return;");
+    /*
+      A read inside the dialog is allowed to supersede one already running —
+      that is his "choose another picture" — and `readId` is what makes the
+      first one's answer harmless. It is bumped by every entrance, because they
+      all go through one road in.
+    */
+    expect(source).toContain("const beginRead = (file: File) => {");
+    const begin = source.slice(source.indexOf("const beginRead = (file: File) => {"));
+    expect(begin.slice(0, begin.indexOf("const onDragEnter"))).toContain("readId.current += 1;");
   });
 
   it("shows our sentence and never the error's", async () => {
@@ -443,20 +483,39 @@ describe("the review is free to abandon, and abandons cleanly", () => {
     */
     expect(briefWithDescription("a dad in his 30s", "")).toBe("a dad in his 30s");
     const review = withoutProse(await readFile(REVIEW, "utf8"));
-    expect(review).toContain("const ready = text.trim().length > 0;");
-    expect(review).toContain("disabled={reading || !ready}");
+    /*
+      ⚠ `description !== null` JOINED THE CONDITION with #196's amendments, and
+      it is load-bearing rather than tidy. `reading` no longer covers every
+      state in which there is nothing to act on: the dialog can now be OPEN with
+      no picture at all (his second entrance) and can sit on a REFUSAL, and in
+      both of those `text` is empty but `reading` is false. Keying on the words
+      themselves answers all four states with one question.
+    */
+    expect(review).toContain("const ready = text.trim().length > 0 && description !== null;");
+    /* Both ways on are disabled at zero — the free one and the paid one. */
+    expect(review).toContain("disabled={!ready}");
+    expect(review).toContain("disabled: !ready");
   });
 });
 
 describe("the words reach the box on her confirm, and never before", () => {
-  it("opens on the PICK so the wait has a subject", async () => {
+  it("opens on the FILE, not on the answer, so the wait has a subject", async () => {
+    /*
+      Several silent seconds after a drop or a file chooser reads as nothing
+      having happened. The picture goes up first and the words fill in beside
+      it. Read at `beginRead`, which is the one road in for all three entrances
+      since #196's amendments — so this property cannot hold for the picker and
+      quietly fail for the drop.
+    */
     const card = withoutProse(await readFile(CARD, "utf8"));
-    const onChange = card.slice(
-      card.indexOf("if (!file || reading) return;"),
-      card.indexOf("void read(file, describe)"),
+    const begin = card.slice(
+      card.indexOf("const beginRead = (file: File) => {"),
+      card.indexOf("void read(file, describe);"),
     );
-    expect(onChange).toContain("setPicture(file);");
-    expect(onChange).toContain("setDescription(null);");
+    expect(begin).toContain("setOpen(true);");
+    expect(begin).toContain("setPicture(file);");
+    expect(begin).toContain("setDescription(null);");
+    expect(begin).toContain("setFailure(null);");
   });
 
   it("hands the page its words only from the modal's confirm", async () => {
@@ -474,42 +533,43 @@ describe("the words reach the box on her confirm, and never before", () => {
 
   it("cannot put an abandoned read's words under the next picture", async () => {
     /*
-      Discard mid-read, pick another picture: without this guard the first
-      call's answer arrives and fills the new modal — a description sitting
-      under a photograph it was not read from, which is the mix-up this modal
-      was adopted to make obvious. It is checked before the words are shown and
+      Cancel mid-read, drop another picture: without this guard the first call's
+      answer arrives and fills the new modal — a description sitting under a
+      photograph it was not read from, which is the mix-up this modal was
+      adopted to make obvious. It is checked before the words are shown and
       before either failure speaks.
     */
     const card = withoutProse(await readFile(CARD, "utf8"));
     expect(card).toContain("const mine = readId.current;");
     expect(card).toContain("readId.current += 1;");
     /*
-      ⚠ THIS ARM WAS WRITTEN AS A BARE `toContain` FIRST AND ITS OWN SABOTAGE
-      WALKED THROUGH IT: the guard appears on the success path AND on the
-      failure path, so deleting the one that matters left the other behind and
-      the string was still there. It is pinned to its POSITION now — immediately
-      before the words are shown — and both occurrences are counted, because a
-      guard that survives only where it is cheap is not the guard.
-    */
-    /*
-      ⚠ PINNED BY POSITION AT EVERY EXIT, never by a COUNT. The count form said
-      `toBe(2)` and went red the moment the review of #196 added the guard to
-      the decode-failure path as well — a magic number pinning today's shape
-      rather than the property, which is the arm getting in the way of the fix
-      it should have been indifferent to. Each exit is named instead, so a new
-      exit is caught by being unnamed and an extra guard is simply fine.
+      ⚠ PINNED BY POSITION AT EVERY EXIT, never by a COUNT of one shape. The
+      count form said `toBe(2)` and went red the moment the review of #196 added
+      the guard to the decode path as well — a magic number pinning today's
+      shape rather than the property.
+
+      ⚠ AND THE EXITS CHANGED SHAPE with his amendments: neither failure closes
+      the dialog or raises a toast any more — each writes its sentence into the
+      dialog she is looking at, so the SET-STATE is what must be guarded.
     */
     expect(card).toContain("if (readId.current !== mine) return;\n      setDescription(words);");
     expect(card).toContain(
-      "if (readId.current !== mine) return;\n      close();\n      toast(CONCEPT_FILE_UNREADABLE);",
+      "if (readId.current !== mine) return;\n      setFailure(CONCEPT_FILE_UNREADABLE);",
     );
     expect(card).toContain(
-      "if (readId.current !== mine) return;\n      close();\n      toast(readableGatedFailure(",
+      "if (readId.current !== mine) return;\n      setFailure(readableGatedFailure(",
     );
-    /* And nothing may speak or land without one: every exit is on the list above. */
-    expect(card.split("if (readId.current !== mine) return;").length - 1).toBe(
-      card.split("toast(").length - 1 + 1,
+    /*
+      And nothing may land without one: inside the read, every write a settling
+      call performs is one of the three above, so the guards and the writes are
+      counted against EACH OTHER rather than against a literal — a fourth exit
+      added without a guard fails this before it needs an arm of its own.
+    */
+    const read = card.slice(card.indexOf("const read = async"), card.indexOf("const beginRead"));
+    expect(read.split("if (readId.current !== mine) return;").length - 1).toBe(
+      read.split(/set(?:Description|Failure)\(/).length - 1,
     );
+    expect(read.split("if (readId.current !== mine) return;").length - 1).toBeGreaterThan(2);
   });
 
   it("leaves the merge rule alone — the modal never replaces what she typed", async () => {
@@ -527,33 +587,376 @@ describe("the words reach the box on her confirm, and never before", () => {
 });
 
 describe("walking away releases the card, rather than latching it to a dead call", () => {
-  it("clears the reading flag in close(), not only when the abandoned call settles", async () => {
+  it("clears every piece of the read in close(), not only when the call settles", async () => {
     /*
-      THE GATE REVIEW OF #196's SECOND FINDING. `reading` disables the entry
-      card and puts "Reading the picture…" on it, and it was cleared only in the
-      promise's `finally` — so after Discard the card sat disabled, describing a
-      picture she had just thrown away, for the rest of the abandoned call's
-      life. Worse, the scenario `readId` exists for — discard, then immediately
-      pick another picture — was UNREACHABLE, because the button was disabled
-      and a re-entrant pick hits the `reading` early return.
+      THE GATE REVIEW OF #196's SECOND FINDING, and it survives the amendments
+      in a stronger form. `reading` used to be a flag cleared in the promise's
+      `finally` — so after Discard the card sat disabled, describing a picture
+      she had just thrown away, for the rest of the abandoned call's life.
 
-      ⚠ This arm exists because the fix PASSED its own sabotage: removing
-      `setReading(false)` from `close()` reddened nothing, so the repair was
-      protected by no test at all until this one.
+      ⚠ THE FLAG IS GONE ENTIRELY NOW. `reading` is DERIVED from the picture and
+      the two answers, all three of which `close()` resets in one place — so the
+      class (a latch outliving the thing it describes) cannot be reintroduced by
+      forgetting a line in a `finally`, because there is no `finally` and no
+      second copy of the truth to forget. Working law 4 applied to a boolean.
     */
     const card = withoutProse(await readFile(CARD, "utf8"));
-    const close = card.slice(card.indexOf("const close = () => {"), card.indexOf("const read = async"));
-    expect(close).toContain("setReading(false);");
+    const close = card.slice(
+      card.indexOf("const close = () => {"),
+      card.indexOf("const read = async"),
+    );
+    expect(close).toContain("setOpen(false);");
+    expect(close).toContain("setPicture(null);");
+    expect(close).toContain("setDescription(null);");
+    expect(close).toContain("setFailure(null);");
+    /* The staleness counter is bumped first, so nothing in flight can speak after. */
+    expect(close.indexOf("readId.current += 1;")).toBeLessThan(close.indexOf("setOpen(false);"));
   });
 
-  it("keeps the late settle from switching OFF a newer read", async () => {
+  it("has no reading flag left to go stale — it is read off the state", async () => {
     /*
-      The other half: once `close()` clears the flag, an abandoned call's
-      `finally` must not clear one a NEWER pick has since set, or the second
-      read draws as idle while it is still running.
+      The other half of the old pair asserted that an abandoned call's `finally`
+      must not clear a flag a NEWER read has since set. That arm is retired
+      because its subject is: there is nothing to clear.
     */
     const card = withoutProse(await readFile(CARD, "utf8"));
-    expect(card).toContain("if (readId.current === mine) setReading(false);");
-    expect(card).not.toContain(".finally(() => setReading(false));");
+    expect(card).toContain(
+      "const reading = picture !== null && description === null && failure === null;",
+    );
+    expect(card).not.toContain("setReading(");
+    expect(card).not.toContain(".finally(");
+  });
+});
+
+/**
+ * HIS TWO AMENDMENTS (#196, both verbatim on the card, both filed before PR
+ * #197 merged without them).
+ *
+ * > *"the button should be cast it and it automatically casts the prompt the
+ * > same flow the original prompt and casting takes just through the modal"*
+ *
+ * > *"i want to be able to drag and drop the image into the upload concept card
+ * > and it will auto open up the modal with the reference image in it
+ * > alternatively i can click the card and it opens up the modal and then i can
+ * > upload or drag and drop the reference image in - it gets analyzed - i read
+ * > the brief decide whether to edit it and cast"*
+ *
+ * The things below are each silent at the screen, which is why they are here
+ * rather than only in the evidence pack: a SECOND dispatch implementation looks
+ * identical until the gear settings stop riding with it; a cast that composes
+ * its own text rather than the merge looks identical until she has typed
+ * something in the box first; and a drop target that forgets `preventDefault`
+ * looks identical until the browser navigates the tab to the file and takes her
+ * brief with it.
+ */
+describe("Cast it goes through the page's ONE roll flow", () => {
+  it("dispatches from the page, never from the card or the dialog", async () => {
+    /*
+      THE LOAD-BEARING NEGATIVE. `createRoll` carries `imagination`, `style` and
+      `path`, each of which travels only when its control was drawn — a second
+      dispatch written inside the dialog would look right and quietly cast every
+      concept at the wrong settings, which is working law 4 on the money path.
+    */
+    for (const url of [CARD, REVIEW_SOURCE]) {
+      const source = withoutProse(await readFile(url, "utf8"));
+      expect(source).not.toContain("createRoll");
+      expect(source).not.toContain("createSession");
+      expect(source).not.toContain("navigate(");
+    }
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    /* One roll-starting function, and it takes its brief as an argument. */
+    expect(page).toContain("const startCasting = async (briefText: string) => {");
+    expect(page).toContain("briefText: briefText.trim(),");
+    expect(page).not.toContain("briefText: brief.trim(),");
+  });
+
+  it("casts EXACTLY what 'Use this brief' would have put in the box", async () => {
+    /*
+      The two actions must never disagree about what her brief is, and the
+      append rule is founder record (#185: the description lands beside her
+      words, never on top of them) — so it governs the paid road as well as the
+      free one. A cast that sent the description alone would silently delete
+      anything she had typed, at the exact moment she is spending.
+    */
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    const onCast = page.slice(page.indexOf("onCast={(description) => {"), page.indexOf("onDescribed={"));
+    expect(onCast).toContain("briefWithDescription(brief, description)");
+    expect(onCast).toContain("void startCasting(text);");
+    /*
+      `setBrief` FIRST — not the dispatch source (the argument is), but the
+      safety net: the dialog has closed by then, so a refused session would
+      otherwise take her edited words with it.
+    */
+    expect(onCast.indexOf("setBrief(text);")).toBeLessThan(onCast.indexOf("void startCasting(text);"));
+    /* And the merged text is what BOTH roads use — proven at the rule itself. */
+    expect(briefWithDescription("a skincare founder", "A man in his 40s.")).toBe(
+      "a skincare founder\n\nA man in his 40s.",
+    );
+  });
+
+  it("keeps the double-submit latch as the page's, so both entrances share one", async () => {
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    expect(page).toContain("castLatch.tryAcquire(null)");
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).not.toContain("tryAcquire");
+    /*
+      The dialog closes BEFORE the dispatch, so it is never the surface in front
+      of a charge in flight — which is what lets it keep `busy={false}` and Esc
+      working, and what keeps the page's latch the only one in the product.
+    */
+    const onCastProp = card.slice(card.indexOf("onCast={(words) => {"));
+    expect(onCastProp.indexOf("close();")).toBeLessThan(onCastProp.indexOf("onCast(words);"));
+  });
+
+  it("puts the price ABOVE the button and never inside it — D-109", async () => {
+    /*
+      ⚠ THE CARD'S TEXT AND THE RATIFIED LAW DISAGREE, and the law wins on the
+      half he did not say. His verbatim is *"the button should be cast it"*; the
+      issue glosses it as *"with the price on it, per the paid-button law"*.
+      D-109 names "Cast it" BY NAME as an immediate-fire action, rules that cost
+      is metadata and never button text, and records that a price inside a
+      confirm's button was tried and REVERSED the same day. So the number sits
+      in the cost line directly above — she cannot tap without it in her eye.
+    */
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    expect(CONCEPT_REVIEW_CAST).toBe("Cast it");
+    expect(CONCEPT_REVIEW_CAST).not.toMatch(/\d/);
+    expect(review).toContain("dpc-signm__cost");
+    expect(review).toContain("{priceCredits} credits");
+    /* The tilde, shared with every other cost line in the product. */
+    expect(review).toContain("dpc-signm__tilde");
+    /* Server-derived, never a constant on this side (D-15). */
+    expect(review).not.toMatch(/priceCredits\s*=\s*\d/);
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    expect(page).toContain("priceCredits={price}");
+    /* And nothing about a number inside the button itself. */
+    const button = review.slice(review.indexOf('className="dpc-signm__primary"'));
+    expect(button.slice(0, 300)).not.toContain("priceCredits");
+    expect(button.slice(0, 300)).not.toMatch(/\d+\s*credits/);
+  });
+
+  it("still offers ONE primary in every state — a review, not a wizard", async () => {
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    expect(review.split("dpc-signm__primary").length - 1).toBe(1);
+    /* Its label and its act are chosen once, so no state can draw two or none. */
+    expect(review).toContain("const primary = empty");
+    expect(review).toContain("disabled={primary.disabled}");
+    expect(review).toContain("onClick={primary.act}");
+    expect(review).not.toContain("Next");
+  });
+});
+
+describe("two entrances, one read", () => {
+  it("opens the dialog EMPTY on a tap — the entrance a file chooser could not be", async () => {
+    /*
+      His second amendment: *"i can click the card and it opens up the modal and
+      then i can upload or drag and drop the reference image in"*. The card used
+      to open the OS file chooser, which can only ever produce a dialog that
+      already has a file — so the picker moved inside, and the dialog learned a
+      state with no picture at all.
+    */
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).toContain("onClick={() => setOpen(true)}");
+    expect(card).toContain("{open ? (");
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    expect(review).toContain("file: File | null;");
+    expect(review).toContain("const empty = file === null;");
+    /* The drop zone stands in the picture's own slot, so nothing moves when one arrives. */
+    expect(review).toContain("portraitFallback={");
+    expect(review).toContain("dpc-signm__drop");
+  });
+
+  it("reads a DROPPED picture straight away — the drop IS the upload", async () => {
+    /*
+      *"drag and drop the image into the upload concept card and it will auto
+      open up the modal with the reference image in it"* — one gesture, no
+      second confirm, and it lands on the same `beginRead` the picker does.
+    */
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    const drop = card.slice(
+      card.indexOf("const onDrop = (event: DragEvent) => {"),
+      card.indexOf("if (!describe) {"),
+    );
+    expect(drop).toContain("beginRead(dropped)");
+    expect(drop).toContain("firstPictureFrom(");
+  });
+
+  it("SWALLOWS A DROP THE PAGE DID NOT CLAIM — or the browser eats her brief", async () => {
+    /*
+      THE HAZARD THIS BUILD ADDS, and the one worth an arm of its own. A file
+      dropped anywhere the page has not claimed makes the browser NAVIGATE THE
+      TAB TO IT — so a near-miss on the card replaces a 160-credit brief she has
+      just typed with a JPEG in a viewer, and there is no undo. It is also the
+      whole of his build note *"a drop anywhere else on the page does NOT
+      trigger it (no accidental uploads)"*.
+
+      And `preventDefault` on `dragover` is what MAKES an element a drop target
+      — without it on the card, the window guard would swallow every drop and
+      the card would look like a target while silently eating files.
+    */
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).toContain('window.addEventListener("dragover", swallow);');
+    expect(card).toContain('window.addEventListener("drop", swallow);');
+    expect(card).toContain('window.removeEventListener("dragover", swallow);');
+    expect(card).toContain('window.removeEventListener("drop", swallow);');
+    /* Mounted with the LIVE card only — an account outside the scope keeps the
+       browser's own behaviour, which is the absent-or-live gate again. */
+    const guard = card.slice(card.indexOf("useEffect(() => {"));
+    expect(guard.slice(0, 200)).toContain("if (!describe) return;");
+    /* Both the card and the dialog are real drop targets, not decorations. */
+    for (const url of [CARD, REVIEW_SOURCE]) {
+      const source = withoutProse(await readFile(url, "utf8"));
+      /*
+        ⚠ SLICED TO THE NEXT DECLARATION, NOT TO A CHARACTER COUNT — this arm
+        WALKED THROUGH its own sabotage in the first form. Written as
+        `over.slice(0, 300)`, the window ran past the end of `onDragOver` and
+        into `onDrop`, which legitimately calls `preventDefault` — so deleting
+        the one that MAKES the element a drop target reddened nothing. A window
+        measured in characters is a window that grows into its neighbour.
+      */
+      const over = source.slice(
+        source.indexOf("const onDragOver = (event: DragEvent) => {"),
+        source.indexOf("const onDrop = (event: DragEvent) => {"),
+      );
+      expect(over).toContain("event.preventDefault();");
+    }
+  });
+
+  it("counts drag depth, so the state does not flicker over its own children", async () => {
+    /*
+      `dragleave` fires every time the pointer crosses into a CHILD element — the
+      icon, the title, the line — so a naive enter/leave pair strobes the drop
+      state as the cursor moves across the target's own text. Both targets count.
+    */
+    for (const url of [CARD, REVIEW_SOURCE]) {
+      const source = withoutProse(await readFile(url, "utf8"));
+      expect(source).toContain("dragDepth.current += 1;");
+      expect(source).toContain("dragDepth.current = Math.max(0, dragDepth.current - 1);");
+      expect(source).toContain("if (dragDepth.current === 0) setDragging(false);");
+    }
+  });
+
+  it("judges a dropped file in ONE place, and never turns away an unknown type", () => {
+    /*
+      Three entrances, one judgement — three copies of "is this a picture?" is
+      working law 4 with a UI accent, and the copy that drifts is the one that
+      silently refuses a customer's photograph.
+
+      ⚠ AN EMPTY `type` IS ACCEPTED. A drop can arrive with the OS having told
+      the browser nothing, and a client-side guess that turns away a valid PNG
+      is strictly worse than passing it to a door that reads the BYTES and says
+      something true. Only a file positively declaring itself something else is
+      refused, which is the case worth catching before a multi-megabyte encode.
+    */
+    const asList = (files: File[]) =>
+      ({
+        ...files,
+        length: files.length,
+        item: (index: number) => files[index] ?? null,
+      }) as unknown as FileList;
+    const png = new File(["x"], "a.png", { type: "image/png" });
+    const pdf = new File(["x"], "a.pdf", { type: "application/pdf" });
+    const unknown = new File(["x"], "a.png", { type: "" });
+    expect(firstPictureFrom(asList([png]))).toBe(png);
+    expect(firstPictureFrom(asList([unknown]))).toBe(unknown);
+    expect(firstPictureFrom(asList([pdf]))).toBeNull();
+    expect(firstPictureFrom(null)).toBeNull();
+    expect(firstPictureFrom(asList([]))).toBeNull();
+    /* The FIRST file, matching the picker — a multi-file drop is not a queue. */
+    expect(firstPictureFrom(asList([png, pdf]))).toBe(png);
+    /* Derived from the door's own vocabulary, so a fourth format needs no edit here. */
+    for (const format of INK_DESIGN_FORMATS) {
+      const file = new File(["x"], `a.${format}`, { type: inkDesignContentType(format) });
+      expect(firstPictureFrom(asList([file]))).toBe(file);
+    }
+  });
+});
+
+describe("a refused read keeps her picture and offers a way on", () => {
+  it("stays open with the door's own sentence — his 'plain retry inside the modal'", async () => {
+    /*
+      ⚠ THIS REVERSES WHAT PR #197 SHIPPED, on his newer and more specific word:
+      *"a failed read gets a plain retry inside the modal, nothing charged"*.
+      The shipped docblock argued an in-modal retry was the "extra options" his
+      one-modal order rules out; closing the dialog instead threw her picture
+      away, so recovering from a transport blip meant finding the file again.
+    */
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).toContain("setFailure(readableGatedFailure(error, CONCEPT_FAILED_FALLBACK))");
+    expect(card).toContain("setFailure(CONCEPT_FILE_UNREADABLE)");
+    /* Neither failure closes the dialog or raises a toast any more. */
+    expect(card).not.toContain("toast(");
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    expect(review).toContain("{failure}");
+    expect(review).toContain("onRetry");
+    /* The raw text is still moved to the console rather than lost. */
+    expect(card).toContain("logRawFailure(");
+  });
+
+  it("offers TWO ways on, because the refusals mean different things", async () => {
+    /*
+      A gateway blip is worth the same picture again; *"I couldn't find a person
+      in that picture"* is deterministic, and a bare retry on the same file
+      would spend house money to be told the same thing. So the wall gets an
+      answer that can actually clear it.
+    */
+    expect(CONCEPT_REVIEW_RETRY).toBe("Try again");
+    expect(CONCEPT_REVIEW_ANOTHER.toLowerCase()).toContain("another");
+    /* The retry reads the SAME picture — through the one road in, so the
+       staleness guard covers it exactly as it covers a first read. */
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    const retry = card.slice(card.indexOf("onRetry={"));
+    expect(retry.slice(0, 200)).toContain("beginRead(picture)");
+  });
+
+  it("does not claim words it does not have — the frame's own finding", async () => {
+    /*
+      ⚠ CAUGHT BY LOOKING, not by reading the source. The refusal shipped under
+      *"This is what we'll cast"* with the read state's explainer above it —
+      *"Edit anything. We cast from these words…"* — on a dialog holding no
+      words at all, because nothing had been read. Two claims about a thing that
+      does not exist, on the one surface whose job is saying what will be cast.
+    */
+    expect(CONCEPT_REVIEW_REFUSED_TITLE.toLowerCase()).not.toContain("cast");
+    expect(CONCEPT_REVIEW_REFUSED_TITLE.toLowerCase()).toContain("read");
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    /*
+      ⚠ SLICED TO THE HEADING, because a bare `toContain` walked through its own
+      sabotage: the accessible name branches on the same constant, so breaking
+      the H2 left the string in the file and the arm passed. Two places say this
+      and BOTH are asserted, each in its own slice.
+    */
+    const heading = review.slice(
+      review.indexOf('<h2 className="dpc-signm__title">'),
+      review.indexOf("</h2>"),
+    );
+    expect(heading).toContain("CONCEPT_REVIEW_REFUSED_TITLE");
+    expect(heading).toContain("CONCEPT_REVIEW_EMPTY_TITLE");
+    /* The explainer is ABSENT in that state rather than reworded. */
+    expect(review).toContain("{refused ? null : (");
+    /* And the accessible name follows the heading rather than staying behind. */
+    const label = review.slice(review.indexOf("label={"), review.indexOf("portrait={preview}"));
+    expect(label).toContain("CONCEPT_REVIEW_REFUSED_TITLE");
+  });
+
+  it("names the formats when a file is not a picture, rather than the refusal", () => {
+    /* "Unsupported file type" says what happened and not what to do. */
+    const said = CONCEPT_NOT_A_PICTURE.toLowerCase();
+    expect(said).toContain("png");
+    expect(said).toContain("jpeg");
+    expect(said).toContain("webp");
+    expect(said).not.toContain("error");
+    expect(said).not.toContain("invalid");
+  });
+
+  it("says the drag-over line on the card, so the drop target is discoverable", () => {
+    expect(CONCEPT_CARD_DROP.toLowerCase()).toContain("drop");
+    expect(CONCEPT_DROP_LINE.toLowerCase()).toContain("drop");
+    /* The empty state carries the same two facts the card's line does, because
+       a customer can arrive here without having read the card at all. */
+    const empty = CONCEPT_REVIEW_EMPTY_EXPLAINER.toLowerCase();
+    expect(empty).toContain("similar");
+    expect(empty).toContain("never keep");
+    expect(empty).not.toContain("likeness");
   });
 });

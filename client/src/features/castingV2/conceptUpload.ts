@@ -56,6 +56,17 @@ export const CONCEPT_CARD_COMING =
 export const CONCEPT_READING_LABEL = "Reading the picture…";
 
 /**
+ * THE CARD'S DRAG-OVER LINE (#196, amendment 2).
+ *
+ * His words: *"i want to be able to drag and drop the image into the upload
+ * concept card and it will auto open up the modal with the reference image in
+ * it."* A drop target nobody can see is not a drop target, so the card says so
+ * while a file is over it — which is also the whole of "the drop target is
+ * discoverable" from his build notes.
+ */
+export const CONCEPT_CARD_DROP = "Drop it here — we'll read it straight away.";
+
+/**
  * OUR SENTENCE WHEN THE SERVER'S NEVER ARRIVED (`readableFailure`'s fallback).
  *
  * The door's own refusals are written for a reader and pass through untouched —
@@ -118,6 +129,118 @@ export const CONCEPT_REVIEW_DISCARD = "Discard";
 
 /** Drawn on the right while the one describer call is in flight. */
 export const CONCEPT_REVIEW_READING = CONCEPT_READING_LABEL;
+
+/* ------------------------------------------- the two entrances, and the cast */
+
+/**
+ * ⚠ **THE MODAL NOW OPENS BEFORE A PICTURE EXISTS, and it casts from inside
+ * itself — his TWO AMENDMENTS on #196, both verbatim on the card.**
+ *
+ * > *"the button should be cast it and it automatically casts the prompt the
+ * > same flow the original prompt and casting takes just through the modal"*
+ *
+ * > *"i want to be able to drag and drop the image into the upload concept card
+ * > and it will auto open up the modal with the reference image in it
+ * > alternatively i can click the card and it opens up the modal and then i can
+ * > upload or drag and drop the reference image in - it gets analyzed - i read
+ * > the brief decide whether to edit it and cast"*
+ *
+ * So the dialog has four states rather than two, and every string either state
+ * needs lives here: **empty** (opened by a click, waiting for a picture),
+ * **reading**, **refused**, and **read**. It is still one modal, one primary
+ * action and no second page — what changed is that the primary now SPENDS,
+ * which is why the price arrives with it below.
+ *
+ * # THE PRICE IS ABOVE THE BUTTON, NEVER ON IT — D-109, and the card's gloss
+ *
+ * The issue text glosses his amendment as *"with the price on it, per the
+ * paid-button law"*. His own sentence says only *"the button should be cast
+ * it"*, and the ratified law says the opposite of the gloss: **D-109 names
+ * "Cast it" by name as an immediate-fire action, rules that cost is metadata
+ * and never button text, and records that putting a price inside a confirm's
+ * button was tried and reversed the same day.** So the button reads "Cast it"
+ * and the number sits directly above it in the cost line — the sign modal's
+ * shape exactly, and the letter of what he asked for: she cannot tap it without
+ * the price in her eye.
+ */
+export const CONCEPT_REVIEW_CAST = "Cast it";
+
+/**
+ * THE EMPTY STATE'S TITLE — not "This is what we'll cast", because at this
+ * point there is nothing to cast and a title that says otherwise is furniture
+ * pretending to be a promise.
+ */
+export const CONCEPT_REVIEW_EMPTY_TITLE = "Start from a picture";
+
+/**
+ * The empty state's explainer. It carries the same two facts the card's line
+ * does — someone SIMILAR, and the picture is not kept — because this is now a
+ * place a customer can arrive at without having read the card at all (she
+ * dropped a file on it, or she tapped it and is looking at this first).
+ */
+export const CONCEPT_REVIEW_EMPTY_EXPLAINER =
+  "Drop a picture in, or choose one. We read the person out of it and write you a brief, "
+  + "so you can cast someone similar — not this person. We never keep the picture.";
+
+/** Inside the drop zone. */
+export const CONCEPT_DROP_LINE = "Drop a picture here";
+
+/** The picker's own button, and the way in for anyone who does not drag. */
+export const CONCEPT_DROP_CHOOSE = "Choose a picture";
+
+/**
+ * SAID WHEN THE FILE POSITIVELY DECLARES ITSELF SOMETHING ELSE.
+ *
+ * It names the formats rather than the refusal, because "unsupported file type"
+ * tells her what happened and not what to do. An unknown type is never refused
+ * here at all — see `firstPictureFrom`.
+ */
+export const CONCEPT_NOT_A_PICTURE = "That isn't a picture we can read. Try a PNG, JPEG or WebP.";
+
+/**
+ * ⚠ **THE RETRY IS INSIDE THE MODAL NOW, AND THAT REVERSES WHAT SHIPPED.**
+ *
+ * PR #197's own docblock argued the modal should CLOSE on a refusal, on the
+ * ground that an in-modal retry is the "extra options" his one-modal-one-confirm
+ * order rules out. His amendment 2's build notes say the opposite in as many
+ * words — *"a failed read gets a plain retry inside the modal, nothing
+ * charged"* — and his word is newer and more specific, so it governs.
+ *
+ * It is also better than the argument it replaces: closing the dialog threw her
+ * picture away, so recovering from a transport blip meant finding the file
+ * again. Two exits are offered rather than one, because the refusals differ in
+ * what they mean — a gateway blip is worth the same picture again, while
+ * *"I couldn't find a person in that picture"* is deterministic and a bare
+ * retry would just spend house money to be told the same thing.
+ */
+export const CONCEPT_REVIEW_RETRY = "Try again";
+
+/** The other exit from a refusal — the one that answers an honest wall. */
+export const CONCEPT_REVIEW_ANOTHER = "Choose another picture";
+
+/**
+ * THE REFUSED STATE'S OWN TITLE — and it exists because the frame said so.
+ *
+ * ⚠ Driven at the running app, the refusal shipped under *"This is what we'll
+ * cast"* with the read state's explainer above it: *"Edit anything. We cast
+ * from these words…"* — said over a dialog holding NO words, because nothing
+ * was read. Two claims about a thing that does not exist, on the one surface
+ * whose whole job is telling her what will be cast.
+ *
+ * The door's own sentence carries the WHY, so this only has to carry the what,
+ * and it says "that one" rather than "your picture" because the picture is
+ * still on screen beside it and the next act may be a different one.
+ */
+export const CONCEPT_REVIEW_REFUSED_TITLE = "We couldn't read that one";
+
+/**
+ * THE WAY OUT WHILE THE READ IS STILL RUNNING.
+ *
+ * His build note asks for the progress line to come "with cancel", and Discard
+ * is the wrong word for it: there is nothing to discard yet. Same button, same
+ * position, same handler — only the label tracks what the tap actually does.
+ */
+export const CONCEPT_REVIEW_CANCEL = "Cancel";
 
 /**
  * THE COUNT IS BARE — a number of characters and no denominator, deliberately.
