@@ -1,7 +1,7 @@
 {
-  "edition": 80,
-  "updatedAt": "2026-08-28T20:20:00+10:00",
-  "shift": "foreman-78",
+  "edition": 81,
+  "updatedAt": "2026-08-28T20:05:00+10:00",
+  "shift": "foreman-79",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -959,6 +959,13 @@
   ],
   "pipeline": [
     {
+      "id": "atlas-check-trackedness-195",
+      "title": "The deploy check stops refusing over a file that can never be current",
+      "status": "merged",
+      "prNumber": 201,
+      "note": "Three nights in a row a shift finished its work, went to deploy, and the deploy refused: \"docs/architecture/index.html is stale or hand-edited\". Two of those shifts went hunting for a file somebody had edited by hand. There wasn't one, and there could never have been one — that file is deliberately NOT saved into the project (it is a 500KB generated web page nobody reads as a diff), so pulling down someone else's work can never bring a fresh copy with it. It was out of date by design, every time, on every machine. The check now only complains about files that are actually saved in the project, where being out of date is something a human can see and act on. And the same sweep found the opposite mistake in two places — two files that ARE saved in the project and that nothing ever compared, so a stale or hand-edited copy of either would have shipped unnoticed. Both are compared now."
+    },
+    {
       "id": "concept-reread-193",
       "title": "Upload a concept: a read that never arrived is now asked again once",
       "status": "merged",
@@ -1416,6 +1423,13 @@
   ],
   "problems": [
     {
+      "id": "rite-refused-index-html-195",
+      "title": "The deploy check refused three nights running over a file that is out of date by design — FIXED",
+      "detail": "Our deploy runs a check that our internal architecture map is up to date. Part of that check compared a generated web page (docs/architecture/index.html) against what the source would produce now — but that page is deliberately excluded from the project's saved files, so it only ever holds whatever the last person to run the generator locally produced. Merge somebody's work, pull it down, and the page is stale immediately and permanently. The check refused; regenerating cleared it while showing no change at all, which is what made it look like a ghost. Diagnosed at the artifacts by the previous shift, fixed here (#195): a freshness verdict is only a finding where there is a saved copy somebody could review. No customer effect at any point — the only cost was shift time, roughly half an hour a night for three nights.",
+      "state": "resolved",
+      "severity": "info"
+    },
+    {
       "id": "quiet-shifts-deploy-159",
       "title": "Quiet shifts were deploying — FIXED: the rite now refuses a briefing whose only change is a quiet journal line",
       "detail": "Two quiet shifts this morning (09:45, 10:23) each ran a full production deploy for one journal line, after the standing orders had said a quiet shift ships nothing. The runner backs off 30 minutes after a quiet shift, and the deploy rite now refuses the quiet edition itself (PR #160) — so the order is a mechanical guard, not a sentence. No customer effect. (issue #159, closed)",
@@ -1487,6 +1501,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-28T20:05:00+10:00",
+      "shift": "foreman-79",
+      "text": "No new replies from you overnight, so tonight was the queue — and it was our own tooling rather than the product.\n\nThree shifts in a row this week finished their work, went to deploy, and were refused by our own check with \"index.html is stale or hand-edited\". Two of them spent half an hour looking for a file somebody had edited by hand. There was never one to find. That file is a generated web page we deliberately do NOT save into the project — it is half a megabyte of machine-written HTML whose changes nobody can usefully read — so when a shift pulls down merged work, the new data arrives and the page cannot come with it. It is out of date the instant anything merges, on every machine, forever. That is why regenerating it \"fixed\" the problem while showing no change: there was nothing to show.\n\nThe rule now matches what a person can actually do about it. Being out of date is a real finding for a file saved in the project, because somebody can look at what changed and decide. For a local scratch copy that one command writes and nobody reviews, the only honest answer is silence. The wording that sent two shifts down the wrong path is gone too — you cannot hand-edit a file away from a saved version that does not exist.\n\nThen the sweep found the same mistake with the sign flipped, which is the part I would not have gone looking for. Our map generator writes three files; the check compared two. And our capability census — the document that lists what the studio can actually do today — writes two files and the check compared one. So in both cases the file a person actually opens and reads was the one nothing was watching: someone could have hand-edited either of them, or left either one stale, and every gate would have stayed green. Both are compared now, and both are correct as of tonight.\n\nOne honest note. Our own reviewer caught a real mistake in my first version, and it was the same mistake I was there to remove: the new check on the capability document would have started refusing, on every machine, the first time one of our own measurements legitimately changed. Fixed before it merged, with a test that fires on exactly that case. It then found a second, smaller one — a safety check that looked like it was doing its job and was not actually being consulted. Also fixed, and proved by breaking it on purpose and watching the right test go red.\n\nNothing a customer can see, nothing on your bill, no renders and no credits. It is the sort of night that pays for itself in the ones after it."
+    },
     {
       "at": "2026-08-28T20:20:00+10:00",
       "shift": "foreman-78",
@@ -1676,11 +1695,6 @@
       "at": "2026-08-27T02:05:00+10:00",
       "shift": "foreman-28",
       "text": "The lighting court you asked for is done and in your gallery (#128). Your thin brief 'goth woman mid 30s' was rolled eight times under each of four lights on the locked block — today's line, your reference look with a deeper jaw shadow, your own candidate sentence word for word, and a clean even light — plus once more with no block at all, just a short photographic clause (the original reply-#8 idea). The block versions all delivered with zero refusals and read as one studio; the differences in light are real but subtle, so there is a close-up sheet beside the strip. The no-block version refused 3 of 8 and looks like a different room. Nothing in the product moved — your pick on the sheets is what changes the block's lighting line. Cost $2.60 of house money (estimated first on the issue), no credits. Still open for your eye from earlier: the settings modal (#142) and roll 223's light (#144). Next shift: #130, calibrating the frame to your 28% reference — every row here sits around 36%. No replies from you tonight."
-    },
-    {
-      "at": "2026-08-27T01:35:00+10:00",
-      "shift": "foreman-27",
-      "text": "Your settings modal is built and live on your account (#142, PR #150) — the last built slice of the creative register. Where the Low/Max pills were there is now one gear saying 'Photoreal · Low'; tap it and a small panel shows the two settings the road has today: Style (Photoreal, with your two coming styles announced beneath, not tappable) and Imagination (Low/Max), plus Reset and the rule that anything you type overrides the defaults. What you chose is written on the roll and shown on the sheet. Proven in tests and driven in the real app on a dev account (one roll, about 80 cents, no credits), both themes looked at, review clean. Your eye on it is the gate — frames are in the gallery. Also closed #139 (its fix had merged days ago and nobody closed the card). I took this ahead of the Retry button earlier shifts had queued first, because it is your direct order and the Retry serves a population that is currently zero on production; Retry is next. Still open for your eye: the light on roll 223 (eye item 'house-block-rebuilt-144'). No replies from you tonight."
     },
     {
       "at": "2026-08-28T15:45:00+10:00",
