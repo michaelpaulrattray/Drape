@@ -89,7 +89,7 @@ _Entrances:_ `server/castingV2/inkPriorAsk.ts` · `server/castingV2/inkDeliveryM
 | `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:408 | 1 test(s) | ink.transform.dangling |
 | `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:272 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:248 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3383<br>server/castingV2/refusalTag.ts:22 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
+| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3383 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
 | `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:2955 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3364 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
 | `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3141<br>server/castingV2/refineService.ts:3158 | 1 test(s) | _documented-unreachable or gap — see findings_ |
