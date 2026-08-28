@@ -106,6 +106,34 @@ describe("what may be uploaded as a design", () => {
     }
   });
 
+  it("the sentence she READS names every format the door takes", () => {
+    /*
+      THE THIRD COPY OF THE LIST, AND THE ONLY ONE A CUSTOMER EVER SEES (#27).
+
+      "Designs come as PNG, JPEG or WebP." is prose, so it cannot derive — the
+      alternative is a machine-composed sentence, and copy this product writes
+      by hand should stay written by hand. What it must not do is go stale: add
+      a fourth format at the vocabulary and the refusal keeps naming three, so
+      the one person who needs the list is told the old one. This arm is the
+      cheap half of that — it does not write the sentence, it refuses to let the
+      sentence forget a format.
+
+      `jpeg`→JPEG, `webp`→WebP: the spelling is the copy's own and only the
+      LETTERS are compared, case-insensitively, so a rewrite is free.
+    */
+    const refusal = inkDesignBytesRefusal({
+      ...good,
+      decoded: { ...good.decoded, format: "pdf" },
+    });
+    expect(refusal?.code).toBe("unsupportedFormat");
+    for (const format of INK_DESIGN_FORMATS) {
+      expect(
+        refusal?.message.toLowerCase(),
+        `the refusal does not name ${format} — a format was added and the sentence was not`,
+      ).toContain(format.toLowerCase());
+    }
+  });
+
   it("refuses a picture with no dimensions read", () => {
     expect(inkDesignBytesRefusal({ ...good, decoded: { format: "png", width: 0, height: 0 } }))
       .toMatchObject({ code: "tooSmall" });

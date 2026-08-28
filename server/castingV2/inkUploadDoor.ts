@@ -37,6 +37,27 @@
 import { randomUUID } from "node:crypto";
 
 import type { AnchorFraming } from "../../shared/bodyAnchorRegions";
+/*
+  THE FORMAT VOCABULARY MOVED TO `shared/` AND IS RE-EXPORTED FROM HERE (#27).
+
+  It was declared in this file, which meant the client's file pickers could only
+  MIRROR it — a server module is not importable from `client/src`. A re-export
+  is not a second copy: one declaration, one binding, and nothing that can
+  drift; what it buys is that six server call sites and the door's own docblocks
+  keep the import path they have always had, on a money- and flag-adjacent file
+  where the smallest diff is worth more than import-path purity. The Atlas has
+  counted re-export edges since `d614320f`, so this does not go invisible to the
+  retirement view.
+*/
+import { isInkDesignFormat, type InkDesignFormat } from "../../shared/pictureFormats";
+
+export {
+  INK_DESIGN_FORMATS,
+  isInkDesignFormat,
+  inkDesignContentType,
+  inkDesignFormatOfContentType,
+  type InkDesignFormat,
+} from "../../shared/pictureFormats";
 import {
   inkPlacementAvailability,
   type InkPlacement,
@@ -75,9 +96,9 @@ export const INK_DESIGN_MAX_BYTES = 8 * 1024 * 1024;
  */
 export const INK_DESIGN_MIN_EDGE = 256;
 
-/** What the bytes may actually BE. Judged after decoding, never from a name. */
-export const INK_DESIGN_FORMATS = ["png", "jpeg", "webp"] as const;
-export type InkDesignFormat = (typeof INK_DESIGN_FORMATS)[number];
+/* What the bytes may actually BE — `INK_DESIGN_FORMATS` and its type, guard and
+   mime mapping now live in `shared/pictureFormats.ts` and are re-exported at
+   the top of this file, because the client's pickers offer the same list. */
 
 /** One prefix, so an operator can see every uploaded design in one place. */
 export const INK_KEY_PREFIX = "casting-v2/ink";
@@ -216,31 +237,13 @@ export function inkDesignBytesRefusal(input: {
   return null;
 }
 
-export function isInkDesignFormat(value: string | undefined): value is InkDesignFormat {
-  return value !== undefined && (INK_DESIGN_FORMATS as readonly string[]).includes(value);
-}
-
-export function inkDesignContentType(format: InkDesignFormat): string {
-  return `image/${format}`;
-}
-
-/**
- * THE SAME MAPPING READ BACKWARDS — a stored design's format from the mime its
- * row records.
- *
- * It lives beside {@link inkDesignContentType} rather than at the one call site
- * that needs it, because the two directions are one decision: change the
- * spelling above and this follows, and a caller stripping `image/` by hand
- * would be the second author of a mapping (law 4).
- *
- * `null` for anything the vocabulary does not know, which includes the mime of
- * a row written by some future door — a format this product cannot name is not
- * a format it should be inventing a key extension for.
- */
-export function inkDesignFormatOfContentType(mime: string): InkDesignFormat | null {
-  const format = mime.trim().toLowerCase().replace(/^image\//, "");
-  return isInkDesignFormat(format) ? format : null;
-}
+/*
+  `isInkDesignFormat`, `inkDesignContentType` and `inkDesignFormatOfContentType`
+  moved to `shared/pictureFormats.ts` with the list they read, and are
+  re-exported at the top of this file. They went together on purpose: the two
+  mime directions are one decision, and a guard split from the list it tests is
+  the second author of a vocabulary (law 4).
+*/
 
 /**
  * Where our copy of the bytes lives.

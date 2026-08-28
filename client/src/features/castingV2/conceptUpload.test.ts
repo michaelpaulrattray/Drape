@@ -10,6 +10,7 @@ import {
   briefWithDescription,
 } from "./conceptUpload";
 import { ACCEPTED_PICTURE_FILES } from "./pictureBytes";
+import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
 import { readableGatedFailure } from "./failureCopy";
 
 /**
@@ -104,12 +105,25 @@ describe("the card claims what the road does and nothing more", () => {
     expect(CONCEPT_CARD_COMING.toLowerCase()).toContain("picture");
   });
 
-  it("offers the three formats the door admits, from ONE client home", async () => {
-    /* The picker's filter is a courtesy; the BYTES are judged server-side. It
-       still must not offer a format the door refuses — and it must not be a
-       third copy of the list, which is what it was until the review of #188
-       (law 4). The literal now lives once and both pickers import it. */
-    expect(ACCEPTED_PICTURE_FILES).toBe("image/png,image/jpeg,image/webp");
+  it("offers exactly the formats the door admits, DERIVED rather than typed", async () => {
+    /*
+      The picker's filter is a courtesy; the BYTES are judged server-side. It
+      still must not offer a format the door refuses — and it must not be a
+      second author of the list, which is what it was until the review of #188
+      made it one client copy and #27 made it a derivation.
+
+      ⚠ This arm used to read `toBe("image/png,image/jpeg,image/webp")`, and
+      that assertion could not tell a derivation from a literal: it pinned the
+      answer the mirror already gave. It compares against the DOOR'S OWN LIST
+      now, so adding a fourth format to `shared/pictureFormats.ts` moves both
+      sides of this comparison together and the picker follows for free —
+      which is the whole point of the move. What still cannot pass unnoticed is
+      the list and the picker disagreeing, and the arm below bans re-typing it.
+    */
+    expect(ACCEPTED_PICTURE_FILES.split(",")).toEqual(
+      INK_DESIGN_FORMATS.map(inkDesignContentType),
+    );
+    expect(INK_DESIGN_FORMATS.length).toBeGreaterThan(0);
     const panel = withoutProse(
       await readFile(new URL("./components/RefinePanel.tsx", import.meta.url), "utf8"),
     );
