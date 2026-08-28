@@ -1,7 +1,7 @@
 {
-  "edition": 76,
-  "updatedAt": "2026-08-28T14:20:00+10:00",
-  "shift": "foreman-74",
+  "edition": 77,
+  "updatedAt": "2026-08-28T15:40:00+10:00",
+  "shift": "foreman-75",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "trigger-cluster-court-190",
+      "title": "Your provocative-casts test came back, and the answer is not a word list (#190)",
+      "productImpact": "You asked whether we could find wording that gets edgy fashion casts past the engine's content checker — the goth and cyber-goth looks it refuses most. I tested the four word families your agent proposed, one at a time, 8 renders each, all shuffled through the same sitting so the checker's mood could not favour one over another. 56 renders. 53 of them refused. Not one of the four families made any difference at all — the age word, the mesh/lace words, every mention of the chest, and our own \"a face you could touch\" line all came back identical to leaving the brief alone. The three that DID get through are beautiful and complete, and they are the coin landing, not a word working.",
+      "workedExample": "Same cyber-goth brief, sent 56 times tonight in seven wordings. Leave it exactly as you wrote it: 15 refused out of 16. Change \"a young woman\" to \"a woman in her twenties\": 8 refused out of 8. Take out every mention of the chest: 8 out of 8. Swap mesh and lace for gloss and tailoring: 7 out of 8 — and the one that landed is still wearing lace, because \"a sheer black top with intricate floral patterns\" paints lace whether or not you name it. The honest headline: this brief was refused 98% of the time on the 26th, 62% on the 27th, and 95% tonight, with nothing about the product changing in between. The checker is a coin, and no word we tried loads it.",
+      "options": [
+        {
+          "key": "rebase",
+          "label": "Try once more on a version of the brief that isn't already refused 19 times in 20",
+          "consequence": "Tonight's test had nowhere to fall — at 95% refused, a word that helps a little is invisible. Your own hand-rewrite of this same brief scored 4 out of 8 back on the 27th, so the same four families on THAT text would actually have room to show an effect. About $2 of house money, one sitting, no credits, nothing shipped either way. This is what I'd do."
+        },
+        {
+          "key": "retry",
+          "label": "Stop testing words on this brief — the Retry button already is the answer",
+          "consequence": "Three separate attempts have now failed to pin the refusal on any word or sentence of this brief. If it really is a coin, the fix is a second flip, and you already have it: Retry is live on your account and covers content-filter tiles on your own word. Costs nothing and closes #190 as measured-and-killed."
+        },
+        {
+          "key": "both",
+          "label": "Do the re-run, and lean on Retry regardless",
+          "consequence": "The $2 sitting runs; Retry stays the shipped answer whatever it finds. Nothing is held on the result."
+        }
+      ],
+      "recommendation": "rebase",
+      "state": "open",
+      "filedAt": "2026-08-28T15:40:00+10:00",
+      "issueNumber": 190
+    },
     {
       "id": "concept-upload-flip-card-185",
       "title": "Flip Upload a concept on for your account? (#185)",
@@ -455,6 +482,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "trigger-cluster-court-190-strip",
+      "title": "56 sends, 53 refusals, 3 pictures — the wall your edgy briefs are hitting (#190)",
+      "question": "This is the whole test in one image: seven rows, one per wording, eight sends each, left to right in the order they were sent. Every grey tile is a refusal from the engine's content checker. Row B1 and row B2 are THE SAME TEXT sent twice — they came back 7 refused and 8 refused, which is the measurement of how much this varies for no reason at all, and it is the number every other row has to beat. None of them beats it. THE QUESTION is on the card, not here: whether to try once more on a brief that isn't already at the ceiling, or to call it and lean on Retry. But look at the second frame first — that is one of the three that got through, and it is your brief almost sentence for sentence: the shaved side with the scalp crosses, the spiked eye harness with her hand raised to it, the lace glove, the septum and lip piercings, the cross under the eye, the buckled choker and the strap down the front, the calligraphy on both arms. The engine can absolutely cast this. The checker is the whole problem.",
+      "state": "open",
+      "filedAt": "2026-08-28T15:40:00+10:00",
+      "issueNumber": 190,
+      "cardId": "trigger-cluster-court-190",
+      "frames": [
+        {
+          "key": "crew-eye/71cca8fa-ed85-4571-ae16-b6a3d4cc2c1d.png",
+          "arm": "THE WHOLE COURT — 7 wordings, 8 sends",
+          "caption": "B1 base (7/8 refused) · B2 the identical text again (8/8) · A1 \"woman in her twenties\" (8/8) · A2 \"woman, mid 30s\" (8/8) · F1 mesh and lace swapped out (7/8) · C1 every chest mention gone (8/8) · T1 our REALISM line without \"a face you could touch\" (7/8). Fisher's exact test on every family against the base: p = 1.0000, which is the number you get when two things are indistinguishable."
+        },
+        {
+          "key": "crew-eye/2ec97692-ad22-4551-9bf2-1d9ce09d0dd7.png",
+          "arm": "ONE OF THE THREE THAT LANDED",
+          "caption": "This is arm B1, send 3: your brief exactly as written, no word changed, mid-torso framing on grey seamless. It is a sheer lace look — that is what the brief asks for and what a fashion casting of it looks like. None of the three passes bought its way through by casting something tamer; all three are the full brief."
+        }
+      ]
+    },
     {
       "id": "concept-upload-flip-185",
       "title": "Upload a concept — read the two notes, then say flip it (#185)",
@@ -1367,6 +1415,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T15:40:00+10:00",
+      "shift": "foreman-75",
+      "text": "You asked last night whether we could find wording that gets provocative casts past the engine, and said it was not worth building without proof. I went looking for the proof tonight and there isn't any — which is a real answer, and it cost 17 cents.\n\nThe test: your cyber-goth brief, sent 56 times in seven different wordings, 8 sends each, all shuffled together so that the checker being in a better mood later in the night could not make one wording look good. The four families your agent named each got a row: the age word, the mesh-and-lace words, every mention of the chest, and our own house line about \"a face you could touch\". A fifth row was the base text sent a second time, unchanged, as the measure of pure luck.\n\n53 of the 56 were refused. The identical-text row came back 7 refused against the base's 8 — so a whole render's worth of difference happens for no reason at all, and not one of the four families beat that. Statistically every single one lands on p = 1.0000, which is what you get when two things cannot be told apart.\n\nThe bigger thing I found is about the brief itself, not the words. It was refused 63 times out of 64 on the 26th, 5 times out of 8 on the 27th, and 53 out of 56 tonight — and nothing about the product changed between the first two. That swing is larger than any effect we were hunting for, which is why tonight's test carried its own control in the same sitting, and why comparing two nights would have told us nothing. It also means tonight had almost no room to detect a small win: at 95% refused, a wording that helps a bit is invisible. That is the honest limit of what I bought, and it is why the card recommends one more sitting on a version of your brief that isn't already at the ceiling — your own hand-rewrite scored 4 out of 8 back on the 27th and would give a word somewhere to move.\n\nTwo corrections to the test plan, said plainly because they change what was actually measured. There is no \"patent\" anywhere in your brief, so the fabric family was tested as mesh and lace only. And the chest hypothesis as written pointed at the lighting line — but the shipped lighting line contains no \"chest\" at all, and the block that did was never turned on. So I tested the strongest version of the question instead: every mention of the chest anywhere in what gets sent, the framing one becoming \"collarbones\", which is the one word we know passes.\n\nWorth ending on the good news, because the strip is mostly grey. The three that got through are gorgeous and they are your brief almost sentence for sentence — and none of them bought its way through by casting something tamer. The engine can serve this look. It is the doorman, not the photographer, and the thing that already beats a doorman flipping a coin is the Retry button, which is on your account."
+    },
+    {
       "at": "2026-08-28T14:20:00+10:00",
       "shift": "foreman-74",
       "text": "You answered the description question overnight, it got built, and I finished and checked it — so there is something to look at.\n\nYou said it should come back as a type, not a police report. It does now. The man you judged went from 1,082 characters to 173: \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" That is the whole read. It did not mention his eye colour, the seams on his shirt, or that he has no tattoos — all three are things it can plainly see and all three are on your drop list.\n\nTwo halves to the fix, and the second is the one that lasts. The instruction now carries your keep list, your drop list and your own example sentence — but an instruction is a polite request to a model. The length is a rule in code: 300 characters maximum, asked for 150–250. An inventory does not fit in 300, so the words you told it to drop have nowhere to go even on a day the model ignores the ask.\n\nOne correction you are owed, and it is ours. Last night's edition put the wrong photograph under \"the frame it was read from\" — the description you were reading was of the man in the SECOND frame, not the first. Nothing about your ruling changes, because you ruled on the words. But you were shown a face those words were not about, and you deserve to know rather than to wonder later why the reader called that man European. I found it by opening both pictures and putting them through the reader again this afternoon: one comes back European, the other South Asian, three times out of three. The frames above are now the right way round.\n\nOne more thing worth your knowing before you flip it. In six reads today, five came back perfectly and one came back as \"we couldn't read that just now\" — on a good photograph, and it does not try a second time. That is not a reason to wait: you would tap it again and it would work. It is filed, it is small, and it is inside behaviour that already exists.\n\nNothing is live. The switch is still off for everyone including you. The only thing left on this feature is your word — read the two notes on the frames and say flip it, or tell me which words are still too much."
@@ -1560,11 +1613,6 @@
       "at": "2026-08-26T23:20:00+10:00",
       "shift": "foreman-25",
       "text": "Your §5f ruling is built and live on your account (#146, PR #147): the house block's expression and colour lines are now studio geometry only — eyes into the lens, mouth closed, no laugh, no speech, no blank CGI stare; neutral daylight with skin colour and sheen from the person. Mood words and skin temperature now belong to the seed and the author, per cast, so a war orc can be severe and a weathered man can be warm without the block fighting them. The guard that refuses old phrases back into the block gained the six §5f drops (the review caught that two were test-only; fixed before merge). No roll and no house spend — your next author-road roll carries it. Still waiting on your eye for the light on roll 223 vs 221/222. Next in order: the Retry button (#122), the minimal settings modal (#142), then the two small courts (#128, #130)."
-    },
-    {
-      "at": "2026-08-26T22:55:00+10:00",
-      "shift": "foreman-24",
-      "text": "Your block ruling is built and live on your account (#144, PR #145). The locked block behind every author-road roll now uses your lighting, expression and colour lines word for word, drops the flash studio, the no-tilt line and the mouth bans, allows text, and treats itself as a default your words override. I probed it first (0 of 6 refused, $0.67), then rolled 'goth woman mid 30s' on your account: roll 223, 7 of 8, one content-filter refusal — the strip sits in your gallery beside 221 and 222 on the old block so you can judge the light side by side. One honest note from my own look: the seven faces on 223 are close cousins (long dark hair, black lips on all) — that is the spread question on open features, not the block's. Next in order: the Retry button (#122), the minimal settings modal (#142), then the two small courts (#128 lighting with your line as variant 2, #130 framing)."
     }
   ],
   "acknowledgedReplyIds": [
