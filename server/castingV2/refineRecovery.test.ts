@@ -18,7 +18,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ledger = {
   charge: 25,
-  refunds: [] as Array<{ amount: number; reference: string }>,
+  /* The DESCRIPTION is here because it is a receipt, not a log line (#111,
+     gate review of PR #215). It is the sentence a customer and support read on
+     the credit ledger, and since #111 it is also the only durable record of
+     WHY an interrupted edit was refunded — `recovered` is 19% of the failed
+     refines on production. The mock discarded it, so a wrong reason at the
+     caller changed every one of those rows with nothing going red: law 5,
+     assert at the wire. */
+  refunds: [] as Array<{ amount: number; reference: string; description?: string }>,
 };
 let variantRow: Record<string, unknown> | null = null;
 let refundRecords = true;
@@ -59,9 +66,9 @@ vi.mock("../db/castingV2Variants", () => ({
 }));
 
 vi.mock("../casting/atomicCredits", () => ({
-  recordRefund: vi.fn(async (_userId: number, amount: number, _description: string, reference: string) => {
+  recordRefund: vi.fn(async (_userId: number, amount: number, description: string, reference: string) => {
     if (!refundRecords) return { recorded: false };
-    ledger.refunds.push({ amount, reference: `refund:${reference}` });
+    ledger.refunds.push({ amount, reference: `refund:${reference}`, description });
     return { recorded: true };
   }),
   refundReferenceFor: (reference: string) => `refund:${reference}`,
@@ -118,7 +125,14 @@ describe("the fork: did the variant land?", () => {
     const outcome = await recoverCastingV2RefineOperation(operation);
 
     expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 25 });
-    expect(ledger.refunds).toEqual([{ amount: 25, reference: "refund:op:33333333-3333-4333-8333-333333333333:charge" }]);
+    /* The sentence is written out rather than imported from the vocabulary it
+       is checking — a test that composed it through `refineRefundDescription`
+       would pass on any reword, and this line lands on a customer's ledger. */
+    expect(ledger.refunds).toEqual([{
+      amount: 25,
+      reference: "refund:op:33333333-3333-4333-8333-333333333333:charge",
+      description: "Refine refunded — the generation was interrupted",
+    }]);
     /* Terminal, so a second sweep cannot pick the row up and refund it twice. */
     expect(failed).toEqual([500]);
   });
