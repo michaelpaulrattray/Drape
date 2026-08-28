@@ -10,13 +10,22 @@ import { describe, expect, it } from "vitest";
  * (`.dpc-signm__portrait > img`, a child combinator against a DOM with a
  * wrapper in it) and its law-7 sweep turned up four rules whose class had no
  * emitter at all. Read mechanically over the whole sheet, the real population
- * was twenty-one classes and thirty-two rules — corpses of surfaces that were
+ * was TWENTY-TWO classes and thirty-three rules — corpses of surfaces that were
  * genuinely shipped and then moved: `52d3e6c4` took Sign to the dock,
  * `b974e882` rebuilt the delete and rename dialogs, `63f5f554` rebuilt the
- * room. Every one of the twenty-one had an emitter once (`git log -S`, all
- * twenty-one, not a sample), so none of them was scaffolding for the unbuilt
- * design north star. They were deleted; this stops the next refactor leaving
- * its own.
+ * room. Every one of them had an emitter once (`git log -S`, all of them, not a
+ * sample), so none was scaffolding for the unbuilt design north star. They were
+ * deleted; this stops the next refactor leaving its own.
+ *
+ * ⚠ THE TWENTY-SECOND WAS FOUND BY THIS GUARD'S OWN GATE REVIEW, and it is the
+ * best argument for the guard existing. `dpc-face__words--absent` was the
+ * "bald" row (founder, fable-889); fable-904 took the row out and the emitter
+ * went with the ruling, correctly — leaving the rule, and a CSS comment still
+ * describing the behaviour in the present tense while the JSX one file over
+ * carried the corrected history. The FIRST version of this reader could not see
+ * it, because its only remaining mention was prose inside a comment and the
+ * source side did not strip comments. A guard with a blind spot toward silence
+ * finds twenty-one of twenty-two and reports done.
  *
  * WHY A GUARD AND NOT JUST THE DELETION. Dead CSS is cheap on its own — bytes
  * in one stylesheet. What it is not cheap on is READING: `.dpc-sign__portrait`
@@ -26,7 +35,7 @@ import { describe, expect, it } from "vitest";
  *
  * WHY THE TOLERATED LIST IS EMPTY. It is a real list with the shrink-only
  * doctrine this repo uses elsewhere (`KNOWN_DEBTS`, `DECLARED_BUT_UNMIGRATED`,
- * `LEGACY_ACCEPT_LITERALS`) — but it starts empty, because the twenty-one were
+ * `LEGACY_ACCEPT_LITERALS`) — but it starts empty, because all twenty-two were
  * deleted rather than tolerated. A class added to it needs a reason on the
  * line, and a class that stops being dead is an ERROR until its line goes.
  *
@@ -52,10 +61,30 @@ const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".html"]);
  */
 const TOLERATED_DEAD: Array<{ className: string; why: string }> = [];
 
-/** Every class name the stylesheet declares, taken from SELECTOR position only. */
+/**
+ * Every class name the stylesheet declares, taken from SELECTOR position only.
+ *
+ * CONDITIONAL GROUP AT-RULES ARE TRANSPARENT. `@media`, `@supports`, `@layer`
+ * and `@container` wrap ordinary rules, so a class declared only inside one is
+ * still declared. Collecting at brace-depth 0 alone would make such a class
+ * invisible to this guard FOREVER — never flagged whether dead or alive, which
+ * is a blind spot toward silence, and this whole guard exists because blind
+ * spots toward silence are where corpses hide. (Caught by the gate review on
+ * the PR that added this file; the blind population was empty at the time, and
+ * an empty population is exactly the argument that was wrong about the
+ * composed-prefix exemption above.)
+ *
+ * A DECLARATION at-rule (`@keyframes`, `@font-face`, `@property`) is NOT
+ * transparent — its inner blocks are keyframe stops and descriptors, not
+ * selectors, and treating them as selectors would invent classes.
+ */
+const TRANSPARENT_AT_RULE = /^@(media|supports|layer|container|scope)\b/i;
+
 export function declaredClasses(css: string): string[] {
   const found = new Set<string>();
-  let depth = 0;
+  /** One entry per open brace: does its BODY hold selectors? */
+  const stack: boolean[] = [];
+  const inSelectorPosition = () => stack.every((transparent) => transparent);
   let selector = "";
   let i = 0;
   while (i < css.length) {
@@ -67,21 +96,23 @@ export function declaredClasses(css: string): string[] {
       continue;
     }
     if (css[i] === "{") {
-      if (depth === 0) {
+      const text = selector.trim();
+      const isAtRule = text.startsWith("@");
+      if (inSelectorPosition() && !isAtRule) {
         for (const m of selector.matchAll(/\.([A-Za-z_][A-Za-z0-9_-]*)/g)) found.add(m[1]);
       }
-      depth += 1;
+      stack.push(isAtRule ? TRANSPARENT_AT_RULE.test(text) : false);
       selector = "";
       i += 1;
       continue;
     }
     if (css[i] === "}") {
-      depth = Math.max(0, depth - 1);
+      stack.pop();
       selector = "";
       i += 1;
       continue;
     }
-    if (depth === 0) selector += css[i];
+    if (inSelectorPosition()) selector += css[i];
     i += 1;
   }
   return [...found].sort();
@@ -126,6 +157,35 @@ export function interpolatedSites(sources: Array<{ path: string; text: string }>
  * search reads a corpse-guard as a live emitter. Two of the twenty-one were
  * hidden exactly that way.
  */
+/**
+ * Text a class name may NOT count as emitted from, removed before the search.
+ *
+ * Two shapes, both found by the gate review, both failing toward SILENCE — a
+ * corpse quietly vouched live, which is the one direction a dead-code guard
+ * must not fail in:
+ *
+ *  - **an absence assertion**, `expect(x).not.toContain("dpc-foo")`. Doing this
+ *    line by line worked only because both live sites happened to fit on one
+ *    line; a formatter wrapping the argument would have put the token on a line
+ *    with no `not.toContain` on it and the corpse-guard would have read as an
+ *    emitter.
+ *  - **a comment**. The CSS side has always stripped comments; the source side
+ *    did not, which was an asymmetry with a LIVE instance — this file's own
+ *    docblock names `.dpc-refine__read`, so had that rule ever come back, this
+ *    guard's prose would have vouched for it.
+ *
+ * Both removals are deliberately blunt. Over-removing can only hide a REAL
+ * emitter, which makes a live class read as dead and fails loudly; under-
+ * removing hides a corpse and passes green. When a stripper must be wrong, it
+ * should be wrong toward the noisy side.
+ */
+function scannable(text: string): string {
+  return text
+    .replace(/\.not\s*\.\s*toContain\s*\([^)]*\)/g, " ")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1 ");
+}
+
 export function emittersOf(
   className: string,
   sources: Array<{ path: string; text: string }>,
@@ -134,23 +194,64 @@ export function emittersOf(
   const hits: Array<{ path: string; line: string }> = [];
   for (const { path, text } of sources) {
     if (!text.includes(className)) continue;
-    for (const line of text.split(/\r?\n/)) {
+    for (const line of scannable(text).split(/\r?\n/)) {
       if (!token.test(line)) continue;
-      if (/\bnot\.toContain\b/.test(line)) continue;
       hits.push({ path, line: line.trim() });
     }
   }
   return hits;
 }
 
+/**
+ * Every `dpc-`-shaped token the sources actually write, indexed once.
+ *
+ * `emittersOf` answers "where", which the fixture arms want; asking it once per
+ * declared class is O(classes x files) and measured at 395 ms over 322 classes
+ * and ~500 files — fine alone, marginal against vitest's 5 s default when
+ * `pnpm test` runs this beside everything else. The index answers "whether" in
+ * one pass, and both readers strip the same non-emitting text so they cannot
+ * disagree about what counts.
+ */
+function emittedTokens(sources: Array<{ path: string; text: string }>): Set<string> {
+  const out = new Set<string>();
+  for (const { text } of sources) {
+    for (const m of scannable(text).matchAll(/[A-Za-z_][A-Za-z0-9_-]*/g)) out.add(m[0]);
+  }
+  return out;
+}
+
 export function deadClasses(
   css: string,
   sources: Array<{ path: string; text: string }>,
 ): string[] {
-  return declaredClasses(css).filter((name) => emittersOf(name, sources).length === 0);
+  const emitted = emittedTokens(sources);
+  return declaredClasses(css).filter((name) => !emitted.has(name));
 }
 
-async function collect(root: string): Promise<Array<{ path: string; text: string }>> {
+/*
+  ONE WALK PER ROOT, SHARED BY EVERY ARM.
+
+  Four arms each read the same ~500 files, which costs nothing when this file
+  runs alone (1.4s) and times out when it runs inside `pnpm test` — measured:
+  the same 15 arms took 9.6s under parallel load, and on the run before that
+  three of them blew vitest's 5s default and reported as FAILURES. A guard that
+  goes red because the machine was busy is worse than no guard, because the next
+  shift learns to disregard it.
+
+  Cached by root rather than by call, so the arms cannot drift onto different
+  populations either.
+*/
+const walks = new Map<string, Promise<Array<{ path: string; text: string }>>>();
+
+function collect(root: string): Promise<Array<{ path: string; text: string }>> {
+  const cached = walks.get(root);
+  if (cached) return cached;
+  const started = walkRoot(root);
+  walks.set(root, started);
+  return started;
+}
+
+async function walkRoot(root: string): Promise<Array<{ path: string; text: string }>> {
   const out: Array<{ path: string; text: string }> = [];
   async function walk(dir: string) {
     let entries: string[];
@@ -212,7 +313,7 @@ describe("castingV2.css declares no class the product never emits", () => {
       The failure this floor exists for is the one every derived-population
       guard in this repo has had: the reader stops matching, the population
       becomes empty, `[]` equals `[]`, and the suite reports PASS over a
-      stylesheet nobody checked. 323 classes stood the day this landed.
+      stylesheet nobody checked. 322 classes stood the day this landed.
     */
     const css = await readFile(SHEET, "utf8");
     const classes = declaredClasses(css);
@@ -221,6 +322,29 @@ describe("castingV2.css declares no class the product never emits", () => {
 
     const sources = await collect(CLIENT_SRC);
     expect(sources.length).toBeGreaterThan(400);
+  });
+
+  it("its two readers agree about what counts as emitted", async () => {
+    /*
+      `deadClasses` asks WHETHER through a one-pass token index; `emittersOf`
+      asks WHERE with a per-class regex. The index exists because asking the
+      locator once per class is O(classes x files) — 1,210 ms against 451 ms
+      measured, which matters only because three arms of this file have already
+      blown vitest's 5 s default under `pnpm test`'s parallel load and reported
+      as failures rather than as slowness.
+
+      Two mechanisms answering one question drift, so the agreement is asserted
+      on the REAL tree rather than assumed. Declared honestly: they are not
+      independent — both strip through `scannable`, so a fault in the stripper
+      moves both together and this arm would not see it. What it does catch is
+      the tokeniser and the regex disagreeing about a boundary, which is the
+      likelier mistake and the one that would quietly resurrect a corpse.
+    */
+    const css = await readFile(SHEET, "utf8");
+    const sources = await collect(CLIENT_SRC);
+    const byIndex = new Set(deadClasses(css, sources));
+    const byLocator = declaredClasses(css).filter((n) => emittersOf(n, sources).length === 0);
+    expect([...byIndex].sort()).toEqual(byLocator.sort());
   });
 
   it("scopes to client/src because nothing else names a dpc- class", async () => {
@@ -292,14 +416,94 @@ describe("the reader itself", () => {
     expect(declaredClasses(css)).toEqual(["dpc-live"]);
   });
 
+  it("sees a class declared ONLY inside a conditional at-rule", () => {
+    /*
+      Gate-review note 1. Collecting at brace-depth 0 alone made an @media-only
+      class invisible forever — never flagged dead OR alive. The blind
+      population was empty when it was found, which is precisely the argument
+      that was wrong about the composed-prefix exemption.
+    */
+    const css = "@media (max-width: 720px) {\n  .dpc-narrowOnly { display: none; }\n}";
+    expect(declaredClasses(css)).toEqual(["dpc-narrowOnly"]);
+    expect(deadClasses(css, [{ path: "a.tsx", text: "nothing here" }])).toEqual(["dpc-narrowOnly"]);
+  });
+
+  it("does not invent classes out of a @keyframes body", () => {
+    /*
+      The other half of note 1: a DECLARATION at-rule is not transparent. Its
+      inner blocks are stops and descriptors, not selectors — the fix for one
+      blind spot must not manufacture a population out of the other.
+    */
+    const css =
+      "@keyframes dpc-spin { from { transform: rotate(0); } to { transform: rotate(1turn); } }\n" +
+      "@font-face { font-family: Inter; src: url(x.woff2); }\n" +
+      ".dpc-live { color: red; }";
+    expect(declaredClasses(css)).toEqual(["dpc-live"]);
+  });
+
+  it("does not count a WRAPPED absence assertion as an emitter", () => {
+    /*
+      Gate-review note 2. The carve-out used to be line-based, so a formatter
+      breaking the argument onto its own line put the token on a line with no
+      `not.toContain` on it — and the corpse-guard read as a live emitter.
+    */
+    const css = ".dpc-corpse { color: blue; }";
+    const sources = [
+      {
+        path: "a.test.ts",
+        text: 'expect(source).not.toContain(\n  "dpc-corpse",\n);',
+      },
+    ];
+    expect(deadClasses(css, sources)).toEqual(["dpc-corpse"]);
+  });
+
+  it("does not count a class named only in a SOURCE comment as an emitter", () => {
+    /*
+      Gate-review note 3, and it had a live instance: this file's own docblock
+      names `.dpc-refine__read`, so the guard's prose would have vouched for
+      that corpse had its rule ever returned. The CSS side stripped comments
+      from the day it was written; the source side did not.
+    */
+    const css = ".dpc-corpse { color: blue; }";
+    const block = [{ path: "a.tsx", text: "/* .dpc-corpse was renamed away */" }];
+    const line = [{ path: "b.tsx", text: "// dpc-corpse used to live here" }];
+    expect(deadClasses(css, block)).toEqual(["dpc-corpse"]);
+    expect(deadClasses(css, line)).toEqual(["dpc-corpse"]);
+  });
+
+  it("does not strip a URL as if it were a line comment", () => {
+    /*
+      The control on the blunt stripper: `https://` must not be eaten, or a
+      className sitting after one on the same line would vanish and a LIVE
+      class would read as dead. That direction fails loudly rather than
+      silently, which is why the stripper is allowed to be blunt — but it
+      should still not be wrong here.
+    */
+    const css = ".dpc-live { color: red; }";
+    const sources = [
+      { path: "a.tsx", text: '// see https://example.com/x\n<div className="dpc-live" />' },
+    ];
+    expect(deadClasses(css, sources)).toEqual([]);
+  });
+
   it("matches whole tokens, so a longer neighbour is not an emitter", () => {
     /*
       The specimen: `.dpc-refine__read` is dead while `.dpc-refine__readInput`,
       `__readResult`, `__readCaption` and `__readNote` are all live. A substring
       search calls the corpse alive four times over.
+
+      ⚠ BOTH READERS ARE DRIVEN HERE, and the second assertion is not padding.
+      When the token index was introduced, the substring sabotage (S6) stopped
+      reddening ANY arm: it mutates `emittersOf`, and `deadClasses` had moved
+      onto the index. The real-tree agreement arm did not catch it either —
+      on a clean tree both readers return the empty list, and empty equals
+      empty however either one is broken. A fixture with a KNOWN corpse in it
+      is the only version of that arm that can fail.
     */
     const css = ".dpc-refine__read { display: flex; }";
     const sources = [{ path: "a.tsx", text: `<input className="dpc-refine__readInput" />` }];
     expect(deadClasses(css, sources)).toEqual(["dpc-refine__read"]);
+    expect(emittersOf("dpc-refine__read", sources)).toEqual([]);
+    expect(emittersOf("dpc-refine__readInput", sources)).toHaveLength(1);
   });
 });

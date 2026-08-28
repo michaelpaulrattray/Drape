@@ -4078,19 +4078,6 @@
   overflow: hidden;
 }
 
-/*
-  WHAT THE ROW STATES WHEN THERE IS NOTHING THERE — "bald" (founder, fable-889).
-
-  Deliberately NOT dimmer than her words: a finding of nothing is a look, not a
-  lesser fact, and greying it would say "we could not read this" — the one thing
-  it must never be confused with. It is one word, so it never wraps; the class
-  exists so the state is assertable from a browser drive rather than by eye.
-*/
-.dpc-face__words--absent {
-  color: color-mix(in srgb, var(--onScrim) 72%, transparent);
-  white-space: nowrap;
-}
-
 .dpc-face__from {
   font-size: 11.5px;
   color: color-mix(in srgb, var(--onScrim) 58%, transparent);
@@ -4105,8 +4092,9 @@
   Deliberately the SAME weight as `.dpc-face__from`, not dimmer. It is a label
   and never a hedge: the row is not less accurate on the Wardrobe path, it is
   accurate about something smaller, and dimming a true statement is how it
-  starts reading as "we could not read this" — the argument
-  `.dpc-face__words--absent` already makes one row up.
+  starts reading as "we could not read this" — the argument the retired "bald"
+  row used to make one row up (fable-889; the row itself was taken out by
+  fable-904, and its rule with it — #210).
 
   One or two words, so it never wraps; the class exists so a browser drive can
   assert the state rather than someone judging it by eye.

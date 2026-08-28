@@ -549,8 +549,9 @@ export function FacePanel({
                         row is not less accurate on the Wardrobe path, it is
                         accurate about something smaller. So it is set in the
                         same weight as `from` and is NOT dimmed further — the
-                        argument `.dpc-face__words--absent` already makes one
-                        row up, that greying a true statement turns it into
+                        argument the retired "bald" row used to make one row up
+                        (fable-889, taken out by fable-904 — its rule went with
+                        it in #210), that greying a true statement turns it into
                         "we could not read this."
 
                         Suppressed on a carried row for the same reason the
