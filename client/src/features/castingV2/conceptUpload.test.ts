@@ -187,9 +187,12 @@ describe("the box the description lands in can be read", () => {
   it("is the brief field, not the single-line input it used to be", async () => {
     const page = withoutProse(await readFile(PAGE, "utf8"));
     /*
-      A 1,200-character description in a 60-character window is the defect
-      `BriefField` was written for, and the start page kept it after the sheet
-      was fixed. The class, not the instance.
+      A long brief in a 60-character window is the defect `BriefField` was
+      written for, and the start page kept it after the sheet was fixed. The
+      class, not the instance. ⚠ The reason quoted here used to be the
+      DESCRIPTION's length (1,200), and his ruling cut that to 300 — the box
+      still needs to be a box, because HER OWN brief may run to 4,000
+      (`BRIEF_TEXT_MAX_AUTHOR_ROAD`) and that is the larger case anyway.
     */
     expect(page).toContain("<BriefField");
     expect(page).not.toMatch(/<Input\s+[\s\S]{0,200}aria-label="Casting brief"/);

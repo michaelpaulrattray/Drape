@@ -83,8 +83,8 @@ export const CONCEPT_FILE_UNREADABLE = "That file couldn't be read. Try another 
  * It does not police LENGTH. The entrance owns that refusal
  * (`BRIEF_TEXT_MAX_AUTHOR_ROAD`, spoken, before the claim) and a second opinion
  * about how long a brief may be is exactly the parallel copy working law 4
- * forbids — `CONCEPT_DESCRIPTION_MAX` (1,200) is set well under both bounds so
- * a description alone can never reach one.
+ * forbids — `CONCEPT_DESCRIPTION_MAX` (300 since his ruling, and 1,200 before
+ * it) is set well under both bounds so a description alone can never reach one.
  */
 export function briefWithDescription(existing: string, description: string): string {
   const kept = existing.trim();
