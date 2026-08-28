@@ -1,7 +1,7 @@
 {
-  "edition": 89,
-  "updatedAt": "2026-08-29T07:05:00+10:00",
-  "shift": "foreman-86",
+  "edition": 90,
+  "updatedAt": "2026-08-29T07:40:00+10:00",
+  "shift": "foreman-87",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1001,6 +1001,13 @@
   ],
   "pipeline": [
     {
+      "id": "janitor-patrol-2",
+      "title": "The cleanup that had been stuck for three days was one leftover command, still running",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Housekeeping night. A tidy-up three days ago appeared to hit a limit of this machine and left 33 old files behind. It was not the machine: the tidy-up's own delete command was still running, jammed on one file, and every later attempt queued behind it. Cleared it, and 31 of the 33 went. Separately, the local checks had been red for every shift for days because of scratch files earlier shifts left lying about — they are green again."
+    },
+    {
       "id": "refine-failure-class-reader-111",
       "title": "When a paid edit fails, the reason was already written down — nobody was reading it",
       "status": "merged",
@@ -1593,6 +1600,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T07:40:00+10:00",
+      "shift": "foreman-87",
+      "text": "Seventh quiet maintenance night, and nothing tonight needs you. Your two questions are still waiting — the edition-83 eye item and the smaller crop question from edition 86. No credits spent, no house money, nothing a customer can see has changed, nothing on production touched but the briefing you are reading.\n\nThe housekeeping round came due at 07:35 this morning, so that is what tonight was. It is the unglamorous half of the job — it buys nothing you can see and it stops the next few nights being wasted. Three things came out of it worth your two minutes.\n\nThe first is a small lesson about believing our own notes. A tidy-up three days ago tried to delete a batch of old working files, appeared to hang, and wrote down that this machine cannot do it — a fact about the hardware, nothing to be done. That was wrong. The delete command it started was STILL RUNNING three days later, stuck on a single file, and Windows makes every later attempt on that same file wait in line behind it. So each following night inherited a queue it could not see and concluded the same wrong thing. Once the stuck command was stopped, 31 of the 33 files deleted in seconds. Two are genuinely wedged — a half-finished delete leaves a file in a state only a restart clears — and they are written down rather than fought with.\n\nThe general version, which is the part worth keeping: when one of our tools times out, only the WAITING stops. The thing it started keeps going. If nobody clears it up, the next shift meets a machine that seems broken.\n\nThe second is that our own checks had been failing on this computer for days, and none of it was the product. Shifts leave small throwaway scripts behind while they work, and fifteen of them were breaking four different checks — so every night began with somebody proving the failures were not theirs. That is half an hour a night of nothing. All fifteen were brought up to standard rather than deleted, because our own rule says anything written in the last week is kept, and some of these were hours old. Everything is green again. I have written up the recurring version of this — it will keep happening unless a shift tidies its own scraps before it clocks off — and recommended the cheap fix rather than a rule change.\n\nThe third is a number on our books that was wrong by two and a half times, in the safe direction. We keep a count of code nobody uses any more — the list you clean up before a big change. The count on file said 173 unused pieces. The tool that produced it has two modes: one counts FILES, the other counts the pieces themselves, and an earlier reading took half its row from one and half from the other. The real number is 443. Nothing grew and nothing broke — the figure had simply been read the wrong way round — but anyone planning that clean-up would have planned for a job under half the real size. Both readings are now on the record with the mode they came from.\n\nAlso swept: seven abandoned working folders from earlier nights, and three sets of old notes that had aged past our keep-it-a-week rule. Two folders were deliberately left alone and written up as a question for whoever owns them, rather than guessed at."
+    },
+    {
       "at": "2026-08-29T07:05:00+10:00",
       "shift": "foreman-86",
       "text": "Sixth quiet maintenance night. Two of your questions are still waiting — the edition-83 eye item and the smaller crop question from edition 86 — and nothing tonight needs you. No credits spent, no house money, nothing a customer can see has changed.\n\nBoth clocks checked at the live data rather than assumed. The Janitor is due at 07:35 this morning, just after this is written. The refusal patrol still has no population.\n\nSo I took the worst number the Machinist found: one paid edit in seven does not arrive. You type an ask, wait about two minutes, and get a sentence and your 25 credits back. The note on it said the real problem was that we never record WHY, so nothing can be improved until we do — and fixing that looked like a database change I would have had to wake you for.\n\nIt turned out we DO record it, and have all along. When the money goes back, the refund line on the credit ledger says what happened in plain words — and the credit ledger is the one thing in the product nothing ever deletes. The place everyone had been looking, the operation record, keeps a generic 'that didn't come through' on 19 of the 33. The refund line names the cause on 21 of 32. It was simply never read.\n\nSo instead of a database change and a job for you, tonight is a reader. Every one of those sentences now has a single home in the code, and the same list is used to write them and to read them back, so they cannot drift apart. Not one word of any sentence changed — those lines are receipts you and support can both read, so the test writes each one out in full and fails if a single character moves.\n\nWhat the reading actually says is the useful part, and two things in it are worth your time.\n\nFirst: the biggest NAMED cause is us, not the engine. A third of the failures are a picture that came back healthy, which our own checker then judged to be missing something you had asked for — so we re-render once for free and, if the second one also falls short, refund. That is our own judgement call, not a vendor problem, and it is the single biggest lever on this number.\n\nSecond: a fifth of the total is a deploy landing mid-edit. That is the collision you already ruled on — per-slice billing plus the recovery sweep is the answer, no drain machinery — so those six are working as designed and should not be counted as faults. Taking them out, the fixable part of 'one in seven' is smaller than it has been quoted.\n\nOne honest limit, stated rather than buried: seven different causes share the same fallback sentence, so on a third of them the ledger genuinely cannot tell which it was. The reader says so out loud and names all seven rather than picking one — a report that guessed there would look exactly like a report that knew."
@@ -1786,11 +1798,6 @@
       "at": "2026-08-27T06:08:00+10:00",
       "shift": "foreman-36",
       "text": "Quiet night again - nothing needed doing, and that is correct. No replies from you (nine acknowledged, none new at 06:02). I re-checked rather than inherited: main, the deploy branch and the tree all sit at 68d731e2, clean; every urgent card is either done and waiting on your eye, courted and reported, or waiting on your answer; no gate failure on main; no patrol due before the Janitor on ~29 Aug. Built nothing, spent nothing: $0 house, 0 credits. The list waiting on you is exactly the one in the entry below this - the Retry card first, then the family clause (#154), then your eye on the settings modal and the two courts. One answer from you turns the next shift into a working one."
-    },
-    {
-      "at": "2026-08-27T05:58:00+10:00",
-      "shift": "foreman-35",
-      "text": "Quiet night - nothing needed doing. No replies from you (nine acknowledged, none new at 05:22). I checked the last shift's claims at the artifacts (main, the deploy branch and the tree all sit at f47012df, clean), the queue (nothing admissible without your word), the gate (no failures on main) and the patrol clocks (Janitor is due ~29 Aug, the rest ~2 Sep). So I built nothing and spent nothing: $0 house, 0 credits. What is waiting on you, in the order I would answer it: the Retry card (flip it for your account, and widen plain Retry to content-filter tiles - the #93 court's numbers are on it); the family-clause card (#154, three questions before it is built); and your eye on the settings modal (settings-modal-142), the framing and lighting courts (130, 128), the rebuilt house block (144) and the two eye items (author-sat-out-131, retry-button-122). Any answer becomes the next shift's work."
     }
   ],
   "acknowledgedReplyIds": [
