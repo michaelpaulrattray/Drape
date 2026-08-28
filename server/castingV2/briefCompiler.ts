@@ -294,6 +294,25 @@ export {
   type BriefRefusalCode,
 } from "./briefRefusalCopy";
 
+/**
+ * How much of a brief the fallback compile can carry: `fallbackIntent` makes
+ * the role `briefText.slice(0, FALLBACK_CARRIES_CHARS)`. It WAS the line
+ * between the two halves of the first refuse-free build (#126, PR #127: a
+ * brief the fallback carried whole kept the fallback on an outage) — and
+ * that line is gone: asked whether "refuse-free" meant always, he answered
+ * "always" (Crew reply #9, 2026-08-26), so an outage refuses at every length
+ * and this constant only sizes the role on the one road that still falls
+ * back, an UNPARSED reply.
+ *
+ * ⚠ **THIS DOCBLOCK WAS DELETED AS REFACTOR COLLATERAL AND RESTORED IN THE
+ * SAME PR** (#206, review finding 2). The edit that lifted `BriefRefusalCode`
+ * and its three sentences out of this file cut from the union's first line to
+ * this constant's declaration — which swept the paragraph in between, where a
+ * founder ruling was the only thing recorded. Nothing failed, because a
+ * deleted comment cannot go red. Worth the line: a mechanical range-delete
+ * bounded by two symbols takes everything BETWEEN them, and what sat between
+ * them here was the record of why an 80 is an 80.
+ */
 export const FALLBACK_CARRIES_CHARS = 80;
 
 /**

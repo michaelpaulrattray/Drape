@@ -362,7 +362,7 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
      ⚠ Two of them are among the most-hit doors in the product. That is not a
      contradiction with this list; see the sense stated in the docblock above. ── */
   { id: "roll.likeness",
-    reason: "answers a brief asking for a real person or a named character — the one subject wall the author road KEEPS (ruling §6 rule 5). HIT IN PRODUCTION whenever a customer types a famous name; it is here because no corpus row can send a BRIEF, not because it is quiet. Pinned by four suite files including its own `likenessRefusal.test.ts`",
+    reason: "answers a brief asking for a real person or a named character — the one subject wall the author road KEEPS (ruling §6 rule 5). HIT IN PRODUCTION whenever a customer types a famous name; it is here because no corpus row can send a BRIEF, not because it is quiet. Pinned by five suite files including its own `likenessRefusal.test.ts`",
     becomesReachable: "a corpus row grammar that carries a BRIEF to `castingV2.createRoll` instead of a sentence to `castingV2.refine` — a second driven entrance, the same shape the concept entrance's picture-carrying row needs, and free at every one of these five doors" },
   { id: "roll.not_a_being",
     reason: "answers a brief whose subject is not a being — an object, a vehicle, a place. THE one wall the author road ADDS (founder: 'someone asking for an object should be refused like a car'), and the twin of `concept.no_being`, which #192 put on the map while this half stayed invisible. Also hit in production",
