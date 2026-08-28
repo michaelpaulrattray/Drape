@@ -1,7 +1,7 @@
 {
-  "edition": 72,
-  "updatedAt": "2026-08-28T08:55:00+10:00",
-  "shift": "foreman-70",
+  "edition": 73,
+  "updatedAt": "2026-08-28T11:00:00+10:00",
+  "shift": "foreman-71",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -431,9 +431,9 @@
     {
       "id": "concept-upload-descriptions-185",
       "title": "Upload a concept — is THIS the description you want back from a picture? (#185, your order tonight)",
-      "question": "You asked for it a few hours ago and slice one is built. Three of our own delivered faces went through the reader tonight; here is one of them, and the frame it read. The man is South Asian, late forties, clean-shaven-ish with light stubble, greying at the temples, in a charcoal raglan tee. What came back: \"A man in his mid-to-late 40s of South Asian heritage, with a solid, athletic build and broad shoulders visible through a fitted crew-neck top. His face is angular with strong bone structure, a defined jaw, and slightly hollowed cheeks. He has short, dense dark hair with a natural side-swept part and a bit of texture at the crown, showing early flecks of grey near the temples. His skin is a warm olive-brown tone... light stubble shadowing his jaw and upper lip... dressed simply in a heathered charcoal-grey athletic-cut t-shirt with raglan seams.\" Not one word about the light, the set, the frame or the camera — that was your condition and it is enforced in code, not just asked for. THE QUESTION FOR YOU: is that the right level of detail, or do you want it shorter and more castable (a type, not an inventory)? Nothing is live — the flag is off and the tile is still the placeholder — so this is cheap to change now and expensive later.",
+      "question": "Still open from last night, and now there is a screen behind it. The card on the casting page is built: tap it, pick a picture, and the description lands in your brief box, yours to edit. Here is what came back tonight for one of our own faces, driven through the shipped card in 5.4 seconds — a man in his forties, buzz cut going grey at the temples, in a dark crew-neck tee: \"A man in his mid-to-late forties with a European heritage, presenting a rugged, athletic, ex-military or law-enforcement type. He has a solid, muscular build with broad shoulders and a thick neck, visible through a fitted dark crew-neck t-shirt... His hair is very short, cropped close to the scalp in a buzz cut, dark brown with light graying at the temples. He has light hazel-green eyes set beneath straight, slightly furrowed brows... no visible jewelry, makeup, or tattoos.\" That is 1,082 characters. Not one word about the light, the set, the frame or the camera — your condition, enforced in code rather than politely asked for. THE QUESTION: is that the right level of detail, or do you want it shorter and more castable (a type, not an inventory)? It is one instruction to change and it does not touch the screen. Nothing is live — the switch is off for everyone including you, and the flip waits on this answer and on your eye at the frames.",
       "state": "open",
-      "filedAt": "2026-08-28T08:55:00+10:00",
+      "filedAt": "2026-08-28T11:00:00+10:00",
       "issueNumber": 185,
       "cardId": null,
       "frames": [
@@ -810,6 +810,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "concept-upload-slice-two-185",
+      "title": "Upload a concept — slice two: the tile, and the description lands in your brief box",
+      "status": "merged",
+      "prNumber": 188,
+      "note": "The screen for last night's reader. Tap the card, pick a picture, and a description of the person is in your brief box in about five seconds — focused, editable, nothing charged and nothing rendered. Driven in the running app in both themes, and the OFF state was taken as a real control rather than argued from the code: with the switch off the card is not a button at all. It stays off for everyone until you answer the description-length question on your eye list. Two things in it ARE live for every account and both are on the record: the card's words (the old ones promised to cast the real person in your photo, which we do not do), and the brief box on that page becoming the same growing box the sheet already has — it was still one line, in the one place a first roll is typed. Either comes out in a single commit if you say so."
+    },
     {
       "id": "follow-anchors-current-version-185",
       "title": "\"Does a Follow use the version I'm on?\" — yes, and it already did",
@@ -1298,6 +1305,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T11:00:00+10:00",
+      "shift": "foreman-71",
+      "text": "UPLOAD A CONCEPT now has a screen. Last night it was a reader with no way in; tonight the card on the casting page is real: tap it, pick a picture, and about five seconds later a description of the person in it is sitting in your brief box, focused, yours to edit before you spend a credit. I drove it end to end in the running app on one of our own faces — 5.4 seconds, and what came back was 1,082 characters about the man and not one word about the light, the set or the camera.\n\nIt is still switched off for everyone, including you, and it stays off until you answer the question already on your eye list — is that the right LENGTH, or do you want a type rather than an inventory. I did not hold the screen for that answer, and here is why: the length lives in one instruction inside the reader, and changing it does not touch the card, the box, or anything you would see. So the answer costs the same whether the screen exists or not, and now the flip is one variable rather than a build.\n\nTWO THINGS I CHANGED THAT EVERY ACCOUNT SEES, and I want them said plainly rather than buried. First, the card's words: it used to say 'Upload a real person — casting from your own photos is coming', which promises to cast the actual person in your photo. We do not do that and this road never will — what reaches the engine is words, so you get someone SIMILAR, which is your own sentence. It now says what it will actually do. Second, the brief box on that page was still a one-line field. It is the box a first 160-credit roll is typed into, and past about sixty characters the start of your own sentence scrolls out of sight, so you cannot read what you are about to buy. The sheet's box was fixed months ago; this one was missed. Same component now — it looks identical until the text is long, then it grows to four lines. Enter still casts; Shift+Enter gives you a new line.\n\nBoth are one commit to undo if you dislike either."
+    },
+    {
       "at": "2026-08-28T08:55:00+10:00",
       "shift": "foreman-70",
       "text": "Both halves of tonight's order (#185) are worked.\n\nUPLOAD A CONCEPT is built as far as it can go without a screen: hand it a picture, it writes a description of the PERSON and nothing about the light, the set, the frame or the camera — your condition, enforced by code on the answer rather than by politely asking the model. It is off everywhere and the tile is still the placeholder, so nothing in the product moved tonight. The design decision worth knowing: the photograph is never kept and never reaches the image engine. It rides one text call and is dropped. That means no stored photographs of strangers, no new table, no cleanup path — and the named-person wall still stands in front of the result, because what reaches the engine is words. There is a description on the eye list; the one thing I would like your eye on is whether it is the right LENGTH.\n\nTwo moments in the build are worth a sentence because they are the same mistake twice. The feature has a list of words a description may not use. Its own tests caught it refusing \"close-cropped stubble\" — which is a haircut, not a camera term — and then a real run caught it throwing away a good description of a South Asian man because it said his features were \"reminiscent of\" that ancestry. Both were bans written to be safe that turned out to refuse the very thing the feature is for. Narrowed, and both are written down where the next person will read them.\n\nYOUR SECOND QUESTION — if you refine a face and then Follow it, does the Follow use the version you are on? Yes, and it already did. The issue said otherwise; I drove it at the real database and the code was right. Five refined faces, all five resolve to the refined picture, with a control proving the reader can also say \"the original\" when nothing is picked. So there is nothing to build. The one real gap was in the test that guards it — it could not have failed — and that is fixed."
@@ -1491,11 +1503,6 @@
       "at": "2026-08-26T20:50:04+10:00",
       "shift": "foreman-22",
       "text": "Your stop-the-line on the author landed while I was merging and is now built and live on your account: the author only writes content, the old studio's locked block is appended by code, LOW adds nothing, MAX adds taste and never a face. Your success test on the dev bot passed to my eye — seven different goth women in one grey studio at MAX, eight at LOW — the frames are in the PR. The night's record on your account: creatures cast (C), the prompt shown with 'Use as brief' (D), the Low/Max meter (E), and this. One honest note: E merged after your card landed and before I re-read the mailbox — its copy is corrected in this PR, and nothing it built conflicts with your spec. Next in order: #128 (the full block versus the distilled realism clause, for your eye), #130 (framing calibration), #129 (refusal patrol). OpenRouter is still at about $4."
-    },
-    {
-      "at": "2026-08-26T19:46:51+10:00",
-      "shift": "foreman-22",
-      "text": "Second merge of the night: the prompt is on the sheet (#131 slice D). Open any sheet the author wrote on your account and the line above the grid opens to the exact prompt; USE AS BRIEF drops it into the box for the next roll. It was driven on a real dev roll — eight lizard men, if you want to know what the studio does with a plain creature brief now — and looked at in both themes before merge. Next in order: slice E (the imagination control), then the two small courts (#128 realism clause, #130 framing calibration). Nothing waits on you tonight beyond the open cards; OpenRouter is still at about $4."
     }
   ],
   "acknowledgedReplyIds": [
