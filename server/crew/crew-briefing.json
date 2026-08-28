@@ -1,7 +1,7 @@
 {
-  "edition": 75,
-  "updatedAt": "2026-08-28T13:10:00+10:00",
-  "shift": "foreman-72",
+  "edition": 76,
+  "updatedAt": "2026-08-28T14:20:00+10:00",
+  "shift": "foreman-74",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "concept-upload-flip-card-185",
+      "title": "Flip Upload a concept on for your account? (#185)",
+      "productImpact": "Today the casting page's Upload a concept card says the feature is coming, for everyone including you. Flipping it means you can hand the studio a photograph of someone — a model you already have, a look you found — and get a short casting brief back in your own box in about five seconds, instead of typing it. It reads THE PERSON and never the picture, and the photograph itself never touches an engine and is never stored: what goes to the engine is words, so it casts a TYPE and not that person's face.",
+      "workedExample": "You upload the photo of the buzz-cut man in the frames below. The box fills with: \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" You change \"mid-forties\" to \"fifties\", hit cast, and get eight different men of that type.",
+      "options": [
+        {
+          "key": "flip",
+          "label": "Flip it on for my account",
+          "consequence": "One Railway variable, one redeploy, about two minutes. The card goes live on your casting page only. Everyone else keeps seeing the coming-state. Costs cents of house money per upload and never your credits."
+        },
+        {
+          "key": "cut",
+          "label": "Cut more words out of the note first",
+          "consequence": "Say which words in the two notes are still saying too much and I re-cut the instruction and re-drive it before anything flips. Cheap — text calls only."
+        },
+        {
+          "key": "wait",
+          "label": "Leave it dark",
+          "consequence": "Nothing changes. The road stays built and off; nobody sees anything different."
+        }
+      ],
+      "recommendation": "Flip it. The thing you objected to is fixed and measured — five reads, every one inside your 150–250, two clearly different types, none of them naming an eye colour or a seam — and the only reading left that a drive cannot buy is what EIGHT RENDERS off one of these notes actually look like. That needs a real roll on your account, which needs the flip.",
+      "state": "open",
+      "filedAt": "2026-08-28T14:20:00+10:00",
+      "issueNumber": 185
+    },
     {
       "id": "follow-court-pick-177",
       "title": "ANSWERED - Row A is built and live on your account (#177 closed, PR #184)",
@@ -429,23 +456,44 @@
   ],
   "eyeItems": [
     {
-      "id": "concept-upload-descriptions-185",
-      "title": "Upload a concept — is THIS the description you want back from a picture? (#185, your order tonight)",
-      "question": "Still open from last night, and now there is a screen behind it. The card on the casting page is built: tap it, pick a picture, and the description lands in your brief box, yours to edit. Here is what came back tonight for one of our own faces, driven through the shipped card in 5.4 seconds — a man in his forties, buzz cut going grey at the temples, in a dark crew-neck tee: \"A man in his mid-to-late forties with a European heritage, presenting a rugged, athletic, ex-military or law-enforcement type. He has a solid, muscular build with broad shoulders and a thick neck, visible through a fitted dark crew-neck t-shirt... His hair is very short, cropped close to the scalp in a buzz cut, dark brown with light graying at the temples. He has light hazel-green eyes set beneath straight, slightly furrowed brows... no visible jewelry, makeup, or tattoos.\" That is 1,082 characters. Not one word about the light, the set, the frame or the camera — your condition, enforced in code rather than politely asked for. THE QUESTION: is that the right level of detail, or do you want it shorter and more castable (a type, not an inventory)? It is one instruction to change and it does not touch the screen. Nothing is live — the switch is off for everyone including you, and the flip waits on this answer and on your eye at the frames.",
+      "id": "concept-upload-flip-185",
+      "title": "Upload a concept — read the two notes, then say flip it (#185)",
+      "question": "The only thing left on this feature is your word. Tap a picture on the casting page and what lands in your brief box is now a short casting note you can read in one breath, yours to edit before you spend anything. Six reads went through the shipped reader this afternoon: 173, 182, 220, 210 and 233 characters — every one of them inside the 150–250 you asked for, every one first attempt, and the sixth came back as \"couldn't read that just now\" on a perfectly good photograph (see the last paragraph of the journal — filed, small, not a reason to wait). Nothing about light, set, frame or camera. Nothing about what the person does NOT have. THE QUESTION: read the two notes under the frames below against the two faces. If they are the briefs you would have typed, say so and it goes on for your account. If a note is still saying more than a casting director would, say which words and I will cut them. Nothing is live: the switch is off for everyone including you.",
       "state": "open",
+      "filedAt": "2026-08-28T14:20:00+10:00",
+      "issueNumber": 185,
+      "cardId": "concept-upload-flip-card-185",
+      "frames": [
+        {
+          "key": "crew-eye/59ca08ab-e100-4026-abc7-879da8cfa1ab.png",
+          "arm": "THE FACE YOU JUDGED — before and after",
+          "caption": "BEFORE (1,082 chars): \"...light hazel-green eyes set beneath straight, slightly furrowed brows... no visible jewelry, makeup, or tattoos.\" AFTER (173): \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" His eyes really are that colour and his shirt really does have those seams — the reader sees them and leaves them out. ⚠ Last night we showed you the wrong face here."
+        },
+        {
+          "key": "crew-eye/0acfd74a-af83-486d-8a8d-bdf572adaa71.png",
+          "arm": "a second man, same reader",
+          "caption": "\"A man in his mid-to-late forties, South Asian heritage, athletic solid build, short dark textured hair, fitted charcoal crew-neck. Serious, composed, authoritative professional type.\" (182 chars.) This is your success test: two different men, two different TYPES — not two inventories. Both would cast eight different faces, not eight reprints of the man in the photograph."
+        }
+      ]
+    },
+    {
+      "id": "concept-upload-descriptions-185",
+      "title": "ANSWERED — you called it a police report, and it is a casting note now (#185)",
+      "question": "Your verdict, and it was the right one: \"Too much inventory. For a cast studio it should come back as a type, not a police report... Then eight renders of the same man.\" Built overnight and driven at the real reader. The same face is now read as: \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" 173 characters against 1,082. It did not name his eye colour, the seams on his shirt, or \"no tattoos\" — your drop list, held on the very picture that produced the ruling. ⚠ ONE CORRECTION YOU ARE OWED: the two frames under this item were the wrong way round. The face captioned \"the frame it was read from\" was NOT the man that description is of — the words were his neighbour's. I only found it by opening both pictures and re-reading them today. The new item below has the right face against the right words.",
+      "state": "answered",
       "filedAt": "2026-08-28T11:00:00+10:00",
       "issueNumber": 185,
       "cardId": null,
       "frames": [
         {
-          "key": "crew-eye/b7ad6162-2bd0-42db-b7a3-9a3b90616987.png",
+          "key": "crew-eye/59ca08ab-e100-4026-abc7-879da8cfa1ab.png",
           "arm": "the frame it was read from",
-          "caption": "Read the description in the question against this face. Heritage, the greying temples, the raglan seams — all of it is in the picture. Heritage was NOT in the first version; I only found it missing by opening the frame and looking, so it went into the instruction and the read was bought again."
+          "caption": "Read the 1,082-character description in the question against THIS face — the greying temples and the raglan seams are his. Until today this caption sat under the other man; the words were always about this one."
         },
         {
-          "key": "crew-eye/59ca08ab-e100-4026-abc7-879da8cfa1ab.png",
+          "key": "crew-eye/b7ad6162-2bd0-42db-b7a3-9a3b90616987.png",
           "arm": "a second face, same reader",
-          "caption": "What this one got: \"a man in his mid-to-late forties with a European heritage... hair buzzed very short, dark brown with a slight fade at the temples... light stubble in a scruffy, unshaved style rather than a defined beard... reads as a rugged, no-nonsense type.\" Two different men, two clearly different briefs — that is the test that matters, not whether either one sounds good on its own."
+          "caption": "The face that was mistakenly shown first. Driven again today, the reader gives him: \"A man in his mid-to-late forties, South Asian heritage, athletic build, short dark cropped hair, fitted charcoal crew-neck top. Composed, capable professional presence...\" — three reads out of three agreed on the heritage, which is how the mix-up was found. Last night's caption here quoted the other man's read."
         }
       ]
     },
@@ -810,6 +858,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "concept-type-not-inventory-185",
+      "title": "The uploaded concept comes back as a type, not a police report",
+      "status": "merged",
+      "prNumber": 191,
+      "note": "Your ruling, built and merged. The description a picture produces went from 1,082 characters to about 180, and the reason it matters is not tidiness: those words go to the engine word for word as the first line of the prompt, so every detail the reader names is one all eight faces are forced to share — which is exactly the eight-renders-of-the-same-man problem you named. Your keep list and drop list are the instruction now, your own example sentence is shown to the reader as the target, and the length is enforced in code so it cannot drift back. A read that comes back as an inventory twice is told so plainly. Nothing is live; the switch did not move."
+    },
     {
       "id": "picture-format-vocabulary-27",
       "title": "The file choosers stop keeping their own copy of what we accept",
@@ -1312,6 +1367,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-28T14:20:00+10:00",
+      "shift": "foreman-74",
+      "text": "You answered the description question overnight, it got built, and I finished and checked it — so there is something to look at.\n\nYou said it should come back as a type, not a police report. It does now. The man you judged went from 1,082 characters to 173: \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" That is the whole read. It did not mention his eye colour, the seams on his shirt, or that he has no tattoos — all three are things it can plainly see and all three are on your drop list.\n\nTwo halves to the fix, and the second is the one that lasts. The instruction now carries your keep list, your drop list and your own example sentence — but an instruction is a polite request to a model. The length is a rule in code: 300 characters maximum, asked for 150–250. An inventory does not fit in 300, so the words you told it to drop have nowhere to go even on a day the model ignores the ask.\n\nOne correction you are owed, and it is ours. Last night's edition put the wrong photograph under \"the frame it was read from\" — the description you were reading was of the man in the SECOND frame, not the first. Nothing about your ruling changes, because you ruled on the words. But you were shown a face those words were not about, and you deserve to know rather than to wonder later why the reader called that man European. I found it by opening both pictures and putting them through the reader again this afternoon: one comes back European, the other South Asian, three times out of three. The frames above are now the right way round.\n\nOne more thing worth your knowing before you flip it. In six reads today, five came back perfectly and one came back as \"we couldn't read that just now\" — on a good photograph, and it does not try a second time. That is not a reason to wait: you would tap it again and it would work. It is filed, it is small, and it is inside behaviour that already exists.\n\nNothing is live. The switch is still off for everyone including you. The only thing left on this feature is your word — read the two notes on the frames and say flip it, or tell me which words are still too much."
+    },
+    {
       "at": "2026-08-28T13:10:00+10:00",
       "shift": "foreman-72",
       "text": "A QUIET ONE, and deliberately so — you have two things sitting on your eye and I did not want to build past them. Nothing you can see changed tonight. What I fixed is a trap that was set to go off the next time we add a picture format.\n\nWhen you tap Upload a concept, or attach a reference in a refine, the file chooser only shows you PNG, JPEG and WebP files. That list is decided by the server. The problem was that the chooser had its OWN typed-out copy of it, because the server's list lived somewhere the screen could not read from. So the day someone adds a fourth format — HEIC off an iPhone, say — the server would take it and the chooser would still hide it. Not an error, not a message: your file simply would not appear in the picker, and you would conclude we do not accept it. That is the worst kind of bug because there is nothing to report.\n\nThe list now lives in one place both sides read, and the chooser BUILDS its filter from it rather than repeating it. Identical behaviour today — same three formats, same everything — and a fourth one would reach both screens with no further work.\n\nOn the way I found the same copy-paste on the server itself, in the route that hands back a picture you attached. It had a hand-typed list of what it is allowed to serve, in a file whose own comment says the list comes from the upload door — while its twin one file over does it properly. That one matters more, because a stale list there is a security answer, not a convenience. Fixed the same way.\n\nAnd I made it hard to do again: the test suite now refuses any screen that types the list out by hand, and I proved the test can actually fail by breaking the code nine different ways and watching each one go red. Four older screens (your avatar, the garment rack, the model upload, the legacy tattoo panel) still have their own copies — they answer to different server lists, so pointing them at this one would just move the problem. They are named on the record and the suite will not let anyone quietly forget them.\n\nTHE REVIEWER CAUGHT TWO THINGS AND BOTH WERE WORTH CATCHING. First, my new test had a hole exactly the shape of the one it was written to close — it noticed the list typed in quotes but not in backticks, which is a thing a developer would write by accident on any given Tuesday. Fixed and proven. Second, and this is the interesting one: by making the two sides share one list, I had quietly made a SECURITY sentence depend on it. The route that hands you back a picture you attached has a comment saying there is no danger here because none of these three formats can carry code. That was a statement about three specific formats; after my change it became a statement about whatever the list happens to hold. So somebody adding SVG one day — a format that is really a document that runs — would have made that sentence false with nothing objecting. There is now a test that objects. Nothing was ever at risk; it is the kind of thing that is cheap today and expensive in a year.\n\nNo credits, no renders, nothing spent, no switches moved. Upload a concept is still off for everyone and still waiting on your answer about the description length."
@@ -1505,11 +1565,6 @@
       "at": "2026-08-26T22:55:00+10:00",
       "shift": "foreman-24",
       "text": "Your block ruling is built and live on your account (#144, PR #145). The locked block behind every author-road roll now uses your lighting, expression and colour lines word for word, drops the flash studio, the no-tilt line and the mouth bans, allows text, and treats itself as a default your words override. I probed it first (0 of 6 refused, $0.67), then rolled 'goth woman mid 30s' on your account: roll 223, 7 of 8, one content-filter refusal — the strip sits in your gallery beside 221 and 222 on the old block so you can judge the light side by side. One honest note from my own look: the seven faces on 223 are close cousins (long dark hair, black lips on all) — that is the spread question on open features, not the block's. Next in order: the Retry button (#122), the minimal settings modal (#142), then the two small courts (#128 lighting with your line as variant 2, #130 framing)."
-    },
-    {
-      "at": "2026-08-26T21:36:18+10:00",
-      "shift": "foreman-23",
-      "text": "The refusal chips are live (#122, PR #143). From now on a refused slice on your sheet says CONTENT FILTER on the card and 'Refused by the engine's content filter · refunded' beneath it — no more guessing. While building it I counted your last three rolls: 220 lost 2 of 8 to the filter, 221 lost 1, and 222 lost 5 of 8 — the worst sheet on record, filed on the refusal-loop card (#129) as the patrol's first number. Nothing new waits on you tonight; the author road is live on your account exactly as e31 described, and your eye on it is still the gate. Next in order: the Retry button (same card), then the minimal settings modal (#142), then the two small courts (#128, #130)."
     }
   ],
   "acknowledgedReplyIds": [
@@ -1531,6 +1586,7 @@
     16,
     17,
     18,
-    19
+    19,
+    20
   ]
 }
