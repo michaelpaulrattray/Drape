@@ -640,12 +640,29 @@ export type ConceptDescribeInput = {
   signal?: AbortSignal;
 };
 
+/**
+ * Every refusal a customer may be shown, named. None of them is an exception.
+ *
+ * ⚠ **THIS IS A DOOR VOCABULARY AND IT IS READ AS ONE** (#192). Its members are
+ * the keys of `CONCEPT_DESCRIBE_COPY`, and the capability atlas derives this
+ * entrance's doors from that table rather than from a grep — so a member added
+ * here without a customer sentence is a TypeScript error, and a member added
+ * WITH one appears on the map (as `concept.<member>`) the same hour. Before
+ * this, three of the five were invisible to the map and the fourth was
+ * attributed to the interpreter's identically-named `unreadable` door.
+ */
+export type ConceptDescribeRefusal =
+  | "no_being"
+  | "unreadable"
+  | "not_about_the_person"
+  | "not_a_casting_note"
+  | "no_transport";
+
 export type ConceptDescribeOutcome =
   | { ok: true; description: string; attempts: number }
-  /** Every refusal a customer may be shown, named. None of them is an exception. */
   | {
       ok: false;
-      reason: "no_being" | "unreadable" | "not_about_the_person" | "not_a_casting_note" | "no_transport";
+      reason: ConceptDescribeRefusal;
       attempts: number;
     };
 
