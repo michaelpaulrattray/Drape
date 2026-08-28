@@ -55,6 +55,7 @@ import {
 } from "../db/storageCleanup";
 import { storagePut } from "../storage";
 import { inkDesignContentType, isInkDesignFormat } from "./inkUploadDoor";
+import { BYTES_NOT_AN_IMAGE_MESSAGE } from "./uploadRefusalCopy";
 import {
   REFERENCE_PICTURES_PER_CANDIDATE,
   referenceAttachBytesRefusal,
@@ -137,7 +138,7 @@ export async function attachReference(
   /* Narrowed by the door above; restated for the type rather than re-decided,
      so a future edit to the door cannot leave a lie here. */
   if (!decoded || !isInkDesignFormat(decoded.format)) {
-    return { ok: false, refusal: { code: "unreadable", message: "That file isn't an image we can read." } };
+    return { ok: false, refusal: { code: "unreadable", message: BYTES_NOT_AN_IMAGE_MESSAGE } };
   }
 
   const storageKey = referenceAttachmentKey(decoded.format);

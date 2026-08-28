@@ -98,6 +98,7 @@ import {
 import { storagePut } from "../storage";
 import { captureCastingInkCutEnabled, captureCastingInkRegionCropEnabled } from "./castingV2Scope";
 import { upscaleToFloor } from "./inkReferenceUpscale";
+import { BYTES_NOT_AN_IMAGE_MESSAGE } from "./uploadRefusalCopy";
 import { createFalRegionReader } from "./falRegionReader";
 import {
   cutInkDesign,
@@ -390,7 +391,7 @@ export async function uploadInkDesign(
   if (bytes) return { ok: false, refusal: bytes };
   /* Narrowed by the door above; restated for the type rather than re-decided. */
   if (!decoded || !isInkDesignFormat(decoded.format)) {
-    return { ok: false, refusal: { code: "unreadable", message: "That file isn't an image we can read." } };
+    return { ok: false, refusal: { code: "unreadable", message: BYTES_NOT_AN_IMAGE_MESSAGE } };
   }
 
   /*

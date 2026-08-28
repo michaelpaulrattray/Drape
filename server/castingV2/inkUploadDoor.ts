@@ -36,6 +36,8 @@
  */
 import { randomUUID } from "node:crypto";
 
+import { BYTES_NOT_AN_IMAGE_MESSAGE } from "./uploadRefusalCopy";
+
 import type { AnchorFraming } from "../../shared/bodyAnchorRegions";
 /*
   THE FORMAT VOCABULARY MOVED TO `shared/` AND IS RE-EXPORTED FROM HERE (#27).
@@ -219,7 +221,7 @@ export function inkDesignBytesRefusal(input: {
     };
   }
   if (!input.decoded) {
-    return { code: "unreadable", message: "That file isn't an image we can read." };
+    return { code: "unreadable", message: BYTES_NOT_AN_IMAGE_MESSAGE };
   }
   if (!isInkDesignFormat(input.decoded.format)) {
     return {
