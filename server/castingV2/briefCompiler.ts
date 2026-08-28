@@ -37,6 +37,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
+import { LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE, READER_OUTAGE_MESSAGE, UNSUPPORTED_COHORT_MESSAGE, type BriefRefusalCode } from "./briefRefusalCopy";
 import type { TextEngine } from "../providers/types";
 import {
   EMPTY_STATED_HAIR,
@@ -266,46 +267,32 @@ export type CompiledRollBrief = {
   statedInk: StatedInk | null;
 };
 
-export type BriefRefusalCode =
-  /** The brief carries no subject the compiler can work with. */
-  | "uninterpretable"
-  /** A cohort exists in the sentence that no adapter is certified for (§I). */
-  | "unsupported_cohort"
-  /**
-   * The brief asks for a real person or a named character — the one wall the
-   * author road KEEPS from the cohort question (ruling §6 rule 5; a
-   * customer's cast is theirs, and so is everyone else's).
-   */
-  | "likeness"
-  /**
-   * The brief asks for something that is not a being — an object, a vehicle,
-   * a scene. THE one wall the author road ADDS (ruling §6: "someone asking for
-   * an object should be refused like a car"). Free, before the claim.
-   */
-  | "not_a_being"
-  /**
-   * The brief reader never read the brief — the call threw (deadline,
-   * transport, provider) or no engine is configured. Free, before the claim,
-   * by founder ruling (#126, Crew reply #7: "refuse-free").
-   */
-  | "reader_outage";
-
-/** The author road's two subject walls, in the customer's ear. Exported for the suite and the road note. */
-export const LIKENESS_MESSAGE =
-  "Casting makes people and creatures who are nobody in particular — not a named person, and not a "
-  + "character from a game, film or show. Describe the kind of face you want and we'll cast that. "
-  + "You have not been charged.";
-export const NOT_A_BEING_MESSAGE =
-  "This is a casting studio — it casts people and creatures, not objects, vehicles or places. "
-  + "Describe who you want in the frame and we'll cast them. You have not been charged.";
-
 /**
- * The sentence a reader outage answers with. Exported so the test that drives
- * the catch branch and the road note can cite the same words.
+ * THE ROLL ENTRANCE'S FIVE WALLS LIVE IN `briefRefusalCopy.ts` (#206).
+ *
+ * The union and the three exported sentences were declared here until the
+ * capability atlas was found unable to see any of them: `new BriefRefusal(...)`
+ * is a shape none of the map's three population greps visits, so all five doors
+ * — including the two subject walls the Prompt Author ruling KEEPS — were
+ * absent from the artifact whose whole job is to be the list.
+ *
+ * The repair is #192's: the vocabulary is a `Record<code, sentence>` table the
+ * atlas IMPORTS, the union is `keyof` it, and the DIRECTION is the load-bearing
+ * part — the table must not import this file, because the Atlas never runs app
+ * code and this module reaches the interpreter and the whole provider layer.
+ *
+ * Re-exported rather than moved out of reach: the suite, `conceptDescribeCopy.test.ts`
+ * and the roads map all name these by their old import path, and a rename would
+ * have been a churn this change has no reason to spend.
  */
-export const READER_OUTAGE_MESSAGE =
-  "The studio couldn't read your brief just now — the reader that turns your words into a casting call did not answer. "
-  + "Nothing was cast and you have not been charged. Try again in a moment.";
+export {
+  LIKENESS_MESSAGE,
+  NOT_A_BEING_MESSAGE,
+  READER_OUTAGE_MESSAGE,
+  UNSUPPORTED_COHORT_MESSAGE,
+  ROLL_REFUSAL_COPY,
+  type BriefRefusalCode,
+} from "./briefRefusalCopy";
 
 /**
  * How much of a brief the fallback compile can carry: `fallbackIntent` makes
@@ -316,6 +303,15 @@ export const READER_OUTAGE_MESSAGE =
  * "always" (Crew reply #9, 2026-08-26), so an outage refuses at every length
  * and this constant only sizes the role on the one road that still falls
  * back, an UNPARSED reply.
+ *
+ * ⚠ **THIS DOCBLOCK WAS DELETED AS REFACTOR COLLATERAL AND RESTORED IN THE
+ * SAME PR** (#206, review finding 2). The edit that lifted `BriefRefusalCode`
+ * and its three sentences out of this file cut from the union's first line to
+ * this constant's declaration — which swept the paragraph in between, where a
+ * founder ruling was the only thing recorded. Nothing failed, because a
+ * deleted comment cannot go red. Worth the line: a mechanical range-delete
+ * bounded by two symbols takes everything BETWEEN them, and what sat between
+ * them here was the record of why an 80 is an 80.
  */
 export const FALLBACK_CARRIES_CHARS = 80;
 
@@ -1204,14 +1200,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     );
     throw new BriefRefusal(
       "unsupported_cohort",
-      "Casting makes photographic people, and only ones who are nobody in particular — not a named person, not a character from a game or film, and not anime or illustration yet. Describe the kind of face you want and we'll cast that. You have not been charged.",
+      UNSUPPORTED_COHORT_MESSAGE,
     );
   }
 
   if (!outcome.ok && outcome.reason === "unsupported_cohort") {
     throw new BriefRefusal(
       "unsupported_cohort",
-      "Casting makes photographic people, and only ones who are nobody in particular — not a named person, not a character from a game or film, and not anime or illustration yet. Describe the kind of face you want and we'll cast that. You have not been charged.",
+      UNSUPPORTED_COHORT_MESSAGE,
     );
   }
   /*

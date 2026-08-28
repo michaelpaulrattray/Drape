@@ -250,6 +250,17 @@ export const CORPUS: readonly CorpusRow[] = [
  * a row's expect (a contradiction), and REFUSES a door listed here that a drive
  * actually produced (stale documentation). So this list can lie in neither
  * direction quietly.
+ *
+ * ⚠ **"UNREACHABLE" MEANS UNREACHABLE BY THE CORPUS, NEVER BY A CUSTOMER** —
+ * stated because the generator's own finding message claimed the second sense
+ * for months and #206 put doors on this list that are hit in production every
+ * day (`roll.likeness` answers anyone who types a famous name). Read at every
+ * row here, the sense has always been the first: each `becomesReachable` is
+ * written in terms of the corpus ROW that would reach it, without exception.
+ * A door is admissible here when the corpus's row grammar structurally cannot
+ * produce its state — it sends a SENTENCE at an existing Cast through
+ * `castingV2.refine`, so it carries no picture, no request shape and no other
+ * entrance. It is NOT a place to file a door that is merely untested.
  */
 /**
  * THE KNOWN DEBTS — the enumerated, SHRINK-ONLY list of doors the map does not
@@ -337,6 +348,34 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "concept.no_transport",
     reason: "answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence",
     becomesReachable: "deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm" },
+  /* ── #206: THE ROLL ENTRANCE'S FIVE WALLS — the map's second entrance, and the
+     one whose absence mattered most, because two of these are founder
+     boundaries the Prompt Author ruling explicitly KEEPS.
+
+     They share ONE reason for being here and it is structural: the corpus sends
+     a SENTENCE at an EXISTING Cast through `castingV2.refine`. All five of these
+     are raised by `castingBriefCompiler` inside `castingV2.createRoll`, BEFORE a
+     roll row exists — there is no cast to send them at and no row shape in the
+     grammar that reaches that entrance at all. Every one is free, before the
+     claim, so a row that could reach them would spend nothing.
+
+     ⚠ Two of them are among the most-hit doors in the product. That is not a
+     contradiction with this list; see the sense stated in the docblock above. ── */
+  { id: "roll.likeness",
+    reason: "answers a brief asking for a real person or a named character — the one subject wall the author road KEEPS (ruling §6 rule 5). HIT IN PRODUCTION whenever a customer types a famous name; it is here because no corpus row can send a BRIEF, not because it is quiet. Pinned by five suite files including its own `likenessRefusal.test.ts`",
+    becomesReachable: "a corpus row grammar that carries a BRIEF to `castingV2.createRoll` instead of a sentence to `castingV2.refine` — a second driven entrance, the same shape the concept entrance's picture-carrying row needs, and free at every one of these five doors" },
+  { id: "roll.not_a_being",
+    reason: "answers a brief whose subject is not a being — an object, a vehicle, a place. THE one wall the author road ADDS (founder: 'someone asking for an object should be refused like a car'), and the twin of `concept.no_being`, which #192 put on the map while this half stayed invisible. Also hit in production",
+    becomesReachable: "the same brief-carrying row; its twin's arm already holds the two sentences to one shared boundary clause, so a row would be measuring the road rather than the words" },
+  { id: "roll.uninterpretable",
+    reason: "answers a brief shorter than `BRIEF_TEXT_MIN` — the floor, raised by both the live compiler and the deterministic one. Its state is a REQUEST too small to be a brief, which the refine grammar has no field for",
+    becomesReachable: "the same brief-carrying row, sending a brief under the floor; the cheapest of the five to drive and the least informative" },
+  { id: "roll.unsupported_cohort",
+    reason: "answers a styled brief the certified adapter cannot cast — off the author road, and off it only. Its own sentence had NO pin at all before #206: it was an inline literal written out twice, so either copy could have been reworded silently",
+    becomesReachable: "a brief-carrying row on an account OUTSIDE `CASTING_CREATIVE_REGISTER_SCOPE`, since the author road does not raise it; the flag position is part of the row's state, which no current row grammar carries" },
+  { id: "roll.reader_outage",
+    reason: "answers a brief whose reader never answered — the transport threw, the deadline passed, or no engine is configured. Free by founder ruling (#126, 'refuse-free', always). An infrastructure state, not a sentence",
+    becomesReachable: "deliberately never as a corpus row: manufacturing a reader outage in the census would test the harness and not the product — the discharge `removal_uncheckable` and `concept.unreadable` already carry. Its pin is its own driven arm in `briefCompiler.test.ts`" },
   { id: "unplacedInk",
     reason: "raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door",
     becomesReachable: "a reference-attached fixture whose take carries no placement" },
