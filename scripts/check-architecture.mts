@@ -67,8 +67,10 @@ const LF_ONLY = (text: string): string => text.split("\r\n").join("\n");
 const sameContent = (a: string, b: string): boolean => LF_ONLY(a) === LF_ONLY(b);
 
 /**
- * The three reads this function makes, injectable so the freshness rule above
- * can be DRIVEN rather than reasoned about.
+ * Every read this function makes, injectable so the freshness rules above can
+ * be DRIVEN rather than reasoned about. (It said "the three reads" while step
+ * 6 already looped over a directory; a count in a docblock is a second source
+ * of truth about the code beside it, and #195 added two more.)
  *
  * Without it `sameContent` could be exported and unit-tested while sitting
  * beside a comparison that never called it — a reader that reports correctly
@@ -192,13 +194,72 @@ export function checkArchitecture(
     }
   }
 
-  // 4. The explorer must be derived from the JSON, never hand-edited.
-  const explorerPath = path.join(committedDir, "index.html");
-  if (fs.existsSync(explorerPath)) {
-    if (!sameContent(readFile(explorerPath), renderExplorer(atlas))) {
-      problems.push("docs/architecture/index.html is stale or hand-edited — regenerate it");
+  /*
+    4. THE GENERATED ARTIFACTS BESIDE THE ATLAS — and "stale" is only a
+    finding where somebody can review it (#195).
+
+    This step used to compare `docs/architecture/index.html` to a fresh render
+    and refuse when they differed, guarded by `fs.existsSync`. **That file is
+    gitignored** (`.gitignore:21`, deliberately — 846 KB of generated HTML
+    whose diff nobody can read), so it is a LOCAL build artifact that git
+    cannot carry. Merge a PR that regenerated the Atlas, fast-forward `main`,
+    and the new `drape-architecture.json` arrives while the local explorer
+    keeps the old fingerprint: **stale by construction, on every machine, every
+    time.** The deploy rite refuses, and `pnpm architecture:generate` clears it
+    while producing NO git diff — because there is nothing to diff.
+
+    Three consecutive shifts paid for that; two of them went hunting for the
+    "hand-edited" file the message named, which for an ignored file **cannot
+    exist** — there is no committed version to have been edited away from. The
+    wording sent them at a hypothesis the file's own status rules out.
+
+    So the rule is the class rather than the instance: **a freshness verdict is
+    a finding only where a reviewable committed copy exists.** The checker
+    consults git — the same `trackedFiles` reader step 5 uses, called once
+    (working law 4) — and stays silent about an artifact nobody reviews and
+    only one command writes.
+
+    ⚠ WHAT IS DELIBERATELY *NOT* CONDITIONAL: `renderExplorer` is invoked
+    either way. Step 4 is its only caller outside the generator, so making the
+    call conditional would take the renderer out of the suite entirely — a
+    throwing renderer would ship green. Its determinism is asserted here for
+    the same reason step 2 asserts the builder's.
+
+    ⚠ AND THE SWEEP FOUND THE MIRROR DEFECT: `drape-architecture.schema.json`
+    is written by `writeAtlas` beside the other two and IS tracked, and no step
+    of this check has ever compared it — a hand-edited or stale committed
+    schema shipped green. Same class, sign flipped, so both go through one
+    comparison rather than two copies of it.
+  */
+  const tracked = trackedFiles();
+  const checkGeneratedArtifact = (relative: string, expected: string): void => {
+    /* Untracked → a local derivation nobody reviews; silence is the answer.
+       A BLIND reader (`tracked.size === 0`) lands here too and says nothing,
+       which is safe only because step 5 refuses outright on that population —
+       asserted there, not assumed here. */
+    if (!tracked.has(relative)) return;
+    let onDisk: string | null = null;
+    try {
+      onDisk = readFile(path.join(repoRoot, relative));
+    } catch {
+      onDisk = null;
     }
+    if (onDisk === null) {
+      problems.push(`${relative} is tracked but is not in the working tree — run pnpm architecture:generate`);
+    } else if (!sameContent(onDisk, expected)) {
+      problems.push(`${relative} is stale or hand-edited — run pnpm architecture:generate and review the diff`);
+    }
+  };
+
+  const explorer = renderExplorer(atlas);
+  if (explorer !== renderExplorer(atlas)) {
+    problems.push("the explorer renderer is not deterministic: two renders of one atlas differed");
   }
+  checkGeneratedArtifact("docs/architecture/index.html", explorer);
+  checkGeneratedArtifact(
+    "docs/architecture/drape-architecture.schema.json",
+    `${JSON.stringify(SCHEMA, null, 2)}\n`,
+  );
 
   /*
     5. Every path the Atlas names is one git tracks. See {@link TrackedFiles} —
@@ -209,7 +270,8 @@ export function checkArchitecture(
     <path>`, and a count does not tell you what to add.
   */
   {
-    const tracked = trackedFiles();
+    /* The one reader, called once in step 4 above (working law 4) — a
+       second call here would be a second source of truth about the index. */
     /* The population control. An empty `git ls-files` — no git, a wrong cwd, a
        reader that threw and was swallowed — would make the loop below pass over
        nothing while reporting the tree clean, which is the exact green this
@@ -227,9 +289,23 @@ export function checkArchitecture(
     }
   }
 
-  // 6. No secret-shaped strings in anything we publish.
+  /*
+    6. No secret-shaped strings in anything we publish.
+
+    A file the directory listing names and the reader cannot open is REPORTED
+    rather than skipped: the sweep's whole value is that it saw everything, and
+    a swallowed read is the silent green invariant 7 exists against. It is also
+    what makes step 4's `tracked but is not in the working tree` arm drivable
+    through an injected reader without the sweep throwing over the same file.
+  */
   for (const file of fs.existsSync(committedDir) ? fs.readdirSync(committedDir) : []) {
-    const contents = readFile(path.join(committedDir, file));
+    let contents: string;
+    try {
+      contents = readFile(path.join(committedDir, file));
+    } catch {
+      problems.push(`${file}: could not be read for the secret sweep`);
+      continue;
+    }
     for (const [pattern, label] of SECRET_SHAPES) {
       if (pattern.test(contents)) problems.push(`${file}: contains something shaped like a ${label}`);
     }

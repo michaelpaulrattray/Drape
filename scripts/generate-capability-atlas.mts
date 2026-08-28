@@ -22,9 +22,12 @@
  */
 import "dotenv/config";
 
+import fs from "node:fs";
+
 import {
   buildStaticAtlas, driveRow, drivenFindings, readCommittedAtlas, writeAtlas, declaredFlags,
-  CAPABILITY_SCHEMA_VERSION, CAPABILITY_JSON,
+  renderCapabilityPage,
+  CAPABILITY_SCHEMA_VERSION, CAPABILITY_JSON, CAPABILITY_MD,
   type CapabilityAtlas, type DrivenAtlas, type Observation,
 } from "./lib/capabilityAtlas.mts";
 import { CORPUS } from "./capability-atlas-corpus.mts";
@@ -200,6 +203,26 @@ async function main(): Promise<number> {
     if (!committed) problems.push(`no committed census at ${CAPABILITY_JSON} — run pnpm capability:generate`);
     else {
       if (JSON.stringify(committed.static) !== JSON.stringify(atlas.static)) problems.push("the STATIC half is stale — the source declares something the committed census does not know; regenerate");
+      /*
+        ⚠ THE PAGE IS GENERATED TOO, AND NOTHING HAS EVER COMPARED IT (#195's
+        sweep). `writeAtlas` writes two files — the JSON and
+        `capability-atlas.md` — and this check read one, so a hand-edited or
+        stale committed PAGE shipped green. It is the same class the
+        architecture check's step 4 was fixed for with the sign flipped:
+        "stale" is a finding exactly where a reviewable committed copy exists,
+        and this file is tracked (`.gitattributes` names it `merge=atlas`,
+        pinned by `server/atlasMergeDriver.test.ts`) — unlike the architecture
+        explorer, which is gitignored and therefore says nothing.
+
+        Compared on CONTENT, not on the bytes git left on disk: the generator
+        writes LF and a Windows checkout hands it back with CRLF, which is the
+        same trap `check-architecture.mts`'s `sameContent` exists for.
+      */
+      const lfOnly = (text: string): string => text.split("\r\n").join("\n");
+      if (!fs.existsSync(CAPABILITY_MD)) problems.push(`no committed page at ${CAPABILITY_MD} — run pnpm capability:generate`);
+      else if (lfOnly(fs.readFileSync(CAPABILITY_MD, "utf8")) !== lfOnly(renderCapabilityPage(atlas))) {
+        problems.push("the PAGE is stale or hand-edited — docs/architecture/capability-atlas.md does not match a fresh render; regenerate and review the diff");
+      }
       if (WANT_DRIVE && JSON.stringify(committed.driven?.observations.map((o) => [o.id, o.observed])) !== JSON.stringify(driven?.observations.map((o) => [o.id, o.observed]))) {
         problems.push("the DRIVEN half moved — see the route-changed findings");
       }
