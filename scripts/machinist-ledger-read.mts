@@ -20,11 +20,18 @@
  *                               when it is on.
  *   B. per day                  the same rows, by UTC day.
  *   C. failure classes          failed/partial operations by kind + errorCode,
- *                               and failed refines by their customer-facing
- *                               sentence — because errorCode collapses every
- *                               refine failure to INTERNAL_SERVER_ERROR and the
- *                               class survives only in publicMessage prose once
- *                               the variant row is purged.
+ *                               failed refines by their customer-facing
+ *                               sentence, and — since #111 — by their CLASS,
+ *                               read off the refund row on `point_transactions`
+ *                               through `refineRefundLedger.ts`. errorCode
+ *                               collapses every refine failure to
+ *                               INTERNAL_SERVER_ERROR and the variant row that
+ *                               carries the class is swept with its candidate
+ *                               (zero survive on production, all time) — but
+ *                               the refund's own sentence sits on a money
+ *                               ledger nothing purges. Seven classes share one
+ *                               sentence, so that row reads as a named FAMILY
+ *                               rather than as a guess between them.
  *   D. candidates               casting_candidates by status + failureClass.
  *   E. face scans               casting_face_scans, split by geometry.scanned —
  *                               true is a PAID look (20 segmenter calls, $0.10);
@@ -47,6 +54,10 @@
  */
 import "dotenv/config";
 
+import {
+  classifyRefineRefundDescription,
+  refineRefundReadingLabel,
+} from "../server/castingV2/refineRefundLedger";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { priceFalCalls, readFalPrices, readFalTraffic } from "./lib/falSpend.mts";
 import { activityByDay, readOpenRouterActivity } from "./lib/openrouterBalance.mts";
@@ -134,7 +145,7 @@ const failures = await q(
 );
 for (const row of failures) console.log(`   ${String(row.n).padStart(4)}  ${row.kind}/${row.status}  ${row.errorCode ?? "-"}  refunded ${row.refunded}`);
 if (failures.length === 0) console.log("   (none)");
-console.log(`   failed refines by customer-facing sentence (the only durable record of the class):`);
+console.log(`   failed refines by customer-facing sentence (lossy — the generic line covers several classes):`);
 const refineFailures = await q(
   `SELECT LEFT(publicMessage, 72) AS msg, COUNT(*) AS n, SUM(refundedCredits) AS refunded
      FROM generation_operations
@@ -144,6 +155,50 @@ const refineFailures = await q(
 );
 for (const row of refineFailures) console.log(`   ${String(row.n).padStart(4)}  refunded ${String(row.refunded).padStart(4)}  ${row.msg}`);
 if (refineFailures.length === 0) console.log("   (none)");
+
+/*
+  THE CLASS, OFF THE MONEY LEDGER (#111 item 1, 2026-08-29).
+
+  Patrol #1 recorded that the failure class survives only in `publicMessage`
+  prose once the variant row is purged. The variant half is worse than that —
+  `casting_candidate_variants.failureClass` is non-null on ZERO production rows,
+  all time — but the conclusion was wrong, because the REFUND already writes the
+  class down on `point_transactions`, which nothing purges. So this is the
+  reading the card asked for, and it is derived rather than parsed: the sentence
+  is composed and classified by one vocabulary (`refineRefundLedger.ts`).
+
+  Three answers, and the middle one is why this is not a tally of classes: seven
+  classes share the fallback sentence, so `family` says the record cannot tell
+  them apart. Folding that into `unknown` would be a precision the ledger does
+  not have — and `unknown` is one of the seven, so the lie would look right.
+*/
+console.log(`   failed refines by CLASS, read off the refund on the money ledger:`);
+const refunds = await q(
+  `SELECT t.description AS description, COUNT(*) AS n, SUM(t.amount) AS credits
+     FROM generation_operations o
+     JOIN point_transactions t
+       ON t.referenceId = CONCAT('refund:op:', o.id, ':charge') AND t.type = 'refund'
+    WHERE o.createdAt >= ? AND o.kind = 'castingV2.refine' AND o.status = 'failed'
+    GROUP BY description ORDER BY n DESC`,
+  [since],
+);
+const byClass = new Map<string, { n: number; credits: number }>();
+for (const row of refunds) {
+  const label = refineRefundReadingLabel(classifyRefineRefundDescription(String(row.description ?? "")));
+  const seen = byClass.get(label) ?? { n: 0, credits: 0 };
+  byClass.set(label, { n: seen.n + Number(row.n), credits: seen.credits + Number(row.credits) });
+}
+const classified = [...byClass.entries()].sort((a, b) => b[1].n - a[1].n);
+for (const [label, totals] of classified) {
+  console.log(`   ${String(totals.n).padStart(4)}  refunded ${String(totals.credits).padStart(4)}  ${label}`);
+}
+if (classified.length === 0) console.log("   (none)");
+/* The denominator, said out loud: a failed refine with no refund row is not a
+   gap in this reader, it is a refine that refunded nothing (a CONFLICT costs
+   the customer nothing and correctly has no ledger row). */
+const refundedFailures = refunds.reduce((total, row) => total + Number(row.n), 0);
+const failedRefines = refineFailures.reduce((total, row) => total + Number(row.n), 0);
+console.log(`   denominator: ${refundedFailures} of ${failedRefines} failed refines carry a refund row`);
 
 // ── D. candidates ─────────────────────────────────────────────────────
 const candidates = await q(

@@ -38,6 +38,7 @@ import {
   markGenerationOperationRecoveryRequired,
 } from "../db/generationOperations";
 import { failVariant, findVariantByOperation } from "../db/castingV2Variants";
+import { refineRefundDescription } from "./refineRefundLedger";
 import { getDb } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 
@@ -316,7 +317,11 @@ export async function recoverCastingV2RefineOperation(
     const refund = await (options.refund ?? recordRefund)(
       operation.userId,
       owed,
-      "Refine refunded — the generation was interrupted",
+      /* The eighth member of a family whose other seven live in
+         `refineService.ts`, and the reason neither could be read back off the
+         ledger until #111: one vocabulary, one author, both writers composing
+         through it. Same bytes. */
+      refineRefundDescription("recovered"),
       operationChargeReference(operation.id),
     );
     if (!refund.recorded) {

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "71f942aae39380fd"
+    "sourceFingerprint": "fc4a4ae304ba61ea"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 184
+      "moduleCount": 185
     },
     {
       "id": "domain:castingV2",
@@ -4271,6 +4271,12 @@
     {
       "id": "module:server/castingV2/refineRecovery.ts",
       "path": "server/castingV2/refineRecovery.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineRefundLedger.ts",
+      "path": "server/castingV2/refineRefundLedger.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -11704,6 +11710,10 @@
     {
       "id": "test:server/castingV2/refineRecovery.test.ts",
       "path": "server/castingV2/refineRecovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineRefundLedger.test.ts",
+      "path": "server/castingV2/refineRefundLedger.test.ts"
     },
     {
       "id": "test:server/castingV2/refineRefusals.test.ts",
@@ -25189,6 +25199,11 @@
     },
     {
       "from": "module:server/castingV2/refineRecovery.ts",
+      "to": "module:server/castingV2/refineRefundLedger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineRecovery.ts",
       "to": "module:server/db/castingV2Variants.ts",
       "kind": "imports"
     },
@@ -25205,6 +25220,11 @@
     {
       "from": "module:server/castingV2/refineRecovery.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineRefundLedger.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {
@@ -25570,6 +25590,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/refineReask.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/refineRefundLedger.ts",
       "kind": "imports"
     },
     {
@@ -33837,17 +33862,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:716",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:717",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:716",
+      "subject": "server/castingV2/refineService.ts:717",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:875",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:876",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:875",
+      "subject": "server/castingV2/refineService.ts:876",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

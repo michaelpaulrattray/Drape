@@ -250,6 +250,7 @@ import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } f
 import {
   RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
 } from "./repaintAsks";
+import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
 import {
   attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote,
@@ -10228,75 +10229,29 @@ function failureClassFor(error: unknown): ProviderFailureClass {
   return "unknown";
 }
 
+/**
+ * THE REFUND'S OWN SENTENCE, composed through the ledger vocabulary (#111).
+ *
+ * These were seven string literals here and an eighth in `refineRecovery.ts`,
+ * which meant nothing could read a class back off `point_transactions` without
+ * re-typing the prose — working law 4 on a money row, and the reason the
+ * Machinist's worst number had no classifier. `refineRefundLedger.ts` is the
+ * single author now and `refineRefundLedger.test.ts` pins every sentence
+ * against the literal it replaced, because a refund description is a receipt a
+ * customer and support both read.
+ *
+ * ⚠ **Not one byte moves.** The two branches below are disjoint by
+ * construction — `RepaintCannotSayError extends Error`, not `ProviderError`,
+ * and nothing in the product throws `ProviderError("cannot_say")` — so the
+ * order the inline chain used cannot matter, and every reachable input
+ * produces the string it produced before.
+ */
 function refundDescriptionFor(error: unknown): string {
-  if (error instanceof ProviderError && error.failureClass === "render_fault") {
-    return "Refine refunded — the image came back damaged";
-  }
-  /*
-    OURS, AND THE RECEIPT SAYS SO. The provider's frame was fine and our
-    compositor cut it; a ledger line blaming the vendor is a support
-    conversation nobody can resolve, which is the whole reason this class was
-    split from `render_fault`.
-  */
-  if (error instanceof ProviderError && error.failureClass === "composite_fault") {
-    return "Refine refunded — we could not assemble the picture cleanly";
-  }
-  /*
-    ALSO OURS, and a different ours. The picture was never attempted, because
-    the record of what she already has could not be read — and delivering
-    without it would have quietly taken back edits she paid for.
-  */
-  if (error instanceof ProviderError && error.failureClass === "segment_store") {
-    return "Refine refunded — we could not read this face's kept edits, so nothing was rendered";
-  }
-  /*
-    NAMES WHAT WAS MISSING. The throw carries the facts, so the receipt can say
-    which ones rather than making support re-derive them from a log.
-
-    "came back" rather than "was missing", because a removal's shortfall is not
-    an absence — the render came back WITH the thing that was supposed to go,
-    and "the render was missing with glasses still in the picture" is the same
-    grammar failure one line over.
-  */
-  if (error instanceof ProviderError && error.failureClass === "facts_missing") {
-    const missing = error.message.trim();
-    return missing
-      ? `Refine refunded — the render came back ${missing}`
-      : "Refine refunded — the render came back without what you asked for";
-  }
-  /*
-    AND THE REMOVAL'S OWN LINE. Without it this falls through to "the
-    generation failed", which is the misdescribing receipt the four classes
-    above were split out to stop — the generation did not fail at all, it came
-    back with the thing she was paying to take off.
-  */
-  if (error instanceof ProviderError && error.failureClass === "removal_not_delivered") {
-    const thing = error.message.trim();
-    return thing
-      ? `Refine refunded — the render still showed the ${thing}`
-      /* SECOND PERSON, like its sibling one branch up ("without what you asked
-         for") — this line goes on a ledger row the customer can read, and it
-         was the one member of the family that talked about them in the third
-         person AND assumed they were a "she" (§5e's sweep). */
-      : "Refine refunded — the render still showed what you asked to remove";
-  }
-  /*
-    NOT A FAILURE AT ALL, and the receipt has to stop calling it one.
-
-    Beyond fable-355's letter and squarely inside the class the four splits above
-    were made for: nothing was rendered and no provider was ever contacted — the
-    road refused before the call, because the recipe has no way to state the ask.
-    "The generation failed" sends support hunting an outage that never happened,
-    on the one door whose whole point is that it knows exactly what went wrong.
-
-    Class-wide rather than makeup-only on purpose: the CUSTOMER sentence is
-    ruled copy and stays scoped to the door the founder ruled, but every reason
-    in this taxonomy shares the fact this line states — no render was attempted.
-  */
-  if (error instanceof RepaintCannotSayError) {
-    return "Refine refunded — we cannot yet place what this asked for, so nothing was rendered";
-  }
-  return "Refine refunded — the generation failed";
+  if (error instanceof RepaintCannotSayError) return refineRefundDescription("cannot_say");
+  if (!(error instanceof ProviderError)) return refineRefundDescription("unknown");
+  /* The message is the throw's own detail; the vocabulary ignores it for every
+     class whose sentence has nowhere to put one. */
+  return refineRefundDescription(error.failureClass, error.message);
 }
 
 /*
