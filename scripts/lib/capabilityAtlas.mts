@@ -57,6 +57,7 @@ import { CORPUS, UNREACHABLE_DOORS, KNOWN_DEBTS, type CorpusRow, type CorpusStat
 import { ROADS, LAWS, type Road } from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "../../server/castingV2/conceptDescribeCopy";
+import { ROLL_REFUSAL_COPY } from "../../server/castingV2/briefRefusalCopy";
 import { FREE_SUBJECT_KEYS } from "../../server/castingV2/subjectCards";
 import { refusalTagOf } from "../../server/castingV2/refusalTag";
 
@@ -72,7 +73,7 @@ export const CAPABILITY_MD = path.join(CAPABILITY_OUT_DIR, "capability-atlas.md"
 export type DeclaredId = {
   id: string;
   /** Where the id comes from. */
-  kind: "service-refusal" | "interpreter-refusal" | "cannot-say" | "concept-refusal";
+  kind: "service-refusal" | "interpreter-refusal" | "cannot-say" | "concept-refusal" | "roll-refusal";
   /** For a `cannot-say` member: whether the sentence is free or after a refund. */
   charge?: "free" | "refunded";
   /** Test files that name the id as a quoted literal. */
@@ -143,11 +144,36 @@ export const listFiles = (dir: string, match: (name: string) => boolean): string
 
 const rel = (file: string): string => path.relative(repoRoot, file).split(path.sep).join("/");
 
+/**
+ * Reads a source file as CODE LINES ONLY.
+ *
+ * ⚠ **#206 — THE COMMENT GUARD WAS ON THE CITATION READER AND NOT ON THE
+ * POPULATION READERS, AND THAT ASYMMETRY CAN INVENT A DOOR.** `raiseSites()`
+ * has skipped comment lines since the day two docblocks were found cited as
+ * raise sites. The two readers below did not, so a docblock that QUOTES the
+ * shape — which is what a docblock explaining this very mechanism must do —
+ * declares a door.
+ *
+ * Not hypothetical: it fired the hour #206 was worked. `briefRefusalCopy.ts`'s
+ * header explains the population by writing `refusal("id"` in prose, and the
+ * generator declared a door named **`id`** and raised `unmapped:id` at ERROR
+ * severity — refusing the rite over a sentence in a comment. The instrument
+ * reading its own documentation as product.
+ *
+ * The asymmetry was also the worse-shaped half: a phantom in the POPULATION is
+ * a door on the map that does not exist, while a phantom citation only points
+ * at the wrong line of a door that does. Measured when this landed: filtering
+ * removes exactly the phantom and no real door (`_shift206_population.json`).
+ */
+function codeLinesOf(file: string): string {
+  return fs.readFileSync(file, "utf8").split("\n").filter((line) => !isCommentLine(line)).join("\n");
+}
+
 /** Every `refusal("id"` in the service modules — the door's own name. */
 export function declaredServiceRefusals(): string[] {
   const ids = new Set<string>();
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
-    const text = fs.readFileSync(file, "utf8");
+    const text = codeLinesOf(file);
     for (const match of text.matchAll(/\brefusal\(\s*"([a-z][a-z0-9_]*)"/g)) ids.add(match[1]!);
   }
   return [...ids].sort();
@@ -163,12 +189,12 @@ export function declaredServiceRefusals(): string[] {
 export function declaredInterpreterRefusals(): string[] {
   const ids = new Set<string>();
   const interpreter = path.join(SOURCE_DIR, "refineInterpreter.ts");
-  const text = fs.readFileSync(interpreter, "utf8");
+  const text = codeLinesOf(interpreter);
   for (const match of text.matchAll(/\breason:\s*"([a-z][a-z0-9_]*)"/g)) ids.add(match[1]!);
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
-    for (const match of fs.readFileSync(file, "utf8").matchAll(/"(gate_[a-z_]+)"/g)) ids.add(match[1]!);
+    for (const match of codeLinesOf(file).matchAll(/"(gate_[a-z_]+)"/g)) ids.add(match[1]!);
   }
-  const delta = fs.readFileSync(path.join(SOURCE_DIR, "refineDelta.ts"), "utf8");
+  const delta = codeLinesOf(path.join(SOURCE_DIR, "refineDelta.ts"));
   for (const match of delta.matchAll(/\|\s*\{\s*reason:\s*"([a-z][a-z0-9_]*)"/g)) ids.add(match[1]!);
   return [...ids].sort();
 }
@@ -217,8 +243,45 @@ export function declaredInterpreterRefusals(): string[] {
  */
 const CONCEPT_ENTRANCE_FILE = "conceptDescribe.ts";
 
+/**
+ * The one file whose `new BriefRefusal(...)` raises belong to the roll entrance.
+ * Named once and checked at disk, with the same declared limit its neighbour
+ * carries: a rename throws, a SPLIT does not — move one raise into a new module
+ * and that door quietly loses a citation with nothing going red. Filed on #206.
+ */
+const ROLL_ENTRANCE_FILE = "briefCompiler.ts";
+
 export function declaredConceptRefusals(): string[] {
   return Object.keys(CONCEPT_DESCRIBE_COPY).sort().map((id) => `concept.${id}`);
+}
+
+/**
+ * THE ROLL ENTRANCE'S WALLS (#206) — the fourth declared source, and the second
+ * entrance on the map.
+ *
+ * ⚠ **A FOURTH RAISE SHAPE NOTHING GREPPED.** `briefCompiler.ts` refuses with
+ * `throw new BriefRefusal("id", MESSAGE)`. None of the three readers above
+ * visits that shape, so all five of this entrance's doors were absent from the
+ * declared set — measured at the artifact before the repair, including
+ * `likeness` and `not_a_being`, the two subject walls the Prompt Author ruling
+ * explicitly KEEPS. The map showed one half of one founder boundary: its twin
+ * `concept.no_being` arrived on the map with #192 while the roll road's own
+ * `not_a_being` stayed invisible.
+ *
+ * The population is `ROLL_REFUSAL_COPY`'s keys, IMPORTED — never a grep, for
+ * the reason the concept reader states above.
+ *
+ * ⚠ **QUALIFIED `roll.*` THOUGH NOTHING COLLIDES TODAY, AND THE REASON IS AN
+ * AMBIGUITY RATHER THAN A COLLISION.** `castingIntent.ts` carries
+ * `reason: "unsupported_cohort"` — the INTERPRETER's internal verdict that feeds
+ * the customer-facing wall. `raiseSites` collects bare `reason:` shapes from
+ * every file in the tree, so declaring these bare would auto-attach the internal
+ * outcome's line to the customer's door: exactly the conflation #206 made in
+ * prose, shipped into the artifact. Qualified, the door cites the line that
+ * SPEAKS to the customer and the internal verdict stays what it is.
+ */
+export function declaredRollRefusals(): string[] {
+  return Object.keys(ROLL_REFUSAL_COPY).sort().map((id) => `roll.${id}`);
 }
 
 /** The scope flags, read off their own `_SCOPE_ENV` constants. */
@@ -327,6 +390,57 @@ export function raiseSites(): Map<string, string[]> {
     (`? "not_about_the_person" : …`), which no `reason:`-shaped regex sees. The
     `CANNOT_SAY_COPY` block below is the same pattern for the same reason.
   */
+  /*
+    #206 — THE ROLL ENTRANCE'S RAISE SITES, AND THIS ONE CANNOT BE READ LINE BY
+    LINE.
+
+    ⚠ **THE SHAPE IS BOTH SINGLE- AND MULTI-LINE, and a line-wise regex would
+    have found sites for three members and ZERO for the other two while looking
+    identical in the artifact.** `throw new BriefRefusal("reader_outage", MSG);`
+    is one line; `unsupported_cohort`'s two sites put `new BriefRefusal(` and
+    the id on different lines. Sites-empty is not an error anywhere in this
+    file, so the half-blind version would have shipped green — the collector
+    class CLAUDE.md's Atlas section names. So the match is over WHOLE TEXT and
+    the citation is the line the ID lands on.
+
+    A docblock quoting the raise is still not a site: the id's own line is
+    tested with the same `isCommentLine` guard the line-wise readers use, which
+    covers both the single-line and the wrapped shape (a wrapped raise inside a
+    docblock has `*` on both lines).
+  */
+  const rollMembers = new Set(Object.keys(ROLL_REFUSAL_COPY));
+  const rollFile = path.join(SOURCE_DIR, ROLL_ENTRANCE_FILE);
+  /* Same refusal as the concept entrance's, for the same reason: qualification
+     keys on ONE path, and a scan that matches nothing looks exactly like a scan
+     with nothing to match. */
+  if (!fs.existsSync(rollFile)) {
+    throw new Error(
+      `capability atlas: the roll entrance's file ${ROLL_ENTRANCE_FILE} is not on disk — `
+      + "its five walls would silently lose every citation they have. "
+      + "Point ROLL_ENTRANCE_FILE at the file that raises them.",
+    );
+  }
+  const rollText = fs.readFileSync(rollFile, "utf8");
+  const rollLines = rollText.split("\n");
+  for (const match of rollText.matchAll(/new\s+BriefRefusal\(\s*"([a-z][a-z0-9_]*)"/g)) {
+    const id = match[1]!;
+    if (!rollMembers.has(id)) continue;
+    /* The line the id is on — which is what gets cited, so it is what is
+       tested for comment-hood. */
+    const at = rollText.slice(0, match.index! + match[0].length).split("\n").length;
+    if (isCommentLine(rollLines[at - 1] ?? "")) continue;
+    add(`roll.${id}`, `${rel(rollFile)}:${at}`);
+  }
+  /* The copy table's key lines are sites too — the concept entrance's pattern,
+     and here it is what gives `uninterpretable` a citation for its SENTENCE as
+     well as its two throws. */
+  const rollCopyFile = path.join(SOURCE_DIR, "briefRefusalCopy.ts");
+  const rollCopyLines = fs.readFileSync(rollCopyFile, "utf8").split("\n");
+  for (const id of rollMembers) {
+    rollCopyLines.forEach((line, at) => {
+      if (new RegExp(`^\\s{2}${id}:`).test(line)) add(`roll.${id}`, `${rel(rollCopyFile)}:${at + 1}`);
+    });
+  }
   const conceptCopyFile = path.join(SOURCE_DIR, "conceptDescribeCopy.ts");
   const conceptCopyLines = fs.readFileSync(conceptCopyFile, "utf8").split("\n");
   for (const id of conceptMembers) {
@@ -387,6 +501,7 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
   const interpreter = declaredInterpreterRefusals().filter((id) => !service.includes(id));
   const cannot = Object.keys(CANNOT_SAY_COPY).sort() as CannotSayReason[];
   const concept = declaredConceptRefusals();
+  const roll = declaredRollRefusals();
   /*
     #192 — PINS ARE SEARCHED ON THE BARE MEMBER NAME AND ATTACHED TO THE
     QUALIFIED ENTRY. `pinningTests` looks for a QUOTED literal, and a test
@@ -396,7 +511,8 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     by this file's naming choice.
   */
   const conceptBare = concept.map((id) => id.slice("concept.".length));
-  const pins = pinningTests([...service, ...interpreter, ...cannot, ...conceptBare]);
+  const rollBare = roll.map((id) => id.slice("roll.".length));
+  const pins = pinningTests([...service, ...interpreter, ...cannot, ...conceptBare, ...rollBare]);
   const sites = raiseSites();
   const declared: DeclaredId[] = [
     ...service.map((id) => ({ id, kind: "service-refusal" as const, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [] })),
@@ -408,6 +524,15 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
       id,
       kind: "concept-refusal" as const,
       pinnedBy: pins.get(id.slice("concept.".length)) ?? [],
+      sites: sites.get(id) ?? [],
+    })),
+    /* #206 — pins on the BARE name for the reason stated above the concept
+       entry: a test quotes what the product returns (`"likeness"`), never the
+       atlas's own `roll.likeness`. */
+    ...roll.map((id) => ({
+      id,
+      kind: "roll-refusal" as const,
+      pinnedBy: pins.get(id.slice("roll.".length)) ?? [],
       sites: sites.get(id) ?? [],
     })),
   ].sort((a, b) => a.id.localeCompare(b.id));
@@ -463,7 +588,20 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
       }
       findings.push({
         id: `documented:${entry.id}`, severity: "info", kind: "documented-unreachable", subject: entry.id,
-        message: `unreachable by design: ${doc.reason} — becomes reachable via: ${doc.becomesReachable}`,
+        /*
+          ⚠ #206 — THIS SENTENCE USED TO READ "unreachable by design", AND OF
+          SOME OF THESE DOORS THAT IS SIMPLY FALSE. `likeness` and
+          `not_a_being` are hit in production whenever a customer types a
+          famous name or asks for a car; `concept.no_being` is hit whenever an
+          upload holds no subject. What every entry in `UNREACHABLE_DOORS`
+          actually records — read at its own rows, whose `becomesReachable`
+          prose is written in corpus-row terms without exception — is that no
+          CORPUS ROW reaches it. The constant keeps its name (renaming it
+          ripples into the finding `kind`, the schema and both renderers for no
+          gain), and the founder-facing sentence stops claiming more than the
+          list knows.
+        */
+        message: `no corpus row reaches it: ${doc.reason} — a row could reach it via: ${doc.becomesReachable}`,
       });
     } else if (knownDebts.has(entry.id)) {
       findings.push({

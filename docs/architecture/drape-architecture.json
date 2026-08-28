@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "23e6edceaa6f35ae"
+    "sourceFingerprint": "c6b1a121b689e893"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 182
+      "moduleCount": 183
     },
     {
       "id": "domain:castingV2",
@@ -3515,6 +3515,12 @@
     {
       "id": "module:server/castingV2/briefLength.ts",
       "path": "server/castingV2/briefLength.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/briefRefusalCopy.ts",
+      "path": "server/castingV2/briefRefusalCopy.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10988,6 +10994,10 @@
     {
       "id": "test:server/castingV2/briefLength.test.ts",
       "path": "server/castingV2/briefLength.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/briefRefusalCopy.test.ts",
+      "path": "server/castingV2/briefRefusalCopy.test.ts"
     },
     {
       "id": "test:server/castingV2/briefRewrite.test.ts",
@@ -22115,6 +22125,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/briefRefusalCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/briefRewrite.ts",
       "kind": "imports"
     },
@@ -22205,6 +22220,11 @@
     },
     {
       "from": "module:server/castingV2/briefLength.ts",
+      "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefRefusalCopy.ts",
       "to": "module:shared/briefLength.ts",
       "kind": "imports"
     },

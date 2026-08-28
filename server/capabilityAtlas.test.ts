@@ -15,7 +15,7 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  buildStaticAtlas, declaredConceptRefusals, declaredInterpreterRefusals, declaredServiceRefusals, drivenFindings,
+  buildStaticAtlas, declaredConceptRefusals, declaredInterpreterRefusals, declaredRollRefusals, declaredServiceRefusals, drivenFindings,
   duplicateDoorFindings, listFiles, outcomeId,
   pinningTests, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
   CAPABILITY_MD, type Finding,
@@ -23,6 +23,7 @@ import {
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "./castingV2/conceptDescribeCopy";
+import { ROLL_REFUSAL_COPY } from "./castingV2/briefRefusalCopy";
 
 describe("the static half reads what the source declares", () => {
   it("POSITIVE CONTROL — finds doors known to exist", () => {
@@ -247,6 +248,132 @@ describe("the concept upload's doors are on the map", () => {
     ];
     expect(duplicateDoorFindings(colliding).map((f) => f.subject)).toEqual(["unreadable"]);
     expect(duplicateDoorFindings(colliding)[0]!.severity).toEqual("error");
+  });
+});
+
+/*
+  #206 — THE ROLL ENTRANCE IS THE MAP'S THIRD SOURCE OF DOORS, and until
+  2026-08-29 ALL FIVE of its walls were invisible: `new BriefRefusal("id", MSG)`
+  is a fourth raise shape none of the population readers visited. Two of the
+  five are founder boundaries the Prompt Author ruling explicitly KEEPS.
+*/
+describe("the roll entrance's walls are on the map", () => {
+  it("POSITIVE CONTROL — every member of the roll copy table is a declared door", () => {
+    const declared = declaredRollRefusals();
+    expect(declared).toEqual([
+      "roll.likeness", "roll.not_a_being", "roll.reader_outage", "roll.uninterpretable", "roll.unsupported_cohort",
+    ]);
+    expect(declared.length).toEqual(Object.keys(ROLL_REFUSAL_COPY).length);
+    const atlas = buildStaticAtlas(CORPUS);
+    const ids = atlas.declared.map((d) => d.id);
+    for (const id of declared) expect(ids).toContain(id);
+    /* The pins resolve on the BARE name — asserted in its own right, because
+       the `unpinned-refusal` arm is green whether they resolve or not. */
+    for (const id of declared) {
+      const entry = atlas.declared.find((d) => d.id === id)!;
+      expect(entry.pinnedBy.length, id).toBeGreaterThan(0);
+    }
+  });
+
+  it("⚠ THE MULTI-LINE RAISE IS SEEN — the shape a line-wise reader would have half-missed", () => {
+    /*
+      THE HAZARD THIS ARM EXISTS FOR. Three of the five raises fit on one line
+      (`throw new BriefRefusal("likeness", LIKENESS_MESSAGE);`) and
+      `unsupported_cohort`'s two put `new BriefRefusal(` and the id on separate
+      lines. A line-wise regex — the shape every other reader in this file uses
+      — finds sites for three members and ZERO for one, and sites-empty is not
+      an error anywhere, so the half-blind version ships green.
+
+      Asserted at the CITATION rather than at the regex: both of
+      `unsupported_cohort`'s sites must be present and must name the line the
+      ID is on, which is the line a reader would open.
+    */
+    const atlas = buildStaticAtlas(CORPUS);
+    const cohort = atlas.declared.find((d) => d.id === "roll.unsupported_cohort")!;
+    const throwSites = cohort.sites.filter((s) => s.includes("briefCompiler.ts:"));
+    expect(throwSites.length, JSON.stringify(cohort.sites)).toEqual(2);
+    const source = readFileSync(join(__dirname, "castingV2", "briefCompiler.ts"), "utf8").split("\n");
+    for (const site of throwSites) {
+      const line = Number(site.split(":").pop());
+      expect(source[line - 1], site).toContain('"unsupported_cohort"');
+    }
+    /* And the single-line members still land on their own throws. */
+    for (const [id, member] of [["roll.likeness", "likeness"], ["roll.not_a_being", "not_a_being"], ["roll.reader_outage", "reader_outage"]] as const) {
+      const entry = atlas.declared.find((d) => d.id === id)!;
+      const at = entry.sites.find((s) => s.includes("briefCompiler.ts:"))!;
+      expect(source[Number(at.split(":").pop()) - 1], id).toContain(`new BriefRefusal("${member}"`);
+    }
+  });
+
+  it("cites only the roll entrance's own files, and no other door cites them", () => {
+    const atlas = buildStaticAtlas(CORPUS);
+    for (const entry of atlas.declared.filter((d) => d.id.startsWith("roll."))) {
+      expect(entry.sites.length, entry.id).toBeGreaterThan(0);
+      for (const site of entry.sites) {
+        expect(site, entry.id).toMatch(/server\/castingV2\/brief(Compiler|RefusalCopy)\.ts:/);
+      }
+    }
+    /*
+      THE AMBIGUITY THE QUALIFICATION EXISTS FOR: `castingIntent.ts` carries
+      `reason: "unsupported_cohort"` — the INTERPRETER's internal verdict that
+      feeds the customer's wall. Declared bare, that line would attach to the
+      door. It must not, and no bare `unsupported_cohort` door may exist.
+    */
+    expect(atlas.declared.map((d) => d.id)).not.toContain("unsupported_cohort");
+    for (const entry of atlas.declared.filter((d) => !d.id.startsWith("roll."))) {
+      for (const site of entry.sites) {
+        expect(`${entry.id} :: ${site}`).not.toMatch(/briefCompiler\.ts:/);
+      }
+    }
+  });
+
+  it("each roll wall is documented unreached — the corpus sends sentences, not briefs", () => {
+    const atlas = buildStaticAtlas(CORPUS);
+    for (const id of declaredRollRefusals()) {
+      expect(atlas.findings.filter((f) => f.subject === id).map((f) => f.kind), id)
+        .toEqual(["documented-unreachable"]);
+    }
+    expect(atlas.findings.filter((f) => f.severity === "error")).toEqual([]);
+  });
+
+  it("⚠ the documented-unreached sentence does not claim a customer cannot reach it", () => {
+    /*
+      #206 — the finding used to read "unreachable by design", which is simply
+      false of `roll.likeness`: it answers anyone who types a famous name, in
+      production, every day. What the list records is that no CORPUS ROW
+      reaches it, which is what every entry's own `becomesReachable` prose has
+      always been written in terms of.
+    */
+    const atlas = buildStaticAtlas(CORPUS);
+    const documented = atlas.findings.filter((f) => f.kind === "documented-unreachable");
+    expect(documented.length).toBeGreaterThan(0);
+    for (const f of documented) {
+      expect(f.message, f.subject).toContain("no corpus row reaches it");
+      expect(f.message, f.subject).not.toContain("unreachable by design");
+    }
+  });
+
+  it("⚠ NEGATIVE CONTROL — a comment quoting a raise shape does not declare a door", () => {
+    /*
+      THE DEFECT THIS SHIFT TRIPPED ON ITSELF. `raiseSites()` has skipped
+      comment lines since two docblocks were found cited as raise sites; the
+      POPULATION readers did not. So `briefRefusalCopy.ts`'s own header — which
+      must quote `refusal("id"` to explain the mechanism — declared a door
+      named `id`, and the generator raised `unmapped:id` at ERROR severity,
+      refusing the rite over a sentence in a comment.
+
+      A phantom in the population is worse than a phantom citation: the second
+      points at the wrong line of a real door, the first puts a door on the map
+      that does not exist.
+    */
+    const declared = buildStaticAtlas(CORPUS).declared.map((d) => d.id);
+    expect(declared).not.toContain("id");
+    /* The prose that produced it is still there — so this arm is live, not a
+       fixture that has been quietly deleted out from under itself. */
+    const copy = readFileSync(join(__dirname, "castingV2", "briefRefusalCopy.ts"), "utf8");
+    expect(copy).toContain('`refusal("id"`');
+    /* Driven: the reader must actually be filtering, not merely agreeing. */
+    expect(declaredServiceRefusals()).not.toContain("id");
   });
 });
 
