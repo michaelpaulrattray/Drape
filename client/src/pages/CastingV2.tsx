@@ -754,6 +754,12 @@ export default function CastingV2() {
                 charged, and the words are hers to edit first — which is the
                 whole promise of reading them into her own brief rather than
                 attaching a picture to a purchase.
+
+                Since #196 this fires on her CONFIRM rather than on the read's
+                arrival: the card shows her the photograph beside the words
+                first, and hands them over when she taps "Use this brief". The
+                contract here is unchanged — the page still decides where words
+                go, and they still land BESIDE anything she has already typed.
               */
               setBrief((current) => briefWithDescription(current, description));
               focusBrief();

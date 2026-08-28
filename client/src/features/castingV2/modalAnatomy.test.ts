@@ -156,3 +156,92 @@ describe("the rename dialog", () => {
     expect(css).toContain(".dpc-signm__cost + .dpc-signm__actions { margin-top: 0; }");
   });
 });
+
+/**
+ * THE THIRD CONSUMER (#196) — the concept review, which neither spends nor
+ * destroys.
+ *
+ * The shell's docblock described itself as "built for spending and destroying"
+ * and the `busy` latch is written to that: it blocks Esc, because walking out
+ * of a charge mid-flight is worse than waiting. A free review is the opposite
+ * case and his order says so — *abandons cleanly, nothing charged either way*.
+ * So the two arms below are the ones that would catch this dialog quietly
+ * acquiring a dialog-for-spending's manners, and the one that would catch the
+ * focus trap failing in the only dialog with something worth typing in.
+ */
+const REVIEW = new URL("./components/ConceptReviewModal.tsx", import.meta.url);
+
+describe("the concept review shares the shell without inheriting its latch", () => {
+  it("renders through the shell rather than building a third scrim", async () => {
+    expect(await readFile(REVIEW, "utf8")).toContain("<CastingModal");
+    expect(await readFile(REVIEW, "utf8")).not.toContain("createPortal");
+  });
+
+  it("never goes busy, so Esc is always a way out", async () => {
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain("busy={false}");
+    /* `aria-busy={reading}` is legitimate and must not answer this question. */
+    expect(review).not.toMatch(/(?<!aria-)busy=\{(reading|true)\}/);
+  });
+
+  it("KEEPS TEXTAREA IN THE FOCUS TRAP — the arm the widening exists for", async () => {
+    /*
+      The trap queried `"button, input"`. The concept review's whole body is a
+      textarea: leave it out and Tab walks straight out of the field she is
+      editing into the page behind the scrim — the trap failing in the one
+      dialog that has something worth typing in, and silently, because every
+      other consumer's field is an `input`.
+    */
+    const shell = await readFile(SHELL, "utf8");
+    expect(shell).toContain('querySelectorAll<HTMLElement>("button, input, textarea")');
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain("<textarea");
+  });
+
+  it("dresses the textarea in the house field rather than a new box", async () => {
+    /*
+      Same wrapper, same focus treatment: the box is drawn by the wrapper and
+      the control inside it is bare (the foundation law), which is why the
+      focus rules had to learn `textarea` alongside `input` — a rule scoped to
+      one of them leaves the browser's own ring drawing inside the other.
+    */
+    const review = await readFile(REVIEW, "utf8");
+    expect(review).toContain('className="dpc-signm__field"');
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-signm__field textarea:focus-visible { outline: none; box-shadow: none; }");
+    const field = css.slice(
+      css.indexOf(".dpc-signm__field textarea {"),
+      css.indexOf(".dpc-signm__field textarea::placeholder"),
+    );
+    /* No drag handle: it could push the body past the portrait it sits beside. */
+    expect(field).toContain("resize: none");
+  });
+});
+
+describe("the concept review shows the WHOLE picture she chose", () => {
+  it("asks for it, rather than inheriting the crop our own renders can take", async () => {
+    /*
+      The other two consumers show OUR renders, every one of them already 4:5.
+      This one shows a picture the CUSTOMER chose, of unknown proportions, and
+      its whole job is letting her check a description against it — a crop can
+      remove the very thing the words describe.
+    */
+    expect(await readFile(REVIEW, "utf8")).toContain("portraitWhole");
+    expect(await readFile(SHELL, "utf8")).toContain("dpc-signm__portrait--whole");
+  });
+
+  it("styles it as a DESCENDANT, because a child selector is inert here", async () => {
+    /*
+      ⚠ THE FINDING THIS ARM EXISTS FOR, measured at the running app rather than
+      read: `CastingModal` wraps the image in a `<span>`, so `.dpc-signm__portrait
+      > img` matches NOTHING — the sign and delete portraits are sized by the
+      browser and clipped by `overflow: hidden` instead. Written the same way,
+      this rule computed `object-fit: fill` (the initial value) and looked
+      exactly as though it had worked. A future tidy-up that "consistently"
+      restores the child combinator here would put it back to inert, silently.
+    */
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-signm__portrait--whole img {");
+    expect(css).not.toContain(".dpc-signm__portrait--whole > img");
+  });
+});

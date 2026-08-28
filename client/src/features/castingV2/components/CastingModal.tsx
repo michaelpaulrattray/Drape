@@ -2,12 +2,21 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 /**
- * The shell the sign and delete dialogs share.
+ * The shell the sign, delete and concept-review dialogs share.
  *
- * Both specs describe the same object — a 664px two-column card with a 4:5
- * portrait, wrapping to stacked below ~560px — and say to build it once with
- * different content rather than twice. Two copies of a scrim is two chances for
- * one of them to be mounted in the wrong place.
+ * All three describe the same object — a 664px two-column card with a 4:5
+ * portrait, wrapping to stacked below ~560px — and it is built once with
+ * different content rather than three times. Two copies of a scrim is two
+ * chances for one of them to be mounted in the wrong place.
+ *
+ * ⚠ **It is NOT only "for spending and destroying" — #196 added a third
+ * consumer that does neither.** The concept review shows a photograph beside
+ * the words read out of it and confirms nothing but which text to keep; it
+ * passes `busy={false}` always, because the `busy` latch below blocks Esc,
+ * which is right in front of a charge and wrong in front of a free review. If a
+ * fourth consumer arrives that cannot be abandoned, `busy` is still there for
+ * it — what changed is that abandonment is now a first-class exit rather than
+ * an exception.
  *
  * **⚠️ The scrim must measure the viewport, which is why this portals.** Any
  * ancestor with `backdrop-filter`, `filter`, `transform`, `perspective` or
@@ -26,6 +35,7 @@ export function CastingModal({
   label,
   portrait,
   portraitMuted = false,
+  portraitWhole = false,
   busy,
   onDismiss,
   children,
@@ -39,6 +49,17 @@ export function CastingModal({
    * The person is already half-gone, and that does work no warning label can.
    */
   portraitMuted?: boolean;
+  /**
+   * SHOW THE WHOLE PICTURE rather than filling the frame with it (#196).
+   *
+   * The default crops to 4:5, which is right for the two dialogs that show OUR
+   * OWN renders — every one of them is already that shape. The concept review
+   * shows a picture the CUSTOMER chose, of unknown proportions, and its entire
+   * job is letting her check a description against it: a cover-crop can hide
+   * the very thing the words are describing. Caught by looking at the frame, on
+   * a 2:3 upload whose lower half was cropped away.
+   */
+  portraitWhole?: boolean;
   busy: boolean;
   onDismiss: () => void;
   children: ReactNode;
@@ -53,8 +74,13 @@ export function CastingModal({
         return;
       }
       if (event.key !== "Tab") return;
-      // Focus stays inside a dialog that is about to spend or destroy.
-      const focusable = cardRef.current?.querySelectorAll<HTMLElement>("button, input");
+      /*
+        Focus stays inside the dialog. `textarea` is in the list because the
+        concept review's whole body is one — omit it and Tab walks straight out
+        of the field she is editing into the page behind the scrim, which is
+        the trap failing in the one dialog that has something worth typing in.
+      */
+      const focusable = cardRef.current?.querySelectorAll<HTMLElement>("button, input, textarea");
       if (!focusable || focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -86,7 +112,11 @@ export function CastingModal({
         className="dpc-signm__card"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="dpc-signm__portrait">
+        <div
+          className={
+            portraitWhole ? "dpc-signm__portrait dpc-signm__portrait--whole" : "dpc-signm__portrait"
+          }
+        >
           {portrait ? (
             <span className={portraitMuted ? "dpc-signm__muted" : undefined}>
               <img src={portrait} alt="" />
