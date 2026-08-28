@@ -246,6 +246,86 @@ describe("the concept review shows the WHOLE picture she chose", () => {
   });
 });
 
+/*
+  ⚠ THE ISSUE NUMBER STAYS IN THIS COMMENT AND OUT OF THE `describe` STRING.
+  These arms close issue 198, and writing that as `(#198)` in the title fails
+  `foundation/token-guard.test.ts`: its comment-stripper deliberately spares
+  prose, but a title is a STRING LITERAL, and every three-digit issue number is
+  a valid three-digit hex colour. The guard is right about the shape and wrong
+  about the intent, and its message names tokens.css rather than the trap.
+*/
+describe("all three portraits lay out by ONE mechanism", () => {
+  /** The declarations of one rule, by its selector, so an arm reads the rule and not the file. */
+  const block = (css: string, selector: string): string => {
+    const at = css.indexOf(`\n${selector} {`);
+    expect(at, `no rule for \`${selector}\``).toBeGreaterThan(-1);
+    const open = css.indexOf("{", at);
+    const close = css.indexOf("}", open);
+    expect(close, `unterminated rule for \`${selector}\``).toBeGreaterThan(open);
+    return css.slice(open + 1, close);
+  };
+
+  it("the base portrait rule is a DESCENDANT, so it matches at all", async () => {
+    /*
+      ⚠ THE DEFECT THIS ARM EXISTS FOR (#198), measured at the running app: the
+      rule was written as `.dpc-signm__portrait > img` and `CastingModal` puts a
+      `<span>` between the two, so it matched NOTHING from the day it was
+      written. The image computed `object-fit: fill` — the initial value — laid
+      out at its own size and was clipped by `overflow: hidden`. On our own 2:3
+      renders that looks exactly like the rule working, which is why it survived.
+    */
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-signm__portrait img {");
+    expect(css).not.toContain(".dpc-signm__portrait > img");
+  });
+
+  it("anchors the base crop to the TOP, which is what makes the repair free", async () => {
+    /*
+      Cover-with-default-centre is the tempting repair and it slides the crop
+      window ~27px down — the face moves, which is the founder's eye and not a
+      tidy-up's to spend. Anchored top, the window is the one the browser was
+      already clipping to for any image at least as tall as the 4:5 slot, which
+      is every render this product makes.
+    */
+    const css = await readFile(CSS, "utf8");
+    const base = block(css, ".dpc-signm__portrait img");
+    expect(base).toContain("object-fit: cover");
+    expect(base).toContain("object-position: top");
+  });
+
+  it("⚠ both neighbours RE-STATE object-position, or the base rule moves them", async () => {
+    /*
+      THE ARM THAT MATTERS. The cascade resolves each property independently:
+      `--whole` and `__muted` come later and win `object-fit` on order, but a
+      rule that does not declare `object-position` INHERITS the base rule's
+      `top` — hanging the concept review's letterbox entirely below the picture,
+      and moving the delete portrait, which is the one surface this repair
+      exists to leave untouched. Deleting either declaration is silent at the
+      source and visible only in a frame nobody re-opens.
+    */
+    const css = await readFile(CSS, "utf8");
+    for (const selector of [".dpc-signm__portrait--whole img", ".dpc-signm__muted > img"]) {
+      expect(block(css, selector), selector).toContain("object-position: center");
+    }
+  });
+
+  it("and the base rule is declared BEFORE both, which is what that guard assumes", async () => {
+    /*
+      The guard above is about cascade ORDER, so it is only true while the base
+      rule comes first. Move it below its neighbours and they would win
+      `object-position` without declaring it — the arm would still pass and the
+      reason it was written would be gone.
+    */
+    const css = await readFile(CSS, "utf8");
+    const base = css.indexOf("\n.dpc-signm__portrait img {");
+    /* Or an absent base rule is index -1 and every neighbour "comes after" it. */
+    expect(base, "no base portrait rule to order against").toBeGreaterThan(-1);
+    for (const selector of [".dpc-signm__portrait--whole img", ".dpc-signm__muted > img"]) {
+      expect(css.indexOf(`\n${selector} {`), selector).toBeGreaterThan(base);
+    }
+  });
+});
+
 describe("the trap holds in the state where every end of the list is disabled", () => {
   it("excludes disabled elements, or the wrap can never fire", async () => {
     /*

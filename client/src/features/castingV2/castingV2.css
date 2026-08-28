@@ -2544,7 +2544,34 @@
   background: var(--media);
 }
 
-.dpc-signm__portrait > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/*
+  ⚠ DESCENDANT, NOT CHILD (#198) — `CastingModal` wraps the image in a `<span>`
+  (the mute treatment's hook), so the child selector this rule was written as
+  matched NOTHING for as long as it existed. Measured at the running app rather
+  than read off the source: the image computed `object-fit: fill`, the initial
+  value, laid out at its own size (214x321 in a 214x268 slot) and was CLIPPED by
+  the container's `overflow: hidden` — a top-anchored crop that, on our own 2:3
+  renders, looked exactly like the rule had worked. Its neighbour
+  `.dpc-signm__muted > img` DID match, because the mute class sits on the span,
+  so the two dialogs sharing this one shell were laying their portraits out by
+  TWO DIFFERENT MECHANISMS.
+
+  `object-position: top` is what makes fixing it free. Cover-with-default-centre
+  is the tempting repair and it MOVES THE FACE — the crop window slides ~27px
+  down, which is his eye and not a tidy-up's to spend. Anchored to the top, the
+  window is the same window the browser was already clipping to, for every image
+  at least as tall as the 4:5 slot — which is every render this product makes.
+  Measured, not reasoned: today vs this rule is resampler grain (mean delta
+  3.9/255, no displaced silhouette); today vs cover-centre through the same
+  instrument is mean 40.1/255 with the silhouette plainly ghosted.
+*/
+.dpc-signm__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  display: block;
+}
 
 /*
   THE WHOLE PICTURE, NOT A CROP OF IT (#196). The two dialogs that show OUR OWN
@@ -2555,20 +2582,17 @@
   lower half. The letterbox is `--media`, the same fill the empty portrait slot
   uses, so it reads as the frame rather than as a gap.
 
-  ⚠ DESCENDANT, NOT CHILD, and that is not a style choice — `CastingModal` wraps
-  the image in a `<span>` (the mute treatment's hook), so `.dpc-signm__portrait
-  > img` above never matches anything and the sign and delete portraits are
-  sized by the browser and CLIPPED by `overflow: hidden` instead. Written as a
-  child selector here, this rule was measured inert at the running app
-  (`object-fit: fill`, the initial value) and looked exactly like it had worked.
-  The dead rule above is deliberately left alone: making it live would change
-  how two dialogs he has already accepted look, which is his eye and not this
-  issue's — filed rather than fixed in passing.
+  ⚠ `object-position` is RE-STATED here and it is load-bearing, not decoration.
+  The cascade resolves each property on its own: this rule wins `object-fit`
+  because it comes later at equal specificity, but it would INHERIT the `top`
+  above for `object-position` and hang the letterbox entirely below the picture.
+  Contain-centred is what #196 shipped and what he has seen.
 */
 .dpc-signm__portrait--whole img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center;
 }
 
 /*
@@ -2833,7 +2857,20 @@
   considered rather than boilerplate.
 */
 .dpc-signm__muted { display: block; width: 100%; height: 100%; filter: grayscale(1); opacity: 0.62; }
-.dpc-signm__muted > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/*
+  ⚠ `object-position: center` is RE-STATED for the reason #198's repair gives in
+  full above the sign portrait's rule: the cascade resolves each property
+  separately, so without this the delete portrait would keep its own
+  `object-fit` and inherit the sign portrait's `top` — moving the one dialog
+  this repair exists to leave alone. Centre is what it has always drawn.
+*/
+.dpc-signm__muted > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
 
 /* The warning is read FIRST, which is what lets the body drop to one line. */
 .dpc-signm__eyebrow--danger { color: var(--accentInk); }
