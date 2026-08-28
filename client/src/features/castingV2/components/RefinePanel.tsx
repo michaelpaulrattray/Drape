@@ -16,7 +16,7 @@ import {
   SHOWN_CUT_LABEL,
   attachClaimChips,
 } from "../referenceAttachCopy";
-import { asBase64 } from "../pictureBytes";
+import { ACCEPTED_PICTURE_FILES, asBase64 } from "../pictureBytes";
 import { READ_CAPTION, READ_USE, droppedNote } from "../referenceReadCopy";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 import { VersionRail } from "./VersionRail";
@@ -883,10 +883,11 @@ export function RefinePanel({
             <input
               ref={pictureInput}
               type="file"
-              /* The three the door accepts. The BYTES are judged server-side
+              /* The three the door accepts, from the one client home that owns
+                 the list (`pictureBytes.ts`). The BYTES are judged server-side
                  either way — this only spares her choosing a file that will be
                  refused. */
-              accept="image/png,image/jpeg,image/webp"
+              accept={ACCEPTED_PICTURE_FILES}
               className="dpc-refine__readInput"
               onChange={(event) => {
                 const file = event.target.files?.[0];

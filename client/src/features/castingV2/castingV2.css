@@ -130,9 +130,32 @@
   text-align: left;
   background: var(--surface);
   cursor: pointer;
+  /* The card is a `div` while it is a coming-state and a `button` once it has
+     a door behind it (#185). A button brings the user agent's own font and
+     colour with it, so the two states would not be the same card. */
+  font: inherit;
+  color: inherit;
+  width: 100%;
   transition:
     border-color var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease);
+}
+
+/* Reading the picture. It keeps its shape and stops taking taps; the line
+   inside it says what is happening, so nothing here has to. */
+.dpc-entry[disabled] {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.dpc-entry[disabled]:hover {
+  border-color: var(--borderCard);
+  background: var(--surface);
+}
+
+/* The picker itself is never drawn — the card is the control. */
+.dpc-entry__file {
+  display: none;
 }
 
 .dpc-entry:hover {

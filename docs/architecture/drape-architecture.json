@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "79f46d0fd4ccff0b"
+    "sourceFingerprint": "4b763973040b963c"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 45
+      "moduleCount": 47
     },
     {
       "id": "domain:client-shared",
@@ -1545,6 +1545,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "path": "client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
       "path": "client/src/features/castingV2/components/ConfirmDialog.tsx",
       "domain": "castingV2",
@@ -1625,6 +1631,12 @@
     {
       "id": "module:client/src/features/castingV2/components/faceSelection.ts",
       "path": "client/src/features/castingV2/components/faceSelection.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/conceptUpload.ts",
+      "path": "client/src/features/castingV2/conceptUpload.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10136,6 +10148,10 @@
       "path": "client/src/features/castingV2/chosenFrame.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/conceptUpload.test.ts",
+      "path": "client/src/features/castingV2/conceptUpload.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/cssBlockOwnership.test.ts",
       "path": "client/src/features/castingV2/cssBlockOwnership.test.ts"
     },
@@ -15602,6 +15618,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/BriefField.tsx",
+      "to": "module:client/src/hooks/useComposition.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/BriefField.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -15643,6 +15664,26 @@
     {
       "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
       "to": "module:shared/imagination.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "to": "module:client/src/features/castingV2/conceptUpload.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "to": "module:client/src/features/castingV2/failureCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "to": "module:client/src/features/castingV2/pictureBytes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18262,12 +18303,22 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/BriefField.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/CardMenu.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
       "kind": "imports"
     },
     {
@@ -18293,6 +18344,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/conceptUpload.ts",
       "kind": "imports"
     },
     {

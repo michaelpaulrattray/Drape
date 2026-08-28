@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, Plus, Search, Upload } from "lucide-react";
+import { ArrowRight, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -21,6 +21,9 @@ import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
 import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
+import { BriefField } from "@/features/castingV2/components/BriefField";
+import { ConceptUploadCard } from "@/features/castingV2/components/ConceptUploadCard";
+import { briefWithDescription } from "@/features/castingV2/conceptUpload";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
@@ -220,8 +223,31 @@ export default function CastingV2() {
   const setStartingRoll = useSheetState((state) => state.setStartingRoll);
   const setDispatchFailure = useSheetState((state) => state.setDispatchFailure);
 
-  const focusBrief = () =>
-    document.querySelector<HTMLInputElement>('input[aria-label="Casting brief"]')?.focus();
+  /*
+    A REF, NOT A SELECTOR. This used to reach for
+    `input[aria-label="Casting brief"]`, which is a query about the box's HTML
+    TAG dressed up as a query about the box — so the day the field grew into a
+    textarea (it had to, see `BriefField`), the New-cast-member tile would have
+    gone quietly dead with nothing to notice it. Two surfaces now put the caret
+    here and neither should have to know what element it is.
+  */
+  const briefField = useRef<HTMLTextAreaElement>(null);
+  const focusBrief = () => {
+    const field = briefField.current;
+    if (!field) return;
+    field.focus();
+    /*
+      And brought into view, because both callers are BELOW it: the tile is
+      under the roster and the concept card is under the hero, so on a short
+      window the box they just filled can be off the top of the screen.
+
+      No caret arithmetic here on purpose. Setting the selection would read
+      `field.value` before React has painted the new text, so it would measure
+      the OLD sentence — and a caret at the start of a description she is about
+      to read is the right place for it anyway.
+    */
+    field.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
 
   const utils = trpc.useUtils();
   const config = trpc.castingV2.config.useQuery({});
@@ -230,6 +256,11 @@ export default function CastingV2() {
     { enabled: config.data?.enabled === true },
   );
 
+  /*
+    UPLOAD A CONCEPT (#185). House money, no credits, nothing kept — and the
+    card is only handed this door where the server says the scope admits her.
+  */
+  const describeConcept = trpc.castingV2.concept.describe.useMutation();
   const abandonSession = trpc.castingV2.abandonSession.useMutation();
   const [abandoning, setAbandoning] = useState<string | null>(null);
   /** The sheet whose delete is armed. One at a time, and never on load. */
@@ -541,12 +572,40 @@ export default function CastingV2() {
               A cast member is a face and a presence — signed once, reusable in every campaign.
             </span>
 
-            <Field className="dpc-hero__field">
-              <Input
+            {/*
+              THE BOX YOU CAN READ WHAT YOU ARE ABOUT TO BUY IN.
+
+              It was a single-line `<input>` here long after the sheet's own
+              brief box stopped being one, and the reason `BriefField` was
+              written applies to this box more than to that one: past about
+              sixty characters the beginning of your own sentence scrolls out
+              of view, so the thing you are about to spend 160 credits on
+              cannot be checked before you spend it — and THIS is the box a
+              first roll is typed into. Same component, same four-line cap, and
+              the resting state is identical: it grows from one line, so a
+              customer typing a sentence sees exactly what they saw before.
+
+              The class, not the instance (working law 7): the fix landed on
+              the sheet in its own commit and the start page kept the defect,
+              which is what a sweep at the time would have caught.
+            */}
+            <Field className="dpc-hero__field dpc-briefrow">
+              <BriefField
+                ref={briefField}
                 value={brief}
                 onChange={(event) => setBrief(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") void startCasting();
+                  /*
+                    ENTER STILL CASTS — the affordance this box has always had,
+                    kept rather than lost to the element change. Shift+Enter is
+                    the new line, which is the convention everywhere else a
+                    submit lives on a textarea, and it is what makes a
+                    two-paragraph brief typeable at all.
+                  */
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void startCasting();
+                  }
                 }}
                 /*
                   PLACEHOLDER LAW (founder, 2026-08-01): a placeholder obeys every
@@ -670,24 +729,36 @@ export default function CastingV2() {
         {/* ---- the two entry cards ---- */}
         <div className="dpc-entries">
           {/*
-            Upload-a-real-person ships as drawn, inert, with copy that says so
-            (F5 supersedes the earlier decision to omit it). The prototype's
-            "Six photos or one 20-second clip. Likeness locks in about four
-            minutes." is a promise about a feature that does not exist, so the
-            structure stays and the claim goes.
+            UPLOAD A CONCEPT (#185, his order 2026-08-28) — the card that was
+            the F5 placeholder, now the door to it where the scope admits her.
+
+            His rename is the first half of the order ("the upload a person
+            should be upload a concept or somthing like that"), and it is not
+            only a name: *a real person* promised likeness upload, which the
+            product still does not do and this road deliberately does not
+            become. The picture is read once and dropped; what casts is words.
+
+            The server decides which state is drawn, as with every other gate on
+            this page — the client asks rather than assumes.
           */}
-          <div className="dpc-entry dpc-entry--inert" aria-disabled="true">
-            <span className="dpc-entry__icon">
-              <Upload size={14} strokeWidth={1.9} aria-hidden="true" />
-            </span>
-            <span className="dp-stack" style={{ gap: 4, minWidth: 0 }}>
-              <span className="dp-label">Upload a real person</span>
-              <span className="dp-secondary">
-                Casting from your own photos is coming. For now, describe the person and cast
-                them.
-              </span>
-            </span>
-          </div>
+          <ConceptUploadCard
+            describe={
+              config.data.conceptUploadEnabled
+                ? async (imageBase64) =>
+                  (await describeConcept.mutateAsync({ imageBase64 })).description
+                : null
+            }
+            onDescribed={(description) => {
+              /*
+                It fills the box and STOPS. Nothing is rolled, nothing is
+                charged, and the words are hers to edit first — which is the
+                whole promise of reading them into her own brief rather than
+                attaching a picture to a purchase.
+              */
+              setBrief((current) => briefWithDescription(current, description));
+              focusBrief();
+            }}
+          />
 
           {/*
             The Klieg-owned catalog of ready-made signed casts — a future
