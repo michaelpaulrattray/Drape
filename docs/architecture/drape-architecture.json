@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "191d8108eca7fe9e"
+    "sourceFingerprint": "3e2eb9e59491614a"
   },
   "domains": [
     {
@@ -11140,6 +11140,10 @@
     {
       "id": "test:server/castingV2/conceptDescribeCopy.test.ts",
       "path": "server/castingV2/conceptDescribeCopy.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/conceptReaderModel.test.ts",
+      "path": "server/castingV2/conceptReaderModel.test.ts"
     },
     {
       "id": "test:server/castingV2/conceptUploadScope.test.ts",
@@ -22752,6 +22756,11 @@
     },
     {
       "from": "module:server/castingV2/conceptDescribe.ts",
+      "to": "module:server/providers/openrouterText.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/conceptDescribe.ts",
       "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
@@ -23943,6 +23952,11 @@
     {
       "from": "module:server/castingV2/interpreter.ts",
       "to": "module:server/providers/openrouterText.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/interpreter.ts",
+      "to": "module:server/providers/providerQueue.ts",
       "kind": "imports"
     },
     {

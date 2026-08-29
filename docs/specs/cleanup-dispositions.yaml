@@ -399,6 +399,13 @@
   why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
   argued: 6c/13a
 
+- symbol: resetConceptReaderForTests
+  file: server/castingV2/conceptDescribe.ts
+  verdict: KEEP
+  why: the same seam one module over (#231) - the reader now memoizes its own engine, and its
+    allowance arm cannot run twice without dropping it; NAME says test-only
+  argued: 6c/13a
+
 - symbol: neighbourTableNames
   file: server/castingV2/maskedRefine.ts
   verdict: KEEP

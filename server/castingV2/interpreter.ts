@@ -19,6 +19,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { createOpenRouterTextEngine } from "../providers/openrouterText";
+import { ProviderQueue } from "../providers/providerQueue";
 import type { TextEngine } from "../providers/types";
 import {
   AGE_BANDS,
@@ -900,17 +901,44 @@ export const INTERPRET_TIMEOUT_MS = 120_000;
 /** One retry, not the transport's two — see the stacking paragraph above. */
 export const INTERPRET_RETRIES = 1;
 
+/**
+ * THE ONE OPENROUTER TEXT ALLOWANCE, held here rather than inside the engine.
+ *
+ * `createOpenRouterTextEngine` builds its own `ProviderQueue` when it is handed
+ * none — so a SECOND engine is a second allowance, and the provider sees eight
+ * concurrent calls where the product declares four. That is the fal-allowance
+ * class arriving on the text side (`assertFalBudget`'s whole reason for
+ * existing), and it would have arrived silently: nothing sums text concurrency.
+ *
+ * The numbers are the ones the engine would have created for itself — name,
+ * concurrency 4, depth 32 — so every reader on this queue behaves exactly as it
+ * did before this function existed. What changed is that a reader may now be
+ * pinned to a DIFFERENT MODEL (the concept reader is, #231) without buying four
+ * more slots along with it: a model is a per-call field, an allowance is not.
+ *
+ * The Sign view judge keeps its own named queue on purpose — it is a separate,
+ * declared budget with its own number (3), not an accidental second copy.
+ */
+let textQueue: ProviderQueue | null = null;
+export function interpreterTextQueue(): ProviderQueue {
+  if (!textQueue) {
+    textQueue = new ProviderQueue({ name: "openrouter-text", concurrency: 4, maxQueueDepth: 32 });
+  }
+  return textQueue;
+}
+
 export function interpreterEngine(): TextEngine | null {
   if (engine) return engine;
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
-  engine = createOpenRouterTextEngine({ apiKey });
+  engine = createOpenRouterTextEngine({ apiKey, queue: interpreterTextQueue() });
   return engine;
 }
 
 /** Test seam: drops the memoized engine so config changes take effect. */
 export function resetInterpreterForTests(): void {
   engine = null;
+  textQueue = null;
 }
 
 /**
