@@ -19,7 +19,7 @@ _Entrances:_ `server/routes/castingV2.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `C
 |---|---|---|---|---|---|
 | `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1221<br>server/castingV2/briefRefusalCopy.ts:114 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1224<br>server/castingV2/briefRefusalCopy.ts:120 | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1150<br>server/castingV2/briefRefusalCopy.ts:126 | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1150<br>server/castingV2/briefRefusalCopy.ts:126 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1087<br>server/castingV2/briefCompiler.ts:1539<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1203<br>server/castingV2/briefCompiler.ts:1210<br>(+1) | 6 test(s) | _documented-unreachable or gap — see findings_ |
 
@@ -63,13 +63,14 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:612<br>server/castingV2/refineInterpreter.ts:894<br>(+1) | 7 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1274<br>server/castingV2/castingIntent.ts:1310<br>(+15) | 21 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
-| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1595<br>(+2) | 7 test(s) | guard.likeness |
-| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:547<br>server/castingV2/refineInterpreter.ts:1527<br>(+1) | 6 test(s) | guard.content |
-| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1605<br>(+2) | 8 test(s) | background.white |
-| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1619<br>(+1) | 4 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
-| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineDelta.ts:1324<br>(+2) | 9 test(s) | _documented-unreachable or gap — see findings_ |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:635<br>server/castingV2/refineInterpreter.ts:905<br>(+1) | 8 test(s) | guard.empty |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1274<br>server/castingV2/castingIntent.ts:1310<br>(+14) | 22 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:634<br>server/castingV2/refineInterpreter.ts:919<br>(+2) | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1618<br>(+2) | 7 test(s) | guard.likeness |
+| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:547<br>server/castingV2/refineInterpreter.ts:1601<br>(+1) | 6 test(s) | guard.content |
+| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1628<br>(+2) | 8 test(s) | background.white |
+| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1693<br>(+1) | 4 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
+| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineDelta.ts:1347<br>(+2) | 9 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:571<br>server/castingV2/refineDelta.ts:571<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:578<br>server/castingV2/refineDelta.ts:578<br>(+4) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:597<br>server/castingV2/refineDelta.ts:597<br>(+3) | 3 test(s) | _documented-unreachable or gap — see findings_ |
@@ -81,6 +82,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 - gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.
 - gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.
 - item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.
+- unreadable = a reply CAME BACK and could not be read, and rephrasing is real advice for it; reader_outage = nothing came back at all (the transport threw, the deadline passed, the text account is overdrawn, or no engine is configured), where telling her to rephrase is advice she cannot follow. The roll road has drawn this line since #126; the refine road drew it 2026-08-30.
 - A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch).
 
 ### The ink lanes — add, transform, remove, and the crop that carries
@@ -243,9 +245,9 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | concept.no_transport | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts, hairColourFromReference.test.ts, refineService.test.ts |
 | concept.not_a_casting_note | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
 | concept.not_about_the_person | concept-refusal |  | conceptDescribe.test.ts |
-| concept.unreadable | concept-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts, server/deployWatchDecision.test.ts |
+| concept.unreadable | concept-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts, server/deployWatchDecision.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
-| empty | interpreter-refusal |  | server/casting/geminiMigration.test.ts, creativeRegisterScope.test.ts, diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts |
+| empty | interpreter-refusal |  | server/casting/geminiMigration.test.ts, creativeRegisterScope.test.ts, diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, readerOutageRefusal.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
@@ -262,6 +264,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | nothingAsked | cannot-say | free | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | noWords | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts, viewFeatureWords.test.ts |
 | perSideRemoval | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
+| reader_outage | interpreter-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, styleRefusal.test.ts |
 | refine_limit | service-refusal |  | refineService.test.ts |
 | removal | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | removal_absent | service-refusal |  | refusalTag.test.ts |
@@ -272,7 +275,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | removal_unnamed | service-refusal |  | refineService.test.ts |
 | roll.likeness | roll-refusal |  | briefRefusalCopy.test.ts, colourContextDoor.test.ts, creativeRegisterScope.test.ts, likenessRefusal.test.ts, stageWallBackstop.test.ts |
 | roll.not_a_being | roll-refusal |  | briefRefusalCopy.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts |
-| roll.reader_outage | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, styleRefusal.test.ts |
+| roll.reader_outage | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, styleRefusal.test.ts |
 | roll.uninterpretable | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts |
 | roll.unsupported_cohort | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, cohortWallRetry.test.ts, creativeRegisterScope.test.ts, likenessRefusal.test.ts, styleRefusal.test.ts |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
@@ -282,7 +285,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts, vacantPhrase.test.ts |
 | unnamedObject | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts |
 | unplacedInk | cannot-say | refunded | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts, inkDesignForAsk.test.ts, refineService.test.ts, repaintAsks.test.ts |
-| unreadable | interpreter-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts, server/deployWatchDecision.test.ts |
+| unreadable | interpreter-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts, server/deployWatchDecision.test.ts |
 | version_missing | service-refusal |  | refineService.test.ts |
 | wall_basics_wardrobe | interpreter-refusal |  | **none** |
 | wall_content | interpreter-refusal |  | colourContextDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
@@ -296,7 +299,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 
 `CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_FRAMING_TRIM_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_TWO_PATHS_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (46)
+## Findings (47)
 
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
 - **info** `documented-unreachable` already_signed — no corpus row reaches it: answers a refine sent at a SIGNED cast — request state, not sentence content — a row could reach it via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
@@ -313,6 +316,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 - **info** `documented-unreachable` kind_unserved — no corpus row reaches it: answers an open-kind render the engine table cannot serve — engine-config state — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` master_missing — no corpus row reaches it: answers a cast whose master object is gone — storage state no fixture manufactures honestly — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` notASlot — no corpus row reaches it: the catalogue's no-picture answer; makeup — its historical population — now renders (measured, drive-4), and no current master-state ask reaches a facet the catalogue refuses a picture for — a row could reach it via: a facet that regains the no-picture classification, or a driven ask found to reach it
+- **info** `documented-unreachable` reader_outage — no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it
 - **info** `documented-unreachable` refine_limit — no corpus row reaches it: answers the 24-instruction ceiling — needs 24 paid variants on one cast (the census never renders) — a row could reach it via: pinned by its C5 service arm; verify-bot's ceiling cast proved it live (opus-969)
 - **info** `documented-unreachable` removal_reread_unmatched — no corpus row reaches it: needs the ambiguity re-read to produce a removal whose noun then matches no step — a two-model-disagreement state that cannot be scripted through the real interpreter deterministically — a row could reach it via: deliberately never: pinned by its service arm (C5); a census row would be a coin flip (the model's read is the unstable thing)
 - **info** `documented-unreachable` removal_uncheckable — no corpus row reaches it: needs the removal-verification reader to be unavailable mid-ask — an infrastructure failure state no fixture manufactures honestly — a row could reach it via: deliberately never: its pin is its service arm (C5), and manufacturing reader outages in the census would test the harness, not the product

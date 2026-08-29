@@ -331,12 +331,23 @@ export async function readMakeupFromReference(
     });
     raw = reply.text ?? "";
   } catch (error) {
-    log.warn({ err: error }, "[makeupFromReference] the reference could not be read");
+    /*
+      NOTHING CAME BACK — ours, not her picture (the #126 class swept onto this
+      road, foreman-111). The parse failure below keeps *"try another one"*,
+      which is real advice for a reply we could not read; this branch is the
+      transport throwing, the deadline passing, or the text account being
+      overdrawn, and telling her to swap photographs then is advice she cannot
+      act on — she changes the picture, it fails again, and we blame her twice.
+
+      Its words are the hair/ink cutters' `couldNotRead`, which already say this
+      honestly on the sibling picture roads, rather than a new sentence.
+    */
+    log.warn({ err: error }, "[makeupFromReference] the reader did not answer");
     return {
       ok: false,
       refusal: {
         code: "unreadable",
-        message: "We couldn't read that picture — try another one.",
+        message: "I couldn't read that picture just now — try again in a moment. Nothing was charged.",
       },
     };
   }
@@ -403,6 +414,18 @@ export async function readMakeupFromReference(
     };
   }
   if (subject.kind === "unanswered") {
+    /*
+      ⚠ THE THIRD `"try another one"`, AND IT IS ON THE RIGHT SIDE OF THE LINE
+      (swept foreman-111, 2026-08-30; see the throw branch above).
+
+      Marked rather than left, because the next sweep for that phrase will find
+      three sites and has to decide about this one too. A reply DID arrive here
+      and its answer to the class question was not one of the values we can
+      read — a reply that came back unreadable, which is exactly what
+      `unreadable` has always meant. A different picture plausibly gets a
+      readable answer, so *"try another one"* is honest advice. It is only the
+      branch where NOTHING came back that was blaming her for our outage.
+    */
     log.warn({ subject: parsed.subject }, "[makeupFromReference] the class question came back unanswered");
     return {
       ok: false,

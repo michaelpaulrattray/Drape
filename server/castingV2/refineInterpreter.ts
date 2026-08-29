@@ -885,7 +885,18 @@ export type RefineInterpretInput = {
   currentHairColour?: string | null;
   currentHairTexture?: string | null;
   currentMakeup?: string | null;
-  engine?: TextEngine;
+  /**
+   * Test seam and dependency injection; `undefined` takes the shipped engine.
+   *
+   * ⚠ `null` means NO ENGINE, DELIBERATELY, and it has to be spelled that way
+   * rather than left to `??`. The unconfigured branch below is only reachable
+   * when `OPENROUTER_API_KEY` is absent, so an arm driving it through
+   * `undefined` is not driving anything — it passes because the test
+   * environment happens to have no key, and would make a REAL call the day one
+   * appeared. `hairColourFromReference` and `makeupFromReference` already
+   * declare this seam exactly this way; this is that pattern, not a new one.
+   */
+  engine?: TextEngine | null;
   signal?: AbortSignal;
 };
 
@@ -893,11 +904,19 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
   const instruction = input.instruction.trim();
   if (!instruction) return { ok: false, refusal: { reason: "empty" } };
 
-  const engine = input.engine ?? interpreterEngine();
+  const engine = input.engine === undefined ? interpreterEngine() : input.engine;
   if (!engine) {
-    // Fail CLOSED — see the header. Refusing costs nobody anything.
+    /*
+      Fail CLOSED — see the header. Refusing costs nobody anything.
+
+      `reader_outage` rather than `unreadable`: no engine configured is a
+      DEPLOYMENT state and there is nothing wrong with her sentence, so telling
+      her to rephrase it is false. The roll road folds the same state into the
+      same door (`interpretBrief`'s `cause: "unconfigured"` → `reader_outage`),
+      and this is that road's rule applied here rather than a second opinion.
+    */
     log.warn({}, "[refineInterpreter] no text engine — refusing rather than guessing");
-    return { ok: false, refusal: { reason: "unreadable" } };
+    return { ok: false, refusal: { reason: "reader_outage" } };
   }
 
   /*
@@ -918,8 +937,25 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     above assumed. Each retry is a free text call on a path that would otherwise
     tell someone their perfectly clear instruction did not come through.
   */
+  /*
+    WHY THE LAST SAMPLING FAILED, so the refusal can be honest about whose
+    fault it is (#126's class, driven `_shift111-dry-account-drive-disposable`).
+
+    An overdrawn text account throws on every call, and all three samplings
+    below then fall through to a sentence telling the customer *"try naming what
+    you want changed"* — advice she cannot follow, on a failure that is ours.
+    The roll road has drawn this exact line since #126 (`cause: "thrown"` versus
+    `cause: "unparsed"`); this is that line on the sibling road. Money does not
+    move: both answers were free before the claim and both still are.
+
+    THE LAST attempt decides, not the first, and not "any". The three samplings
+    are one reading — what is true at the end of it is what the customer is
+    told — and a mixed run is a coin either way.
+  */
+  const trace: { last?: ReadFailure } = {};
+
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const parsed = await runOnce(engine, input, instruction, "interpret");
+    const parsed = await runOnce(engine, input, instruction, "interpret", trace);
     if (parsed) {
       /*
         THE ECHO PASS (D-172) — only the user's words are ever filed.
@@ -956,7 +992,17 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
       }
       return throughTheDoors(engine, input, instruction, parsed);
     }
-    if (attempt < 3) log.warn({ attempt }, "[refineInterpreter] empty reply — re-sampling");
+    if (attempt < 3) log.warn({ attempt, why: trace.last }, "[refineInterpreter] no usable reply — re-sampling");
+  }
+  /*
+    An EMPTY completion on a 200 arrives here as `threw`, because
+    `openrouterText` raises `ProviderError("unknown")` for it — and that is the
+    right side of the line. Three empty completions in a row is our transport
+    failing, not her sentence, and "try again in a moment" is the true advice.
+  */
+  if (trace.last === "threw") {
+    log.warn({}, "[refineInterpreter] reader outage — three samplings, nothing came back");
+    return { ok: false, refusal: { reason: "reader_outage" } };
   }
   return { ok: false, refusal: { reason: "unreadable" } };
 }
@@ -1340,6 +1386,16 @@ export async function asksNothingOfItsOwn(
 }
 
 /**
+ * WHY THE LAST SAMPLING FAILED — `threw` (nothing came back) or `unparsed` (a
+ * reply came back and could not be read).
+ *
+ * Optional and written only by the top-level loop, so the six other `runOnce`
+ * call sites are untouched. The distinction exists because those two states
+ * deserve different sentences and had one: see `RefineRefusal.reader_outage`.
+ */
+export type ReadFailure = "threw" | "unparsed";
+
+/**
  * One sampling. Returns null when the reply was unusable, so the caller retries.
  *
  * # `purpose` — WHY this sampling is happening, and the caller is the only one
@@ -1362,8 +1418,10 @@ async function runOnce(
   input: RefineInterpretInput,
   instruction: string,
   purpose: ReadPurpose,
+  trace?: { last?: ReadFailure },
 ): Promise<RefineParse | null> {
   let raw: unknown;
+  let text: string;
   try {
     const reply = await engine.complete({
       about: purpose,
@@ -1427,8 +1485,24 @@ async function runOnce(
       as "that did not come through clearly" for instructions it had in fact
       read perfectly. A presentation habit was being reported as their mistake.
     */
-    raw = JSON.parse(firstObject(stripFence(reply.text)));
+    text = reply.text;
   } catch (error) {
+    /*
+      NOTHING CAME BACK — the transport threw, the deadline passed, or the
+      account is overdrawn (`classifyOpenRouterTextHttp` maps 402/401/403 to
+      `provider_account`). Recorded so the top-level loop can say OUR sentence
+      instead of hers; the return value is unchanged, so every other caller
+      behaves exactly as before.
+    */
+    if (trace) trace.last = "threw";
+    log.warn({ err: error }, "[refineInterpreter] the reader did not answer");
+    return null;
+  }
+
+  try {
+    raw = JSON.parse(firstObject(stripFence(text)));
+  } catch (error) {
+    if (trace) trace.last = "unparsed";
     log.warn({ err: error }, "[refineInterpreter] unreadable reply");
     return null;
   }

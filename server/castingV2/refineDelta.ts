@@ -609,6 +609,29 @@ export type RefineRefusal =
     alternatives: readonly string[];
   }
   | { reason: "unreadable" }
+  /**
+   * THE READER NEVER ANSWERED — an outage, not her sentence (#126's class on
+   * the refine road; driven `_shift111-dry-account-drive-disposable`).
+   *
+   * `unreadable` above means a reply CAME BACK and could not be read, and its
+   * sentence tells her to try naming what she wants changed — which is sound
+   * advice for a reply we could not parse and is false, and unfollowable, when
+   * the text account is overdrawn or the transport is down. She rephrases, it
+   * fails again, and the product blames her every time.
+   *
+   * The roll road already draws exactly this line: `interpretBrief` returns
+   * `cause: "thrown"` against `cause: "unparsed"`, and `castingBriefCompiler`
+   * refuses free naming the outage on the first and keeps the styled-brief
+   * screen for the second (#126, founder Crew reply #7 "refuse-free", reply #9
+   * "always"). #126's own class sweep asked whether any other paid road
+   * DEGRADES on a reader failure and correctly answered no — the refine road
+   * has always refused free. What it did not ask is what that road SAYS, and
+   * the money being right is why this went unnoticed.
+   *
+   * Free, exactly as `unreadable` is: nothing is claimed and nothing is
+   * charged. The only thing that moves is the sentence.
+   */
+  | { reason: "reader_outage" }
   | { reason: "empty" }
   /**
    * THE ASK WAS ABSORBED — everything filed was already true of her.

@@ -34,7 +34,7 @@ import { describe, expect, it } from "vitest";
 
 import type { TextEngine, TextRequest } from "../providers/types";
 import { ProviderError } from "../providers/types";
-import { REFINE_PARSE_MAX_TOKENS, interpretRefinement } from "./refineInterpreter";
+import { REFINE_PARSE_MAX_TOKENS, interpretRefinement, refusalMessage } from "./refineInterpreter";
 
 const GOOD = JSON.stringify({ intent: "edit", eyeShape: "fox eyes" });
 
@@ -104,12 +104,29 @@ describe("the parser's token ceiling (2026-08-09)", () => {
     expect(engine.seen.length, "it re-sampled rather than refusing").toBe(3);
   });
 
-  it("still refuses honestly when every reading comes back empty", async () => {
+  it("still refuses honestly when every reading comes back empty — and says it was OURS", async () => {
     /*
       The other half, and it must stay: three empties in a row is a real outage,
       and inventing an answer for her would be worse than saying so. What the
       raised ceiling changes is how often this branch is reached, not whether
       it exists.
+
+      ⚠ THE REASON MOVED `unreadable` -> `reader_outage` ON 2026-08-30, AND THIS
+      FILE ARGUED FOR IT THREE WEEKS BEFORE IT HAPPENED.
+
+      The intent asserted here has not changed by a word — it still refuses, it
+      still refuses free, and it still does not invent an answer. What changed
+      is which honest sentence it refuses WITH, and the old assertion was pinned
+      to the implementation rather than to that intent.
+
+      The argument is this file's own prose, not a new opinion: the comment
+      above already calls three empties "a real outage", and the header calls it
+      the worst possible shape that "the customer whose instruction is least
+      ordinary is the one told *that didn't come through clearly*". The ceiling
+      was raised to make that RARE. This change makes the sentence TRUE when it
+      still happens. `unreadable` survives untouched for what it always meant —
+      a reply that came back and could not be parsed (`readerOutageRefusal.test.ts`
+      holds both directions).
     */
     const engine = scripted(["EMPTY"]);
     const parsed = await interpretRefinement({
@@ -119,6 +136,13 @@ describe("the parser's token ceiling (2026-08-09)", () => {
       engine,
     });
     expect(parsed.ok).toBe(false);
-    if (!parsed.ok) expect(parsed.refusal.reason).toBe("unreadable");
+    if (parsed.ok) return;
+    expect(parsed.refusal.reason).toBe("reader_outage");
+    /* It re-sampled three times before saying so — the retry the raised ceiling
+       exists beside is not skipped just because the failure is now named. */
+    expect(engine.seen.length).toBe(3);
+    /* And the sentence does not send her back to her own perfectly clear
+       instruction, which is the whole point of the rename. */
+    expect(refusalMessage(parsed)).not.toContain("Try naming");
   });
 });
