@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c6a0a2f1cc5e2692"
+    "sourceFingerprint": "6c40c54cd66016cf"
   },
   "domains": [
     {
@@ -22218,6 +22218,11 @@
     {
       "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/heritagePromotion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/houseBlock.ts",
       "kind": "imports"
     },
     {
