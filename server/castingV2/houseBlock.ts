@@ -61,6 +61,42 @@
  * three REALISM micro-detail sentences. Chest-up framing is
  * `AUTHOR_ROAD_FRAMING`, calibrated by #130 against his two reference frames.
  *
+ * # ⚠ THE BLOCK HAS TWO LANES NOW — #232 and #237, 2026-08-29
+ *
+ * It was ONE text for every subject this studio casts, and the founder found
+ * the two places where the human rules break a creature. His words, one
+ * message each:
+ *
+ *   - *"Creature mouths are broken by the human headshot rule. Fix the house
+ *     block by lane. People / androids that read as people — Mouth closed. …
+ *     Creatures — Mouth is anatomy when it's who they are. … Still ban: laugh,
+ *     speech, acted roar, poster tongue-out. … Pose off. Anatomy on."* (#232)
+ *   - *"Listed anatomy is losing to the human crop. `long tail` is in the
+ *     brief. The generations still have no tail. Chest-up + square-on +
+ *     shoulders off the edges hides it behind the back and cuts it off. More
+ *     adjectives will not fix that."* (#237)
+ *
+ * Both are the same law he has now ruled three times — the mechanical eye
+ * (#185 reply #28), the tusks, the tail: **if it is who they are, show it.**
+ * And both are properties of the LOCKED BLOCK rather than of the author's
+ * paragraph, because an adjective cannot out-argue a crop and a ban on teeth
+ * cannot be talked round by taste.
+ *
+ * The split is deliberately as small as a split can be: **two sentences**, one
+ * SWAPPED (`EXPRESSION_LINE` → `CREATURE_EXPRESSION_LINE`) and one ADDED
+ * (`ANATOMY_VISIBILITY_LINE`, which the human lane does not have at all). The
+ * suite asserts that difference set exactly, so a third divergence cannot
+ * arrive without saying so, and it asserts that
+ * `houseBlockForStyle("photoreal")` is `HOUSE_BLOCK` byte for byte — **every
+ * human roll, and every roll off this road, receives what it received before
+ * this commit.**
+ *
+ * The lane is chosen by the READER's four-valued subject answer
+ * (`houseLaneFor`), once per roll, in `briefCompiler.ts`. Never per slice,
+ * never by scanning the brief for creature words here, and never by the style
+ * — a style is a bundle (#142) and a lane is a subject; they are different
+ * questions and they compose (`houseBlockForStyle(style, lane)`).
+ *
  * # Guards (in the suite)
  *
  * Present byte-identical at the END of every authored prompt; the author's
@@ -139,8 +175,96 @@ export const LIGHTING_LINE =
  * §5f, verbatim (the label is the block's own convention; his words are
  * untouched after it). ONLY the geometry of an expression is universal —
  * "self-possessed", "severe", "warm" are the seed's or the author's, per cast.
+ *
+ * ⚠ **THIS IS THE HUMAN LANE'S LINE NOW, NOT THE BLOCK'S** (#232). It is
+ * unchanged byte for byte and every human roll still receives it; a creature
+ * roll receives `CREATURE_EXPRESSION_LINE` instead. See `HouseLane` below.
  */
 export const EXPRESSION_LINE = "EXPRESSION: Eyes into the lens, present, mouth closed. No laugh, no speech, no blank CGI stare.";
+
+/**
+ * THE CREATURE LANE'S EXPRESSION LINE (#232) — founder, verbatim (terminal,
+ * 2026-08-29): *"Creature mouths are broken by the human headshot rule. Fix
+ * the house block by lane. People / androids that read as people — Mouth
+ * closed. No teeth, no tongue, no laugh, no speech. Creatures — Mouth is
+ * anatomy when it's who they are. Allow at rest: oni tusks / non-human
+ * dentition · underbites, split lips · a long tongue if it's in the upload as
+ * a species trait. Still ban: laugh, speech, acted roar, poster tongue-out.
+ * … Same law as the mechanical eye and the tail. Pose off. Anatomy on."*
+ *
+ * `mouth closed` is what strips a tusked being of its own dentition, so the
+ * geometry becomes **mouth at rest** and his own sentence — *pose off, anatomy
+ * on* — carries the logic. Every ban he kept is kept, in his own nouns; the
+ * one he did not name (`no blank CGI stare`) survives because it is the human
+ * line's and has nothing to do with the mouth.
+ */
+export const CREATURE_EXPRESSION_LINE =
+  "EXPRESSION: Eyes into the lens, present, mouth at rest — pose off, anatomy on. "
+  + "Where the mouth is the being's own anatomy it stays visible at rest: non-human dentition, tusks, an underbite, a split lip, a species tongue. "
+  + "No laugh, no speech, no acted roar, no tongue out as a pose, no blank CGI stare.";
+
+/**
+ * THE CREATURE LANE'S ANATOMY VISIBILITY CLAUSE (#237 half 2) — founder,
+ * verbatim: *"Listed anatomy is losing to the human crop. `long tail` is in
+ * the brief. The generations still have no tail. Chest-up + square-on +
+ * shoulders off the edges hides it behind the back and cuts it off. More
+ * adjectives will not fix that."* — with his own house-block sentence: *"If
+ * the being has a tail, wing, or other listed anatomy, it must be visible in
+ * the chest-up frame — over a shoulder, beside the ribcage, or rising into
+ * the picture. Do not hide it behind the back. Do not switch to a full-body
+ * shot."*
+ *
+ * ⚠ **TWO WORDS OF HIS SENTENCE ARE ADAPTED AND BOTH ARE DECLARED HERE, because
+ * the block would otherwise argue with itself.**
+ *
+ *   - *"the chest-up frame"* → *"this frame"*. The block's own crop has been
+ *     MID-TORSO since #182, on his own reversal (*"chest up is far too tight
+ *     we need to see the outfit more"*), and `AUTHOR_ROAD_FRAMING` says so two
+ *     sentences earlier. Naming a second crop here would hand the engine two.
+ *     His diagnosis is about the crop HIDING anatomy, and the crop's name is
+ *     the block's, not this sentence's.
+ *   - *"other listed anatomy"* → *"other anatomy the description names"*.
+ *     "Listed" has no referent inside the block; `AUTHORITY_LINE` already
+ *     establishes "the description" as the thing that states facts.
+ *
+ * His three placements and both prohibitions are verbatim.
+ */
+export const ANATOMY_VISIBILITY_LINE =
+  "ANATOMY: If the being has a tail, wings, or other anatomy the description names, it must be visible in this frame "
+  + "— over a shoulder, beside the ribcage, or rising into the picture. Do not hide it behind the back. Do not switch to a full-body shot.";
+
+/**
+ * WHICH LANE THE BLOCK IS COMPOSED IN (#232, #237) — the founder's own split:
+ * *"People / androids that read as people"* against *"Creatures"*.
+ *
+ * The lane is chosen ONCE per roll, from what the READER established about the
+ * subject (`register.subject`, the four-valued question of the ruling's §6) —
+ * never by a per-slice guess, and never by scanning the brief for creature
+ * words here.
+ *
+ * ⚠ **THE WRONG-LANE FAILURE MODE, both directions, stated rather than
+ * assumed.** A creature brief the reader calls `human` gets the strict human
+ * line — which is exactly today's behaviour for every roll, so a misread costs
+ * the feature and never a regression. A human brief the reader calls `being`
+ * gets the creature line and the anatomy clause; both are CONDITIONAL prose
+ * (*"where the mouth is the being's own anatomy"*, *"if the being has a tail,
+ * wings, or other anatomy the description names"*), so on a human they assert
+ * nothing. That asymmetry is deliberate: the reader's mistakes are cheap in
+ * one direction and free in the other.
+ */
+export type HouseLane = "human" | "creature";
+export const HOUSE_LANES = ["human", "creature"] as const satisfies readonly HouseLane[];
+export const DEFAULT_HOUSE_LANE: HouseLane = "human";
+
+/**
+ * The reader's subject reading → the lane. `being` is the creature lane;
+ * `human`, `unread` (the reply could not be parsed and the sheet went out on
+ * the verbatim brief) and an absent reading are all the human lane, because
+ * the human lane is today's bytes and an unknown subject must not change them.
+ */
+export function houseLaneFor(subject: "human" | "being" | "unread" | null | undefined): HouseLane {
+  return subject === "being" ? "creature" : "human";
+}
 
 /** §5f, verbatim (same convention). No temperature pin, no grade language: the person decides. */
 export const COLOUR_LINE = "COLOUR: Neutral daylight. Skin colour and sheen come from the person, not from a house grade.";
@@ -169,14 +293,31 @@ export const AUTHORITY_LINE =
   + "Anything the description states outright — a look, a feature, a garment, a mood — is a fact and overrides any default or negative here. "
   + "Where the description is silent, this block governs: plain studio frame, no scene, no props.";
 
-const framingSentences: readonly string[] = [
-  ...AUTHOR_ROAD_FRAMING,
-  take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "CROP: The subject's ENTIRE HAIR SILHOUETTE"),
-  take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "Nothing on the head is clipped"),
-  POSTURE_LINE,
-  EXPRESSION_LINE,
-  take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "BACKGROUND:"),
-];
+/**
+ * The framing paragraph, per lane. The two lanes differ in EXACTLY two places
+ * and nowhere else, which is what makes "the human lane is byte-identical to
+ * today" a property of the code rather than a claim in a docblock:
+ *
+ *   - the EXPRESSION sentence (#232), and
+ *   - the ANATOMY sentence (#237), which the creature lane ADDS and the human
+ *     lane does not have at all.
+ *
+ * The anatomy clause sits with the crop sentences on purpose: it is a FRAMING
+ * fact, which is his own diagnosis (*"More adjectives will not fix that"*).
+ */
+function framingSentencesFor(lane: HouseLane): readonly string[] {
+  return [
+    ...AUTHOR_ROAD_FRAMING,
+    take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "CROP: The subject's ENTIRE HAIR SILHOUETTE"),
+    take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "Nothing on the head is clipped"),
+    ...(lane === "creature" ? [ANATOMY_VISIBILITY_LINE] : []),
+    POSTURE_LINE,
+    lane === "creature" ? CREATURE_EXPRESSION_LINE : EXPRESSION_LINE,
+    take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "BACKGROUND:"),
+  ];
+}
+
+const framingSentences: readonly string[] = framingSentencesFor("human");
 
 const captureSentences: readonly string[] = [
   take(PHOTOREAL_HUMAN_BLOCKS.captureSentences, "CAMERA:"),
@@ -185,7 +326,8 @@ const captureSentences: readonly string[] = [
   COLOUR_LINE,
 ];
 
-/** The block minus the style preset — what every preset will share once there is more than one. */
+/** Every sentence of a lane's block, in order — the suite asserts the author wrote none of them. */
+/** The block minus the style preset — what every preset will share once there is more than one. HUMAN lane's. */
 export const UNIVERSAL_BLOCK_SENTENCES: readonly string[] = [
   ...framingSentences,
   ...captureSentences,
@@ -193,21 +335,48 @@ export const UNIVERSAL_BLOCK_SENTENCES: readonly string[] = [
   ...NEGATIVE_LINES,
 ];
 
-/** Every sentence of the block, in order — exported so the suite can assert the author wrote none of them. */
+/** Every sentence of the HUMAN lane's block, in order — the meaning this constant has always had. */
 export const HOUSE_BLOCK_SENTENCES: readonly string[] = [...UNIVERSAL_BLOCK_SENTENCES, ...PHOTOREAL_PRESET, AUTHORITY_LINE];
+
+/**
+ * Every sentence of a lane's block, in order. The HUMAN lane RETURNS
+ * `HOUSE_BLOCK_SENTENCES` itself rather than rebuilding the same list beside
+ * it (working law 4) — which also keeps that constant wired to production
+ * code rather than to the suite alone, the thing `pnpm check`'s uncalled-
+ * export sweep caught the first time this function was written.
+ */
+export function houseBlockSentencesFor(lane: HouseLane): readonly string[] {
+  if (lane === "human") return HOUSE_BLOCK_SENTENCES;
+  return [
+    ...framingSentencesFor(lane),
+    ...captureSentences,
+    ...PHOTOREAL_HUMAN_BLOCKS.realismSentences,
+    ...NEGATIVE_LINES,
+    ...PHOTOREAL_PRESET,
+    AUTHORITY_LINE,
+  ];
+}
 
 /**
  * The block as sent: framing, capture, realism and negatives as one paragraph
  * each, the preset, then the authority paragraph last.
  */
-export const HOUSE_BLOCK: string = [
-  framingSentences.join(" "),
-  captureSentences.join(" "),
-  PHOTOREAL_HUMAN_BLOCKS.realismSentences.join(" "),
-  NEGATIVE_LINES.join(" "),
-  PHOTOREAL_PRESET.join(" "),
-  AUTHORITY_LINE,
-].join("\n");
+function composeBlock(lane: HouseLane): string {
+  return [
+    framingSentencesFor(lane).join(" "),
+    captureSentences.join(" "),
+    PHOTOREAL_HUMAN_BLOCKS.realismSentences.join(" "),
+    NEGATIVE_LINES.join(" "),
+    PHOTOREAL_PRESET.join(" "),
+    AUTHORITY_LINE,
+  ].join("\n");
+}
+
+/** THE HUMAN LANE'S BLOCK — what every roll received before #232/#237, and what every human roll still receives. */
+export const HOUSE_BLOCK: string = composeBlock("human");
+
+/** THE CREATURE LANE'S BLOCK (#232, #237) — the same bytes with his two sentences swapped in. */
+export const CREATURE_HOUSE_BLOCK: string = composeBlock("creature");
 
 /**
  * THE BLOCK, CHOSEN BY STYLE (#142, the minimal settings modal) — the style
@@ -217,10 +386,10 @@ export const HOUSE_BLOCK: string = [
  * style a compile error at this one site until its preset is written,
  * declared and courted — never a silent fall-through to the photoreal bytes.
  */
-export function houseBlockForStyle(style: CastStyle): string {
+export function houseBlockForStyle(style: CastStyle, lane: HouseLane = DEFAULT_HOUSE_LANE): string {
   switch (style) {
     case "photoreal":
-      return HOUSE_BLOCK;
+      return lane === "creature" ? CREATURE_HOUSE_BLOCK : HOUSE_BLOCK;
     default: {
       const never: never = style;
       throw new Error(`[houseBlock] no preset for style ${String(never)}`);
@@ -278,20 +447,28 @@ export const DROPPED_FROM_BLOCK: ReadonlyArray<{ phrase: string; from: string }>
   the flash studio again. The suite's arm proves the list reads real sentences
   (each phrase IS in the old studio's block); this proves the block is clean.
 */
-{
-  const lower = HOUSE_BLOCK.toLowerCase();
+/* BOTH LANES (#232): a phrase back in the creature lane alone would be invisible to a guard reading the human bytes. */
+for (const [lane, block] of [["human", HOUSE_BLOCK], ["creature", CREATURE_HOUSE_BLOCK]] as const) {
+  const lower = block.toLowerCase();
   for (const { phrase, from } of DROPPED_FROM_BLOCK) {
     if (lower.includes(phrase.toLowerCase())) {
-      throw new Error(`[houseBlock] "${phrase}" is back in the locked block (dropped from ${from} by §5d/§5e/§5f, #144/#146)`);
+      throw new Error(`[houseBlock] "${phrase}" is back in the locked block's ${lane} lane (dropped from ${from} by §5d/§5e/§5f, #144/#146)`);
     }
   }
 }
 
-/** True when `text` contains any sentence of the block — the author is never allowed to. */
+/**
+ * True when `text` contains any sentence of EITHER lane's block — the author is
+ * never allowed to. It reads both because the author is not told which lane
+ * the roll took, and a draft copying the creature EXPRESSION sentence is the
+ * same defect as one copying the human sentence (#232).
+ */
 export function containsHouseSentence(text: string): string | null {
   const lower = text.toLowerCase();
-  for (const sentence of HOUSE_BLOCK_SENTENCES) {
-    if (lower.includes(sentence.toLowerCase())) return sentence;
+  for (const lane of HOUSE_LANES) {
+    for (const sentence of houseBlockSentencesFor(lane)) {
+      if (lower.includes(sentence.toLowerCase())) return sentence;
+    }
   }
   return null;
 }
