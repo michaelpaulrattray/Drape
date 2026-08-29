@@ -1,7 +1,7 @@
 {
-  "edition": 109,
-  "updatedAt": "2026-08-30T02:35:00+10:00",
-  "shift": "foreman-102",
+  "edition": 110,
+  "updatedAt": "2026-08-30T04:40:00+10:00",
+  "shift": "foreman-103",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "reader-rules-court-231",
+      "title": "Your four reader rules — three landed, and the Grok court did NOT go the way my first run said (#231)",
+      "productImpact": "Upload a picture of a hairless creature now and the studio writes down that it is hairless instead of inventing a coat on it. That is three of your four rules in: bare skin reads hairless, worn ornament is materials rather than a collar plate and a bracer, and a species fact now outranks styling when the note will not all fit.\n\nTHE GROK COURT RAN AND IT IS NOT DECIDED, and the reason is the thing worth your minute. Grok read 4 of 12 pictures and my FIRST run reported the other 8 as \"unreadable\" — which reads exactly like Grok refusing your creature and goth pictures, the regression you named yourself. It is not. Every one of those 8 was a TIMEOUT at the 45-second limit our own reader gives it, and it is intermittent: the same photograph read once and timed out once. Had I written up run 1 you would have a verdict on your desk against a model that never got to answer. What the night actually learned is that swapping the reader is not the one-line change the card assumed — a model that needs 90 seconds is a different product decision from one that writes better prose, because she is watching a spinner while it thinks. Where Grok DID answer it was good and noticeably shorter (137-224 characters against Sonnet's 209-300), got heritage right 3 of 3, and correctly refused the object control.\n\nTWO SMALLER THINGS I WANT YOUR EYE ON, both one line to answer. (1) IS THAT A TAIL OR A STAFF? On your feline deity the long banded shape behind his shoulder reads to me as a gold-banded staff, not a tail — but your rule says \"tail included\", so it is your eye that decides. It matters: the readers call it a tail on nearly every read, so if it is a staff then that is not a rule working, it is the reader inventing an anatomy, which is the exact thing rule 1 is against. (2) THE NOTES GOT MORE EXPENSIVE AND I DID NOT MOVE YOUR NUMBERS. Asking for more facts makes a longer first draft, and your 300-character ceiling sends those back to be rewritten, so the rewrite rate roughly doubled (4 in 12, now 13 in 24) — cents of our money and a second wait for her. Both numbers are yours from an explicit ruling, so I left them alone. I would leave them: the rewrite is where the species facts are actually getting caught, so the second pass is buying something real, and raising the ceiling lets inventories back in, which is what the ceiling was for.",
+      "workedExample": "Your own feline deity, through the real reader.\n\nBEFORE: \"Feline humanoid creature, muscular build, with short deep-purple-blue FUR, large pointed ears with pink inner markings, whiskers, sharp yellow eyes and a long tail.\"\n\nAFTER: \"Male feline humanoid, adult, muscular build, with HAIRLESS deep-violet hide, large pink-inner ears, whiskers, a tail and sharp yellow eyes.\"\n\n0 in 4 named the hairlessness before; 3 in 4 after. I am calling that a PARTIAL and not a win: the one read that did not improve is the one that never got rewritten, so the correction is arriving on the second pass rather than the first.",
+      "options": [
+        {
+          "key": "rerun-long",
+          "label": "Rerun Grok at a longer deadline, then show me the pairs",
+          "consequence": "Cheap, text only, no credits. It is the only way to score your third axis — does it decline your edgy-fashion pictures — because right now we cannot tell declining from timing out. If it reads everything at 180 seconds, the real question becomes whether a slower reader is worth better prose, and that comes back to you as its own decision."
+        },
+        {
+          "key": "drop-grok",
+          "label": "Drop it — Sonnet stays the reader",
+          "consequence": "Costs nothing and loses nothing built: the model is a one-line constant now either way. But your own hunch goes untested, and the four reads Grok did manage were genuinely tighter than ours."
+        },
+        {
+          "key": "court-another",
+          "label": "Court a different model instead",
+          "consequence": "Same machinery, same fixtures, one slug changed. Worth saying if you have one in mind — the driver reads the live model list, so it never guesses a name."
+        }
+      ],
+      "recommendation": "RERUN GROK AT A LONGER DEADLINE. Your hunch has not actually been tested yet — the first attempt measured our own 45-second limit, not Grok's reading. It is cents and it is text only, and I will run it next shift unless you say otherwise.",
+      "state": "open",
+      "filedAt": "2026-08-30T04:40:00+10:00",
+      "issueNumber": 231
+    },
     {
       "id": "hero-showcase-240",
       "title": "The casting hero is a showcase now — nobody's shelf, and a click fills the box (#240)",
@@ -1309,6 +1336,13 @@
   ],
   "pipeline": [
     {
+      "id": "reader-rules-court-231",
+      "title": "#231 — your three remaining reader rules, and the reader gets its own model",
+      "status": "merged",
+      "prNumber": 245,
+      "note": "MERGED as 99664b55 and deployed with this edition. Three clauses in the reader's instruction and NO new banned word — your own sentence, \"proof is the output, not a word list\", and this file already records five times a ban caught something it was not aimed at. TWO DEFECTS turned up by driving it, both fixed here: the \"that is too long, write it again\" message carried a keep-list with no tail, no surface and no kind of being on it, so a creature note under pressure was told in our own words to come back without its species — the exact opposite of your rule 4, in code; and a rewrite that came back SHORTER AND CORRECT (\"bare violet-blue hide\") was thrown away because it forgot to wrap itself in JSON, and the customer was told we could not read her picture. The reader also has its own model constant now, which is what your Grok court needed — and building it found that a second reader engine would have quietly doubled how many calls we make to OpenRouter at once, with nothing anywhere counting them. 12 sabotages, 12 reds. Record: docs/specs/CONCEPT_READER_COURT_2026-08-30.md."
+    },
+    {
       "id": "hero-showcase-240",
       "title": "#240 — the casting hero is a showcase, not the account's shelf",
       "status": "merged",
@@ -1921,8 +1955,8 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "The gate's second-opinion reviewer is still down — nineteenth refusal, about 27 hours",
-      "detail": "NINETEENTH refusal, probed in one line before tonight's work was planned: same sentence, your Fable 5 allowance is used up. Honest span: 22:20 on the 28th to now, about twenty-seven hours, against the one precedent we have of about five. Tonight's change went through the gate's four instruments and PASSED; the review check went red and I read its log rather than guessing — the job died in one second with is_error, which is the no-verdict shape, not a rejection. So nothing in this diff was judged by a second pair of eyes. What stands behind it instead is stated plainly on the PR: 244 driven checks with a working control, and 15 sabotages that each go red. When your allowance comes back, #240's diff is worth a read-over.",
+      "title": "The gate's second-opinion reviewer is still down — twentieth refusal, about 30 hours",
+      "detail": "TWENTIETH refusal, probed in one line before tonight's work was planned: same sentence, your Fable 5 allowance is used up. Honest span: 22:20 on the 28th to now, about thirty hours, against the one precedent we have of about five. Tonight's change went through the gate's four instruments and PASSED; the review check went red and I read its log rather than guessing — it died with is_error, which is the no-verdict shape, not a rejection. So nothing in this diff was judged by a second pair of eyes either. What stands behind it instead is stated on PR #245: three separate drives against your own pictures, and 12 sabotages that each go red in the arm that names them — including two NO-REDs I chased down and found were my instrument's fault rather than the product's. When your allowance comes back, #245 and #244 are both worth a read-over.",
       "severity": "warning",
       "state": "open"
     },
@@ -2012,6 +2046,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T04:40:00+10:00",
+      "shift": "foreman-103",
+      "text": "No new reply overnight, so the lobby lane stayed shut and I took your #231 instead. Three of your four reader rules are in and the Grok court ran.\n\nThe thing I want to put in front of you is not the rules, it is that my FIRST run of that court would have told you something false. It reported eight \"unreadable\" results for Grok, which reads as Grok declining your creature and goth pictures — the regression you named yourself. I could not see WHY from the outcome, so I wrapped the call and ran it again, and every one of those eight was a plain TIMEOUT at 45 seconds. Nothing to do with the subject. Had I written up run 1 you would have a verdict on your desk against a model that never got to answer.\n\nThe same habit paid twice more. Driving your own feline picture, a rewrite came back SHORTER and CORRECT — it said \"bare violet-blue hide\", the exact fact your rule 1 is about — and our code threw it away because the reply forgot its JSON wrapper, then told the customer we could not read her picture. And the \"that is too long, write it again\" message we send turned out to carry a list of what to keep with no tail, no surface and no kind of being on it. So on the one path that fires when a creature note is under pressure, we were telling it to drop the species. Both fixed.\n\nI am being careful about what I claim landed. Your fixture went from 0 in 4 naming the hairlessness to 3 in 4 — but the one read that did NOT improve is the one that never got rewritten, so the correction is arriving on the second pass rather than the first. That is a partial, not a win, and it is on the card that way."
+    },
     {
       "at": "2026-08-30T02:35:00+10:00",
       "shift": "foreman-102",
@@ -2206,11 +2245,6 @@
       "at": "2026-08-28T02:25:00+10:00",
       "shift": "foreman-58",
       "text": "Quiet-hours patrol shift, two things worth your morning read. First: your cyber-goth sheet from yesterday afternoon that died whole - all eight tiles failed - was NOT the studio refusing your brief. A deploy restarted the studio seconds after your roll started (the deploy guard checks whether you're mid-session, but you'd been quiet eight minutes when the push fired and it can't see a roll that hasn't started yet - it did refuse the very next push two minutes later). Every slice was refunded within six minutes - I verified the 160 credits back row by row - and each tile offered Retry. This is the known accepted deploy-collision class; nothing is broken. Second: the refusal patrol ran on the new material (your roll before that one had 4 of 8 refused by the content filter - same coin-per-render behaviour as before, byte-identical text refused and delivered in one sheet). The new mid-torso framing sentence showed slightly more refusals in its court, but the numbers say coin, not sentence (p = 0.35) - and every roll you make on the live framing adds free evidence, so the patrol logged it and spent nothing. No word enters any rewrite list. Your first Follow tap is still the live check of the Row A build."
-    },
-    {
-      "at": "2026-08-28T01:55:00+10:00",
-      "shift": "foreman-57",
-      "text": "Your Row A pick is built, merged (#184) and deploying to your account now. Tap Follow on a face you like and the studio sends that face's own photo to the engine with your brief and your exact sentence - the eight come back as close variations held by the picture, not by a paragraph describing a record (the ghost that misfiled the fitness creator's heritage has no channel left at all). Nothing else rides a follow any more: no chip adjustments, no imagination call - the chips read as a record, the settings panel says 'a follow holds the look of the face you picked' instead of showing a meter that does nothing, and to change a fact you edit the sentence and roll. If a follow's photo can't be loaded, you're refused free before any charge; a retried tile re-attaches the same photo or refuses free too. Row B (the shortlist) stays on the record as a possible second button later, per your 'for now'. YOUR NEXT FOLLOW TAP IS THE LIVE CHECK - one honest note: the court's frames were rendered at the delivered size, while your rolls render larger under the framing trim, so if a follow sheet's framing reads off, that combination is the first suspect. Review gate found one real hole (a follow whose photo is missing would have quietly cast strangers for money) - fixed before merge. House spend this shift: $0."
     }
   ],
   "acknowledgedReplyIds": [
