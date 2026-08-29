@@ -395,16 +395,107 @@
  * `framing` class in this file is one too many to risk a fifth, and *"open"*
  * and *"wide"* are ordinary prose about a face.
  *
- * ⚠ **The other three rules of #231 (bare skin reads HAIRLESS, materials not
- * named pieces on the READER's side, LOW keeps species facts) and its
- * Grok-vs-Sonnet reader court are NOT here** — they are that card's, and it is
- * open. What landed with #232 is the one sentence the two cards share.
+ * ⚠ **AND THE OTHER THREE RULES OF #231 LANDED 2026-08-30 — the sentence that
+ * stood here said they were "NOT here", which was true for a day.**
+ *
+ * They came from one miss he named himself: a sphynx-like feline deity read
+ * back without its hairlessness and without its tail. His words, verbatim:
+ *
+ * > *"If skin is bare, write hairless. Never invent fur. · Creature features in
+ * > frame get named: tail included. · Materials, not collar plating and an arm
+ * > bracer. · LOW still has to keep visible species facts. Hairless is a fact,
+ * > not MAX taste."*
+ *
+ * Rule 2 (the checklist) landed with #232 above. The other three are three
+ * clauses in {@link RULES} and no new sweep, which is this file's own recorded
+ * discipline rather than laziness — *"Proof is the output, not a word list"*,
+ * and five instances of an over-broad ban are already on the record here:
+ *
+ * - **SURFACE** carries rule 1. It is written as *never dress a being in
+ *   something it has not got*, because the failure was not a missing adjective
+ *   — it was INVENTED FUR, a positive claim about a surface that is bare.
+ * - **The wardrobe rule** carries rule 3: worn ornament and armour take the
+ *   MATERIALS rule and not the feature rule above it, in his own words
+ *   (*"ornamented metal, banded gold"*, never *"collar plating"* or *"an arm
+ *   bracer"*). It is placed inside the wardrobe bullet rather than as a fourth
+ *   line of the feature rule, because the discriminator is his own law's:
+ *   strapped ON is styling, fitted INTO the body is a feature.
+ * - **Rule 4 is a sentence about the LENGTH TARGET**, which is where it
+ *   actually bites: nothing in this module has a LOW or a MAX, so *"LOW still
+ *   has to keep visible species facts"* is not a mode to build. ⚠ **Read at
+ *   the road, it is already structural on the author side and the reader was
+ *   the only weak link** — at LOW no author is called at all and the
+ *   description IS the prompt's first paragraph, and at MAX the brief is the
+ *   first paragraph BY CODE (append-only). So a species fact that reaches the
+ *   note survives both settings by construction, and the only way to lose one
+ *   is for this reader not to write it. The one force that would drop it here
+ *   is the announced ~150–250 target, so that is the clause the rule is
+ *   attached to: **styling is what gets cut for length, never anatomy.**
+ *
+ * The Grok-vs-Sonnet reader court is the fourth item, and it has what it needs
+ * now: {@link CONCEPT_READER_MODEL}.
  */
 import { createModuleLogger } from "../logging/logger";
-import { interpreterEngine } from "./interpreter";
+import { interpreterTextQueue } from "./interpreter";
+import {
+  createOpenRouterTextEngine,
+  DEFAULT_INTERPRETER_MODEL,
+} from "../providers/openrouterText";
 import { ProviderError, type TextEngine } from "../providers/types";
 
 const log = createModuleLogger("castingV2/conceptDescribe");
+
+/**
+ * THE READER'S OWN MODEL — one line, and swapping it swaps nothing else (#231).
+ *
+ * His card asks for exactly this and says why: *"I have a feeling grok might
+ * perform better at reading … the reader model becomes its OWN constant
+ * (independent of the brief interpreter) in the same PR, so the swap is one
+ * line and reversible."* Until tonight this reader had no model of its own — it
+ * took `interpreterEngine()` whole, so the only way to try a different reader
+ * was to move the slug every brief in the product is interpreted by.
+ *
+ * ⚠ **TODAY IT IS THE SAME SLUG, DELIBERATELY, so nothing about the shipped
+ * reader moves in the commit that makes it swappable.** The court is what may
+ * move it, and a swap that arrived in the same change as the rules it is
+ * measured against would have two variables in it.
+ *
+ * It is a CONSTANT rather than an env var on purpose. A per-deployment override
+ * would be a tenth undocumented flag on a file whose own history records nine
+ * of them (`CLAUDE.md`, "the flags that were live and undocumented"), and the
+ * court does not need one: {@link ConceptDescribeInput.engine} already takes an
+ * engine, so an arm drives whatever model it likes without configuring the
+ * service.
+ */
+export const CONCEPT_READER_MODEL = DEFAULT_INTERPRETER_MODEL;
+
+let readerEngine: TextEngine | null = null;
+
+/**
+ * The reader's engine: its own model, the interpreter's ONE allowance.
+ *
+ * The queue is shared rather than built here, and that is the load-bearing half
+ * of this function — see {@link interpreterTextQueue}. A second engine with a
+ * second queue would double what the product is willing to have in flight at
+ * OpenRouter, which is the sort of widening that shows up as 429s on a
+ * customer's read rather than as a failing test.
+ */
+export function conceptReaderEngine(): TextEngine | null {
+  if (readerEngine) return readerEngine;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return null;
+  readerEngine = createOpenRouterTextEngine({
+    apiKey,
+    model: CONCEPT_READER_MODEL,
+    queue: interpreterTextQueue(),
+  });
+  return readerEngine;
+}
+
+/** Test seam: drops the memoized reader engine. */
+export function resetConceptReaderForTests(): void {
+  readerEngine = null;
+}
 
 /**
  * THE CEILING IS THE ANTI-CLONE CONTROL — 300, and it was 1,200 (his ruling,
@@ -804,6 +895,13 @@ const RULES = [
   "  never as a product: \"fitted mechanical eye\", \"integrated facial hardware\" \u2014 never \"spiked eye",
   "  harness\", never \"sleek mechanical eye piece\". Do not flatten it away either: a being's own",
   "  hardware is part of what a casting director would be booking.",
+  "- SURFACE: name what the skin, hide, scale or plating actually IS, and never dress a being in",
+  "  something it has not got. IF THE SKIN IS BARE, WRITE IT \u2014 \"hairless\", \"bare grey hide\",",
+  "  \"smooth violet skin\". NEVER INVENT FUR, hair, a coat or a mane on a being that has none: a",
+  "  hairless creature written as a furred one is a different creature, and it is the one that gets cast.",
+  "  DO NOT INFER A COAT FROM THE KIND OF BEING. A feline, canine or bear-like creature may be entirely",
+  "  bare-skinned, and many are. Look at the skin actually in front of you and write what is on it —",
+  "  wrinkled bare hide is not fur because the face is a cat's.",
   "- THE CREATURE CHECKLIST \u2014 ears, horns, tail, wings, scales, whiskers, and mouth anatomy.",
   "  IF IT IS IN THE FRAME, WRITE IT. The list is a floor and never a ceiling: extra limbs, fins, a",
   "  crest, a beak, an exoskeleton are facts about the being too, and a fact is not optional taste.",
@@ -816,6 +914,10 @@ const RULES = [
   "  (\"dark structured fashion in lace, leather and metal\"). Never itemise, and never name a single",
   "  WORN accessory \u2014 no harness, no mask, no collar, no glove, no piece of jewellery, whatever it is",
   "  made of. A part of the being itself is not an accessory: that is the rule above.",
+  "  WORN ORNAMENT AND ARMOUR TAKE THIS RULE, not the feature rule above it: a plate strapped over a",
+  "  shoulder is styling, not anatomy. Write the material and its world \u2014 \"ornamented metal\",",
+  "  \"banded gold\" \u2014 and never the piece: not \"collar plating\", not \"an arm bracer\", not a",
+  "  gorget, a pauldron or a greave. A piece a props department could be sent to fetch is a piece.",
   "  Name the MATERIAL, never the hardware or what has been done to it \u2014 \"metal accents\" is enough,",
   "  and \"spiked\", \"studded\", \"buckled\", \"chained\" and their kind are out. That is not taste: a note",
   "  carrying them is REFUSED OUTRIGHT by the image engine, so it costs her the cast altogether.",
@@ -841,6 +943,9 @@ const RULES = [
   "It is wrong because it locks a body size, one exact haircut and three named garments onto all eight",
   "faces, and because garment names like those are refused outright by the image engine.",
   "",
+  "A VISIBLE SPECIES FACT OUTRANKS EVERYTHING ELSE WHEN IT WILL NOT ALL FIT. Hairlessness, a tail, ears,",
+  "horns, a snout, the kind of being it is: those are what make it that being at all. If the note is",
+  "getting too long, CUT THE STYLING AND KEEP THE ANATOMY — never the other way round.",
   `Write TWO OR THREE SHORT SENTENCES, about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters in total.`,
   'Reply with JSON: {"description": "..."} — or {"description": null} if there is no BEING in the picture at all, only an object, a place or a thing.',
 ].join("\n");
@@ -950,7 +1055,7 @@ function reAsk(fault: Fault): string {
     case "absence":
       return `Your previous answer said "${fault.phrase}". Never say what the person does NOT have — describe only what is there. Write it again without that.`;
     case "long":
-      return `Your previous answer was ${fault.length} characters — that is an inventory, not a casting note. Write it again in about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters, keeping only sex, age band, heritage if visible, build family, hair world, skin and marking world, wardrobe materials and type.`;
+      return `Your previous answer was ${fault.length} characters — that is an inventory, not a casting note. Write it again in about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters. KEEP every visible species fact — the surface (hairless, scaled, furred), a tail, ears, horns, non-human dentition, the kind of being it is — and keep sex, age band, heritage if visible, build family where the type needs one, hair world, marking world, wardrobe as materials, and the type. Cut the styling detail, never the anatomy.`;
     case "brief":
       return `Your previous answer was only ${fault.length} characters and says too little to cast from. Write it again at about ${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters.`;
   }
@@ -1012,7 +1117,7 @@ function parse(raw: string): Parsed {
  * handed over as though it had been written that way.
  */
 export async function describeConcept(input: ConceptDescribeInput): Promise<ConceptDescribeOutcome> {
-  const engine = input.engine === undefined ? interpreterEngine() : input.engine;
+  const engine = input.engine === undefined ? conceptReaderEngine() : input.engine;
   if (!engine) return { ok: false, reason: "no_transport", attempts: 0 };
 
   /**
@@ -1027,7 +1132,19 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
       reply = await engine.complete({
         about: "describe",
         system: RULES,
-        user: previous ? `${ASK} ${reAsk(previous)}` : ASK,
+        /* THE ENVELOPE IS RESTATED ON THE RE-ASK, and it is not belt-and-braces.
+           Driven on his own feline fixture (#231): the first read faulted `long`,
+           the re-ask produced a SHORTER AND CORRECT note — "bare violet-blue
+           hide", the exact fact his rule 1 is about — and it came back as BARE
+           PROSE with no JSON around it, so `parse` could not read it and the
+           customer was told we could not read her picture. The system turn does
+           carry the envelope on every call; a model that has just been told it
+           got something wrong evidently drops it anyway. One sentence on the
+           turn that is actually being corrected costs nothing and is the only
+           place a re-ask can lose an answer it had already got right. */
+        user: previous
+          ? `${ASK} ${reAsk(previous)} Reply with JSON in the same shape as before: {"description": "..."}.`
+          : ASK,
         images: [{ bytes: input.bytes, contentType: input.contentType }],
         json: true,
         temperature: 0,

@@ -917,3 +917,183 @@ describe("feature or wardrobe — his reply 28", () => {
     expect(feature, "the line is drawn before the rule that was crossing it").toBeLessThan(wardrobe);
   });
 });
+
+/**
+ * #231 — HIS THREE REMAINING READER RULES, from the feline-deity miss.
+ *
+ * Verbatim: *"If skin is bare, write hairless. Never invent fur. · … ·
+ * Materials, not collar plating and an arm bracer. · LOW still has to keep
+ * visible species facts. Hairless is a fact, not MAX taste."*
+ *
+ * These are arms on the INSTRUCTION and they are honest about what that is
+ * worth: the instruction is the primary control here and a suite cannot prove a
+ * model obeys it. What they prevent is the rule silently leaving the prompt —
+ * which is how this reader lost things before. The acceptance is the drive
+ * against his own pictures (`scripts/_shift103-reader-court-disposable.mts`).
+ *
+ * ⚠ EVERY SLICE HAS A NON-EMPTY FLOOR. An arm that slices a prompt from an
+ * anchor it cannot find, and then asserts only what is absent, passes on the
+ * empty string — foreman-102 found two live instances of exactly that, one of
+ * them in this very file.
+ */
+describe("#231 — his three remaining reader rules", () => {
+  const systemOf = async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    return engine.sent[0]!.system;
+  };
+
+  const sliceFrom = (system: string, anchor: string, length: number) => {
+    const at = system.indexOf(anchor);
+    expect(at, `anchor: ${anchor}`).toBeGreaterThan(-1);
+    const slice = system.slice(at, at + length).replace(/\s+/g, " ");
+    expect(slice.length, `anchor: ${anchor} — a slice with nothing in it asserts nothing`)
+      .toBeGreaterThan(anchor.length);
+    return slice;
+  };
+
+  it("rule 1 — tells the reader to WRITE hairless when the skin is bare", async () => {
+    const rule = sliceFrom((await systemOf()).toLowerCase(), "- surface:", 500);
+    expect(rule, "his own word").toContain("hairless");
+    expect(rule, "as an instruction to write it, not as a passing mention")
+      .toContain("if the skin is bare, write it");
+  });
+
+  /*
+    HIS SENTENCE HAS TWO HALVES AND THE SECOND IS THE ONE THAT MISSED. The
+    feline deity did not merely go unlabelled — it came back with fur it does
+    not have, which is a positive claim about a surface. A rule that only said
+    "say hairless" leaves inventing a coat permitted.
+  */
+  it("rule 1 — and forbids INVENTING fur on a being that has none", async () => {
+    const rule = sliceFrom((await systemOf()).toLowerCase(), "- surface:", 500);
+    expect(rule, "the half of his sentence that was the actual miss").toContain("never invent fur");
+  });
+
+  /*
+    ⚠ THE CLAUSE THE SABOTAGE SWEEP FOUND UNARMED — and it is the half that
+    actually moved the number. His fixture is a sphynx: bare skin, and the
+    reader wrote "short violet-blue fur" 4/4 while the rule said only "if the
+    skin is bare, write it". What it was missing is the INFERENCE: the model was
+    not failing to look, it was reading "cat" and writing a coat. 0/4 -> 3/4 on
+    the re-drive after this clause landed.
+  */
+  it("rule 1 — and forbids inferring a coat from the KIND of being", async () => {
+    const rule = sliceFrom((await systemOf()).toLowerCase(), "- surface:", 700);
+    expect(rule, "the inference, not just the observation")
+      .toContain("do not infer a coat from the kind of being");
+    expect(rule, "a feline may be bare-skinned").toContain("bare-skinned");
+  });
+
+  it("rule 3 — worn ornament and armour take the MATERIALS rule, in his own words", async () => {
+    const rule = sliceFrom((await systemOf()).toLowerCase(), "- wardrobe:", 1200);
+    for (const world of ["ornamented metal", "banded gold"]) {
+      expect(rule, `his replacement language: ${world}`).toContain(world);
+    }
+    for (const sku of ["collar plating", "arm bracer"]) {
+      expect(rule, `the piece he named: ${sku}`).toContain(sku);
+    }
+  });
+
+  /*
+    THE PLACEMENT IS THE RULING. His own law (Crew reply 28) draws the line by
+    WHERE the thing sits: fitted INTO the body is a feature, strapped ON is
+    styling. A plate over a shoulder therefore belongs to the wardrobe rule, and
+    an arm that only checked the words were somewhere in the prompt would pass
+    with them under the feature rule, where they would mean the opposite.
+  */
+  it("rule 3 — and puts them under WARDROBE rather than under the feature rule", async () => {
+    const system = (await systemOf()).toLowerCase();
+    const feature = system.indexOf("the clothes cut does not strip a face");
+    const wardrobe = system.indexOf("- wardrobe:");
+    const ornament = system.indexOf("worn ornament and armour");
+    expect(feature, "the feature rule").toBeGreaterThan(-1);
+    expect(wardrobe, "the wardrobe rule").toBeGreaterThan(-1);
+    expect(ornament, "his ornament clause").toBeGreaterThan(-1);
+    expect(ornament, "strapped ON is styling — it belongs after the wardrobe rule opens")
+      .toBeGreaterThan(wardrobe);
+    expect(feature).toBeLessThan(wardrobe);
+  });
+
+  /*
+    RULE 4 IS ABOUT THE LENGTH TARGET, and that is a reading rather than a
+    transcription: nothing in this module has a LOW or a MAX. At LOW no author
+    is called and the description IS the prompt's first paragraph; at MAX the
+    brief is the first paragraph by code. So a fact that reaches the note
+    survives both settings structurally, and the only force here that would drop
+    one is the announced ~150–250 target. The arm therefore asserts the rule
+    sits WITH that target: moved away from it, it is a sentence about nothing.
+  */
+  /*
+    ⚠ IT IS A PRIORITY RULE AND IT USED TO BE A LICENCE, which is a correction
+    made by driving it rather than by reading it back. The first wording said a
+    species fact is kept "even when the note runs a little long" — an
+    instruction to overrun a bound the CODE REFUSES at 300 characters, so it
+    bought re-asks rather than facts. What he actually ruled is an ORDER OF
+    PRECEDENCE: hairlessness is a fact, styling is taste, and the taste is what
+    goes when they will not both fit.
+  */
+  it("rule 4 — a species fact outranks styling when the note will not all fit", async () => {
+    const system = (await systemOf()).toLowerCase();
+    const rule = sliceFrom(system, "a visible species fact outranks everything else", 400);
+    expect(rule, "the facts he named").toContain("hairlessness");
+    expect(rule, "the facts he named").toContain("a tail");
+    expect(rule, "and which way round to cut").toContain("cut the styling and keep the anatomy");
+    expect(rule, "it must not license overrunning the ceiling the code enforces")
+      .not.toContain("runs a little long");
+
+    const at = system.indexOf("a visible species fact outranks everything else");
+    const target = system.indexOf("two or three short sentences");
+    expect(target, "the announced target").toBeGreaterThan(-1);
+    expect(Math.abs(target - at), "the rule stands with the target it is about")
+      .toBeLessThan(600);
+  });
+
+  /*
+    ⚠ THE RETRY PATH WAS STRIPPING THE VERY FACTS RULE 4 PROTECTS, and no arm on
+    the instruction could have seen it: the `long` re-ask carried its own KEEP
+    LIST — "sex, age band, heritage, build family, hair world, skin and marking
+    world, wardrobe materials and type" — with no tail, no surface and no kind
+    of being on it. So a creature note that ran over the ceiling was told, in
+    our own words, to come back without its species. Found by driving his own
+    fixture; it is the second half of rule 4 and the more load-bearing one,
+    because it fires exactly when the note is under pressure.
+  */
+  it("rule 4 — and the LONG re-ask keeps them rather than listing them away", async () => {
+    const long = `${"A ".repeat(60)}creature note far over the ceiling.`.padEnd(CONCEPT_DESCRIPTION_MAX + 40, "x");
+    const engine = engineSaying(said(long), said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    expect(engine.sent.length, "the read was sent back once").toBe(2);
+    const reask = engine.sent[1]!.user.toLowerCase();
+    expect(reask, "the fault it names").toContain("inventory, not a casting note");
+    for (const fact of ["hairless", "a tail", "ears", "horns", "kind of being"]) {
+      expect(reask, `the re-ask must keep: ${fact}`).toContain(fact);
+    }
+    expect(reask, "and say which way to cut").toContain("cut the styling");
+  });
+
+  /*
+    ⚠ AND A RE-ASK THAT FIXES THE FAULT CAN STILL BE THROWN AWAY. Driven on his
+    feline fixture: the re-ask came back SHORTER and CORRECT — "bare violet-blue
+    hide", the fact rule 1 exists for — as bare prose with no JSON around it, so
+    `parse` could not read it and she was told we could not read her picture.
+    The system turn carries the envelope on every call; a model that has just
+    been told it got something wrong drops it anyway. One sentence on the turn
+    being corrected is the whole repair.
+  */
+  it("every re-ask restates the JSON envelope, whatever the fault was", async () => {
+    const faults: ReadonlyArray<readonly [string, string]> = [
+      ["long", said("x".repeat(CONCEPT_DESCRIPTION_MAX + 20))],
+      ["brief", said("too short")],
+      ["picture", said(`${CLEAN} Shot with a shallow depth of field.`)],
+      ["absence", said(`${CLEAN} No tattoos.`)],
+    ];
+    for (const [name, first] of faults) {
+      const engine = engineSaying(first, said(CLEAN));
+      await describeConcept({ ...PICTURE, engine });
+      expect(engine.sent.length, `${name}: it was sent back`).toBe(2);
+      expect(engine.sent[1]!.user, `${name}: the envelope is restated`)
+        .toContain('{"description": "..."}');
+    }
+  });
+});
