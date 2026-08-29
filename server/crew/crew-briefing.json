@@ -1,7 +1,7 @@
 {
-  "edition": 101,
-  "updatedAt": "2026-08-29T18:05:00+10:00",
-  "shift": "foreman-97",
+  "edition": 102,
+  "updatedAt": "2026-08-29T19:05:00+10:00",
+  "shift": "foreman-98",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -123,7 +123,7 @@
       {
         "label": "One thing waiting on you: pick the lobby's first segment",
         "tone": "warn",
-        "source": "needsYou card lobby-segments-228"
+        "source": "needsYou card lobby-segments-228; eye item lobby-before-228 (5 frames, driven in the running app)"
       },
       {
         "label": "Six finished cards closed in the queue — nothing built, records made true",
@@ -578,6 +578,42 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "lobby-before-228",
+      "title": "Your lobby as it stands tonight — the before pictures, so the segment you pick has something to be measured against",
+      "question": "NOTHING HAS BEEN BUILT. The card above still asks you to name segment 1, and it still will after you look at these.\n\nWHY THESE EXIST. Every lobby segment ships with a before-and-after pack: the same screen, shipped against the mockup, in both light and dark. The AFTER half gets taken when a segment is built. The BEFORE half is the same photographs every time, so I took them once tonight rather than five times later — and they are also the fairest way to show you what you are choosing between.\n\nWHAT YOU ARE LOOKING AT. Home, Canvas and Library as they are right now, plus the rail. Photographed in the running app on a test account, not drawn.\n\nTHE ONE THING WORTH YOUR ATTENTION. Look at Home. That is the landing page of the studio: a title, a row of recent work, and three lines of text under the word TOOLS. It is the smallest surface in the product and it is the first thing anyone sees. Everything the design handoff draws for that page — the big composer with its six modes — is five capabilities we do not have and one (image) that is the casting entrance, which this lane is frozen out of. So a Home segment would give you the greeting, what is running right now, what just landed and who you can cast — and it would NOT give you the composer. That is the honest trade, and it is why Home is my recommendation rather than my certainty.\n\nTWO THINGS I DO NOT WANT YOU TO MISREAD.\n1. On the Canvas picture, one card shows a broken-picture symbol. That is not a bug in the product. That object was written by an old test script without saying it was an image, so the browser refuses to paint it; every real place the product saves a picture says so properly (I read all 24). It is rubbish in the test database and it will keep appearing in these shots.\n2. Two of the three Library lists are empty here because the test account has no garments and no looks — not because those pages are broken.\n\nNOTHING IS ASKED OF YOU HERE. Judge the card, not these. If they change your mind about which segment goes first, that is exactly what they are for.",
+      "state": "open",
+      "filedAt": "2026-08-29T19:05:00+10:00",
+      "issueNumber": 228,
+      "frames": [
+        {
+          "key": "crew-eye/0db0e9d4-6717-494a-b8cd-cbc2cd52eb3e.jpg",
+          "caption": "HOME as it is tonight. A title, eight recent cards, and TOOLS as three numbered lines of type. This is the page segment 1 would replace. Compare it in your head to the handoff's landing page — the difference is mostly the thing I cannot build.",
+          "arm": "HOME — light"
+        },
+        {
+          "key": "crew-eye/8013a65c-925f-40bf-a142-23044a9d08b5.jpg",
+          "caption": "The same page in dark. Included because it is the half of every evidence pack people skip: there is no light island and no unthemed card here, so a Home segment does not have to fix the theme before it starts.",
+          "arm": "HOME — dark"
+        },
+        {
+          "key": "crew-eye/4f70ed59-ab61-457b-a889-9716f3eb6036.jpg",
+          "caption": "CANVAS — thirteen canvases and the dashed New canvas tile. The card showing a broken-picture symbol is test rubbish, not a defect: that file was saved without saying it was an image. Read the second numbered note in the question.",
+          "arm": "CANVAS — light"
+        },
+        {
+          "key": "crew-eye/c949e7ca-5433-4a81-a7b3-1a2661e97cd0.jpg",
+          "caption": "LIBRARY — 28 models on a test account, split In progress / Minted. The grey tiles near the bottom are fixture models with no picture. This is the surface segment 2 reorganises by when you made things.",
+          "arm": "LIBRARY — light"
+        },
+        {
+          "key": "crew-eye/08d06569-6c5d-4bbf-bad9-c7318335b6f5.jpg",
+          "caption": "THE RAIL. Home, Canvas, Casting and Library are live; Create, Templates and Assets are deliberately greyed and are not even links — a place-name is not a claim that the place works. Worth seeing before segment 5, because that part is already honest.",
+          "arm": "THE RAIL — light"
+        }
+      ],
+      "cardId": "lobby-segments-228"
+    },
     {
       "id": "portrait-crop-198",
       "title": "ANSWERED — you said top crop on both, and the Delete dialog now takes it (#198 closed)",
@@ -1101,7 +1137,7 @@
       "title": "Side lane — the lobby redesign: segment proposal, waiting on your pick",
       "status": "waiting-founder",
       "prNumber": null,
-      "note": "No code. Six segments proposed in landing order, each with what a customer would see change; the capability audit names what this lane cannot honestly build. The milestone stays N1 — when your Claude credits refresh, the N1 review outranks any lobby work."
+      "note": "No code, and none until you pick. Six segments proposed in landing order, each with what a customer would see change; the capability audit names what this lane cannot honestly build. Tonight adds the BEFORE photographs of every surface those segments touch, so whichever you name already has something to be measured against. The milestone stays N1 — when your Claude credits refresh, the N1 review outranks any lobby work."
     },
     {
       "id": "reply-reader-both-halves",
@@ -1773,6 +1809,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T19:05:00+10:00",
+      "shift": "foreman-98",
+      "text": "No reply from you yet on which lobby segment goes first, so nothing was built — that is the rule you set and it held. What I did instead was take the before photographs: Home, Canvas, Library and the rail, in both light and dark, driven in the running app rather than drawn. They are in your gallery above. Every segment has to ship with a before-and-after pack, and this is the before half for all six of them at once, so no later shift spends an hour re-photographing a page it is about to replace. Two things came out of doing it that are worth a line. The broken picture you will see on the Canvas shot is test rubbish, not a fault: that file was saved years ago without saying it was an image, so the browser refuses to paint it — I checked all 24 places the product saves pictures and every one of them says so properly. And my own instrument was wrong twice before it was right: it photographed the dark theme while claiming to photograph the light one, and it recorded that mismatch and passed anyway. It fails on it now. Your Claude usage limit is still out — fourteen refusals, about ten hours. No code review has been possible on our own changes for that whole time, which is why tonight was deliberately a night with no code in it."
+    },
+    {
       "at": "2026-08-29T18:05:00+10:00",
       "shift": "foreman-97",
       "text": "Your lobby side lane has its first deliverable: the redesign broken into six segments, in the order I would land them, with one line each on what you would actually see change — the card above. Nothing is built and nothing will be until you name the first one. The honest part you should read before picking: I audited your design handoff against what the server can actually do, and the prompt box across the top of the home screen — Image, Video, Try-on, UGC, Upscale, Voice — is the one thing this lane cannot build. Five of the six are capabilities that do not exist anywhere in the product, and the sixth is the casting entrance, which is frozen in this lane on purpose so the lobby work cannot muddy the casting review waiting for your credits. Templates, the project switcher at the top, team members and rail notifications are out for the same reason and are named on the card's record. What is left is genuinely buildable today with no new capability: the landing page, the library, the canvas page, the Assets tab, honest pages behind the two dead rail items, and your own note L5 about the icons. My recommendation is Home first. The milestone has not moved: N1 is still the task, and the moment your Claude credits are back the team goes straight back to it."
@@ -1966,11 +2007,6 @@
       "at": "2026-08-27T18:40:00+10:00",
       "shift": "foreman-50",
       "text": "All three of your answers are executed. K keeps the light — nothing moved, #128 closed, and L2+'s 2-of-8 refusal count went to the refusal patrol as a lead. The block chapter is closed on your reply #16. And the role-family re-strip you were waiting on is in the gallery: the Follow clause is rebuilt to your photographer sentence (PR #172, merged — 'close relative' and the expression-only sheet line are dead, with guards so neither can come back), and chip edits now rewrite the brief in place with no tie-breaker sentence (PR #173, with the shown-prompt fix: your locked block never prints on the sheet — competitors see your words and the author's, never the framework). Driven on dev on your own specimen brief before any of it goes near your account: my eye passes both grids; yours is the gate, and your first Follow on your own account is the court. Also closed: #167 (the rite already refuses an unparseable briefing — proven live on e58/e59)."
-    },
-    {
-      "at": "2026-08-27T17:35:00+10:00",
-      "shift": "foreman-50",
-      "text": "Your L2+ lighting block is rendered and on the light card — verbatim, byte-for-byte, eight frames on your thin brief, beside the four rows you already have. The look is what you wrote: wrapped soft key, luminous grey behind the head, no oily speculars. One honest count travels with it: the engine's content filter refused 2 of its 8 renders, where the other four block rows passed 32 of 32 — if you pick L2+, that count rides the PR and #129's patrol hunts the word. Cost $0.53 house, no credits. The letter question is re-asked on the card with L2+ in the list. Next on your order: #166 (the Follow casts a ROLE family, not a blood family), then #164 (chip edits rewrite the brief in place) and #168 (the shown prompt stops printing the locked block)."
     }
   ],
   "acknowledgedReplyIds": [
