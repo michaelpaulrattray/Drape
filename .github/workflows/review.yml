@@ -53,6 +53,23 @@
 # that label's meaning is unchanged). The PR that shipped this guard
 # demonstrated it on itself: its own `review` check went red by design.
 #
+# A `review` CHECK REPORTS WHETHER A VERDICT EXISTS, NOT WHETHER THE DIFF
+# PASSED (issue #219). The action exits 0 whatever it finds, so findings ride
+# a GREEN check's sticky comment and a RED check means NO REVIEW WAS PRODUCED:
+#
+#   green   the reviewer ran — read the sticky comment; it may hold findings
+#   red     no verdict — the self-skip refusal above (#165), or the action
+#           failing to complete (#219: the founder's Fable allowance ran out,
+#           the job died in ~1s on `is_error: true`, and two shifts read that
+#           red check as a reviewer verdict before the log was dug out)
+#   absent  triage decided this diff earns no review; gate.yml still ran
+#
+# The last step of the review job says which of those it is, as an annotation
+# on the PR's checks page and a table in the run summary. It cannot change the
+# job's conclusion (always() + continue-on-error), and it covers the self-skip
+# branch too — a PR touching this file can never earn a green review, so that
+# is the only branch such a PR is able to demonstrate live.
+#
 # Runs on the founder's Claude subscription via CLAUDE_CODE_OAUTH_TOKEN.
 
 name: Fable Review
@@ -185,6 +202,7 @@ jobs:
           persist-credentials: false
 
       - uses: anthropics/claude-code-action@16b3b310c3d7b5279df73130324d5205aeea8eac # v1
+        id: fable
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           use_sticky_comment: true
@@ -223,3 +241,48 @@ jobs:
             your first line. If you find nothing, say what you checked and
             pass it cleanly — do not invent findings.
           claude_args: "--model claude-fable-5"
+
+      # WHAT A `review` CHECK MEANS (issue #219). The colour of this check
+      # reports whether a review was PRODUCED — never whether the diff passed.
+      # Findings ride a GREEN check's sticky comment (the action exits 0
+      # whatever it finds); this job goes RED only when no verdict exists at
+      # all. That was read the wrong way round on PR #218: the founder's
+      # Fable allowance was exhausted, the action died in ~1s with
+      # `is_error: true`, and a red `review` looked like a reviewer verdict
+      # for two shifts. The step below says which state it is, on the PR's
+      # own checks page and in the run summary, so nobody has to dig the
+      # result JSON out of an action log again.
+      #
+      # It can never change the job's conclusion: `always()` so it also runs
+      # after a failure, `continue-on-error` so its own failure is a warning.
+      # It covers the self-skip branch too (#165) rather than skipping it —
+      # a PR touching this file cannot get a green review, so that is the
+      # only branch such a PR can ever demonstrate live.
+      - name: What this check means
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          OUTCOME: ${{ steps.fable.outcome }}
+          SELFSKIP: ${{ needs.triage.outputs.selfskip }}
+        run: |
+          if [ "$SELFSKIP" = "yes" ]; then
+            STATE="NO VERDICT — the reviewer cannot run on its own change (#165)"
+            echo "::error::NO VERDICT: this PR modifies review.yml, so claude-code-action self-skips and no review can run. Red here is by design, not a rejection — hand-review the reviewer change before merging (issue #165)."
+          elif [ "$OUTCOME" = "success" ]; then
+            STATE="RAN — findings, if any, are in the sticky review comment"
+            echo "::notice::The Fable reviewer RAN. Green is not a pass: read the sticky review comment on this PR for its findings before merging."
+          else
+            STATE="NO VERDICT — the reviewer did not complete (outcome: $OUTCOME)"
+            echo "::error::NO VERDICT: the Fable reviewer did not complete (step outcome: $OUTCOME). This is an OUTAGE, not a rejection — nothing in this diff was judged. Check the founder's Fable allowance and the action log before reading anything into it (issue #219)."
+          fi
+          {
+            echo "## Fable review: $STATE"
+            echo
+            echo "This check reports whether a review was **produced**, never whether the diff passed."
+            echo
+            echo "| check | what it means |"
+            echo "|---|---|"
+            echo "| green | the reviewer ran — its findings, if any, are in the sticky review comment. **Read it before merging.** |"
+            echo "| red | **no verdict exists.** Either the reviewer cannot run on its own change (#165) or it failed to complete (#219). Nothing was judged. |"
+            echo "| absent | triage decided this diff does not earn a review; the four mechanical checks in \`gate.yml\` still ran. |"
+          } >> "$GITHUB_STEP_SUMMARY"
