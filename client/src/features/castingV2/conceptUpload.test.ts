@@ -223,7 +223,17 @@ describe("the card is absent-or-live, never drawn as a control that can only ref
 
   it("fills the box and stops — nothing is rolled and nothing is charged", async () => {
     const page = withoutProse(await readFile(PAGE, "utf8"));
-    const onDescribed = page.slice(page.indexOf("onDescribed={"), page.indexOf("focusBrief();"));
+    /*
+      SEARCH FORWARD FROM THE ANCHOR, NOT FROM THE TOP OF THE FILE. This slice
+      used a bare `indexOf("focusBrief();")`, which found the FIRST caret call
+      in the page — and the moment the hero deck gained one (#240) that call
+      sat ABOVE `onDescribed={`, so the slice ran backwards and came back
+      empty. An empty string satisfies both `not.toContain` arms here, so two
+      of this test's three assertions would have passed on nothing.
+    */
+    const start = page.indexOf("onDescribed={");
+    const onDescribed = page.slice(start, page.indexOf("focusBrief();", start));
+    expect(onDescribed.length, "the slice must not be empty").toBeGreaterThan(20);
     expect(onDescribed).toContain("briefWithDescription");
     expect(onDescribed).not.toContain("startCasting");
     expect(onDescribed).not.toContain("navigate(");

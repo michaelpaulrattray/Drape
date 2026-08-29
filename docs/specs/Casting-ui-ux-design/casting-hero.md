@@ -1,5 +1,15 @@
 # Casting hero — build spec
 
+> ⚠ **CORRECTED BY THE FOUNDER, 2026-08-29 (#240). Read this before §4, §5 or §7.**
+>
+> This document originally described the deck as the account's own shelf of signed casts, with a curated set as a fallback. **That is wrong and it was built and reverted.** His words on seeing it, verbatim:
+>
+> > *"oh you messed up the casting hero, it's not meant to actually take people to a signed cast these are just images of potential casts you can make in the studio otherwise when a fresh user comes to the casting page they wouldnt see any images?"*
+>
+> **The deck is a SHOWCASE.** One curated set, the same for every account, signed casts or not — images of *what you can make in this studio*, each paired with the real brief that produced it. It does not read the roster. **No card opens a cast room.** Clicking any card — centre or peek — puts that card's brief in the prompt field and does not submit, exactly as the TRY chips do (his ruling on the same card: *"i agree with your reccomendation"*); a peek additionally brings itself to the centre.
+>
+> The sections below have been corrected in place. Where this note and an older line still disagree, this note wins.
+
 Replaces whatever currently sits at the top of the Casting page. Live reference: `Klieg Studio.dc.html` → Casting tab (the panel above the search row). Where this doc and the prototype disagree, the prototype wins.
 
 Everything here uses tokens from `client/src/foundation/tokens.css`. No hex literals — the token-guard test will fail you.
@@ -12,11 +22,11 @@ The old casting page opened straight into the roster. That answers "who do I alr
 
 1. **States the promise in one line** — you describe a person, you get eight of them.
 2. **Takes the input right there** — the prompt field is in the hero, not behind a button.
-3. **Shows the output before you commit** — a live deck of already-signed cast, each with the brief that produced them.
+3. **Shows the output before you commit** — a deck of real casts this studio produced, each with the brief that produced them.
 
 That third job is the one that matters. A prompt field alone asks the user to imagine the result; the deck shows it. Every card in the rotation is paired with the exact words that cast that person, so the user learns what a good brief looks like by reading real ones rather than by reading instructions.
 
-**Do not replace the deck with a static illustration or a stock hero image.** The whole argument of the section is that these are real signed performers and those are their real briefs.
+**Do not replace the deck with a static illustration or a stock hero image.** The whole argument of the section is that these are real frames this product rendered and those are their real briefs.
 
 ---
 
@@ -128,8 +138,8 @@ Transition on the centre-swap: `transform .52s var(--ease), opacity .52s ease, b
 
 - Advances every ~4s.
 - **Pauses on hover of the whole right column** (`onMouseEnter` / `onMouseLeave` → a `heroHeld` flag). A moving target the user is trying to read is hostile.
-- Clicking a **peek** brings it to centre and releases the hold.
-- Clicking the **centre** opens that cast member's room.
+- **Clicking any card puts that card's brief into the prompt field, and does not submit** — the TRY chips' behaviour exactly (§3). This is the founder's ruling on #240 and it replaces *"clicking the centre opens that cast member's room"*, which was built, refused and removed: nothing in the deck is anybody's property, so there is no room to open.
+- Clicking a **peek** additionally brings it to centre and releases the hold.
 
 Both clicks are required. A carousel where the off-centre cards are decorative teaches the user the deck isn't interactive.
 
@@ -155,7 +165,7 @@ CAST FROM THESE WORDS ────────────────
 - Eyebrow: `500 8.5px` mono, `.13em`, `--faint`, followed by a `--rule` hairline filling the row.
 - Brief: `400 13.5px/1.6`, `--ink`, `text-wrap: pretty`, in typographic quotes.
 - **`min-height: 60px`** on the brief — briefs vary in length, and without a floor the deck above jumps every rotation.
-- Progress ticks: one 3px bar per card. Current = `--ink`, past = `--lineStrong`, future = `--border`. The current tick animates its width over the dwell time, and freezes when hovered.
+- Progress ticks: **one bar per card, `flex: 1`, spanning the full width of the column and divided evenly** (founder amendment on #240, with a reference frame at `docs/specs/references/hero/progress-ticks-reference.png`: *"the bottom progress chips should expand the length of the hero section at the moment they are tiny it should look like this"* — the earlier 22px stubs huddled at the left edge are the thing it replaces). Hairlines at 1px; the **current** one is 3px and the row is `align-items: center` so the two heights read as one line. Colours unchanged: current = `--ink`, past = `--lineStrong`, future = `--border`. `min-width: 0` on every tick, or a flex item's default `min-width: auto` overflows the column at 700px instead of dividing it. The current tick animates its width over the dwell time, and freezes when hovered.
 
 The brief must be the **real** brief for the card on screen — same array index, changing together. Pairing a face with someone else's words destroys the only thing this block is for.
 
@@ -163,9 +173,13 @@ The brief must be the **real** brief for the card on screen — same array index
 
 ## 5. Data
 
-One array, three fields per entry: display name, frame count, and the brief that cast them. Five to seven entries.
+One array, four fields per entry: display name, a caption meta, the image, and the brief that cast it. Five to seven entries.
 
-Use **real signed cast from the account** where available, newest first, so the hero is a live shelf rather than marketing copy. Fall back to a curated set for a new workspace with an empty roster — and in that case say so in the eyebrow (`EXAMPLE CASTS`), because claiming an empty roster has signed performers is a lie the user will catch immediately.
+**One curated array, identical for every account** — `SHOWCASE_DECK` in `client/src/features/castingV2/heroDeck.ts`. It does not read the roster and does not vary with what anyone owns. His reason (#240): the person who needs this section is the one who has cast nobody yet, and a fresh account on a roster-fed deck opens on an empty column.
+
+Every frame is a real render from this product and every brief is the real sentence that cast it, read off `casting_rolls.briefText` — a card whose words did not produce its picture would teach a brief that does not work. The names are **types** ("Orc warrior", "Android"), never invented people, and the meta reads `Example` on every card, which is what stops the eyebrow *CAST FROM THESE WORDS* being read as a claim about the viewer's own shelf.
+
+No entry carries a cast id. The field is absent rather than null: a field that is always null is an invitation to wire the navigation back up.
 
 ---
 
@@ -183,7 +197,9 @@ Use **real signed cast from the account** where available, newest first, so the 
 - [ ] Deck visible without scrolling at 1440×900, with both peeks in frame.
 - [ ] Seed chips are one line each at every width from 344px column upward.
 - [ ] Brief text always matches the centre card.
-- [ ] Rotation pauses on hover; peeks are clickable; centre opens the cast room.
+- [ ] Rotation pauses on hover; peeks are clickable; **no card navigates anywhere**, and a click on any card fills the prompt field without submitting.
+- [ ] The same deck is drawn for an account with signed casts and for a fresh one.
+- [ ] The tick row spans the column and divides evenly at every width; the current tick is visibly heavier.
 - [ ] Deck reflows without a media query — check at 700px, 1024px, 1440px, 1920px.
 - [ ] Columns wrap to stacked below ~700px with no overflow.
 - [ ] `min-height: 60px` on the brief; no vertical jump between rotations.
@@ -194,4 +210,4 @@ Use **real signed cast from the account** where available, newest first, so the 
 
 ## 8. One thing to watch when you integrate
 
-The hero, the search row and the roster grid must all live inside **one** `max-width: 1240px; margin: 0 auto` container. In the prototype a stray closing tag put the hero inside it and the roster outside, and the roster silently stretched edge-to-edge on wide screens while the hero stayed centred. It looks like a design decision until you notice the left edges don't line up.
+The hero, the search row and the roster grid must all live inside **one** `max-width: 1240px; margin: 0 auto` container. His own numbers for it (#240, verbatim): *"max-width: 1240px; margin: 0 auto; padding: 34px 32px 44px"*. In the shipped app that container is the shell's own content column — `AppShell width="working" gutter="tight"` — so there is exactly one and a page cannot accidentally open a second. In the prototype a stray closing tag put the hero inside it and the roster outside, and the roster silently stretched edge-to-edge on wide screens while the hero stayed centred. It looks like a design decision until you notice the left edges don't line up.

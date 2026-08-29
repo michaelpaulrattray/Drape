@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
+  SHOWCASE_DECK,
   deckOffsets,
   entryAt,
-  heroDeck,
   type HeroDeckEntry,
-  type RosterCast,
 } from "../heroDeck";
 
 /**
- * THE CASTING HERO'S DECK (#234, his spec §4 — `casting-hero.md`).
+ * THE CASTING HERO'S DECK (#234, his spec §4 — `casting-hero.md`; corrected by
+ * #240).
  *
  * A prompt field alone asks the customer to imagine the result. This shows it:
- * a fanned deck of real signed performers, and under it the exact sentence
- * that cast whoever is in the centre. That pairing is the point of the whole
- * section — face and words move together, same index, always.
+ * a fanned deck of frames this studio really rendered, and under it the exact
+ * sentence that cast whoever is in the centre. That pairing is the point of the
+ * whole section — face and words move together, same index, always.
  *
  * The three laws that are easy to break and were written down because of it:
  *
@@ -28,34 +28,24 @@ import {
  *     the rotation and freezes the progress tick; a moving target someone is
  *     trying to read is hostile. `prefers-reduced-motion` gets no timer at all,
  *     and a hidden tab does not advance.
- *   - **Both clicks exist.** A peek brings itself to the centre; the centre
- *     opens that Cast's room. A carousel whose off-centre cards are decorative
- *     teaches the customer the deck is a picture.
+ *   - **EVERY CARD IS THE SAME KIND OF CONTROL (#240).** A click — centre or
+ *     peek — puts that card's brief in the prompt field and submits nothing,
+ *     exactly as the TRY chips do. A peek additionally brings itself to the
+ *     centre. Nothing here navigates: these are examples of what the studio can
+ *     make, not anybody's signed Cast, so there is no room to open. The deck
+ *     does not read the roster and does not vary by account — a fresh customer
+ *     and an account with forty signed Casts see the same six faces.
  */
 
 /** How long a card holds the centre. */
 const DWELL_MS = 4000;
 
-export function HeroDeck({
-  casts,
-  loading = false,
-  onOpenCast,
-}: {
-  casts: readonly RosterCast[] | undefined;
-  /** The roster's first fetch is still in flight — see the empty state below. */
-  loading?: boolean;
-  onOpenCast: (castId: string) => void;
-}) {
-  const { entries, live } = useMemo(() => heroDeck(casts), [casts]);
+export function HeroDeck({ onUseBrief }: { onUseBrief: (brief: string) => void }) {
+  const entries = SHOWCASE_DECK;
   const [index, setIndex] = useState(0);
   const [held, setHeld] = useState(false);
   const reduced = usePrefersReducedMotion();
 
-  /*
-    The roster arrives after the first paint, so the deck can change length
-    under a running index. Clamping here rather than in the timer keeps the
-    centre card and its brief on the same entry through that swap.
-  */
   const safeIndex = entries.length === 0 ? 0 : index % entries.length;
 
   useEffect(() => {
@@ -67,16 +57,6 @@ export function HeroDeck({
     return () => window.clearInterval(timer);
   }, [reduced, held, entries.length]);
 
-  /*
-    WHILE THE ROSTER IS IN FLIGHT THE COLUMN IS QUIET, and that is a decision
-    rather than an oversight. Drawing the curated deck first would show a
-    customer who owns signed Casts a fan of strangers under the words EXAMPLE
-    CASTS for a second or so, and then swap it for their own people — a
-    momentary claim about their roster that is not true, and a flash of faces
-    nobody asked for. The column keeps its width and height, so nothing moves
-    when the real deck arrives.
-  */
-  if (loading) return <div className="dpc-deck" aria-busy="true" />;
   if (entries.length === 0) return null;
   const centre = entryAt(entries, safeIndex, 0);
   const offsets = deckOffsets(entries.length);
@@ -98,11 +78,17 @@ export function HeroDeck({
               offset={offset}
               isCentre={isCentre}
               onSelect={() => {
+                /*
+                  A PEEK DOES BOTH, and in this order (his ruling on #240: the
+                  peek's click still centres it, AND a click on any card fills
+                  the field). Centring first means the brief the customer now
+                  reads under the deck is the one that just landed in the box —
+                  the pairing law extended to the click.
+                */
                 if (!isCentre) {
                   setIndex((current) => (((current + offset) % entries.length) + entries.length) % entries.length);
-                  return;
                 }
-                if (entry.castId) onOpenCast(entry.castId);
+                onUseBrief(entry.brief);
               }}
             />
           );
@@ -112,14 +98,23 @@ export function HeroDeck({
       <div className="dpc-deck__brief">
         <span className="dpc-deck__eyebrow">
           {/*
-            The eyebrow is where the honesty lives. A live deck says these are
-            the words that cast these people; a curated one says plainly that
-            they are examples, because this account has signed nobody yet.
+            One eyebrow, because there is one deck. It says the true thing about
+            these six frames — those words produced that face — and it cannot be
+            read as a claim about the viewer's roster, because the caption on the
+            centre card says `Example` in the same breath.
           */}
-          {live ? "Cast from these words" : "Example casts"}
+          Cast from these words
           <span className="dpc-deck__rule" aria-hidden="true" />
         </span>
         <p className="dpc-deck__quote">&ldquo;{centre.brief}&rdquo;</p>
+        {/*
+          THE TICKS SPAN THE COLUMN (#240, his amendment with a reference frame
+          at `docs/specs/references/hero/progress-ticks-reference.png`: *"the
+          bottom progress chips should expand the length of the hero section at
+          the moment they are tiny"*). The geometry is CSS — each tick is
+          `flex: 1` across the row — so this markup states the STATE and the
+          stylesheet states the shape.
+        */}
         <div className="dpc-deck__ticks" aria-hidden="true">
           {entries.map((entry, position) => (
             <span
@@ -167,7 +162,6 @@ function DeckCard({
   isCentre: boolean;
   onSelect: () => void;
 }) {
-  const interactive = !isCentre || Boolean(entry.castId);
   const className = [
     "dpc-deck__card",
     isCentre ? "dpc-deck__card--centre" : "dpc-deck__card--peek",
@@ -176,8 +170,18 @@ function DeckCard({
     .filter(Boolean)
     .join(" ");
 
-  const body = (
-    <>
+  return (
+    <button
+      type="button"
+      className={className}
+      onClick={onSelect}
+      /*
+        The label names what the click DOES, not what the card is. A peek states
+        both of its effects because both are real state changes and a screen
+        reader user gets no fan to watch.
+      */
+      aria-label={isCentre ? "Use this brief" : `Show ${entry.name} and use that brief`}
+    >
       <img src={entry.imageUrl} alt={entry.name} loading="lazy" draggable={false} />
       {isCentre ? (
         <span className="dpc-deck__caption">
@@ -185,18 +189,6 @@ function DeckCard({
           <span className="dpc-deck__meta">{entry.meta}</span>
         </span>
       ) : null}
-    </>
-  );
-
-  if (!interactive) return <div className={className}>{body}</div>;
-  return (
-    <button
-      type="button"
-      className={className}
-      onClick={onSelect}
-      aria-label={isCentre ? `Open ${entry.name}` : `Show ${entry.name}`}
-    >
-      {body}
     </button>
   );
 }

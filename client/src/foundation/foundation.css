@@ -104,6 +104,7 @@
   --content-max: 1240px;
 }
 
+
 /*
   Surfaces that still own their own layout — the lobby views during shell
   adoption. The shell contributes chrome and tokens only, so their existing
@@ -243,6 +244,24 @@
   .dp-rail__item { width: 44px; }
   .dp-rail__label { display: none; }
   .dp-content { padding: 24px var(--s-8) 80px; }
+}
+
+/*
+  A TIGHTER BOTTOM GUTTER (#240) — 44px instead of the shell's 80px of scroll
+  room. The casting page is the one surface that asks for it, in the founder's
+  own numbers: *"max-width: 1240px; margin: 0 auto; padding: 34px 32px 44px"*.
+  Kept as a modifier rather than a new width, because the width vocabulary is
+  closed at three numbers and this is not a width.
+
+  ⚠ **IT SITS AFTER THE NARROW-RAIL MEDIA QUERY ON PURPOSE, AND IT WAS FOUND BY
+  DRIVING IT.** Placed beside `--working` it lost to `@media (max-width: 720px)`
+  — same specificity, later rule — so the page measured 44px at 1920 and 80px at
+  700, which is the width nobody screenshots. What the media query still owns at
+  that size is the TOP and the SIDES (24px/20px, the shell's own narrow-rail
+  decision, unchanged by #240); what this owns is the bottom, at every width.
+*/
+.dp-content--tight {
+  padding-bottom: var(--s-12);
 }
 
 /* ---- Topbar ---- */
