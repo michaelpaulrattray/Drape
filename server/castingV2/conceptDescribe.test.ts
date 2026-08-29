@@ -839,3 +839,81 @@ describe("the being, not the person (#204)", () => {
     expect(engine.sent).toHaveLength(1);
   });
 });
+
+/**
+ * HIS REPLY 28 — THE LINE BETWEEN A FEATURE AND THE WARDROBE.
+ *
+ * The drive for #185 found one subject of thirteen carrying a named *"mechanical
+ * eye-piece"* through BOTH arms, and that was put to him as a question rather
+ * than patched. He ruled (verbatim): *"Treat it as part of the being. The
+ * clothes cut does not strip a face … On the body as anatomy → feature. On the
+ * outfit as styling → materials, not a named piece. Strapped on, but replacing
+ * a body part → feature."*
+ *
+ * ⚠ THE PLACEMENT IS THE FIX, so an arm asserts it. The defect was the WARDROBE
+ * rule reaching something it was never about, so the feature rule sits above it
+ * and the accessory clause is scoped to a WORN one. A suite that only asked
+ * "are his words somewhere in the prompt" would pass on an instruction that
+ * still told the reader to strip a cyborg's eye two lines later.
+ *
+ * What a suite CANNOT answer is whether a real cyborg photograph now reads the
+ * way he asked — that is the drive, and his own sentence says so: *"Use this
+ * rule, then check the output."*
+ */
+describe("feature or wardrobe — his reply 28", () => {
+  const systemOf = async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    return engine.sent[0]!.system;
+  };
+
+  it("draws his three lines, in the feature rule's own neighbourhood", async () => {
+    const system = (await systemOf()).toLowerCase();
+    const at = system.indexOf("the clothes cut does not strip a face");
+    expect(at, "his own sentence, as the rule's heading").toBeGreaterThan(-1);
+    /* The rule wraps across source lines; a phrase is judged on the sentence, not the layout. */
+    const rule = system.slice(at, at + 900).replace(/\s+/g, " ");
+    /* On the body as anatomy -> feature. */
+    expect(rule, "anatomy is a feature").toContain("anatomy");
+    expect(rule, "a machine part fitted into the body").toContain("mechanical eye");
+    /* Strapped on, but replacing a body part -> feature. */
+    expect(rule, "his third line").toContain("replacing a body part");
+    /* On the outfit as styling -> the wardrobe rule. */
+    expect(rule, "styling routes to wardrobe").toContain("styling");
+    /* His own three specimens of the line. */
+    expect(rule, "a choker").toContain("a choker is an accessory");
+    expect(rule, "a horn").toContain("a horn is a feature");
+  });
+
+  it("asks for a TYPE and not a SKU, naming both of the products he refused", async () => {
+    const system = (await systemOf()).toLowerCase();
+    const at = system.indexOf("the clothes cut does not strip a face");
+    const rule = system.slice(at, at + 900).replace(/\s+/g, " ");
+    for (const type of ["fitted mechanical eye", "integrated facial hardware"]) {
+      expect(rule, type).toContain(type);
+    }
+    for (const sku of ["spiked eye", "mechanical eye piece"]) {
+      expect(rule, sku).toContain(sku);
+    }
+    /* And it must not tell the reader to drop it — "flattening it costs the character". */
+    expect(rule, "never flatten the being's own hardware").toContain("flatten");
+  });
+
+  it("scopes the accessory ban to a WORN one — the clause that was stripping the face", async () => {
+    const system = (await systemOf()).toLowerCase();
+    const at = system.indexOf("- wardrobe:");
+    expect(at, "the wardrobe rule").toBeGreaterThan(-1);
+    const rule = system.slice(at, at + 500).replace(/\s+/g, " ");
+    expect(rule, "the ban is about what is WORN").toContain("worn accessory");
+    expect(rule, "and it says so out loud").toContain("not an accessory");
+  });
+
+  it("puts the feature rule ABOVE the wardrobe rule — the placement IS the repair", async () => {
+    const system = (await systemOf()).toLowerCase();
+    const feature = system.indexOf("the clothes cut does not strip a face");
+    const wardrobe = system.indexOf("- wardrobe:");
+    expect(feature).toBeGreaterThan(-1);
+    expect(wardrobe).toBeGreaterThan(-1);
+    expect(feature, "the line is drawn before the rule that was crossing it").toBeLessThan(wardrobe);
+  });
+});
