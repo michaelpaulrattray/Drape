@@ -1,6 +1,6 @@
 {
-  "edition": 117,
-  "updatedAt": "2026-08-30T07:20:00+10:00",
+  "edition": 118,
+  "updatedAt": "2026-08-30T07:45:00+10:00",
   "shift": "foreman-110",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -2218,8 +2218,8 @@
     },
     {
       "id": "openrouter-balance-low",
-      "title": "The OpenRouter account is nearly empty — $4.09 of $250 left, and from tonight an empty account REFUSES long briefs rather than quietly degrading them",
-      "detail": "OpenRouter is the text engine behind every roll and refine: it reads each brief and each edit before anything renders. Read off the account by the deploy at 16:32 on 26 Aug: $4.09 remaining ($7.52 at 02:35, $6.77 at 13:50 — it is draining about $3 a day and the $250 granted figure has not moved, so no top-up is firing). What happens at zero, read at the code rather than remembered: an EDIT is refused free (nobody charged, nobody can edit); a ROLL longer than a sentence is now refused free too, with 'we couldn't read your brief just now' — your refuse-free ruling (#126), live tonight — and a short roll still casts from the words as typed. So nobody loses credits, but the studio visibly stops taking briefs. Nothing on our side tops this account up — please check whether auto-top-up is on there, or add credit. fal (the image engine) is at $20.20 and tops itself up.",
+      "title": "The OpenRouter account is nearly empty again — $7.70 left, about three days at the current rate, and at zero the studio visibly stops taking briefs",
+      "detail": "OpenRouter is the text engine behind every roll and refine: it reads each brief and each edit before anything renders. Read off the account by tonight's deploy (30 Aug 07:37): $7.70 remaining of $260 granted, $252.30 spent. Today's spend was $3.59 and the week's $16.96, so the runway is roughly two to three days.\n\nWhat has changed since this was last written, and it is partly good news: the previous version of this note said \"$4.09 of $250\", and a $10 top-up DID land afterwards — the granted figure moved 250 to 260 on 27 Aug. It has not moved since, through three days of spending. So the account is not dead, but whatever tops it up is topping up less than it burns.\n\nWhat happens at zero, read at the code rather than remembered: an EDIT is refused free (nobody charged, nobody can edit); a ROLL longer than a sentence is refused free too, with \"we couldn't read your brief just now\" — your refuse-free ruling (#126); and a short roll still casts from the words as typed. So nobody loses credits, but the studio visibly stops taking briefs.\n\nTonight's own measurement work spent 26 cents of that $3.59 and is on the record (#242, #252); the other $3.33 is not this shift's and is not attributed. fal (the image engine) is at $18.07 and tops itself up.",
       "severity": "urgent",
       "state": "open"
     },
