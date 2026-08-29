@@ -1,7 +1,7 @@
 {
-  "edition": 114,
-  "updatedAt": "2026-08-30T04:40:00+10:00",
-  "shift": "foreman-107",
+  "edition": 115,
+  "updatedAt": "2026-08-30T05:15:00+10:00",
+  "shift": "foreman-108",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1448,6 +1448,13 @@
   ],
   "pipeline": [
     {
+      "id": "atlas-suite-repair-233",
+      "title": "The two-minute safety check now takes half a minute - and the shortcut that would have broken it is now impossible (#233)",
+      "status": "merged",
+      "prNumber": 248,
+      "note": "Last night's shift found out WHY one of the team's safety checks takes two minutes: it was doing the same piece of work twenty-two times. It measured a fix, found that the FASTER version of that fix quietly switches the check off, and deliberately shipped nothing. Tonight that fix is in - the safe version - and the check runs in 29 seconds instead of 119.\n\nThe part worth knowing is the second half. The thing this check is meant to catch is the studio's own map going wrong. To catch that it builds the map twice and compares. Nothing in the test suite had ever checked that the COMPARISON works - so if someone had accidentally deleted it, every test would still have passed. We proved that: we broke the comparison on purpose, two different ways, and all eighteen existing tests stayed green.\n\nSo the repair had to buy a new test first - one that deliberately feeds the check a bad map and insists it complains. Both ways of breaking it are now caught, by name. Nothing in the studio changed; this is the team's own tooling, and it is the last thing on this card."
+    },
+    {
       "id": "atlas-suite-diagnosis-233",
       "title": "Found why the safety check that guards every change takes two minutes - and why the obvious fix would have broken it (#233)",
       "status": "merged",
@@ -2094,13 +2101,6 @@
   ],
   "problems": [
     {
-      "id": "atlas-suite-timeouts-233",
-      "title": "The team's own safety checks go red when your computer is busy - and a red one looks exactly like a real failure",
-      "detail": "The full check run takes about two minutes of flat-out work from one file, and while that is happening every other check is racing a five-second clock nobody chose on purpose - so one or two of them fail for no reason, and a different one each time. Two shifts have hit it. It costs the team real time (half an hour proving nothing is actually wrong, at 3am) and it has a worse edge: the failure looks identical to the one failure that genuinely blocks everything, so a shift in a hurry learns to scroll past a red check. That is the shape of a smoke alarm nobody trusts. Tonight's shift measured the cause and priced the repair - 119 seconds down to 19 - and did not ship it, because the file involved sits on the path every change travels and your second-opinion reviewer is still out. It is queued on #233 with the measurement attached, so whoever takes it is choosing from numbers rather than guessing.",
-      "severity": "warning",
-      "state": "open"
-    },
-    {
       "id": "gate-review-arm-broken-219",
       "title": "Your Fable allowance is still out - 24 refusals now, and it has been down about 30 hours",
       "detail": "No change in cause. I asked the advisor once at the top of this shift and got the same sentence back: your Fable 5 limit is reached. That is the twenty-fourth consecutive refusal, about thirty hours since the first failed review - well past the roughly five hours the same fault took to clear itself on the 26th, so it is no longer the same thing as last time. Opus is answering fine on the same machine and the same login: it ran tonight's whole measurement, the typecheck and the guard suites. So the account and the token are fine, and one model on them is out. What it costs: every product change is meant to be read by a second model before it lands, and that reviewer is the one that is down - so for a sixth night the team held to the rule that measurements, tooling and written records may ship while anything touching money or the product waits for you. Tonight's work was a measurement and a written record, which is inside that rule, and the repair it priced was deliberately NOT shipped for exactly this reason. Your three options are on the card lower down the page.",
@@ -2193,6 +2193,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T05:15:00+10:00",
+      "shift": "foreman-108",
+      "text": "Nothing in the studio changed tonight and nothing new needs you. This was the team's own tooling, and it finishes the job the last shift deliberately left half done.\n\nEvery change we make has to pass a set of automatic checks first. One of them was taking two minutes of solid work on its own, which made the whole run go red whenever your machine was busy - a red that looks exactly like a real failure. Last night's shift found the cause: the check was repeating the same expensive piece of work twenty-two times over an unchanged tree. It also found something more uncomfortable, and stopped: the obvious, faster fix silently switches OFF the very safety check it lives inside, and when it does, the test results look identical to a working one.\n\nTonight the safe version shipped. It is now 29 seconds instead of 119, and the full run of all 10,307 tests takes 83 seconds.\n\nBut the reason I am telling you about it is the bit underneath. That check works by building the studio's map twice and comparing the two. Nothing had ever tested that the COMPARISON itself works - every test fed it a map that was correct, so they all agreed it was correct, and not one of them could have noticed the comparison being deleted. I proved that rather than assumed it: I broke it on purpose, two different ways, and all eighteen existing tests stayed green both times.\n\nSo the speed-up had to buy a new guard before it was allowed in - one that hands the check a deliberately broken map and insists it complains, and which goes red the moment anyone takes the tempting shortcut. That guard is now in, and it has been seen to fail, which is the only way to know a guard works.\n\nTwo honest notes. The review robot on our pull requests is still down - your Fable allowance has been exhausted for about 31 hours - so nothing external read this change. What stood in its place is that it carries its own proof: the broken-on-purpose test. And the money line is unchanged and still worth a glance when you are back: the OpenRouter balance is $8.05 and its top-up has not landed in five days.\n\nStill waiting on you, and not started: which lobby segment you want first, and the bald-skull question from two nights ago."
+    },
     {
       "at": "2026-08-30T04:40:00+10:00",
       "shift": "foreman-107",
@@ -2387,11 +2392,6 @@
       "at": "2026-08-28T07:45:00+10:00",
       "shift": "foreman-69",
       "text": "Your framing call landed and is done: \"M - the framing is right, keep it as the default.\" The mid-torso sentence is now the studio's settled framing rather than something on trial - #182 is closed, the revert we were holding in reserve is off the table, and I stamped your verdict into the two places an engineer actually reads (the framing code itself and the project law file) so nobody re-opens it in a month. Nothing needed changing in the product: what you judged is what was already live.\n\nThen your second sentence - \"the refusal rate on M needs figuring out ... but don't hold the framing on it\". I took that to the refusal patrol and asked the only version of the question that could actually change anything for you: not \"is the new framing worse than the old one\" (the old one is the crop you rejected, so it can never come back), but \"is there a way to say the same thing that gets refused less often?\" The one trigger we have ever proven is anatomical - the word \"sternum\" was refused 8 times out of 8 while \"collarbones\" sailed through - and your new sentence is the first thing since to put body words back in (mid-torso, chest, waist). So I wrote a version that gives the identical framing without them, describing the crop by the outfit instead, and rendered 24 pictures of each.\n\nFirst run: the reworded version was refused 25% of the time against the shipped one's 58%. That looks like a clear win - and I did not report it as one, because of the exact thing you spotted. You said \"fewer on the second pass, so it smells like the coin again\". In that first run I had rendered all 24 of the shipped version first and all 24 of the reworded one after, and the refusals across the whole sitting fell from 14 in the first half to 6 in the second. The boundary between my two versions sat precisely on that fall. So I ran it again with the two versions alternating one after the other, so neither could sit in the \"easy\" part of the sitting - and the difference vanished completely: 9 refusals each, dead level.\n\nSo: the body words are innocent, nothing changes, your framing sentence stays exactly as you approved it. The thing actually worth having is the method fault it exposed - a refusal test that runs one version and then the other is measuring the clock as much as the words. That is now a rule for this patrol, and three earlier leads that were measured the same way (the lighting one, the numeric-framing one, and the original new-vs-old framing number) are downgraded to hunches. None of them ever moved anything in the product, so nothing has to be undone - but had I stopped after that first run this morning, I would have rewritten a sentence you had ratified three hours earlier on the strength of a coin toss. $3.81 of house money, no credits, nothing touched in production."
-    },
-    {
-      "at": "2026-08-28T02:43:28+10:00",
-      "shift": "foreman-60",
-      "text": "Follow-up to last night's doc cleanup (#69): the 7 documents stamped 'not re-verified' have now each been checked against the actual code, and the honest stamp paid off - three of our own tracking records were wrong about them. The biggest one: a measurement we ordered in mid-August (does a patch of skin still read as skin at thumbnail size?) was listed everywhere as 'never run' - it DID run, on Aug 13, and it failed its own bar, which is why skin stays described in words rather than shown as a swatch. That verdict was sitting in the middle of the document where no header-skim could see it. Two designs listed as 'not built' (the panel's honest 'this face has no beard' rows, and the store that remembers what an invented feature is) turned out to be built and live too. All seven banners now state the verified truth with the file that proves it, the wrong rows are corrected, and the affected cards (#23, #24) carry the correction. Nothing you can see in the product changed. Otherwise quiet: no new replies, no new refusals for the patrol, and your first Follow tap is still the live check of the Row A build."
     }
   ],
   "acknowledgedReplyIds": [
