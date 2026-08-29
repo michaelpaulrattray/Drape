@@ -1249,3 +1249,9 @@
   verdict: KEEP
   why: "the founder's judging checklist for any MAX sheet, verbatim (§5g item 4, #171) — its consumer is the EYE CAPTION of every MAX sheet filed to his gallery, which is hand-written prose quoting this constant; a code importer will never exist by design, and the arm in creativeRegisterScope.test.ts keeps its clauses verbatim so the quoted copies have one source"
   argued: "PROMPT_AUTHOR_RULING_2026-08-26.md §5g item 4 (#171)"
+
+- symbol: readListedSource
+  file: server/testing/listedSource.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the allowColdImports precedent). Seven tree-walking suites read their listed entries through it so a file that leaves between the listing and the read cannot ENOENT the deploy rite on a clean tree (#223); its own suite drives the race, and the negative control proves it still throws everything that is not absence"
+  argued: 13a

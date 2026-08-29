@@ -1,7 +1,9 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { readListedSource } from "../testing/listedSource";
 
 import sharp from "sharp";
 
@@ -76,7 +78,13 @@ describe("on-image geometry is monochrome, everywhere (founder ruling, fable-230
       ? walk(path.posix.join(dir, entry.name))
       : (/\.m?ts$/.test(entry.name) ? [path.posix.join(dir, entry.name)] : [])));
   const compositors = walk("scripts")
-    .map((rel) => ({ rel, raw: readFileSync(path.join(ROOT, rel), "utf8") }))
+    /* A listed file can be gone by the read — a parallel suite plants and
+       unlinks in `scripts/` (#223). The population arm below is what stops the
+       skip from being silent. */
+    .flatMap((rel) => {
+      const raw = readListedSource(path.join(ROOT, rel));
+      return raw === null ? [] : [{ rel, raw }];
+    })
     .filter((file) => file.raw.includes(".composite("));
 
   it("finds the exhibit builders at all — a guard over an empty list is not a guard", () => {

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { readListedSource } from "../testing/listedSource";
 import { inkDesignBytesRefusal } from "./inkUploadDoor";
 import { referenceAttachBytesRefusal } from "./referenceAttachDoor";
 import { BYTES_NOT_AN_IMAGE_MESSAGE } from "./uploadRefusalCopy";
@@ -84,11 +85,25 @@ describe("the not-an-image sentence has exactly one author", () => {
    * with the reason for each written beside it.
    */
   it("appears as a literal in no file but the two that must hold it", () => {
-    const authors = sources("server")
-      .concat(sources("client"), sources("shared"), sources("scripts"))
-      .filter((relative) =>
-        fs.readFileSync(path.join(repoRoot, relative), "utf8").includes(BYTES_NOT_AN_IMAGE_MESSAGE),
-      );
+    const scanned = sources("server").concat(sources("client"), sources("shared"), sources("scripts"));
+
+    /*
+      THE FLOOR THIS ARM DID NOT HAVE, and it is the one suite in the class that
+      needed it (#223). The assertion below is an EQUALITY against a two-name
+      list, so a reader that found nothing at all would agree with it perfectly
+      — blindness reads exactly like a clean sweep. Five of the seven scripts/
+      walkers already carry a population arm; this one did not.
+    */
+    expect(scanned.length, "the scan found no sources — a checker that cannot look cannot fail")
+      .toBeGreaterThan(500);
+
+    const authors = scanned.filter((relative) => {
+      /* A file `sources()` listed can be gone by the time it is read — a
+         parallel suite plants and unlinks in `scripts/`, and this is the arm
+         that met the ENOENT and refused the deploy rite on a clean tree. */
+      const source = readListedSource(path.join(repoRoot, relative));
+      return source !== null && source.includes(BYTES_NOT_AN_IMAGE_MESSAGE);
+    });
 
     expect(
       authors.sort(),

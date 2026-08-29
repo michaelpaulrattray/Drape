@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1386a734a94b8ad9"
+    "sourceFingerprint": "3ef03fa4b1cde4d8"
   },
   "domains": [
     {
@@ -143,7 +143,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 33
+      "moduleCount": 34
     },
     {
       "id": "domain:wardrobe",
@@ -5525,6 +5525,12 @@
     {
       "id": "module:server/testing/fetchablePort.ts",
       "path": "server/testing/fetchablePort.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/listedSource.ts",
+      "path": "server/testing/listedSource.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -12798,6 +12804,10 @@
     {
       "id": "test:server/testing/fetchablePort.test.ts",
       "path": "server/testing/fetchablePort.test.ts"
+    },
+    {
+      "id": "test:server/testing/listedSource.test.ts",
+      "path": "server/testing/listedSource.test.ts"
     },
     {
       "id": "test:server/testing/migrationColumns.test.ts",

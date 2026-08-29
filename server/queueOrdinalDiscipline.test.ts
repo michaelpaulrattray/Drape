@@ -83,6 +83,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 
+import { readListedSource } from "./testing/listedSource";
+
 const REPO_ROOT = join(__dirname, "..");
 const ROADMAP = join(REPO_ROOT, "docs/specs/POST_SIGN_ROADMAP.md");
 
@@ -286,8 +288,11 @@ describe("a §10 queue citation names its row", () => {
     for (const file of files) {
       /* See the header: this file's red controls ARE stale citations. */
       if (file.endsWith("queueOrdinalDiscipline.test.ts")) continue;
-      const text = readFileSync(file, "utf8");
-      if (!text.includes("§10 item")) continue;
+      /* `filesUnder` already tolerates an entry that vanishes at the STAT step
+         (`throwIfNoEntry: false`); the read is the other half of the same race
+         and it is the half that refused the deploy rite (#223). */
+      const text = readListedSource(file);
+      if (text === null || !text.includes("§10 item")) continue;
       for (const cite of namedCitationsIn(text)) {
         citationsRead += 1;
         const problem = citationDisagrees(rows, cite);

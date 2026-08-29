@@ -1,8 +1,10 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+
+import { readListedSource } from "./testing/listedSource";
 
 /**
  * A SCRIPT ENDS BY ENDING THE PROCESS.
@@ -134,9 +136,30 @@ const walk = (dir: string): string[] => readdirSync(path.join(ROOT, dir), { with
     ? walk(path.posix.join(dir, entry.name))
     : (/\.(m?ts|tsx|m?js)$/.test(entry.name) ? [path.posix.join(dir, entry.name)] : [])));
 
-const scriptFiles = walk("scripts");
-const universe = [...scriptFiles, ...walk("server"), ...walk("client/src")];
-const sourceOf = new Map(universe.map((rel) => [rel, readFileSync(path.join(ROOT, rel), "utf8")]));
+/*
+  THE READ AND THE POPULATION ARE THE SAME STEP, on purpose (#223).
+
+  This map used to be built at module scope with a bare `readFileSync`, so a
+  file that left between the walk and the read did not fail an arm — it failed
+  COLLECTION, which is the loudest and least legible way this class can land. It
+  is not hypothetical: `scriptWorldGuard.test.ts` plants and unlinks a real file
+  in `scripts/` while this suite is walking it in another worker.
+
+  Filtering here rather than at the readers keeps every `sourceOf.get(rel)!`
+  below sound: a member of `scriptFiles` or `universe` is, by construction, a
+  file whose bytes are in the map.
+*/
+const sourceOf = new Map<string, string>();
+const readable = (relatives: string[]): string[] =>
+  relatives.filter((rel) => {
+    const source = readListedSource(path.join(ROOT, rel));
+    if (source === null) return false;
+    sourceOf.set(rel, source);
+    return true;
+  });
+
+const scriptFiles = readable(walk("scripts"));
+const universe = [...scriptFiles, ...readable(walk("server")), ...readable(walk("client/src"))];
 
 /**
  * Every specifier the file imports — static, dynamic and `require`. The dynamic

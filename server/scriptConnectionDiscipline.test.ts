@@ -76,6 +76,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 
+import { readListedSource } from "./testing/listedSource";
+
 const REPO_ROOT = path.resolve(__dirname, "..");
 const SCRIPTS_ROOT = path.join(REPO_ROOT, "scripts");
 const DOOR = path.join(SCRIPTS_ROOT, "lib", "dbConnection.mts");
@@ -92,7 +94,14 @@ function scriptFiles(): string[] {
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir)) {
       const full = path.join(dir, entry);
-      if (statSync(full).isDirectory()) walk(full);
+      /* THE LIST-SIDE TWIN OF #223, and it is the one that actually fired here:
+         the ENOENT this suite met said `stat`, not `open`. A listed entry can
+         be gone before it is even classified, so the stat must be allowed to
+         come back empty — `queueOrdinalDiscipline.test.ts` has walked this way
+         all along. */
+      const stat = statSync(full, { throwIfNoEntry: false });
+      if (!stat) continue;
+      if (stat.isDirectory()) walk(full);
       else if (entry.endsWith(".ts") || entry.endsWith(".mts")) found.push(full);
     }
   };
@@ -188,7 +197,12 @@ describe("scripts open their database through one door", { timeout: 60_000 }, ()
     const offenders: string[] = [];
     for (const file of scriptFiles()) {
       if (path.resolve(file) === path.resolve(DOOR)) continue;
-      const sites = rawConnectionSites(readFileSync(file, "utf8"), file);
+      /* Listed a moment ago, and it can be gone now — a parallel suite plants
+         and unlinks in this directory (#223). The DOOR read above is a fixed
+         name and deliberately still throws if it is missing. */
+      const source = readListedSource(file);
+      if (source === null) continue;
+      const sites = rawConnectionSites(source, file);
       for (const site of sites) {
         offenders.push(`${path.relative(REPO_ROOT, file).replace(/\\/g, "/")}:${site.line} — ${site.callee}`);
       }
@@ -272,7 +286,8 @@ describe("a script documented for production reads production", () => {
   it("no production-documented script silently falls back to the dev database", () => {
     const offenders: string[] = [];
     for (const file of scriptFiles()) {
-      if (readsTheWrongWorld(readFileSync(file, "utf8"))) {
+      const source = readListedSource(file); // gone since the walk listed it → skip (#223)
+      if (source !== null && readsTheWrongWorld(source)) {
         offenders.push(path.relative(REPO_ROOT, file).split(path.sep).join("/"));
       }
     }

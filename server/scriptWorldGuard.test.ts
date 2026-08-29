@@ -1,8 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { readListedSource } from "./testing/listedSource";
 
 /**
  * A SCRIPT THAT READS THE APP'S DATABASE DECLARES WHICH WORLD IT IS IN.
@@ -71,7 +73,10 @@ function walk(dir: string, out: string[] = []): string[] {
 /** Everything under `scripts/` that reaches the app's own pool. */
 export function databaseScripts(root: string): string[] {
   return walk(root)
-    .filter((file) => readFileSync(file, "utf8").includes("getDb()"))
+    /* A file this walk just listed can be gone by the time it is read: the
+       positive control below plants one in this very directory while six other
+       suites are walking it in parallel workers (#223). */
+    .filter((file) => readListedSource(file)?.includes("getDb()") ?? false)
     .map((file) => path.relative(root, file).split(path.sep).join("/"));
 }
 
@@ -138,7 +143,9 @@ export function unguardedScripts(root: string): string[] {
   return databaseScripts(root).filter((relative) => {
     if (!tracked.has(relative)) return false;
     if (relative in EXEMPT) return false;
-    return !callsTheGuard(readFileSync(path.join(root, relative), "utf8"));
+    const source = readListedSource(path.join(root, relative));
+    if (source === null) return false; // gone since the walk listed it (#223)
+    return !callsTheGuard(source);
   });
 }
 
@@ -172,6 +179,16 @@ describe("a script that reads the app's database declares its world", () => {
     an untracked unguarded script, proves the reader finds it, and removes it.
     The main assertion above filters to tracked files, so the plant can never
     redden it, even mid-flight.
+
+    ⚠ AND THAT SENTENCE WAS TRUE OF THIS SUITE AND SILENT ABOUT EVERY OTHER ONE
+    (#223, 2026-08-29). vitest runs test FILES in parallel, and six other suites
+    walk this same directory: they list (the plant is there), then read each
+    entry (the plant is gone). The ENOENT came out of a `.filter()` in
+    `uploadRefusalCopy.test.ts` and REFUSED THE DEPLOY RITE ON A CLEAN TREE.
+    The plant stays in the real tree — that is what makes this control worth
+    having — and the readers now tolerate a listed file that has left, through
+    `readListedSource` (`server/testing/listedSource.ts`), which carries the
+    receipt and the reasoning.
   */
   it("POSITIVE CONTROL — the reader does find an unguarded getDb() script", () => {
     const plantedName = `_scriptworldguard-positive-control-${process.pid}-disposable.mts`;
@@ -185,7 +202,10 @@ describe("a script that reads the app's database declares its world", () => {
       expect(tracked.has(plantedName), "the planted fixture must read as untracked").toBe(false);
       const benches = databaseScripts(scriptsDir)
         .filter((relative) => !tracked.has(relative))
-        .filter((relative) => !callsTheGuard(readFileSync(path.join(scriptsDir, relative), "utf8")));
+        .filter((relative) => {
+          const source = readListedSource(path.join(scriptsDir, relative));
+          return source !== null && !callsTheGuard(source);
+        });
       expect(benches).toContain(plantedName);
     } finally {
       unlinkSync(plantedPath);
