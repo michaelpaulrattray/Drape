@@ -1,7 +1,7 @@
 {
-  "edition": 106,
-  "updatedAt": "2026-08-29T22:55:00+10:00",
-  "shift": "foreman-100",
+  "edition": 107,
+  "updatedAt": "2026-08-30T00:55:00+10:00",
+  "shift": "foreman-101",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -144,10 +144,37 @@
   },
   "needsYou": [
     {
+      "id": "creature-lane-237-232",
+      "title": "The tail is in the picture now, and MAX stopped writing a build sheet (#237, #232)",
+      "productImpact": "Both things you flagged are fixed and both are live. MAX no longer names a kit: your law — pin materials, mood and species facts, never pin a garment, cut, jewellery piece or armour piece the customer did not type — is now in the author's instruction with your own sphinx target shown as the target, AND armour pieces are a hard check rather than a hope, so a draft that says 'pauldrons' is sent back before it ever reaches the engine. And your diagnosis on the tail was exact: it was the crop, not the adjectives. The house block now has a CREATURE LANE, and in that lane it says a named tail or wing has to be visible in the frame — over a shoulder, beside the ribcage, or rising into the picture — never behind the back, never by switching to a full-body shot. A creature's mouth is its own anatomy there too: at rest, with its own dentition, while laugh, speech, acted roar and a poster tongue-out stay banned. Pose off, anatomy on.",
+      "workedExample": "Your own sphinx brief, driven four times each way tonight. On today's block the tail showed up in ONE frame of four — and in that one it was a thin line at the very edge. On the creature lane it is in ALL FOUR, carried over the shoulder or up beside the ribs, with nobody zooming out to a full-body shot to fit it in. And the author: your refused sheet (roll 235) named three pieces — angular pauldrons, banded vambraces, a high sculpted collar. Four fresh drafts under the new law named ZERO.",
+      "options": [
+        {
+          "key": "as-is",
+          "label": "Good — leave it as it stands",
+          "consequence": "The creature lane stays on for every cast the reader calls a being. Nothing further is spent and the mouth question below stays filed rather than answered."
+        },
+        {
+          "key": "prove-mouth",
+          "label": "Settle the mouth question properly (#243)",
+          "consequence": "I run the fixture that would actually separate the two blocks — a creature whose mouth anatomy is who it IS and which the brief does NOT name (a species tongue, a split lip, an underbite). About a dollar of house money, no credits of yours, and it needs nothing from you but the verdict at the end."
+        },
+        {
+          "key": "tighter",
+          "label": "The armour check is too narrow — ban garments and jewellery too",
+          "consequence": "I would add a word list for garments, cuts and jewellery. I recommend against it and say why below; if you want it anyway I will build it and put the false-refusals in front of you."
+        }
+      ],
+      "recommendation": "Look at the sphinx strip in your gallery first — that is the one that answers your tail complaint, and the difference is not subtle. Then take 'prove-mouth' if you want the second half settled rather than assumed. I recommend AGAINST the wider word ban: your law names four kinds of thing and I only made a hard check for armour, because those words mean one thing and nothing else. A ban list over the world's clothing refuses good sentences — this codebase has been bitten by that four times, most recently when the word 'framing' threw away a perfectly good description of a beard. The other three classes are still in the author's instruction; they just are not a machine check, and I would rather tell you that than let a green tick imply otherwise.",
+      "state": "open",
+      "filedAt": "2026-08-30T00:55:00+10:00",
+      "issueNumber": 237
+    },
+    {
       "id": "casting-hero-234",
-      "title": "Your casting hero is rebuilt — it now shows YOUR signed cast beside the words that cast them (#234)",
-      "productImpact": "You said the picture on the right of the casting page was boring. It was: one split-face photo, four looks, nothing to do with you. It is now a deck of the cast YOU have signed, newest first, and under each face sits the exact sentence that cast them — pulled from your own roll, not written for the page. It rotates every four seconds, stops the moment your pointer is on it, a side card taps to the middle, and the middle card opens that cast's room. Someone who has signed nobody yet sees six of your creature and sci-fi casts instead, under the words EXAMPLE CASTS, so nobody is ever told an empty roster has performers.",
-      "workedExample": "On your account the deck will open on Kade — tail court, the cyborg with the tail, captioned \"6 frames\", with your own brief under him: \"Bald male, mid-40s, pale porcelain skin, heavily weathered...\". Tap the card to his right and Jericho comes to the middle and the words change with him. The example deck a new customer sees is the hive-skull being, the oni-cyber, the sphinx-cat, the pink android, the orc and the cyber-goth — I looked at twenty of your candidates across ten rolls and picked the six that stop you, which is what \"dont use boring ones\" asked for.",
+      "title": "Your casting hero — built, and then you corrected it the same evening (#234 → #240)",
+      "productImpact": "The rebuilt hero is live and you have already ruled on it: the deck should be a SHOWCASE that every account sees — the same curated 'what you can make' casts for a brand-new customer and for you — not your own signed shelf, and the middle card should NOT open a cast room. That is filed as #240 and it is the FIRST thing the next shift does. Nothing about it is waiting on you; it is a reversal of one decision inside a surface that already works, and your spec file gets corrected in the same change, because casting-hero.md §5 is what asked for the signed shelf in the first place.",
+      "workedExample": "What changes: the six curated casts you see today ONLY when your roster is empty become what everybody sees, always. Tapping the middle card stops opening that cast's room and instead drops that card's brief into the prompt box, the way a TRY chip does — never submitting, so you still choose. Your own signed cast is not lost, it simply stops being what this panel is for.",
       "options": [
         {
           "key": "ship",
@@ -166,7 +193,7 @@
         }
       ],
       "recommendation": "Look at the four pictures below and say yes or name what to change. The build is done and driven — 124 checks in the running app, both themes, four screen widths — so what is left is taste, and taste is yours.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-29T22:35:00+10:00",
       "issueNumber": 234
     },
@@ -628,10 +655,31 @@
   ],
   "eyeItems": [
     {
+      "id": "creature-lane-237-232-strips",
+      "title": "The tail, three ways — and the oni test that did NOT separate",
+      "question": "WHAT YOU ARE JUDGING. Two strips.\n\nTHE SPHINX STRIP, three rows of four, all from your own brief (production roll 235's seed, byte for byte). Row K is what the studio sends today. Row C is the creature lane. Row A is the creature lane with MAX on top under your new noun law. Look at where the tail is: one frame in K has it, and it is a thread at the edge. Every frame in C and A carries it into the picture, and nobody switched to a full-body shot to do it.\n\nTHE ONI STRIP, three rows of three. Top row today, middle the creature lane, bottom the human control — a goth woman who must still come back mouth closed with no teeth, and does. Here is the honest part: BOTH oni rows have tusks and the machine's measurements do not separate them. My own eye reads the middle row's mouths as heavier and more open at rest, with the tusks reading as teeth rather than as nubs at the corner of a pressed mouth — but that is three frames and my opinion, so I am not calling it a result. Your eye is the one that counts, which is why the strip is in front of you instead of a sentence saying it worked.\n\nTWO REFUSED TILES in the bottom row are the per-render coin you already know about (#93/#129), on bytes this change never touched — not something I broke.",
+      "state": "open",
+      "filedAt": "2026-08-30T00:55:00+10:00",
+      "issueNumber": 237,
+      "cardId": "creature-lane-237-232",
+      "frames": [
+        {
+          "key": "crew-eye/a7a3b6f0-4b42-4165-a2fb-1daab3c89d0c.jpg",
+          "caption": "THE SPHINX, your own brief, four frames a row. Row K is today's studio: one tail, and it is a thread at the left edge. Row C is the creature lane — same words, only the block changed: four tails, carried over a shoulder or up beside the ribs. Row A is that lane with MAX on top under your new noun law: no pauldrons, no vambraces, no sculpted collar anywhere in the four.",
+          "arm": "SPHINX — today / lane / lane+MAX"
+        },
+        {
+          "key": "crew-eye/1c1dfb3b-68ca-490a-b6fd-0c235c14c44c.jpg",
+          "caption": "THE ONI, three a row — and this is the one I could not prove. Top row today, middle row the creature lane, bottom row the human control (mouth closed, no teeth, correct). Both oni rows have tusks and the measurements overlap. The likely reason is that your seed SAYS 'prominent lower tusks', so your own words were already beating the block. The two REFUSED tiles are the per-render coin, on bytes this change never touched.",
+          "arm": "ONI — today / lane / human control"
+        }
+      ]
+    },
+    {
       "id": "casting-hero-234-frames",
       "title": "The new casting hero, photographed in the running app — both themes, and both states",
       "question": "WHAT YOU ARE JUDGING. Whether this is the hero you asked for. Two of these pictures show the deck with real signed cast in it, two show what a customer with an empty roster sees, and one shows the whole thing stacked on a narrow screen.\n\nWHY THE FIRST TWO SHOW SOMEONE ELSE'S CAST. They were taken on the test account, which owns four signed Casts and so is the only account I can photograph the live deck on. On YOUR account those cards will be Kade, Jericho and Shina, with your own briefs under them — same deck, your people.\n\nWHAT TO LOOK FOR. The words under the deck belong to the face above them, always, and they change together. The middle card is the one you can open; the side cards tap themselves into the middle. The block under the quote never changes height when the deck rotates, so nothing jumps.\n\nONE THING I DID NOT SILENTLY FIX. The side cards are clipped by ten to fifteen pixels at the panel's edge. That falls out of the numbers in your own spec, and it reads as the fan continuing past the frame — your sketch draws it that way. Say the word if you want them fully inside.\n\nAND ONE THING I TOOK OUT. The split-face art is gone. Nothing else used it, and the deck replaces it; it is one command away if you miss it.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-29T22:35:00+10:00",
       "issueNumber": 234,
       "frames": [
@@ -1217,6 +1265,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "creature-lane-237-232",
+      "title": "#237 + #232 — the creature lane: the tail in the frame, and MAX off the build sheet",
+      "status": "merged",
+      "prNumber": 241,
+      "note": "MERGED as 1d48f584 and deployed with this edition. Your two cards were one structural change — both are properties of the LOCKED BLOCK rather than of the author's words — so they landed together. The human lane is byte-identical: every human cast, and every cast off the author road, gets exactly what it got before. The two lanes differ in EXACTLY two sentences and the suite refuses a third. Twelve sabotages, twelve reds. Two words of your anatomy sentence are adapted and both are written into the code with the reason: 'the chest-up frame' would have given the engine a second crop against your own mid-torso framing, and 'listed anatomy' has nothing to point at inside the block. Cost: $1.28 of house money, no credits of yours, no flag moved. Reviewed by no advisor — your Fable allowance is still out."
+    },
     {
       "id": "casting-hero-234",
       "title": "#234 — the casting hero: your signed cast, beside the words that cast them",
@@ -1816,8 +1871,8 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "The gate's second-opinion reviewer is still down — and the span has now passed the one precedent we had",
-      "detail": "SIXTEENTH refusal, probed in one line before any work was planned tonight: same sentence, your Fable 5 allowance is used up. Honest span: 22:20 on the 28th to now, about fifteen hours, against the one precedent we have of roughly five. Opus answered on the same machine and the same login throughout — it read your production database, ran the 685-file suite, drove a headless browser through 124 checks and did every piece of tonight's work — so this is the Fable allowance specifically and not credentials, the network, or this machine. What it costs you: the pull request for the hero carries no second opinion. A RED review check means no verdict was produced, never that the code failed.",
+      "title": "The gate's second-opinion reviewer is still down — seventeenth refusal, about eighteen hours",
+      "detail": "SEVENTEENTH refusal, probed in one line before tonight's work was planned: same sentence, your Fable 5 allowance is used up. Honest span: 22:20 on the 28th to now, roughly eighteen hours, against the one precedent we have of about five. The gate's four instruments PASSED on tonight's change; the review check is RED and I read its log rather than guessing — it says NO VERDICT, an outage, nothing in the diff was judged. So tonight's work carries no second opinion, and that is written on the PR itself rather than left for someone to discover. Everything else ran normally on Opus: your production database, the 685-file suite, twenty-one paid renders and twelve sabotages.",
       "severity": "warning",
       "state": "open"
     },
@@ -1907,6 +1962,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T00:55:00+10:00",
+      "shift": "foreman-101",
+      "text": "Took your two urgent cards as one brief, which is what #237 itself says they are. The tail was the satisfying one: you called it a framing fact and not an adjective, and the measurement agrees with you flatly — one frame in four today, four in four with the clause. The author law was cleaner than expected too; your own refused sheet was still sitting in the database with 'angular pauldrons, banded vambraces, a high sculpted collar' in it, so I used your failure as the control instead of inventing one, and four drafts under the new law named nothing. Where I have to be straight with you is the mouth. Your oni test does not separate the two blocks, because your own seed says 'prominent lower tusks' and a fact you state already overrides the block — so the old 'mouth closed' was being beaten by your words, not by the lane. I could have shown you three frames and called it proved. It is filed as #243 with the fixture that would actually settle it. One thing I deliberately did NOT do: ban garment, cut and jewellery words. Your law names four kinds of thing and only armour became a hard check, because a banned-word list over the world's clothing refuses good sentences — and I would rather tell you the check is narrower than the law than let a green tick imply otherwise. Your hero correction (#240) arrived while I was building and is the next shift's first job; I did not start it, because leaving half a rebuilt hero on your account overnight is the wrong trade. Your progress-ticks reference frame is carried up with this push."
+    },
     {
       "at": "2026-08-29T22:55:00+10:00",
       "shift": "foreman-100",
@@ -2101,11 +2161,6 @@
       "at": "2026-08-27T23:05:00+10:00",
       "shift": "foreman-55",
       "text": "Housekeeping behind the Follow-ghost fix, while your court pick (#177) waits: the 96 older author-road candidates still carried the made-up per-slice identity records — the fiction that had your Follow paint eight Indian relatives. The dev database is now marked clean (each record flagged as never-sent, so the product refuses to read it as fact; the dice captions under tiles are cleared too), the ceremony script is merged (PR #181), and it verified itself through the product's own reader: before the fix 96 records read as fact, after it zero do. Production gets the same one-command mark in the next ceremony batch — until then the code gates from PR #178 already keep the fiction out of everything you see. Nothing new needs you beyond the court pick."
-    },
-    {
-      "at": "2026-08-27T22:45:00+10:00",
-      "shift": "foreman-54",
-      "text": "Your Follow court (#177) ran the same night you ordered it and is on this page. All 24 renders are image-anchored — the photo of the guy you followed rides with the brief, per your ruling. One catch found before the money was spent: your B/C sentence said 'eight clearly different men', and sent per-picture the engine painted an eight-face collage inside every single frame (2 of 2 on each row) — so the sentence rides in the singular and the spread comes from the engine's dice, like a normal roll. Detail on #177. Pick a row up top; the winning sentence becomes the Follow build."
     }
   ],
   "acknowledgedReplyIds": [
