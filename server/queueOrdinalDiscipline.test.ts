@@ -85,6 +85,13 @@ import { join, extname } from "node:path";
 
 import { readListedSource } from "./testing/listedSource";
 
+
+import { allowTreeSweeps } from "./testing/suiteClocks";
+
+/* This file walks the docs and mailbox trees with `readdirSync`. It timed out at the
+   5s default TWICE across the runs on #233 (foreman-98 run 2; foreman-99 run 2).
+   See `suiteClocks.ts` family 2. */
+allowTreeSweeps();
 const REPO_ROOT = join(__dirname, "..");
 const ROADMAP = join(REPO_ROOT, "docs/specs/POST_SIGN_ROADMAP.md");
 

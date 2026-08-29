@@ -18,6 +18,14 @@
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+
+import { allowColdImports } from "./testing/suiteClocks";
+
+/* This file is 22 `await import()` calls — family 1's exact subject — and carried a
+   hand-written `15_000` that predates the helper and sits BELOW the family's own
+   30s. It is the measured casualty of the second loaded run on 2026-08-30: 15,004ms
+   against its own 15,000ms clock, from 9,991ms quiet. See `suiteClocks.ts` family 1. */
+allowColdImports();
 // ============================================================================
 // 1. withTransaction helper tests
 // ============================================================================
@@ -93,7 +101,7 @@ describe("account.exportData endpoint", () => {
     // Verify the procedure exists on the router
     const procedures = Object.keys((appRouter as any)._def.procedures);
     expect(procedures).toContain("account.exportData");
-  }, 15_000);
+  });
 
   it("should require authentication (protectedProcedure)", async () => {
     const { appRouter } = await import("./routers");

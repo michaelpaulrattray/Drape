@@ -25,6 +25,13 @@
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+
+import { allowColdImports } from "./testing/suiteClocks";
+
+/* This file is 16 `await import()` calls — family 1's exact subject — and carried the
+   same hand-written `15_000` as its `pathB-hardening` sibling. Measured 2026-08-30:
+   7,691ms quiet, 11,046ms loaded — 74% of the clock it had. See `suiteClocks.ts`. */
+allowColdImports();
 // ============================================================================
 // 1. STRUCTURED LOGGING — Logger Factory
 // ============================================================================
@@ -162,7 +169,7 @@ describe("GDPR Export — account.exportData procedure exists", () => {
     // Verify the procedure exists on the router
     const procedures = Object.keys((appRouter as any)._def.procedures);
     expect(procedures).toContain("account.exportData");
-  }, 15_000);
+  });
 
   it("exportData should require authentication", async () => {
     const { appRouter } = await import("./routers");
@@ -173,7 +180,7 @@ describe("GDPR Export — account.exportData procedure exists", () => {
       correlationId: "req_test_gdpr",
     });
     await expect(caller.account.exportData()).rejects.toThrow();
-  }, 15_000);
+  });
 });
 
 // ============================================================================

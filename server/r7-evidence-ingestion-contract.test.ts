@@ -13,6 +13,14 @@ import {
   assertGenerationOperationKind,
 } from "./casting/operationContract";
 
+
+import { allowTreeSweeps } from "./testing/suiteClocks";
+
+/* This file reads the source tree. It timed out at the 5s default on #233
+   (foreman-98 run 3), and measured a 5.9x blow-up (391ms quiet -> 2,294ms) in the
+   loaded run of 2026-08-30 — the second-worst in the whole suite.
+   See `suiteClocks.ts` family 2. */
+allowTreeSweeps();
 describe("R7-7C1 owned-evidence schema contract", () => {
   async function runtimeSources(root: string): Promise<string[]> {
     const entries = await readdir(root, { withFileTypes: true });

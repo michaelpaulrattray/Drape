@@ -6,6 +6,14 @@ import { describe, expect, it } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
 
+
+import { allowTreeSweeps } from "./testing/suiteClocks";
+
+/* The law-7 sibling: this file sweeps the same `scripts/` directory as
+   `scriptConnectionDiscipline.test.ts`, which has carried `60_000` since it was
+   written — and this one never did. Nothing was wrong with either shift; the
+   asymmetry simply had nowhere to show up. See `suiteClocks.ts` family 2. */
+allowTreeSweeps();
 /**
  * A SCRIPT ENDS BY ENDING THE PROCESS.
  *

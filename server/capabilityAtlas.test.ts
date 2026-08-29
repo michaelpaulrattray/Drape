@@ -25,6 +25,14 @@ import { cannotSaySentence } from "./castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "./castingV2/conceptDescribeCopy";
 import { ROLL_REFUSAL_COPY } from "./castingV2/briefRefusalCopy";
 
+
+import { allowTreeSweeps } from "./testing/suiteClocks";
+
+/* This file reads the source tree; under load that is the work that blows up, not
+   the logic. It timed out at the 5s default THREE times across the runs on #233
+   (foreman-98 run 1; foreman-99 runs 1 and 2). See `suiteClocks.ts` family 2 for
+   why the raise is here and not global (fable-233 §5, re-tested 2026-08-30). */
+allowTreeSweeps();
 describe("the static half reads what the source declares", () => {
   it("POSITIVE CONTROL — finds doors known to exist", () => {
     const service = declaredServiceRefusals();

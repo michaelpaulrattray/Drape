@@ -7,10 +7,10 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 
-import { allowColdImports } from "./testing/coldImportTimeout";
+import { allowColdImports } from "./testing/suiteClocks";
 
 /* This file's tests are dominated by cold module loading, not by logic —
-   see `coldImportTimeout.ts` for the flake this ends and why the raise is
+   see `suiteClocks.ts` for the flake this ends and why the raise is
    here rather than global (fable-233 §5). */
 allowColdImports();
 
