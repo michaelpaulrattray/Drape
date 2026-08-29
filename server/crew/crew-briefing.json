@@ -1,7 +1,7 @@
 {
-  "edition": 94,
-  "updatedAt": "2026-08-29T11:55:00+10:00",
-  "shift": "foreman-91",
+  "edition": 95,
+  "updatedAt": "2026-08-29T14:05:00+10:00",
+  "shift": "foreman-92",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1028,6 +1028,13 @@
   ],
   "pipeline": [
     {
+      "id": "review-check-says-outage-219",
+      "title": "A failed code review now says whether it actually judged anything (#219)",
+      "status": "merged",
+      "prNumber": 222,
+      "note": "Small and tooling-only, which is all that may ship while the reviewer is down - and it is the part of this outage that was ours rather than yours. Every change the team makes gets a second opinion from a different model, and that check shows up as a green or red tick on the change. The catch nobody had written down: the reviewer passes the tick GREEN even when it has found problems - its findings go in a comment you have to open - so a RED tick has never once meant 'this change was rejected'. It means no review happened at all. When your allowance ran out on Thursday the reviewer died after one second and left a red tick, and three shifts in a row read that as a verdict and spent time working out that it was not. The tick now says which it is, in one line on the change itself: 'the reviewer ran - read its comment' or 'NO VERDICT - nothing was judged'. Proved on all four ways it can end before it shipped, and then proved live on its own change."
+    },
+    {
       "id": "reply-reader-wrong-world-221",
       "title": "The tool the night shifts read your replies with was reading our computer's copy, not your page (#221)",
       "status": "merged",
@@ -1563,8 +1570,8 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "The gate's second-opinion reviewer is still down - your Fable usage limit, and it is now about three hours",
-      "detail": "Unchanged tonight and still the same cause. I asked the advisor once from this machine at 11:14 this morning and got the same sentence back: your Fable 5 allowance is used up. That is seven refusals across three shifts now - though most of that number is us asking more often, not the fault getting worse. Opus is answering on the same machine and the same login throughout: it ran four Railway reads, a production database read and this whole night's work, so the account and the token are fine and one model on them is out. The honest length so far is two hours fifty-four minutes, measured from the first failed review at 8:20 yesterday evening, which is still inside the roughly five hours the same fault took to clear itself on the 26th. So this is not yet evidence of anything different, and the card at the top of your page - with the three options and the recommendation - has not changed. Nothing a customer can see is affected. The team's rule while it is down: only tooling and tests may ship, and anything touching money or the product waits.",
+      "title": "The gate's second-opinion reviewer is still down - your Fable usage limit, and it has now been out longer than last time",
+      "detail": "Same cause, one new fact. I asked the advisor once from this machine at one o'clock this afternoon and got the same sentence back: your Fable 5 allowance is used up. Opus is answering on the same machine and the same login throughout - it ran two production database reads, the full test suite and this whole night's work - so the account and the token are fine and one model on them is out. What is new is the clock. The honest length is now four hours forty minutes, measured from the first failed review at 8:20 last night, and the only precedent we have is the same fault on the 26th, which cleared itself in about five hours. So tonight is the first reading at the edge of that rather than comfortably inside it. If the next shift asks and it still refuses, this stops being 'the same thing as last time' and the three options on the card at the top of your page become worth answering. Nothing a customer can see is affected, and the team's rule while it is down has held for a fourth night: only tooling and tests may ship, and anything touching money or the product waits.",
       "state": "open",
       "severity": "warning"
     },
@@ -1654,6 +1661,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-29T14:05:00+10:00",
+      "shift": "foreman-92",
+      "text": "A quiet night with nothing needing you, and one thing worth telling you about. Your Fable allowance is still out, so the code reviewer and the shifts' advisor are both still down - that is the fourth night in a row of tooling-only work. The one number that moved: it has now been out four hours forty minutes, against about five hours the last time it healed itself, so tonight is the first reading at the edge of the only precedent we have rather than inside it. Nothing to decide yet; if tomorrow's first shift asks and it still refuses, the card at the top of your page becomes worth answering.\n\nWhat I fixed is the part of that outage that was ours. Every change the team makes gets read by a second model before it lands, and the result shows as a green or red tick. It turns out a red tick has NEVER meant 'this change was rejected' - the reviewer passes the tick green even when it finds problems, because its findings go into a comment you open separately. Red only ever meant 'no review happened'. Nobody had written that down, so when your allowance ran out on Thursday and the reviewer died after one second, three shifts in a row read the red tick as a verdict and each spent time digging through machine logs to find out it was not one. The tick now says which it is, in one sentence, on the change itself. I proved it on all four ways a review can end before shipping it, then watched it do the right thing live on its own change.\n\nTwo smaller things. The team's own typecheck had been failing for three nights on one leftover file a previous shift left behind - not a real error, but a standing red light is exactly what hides a real one, so it is gone and the check is clean again. And I re-read your studio's rows to check whether the refusal patrol was due: no roll has been cast in forty-six hours and the refusal count has not moved, so it is not, and I spent nothing.\n\nNo credits, no renders, no house money, nothing on production touched but the briefing you are reading."
+    },
     {
       "at": "2026-08-29T11:55:00+10:00",
       "shift": "foreman-91",
@@ -1848,11 +1860,6 @@
       "at": "2026-08-27T08:45:00+10:00",
       "shift": "foreman-41",
       "text": "A quiet morning: no new word from you since #12 last night, and nothing in N1 is left to build — every slice of the author road is merged and live on your account, so the milestone now waits on your eye. Four things are on this page for it: your first Follow on your own account (the family clause's real court — do the eight read as relatives of the face you tapped?), the framing strip (#130 — the 28% question is really a 9:16-versus-2:3 question, your pick), the lighting sheets (#128 — four rooms, your pick), and the rebuilt house block (#144). I spent the shift making the queue tell the truth: six cards whose work was already done and merged were still open (#121, #125, #142, #92, #93, #122) — each closed with the record it cites, and #120 re-pointed at the rung where its constant actually retires. No renders, no credits, $0 house. The service redeploys with this edition, nothing in it changes what you see in the studio."
-    },
-    {
-      "at": "2026-08-27T08:30:00+10:00",
-      "shift": "foreman-40",
-      "text": "Two replies in. #11 — the family clause (#154) — built as you answered it and merged (PR #156, 56c7386c): on your account a Follow or a chip edit is now written by the author, with a 'continue this family' paragraph from the face you followed; chips on a plain authored sheet are a read-only record with one line saying why. Driven on dev through the real entrance (4 rolls — three landed 8/8, one was killed by my own dev-server restart mid-cast and settled by the recovery sweep, the known deploy-collision class; ~$3.20 house, 0 credits); five frames on the new eye item. #12 — the minimal settings modal passes on your word ('that's good'); 'imagination should be a slider' is recorded on #142 for the full N3 modal. the service redeploys with this edition. Your first Follow on your own account is the court."
     }
   ],
   "acknowledgedReplyIds": [
