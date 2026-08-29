@@ -333,3 +333,59 @@ and says they are still there — so the frame is **delivered and charged** (the
 catastrophic-only contract), and **the slot is not retired**, which means the
 next repaint paints the eyebrows back on. A paid removal that reverts on the
 following edit: the `library-holds-presence-not-absence` class, not a refund bug.
+
+## 7.7 ⚠ AND THE RECOMMENDED REPAIR DOES NOT CATCH EITHER OF THIS GATE'S TWO CASES
+
+#246's costed option **(b)** — *"a bound on WHERE the answer may sit: the answer
+must land in the band its anatomy lives in"* — is the recommendation standing on
+the founder's card, and it is free, fails toward an outcome the code already
+handles, and needs no second model opinion. Every one of those merits holds. It
+is also, at this gate, **measured not to fire**, and that was noticed only by
+putting the two sittings' bands in one table:
+
+| word | arm | band |
+|---|---|---|
+| `hair` | ABSENT — substitution on a bare skull | **12%–28%** |
+| `hair` | PRESENT — real hair, positive control | **9%–50%** |
+| `eyebrows` | ABSENT — ridge, ANG-C-2 | **26%–29%** |
+| `eyebrows` | PRESENT — real blond brows, BR-53 | **26%–29%** |
+| `eyebrows` | ABSENT — ridge, ANG-C-0 | **23%–27%** |
+| `eyebrows` | PRESENT — real dark brows, BR-LAM-K-2 | **29%–32%** |
+
+The `hair` substitution's band is **entirely contained inside** the real
+feature's. One `eyebrows` substitution's band is **identical to the digit** to a
+real pair's. **A band bound cannot separate these; it would accept every one of
+them.**
+
+### The mechanism, and it is why this is a class rather than two unlucky cells
+
+`tusks` — the specimen #246 was born on — is caught by a band bound, cleanly:
+the horns it substituted sit at 17%–23% and real tusks at 35%–38%, disjoint. The
+difference is not luck. **`tusks` was measured on a frame that never had tusks;
+this gate only ever reads a frame that HAD the feature a moment ago.**
+
+And what a removal leaves behind is **the substrate the feature was sitting on**
+— the ridge under the brows, the scalp under the hair, the jaw under a beard,
+the lobe under an earring. A feature and its own substrate are **in the same
+place by definition**, so a rule that separates answers by WHERE they sit cannot
+tell them apart. The departure gate's population is precisely the population
+that defeats a positional bound.
+
+### What this does and does not say
+
+- It does **not** kill option (b). (b) catches the class #246 was born on, and
+  that class is real and lives at the other 21 sites.
+- It does say (b) is **not a general repair**, and specifically that adopting it
+  at the departure gate would leave the gate exactly as wrong as it is now while
+  reading as fixed — the worst of the outcomes, because a repair with a name
+  stops a site being re-examined.
+- The mechanism is stated as a **hypothesis with two confirming cases and a
+  structural reason**, not as a measurement. It is cheap to attack: pick a gate
+  word whose substrate is somewhere else and see whether the bound fires. It is
+  also cheap to attack the other way — one absent cell whose mask lands outside
+  the real feature's band refutes it.
+- It changes **which** option this gate wants, not whose decision it is. Option
+  (c) — a second, differently-anchored question — is unaffected by the argument
+  above, and it is the one whose cost ($0.005 per carried feature) the card
+  already prices. Nothing is cut; the founder's card now carries this so his
+  choice is made against it rather than around it.
