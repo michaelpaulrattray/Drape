@@ -25,6 +25,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { STORAGE_CLEANUP_BATCH_KINDS } from "../drizzle/schema";
+import { readListedSource } from "./testing/listedSource";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
@@ -74,7 +75,9 @@ describe("storage_cleanup_batches.kind, in every place it is written down", () =
         const full = path.join(directory, entry.name);
         if (entry.isDirectory()) { walk(full); continue; }
         if (!/\.m?ts$/.test(entry.name)) continue;
-        const source = fs.readFileSync(full, "utf8");
+        /* Listed, then gone — a parallel suite plants and unlinks here (#223). */
+        const source = readListedSource(full);
+        if (source === null) continue;
         for (const match of source.matchAll(/enum\((\s*'[^)]*)\)/gi)) {
           const members = membersOf(`enum(${match[1]})`);
           /* Two or more of THIS enum's members spelled together is the copy;
