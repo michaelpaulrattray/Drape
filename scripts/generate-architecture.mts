@@ -1605,11 +1605,49 @@ function fingerprint(): string {
   return hash.digest("hex").slice(0, 16);
 }
 
-export function buildAtlas() {
-  const project = new Project({
+/**
+ * ⚠ THE ts-morph PROJECT IS BUILT ONCE PER PROCESS, AND THE REASON IS A
+ * MEASUREMENT (#233, `docs/specs/ATLAS_SUITE_TIMEOUT_DIAGNOSIS_2026-08-30.md`).
+ *
+ * `checkArchitecture()` calls `buildAtlas()` TWICE by design — step 2 *is* the
+ * determinism check — and `server/architectureAtlas.test.ts` calls
+ * `checkArchitecture()` eleven times. That was **22 full TypeScript program
+ * constructions of the same unchanged tree**, 83% of every build, and 99.85%
+ * of a 118.86 s suite file. The work never grew; it was paid 22 times.
+ *
+ * The cache is safe here and nowhere else, for a stated reason: the file scan
+ * (`allFiles`) is ALREADY a module-level constant, computed once at import and
+ * explicitly sorted, so no caller has ever seen a build re-discover the tree.
+ * Every writer of the atlas — `writeAtlas`, the CLI, the pre-commit hook —
+ * runs in a fresh process and builds once.
+ *
+ * ⚠ WHAT IT COSTS, STATED RATHER THAN MEASURED AWAY: with one Project reused,
+ * a nondeterminism arising INSIDE Project construction is no longer exercised
+ * by step 2's second build. That coverage is not dropped — it moves to a
+ * dedicated arm which pays for two independent constructions ONCE per suite
+ * run instead of eleven times (`architectureAtlas.test.ts`, "two INDEPENDENTLY
+ * CONSTRUCTED Projects"). `{ freshProject: true }` is what that arm drives,
+ * and it is for that arm: passing it on the hot path restores the 22 builds.
+ *
+ * ⚠ AND THE TEMPTING VERSION OF THIS REPAIR IS THE ONE THAT MUST NOT BE
+ * TAKEN. Memoising the ATLAS instead of the Project measured 7.32 s — faster
+ * still, and it DISARMS step 2 silently, because a memoised atlas is compared
+ * to itself. At the pass/fail line it is indistinguishable from a working
+ * check. The collectors deliberately still run twice over the shared Project,
+ * which is what keeps step 2 asking a real question, and a positive-control
+ * arm in the suite goes red the moment anything calls the builder once.
+ */
+let sharedProject: Project | undefined;
+
+function newAtlasProject(): Project {
+  return new Project({
     tsConfigFilePath: path.join(repoRoot, "tsconfig.json"),
     skipAddingFilesFromTsConfig: false,
   });
+}
+
+export function buildAtlas(options: { freshProject?: boolean } = {}) {
+  const project = options.freshProject ? newAtlasProject() : (sharedProject ??= newAtlasProject());
 
   const procedures = collectProcedures(project, resolveNamespaces(project));
 
