@@ -1,7 +1,7 @@
 {
-  "edition": 111,
-  "updatedAt": "2026-08-30T02:20:00+10:00",
-  "shift": "foreman-104",
+  "edition": 112,
+  "updatedAt": "2026-08-30T03:20:00+10:00",
+  "shift": "foreman-105",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "lookalike-reader-246",
+      "title": "Our measuring tool points at the nearest lookalike when the thing is not there - pick the fix",
+      "productImpact": "The studio has a tool it uses to find things in a picture - where the horns are, where the tattoo landed, whether the glasses you asked to remove actually came off. Last night we learned it does something nobody had written down: asked to find something that ISN'T in the picture, it does not say \"not there\". It points at the nearest thing that LOOKS like the word, confidently, and with a bigger number than the real thing scores when it IS there. Tonight I proved that reaches the studio's own machinery, not just our test tools. Nobody has been affected - I checked the live records and the part of the studio that would show it has never run for a customer, so this is caught before it can bite rather than after. But it sits underneath several things that matter: whether we refund you when an edit did not work, whether a tattoo's saved picture is of the tattoo, and whether the boxes on the face panel are on the right features.",
+      "workedExample": "The picture on your page is the proof. Two of your oni, same question asked of both: \"where are the tusks?\" The one on the RIGHT has tusks, and the box lands on his mouth - correct. The one on the LEFT has NO tusks, and instead of saying so, the tool drew a box around his HORNS - and scored it three times higher than the real tusks scored on the right. That is your own original complaint from a fortnight ago, the rectangle labelled \"Right horn\" sitting where it did not belong, coming back out of the machinery we built to end it.",
+      "options": [
+        {
+          "key": "b",
+          "label": "Bound WHERE the answer may sit (recommended)",
+          "consequence": "A feature's answer has to land in the part of the picture that feature lives in - a mouth thing near the mouth, a forehead thing near the forehead. Costs nothing to run, and when it does not fit the studio simply says \"could not read it\", which is an answer the code already handles. The work is writing down which band each feature lives in, so it is a couple of nights rather than one."
+        },
+        {
+          "key": "c",
+          "label": "Ask a second, different question to confirm",
+          "consequence": "More robust and it costs half a cent per feature per edit - real money at scale but small today. Slower to build than (b) and it leans on the same kind of model that got it wrong, which cuts against your own \"the engine lies\" rule."
+        },
+        {
+          "key": "wait",
+          "label": "Leave it, record it, revisit when the feature has customers",
+          "consequence": "Legitimate: nobody is affected today. The risk is that the population arrives with the refine work and this is underneath it by then, which is exactly how the last four of these got found late."
+        }
+      ],
+      "recommendation": "Go with (b). It is free to run, it fails toward \"we could not tell\" rather than toward a confident wrong answer, and it is arithmetic rather than asking another model - which is your own rule about not trusting the engine. I would do it when the refine work starts rather than tonight, because nothing is using it yet.",
+      "state": "open",
+      "filedAt": "2026-08-30T03:20:00+10:00",
+      "issueNumber": 246
+    },
     {
       "id": "creature-widening-243",
       "title": "The widening ran: a creature keeps its own mouth when nobody typed one (#243)",
@@ -730,6 +757,22 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "lookalike-reader-246-strip",
+      "title": "Same question, two faces: where the studio thinks the tusks are",
+      "question": "WHAT YOU ARE JUDGING - one glance is enough. Both pictures were asked the same question by the same piece of the studio: \"where are the tusks?\" The red box is the answer it gave, drawn exactly where it gave it - nothing here was placed by hand.\n\nRIGHT: an oni WITH tusks. The box is on his mouth. Correct.\n\nLEFT: an oni with NO tusks - closed lips, a beard, no tusks anywhere. Instead of saying \"there are none\", the tool boxed his HORNS, and scored them three times higher than the real tusks scored on the right.\n\nThe question for you is on the card: which of the three fixes do you want, and do you want it now or when the refine work starts. Nobody is affected today - I checked the live records and this part of the studio has never run for a customer.",
+      "state": "open",
+      "filedAt": "2026-08-30T03:20:00+10:00",
+      "issueNumber": 246,
+      "cardId": "lookalike-reader-246",
+      "frames": [
+        {
+          "key": "crew-eye/5870cbb9-8f93-4896-8c27-e1b0bf5be9e1.jpg",
+          "caption": "LEFT - no tusks in the picture: the box for \"tusks\" is drawn around the two HORNS on the forehead, 7,455 pixels. RIGHT - tusks present: the box for the same word lands on the mouth, 2,123 pixels. Both boxes came straight out of the studio's own function; the only thing I added was the red outline so you can see where it pointed.",
+          "arm": "tusks absent vs tusks present"
+        }
+      ]
+    },
     {
       "id": "creature-widening-243-strips",
       "title": "Three creatures, each one with and without the creature lane",
@@ -1389,6 +1432,13 @@
   ],
   "pipeline": [
     {
+      "id": "lookalike-reader-246",
+      "title": "Proved the lookalike problem reaches the studio itself, and mapped every place it could bite (#246)",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "Last night's finding was about a measuring tool. Tonight I asked the two questions that were left open. First: does it reach the product? Yes - driven through the studio's real function with the real reader, and it filed a box for a feature that is not in the picture. Two controls held either side of it, including the one that matters (a blank grey picture, which correctly answered \"nothing there\" through the same code), so the box is a reading of the picture rather than the function misbehaving on everything. Second: where else could it bite? I went through all 25 places in the studio that ask this kind of question. Only TWO of the words we ask have ever been tested against pictures that do not contain the answer - glasses and earrings - and both passed. The other 22 have never been checked in that direction. The sharpest one is the refund gate: when you take something off a face, we re-read the picture to check it actually went, and a lookalike there would refuse and refund a customer whose edit worked perfectly. Nothing is being changed until you pick a fix; the record is written so nobody reads a green test suite as proof."
+    },
+    {
       "id": "creature-widening-243",
       "title": "#243 — the creature lane's widening: does it change the PICTURE when nobody types the anatomy",
       "status": "waiting-founder",
@@ -2015,8 +2065,8 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "The gate's second-opinion reviewer is still down — twentieth refusal, about 30 hours",
-      "detail": "TWENTIETH refusal, probed in one line before tonight's work was planned: same sentence, your Fable 5 allowance is used up. Honest span: 22:20 on the 28th to now, about thirty hours, against the one precedent we have of about five. Tonight's change went through the gate's four instruments and PASSED; the review check went red and I read its log rather than guessing — it died with is_error, which is the no-verdict shape, not a rejection. So nothing in this diff was judged by a second pair of eyes either. What stands behind it instead is stated on PR #245: three separate drives against your own pictures, and 12 sabotages that each go red in the arm that names them — including two NO-REDs I chased down and found were my instrument's fault rather than the product's. When your allowance comes back, #245 and #244 are both worth a read-over.",
+      "title": "Your Fable allowance is still out - 22 refusals now, and it has been down about 34 hours",
+      "detail": "No change in cause and one change in the clock. I asked the advisor once at the top of this shift and got the same sentence back: your Fable 5 limit is reached. That is the twenty-second consecutive refusal, and the span from the first failed review is now about thirty-four hours - well past the roughly five hours the same fault took to clear itself on the 26th, so it is no longer 'the same thing as last time'. Opus is answering fine on the same machine and the same login - it ran the typecheck, the full guard suites, two read-only production queries and tonight's whole court - so the account and the token are fine and one model on them is out. What it costs: every change still gets read by a second model before it lands, and that reviewer is the one that is down, so the team's rule has held for a fifth night - tooling, tests, measurements and records may ship, and anything touching money or the product waits for you. Tonight's work was a measurement and a written record, which is inside that rule. The three options are on the card at the top of your page.",
       "severity": "warning",
       "state": "open"
     },
@@ -2106,6 +2156,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T03:20:00+10:00",
+      "shift": "foreman-105",
+      "text": "One thing tonight, and it is worth your two minutes because the picture explains it faster than I can.\n\nLast night's shift found that our measuring tool - the thing that finds features in a picture - does something odd when you ask it for something that isn't there. It doesn't say \"not there\". It points at the nearest thing that looks like the word. That was a finding about a tool, and it left two questions open: does it reach the actual studio, and where else could it bite?\n\nBoth are answered now. It DOES reach the studio - I drove the studio's own real function, with the real reader, on a picture of an oni with no tusks, and it filed a box around his horns and called them tusks. There is a picture of it on your page: same question, two faces, and on the one with real tusks the box lands correctly on the mouth. The wrong answer scored three times higher than the right one, which is the part that makes it dangerous - a wrong answer that looks small gets ignored, a wrong answer that looks big gets written down as a finding.\n\nI also checked the controls properly, because a court that only proves it can find things when they ARE there proves nothing here. A blank grey picture went through the same code and correctly said \"nothing there\", so the box on the horns is a reading of that picture rather than the function drawing boxes at random.\n\nThen I mapped the whole studio: 25 places ask this kind of question. Only two of the words we ask - glasses and earrings - have ever been tested against pictures that do NOT contain the answer, and both passed. The other 22 have never been checked in that direction. The one I would least like to be wrong is the refund gate: when you take something off a face we re-read the picture to check it went, and a lookalike there would refuse and refund somebody whose edit worked.\n\nThe good news, and I checked it at the live records rather than assuming: the part of the studio I proved this on has never run for a customer - one saved row from before it shipped, and none since. So this is caught before it can bite, not after. Nothing has been changed. There are three possible fixes on the card at the top of your page and my recommendation is the free one, done when the refine work starts rather than tonight.\n\nHousekeeping: your Fable allowance is still out - twenty-second refusal, about thirty-four hours now, past the only precedent we have - so it was another tooling-and-measurement night by the team's own rule. Tonight cost about one and a half cents of house money in three picture-readings. No credits, no renders, nothing on production touched but the briefing you are reading and one picture uploaded for it."
+    },
     {
       "at": "2026-08-30T02:35:00+10:00",
       "shift": "foreman-102",
@@ -2300,11 +2355,6 @@
       "at": "2026-08-28T02:25:00+10:00",
       "shift": "foreman-58",
       "text": "Quiet-hours patrol shift, two things worth your morning read. First: your cyber-goth sheet from yesterday afternoon that died whole - all eight tiles failed - was NOT the studio refusing your brief. A deploy restarted the studio seconds after your roll started (the deploy guard checks whether you're mid-session, but you'd been quiet eight minutes when the push fired and it can't see a roll that hasn't started yet - it did refuse the very next push two minutes later). Every slice was refunded within six minutes - I verified the 160 credits back row by row - and each tile offered Retry. This is the known accepted deploy-collision class; nothing is broken. Second: the refusal patrol ran on the new material (your roll before that one had 4 of 8 refused by the content filter - same coin-per-render behaviour as before, byte-identical text refused and delivered in one sheet). The new mid-torso framing sentence showed slightly more refusals in its court, but the numbers say coin, not sentence (p = 0.35) - and every roll you make on the live framing adds free evidence, so the patrol logged it and spent nothing. No word enters any rewrite list. Your first Follow tap is still the live check of the Row A build."
-    },
-    {
-      "at": "2026-08-30T02:20:00+10:00",
-      "shift": "foreman-104",
-      "text": "Ran the widening you ordered on #243 — the test where the customer names a species and says nothing about its face. It works: on \"a deep-sea anglerfish humanoid\", today's studio gives you a person with grey skin and a closed human mouth four times out of four, and the creature lane gives you the anglerfish's own jaw and teeth four times out of four. Three strips are in your gallery. Two honest limits are on the card: your species-TONGUE case is still unasked (a snake-woman's tongue is inside her closed mouth, so that fixture could never have shown one), and I found a hole in my own measuring tool — asked for tusks on a face that has none, it outlines the HORNS and reports 7,455 pixels, which read at face value says today's version paints more tusks than the creature version, the exact opposite of the pictures. I only caught it because I painted the outline back onto the photo. It does not undo the oni reading from two nights ago; I re-checked those the same way and that tool was reading real tusks at the real mouth. One thing I did not go looking for is on the card as your decision: with the creature lane on, the lamia has a serpent coil in the picture 4 times of 4 and 0 of 4 without — and her brief never says \"tail\"."
     }
   ],
   "acknowledgedReplyIds": [
