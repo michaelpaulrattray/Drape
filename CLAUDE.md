@@ -185,6 +185,18 @@ work is either one of its shifts or must behave like one. The binding pieces:
   diffs are labelled `founder-review` for visibility and always reviewed but
   do NOT block on founder approval (his ruling, 2026-08-25). Product code
   goes branch → PR → gate; direct pushes to main are the deploy rite's alone.
+  ⚠ **A `review` CHECK REPORTS WHETHER A VERDICT EXISTS, NEVER WHETHER THE
+  DIFF PASSED** (#219, 2026-08-29). The action exits 0 whatever it finds, so
+  **findings ride a GREEN check's sticky comment — read it before merging —
+  and a RED `review` means NO REVIEW WAS PRODUCED**: either the reviewer
+  cannot run on its own change (#165) or it failed to complete. Read the
+  wrong way round on PR #218, where the founder's Fable allowance was
+  exhausted, the job died in ~1s on `is_error: true`, and a red check looked
+  like a reviewer verdict for two shifts until the result JSON was dug out of
+  the action log. The review job's last step now names which of the three
+  states it is, on the PR's own checks page and in the run summary; it runs
+  on `always()` with `continue-on-error`, so it can neither rescue a failure
+  nor break a pass.
 - **The founder steers from the Desk** (a claude.ai artifact page): his
   replies and journal entries there are rulings — quoted verbatim when acted
   on. Desk cards lead with product impact and a worked example, flags second.
