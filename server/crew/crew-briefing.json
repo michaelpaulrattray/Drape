@@ -1,7 +1,7 @@
 {
-  "edition": 98,
-  "updatedAt": "2026-08-29T16:40:00+10:00",
-  "shift": "foreman-94",
+  "edition": 99,
+  "updatedAt": "2026-08-29T16:55:00+10:00",
+  "shift": "foreman-95",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -166,7 +166,7 @@
         }
       ],
       "recommendation": "Treat it as part of the being. Your cut was aimed at fashion — “spiked metal accents” on a lace-and-leather outfit — and the reader is already told to name a creature’s features. A rule wide enough to strip a cyborg’s face part would also flatten the sci-fi subjects the studio is being built for.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-29T16:40:00+10:00",
       "issueNumber": 185
     },
@@ -256,10 +256,6 @@
       "title": "ANSWERED - Row A is built and live on your account (#177 closed, PR #184)",
       "productImpact": "Your three rulings tonight are now the plan: a Follow attaches the photo of the cast you followed (words alone can't carry likeness — your hand test), facts change at the roll (chip → brief rewrites → new sheet → follow one of those), and the one open dial is how close the new faces stay. The court ran on dev, house money (~$1.63): the anchor's own brief + his photo, eight fresh renders per row, only the closeness sentence changing. Whichever row you pick becomes the Follow that ships.",
       "workedExample": "Row A is your exact hand-test sentence (keep sex, age range, heritage, hair-colour family; don't copy the face). Row B tells the engine the photo is the BOOKING, not a person to resemble — cast a clearly different man of the same type. Row C keeps the photo and almost no words. One honest note: your B/C wording said 'eight clearly different men' — sent per-picture that paints an eight-face collage inside every frame (we proved it, twice per row), so each render carries the same sentence in the singular and the eight vary by the engine's own dice, exactly like a normal roll.",
-      "recommendation": "Done as you ordered: Follow = the photo of the face you picked + your brief + your Row A sentence, dice never consulted, facts change at the roll never at the follow. Row B stays recorded as a possible second button - not built, per your 'for now'. Your next Follow tap is the live check.",
-      "state": "answered",
-      "filedAt": "2026-08-27T22:45:00+10:00",
-      "issueNumber": 177,
       "options": [
         {
           "key": "row-a",
@@ -281,17 +277,17 @@
           "label": "Two buttons — close variations AND more of this type",
           "consequence": "Follow becomes a pair of actions; both clauses ship, each behind its own button."
         }
-      ]
+      ],
+      "recommendation": "Done as you ordered: Follow = the photo of the face you picked + your brief + your Row A sentence, dice never consulted, facts change at the roll never at the follow. Row B stays recorded as a possible second button - not built, per your 'for now'. Your next Follow tap is the live check.",
+      "state": "answered",
+      "filedAt": "2026-08-27T22:45:00+10:00",
+      "issueNumber": 177
     },
     {
       "id": "family-clause-154",
       "title": "ANSWERED — the author now carries a Follow and chip edits (#154), built to your three answers",
       "productImpact": "Your word (reply #11): \"Yes to building it; (1) yes, let the engine vary; (2) yes, read-only chips with the sentence; (3) no fine details. It is dark until it lands, and the first follow on your account is the court.\" Built and merged. On your account, tapping Follow or changing a chip no longer drops the roll back to the studio's old casting: the author writes it, with one 'continue this family' paragraph from the face you followed placed between your words and the locked block. The whole prompt is on the sheet as before. Nobody else sees any of this.",
       "workedExample": "Dev sheet, 'a fitness creator in their 30s, close-cropped hair', Follow on 01: the prompt read your words, then 'Continue this family: cast a close relative of one person — a man, in their 30s, of Mediterranean heritage, black hair. Same sex, same age, same heritage and same hair colour; the face itself is new.' then the block — 8 of 8 landed. Chip edit 30s → 40s on a plain sheet: 'Cast as a person, in their 40s; where this differs from the request above, this wins.' On a plain authored sheet the underlined facts no longer offer 'let it vary' (your sentence goes to the engine word for word) and one line says so under the echo; on a Follow, sex/age/heritage still can.",
-      "recommendation": "Done: PR #156 merged (56c7386c), the service redeploys with this edition. Your first Follow on your own account is the court — tap Follow on a face you like and say on #154 whether the relatives read as one family.",
-      "state": "answered",
-      "filedAt": "2026-08-27T05:05:00+10:00",
-      "issueNumber": 154,
       "options": [
         {
           "key": "build-as-recommended",
@@ -308,17 +304,17 @@
           "label": "Leave it: a Follow or chip edit keeps using the studio's old casting, and the sheet keeps saying so",
           "consequence": "Nothing is built; the AUTHOR record line from PR #153 stays as the honest state."
         }
-      ]
+      ],
+      "recommendation": "Done: PR #156 merged (56c7386c), the service redeploys with this edition. Your first Follow on your own account is the court — tap Follow on a face you like and say on #154 whether the relatives read as one family.",
+      "state": "answered",
+      "filedAt": "2026-08-27T05:05:00+10:00",
+      "issueNumber": 154
     },
     {
       "id": "retry-flip-122",
       "title": "ANSWERED — Retry is on for your account, and content-filter tiles have the button too (#122)",
       "productImpact": "Your word (reply #10): \"Flip it on for your account, AND widen it to content-filter tiles.\" Both done. On your sheets, every tile that says 'Refused by the engine's content filter · refunded' now carries Retry · 20 credits, beside the engine-error tiles that already did. Same words, same slot; refused again → the 20 come back and the button returns. Nobody else sees the button yet. The 'Softer wording' road (#93) stays parked on its own numbers.",
       "workedExample": "Roll 222, the five refused tiles: each shows the CONTENT FILTER chip, the refunded line, and Retry · 20 credits. Tap one: it goes back to 'Casting…' and lands in its own slot in about a minute — or is refused again and refunded. The court's odds for that text were about 3 in 4 per tap, but the filter drifts night to night, so the button promises nothing about odds.",
-      "recommendation": "Done: PR #155 merged (4c6b1a42), CASTING_RETRY_SCOPE=users:1 read back off the service, the service redeployed on the variable change and again with this edition. Tap one on your next refused tile and say if the wait or the wording reads wrong.",
-      "state": "answered",
-      "filedAt": "2026-08-27T04:05:00+10:00",
-      "issueNumber": 122,
       "options": [
         {
           "key": "flip-users1",
@@ -335,17 +331,17 @@
           "label": "Also offer a plain Retry on content-filter tiles (one tap, coin odds shown)",
           "consequence": "A refused tile can be re-thrown for 20 credits; about 3 in 8 land; every loss refunds. Softer wording replaces it when built."
         }
-      ]
+      ],
+      "recommendation": "Done: PR #155 merged (4c6b1a42), CASTING_RETRY_SCOPE=users:1 read back off the service, the service redeployed on the variable change and again with this edition. Tap one on your next refused tile and say if the wait or the wording reads wrong.",
+      "state": "answered",
+      "filedAt": "2026-08-27T04:05:00+10:00",
+      "issueNumber": 122
     },
     {
       "id": "prompt-author-court-eye",
       "title": "Your eye on the Prompt Author court: which of these sheets is the studio you want — and should MAX imagination mean one face or eight?",
       "productImpact": "This decides what the new author writes for every roll. On your 73-word cyber-goth prompt: sent RAW, the engine gave eight different women with the framing held (your four-women result, at eight). With the author at LOW (it only added studio/framing sentences), the same: different women, the look kept, a steadier chest-up frame. With the author at MAX (your own instruction, word for word), it gave one striking woman EIGHT TIMES — same cut, same latex, same choker — because the author had stated everything and left the engine nothing to vary. Today's studio, for comparison, put your 73 words through the compiler and delivered seven of eight in the grey house tee, and put 'goth woman mid 30s' through it and delivered eight women with no goth styling at all.",
       "workedExample": "Type 'goth woman mid 30s'. LOW author → six distinct goth women who read as their thirties, black lips, chokers, lace, clean studio (two of eight refused by the engine). MAX author → the same spiky-haired woman eight times. Raw, with no author at all → the engine refused it 17 times out of 18. Your call: is LOW the default and MAX a per-sheet choice, or should MAX be rewritten to leave hair/makeup/clothes open so it invents eight faces?",
-      "recommendation": "Build the author verbatim-first as you ruled, with LOW as the default; rewrite the MAX instruction so it names what it leaves to the engine (otherwise MAX = one face); never let the preset say 'sternum' (that one word flipped a passing prompt to eight refusals); and run #93's rewrite-and-retry on your full cyber-goth brief, which the engine refused 63 of 64 times in every form — raw included. — YOUR ANSWER (reply #8, 16:31): \"B is the studio, for both the rich prompt and the thin one — build the author verbatim-first with LOW as the default. MAX as written gives one face eight times; rewrite the MAX instruction so it always leaves the face and a few axes open (casting call, not a portrait). D had the most realistic-looking humans but missed the brief — take a short realism clause from D's photographic language and test B+R against B. Build the refusal loop: log every refused and passed prompt, find trigger words, measured word→replacement pairs into the author's rewrite list, visible on the expanded prompt. Calibrate the preset's framing to my reference frame (28% head share) and lock framing, lighting and studio across every cast. Never say \"sternum\".\" Filed: the register rebuild to this (author verbatim-first, LOW default, MAX rewritten to leave the face open), the B+R realism court (#128), the refusal-loop patrol (#129), the preset calibration to your 28% frame (#130).",
-      "state": "answered",
-      "filedAt": "2026-08-26T17:55:00+10:00",
-      "issueNumber": 125,
       "options": [
         {
           "key": "low-default",
@@ -362,17 +358,17 @@
           "label": "No imagination meter yet — author = your words + the photoreal preset only",
           "consequence": "Smallest build; thin briefs lean on the engine's own invention."
         }
-      ]
+      ],
+      "recommendation": "Build the author verbatim-first as you ruled, with LOW as the default; rewrite the MAX instruction so it names what it leaves to the engine (otherwise MAX = one face); never let the preset say 'sternum' (that one word flipped a passing prompt to eight refusals); and run #93's rewrite-and-retry on your full cyber-goth brief, which the engine refused 63 of 64 times in every form — raw included. — YOUR ANSWER (reply #8, 16:31): \"B is the studio, for both the rich prompt and the thin one — build the author verbatim-first with LOW as the default. MAX as written gives one face eight times; rewrite the MAX instruction so it always leaves the face and a few axes open (casting call, not a portrait). D had the most realistic-looking humans but missed the brief — take a short realism clause from D's photographic language and test B+R against B. Build the refusal loop: log every refused and passed prompt, find trigger words, measured word→replacement pairs into the author's rewrite list, visible on the expanded prompt. Calibrate the preset's framing to my reference frame (28% head share) and lock framing, lighting and studio across every cast. Never say \"sternum\".\" Filed: the register rebuild to this (author verbatim-first, LOW default, MAX rewritten to leave the face open), the B+R realism court (#128), the refusal-loop patrol (#129), the preset calibration to your 28% frame (#130).",
+      "state": "answered",
+      "filedAt": "2026-08-26T17:55:00+10:00",
+      "issueNumber": 125
     },
     {
       "id": "refuse-free-long-or-always",
       "title": "Refuse-free is live for long briefs — did you mean ALWAYS, whatever the length?",
       "productImpact": "Was: a brief longer than about a sentence (80 characters) that the reader never read was refused free, while a shorter one still rolled from the words as typed and was charged. NOW (your word, built and live): a brief the reader never read is refused free at EVERY length — 'dad in his 30s, beard' during a reader outage keeps its credits too.",
       "workedExample": "Reader down for a minute. Customer A types a 1,200-character pirate captain brief → refused free, credits kept. Customer B types 'dad in his 30s, beard' → eight dads in their 30s with beards, 160 credits, same as before the outage.",
-      "recommendation": "Keep it as built (long refuses, short rolls) — a five-word brief loses nothing on the fallback. Say 'always' if you want the simpler rule. — YOUR ANSWER (reply #9, 17:08): \"always\". Built as PR #134, merged; the 80-character line and every place that stated it are gone.",
-      "state": "answered",
-      "filedAt": "2026-08-26T16:55:00+10:00",
-      "issueNumber": 126,
       "options": [
         {
           "key": "keep-long",
@@ -384,7 +380,11 @@
           "label": "Always refuse free on a reader outage, whatever the length",
           "consequence": "One-line change, one PR; a short brief loses a roll it would have got during an outage."
         }
-      ]
+      ],
+      "recommendation": "Keep it as built (long refuses, short rolls) — a five-word brief loses nothing on the fallback. Say 'always' if you want the simpler rule. — YOUR ANSWER (reply #9, 17:08): \"always\". Built as PR #134, merged; the 80-character line and every place that stated it are gone.",
+      "state": "answered",
+      "filedAt": "2026-08-26T16:55:00+10:00",
+      "issueNumber": 126
     },
     {
       "id": "rich-brief-outage-refuse",
@@ -543,19 +543,19 @@
       "state": "answered",
       "filedAt": "2026-08-29T02:20:00+10:00",
       "issueNumber": 198,
-      "cardId": null,
       "frames": [
         {
           "key": "crew-eye/79190064-8a2a-4eb7-b85b-7e352dd13c53.png",
-          "arm": "THE THREE CROPS",
-          "caption": "Same candidate, three ways. LEFT is what the Sign dialog draws today. MIDDLE is what it draws after tonight. RIGHT is the version I did NOT ship — the centred crop — a simulation of that rule on this face, labelled on the frame so it is never mistaken for a shipped screen. But the mechanism in it is live: it is exactly what your Delete dialog does. Left and middle should be indistinguishable to you. Right should not be, and that gap is the bug."
+          "caption": "Same candidate, three ways. LEFT is what the Sign dialog draws today. MIDDLE is what it draws after tonight. RIGHT is the version I did NOT ship — the centred crop — a simulation of that rule on this face, labelled on the frame so it is never mistaken for a shipped screen. But the mechanism in it is live: it is exactly what your Delete dialog does. Left and middle should be indistinguishable to you. Right should not be, and that gap is the bug.",
+          "arm": "THE THREE CROPS"
         },
         {
           "key": "crew-eye/90e8069d-c3c6-422d-91a9-7be850137a15.png",
-          "arm": "THE WHOLE DIALOG — light",
-          "caption": "For context rather than judgement: the actual Sign dialog after the change, in light. Nothing in it moved but the mechanism behind the picture."
+          "caption": "For context rather than judgement: the actual Sign dialog after the change, in light. Nothing in it moved but the mechanism behind the picture.",
+          "arm": "THE WHOLE DIALOG — light"
         }
-      ]
+      ],
+      "cardId": null
     },
     {
       "id": "concept-reader-gold-line-185-204",
@@ -564,19 +564,19 @@
       "state": "answered",
       "filedAt": "2026-08-28T23:05:00+10:00",
       "issueNumber": 185,
-      "cardId": null,
       "frames": [
         {
           "key": "crew-eye/ce0cdab7-4493-44b0-b95e-5e32d696e23a.jpg",
-          "arm": "THE GOTH — your failing box's picture",
-          "caption": "The picture the packing-list read was of. Read the OLD words and the NEW words in the question against this face: the old one locks her body size, her exact fringe and three named garments onto all eight; the new one gives the world they come from."
+          "caption": "The picture the packing-list read was of. Read the OLD words and the NEW words in the question against this face: the old one locks her body size, her exact fringe and three named garments onto all eight; the new one gives the world they come from.",
+          "arm": "THE GOTH — your failing box's picture"
         },
         {
           "key": "crew-eye/f5ee1abc-3fc0-4d50-8db0-da5b7ef66ffd.jpg",
-          "arm": "THE CREATURE — your own reference",
-          "caption": "This is the class of upload that was answered \"I couldn't find a person in that picture.\" It is one of your own creature references rather than the exact deity figure you tried, which I do not have — the reader never keeps an upload, by design. Same road, same answer."
+          "caption": "This is the class of upload that was answered \"I couldn't find a person in that picture.\" It is one of your own creature references rather than the exact deity figure you tried, which I do not have — the reader never keeps an upload, by design. Same road, same answer.",
+          "arm": "THE CREATURE — your own reference"
         }
-      ]
+      ],
+      "cardId": null
     },
     {
       "id": "concept-cast-it-196",
@@ -585,29 +585,29 @@
       "state": "open",
       "filedAt": "2026-08-28T17:55:00+10:00",
       "issueNumber": 196,
-      "cardId": null,
       "frames": [
         {
           "key": "crew-eye/dfe5f592-097e-4c12-bfb8-196c1d46e414.png",
-          "arm": "THE CAST — dark",
-          "caption": "Your picture on the left, the description you can edit on the right, the character count and ~160 credits above the buttons. Cast it goes straight to the sheet."
+          "caption": "Your picture on the left, the description you can edit on the right, the character count and ~160 credits above the buttons. Cast it goes straight to the sheet.",
+          "arm": "THE CAST — dark"
         },
         {
           "key": "crew-eye/e04f4d2f-3ef6-488f-93da-169ac30aee52.png",
-          "arm": "THE CAST — light",
-          "caption": "The same object in light. Nothing about it changes but the paper."
+          "caption": "The same object in light. Nothing about it changes but the paper.",
+          "arm": "THE CAST — light"
         },
         {
           "key": "crew-eye/56d9b2a4-bc14-46ad-8a57-4e9f6b690fc7.png",
-          "arm": "ENTRANCE 2 — tap, not drop",
-          "caption": "Tapping the card opens this: a drop zone where the picture will go, and a picker button. Dropping a picture ON the card skips this screen entirely and starts reading. The way out says Cancel rather than Discard here, because nothing has been chosen yet to discard."
+          "caption": "Tapping the card opens this: a drop zone where the picture will go, and a picker button. Dropping a picture ON the card skips this screen entirely and starts reading. The way out says Cancel rather than Discard here, because nothing has been chosen yet to discard.",
+          "arm": "ENTRANCE 2 — tap, not drop"
         },
         {
           "key": "crew-eye/e392b31e-27dc-4993-8a2a-9f1cf019491e.png",
-          "arm": "WHEN A READ FAILS — light",
-          "caption": "It keeps the picture and says what actually happened. This is the real wall: I dropped a plain grey square on it, and it answers \"I couldn't find a person in that picture — try one with someone in it.\" Try again is for a blip; Choose another picture is for when the answer is about the picture itself. Before this it closed and threw your picture away."
+          "caption": "It keeps the picture and says what actually happened. This is the real wall: I dropped a plain grey square on it, and it answers \"I couldn't find a person in that picture — try one with someone in it.\" Try again is for a blip; Choose another picture is for when the answer is about the picture itself. Before this it closed and threw your picture away.",
+          "arm": "WHEN A READ FAILS — light"
         }
-      ]
+      ],
+      "cardId": null
     },
     {
       "id": "trigger-cluster-court-190-strip",
@@ -616,19 +616,19 @@
       "state": "answered",
       "filedAt": "2026-08-28T15:40:00+10:00",
       "issueNumber": 190,
-      "cardId": "trigger-cluster-court-190",
       "frames": [
         {
           "key": "crew-eye/71cca8fa-ed85-4571-ae16-b6a3d4cc2c1d.png",
-          "arm": "THE WHOLE COURT — 7 wordings, 8 sends",
-          "caption": "B1 base (7/8 refused) · B2 the identical text again (8/8) · A1 \"woman in her twenties\" (8/8) · A2 \"woman, mid 30s\" (8/8) · F1 mesh and lace swapped out (7/8) · C1 every chest mention gone (8/8) · T1 our REALISM line without \"a face you could touch\" (7/8). Fisher's exact test on every family against the base: p = 1.0000, which is the number you get when two things are indistinguishable."
+          "caption": "B1 base (7/8 refused) · B2 the identical text again (8/8) · A1 \"woman in her twenties\" (8/8) · A2 \"woman, mid 30s\" (8/8) · F1 mesh and lace swapped out (7/8) · C1 every chest mention gone (8/8) · T1 our REALISM line without \"a face you could touch\" (7/8). Fisher's exact test on every family against the base: p = 1.0000, which is the number you get when two things are indistinguishable.",
+          "arm": "THE WHOLE COURT — 7 wordings, 8 sends"
         },
         {
           "key": "crew-eye/2ec97692-ad22-4551-9bf2-1d9ce09d0dd7.png",
-          "arm": "ONE OF THE THREE THAT LANDED",
-          "caption": "This is arm B1, send 3: your brief exactly as written, no word changed, mid-torso framing on grey seamless. It is a sheer lace look — that is what the brief asks for and what a fashion casting of it looks like. None of the three passes bought its way through by casting something tamer; all three are the full brief."
+          "caption": "This is arm B1, send 3: your brief exactly as written, no word changed, mid-torso framing on grey seamless. It is a sheer lace look — that is what the brief asks for and what a fashion casting of it looks like. None of the three passes bought its way through by casting something tamer; all three are the full brief.",
+          "arm": "ONE OF THE THREE THAT LANDED"
         }
-      ]
+      ],
+      "cardId": "trigger-cluster-court-190"
     },
     {
       "id": "concept-upload-flip-185",
@@ -637,19 +637,19 @@
       "state": "answered",
       "filedAt": "2026-08-28T14:20:00+10:00",
       "issueNumber": 185,
-      "cardId": "concept-upload-flip-card-185",
       "frames": [
         {
           "key": "crew-eye/59ca08ab-e100-4026-abc7-879da8cfa1ab.png",
-          "arm": "THE FACE YOU JUDGED — before and after",
-          "caption": "BEFORE (1,082 chars): \"...light hazel-green eyes set beneath straight, slightly furrowed brows... no visible jewelry, makeup, or tattoos.\" AFTER (173): \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" His eyes really are that colour and his shirt really does have those seams — the reader sees them and leaves them out. ⚠ Last night we showed you the wrong face here."
+          "caption": "BEFORE (1,082 chars): \"...light hazel-green eyes set beneath straight, slightly furrowed brows... no visible jewelry, makeup, or tattoos.\" AFTER (173): \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" His eyes really are that colour and his shirt really does have those seams — the reader sees them and leaves them out. ⚠ Last night we showed you the wrong face here.",
+          "arm": "THE FACE YOU JUDGED — before and after"
         },
         {
           "key": "crew-eye/0acfd74a-af83-486d-8a8d-bdf572adaa71.png",
-          "arm": "a second man, same reader",
-          "caption": "\"A man in his mid-to-late forties, South Asian heritage, athletic solid build, short dark textured hair, fitted charcoal crew-neck. Serious, composed, authoritative professional type.\" (182 chars.) This is your success test: two different men, two different TYPES — not two inventories. Both would cast eight different faces, not eight reprints of the man in the photograph."
+          "caption": "\"A man in his mid-to-late forties, South Asian heritage, athletic solid build, short dark textured hair, fitted charcoal crew-neck. Serious, composed, authoritative professional type.\" (182 chars.) This is your success test: two different men, two different TYPES — not two inventories. Both would cast eight different faces, not eight reprints of the man in the photograph.",
+          "arm": "a second man, same reader"
         }
-      ]
+      ],
+      "cardId": "concept-upload-flip-card-185"
     },
     {
       "id": "concept-upload-descriptions-185",
@@ -658,19 +658,19 @@
       "state": "answered",
       "filedAt": "2026-08-28T11:00:00+10:00",
       "issueNumber": 185,
-      "cardId": null,
       "frames": [
         {
           "key": "crew-eye/59ca08ab-e100-4026-abc7-879da8cfa1ab.png",
-          "arm": "the frame it was read from",
-          "caption": "Read the 1,082-character description in the question against THIS face — the greying temples and the raglan seams are his. Until today this caption sat under the other man; the words were always about this one."
+          "caption": "Read the 1,082-character description in the question against THIS face — the greying temples and the raglan seams are his. Until today this caption sat under the other man; the words were always about this one.",
+          "arm": "the frame it was read from"
         },
         {
           "key": "crew-eye/b7ad6162-2bd0-42db-b7a3-9a3b90616987.png",
-          "arm": "a second face, same reader",
-          "caption": "The face that was mistakenly shown first. Driven again today, the reader gives him: \"A man in his mid-to-late forties, South Asian heritage, athletic build, short dark cropped hair, fitted charcoal crew-neck top. Composed, capable professional presence...\" — three reads out of three agreed on the heritage, which is how the mix-up was found. Last night's caption here quoted the other man's read."
+          "caption": "The face that was mistakenly shown first. Driven again today, the reader gives him: \"A man in his mid-to-late forties, South Asian heritage, athletic build, short dark cropped hair, fitted charcoal crew-neck top. Composed, capable professional presence...\" — three reads out of three agreed on the heritage, which is how the mix-up was found. Last night's caption here quoted the other man's read.",
+          "arm": "a second face, same reader"
         }
-      ]
+      ],
+      "cardId": null
     },
     {
       "id": "framing-court-2-182",
@@ -679,14 +679,14 @@
       "state": "answered",
       "filedAt": "2026-08-28T00:45:00+10:00",
       "issueNumber": 182,
-      "cardId": null,
       "frames": [
         {
           "key": "crew-eye/fb224eb2-5e7c-402f-a7b5-4777b121f092.jpg",
-          "arm": null,
-          "caption": "REF = your 2:3 frame, the ask. K = today, face and collar. M / M2 = the new sentence, two passes of the same words — see the outfit. Grey = the checker refused that render (identical words to its neighbours)."
+          "caption": "REF = your 2:3 frame, the ask. K = today, face and collar. M / M2 = the new sentence, two passes of the same words — see the outfit. Grey = the checker refused that render (identical words to its neighbours).",
+          "arm": null
         }
-      ]
+      ],
+      "cardId": null
     },
     {
       "id": "follow-court-177",
@@ -698,23 +698,23 @@
       "frames": [
         {
           "key": "crew-eye/e2978626-e9f7-47e3-a5c5-1bc6b0c107a6.png",
-          "arm": "THE ANCHOR",
-          "caption": "THE GUY THAT WAS FOLLOWED — every row below was made from this photo and his brief."
+          "caption": "THE GUY THAT WAS FOLLOWED — every row below was made from this photo and his brief.",
+          "arm": "THE ANCHOR"
         },
         {
           "key": "crew-eye/9ed561dc-73ea-448b-bc48-679f2f39617c.jpg",
-          "arm": "Row A",
-          "caption": "Stays close to him — comes back looking like his brothers."
+          "caption": "Stays close to him — comes back looking like his brothers.",
+          "arm": "Row A"
         },
         {
           "key": "crew-eye/9a56f38c-26b1-4f6b-9003-7cca61e14aa3.jpg",
-          "arm": "Row B",
-          "caption": "His type, but clearly different men — a shortlist for the same role."
+          "caption": "His type, but clearly different men — a shortlist for the same role.",
+          "arm": "Row B"
         },
         {
           "key": "crew-eye/41e7adfa-e900-4ce4-a9fe-5047d4141199.jpg",
-          "arm": "Row C",
-          "caption": "Same as B but we tell the engine less and let the photo do the work."
+          "caption": "Same as B but we tell the engine less and let the photo do the work.",
+          "arm": "Row C"
         }
       ]
     },
@@ -728,18 +728,18 @@
       "frames": [
         {
           "key": "crew-eye/e2978626-e9f7-47e3-a5c5-1bc6b0c107a6.png",
-          "arm": "THE ANCHOR",
-          "caption": "THE ANCHOR — the candidate that was followed (dev roll 103, tile 08). The grids should read as eight others on his shortlist."
+          "caption": "THE ANCHOR — the candidate that was followed (dev roll 103, tile 08). The grids should read as eight others on his shortlist.",
+          "arm": "THE ANCHOR"
         },
         {
           "key": "crew-eye/a2501eb4-a4d8-4e86-94a8-0a6f38f2bf3c.jpg",
-          "arm": "role family · plain Follow · fixed road",
-          "caption": "Eight from one Follow on the FIXED road: the clause holds only the brief's stated facts (age range), heritage left open rather than invented. Wire checked: no word from the old record reaches the engine."
+          "caption": "Eight from one Follow on the FIXED road: the clause holds only the brief's stated facts (age range), heritage left open rather than invented. Wire checked: no word from the old record reaches the engine.",
+          "arm": "role family · plain Follow · fixed road"
         },
         {
           "key": "crew-eye/c3971789-9964-46c3-bd2f-c8a492f291a7.jpg",
-          "arm": "chip edit · 30s→40s · fixed road",
-          "caption": "The same Follow with the age chip set to 40s: the brief itself reads 'in their 40s' on the wire, '30s' nowhere, no tie-breaker sentence. All eight read as men in their 40s, close-cropped."
+          "caption": "The same Follow with the age chip set to 40s: the brief itself reads 'in their 40s' on the wire, '30s' nowhere, no tie-breaker sentence. All eight read as men in their 40s, close-cropped.",
+          "arm": "chip edit · 30s→40s · fixed road"
         }
       ]
     },
@@ -768,23 +768,23 @@
       "frames": [
         {
           "key": "crew-eye/3183cd7e-0971-442c-a1d8-55082444948b.png",
-          "arm": "before — the failed tile",
-          "caption": "Tile 08 after an engine error: the chip, 'Engine error · refunded', and the new Retry · 20 credits button (dark theme; light is in the repo)."
+          "caption": "Tile 08 after an engine error: the chip, 'Engine error · refunded', and the new Retry · 20 credits button (dark theme; light is in the repo).",
+          "arm": "before — the failed tile"
         },
         {
           "key": "crew-eye/aafd50aa-0910-489a-a785-e3e70870f876.png",
-          "arm": "5 s after the tap",
-          "caption": "Tile 08 back on 'Casting…'; the button is gone; the other seven untouched."
+          "caption": "Tile 08 back on 'Casting…'; the button is gone; the other seven untouched.",
+          "arm": "5 s after the tap"
         },
         {
           "key": "crew-eye/8ac37d48-c5db-4f45-b061-b98fccd7a294.png",
-          "arm": "52 s — landed",
-          "caption": "The retried face in slot 08 with Keep / Follow / discard like its siblings; the sheet is 8 of 8 and its record reads complete."
+          "caption": "The retried face in slot 08 with Keep / Follow / discard like its siblings; the sheet is 8 of 8 and its record reads complete.",
+          "arm": "52 s — landed"
         },
         {
           "key": "crew-eye/c2f1565a-a4de-4896-94b6-cb34a96518fd.png",
-          "arm": "widened — a content-filter tile",
-          "caption": "Tile 07 refused by the filter (dev roll 0ec93715): CONTENT FILTER chip, 'Refused by the engine's content filter · refunded', and Retry · 20 credits — the widening from your reply #10 (dark theme; light in the repo)."
+          "caption": "Tile 07 refused by the filter (dev roll 0ec93715): CONTENT FILTER chip, 'Refused by the engine's content filter · refunded', and Retry · 20 credits — the widening from your reply #10 (dark theme; light in the repo).",
+          "arm": "widened — a content-filter tile"
         }
       ]
     },
@@ -798,8 +798,8 @@
       "frames": [
         {
           "key": "crew-eye/03124b19-b1e1-4654-ad8b-00a17fb54b06.jpg",
-          "arm": "the strip · reference + 4 rows × 8",
-          "caption": "Top: your reference frame, letterboxed at its own 9:16 shape (28.2%). Then K (today's sentence, 36.7%), F1 (a hand's width lower, 35.9%), F2 (face 'about a quarter of the frame's height', 32.6%), F3 ('a little under a third', 33.7%). Same brief, same block otherwise, the size the product renders at. Grey tiles are the engine's own refusals."
+          "caption": "Top: your reference frame, letterboxed at its own 9:16 shape (28.2%). Then K (today's sentence, 36.7%), F1 (a hand's width lower, 35.9%), F2 (face 'about a quarter of the frame's height', 32.6%), F3 ('a little under a third', 33.7%). Same brief, same block otherwise, the size the product renders at. Grey tiles are the engine's own refusals.",
+          "arm": "the strip · reference + 4 rows × 8"
         }
       ]
     },
@@ -813,23 +813,23 @@
       "frames": [
         {
           "key": "crew-eye/b79757d4-d91e-457d-8906-f1d6c9c05ba1.jpg",
-          "arm": "close-up · 3 frames per light",
-          "caption": "The first three frames of each block arm at a size where the light reads: K (today's §5e line), L1 (reference look, deep jaw shadow), L2 (your candidate verbatim), L3 (clean even light). Same brief, same block otherwise, same size the product renders at."
+          "caption": "The first three frames of each block arm at a size where the light reads: K (today's §5e line), L1 (reference look, deep jaw shadow), L2 (your candidate verbatim), L3 (clean even light). Same brief, same block otherwise, same size the product renders at.",
+          "arm": "close-up · 3 frames per light"
         },
         {
           "key": "crew-eye/9fb20852-3863-405a-b150-42e1d6340295.jpg",
-          "arm": "the strip · five rows × eight",
-          "caption": "All forty frames: K, L1, L2, L3 on the locked block (0 of 32 refused), and R — the brief plus a distilled photographic clause with no block — 3 of 8 refused by the engine's content filter and a visibly different room (darker grey, tighter crop)."
+          "caption": "All forty frames: K, L1, L2, L3 on the locked block (0 of 32 refused), and R — the brief plus a distilled photographic clause with no block — 3 of 8 refused by the engine's content filter and a visibly different room (darker grey, tighter crop).",
+          "arm": "the strip · five rows × eight"
         },
         {
           "key": "crew-eye/014ffc47-9f78-446f-9f7b-77bc618dfff7.jpg",
-          "arm": "L2+ · the strip row",
-          "caption": "L2+ — his block verbatim: the thin brief ×8 on today's locked block with the LIGHTING clause replaced by your block, byte-for-byte. 6 of 8 delivered; the two dark tiles are the engine's content filter refusing — the first refusals on any block arm (the other four rows were 0 of 32)."
+          "caption": "L2+ — his block verbatim: the thin brief ×8 on today's locked block with the LIGHTING clause replaced by your block, byte-for-byte. 6 of 8 delivered; the two dark tiles are the engine's content filter refusing — the first refusals on any block arm (the other four rows were 0 of 32).",
+          "arm": "L2+ · the strip row"
         },
         {
           "key": "crew-eye/092e7e50-25a6-4513-b750-8ad79965ec76.jpg",
-          "arm": "L2+ · close-up",
-          "caption": "Three delivered L2+ frames at a size where the light reads: face wrapped by the soft key, open shadows, grey paper luminous but not white and brighter behind the head, no hard shadow dumped on the paper, speculars only where skin and lace naturally catch the source."
+          "caption": "Three delivered L2+ frames at a size where the light reads: face wrapped by the soft key, open shadows, grey paper luminous but not white and brighter behind the head, no hard shadow dumped on the paper, speculars only where skin and lace naturally catch the source.",
+          "arm": "L2+ · close-up"
         }
       ]
     },
@@ -843,13 +843,13 @@
       "frames": [
         {
           "key": "crew-eye/8aa9a9a2-be18-432e-9ac6-65147d4a87a1.png",
-          "arm": "the gear · at rest",
-          "caption": "The casting page on the author road, dark theme: under the brief box, where the Low/Max pills were, one gear reads SETTINGS Photoreal · Low — what the next roll will use, readable without opening anything."
+          "caption": "The casting page on the author road, dark theme: under the brief box, where the Low/Max pills were, one gear reads SETTINGS Photoreal · Low — what the next roll will use, readable without opening anything.",
+          "arm": "the gear · at rest"
         },
         {
           "key": "crew-eye/fe54c276-50ab-4a9f-a018-689574bea560.png",
-          "arm": "the panel · Max chosen",
-          "caption": "The panel open with Max chosen: STYLE Photoreal (the only live pill) with its line; 'Painted realism' and 'Glossy poster' as COMING SOON rows from your rule-9 list; IMAGINATION Low/Max with Max's line; RESET appears because something is off default; the footer: these are the studio's defaults, anything you type in the brief overrides them."
+          "caption": "The panel open with Max chosen: STYLE Photoreal (the only live pill) with its line; 'Painted realism' and 'Glossy poster' as COMING SOON rows from your rule-9 list; IMAGINATION Low/Max with Max's line; RESET appears because something is off default; the footer: these are the studio's defaults, anything you type in the brief overrides them.",
+          "arm": "the panel · Max chosen"
         }
       ]
     },
@@ -863,18 +863,18 @@
       "frames": [
         {
           "key": "crew-eye/b28f6124-781f-48bd-b7d7-be07f49bb01a.png",
-          "arm": "223 · NEW block",
-          "caption": "Roll 223, your account, tonight: 'goth woman mid 30s' at LOW on the rebuilt block — your LIGHTING, EXPRESSION and COLOUR lines word for word, posture not pose, text allowed, the photoreal ban in its own preset line, and an authority that says the block is a default your words override. 7 of 8 delivered, 1 refused by the content filter. Light-grey seamless brighter behind the head, soft chin/jaw shadow, hair fully in frame."
+          "caption": "Roll 223, your account, tonight: 'goth woman mid 30s' at LOW on the rebuilt block — your LIGHTING, EXPRESSION and COLOUR lines word for word, posture not pose, text allowed, the photoreal ban in its own preset line, and an authority that says the block is a default your words override. 7 of 8 delivered, 1 refused by the content filter. Light-grey seamless brighter behind the head, soft chin/jaw shadow, hair fully in frame.",
+          "arm": "223 · NEW block"
         },
         {
           "key": "crew-eye/6db2320c-477d-4ca1-b75a-734723fa1b4f.png",
-          "arm": "221 · OLD block",
-          "caption": "Roll 221 (yesterday), the same brief on the block you read and ruled on — front flash, 'head straight with no tilt', the mouth/teeth bans, 'skin tones warm and dimensional'. 7 of 8 delivered. The darker, flatter flash look you called 'your current flash studio'."
+          "caption": "Roll 221 (yesterday), the same brief on the block you read and ruled on — front flash, 'head straight with no tilt', the mouth/teeth bans, 'skin tones warm and dimensional'. 7 of 8 delivered. The darker, flatter flash look you called 'your current flash studio'.",
+          "arm": "221 · OLD block"
         },
         {
           "key": "crew-eye/d3aef70d-e365-47c4-a67c-22d294618cf3.png",
-          "arm": "222 · OLD block",
-          "caption": "Roll 222 (yesterday), your 73-word cyber-goth prompt at LOW on the old block — only 3 of 8 delivered (5 refused). Here for the light comparison; the refusals are #129's."
+          "caption": "Roll 222 (yesterday), your 73-word cyber-goth prompt at LOW on the old block — only 3 of 8 delivered (5 refused). Here for the light comparison; the refusals are #129's.",
+          "arm": "222 · OLD block"
         }
       ]
     },
@@ -1055,6 +1055,13 @@
   ],
   "pipeline": [
     {
+      "id": "concept-feature-line-185",
+      "title": "Your cyborg-eye ruling is built — a fitted machine part is part of the being now (#185)",
+      "status": "in-review",
+      "prNumber": 227,
+      "note": "Upload a picture of a cyborg and the casting note keeps her mechanical eye as part of WHO SHE IS, named as a type, instead of stripping it as an accessory or turning it into a product name.\n\nBEFORE: \"...one side of the face fitted with a sleek mechanical eye piece.\"\nAFTER:  \"...integrated mechanical eye plating on one side of the face.\"\n\nThe bug was not a missing rule. It was the WARDROBE rule reaching something it was never about — \"never name a single accessory\" was catching a face. That clause is scoped to a WORN accessory now, and your three lines sit immediately above it as their own rule: on the body as anatomy is a feature, on the outfit as styling is materials, and strapped-on-but-replacing-a-body-part is a feature.\n\nNo word list, on your word. The grey cases you named — strap-on visors, armour-as-skin — are deliberately left undrawn."
+    },
+    {
       "id": "concept-build-rule-185",
       "title": "Your two cuts to the concept reader are built — one landed, one did not (#185)",
       "status": "merged",
@@ -1212,22 +1219,22 @@
       "id": "refusal-patrol-run3",
       "title": "Refusal patrol run #3 - the reword that looked like a 33-point win and wasn't",
       "status": "merged",
-      "note": "Ordered by your reply #19. Tested whether the body words in the new framing sentence (mid-torso, chest, waist) are what the engine's content checker objects to, by rendering a version that gives the same crop without them. Arm-major run: 58% refused vs 25%, p = 0.039. Interleaved control run: 38% vs 38%, p = 1.000 - an exact tie. The first result was a sitting-wide decline in refusals landing on the boundary between the two arms. Nothing enters the author's rewrite list; the framing sentence is untouched. Standing rule added: a refusal court interleaves its arms, and an arm-major refusal reading is a lead rather than a finding. Records: docs/specs/REFUSAL_PATROL_RUN3_2026-08-28.md. $3.81 house.",
-      "prNumber": null
+      "prNumber": null,
+      "note": "Ordered by your reply #19. Tested whether the body words in the new framing sentence (mid-torso, chest, waist) are what the engine's content checker objects to, by rendering a version that gives the same crop without them. Arm-major run: 58% refused vs 25%, p = 0.039. Interleaved control run: 38% vs 38%, p = 1.000 - an exact tie. The first result was a sitting-wide decline in refusals landing on the boundary between the two arms. Nothing enters the author's rewrite list; the framing sentence is untouched. Standing rule added: a refusal court interleaves its arms, and an arm-major refusal reading is a lead rather than a finding. Records: docs/specs/REFUSAL_PATROL_RUN3_2026-08-28.md. $3.81 house."
     },
     {
       "id": "stamp-verification-69",
       "title": "The 7 'not re-verified' docs verified at the code (#69) - and three of our own records were wrong about them",
       "status": "merged",
-      "note": "Each of the seven was checked against the running code. Four are fully built (wardrobe picker's costume-designer direction, the open-lane carry keys, the panel's absent-state rows, regenerate-in-place), one is partially built (the open-kind store), one is a delivered report whose priced raise was never executed (the edit box is still capped at 200 characters - card #26), and one - the skin-thumbnail bench - had RUN on Aug 13 and failed its pre-registered bar, despite two later records calling it 'never run'. Skin staying words is a standing verdict, not an unrun measurement. The sweep-2 work list's three wrong rows are corrected, and #23/#24 carry the corrections. Lesson filed for the Retro: a status recorded only mid-document is invisible to a header read; the banner discipline is the fix.",
-      "prNumber": null
+      "prNumber": null,
+      "note": "Each of the seven was checked against the running code. Four are fully built (wardrobe picker's costume-designer direction, the open-lane carry keys, the panel's absent-state rows, regenerate-in-place), one is partially built (the open-kind store), one is a delivered report whose priced raise was never executed (the edit box is still capped at 200 characters - card #26), and one - the skin-thumbnail bench - had RUN on Aug 13 and failed its pre-registered bar, despite two later records calling it 'never run'. Skin staying words is a standing verdict, not an unrun measurement. The sweep-2 work list's three wrong rows are corrected, and #23/#24 carry the corrections. Lesson filed for the Retro: a status recorded only mid-document is invisible to a header read; the banner discipline is the fix."
     },
     {
       "id": "supersession-stamping-69",
       "title": "The spec library stopped lying to its readers (#69) — all 171 status-silent docs now say what they are",
       "status": "merged",
-      "note": "Your Aug 25 cleanup order, part 2 executed: every design doc, court record and old review prompt in docs/specs that carried no status marker now opens with a one-line banner saying whether it is live, historical, a dated record, built, or designed-but-never-built. 78 old review prompts and 18 era docs marked historical; 43 courts and evidence packs marked dated records — including the freckle court, now stamped with the fact your own eye overturned it; 13 designs stamped built with the proof cited; 9 marked live and governing; 3 marked designed-not-built with their queue card; 7 honestly stamped 'not re-verified' as the next sweep's shortlist. Nothing deleted, nothing user-visible changed. The supersession map's four open items were also verified discharged at their artifacts and its record updated.",
-      "prNumber": null
+      "prNumber": null,
+      "note": "Your Aug 25 cleanup order, part 2 executed: every design doc, court record and old review prompt in docs/specs that carried no status marker now opens with a one-line banner saying whether it is live, historical, a dated record, built, or designed-but-never-built. 78 old review prompts and 18 era docs marked historical; 43 courts and evidence packs marked dated records — including the freckle court, now stamped with the fact your own eye overturned it; 13 designs stamped built with the proof cited; 9 marked live and governing; 3 marked designed-not-built with their queue card; 7 honestly stamped 'not re-verified' as the next sweep's shortlist. Nothing deleted, nothing user-visible changed. The supersession map's four open items were also verified discharged at their artifacts and its record updated."
     },
     {
       "id": "framing-midtorso-182",
@@ -1338,8 +1345,8 @@
       "id": "lighting-court-128",
       "title": "The lighting court (#128) — RUN: four lights on the locked block, plus the distilled clause, your thin brief × 8 each — sheets in your gallery",
       "status": "waiting-founder",
-      "note": "Your words: 'a few different options would be good to look at.' Done on 'goth woman mid 30s' at Low (no author call, so this is exactly what a Low roll sends): K = the block as it stands today (the §5e light, what roll 223 used); L1 = your reference look with a deeper open shadow under the jaw; L2 = your own candidate sentence word for word ('soft frontal beauty lighting, high fill, open shadows, grey seamless with a gentle centre falloff, minimal rim, photoreal fashion studio'); L3 = a clean, even light; R = the original idea from reply #8 — the brief plus a short three-sentence photographic clause and NO block. Everything else identical. What came back: the four block versions delivered 32 of 32 with no refusals and all read as one studio — the light differences are real but subtle, so there is a close-up sheet beside the strip. The no-block version refused 3 of 8 and is a different picture (darker grey, tighter, leather and tattoos invented). Every arm frames tighter than your reference (about 36% head share against your 28%) — that is #130's job, next. Spend: $2.60 house (estimated $2.65 on the issue first), no credits, no rows. Nothing changed in the product: your pick on the sheets is what moves the block's lighting line. Record: docs/specs/LIGHTING_COURT_2026-08-27.md.",
-      "prNumber": null
+      "prNumber": null,
+      "note": "Your words: 'a few different options would be good to look at.' Done on 'goth woman mid 30s' at Low (no author call, so this is exactly what a Low roll sends): K = the block as it stands today (the §5e light, what roll 223 used); L1 = your reference look with a deeper open shadow under the jaw; L2 = your own candidate sentence word for word ('soft frontal beauty lighting, high fill, open shadows, grey seamless with a gentle centre falloff, minimal rim, photoreal fashion studio'); L3 = a clean, even light; R = the original idea from reply #8 — the brief plus a short three-sentence photographic clause and NO block. Everything else identical. What came back: the four block versions delivered 32 of 32 with no refusals and all read as one studio — the light differences are real but subtle, so there is a close-up sheet beside the strip. The no-block version refused 3 of 8 and is a different picture (darker grey, tighter, leather and tattoos invented). Every arm frames tighter than your reference (about 36% head share against your 28%) — that is #130's job, next. Spend: $2.60 house (estimated $2.65 on the issue first), no credits, no rows. Nothing changed in the product: your pick on the sheets is what moves the block's lighting line. Record: docs/specs/LIGHTING_COURT_2026-08-27.md."
     },
     {
       "id": "settings-modal-142",
@@ -1436,8 +1443,8 @@
       "id": "prompt-author-court-125",
       "title": "THE PROMPT AUTHOR COURT (#125) — RUN ($7.12) and JUDGED by your eye: B is the studio",
       "status": "merged",
-      "note": "272 renders dispatched, 152 refused by the engine's checker (unpaid), 120 delivered; the fact-reader and the frame-pointer were proven on controls before a cent; framing calibrated on your 'this framing is perfect' frame (head 28% of frame height, top of head at 6.8%). Record: docs/specs/PROMPT_AUTHOR_COURT_2026-08-26.md. — Closed on your verdict (reply #8). Three cards filed from it: #128 (B+R realism court, under the spend threshold), #129 (refusal-loop patrol), #130 (preset framing calibrated to your 28% reference frame, then locked).",
-      "prNumber": null
+      "prNumber": null,
+      "note": "272 renders dispatched, 152 refused by the engine's checker (unpaid), 120 delivered; the fact-reader and the frame-pointer were proven on controls before a cent; framing calibrated on your 'this framing is perfect' frame (head 28% of frame height, top of head at 6.8%). Record: docs/specs/PROMPT_AUTHOR_COURT_2026-08-26.md. — Closed on your verdict (reply #8). Three cards filed from it: #128 (B+R realism court, under the spend threshold), #129 (refusal-loop patrol), #130 (preset framing calibrated to your 28% reference frame, then locked)."
     },
     {
       "id": "interpreter-deadline-121",
@@ -1620,8 +1627,8 @@
       "id": "gate-review-arm-broken-219",
       "title": "The gate's second-opinion reviewer is still down — and the span has now passed the one precedent we had",
       "detail": "Ninth refusal, measured at 1:50 this afternoon, one line before any work was planned. Same sentence back: your Fable 5 allowance is used up. Opus answered on the same machine and the same login throughout — it read your production database, ran the full 682-file test suite twice, and did every piece of tonight's work — so this is the Fable allowance specifically and not credentials, the network, or this machine. Honest span: 22:20 on the 28th to 03:50 on the 29th, five hours thirty minutes. Last time (#114) it healed in about five hours. One thing did go right: yesterday's fix worked. Last night the team made a red review tick say WHICH of three things it is, and tonight it fired for real on a change that was not its own — 'NO VERDICT: the Fable reviewer did not complete. This is an OUTAGE, not a rejection.' That is the branch yesterday's shift could not demonstrate on its own pull request, and it is now proven on a live one.",
-      "state": "open",
-      "severity": "warning"
+      "severity": "warning",
+      "state": "open"
     },
     {
       "id": "edition-93-never-served-221",
@@ -1634,29 +1641,29 @@
       "id": "rite-refused-index-html-195",
       "title": "The deploy check refused three nights running over a file that is out of date by design — FIXED",
       "detail": "Our deploy runs a check that our internal architecture map is up to date. Part of that check compared a generated web page (docs/architecture/index.html) against what the source would produce now — but that page is deliberately excluded from the project's saved files, so it only ever holds whatever the last person to run the generator locally produced. Merge somebody's work, pull it down, and the page is stale immediately and permanently. The check refused; regenerating cleared it while showing no change at all, which is what made it look like a ghost. Diagnosed at the artifacts by the previous shift, fixed here (#195): a freshness verdict is only a finding where there is a saved copy somebody could review. No customer effect at any point — the only cost was shift time, roughly half an hour a night for three nights.",
-      "state": "resolved",
-      "severity": "info"
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "quiet-shifts-deploy-159",
       "title": "Quiet shifts were deploying — FIXED: the rite now refuses a briefing whose only change is a quiet journal line",
       "detail": "Two quiet shifts this morning (09:45, 10:23) each ran a full production deploy for one journal line, after the standing orders had said a quiet shift ships nothing. The runner backs off 30 minutes after a quiet shift, and the deploy rite now refuses the quiet edition itself (PR #160) — so the order is a mechanical guard, not a sentence. No customer effect. (issue #159, closed)",
-      "state": "resolved",
-      "severity": "info"
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "rite-pushes-red-scripts-152",
       "title": "The deploy rite could push a script to main that the test gate rejects — FIXED: the rite now runs the script checks on the exact commit before it pushes",
       "detail": "Two patrol helper scripts rode to main with briefing e39 and neither ended the way the script guard requires, so the guard was red on main for a night and the next pull request inherited the failure. No customer effect. Fixed (PR #157, foreman-42): before pushing, the rite checks out the commit into a throwaway folder and runs every suite that checks our scripts there — eight at today's tree, found by reading the suites rather than by a list — and refuses the push on any red. Proven green on today's tree (6 s) and red on a deliberate bad commit. (issue #152, closed)",
-      "state": "resolved",
-      "severity": "info"
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "engine-refuses-lean-and-sternum",
       "title": "The engine's own content checker refuses short prompts most of the time, and one house word ('sternum') reliably",
       "detail": "'goth woman mid 30s' sent raw was refused 17 of 18 times; your full cyber-goth brief 63 of 64 in every form. A single added sentence with 'the crop just below the sternum' turned a prompt that passes 8/8 into 8/8 refused; the same sentence with 'collarbones' passes. The author's re-wording duty (your rule 16, #93) is not a corner case — it is the road for rich briefs. (issue #93) UPDATE (refusal patrol #1, 2026-08-27): the filter is a coin per picture on identical text — roll 222 refused 5 and delivered 3 from ONE prompt; the numeric framing sentence went 2/8 last night and 0/8 tonight. No second trigger word is attributable yet; a plain same-words retry is the cheapest rescue (#122, #93).",
-      "state": "open",
-      "severity": "warning"
+      "severity": "warning",
+      "state": "open"
     },
     {
       "id": "rich-brief-fallback-charge",
@@ -1709,6 +1716,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-29T16:55:00+10:00",
+      "shift": "foreman-95",
+      "text": "Your cyborg-eye answer came in overnight and it is built and driven. Thank you for it — the rule you wrote is better than the patch I would have written, because it draws the line by WHERE the thing sits rather than by what it is made of.\n\nWHAT CHANGED. The reader was being told two things that collided on a cyborg: never name an accessory, but do name a creature's features. The accessory rule was written about clothes and it was reaching a face. It now says WORN accessory, and your three lines sit above it as the rule that decides which is which.\n\nI RAN IT ON YOUR OWN CASTS FOLDER, thirteen pictures, same pictures as before, one thing changed. Your cyber-goth reference went from \"a sleek mechanical eye piece\" to \"integrated mechanical eye plating on one side of the face\". Your android with the cat ears came back with \"integrated cat-ear hardware\", which is your phrasing almost word for word.\n\nI THEN READ THAT ONE PICTURE THREE MORE TIMES, because this reader is a coin and one read proves nothing. Four reads after the ruling: the eye is kept every time and never flattened, \"sleek\" is gone every time, and twice it came back in your exact register — \"integrated mechanical eye hardware\", \"integrated mechanical eye plating\".\n\nWHAT IT DID NOT FIX, and I am not patching it without you: the word \"eye-piece\" survives in two of those four reads (\"fitted mechanical eye-piece integrated into the skull\"). Your counterexample is already inside the instruction, word for word, and the reader still reaches for that noun half the time. I could push harder on it, but that would be me writing past your ruling on the strength of four reads, and the taste is yours. My honest read: leave it. The eye is kept, which was the thing that mattered, and \"eye-piece\" is not a word the engine refuses.\n\nTWO OTHER THINGS FROM THE SAME RUN, said because the prompt did change and I would rather you hear them from me. A build word went from 3 in 9 to 5 in 9 — the two that gained are a predatory alien (\"muscular\") and your weathered old man (\"solid\"), both physical types your own build rule allows, and two changes is not a reading. And \"spiked\" still turns up on creature ANATOMY — spiked bone growths on the reptile — which is the second-meaning problem you already refused a ban list for. It sits with the refusal patrol, not here.\n\nThe reviewer is still down — eleven refusals, eight hours now, past every precedent. Three of your rulings have shipped with no second pair of eyes. Everything is driven and sabotage-tested, but that is not the same thing, and the top-up card is on your page whenever you want it."
+    },
     {
       "at": "2026-08-29T16:40:00+10:00",
       "shift": "foreman-94",
@@ -1903,11 +1915,6 @@
       "at": "2026-08-27T11:40:00+10:00",
       "shift": "foreman-45",
       "text": "Your morning finding became a guard: the deploy rite now refuses a quiet edition (#159, PR #160, merged). Before it pushes, it reads what is actually being pushed — if the only change is the briefing and the only change in the briefing is a \"nothing needed doing\" line, it refuses and tells the shift to write its note and stop; anything real beside it still deploys. Proven both ways at the real rite before merging (a throw-away quiet edition refused, the working branch not), and the two quiet deploys you paid for this morning are judged quiet by the same code in its test. Still no new word from you (12 replies, all acknowledged); the milestone still waits on your eye — your first Follow, the framing strip, the lighting sheets, the rebuilt block. $0 house, 0 credits, no renders."
-    },
-    {
-      "at": "2026-08-27T10:30:00+10:00",
-      "shift": "foreman-44",
-      "text": "Quiet shift — nothing needed doing. Still no new word from you (12 replies, all acknowledged) and nothing in N1 is left to build; the milestone waits on your eye, the same four things: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). Read at the artifacts, not assumed: last shift's claims hold (main matches production at b053645d), every urgent card's last comment is unchanged, no patrol is due until the 29th. No renders, no credits, $0 house."
     }
   ],
   "acknowledgedReplyIds": [
@@ -1937,6 +1944,7 @@
     24,
     25,
     26,
-    27
+    27,
+    28
   ]
 }
