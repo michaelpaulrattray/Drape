@@ -414,6 +414,18 @@ export async function readMakeupFromReference(
     };
   }
   if (subject.kind === "unanswered") {
+    /*
+      ⚠ THE THIRD `"try another one"`, AND IT IS ON THE RIGHT SIDE OF THE LINE
+      (swept foreman-111, 2026-08-30; see the throw branch above).
+
+      Marked rather than left, because the next sweep for that phrase will find
+      three sites and has to decide about this one too. A reply DID arrive here
+      and its answer to the class question was not one of the values we can
+      read — a reply that came back unreadable, which is exactly what
+      `unreadable` has always meant. A different picture plausibly gets a
+      readable answer, so *"try another one"* is honest advice. It is only the
+      branch where NOTHING came back that was blaming her for our outage.
+    */
     log.warn({ subject: parsed.subject }, "[makeupFromReference] the class question came back unanswered");
     return {
       ok: false,
