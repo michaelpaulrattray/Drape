@@ -1,6 +1,6 @@
 {
-  "edition": 96,
-  "updatedAt": "2026-08-29T14:35:00+10:00",
+  "edition": 97,
+  "updatedAt": "2026-08-29T15:25:00+10:00",
   "shift": "foreman-93",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -511,9 +511,9 @@
   "eyeItems": [
     {
       "id": "portrait-crop-198",
-      "title": "The Sign and Delete dialogs were cropping their portrait two different ways (#198)",
+      "title": "ANSWERED — you said top crop on both, and the Delete dialog now takes it (#198 closed)",
       "question": "A small one, and the only reason it needs your eye is that the obvious fix would have moved faces.\n\nWHAT WAS WRONG. Sign and Delete are the same dialog with different words. The instruction that sizes the portrait in that dialog had a typo-shaped mistake in it — it was written to point at the picture, and it pointed one level off, so for as long as it has existed it has applied to NOTHING. The Sign portrait was being sized by the browser's default and then simply cut off at the bottom by the frame around it. The Delete portrait, by an accident of where its grey-out lives, DID get the instruction. So the same face in the same dialog shell was being cropped two different ways depending on which button you pressed.\n\nIt has never looked broken, and that is exactly why it survived: our own renders are all the same shape, so cutting the bottom off and cropping properly happen to land in the same place.\n\nWHY IT NEEDED YOU. Making the instruction work as written centres the crop — which slides the face about 27 pixels. That is a change to two dialogs you have already accepted, so the card for this was filed rather than fixed, months ago, waiting for someone to put frames in front of you.\n\nWHAT I DID INSTEAD. Anchored the crop to the TOP, which is where the browser was already cutting. Then measured it rather than trusting my own eye: the Delete portrait is pixel-for-pixel identical, not one pixel of 57,620 changed. The Sign portrait is not quite byte-identical — the picture is scaled by a very slightly different route now — but there is no movement in it, and I proved that by ALSO building the version that does move and measuring both through the same instrument. That is the third panel.\n\n⚠ AND THE THIRD PANEL IS NOT HYPOTHETICAL, WHICH IS THE PART WORTH SEEING. Centred is exactly what your DELETE dialog does today. On a standard 1024x1536 render the Delete portrait shows source rows 128 to 1408 — it takes 128 pixels off the top and 128 off the bottom — while the Sign portrait shows rows 0 to 1280, dropping 256 off the bottom and nothing off the top. So panel three is not a mock-up of a bad idea; it is a photograph of the other half of your own product, and the gap between panel one and panel three is the bug.\n\nTHE QUESTION: the left and middle panels should look the same to you. Do they? And now that you can see both crops side by side — is TOP the one you want in both dialogs, or would you rather I brought Sign across to Delete's centred crop instead? Either is one line; I chose the one that changes nothing you have already approved.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-29T02:20:00+10:00",
       "issueNumber": 198,
       "cardId": null,
@@ -532,9 +532,9 @@
     },
     {
       "id": "concept-reader-gold-line-185-204",
-      "title": "Your reader notes are both done — the goth reads as a type, and creatures read at all (#185, #204)",
+      "title": "ANSWERED — your two cuts are recorded, and the hard ban stays off (#185)",
       "question": "Two things you sent an hour apart, both fixed and both worth your eye, because the test you set is whether these words would cast EIGHT different people of that type rather than reprint the one in the picture.\n\nFRAME 1 is the goth. What the reader used to say about it: \"A woman in her twenties, slight build, long straight platinum hair with blunt bangs, multiple facial piercings and forearm tattoos. Dark-fashion / gothic-alternative model type, styled with lace bodysuit, leather choker and spiked eye harness.\" What it says now: \"Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted platinum hair, facial piercings and fine-line facial markings, script tattoos on both arms. Athletic build, dark structured fashion in lace, leather and spiked metal accents.\" Your two men still read the way you approved them.\n\nFRAME 2 is a creature from your own reference folder. It used to be answered \"I couldn't find a person in that picture.\" It now reads: \"Reptilian humanoid being of adult presence, solid muscular build, dark pebbled scaled skin with bony ridged crests along the face. Bone-toned spinal ornamentation breaks the scales. Menacing creature-alien performance type.\" A picture with no BEING in it — an object, a place — is still refused, and I kept a control for that in the test run.\n\nTWO THINGS I OWE YOU STRAIGHT.\n\nOne. I did NOT add a code ban on the words you struck (bodysuit, choker, harness, slight), and that was a judgement call I could be wrong about. The reason is that your own PASSING examples use those same kinds of words — \"fitted dark crew-neck top\" is a named garment and \"athletic muscular build\" is build language — so a ban wide enough to catch the bad use also refuses your good ones. It is the \"shave\"/\"shape\" problem this studio has hit three times. So the rule lives in the reader's instruction, and the proof lives in running it on real pictures rather than in a test that can only check itself. If you would rather have the hard ban and accept that it will sometimes refuse a good description, say so and it is one change.\n\nTwo. Across fourteen reads, none used any word on your drop list and every build word came from the short list of families. About one read in three still slips in a single named item — \"a buckled choker\", \"a mechanical eye-piece\". That is the honest remaining gap, not something I am claiming is finished.\n\nTHE QUESTION: do these two read as TYPES you could cast eight different people from, or is there still inventory in them?",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-28T23:05:00+10:00",
       "issueNumber": 185,
       "cardId": null,
@@ -1027,6 +1027,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "delete-crop-top-198",
+      "title": "The Delete dialog crops its portrait the same way Sign does — your call (#198)",
+      "status": "merged",
+      "prNumber": 225,
+      "note": "You said it: \"left and middle should match. Top crop on both. Don't ship the right panel.\" Sign was already top; Delete was the centred one, left that way on purpose months ago because moving it was your eye to spend and not ours. It is top now, so the two dialogs finally crop the same face the same way — which is what the original bug was. It moves the delete portrait about 128 pixels' worth of source: it stops shaving the top of the head. Looked at in the running app before it shipped, both themes, by clicking through the real menu on a real cast — ten checks, none failing, frames kept. ⚠ And the driver caught itself lying twice on the way, which is worth a line: the first version photographed a SHEET's delete dialog instead of a cast's, and then produced \"light theme\" frames that were byte-identical to the dark ones and passed every check anyway. A picture taken is not a picture read. Both are fixed and the theme is now proven before anything is photographed."
+    },
     {
       "id": "listed-file-race-223",
       "title": "The thing that was falsely refusing the team's only push path is fixed (#223)",
@@ -1669,6 +1676,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T15:25:00+10:00",
+      "shift": "foreman-93",
+      "text": "Your two replies came in while I was working, so this is a second note for the same night.\n\nTHE CROP. You said top on both, and it is done — that one had an action in it, so it shipped rather than waiting. The Delete dialog was the odd one out; it now crops exactly like Sign, which stops the two dialogs showing the same face two different ways. I looked at it in the running app in both themes before it went, by clicking through the real menu on a real cast. Worth knowing: my own test rig tried to fool me twice — first it photographed the wrong dialog entirely, then it handed me \"light theme\" pictures that were identical to the dark ones and passed every check. Both caught and fixed before anything shipped. That is the second time tonight that testing my own work found something reading it did not.\n\nTHE READER NOTES. Two of your three points needed no code and are recorded: the creature note stays as it is, and the hard ban stays OFF — which is what the code had already decided out loud for your own reason, that \"fitted dark crew-neck\" is a named garment you approved. Your words are now the citation instead of our argument.\n\nThe third one I deliberately did NOT rush, and I want to say why rather than have it look like it was missed. You cut \"athletic build\" and \"spiked\" — but in the same breath you said \"proof is the output, not a word list\". So neither cut can be done by banning a word, which means it is a change to the RULE. And \"athletic\" is not a slip: it is on the reader's own approved build list, and both of your passing men use it. So you are telling me something sharper than \"drop a word\" — that naming a build at all was the mistake on that woman, because everything named gets locked onto all eight faces. That is a real change to how the reader works, there are two ways to read it that give you different products, and with the reviewer still down I would be guessing at your meaning and calling it your ruling. It is written up in full with a recommendation, ready to build.\n\nEverything else from earlier tonight stands: the false deploy refusal is fixed, and your Fable allowance is still out at five and a half hours."
+    },
+    {
       "at": "2026-08-29T14:35:00+10:00",
       "shift": "foreman-93",
       "text": "Another quiet night, nothing needing a decision from you, and one real repair.\n\nFirst the standing item: your Fable allowance is still out, so the code reviewer and the shifts' advisor are both still down — the fifth night. The number that moved: it is now five and a half hours out, against about five hours the last time it healed on its own. That was the sentence keeping this off your desk, and it has run out. The card at the top of your page has three options and a recommendation; the short version is that topping it up is one action and brings back both.\n\nWhat I fixed is the thing that has been quietly making the team's own machinery unreliable. When the team ships work, a deploy step runs a batch of self-checks first and refuses to push if any of them complain. Yesterday it refused on a completely clean tree — and running the identical code again passed. That is the worst kind of failure, because a shift that trusted it would have gone to bed having shipped you nothing, believing something was broken.\n\nThe cause is almost funny. One of those checks proves it is still working by planting a temporary file and confirming it notices it, then deleting it. Six other checks read the same folder at the same time — and kept tripping over that file vanishing between the moment they listed it and the moment they read it. The plant is a good idea and it stays; what changed is that all the readers now expect a file to be able to disappear underneath them, which is honest anyway — that folder has hundreds of temporary files coming and going.\n\nThe part I want you to see is how it was checked, because it is the argument for getting the reviewer back. Reading the code, my fix looked finished. So I built a harness that caused the fault deliberately — files appearing and vanishing while the checks ran — and it showed the bug still alive in a second place I had not thought to look. Then I aimed the same trick at the new safety net I had just written, and it turned out the net had a hole: it was checking that a file MENTIONED the new rule, which an import line does by itself, so removing the actual use of it slipped straight through. Both are fixed. Both were found by testing my own work rather than by a second reader — which is exactly the gap the reviewer normally fills.\n\nProof before it shipped: with the fix taken back out, three of the seven checks fail under the harness. With it in, seven of seven pass, six runs in a row, with the error gone completely. The whole test suite is green — 652 files, nothing failing. Tests only; no product code, no money, nothing a customer can reach.\n\nNothing else needed doing. No patrol was due, no rolls have been cast in two days so the refusal patrol has nothing new to read, and your two open eye items are still waiting — the edition 83 one for a thirteenth shift now."
@@ -1862,11 +1874,6 @@
       "at": "2026-08-27T09:55:00+10:00",
       "shift": "foreman-43",
       "text": "Quiet shift — nothing needed doing. Still no new word from you (12 replies, all acknowledged) and nothing in N1 is left to build; the milestone waits on your eye, same four things: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). I checked the queue rather than assuming: every urgent card waits on you or on N2, no patrol is due until the 29th, the gate is green and main matches production. No renders, no credits, $0 house."
-    },
-    {
-      "at": "2026-08-27T09:35:00+10:00",
-      "shift": "foreman-42",
-      "text": "Still no new word from you (12 replies, all acknowledged), and nothing in N1 is left to build — the milestone waits on your eye, same four things as this morning: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). The one thing in the queue that needed no eye was #152: the deploy rite could push a helper script to main that our own test gate then rejects — it happened once, and the next pull request got blamed. Built and merged (PR #157): before it pushes, the rite now checks out the exact commit into a throwaway folder and runs every script-checking suite there, refusing the push if any is red. Checked out separately on purpose — the shared working folder is full of untracked leftovers, two of which would have refused a push they were not in. Proven both ways: green on today's tree in six seconds, red on a deliberate bad commit that named the offending file. No customer effect, no renders, no credits, $0 house."
     }
   ],
   "acknowledgedReplyIds": [
@@ -1894,6 +1901,8 @@
     22,
     23,
     24,
-    25
+    25,
+    26,
+    27
   ]
 }
