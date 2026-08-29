@@ -1,6 +1,7 @@
 /**
- * THE PROMPT AUTHOR — the user's words go to the engine verbatim, the author
- * writes CONTENT and nothing else, and CODE appends the locked house block
+ * THE PROMPT AUTHOR — at LOW the user's words go to the engine verbatim, at
+ * MAX the author REWRITES them into one paragraph (#230), and either way CODE
+ * appends the locked house block
  * (founder ruling, `docs/specs/PROMPT_AUTHOR_RULING_2026-08-26.md` — his
  * verdict on the court (Crew reply #8) and then, watching the first live rolls,
  * his corrected spec in §5b and §5c; issues #131 and #139).
@@ -36,11 +37,46 @@
  *    direction, and *"MAX must not leave the studio. More taste, not more
  *    world."*
  *
+ * # ⚠ THE APPEND IS DEAD — MAX REWRITES NOW (#230, 2026-08-29)
+ *
+ * The founder watched a live MAX sheet and refused the shape itself
+ * (verbatim): *"This MAX sheet is still wrong … user seed / then a second
+ * director paragraph pasted under it … **Engine gets one brief, not a
+ * stack.** LOW: user seed unchanged + studio block. **MAX: author rewrites
+ * the seed into a single type + look paragraph. Facts stay. Taste goes up. No
+ * second essay underneath.** Keep the raw seed internally for the fidelity
+ * check. The record can show 'your words → authored brief.' The roll only
+ * gets authored brief + studio block."*
+ *
+ * So on MAX the author's paragraph REPLACES the seed on the wire, and the
+ * seed survives internally in two places and no others: the row (`briefSent`,
+ * which the sheet shows as *your words*) and the fidelity check below.
+ *
+ * ⚠ **THIS REVERSES A MEASURED COURT FINDING, ON HIS EYE (law 9), AND THE
+ * REVERSAL IS NOT FREE.** `PROMPT_AUTHOR_COURT_2026-08-26.md` finding 5: the
+ * free-reword arm CONTRADICTED a fact on 2 of 2 runs while append-only held
+ * 33/33, 19/19, 3/3. His own mitigation is what pays for it —
+ * `seedFidelity.ts` reads the raw seed, the author is re-asked once naming the
+ * fact it dropped, and a second failure falls back to the customer's own words
+ * plus the block. **What that floor does NOT catch is the very thing the court
+ * measured — an adjective moving ("subtle" → "crisp") — and that limit is
+ * declared in `seedFidelity.ts` rather than papered over.**
+ *
+ * His own four-way list of how the first rewrite failed, each answered here:
+ * still stacked (the compose below); a differ-by caption (the sheet's echo,
+ * `briefEcho.ts`); new inventory on a finished seed (the
+ * FINISHED-seed rule in `maxSystemPrompt`, with the growth recorded on the row
+ * as `addedWords` so the rate is a reading rather than an anecdote — a NOUN
+ * diff is not mechanical and is deliberately not faked); and skin words that
+ * fight the block's own realism negatives (`SKIN_CONTRADICTIONS`).
+ *
  * # What is STRUCTURAL rather than promised
  *
- *   - Verbatim first, by code: the brief is the first paragraph; the author is
- *     told to write only what follows (the court's free-reword arm lost a fact
- *     2/2; append-only held 33/33, 19/19, 3/3).
+ *   - ONE brief on the wire: the composed prompt is the authored paragraph (or,
+ *     at LOW and on the fallback, the customer's own) and then the block. There
+ *     is no shape in which two briefs are sent.
+ *   - One paragraph: a draft carrying a blank line is refused and re-asked —
+ *     "no second essay underneath" as a check, not a hope.
  *   - The house block is last, by code, byte-identical on every roll.
  *   - One prompt per sheet ("the answer is one prompt for a cast sheet not 8").
  *   - Never "sternum" (refused 8/8 at fal's checker), never a pipeline note,
@@ -51,19 +87,42 @@
  *
  * # Budget (rule 14)
  *
- * The author's allowance is ~400 words minus the brief (floor 40), re-asked
- * once to trim itself. The locked block is OUTSIDE that budget — his §5c word
- * is the full old block, and the B+R court (#128) is where the full block is
- * measured against the distilled clause, on his eye, with the refusal count
- * beside it. The total is recorded on the row (`houseBlockWords`) so the
- * census can read it rather than anyone assuming it.
+ * ⚠ **THE ALLOWANCE ARITHMETIC HAD TO INVERT WITH THE REWRITE (#230).** It
+ * was ~400 words MINUS the brief, because the author was writing an addition
+ * that sat beside the brief. The author's text now IS the brief, so the same
+ * subtraction would demand that a 380-word seed come back as 40 words — which
+ * is an instruction to cut the customer's facts, the one thing his ruling
+ * forbids. The allowance is the budget, and never less than the seed's own
+ * length plus headroom: a rewrite can always afford to say everything the
+ * customer said. The locked block is OUTSIDE it — his §5c word is the full
+ * old block, and the B+R court (#128) is where the full block is measured
+ * against the distilled clause, on his eye, with the refusal count beside it.
+ * The total is recorded on the row (`houseBlockWords`) so the census can read
+ * it rather than anyone assuming it.
  */
 import type { TextEngine } from "../providers/types";
 import { INTERPRET_TIMEOUT_MS } from "./interpreter";
 import { createModuleLogger } from "../logging/logger";
 import { containsHouseSentence, houseBlockForStyle } from "./houseBlock";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
-import { AGE_BANDS, type AgeBand, type AgePhase } from "./castingIntent";
+import { ageContradictionIn, droppedFactIn, seedFactsOf, type SeedFacts, type StatedAge } from "./seedFidelity";
+import type { Sex } from "../../shared/castingVocabularies";
+
+/*
+  The age machinery moved to `seedFidelity.ts` when the rewrite landed (#230) —
+  the presence check and the contradiction check read the same vocabulary, and
+  two copies of a decade table is working law 4 in the small. Re-exported so
+  every existing reader keeps its import.
+*/
+export {
+  ageClaimsIn,
+  ageContradictionIn,
+  droppedFactIn,
+  saysSex,
+  seedFactsOf,
+  type SeedFacts,
+  type StatedAge,
+} from "./seedFidelity";
 
 const log = createModuleLogger("promptAuthor");
 
@@ -115,11 +174,31 @@ export const NEVER_WRITTEN: ReadonlyArray<{ word: string; because: string }> = [
   { word: "line-up", because: "a lineup is a set in one frame" },
   { word: "contact sheet", because: "a contact sheet is a set in one frame" },
   { word: "grid", because: "a grid is a set in one frame" },
+  /*
+    #230 — MEASURED ON THE REWRITE'S OWN FIRST DRIVE, and it is defect 3 of
+    §5b wearing new clothes. Told to keep the customer's facts and add no new
+    nouns, the author started narrating its COMPLIANCE to the image engine:
+    *"the sense of manufactured texture the user specified"*. There is no
+    reading in which an image prompt addresses a user, so the ban is safe in
+    the way this repo requires — unlike `cropped` or `framing`, the phrase has
+    no second sense — and the customer's own words are exempt anyway.
+  */
+  { word: "the user", because: "the rewrite narrated its own compliance to the engine (#230, first drive)" },
 ];
 
-const APPEND_RULE =
-  "The user's request is placed VERBATIM before your text by the studio. Write ONLY the text that follows it — "
-  + "do not repeat, paraphrase or restate the request itself.";
+/**
+ * #230, his sentence: *"The roll only gets authored brief + studio block."*
+ * The old rule said the opposite — that the request was placed verbatim
+ * before the author's text and the author must not restate it — and it is
+ * gone with the append.
+ */
+const REPLACE_RULE =
+  "What you write REPLACES the request on the wire: the engine receives your paragraph and then the studio's "
+  + "own locked block, and nothing else. Its own text is not sent separately, so anything you leave out is lost.";
+
+/** "No second essay underneath" (#230) said to the author as well as checked in code. */
+const ONE_PARAGRAPH_RULE =
+  "Write ONE paragraph and nothing else — no second paragraph, no blank line, no heading, no list, no notes after it.";
 
 const FILTER_RULE =
   "Keep wording GPT Image 2 safe: no nudity, no sexual language, no gore, no named real person or named character, "
@@ -131,7 +210,52 @@ const NO_STUDIO_RULE =
 
 const NO_NOTES_RULE =
   "Do NOT write notes about the series or the process — nothing about how many portraits will be made, what is "
-  + "unstated or undecided, what changes between them, or which option to choose. Write only what the picture should contain.";
+  + "unstated or undecided, what changes between them, or which option to choose. "
+  /* #230, measured on the rewrite's first drive: the author narrated its own obedience into the image prompt. */
+  + "Never mention the request, the person who wrote it, or your own instructions, and never say what you did or did not add. "
+  + "Write only what the picture should contain.";
+
+/**
+ * #230 item 4, his own reading of a live sheet: *"youthful + translucency +
+ * exposed torso fights the house ban on doll/plastic skin and will refuse more
+ * often."* The locked block's own negatives ban plastic skin, a doll look, a
+ * wax figure and beauty-app smoothing; a paragraph asking for translucent,
+ * poreless, flawless skin asks the engine for the thing the same prompt
+ * forbids, and the provider's checker is what settles the argument.
+ *
+ * ⚠ **A word here is refused only where the author ADDED it** (see
+ * `skinContradictionIn`). *"Porcelain-pale is that goth brief's"* is the
+ * founder's own sentence in `houseBlock.ts`: a customer may write any of these
+ * about her own cast, and refusing her rewrite for a word she typed would drop
+ * her to a static prompt that sends the same word anyway.
+ */
+export const SKIN_CONTRADICTIONS: ReadonlyArray<{ phrase: string; because: string }> = [
+  { phrase: "translucent", because: "his own named specimen (#230 item 4); reads as the block's banned doll skin" },
+  { phrase: "translucency", because: "his own named specimen (#230 item 4)" },
+  { phrase: "poreless", because: "the block bans beauty-app smoothing by name" },
+  { phrase: "flawless skin", because: "the block bans beauty-app smoothing by name" },
+  { phrase: "airbrushed", because: "the block bans beauty-app smoothing by name" },
+  { phrase: "plastic skin", because: "the block's own negative, word for word" },
+  { phrase: "doll-like", because: "the block bans a doll look by name" },
+  { phrase: "waxy", because: "the block bans a wax figure by name" },
+  { phrase: "wax-like", because: "the block bans a wax figure by name" },
+  { phrase: "perfect symmetry", because: "the block's own negative, word for word" },
+];
+
+/*
+  ⚠ THE "UNLESS SHE WROTE IT" CLAUSE IS NOT POLITENESS — it is what stops this
+  rule contradicting FACTS STAY. Driven on his own roll-228 seed, which says
+  *"doll-like porcelain android presence"*: an unqualified ban tells the author
+  not to write the very look she asked for, and what it actually produces is
+  synonym-hunting ("waxy") until the draft is refused twice and she loses MAX
+  altogether. The guard has always exempted her own words (`skinContradictionIn`);
+  the instruction now says the same thing, because a rule the check does not
+  enforce and a check the rule does not describe are how both drift.
+*/
+const SKIN_RULE =
+  "Do NOT ADD skin or surface words that fight the studio's own realism rules — no translucent, poreless, flawless, "
+  + "airbrushed, waxy or doll-like skin, and no perfect symmetry — and do not reach for a synonym of one either. "
+  + "If the request uses such a word, keep it: it is a stated fact. Skin it does not describe has texture, pores and life.";
 
 /**
  * His MAX instruction, §5b verbatim where it speaks: seed + studio/camera +
@@ -146,24 +270,38 @@ export function maxSystemPrompt(allowance: number): string {
     "",
     "Imagination level: MAX",
     "",
-    "The user's request is the seed. FIRST decide what kind of seed it is — the decision is by CONTENT, never length: if the user already specified the world (the aesthetic, the skin language, the face language), the seed is FINISHED; otherwise it is thin.",
+    `The request below is the seed. Your job is to REWRITE it into a single casting paragraph — who is being cast, and what the look is. ${REPLACE_RULE}`,
     "",
-    "On a FINISHED seed, do not write a second look on top of the user's: your ENTIRE output is one short intensity clause — pressure only (more severe, more editorial, denser texture, stronger mood). Forbidden on a finished seed: new nouns — a new garment, a jewellery item, a named haircut, a younger age, a sharper named face, any material or item the user did not name.",
+    /* §5g (#171), his sentence, kept verbatim through the rewrite. */
+    "FACTS STAY. Every fact the request states survives, in your own sentence: sex, age, heritage, build, hair, wardrobe, features, materials, mood. Facts cannot move at any level or in any wording — \"mid 30s\" must never surface as \"young woman\", and an adjective the request chose (\"subtle\") must not become a different one (\"crisp\"). Never dropped, never softened, never contradicted, never re-described. Taste can be added. Facts cannot be rewritten.",
     "",
-    "On a thin seed, your text adds ART DIRECTION to it — aesthetic language only:",
+    "TASTE GOES UP. What you add is heat and aesthetic language — mood, materials, makeup language, hair language, lighting taste — never a second description arguing with what it already says.",
+    "",
+    "FIRST decide what kind of seed it is — the decision is by CONTENT, never length: if the request already fixes the world (the aesthetic, the skin language, the face language), the seed is FINISHED; otherwise it is thin.",
+    "",
+    "On a FINISHED seed: HEAT ONLY, inside the same paragraph. Return that look with its pressure raised — more severe, more editorial, denser texture, stronger mood — and add NO new parts. Forbidden on a finished seed: new nouns. No new garment, no jewellery item, no named haircut, no new material, no body part brought into frame that the request did not name, no younger age, no sharper named face. If you catch yourself naming a thing the request did not name, delete it.",
+    /*
+      #230 item 3, his own failing sheet quoted as the example — the seed and
+      the reply are the production rows this build was driven on (roll 230),
+      and the words he listed are the ones the draft actually invented. An
+      instruction that names the rule and shows the miss is the shape
+      `conceptDescribe.ts` already uses for his granularity ruling.
+    */
+    "Worked example of getting a finished seed WRONG. Seed: \"Female android type with a youthful face, sculpted pastel pink hair, pale synthetic skin with visible mechanical paneling beneath.\" A draft then invented colour-coded filaments, lit conduits, hairline seams, chrome, pearlescent white and jewellery-as-anatomy. That is a second wardrobe bible, not heat. Heat would be: the same paneling read harder — colder, more clinical, more couture — with nothing named that the request did not name.",
+    "",
+    "On a thin seed: keep the stated facts and add ART DIRECTION around them — aesthetic language only:",
     "- Invent mood, materials, makeup language, hair language and lighting taste that belong to the seed's world (an editorial line, a universe of styling).",
     "- Do NOT specify an exact face, exact hairstyle, exact eye colour, exact jewellery item, exact garment, exact body type or exact expression. Anything you state is locked on every portrait; anything you leave unsaid the engine decides differently each time — that is how the casting stays a cast and not one person. Never lock a repeating signature item.",
     "- Stay in the studio: more taste, not more world. No scene, no story, no environment, no props.",
-    /* §5g (#171), his words: facts cannot be rewritten — including as a paraphrase. */
-    "- Seed facts cannot move, at any level and in any wording: \"mid 30s\" must never surface as \"young woman\". Age, sex, and every other stated fact stay exactly as stated — never dropped, softened, contradicted or re-described. Taste can be added. Facts cannot be rewritten.",
     `- ${NO_STUDIO_RULE}`,
     `- ${NO_NOTES_RULE}`,
-    `- Word allowance for YOUR text: at most ${allowance} words. If you are over, cut your own additions first — never the user's facts.`,
+    `- ${SKIN_RULE}`,
+    `- Word allowance for YOUR paragraph: at most ${allowance} words. If you are over, cut your own additions first — never a stated fact.`,
     `- ${FILTER_RULE}`,
-    `- ${APPEND_RULE}`,
+    `- ${ONE_PARAGRAPH_RULE}`,
     "",
     /* The format line must not out-argue the finished-seed rule (measured: four full sentences on the specimen finished seed, #171 drive). */
-    "Output only your text, in clean prose, nothing else: two to four sentences of art direction on a thin seed — on a FINISHED seed, the single short intensity clause and nothing more.",
+    "Output only the paragraph, in clean prose, nothing else.",
   ].join("\n");
 }
 
@@ -173,110 +311,69 @@ export function countWords(text: string): number {
   return trimmed.length === 0 ? 0 : trimmed.split(/\s+/).length;
 }
 
-/** Rule 14: the brief is never cut; the author fits in what is left. */
+/**
+ * Rule 14, inverted by the rewrite (#230). The author's paragraph IS the brief
+ * now, so it must always be able to hold everything the customer said and then
+ * some: the allowance is the budget, or the seed's own length plus headroom
+ * when the seed is longer than the budget. Subtracting the brief — what this
+ * did while the author wrote an addition — would order a long brief cut to the
+ * floor, which is the one instruction his ruling forbids.
+ */
 export function authorAllowance(briefText: string): number {
-  return Math.max(AUTHOR_ALLOWANCE_FLOOR, WORD_BUDGET - countWords(briefText));
+  return Math.max(WORD_BUDGET, countWords(briefText) + AUTHOR_ALLOWANCE_FLOOR);
 }
 
-/** The first of `NEVER_WRITTEN` found in `text` as a whole word or phrase, or null. */
-export function neverWrittenIn(text: string): string | null {
+/**
+ * The first of `NEVER_WRITTEN` found in `text` as a whole word or phrase, or
+ * null.
+ *
+ * ⚠ **`seedText` EXEMPTS THE CUSTOMER'S OWN WORDS, and the rewrite is why**
+ * (#230). While the author wrote an addition, every one of these words was
+ * unambiguously the author's. The author's paragraph now carries the
+ * customer's facts, so a brief that itself says "grid" or "contact sheet"
+ * would make every rewrite refusable — and the fallback sends the customer's
+ * own sentence, containing that same word, to the same engine. Refusing it
+ * therefore buys nothing and costs the customer MAX. What the guard still
+ * catches is the whole of what it was built for: a word the AUTHOR introduced.
+ */
+export function neverWrittenIn(text: string, seedText?: string): string | null {
   /* Whitespace normalised first, so a phrase split by a newline or a double space cannot slip (review of #141, finding 4). */
   const lower = text.toLowerCase().replace(/\s+/g, " ");
+  const seed = seedText === undefined ? null : seedText.toLowerCase().replace(/\s+/g, " ");
   for (const { word } of NEVER_WRITTEN) {
     const re = new RegExp(`(^|[^a-z])${word.replace(/[-]/g, "\\-")}([^a-z]|$)`);
-    if (re.test(lower)) return word;
+    if (!re.test(lower)) continue;
+    if (seed !== null && re.test(seed)) continue;
+    return word;
   }
   return null;
 }
 
 /**
- * §5g (#171) — SEED FACTS CANNOT MOVE, and the check compares VALUES, never
- * substrings: the READER already recorded the brief's age (`intent.ageBand`),
- * and this asks whether the author's addition claims a DIFFERENT one. "mid
- * 30s" → "in her mid-thirties" passes; → "young" is a contradiction (his own
- * specimen). The seed itself is verbatim-first by code, so the only place an
- * age can drift is the author's own text — which is all this reads.
+ * The skin word the AUTHOR added that fights the locked block's own realism
+ * negatives (#230 item 4), or null. Seed-exempt for the same reason
+ * `neverWrittenIn` is, and here it is load-bearing rather than a nicety: the
+ * founder's own goth brief says "porcelain-pale".
  */
-export type StatedAge = { band: AgeBand; phase: AgePhase | null };
-
-/**
- * Decade words → the band they claim. Consulted ONLY inside an age-stating
- * shape ("in her …", "early/mid/late …", "…-something", "aged NN") — a bare
- * "70s" or "80s" is era styling ("70s disco"), not an age claim, which is the
- * anchored-matcher lesson the review of #173 taught `briefRewrite.ts`.
- * Decades past the vocabulary's top band claim "70s+".
- */
-const BAND_OF_WORD: Readonly<Record<string, AgeBand>> = {
-  teens: "teens", teenage: "teens", teenaged: "teens", teenager: "teens",
-  "20s": "20s", twenties: "20s", twenty: "20s",
-  "30s": "30s", thirties: "30s", thirty: "30s",
-  "40s": "40s", forties: "40s", forty: "40s",
-  "50s": "50s", fifties: "50s", fifty: "50s",
-  "60s": "60s", sixties: "60s", sixty: "60s",
-  "70s": "70s+", seventies: "70s+", seventy: "70s+",
-  "80s": "70s+", eighties: "70s+", eighty: "70s+",
-  "90s": "70s+", nineties: "70s+", ninety: "70s+",
-};
-
-function bandOfYears(years: number): AgeBand | null {
-  if (years < 13 || years > 120) return null;
-  if (years < 20) return "teens";
-  if (years < 30) return "20s";
-  if (years < 40) return "30s";
-  if (years < 50) return "40s";
-  if (years < 60) return "50s";
-  if (years < 70) return "60s";
-  return "70s+";
+export function skinContradictionIn(text: string, seedText: string): string | null {
+  const lower = text.toLowerCase().replace(/\s+/g, " ");
+  const seed = seedText.toLowerCase().replace(/\s+/g, " ");
+  for (const { phrase } of SKIN_CONTRADICTIONS) {
+    if (!lower.includes(phrase)) continue;
+    if (seed.includes(phrase)) continue;
+    return phrase;
+  }
+  return null;
 }
 
 /**
- * Age-stating shapes; each captures the one token `BAND_OF_WORD` or
- * `bandOfYears` reads. The non-possessive early/mid/late shape is marked
- * `eraAmbiguous`: "late 70s disco" / "early 90s minimalism" are genre names in
- * exactly the aesthetic language MAX is told to write (Fable review of #174,
- * finding 1), so in THAT shape alone a numeric decade above 60s is declined —
- * the possessive shape ("in her late 70s") still catches a real elder-age
- * claim, and the word forms ("late seventies") stay age claims everywhere.
+ * True when the draft is a stack rather than one paragraph — his *"no second
+ * essay underneath"* as a check (#230 item 1). A blank line is the whole
+ * signal: it is what a second block looks like, and it is what the shipped
+ * prompt he refused actually contained.
  */
-const AGE_CLAIM_SHAPES: ReadonlyArray<{ shape: RegExp; eraAmbiguous?: true }> = [
-  { shape: /\bin (?:her|his|their) (?:(?:early|mid|late)[ -])?([a-z0-9]+)\b/g },
-  { shape: /\b(?:early|mid|late)[ -]([a-z0-9]+)\b/g, eraAmbiguous: true },
-  { shape: /\b([a-z]+)-something\b/g },
-  { shape: /\baged? (\d{1,3})\b/g },
-  { shape: /\b(\d{1,3})[ -]years?[ -]old\b/g },
-  { shape: /\b(teenage[dr]?|teenager)\b/g },
-];
-
-/** Numeric decades that double as era genres; declined only in the `eraAmbiguous` shape. */
-const ERA_DECADES = new Set(["70s", "80s", "90s"]);
-
-/**
- * Words that age a seed DOWN without naming a decade — the measured failure
- * direction ("mid 30s" must never become "young woman"). They contradict a
- * stated band of 30s or older; on a teens/20s seed "young" states nothing the
- * seed did not. UP-drift is caught only in the decade-stating shapes above —
- * elder adjectives ("aged", "mature") double as material/styling words and a
- * guard that refuses "aged leather" would be the typo gate owning a real word.
- */
-const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
-
-/** The phrase in `content` that claims an age other than `stated`, or null. */
-export function ageContradictionIn(content: string, stated: StatedAge): string | null {
-  const lower = content.toLowerCase().replace(/\s+/g, " ");
-  for (const { shape, eraAmbiguous } of AGE_CLAIM_SHAPES) {
-    for (const match of Array.from(lower.matchAll(shape))) {
-      const token = match[1] ?? match[0];
-      if (eraAmbiguous && ERA_DECADES.has(token)) continue;
-      const claimed = /^\d+$/.test(token) ? bandOfYears(Number(token)) : BAND_OF_WORD[token] ?? null;
-      if (claimed !== null && claimed !== stated.band) return match[0];
-    }
-  }
-  if (AGE_BANDS.indexOf(stated.band) >= AGE_BANDS.indexOf("30s")) {
-    for (const word of YOUTH_WORDS) {
-      if (new RegExp(`\\b${word}\\b`).test(lower)) return word;
-    }
-  }
-  return null;
+export function isStacked(text: string): boolean {
+  return /\n[ \t]*\n/.test(text.trim());
 }
 
 /**
@@ -306,9 +403,16 @@ export function composeFinalPrompt(
   style: CastStyle = DEFAULT_CAST_STYLE,
   clause: string | null = null,
 ): string {
-  const parts = [briefText.trim()];
+  /*
+    ⚠ THE AUTHOR'S PARAGRAPH REPLACES THE SEED (#230) — it does not follow it.
+    This one line is the whole of his *"Engine gets one brief, not a stack"*,
+    and every other guard in this module exists to make it safe. `content` is
+    null at LOW and on the fallback, and there the customer's own words are the
+    brief, unchanged, which is his LOW spec word for word.
+  */
+  const authored = content !== null && content.trim().length > 0;
+  const parts = [authored ? content!.trim() : briefText.trim()];
   if (clause && clause.trim().length > 0) parts.push(clause.trim());
-  if (content && content.trim().length > 0) parts.push(content.trim());
   /* The block is the STYLE's (#142) — one member today, so these are `HOUSE_BLOCK`'s bytes. */
   parts.push(houseBlockForStyle(style));
   return parts.join("\n\n");
@@ -320,8 +424,20 @@ export function staticPrompt(briefText: string, style: CastStyle = DEFAULT_CAST_
 }
 
 export type AuthoredPrompt = {
-  /** The whole prompt the eight frames are painted from — brief, content, block. */
+  /** The whole prompt the eight frames are painted from — the one brief, then the block. */
   prompt: string;
+  /**
+   * WHICH SHAPE WROTE THIS PROMPT (#230), recorded because the meaning of
+   * `content` changed under it: `rewrite` — the content IS the brief the
+   * engine received and the customer's own words were not sent; `append` —
+   * the shape every row written before 2026-08-29 has, where the content sat
+   * BENEATH the customer's words. Rows carrying no `compose` at all are
+   * `append` rows, and the sheet reads them in the past tense rather than
+   * redrawing them as something they were not.
+   */
+  compose: "rewrite" | "append";
+  /** Words the customer's own seed held — the denominator for how far a rewrite grew. */
+  seedWords: number;
   imagination: Imagination;
   /** Which locked bundle closed the prompt (#142) — the settings modal's style, photoreal unless told otherwise. */
   style: CastStyle;
@@ -333,9 +449,15 @@ export type AuthoredPrompt = {
   mode: "seed" | "authored" | "static";
   /** True only for `authored` — kept so a census reading the older rows still means the same thing. */
   authored: boolean;
-  /** The author's content alone, null unless `authored`. */
+  /** The author's paragraph, null unless `authored`. On a `rewrite` row this IS the brief the engine got. */
   content: string | null;
-  /** Words the author added (0 unless `authored`). */
+  /**
+   * How many words the author's paragraph runs to beyond the seed's own
+   * length (0 unless `authored`, and negative when a rewrite came back
+   * shorter than the seed). It was the author's addition when the author
+   * wrote one; under the rewrite it is the growth, which is the number
+   * *"heat only, no new nouns"* will be read against.
+   */
   addedWords: number;
   /** Words the locked block adds, recorded so the total is read and never assumed. */
   houseBlockWords: number;
@@ -353,22 +475,57 @@ function cleanReply(raw: string): string {
   return raw.replace(/^```[a-z]*\n?|```$/g, "").replace(/\r\n/g, "\n").trim();
 }
 
-/** Why a draft is refused, or null when it may stand. */
-export function draftRefusal(addition: string, allowance: number, statedAge?: StatedAge | null): string | null {
+/**
+ * Why a draft is refused, or null when it may stand.
+ *
+ * `seed` is the raw seed his ruling ordered kept (#230) — it is what the
+ * fidelity check reads, and what exempts the customer's own words from the
+ * two word guards. `seed.facts` is what the seed stated in a shape code can
+ * read (`seedFidelity.ts`); empty facts check nothing, which is the correct
+ * behaviour for a brief that named neither a sex nor an age.
+ */
+export function draftRefusal(
+  addition: string,
+  allowance: number,
+  statedAge?: StatedAge | null,
+  seed?: { text: string; facts: SeedFacts },
+): string | null {
   if (addition.length === 0) return "Your previous reply was empty.";
-  if (countWords(addition) > allowance * (1 + OVERRUN_TOLERANCE)) {
-    return `Your previous draft was ${countWords(addition)} words; the allowance is ${allowance}. Rewrite it within ${allowance} words, cutting your own additions and never the user's facts.`;
+  if (isStacked(addition)) {
+    return "Your previous draft was more than one paragraph. The engine receives ONE brief — rewrite it as a single paragraph, with no blank line, no heading and no list.";
   }
-  const forbidden = neverWrittenIn(addition);
+  if (countWords(addition) > allowance * (1 + OVERRUN_TOLERANCE)) {
+    return `Your previous draft was ${countWords(addition)} words; the allowance is ${allowance}. Rewrite it within ${allowance} words, cutting your own additions and never a stated fact.`;
+  }
+  const forbidden = neverWrittenIn(addition, seed?.text);
   if (forbidden) return `Your previous draft used the word "${forbidden}", which this studio never sends. Rewrite it without that word — and without any note about the series or the process.`;
   const house = containsHouseSentence(addition);
-  if (house) return "Your previous draft contained camera/studio language. The studio appends its own locked block; write only the art direction for the person.";
+  if (house) return "Your previous draft contained camera/studio language. The studio appends its own locked block; write only the casting paragraph for the person.";
+  if (seed) {
+    /* #230 item 4: a skin word the AUTHOR added that this same prompt's locked negatives ban. */
+    const skin = skinContradictionIn(addition, seed.text);
+    if (skin) {
+      return `Your previous draft said "${skin}", which fights the studio's own locked realism rules and makes the engine refuse the picture. Rewrite it with real skin — texture, pores, life.`;
+    }
+  }
   /* §5g (#171): the reader's recorded value against the author's text — an aged-down seed reddens here. */
   if (statedAge) {
     const drifted = ageContradictionIn(addition, statedAge);
     if (drifted) {
       const statedValue = `${statedAge.phase ? `${statedAge.phase} ` : ""}${statedAge.band}`;
-      return `Your previous draft said "${drifted}", which moves the user's stated age (${statedValue}). Stated facts cannot be rewritten, even as a paraphrase — rewrite without changing or re-describing the age.`;
+      return `Your previous draft said "${drifted}", which moves the stated age (${statedValue}). Stated facts cannot be rewritten, even as a paraphrase — rewrite without changing or re-describing the age.`;
+    }
+  }
+  /*
+    #230 — LAST, and the order is the point: a draft that says the WRONG thing
+    gets the precise sentence about what it moved, and only a draft that says
+    NOTHING about a stated fact is told it dropped one. "A young woman" on a
+    mid-30s seed is both at once, and the useful message is the first.
+  */
+  if (seed) {
+    const dropped = droppedFactIn(addition, seed.facts);
+    if (dropped) {
+      return `Your previous draft dropped ${dropped}, which the request stated. Your paragraph replaces the request entirely, so every stated fact has to be inside it. Rewrite it keeping that fact.`;
     }
   }
   return null;
@@ -389,11 +546,13 @@ export async function authorPrompt(input: {
   style?: CastStyle;
   /**
    * THE FAMILY CLAUSE (#154) — a follow's anchor and the chip edits, already
-   * rendered to one paragraph by code. It sits between the brief and the
-   * author's content on every road (seed, authored, static), and the author
-   * SEES it beneath the brief as context so its art direction does not restate
-   * the identity — but it is code's paragraph, outside the author's word
-   * allowance the way the block is. Null on a plain authored roll.
+   * rendered to one paragraph by code. It sits between the brief and the block
+   * on every road (seed, authored, static), and the author SEES it beneath the
+   * brief as context so its paragraph does not restate the identity — but it
+   * is code's paragraph, outside the author's word allowance the way the block
+   * is. Null on a plain authored roll, and in practice null on every AUTHORED
+   * one: the compiler forces LOW whenever a clause is carried (#177 Row A), so
+   * the clause and a rewrite do not meet today.
    */
   clause?: string | null;
   /**
@@ -403,6 +562,12 @@ export async function authorPrompt(input: {
    * nothing that could drift.
    */
   statedAge?: StatedAge | null;
+  /**
+   * The READER's recorded sex (#230) — the second half of the fidelity check.
+   * It is demanded of the rewrite only where the SEED ITSELF says it in words
+   * (`seedFactsOf`), never where the reader inferred it from a role noun.
+   */
+  statedSex?: Sex | null;
   signal?: AbortSignal;
 }): Promise<AuthoredPrompt> {
   const imagination = input.imagination ?? DEFAULT_IMAGINATION;
@@ -411,10 +576,17 @@ export async function authorPrompt(input: {
   const clause = input.clause?.trim() || null;
   const allowance = authorAllowance(briefText);
   const houseBlockWords = countWords(houseBlockForStyle(style));
+  const seedWords = countWords(briefText);
+  /* THE RAW SEED, kept internally for the fidelity check — his own sentence (#230). */
+  const seed = {
+    text: briefText,
+    facts: seedFactsOf(briefText, { sex: input.statedSex ?? null, age: input.statedAge ?? null }),
+  };
 
   if (imagination === "low") {
     return {
-      prompt: staticPrompt(briefText, style, clause), imagination, style, mode: "seed", authored: false, content: null,
+      prompt: staticPrompt(briefText, style, clause), imagination, style, compose: "rewrite", seedWords,
+      mode: "seed", authored: false, content: null,
       addedWords: 0, houseBlockWords, allowance, model: null, latencyMs: null, attempts: 0,
     };
   }
@@ -443,7 +615,8 @@ ${clause}` : briefText,
   };
 
   const fallback = (latencyMs: number | null): AuthoredPrompt => ({
-    prompt: staticPrompt(briefText, style, clause), imagination, style, mode: "static", authored: false, content: null,
+    prompt: staticPrompt(briefText, style, clause), imagination, style, compose: "rewrite", seedWords,
+    mode: "static", authored: false, content: null,
     addedWords: 0, houseBlockWords, allowance, model: null, latencyMs, attempts,
   });
 
@@ -453,21 +626,23 @@ ${clause}` : briefText,
     let model = first.provenance.model;
     let latencyMs = first.latencyMs;
     spentMs = latencyMs;
-    const why = draftRefusal(content, allowance, input.statedAge);
+    const why = draftRefusal(content, allowance, input.statedAge, seed);
     if (why) {
       log.warn({ imagination, allowance, why }, "[promptAuthor] re-asking once");
       const second = await ask(`${system}\n\n${why}\n\nPREVIOUS DRAFT:\n${content}`, 0.3);
       content = cleanReply(second.text);
       model = second.provenance.model;
       latencyMs += second.latencyMs;
-      if (draftRefusal(content, allowance, input.statedAge)) {
-        log.warn({ imagination, allowance }, "[promptAuthor] second draft refused too — the static prompt stands");
+      const stillWhy = draftRefusal(content, allowance, input.statedAge, seed);
+      if (stillWhy) {
+        log.warn({ imagination, allowance, why: stillWhy }, "[promptAuthor] second draft refused too — the customer's own words stand");
         return fallback(latencyMs);
       }
     }
     return {
-      prompt: composeFinalPrompt(briefText, content, style, clause), imagination, style, mode: "authored", authored: true, content,
-      addedWords: countWords(content), houseBlockWords, allowance, model, latencyMs, attempts,
+      prompt: composeFinalPrompt(briefText, content, style, clause), imagination, style, compose: "rewrite", seedWords,
+      mode: "authored", authored: true, content,
+      addedWords: countWords(content) - seedWords, houseBlockWords, allowance, model, latencyMs, attempts,
     };
   } catch (error) {
     log.warn({ error: String(error), imagination, attempts }, "[promptAuthor] the author call failed — the static prompt stands");

@@ -21,5 +21,13 @@ describe("the imagination meter", () => {
       expect(line.toLowerCase()).not.toContain("sternum");
     }
     expect(IMAGINATION_LINES.max).toContain("never an exact face");
+    /*
+      #230 — the copy must describe the road the product takes. MAX rewrites
+      the seed into one brief; a line promising the author "adds" something
+      beside her words describes the shape the founder refused.
+    */
+    expect(IMAGINATION_LINES.max).toContain("rewritten");
+    expect(IMAGINATION_LINES.max.toLowerCase()).not.toContain("the author adds");
+    expect(IMAGINATION_LINES.low).toContain("nothing invented");
   });
 });

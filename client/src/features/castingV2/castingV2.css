@@ -1609,6 +1609,22 @@
   line-height: 1.5;
   opacity: 0.85;
 }
+/*
+  YOUR WORDS → AUTHORED BRIEF (#230). Two labelled records inside the one
+  disclosure, in the same quiet register as everything else in this panel —
+  a label, not a heading, because the panel already has its summary.
+*/
+.dpc-prompt__label {
+  margin: 12px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.dpc-prompt__text--seed {
+  opacity: 0.62;
+}
+
 .dpc-prompt__row {
   display: flex;
   align-items: baseline;

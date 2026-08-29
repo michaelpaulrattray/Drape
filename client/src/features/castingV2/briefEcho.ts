@@ -204,9 +204,21 @@ function heritagePhrase(heritage: string[], first: boolean): EchoSpan[] {
  */
 const TWO_LINE_BUDGET = 210;
 
+export type EchoOptions = {
+  terse?: boolean;
+  followLabel?: string | null;
+  /**
+   * THIS SHEET's road, not the next roll's (#230). True when the sheet in
+   * front of the reader was painted from ONE authored prompt, which is what
+   * makes the differ-by caption a false sentence rather than merely an
+   * unwanted one. Derived at the call site from the sheet's own register.
+   */
+  authorRoad?: boolean;
+};
+
 export function composeEcho(
   facts: BriefFacts,
-  options: { terse?: boolean; followLabel?: string | null } = {},
+  options: EchoOptions = {},
 ): EchoSpan[] {
   const full = composeSpans(facts, options);
   /*
@@ -223,7 +235,7 @@ export function composeEcho(
 
 function composeSpans(
   facts: BriefFacts,
-  options: { terse?: boolean; followLabel?: string | null },
+  options: EchoOptions & { terse?: boolean },
 ): EchoSpan[] {
   const { role, locks, open, variationAxis } = facts;
   const spans: EchoSpan[] = [...categoryPhrase(role), ...subjectPhrase(locks, Boolean(role))];
@@ -310,6 +322,25 @@ function composeSpans(
     // verb wrong is a sentence nobody believes was written on purpose.
     spans.push({ kind: "text", text: namedOpen.length === 1 ? " was left to the roll." : " were left to the roll." });
   }
+
+  /*
+    ⚠ NO DIFFER-BY CAPTION ON THE AUTHOR ROAD (#230, his verdict on a live MAX
+    sheet, verbatim): *"Delete the differ-by line on LOW and MAX. Don't say the
+    eight differ by look, disposition, or expression. Keep only: Everyone on
+    this sheet is cast as [type] — [sex] in their [age band]. The sheet already
+    proves whether the faces are different."*
+
+    It is not only his taste — on that road the sentence is FALSE. One authored
+    prompt paints all eight and the per-slice identities are marked unsent
+    (#176), so there is no axis anyone varied; the caption was describing the
+    house resolver's mechanism on a sheet that never ran it.
+
+    The HOUSE road keeps it, and that is deliberate rather than an oversight:
+    there the eight really are resolved one at a time along that axis, so the
+    sentence is true of them. His ruling is about LOW and MAX, which are the
+    author road's own two positions.
+  */
+  if (options.authorRoad) return spans;
 
   if (options.followLabel) {
     spans.push({

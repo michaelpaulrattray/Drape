@@ -1358,6 +1358,13 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         clause: carried?.clause ?? null,
         /* §5g (#171): the reader's recorded age is the fidelity check's value — "mid 30s" may never come back "young". */
         statedAge: intent.ageBand ? { band: intent.ageBand, phase: intent.agePhase } : null,
+        /*
+          #230 — the rewrite made the fidelity check load-bearing rather than a
+          backstop: the author's paragraph is now the ONLY place the customer's
+          facts exist on the wire. The reader's sex joins its age, and both are
+          demanded of the rewrite only where the SEED ITSELF says them.
+        */
+        statedSex: intent.sex,
       })
     : null;
   /*
@@ -1435,6 +1442,17 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
                 `authored` is kept beside it for the rows already written.
               */
               mode: authored.mode,
+              /*
+                WHICH SHAPE COMPOSED THIS PROMPT (#230). `rewrite` — the
+                author's paragraph REPLACED the customer's words on the wire;
+                `append`, which only rows written before 2026-08-29 carry (as
+                an ABSENT field, never this value), had the content sitting
+                beneath them. The sheet's readers branch on it so an old row
+                is still drawn as what it actually was.
+              */
+              compose: authored.compose,
+              /* The seed's own length, so `addedWords` below has a denominator on the row. */
+              seedWords: authored.seedWords,
               authored: authored.authored,
               content: authored.content,
               addedWords: authored.addedWords,

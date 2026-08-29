@@ -43,7 +43,9 @@ import {
   MAX_SHEET_CHECKLIST,
   maxSystemPrompt,
   NEVER_WRITTEN,
+  isStacked,
   neverWrittenIn,
+  skinContradictionIn,
   staticPrompt,
   WORD_BUDGET,
 } from "./promptAuthor";
@@ -246,8 +248,20 @@ describe("the author's instruction (§5b, at the text)", () => {
       "Taste can be added. Facts cannot be rewritten.",
       "at most 200 words",
       "avoid explicit sheer or revealing clothing language",
-      "placed VERBATIM before your text",
+      /* #230 — the append rule is gone, and its replacement says the opposite. */
+      "REPLACES the request on the wire",
+      /*
+        #230 — "the user" is BANNED now (it leaked into a live rewrite), so it
+        cannot be in the author's ear either: a word in the instruction is a
+        word that gets echoed, which is exactly what the arm below asserts for
+        every member of the list.
+      */
+      "anything you leave out is lost",
+      "Write ONE paragraph and nothing else",
+      "FACTS STAY",
+      "TASTE GOES UP",
     ]) expect(max, clause).toContain(clause);
+    expect(max).not.toContain("placed VERBATIM before your text");
     /* No studio sentence and no forbidden word is in the model's ear. */
     expect(containsHouseSentence(max)).toBeNull();
     expect(neverWrittenIn(max)).toBeNull();
@@ -271,17 +285,34 @@ describe("the author's instruction (§5b, at the text)", () => {
 });
 
 describe("the budget (rule 14) — the brief is never cut, the author fits in what is left, the block is outside it", () => {
-  it("allowance is the budget minus the brief's words, floored", () => {
+  /*
+    #230 INVERTED THIS, and the arm is written as the property rather than the
+    arithmetic: the author's paragraph IS the brief now, so an allowance that
+    subtracted the brief would order a long seed cut to the floor — an
+    instruction to drop the customer's facts, which his ruling forbids.
+  */
+  it("allowance is the budget, and never less than the seed plus headroom — a rewrite can always say everything the customer said", () => {
     expect(countWords(THIN)).toBe(4);
-    expect(authorAllowance(THIN)).toBe(WORD_BUDGET - 4);
+    expect(authorAllowance(THIN)).toBe(WORD_BUDGET);
     const huge = Array.from({ length: 600 }, () => "word").join(" ");
-    expect(authorAllowance(huge)).toBe(AUTHOR_ALLOWANCE_FLOOR);
+    expect(authorAllowance(huge)).toBe(600 + AUTHOR_ALLOWANCE_FLOOR);
+    expect(authorAllowance(huge)).toBeGreaterThan(countWords(huge));
   });
 
-  it("the composition is brief → content → block, verbatim first BY CODE, block last BY CODE", () => {
-    expect(composeFinalPrompt(`  ${RICH}  `, " added ")).toBe(`${RICH}\n\nadded\n\n${HOUSE_BLOCK}`);
+  /*
+    HIS SENTENCE AS A BYTE ASSERTION (#230): *"Engine gets one brief, not a
+    stack … The roll only gets authored brief + studio block."* The seed is in
+    the composed prompt only where the author wrote nothing — LOW and the
+    fallback — and there it is the customer's own words, unchanged, which is
+    his LOW spec.
+  */
+  it("the composition is ONE brief then the block: the author's paragraph REPLACES the seed, and the seed stands only when nobody authored one", () => {
+    expect(composeFinalPrompt(`  ${RICH}  `, " authored paragraph ")).toBe(`authored paragraph\n\n${HOUSE_BLOCK}`);
+    expect(composeFinalPrompt(RICH, "authored paragraph")).not.toContain(RICH);
     expect(composeFinalPrompt(THIN, null)).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
     expect(composeFinalPrompt(THIN, "   ")).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
+    /* Two briefs is the shape he refused; there is no argument list that produces one. */
+    expect(composeFinalPrompt(THIN, AUTHORED).split("\n\n")).toHaveLength(2);
   });
 
   it("a draft is refused for: empty, overrun, a forbidden word, a studio sentence", () => {
@@ -338,12 +369,12 @@ describe("§5g — seed facts cannot move, including paraphrase (the check compa
   });
 
   it("driven: an author draft that ages the seed down is refused and re-asked once, naming the stated value; the clean second draft stands", async () => {
-    const engine = engineAnswering(["A young woman in blackened velvet.", ADDITION]);
+    const engine = engineAnswering(["A young woman in blackened velvet.", AUTHORED]);
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max", statedAge: { band: "30s", phase: "mid" } });
     const calls = sent(engine, "author");
     expect(calls).toHaveLength(2);
-    expect(calls[1]?.system).toContain("moves the user's stated age (mid 30s)");
-    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
+    expect(calls[1]?.system).toContain("moves the stated age (mid 30s)");
+    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: AUTHORED });
   });
 
   it("the MAX instruction states both §5g rules: facts cannot be rewritten; a finished seed gets pressure only, never new nouns", () => {
@@ -351,9 +382,11 @@ describe("§5g — seed facts cannot move, including paraphrase (the check compa
     expect(prompt).toContain("Facts cannot be rewritten");
     expect(prompt).toContain('"mid 30s" must never surface as "young woman"');
     expect(prompt).toContain("the decision is by CONTENT, never length");
-    expect(prompt).toContain("your ENTIRE output is one short intensity clause");
+    /* #230 item 4, his words: "Heat only. No new nouns." — inside the same paragraph. */
+    expect(prompt).toContain("HEAT ONLY, inside the same paragraph");
     expect(prompt).toContain("more severe, more editorial, denser texture, stronger mood");
-    expect(prompt).toContain("a named haircut, a younger age, a sharper named face");
+    expect(prompt).toContain("Forbidden on a finished seed: new nouns");
+    expect(prompt).toContain("no named haircut");
   });
 
   it("no third button (§5g): the imagination input is exactly the two endpoints until N3's slider", () => {
@@ -420,13 +453,95 @@ const sent = (engine: Engine, about: string): TextRequest[] =>
     .map((call: unknown[]) => call[0] as TextRequest)
     .filter((request) => request.about === about);
 
-const ADDITION = "Pale cool-toned skin, intense black makeup language, sculpted black hair, and dark structured fashion built from patent, mesh, lace, high collars and metal hardware. Still, confrontational studio presence.";
+/*
+  THE AUTHOR'S PARAGRAPH, and under #230 it is a REWRITE rather than an
+  addition — it carries THIN's own facts (a goth WOMAN in her MID 30s) because
+  the customer's words are no longer sent beside it. A fixture that dropped
+  them would be refused by the fidelity check, which is the point of it.
+*/
+const AUTHORED = "A goth woman in her mid 30s: pale cool-toned skin, intense black makeup language, sculpted black hair, and dark structured fashion built from patent, mesh, lace, high collars and metal hardware. Still, confrontational studio presence.";
+
+/* ------------------------------------------- #230: ONE BRIEF, NOT A STACK */
+
+/**
+ * The founder watched a live MAX sheet and refused its SHAPE (#230, verbatim):
+ * *"Engine gets one brief, not a stack … MAX: author rewrites the seed into a
+ * single type + look paragraph. Facts stay. Taste goes up. No second essay
+ * underneath."* His success test is what these arms encode: one brief, facts
+ * intact, same universe, no differ-by caption.
+ */
+describe("#230 — the author REWRITES, and the four ways his first rewrite failed", () => {
+  it("a stacked draft is refused by SHAPE — a blank line is what a second essay looks like", () => {
+    expect(isStacked("One paragraph, however long, with no break in it.")).toBe(false);
+    expect(isStacked("goth woman mid 30s\n\nPale cool-toned skin, black lace.")).toBe(true);
+    /* A single newline is a line wrap, not a second block. */
+    expect(isStacked("goth woman mid 30s\nPale cool-toned skin.")).toBe(false);
+    expect(draftRefusal("a\n\nb", 100)).toContain("more than one paragraph");
+    expect(draftRefusal("a b c", 100)).toBeNull();
+  });
+
+  it("a skin word the AUTHOR added is refused; the SAME word in her own brief is not (his 'porcelain-pale' rule)", () => {
+    const seed = { text: "goth woman mid 30s", facts: { sex: null, age: null } };
+    expect(skinContradictionIn("Translucent, poreless skin under cold light.", seed.text)).toBe("translucent");
+    expect(draftRefusal("Translucent skin, black lace.", 100, null, seed)).toContain("real skin");
+    /*
+      THE NEGATIVE CONTROL, and it is the whole reason this guard is
+      seed-exempt: a customer may write any of these about her own cast, and
+      the fallback would send her word to the same engine anyway.
+    */
+    const hers = { text: "goth woman, translucent porcelain skin", facts: { sex: null, age: null } };
+    expect(skinContradictionIn("Translucent skin, black lace.", hers.text)).toBeNull();
+    expect(draftRefusal("Translucent skin, black lace.", 100, null, hers)).toBeNull();
+  });
+
+  it("a word this studio never sends is exempt where SHE wrote it — the rewrite carries her words now", () => {
+    /* The guard is unchanged where the author introduced the word. */
+    expect(neverWrittenIn("lips oxblood across the set")).toBe("across the set");
+    expect(neverWrittenIn("lips oxblood across the set", "a goth woman")).toBe("across the set");
+    /* Her own sentence said it, so refusing the rewrite would buy nothing: the fallback sends it too. */
+    expect(neverWrittenIn("a contact sheet aesthetic, hard flash", "shot like a contact sheet")).toBeNull();
+    expect(draftRefusal("a contact sheet aesthetic", 100, null, { text: "shot like a contact sheet", facts: { sex: null, age: null } })).toBeNull();
+  });
+
+  it("driven: a rewrite that drops her stated sex is re-asked once, and the clean second paragraph stands", async () => {
+    const engine = engineAnswering(["Pale cool-toned skin, mid 30s, black lace and patent hardware.", AUTHORED]);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max", statedSex: "female", statedAge: { band: "30s", phase: "mid" } });
+    const calls = sent(engine, "author");
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.system).toContain("dropped the subject's sex (female)");
+    /* The re-ask rides into the system prompt, so it cannot carry a banned word either. */
+    expect(neverWrittenIn(calls[1]?.system ?? "")).toBeNull();
+    expect(calls[1]?.system).toContain("replaces the request entirely");
+    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: AUTHORED });
+  });
+
+  it("HER WORDS ARE THE FLOOR: two drafts that drop a fact fall back to the seed + block, never to a paragraph missing it", async () => {
+    /* No "she", no "her", no "woman" — the fact she typed is simply gone. */
+    const dropsIt = "Pale cool-toned skin, mid 30s, black lace and patent hardware.";
+    const engine = engineAnswering([dropsIt, dropsIt]);
+    const out = await authorPrompt({ engine, briefText: THIN, imagination: "max", statedSex: "female", statedAge: { band: "30s", phase: "mid" } });
+    expect(sent(engine, "author")).toHaveLength(2);
+    /* The customer gets her own sentence — his LOW spec — rather than a rewrite that lost her. */
+    expect(out).toMatchObject({ mode: "static", authored: false, content: null, attempts: 2 });
+    expect(out.prompt).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
+    expect(out.prompt).toContain("woman");
+  });
+
+  it("the fact checks are anchored on HER sentence: a reader-inferred fact is never demanded of the rewrite", async () => {
+    /* "a ballerina" — the reader says female; she did not, so a paragraph that never says it is fine. */
+    const silent = "Weathered, grave, in worn practice wool and old rosin dust.";
+    const engine = engineAnswering([silent]);
+    const out = await authorPrompt({ engine, briefText: "a ballerina, weathered and grave", imagination: "max", statedSex: "female" });
+    expect(sent(engine, "author")).toHaveLength(1);
+    expect(out).toMatchObject({ mode: "authored", attempts: 1, content: silent });
+  });
+});
 
 /* ------------------------------------------------ the author, driven */
 
 describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", () => {
   it("LOW: no call at all — seed + block, mode 'seed', zero attempts", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const out = await authorPrompt({ engine, briefText: THIN });
     expect(sent(engine, "author")).toHaveLength(0);
     expect(out).toMatchObject({ mode: "seed", authored: false, content: null, imagination: "low", attempts: 0, addedWords: 0, model: null, latencyMs: null });
@@ -434,8 +549,8 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
     expect(out.houseBlockWords).toBe(countWords(HOUSE_BLOCK));
   });
 
-  it("MAX: one call at 0.8 with the MAX instruction, the interpreter's deadline, no transport retries, the brief as the user turn; content between brief and block", async () => {
-    const engine = engineAnswering([ADDITION]);
+  it("MAX: one call at 0.8 with the MAX instruction, the interpreter's deadline, no transport retries, the brief as the user turn; the paragraph REPLACES the brief (#230)", async () => {
+    const engine = engineAnswering([AUTHORED]);
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     const [request] = sent(engine, "author");
     expect(sent(engine, "author")).toHaveLength(1);
@@ -446,37 +561,42 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
     expect(request?.retries).toBe(0);
     expect(request?.maxOutputTokens).toBe(AUTHOR_MAX_OUTPUT_TOKENS);
     expect(request?.json).toBeUndefined();
-    expect(out).toMatchObject({ mode: "authored", authored: true, content: ADDITION, imagination: "max", attempts: 1, model: "stub-model", latencyMs: 7 });
-    expect(out.prompt).toBe(`${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}`);
-    expect(out.addedWords).toBe(countWords(ADDITION));
+    expect(out).toMatchObject({ mode: "authored", authored: true, content: AUTHORED, imagination: "max", attempts: 1, model: "stub-model", latencyMs: 7 });
+    expect(out.prompt).toBe(`${AUTHORED}\n\n${HOUSE_BLOCK}`);
+    /* #230 — `addedWords` is the GROWTH over the seed now, not the size of an addition. */
+    expect(out.addedWords).toBe(countWords(AUTHORED) - countWords(THIN));
+    expect(out.seedWords).toBe(countWords(THIN));
+    expect(out.compose).toBe("rewrite");
+    /* The seed is not on the wire at all — his "one brief, not a stack". */
+    expect(out.prompt).not.toContain(THIN);
     /* The block is byte-identical at the end, and the author wrote none of it. */
     expect(out.prompt.endsWith(HOUSE_BLOCK)).toBe(true);
     expect(containsHouseSentence(out.content ?? "")).toBeNull();
   });
 
   it("a reply that says 'sternum' is refused and re-asked ONCE, naming the word; the clean second draft is the content", async () => {
-    const engine = engineAnswering(["Chest-up, the crop just below the sternum.", ADDITION]);
+    const engine = engineAnswering(["Chest-up, the crop just below the sternum.", AUTHORED]);
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     const calls = sent(engine, "author");
     expect(calls).toHaveLength(2);
     expect(calls[1]?.system).toContain('used the word "sternum"');
     expect(calls[1]?.system).toContain("PREVIOUS DRAFT:");
-    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
+    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: AUTHORED });
     expect(neverWrittenIn(out.content ?? "")).toBeNull();
   });
 
   it("a draft that narrates the SET or writes a pipeline note is refused by name (dev roll 95 — 7 of 8 tiles were contact-sheet grids)", async () => {
-    const engine = engineAnswering(["Skin left open across the set, lips oxblood on every subject.", ADDITION]);
+    const engine = engineAnswering(["Skin left open across the set, lips oxblood on every subject.", AUTHORED]);
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     expect(sent(engine, "author")[1]?.system).toContain('used the word "across the set"');
     expect(out).toMatchObject({ mode: "authored", attempts: 2 });
   });
 
   it("a draft that writes studio language is refused — the studio appends its own block", async () => {
-    const engine = engineAnswering([`Pale skin. ${PHOTOREAL_PRESET[0]}`, ADDITION]);
+    const engine = engineAnswering([`Pale skin. ${PHOTOREAL_PRESET[0]}`, AUTHORED]);
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     expect(sent(engine, "author")[1]?.system).toContain("camera/studio language");
-    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
+    expect(out).toMatchObject({ mode: "authored", attempts: 2, content: AUTHORED });
   });
 
   it("an overrun draft is re-asked once to trim itself; refused twice, seed + block stands with mode 'static'", async () => {
@@ -499,9 +619,9 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
   });
 
   it("code fences are stripped and an empty reply is re-asked", async () => {
-    const engine = engineAnswering(["", "```\n" + ADDITION + "\n```"]);
+    const engine = engineAnswering(["", "```\n" + AUTHORED + "\n```"]);
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
-    expect(out).toMatchObject({ mode: "authored", content: ADDITION });
+    expect(out).toMatchObject({ mode: "authored", content: AUTHORED });
   });
 });
 
@@ -509,7 +629,7 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
 
 describe("the WIRE — off is today's product to the byte", () => {
   it("the author is never called, the row carries no register, the eight prompts are the house road", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const compiled = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -536,7 +656,7 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
       rollSeed: "wire-on",
       engine: engineAnswering([]),
     });
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -585,7 +705,7 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
   });
 
   it("a THIN brief at MAX — the four words first, the author's art direction, the block last; ONE author call", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: THIN,
       candidateCount: 8,
@@ -597,13 +717,13 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     expect(sent(engine, "author")).toHaveLength(1);
     expect(sent(engine, "author")[0]?.temperature).toBe(0.8);
     expect(sent(engine, "author")[0]?.user).toBe(THIN);
-    expect(on.candidates[0]?.prompt).toBe(`${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}`);
-    expect(on.compiledBrief.register).toMatchObject({ kind: "author", imagination: "max", mode: "authored", authored: true, content: ADDITION, prompt: `${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}` });
+    expect(on.candidates[0]?.prompt).toBe(`${AUTHORED}\n\n${HOUSE_BLOCK}`);
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", imagination: "max", mode: "authored", authored: true, content: AUTHORED, prompt: `${AUTHORED}\n\n${HOUSE_BLOCK}` });
   });
 
   it("the WIRE of §5g (#171): the compiler hands the READER's recorded age to the author — an aged-down draft is re-asked at the real call site", async () => {
     /* The stub INTENT records ageBand "30s"; the first draft says "young". */
-    const engine = engineAnswering(["A young woman in blackened velvet.", ADDITION]);
+    const engine = engineAnswering(["A young woman in blackened velvet.", AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: THIN,
       candidateCount: 8,
@@ -614,8 +734,8 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     });
     const calls = sent(engine, "author");
     expect(calls).toHaveLength(2);
-    expect(calls[1]?.system).toContain("moves the user's stated age");
-    expect(on.compiledBrief.register).toMatchObject({ mode: "authored", attempts: 2, content: ADDITION });
+    expect(calls[1]?.system).toContain("moves the stated age");
+    expect(on.compiledBrief.register).toMatchObject({ mode: "authored", attempts: 2, content: AUTHORED });
   });
 
   it("the author down at MAX, the sheet still rolls on seed + block and the row says nobody authored it", async () => {
@@ -665,7 +785,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       engine: engineAnswering([]),
       followIdentity: FOLLOW as never,
     });
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -709,7 +829,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
   });
 
   it("a FOLLOW at MAX makes NO author call — the courted formula is exhaustive (photo + brief + clause + block), recorded as seed", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: THIN,
       candidateCount: 8,
@@ -732,7 +852,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
   });
 
   it("no record can reach the clause — the #176 ghost class is structurally dead: dice AND stated anchor supplied, the clause is the fixed bytes", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -753,7 +873,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
   });
 
   it("adjustments handed in WITH an anchored follow do not move the prompt — the compiler's half of 'facts change at the roll, never at the follow' (the entrance drops them; this is the belt)", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -772,7 +892,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
   });
 
   it("a follow WITHOUT the photo attached carries no clause at all — 'the attached look' is never said to an engine with no attachment", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -788,7 +908,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
   });
 
   it("an OVERRIDE without a follow lands in the brief itself — no clause, no tie-breaker (#164, unchanged by Row A)", async () => {
-    const overridden = engineAnswering([ADDITION]);
+    const overridden = engineAnswering([AUTHORED]);
     const c = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -818,7 +938,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
   });
 
   it("an UNLOCK on a plain authored roll reaches nothing the engine reads — no clause, the prompt is the plain one, and every derived chip is read-only", async () => {
-    const plain = engineAnswering([ADDITION]);
+    const plain = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -838,7 +958,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
 
   it("an EMPTY override object is not an edit — no clause, the author road exactly as before", async () => {
     /* An EMPTY override object is not an edit — the author road is taken (MAX, so a call is visible). */
-    const empty = engineAnswering([ADDITION]);
+    const empty = engineAnswering([AUTHORED]);
     const c = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
@@ -854,7 +974,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
   });
 
   it("a brand name never reaches the engine (founder gate 21): the brief is scrubbed before the author sees it and before the prompt is composed", async () => {
-    const engine = engineAnswering([ADDITION]);
+    const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: "a young male Mediterranean model inspired by Versace editorial",
       candidateCount: 8,
@@ -897,7 +1017,7 @@ import { parseCastingIntent } from "./castingIntent";
  * the reply text; an object is serialised), and whose AUTHOR reply is fixed.
  * The suite reads which system prompt each interpreter call carried.
  */
-function engineReading(interpretReplies: (string | Record<string, unknown>)[], authorReply: string = ADDITION): Engine {
+function engineReading(interpretReplies: (string | Record<string, unknown>)[], authorReply: string = AUTHORED): Engine {
   let interpretCalls = 0;
   const complete = vi.fn(async (request: TextRequest) => {
     let text = authorReply;
@@ -1125,8 +1245,8 @@ describe("the cast style (#142) — the settings modal's selector, one member to
   it("the author records the style: absent means photoreal, given is kept — on LOW and on MAX alike", async () => {
     const low = await authorPrompt({ engine: engineAnswering([]), briefText: THIN, imagination: "low" });
     expect(low).toMatchObject({ style: "photoreal", mode: "seed", prompt: `${THIN}\n\n${HOUSE_BLOCK}` });
-    const max = await authorPrompt({ engine: engineAnswering([ADDITION]), briefText: THIN, imagination: "max", style: "photoreal" });
-    expect(max).toMatchObject({ style: "photoreal", mode: "authored", prompt: `${THIN}\n\n${ADDITION}\n\n${HOUSE_BLOCK}` });
+    const max = await authorPrompt({ engine: engineAnswering([AUTHORED]), briefText: THIN, imagination: "max", style: "photoreal" });
+    expect(max).toMatchObject({ style: "photoreal", mode: "authored", prompt: `${AUTHORED}\n\n${HOUSE_BLOCK}` });
   });
 
   it("the compile writes the style onto the register row, and the projection reads it back through a validator", async () => {
