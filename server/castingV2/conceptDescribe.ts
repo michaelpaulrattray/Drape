@@ -170,8 +170,50 @@
  *   nodules), which is a word with a second sense caught by a word list: this
  *   file's own recorded ban class, arriving for a fourth time inside the
  *   instrument built to measure the rule against it. Whether a machine part
- *   fitted to a cyborg's face is an accessory or a FEATURE of the being is a
- *   real question this reader has not been asked, and it is not answered here.
+ *   fitted to a cyborg's face is an accessory or a FEATURE of the being was
+ *   put to him as a question rather than patched — see the ruling below.
+ *
+ * # ⚠ HE ANSWERED IT, AND THE ANSWER IS A LINE RATHER THAN A LIST (Crew reply 28, 2026-08-29)
+ *
+ * The question above went to his page with a recommendation, and he ruled on
+ * it, verbatim:
+ *
+ * > *"Treat it as part of the being. The clothes cut does not strip a face. A
+ * > choker is an accessory. A horn is a feature. A machine part fitted into
+ * > the skull is a feature. Name it as a type, not a SKU: fitted mechanical
+ * > eye or integrated facial hardware. Not spiked eye harness. Not sleek
+ * > mechanical eye piece. spiked / metal accents stays on wardrobe only.
+ * > That's the law:
+ * >
+ * > On the body as anatomy → feature
+ * > On the outfit as styling → materials, not a named piece
+ * > Strapped on, but replacing a body part → feature
+ * >
+ * > This does not clear every grey case (strap-on visors, armour-as-skin).
+ * > Don't write a bigger ban list for those. Use this rule, then check the
+ * > output. Don't wait for more uploads to decide the cyborg eye — that class
+ * > is why the studio exists. Flattening it to 'exposed mechanical elements'
+ * > costs the character."*
+ *
+ * His three lines are the FEATURE-OR-WARDROBE rule in {@link RULES}, placed
+ * immediately ABOVE the wardrobe rule because the defect was the wardrobe rule
+ * reaching something it was never about: *"never name a single accessory"* is
+ * scoped to a WORN one now, and the machine part fitted into the body is
+ * carried by the rule above it.
+ *
+ * ⚠ **THE GREY CASES ARE DELIBERATELY UNANSWERED, ON HIS INSTRUCTION.** A
+ * strap-on visor and armour-as-skin have no line drawn for them here, and the
+ * next seat is not to draw one by adding words: *"Don't write a bigger ban
+ * list for those"* is the same sentence as *"Proof is the output, not a word
+ * list"* one ruling earlier, and this file already carries four instances of
+ * a word list catching the thing it was not about.
+ *
+ * ⚠ **AND THE MEASURED FIGURE ABOVE STAYS AS IT IS.** *"The hardware cut did
+ * not measurably land"* was a true reading of the arm that ran, and this
+ * ruling does not retroactively make it land — what it changes is the RULE
+ * that arm was measuring. One subject of the thirteen is affected either way,
+ * so the drive below is a check that the ruling reads correctly on the real
+ * pictures rather than a court that could move a number.
  * - Read rate **11/13 in both arms**, with different subjects refusing each
  *   time — the coin, not a regression. The negative control (a blank field)
  *   refused `no_being` in both arms.
@@ -694,7 +736,8 @@ const RULES = [
   "THIS STUDIO CASTS BEINGS, not people only: photoreal humans first, and equally sci-fi humans,",
   "creatures, monsters, aliens, robots and androids, drawn or photographed. A creature gets the same",
   "note a person does \u2014 its kind and type, its build family, its surface (skin, scales, fur, plating),",
-  "its features (ears, horns, ornamentation) where a person has hair, and its wardrobe as materials.",
+  "its features (ears, horns, ornamentation, fitted hardware) where a person has hair, and its",
+  "wardrobe as materials.",
   "There is NOBODY in the picture only when there is no being in it at all: an object, a vehicle, a",
   "landscape, a building, a product, food, a pattern, an empty room.",
   "",
@@ -724,10 +767,20 @@ const RULES = [
   "  A body SIZE or weight is never one of them: \"slight\", \"slender\", \"petite\", \"skinny\", \"curvy\",",
   "  \"trim\" and anything like them are out, alone or as a modifier. A size is the fastest way to reprint",
   "  one person, and eight different people do not share one.",
+  "- FEATURE OR WARDROBE \u2014 THE CLOTHES CUT DOES NOT STRIP A FACE. Draw the line by where the thing",
+  "  sits, not by what it is made of. On the body as ANATOMY it is a FEATURE and it stays: ears, horns,",
+  "  ornamentation, plating, and a machine part fitted into the body \u2014 a mechanical eye, a jaw plate,",
+  "  a skull implant. Strapped on, but REPLACING a body part, is still a feature. On the outfit as",
+  "  STYLING it is wardrobe, and the wardrobe rule below governs it. A choker is an accessory; a horn",
+  "  is a feature; a machine part fitted into the skull is a feature. Name a feature as a TYPE and",
+  "  never as a product: \"fitted mechanical eye\", \"integrated facial hardware\" \u2014 never \"spiked eye",
+  "  harness\", never \"sleek mechanical eye piece\". Do not flatten it away either: a being's own",
+  "  hardware is part of what a casting director would be booking.",
   "- WARDROBE: ONE phrase, never a list of pieces. If the clothing is plain, the phrase can name it",
   "  (\"fitted dark crew-neck\"). If it is styled or elaborate, the phrase is MATERIALS AND MOOD",
   "  (\"dark structured fashion in lace, leather and metal\"). Never itemise, and never name a single",
-  "  accessory \u2014 no harness, no mask, no collar, no glove, no piece of jewellery, whatever it is made of.",
+  "  WORN accessory \u2014 no harness, no mask, no collar, no glove, no piece of jewellery, whatever it is",
+  "  made of. A part of the being itself is not an accessory: that is the rule above.",
   "  Name the MATERIAL, never the hardware or what has been done to it \u2014 \"metal accents\" is enough,",
   "  and \"spiked\", \"studded\", \"buckled\", \"chained\" and their kind are out. That is not taste: a note",
   "  carrying them is REFUSED OUTRIGHT by the image engine, so it costs her the cast altogether.",
