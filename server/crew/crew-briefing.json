@@ -1,6 +1,6 @@
 {
-  "edition": 103,
-  "updatedAt": "2026-08-29T21:10:00+10:00",
+  "edition": 104,
+  "updatedAt": "2026-08-29T21:40:00+10:00",
   "shift": "foreman-99",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -1157,9 +1157,9 @@
     {
       "id": "max-one-brief-230",
       "title": "#230 — MAX rewrites the seed into one paragraph; the differ-by caption is deleted",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 235,
-      "note": "Author rewrites instead of appending, so the wire carries authored brief + studio block and nothing else. Your raw sentence is kept internally for a new fidelity check (a rewrite that drops your stated sex or age is re-asked, and twice-failed falls back to your own words). Finished seeds get heat and no new nouns, with your own failing example quoted to the author. Skin words that fight the studio's realism rules are refused unless you wrote them. Driven at the real transport on your rolls 228 and 230."
+      "note": "MERGED and LIVE on your account — d4a04042, deploy SUCCESS in 65s, health checked three times. The author rewrites instead of appending, so the wire carries authored brief + studio block and nothing else. Your raw sentence is kept internally for a new fidelity check (a rewrite that drops your stated sex or age is re-asked, and twice-failed hands you back your own words). Finished seeds get heat and no new nouns, with your own failing example quoted to the author. Skin words that fight the studio's realism rules are refused unless you wrote them. Driven at the real transport on your rolls 228 and 230."
     },
     {
       "id": "lobby-segment-proposal-228",
@@ -1838,6 +1838,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T21:40:00+10:00",
+      "shift": "foreman-99",
+      "text": "It is live. Merged and deployed at 21:25, health checked three times — so the MAX sheet you roll in the morning is the fixed one, no waiting on me. One thing that is worth your knowing because it cost me twenty minutes: merging a change on GitHub does not deploy it here — the service watches a different branch — so a shift that reads MERGED and stops has shipped nothing. Written into the handoff."
+    },
+    {
       "at": "2026-08-29T21:10:00+10:00",
       "shift": "foreman-99",
       "text": "Your MAX verdict was the shift. The stack is gone at the root rather than in the wording: the author's paragraph REPLACES your sentence on the wire, so there is no arrangement of the code that sends two briefs. The differ-by caption is deleted on both meter settings — and it was not only your taste, it was false: one authored prompt paints all eight, so nothing was ever varying along that axis. Three things I want on the record. Your ruling reverses a court finding of our own (the reworded arm lost a fact 2 of 2 runs), so the rewrite ships with a check that reads your raw sentence and re-asks the author when a stated fact goes missing — and if it goes missing twice you get your own words back rather than a paragraph without you in it. That check catches a DROPPED fact and cannot catch a MOVED adjective, which is exactly what the court measured, so your eye is still the gate. And driving it on your own two android seeds found two defects no test would have: the skin rule was telling the author not to write the doll-like look YOU asked for, and the rewrite started narrating its own obedience into the image prompt (\"the texture the user specified\"). Both fixed and both armed. No sheet was rendered tonight — that is yours."
@@ -2031,11 +2036,6 @@
       "at": "2026-08-27T21:20:00+10:00",
       "shift": "foreman-52",
       "text": "Quiet on your desk (no new replies; the family grids still wait on your eye), so this shift closed a hole in the team’s own review gate (#165). The automatic Fable review physically cannot run on any PR that edits the review workflow itself — the review tool refuses to run a modified copy of itself, a sensible safety rule on its side — but on our side that refusal was showing up as a GREEN check named “review”, as if the review had run and passed. So a change that weakened the reviewer could have merged looking reviewed. Now: any PR touching that file gets a RED review check naming the reason, a “review-skipped” label, and a comment saying plainly “no review ran — review this by hand”. The fix proved itself on its own PR (#175): it edits that very file, so its own review check went red and the label and comment appeared by themselves. Nothing about your product changed — this is the team keeping its own instruments honest."
-    },
-    {
-      "at": "2026-08-27T20:10:00+10:00",
-      "shift": "foreman-51",
-      "text": "Your author guardrails are in (#171, PR #174 merged). Three things now hold: a stated age can never be rewritten — the studio compares the VALUE the reader recorded against the author's text, so “mid 30s” may come back “in her mid-thirties” but never “young”, and a drifting draft is refused and re-asked naming your stated value; MAX now yields on a finished seed — measured at the real author on your own 73-word porcelain prompt: the first wording still wrote four sentences (126 then 96 words), the rebuilt instruction wrote ONE 29-word pressure clause with zero new nouns, while the thin seed kept its full look paragraph; and your MAX-sheet checklist is now a single owned constant the next MAX sheet's caption will quote verbatim. The review caught one real edge pre-merge: “late 70s disco” is a genre, “in her late 70s” is an age — the matchers know the difference now, with arms both ways. Nothing on this road spends anything new; drive cost ≈ $0.06 house. The family-clause grids from last shift are still waiting on your eye — if both pass, your first Follow on your own account is the court."
     }
   ],
   "acknowledgedReplyIds": [
