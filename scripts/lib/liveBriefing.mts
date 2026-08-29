@@ -39,11 +39,31 @@
  */
 import type { DeploymentRow } from "./deployWatch.mts";
 
-/** The two fields a reply read needs, plus the titles it decorates with. */
+/** One thing a reply can be addressed to — a needs-you card or an eye item. */
+export type BriefingHostRow = { id: string; title: string; state?: string };
+
+/**
+ * The two fields a reply read needs, plus the cards it decorates with.
+ *
+ * ⚠ **`needsYou` ALONE WAS HALF THE NAMESPACE, AND THE HALF HIS VERDICTS
+ * MOSTLY LAND ON WAS THE MISSING ONE** (measured 2026-08-29, shift 96).
+ * `crewBriefingSchema` states outright that *"needsYou[].id and eyeItems[].id
+ * share one reply namespace"* and refuses a collision across both — so the
+ * source of truth has always said the namespace is the union, and this type
+ * mirrored one arm of it (working law 4). The cost was not cosmetic: of the 17
+ * distinct card ids the reply reader labelled *"(not in the current
+ * briefing)"*, **17 were in the current briefing** and 0 were genuinely gone,
+ * so 20 of his 28 replies printed a sentence telling the shift the card it
+ * answered no longer existed. Two eye items he answered on 2026-08-28 (#23,
+ * #24, #25) therefore sat `open` on his page for three editions until he said
+ * so himself. `eyeItems` is carried here for that reason, and `state` with it
+ * — `replyHosts.mts` is what reads them.
+ */
 export type BriefingFacts = {
   edition: number;
   acknowledgedReplyIds: number[];
-  needsYou: Array<{ id: string; title: string }>;
+  needsYou: BriefingHostRow[];
+  eyeItems: BriefingHostRow[];
 };
 
 export type BriefingChoice = {
@@ -74,6 +94,7 @@ const parseFacts = (json: string): BriefingFacts | null => {
     edition: record.edition,
     acknowledgedReplyIds: Array.isArray(record.acknowledgedReplyIds) ? record.acknowledgedReplyIds : [],
     needsYou: Array.isArray(record.needsYou) ? record.needsYou : [],
+    eyeItems: Array.isArray(record.eyeItems) ? record.eyeItems : [],
   };
 };
 
