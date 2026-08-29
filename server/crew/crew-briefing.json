@@ -1,7 +1,7 @@
 {
-  "edition": 102,
-  "updatedAt": "2026-08-29T19:05:00+10:00",
-  "shift": "foreman-98",
+  "edition": 103,
+  "updatedAt": "2026-08-29T21:10:00+10:00",
+  "shift": "foreman-99",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "max-one-brief-230",
+      "title": "MAX sends ONE brief now — roll a sheet and tell me if it is fixed (#230)",
+      "productImpact": "You said the MAX sheet was still wrong: your words, then a second director paragraph pasted underneath, and a footer claiming the eight differ by disposition. Both are gone. At MAX the author now REWRITES your sentence into one casting paragraph and THAT is what the engine gets — your seed is not sent alongside it any more, so there is no stack to see. LOW is untouched: your words exactly as you typed them, plus the studio block. The differ-by caption is deleted on both settings; the sheet says who is being cast and stops.",
+      "workedExample": "Your own roll 230, the android. You typed: \"Female android type with a youthful face, sculpted pastel pink hair, pale synthetic skin with visible mechanical paneling beneath...\". What the engine used to receive was that, then a 130-word essay under it that invented colour-coded filaments, lit conduits, hairline seams, chrome and pearlescent white. What it receives now is a single paragraph that keeps your android, your pastel pink hair and your paneling and pushes them harder — \"read the paneling harder here, its seams crisper and more clinically precise, its surfaces cooler and more couture in finish\" — with nothing named that you did not name. Driven on your two real android seeds and the goth one: three of three came back as one paragraph with every fact you stated still in it.",
+      "options": [
+        {
+          "key": "roll",
+          "label": "Roll one MAX sheet on your account and judge it",
+          "consequence": "This is your own success test — one brief, facts intact, same universe, eight different faces, no differ-by caption. It is live on your account the moment the change merges. If you still see two blocks, it is not fixed and I want to know before anything else moves."
+        },
+        {
+          "key": "lane",
+          "label": "I would rather you got straight back to the lobby lane",
+          "consequence": "Then #230 stays shipped-but-unjudged and the lobby waits on your segment pick as before. I would not recommend it: you said this blocks the lobby lane, and a MAX sheet takes you two minutes."
+        }
+      ],
+      "recommendation": "Roll one MAX sheet. I have proven the SHAPE — one brief, facts kept — at the text transport on your own seeds, but I have not rendered a sheet, so nothing I did tells you how the faces look. That part is only your eye.",
+      "state": "open",
+      "filedAt": "2026-08-29T21:10:00+10:00",
+      "issueNumber": 230
+    },
     {
       "id": "lobby-segments-228",
       "title": "The lobby redesign, broken into six pieces — tell me which one you want first (#228)",
@@ -1133,6 +1155,13 @@
   ],
   "pipeline": [
     {
+      "id": "max-one-brief-230",
+      "title": "#230 — MAX rewrites the seed into one paragraph; the differ-by caption is deleted",
+      "status": "in-review",
+      "prNumber": 235,
+      "note": "Author rewrites instead of appending, so the wire carries authored brief + studio block and nothing else. Your raw sentence is kept internally for a new fidelity check (a rewrite that drops your stated sex or age is re-asked, and twice-failed falls back to your own words). Finished seeds get heat and no new nouns, with your own failing example quoted to the author. Skin words that fight the studio's realism rules are refused unless you wrote them. Driven at the real transport on your rolls 228 and 230."
+    },
+    {
       "id": "lobby-segment-proposal-228",
       "title": "Side lane — the lobby redesign: segment proposal, waiting on your pick",
       "status": "waiting-founder",
@@ -1809,6 +1838,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T21:10:00+10:00",
+      "shift": "foreman-99",
+      "text": "Your MAX verdict was the shift. The stack is gone at the root rather than in the wording: the author's paragraph REPLACES your sentence on the wire, so there is no arrangement of the code that sends two briefs. The differ-by caption is deleted on both meter settings — and it was not only your taste, it was false: one authored prompt paints all eight, so nothing was ever varying along that axis. Three things I want on the record. Your ruling reverses a court finding of our own (the reworded arm lost a fact 2 of 2 runs), so the rewrite ships with a check that reads your raw sentence and re-asks the author when a stated fact goes missing — and if it goes missing twice you get your own words back rather than a paragraph without you in it. That check catches a DROPPED fact and cannot catch a MOVED adjective, which is exactly what the court measured, so your eye is still the gate. And driving it on your own two android seeds found two defects no test would have: the skin rule was telling the author not to write the doll-like look YOU asked for, and the rewrite started narrating its own obedience into the image prompt (\"the texture the user specified\"). Both fixed and both armed. No sheet was rendered tonight — that is yours."
+    },
+    {
       "at": "2026-08-29T19:05:00+10:00",
       "shift": "foreman-98",
       "text": "No reply from you yet on which lobby segment goes first, so nothing was built — that is the rule you set and it held. What I did instead was take the before photographs: Home, Canvas, Library and the rail, in both light and dark, driven in the running app rather than drawn. They are in your gallery above. Every segment has to ship with a before-and-after pack, and this is the before half for all six of them at once, so no later shift spends an hour re-photographing a page it is about to replace. Two things came out of doing it that are worth a line. The broken picture you will see on the Canvas shot is test rubbish, not a fault: that file was saved years ago without saying it was an image, so the browser refuses to paint it — I checked all 24 places the product saves pictures and every one of them says so properly. And my own instrument was wrong twice before it was right: it photographed the dark theme while claiming to photograph the light one, and it recorded that mismatch and passed anyway. It fails on it now. Your Claude usage limit is still out — fourteen refusals, about ten hours. No code review has been possible on our own changes for that whole time, which is why tonight was deliberately a night with no code in it."
@@ -2002,11 +2036,6 @@
       "at": "2026-08-27T20:10:00+10:00",
       "shift": "foreman-51",
       "text": "Your author guardrails are in (#171, PR #174 merged). Three things now hold: a stated age can never be rewritten — the studio compares the VALUE the reader recorded against the author's text, so “mid 30s” may come back “in her mid-thirties” but never “young”, and a drifting draft is refused and re-asked naming your stated value; MAX now yields on a finished seed — measured at the real author on your own 73-word porcelain prompt: the first wording still wrote four sentences (126 then 96 words), the rebuilt instruction wrote ONE 29-word pressure clause with zero new nouns, while the thin seed kept its full look paragraph; and your MAX-sheet checklist is now a single owned constant the next MAX sheet's caption will quote verbatim. The review caught one real edge pre-merge: “late 70s disco” is a genre, “in her late 70s” is an age — the matchers know the difference now, with arms both ways. Nothing on this road spends anything new; drive cost ≈ $0.06 house. The family-clause grids from last shift are still waiting on your eye — if both pass, your first Follow on your own account is the court."
-    },
-    {
-      "at": "2026-08-27T18:40:00+10:00",
-      "shift": "foreman-50",
-      "text": "All three of your answers are executed. K keeps the light — nothing moved, #128 closed, and L2+'s 2-of-8 refusal count went to the refusal patrol as a lead. The block chapter is closed on your reply #16. And the role-family re-strip you were waiting on is in the gallery: the Follow clause is rebuilt to your photographer sentence (PR #172, merged — 'close relative' and the expression-only sheet line are dead, with guards so neither can come back), and chip edits now rewrite the brief in place with no tie-breaker sentence (PR #173, with the shown-prompt fix: your locked block never prints on the sheet — competitors see your words and the author's, never the framework). Driven on dev on your own specimen brief before any of it goes near your account: my eye passes both grids; yours is the gate, and your first Follow on your own account is the court. Also closed: #167 (the rite already refuses an unparseable briefing — proven live on e58/e59)."
     }
   ],
   "acknowledgedReplyIds": [
