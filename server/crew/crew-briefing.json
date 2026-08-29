@@ -1,7 +1,7 @@
 {
-  "edition": 93,
-  "updatedAt": "2026-08-29T10:05:00+10:00",
-  "shift": "foreman-90",
+  "edition": 94,
+  "updatedAt": "2026-08-29T11:55:00+10:00",
+  "shift": "foreman-91",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1028,6 +1028,13 @@
   ],
   "pipeline": [
     {
+      "id": "reply-reader-wrong-world-221",
+      "title": "The tool the night shifts read your replies with was reading our computer's copy, not your page (#221)",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Small and tooling-only, which is all that may ship while the reviewer is down. Every shift starts and ends by reading your replies with one script. It was taking two things out of our own working copy of the briefing rather than the one actually on your page: the edition number it prints, and - the part that could have cost something - which of your replies count as already seen. Last night made the difference visible: it said edition 93 while your page said 92. The risk was never the label. It was that a reply marked seen in an edition that never deployed would be skipped by the next shift, while your page still said Not read yet - and a failed deploy is exactly the setup for that. It has never happened. It now reads the briefing at the version actually running, and when it cannot reach it, it says so on screen instead of quietly using ours. Thirteen tests, driven on last night's exact shape, and deliberately broken two ways to prove they can fail."
+    },
+    {
       "id": "script-guard-readings-216",
       "title": "A safety check was turning away good work, and the local test run kept going red for nobody's fault",
       "status": "merged",
@@ -1556,10 +1563,17 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "The gate's second-opinion reviewer is down - your Fable usage limit, and it is the same fault as the resolved one further down this list",
-      "detail": "Still down tonight, and still the same cause. I asked the advisor twice more from this machine - about 09:57 and again at 10:03 - and both times it came back with the same sentence: your Fable 5 allowance is used up. That is five refusals across two shifts now, plus the three failed reviews last night. Opus is answering on the same machine and the same login the whole time, so the account and the token are fine; it is one model on it that is out. The honest length of the outage so far is one hour forty-three minutes, measured from the first failed review at 8:20 this morning - which is well inside the roughly five hours the same fault took to clear itself on the 26th. So tonight's readings are not evidence that this one is different, and I have said so rather than letting a growing number look like a worsening problem. It is above in the list of things that need you, with three ways out and a recommendation, and that recommendation has not changed. Two smaller corrections from last night still stand, because the team has had these backwards. A RED reviewer mark has never meant \"the reviewer objects\" - it only ever means the reviewer failed to run. The one to watch is the opposite: a GREEN tick means it RAN, and it can still be carrying findings inside its written comment. Green is not \"nothing found\". Nothing on the product, your credits or the customer-facing studio is affected, and the other three gate checks all still run.",
+      "title": "The gate's second-opinion reviewer is still down - your Fable usage limit, and it is now about three hours",
+      "detail": "Unchanged tonight and still the same cause. I asked the advisor once from this machine at 11:14 this morning and got the same sentence back: your Fable 5 allowance is used up. That is seven refusals across three shifts now - though most of that number is us asking more often, not the fault getting worse. Opus is answering on the same machine and the same login throughout: it ran four Railway reads, a production database read and this whole night's work, so the account and the token are fine and one model on them is out. The honest length so far is two hours fifty-four minutes, measured from the first failed review at 8:20 yesterday evening, which is still inside the roughly five hours the same fault took to clear itself on the 26th. So this is not yet evidence of anything different, and the card at the top of your page - with the three options and the recommendation - has not changed. Nothing a customer can see is affected. The team's rule while it is down: only tooling and tests may ship, and anything touching money or the product waits.",
       "state": "open",
       "severity": "warning"
+    },
+    {
+      "id": "edition-93-never-served-221",
+      "title": "Last night's briefing was written and never reached your page - and the fact you are reading this is the proof it is fixed",
+      "detail": "Edition 93 was finished and pushed at 10:07 yesterday morning and you never saw it. Railway built the new version perfectly - the build log is clean and the finished image was uploaded at 00:13 - and then the container that was meant to run it never started. It produced not one line of output for twenty-nine minutes and was stopped. The deploy ceremony watched for thirty minutes, refused to report a deploy it had not seen finish, and exited with an error, which is exactly what it is for. It was not our change: the only difference between that version and the one that was running is eleven lines of the briefing file itself. Your studio was never affected - production stayed healthy on the previous build the whole time, no credits, no renders, nothing a customer could touch. The one cost was that a night's journal sat where you could not read it, and the single thing needing your answer was already on the page you could see. Tonight's push carries both editions' news. If this ever happens twice in a row it stops being a stall and becomes an infrastructure problem worth raising.",
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "rite-refused-index-html-195",
@@ -1640,6 +1654,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-29T11:55:00+10:00",
+      "shift": "foreman-91",
+      "text": "Two things to know and neither needs you tonight. First: last night's briefing never reached you. It was written, checked and pushed on time, and then Railway built it and never started the container - so your page sat on the edition before it. That is written up above; the short version is that it was not our change, your studio was never affected, and you are reading this because tonight's push worked. Second: your Fable allowance is still out, so the code reviewer and the shifts' advisor are both still down. Nearly three hours now, against about five the last time it healed itself, so there is still nothing new to decide - the card at the top of your page is the same one, with the same three options.\n\nWith no product code safe to ship while the reviewer is down, I fixed something the failed deploy exposed. Every night shift starts and finishes by reading your replies with one small script. That script was reading the briefing from our own computer rather than from your page - and it was deciding which of your replies had already been seen from the same wrong copy. Last night made the gap visible for the first time: it printed edition 93 while your page said 92, and two shifts had already written that number down as fact.\n\nThe label was the harmless half. The half worth fixing is this: a reply is 'seen' when the team's next deploy proves it was read. If a shift marked one of your replies read and then the deploy failed - exactly what happened last night - the next shift would have looked at our copy, decided you had been answered, and moved on, while your page still said Not read yet. Your words are the steering wheel here, so a road where one of them could quietly go unanswered is worth closing before it is ever used. It never was: I checked both versions and they mark the same twenty-five replies. The script now reads the briefing from the version actually running on your page, and where it cannot get there it says so on screen instead of silently using ours.\n\nNo credits, no renders, no house money. Nothing on production touched but the briefing you are reading."
+    },
     {
       "at": "2026-08-29T10:05:00+10:00",
       "shift": "foreman-90",
@@ -1834,11 +1853,6 @@
       "at": "2026-08-27T08:30:00+10:00",
       "shift": "foreman-40",
       "text": "Two replies in. #11 — the family clause (#154) — built as you answered it and merged (PR #156, 56c7386c): on your account a Follow or a chip edit is now written by the author, with a 'continue this family' paragraph from the face you followed; chips on a plain authored sheet are a read-only record with one line saying why. Driven on dev through the real entrance (4 rolls — three landed 8/8, one was killed by my own dev-server restart mid-cast and settled by the recovery sweep, the known deploy-collision class; ~$3.20 house, 0 credits); five frames on the new eye item. #12 — the minimal settings modal passes on your word ('that's good'); 'imagination should be a slider' is recorded on #142 for the full N3 modal. the service redeploys with this edition. Your first Follow on your own account is the court."
-    },
-    {
-      "at": "2026-08-27T07:40:00+10:00",
-      "shift": "foreman-39",
-      "text": "Your reply #10 landed and was acted on: Retry is ON for your account (CASTING_RETRY_SCOPE=users:1, read back), and content-filter tiles got the same plain Retry · 20 credits (PR #155, merged 4c6b1a42; rendered on a real refused tile, both themes — frame 4 on the retry eye item). the service redeployed on the variable change and again with this edition. #122 carries the record. Still waiting on your word: the family-clause card (#154) and the five older eye items. $0 house, 0 credits."
     }
   ],
   "acknowledgedReplyIds": [

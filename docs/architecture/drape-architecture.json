@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e6ee0395a1e34bdc"
+    "sourceFingerprint": "1386a734a94b8ad9"
   },
   "domains": [
     {
@@ -12158,6 +12158,10 @@
     {
       "id": "test:server/lib/publicError.test.ts",
       "path": "server/lib/publicError.test.ts"
+    },
+    {
+      "id": "test:server/liveBriefing.test.ts",
+      "path": "server/liveBriefing.test.ts"
     },
     {
       "id": "test:server/lobby.test.ts",

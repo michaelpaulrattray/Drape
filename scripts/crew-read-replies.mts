@@ -45,11 +45,22 @@
  * cannot hide a reply: an unacknowledged id prints on every run until a
  * deployed edition names it, however the list was edited.
  *
+ * ⚠ **AND "A DEPLOYED EDITION" IS NOT WHAT THE CODE READ UNTIL 2026-08-29 — it
+ * read the WORKING TREE, which is a superset and hides in exactly the
+ * direction the waterline did** (#221 §4). An edition committed but never
+ * deployed acknowledges replies his page still shows as unread. See
+ * `lib/liveBriefing.mts`: the list now comes from the briefing AT THE NEWEST
+ * SUCCESS DEPLOYMENT'S COMMIT, and every road that cannot get there falls back
+ * to the tree ON THE SCREEN rather than substituting it in silence.
+ *
  *   --all   print the whole thread, acknowledged or not
  */
+import { execFileSync, execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { openDatabase, resolveDatabaseUrl, utc } from "./lib/dbConnection.mts";
+import { listedRows } from "./lib/deployWatch.mts";
+import { chooseBriefing, describeSource } from "./lib/liveBriefing.mts";
 
 const showAll = process.argv.includes("--all");
 
@@ -64,26 +75,72 @@ if (!url) {
 }
 
 /**
- * The deployed briefing, read from the working tree.
+ * THE DEPLOYED BRIEFING — read at the live commit, NOT from the working tree.
  *
  * Two things come out of it and neither is essential: the acknowledgement
  * waterline, and the card titles. If it cannot be read the script still prints
  * every reply — it says so and shows the whole thread, which is the failure
  * direction that loses nothing.
+ *
+ * ⚠ **AND IT WAS READ FROM THE TREE UNTIL 2026-08-29, WHICH IS A DIFFERENT
+ * WORLD** (#221 §4). The night deployment `465bb66c` built an image and never
+ * started a container, this line printed `edition 93` at a production serving
+ * 92 — and the acknowledgement set, whose whole contract is *a reply is seen
+ * when the team's own next deploy proves it was read*, was taken from an
+ * edition no deploy had proven. `lib/liveBriefing.mts` holds the decision and
+ * the reasoning; every fallback road it can take says so on the screen.
  */
-type Briefing = {
-  edition: number;
-  acknowledgedReplyIds: number[];
-  needsYou: Array<{ id: string; title: string }>;
-};
+const treeJson = (() => {
+  try {
+    return readFileSync("server/crew/crew-briefing.json", "utf8");
+  } catch (cause) {
+    console.error(`[warn] could not read server/crew/crew-briefing.json (${(cause as Error).message}).`);
+    return null;
+  }
+})();
 
-let briefing: Briefing | null = null;
-try {
-  briefing = JSON.parse(readFileSync("server/crew/crew-briefing.json", "utf8")) as Briefing;
-} catch (cause) {
-  console.error(`[warn] could not read server/crew/crew-briefing.json (${(cause as Error).message}).`);
-  console.error("[warn] showing the WHOLE thread and no card titles — nothing is hidden by this.");
-}
+/* Railway's own listing, scoped by `--service` explicitly — this script runs
+   UNDER `railway run --service MySQL`, which injects a service context that an
+   unscoped listing honours (#148, the rite's ten-minute silence). Never fatal:
+   a CLI that is slow, absent or unauthenticated drops to the tree with a line
+   saying so, because a shift-start reader that dies costs more than the defect
+   it repairs. */
+const deploymentRows = (() => {
+  try {
+    /* A SHELL is not a style choice on Windows — `railway.cmd` is a batch file
+       and `execFileSync` without one cannot resolve it from PATH (the rite's
+       own `run` carries the same note). Driven both ways: without it this read
+       fell to the tree every night, honestly and uselessly. One string rather
+       than an args array because node's DEP0190 warns on the pair, and a
+       shift-start tool should print its answer and no noise. */
+    const service = process.env.RAILWAY_SERVICE ?? "Drape";
+    /* Nothing but a plain service name ever reaches the shell string. The
+       value is an operator's own environment rather than a request, so this is
+       belt and braces — but a name that is not a name is a typo or a hostile
+       env, and both are better answered by falling back to the tree with a
+       line on the screen than by running whatever it says. */
+    if (!/^[A-Za-z0-9._-]{1,64}$/.test(service)) return [];
+    return listedRows(execSync(
+      `railway.cmd deployment list --service ${service} --json --limit 5`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 60_000 },
+    ));
+  } catch {
+    return [];
+  }
+})();
+
+const choice = chooseBriefing(deploymentRows, treeJson, (sha) => {
+  try {
+    return execFileSync("git", ["show", `${sha}:server/crew/crew-briefing.json`], {
+      encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 30_000,
+    });
+  } catch {
+    return null;
+  }
+});
+
+const briefing = choice.facts;
+if (!briefing) console.error("[warn] no briefing could be parsed on any road — showing the WHOLE thread and no card titles.");
 
 const acknowledged = briefing?.acknowledgedReplyIds ?? [];
 const titles = new Map((briefing?.needsYou ?? []).map((card) => [card.id, card.title]));
@@ -116,6 +173,10 @@ try {
     showAll || acknowledged.length === 0 ? [] : [acknowledged],
   );
 
+  /* PROVENANCE FIRST, then the counts. The edition number on its own was read
+     as a fact about production for two shifts running (#221 §4); it now
+     arrives with the world it was read from attached to it. */
+  console.log(describeSource(choice));
   console.log(
     `briefing edition ${briefing?.edition ?? "?"} · ${acknowledged.length} acknowledged · `
     + `${total[0].n} replies in total`,
