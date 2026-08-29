@@ -19,6 +19,7 @@ export function AppShell({
   account,
   topbarRight,
   width = "browse",
+  gutter = "default",
   children,
 }: {
   breadcrumb?: string;
@@ -33,14 +34,29 @@ export function AppShell({
    * restyle them). New surfaces should not use `bare`.
    */
   width?: "browse" | "working" | "bare";
+  /**
+   * The gutter below the content column. `default` is the shell's 80px of
+   * scroll room; `tight` is 44px.
+   *
+   * It is a separate prop rather than a fourth width because **the width
+   * vocabulary is closed at three numbers** (foundation README §7, *"No fourth
+   * number"*) and a bottom gutter is not a width. The casting page is the one
+   * surface that names its own — the founder's own values for it, verbatim on
+   * #240: *"max-width: 1240px; margin: 0 auto; padding: 34px 32px 44px"*. The
+   * other two numbers in that sentence are already what `working` gives, which
+   * is why only this one needed anywhere to live.
+   */
+  gutter?: "default" | "tight";
   children: ReactNode;
 }) {
-  const contentClass =
-    width === "bare"
-      ? "dp-content dp-content--bare"
-      : width === "working"
-        ? "dp-content dp-content--working"
-        : "dp-content";
+  const contentClass = [
+    "dp-content",
+    width === "bare" ? "dp-content--bare" : width === "working" ? "dp-content--working" : "",
+    /* `bare` has no padding at all, so a gutter on it would be a contradiction. */
+    gutter === "tight" && width !== "bare" ? "dp-content--tight" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className="dp-root">

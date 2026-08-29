@@ -232,14 +232,37 @@
   overflow: hidden;
 }
 
+/*
+  THE TICK ROW SPANS THE COLUMN (#240, his amendment with a reference frame at
+  `docs/specs/references/hero/progress-ticks-reference.png`, verbatim: *"the
+  bottom progress chips should expand the length of the hero section at the
+  moment they are tiny it should look like this"*).
+
+  Each tick is `flex: 1`, so the row divides the column into equal parts
+  whatever the deck's length or the window's width — the geometry the frame
+  shows, with no arithmetic and no breakpoint. It replaced fixed 22px stubs
+  huddled at the left edge.
+
+  `min-width: 0` is load-bearing: a flex item's default `min-width: auto`
+  refuses to shrink below its content, and the current tick has a child. Without
+  it the row overflows the column at 700px rather than dividing it.
+*/
 .dpc-deck__ticks {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
+/*
+  The current one is HEAVIER as well as darker (§4's colours are unchanged:
+  current --ink, past --lineStrong, future --border). Centring the row is what
+  keeps the two heights on one optical line instead of on a shared top edge.
+*/
 .dpc-deck__tick {
-  width: 22px;
-  height: 3px;
+  flex: 1;
+  min-width: 0;
+  height: 1px;
   border-radius: 2px;
   background: var(--border);
   overflow: hidden;
@@ -247,6 +270,10 @@
 
 .dpc-deck__tick--past {
   background: var(--lineStrong);
+}
+
+.dpc-deck__tick--now {
+  height: 3px;
 }
 
 .dpc-deck__tickfill {

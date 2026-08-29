@@ -386,7 +386,7 @@ export default function CastingV2() {
 
   if (config.isLoading) {
     return (
-      <AppShell breadcrumb="Casting" current="casting" width="browse">
+      <AppShell breadcrumb="Casting" current="casting" width="working" gutter="tight">
         <span className="dp-metadata">Loading…</span>
       </AppShell>
     );
@@ -399,7 +399,7 @@ export default function CastingV2() {
   */
   if (!config.data?.enabled) {
     return (
-      <AppShell breadcrumb="Casting" current="casting" width="browse">
+      <AppShell breadcrumb="Casting" current="casting" width="working" gutter="tight">
         <div className="dp-stack" style={{ gap: 9, maxWidth: 520 }}>
           <span className="dp-eyebrow">Casting</span>
           <h1 className="dp-headline">Not open on this account yet.</h1>
@@ -575,7 +575,7 @@ export default function CastingV2() {
   const shownCasts = scope === "Unsigned" ? [] : casts;
 
   return (
-    <AppShell breadcrumb="Casting" current="casting" width="browse">
+    <AppShell breadcrumb="Casting" current="casting" width="working" gutter="tight">
       <div className="dp-stack" style={{ gap: 12 }}>
         {/* ---- hero card: copy left, the pair right, one seam between ---- */}
         <div className="dpc-hero">
@@ -756,14 +756,27 @@ export default function CastingV2() {
             field asks the customer to imagine the result; this shows it, and
             teaches what a good brief looks like by displaying real ones.
 
-            The roster is the source, not a second list of the same people
-            (working law 4). An account that has signed nobody gets a curated
-            deck that says so in its own eyebrow.
+            ⚠ **IT IS A SHOWCASE, NOT THIS ACCOUNT'S SHELF (#240).** The
+            first build read the roster and fell back to a curated set, which
+            is what his spec §5 said; he corrected it the hour he saw it, and
+            the reason is the whole point of the section — the customer who
+            needs a hero is the one who has cast nobody, and a fresh account
+            would have opened on an empty column. One deck, the same for
+            everyone, and no card opens a room because none of them is anyone's
+            property. A click fills the box below, like a TRY chip.
           */}
           <HeroDeck
-            casts={roster.data}
-            loading={roster.isFetching && roster.data === undefined}
-            onOpenCast={(castId) => navigate(`/casting/cast/${castId}`)}
+            onUseBrief={(cardBrief) => {
+              setBrief(cardBrief);
+              /*
+                And the caret goes to the box, which is the whole confirmation
+                this action gets. The chips sit inches from the field; a deck
+                card is a column away, so a silent fill would read as a dead
+                control. `focusBrief` is the same helper the concept card and
+                the new-cast tile use — one place that knows where the box is.
+              */
+              focusBrief();
+            }}
           />
         </div>
 
