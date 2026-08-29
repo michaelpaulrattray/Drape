@@ -1,7 +1,7 @@
 {
-  "edition": 99,
-  "updatedAt": "2026-08-29T16:55:00+10:00",
-  "shift": "foreman-95",
+  "edition": 100,
+  "updatedAt": "2026-08-29T17:10:00+10:00",
+  "shift": "foreman-96",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -121,9 +121,9 @@
         "source": "your reply #10; PR #155 merged 4c6b1a42; CASTING_RETRY_SCOPE=users:1 read back by name 27 Aug 07:10 and by the rite 08:15"
       },
       {
-        "label": "Waiting on your eye: Follow #154, framing #130, lighting #128, block #144",
-        "tone": "neutral",
-        "source": "the four open eye items below; no reply since #12 (21:11Z), read from the crew_replies table 27 Aug 08:22"
+        "label": "Nothing is waiting on your eye — every item on this page has your answer",
+        "tone": "good",
+        "source": "the 28 replies read from crew_replies 29 Aug 07:04Z, swept against every card and eye item by scripts/lib/replyHosts.mts; the two that were still open are closed in this edition"
       },
       {
         "label": "Six finished cards closed in the queue — nothing built, records made true",
@@ -133,7 +133,7 @@
       {
         "label": "Production healthy",
         "tone": "good",
-        "source": "last rite 27 Aug 08:15 — health 3× 200, db 6.68/3.83/3.35 ms, 35/35 flags where the record says, 61/61 tables"
+        "source": "last rite 29 Aug 06:42Z (9f3a81d9) — health ×3 200, db 2.85/1.58/3.99 ms, 36/36 flags where the record says, 61/61 tables, 24/24 assets"
       },
       {
         "label": "This page is the Desk",
@@ -172,8 +172,8 @@
     },
     {
       "id": "fable-cap-review-arm-219",
-      "title": "Your Claude usage limit is still out — and it has now been out LONGER than the only time it healed itself (#219)",
-      "productImpact": "Nothing a customer can see is affected: the product, your credits and the casting studio are all untouched, and the other three gate checks are still running. What is down is the second pair of eyes. Every change the team makes is read by a different model before it lands, and the night shifts consult that same model before they build anything — both ask for Fable by name on your subscription, so both went down together on one cause. It has been erroring after about one second since 8:20 yesterday morning. The one number that moved tonight: it is now five and a half hours out, against about five hours the last time this happened and healed itself. So the reassuring sentence — 'this is the same as last time, it came back on its own' — has run out of evidence behind it. That does not make it a different fault; it means the reading that was doing the reassuring is spent. The cost so far is four consecutive nights where every change was read only by the person who wrote it, and the team has held anything touching money or the product the whole time.",
+      "title": "Your Claude usage limit has now been out for nearly nine hours — 75% longer than the one time it healed itself (#219)",
+      "productImpact": "Nothing a customer can see is affected: the product, your credits and the casting studio are all untouched, and the other three gate checks are still running. What is down is the second pair of eyes. Every change the team makes is read by a different model before it lands, and the night shifts consult that same model before they build anything — both ask for Fable by name on your subscription, so both went down together on one cause. It has been erroring after about one second since 8:20 yesterday morning. I probed it again at the top of this shift and it refused again — the twelfth refusal in a row. The span is now 8 hours 44 minutes, against about five hours the last time this happened and healed itself. So the reassuring sentence — 'this is the same as last time, it came back on its own' — has run out of evidence behind it. That does not make it a different fault; it means the reading that was doing the reassuring is spent. Five of your rulings have now shipped with no second reader at any point (#225, #226, #227, and tonight's two changes). The cost so far is four consecutive nights where every change was read only by the person who wrote it, and the team has held anything touching money or the product the whole time.",
       "workedExample": "Tonight is a worked example of what the missing second pair of eyes actually costs, and it is not theoretical. I fixed a bug that had been falsely refusing the team's only way to push work out (see below). Reading the code, the fix looked complete. So I built a harness that recreated the fault on purpose — and it showed the bug still there, in a second place I had not thought to look. Then a second harness, aimed at the new safety net I had just written, found that the safety net itself had a hole in it. Both were caught, and both were caught by me testing my own work rather than by a reviewer. That works, and it is slower and more fragile than a second reader. Three ways out, and my recommendation is the first: (1) top up or raise the Fable allowance at claude.ai/settings/usage — one action, and it brings back both the reviewer and the advisor; (2) point the reviewer at a different model until it recovers — real work, only worth it if (1) is refused; (3) tell us plainly that a change read only by its author is acceptable while this lasts — which is what four nights have been doing in practice without you ever having agreed to it.",
       "options": [
         {
@@ -580,9 +580,9 @@
     },
     {
       "id": "concept-cast-it-196",
-      "title": "Upload a concept now casts from the modal — and you can drag a picture straight onto the card (#196)",
+      "title": "ANSWERED — \"Cast it and drag-and-drop both work as I asked. Done.\" (#196 closed)",
       "question": "Both of the things you asked for after seeing the review step. FRAME 1 is the new one to judge: the button says Cast it and it casts straight from here into the normal roll flow — same settings, same charge, same sheet — with the price sitting above it rather than on it. That last bit is the one call I made against the wording of the card: the card says \"with the price on it\", your own sentence says only \"the button should be cast it\", and our own pricing rule (D-109) names Cast it by name and says a price belongs above a button and never inside one — it was tried inside a confirm's button once and reversed the same day. Use this brief stays as the quiet second option for when you want to keep editing in the box. FRAME 2 is the same thing in light. FRAME 3 is the second entrance: tap the card instead of dropping on it and you get an empty dialog with a drop zone — drop a picture on the CARD and it skips this and starts reading immediately. FRAME 4 is what a failed read looks like now: it keeps your picture and offers Try again or Choose another picture, instead of closing and making you find the file again — that one is a real refusal, from dropping a plain grey square on it. THE QUESTION: does the three-button row read right to you, or is Discard one thing too many?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-28T17:55:00+10:00",
       "issueNumber": 196,
       "frames": [
@@ -1033,9 +1033,9 @@
     },
     {
       "id": "concept-review-modal",
-      "title": "Upload a concept now opens a review — is this the check you wanted?",
+      "title": "ANSWERED — \"Modal design and function is good now\" (#196 closed; the reader half went to #185)",
       "question": "You asked for the description to open in a modal instead of dropping into the small prompt box. This is it: your picture on the left, the words on the right in a box you can edit, one button that puts them in your brief. Two things to judge. First — is the note the right SIZE and shape now? These reads are 243 characters, a type rather than an inventory, which is the cut you asked for. Second — is seeing the photograph beside the words actually useful, or is it a step in your way? Discard and Escape both cost nothing, and nothing is charged either way; the credits still go at the roll, as they always have.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-28T15:45:00+10:00",
       "issueNumber": 196,
       "frames": [
@@ -1054,6 +1054,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "reply-reader-both-halves",
+      "title": "The tool the night shifts read your replies with could only see half your page — fixed, and it now sweeps for exactly what you caught",
+      "status": "in-review",
+      "prNumber": null,
+      "note": "Measured first: 20 of your 28 replies printed \"not in the current briefing\"; all 17 ids under that sentence WERE in the briefing."
+    },
     {
       "id": "concept-feature-line-185",
       "title": "Your cyborg-eye ruling is built — a fitted machine part is part of the being now (#185)",
@@ -1717,6 +1724,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T17:10:00+10:00",
+      "shift": "foreman-96",
+      "text": "You said the desk was still showing you things you had already answered, and you were right — but the cause was not that nobody looked. The one tool a night shift reads your replies with was only ever looking at HALF your page: it indexed the cards, never the picture items, so when your verdict landed on something in the gallery it printed \"not in the current briefing\" — which reads as \"that card is gone, nothing to update\". I measured it before touching anything: 20 of your 28 replies carried that sentence, and all 17 items under it were sitting right there on the page. Zero were actually gone. That is why \"Cast it\" and the review modal stayed marked open for three editions after you'd answered them. Both are marked with your own words in this edition, and the tool now reads both halves, prints the state of every item beside your reply, and — the part that stops it recurring — starts every shift by naming any item you have answered that the page still calls open. Driven against your live page tonight: it named exactly the two you did. Also honest about two numbers that had gone stale on this page: the Claude review outage is 8h 44m now (I probed again — twelfth refusal), not the five and a half hours the card still said, and five of your rulings have now shipped with no second reader; and the \"waiting on your eye\" chip was still naming four items you answered days ago. $0 house, 0 credits, no renders, no rolls."
+    },
+    {
       "at": "2026-08-29T16:55:00+10:00",
       "shift": "foreman-95",
       "text": "Your cyborg-eye answer came in overnight and it is built and driven. Thank you for it — the rule you wrote is better than the patch I would have written, because it draws the line by WHERE the thing sits rather than by what it is made of.\n\nWHAT CHANGED. The reader was being told two things that collided on a cyborg: never name an accessory, but do name a creature's features. The accessory rule was written about clothes and it was reaching a face. It now says WORN accessory, and your three lines sit above it as the rule that decides which is which.\n\nI RAN IT ON YOUR OWN CASTS FOLDER, thirteen pictures, same pictures as before, one thing changed. Your cyber-goth reference went from \"a sleek mechanical eye piece\" to \"integrated mechanical eye plating on one side of the face\". Your android with the cat ears came back with \"integrated cat-ear hardware\", which is your phrasing almost word for word.\n\nI THEN READ THAT ONE PICTURE THREE MORE TIMES, because this reader is a coin and one read proves nothing. Four reads after the ruling: the eye is kept every time and never flattened, \"sleek\" is gone every time, and twice it came back in your exact register — \"integrated mechanical eye hardware\", \"integrated mechanical eye plating\".\n\nWHAT IT DID NOT FIX, and I am not patching it without you: the word \"eye-piece\" survives in two of those four reads (\"fitted mechanical eye-piece integrated into the skull\"). Your counterexample is already inside the instruction, word for word, and the reader still reaches for that noun half the time. I could push harder on it, but that would be me writing past your ruling on the strength of four reads, and the taste is yours. My honest read: leave it. The eye is kept, which was the thing that mattered, and \"eye-piece\" is not a word the engine refuses.\n\nTWO OTHER THINGS FROM THE SAME RUN, said because the prompt did change and I would rather you hear them from me. A build word went from 3 in 9 to 5 in 9 — the two that gained are a predatory alien (\"muscular\") and your weathered old man (\"solid\"), both physical types your own build rule allows, and two changes is not a reading. And \"spiked\" still turns up on creature ANATOMY — spiked bone growths on the reptile — which is the second-meaning problem you already refused a ban list for. It sits with the refusal patrol, not here.\n\nThe reviewer is still down — eleven refusals, eight hours now, past every precedent. Three of your rulings have shipped with no second pair of eyes. Everything is driven and sabotage-tested, but that is not the same thing, and the top-up card is on your page whenever you want it."
@@ -1910,11 +1922,6 @@
       "at": "2026-08-27T15:35:00+10:00",
       "shift": "foreman-49",
       "text": "Your \"F2\" is executed and live: the locked block's framing sentence is now F2's word for word (PR #162) — your reference's view carried into our 2:3 frame, about 33% head share against the old 36.7%. Your next roll frames this way; nothing else in the block moved, and whether the trim now retires is filed on #11 with the readings it needs. Your reviewer's diet (#161) is built too (PR #163): ordinary PR reviews read a 15KB charter instead of the full 157KB law book on your token — money and auth changes keep the full reading — and its first live review this afternoon used it properly and caught two real polish items. And the straight story on the broken page you saw around 2pm: that was my edition — I wrote two status values the page's own rules refuse and overfilled the journal, the deploy checks never parsed the page's file, and your page showed its fallback for about 15 minutes until the relay seat trimmed it. Two guards exist now so neither can recur: the deploy rite refuses any edition the page cannot parse (PR #170, proven on the exact broken bytes), and the review-skip hole it surfaced is carded (#165). Still waiting on your eye: the light (#128 — pick a row by letter), the rebuilt block (#144), and your first Follow (#154)."
-    },
-    {
-      "at": "2026-08-27T11:40:00+10:00",
-      "shift": "foreman-45",
-      "text": "Your morning finding became a guard: the deploy rite now refuses a quiet edition (#159, PR #160, merged). Before it pushes, it reads what is actually being pushed — if the only change is the briefing and the only change in the briefing is a \"nothing needed doing\" line, it refuses and tells the shift to write its note and stop; anything real beside it still deploys. Proven both ways at the real rite before merging (a throw-away quiet edition refused, the working branch not), and the two quiet deploys you paid for this morning are judged quiet by the same code in its test. Still no new word from you (12 replies, all acknowledged); the milestone still waits on your eye — your first Follow, the framing strip, the lighting sheets, the rebuilt block. $0 house, 0 credits, no renders."
     }
   ],
   "acknowledgedReplyIds": [

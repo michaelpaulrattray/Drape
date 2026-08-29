@@ -61,6 +61,7 @@ import { readFileSync } from "node:fs";
 import { openDatabase, resolveDatabaseUrl, utc } from "./lib/dbConnection.mts";
 import { listedRows } from "./lib/deployWatch.mts";
 import { chooseBriefing, describeSource } from "./lib/liveBriefing.mts";
+import { hostIndex, staleOpenHosts, type ReplyRow } from "./lib/replyHosts.mts";
 
 const showAll = process.argv.includes("--all");
 
@@ -143,7 +144,10 @@ const briefing = choice.facts;
 if (!briefing) console.error("[warn] no briefing could be parsed on any road — showing the WHOLE thread and no card titles.");
 
 const acknowledged = briefing?.acknowledgedReplyIds ?? [];
-const titles = new Map((briefing?.needsYou ?? []).map((card) => [card.id, card.title]));
+/* BOTH halves of the reply namespace, and the state each item is drawn in.
+   `needsYou` alone printed "(not in the current briefing)" over 17 ids that
+   were all present — see `lib/replyHosts.mts` for the reading. */
+const hosts = hostIndex(briefing);
 
 const conn = await openDatabase(url);
 try {
@@ -173,6 +177,16 @@ try {
     showAll || acknowledged.length === 0 ? [] : [acknowledged],
   );
 
+  /* THE SWEEP'S OWN READING — the default read prints only UNacknowledged
+     replies, and the thing that went wrong is on the other side of that line
+     (an acknowledged reply whose card was never moved off `open`). So it gets
+     its own narrow statement rather than riding the display query, which
+     answers a different question in two of its three modes. */
+  const [addressed] = await conn.query<any[]>(
+    "SELECT id, cardId FROM crew_replies WHERE cardId IS NOT NULL ORDER BY id ASC",
+  );
+  const stale = staleOpenHosts(briefing, addressed as ReplyRow[]);
+
   /* PROVENANCE FIRST, then the counts. The edition number on its own was read
      as a fact about production for two shifts running (#221 §4); it now
      arrives with the world it was read from attached to it. */
@@ -182,14 +196,38 @@ try {
     + `${total[0].n} replies in total`,
   );
 
+  /*
+    HIS OWN STANDING ORDER, ASKED AS A READING (relay 2026-08-29 16:20):
+    *"Mark every answered item's state in the SAME edition that acknowledges
+    its reply — an item whose reply is acknowledged but whose state stays open
+    is the schema arm's own class."* It prints ABOVE the replies because it is
+    work this shift owes, not context; and it prints its CLEAN answer too, so
+    silence here is a reading rather than an absent check.
+  */
+  if (stale.length > 0) {
+    console.log(
+      `\n⚠ THE DESK STILL SHOWS ${stale.length} ANSWERED ITEM${stale.length === 1 ? "" : "S"} AS OPEN `
+      + "— set the state in THIS shift's edition (his order, 2026-08-29):",
+    );
+    for (const { host, replyIds } of stale) {
+      console.log(`    ${host.kind} ${host.id} — answered by ${replyIds.map((id) => `#${id}`).join(", ")}`);
+      console.log(`      "${host.title}"`);
+    }
+  } else {
+    console.log("state sweep: no acknowledged reply points at an item still `open`.");
+  }
+
   if (rows.length === 0) {
     console.log(showAll ? "\nThe thread is empty." : "\nNo new replies.");
   } else {
     console.log(`\n${rows.length} ${showAll ? "" : "NEW "}${rows.length === 1 ? "reply" : "replies"}:\n`);
     for (const row of rows) {
+      const host = row.cardId === null ? undefined : hosts.get(row.cardId);
       const card = row.cardId === null
         ? "journal note"
-        : `card ${row.cardId}${titles.has(row.cardId) ? ` — "${titles.get(row.cardId)}"` : " (not in the current briefing)"}`;
+        : host
+          ? `${host.kind} ${row.cardId} [${host.state ?? "no state"}] — "${host.title}"`
+          : `card ${row.cardId} (not in the current briefing)`;
       console.log(`  #${row.id}  ${utc(row.createdAt)}  ${card}`);
       /* Verbatim, every line of it, indented but never reflowed or truncated —
          his words are the steering wheel and this is the only place a shift

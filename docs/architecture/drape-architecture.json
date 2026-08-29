@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0dcfc1c12ac2ae69"
+    "sourceFingerprint": "9ce2024b0c6690af"
   },
   "domains": [
     {
@@ -12592,6 +12592,10 @@
     {
       "id": "test:server/refinePanelDoors.test.ts",
       "path": "server/refinePanelDoors.test.ts"
+    },
+    {
+      "id": "test:server/replyHosts.test.ts",
+      "path": "server/replyHosts.test.ts"
     },
     {
       "id": "test:server/resend.test.ts",
