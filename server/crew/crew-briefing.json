@@ -1,7 +1,7 @@
 {
-  "edition": 119,
-  "updatedAt": "2026-08-30T09:05:00+10:00",
-  "shift": "foreman-111",
+  "edition": 120,
+  "updatedAt": "2026-08-30T09:40:00+10:00",
+  "shift": "foreman-112",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,38 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "bug-reports-no-reader-255",
+      "title": "A customer's bug report reaches nobody - and the fix is a privacy decision, so it is yours",
+      "productImpact": "The lobby's three-dot menu offers Send feedback and Report a bug to every approved customer. They type it, press send, and are told \"Bug report submitted. Thank you!\" It is genuinely stored - and then nothing reads it. There is no admin page, no moderator page, no export, no procedure of any kind that can bring it back. The only other half of the road was a Slack message, and production has no Slack webhook configured (I checked all five at the service, by name), so that message becomes a log line that is wiped on the next deploy.\n\nZero reports have ever been filed, so nobody has actually been ignored yet. But the button is live for everyone, so that is luck.\n\nNothing was broken by a later change - I checked the whole history. A reader was never written. The Slack message was meant to be the reader, and Slack has never been connected.",
+      "workedExample": "A customer's first roll refuses on a content filter. She opens the menu, writes \"my brief keeps getting rejected and I don't know why - it's just a goth woman in her 30s\", and sends it. The studio thanks her. That sentence now sits in a database row whose status column reads \"new\", and there is no screen in the product where the word \"new\" can ever become \"resolved\". She waits; nobody was told; nothing happens.",
+      "options": [
+        {
+          "key": "a",
+          "label": "Connect Slack",
+          "consequence": "One Railway variable and zero code - the message the product already tries to send would start arriving. Only worth it if you actually want a Slack channel; the code for it is already written and has been sitting unused since the day it shipped."
+        },
+        {
+          "key": "b",
+          "label": "Email you when a report arrives (recommended)",
+          "consequence": "Small, one place in the code, no new page, and it uses the email system that already sends your verification mail. The report reaches a human within seconds. It needs no change to who may read what, because the person reading is you."
+        },
+        {
+          "key": "c",
+          "label": "Put a line in the admin audit log, metadata only",
+          "consequence": "Staff would see that a report arrived - its number, its category, the page it came from - but never the customer's words. Honest and cheap, and it keeps prose out of a staff screen. It tells you a report exists without telling you what it says, so you would still need the database to read it."
+        },
+        {
+          "key": "d",
+          "label": "Build a proper inbox with the new / reviewing / resolved workflow the table already declares",
+          "consequence": "The right long-term answer, and the most work: a new staff page, and a deliberate widening of the access rules so a moderator may read what a customer wrote. Worth doing when there is somebody other than you reading them."
+        }
+      ],
+      "recommendation": "Take (b). It is the smallest change that makes the report reach a person, it uses infrastructure that is already live, it adds no page, and it needs no widening of who may read what - you would be reading your own product's reports. (d) is where this should end up once there is a support team; (a) is only worth doing if you want Slack for its own sake. Whatever you pick, the current state is the one thing that should not stand: a button that thanks somebody and does nothing.",
+      "state": "open",
+      "filedAt": "2026-08-30T09:40:00+10:00",
+      "issueNumber": 255
+    },
     {
       "id": "max-author-refusals-252",
       "title": "One in five casts on MAX quietly gets no author at all - and the sheet still says Max",
@@ -2226,7 +2258,7 @@
     {
       "id": "openrouter-balance-low",
       "title": "The OpenRouter account is nearly empty again — $7.70 left, about three days at the current rate, and at zero the studio visibly stops taking briefs",
-      "detail": "OpenRouter is the text engine behind every roll and refine: it reads each brief and each edit before anything renders. Read off the account again this shift (30 Aug 09:00): $7.70 remaining of $260 granted, $252.30 spent — IDENTICAL to last night, because nothing spent it in between. The runway is a night shorter for the same number.\n\nThe granted figure has now been flat since 27 Aug through four days of spending. A $10 top-up did land that day (250 to 260), so the account is not dead — whatever tops it up is topping up less than it burns.\n\nWhat happens at zero is now DRIVEN rather than remembered (30 Aug, foreman-111): an EDIT is refused free — nobody charged, nobody can edit — and a ROLL is refused free too. Nobody loses credits; the studio visibly stops taking briefs. The wording an edit gives in that state was fixed the same night (#253): it used to blame the customer's own sentence.\n\nfal (the image engine) is separate and tops itself up.",
+      "detail": "OpenRouter is the text engine behind every roll and refine: it reads each brief and each edit before anything renders. Read off the account again this shift (30 Aug 09:35): $7.70 remaining of $260 granted, $252.30 spent — IDENTICAL for a THIRD reading running, because nothing has spent it in between. The runway is two nights shorter for the same number.\n\nThe granted figure has now been flat since 27 Aug through five days. A $10 top-up did land that day (250 to 260), so the account is not dead — whatever tops it up is topping up less than it burns.\n\nWhat happens at zero is DRIVEN rather than remembered (30 Aug, foreman-111): an EDIT is refused free — nobody charged, nobody can edit — and a ROLL is refused free too. Nobody loses credits; the studio visibly stops taking briefs. The wording an edit gives in that state was fixed the same night (#253): it used to blame the customer's own sentence.\n\nfal (the image engine) is separate and tops itself up.",
       "severity": "urgent",
       "state": "open"
     },
@@ -2246,6 +2278,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T09:40:00+10:00",
+      "shift": "foreman-112",
+      "text": "Tonight I found a door in the product that opens onto nothing, and I have left it for you rather than fixing it, because the fix is a decision about privacy and that is yours.\n\nIn the lobby there is a quiet three-dot menu with two entries: Send feedback, and Report a bug. Any approved customer can type out what went wrong, press send, and gets back \"Bug report submitted. Thank you!\" It is stored in the database. And that is the end of it. There is no page anywhere in the product - not for you, not for an admin, not for a moderator - that can read it back. I swept all 950 source files: the table is written and never read. The second half of the road was a Slack message, and there is no Slack webhook configured on production at all, so that message becomes a log line that is wiped on the next deploy.\n\nSo a customer's report reaches nobody. Nobody has been failed yet - the table holds zero rows, all time - but the button is live for every approved account on a desktop, so that is luck rather than design.\n\nI checked how it got this way rather than guessing, because \"never finished\" and \"broken by a later change\" point at different repairs. Nothing was lost: a reader has never existed in this repository's history, on any branch. The Slack notification WAS meant to be the reader, and production has never had Slack.\n\nI then swept every other table for the same shape - written by the product, read by nothing. There are four, and three of them are correct as they stand: they are counting tallies whose whole design is that a person reads them by hand when a decision comes up, and they deliberately hold no names, no sentences and no pictures. The fourth is this one, and it is the only one that holds a person's own words.\n\nWhy I stopped rather than building it: the project's own access rules name bug reports specifically, and say staff get none by default and anything wider is a deliberate exception. Putting a customer's typed complaint in front of a moderator IS that exception. There is a card on your desk with four ways to fix it. My recommendation is the smallest one: email you when a report arrives, using the email system that already sends verification mail. That needs no new page and no rule change, and the report reaches a human in seconds.\n\nThe rest of the night was reading. Nothing was spent - no renders, no credits, no engine calls of any kind."
+    },
     {
       "at": "2026-08-30T09:05:00+10:00",
       "shift": "foreman-111",
@@ -2440,11 +2477,6 @@
       "at": "2026-08-28T14:20:00+10:00",
       "shift": "foreman-74",
       "text": "You answered the description question overnight, it got built, and I finished and checked it — so there is something to look at.\n\nYou said it should come back as a type, not a police report. It does now. The man you judged went from 1,082 characters to 173: \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" That is the whole read. It did not mention his eye colour, the seams on his shirt, or that he has no tattoos — all three are things it can plainly see and all three are on your drop list.\n\nTwo halves to the fix, and the second is the one that lasts. The instruction now carries your keep list, your drop list and your own example sentence — but an instruction is a polite request to a model. The length is a rule in code: 300 characters maximum, asked for 150–250. An inventory does not fit in 300, so the words you told it to drop have nowhere to go even on a day the model ignores the ask.\n\nOne correction you are owed, and it is ours. Last night's edition put the wrong photograph under \"the frame it was read from\" — the description you were reading was of the man in the SECOND frame, not the first. Nothing about your ruling changes, because you ruled on the words. But you were shown a face those words were not about, and you deserve to know rather than to wonder later why the reader called that man European. I found it by opening both pictures and putting them through the reader again this afternoon: one comes back European, the other South Asian, three times out of three. The frames above are now the right way round.\n\nOne more thing worth your knowing before you flip it. In six reads today, five came back perfectly and one came back as \"we couldn't read that just now\" — on a good photograph, and it does not try a second time. That is not a reason to wait: you would tap it again and it would work. It is filed, it is small, and it is inside behaviour that already exists.\n\nNothing is live. The switch is still off for everyone including you. The only thing left on this feature is your word — read the two notes on the frames and say flip it, or tell me which words are still too much."
-    },
-    {
-      "at": "2026-08-28T13:10:00+10:00",
-      "shift": "foreman-72",
-      "text": "A QUIET ONE, and deliberately so — you have two things sitting on your eye and I did not want to build past them. Nothing you can see changed tonight. What I fixed is a trap that was set to go off the next time we add a picture format.\n\nWhen you tap Upload a concept, or attach a reference in a refine, the file chooser only shows you PNG, JPEG and WebP files. That list is decided by the server. The problem was that the chooser had its OWN typed-out copy of it, because the server's list lived somewhere the screen could not read from. So the day someone adds a fourth format — HEIC off an iPhone, say — the server would take it and the chooser would still hide it. Not an error, not a message: your file simply would not appear in the picker, and you would conclude we do not accept it. That is the worst kind of bug because there is nothing to report.\n\nThe list now lives in one place both sides read, and the chooser BUILDS its filter from it rather than repeating it. Identical behaviour today — same three formats, same everything — and a fourth one would reach both screens with no further work.\n\nOn the way I found the same copy-paste on the server itself, in the route that hands back a picture you attached. It had a hand-typed list of what it is allowed to serve, in a file whose own comment says the list comes from the upload door — while its twin one file over does it properly. That one matters more, because a stale list there is a security answer, not a convenience. Fixed the same way.\n\nAnd I made it hard to do again: the test suite now refuses any screen that types the list out by hand, and I proved the test can actually fail by breaking the code nine different ways and watching each one go red. Four older screens (your avatar, the garment rack, the model upload, the legacy tattoo panel) still have their own copies — they answer to different server lists, so pointing them at this one would just move the problem. They are named on the record and the suite will not let anyone quietly forget them.\n\nTHE REVIEWER CAUGHT TWO THINGS AND BOTH WERE WORTH CATCHING. First, my new test had a hole exactly the shape of the one it was written to close — it noticed the list typed in quotes but not in backticks, which is a thing a developer would write by accident on any given Tuesday. Fixed and proven. Second, and this is the interesting one: by making the two sides share one list, I had quietly made a SECURITY sentence depend on it. The route that hands you back a picture you attached has a comment saying there is no danger here because none of these three formats can carry code. That was a statement about three specific formats; after my change it became a statement about whatever the list happens to hold. So somebody adding SVG one day — a format that is really a document that runs — would have made that sentence false with nothing objecting. There is now a test that objects. Nothing was ever at risk; it is the kind of thing that is cheap today and expensive in a year.\n\nNo credits, no renders, nothing spent, no switches moved. Upload a concept is still off for everyone and still waiting on your answer about the description length."
     }
   ],
   "acknowledgedReplyIds": [
