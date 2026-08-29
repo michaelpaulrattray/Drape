@@ -1,7 +1,7 @@
 {
-  "edition": 113,
-  "updatedAt": "2026-08-30T03:50:00+10:00",
-  "shift": "foreman-106",
+  "edition": 114,
+  "updatedAt": "2026-08-30T04:40:00+10:00",
+  "shift": "foreman-107",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1448,6 +1448,13 @@
   ],
   "pipeline": [
     {
+      "id": "atlas-suite-diagnosis-233",
+      "title": "Found why the safety check that guards every change takes two minutes - and why the obvious fix would have broken it (#233)",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Every change the team makes has to pass a set of automatic checks before it can go anywhere. One of those checks keeps failing for the wrong reason - not because anything is wrong, but because it runs out of time when the computer is busy. Two shifts had already reported it and both deliberately left it alone, because raising the time limit without knowing WHY it is slow is how a slow tool becomes permanent. Tonight I found out why. The check rebuilds a full picture of the codebase 22 times in a row, from exactly the same unchanged files, and about 83 per cent of each rebuild is one expensive step repeated for nothing. Reusing that one step instead of redoing it takes the check from 119 seconds to 19 - and all 17 of its own tests still pass. But the finding that matters is the near-miss: there is an even faster version, 7 seconds, which is what anyone would reach for first - and I measured that it SILENTLY SWITCHES OFF one of the safety checks inside it. I proved that by deliberately breaking the tool and watching the fast version report everything as fine. It would have shipped looking like the bigger win. Nothing was changed tonight: this file sits on the path every change goes through, and your Fable reviewer is still down, so it is written up and queued rather than shipped."
+    },
+    {
       "id": "departure-gate-246",
       "title": "Measured the removal gate against the lookalike problem - confirmed, and corrected what it costs (#246)",
       "status": "waiting-founder",
@@ -2087,9 +2094,16 @@
   ],
   "problems": [
     {
+      "id": "atlas-suite-timeouts-233",
+      "title": "The team's own safety checks go red when your computer is busy - and a red one looks exactly like a real failure",
+      "detail": "The full check run takes about two minutes of flat-out work from one file, and while that is happening every other check is racing a five-second clock nobody chose on purpose - so one or two of them fail for no reason, and a different one each time. Two shifts have hit it. It costs the team real time (half an hour proving nothing is actually wrong, at 3am) and it has a worse edge: the failure looks identical to the one failure that genuinely blocks everything, so a shift in a hurry learns to scroll past a red check. That is the shape of a smoke alarm nobody trusts. Tonight's shift measured the cause and priced the repair - 119 seconds down to 19 - and did not ship it, because the file involved sits on the path every change travels and your second-opinion reviewer is still out. It is queued on #233 with the measurement attached, so whoever takes it is choosing from numbers rather than guessing.",
+      "severity": "warning",
+      "state": "open"
+    },
+    {
       "id": "gate-review-arm-broken-219",
-      "title": "Your Fable allowance is still out - 23 refusals now, and it has been down about 29 hours",
-      "detail": "No change in cause. I asked the advisor once at the top of this shift and got the same sentence: your Fable 5 limit is reached. Twenty-third consecutive refusal, and about twenty-nine hours since the first failed review - well past the roughly five hours the same fault took to clear itself on the 26th, so it is no longer 'the same thing as last time'. Opus is answering fine on the same machine and the same login: it ran the typecheck, the guard suites, two read-only production queries and tonight's whole measurement. So the account and the token are fine, and one model on them is out. What it costs: every product change is supposed to be read by a second model before it lands, and that reviewer is the one that is down - so for a fifth night the team held to the rule that measurements, tooling and written records may ship while anything touching money or the product waits for you. Tonight was a measurement and a record, which is inside that rule. Your three options are on the card lower down the page.",
+      "title": "Your Fable allowance is still out - 24 refusals now, and it has been down about 30 hours",
+      "detail": "No change in cause. I asked the advisor once at the top of this shift and got the same sentence back: your Fable 5 limit is reached. That is the twenty-fourth consecutive refusal, about thirty hours since the first failed review - well past the roughly five hours the same fault took to clear itself on the 26th, so it is no longer the same thing as last time. Opus is answering fine on the same machine and the same login: it ran tonight's whole measurement, the typecheck and the guard suites. So the account and the token are fine, and one model on them is out. What it costs: every product change is meant to be read by a second model before it lands, and that reviewer is the one that is down - so for a sixth night the team held to the rule that measurements, tooling and written records may ship while anything touching money or the product waits for you. Tonight's work was a measurement and a written record, which is inside that rule, and the repair it priced was deliberately NOT shipped for exactly this reason. Your three options are on the card lower down the page.",
       "severity": "warning",
       "state": "open"
     },
@@ -2179,6 +2193,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T04:40:00+10:00",
+      "shift": "foreman-107",
+      "text": "A quiet, useful night on the team's own tools - nothing in the studio changed, and nothing new needs you.\n\nBefore any change the team makes can go anywhere, it has to pass a set of automatic checks. One of those checks has been failing for the wrong reason: not because anything is broken, but because it runs out of time when your computer is doing something else. Two earlier shifts hit it, wrote it down carefully, and deliberately did NOT fix it - their reasoning was good and I want to repeat it, because it is the right instinct: raising a time limit without knowing why something is slow is how a slow tool becomes permanent. So they left the question open. Tonight I answered it.\n\nThe check builds a complete picture of the codebase and compares it against the one we have on file. It turns out it builds that picture from scratch twenty-two times in a row, from files that have not changed between one build and the next, and about eighty-three per cent of each build is one expensive step being repeated for nothing. That is where the two minutes goes - not growth, just the same work over and over.\n\nI measured the repair rather than proposing it. Reusing that one expensive step takes the check from a hundred and nineteen seconds to nineteen, with all seventeen of its own tests still passing. Six times faster.\n\nBut here is the part worth your attention, and it is the reason I think tonight was worth a night. There is an even faster version - seven seconds - and it is the one anybody would reach for first, including me. I tested it by deliberately breaking the underlying tool and watching whether the check would notice. The nineteen-second version caught it and said so by name. The seven-second version said nothing at all: it had quietly switched off one of the safety checks inside itself, and reported everything as fine over a genuinely broken tool. It would have shipped looking like the bigger win, and we would have had a smoke alarm with the battery taken out.\n\nThat is measured rather than argued - I ran the real check four times, breaking one thing at a time, and it put itself back each time.\n\nI did not ship any of it. The file involved sits on the path every single change travels through, and your Fable reviewer is still out - twenty-fourth refusal, about thirty hours now, well past the only precedent we have. So this is a sixth night of the team's own rule: measurements, tooling and written records may go ahead; anything touching money or the product waits for you. It is written up and queued with the numbers attached, so whoever picks it up is choosing between measured options instead of guessing.\n\nCost: nothing at all. No credits, no renders, no picture readings, no house money - tonight was reading code and running our own tests. Nothing on production was touched but this briefing.\n\nStill waiting on you, unchanged from last night: which lobby segment you want first, and whether that left-hand skull in last night's picture reads as bald to you."
+    },
     {
       "at": "2026-08-30T03:50:00+10:00",
       "shift": "foreman-106",
@@ -2373,11 +2392,6 @@
       "at": "2026-08-28T02:43:28+10:00",
       "shift": "foreman-60",
       "text": "Follow-up to last night's doc cleanup (#69): the 7 documents stamped 'not re-verified' have now each been checked against the actual code, and the honest stamp paid off - three of our own tracking records were wrong about them. The biggest one: a measurement we ordered in mid-August (does a patch of skin still read as skin at thumbnail size?) was listed everywhere as 'never run' - it DID run, on Aug 13, and it failed its own bar, which is why skin stays described in words rather than shown as a swatch. That verdict was sitting in the middle of the document where no header-skim could see it. Two designs listed as 'not built' (the panel's honest 'this face has no beard' rows, and the store that remembers what an invented feature is) turned out to be built and live too. All seven banners now state the verified truth with the file that proves it, the wrong rows are corrected, and the affected cards (#23, #24) carry the correction. Nothing you can see in the product changed. Otherwise quiet: no new replies, no new refusals for the patrol, and your first Follow tap is still the live check of the Row A build."
-    },
-    {
-      "at": "2026-08-28T03:20:00+10:00",
-      "shift": "foreman-59",
-      "text": "Housekeeping shift while you sleep - the doc cleanup you ordered on Aug 25 (#69) is done for the spec library. The problem it fixes: 171 of our 253 spec documents had no marker saying whether they were current, finished, superseded or never built - which is exactly how an old plan gets read as a live order (it has bitten us three times on record). Every one now opens with a one-line status banner: old review prompts and era docs marked historical, courts and evidence packs marked as dated records (the freckle court now carries the note that your own eye overturned it), built designs stamped with the proof they shipped, the governing plans marked live, unbuilt designs pointed at their queue cards, and 7 stamped honestly as 'not re-verified' - those are the next sweep's shortlist. Nothing was deleted and nothing you can see in the product changed. Otherwise quiet: no new content-filter refusals for the patrol (checked at the rows), no new replies, and your first Follow tap is still the live check of last night's Row A build."
     }
   ],
   "acknowledgedReplyIds": [
