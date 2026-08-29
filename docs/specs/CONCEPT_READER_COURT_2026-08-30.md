@@ -1,9 +1,22 @@
 # THE CONCEPT READER COURT — Grok 4.6 vs Sonnet 5, and his four rules (#231)
 
-**Shift:** foreman-103, 2026-08-30. **Spend:** ~$0.39 of house money (OpenRouter
-text calls with an inline picture). No customer credits, no renders, no
-segmenter reads, no database writes. Under THE SPEND THRESHOLD, so it ran and
-reports.
+**Shift:** foreman-103, 2026-08-30. **Spend:** **~$1.40 of house money** across
+four runs (~112 OpenRouter text calls, each with an inline picture). No customer
+credits, no renders, no segmenter reads, no database writes. Under THE SPEND
+THRESHOLD, so it ran and reports.
+
+⚠ **THAT FIGURE WAS ~$0.39 IN THE FIRST VERSION OF THIS FILE AND IN PR #245's
+BODY, AND IT WAS WRONG BY 3.5x** — it was read off the balance MID-SHIFT, after
+run 1, and then three more runs happened. Corrected here at the rite's own
+reading (`$9.55` at the previous shift's close → `$8.15` at this one's).
+⚠ **The meter is ACCOUNT-WIDE, not per-key**, so `$1.40` is this shift's share of
+a balance the deployed service also draws on; the call count is mine and exact,
+the dollars are attribution.
+
+⚠ **AND THE BALANCE IS THE REAL HEADLINE OF THE MONEY LINE: $8.15 of $260
+granted, and the granted figure has NOT MOVED FOR A THIRD DAY** while the
+balance falls — which is #202's complaint exactly, and by the rite's own
+sentence that means the top-up is not firing.
 
 **Driver:** `scripts/_shift103-reader-court-disposable.mts` (untracked,
 disposable). **Records:** `output/_shift103-court/run{1,2,4}/court.json`.
