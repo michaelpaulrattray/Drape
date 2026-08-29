@@ -1,7 +1,7 @@
 {
-  "edition": 110,
-  "updatedAt": "2026-08-30T04:40:00+10:00",
-  "shift": "foreman-103",
+  "edition": 111,
+  "updatedAt": "2026-08-30T02:20:00+10:00",
+  "shift": "foreman-104",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "creature-widening-243",
+      "title": "The widening ran: a creature keeps its own mouth when nobody typed one (#243)",
+      "productImpact": "You asked me to run the widening and it proves out. Here is what it means for someone using the studio.\n\nUntil now the only proof we had was your oni brief, and that brief SAID \"prominent lower tusks\" — so the studio was always going to paint tusks either way, because anything you type outright beats our house rules. The real question was the one where the customer types a species and nothing about its face. She writes \"a deep-sea anglerfish humanoid\" and never mentions teeth. Does the studio give her the creature, or a person with grey skin?\n\nAnswer: WITHOUT the creature lane, four out of four came back as a person with grey skin and an ordinary closed human mouth. WITH it, four out of four have the anglerfish's own jaw and teeth, sitting there at rest. Two separate readers and my own eyes agree. That is the lane doing exactly what you described when you said creature mouths were being broken by the human headshot rule.\n\nTWO THINGS I AM NOT CLAIMING, and both matter. (1) THE LAMIA TOLD US NOTHING ABOUT TONGUES. Your third case was the species tongue, and on a snake-woman both versions came back the same: mouth closed, no tongue, four out of four each. That is not the lane failing — a forked tongue at rest is inside a closed mouth, so the test could never have shown one. Your tongue case is still unasked and it needs a different creature. (2) I FOUND A HOLE IN MY OWN MEASURING TOOL AND IT WOULD HAVE FOOLED ME. The tool that counts \"how many tusk pixels are in this picture\" answered 7,455 on a bearded oni whose mouth is completely closed — because when the thing you ask for is not in the picture, it quietly outlines the nearest thing that looks like the word. It had outlined his HORNS. I only know because I painted the outline back onto the photo and looked. Taken at face value the number said today's version paints MORE tusks than the creature version, which is the exact opposite of what the pictures show. Filed as #246. It does NOT undo the oni reading from two nights ago — I re-checked those pictures the same way and that tool was reading real tusks at the real mouth, so that reading was honest and your eye was the thing that added placement to it.",
+      "workedExample": "Same eight-word brief, same settings, the only difference is the creature lane.\n\nBrief: \"Deep-sea anglerfish humanoid, slick black-violet hide over a lean wiry frame, a pale bioluminescent lure on a thin stalk rising from the brow, small milky eyes. Wet dark oilskin wrap.\" — note it never says teeth, mouth, jaw or anything else about her face.\n\nTODAY (top row of the first strip): four women with grey-violet skin, a lure on a stalk, and a normal closed human mouth. The teeth-finder scores zero on all four.\n\nWITH THE CREATURE LANE (bottom row): four anglerfish faces — a wider, harder jaw with rows of needle teeth showing at rest. Not snarling, not roaring, not posed. Just her own mouth.",
+      "options": [
+        {
+          "key": "leave",
+          "label": "Leave the anatomy rule as it is",
+          "consequence": "The lamia strip turned up something I did not go looking for: with the creature lane on, a serpent body or coil is in the picture 4 times out of 4; without it, 0 out of 4. Her brief never says \"tail\" — it says \"a serpent-blooded woman\". Our rule's own words are \"anatomy the description NAMES\", so strictly it should not have fired. It fired anyway and the results look right to me. Leaving it means the studio brings a species' body into frame when the species implies it, which is probably what you want and is currently undocumented."
+        },
+        {
+          "key": "tighten",
+          "label": "Tighten it to only fire on anatomy actually typed",
+          "consequence": "Predictable and literal, but it would take the serpent coils back out of those four pictures, and a customer who writes \"a lamia\" would get a woman in a drape. I think that is worse."
+        },
+        {
+          "key": "widen-the-words",
+          "label": "Rewrite the rule so it says species too",
+          "consequence": "Makes the behaviour we are already getting into the stated intention rather than a happy accident. Costs one sentence in the house block and one court to check it did not change anything else — and every prompt change in this studio has to be measured, because we have learned the hard way that adding context is not additive."
+        }
+      ],
+      "recommendation": "LEAVE IT for now and look at the third strip. The behaviour is good; the only thing wrong is that our written rule under-describes what it does. That is worth fixing on paper eventually, but not worth a prompt change tonight — and it is one fixture and four pictures, which is not enough to build on.",
+      "state": "open",
+      "filedAt": "2026-08-30T02:20:00+10:00",
+      "issueNumber": 243
+    },
     {
       "id": "reader-rules-court-231",
       "title": "Your four reader rules — three landed, and the Grok court did NOT go the way my first run said (#231)",
@@ -703,6 +730,32 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "creature-widening-243-strips",
+      "title": "Three creatures, each one with and without the creature lane",
+      "question": "WHAT YOU ARE JUDGING. Three strips. In each one the TOP row is today's studio and the BOTTOM row is the creature lane, four pictures each, same brief, nothing else changed. None of the three briefs says anything at all about a mouth.\n\nSTRIP ONE — THE ANGLERFISH. This is the finding. Top: a person with grey skin and a closed human mouth, four times. Bottom: the anglerfish's own jaw and teeth, at rest. Does the bottom row read as a creature you would cast, and does the top row read as the failure you described?\n\nSTRIP TWO — THE ONI, with the tusks NOT typed. This is your oni brief from two nights ago with the words \"prominent lower tusks\" deleted. Top: four bearded men whose mouths are basically human. Bottom: four heavier jaws with the tusks seated outside the upper lip. My eye says the bottom row is right; the pixel-counter said the opposite, which is the tool defect on the card.\n\nSTRIP THREE — THE LAMIA, and this one is a QUESTION not a result. Both rows have a closed mouth and no tongue, so it tells us nothing about your tongue case. But look at the bottom row's serpent coils: they are in all four, and in none of the top four — and her brief never says \"tail\".",
+      "state": "open",
+      "filedAt": "2026-08-30T02:20:00+10:00",
+      "issueNumber": 243,
+      "cardId": "creature-widening-243",
+      "frames": [
+        {
+          "key": "crew-eye/1a1ae8eb-80b2-4814-a0f9-e97523838305.jpg",
+          "caption": "THE ANGLERFISH — the finding. Top row (ANG-K) is today: a person with grey-violet skin, a lure on a stalk, and an ordinary closed human mouth, 4 of 4. Bottom row (ANG-C) is the creature lane: the anglerfish's own widened jaw with rows of needle teeth showing at rest, 4 of 4. The brief never mentions a mouth, teeth or a jaw.",
+          "arm": "anglerfish - today vs creature lane"
+        },
+        {
+          "key": "crew-eye/b6ba3fae-30e1-4396-beb3-865cef89b159.jpg",
+          "caption": "THE ONI, with the tusks NOT typed — your own brief from two nights ago with \"prominent lower tusks\" deleted. Top (ONI-K) today: four bearded men, mouths essentially human. Bottom (ONI-C): four heavier jaws with lower tusks seated outside the upper lip. The pixel-counter scored the TOP row higher because it was outlining the horns — see the card.",
+          "arm": "oni, tusks unstated - vs creature lane"
+        },
+        {
+          "key": "crew-eye/ee01faca-6a40-4ef1-abc6-19134cb6ab4f.jpg",
+          "caption": "THE LAMIA — a null on the mouth and a question on the body. Both rows: closed lips, no tongue, 4 of 4 each, so this fixture cannot answer your species-tongue case at all. But the bottom row (LAM-C) has a serpent body or coil in frame in all four, and the top row (LAM-K) in none — and her brief says \"a serpent-blooded woman\", never \"tail\".",
+          "arm": "lamia - today vs creature lane"
+        }
+      ]
+    },
     {
       "id": "hero-showcase-240-strips",
       "title": "Your own page, before and after — and the same deck for a stranger",
@@ -1335,6 +1388,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "creature-widening-243",
+      "title": "#243 — the creature lane's widening: does it change the PICTURE when nobody types the anatomy",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "RAN AND REPORTED. 24 renders, $1.34 of house money, no customer credits. It proves out on the anglerfish (4/4 against 4/4, two readers and my eyes agreeing). Three strips are in your gallery and the card holds the two things I am not claiming. Also produced a tool defect worth its own card (#246): the pixel-counter answers with a lookalike when the thing you ask for is absent, and it fails in the flattering direction."
+    },
     {
       "id": "reader-rules-court-231",
       "title": "#231 — your three remaining reader rules, and the reader gets its own model",
@@ -2047,11 +2107,6 @@
   ],
   "journal": [
     {
-      "at": "2026-08-30T04:40:00+10:00",
-      "shift": "foreman-103",
-      "text": "No new reply overnight, so the lobby lane stayed shut and I took your #231 instead. Three of your four reader rules are in and the Grok court ran.\n\nThe thing I want to put in front of you is not the rules, it is that my FIRST run of that court would have told you something false. It reported eight \"unreadable\" results for Grok, which reads as Grok declining your creature and goth pictures — the regression you named yourself. I could not see WHY from the outcome, so I wrapped the call and ran it again, and every one of those eight was a plain TIMEOUT at 45 seconds. Nothing to do with the subject. Had I written up run 1 you would have a verdict on your desk against a model that never got to answer.\n\nThe same habit paid twice more. Driving your own feline picture, a rewrite came back SHORTER and CORRECT — it said \"bare violet-blue hide\", the exact fact your rule 1 is about — and our code threw it away because the reply forgot its JSON wrapper, then told the customer we could not read her picture. And the \"that is too long, write it again\" message we send turned out to carry a list of what to keep with no tail, no surface and no kind of being on it. So on the one path that fires when a creature note is under pressure, we were telling it to drop the species. Both fixed.\n\nI am being careful about what I claim landed. Your fixture went from 0 in 4 naming the hairlessness to 3 in 4 — but the one read that did NOT improve is the one that never got rewritten, so the correction is arriving on the second pass rather than the first. That is a partial, not a win, and it is on the card that way."
-    },
-    {
       "at": "2026-08-30T02:35:00+10:00",
       "shift": "foreman-102",
       "text": "Your reply landed while I was building, so this edition is only to mark it seen and to say what it settled. You separated the two oni rows with your eye on a thing the measurement genuinely cannot express — WHERE the tusks sit, not how many pixels of them there are — after the shift that ran it had refused to claim it. That is the law working the right way round rather than an argument won: the reader said nothing, the shift reported nothing, and your eye said the thing. #232 and #237 are both closed on your word. #243 stays open and I have re-pointed it on the card: it is no longer the proof, it is the widening — the fixture whose seed does NOT name the anatomy, which is exactly where the lane should matter most.\n\nTonight's own work is edition 108's top card: the casting hero is a showcase now."
@@ -2245,6 +2300,11 @@
       "at": "2026-08-28T02:25:00+10:00",
       "shift": "foreman-58",
       "text": "Quiet-hours patrol shift, two things worth your morning read. First: your cyber-goth sheet from yesterday afternoon that died whole - all eight tiles failed - was NOT the studio refusing your brief. A deploy restarted the studio seconds after your roll started (the deploy guard checks whether you're mid-session, but you'd been quiet eight minutes when the push fired and it can't see a roll that hasn't started yet - it did refuse the very next push two minutes later). Every slice was refunded within six minutes - I verified the 160 credits back row by row - and each tile offered Retry. This is the known accepted deploy-collision class; nothing is broken. Second: the refusal patrol ran on the new material (your roll before that one had 4 of 8 refused by the content filter - same coin-per-render behaviour as before, byte-identical text refused and delivered in one sheet). The new mid-torso framing sentence showed slightly more refusals in its court, but the numbers say coin, not sentence (p = 0.35) - and every roll you make on the live framing adds free evidence, so the patrol logged it and spent nothing. No word enters any rewrite list. Your first Follow tap is still the live check of the Row A build."
+    },
+    {
+      "at": "2026-08-30T02:20:00+10:00",
+      "shift": "foreman-104",
+      "text": "Ran the widening you ordered on #243 — the test where the customer names a species and says nothing about its face. It works: on \"a deep-sea anglerfish humanoid\", today's studio gives you a person with grey skin and a closed human mouth four times out of four, and the creature lane gives you the anglerfish's own jaw and teeth four times out of four. Three strips are in your gallery. Two honest limits are on the card: your species-TONGUE case is still unasked (a snake-woman's tongue is inside her closed mouth, so that fixture could never have shown one), and I found a hole in my own measuring tool — asked for tusks on a face that has none, it outlines the HORNS and reports 7,455 pixels, which read at face value says today's version paints more tusks than the creature version, the exact opposite of the pictures. I only caught it because I painted the outline back onto the photo. It does not undo the oni reading from two nights ago; I re-checked those the same way and that tool was reading real tusks at the real mouth. One thing I did not go looking for is on the card as your decision: with the creature lane on, the lamia has a serpent coil in the picture 4 times of 4 and 0 of 4 without — and her brief never says \"tail\"."
     }
   ],
   "acknowledgedReplyIds": [

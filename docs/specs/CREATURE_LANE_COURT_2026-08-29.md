@@ -1,5 +1,19 @@
 # The creature lane court — #237 and #232, 2026-08-29 (foreman-101)
 
+> ✅ **SUPERSEDED IN PART — read `CREATURE_LANE_WIDENING_COURT_2026-08-30.md` (#243) beside this.**
+> Two things moved after this document was written. (1) **The render half IS proven** — the
+> founder's eye separated the two oni rows on PLACEMENT (tusks seated as dentition against
+> tusks pushing through closed lips), which is the dimension §3's pixel areas could not
+> express; #232 closed on his word. (2) The widening then ran on a fixture whose seed names
+> no mouth anatomy, and it proves out cleanly on an anglerfish humanoid — 4/4 against 4/4.
+>
+> ⚠ **And §3's instrument was RE-CHECKED, in this court's favour.** The widening found that
+> the region reader asked for an ABSENT feature answers with the nearest lookalike (it
+> outlined an oni's HORNS for `tusks`, 7,455 px — #246). That is not what happened here:
+> `T-K-0/1/2` were re-read and the mask painted, and all three sit at **38%–44% of frame
+> height, on real tusks at the mouth**, because this court's seed STATED the tusks. **§3's
+> overlap was a true overlap, honestly measured; its blindness was to placement alone.**
+
 What the founder ordered, what was built, what was measured, and — the part
 that matters most here — **the half that was NOT proven**.
 
