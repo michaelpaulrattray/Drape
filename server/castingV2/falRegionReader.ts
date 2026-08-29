@@ -706,6 +706,43 @@ export function createFalRegionReader(input: {
         for the picture she already had, which is the worse of the two errors
         this whole path exists to prevent.
       */
+      /*
+        ⚠ AND A NON-EMPTY ANSWER MEANS TWO DIFFERENT THINGS TOO — the feature,
+        or THE NEAREST THING IN THE PICTURE THAT LOOKS LIKE THE WORD. This half
+        was missing from this module, and it is the half `absentIsAnswer`
+        cannot survive (#246, measured 2026-08-30).
+
+        The `eyebrow` union above is the direction this file already records at
+        length: a feature that IS there read as zero, which with
+        `absentIsAnswer` becomes a confident *"she has no eyebrows"*. The
+        mirror is worse and was written down nowhere:
+
+            frame                          asked     px      where the mask sat
+            an oni with NO tusks, horns   `tusks`   7,455    17%–23% of height
+              plainly in frame                               — THE HORNS
+            the same species WITH tusks   `tusks`   2,123    35%–38% — the mouth
+
+        Stable on re-read (7455 twice, 2123 twice): a settled wrong answer, not
+        noise. **It fails UPWARD** — the arm where the feature was ABSENT scored
+        three to four times the arm where it was PRESENT — and that is the
+        dangerous direction, because a false negative reads as a null result and
+        gets treated with suspicion while a false positive reads as a finding
+        and gets written down.
+
+        So `absentIsAnswer` does what its callers believe ONLY for a word with
+        no lookalike in frame. A caller whose question can be asked of a picture
+        that does not contain the answer cannot read "some pixels" as
+        "it is there": that reading needs a second, differently-anchored
+        question, or a bound on WHERE the answer is allowed to sit.
+
+        **A positive control does not catch this**, which is why it survived a
+        court that had one — the reader really can find the thing when it is
+        there. What catches it is painting the mask back onto the frame and
+        looking at the band (`scripts/_shift104-where-disposable.mts`), and it
+        takes thirty seconds. Confirmed to reach the product path through the
+        real `reMintCarriedGeometry` with both controls holding
+        (`docs/specs/ABSENT_FEATURE_SUBSTITUTION_AUDIT_2026-08-30.md`).
+      */
       const absent = async (): Promise<Mask> => {
         if (!absentIsAnswer) throw new MaskError(`the segmenter found no ${name} to edit`);
         log.debug({ name }, "[falRegionReader] nothing there, and nothing there is the answer");
