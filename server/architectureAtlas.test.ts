@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { atlasSourcePaths, checkArchitecture } from "../scripts/check-architecture.mts";
-import { sourceText } from "../scripts/generate-architecture.mts";
+import { buildAtlas, sourceText } from "../scripts/generate-architecture.mts";
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -520,8 +520,116 @@ describe("architecture atlas", () => {
     // normalize is quietly editing source rather than folding endings.
     expect(sourceText("a\rb")).toEqual("a\rb");
   });
+
+  /**
+   * ⚠ STEP 2 — THE DETERMINISM CHECK — HAD NEVER BEEN DRIVEN, AND IT IS THE
+   * ONE ARM OF THIS CHECKER THAT CAN BE DISARMED WITHOUT TURNING ANYTHING RED
+   * (#233, `docs/specs/ATLAS_SUITE_TIMEOUT_DIAGNOSIS_2026-08-30.md` §3).
+   *
+   * Every arm above hands `checkArchitecture` the REAL generator, which is
+   * deterministic — so all of them agreed that two identical builds are
+   * identical, and none of them could have noticed the comparison being
+   * removed. That is working law 2 exactly: a green suite proves nothing if
+   * the checker cannot fail.
+   *
+   * It stopped being hypothetical the night the suite was made 6× faster. The
+   * measured, tempting version of that repair memoises the ATLAS, and a
+   * memoised atlas is compared to ITSELF: step 2 goes permanently silent while
+   * `3 failed | 14 passed` reads **identically** to the working version — the
+   * difference lived only inside the problems string. The shipped repair
+   * shares the ts-morph Project instead, so the collectors still run twice.
+   *
+   * This is the arm that keeps it that way. It asserts the MECHANISM (the
+   * builder is called twice) and the REASON (the determinism complaint by
+   * name), never the colour: the fixture also fails schema and freshness, and
+   * asserting `ok === false` would have passed on a disarmed check.
+   */
+  it("CAN FAIL — step 2 is driven with a builder that really is nondeterministic", () => {
+    let calls = 0;
+    const drifting = () => atlasShaped(`fingerprint-${++calls}`);
+    const { problems } = checkArchitecture({ build: drifting });
+
+    /* THE GUARD AGAINST THE SILENT REPAIR. One call means the checker compared
+       one object to itself — the memoised variant — and every assertion below
+       would then be passing for a reason that has nothing to do with
+       determinism. Read this line first when it goes red. */
+    expect(calls, "checkArchitecture must build TWICE — step 2 is that second build").toBe(2);
+    expect(problems.join("\n")).toContain("generator is not deterministic");
+  }, 60_000);
+
+  it("and does NOT cry nondeterminism over two builds that agree", () => {
+    /*
+      The negative control for the arm above. Without it, an injected builder
+      that tripped step 2 unconditionally — or a comparison done by identity
+      rather than by value — would look exactly like a working check.
+      Deliberately two DISTINCT objects with equal content: `JSON.stringify`
+      comparison is the contract, object identity is not.
+    */
+    let calls = 0;
+    const { problems } = checkArchitecture({
+      build: () => {
+        calls += 1;
+        return atlasShaped("same");
+      },
+    });
+
+    expect(calls).toBe(2);
+    expect(problems.join("\n")).not.toContain("generator is not deterministic");
+    /* And the fixture really did reach the checker — an `expect(...).not` is
+       green on nothing at all, which is how an absence-only assertion passes a
+       check that never ran. */
+    expect(problems.join("\n")).toContain("is stale");
+  }, 60_000);
+
+  /**
+   * ⚠ THIS ARM IS THE COVERAGE THE SHARED-PROJECT REPAIR WOULD OTHERWISE HAVE
+   * DROPPED, AND IT IS HERE BECAUSE THE DIAGNOSIS NAMED IT AS THE OPEN
+   * QUESTION RATHER THAN MEASURING IT AWAY (#233 §4).
+   *
+   * `buildAtlas()` now reuses one ts-morph Project per process. Step 2's two
+   * builds therefore re-run every COLLECTOR but no longer re-run PROJECT
+   * CONSTRUCTION — so a nondeterminism arising inside construction itself
+   * (file-discovery order, say) would no longer be exercised there.
+   *
+   * The narrowing is real but it is small, for a reason that is read off the
+   * code rather than hoped for: the file scan `allFiles` was ALREADY a
+   * module-level constant, computed once at import and explicitly `.sort()`ed,
+   * so no build has ever re-discovered the tree. What is left is ts-morph's
+   * own resolution through `tsConfigFilePath`, and that is what this drives.
+   *
+   * The cost is the point. Two independent constructions are ~10.7 s — the
+   * price of exactly ONE of the eleven `checkArchitecture()` calls this file
+   * used to make. The reach is unchanged; it is paid once per suite run
+   * instead of eleven times.
+   */
+  it("two INDEPENDENTLY CONSTRUCTED Projects produce the same atlas", () => {
+    const first = buildAtlas({ freshProject: true });
+    const second = buildAtlas({ freshProject: true });
+
+    /* Population control: a builder that returned an empty husk would satisfy
+       the equality below and prove nothing. */
+    expect(first.modules.length, "modules the Atlas names").toBeGreaterThan(500);
+    expect(first.routes.length, "procedures the Atlas names").toBeGreaterThan(100);
+
+    expect(JSON.stringify(second)).toEqual(JSON.stringify(first));
+  }, 120_000);
 });
 
 function sha(text: string): string {
   return createHash("sha256").update(text).digest("hex");
+}
+
+/**
+ * A minimal atlas-shaped fixture for the step-2 arms. It is deliberately NOT a
+ * real atlas: those arms are about the COMPARISON, and a fixture that had to be
+ * schema-valid and fresh would have to be a real build, which is the 10.7 s
+ * this repair exists to stop paying eleven times.
+ */
+function atlasShaped(fingerprint: string): ReturnType<typeof buildAtlas> {
+  return {
+    meta: { schemaVersion: 1, generatorVersion: 1, sourceFingerprint: fingerprint },
+    domains: [], modules: [], routes: [], surfaces: [], envVars: [], flags: [],
+    workers: [], operationKinds: [], creditCosts: [], vocabulary: [], tests: [],
+    edges: [], findings: [],
+  } as unknown as ReturnType<typeof buildAtlas>;
 }

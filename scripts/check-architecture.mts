@@ -145,13 +145,34 @@ export function atlasSourcePaths(atlas: unknown): string[] {
 }
 
 export function checkArchitecture(
-  dependencies: { readFile?: CheckReader; trackedFiles?: TrackedFiles } = {},
+  dependencies: {
+    readFile?: CheckReader;
+    trackedFiles?: TrackedFiles;
+    /**
+     * ⚠ THE BUILDER IS INJECTABLE SO THAT STEP 2 CAN BE PROVEN ABLE TO FAIL
+     * (#233, working law 2 — a green suite proves nothing if the checker
+     * cannot fail). Step 2 is the ONLY thing in this file that asks the
+     * determinism question, and until this seam existed nothing drove it:
+     * every arm fed it the real generator, which is deterministic, so the
+     * check was asserted by a suite that could not have noticed its removal.
+     *
+     * It is called ONCE PER BUILD on purpose. A refactor that memoises the
+     * atlas — the tempting 16× win measured in
+     * `docs/specs/ATLAS_SUITE_TIMEOUT_DIAGNOSIS_2026-08-30.md` §3 — would
+     * call it once and compare the result to itself, and the positive-control
+     * arm in `server/architectureAtlas.test.ts` goes RED when it does. That
+     * arm is the reason this parameter exists; it is not a general-purpose
+     * override and no production caller passes it.
+     */
+    build?: () => ReturnType<typeof buildAtlas>;
+  } = {},
 ): CheckResult {
   const readFile = dependencies.readFile ?? ((at: string) => fs.readFileSync(at, "utf8"));
   const trackedFiles = dependencies.trackedFiles ?? gitTrackedFiles;
+  const build = dependencies.build ?? (() => buildAtlas());
   const problems: string[] = [];
 
-  const atlas = buildAtlas();
+  const atlas = build();
 
   // 1. Schema validity.
   const ajv = new Ajv2020({ allErrors: true, strict: false });
@@ -163,7 +184,7 @@ export function checkArchitecture(
   }
 
   // 2. Determinism — two builds on an unchanged tree must be identical.
-  const second = buildAtlas();
+  const second = build();
   if (JSON.stringify(atlas) !== JSON.stringify(second)) {
     problems.push(
       "generator is not deterministic: two runs on an unchanged tree differed",
