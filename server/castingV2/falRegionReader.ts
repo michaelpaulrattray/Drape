@@ -729,6 +729,29 @@ export function createFalRegionReader(input: {
         gets treated with suspicion while a false positive reads as a finding
         and gets written down.
 
+        ⚠ AND IT IS NOT A PROPERTY OF ONE WORD. Two further words have been
+        driven at the departure gate since, each in its own sitting with its own
+        controls, and the second of them fails upward PAST ITS OWN POSITIVE
+        CONTROLS:
+
+            frame                          asked        px      where the mask sat
+            a hairless creature skull     `hair`      25,962    a hairline-shaped
+                                                                cap on bare bone
+            a creature with NO brow hair  `eyebrows`   6,714    TWO perfect brow
+              (ANG-C-2)                                         shapes on the bare
+                                                                ridge, 26%–29%
+            a woman WITH dark brows       `eyebrows`   3,878    her real brows
+            a man WITH blond brows        `eyebrows`   6,084    his real brows
+
+        So on `eyebrows` the ABSENT read outscores the feature genuinely being
+        present, in both present arms. **A magnitude test cannot separate these
+        two populations** — not because they overlap, but because they are
+        inverted. Pooled: three substitutions in ten absent cells across five
+        words; `facial hair` and `horns` came back clean with positive controls
+        firing on the same word in the same sitting, so which words it reaches is
+        still open. (`docs/specs/DEPARTURE_GATE_SUBSTITUTION_2026-08-30.md`
+        §2 and §7.)
+
         So `absentIsAnswer` does what its callers believe ONLY for a word with
         no lookalike in frame. A caller whose question can be asked of a picture
         that does not contain the answer cannot read "some pixels" as
