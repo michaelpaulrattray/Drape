@@ -63,7 +63,9 @@ for (const arm of ARMS) {
     input: Buffer.from(
       `<svg width="${WIDE}" height="${CAPTION}"><rect width="${WIDE}" height="${CAPTION}" fill="#000"/>`
       + `<text x="6" y="18" font-family="monospace" font-size="15" fill="#fff">${caption}</text>`
-      + `<text x="6" y="38" font-family="monospace" font-size="14" fill="#ffb0b0">READER: ${verdictOf(arm.id)}</text></svg>`,
+      /* Grey, not the tint this line first carried: fable-230's monochrome
+         ruling covers everything drawn onto an image, and the gate caught it. */
+      + `<text x="6" y="38" font-family="monospace" font-size="14" fill="#bbbbbb">READER: ${verdictOf(arm.id)}</text></svg>`,
     ),
     left: 0,
     top: top + (cropMeta.height ?? 0),

@@ -145,11 +145,21 @@ for (const arm of ARMS) {
 
       /* Paint it back so the box is LOOKED at rather than reasoned about. The
          boring loop, not `dest-in`: sharp promotes a raw one-channel buffer to
-         greyscale and paints the whole frame. */
+         greyscale and paints the whole frame.
+
+         WHITE, not the red the earlier `-WHERE` writers used: the founder's
+         standing ruling is *"Bounding-box overlays are THIN WHITE, not red —
+         everywhere"* (fable-230, guarded by
+         `server/castingV2/onImageGeometryMonochrome.test.ts`). Those writers
+         were never tracked, so the guard never saw them and this would have
+         been the commit that imported the breach. ⚠ The guard still cannot see
+         THIS line either — it reads `fill=`/`stroke=` hexes and `[r, g, b]`
+         literals, and a per-channel assignment is a third idiom — so obeying it
+         here is a choice rather than an enforcement, and the gap is filed. */
       const rgba = Buffer.alloc(lastMask.width * lastMask.height * 4);
       for (let index = 0; index < lastMask.width * lastMask.height; index += 1) {
         const on = (lastMask.data[index] ?? 0) > 127;
-        rgba[index * 4] = 220; rgba[index * 4 + 1] = 40; rgba[index * 4 + 2] = 40;
+        rgba[index * 4] = 255; rgba[index * 4 + 1] = 255; rgba[index * 4 + 2] = 255;
         rgba[index * 4 + 3] = on ? 165 : 0;
       }
       const red = await sharp(rgba, { raw: { width: lastMask.width, height: lastMask.height, channels: 4 } })
