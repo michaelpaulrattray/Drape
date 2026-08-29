@@ -29,9 +29,15 @@
   align-items: stretch;
 }
 
+/*
+  The two flex-basis values on the columns are load-bearing (#234 spec §2):
+  they let copy and deck share a row down to ~750px and then wrap cleanly, with
+  no media query at all. `min()` guards the stacked case — below the basis the
+  column takes the width it has rather than overflowing the card.
+*/
 .dpc-hero__copy {
-  flex: 1 1 470px;
-  min-width: min(400px, 100%);
+  flex: 1 1 420px;
+  min-width: min(344px, 100%);
   padding: 28px 28px 24px;
   display: flex;
   flex-direction: column;
@@ -51,66 +57,228 @@
 }
 
 /*
-  The outline-seam construction. The 1px flex gap lets the `--border`
-  background show through as the seam between the two frames, and the outline
-  draws the same hairline around the pair — so seam and edge are one weight.
-  Two separately-bordered boxes would double the line where they meet.
-*/
-.dpc-hero__pair {
-  flex: 1 1 320px;
-  min-width: min(300px, 100%);
-  display: flex;
-  gap: 1px;
-  background: var(--border);
-  outline: 1px solid var(--border);
-  min-height: 286px;
-}
+  THE DECK COLUMN (#234, spec §2 and §4) — what replaced the split-face pair.
 
-.dpc-hero__slot {
-  flex: 1;
-  position: relative;
-  background: var(--media);
+  It is a column of two areas: the fanned deck, which takes the height left
+  over, and the brief block, which does not move. `--page` behind it and one
+  hairline down the left edge are what make it read as the card's other half
+  rather than as a picture dropped into a panel.
+*/
+.dpc-deck {
+  flex: 1 1 330px;
+  min-width: min(302px, 100%);
+  min-height: 452px;
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+  border-left: 1px solid var(--border);
   overflow: hidden;
 }
 
 /*
-  The image can NEVER dictate the box. `height: 100%` on a flex-sized slot is
-  circular — with no definite height it resolves as auto, and the art's
-  intrinsic ratio balloons the card (learned 2026-08-05, when a tall frame
-  did exactly that in production). Absolute-fill breaks the cycle: the pair's
-  own min-height and the copy column size the card; the art crops to fit.
+  `container-type: size` is the whole trick: it makes `100cqh` mean THIS box's
+  height, so a card can be capped by the height available as well as by the
+  width — one expression instead of a media query, and it holds whether the
+  column is short and wide or tall and narrow.
 */
-.dpc-hero__slot > img {
+.dpc-deck__stage {
+  flex: 1;
+  container-type: size;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+}
+
+/*
+  A card sets WIDTH only. `aspect-ratio` resolves the auto axis; setting both
+  axes would silently win over the ratio and hand back a stretched frame.
+*/
+.dpc-deck__card {
+  position: absolute;
+  aspect-ratio: 4 / 5;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--media);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.52s var(--ease), opacity 0.52s ease, box-shadow 0.52s ease;
+}
+
+.dpc-deck__card:focus-visible {
+  outline: 2px solid var(--accentLine);
+  outline-offset: 2px;
+}
+
+.dpc-deck__card--centre {
+  width: min(58%, calc((100cqh - 18px) * 0.8));
+  z-index: 3;
+  opacity: 1;
+  border-color: var(--borderCard);
+  box-shadow: var(--shadowCard);
+}
+
+/*
+  The peeks are dimmed, not hidden. In dark they must still read as CARDS
+  rather than as holes cut in the panel, which is what the border and the media
+  background are doing at 34%.
+*/
+.dpc-deck__card--peek {
+  width: min(46%, calc((100cqh - 18px) * 0.8));
+  z-index: 1;
+  opacity: 0.34;
+}
+
+.dpc-deck__card--left {
+  transform: translateX(-62%) rotate(-7deg) scale(0.9);
+}
+
+.dpc-deck__card--right {
+  transform: translateX(62%) rotate(7deg) scale(0.9);
+}
+
+/*
+  The image can NEVER dictate the box — the law the pair this replaced was
+  built on (2026-08-05, when a taller intrinsic ratio ballooned the hero in
+  production) and the deck inherits unchanged. `height: 100%` on a flex-sized
+  slot is circular; absolute-fill breaks the cycle, so whatever art ships next
+  crops to the card instead of bending it.
+*/
+.dpc-deck__card > img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Brand art, not a cast — decorative, so it carries no alt text and no pill. */
-  object-position: center 22%;
-  /*
-    The motion layers (HeroMotion). A frame starts transparent and the ACTIVE
-    one fades in over 90ms — a softened film cut. The engine raises the
-    incoming frame's z-index and only drops covered frames with the transition
-    suppressed, so the slot never dips toward the background mid-swap and no
-    two faces ever visibly blend.
-  */
-  opacity: 0;
-  transition: opacity 90ms linear;
+  object-position: center top;
+  user-select: none;
 }
 
-.dpc-hero__slot > img.dpc-hero__frame--on {
-  opacity: 1;
+.dpc-deck__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 26px 11px 10px;
+  background: linear-gradient(to top, var(--scrimPill), transparent);
+  pointer-events: none;
+  text-align: left;
+}
+
+.dpc-deck__name {
+  font: 500 11.5px var(--font-sans);
+  color: var(--onScrim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dpc-deck__meta {
+  font: 400 9px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--onScrim);
+  opacity: 0.72;
 }
 
 /*
-  The art is ONE split-face composition carried as two halves, and the CSS seam
-  is its dividing line — so each half anchors to its seam edge. Centering would
-  shave the faces at the seam on narrow slots and break the reconstruction;
-  anchored, any crop comes from the blurred outer margin instead.
+  THE BRIEF BLOCK — the point of the section. It never moves: `min-height` on
+  the quote is what stops the deck above jumping every four seconds as briefs
+  of different lengths arrive, and the clamp is what stops a long one pushing
+  the card taller. The words themselves are never edited — a long brief is
+  elided on screen and stays whole underneath.
 */
-.dpc-hero__slot:first-child > img { object-position: right 22%; }
-.dpc-hero__slot:last-child > img { object-position: left 22%; }
+.dpc-deck__brief {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 18px 18px;
+}
+
+.dpc-deck__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.dpc-deck__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.dpc-deck__quote {
+  margin: 0;
+  min-height: 60px;
+  font: 400 13.5px/1.6 var(--font-sans);
+  color: var(--ink);
+  text-wrap: pretty;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dpc-deck__ticks {
+  display: flex;
+  gap: 4px;
+}
+
+.dpc-deck__tick {
+  width: 22px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.dpc-deck__tick--past {
+  background: var(--lineStrong);
+}
+
+.dpc-deck__tickfill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--ink);
+  animation-name: dpc-deck-tick;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes dpc-deck-tick {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/*
+  Motion is the accent, never the state. With reduced motion the deck is a
+  still fan: no timer runs (the component sees the same query), and nothing
+  eases between cards a click does move.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .dpc-deck__card {
+    transition: none;
+  }
+
+  .dpc-deck__tickfill {
+    animation: none;
+    width: 100%;
+  }
+}
 
 /* ---- the two entry cards ---- */
 

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e6c8fcf288d97b86"
+    "sourceFingerprint": "c6a0a2f1cc5e2692"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 48
+      "moduleCount": 49
     },
     {
       "id": "domain:client-shared",
@@ -1581,8 +1581,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/castingV2/components/HeroMotion.tsx",
-      "path": "client/src/features/castingV2/components/HeroMotion.tsx",
+      "id": "module:client/src/features/castingV2/components/HeroDeck.tsx",
+      "path": "client/src/features/castingV2/components/HeroDeck.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -1661,6 +1661,12 @@
     {
       "id": "module:client/src/features/castingV2/frameDecodes.ts",
       "path": "client/src/features/castingV2/frameDecodes.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/heroDeck.ts",
+      "path": "client/src/features/castingV2/heroDeck.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10236,6 +10242,10 @@
       "path": "client/src/features/castingV2/heroBox.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/heroDeck.test.ts",
+      "path": "client/src/features/castingV2/heroDeck.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/holdToCompare.test.ts",
       "path": "client/src/features/castingV2/holdToCompare.test.ts"
     },
@@ -15816,6 +15826,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/HeroDeck.tsx",
+      "to": "module:client/src/features/castingV2/heroDeck.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
@@ -18442,7 +18457,7 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/HeroMotion.tsx",
+      "to": "module:client/src/features/castingV2/components/HeroDeck.tsx",
       "kind": "imports"
     },
     {

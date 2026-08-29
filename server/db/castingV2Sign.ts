@@ -1220,6 +1220,18 @@ export async function listCastPublicIdsForCandidates(
  * for and must be reachable, which is the whole point of this query existing.
  * Legacy surfaces correctly exclude that status; an owner-scoped V2 read does
  * not (plan §F).
+ *
+ * **`frameCount` and `brief` are here rather than in a second hero-only read**
+ * (working law 4, #234). The casting hero's deck shows each signed Cast beside
+ * the sentence that cast her, and a parallel list would be a second source of
+ * truth for the same rows that drifts the first time one of them changes. Both
+ * are owner-scoped in their own statement like everything else in this file:
+ * the frame count over this account's models, the brief through a candidate
+ * already re-anchored to `userId` and then a roll re-anchored to it again.
+ *
+ * `brief` is the customer's own sentence read back to the customer who typed
+ * it — never a compiled prompt, which stays internal (`compiledBrief` is not
+ * selected here and must not be).
  */
 export async function listSignedCasts(
   userId: number,
@@ -1228,6 +1240,8 @@ export async function listSignedCasts(
   model: Model;
   anchorUrl: string | null;
   personaLine: string | null;
+  frameCount: number;
+  brief: string | null;
 }>> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();
@@ -1263,8 +1277,28 @@ export async function listSignedCasts(
     }
   }
 
+  /*
+    HOW MANY FRAMES THIS CAST ACTUALLY HAS — counted over the rows, never
+    assumed from the package's declared view list. A package still building has
+    fewer than a finished one, and the hero's caption says a number to a
+    customer about their own property, so it is a count or it is nothing.
+  */
+  const frameRows = await db
+    .select({ modelId: modelAssets.modelId, frames: sql<number>`count(*)` })
+    .from(modelAssets)
+    .where(and(
+      inArray(modelAssets.modelId, rows.map((row) => row.id)),
+      isNotNull(modelAssets.storageUrl),
+    ))
+    .groupBy(modelAssets.modelId);
+  const framesByModel = new Map(frameRows.map((row) => [row.modelId, Number(row.frames)]));
+
   const candidates = await db
-    .select({ id: castingCandidates.id, personaLine: castingCandidates.personaLine })
+    .select({
+      id: castingCandidates.id,
+      personaLine: castingCandidates.personaLine,
+      rollId: castingCandidates.rollId,
+    })
     .from(castingCandidates)
     .where(and(
       inArray(
@@ -1274,14 +1308,31 @@ export async function listSignedCasts(
       eq(castingCandidates.userId, userId),
     ));
   const lineByCandidate = new Map(candidates.map((row) => [row.id, row.personaLine]));
+  const rollByCandidate = new Map(candidates.map((row) => [row.id, row.rollId]));
 
-  return rows.map((model) => ({
-    model,
-    anchorUrl: faceByModel.get(model.id) ?? null,
-    personaLine: model.sourceCandidateId
-      ? lineByCandidate.get(model.sourceCandidateId) ?? null
-      : null,
-  }));
+  /*
+    The sentence that cast her. `userId` is in this WHERE as well as in the
+    candidate read above — the candidate ids were already re-anchored, so this
+    is belt and braces rather than the only owner check, and it costs nothing.
+  */
+  const rollIds = Array.from(new Set(candidates.map((row) => row.rollId)));
+  const briefRows = rollIds.length === 0 ? [] : await db
+    .select({ id: castingRolls.id, briefText: castingRolls.briefText })
+    .from(castingRolls)
+    .where(and(inArray(castingRolls.id, rollIds), eq(castingRolls.userId, userId)));
+  const briefByRoll = new Map(briefRows.map((row) => [row.id, row.briefText]));
+
+  return rows.map((model) => {
+    const candidateId = model.sourceCandidateId;
+    const rollId = candidateId ? rollByCandidate.get(candidateId) : undefined;
+    return {
+      model,
+      anchorUrl: faceByModel.get(model.id) ?? null,
+      personaLine: candidateId ? lineByCandidate.get(candidateId) ?? null : null,
+      frameCount: framesByModel.get(model.id) ?? 0,
+      brief: rollId === undefined ? null : briefByRoll.get(rollId) ?? null,
+    };
+  });
 }
 
 /**
