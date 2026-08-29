@@ -1,6 +1,6 @@
 {
-  "edition": 105,
-  "updatedAt": "2026-08-29T22:35:00+10:00",
+  "edition": 106,
+  "updatedAt": "2026-08-29T22:55:00+10:00",
   "shift": "foreman-100",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -187,8 +187,8 @@
           "consequence": "Then #230 stays shipped-but-unjudged and the lobby waits on your segment pick as before. I would not recommend it: you said this blocks the lobby lane, and a MAX sheet takes you two minutes."
         }
       ],
-      "recommendation": "Roll one MAX sheet. I have proven the SHAPE — one brief, facts kept — at the text transport on your own seeds, but I have not rendered a sheet, so nothing I did tells you how the faces look. That part is only your eye.",
-      "state": "open",
+      "recommendation": "ANSWERED — you rolled it and filed the residue as #237: the paragraph is one block now but still names armour pieces, and the tail your brief asks for is being hidden by the chest-up crop. That is the next shift's first brief.",
+      "state": "answered",
       "filedAt": "2026-08-29T21:10:00+10:00",
       "issueNumber": 230
     },
@@ -1908,6 +1908,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T22:55:00+10:00",
+      "shift": "foreman-100",
+      "text": "Read your reply and #237 with it. You are right on both counts and neither is a small edit: the noun discipline has to move INSIDE the paragraph, and the tail clause is a framing fact that needs the house block to know it is casting a creature — which is the same lane split #232 needs for creature mouths. So they are one brief, not two, and the next shift takes them together with your sphinx as the fixture. I did not start it tonight rather than leave a half-changed prompt sitting on your account overnight with no second opinion available. Tonight's hero is merged, deployed and waiting for your eye on the card above it."
+    },
+    {
       "at": "2026-08-29T22:35:00+10:00",
       "shift": "foreman-100",
       "text": "Your hero is rebuilt and it is on a pull request, not yet live. The right half of the casting page now shows the cast you have actually signed with the words that cast them underneath, and an empty account gets six of your creature casts instead of a stock picture. I looked at twenty of your candidates before choosing those six — that part was taste, not a query. Two honest notes: the trait-panel toggle your spec asks for is not built, because the panel it opens does not exist and a dead control is worse than a missing one (#238); and the split-face art is deleted, which is one command to undo if you miss it. The lobby lane is still waiting on you to name segment 1, and the MAX sheet is still waiting on your roll."
@@ -2101,11 +2106,6 @@
       "at": "2026-08-27T22:45:00+10:00",
       "shift": "foreman-54",
       "text": "Your Follow court (#177) ran the same night you ordered it and is on this page. All 24 renders are image-anchored — the photo of the guy you followed rides with the brief, per your ruling. One catch found before the money was spent: your B/C sentence said 'eight clearly different men', and sent per-picture the engine painted an eight-face collage inside every single frame (2 of 2 on each row) — so the sentence rides in the singular and the spread comes from the engine's dice, like a normal roll. Detail on #177. Pick a row up top; the winning sentence becomes the Follow build."
-    },
-    {
-      "at": "2026-08-27T23:20:00+10:00",
-      "shift": "foreman-53",
-      "text": "Your ghost find (#176) is fixed, merged and live. What you caught at the frames was real and bigger than one bad sheet: on authored rolls the old studio's per-face dice still wrote invented identities into every record, and three things read those records as fact — the Follow (your eight Indian 'relatives'), the pronouns and current-value readers on edits, and worst, Sign, which would have stamped the fiction into a Cast's permanent identity papers under 'THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY'. Measured before the fix landed: no Cast and no edit had ever consumed the fiction yet, in dev or production — caught in time. Now the records are marked never-sent and refused everywhere, a Follow holds only what the brief stated, and captions on authored tiles show the tile number instead of a disposition nobody cast. Your invalid grids were re-stripped on the fixed road the same night — on the eye item, with the anchor frame first as you asked. The remaining tidy-up (marking the ~96 already-written records per database) is carded as #179."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2136,6 +2136,7 @@
     25,
     26,
     27,
-    28
+    28,
+    29
   ]
 }
