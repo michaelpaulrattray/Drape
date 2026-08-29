@@ -76,7 +76,7 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1024",
+          "server/castingV2/conceptDescribe.ts:1059",
           "server/castingV2/conceptDescribeCopy.ts:79"
         ]
       },
@@ -90,7 +90,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:981",
+          "server/castingV2/conceptDescribe.ts:1016",
           "server/castingV2/conceptDescribeCopy.ts:90"
         ]
       },
@@ -142,8 +142,8 @@
           "server/deployWatchDecision.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1016",
-          "server/castingV2/conceptDescribe.ts:1053",
+          "server/castingV2/conceptDescribe.ts:1051",
+          "server/castingV2/conceptDescribe.ts:1088",
           "server/castingV2/conceptDescribeCopy.ts:89"
         ]
       },
@@ -477,7 +477,7 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1220",
+          "server/castingV2/briefCompiler.ts:1221",
           "server/castingV2/briefRefusalCopy.ts:114"
         ]
       },
@@ -490,7 +490,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1223",
+          "server/castingV2/briefCompiler.ts:1224",
           "server/castingV2/briefRefusalCopy.ts:120"
         ]
       },
@@ -503,7 +503,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1149",
+          "server/castingV2/briefCompiler.ts:1150",
           "server/castingV2/briefRefusalCopy.ts:126"
         ]
       },
@@ -515,8 +515,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1086",
-          "server/castingV2/briefCompiler.ts:1521",
+          "server/castingV2/briefCompiler.ts:1087",
+          "server/castingV2/briefCompiler.ts:1539",
           "server/castingV2/briefRefusalCopy.ts:106"
         ]
       },
@@ -532,8 +532,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1202",
-          "server/castingV2/briefCompiler.ts:1209",
+          "server/castingV2/briefCompiler.ts:1203",
+          "server/castingV2/briefCompiler.ts:1210",
           "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },

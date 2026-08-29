@@ -372,6 +372,34 @@
  * that comes back as noise twice is the one case where *try a different
  * picture* is honest advice.
  */
+/**
+ * ⚠ THE CREATURE CHECKLIST — #232 half 2, with his own list from #231.
+ *
+ * Founder, verbatim (terminal, 2026-08-29): *"Reader: if the tongue or tusks
+ * are in the picture and the being still isn't itself without them, write them
+ * as features — short oni tusks, long tongue. Not dripping slime, not mouth
+ * wide open."* — and, in the same night's addendum: *"Add whiskers to the
+ * creature checklist: ears, horns, tail, wings, scales, whiskers — if it's in
+ * the frame, write it."*
+ *
+ * So the FEATURE bullet gained his checklist and the mouth clause, and the
+ * closing law is his sentence rather than the list: **if it is in the frame,
+ * write it.** The list is a FLOOR — a crest, a beak, fins, an exoskeleton are
+ * facts about the being too — and the mouth clause carries the anatomy/styling
+ * line this module already draws: on the body as anatomy it is a feature, an
+ * acted state is still a pose.
+ *
+ * ⚠ **Nothing here is a banned WORD.** *"dripping slime"* and *"mouth wide
+ * open"* are shown as wrong shapes inside the instruction and are NOT in
+ * `NOT_ABOUT_THE_PERSON` — the fourth instance of the `cropped` / bare
+ * `framing` class in this file is one too many to risk a fifth, and *"open"*
+ * and *"wide"* are ordinary prose about a face.
+ *
+ * ⚠ **The other three rules of #231 (bare skin reads HAIRLESS, materials not
+ * named pieces on the READER's side, LOW keeps species facts) and its
+ * Grok-vs-Sonnet reader court are NOT here** — they are that card's, and it is
+ * open. What landed with #232 is the one sentence the two cards share.
+ */
 import { createModuleLogger } from "../logging/logger";
 import { interpreterEngine } from "./interpreter";
 import { ProviderError, type TextEngine } from "../providers/types";
@@ -776,6 +804,13 @@ const RULES = [
   "  never as a product: \"fitted mechanical eye\", \"integrated facial hardware\" \u2014 never \"spiked eye",
   "  harness\", never \"sleek mechanical eye piece\". Do not flatten it away either: a being's own",
   "  hardware is part of what a casting director would be booking.",
+  "- THE CREATURE CHECKLIST \u2014 ears, horns, tail, wings, scales, whiskers, and mouth anatomy.",
+  "  IF IT IS IN THE FRAME, WRITE IT. The list is a floor and never a ceiling: extra limbs, fins, a",
+  "  crest, a beak, an exoskeleton are facts about the being too, and a fact is not optional taste.",
+  "  A MOUTH is anatomy when the being would not be itself without it \u2014 write it as a feature in type",
+  "  language (\"short oni tusks\", \"a long tongue\", \"a heavy underbite\", \"non-human dentition\"),",
+  "  never as gore and never as an acted state: not \"dripping slime\", not \"mouth wide open\", not a",
+  "  snarl or a roar. A mouth that is an ordinary mouth is not a feature and goes unmentioned.",
   "- WARDROBE: ONE phrase, never a list of pieces. If the clothing is plain, the phrase can name it",
   "  (\"fitted dark crew-neck\"). If it is styled or elaborate, the phrase is MATERIALS AND MOOD",
   "  (\"dark structured fashion in lace, leather and metal\"). Never itemise, and never name a single",

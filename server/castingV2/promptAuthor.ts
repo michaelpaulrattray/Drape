@@ -70,6 +70,32 @@
  * diff is not mechanical and is deliberately not faked); and skin words that
  * fight the block's own realism negatives (`SKIN_CONTRADICTIONS`).
  *
+ * # ⚠ ONE PARAGRAPH IS NECESSARY AND NOT SUFFICIENT — #237, 2026-08-29
+ *
+ * The rewrite above fixed the SHAPE and the founder then refused the CONTENT
+ * inside it (verbatim): *"MAX is now one paragraph. Good. Don't stack again.
+ * … The paragraph is still a build sheet. One block is necessary. It is not
+ * sufficient. This sphinx MAX named a kit: angular pauldrons, banded
+ * vambraces, a high sculpted collar. That's the clone path inside a single
+ * paragraph."* — with the law: *"Pin materials, mood, species facts. Never pin
+ * exact garments, cuts, jewellery, or armour pieces unless the user typed
+ * them. Faces stay free. Facts stay put."*
+ *
+ * It is the SAME defect as locking one face, arriving through the wardrobe:
+ * anything the paragraph states is locked on every portrait, so a named kit
+ * dresses eight people in one costume. Two things carry it, and the division
+ * between them is declared rather than assumed:
+ *
+ *   - the INSTRUCTION (`maxSystemPrompt`) carries all four of his classes,
+ *     with his own golden sphinx target and his own failing kit shown and
+ *     labelled — the shape `conceptDescribe.ts` uses for his granularity
+ *     ruling;
+ *   - the CHECK (`PIECE_NOUNS` / `pieceNounIn`) carries ONE of them, armour
+ *     pieces, because those are the words that have no second sense in a
+ *     casting paragraph. Its own docblock says why the other three are not
+ *     banned words, and the suite asserts that non-catch out loud so a green
+ *     run is never read as a reader that catches them.
+ *
  * # What is STRUCTURAL rather than promised
  *
  *   - ONE brief on the wire: the composed prompt is the authored paragraph (or,
@@ -103,7 +129,7 @@
 import type { TextEngine } from "../providers/types";
 import { INTERPRET_TIMEOUT_MS } from "./interpreter";
 import { createModuleLogger } from "../logging/logger";
-import { containsHouseSentence, houseBlockForStyle } from "./houseBlock";
+import { containsHouseSentence, DEFAULT_HOUSE_LANE, houseBlockForStyle, type HouseLane } from "./houseBlock";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
 import { ageContradictionIn, droppedFactIn, seedFactsOf, type SeedFacts, type StatedAge } from "./seedFidelity";
 import type { Sex } from "../../shared/castingVocabularies";
@@ -258,6 +284,85 @@ const SKIN_RULE =
   + "If the request uses such a word, keep it: it is a stated fact. Skin it does not describe has texture, pores and life.";
 
 /**
+ * THE PIECES — nouns that name a specific manufactured ARMOUR part, refused
+ * when the AUTHOR introduces one the request did not (#237).
+ *
+ * Founder, verbatim (terminal, 2026-08-29), on his sphinx MAX sheet: *"The
+ * paragraph is still a build sheet. One block is necessary. It is not
+ * sufficient. This sphinx MAX named a kit: angular pauldrons, banded
+ * vambraces, a high sculpted collar. That's the clone path inside a single
+ * paragraph."* — with the law: *"Pin materials, mood, species facts. Never pin
+ * exact garments, cuts, jewellery, or armour pieces unless the user typed
+ * them. Faces stay free. Facts stay put."*
+ *
+ * ⚠ **THE LIST IS ARMOUR PIECES AND HIS OWN THIRD NOUN, AND THAT NARROWNESS IS
+ * A DECLARED JUDGEMENT RATHER THAN AN OVERSIGHT.** His law names four classes;
+ * three of them (garments, cuts, jewellery) have been INSTRUCTION rules in
+ * `maxSystemPrompt` since #131 and stay instruction rules, because a word ban
+ * over the world's garments either sweeps ordinary prose or is a taxonomy
+ * nobody wrote — this module's own admission test, and the fourth time this
+ * repo has met it (`cropped`, `framing`, `reminiscent of` in
+ * `conceptDescribe.ts`). Armour pieces are different in the one way that
+ * matters: each word below names exactly one manufactured plate and has no
+ * second sense in a casting paragraph. `collar` is his own failing noun and is
+ * here on that evidence; `collarbones` is a DIFFERENT WHOLE WORD and passes,
+ * which the suite asserts as a positive control, because the court's own
+ * finding is that `collarbones` is the word that gets a prompt through where
+ * `sternum` does not.
+ *
+ * **The check is SEED-EXEMPT, and that is his own clause** (*"unless the user
+ * typed them"* / *"FACTS STAY PUT"*): a customer who writes "pauldrons" keeps
+ * them, and refusing her rewrite for a word she typed would drop her to a
+ * static prompt that sends the same word to the same engine anyway — the
+ * argument `skinContradictionIn` already had to make about "porcelain-pale".
+ */
+export const PIECE_NOUNS: ReadonlyArray<{ word: string; because: string }> = [
+  { word: "pauldron", because: "his own failing fixture (#237)" },
+  { word: "vambrace", because: "his own failing fixture (#237)" },
+  { word: "collar", because: "his own failing fixture, 'a high sculpted collar' (#237); 'collarbones' is a different whole word and passes" },
+  { word: "collared", because: "the same piece as a garment CUT — his law names cuts beside pieces" },
+  { word: "gorget", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "greave", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "cuirass", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "breastplate", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "chestplate", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "bracer", because: "an armour plate; his #231 rule 3 names 'an arm bracer' as a SKU" },
+  { word: "gauntlet", because: "an armour piece; below the frame and still a locked costume part" },
+  { word: "spaulder", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "rerebrace", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "faulds", because: "an armour plate; one manufactured part, no second sense" },
+  { word: "brigandine", because: "a named armour garment; one manufactured part, no second sense" },
+  { word: "codpiece", because: "an armour piece; one manufactured part, no second sense" },
+];
+
+/**
+ * The first `PIECE_NOUNS` entry the AUTHOR introduced, as a whole word, or
+ * null. Seed-exempt for the reason in that constant's docblock — his own
+ * *"unless the user typed them"*.
+ *
+ * ⚠ **THE PLURAL IS PART OF THE MATCH, and it is here because the canonical
+ * author fixture in the suite said "high collarS".** A whole-word list that
+ * holds the singular alone catches *"a high sculpted collar"* and misses *"high
+ * collars"* — the same defect with an `s` on it, and the shape a draft actually
+ * reaches for. So one optional trailing `s` is part of the pattern rather than
+ * a second row per noun. The boundary still holds where it matters:
+ * `collarbones` is not `collar` or `collars`, and the suite asserts that as a
+ * positive control, because `collarbones` is the word the court found gets a
+ * prompt through where `sternum` does not.
+ */
+export function pieceNounIn(text: string, seedText: string): string | null {
+  const lower = text.toLowerCase().replace(/\s+/g, " ");
+  const seed = seedText.toLowerCase().replace(/\s+/g, " ");
+  for (const { word } of PIECE_NOUNS) {
+    const re = new RegExp(`(^|[^a-z])${word}s?([^a-z]|$)`);
+    if (!re.test(lower)) continue;
+    if (re.test(seed)) continue;
+    return word;
+  }
+  return null;
+}
+
+/**
  * His MAX instruction, §5b verbatim where it speaks: seed + studio/camera +
  * invented aesthetic LANGUAGE — mood, materials, makeup language, hair
  * language, lighting taste — and never an exact face, hairstyle, eye colour,
@@ -276,6 +381,20 @@ export function maxSystemPrompt(allowance: number): string {
     "FACTS STAY. Every fact the request states survives, in your own sentence: sex, age, heritage, build, hair, wardrobe, features, materials, mood. Facts cannot move at any level or in any wording — \"mid 30s\" must never surface as \"young woman\", and an adjective the request chose (\"subtle\") must not become a different one (\"crisp\"). Never dropped, never softened, never contradicted, never re-described. Taste can be added. Facts cannot be rewritten.",
     "",
     "TASTE GOES UP. What you add is heat and aesthetic language — mood, materials, makeup language, hair language, lighting taste — never a second description arguing with what it already says.",
+    "",
+    /*
+      #237, his law verbatim where it speaks. One paragraph was necessary and
+      is not sufficient: the sphinx sheet came back as a KIT inside a single
+      paragraph, which is the clone path wearing the right shape.
+    */
+    "PIN THE WORLD, NEVER THE PIECES. Pin materials, mood and species facts. NEVER pin an exact garment, an exact cut, a jewellery piece or an armour piece the request did not name — no pauldrons, no vambraces, no sculpted collar, no named coat, boot, buckle or ring. Naming a kit locks one costume onto every portrait, which is the same failure as locking one face. Say what the wardrobe is MADE OF and what it FEELS like, and leave the parts to the engine. FACES STAY FREE. FACTS STAY PUT.",
+    "",
+    /*
+      His own golden target and his own failing kit, labelled — the shape
+      `conceptDescribe.ts` uses for his granularity ruling, and the specimen is
+      the sheet he refused.
+    */
+    "Worked example of the PIECES rule. An armoured feline humanoid should come back like this: \"Adult feline humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber eyes, long tail. Sphinx-cat presence, sovereign and predatory. Dark structured armour in aged bronze and gold with jewel-toned inlay — ceremonial, worn, formidable.\" Heat on top of that is pressure, never parts: \"Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft youthful rounding.\" What it must never become is a kit — \"angular pauldrons, banded vambraces, a high sculpted collar\" — which is a build sheet, not a casting note.",
     "",
     "FIRST decide what kind of seed it is — the decision is by CONTENT, never length: if the request already fixes the world (the aesthetic, the skin language, the face language), the seed is FINISHED; otherwise it is thin.",
     "",
@@ -402,6 +521,7 @@ export function composeFinalPrompt(
   content: string | null,
   style: CastStyle = DEFAULT_CAST_STYLE,
   clause: string | null = null,
+  lane: HouseLane = DEFAULT_HOUSE_LANE,
 ): string {
   /*
     ⚠ THE AUTHOR'S PARAGRAPH REPLACES THE SEED (#230) — it does not follow it.
@@ -413,14 +533,22 @@ export function composeFinalPrompt(
   const authored = content !== null && content.trim().length > 0;
   const parts = [authored ? content!.trim() : briefText.trim()];
   if (clause && clause.trim().length > 0) parts.push(clause.trim());
-  /* The block is the STYLE's (#142) — one member today, so these are `HOUSE_BLOCK`'s bytes. */
-  parts.push(houseBlockForStyle(style));
+  /*
+    The block is the STYLE's (#142) and now the LANE's (#232/#237) — one style
+    today, and the human lane is `HOUSE_BLOCK`'s bytes exactly as before.
+  */
+  parts.push(houseBlockForStyle(style, lane));
   return parts.join("\n\n");
 }
 
 /** Seed (+ the family clause when one is carried) + block: what every LOW roll gets, and what a MAX roll falls back to. */
-export function staticPrompt(briefText: string, style: CastStyle = DEFAULT_CAST_STYLE, clause: string | null = null): string {
-  return composeFinalPrompt(briefText, null, style, clause);
+export function staticPrompt(
+  briefText: string,
+  style: CastStyle = DEFAULT_CAST_STYLE,
+  clause: string | null = null,
+  lane: HouseLane = DEFAULT_HOUSE_LANE,
+): string {
+  return composeFinalPrompt(briefText, null, style, clause, lane);
 }
 
 export type AuthoredPrompt = {
@@ -441,6 +569,13 @@ export type AuthoredPrompt = {
   imagination: Imagination;
   /** Which locked bundle closed the prompt (#142) — the settings modal's style, photoreal unless told otherwise. */
   style: CastStyle;
+  /**
+   * WHICH LANE the locked block was composed in (#232/#237) — `human` unless
+   * the reader called the subject a `being`. Recorded so a sheet can say which
+   * block it was painted under without re-deriving it from a reading that may
+   * since have changed, and so a census can count the creature road.
+   */
+  lane: HouseLane;
   /**
    * `seed` — LOW: no author call by design (seed + block is the whole spec);
    * `authored` — MAX: a text call wrote the content;
@@ -507,6 +642,11 @@ export function draftRefusal(
     if (skin) {
       return `Your previous draft said "${skin}", which fights the studio's own locked realism rules and makes the engine refuse the picture. Rewrite it with real skin — texture, pores, life.`;
     }
+    /* #237: a manufactured PIECE the author introduced — the kit inside the one paragraph. */
+    const piece = pieceNounIn(addition, seed.text);
+    if (piece) {
+      return `Your previous draft named "${piece}", a specific piece the request never named. Do not pin an exact garment, cut, jewellery piece or armour piece — pin materials, mood and species facts instead, and leave the parts to the engine. Rewrite it without that noun.`;
+    }
   }
   /* §5g (#171): the reader's recorded value against the author's text — an aged-down seed reddens here. */
   if (statedAge) {
@@ -545,6 +685,12 @@ export async function authorPrompt(input: {
   /** The settings modal's style (#142). Absent means photoreal, the only style and the default. */
   style?: CastStyle;
   /**
+   * WHICH LANE the locked block is composed in (#232/#237). The caller derives
+   * it ONCE per roll from the reader's subject (`houseLaneFor`); absent means
+   * the human lane, whose bytes are today's exactly.
+   */
+  lane?: HouseLane;
+  /**
    * THE FAMILY CLAUSE (#154) — a follow's anchor and the chip edits, already
    * rendered to one paragraph by code. It sits between the brief and the block
    * on every road (seed, authored, static), and the author SEES it beneath the
@@ -572,10 +718,12 @@ export async function authorPrompt(input: {
 }): Promise<AuthoredPrompt> {
   const imagination = input.imagination ?? DEFAULT_IMAGINATION;
   const style = input.style ?? DEFAULT_CAST_STYLE;
+  const lane = input.lane ?? DEFAULT_HOUSE_LANE;
   const briefText = input.briefText.trim();
   const clause = input.clause?.trim() || null;
   const allowance = authorAllowance(briefText);
-  const houseBlockWords = countWords(houseBlockForStyle(style));
+  /* The lane's own block, so the recorded total is the one that was actually sent (#232). */
+  const houseBlockWords = countWords(houseBlockForStyle(style, lane));
   const seedWords = countWords(briefText);
   /* THE RAW SEED, kept internally for the fidelity check — his own sentence (#230). */
   const seed = {
@@ -585,7 +733,7 @@ export async function authorPrompt(input: {
 
   if (imagination === "low") {
     return {
-      prompt: staticPrompt(briefText, style, clause), imagination, style, compose: "rewrite", seedWords,
+      prompt: staticPrompt(briefText, style, clause, lane), imagination, style, lane, compose: "rewrite", seedWords,
       mode: "seed", authored: false, content: null,
       addedWords: 0, houseBlockWords, allowance, model: null, latencyMs: null, attempts: 0,
     };
@@ -615,7 +763,7 @@ ${clause}` : briefText,
   };
 
   const fallback = (latencyMs: number | null): AuthoredPrompt => ({
-    prompt: staticPrompt(briefText, style, clause), imagination, style, compose: "rewrite", seedWords,
+    prompt: staticPrompt(briefText, style, clause, lane), imagination, style, lane, compose: "rewrite", seedWords,
     mode: "static", authored: false, content: null,
     addedWords: 0, houseBlockWords, allowance, model: null, latencyMs, attempts,
   });
@@ -640,7 +788,7 @@ ${clause}` : briefText,
       }
     }
     return {
-      prompt: composeFinalPrompt(briefText, content, style, clause), imagination, style, compose: "rewrite", seedWords,
+      prompt: composeFinalPrompt(briefText, content, style, clause, lane), imagination, style, lane, compose: "rewrite", seedWords,
       mode: "authored", authored: true, content,
       addedWords: countWords(content) - seedWords, houseBlockWords, allowance, model, latencyMs, attempts,
     };

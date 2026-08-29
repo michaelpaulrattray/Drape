@@ -78,6 +78,7 @@ import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief, interpreterEngine } from "./interpreter";
 import { authorPrompt, type Imagination } from "./promptAuthor";
+import { houseLaneFor } from "./houseBlock";
 import { followClause } from "./familyClause";
 import { rewriteBrief } from "./briefRewrite";
 import type { CastStyle } from "../../shared/castStyles";
@@ -1355,6 +1356,16 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         */
         imagination: carried ? "low" : input.imagination,
         style: input.style,
+        /*
+          WHICH LANE THE LOCKED BLOCK IS COMPOSED IN (#232, #237) — from the
+          READER's own four-valued subject answer and nothing else. A `being`
+          takes the creature lane, whose block lets a creature's mouth be its
+          own anatomy at rest and requires a named tail or wing to be VISIBLE in
+          the frame; `human` and `unread` take today's bytes. It is decided ONCE
+          per roll here, never per slice, and never by scanning the brief for
+          creature words — the reader is the one thing that has already read it.
+        */
+        lane: houseLaneFor(outcome.ok ? outcome.subject : "unread"),
         clause: carried?.clause ?? null,
         /* §5g (#171): the reader's recorded age is the fidelity check's value — "mid 30s" may never come back "young". */
         statedAge: intent.ageBand ? { band: intent.ageBand, phase: intent.agePhase } : null,
@@ -1434,6 +1445,13 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
               imagination: authored.imagination,
               /* The style the block was chosen by (#142) — shown on the sheet beside the meter: no hidden settings, ever. */
               style: authored.style,
+              /*
+                WHICH LANE the block was composed in (#232/#237) — `human` or
+                `creature`, recorded beside `subject` below rather than derived
+                from it by a later reader, so a row still says which block it
+                was painted under after the mapping has moved.
+              */
+              lane: authored.lane,
               /*
                 `mode` says which of the three roads wrote this prompt (§5b/5c):
                 `seed` — LOW, no author call, the customer's words + the locked

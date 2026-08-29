@@ -27,7 +27,6 @@ import {
 import { INTERPRET_TIMEOUT_MS, interpreterSystemPrompt } from "./interpreter";
 import { castingBriefCompiler } from "./briefCompiler";
 import { FOLLOW_ANCHOR_CLAUSE } from "./familyClause";
-import { houseBlockForStyle } from "./houseBlock";
 import { readCastStyle } from "./rollProjection";
 import { CAST_STYLES, CAST_STYLE_LINES, CAST_STYLE_NAMES, COMING_CAST_STYLES, DEFAULT_CAST_STYLE } from "../../shared/castStyles";
 import {
@@ -45,20 +44,30 @@ import {
   NEVER_WRITTEN,
   isStacked,
   neverWrittenIn,
+  PIECE_NOUNS,
+  pieceNounIn,
+  seedFactsOf,
   skinContradictionIn,
   staticPrompt,
   WORD_BUDGET,
 } from "./promptAuthor";
 import { IMAGINATIONS } from "../../shared/imagination";
 import {
+  ANATOMY_VISIBILITY_LINE,
   AUTHOR_ROAD_FRAMING,
   AUTHORITY_LINE,
   COLOUR_LINE,
   containsHouseSentence,
+  CREATURE_EXPRESSION_LINE,
+  CREATURE_HOUSE_BLOCK,
   DROPPED_FROM_BLOCK,
   EXPRESSION_LINE,
   HOUSE_BLOCK,
   HOUSE_BLOCK_SENTENCES,
+  HOUSE_LANES,
+  houseBlockForStyle,
+  houseBlockSentencesFor,
+  houseLaneFor,
   LIGHTING_LINE,
   NEGATIVE_LINES,
   PHOTOREAL_PRESET,
@@ -459,7 +468,14 @@ const sent = (engine: Engine, about: string): TextRequest[] =>
   the customer's words are no longer sent beside it. A fixture that dropped
   them would be refused by the fidelity check, which is the point of it.
 */
-const AUTHORED = "A goth woman in her mid 30s: pale cool-toned skin, intense black makeup language, sculpted black hair, and dark structured fashion built from patent, mesh, lace, high collars and metal hardware. Still, confrontational studio presence.";
+/*
+  #237: "high collars" came OUT of this fixture the day his MAX noun law
+  landed. It was a garment CUT the seed never named — a piece, by his own
+  definition — so the canonical PASSING draft was one his law refuses. The
+  materials it stands beside (patent, mesh, lace, metal) are exactly what the
+  law asks for and are untouched, which is why the swap is one phrase.
+*/
+const AUTHORED = "A goth woman in her mid 30s: pale cool-toned skin, intense black makeup language, sculpted black hair, and dark structured fashion built from patent, mesh, lace and metal hardware. Still, confrontational studio presence.";
 
 /* ------------------------------------------- #230: ONE BRIEF, NOT A STACK */
 
@@ -1159,8 +1175,14 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
     const engine = engineReading([intentWith("being")]);
     const on = await castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-creature", engine, creativeRegister: true });
     expect(sent(engine, "author")).toHaveLength(0);
-    expect(on.candidates[0]?.prompt).toBe(`${brief}\n\n${HOUSE_BLOCK}`);
-    expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "seed", subject: "being" });
+    /*
+      #232/#237: the reader called it a `being`, so the block it was painted
+      under is the CREATURE lane's — asserted at the candidate's own prompt,
+      which is the wire, and never at the constant beside it (working law 5).
+    */
+    expect(on.candidates[0]?.prompt).toBe(`${brief}\n\n${CREATURE_HOUSE_BLOCK}`);
+    expect(on.candidates[0]?.prompt).not.toBe(`${brief}\n\n${HOUSE_BLOCK}`);
+    expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "seed", subject: "being", lane: "creature" });
     /* The adapter that resolved the reader's record is still the photoreal-human one, and the row says which. */
     expect(on.cohortKey).toBe("photoreal_human");
     expect(on.compiledBrief.intent).not.toHaveProperty("creativeRegister");
@@ -1281,5 +1303,206 @@ describe("the cast style (#142) — the settings modal's selector, one member to
     });
     expect(off.compiledBrief.register).toBeUndefined();
     expect(readCastStyle(off.compiledBrief)).toBeNull();
+  });
+});
+
+/* ---------------------------------------------- the lanes (#232, #237) */
+
+describe("the block by LANE — his creature split (#232) and the anatomy clause (#237)", () => {
+  it("the HUMAN lane is byte-identical to the block this road has always sent", () => {
+    expect(houseBlockForStyle("photoreal")).toBe(HOUSE_BLOCK);
+    expect(houseBlockForStyle("photoreal", "human")).toBe(HOUSE_BLOCK);
+    /* Positive control: the two lanes really are different bytes, so the arm above could have failed. */
+    expect(houseBlockForStyle("photoreal", "creature")).not.toBe(HOUSE_BLOCK);
+    expect(houseBlockForStyle("photoreal", "creature")).toBe(CREATURE_HOUSE_BLOCK);
+  });
+
+  it("the lanes differ in EXACTLY two sentences, and every other sentence of the block is shared", () => {
+    const human = houseBlockSentencesFor("human");
+    const creature = houseBlockSentencesFor("creature");
+    /* The creature lane ADDS the anatomy sentence and SWAPS the expression one. */
+    expect(human.filter((line) => !creature.includes(line))).toEqual([EXPRESSION_LINE]);
+    expect(creature.filter((line) => !human.includes(line))).toEqual([ANATOMY_VISIBILITY_LINE, CREATURE_EXPRESSION_LINE]);
+    expect(creature).toHaveLength(human.length + 1);
+    expect(human).toEqual(HOUSE_BLOCK_SENTENCES);
+  });
+
+  it("#232 — the human line keeps 'mouth closed'; the creature line is mouth AT REST with its own anatomy, and keeps every ban he kept", () => {
+    expect(EXPRESSION_LINE).toContain("mouth closed");
+    expect(CREATURE_EXPRESSION_LINE).not.toContain("mouth closed");
+    expect(CREATURE_EXPRESSION_LINE).toContain("mouth at rest");
+    /* His own sentence carries the logic. */
+    expect(CREATURE_EXPRESSION_LINE).toContain("pose off, anatomy on");
+    /* Allowed at rest — his own nouns. */
+    for (const anatomy of ["non-human dentition", "tusks", "underbite", "split lip", "species tongue"]) {
+      expect(CREATURE_EXPRESSION_LINE).toContain(anatomy);
+    }
+    /* Still banned — his four, plus the human line's own CGI stare. */
+    for (const banned of ["No laugh", "no speech", "no acted roar", "no tongue out as a pose", "no blank CGI stare"]) {
+      expect(CREATURE_EXPRESSION_LINE).toContain(banned);
+    }
+  });
+
+  it("#237 — the anatomy clause is a FRAMING fact: his three placements, both prohibitions, and no second crop word", () => {
+    for (const placement of ["over a shoulder", "beside the ribcage", "rising into the picture"]) {
+      expect(ANATOMY_VISIBILITY_LINE).toContain(placement);
+    }
+    expect(ANATOMY_VISIBILITY_LINE).toContain("Do not hide it behind the back.");
+    expect(ANATOMY_VISIBILITY_LINE).toContain("Do not switch to a full-body shot.");
+    expect(ANATOMY_VISIBILITY_LINE).toContain("tail");
+    expect(ANATOMY_VISIBILITY_LINE).toContain("wings");
+    /*
+      THE ADAPTATION, ASSERTED: his sentence says "the chest-up frame" and the
+      block's crop has been MID-TORSO since #182, on his own reversal. A second
+      crop word here would hand the engine two framings, so the clause says
+      "this frame" — and the creature block must therefore still name exactly
+      one crop.
+    */
+    expect(ANATOMY_VISIBILITY_LINE.toLowerCase()).not.toContain("chest-up");
+    expect(ANATOMY_VISIBILITY_LINE.toLowerCase()).not.toContain("chest up");
+    expect(CREATURE_HOUSE_BLOCK).toContain("mid-torso");
+    expect(CREATURE_HOUSE_BLOCK.toLowerCase()).not.toContain("chest-up");
+    /* It sits with the crop sentences, before the posture line — it is framing, not mood. */
+    expect(CREATURE_HOUSE_BLOCK.indexOf(ANATOMY_VISIBILITY_LINE)).toBeGreaterThan(CREATURE_HOUSE_BLOCK.indexOf("Nothing on the head is clipped"));
+    expect(CREATURE_HOUSE_BLOCK.indexOf(ANATOMY_VISIBILITY_LINE)).toBeLessThan(CREATURE_HOUSE_BLOCK.indexOf(POSTURE_LINE));
+  });
+
+  it("the forbidden-token guard and the never-written list read BOTH lanes, not just the human bytes", () => {
+    for (const lane of HOUSE_LANES) {
+      const block = houseBlockForStyle("photoreal", lane).toLowerCase();
+      for (const { phrase } of DROPPED_FROM_BLOCK) expect(block).not.toContain(phrase.toLowerCase());
+      expect(neverWrittenIn(houseBlockForStyle("photoreal", lane))).toBeNull();
+    }
+    /* And the author may not copy EITHER lane's sentences. */
+    expect(containsHouseSentence(`taste. ${CREATURE_EXPRESSION_LINE}`)).toBe(CREATURE_EXPRESSION_LINE);
+    expect(containsHouseSentence(`taste. ${ANATOMY_VISIBILITY_LINE}`)).toBe(ANATOMY_VISIBILITY_LINE);
+    expect(containsHouseSentence(`taste. ${EXPRESSION_LINE}`)).toBe(EXPRESSION_LINE);
+    /* Negative control: ordinary cast-layer prose about a tail is not a house sentence. */
+    expect(containsHouseSentence("A sovereign feline humanoid with a long tail.")).toBeNull();
+  });
+
+  it("the lane comes from the READER's subject and nothing else — `unread` is the human lane, which is today's bytes", () => {
+    expect(houseLaneFor("being")).toBe("creature");
+    expect(houseLaneFor("human")).toBe("human");
+    expect(houseLaneFor("unread")).toBe("human");
+    expect(houseLaneFor(null)).toBe("human");
+    expect(houseLaneFor(undefined)).toBe("human");
+  });
+
+  it("the lane reaches the PROMPT and the row through the author, on all three modes", async () => {
+    const brief = "a sphinx-cat humanoid with a long tail";
+    /* seed (LOW): no author call at all. */
+    const low = await authorPrompt({ engine: engineAnswering([]), briefText: brief, imagination: "low", lane: "creature" });
+    expect(low.prompt).toBe(`${brief}\n\n${CREATURE_HOUSE_BLOCK}`);
+    expect(low.lane).toBe("creature");
+    expect(low.houseBlockWords).toBe(countWords(CREATURE_HOUSE_BLOCK));
+    /* authored (MAX). */
+    const max = await authorPrompt({
+      engine: engineAnswering(["Sovereign feline humanoid in aged bronze, ceremonial and worn."]),
+      briefText: brief, imagination: "max", lane: "creature",
+    });
+    expect(max.mode).toBe("authored");
+    expect(max.prompt.endsWith(CREATURE_HOUSE_BLOCK)).toBe(true);
+    expect(max.lane).toBe("creature");
+    /* static (MAX, refused twice) — the fallback keeps the lane. */
+    const stat = await authorPrompt({ engine: engineAnswering(["", ""]), briefText: brief, imagination: "max", lane: "creature" });
+    expect(stat.mode).toBe("static");
+    expect(stat.prompt).toBe(`${brief}\n\n${CREATURE_HOUSE_BLOCK}`);
+    expect(stat.lane).toBe("creature");
+    /* And the default is the human lane, byte for byte. */
+    const human = await authorPrompt({ engine: engineAnswering([]), briefText: brief, imagination: "low" });
+    expect(human.prompt).toBe(`${brief}\n\n${HOUSE_BLOCK}`);
+    expect(human.lane).toBe("human");
+  });
+});
+
+/* ---------------------------------- the pieces, his MAX law (#237 half 1) */
+
+describe("PIN THE WORLD, NEVER THE PIECES — his MAX noun law (#237)", () => {
+  it("his three failing nouns are the fixture, and each is refused only where the AUTHOR added it", () => {
+    const seed = "a sphinx-cat humanoid in dark structured armour";
+    for (const kit of ["angular pauldrons", "banded vambraces", "a high sculpted collar"]) {
+      expect(pieceNounIn(`Sovereign feline humanoid with ${kit}.`, seed)).not.toBeNull();
+    }
+    /* FACTS STAY PUT — his own clause: a piece the customer typed survives. */
+    expect(pieceNounIn("Sovereign feline humanoid with angular pauldrons.", "a warrior in angular pauldrons")).toBeNull();
+    /* His golden target passes whole. */
+    const golden =
+      "Adult feline humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber eyes, long tail. "
+      + "Sphinx-cat presence, sovereign and predatory. Dark structured armour in aged bronze and gold with jewel-toned inlay — ceremonial, worn, formidable.";
+    expect(pieceNounIn(golden, seed)).toBeNull();
+    /* And so does his own "optional heat", which is pressure and not parts. */
+    expect(pieceNounIn("Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft youthful rounding.", seed)).toBeNull();
+  });
+
+  it("THE PLURAL IS THE FIXTURE'S OWN DEFECT: 'high collars' is caught, and 'collarbones' is not", () => {
+    expect(pieceNounIn("a high sculpted collar", "seed")).toBe("collar");
+    /* The suite's canonical author fixture said "high collarS" — a singular-only list would have missed it. */
+    expect(pieceNounIn("dark structured fashion with high collars and metal hardware", "seed")).toBe("collar");
+    /*
+      POSITIVE CONTROL on the boundary. The court (§4) found "collarbones" is
+      what gets a prompt through where "sternum" does not, so a ban that swept
+      it would cost the road the one word that works.
+    */
+    expect(pieceNounIn("cropped at the collarbones", "seed")).toBeNull();
+    expect(pieceNounIn("a collarbone tattoo", "seed")).toBeNull();
+  });
+
+  it("THE NON-CATCH IS ASSERTED OUT LOUD: garments, cuts and jewellery are INSTRUCTION rules, not banned words", () => {
+    /*
+      His law names four classes and this list holds ONE of them. A word ban
+      over the world's garments either sweeps ordinary prose or is a taxonomy
+      nobody wrote — the `cropped` / `framing` class, four times in this repo.
+      So these pass the CHECK and are carried by `maxSystemPrompt` alone, and a
+      green suite must never be read as a reader that catches them.
+    */
+    for (const notCaught of ["a cropped leather jacket", "a silver septum ring", "a blunt bob", "knee-high boots"]) {
+      expect(pieceNounIn(notCaught, "seed")).toBeNull();
+    }
+    /* The instruction is where they live, and it names all four classes in his words. */
+    const rules = maxSystemPrompt(400);
+    expect(rules).toContain("PIN THE WORLD, NEVER THE PIECES");
+    expect(rules).toContain("Pin materials, mood and species facts");
+    expect(rules).toContain("NEVER pin an exact garment, an exact cut, a jewellery piece or an armour piece the request did not name");
+    expect(rules).toContain("FACES STAY FREE. FACTS STAY PUT.");
+    /* His golden target and his failing kit are both shown, labelled. */
+    expect(rules).toContain("Adult feline humanoid, hairless violet-blue skin");
+    expect(rules).toContain("angular pauldrons, banded vambraces, a high sculpted collar");
+    /* And the instruction must not teach the words the set-narration ban exists for. */
+    expect(neverWrittenIn(rules)).toBeNull();
+  });
+
+  it("a draft that names a piece is REFUSED and re-asked — driven at the author, not asserted at the constant", async () => {
+    const seed = "a sphinx-cat humanoid in dark structured armour";
+    const kit = "Sovereign feline humanoid in angular pauldrons and banded vambraces.";
+    const clean = "Sovereign feline humanoid in dark structured armour, aged bronze and gold, ceremonial and worn.";
+    const engine = engineAnswering([kit, clean]);
+    const out = await authorPrompt({ engine, briefText: seed, imagination: "max", lane: "creature" });
+    expect(out.mode).toBe("authored");
+    expect(out.content).toBe(clean);
+    expect(out.attempts).toBe(2);
+    /* The re-ask names the noun, so the author is told what to remove. */
+    const second = sent(engine, "author")[1];
+    expect(second?.system).toContain("pauldron");
+    expect(second?.system).toContain("a specific piece the request never named");
+    /* Twice refused falls to the customer's own words, never to a kit. */
+    const both = engineAnswering([kit, kit]);
+    const fell = await authorPrompt({ engine: both, briefText: seed, imagination: "max", lane: "creature" });
+    expect(fell.mode).toBe("static");
+    expect(fell.prompt).toBe(`${seed}\n\n${CREATURE_HOUSE_BLOCK}`);
+  });
+
+  it("every entry carries its reason, and the refusal order puts the piece AFTER the skin word", () => {
+    expect(PIECE_NOUNS.length).toBeGreaterThanOrEqual(12);
+    for (const { word, because } of PIECE_NOUNS) {
+      expect(word).toBe(word.toLowerCase());
+      expect(because.length).toBeGreaterThan(10);
+    }
+    const seed = { text: "a sphinx-cat humanoid", facts: seedFactsOf("a sphinx-cat humanoid", { sex: null, age: null }) };
+    /* A draft with BOTH a banned skin word and a piece is told about the skin first: it is the one that makes the engine refuse the picture. */
+    expect(draftRefusal("Translucent-skinned feline humanoid in angular pauldrons.", 400, null, seed)).toContain("translucent");
+    expect(draftRefusal("Feline humanoid in angular pauldrons.", 400, null, seed)).toContain("pauldron");
+    /* And with no seed handed in, the piece check does not run at all — it cannot know what she typed. */
+    expect(draftRefusal("Feline humanoid in angular pauldrons.", 400)).toBeNull();
   });
 });
