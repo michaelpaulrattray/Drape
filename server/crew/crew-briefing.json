@@ -1,7 +1,7 @@
 {
-  "edition": 112,
-  "updatedAt": "2026-08-30T03:20:00+10:00",
-  "shift": "foreman-105",
+  "edition": 113,
+  "updatedAt": "2026-08-30T03:50:00+10:00",
+  "shift": "foreman-106",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,9 +145,9 @@
   "needsYou": [
     {
       "id": "lookalike-reader-246",
-      "title": "Our measuring tool points at the nearest lookalike when the thing is not there - pick the fix",
-      "productImpact": "The studio has a tool it uses to find things in a picture - where the horns are, where the tattoo landed, whether the glasses you asked to remove actually came off. Last night we learned it does something nobody had written down: asked to find something that ISN'T in the picture, it does not say \"not there\". It points at the nearest thing that LOOKS like the word, confidently, and with a bigger number than the real thing scores when it IS there. Tonight I proved that reaches the studio's own machinery, not just our test tools. Nobody has been affected - I checked the live records and the part of the studio that would show it has never run for a customer, so this is caught before it can bite rather than after. But it sits underneath several things that matter: whether we refund you when an edit did not work, whether a tattoo's saved picture is of the tattoo, and whether the boxes on the face panel are on the right features.",
-      "workedExample": "The picture on your page is the proof. Two of your oni, same question asked of both: \"where are the tusks?\" The one on the RIGHT has tusks, and the box lands on his mouth - correct. The one on the LEFT has NO tusks, and instead of saying so, the tool drew a box around his HORNS - and scored it three times higher than the real tusks scored on the right. That is your own original complaint from a fortnight ago, the rectangle labelled \"Right horn\" sitting where it did not belong, coming back out of the machinery we built to end it.",
+      "title": "The lookalike problem is now confirmed in a second place - and it is not a refund bug, it is a 'your edit comes back' bug",
+      "productImpact": "Same decision as last night, sharpened by tonight's measurement, and one thing I told you has turned out to be wrong. Last night you were told this could cost a customer money at the removal gate - the place where, after you ask for something to be taken OFF a face, we re-read the picture to check it actually went. I read that code tonight rather than trusting the summary: because of your own ruling that a machine's opinion of a picture never takes somebody's money, a disputed removal is DELIVERED AND CHARGED. So no refund is at risk. What IS at risk is worse in a quiet way: when the tool wrongly says the thing is still there, we do not update the face's record - so the studio still believes she has the hair you paid to remove, and the NEXT edit paints it back on. You would get exactly what you asked for, once, and then lose it. Tonight I proved that can happen: a bald head, asked \"where is the hair\", came back with a hair-shaped patch drawn across the bare skull. It is not every bald head - two others answered correctly - which is the harder version, because something wrong one time in three is not caught by checking it once. Nobody is affected today: I read the live records and this gate has never run for a customer, on 236 castings.",
+      "workedExample": "The picture on your page. Two heads, one question - \"where is the hair?\" - and the red is exactly what the studio answered, nothing placed by hand. On the RIGHT, a woman with hair: the red sits on her hair. Correct. On the LEFT, a creature with a completely bare skull: instead of \"there is none\", the tool drew a cap of hair across the top of her head, right where hair would be if she had any. In a real edit that is: you say \"shave his head\", we shave it, we check our own work, we decide it did not go - and your next edit puts the hair back.",
       "options": [
         {
           "key": "b",
@@ -165,9 +165,9 @@
           "consequence": "Legitimate: nobody is affected today. The risk is that the population arrives with the refine work and this is underneath it by then, which is exactly how the last four of these got found late."
         }
       ],
-      "recommendation": "Go with (b). It is free to run, it fails toward \"we could not tell\" rather than toward a confident wrong answer, and it is arithmetic rather than asking another model - which is your own rule about not trusting the engine. I would do it when the refine work starts rather than tonight, because nothing is using it yet.",
+      "recommendation": "Unchanged: go with (b), the free one that bounds WHERE an answer may sit, and do it when the refine work starts rather than tonight. What tonight adds is a reason it should not slip past that point: this is the second place in a row where the fault is real and the customer count is zero, and the refine work is exactly what brings the customers. Fixing it while nobody is on it costs a couple of nights; fixing it afterwards means finding it in somebody's face first.",
       "state": "open",
-      "filedAt": "2026-08-30T03:20:00+10:00",
+      "filedAt": "2026-08-30T03:50:00+10:00",
       "issueNumber": 246
     },
     {
@@ -757,6 +757,22 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "hair-on-a-bald-head-246",
+      "title": "Where the studio thinks the hair is - on a head that has none",
+      "question": "WHAT YOU ARE JUDGING - one glance, and then one question for you.\n\nBoth pictures were asked the same question by the same piece of the studio: \"where is the hair?\" The red is the answer it gave, painted exactly where it gave it. Nothing was placed by hand.\n\nRIGHT: a woman with hair. The red is on her hair. Correct.\n\nLEFT: a creature with a bare skull. Instead of answering \"there is none\", the tool drew a cap of hair across the top of her head.\n\nTHE QUESTION FOR YOU: do you read that left-hand head as bald? I say it is - smooth skin, no strands, and I opened it at full size before and after the reading. But my eye is not the one that counts, and I got this exact call wrong earlier tonight on a different picture, so I would rather you settled it. If you read hair there, the tool was right and my finding is half a finding.\n\nWhy it matters is on the card above: when this happens after you ask for something to be removed, the studio keeps believing she still has it, and your next edit paints it back on.",
+      "state": "open",
+      "filedAt": "2026-08-30T03:50:00+10:00",
+      "issueNumber": 246,
+      "cardId": "lookalike-reader-246",
+      "frames": [
+        {
+          "key": "crew-eye/041564ce-eaa2-48f9-af2a-e3b415e944bf.jpg",
+          "caption": "LEFT - a bare skull: asked for \"hair\", the studio returned 25,962 pixels shaped like a hairline, sitting on bald skin. Same answer twice, so it is settled rather than a wobble. RIGHT - real hair, same word, 106,160 pixels, correctly placed. Both came straight out of the studio's own function; the only thing added is the red so you can see where it pointed. A blank grey picture through the same code correctly answered \"nothing there\".",
+          "arm": "hair asked of a bald head"
+        }
+      ]
+    },
     {
       "id": "lookalike-reader-246-strip",
       "title": "Same question, two faces: where the studio thinks the tusks are",
@@ -1432,6 +1448,13 @@
   ],
   "pipeline": [
     {
+      "id": "departure-gate-246",
+      "title": "Measured the removal gate against the lookalike problem - confirmed, and corrected what it costs (#246)",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "Last night's shift named the removal gate as the sharpest of 22 unchecked places and did not measure it. Tonight I did. Three things came out. (1) The gate asks twelve different questions of a picture and only TWO of them - glasses and earrings - have ever been measured against pictures that do not contain the answer; the other ten are judged against a threshold of zero, so a single stray pixel is enough to dispute a removal that worked. (2) The fault reproduces: a bald head asked for \"hair\" came back with a hair-shaped patch on bare skin, twice, with a blank-grey control correctly answering nothing and a haired control correctly answering hair. It is one head in three, not every head. (3) The cost was mis-stated to you last night and I corrected it at the code: no money is at risk, because your own catastrophic-only ruling keeps a machine's opinion of a picture off the money path. What is at risk is the record - the face keeps the thing you paid to remove, and the next edit paints it back. Live population is zero: 236 castings, and this gate has never fired for a customer. I also got one of my own test pictures wrong and caught it by looking at the overlay; that is written into the record, because it is the reason the overlay step exists."
+    },
+    {
       "id": "lookalike-reader-246",
       "title": "Proved the lookalike problem reaches the studio itself, and mapped every place it could bite (#246)",
       "status": "waiting-founder",
@@ -2065,8 +2088,8 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "Your Fable allowance is still out - 22 refusals now, and it has been down about 34 hours",
-      "detail": "No change in cause and one change in the clock. I asked the advisor once at the top of this shift and got the same sentence back: your Fable 5 limit is reached. That is the twenty-second consecutive refusal, and the span from the first failed review is now about thirty-four hours - well past the roughly five hours the same fault took to clear itself on the 26th, so it is no longer 'the same thing as last time'. Opus is answering fine on the same machine and the same login - it ran the typecheck, the full guard suites, two read-only production queries and tonight's whole court - so the account and the token are fine and one model on them is out. What it costs: every change still gets read by a second model before it lands, and that reviewer is the one that is down, so the team's rule has held for a fifth night - tooling, tests, measurements and records may ship, and anything touching money or the product waits for you. Tonight's work was a measurement and a written record, which is inside that rule. The three options are on the card at the top of your page.",
+      "title": "Your Fable allowance is still out - 23 refusals now, and it has been down about 29 hours",
+      "detail": "No change in cause. I asked the advisor once at the top of this shift and got the same sentence: your Fable 5 limit is reached. Twenty-third consecutive refusal, and about twenty-nine hours since the first failed review - well past the roughly five hours the same fault took to clear itself on the 26th, so it is no longer 'the same thing as last time'. Opus is answering fine on the same machine and the same login: it ran the typecheck, the guard suites, two read-only production queries and tonight's whole measurement. So the account and the token are fine, and one model on them is out. What it costs: every product change is supposed to be read by a second model before it lands, and that reviewer is the one that is down - so for a fifth night the team held to the rule that measurements, tooling and written records may ship while anything touching money or the product waits for you. Tonight was a measurement and a record, which is inside that rule. Your three options are on the card lower down the page.",
       "severity": "warning",
       "state": "open"
     },
@@ -2156,6 +2179,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T03:50:00+10:00",
+      "shift": "foreman-106",
+      "text": "One thing tonight, and there is a picture on your page that explains it in a glance.\n\nLast night you were told our measuring tool - the thing that finds features in a picture - points at the nearest lookalike when the thing you asked about is not there. That shift named one place as the sharpest of twenty-two unchecked ones: the removal gate. It is the step that runs after you ask for something to be taken OFF a face, where we re-read the picture to check our own work. Tonight I measured it.\n\nIt reproduces. A creature with a completely bare skull, asked \"where is the hair\", came back with a hair-shaped cap painted across the bald skin - twice, so it is settled rather than a wobble. I checked it both ways in the same sitting: a blank grey picture through the same code correctly said \"nothing there\", and a woman with real hair came back correctly on her hair. So the tool can say nothing when there is nothing, and it can find hair when there is hair - it just occasionally invents it. Not every time: two other bald heads answered correctly, so it is about one in three. That is the harder version, not the easier one, because something that is wrong one time in three is never caught by checking it once.\n\nNow the part where I have to correct what you were told. Last night's note said this gate could cost a customer money. I read the code rather than trusting the summary, and it is not true: because of your own ruling that a machine's opinion of a picture never takes somebody's money, a disputed removal is delivered and charged, and Regenerate is the remedy. So no refund is at risk. What IS at risk is quieter and, I think, worse: when the tool wrongly says the thing is still there, we do not update the face's record. The studio goes on believing she has the hair you paid to remove - and the next edit paints it back on. You would get exactly what you asked for, once, and then lose it.\n\nThe good news, checked at the live records rather than assumed: this gate has never run for a customer. Two hundred and thirty-six castings, and not one has reached it. That is the second night in a row where the fault is real and the customer count is zero - which is the argument for fixing it now rather than later, because the refine work is exactly what brings the customers.\n\nI should also tell you I got one of my own test pictures wrong. I picked my test faces off a small contact sheet and called one of them bald; it is not - it has fine wet dark hair, and the tool was right about it. I caught it by painting the answer back onto the picture and opening it full size, which is the step that exists for this. Uncaught, it would have gone to you as a second confirmed fault at four times the size of the real one. It is written into the record, because the lesson is worth more than the arm.\n\nThat is also why the picture on your page ends with a question for you: I read that left-hand skull as bald, but I got this exact call wrong once tonight already, and your eye is the one that counts.\n\nHousekeeping: your Fable allowance is still out - twenty-third refusal, about twenty-nine hours, past the only precedent we have - so it was another measurement-and-record night by the team's own rule. Tonight cost twelve cents of house money in twenty-four picture readings. No credits, no renders, and nothing on production touched but this briefing and one picture uploaded for it."
+    },
     {
       "at": "2026-08-30T03:20:00+10:00",
       "shift": "foreman-105",
@@ -2350,11 +2378,6 @@
       "at": "2026-08-28T03:20:00+10:00",
       "shift": "foreman-59",
       "text": "Housekeeping shift while you sleep - the doc cleanup you ordered on Aug 25 (#69) is done for the spec library. The problem it fixes: 171 of our 253 spec documents had no marker saying whether they were current, finished, superseded or never built - which is exactly how an old plan gets read as a live order (it has bitten us three times on record). Every one now opens with a one-line status banner: old review prompts and era docs marked historical, courts and evidence packs marked as dated records (the freckle court now carries the note that your own eye overturned it), built designs stamped with the proof they shipped, the governing plans marked live, unbuilt designs pointed at their queue cards, and 7 stamped honestly as 'not re-verified' - those are the next sweep's shortlist. Nothing was deleted and nothing you can see in the product changed. Otherwise quiet: no new content-filter refusals for the patrol (checked at the rows), no new replies, and your first Follow tap is still the live check of last night's Row A build."
-    },
-    {
-      "at": "2026-08-28T02:25:00+10:00",
-      "shift": "foreman-58",
-      "text": "Quiet-hours patrol shift, two things worth your morning read. First: your cyber-goth sheet from yesterday afternoon that died whole - all eight tiles failed - was NOT the studio refusing your brief. A deploy restarted the studio seconds after your roll started (the deploy guard checks whether you're mid-session, but you'd been quiet eight minutes when the push fired and it can't see a roll that hasn't started yet - it did refuse the very next push two minutes later). Every slice was refunded within six minutes - I verified the 160 credits back row by row - and each tile offered Retry. This is the known accepted deploy-collision class; nothing is broken. Second: the refusal patrol ran on the new material (your roll before that one had 4 of 8 refused by the content filter - same coin-per-render behaviour as before, byte-identical text refused and delivered in one sheet). The new mid-torso framing sentence showed slightly more refusals in its court, but the numbers say coin, not sentence (p = 0.35) - and every roll you make on the live framing adds free evidence, so the patrol logged it and spent nothing. No word enters any rewrite list. Your first Follow tap is still the live check of the Row A build."
     }
   ],
   "acknowledgedReplyIds": [
