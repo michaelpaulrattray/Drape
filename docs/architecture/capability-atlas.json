@@ -10,8 +10,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:630",
-          "server/castingV2/refineDelta.ts:630"
+          "server/castingV2/refineDelta.ts:653",
+          "server/castingV2/refineDelta.ts:653"
         ]
       },
       {
@@ -21,8 +21,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:644",
-          "server/castingV2/refineDelta.ts:644"
+          "server/castingV2/refineDelta.ts:667",
+          "server/castingV2/refineDelta.ts:667"
         ]
       },
       {
@@ -131,6 +131,7 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
           "server/castingV2/referenceClassGate.test.ts",
           "server/castingV2/referenceMediumDoor.test.ts",
@@ -167,13 +168,14 @@
           "server/castingV2/diagnosticCapture.test.ts",
           "server/castingV2/faceScan.test.ts",
           "server/castingV2/faceScanService.test.ts",
+          "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceSlotCatalogue.test.ts",
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:612",
-          "server/castingV2/refineInterpreter.ts:894",
-          "server/castingV2/refineDelta.ts:612"
+          "server/castingV2/refineDelta.ts:635",
+          "server/castingV2/refineInterpreter.ts:905",
+          "server/castingV2/refineDelta.ts:635"
         ]
       },
       {
@@ -187,8 +189,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:605",
           "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:1572",
-          "server/castingV2/refineDelta.ts:1572",
+          "server/castingV2/refineDelta.ts:1595",
+          "server/castingV2/refineDelta.ts:1595",
           "server/castingV2/refineService.ts:2413"
         ]
       },
@@ -202,8 +204,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:571",
           "server/castingV2/refineDelta.ts:571",
-          "server/castingV2/refineDelta.ts:1581",
-          "server/castingV2/refineDelta.ts:1581",
+          "server/castingV2/refineDelta.ts:1604",
+          "server/castingV2/refineDelta.ts:1604",
           "server/castingV2/refineDelta.ts:571"
         ]
       },
@@ -218,8 +220,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:578",
           "server/castingV2/refineDelta.ts:578",
-          "server/castingV2/refineDelta.ts:1549",
-          "server/castingV2/refineDelta.ts:1549",
+          "server/castingV2/refineDelta.ts:1572",
+          "server/castingV2/refineDelta.ts:1572",
           "server/castingV2/refineService.ts:2412",
           "server/castingV2/refineService.ts:2417"
         ]
@@ -235,8 +237,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:597",
           "server/castingV2/refineDelta.ts:597",
-          "server/castingV2/refineDelta.ts:1564",
-          "server/castingV2/refineDelta.ts:1564",
+          "server/castingV2/refineDelta.ts:1587",
+          "server/castingV2/refineDelta.ts:1587",
           "server/castingV2/refineDelta.ts:597"
         ]
       },
@@ -383,6 +385,23 @@
         ]
       },
       {
+        "id": "reader_outage",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/briefCompiler.test.ts",
+          "server/castingV2/briefRefusalCopy.test.ts",
+          "server/castingV2/readerOutageRefusal.test.ts",
+          "server/castingV2/refineInterpreterCeiling.test.ts",
+          "server/castingV2/styleRefusal.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/refineDelta.ts:634",
+          "server/castingV2/refineInterpreter.ts:919",
+          "server/castingV2/refineInterpreter.ts:1005",
+          "server/castingV2/refineDelta.ts:634"
+        ]
+      },
+      {
         "id": "refine_limit",
         "kind": "service-refusal",
         "pinnedBy": [
@@ -500,6 +519,8 @@
         "pinnedBy": [
           "server/castingV2/briefCompiler.test.ts",
           "server/castingV2/briefRefusalCopy.test.ts",
+          "server/castingV2/readerOutageRefusal.test.ts",
+          "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
@@ -642,6 +663,7 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
           "server/castingV2/referenceClassGate.test.ts",
           "server/castingV2/referenceMediumDoor.test.ts",
@@ -667,8 +689,7 @@
           "server/castingV2/openLaneKind.ts:324",
           "server/castingV2/openLaneKind.ts:325",
           "server/castingV2/refineDelta.ts:611",
-          "server/castingV2/refineInterpreter.ts:900",
-          "server/castingV2/refineInterpreter.ts:961",
+          "server/castingV2/refineInterpreter.ts:1007",
           "server/castingV2/refineDelta.ts:611"
         ]
       },
@@ -688,7 +709,7 @@
         "pinnedBy": [],
         "sites": [
           "server/castingV2/refineDelta.ts:546",
-          "server/castingV2/refineInterpreter.ts:1614",
+          "server/castingV2/refineInterpreter.ts:1688",
           "server/castingV2/refineDelta.ts:546"
         ]
       },
@@ -705,7 +726,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:547",
-          "server/castingV2/refineInterpreter.ts:1527",
+          "server/castingV2/refineInterpreter.ts:1601",
           "server/castingV2/refineDelta.ts:547"
         ]
       },
@@ -723,8 +744,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:498",
-          "server/castingV2/refineDelta.ts:1595",
-          "server/castingV2/refineInterpreter.ts:1525",
+          "server/castingV2/refineDelta.ts:1618",
+          "server/castingV2/refineInterpreter.ts:1599",
           "server/castingV2/refineDelta.ts:498"
         ]
       },
@@ -743,8 +764,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:513",
-          "server/castingV2/refineDelta.ts:1605",
-          "server/castingV2/refineInterpreter.ts:1618",
+          "server/castingV2/refineDelta.ts:1628",
+          "server/castingV2/refineInterpreter.ts:1692",
           "server/castingV2/refineDelta.ts:513"
         ]
       },
@@ -759,7 +780,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:537",
-          "server/castingV2/refineInterpreter.ts:1619",
+          "server/castingV2/refineInterpreter.ts:1693",
           "server/castingV2/refineDelta.ts:537"
         ]
       },
@@ -779,8 +800,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:558",
-          "server/castingV2/refineDelta.ts:1324",
-          "server/castingV2/refineDelta.ts:1657",
+          "server/castingV2/refineDelta.ts:1347",
+          "server/castingV2/refineDelta.ts:1680",
           "server/castingV2/refineDelta.ts:558"
         ]
       },
@@ -1489,6 +1510,7 @@
         "doors": [
           "empty",
           "unreadable",
+          "reader_outage",
           "wall_likeness",
           "wall_content",
           "wall_stage",
@@ -1511,6 +1533,7 @@
           "gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.",
           "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",
           "item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.",
+          "unreadable = a reply CAME BACK and could not be read, and rephrasing is real advice for it; reader_outage = nothing came back at all (the transport threw, the deadline passed, the text account is overdrawn, or no engine is configured), where telling her to rephrase is advice she cannot follow. The roll road has drawn this line since #126; the refine road drew it 2026-08-30.",
           "A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch)."
         ]
       },
@@ -1761,6 +1784,13 @@
         "kind": "documented-unreachable",
         "subject": "notASlot",
         "message": "no corpus row reaches it: the catalogue's no-picture answer; makeup — its historical population — now renders (measured, drive-4), and no current master-state ask reaches a facet the catalogue refuses a picture for — a row could reach it via: a facet that regains the no-picture classification, or a driven ask found to reach it"
+      },
+      {
+        "id": "documented:reader_outage",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "reader_outage",
+        "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it"
       },
       {
         "id": "documented:refine_limit",
@@ -2853,6 +2883,13 @@
       "kind": "documented-unreachable",
       "subject": "notASlot",
       "message": "no corpus row reaches it: the catalogue's no-picture answer; makeup — its historical population — now renders (measured, drive-4), and no current master-state ask reaches a facet the catalogue refuses a picture for — a row could reach it via: a facet that regains the no-picture classification, or a driven ask found to reach it"
+    },
+    {
+      "id": "documented:reader_outage",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "reader_outage",
+      "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it"
     },
     {
       "id": "documented:refine_limit",

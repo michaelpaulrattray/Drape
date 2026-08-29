@@ -103,7 +103,8 @@ export const ROADS: readonly Road[] = [
       + "own names. Walls refuse the ASK's kind; gates refuse an ask the road cannot serve YET and say what would work. "
       + "An unreadable or empty sentence refuses free — the product never guesses.",
     doors: [
-      "empty", "unreadable", "wall_likeness", "wall_content", "wall_stage", "wall_unbacked", "wall_unfileable",
+      "empty", "unreadable", "reader_outage",
+      "wall_likeness", "wall_content", "wall_stage", "wall_unbacked", "wall_unfileable",
       "gate_ink_document", "gate_ink_uncarried", "gate_ink_unkeepable",
       "gate_ink_coverage_unread", "scope_unknown", "scope_mismatch",
     ],
@@ -113,6 +114,7 @@ export const ROADS: readonly Road[] = [
       "gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.",
       "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",
       "item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.",
+      "unreadable = a reply CAME BACK and could not be read, and rephrasing is real advice for it; reader_outage = nothing came back at all (the transport threw, the deadline passed, the text account is overdrawn, or no engine is configured), where telling her to rephrase is advice she cannot follow. The roll road has drawn this line since #126; the refine road drew it 2026-08-30.",
       "A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch).",
     ],
   },

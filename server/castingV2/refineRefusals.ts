@@ -291,8 +291,30 @@ export const REFINE_REFUSALS = {
     report: "unread",
   },
   unreadable: {
+    /* A reply CAME BACK and could not be read. Rephrasing is real advice here,
+       which is exactly why it must not be said when nothing came back at all —
+       see `reader_outage` below. */
     say: () => "That one didn't come through clearly. Try naming what you want changed about "
       + "them. Nothing was charged.",
+    charge: "free",
+    report: "unread",
+  },
+  reader_outage: {
+    /*
+      NOTHING CAME BACK — our side, said as ours.
+
+      Derived from the two sentences this product already says honestly when a
+      reader does not answer, rather than invented: the roll road's
+      `READER_OUTAGE_MESSAGE` (briefRefusalCopy.ts) names the reader and the
+      money, and the hair/ink cutters' `couldNotRead` carries "just now — try
+      again in a moment. Nothing was charged." This is those two, in Refine's
+      own first-person voice and about an edit rather than a brief.
+
+      It does not ask her to do anything to her sentence, because there is
+      nothing wrong with her sentence.
+    */
+    say: () => "I couldn't read that just now — the reader that turns your words into an edit "
+      + "didn't answer. Try again in a moment. Nothing was charged.",
     charge: "free",
     report: "unread",
   },

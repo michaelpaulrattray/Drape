@@ -454,12 +454,23 @@ export async function readHairColourFromReference(
     });
     raw = reply.text ?? "";
   } catch (error) {
-    log.warn({ err: error }, "[hairColourFromReference] the reference could not be read");
+    /*
+      NOTHING CAME BACK — ours, not her picture (the #126 class swept onto this
+      road, foreman-111). The parse failure below keeps *"try another one"*,
+      which is real advice for a reply we could not read; this branch is the
+      transport throwing, the deadline passing, or the text account being
+      overdrawn, and telling her to swap photographs then is advice she cannot
+      act on — she changes the picture, it fails again, and we blame her twice.
+
+      Its words are the hair/ink cutters' `couldNotRead`, which already say this
+      honestly on the sibling picture roads, rather than a new sentence.
+    */
+    log.warn({ err: error }, "[hairColourFromReference] the reader did not answer");
     return {
       ok: false,
       refusal: {
         code: "unreadable",
-        message: "We couldn't read that picture — try another one.",
+        message: "I couldn't read that picture just now — try again in a moment. Nothing was charged.",
       },
     };
   }
