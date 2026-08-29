@@ -39,6 +39,14 @@ import { describe, it, expect } from "vitest";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+
+import { allowTreeSweeps } from "./testing/suiteClocks";
+
+/* This file reads EVERY `.ts`/`.tsx` under `client/src` off disk, several times over.
+   It is the measured casualty of #233's scheduling half: `Test timed out in 5000ms`
+   at 5,016ms under load on 2026-08-30, against 785ms on the same suite run quiet —
+   a 6.4x blow-up, the worst in the suite. See `suiteClocks.ts` family 2. */
+allowTreeSweeps();
 const CLIENT_SRC = new URL("../client/src/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
 /** The code with its prose removed — a comment about a rule is not a breach of it. */

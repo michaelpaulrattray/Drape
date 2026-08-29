@@ -703,7 +703,7 @@ casting-shaped reading would never reach.
 
 `_clearCooldowns`, `_getCooldownCount` (`monitoring/healthMonitor.ts`),
 `_clearPendingActions` (`slack/slackApproval.ts`), `allowColdImports`
-(`testing/coldImportTimeout.ts`). The leading underscore is this codebase's own
+(`testing/suiteClocks.ts`). The leading underscore is this codebase's own
 convention for a seam, and `server/testing/` is test infrastructure by
 directory. The sweep cannot see a convention; a human can.
 

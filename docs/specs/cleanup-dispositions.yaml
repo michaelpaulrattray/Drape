@@ -801,9 +801,15 @@
   argued: 6c
 
 - symbol: allowColdImports
-  file: server/testing/coldImportTimeout.ts
+  file: server/testing/suiteClocks.ts
   verdict: KEEP
   why: server/testing/ is test infrastructure by directory
+  argued: 13a
+
+- symbol: allowTreeSweeps
+  file: server/testing/suiteClocks.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the allowColdImports precedent beside it). It is the clock for suites that sweep the source tree — #233's scheduling half, enrolled on measured casualties rather than on a stopwatch"
   argued: 13a
 
 - symbol: cataloguedFeaturesWithRegion

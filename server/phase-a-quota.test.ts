@@ -12,6 +12,12 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+
+import { allowColdImports } from "./testing/suiteClocks";
+
+/* Every arm here is `await import("./db/dailyQuota")` — family 1's exact subject.
+   It timed out at the 5s default on #233 (foreman-99 run 2). See `suiteClocks.ts`. */
+allowColdImports();
 // ── 1. Configurable Queue Limits ──────────────────────────────────────────
 
 // ── 2. Daily Quota Module ─────────────────────────────────────────────────

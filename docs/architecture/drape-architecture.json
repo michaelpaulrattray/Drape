@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "30ebd7d24d5332c5"
+    "sourceFingerprint": "4eba9800c8438e01"
   },
   "domains": [
     {
@@ -5529,12 +5529,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/testing/coldImportTimeout.ts",
-      "path": "server/testing/coldImportTimeout.ts",
-      "domain": "unassigned",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/testing/fetchablePort.ts",
       "path": "server/testing/fetchablePort.ts",
       "domain": "unassigned",
@@ -5549,6 +5543,12 @@
     {
       "id": "module:server/testing/migrationColumns.ts",
       "path": "server/testing/migrationColumns.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/suiteClocks.ts",
+      "path": "server/testing/suiteClocks.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
