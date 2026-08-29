@@ -1,6 +1,6 @@
 {
-  "edition": 108,
-  "updatedAt": "2026-08-30T02:05:00+10:00",
+  "edition": 109,
+  "updatedAt": "2026-08-30T02:35:00+10:00",
   "shift": "foreman-102",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -188,7 +188,7 @@
         }
       ],
       "recommendation": "Look at the sphinx strip in your gallery first — that is the one that answers your tail complaint, and the difference is not subtle. Then take 'prove-mouth' if you want the second half settled rather than assumed. I recommend AGAINST the wider word ban: your law names four kinds of thing and I only made a hard check for armour, because those words mean one thing and nothing else. A ban list over the world's clothing refuses good sentences — this codebase has been bitten by that four times, most recently when the word 'framing' threw away a perfectly good description of a beard. The other three classes are still in the author's instruction; they just are not a machine check, and I would rather tell you that than let a green tick imply otherwise.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-30T00:55:00+10:00",
       "issueNumber": 237
     },
@@ -701,7 +701,7 @@
       "id": "creature-lane-237-232-strips",
       "title": "The tail, three ways — and the oni test that did NOT separate",
       "question": "WHAT YOU ARE JUDGING. Two strips.\n\nTHE SPHINX STRIP, three rows of four, all from your own brief (production roll 235's seed, byte for byte). Row K is what the studio sends today. Row C is the creature lane. Row A is the creature lane with MAX on top under your new noun law. Look at where the tail is: one frame in K has it, and it is a thread at the edge. Every frame in C and A carries it into the picture, and nobody switched to a full-body shot to do it.\n\nTHE ONI STRIP, three rows of three. Top row today, middle the creature lane, bottom the human control — a goth woman who must still come back mouth closed with no teeth, and does. Here is the honest part: BOTH oni rows have tusks and the machine's measurements do not separate them. My own eye reads the middle row's mouths as heavier and more open at rest, with the tusks reading as teeth rather than as nubs at the corner of a pressed mouth — but that is three frames and my opinion, so I am not calling it a result. Your eye is the one that counts, which is why the strip is in front of you instead of a sentence saying it worked.\n\nTWO REFUSED TILES in the bottom row are the per-render coin you already know about (#93/#129), on bytes this change never touched — not something I broke.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-30T00:55:00+10:00",
       "issueNumber": 237,
       "cardId": "creature-lane-237-232",
@@ -1320,7 +1320,7 @@
       "title": "#237 + #232 — the creature lane: the tail in the frame, and MAX off the build sheet",
       "status": "merged",
       "prNumber": 241,
-      "note": "MERGED as 1d48f584 and deployed with this edition. Your two cards were one structural change — both are properties of the LOCKED BLOCK rather than of the author's words — so they landed together. The human lane is byte-identical: every human cast, and every cast off the author road, gets exactly what it got before. The two lanes differ in EXACTLY two sentences and the suite refuses a third. Twelve sabotages, twelve reds. Two words of your anatomy sentence are adapted and both are written into the code with the reason: 'the chest-up frame' would have given the engine a second crop against your own mid-torso framing, and 'listed anatomy' has nothing to point at inside the block. Cost: $1.28 of house money, no credits of yours, no flag moved. Reviewed by no advisor — your Fable allowance is still out."
+      "note": "MERGED as 1d48f584 and deployed with this edition. Your two cards were one structural change — both are properties of the LOCKED BLOCK rather than of the author's words — so they landed together. The human lane is byte-identical: every human cast, and every cast off the author road, gets exactly what it got before. The two lanes differ in EXACTLY two sentences and the suite refuses a third. Twelve sabotages, twelve reds. Two words of your anatomy sentence are adapted and both are written into the code with the reason: 'the chest-up frame' would have given the engine a second crop against your own mid-torso framing, and 'listed anatomy' has nothing to point at inside the block. Cost: $1.28 of house money, no credits of yours, no flag moved. Reviewed by no advisor — your Fable allowance is still out. — JUDGED BY HIS EYE and both issues CLOSED (reply #30): \"Sphinx: fixed — four tails out of four, carried properly, no full-body cheat, and no invented armour pieces in row A. Ship the creature lane.\" And on the half the machine could not prove: \"my eye says it separated. In the creature row the tusks sit as teeth in the mouth; in the human row they're pushing out through closed lips. That's the difference the pixel counts couldn't see — placement, not quantity.\""
     },
     {
       "id": "casting-hero-234",
@@ -2013,6 +2013,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T02:35:00+10:00",
+      "shift": "foreman-102",
+      "text": "Your reply landed while I was building, so this edition is only to mark it seen and to say what it settled. You separated the two oni rows with your eye on a thing the measurement genuinely cannot express — WHERE the tusks sit, not how many pixels of them there are — after the shift that ran it had refused to claim it. That is the law working the right way round rather than an argument won: the reader said nothing, the shift reported nothing, and your eye said the thing. #232 and #237 are both closed on your word. #243 stays open and I have re-pointed it on the card: it is no longer the proof, it is the widening — the fixture whose seed does NOT name the anatomy, which is exactly where the lane should matter most.\n\nTonight's own work is edition 108's top card: the casting hero is a showcase now."
+    },
+    {
       "at": "2026-08-30T02:05:00+10:00",
       "shift": "foreman-102",
       "text": "Took your hero correction as the first job, which is what the last shift handed over. The satisfying part was that your reason was better than the bug: the deck reading the roster wasn't just wrong for a fresh customer, it made the section unjudgeable by YOU — you were the only person seeing your own casts in it. Now you see what a stranger sees. I deleted the roster road rather than switching it off, and took the cast id off the type entirely, because a field that is always null is an invitation to wire the navigation back up.\n\nThree things I want to be straight about. First, my own change had a real bug and the drive caught it: the 44px bottom you asked for sat above the narrow-window rule in the stylesheet, so the page measured your number at 1920 and the old one at 700 — right at every width anybody screenshots and wrong at the one they don't. Second, the driver found three defects in ITSELF before it found none in the product, including one arm that read a card mid-swing and reported it the wrong shape; a driver that goes green first time usually isn't looking. Third, two OLD tests turned out to be asserting nothing — one of them sliced the page file backwards the moment the hero gained a line, and two of its three checks were 'must not contain', which pass happily on an empty string. Both fixed here.\n\nYour reference frame for the ticks arrived as a commit with no card, and the last shift flagged it as 'ask before building'. It didn't need asking in the end — you'd already written the amendment onto #240 yourself, so I built to your words and your picture together. The lobby lane is still waiting on you to name segment 1."
@@ -2206,11 +2211,6 @@
       "at": "2026-08-28T01:55:00+10:00",
       "shift": "foreman-57",
       "text": "Your Row A pick is built, merged (#184) and deploying to your account now. Tap Follow on a face you like and the studio sends that face's own photo to the engine with your brief and your exact sentence - the eight come back as close variations held by the picture, not by a paragraph describing a record (the ghost that misfiled the fitness creator's heritage has no channel left at all). Nothing else rides a follow any more: no chip adjustments, no imagination call - the chips read as a record, the settings panel says 'a follow holds the look of the face you picked' instead of showing a meter that does nothing, and to change a fact you edit the sentence and roll. If a follow's photo can't be loaded, you're refused free before any charge; a retried tile re-attaches the same photo or refuses free too. Row B (the shortlist) stays on the record as a possible second button later, per your 'for now'. YOUR NEXT FOLLOW TAP IS THE LIVE CHECK - one honest note: the court's frames were rendered at the delivered size, while your rolls render larger under the framing trim, so if a follow sheet's framing reads off, that combination is the first suspect. Review gate found one real hole (a follow whose photo is missing would have quietly cast strangers for money) - fixed before merge. House spend this shift: $0."
-    },
-    {
-      "at": "2026-08-28T00:45:00+10:00",
-      "shift": "foreman-56",
-      "text": "Two of your orders landed while you slept. (1) The framing: your 2:3 mid-torso reference was measured (22% face height), a court ran K (today's sentence) against M (a sentence written to your frame's numbers) — 16 renders plus a same-words second pass to separate the content-checker's coin from the sentence — and the winner shipped with the head-size trim retargeted in the same PR (#183), your sequencing followed to the letter. The strip is first in your gallery. (2) Your Row A pick on the Follow court is logged and acknowledged (#177): Follow = your photo + your brief + the close-variations clause, identity dice never consulted. Building it is the next shift's first brief — it was not rushed into the framing PR. House spend this shift: ~$1.55 on the court."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2242,6 +2242,7 @@
     26,
     27,
     28,
-    29
+    29,
+    30
   ]
 }
