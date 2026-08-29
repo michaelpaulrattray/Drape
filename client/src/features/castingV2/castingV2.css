@@ -2697,18 +2697,32 @@
 */
 .dpc-signm__muted { display: block; width: 100%; height: 100%; filter: grayscale(1); opacity: 0.62; }
 /*
-  ⚠ `object-position: center` is RE-STATED for the reason #198's repair gives in
-  full above the sign portrait's rule: the cascade resolves each property
-  separately, so without this the delete portrait would keep its own
-  `object-fit` and take the sign portrait's `top` — the base rule matches this
-  element too and would be the only declaration left standing — moving the one
-  dialog this repair exists to leave alone. Centre is what it has always drawn.
+  ⚠ TOP, ON HIS WORD — and this rule said `center` until 2026-08-29 (#198).
+
+  #198's repair deliberately left the delete portrait centred, on the ground that
+  moving it was the founder's eye to spend and not a tidy-up's. Edition 86 put
+  the three crops in front of him and asked. Crew reply #27, verbatim and entire:
+
+    left and middle should match. Top crop on both. Don't ship the right panel.
+
+  So he spent it: the two dialogs sharing this shell now crop the same way, which
+  is what the card said the bug was in the first place. On a standard 1024x1536
+  render this moves the delete portrait from source rows 128-1408 to rows 0-1280
+  — it stops taking 128px off the top.
+
+  The declaration is still RE-STATED rather than left to the cascade, and the
+  reason is now one step removed: with the base rule also `top`, deleting this
+  line would change nothing TODAY. It would change something the moment the base
+  rule moves, silently, in the one dialog nobody would think to re-open. Writing
+  it out is what keeps that a compile-time fact instead of a rendering surprise —
+  and the arm beside it says plainly that this selector's cascade hazard is now
+  LATENT while `--whole`'s is still live, rather than implying both bite.
 */
 .dpc-signm__muted > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: top;
   display: block;
 }
 

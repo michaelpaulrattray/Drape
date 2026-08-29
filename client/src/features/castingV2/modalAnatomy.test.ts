@@ -293,26 +293,37 @@ describe("all three portraits lay out by ONE mechanism", () => {
     expect(base).toContain("object-position: top");
   });
 
-  it("⚠ both neighbours RE-STATE object-position, or the base rule moves them", async () => {
+  it("⚠ both neighbours RE-STATE object-position, and the two values are his ruling", async () => {
     /*
-      THE ARM THAT MATTERS. The cascade resolves each property independently:
-      `--whole` and `__muted` come later and win `object-fit` on order, but
-      where they declare no `object-position` the base rule — which matches the
-      same element — is the winning declaration, and its `top` applies. That
-      hangs the concept review's letterbox entirely below the picture and moves
-      the delete portrait, which is the one surface this repair exists to leave
-      untouched. Deleting either declaration is silent at the source and visible
-      only in a frame nobody re-opens.
+      THE ARM THAT MATTERS, and its subject is the RE-STATEMENT rather than any
+      one value. The cascade resolves each property independently: `--whole` and
+      `__muted` come later and win `object-fit` on order, but where they declare
+      no `object-position` the base rule — which matches the same element — is
+      the winning declaration, and its `top` applies. Deleting either declaration
+      is silent at the source and visible only in a frame nobody re-opens.
 
       Cascade fallthrough, NOT inheritance — `object-position` is not an
       inherited property and no parent's value is being read. The distinction
-      matters here because it decides where a future reader looks when this
-      breaks (review of #198).
+      decides where a future reader looks when this breaks (review of #198).
+
+      ⚠ THE TWO VALUES NOW DIFFER, AND SO DOES WHAT THIS ARM BUYS FOR EACH.
+
+      `--whole` is `center` for the concept review's own reason: it letterboxes a
+      customer's picture of unknown proportions, and `top` would hang the
+      letterbox entirely below it. That hazard is LIVE — delete the declaration
+      and the next frame is visibly wrong.
+
+      `__muted` is `top` on the founder's word (Crew reply #27, 2026-08-29:
+      *"left and middle should match. Top crop on both. Don't ship the right
+      panel."*), which is the same value the base rule carries. So for THIS
+      selector the hazard is now LATENT: deleting the line changes nothing today
+      and changes the delete dialog silently the day the base rule moves. Said
+      out loud because an arm that implies both cases bite is an arm whose reason
+      a future reader cannot check.
     */
     const css = await readFile(CSS, "utf8");
-    for (const selector of [".dpc-signm__portrait--whole img", ".dpc-signm__muted > img"]) {
-      expect(block(css, selector), selector).toContain("object-position: center");
-    }
+    expect(block(css, ".dpc-signm__portrait--whole img")).toContain("object-position: center");
+    expect(block(css, ".dpc-signm__muted > img")).toContain("object-position: top");
   });
 
   it("and the base rule is declared BEFORE both, which is what that guard assumes", async () => {
