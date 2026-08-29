@@ -1,7 +1,7 @@
 {
-  "edition": 107,
-  "updatedAt": "2026-08-30T00:55:00+10:00",
-  "shift": "foreman-101",
+  "edition": 108,
+  "updatedAt": "2026-08-30T02:05:00+10:00",
+  "shift": "foreman-102",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "hero-showcase-240",
+      "title": "The casting hero is a showcase now — nobody's shelf, and a click fills the box (#240)",
+      "productImpact": "You were right and it is fixed. The deck on the casting page no longer shows you YOUR OWN signed casts — it shows the same six creature and sci-fi frames to everybody, so somebody who joined ten seconds ago sees exactly what you see, which was your whole point. No card opens a cast room any more. Instead, clicking any card drops that card's brief into the prompt box and puts the caret there, and spends nothing — the same thing the TRY chips do, which is what you agreed to. The peek cards still swing to the middle when you click them, and now they hand over their brief on the way. Your two amendments landed with it: the progress chips under the brief run the full width of the column and divide it into equal parts, and the whole casting page — hero, the two entry cards, the search row and the roster grid — now sits in ONE 1240px container with your padding, so no section can drift out of line at a wide window.",
+      "workedExample": "A fresh account and your verify bot, which owns four signed casts, were both driven tonight at 1920, 1440, 1024 and 700, in both themes. They see the same six faces in the same order, with the same six briefs. That comparison only means something because the control passed too: the bot really does own four casts (its roster grid drew four cards) and the fresh one owns none — otherwise 'the deck no longer varies by account' would just be two empty accounts agreeing about nothing. Then: click the middle card, and the URL does not move while the box fills with 'Adult feline humanoid, hairless violet-blue skin…' and the caret lands in it. Click the right-hand peek, and it swings to the middle AND the box changes to ITS brief.",
+      "options": [
+        {
+          "key": "keep",
+          "label": "Leave the label above the brief reading CAST FROM THESE WORDS",
+          "consequence": "It stays the teaching line, and it is true of all six — those words really did make those faces. The card's own caption says 'Example', so it cannot be read as a claim about your shelf."
+        },
+        {
+          "key": "reword",
+          "label": "Change it to something that says 'examples' outright",
+          "consequence": "Say the words you want and it is one line. What you lose is the sentence that teaches somebody a brief like that is what produced a face like that, which is the whole reason the block is under the deck."
+        }
+      ],
+      "recommendation": "Keep it — and test-drive the page either way: open /casting, click the middle card, click a peek, then narrow the window and check the left edges still line up. The only reason it ever said EXAMPLE CASTS was to stop a stand-in deck being read as YOUR signed people, and that reading is gone now the deck never claims to be anybody's.",
+      "filedAt": "2026-08-30T02:05:00+10:00",
+      "issueNumber": 240,
+      "state": "open"
+    },
     {
       "id": "creature-lane-237-232",
       "title": "The tail is in the picture now, and MAX stopped writing a build sheet (#237, #232)",
@@ -654,6 +676,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "hero-showcase-240-strips",
+      "title": "Your own page, before and after — and the same deck for a stranger",
+      "question": "WHAT YOU ARE JUDGING. Two strips, both your verify bot's own casting page at 1440 in dark.\n\nSTRIP ONE — THE SAME ACCOUNT, BEFORE AND ABOVE AFTER. The top half is what shipped this morning: your own signed cast in the middle card, captioned 'Package Three One · 6 frames', under the brief 'a street casting, mid 20s', with four short tick stubs bunched at the left. The bottom half is tonight: the showcase, and the tick row running the full width in six equal parts. That top half is exactly the thing you refused — and it is what a fresh customer would have opened onto an EMPTY column to see.\n\nSTRIP TWO — TWO DIFFERENT ACCOUNTS, ONE DECK. Top is the account with four signed casts, bottom is a brand-new account with none. Same face, same brief, same six ticks. The only difference anywhere in the two frames is how far the current tick has filled, which is the four-second timer.\n\nWHAT I WANT FROM YOUR EYE: whether the tick row now matches the reference frame you filed, and whether the eyebrow 'CAST FROM THESE WORDS' reads right to you now that these are examples rather than your people.",
+      "state": "open",
+      "filedAt": "2026-08-30T02:05:00+10:00",
+      "issueNumber": 240,
+      "cardId": "hero-showcase-240",
+      "frames": [
+        {
+          "key": "crew-eye/b5daaff7-6261-476c-9b45-a6de1237fabd.jpg",
+          "caption": "SAME ACCOUNT, BEFORE (top) AND AFTER (bottom). Top: this morning's build, showing the account its own signed cast and its own brief, ticks as four short stubs at the left. Bottom: tonight, the showcase deck and the full-width evenly-divided tick row. Nothing else on the page moved.",
+          "arm": "YOUR ACCOUNT — before / after"
+        },
+        {
+          "key": "crew-eye/4cd8f371-6b75-4326-9157-3b9fae72d3ea.jpg",
+          "caption": "TWO ACCOUNTS, ONE DECK. Top: the account that owns four signed casts. Bottom: an account that owns none. Identical deck, identical brief — the only difference in the two frames is how far the current tick has filled, which is the rotation clock.",
+          "arm": "owner / fresh — same deck"
+        }
+      ]
+    },
     {
       "id": "creature-lane-237-232-strips",
       "title": "The tail, three ways — and the oni test that did NOT separate",
@@ -1266,6 +1309,13 @@
   ],
   "pipeline": [
     {
+      "id": "hero-showcase-240",
+      "title": "#240 — the casting hero is a showcase, not the account's shelf",
+      "status": "merged",
+      "prNumber": 244,
+      "note": "MERGED as 2112b7d0 and deployed with this edition. Your three rulings on the card all landed together: the showcase deck, the click that fills the box instead of navigating, and the full-width tick row — plus your container amendment. The roster road was DELETED rather than switched off, so it cannot come back by accident: the function, its type and two constants are gone, and a card has no cast id to open. Your spec file was corrected in the same commit as you asked, because §5 is what sent the last shift down that road. Driven at 244 checks, 0 failing; guarded by 15 sabotages, 15 reds. Evidence and copy audit: docs/specs/CASTING_HERO_240_EVIDENCE.md."
+    },
+    {
       "id": "creature-lane-237-232",
       "title": "#237 + #232 — the creature lane: the tail in the frame, and MAX off the build sheet",
       "status": "merged",
@@ -1871,8 +1921,8 @@
   "problems": [
     {
       "id": "gate-review-arm-broken-219",
-      "title": "The gate's second-opinion reviewer is still down — seventeenth refusal, about eighteen hours",
-      "detail": "SEVENTEENTH refusal, probed in one line before tonight's work was planned: same sentence, your Fable 5 allowance is used up. Honest span: 22:20 on the 28th to now, roughly eighteen hours, against the one precedent we have of about five. The gate's four instruments PASSED on tonight's change; the review check is RED and I read its log rather than guessing — it says NO VERDICT, an outage, nothing in the diff was judged. So tonight's work carries no second opinion, and that is written on the PR itself rather than left for someone to discover. Everything else ran normally on Opus: your production database, the 685-file suite, twenty-one paid renders and twelve sabotages.",
+      "title": "The gate's second-opinion reviewer is still down — nineteenth refusal, about 27 hours",
+      "detail": "NINETEENTH refusal, probed in one line before tonight's work was planned: same sentence, your Fable 5 allowance is used up. Honest span: 22:20 on the 28th to now, about twenty-seven hours, against the one precedent we have of about five. Tonight's change went through the gate's four instruments and PASSED; the review check went red and I read its log rather than guessing — the job died in one second with is_error, which is the no-verdict shape, not a rejection. So nothing in this diff was judged by a second pair of eyes. What stands behind it instead is stated plainly on the PR: 244 driven checks with a working control, and 15 sabotages that each go red. When your allowance comes back, #240's diff is worth a read-over.",
       "severity": "warning",
       "state": "open"
     },
@@ -1962,6 +2012,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T02:05:00+10:00",
+      "shift": "foreman-102",
+      "text": "Took your hero correction as the first job, which is what the last shift handed over. The satisfying part was that your reason was better than the bug: the deck reading the roster wasn't just wrong for a fresh customer, it made the section unjudgeable by YOU — you were the only person seeing your own casts in it. Now you see what a stranger sees. I deleted the roster road rather than switching it off, and took the cast id off the type entirely, because a field that is always null is an invitation to wire the navigation back up.\n\nThree things I want to be straight about. First, my own change had a real bug and the drive caught it: the 44px bottom you asked for sat above the narrow-window rule in the stylesheet, so the page measured your number at 1920 and the old one at 700 — right at every width anybody screenshots and wrong at the one they don't. Second, the driver found three defects in ITSELF before it found none in the product, including one arm that read a card mid-swing and reported it the wrong shape; a driver that goes green first time usually isn't looking. Third, two OLD tests turned out to be asserting nothing — one of them sliced the page file backwards the moment the hero gained a line, and two of its three checks were 'must not contain', which pass happily on an empty string. Both fixed here.\n\nYour reference frame for the ticks arrived as a commit with no card, and the last shift flagged it as 'ask before building'. It didn't need asking in the end — you'd already written the amendment onto #240 yourself, so I built to your words and your picture together. The lobby lane is still waiting on you to name segment 1."
+    },
     {
       "at": "2026-08-30T00:55:00+10:00",
       "shift": "foreman-101",
@@ -2156,11 +2211,6 @@
       "at": "2026-08-28T00:45:00+10:00",
       "shift": "foreman-56",
       "text": "Two of your orders landed while you slept. (1) The framing: your 2:3 mid-torso reference was measured (22% face height), a court ran K (today's sentence) against M (a sentence written to your frame's numbers) — 16 renders plus a same-words second pass to separate the content-checker's coin from the sentence — and the winner shipped with the head-size trim retargeted in the same PR (#183), your sequencing followed to the letter. The strip is first in your gallery. (2) Your Row A pick on the Follow court is logged and acknowledged (#177): Follow = your photo + your brief + the close-variations clause, identity dice never consulted. Building it is the next shift's first brief — it was not rushed into the framing PR. House spend this shift: ~$1.55 on the court."
-    },
-    {
-      "at": "2026-08-27T23:05:00+10:00",
-      "shift": "foreman-55",
-      "text": "Housekeeping behind the Follow-ghost fix, while your court pick (#177) waits: the 96 older author-road candidates still carried the made-up per-slice identity records — the fiction that had your Follow paint eight Indian relatives. The dev database is now marked clean (each record flagged as never-sent, so the product refuses to read it as fact; the dice captions under tiles are cleared too), the ceremony script is merged (PR #181), and it verified itself through the product's own reader: before the fix 96 records read as fact, after it zero do. Production gets the same one-command mark in the next ceremony batch — until then the code gates from PR #178 already keep the fiction out of everything you see. Nothing new needs you beyond the court pick."
     }
   ],
   "acknowledgedReplyIds": [
