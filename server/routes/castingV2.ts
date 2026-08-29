@@ -1950,11 +1950,21 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const casts = await listSignedCasts(ctx.user.id);
-      return casts.map(({ model, anchorUrl, personaLine }) => ({
+      return casts.map(({ model, anchorUrl, personaLine, frameCount, brief }) => ({
         castId: model.agencyId ?? "",
         name: model.name,
         personaLine,
         imageUrl: anchorUrl,
+        /*
+          THE HERO DECK'S TWO FACTS (#234). The deck at the top of this page
+          shows a signed Cast beside the sentence that cast her, so the roster
+          carries both rather than a second endpoint mirroring the same rows
+          (working law 4). `brief` is the customer's own words back to the
+          customer who typed them — the compiled prompt stays internal and is
+          not selected at all.
+        */
+        frameCount,
+        brief,
         // Derived words, never the schema they came from — the delete ceremony
         // talks about a specific person and must not call Jericho "she".
         pronouns: castPronouns(model.technicalSchema),
