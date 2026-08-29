@@ -1,7 +1,7 @@
 {
-  "edition": 97,
-  "updatedAt": "2026-08-29T15:25:00+10:00",
-  "shift": "foreman-93",
+  "edition": 98,
+  "updatedAt": "2026-08-29T16:40:00+10:00",
+  "shift": "foreman-94",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "cyborg-eye-piece-185",
+      "title": "Is a machine part fitted to a cyborg's face an accessory, or part of the being?",
+      "productImpact": "It decides whether your \"spiked / metal accents\" cut reaches the sci-fi subjects at all. The reader is told two things that collide on a cyborg: never name a single accessory, but DO name a creature's features — its ears, horns, ornamentation. A mechanical eye-piece bolted to a face sits in both, and the reader currently calls it out by name.",
+      "workedExample": "Your cyber-goth reference reads: \"...one side of the face fitted with a sleek mechanical eye piece. Dark structured fashion in lace and leather with metal accents.\" The wardrobe half is exactly what you asked for. The eye piece is the bit in question. If it is an ACCESSORY, that phrase is the thing you struck and the rule should reach it. If it is part of WHO THIS IS — the way a horn or a tusk is — then the reader is right and the rule should stay off it. I did not decide this one, because either way it changes what every sci-fi and creature upload comes back as, and the reader is not obviously wrong.",
+      "options": [
+        {
+          "key": "accessory",
+          "label": "Treat it as an accessory — the rule reaches it",
+          "consequence": "A cyborg’s eye-piece, jaw plate or ear unit stops being named; sci-fi subjects come back as “exposed mechanical elements” rather than by part. Safer against engine refusals, and it loses detail that may be the most castable thing in the picture."
+        },
+        {
+          "key": "feature",
+          "label": "Treat it as part of the being — the rule stays off it",
+          "consequence": "The reader keeps naming a fitted machine part, the way it already names a horn or a tusk. Your “spiked” cut then applies to CLOTHING only, which is where you struck it, and sci-fi reads keep their character."
+        },
+        {
+          "key": "leave",
+          "label": "Leave it and look again after more uploads",
+          "consequence": "Nothing changes. One picture in thirteen was affected, so the evidence is thin either way and a second reading costs cents."
+        }
+      ],
+      "recommendation": "Treat it as part of the being. Your cut was aimed at fashion — “spiked metal accents” on a lace-and-leather outfit — and the reader is already told to name a creature’s features. A rule wide enough to strip a cyborg’s face part would also flatten the sci-fi subjects the studio is being built for.",
+      "state": "open",
+      "filedAt": "2026-08-29T16:40:00+10:00",
+      "issueNumber": 185
+    },
     {
       "id": "fable-cap-review-arm-219",
       "title": "Your Claude usage limit is still out — and it has now been out LONGER than the only time it healed itself (#219)",
@@ -1028,6 +1055,13 @@
   ],
   "pipeline": [
     {
+      "id": "concept-build-rule-185",
+      "title": "Your two cuts to the concept reader are built — one landed, one did not (#185)",
+      "status": "merged",
+      "prNumber": 226,
+      "note": "You cut \"athletic build\" and \"spiked\" from the goth read, and in the same breath said \"proof is the output, not a word list\". So neither is a banned word — both are rules now. THE BUILD RULE: the reader names a build only where the build IS the type (a fitness type, a heavy man, a creature built like a tank) and leaves it out entirely on a fashion or character type. That is your sharper point, not a word drop: \"athletic\" was on the reader's own approved list, so the list was working as written — what was wrong was naming a build on that woman at all, because everything named is locked onto all eight faces. THE MATERIALS RULE: give the material, never the hardware — \"metal accents\", not \"spiked\" — and the reader is now told WHY, that those words are refused outright by the image engine and cost you the cast.\n\nI proved it before shipping, on thirteen pictures from your own reference folder that the reader has never seen. Not the goth frame: your corrected line is now IN the instruction, so re-reading that picture would only measure its memory. BUILD WORDS WENT FROM 7 IN 9 TO 3 IN 9, every change in your direction and none against, and the three that kept one are the three physical types. THE OTHER CUT DID NOT LAND: exactly one of the thirteen names a wardrobe piece — a cyborg's mechanical eye-piece — and it survived both before and after. I am not claiming that one as fixed."
+    },
+    {
       "id": "delete-crop-top-198",
       "title": "The Delete dialog crops its portrait the same way Sign does — your call (#198)",
       "status": "merged",
@@ -1676,6 +1710,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-29T16:40:00+10:00",
+      "shift": "foreman-94",
+      "text": "Your build ruling is built. Last night I stopped short of it on purpose and said why; today the thing that settled it was going back to what you were actually looking at.\n\nThe line you cut from was not one of our examples — it was a LIVE READ of your goth picture, the one I quoted you in edition 96. Your \"I'd ship it as\" is that same sentence with two things taken out. So the reader really did put a build word on a fashion type, and your corrected line is the reader's own wording with your cuts made. That turned a guess about your meaning into something I could check.\n\nWHAT IT DOES NOW. A build is named only where the build is the type. Both your passing men keep theirs — they are physical types and it belongs. A fashion or character type gets none. And the materials rule now carries its reason: name the material, never the hardware, because those words get the picture refused by the engine outright.\n\nI RAN IT ON THIRTEEN PICTURES FROM YOUR OWN CASTS FOLDER, before and after, same pictures both times. Build words dropped from 7 in 9 to 3 in 9, and every single change went your way. Deliberately not the goth picture: your corrected note is inside the reader's instruction now, so reading that one would just be measuring its memory, not its judgement.\n\nTWO THINGS I AM NOT CLAIMING. The \"spiked\" half did not land — one picture of the thirteen names a wardrobe piece and it survived both runs. And one apparent win was not one: a creature swapped \"muscular sinewy build\" for \"sinewy, powerful build\", which is still naming a build, just in words that are off the approved list. My first way of counting scored that as a pass. I would rather tell you the softer number.\n\nThere is one question for you on the page about the cyborg eye-piece — it is the reason the second cut did not land, and it is genuinely a judgement about what a face part IS, not a bug.\n\nThe reviewer is still down. Seven hours now, past the five it ran last time, so I have stopped calling it \"the same as before\". Two of your rulings have now shipped with no second pair of eyes on them — both driven and tested hard, but that is not the same thing, and the options are on the card whenever you want to pick one."
+    },
+    {
       "at": "2026-08-29T15:25:00+10:00",
       "shift": "foreman-93",
       "text": "Your two replies came in while I was working, so this is a second note for the same night.\n\nTHE CROP. You said top on both, and it is done — that one had an action in it, so it shipped rather than waiting. The Delete dialog was the odd one out; it now crops exactly like Sign, which stops the two dialogs showing the same face two different ways. I looked at it in the running app in both themes before it went, by clicking through the real menu on a real cast. Worth knowing: my own test rig tried to fool me twice — first it photographed the wrong dialog entirely, then it handed me \"light theme\" pictures that were identical to the dark ones and passed every check. Both caught and fixed before anything shipped. That is the second time tonight that testing my own work found something reading it did not.\n\nTHE READER NOTES. Two of your three points needed no code and are recorded: the creature note stays as it is, and the hard ban stays OFF — which is what the code had already decided out loud for your own reason, that \"fitted dark crew-neck\" is a named garment you approved. Your words are now the citation instead of our argument.\n\nThe third one I deliberately did NOT rush, and I want to say why rather than have it look like it was missed. You cut \"athletic build\" and \"spiked\" — but in the same breath you said \"proof is the output, not a word list\". So neither cut can be done by banning a word, which means it is a change to the RULE. And \"athletic\" is not a slip: it is on the reader's own approved build list, and both of your passing men use it. So you are telling me something sharper than \"drop a word\" — that naming a build at all was the mistake on that woman, because everything named gets locked onto all eight faces. That is a real change to how the reader works, there are two ways to read it that give you different products, and with the reviewer still down I would be guessing at your meaning and calling it your ruling. It is written up in full with a recommendation, ready to build.\n\nEverything else from earlier tonight stands: the false deploy refusal is fixed, and your Fable allowance is still out at five and a half hours."
@@ -1869,11 +1908,6 @@
       "at": "2026-08-27T10:30:00+10:00",
       "shift": "foreman-44",
       "text": "Quiet shift — nothing needed doing. Still no new word from you (12 replies, all acknowledged) and nothing in N1 is left to build; the milestone waits on your eye, the same four things: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). Read at the artifacts, not assumed: last shift's claims hold (main matches production at b053645d), every urgent card's last comment is unchanged, no patrol is due until the 29th. No renders, no credits, $0 house."
-    },
-    {
-      "at": "2026-08-27T09:55:00+10:00",
-      "shift": "foreman-43",
-      "text": "Quiet shift — nothing needed doing. Still no new word from you (12 replies, all acknowledged) and nothing in N1 is left to build; the milestone waits on your eye, same four things: your first Follow on your own account, the framing strip (#130), the lighting sheets (#128), the rebuilt block (#144). I checked the queue rather than assuming: every urgent card waits on you or on N2, no patrol is due until the 29th, the gate is green and main matches production. No renders, no credits, $0 house."
     }
   ],
   "acknowledgedReplyIds": [
