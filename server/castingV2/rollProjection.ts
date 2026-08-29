@@ -155,6 +155,13 @@ export type RollProjection = {
    */
   authoredText: string | null;
   /**
+   * HER WORDS on a sheet the author REWROTE (#230) — the left half of his
+   * *"your words → authored brief"*. Null on every other kind of sheet,
+   * including the rows written before the rewrite landed, where the brief is
+   * already the first thing `authoredPrompt` shows.
+   */
+  authoredFrom: string | null;
+  /**
    * HOW FAR THE AUTHOR WENT on this sheet (#131 slice E) — `low` | `max` on an
    * author register, null everywhere else. The dock preselects the NEXT roll's
    * meter from it, the way the path switch preselects from the sheet's path:
@@ -581,24 +588,61 @@ export function readAuthoredPrompt(briefText: string, compiledBrief: unknown): s
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;
   if (!register || typeof register !== "object") return null;
-  const { kind, prompt, content, briefSent, carried } = register as {
+  const { kind, prompt, content, briefSent, carried, compose } = register as {
     kind?: unknown;
     prompt?: unknown;
     content?: unknown;
     briefSent?: unknown;
     carried?: unknown;
+    compose?: unknown;
   };
   /* An author row always records the whole prompt; a row without one never painted. */
   if (kind !== "author" || typeof prompt !== "string") return null;
   const parts: string[] = [];
   const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
-  if (brief.trim().length > 0) parts.push(brief.trim());
+  const authoredText = typeof content === "string" && content.trim().length > 0 ? content.trim() : null;
+  /*
+    ⚠ #230 — ON A REWRITE ROW THE CUSTOMER'S OWN WORDS WERE NOT SENT, so
+    showing them here would be a second brief on a surface whose whole purpose
+    is *no hidden prompt, ever*: the sheet would draw a stack the engine never
+    received. The raw seed is shown beside this, labelled as HER WORDS, by
+    `readAuthoredFrom` below — which is his own *"your words → authored
+    brief"*. An `append` row (no `compose` field: everything written before
+    2026-08-29) still draws brief-then-content, because that is what its engine
+    actually got.
+  */
+  const rewrote = compose === "rewrite" && authoredText !== null;
+  if (rewrote) parts.push(authoredText!);
+  else if (brief.trim().length > 0) parts.push(brief.trim());
   const clause = carried && typeof carried === "object" ? (carried as { clause?: unknown }).clause : null;
   if (typeof clause === "string" && clause.trim().length > 0) parts.push(clause.trim());
-  if (typeof content === "string" && content.trim().length > 0) parts.push(content.trim());
+  if (!rewrote && authoredText) parts.push(authoredText);
   const shown = parts.join("\n\n");
   if (shown.length === 0 || shown.length > AUTHORED_PROMPT_MAX) return null;
   return shown;
+}
+
+/**
+ * HER WORDS, on a sheet whose prompt is not made of them — the left half of
+ * his *"The record can show 'your words → authored brief'"* (#230).
+ *
+ * Null everywhere it would be noise: on an `append` row (the brief is already
+ * the first thing `readAuthoredPrompt` shows), on a LOW or static sheet (the
+ * brief IS the prompt), and off the author road entirely.
+ */
+export function readAuthoredFrom(briefText: string, compiledBrief: unknown): string | null {
+  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+  const register = (compiledBrief as { register?: unknown }).register;
+  if (!register || typeof register !== "object") return null;
+  const { kind, content, briefSent, compose } = register as {
+    kind?: unknown; content?: unknown; briefSent?: unknown; compose?: unknown;
+  };
+  if (kind !== "author" || compose !== "rewrite") return null;
+  if (typeof content !== "string" || content.trim().length === 0) return null;
+  const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
+  const trimmed = brief.trim();
+  if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
+  return trimmed;
 }
 
 /** Brief + the author's content — what a customer may roll again with. Null without authored content. */
@@ -606,10 +650,20 @@ export function readAuthoredText(briefText: string, compiledBrief: unknown): str
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;
   if (!register || typeof register !== "object") return null;
-  const { kind, content, briefSent } = register as { kind?: unknown; content?: unknown; briefSent?: unknown };
+  const { kind, content, briefSent, compose } = register as {
+    kind?: unknown; content?: unknown; briefSent?: unknown; compose?: unknown;
+  };
   if (kind !== "author" || typeof content !== "string") return null;
   const trimmed = content.trim();
   if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
+  /*
+    ⚠ #230 — ON A REWRITE ROW THE AUTHORED PARAGRAPH IS THE WHOLE BRIEF, so
+    prepending the customer's own words would put a stack in her box and the
+    next roll would send one. An `append` row still offers brief + content:
+    that is what its engine received, and #164's reason for `briefSent`
+    (a chip edit rewrote her sentence) is untouched on that road.
+  */
+  if (compose === "rewrite") return trimmed;
   /* The brief AS SENT (#164): a chip edit rewrote the sentence, and rolling
      again with the pre-edit text would silently undo the customer's own change. */
   const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
@@ -739,6 +793,7 @@ export function projectRoll(input: {
     statedWardrobe: statesWardrobe(input.roll.briefText),
     authoredPrompt: readAuthoredPrompt(input.roll.briefText, input.roll.compiledBrief),
     authoredText: readAuthoredText(input.roll.briefText, input.roll.compiledBrief),
+    authoredFrom: readAuthoredFrom(input.roll.briefText, input.roll.compiledBrief),
     imagination: readImagination(input.roll.compiledBrief),
     style: readCastStyle(input.roll.compiledBrief),
     authorSatOut: readAuthorSatOut(input.roll.compiledBrief),

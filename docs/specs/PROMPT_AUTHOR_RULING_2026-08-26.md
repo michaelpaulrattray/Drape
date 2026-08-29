@@ -21,6 +21,26 @@ Evidence he supplied (corrected the same day — the first draft conflated his t
 1. The user's words reach the engine **verbatim, first, and authoritative**. Nothing drops a stated fact.
 2. The creative register is **the only road** for every roll. The engagement gate ("ambiguity resolves to false") is deleted.
 
+> ⚠ **RULE 1's FIRST HALF IS SUPERSEDED AT MAX — 2026-08-29, #230, his own eye
+> on a live MAX sheet.** Verbatim: *"Engine gets one brief, not a stack. LOW:
+> user seed unchanged + studio block. MAX: author **rewrites** the seed into a
+> single type + look paragraph. Facts stay. Taste goes up. No second essay
+> underneath. Keep the raw seed internally for the fidelity check."*
+>
+> So **verbatim-first still governs LOW** and every fallback, and at MAX the
+> author's paragraph REPLACES the seed on the wire. *"Nothing drops a stated
+> fact"* is untouched and is now a CHECK rather than a construction —
+> `server/castingV2/seedFidelity.ts` reads the raw seed, the author is re-asked
+> once naming the fact it dropped, and a second failure hands the customer back
+> her own words plus the block.
+>
+> **This reverses §8's own court finding (5) on his eye (law 9), and the price
+> is declared rather than hidden**: the reword arm contradicted a fact 2/2, and
+> the mechanical floor catches a DROPPED person, not a MOVED adjective. Also in
+> that ruling: the differ-by caption is deleted on both meter positions, a
+> finished seed gets heat with no new nouns, and the author may not add skin
+> words that fight the locked block's own realism negatives.
+
 ## 2. Author, not compiler
 
 3. One text call **authors** the final prompt: the user's words plus what an expert prompter would add — style, framing, background, lighting, and (per the imagination level) invented specifics. Prose in, prose out. No schema between user and engine.

@@ -559,8 +559,10 @@ export default function CastingSheet() {
   const brief = displayText(draft, shownBrief);
   /* The prompt this sheet was painted from — null on every sheet off the author road (#131 slice D). */
   const authoredPrompt = roll.data?.authoredPrompt ?? null;
-  /* What USE AS BRIEF offers back: the brief + the author's content, never the locked block (review of #141). */
+  /* What USE AS BRIEF offers back — the brief the engine got, never the locked block (review of #141). */
   const authoredText = roll.data?.authoredText ?? null;
+  /* HER WORDS, on a sheet the author rewrote (#230) — null on every other kind. */
+  const authoredFrom = roll.data?.authoredFrom ?? null;
   const draftAnchor = useRef<string | null>(null);
   useEffect(() => {
     const rollId = roll.data?.rollId;
@@ -2437,6 +2439,20 @@ export default function CastingSheet() {
         {authoredPrompt ? (
           <details className="dpc-prompt">
             <summary className="dpc-prompt__summary">The prompt this sheet was painted from</summary>
+            {/*
+              YOUR WORDS → AUTHORED BRIEF (#230, his own words for what the
+              record may show). It is drawn only where the author REWROTE the
+              seed: on a LOW or static sheet the prompt below IS her sentence,
+              and printing it twice under two headings would invent a
+              distinction the roll did not have.
+            */}
+            {authoredFrom ? (
+              <>
+                <p className="dpc-prompt__label">Your words</p>
+                <p className="dpc-prompt__text dpc-prompt__text--seed">{authoredFrom}</p>
+                <p className="dpc-prompt__label">The authored brief</p>
+              </>
+            ) : null}
             <p className="dpc-prompt__text">{authoredPrompt}</p>
             {/*
               USE AS BRIEF offers the brief + the author's CONTENT — never the
@@ -2460,7 +2476,9 @@ export default function CastingSheet() {
                   Use as brief
                 </button>
                 <span className="dpc-prompt__note">
-                  Your words, then the author's art direction. The studio's locked block is added again at the roll.
+                  {authoredFrom
+                    ? "The author's rewrite of your words — one brief, not two. The studio's locked block is added again at the roll."
+                    : "Your words, then the author's art direction. The studio's locked block is added again at the roll."}
                 </span>
               </div>
             ) : authoredText ? (
@@ -2519,6 +2537,14 @@ export default function CastingSheet() {
             facts={roll.data.facts}
             followLabel={followLabel}
             terse={rolls.length > 1}
+            /*
+              THIS sheet's road, read off the sheet's own register rather than
+              the config (#230): `imagination` is projected only for an author
+              row, so a non-null value IS "one authored prompt painted these",
+              which is exactly the condition that makes the differ-by caption
+              false. Derived, never mirrored.
+            */
+            authorRoad={roll.data.imagination !== null}
             // What the user has queued but the sheet in front of them cannot
             // show, because rolls are immutable.
             pending={{ overrides, unlocked }}

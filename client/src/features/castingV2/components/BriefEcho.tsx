@@ -125,6 +125,7 @@ export function BriefEcho({
   facts,
   followLabel,
   terse,
+  authorRoad,
   pending,
   vary,
   onAdjust,
@@ -133,12 +134,18 @@ export function BriefEcho({
   followLabel?: string | null;
   /** True on the second and later rolls of a session. */
   terse?: boolean;
+  /**
+   * THIS sheet's own road (#230) — it drops the differ-by caption, which is
+   * false on a sheet one authored prompt painted. Distinct from `vary`, which
+   * is a policy about the NEXT roll.
+   */
+  authorRoad?: boolean;
   pending?: PendingAdjustments;
   /** Absent means every pinned fact may be let vary (the house road). */
   vary?: VaryPolicy;
   onAdjust: (adjustment: EchoAdjustment) => void;
 }) {
-  const spans = composeEcho(facts, { terse, followLabel });
+  const spans = composeEcho(facts, { terse, followLabel, authorRoad });
   if (spans.length === 0) return null;
 
   return (

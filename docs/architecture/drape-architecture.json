@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9ce2024b0c6690af"
+    "sourceFingerprint": "e6c8fcf288d97b86"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 185
+      "moduleCount": 186
     },
     {
       "id": "domain:castingV2",
@@ -4397,6 +4397,12 @@
     {
       "id": "module:server/castingV2/rollService.ts",
       "path": "server/castingV2/rollService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/seedFidelity.ts",
+      "path": "server/castingV2/seedFidelity.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -11800,6 +11806,10 @@
     {
       "id": "test:server/castingV2/rollService.test.ts",
       "path": "server/castingV2/rollService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/seedFidelity.test.ts",
+      "path": "server/castingV2/seedFidelity.test.ts"
     },
     {
       "id": "test:server/castingV2/segmentAssembly.test.ts",
@@ -24347,11 +24357,6 @@
     },
     {
       "from": "module:server/castingV2/promptAuthor.ts",
-      "to": "module:server/castingV2/castingIntent.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:server/castingV2/houseBlock.ts",
       "kind": "imports"
     },
@@ -24362,12 +24367,22 @@
     },
     {
       "from": "module:server/castingV2/promptAuthor.ts",
+      "to": "module:server/castingV2/seedFidelity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/promptAuthor.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -26398,6 +26413,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:shared/imagination.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/seedFidelity.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -33901,10 +33921,10 @@
       "message": "Names 5 of RecoverableRollOperation's 5 fields (server/castingV2/rollRecovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:277",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:284",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:277",
+      "subject": "server/castingV2/rollProjection.ts:284",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -6,7 +6,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
+const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readAuthoredFrom, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
   "./rollProjection"
 );
 
@@ -172,6 +172,52 @@ describe("nothing internal crosses the boundary", () => {
       expect(readAuthoredText("x", { register: { kind: "house", content: "y" } })).toBeNull();
       const projected = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
       expect(projected.authoredText).toBeNull();
+    });
+
+    /*
+      #230 — THE REWRITE ROW. His own sentence for what the record may show is
+      *"your words → authored brief"*, and the two halves are two readers: the
+      prompt is the authored paragraph ALONE (the customer's words were not
+      sent, so drawing them inside the prompt would put a stack on the one
+      surface whose promise is *no hidden prompt, ever*), and her words are
+      shown beside it, labelled as hers.
+    */
+    it("a REWRITE row shows the authored paragraph alone, and her words beside it (#230)", () => {
+      const register = {
+        kind: "author",
+        compose: "rewrite",
+        mode: "authored",
+        content: "A goth woman in her mid 30s, pale and severe.",
+        prompt: "A goth woman in her mid 30s, pale and severe.\n\nFRAMING: …",
+      };
+      expect(readAuthoredPrompt("goth woman mid 30s", { register }))
+        .toBe("A goth woman in her mid 30s, pale and severe.");
+      expect(readAuthoredFrom("goth woman mid 30s", { register })).toBe("goth woman mid 30s");
+      /* USE AS BRIEF offers the brief the engine got — prepending her words would roll a stack next time. */
+      expect(readAuthoredText("goth woman mid 30s", { register }))
+        .toBe("A goth woman in her mid 30s, pale and severe.");
+      /* The brief AS SENT still wins over the typed one (#164) on the "your words" half. */
+      expect(readAuthoredFrom("goth woman mid 30s", { register: { ...register, briefSent: "goth woman mid 40s" } }))
+        .toBe("goth woman mid 40s");
+    });
+
+    it("an APPEND row — every row written before 2026-08-29 — is still drawn as what its engine actually got", () => {
+      /* No `compose` field at all: the shape of every author row that already exists. */
+      const old = { kind: "author", mode: "authored", content: "Pale skin, black lace.", prompt: "irrelevant here" };
+      expect(readAuthoredPrompt("goth woman mid 30s", { register: old }))
+        .toBe("goth woman mid 30s\n\nPale skin, black lace.");
+      expect(readAuthoredText("goth woman mid 30s", { register: old }))
+        .toBe("goth woman mid 30s\n\nPale skin, black lace.");
+      /* "Your words" is null there — the brief is already the first thing the prompt shows. */
+      expect(readAuthoredFrom("goth woman mid 30s", { register: old })).toBeNull();
+    });
+
+    it("'your words' is null wherever it would be noise — a LOW or static sheet, and off the road entirely", () => {
+      expect(readAuthoredFrom("x", { register: { kind: "author", compose: "rewrite", mode: "seed", content: null, prompt: "x" } })).toBeNull();
+      expect(readAuthoredFrom("x", { register: { kind: "author", compose: "rewrite", mode: "static", content: null, prompt: "x" } })).toBeNull();
+      expect(readAuthoredFrom("x", { register: { kind: "house", because: "anchored" } })).toBeNull();
+      expect(readAuthoredFrom("x", null)).toBeNull();
+      expect(projectRoll({ roll: rollRow(), candidates: [candidateRow()] }).authoredFrom).toBeNull();
     });
 
     it("the sheet's imagination is projected from an author register and nowhere else (slice E)", () => {

@@ -267,6 +267,42 @@ describe("the casting category is in the sentence", () => {
     expect(echoText(spans)).not.toContain("someone");
   });
 
+  /*
+    #230, his verdict on a live MAX sheet (verbatim): *"Delete the differ-by
+    line on LOW and MAX. Don't say the eight differ by look, disposition, or
+    expression. Keep only: Everyone on this sheet is cast as [type] — [sex] in
+    their [age band]. The sheet already proves whether the faces are
+    different."*
+
+    On the author road the caption was also FALSE, which is why the fix is the
+    road rather than the wording: one authored prompt paints all eight and the
+    per-slice identities are marked unsent (#176), so no axis was ever varied.
+    The HOUSE road keeps it — there the eight really are resolved one at a time
+    along that axis — and the arm below is what holds those two apart.
+  */
+  it("the author road says who is being cast and stops — no differ-by caption", () => {
+    const shown = facts({
+      role: "oncology nurse",
+      locks: { sex: "female", ageBand: "50s", heritage: ["British Isles"], energy: "grave" },
+      variationAxis: "disposition",
+    });
+    expect(echoText(composeEcho(shown, { authorRoad: true }))).toBe(
+      "Everyone on this sheet is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave.",
+    );
+    /* The house road is untouched — the positive control for the same data. */
+    expect(echoText(composeEcho(shown))).toContain("The eight differ by disposition");
+    for (const axis of ["look", "disposition"] as const) {
+      const spans = composeEcho(facts({ role: "blacksmith", variationAxis: axis }), { authorRoad: true });
+      expect(echoText(spans)).not.toContain("differ by");
+    }
+    /* A FOLLOW's tail carried the same claim in a subordinate clause; it goes with it. */
+    const followed = composeEcho(
+      facts({ locks: { sex: "female", ageBand: "40s" }, variationAxis: "look" }),
+      { authorRoad: true, followLabel: "the third face on roll 01" },
+    );
+    expect(echoText(followed)).not.toContain("differ by");
+  });
+
   it("carries the category alongside a full subject", () => {
     const spans = composeEcho(
       facts({
