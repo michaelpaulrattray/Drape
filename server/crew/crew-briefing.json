@@ -1,7 +1,7 @@
 {
-  "edition": 116,
-  "updatedAt": "2026-08-30T06:20:00+10:00",
-  "shift": "foreman-109",
+  "edition": 117,
+  "updatedAt": "2026-08-30T07:20:00+10:00",
+  "shift": "foreman-110",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,38 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "max-author-refusals-252",
+      "title": "One in five casts on MAX quietly gets no author at all - and the sheet still says Max",
+      "productImpact": "When you set the imagination meter to MAX, the studio pays a writer to turn your words into one richer paragraph, and that paragraph is what the eight faces are painted from. Tonight I ran that writer 24 times, on three of your own past briefs, and measured what our OWN safety rules do to it.\n\nMore than half the time - 13 of 24 - the writer's first draft is refused by one of our rules and it has to write again. And one time in five - 5 of 24 - the second draft is refused too, at which point the studio quietly falls back to sending your raw words, exactly as if you had left the meter on LOW. You paid attention to a setting and got the other setting.\n\nThe sheet does not tell you. It shows the prompt honestly - your own words, which genuinely is what was sent - but the settings line under it still reads \"Photoreal - Max imagination\", and there is nothing distinguishing that sheet from one the writer actually wrote. The record inside the database DOES know the difference; the page you look at does not show it.\n\nWhat is doing the refusing is the surprising part: it is not the pipeline-note rules. It is two of our own good rules fighting each other. At least seven refusals were the writer reaching for skin words - waxy, airbrushed, doll-like - that the studio's locked realism block bans. At least five more were the writer saying \"youthful\" about a brief that says \"mid 30s\", which our age rule refuses because it will not let a stated fact be re-worded. Every one of the five casts that lost its writer entirely involved one of those two. Both rules are individually right, which is why this needs your call rather than a fix.\n\nOne honesty note on my own numbers: 18 refusals happened and I read 16 of them - two scrolled off the top of the run log before I looked, and they are not recoverable. The 54% and the 21% are exact (they come from the saved record); the breakdown of REASONS is a floor.",
+      "workedExample": "Your own thin brief, \"goth woman mid 30s\", run 8 times. Six produced a paragraph and two were dropped. Four of the six survivors had to be written twice, every one of them because the writer said \"youthful\" about a brief that says mid 30s - our age rule will not let a stated fact be re-worded, and it is right not to. The two that were dropped each opened with a banned pipeline phrase, then hit a banned skin word or \"youthful\" on the retry - so those two casts would have gone out on the four words you typed, with the sheet reporting MAX. Your sphinx brief, by contrast, survived all 8 times: it is long and specific, so the writer has less room to reach for a banned word.",
+      "options": [
+        {
+          "key": "a",
+          "label": "Tell the customer when the writer sat it out (recommended first step)",
+          "consequence": "One line on the sheet - the studio already writes this kind of line for a neighbouring case (\"Sat this one out...\"), so it is copy rather than machinery, and it is honest whatever we decide about the rest. Costs nothing to run and changes no picture. It does not reduce the 21%; it stops the 21% being invisible."
+        },
+        {
+          "key": "b",
+          "label": "Loosen one of the two rules that cause it",
+          "consequence": "Would raise the number of MAX sheets that actually get a writer. But both rules exist because of real damage - the realism block stops plastic-doll skin, the age rule stops your stated facts being re-worded - and this campaign has already measured that changing prompt wording changes results in ways nobody predicts. So this one needs a proper before/after test, not an edit, and I would not do it on a hunch."
+        },
+        {
+          "key": "c",
+          "label": "Let the writer have a third try instead of two",
+          "consequence": "Cheapest way to cut the 21% without touching any rule - the writer is told which word broke it, and it usually fixes it. Costs a few more seconds and a fraction of a cent per cast. It is a guess at whether a third try helps; that is measurable for about 30 cents before anything ships."
+        },
+        {
+          "key": "wait",
+          "label": "Leave it - the numbers are from a bench, not from your rolls",
+          "consequence": "Fair reading: this was measured by calling the writer directly 24 times, not by rolling 24 sheets. Your own live MAX casts number four, and none of them fell back - which at four is no evidence in either direction. Waiting costs nothing except that the next person to hit it will not know it happened."
+        }
+      ],
+      "recommendation": "Take (a) now and hold the rest. The one thing that is clearly wrong today is the silence: a customer choosing MAX and receiving LOW should be told, and we already have that sentence written for a neighbouring case. Everything else is a real trade between two rules that are both doing their job, and this campaign's own history says a prompt change without a proper test is how you break the thing you were not looking at. If you want the 21% down, (c) is the cheap first measurement - about 30 cents - and it touches no rule.",
+      "state": "open",
+      "filedAt": "2026-08-30T07:20:00+10:00",
+      "issueNumber": 252
+    },
     {
       "id": "lookalike-reader-246",
       "title": "The lookalike problem is now confirmed in a second place - and it is not a refund bug, it is a 'your edit comes back' bug",
@@ -1448,6 +1480,13 @@
   ],
   "pipeline": [
     {
+      "id": "author-self-narration-242",
+      "title": "The writer sometimes talks about its own job inside the picture instructions - measured, and it was not what we thought (#242)",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "A small defect was spotted last night: the paragraph our writer produces occasionally contains a note about ITSELF - a sentence explaining what it did not add - rather than a description of the person. That text goes straight to the image engine, which has no idea what to do with it.\n\nThe card said the cheap way to find out how often was to read the records. I tried that first and it does not work: across both databases the studio has recorded exactly FIVE such paragraphs in its whole life, because MAX is one account's setting and LOW does not use a writer at all. Five is not a rate.\n\nSo I bought one instead - 24 runs on three of your own briefs, 26 cents. It happens about one time in six. And the reason matters more than the rate, because the guess was wrong: we assumed the writer does this when it is told not to add things to a detailed brief. It does the opposite. It happens most on THIN briefs, where the writer starts narrating what it is leaving open - one draft literally told the image engine that jewellery was \"left to the engine\". That is a note about our pipeline sitting inside a picture instruction, and there is a measured case in this project's own history where that kind of sentence made the engine paint all eight faces into one contact sheet.\n\nI did not fix it, and that is deliberate: the obvious fix is to ban the phrases, and I measured that the phrase that looks most like the tell is legitimate four times out of five - it is your own wording. Worse, my deliberately over-wide detector still missed one of the four real cases. A ban built from four examples catches four examples. The full reasoning is written up; it is a decision rather than a repair."
+    },
+    {
       "id": "suite-clocks-233",
       "title": "The test run stops going red on a different check each time - and the file that proved it was already covered (#233)",
       "status": "merged",
@@ -2201,6 +2240,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T07:20:00+10:00",
+      "shift": "foreman-110",
+      "text": "Nothing in the studio changed tonight - no product code at all - and one new thing needs your call.\n\nThe brief was a small defect filed last night: the writer that turns your words into a richer paragraph on MAX occasionally slips a note about its own job into the picture instructions. The card said the cheap way to measure it was to read our records. I tried that first, and the useful finding is that it does not work - the studio has recorded five of those paragraphs in its entire life, because MAX is your setting alone and LOW uses no writer. So I bought a measurement instead: 24 runs on three of your own briefs, 26 cents.\n\nIt happens about one time in six, and the assumption behind the card was backwards. We thought the writer does it when told not to add things to a rich brief. It is the opposite - it does it most on THIN briefs, where it starts narrating what it is leaving open. One draft told the image engine that jewellery was \"left to the engine\". I did not fix it, because I also measured that the obvious fix does not work: the phrase that looks most like the tell is your own legitimate wording four times out of five, and my deliberately over-wide detector still missed one of the four real cases.\n\nThe bigger thing came out of the same 24 runs and it is on your desk as a card. Our own safety rules refuse the writer's first draft more than half the time, and one time in five they refuse it twice - at which point the studio quietly sends your raw words instead, exactly as if the meter were on LOW, while the sheet still says Max. The cause is two of our own good rules getting in each other's way: the writer reaching for skin words the realism block bans, and the writer saying \"youthful\" about a brief that says mid 30s. Both rules are right on their own terms.\n\nMy recommendation is the small honest one first - tell the customer when the writer sat it out, using a sentence we have already written for a neighbouring case - and leave the rules alone until there is a proper before/after test. The rest is on the card.\n\nStill waiting on you for the lobby lane: nothing gets built there until you name which segment is first."
+    },
+    {
       "at": "2026-08-30T06:20:00+10:00",
       "shift": "foreman-109",
       "text": "Nothing in the studio changed tonight and nothing new needs you. Team tooling again - and it closes out the job the last two shifts were working on.\n\nThe short version: the automatic test run that guards every change has been going red on a different check each time whenever your computer was busy. Last night's shift fixed the biggest offender. Tonight's shift asked whether the rest of it needed fixing too, measured it properly, and found the answer was NOT the obvious one.\n\nThe obvious answer is 'give everything more time'. The measurement said no. The same ten thousand checks were run twice - once quiet, once with the machine deliberately loaded up the way it is when you are using it - and paired one by one. Nine thousand nine hundred and fifty of them finished in under a second either way. Exactly ONE ran out of time. Loosening the limit for all ten thousand, to rescue one, would have made the run worse at spotting a check that is genuinely stuck - which is the whole point of having a limit.\n\nSo the eight checks that genuinely need longer were given longer, and every one of them earned it by having actually failed before, not by looking slow on a stopwatch. That distinction turned out to matter: the check that DID fail had looked perfectly comfortable when the machine was quiet, and the one that looked closest to the edge got faster under load.\n\nTwo things worth flagging, both found by the work rather than assumed.\n\nFirst, the run taken to prove the fix had worked killed a check that ALREADY had extra time and had quietly grown into it - it used 100% of its allowance. So the real question is not which checks are slow, it is which ones are close to their own ceiling. Two were, and both are now fixed.\n\nSecond, a housekeeping mistake worth knowing about because it hides work rather than breaking it. Last night's shift closed its task with a note saying the job was only half done and the card must stay open - but the way the note was written, the system closed the card anyway, about ninety seconds before that very sentence was posted. The next shift then read the queue, could not see it, and would never have found the other half. I only found it by opening it directly. The card was reopened, the second half is now done, and I checked the last twenty-five merges for the same mistake - it had happened only this once."
@@ -2394,11 +2438,6 @@
       "at": "2026-08-28T11:00:00+10:00",
       "shift": "foreman-71",
       "text": "UPLOAD A CONCEPT now has a screen. Last night it was a reader with no way in; tonight the card on the casting page is real: tap it, pick a picture, and about five seconds later a description of the person in it is sitting in your brief box, focused, yours to edit before you spend a credit. I drove it end to end in the running app on one of our own faces — 5.4 seconds, and what came back was 1,082 characters about the man and not one word about the light, the set or the camera.\n\nIt is still switched off for everyone, including you, and it stays off until you answer the question already on your eye list — is that the right LENGTH, or do you want a type rather than an inventory. I did not hold the screen for that answer, and here is why: the length lives in one instruction inside the reader, and changing it does not touch the card, the box, or anything you would see. So the answer costs the same whether the screen exists or not, and now the flip is one variable rather than a build.\n\nTWO THINGS I CHANGED THAT EVERY ACCOUNT SEES, and I want them said plainly rather than buried. First, the card's words: it used to say 'Upload a real person — casting from your own photos is coming', which promises to cast the actual person in your photo. We do not do that and this road never will — what reaches the engine is words, so you get someone SIMILAR, which is your own sentence. It now says what it will actually do. Second, the brief box on that page was still a one-line field. It is the box a first 160-credit roll is typed into, and past about sixty characters the start of your own sentence scrolls out of sight, so you cannot read what you are about to buy. The sheet's box was fixed months ago; this one was missed. Same component now — it looks identical until the text is long, then it grows to four lines. Enter still casts; Shift+Enter gives you a new line.\n\nBoth are one commit to undo if you dislike either."
-    },
-    {
-      "at": "2026-08-28T08:55:00+10:00",
-      "shift": "foreman-70",
-      "text": "Both halves of tonight's order (#185) are worked.\n\nUPLOAD A CONCEPT is built as far as it can go without a screen: hand it a picture, it writes a description of the PERSON and nothing about the light, the set, the frame or the camera — your condition, enforced by code on the answer rather than by politely asking the model. It is off everywhere and the tile is still the placeholder, so nothing in the product moved tonight. The design decision worth knowing: the photograph is never kept and never reaches the image engine. It rides one text call and is dropped. That means no stored photographs of strangers, no new table, no cleanup path — and the named-person wall still stands in front of the result, because what reaches the engine is words. There is a description on the eye list; the one thing I would like your eye on is whether it is the right LENGTH.\n\nTwo moments in the build are worth a sentence because they are the same mistake twice. The feature has a list of words a description may not use. Its own tests caught it refusing \"close-cropped stubble\" — which is a haircut, not a camera term — and then a real run caught it throwing away a good description of a South Asian man because it said his features were \"reminiscent of\" that ancestry. Both were bans written to be safe that turned out to refuse the very thing the feature is for. Narrowed, and both are written down where the next person will read them.\n\nYOUR SECOND QUESTION — if you refine a face and then Follow it, does the Follow use the version you are on? Yes, and it already did. The issue said otherwise; I drove it at the real database and the code was right. Five refined faces, all five resolve to the refined picture, with a control proving the reader can also say \"the original\" when nothing is picked. So there is nothing to build. The one real gap was in the test that guards it — it could not have failed — and that is fixed."
     }
   ],
   "acknowledgedReplyIds": [
