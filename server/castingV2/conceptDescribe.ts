@@ -82,6 +82,100 @@
  * upload comes back as {@link GOLDEN_NOTES}.styled rather than as
  * {@link INVENTORY_NOTE}, and the two men keep passing.
  *
+ * # ⚠ AND HE RULED ON THAT JUDGEMENT CALL HIMSELF — Crew reply #26,
+ * 2026-08-29, verbatim
+ *
+ * The paragraph above declared a judgement (no word ban) and asked to be
+ * challenged. He answered all three parts:
+ *
+ * > *"Goth: yes, type — with two cuts. Creature: yes, type. Hard ban: no."*
+ *
+ * > *"Hard ban — Don't. `fitted dark crew-neck` is a named garment and you
+ * > already approved it. A ban on bodysuit / choker / harness will either be
+ * > too narrow to matter or too wide to trust. Rule stays: reader prefers
+ * > materials over named fetish pieces. **Proof is the output, not a word
+ * > list.**"*
+ *
+ * So the judgement above is now HIS, not ours, and the sentence that matters
+ * for every future seat is the last one: **the acceptance of this reader is
+ * the drive against real pictures, and a word list is not admissible as a
+ * substitute for it.** The creature widening (#204) is ratified as it stands
+ * — *"That's a species brief, not a portrait inventory … Keep it. Adult
+ * presence is the right guard."*
+ *
+ * His two cuts to the goth line are the third part, and neither is a word:
+ *
+ * > *"Athletic build — same class of mistake as slight build. spiked — filter
+ * > bait; metal accents is enough."*
+ *
+ * ⚠ **WHAT HE WAS CUTTING FROM IS A LIVE READ, WHICH IS WHY THIS IS READABLE
+ * AT ALL AND NOT A GUESS AT HIS MEANING.** The line quoted to him (briefing
+ * edition 96, eye item 1, and the pipeline note beside it) is what the SHIPPED
+ * reader answered on the goth photograph: *"Woman in her twenties, dark-fashion
+ * / cyber-goth model type. Pale skin, sculpted platinum hair, facial piercings
+ * and fine-line facial markings, script tattoos on both arms. **Athletic
+ * build**, dark structured fashion in lace, leather and **spiked** metal
+ * accents."* His *"I'd ship it as"* is that same sentence with exactly those
+ * two things taken out. So the reader really did put a build word on a fashion
+ * type, and {@link GOLDEN_NOTES}.styled below is his ratification of the live
+ * reader's own phrasing minus the two cuts — not a specimen written for it.
+ *
+ * ⚠ **THE FIRST CUT IS A CHANGE TO THE BUILD RULE, NOT A DELETION FROM ITS
+ * LIST, and reading it the other way would have been the smaller, wronger
+ * fix.** `slight` was already refused for being a body SIZE; `athletic` was on
+ * the instruction's own CLOSED build list, so it was the list working exactly
+ * as written. He is therefore not striking a word — he is saying that naming a
+ * build ON THIS SUBJECT was the mistake, because a build word a fashion type
+ * did not need is one more thing locked onto all eight faces. **A build is
+ * named only where the build is part of the type**, which is what his own
+ * three specimens have said all along and nobody had read: both passing men
+ * are physical types (*"rugged, no-nonsense fitness presence"*, *"authoritative
+ * professional"*) and both name one; his corrected goth line is a fashion type
+ * and names none. The closed list and the size prohibition are untouched —
+ * they still govern the case where a build IS named.
+ *
+ * **The second cut is the refusal coin reaching the describer** (#129), not a
+ * matter of taste, and it is stated in {@link RULES} WITH THAT REASON
+ * attached: name the material and never the hardware or its treatment, because
+ * a note carrying *spiked* / *studded* / *buckled* is refused outright by the
+ * image engine and costs her the cast. A reason travels to the words his list
+ * could not enumerate; a banned word does not — which is the same argument he
+ * just ratified one paragraph above.
+ *
+ * # ⚠ AND THE DRIVE HE ASKED FOR SAYS ONE CUT LANDED AND THE OTHER DID NOT
+ *
+ * *"Proof is the output"* — so the acceptance was driven before this shipped,
+ * two arms on the SAME thirteen pictures with one variable (this instruction,
+ * before and after), on the founder's own reference set, which the instruction
+ * has never seen. Not the goth frame: his corrected note for it is IN the
+ * instruction, so reading it would measure recall.
+ *
+ * - **The build cut LANDED, unanimously and unproven.** Paired on the nine
+ *   pictures both arms read: a closed-list build word on **7/9 → 3/9**, every
+ *   one of the four changes in his direction and none against (McNemar exact
+ *   **p = 0.125** — and with four discordant pairs that test CANNOT go below
+ *   0.125, so the bar is out of this sample's reach by construction, not by
+ *   result). The three that KEEP a build are the three physical types — a
+ *   solid muscular reptilian warrior, an athletic wiry predator, a broad
+ *   heavy-set cyclops — which is the boundary rather than the ban.
+ * - ⚠ **One "drop" was not a drop, and the first pointer scored it as a win.**
+ *   The quadrupedal creature went from *"muscular sinewy build"* to *"sinewy,
+ *   powerful build"* — a build claim in words that are not on the closed list
+ *   at all. Counting only listed words reads that as compliance. On *any*
+ *   build claim the honest figure is **7/9 → 4/9, p = 0.25**.
+ * - ⚠ **The hardware cut did NOT measurably land.** Exactly one of the
+ *   thirteen carries a named wardrobe piece — a cyber-goth woman's *mechanical
+ *   eye-piece* — and it survives in BOTH arms. The other matches were creature
+ *   ANATOMY (*"bone-spike ridge"*, an organic substance *"studded"* with
+ *   nodules), which is a word with a second sense caught by a word list: this
+ *   file's own recorded ban class, arriving for a fourth time inside the
+ *   instrument built to measure the rule against it. Whether a machine part
+ *   fitted to a cyborg's face is an accessory or a FEATURE of the being is a
+ *   real question this reader has not been asked, and it is not answered here.
+ * - Read rate **11/13 in both arms**, with different subjects refusing each
+ *   time — the coin, not a regression. The negative control (a blank field)
+ *   refused `no_being` in both arms.
+ *
  * ⚠ **MATCH THIS FACE IS A NAMED SECOND MODE AND IT IS NOT BUILT** — recorded
  * here so it does not vanish into a closed issue. It is not a describer mode
  * at all when it comes: a lookalike is an IMAGE-anchored road (the Follow's
@@ -525,11 +619,21 @@ export const GOLDEN_NOTES = {
   plain:
     "A man in his mid-forties, European heritage, athletic muscular build, "
     + "close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness presence.",
-  /** His own correction of the failing box — *"This goth upload should come back as"*. */
+  /**
+   * His own correction of the failing box — and this is his SECOND correction
+   * of it (Crew reply #26, 2026-08-29), *"I'd ship it as"*, verbatim.
+   *
+   * ⚠ It differs from the line that shipped in two ways that are the whole of
+   * his ruling: it carries **no build word at all** — a styled fashion type is
+   * exactly where {@link RULES} now says to leave one out — and it says
+   * *"fine-line facial markings, script tattoos on both arms"* where ours said
+   * *"sparse fine-line tattoos on the face and arms"*. Both are worlds rather
+   * than items; his is the newer one and it is the one shown to the reader.
+   */
   styled:
     "Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted "
-    + "platinum hair, facial piercings, sparse fine-line tattoos on the face and arms. "
-    + "Dark structured fashion in lace, leather and metal.",
+    + "platinum hair, facial piercings and fine-line facial markings, script tattoos on "
+    + "both arms. Dark structured fashion in lace, leather and metal.",
   /**
    * His second passing man, and it is NOT shown to the reader — it teaches the
    * same lesson as {@link GOLDEN_NOTES.plain}, and context is not additive here.
@@ -555,6 +659,22 @@ export const INVENTORY_NOTE =
   "A woman in her twenties, slight build, long straight platinum hair with blunt bangs, "
   + "multiple facial piercings and forearm tattoos. Dark-fashion / gothic-alternative model "
   + "type, styled with lace bodysuit, leather choker and spiked eye harness.";
+
+/**
+ * THE CLOSED BUILD LIST — the only build words the reader may use, and the
+ * ONLY place they are written down.
+ *
+ * It is exported because the specimens are checked against it: his ruling
+ * ("athletic build — same class of mistake as slight build") is the statement
+ * that a STYLED type carries none of these while a PHYSICAL type may carry
+ * one, and an arm asserting that has to ask the instruction's own list rather
+ * than keep a second copy of it beside the question (working law 4 — a
+ * shadowing list drifts, and this one would drift silently, since a build word
+ * added here and not there simply stops being checked).
+ */
+export const BUILD_FAMILIES = [
+  "athletic", "muscular", "solid", "broad", "wiry", "stocky", "heavy-set", "average",
+] as const;
 
 /**
  * ⚠ THE INSTRUCTION IS THE PRIMARY CONTROL AND IT IS HIS RULING, CLAUSE BY
@@ -595,8 +715,12 @@ const RULES = [
   "and each rule below is a RULE rather than a list of banned words \u2014 apply it to whatever you are looking at:",
   "- HAIR: name the world it belongs to, never the cut. \"Sculpted platinum\" \u2014 not the length, the parting,",
   "  the fringe or the fade. If you could take it to a barber and get it copied, it is too exact.",
-  "- BUILD: choose from this CLOSED list and nothing else — athletic, muscular, solid, broad, wiry,",
-  "  stocky, heavy-set, average. You may pair two of them (\"athletic muscular\", \"solid athletic\").",
+  "- BUILD: name one ONLY WHERE THE BUILD IS PART OF THE TYPE — a fitness type, a heavy man, a",
+  "  physical presence a casting director would actually book for. If the type is a fashion, a style",
+  "  or a character type, LEAVE THE BUILD OUT ENTIRELY: a build word the type did not need is one more",
+  "  thing all eight of them are forced to share. When you do name one, choose from this CLOSED list",
+  `  and nothing else — ${BUILD_FAMILIES.join(", ")} — and you`,
+  "  may pair two of them (\"athletic muscular\", \"solid athletic\").",
   "  A body SIZE or weight is never one of them: \"slight\", \"slender\", \"petite\", \"skinny\", \"curvy\",",
   "  \"trim\" and anything like them are out, alone or as a modifier. A size is the fastest way to reprint",
   "  one person, and eight different people do not share one.",
@@ -604,6 +728,9 @@ const RULES = [
   "  (\"fitted dark crew-neck\"). If it is styled or elaborate, the phrase is MATERIALS AND MOOD",
   "  (\"dark structured fashion in lace, leather and metal\"). Never itemise, and never name a single",
   "  accessory \u2014 no harness, no mask, no collar, no glove, no piece of jewellery, whatever it is made of.",
+  "  Name the MATERIAL, never the hardware or what has been done to it \u2014 \"metal accents\" is enough,",
+  "  and \"spiked\", \"studded\", \"buckled\", \"chained\" and their kind are out. That is not taste: a note",
+  "  carrying them is REFUSED OUTRIGHT by the image engine, so it costs her the cast altogether.",
   "- MARKINGS: a world, never an inventory. \"Facial piercings\", \"sparse fine-line tattoos on the face",
   "  and arms\" \u2014 never each piece, its design, or where exactly it sits.",
   "",

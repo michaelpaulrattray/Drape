@@ -17,6 +17,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  BUILD_FAMILIES,
   CONCEPT_DESCRIPTION_MAX,
   CONCEPT_DESCRIPTION_MIN,
   CONCEPT_DESCRIPTION_TARGET,
@@ -310,6 +311,34 @@ describe("his specimens — the two shapes that pass and the one that fails", ()
     expect(absenceClaimIn(INVENTORY_NOTE)).toBeNull();
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(INVENTORY_NOTE)) }))
       .toEqual({ ok: true, description: INVENTORY_NOTE, attempts: 1 });
+  });
+
+  /*
+    ⚠ HIS BUILD RULING, MADE CONCRETE ON HIS OWN THREE SPECIMENS — and this is
+    the arm that says WHERE the line falls, which no amount of instruction prose
+    can. Both his passing men are PHYSICAL types ("rugged, no-nonsense fitness
+    presence", "authoritative professional") and both name a build; his corrected
+    goth line is a FASHION type and names none, which is his cut of "Athletic
+    build" from the live read he was shown.
+
+    A future seat that reads the ruling as "drop `athletic` from the list" makes
+    the second half of this arm go red, and a seat that reads it as "never name a
+    build" makes the first half go red. It is the boundary, held from both sides.
+
+    The list comes from the module, never from a copy here — see BUILD_FAMILIES.
+  */
+  const buildWordsIn = (note: string) =>
+    BUILD_FAMILIES.filter((word) => note.toLowerCase().includes(word));
+
+  it("his styled specimen names NO build — a fashion type did not need one", () => {
+    expect(buildWordsIn(GOLDEN_NOTES.styled)).toEqual([]);
+  });
+
+  it.each([
+    ["his passing man", GOLDEN_NOTES.plain],
+    ["his second passing man", GOLDEN_NOTES.secondMan],
+  ])("%s DOES name one — the ruling is a boundary, not a ban", (_name, note) => {
+    expect(buildWordsIn(note).length).toBeGreaterThan(0);
   });
 
   /* And it is the shape he refused, not a paraphrase of it — every word he
@@ -662,6 +691,61 @@ describe("the reader", () => {
     expect(system).toContain("never guess");
     /* The announced target is a brief in itself, so it must actually be said. */
     expect(system).toContain(`${CONCEPT_DESCRIPTION_TARGET.low}–${CONCEPT_DESCRIPTION_TARGET.high} characters`);
+  });
+
+  /*
+    HIS TWO CUTS (Crew reply #26, 2026-08-29), and NEITHER IS A WORD — which is
+    why both arms are pointed at the RULE rather than at a banned token. He
+    ratified the no-word-ban judgement in the same breath ("Proof is the output,
+    not a word list"), so a future seat that turns either of these into a sweep
+    is going against his word, not just against this module's argument.
+
+    CUT ONE — "Athletic build: same class of mistake as slight build." `slight`
+    was already out for being a SIZE and `athletic` is on the instruction's own
+    closed list, so the cut cannot be a deletion from that list: it is that
+    naming a build on a fashion type was the mistake at all.
+  */
+  it("names a build only where the build is part of the type — his first cut is a rule, not a word", async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    const system = engine.sent[0]!.system.toLowerCase();
+    expect(system).toContain("only where the build is part of the type");
+    expect(system).toContain("leave the build out entirely");
+    /* And the two halves that DID NOT move — the closed list still governs the
+       case where a build is named, and a size is still never one of them. */
+    expect(system).toContain("closed list");
+    expect(system).toContain("heavy-set");
+    expect(system).toContain("a body size or weight is never one of them");
+  });
+
+  /*
+    CUT TWO — "spiked: filter bait; metal accents is enough." This one is the
+    refusal coin (#129) reaching the describer, and the REASON is the load-
+    bearing part: a rule travels to the hardware words his sentence could not
+    enumerate, where a four-word ban would not.
+  */
+  it("names the material and never the hardware, WITH the refusal reason attached", async () => {
+    const engine = engineSaying(said(CLEAN));
+    await describeConcept({ ...PICTURE, engine });
+    const system = engine.sent[0]!.system.toLowerCase();
+    const at = system.indexOf("name the material, never the hardware");
+    expect(at, "the hardware rule itself").toBeGreaterThan(-1);
+    /*
+      ⚠ READ IN THE RULE'S OWN NEIGHBOURHOOD, NOT ACROSS THE WHOLE INSTRUCTION.
+      The first cut of this arm asserted the reason with a bare `toContain` over
+      the system prompt and a sabotage that DELETED the reason still passed it —
+      the words "refused outright by the image engine" already appear hundreds of
+      lines away, in the gloss under the failing specimen. An assertion satisfied
+      by a sentence it is not about is not a guard; the sabotage driver's own
+      selected-count line is what made the false pass visible.
+    */
+    const rule = system.slice(at, at + 400);
+    expect(rule, "the material he asked for").toContain("metal accents");
+    for (const hardware of ["spiked", "studded", "buckled", "chained"]) {
+      expect(rule, hardware).toContain(hardware);
+    }
+    /* The why, not just the what — "that is not taste", in the same breath. */
+    expect(rule, "the reason").toContain("refused outright by the image engine");
   });
 });
 
