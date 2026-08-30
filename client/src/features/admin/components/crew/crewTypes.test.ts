@@ -16,8 +16,12 @@ import {
   foldTimeline,
   milestoneCountLine,
   milestoneProgress,
+  HISTORY_LANDED_VISIBLE,
+  foldHistory,
+  nextUpRows,
+  pipelineNotDone,
+  recentHistory,
   replyFallsToJournal,
-  splitPipeline,
 } from "./crewTypes";
 
 const CARDS = [
@@ -96,7 +100,7 @@ describe("the milestone progress bar (#74)", () => {
   });
 });
 
-describe("the pipeline split (#74)", () => {
+describe("what is not done — the pipeline, cut and ranked (#291)", () => {
   const ITEMS = [
     { id: "a", title: "a", status: "building", prNumber: null, note: null },
     { id: "b", title: "b", status: "merged", prNumber: 1, note: null },
@@ -105,17 +109,157 @@ describe("the pipeline split (#74)", () => {
     { id: "e", title: "e", status: "waiting-founder", prNumber: null, note: null },
   ] as const;
 
-  it("landed is exactly the merged rows; everything else is in flight", () => {
-    const { inFlight, landed } = splitPipeline([...ITEMS]);
-    expect(landed.map((item) => item.id)).toEqual(["b"]);
-    expect(inFlight.map((item) => item.id)).toEqual(["a", "c", "d", "e"]);
+  it("merged rows leave — they are history, and history has one place now", () => {
+    /* 107 entries, 92 merged: the section was a changelog wearing the word
+       "pipeline", and the 15 rows that could change what he does were
+       scattered through it. */
+    expect(pipelineNotDone([...ITEMS]).map((item) => item.id)).not.toContain("b");
   });
 
-  it("exhaustive: every item renders in exactly one half", () => {
-    const { inFlight, landed } = splitPipeline([...ITEMS]);
-    expect(inFlight.length + landed.length).toBe(ITEMS.length);
-    const ids = new Set([...inFlight, ...landed].map((item) => item.id));
-    expect(ids.size).toBe(ITEMS.length);
+  it("⚠ ranked by how much a row wants a human, never by when it was written", () => {
+    expect(pipelineNotDone([...ITEMS]).map((item) => item.id)).toEqual(["c", "e", "d", "a"]);
+  });
+
+  it("stable within a rank, so equal rows keep the order the shifts recorded", () => {
+    const two = [
+      { id: "first", title: "t", status: "in-review", prNumber: null, note: null },
+      { id: "second", title: "t", status: "in-review", prNumber: null, note: null },
+    ] as const;
+    expect(pipelineNotDone([...two]).map((item) => item.id)).toEqual(["first", "second"]);
+  });
+
+  it("does not mutate the array it was given", () => {
+    const items = [...ITEMS];
+    pipelineNotDone(items);
+    expect(items.map((item) => item.id)).toEqual(["a", "b", "c", "d", "e"]);
+  });
+});
+
+describe("one history block where the page had three (#292)", () => {
+  const CARD = {
+    id: "card-1", title: "a question", productImpact: "", workedExample: null,
+    options: [], recommendation: null, state: "answered", issueNumber: 10,
+    filedAt: "2026-08-20T00:00:00+10:00",
+  } as const;
+  const OPEN_CARD = { ...CARD, id: "card-2", title: "still open", state: "open" } as const;
+  const EYE = {
+    id: "eye-1", title: "some frames", question: "", state: "done", issueNumber: 11,
+    filedAt: "2026-08-25T00:00:00+10:00", frames: [],
+  } as const;
+  const LANDED = { id: "pipe-1", title: "shipped work", status: "merged", prNumber: 3, note: null } as const;
+  const MOVING = { id: "pipe-2", title: "still moving", status: "in-review", prNumber: 4, note: null } as const;
+
+  it("⚠ collapses all three lists into one, tagged by kind — his word was 'double ups'", () => {
+    const rows = recentHistory([CARD, OPEN_CARD] as never, [EYE] as never, [LANDED, MOVING] as never);
+    expect(rows.map((row) => row.kind)).toEqual(["judged", "answered", "landed"]);
+    expect(rows.map((row) => row.title)).toEqual(["some frames", "a question", "shipped work"]);
+  });
+
+  it("only the past: an OPEN card and a MOVING row are not history", () => {
+    const rows = recentHistory([CARD, OPEN_CARD] as never, [EYE] as never, [LANDED, MOVING] as never);
+    expect(rows.map((row) => row.title)).not.toContain("still open");
+    expect(rows.map((row) => row.title)).not.toContain("still moving");
+  });
+
+  it("decided things sort newest-first on their own clock", () => {
+    /* EYE is filed 25 Aug and CARD 20 Aug, so the newer leads whichever list
+       it came from — the seam between the two former sections is invisible. */
+    const rows = recentHistory([CARD] as never, [EYE] as never, []);
+    expect(rows.map((row) => row.key)).toEqual(["eye:eye-1", "card:card-1"]);
+  });
+
+  it("⚠ `done` is read off the state, and a landed row is always done (#292)", () => {
+    const rows = recentHistory([CARD] as never, [EYE] as never, [LANDED] as never);
+    expect(rows.find((row) => row.key === "card:card-1")!.done).toBe(false);
+    expect(rows.find((row) => row.key === "eye:eye-1")!.done).toBe(true);
+    expect(rows.find((row) => row.key === "pipeline:pipe-1")!.done).toBe(true);
+  });
+
+  it("keys are unique across the three populations, so React draws every row", () => {
+    const collide = { ...LANDED, id: "card-1" } as const;
+    const rows = recentHistory([CARD] as never, [EYE] as never, [collide] as never);
+    expect(new Set(rows.map((row) => row.key)).size).toBe(rows.length);
+  });
+});
+
+describe("the history fold is fair to both kinds (#292)", () => {
+  /* THE DEFECT, caught by photographing the rendered block rather than reading
+     the markup: 65 decided cards sort ahead of 93 landed rows, so a fold taken
+     off the top of the concatenated list showed TEN rows and not one of them
+     was shipped work — the one kind that shows him momentum. */
+  const decided = Array.from({ length: 30 }, (_, i) => ({
+    key: `card:${i}`, kind: "answered" as const, title: `q${i}`, issueNumber: i, done: false,
+  }));
+  const landed = Array.from({ length: 30 }, (_, i) => ({
+    key: `pipeline:${i}`, kind: "landed" as const, title: `p${i}`, issueNumber: null, done: true,
+  }));
+
+  it("⚠ shipped work is visible above the fold even when decided rows outnumber it 30 to 1", () => {
+    const { recent } = foldHistory([...decided, ...landed.slice(0, 1)]);
+    expect(recent.filter((row) => row.kind === "landed")).toHaveLength(1);
+  });
+
+  it("caps each group and keeps the list's own order", () => {
+    const { recent } = foldHistory([...decided, ...landed]);
+    expect(recent.filter((row) => row.kind === "landed")).toHaveLength(HISTORY_LANDED_VISIBLE);
+    expect(recent.map((row) => row.kind)).toEqual(
+      [...recent.filter((r) => r.kind !== "landed"), ...recent.filter((r) => r.kind === "landed")]
+        .map((row) => row.kind),
+    );
+  });
+
+  it("recent and older partition the list exactly — nothing is shown twice or lost", () => {
+    const rows = [...decided, ...landed];
+    const { recent, older } = foldHistory(rows);
+    expect(recent.length + older.length).toBe(rows.length);
+    expect(new Set([...recent, ...older]).size).toBe(rows.length);
+  });
+
+  it("a short list folds to nothing hidden", () => {
+    const { recent, older } = foldHistory([decided[0], landed[0]]);
+    expect(recent).toHaveLength(2);
+    expect(older).toHaveLength(0);
+  });
+});
+
+describe("NEXT UP — blocked-on-him is derived off his desk, never stored (#290)", () => {
+  const NEXT_UP = {
+    readAt: "2026-08-30T09:00:00Z",
+    items: [
+      { issueNumber: 278, title: "the shell is empty", urgent: true },
+      { issueNumber: 287, title: "desk hygiene", urgent: false },
+    ],
+  } as const;
+  const card = (issueNumber: number | null, state: string) => ({
+    id: `card-${issueNumber}`, title: "t", productImpact: "", workedExample: null,
+    options: [], recommendation: null, state, issueNumber,
+    filedAt: "2026-08-30T00:00:00+10:00",
+  });
+
+  it("⚠ an OPEN card naming the issue makes it visibly waiting on him", () => {
+    /* #278 sat looking like ordinary queued work while it was actually waiting
+       on one sentence from him — a queue that cannot show that is the same
+       failure with a nicer surface. */
+    const rows = nextUpRows(NEXT_UP as never, [card(278, "open")] as never);
+    expect(rows.find((row) => row.issueNumber === 278)!.blockedOnYou).toBe(true);
+    expect(rows.find((row) => row.issueNumber === 287)!.blockedOnYou).toBe(false);
+  });
+
+  it("an ANSWERED card stops blocking the moment he answers — no shift edit needed", () => {
+    const rows = nextUpRows(NEXT_UP as never, [card(278, "answered")] as never);
+    expect(rows.every((row) => !row.blockedOnYou)).toBe(true);
+  });
+
+  it("a card with no issue number blocks nothing (and cannot match by accident)", () => {
+    const rows = nextUpRows(NEXT_UP as never, [card(null, "open")] as never);
+    expect(rows.every((row) => !row.blockedOnYou)).toBe(true);
+  });
+
+  it("the rows are the block's own list, in its own order, unfiltered", () => {
+    /* The count must agree with `gh issue list --label founder-ordered
+       --state open`, which is his card's stated check: nothing here may drop
+       or reorder a row. */
+    expect(nextUpRows(NEXT_UP as never, []).map((row) => row.issueNumber)).toEqual([278, 287]);
   });
 });
 

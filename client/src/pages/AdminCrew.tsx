@@ -6,9 +6,17 @@
  * stops mattering: the briefing and the steering wheel live in the product he
  * already opens every day.
  *
- * His reading order, mirroring the Desk: program → needs you → pipeline →
- * problems → journal. Single column, restrained, no charts and no KPI tiles —
- * this is a briefing, not a dashboard.
+ * His reading order: working now → background work → program → needs you →
+ * NEXT UP → for your eyes → what is not done → already dealt with → problems
+ * → journal. Single column, restrained, no charts and no KPI tiles — this is
+ * a briefing, not a dashboard.
+ *
+ * ⚠ **THE LAST THREE BLOCKS ARE #290/#291/#292, WORKED AS THE ONE PASS HE
+ * ORDERED.** The page could say what was running and what had shipped and had
+ * no state that meant QUEUED; its pipeline was a 107-row changelog with seven
+ * rows claiming he was blocking things his desk said nothing about; and three
+ * separate sections all meant "the past". Each is one question he asks, and
+ * each now has exactly one place to be answered.
  *
  * # Two auth layers, and neither is decoration
  *
@@ -30,7 +38,9 @@ import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
+import { CrewNextUp } from "@/features/admin/components/crew/CrewNextUp";
 import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
+import { CrewRecentHistory } from "@/features/admin/components/crew/CrewRecentHistory";
 import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
@@ -254,7 +264,28 @@ export default function AdminCrew() {
               onSend={send}
             />
 
+            {/* WHAT IS PLANNED (#290) — the missing middle. The page now reads
+                working now → what needs you → next up → what is not done →
+                one history block: four short answers to four questions he
+                actually asks, instead of one 107-row scroll. It sits under
+                Needs You rather than above it because a question waiting on
+                him outranks a queue that is merely next. */}
+            <CrewNextUp
+              nextUp={stateQuery.data.briefing.nextUp}
+              cards={stateQuery.data.briefing.needsYou}
+            />
+
             <CrewPipeline items={stateQuery.data.briefing.pipeline} />
+
+            {/* ONE history block where there were three (#292): Needs You's
+                "Recently answered", the gallery's "Already judged" and the
+                pipeline's "Recently landed" were the same idea said three
+                times — his word for it was "double ups". */}
+            <CrewRecentHistory
+              cards={stateQuery.data.briefing.needsYou}
+              eyeItems={stateQuery.data.briefing.eyeItems}
+              pipeline={stateQuery.data.briefing.pipeline}
+            />
 
             <CrewProblems problems={stateQuery.data.briefing.problems} />
 

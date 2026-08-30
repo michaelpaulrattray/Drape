@@ -33,9 +33,10 @@ export type CrewThreadHost = Pick<CrewNeedsYouCard, "id" | "state" | "title">;
  *
  * The rule is "does a thread render for its card", not "does the briefing
  * mention its card": Needs You shows reply threads under OPEN cards only, so a
- * reply on an answered/done card (still listed under "Recently answered") must
- * fall through here or it renders NOWHERE — the vanishing the design forbids,
- * caught live by the PR #72 gate review. Pure, and tested directly.
+ * reply on an answered/done card (listed in the recent-history block since
+ * #292) must fall through here or it renders NOWHERE — the vanishing the
+ * design forbids, caught live by the PR #72 gate review. Pure, and tested
+ * directly.
  */
 export function replyFallsToJournal(
   cardId: string | null,
@@ -91,20 +92,178 @@ export function milestoneCountLine(progress: MilestoneProgress): string {
   return parts.join(" · ");
 }
 
+/* ─── #290/#291/#292: the page reads working now → next up → what is not done
+   → one recent-history block. Four questions he actually asks, instead of one
+   107-row scroll with three history sections in it. All three derivations are
+   pure and tested directly; none of them writes a state down twice. ─── */
+
 /**
- * The pipeline split (#74 items 4 and 6): momentum gets its own section.
- * "Landed" is DERIVED from the status the shifts already record — a merged row
- * is a done thing wherever it sits in the file — so there is no second
- * "recently completed" list to drift.
+ * ⚠ **THE ORDER IS THE POINT.** His reading of the old section was *"a massive
+ * list i cant tell whats going on"* — 107 rows with the 15 that could change
+ * his behaviour scattered through them. Blocked first, then what waits on him,
+ * then what is moving: the rows are sorted by how much they want a human,
+ * never by when they were written.
  */
-export function splitPipeline(items: readonly CrewPipelineItem[]): {
-  inFlight: CrewPipelineItem[];
-  landed: CrewPipelineItem[];
+const NOT_DONE_RANK: Record<string, number> = {
+  blocked: 0,
+  "waiting-founder": 1,
+  "in-review": 2,
+  building: 3,
+};
+
+export function pipelineNotDone(items: readonly CrewPipelineItem[]): CrewPipelineItem[] {
+  return items
+    .filter((item) => item.status !== "merged")
+    /* Stable within a rank: the file is already newest-first, and `sort` is
+       stable in every engine this ships to, so equal-rank rows keep the order
+       the shifts recorded. */
+    .slice()
+    .sort((a, b) => (NOT_DONE_RANK[a.status] ?? 9) - (NOT_DONE_RANK[b.status] ?? 9));
+}
+
+/** One row of the single recent-history block (#292). */
+export type CrewHistoryRow = {
+  key: string;
+  /** What kind of past thing this is — the tag that replaces three headings. */
+  kind: "answered" | "judged" | "landed";
+  title: string;
+  issueNumber: number | null;
+  /** `done` reads differently from `answered`; a landed row is always done. */
+  done: boolean;
+};
+
+/**
+ * THE ONE HISTORY BLOCK — his verdict on the old page was *"the recently
+ * answered and already judged sections are double ups"*, and it was three
+ * sections, not two: `Recently answered` (needs-you), `Already judged` (the eye
+ * gallery) and `Recently landed` (the pipeline). From where he sits that is
+ * *things I have already dealt with*, said three times.
+ *
+ * ⚠ **THE TWO GROUPS ARE NOT INTERLEAVED, AND THAT IS DELIBERATE.** Cards and
+ * eye items carry `filedAt`, so they merge on a real clock. A pipeline row
+ * carries no date at all — so decided things sort by their own timestamps and
+ * landed work follows in the order the shifts recorded it. Faking a common
+ * clock would order the list by a number no record makes. One heading, one
+ * list, tagged rows; the seam is invisible to him and honest in the code.
+ */
+export function recentHistory(
+  cards: readonly CrewNeedsYouCard[],
+  eyeItems: readonly CrewEyeItem[],
+  pipeline: readonly CrewPipelineItem[],
+): CrewHistoryRow[] {
+  const decided: (CrewHistoryRow & { filedAt: string })[] = [
+    ...cards
+      .filter((card) => card.state !== "open")
+      .map((card) => ({
+        key: `card:${card.id}`,
+        kind: "answered" as const,
+        title: card.title,
+        issueNumber: card.issueNumber,
+        done: card.state === "done",
+        filedAt: card.filedAt,
+      })),
+    ...eyeItems
+      .filter((item) => item.state !== "open")
+      .map((item) => ({
+        key: `eye:${item.id}`,
+        kind: "judged" as const,
+        title: item.title,
+        issueNumber: item.issueNumber,
+        done: item.state === "done",
+        filedAt: item.filedAt,
+      })),
+  ].sort((a, b) => Date.parse(b.filedAt) - Date.parse(a.filedAt));
+
+  const landed: CrewHistoryRow[] = pipeline
+    .filter((item) => item.status === "merged")
+    .map((item) => ({
+      key: `pipeline:${item.id}`,
+      kind: "landed" as const,
+      title: item.title,
+      issueNumber: null,
+      done: true,
+    }));
+
+  return [
+    ...decided.map(({ filedAt: _filedAt, ...row }) => row),
+    ...landed,
+  ];
+}
+
+/**
+ * ⚠ **THE FOLD IS PER KIND, AND THAT IS A DEFECT FOUND BY LOOKING AT IT.**
+ *
+ * The first build took the first ten rows of the concatenated list. There are
+ * 65 decided cards and 93 landed rows, and decided ones sort first — so every
+ * row above the fold read "You answered" or "You judged" and **not one piece
+ * of shipped work was visible**. His brief asks for a block whose rows are
+ * tagged *a question he answered · a frame he judged · work that landed*, and
+ * a default view that can only ever show two of those three kinds is not that
+ * block. Momentum was the one thing buried.
+ *
+ * So the cut is taken from each group instead of from the concatenation, which
+ * keeps one heading, one list and the list's own order.
+ *
+ * ⚠ **And his brief said "last 7 days, or the last 8 merged rows, whichever is
+ * shorter" — only the count half is buildable.** A pipeline row carries no
+ * date and there is nothing on it to derive one from; inventing a timestamp so
+ * the code could claim a 7-day window would be a number no record makes, which
+ * is the specific thing his own count-pill ruling forbids. The disclosure says
+ * how many are behind it rather than implying a window.
+ */
+export const HISTORY_DECIDED_VISIBLE = 6;
+export const HISTORY_LANDED_VISIBLE = 4;
+
+/** The fold, taken fairly across the two groups. Pure, and tested directly. */
+export function foldHistory(rows: readonly CrewHistoryRow[]): {
+  recent: CrewHistoryRow[];
+  older: CrewHistoryRow[];
 } {
-  return {
-    inFlight: items.filter((item) => item.status !== "merged"),
-    landed: items.filter((item) => item.status === "merged"),
-  };
+  const recent: CrewHistoryRow[] = [];
+  let decided = 0;
+  let landed = 0;
+  for (const row of rows) {
+    if (row.kind === "landed") {
+      if (landed++ < HISTORY_LANDED_VISIBLE) recent.push(row);
+    } else if (decided++ < HISTORY_DECIDED_VISIBLE) {
+      recent.push(row);
+    }
+  }
+  const shown = new Set(recent);
+  return { recent, older: rows.filter((row) => !shown.has(row)) };
+}
+
+/** One row of NEXT UP (#290) — a founder-ordered card a shift will take. */
+export type CrewNextUpRow = {
+  issueNumber: number;
+  title: string;
+  urgent: boolean;
+  /**
+   * ⚠ **DERIVED, NEVER STORED.** A queued card is blocked on him when his own
+   * desk still has an OPEN card naming that issue — the desk's state is the one
+   * definition of "he is blocking this" (#291's rule). `#278` sat looking like
+   * ordinary queued work while it was actually waiting on one sentence from
+   * him; a queue that cannot show that is the same failure with a nicer
+   * surface.
+   */
+  blockedOnYou: boolean;
+};
+
+export function nextUpRows(
+  nextUp: CrewBriefingView["nextUp"],
+  cards: readonly CrewNeedsYouCard[],
+): CrewNextUpRow[] {
+  const askingHim = new Set(
+    cards
+      .filter((card) => card.state === "open" && card.issueNumber !== null)
+      .map((card) => card.issueNumber as number),
+  );
+  return nextUp.items.map((item) => ({
+    issueNumber: item.issueNumber,
+    title: item.title,
+    urgent: item.urgent,
+    blockedOnYou: askingHim.has(item.issueNumber),
+  }));
 }
 
 /** How many merged timeline items the journal shows before the fold (#74 item
