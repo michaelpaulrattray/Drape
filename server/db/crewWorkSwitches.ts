@@ -36,6 +36,7 @@
  */
 import { eq } from "drizzle-orm";
 
+import { parseQueueTitles, type CrewQueueTitle } from "../../shared/crewQueueTitles";
 import {
   CREW_WORK_CATEGORIES,
   CREW_WORK_SWITCH_KEYS,
@@ -44,8 +45,23 @@ import {
 import { crewQueueCounts, crewWorkSwitches } from "../../drizzle/schema";
 import { getDb, type DbInstance } from "./connection";
 
-/** MySQL's "table doesn't exist". The ONLY failure the readers rescue. */
+/** MySQL's "table doesn't exist". */
 const ER_NO_SUCH_TABLE = "ER_NO_SUCH_TABLE";
+
+/**
+ * MySQL's "unknown column in field list" — `crew_queue_counts.titles` (#285)
+ * before the founder has run its ceremony.
+ *
+ * ⚠ **THE SECOND, AND LAST, FAILURE THIS READER RESCUES.** The column is
+ * migration 0057 and production takes it by
+ * `scripts/ceremony-crew-queue-count-titles.mts`, which is a founder act — so
+ * there is a real window in which this code is deployed and the column is not
+ * there. His ENTIRE Crew tab is one `crew.getState` call, so an unrescued
+ * throw here is a blank page for the founder, which is the failure the briefing
+ * parse arm already exists to prevent. Rescued to exactly today's panel: the
+ * counts, with no titles under them.
+ */
+const ER_BAD_FIELD_ERROR = "ER_BAD_FIELD_ERROR";
 
 /**
  * Whether this error is the absent table, and nothing else.
@@ -56,9 +72,26 @@ const ER_NO_SUCH_TABLE = "ER_NO_SUCH_TABLE";
  * are not this one.
  */
 function isMissingTable(error: unknown): boolean {
+  return carriesCode(error, ER_NO_SUCH_TABLE);
+}
+
+/** Whether this error is the absent COLUMN, and nothing else. Same walk. */
+function isMissingColumn(error: unknown): boolean {
+  return carriesCode(error, ER_BAD_FIELD_ERROR);
+}
+
+/**
+ * Whether the driver's code appears anywhere on this error's `cause` chain.
+ *
+ * Walks `cause` — the code arrives wrapped at some call sites and bare at
+ * others, a chain that has caught this repository before. A string match on the
+ * message is deliberately not used: "doesn't exist" appears in errors that are
+ * not this one.
+ */
+function carriesCode(error: unknown, code: string): boolean {
   let current: unknown = error;
   for (let hop = 0; hop < 5 && current; hop += 1) {
-    if (typeof current === "object" && (current as { code?: unknown }).code === ER_NO_SUCH_TABLE) return true;
+    if (typeof current === "object" && (current as { code?: unknown }).code === code) return true;
     current = (current as { cause?: unknown }).cause;
   }
   return false;
@@ -68,6 +101,15 @@ function isMissingTable(error: unknown): boolean {
 export type CrewQueueCountView = {
   readonly categoryKey: string;
   readonly openCount: number;
+  /**
+   * The five most recent cards behind that number (#285), or an empty list.
+   *
+   * Empty and "there are none" are deliberately the same value here, and the
+   * panel is what distinguishes them: `queueTitlesView` draws no remainder line
+   * when the list is empty, so a category with no titles reads as the count
+   * alone rather than as a promise of a list that is not there.
+   */
+  readonly titles: readonly CrewQueueTitle[];
   readonly countedAt: Date;
 };
 
@@ -104,6 +146,50 @@ async function requireDb(): Promise<DbInstance> {
  * or a hand-written row. Skipping is the safe direction; the unknown key cannot
  * turn anything on because nothing asks for it.
  */
+/**
+ * The count rows, with the titles where this database has the column.
+ *
+ * ⚠ **THE FALLBACK IS THE POINT, AND IT IS ONE ROUND TRIP IN ONE WINDOW.**
+ * `crew_queue_counts.titles` is migration 0057; production takes it by a
+ * founder ceremony, so between the deploy and that command a `SELECT` naming it
+ * is `ER_BAD_FIELD_ERROR` — and this projection is inside the ONE call his
+ * whole Crew tab makes. The retry drops the column and nothing else, so the
+ * degraded answer is the panel he has today rather than an error page.
+ *
+ * Caught rather than probed: a probe would cost `information_schema` on every
+ * page load forever to guard a window that closes the day he runs one command.
+ * Only `ER_BAD_FIELD_ERROR` is rescued; anything else still throws.
+ *
+ * EXPORTED for `server/crewQueueCountRescue.test.ts`, which drives all three of
+ * its arms — the rescue, the positive control, and a different driver code
+ * still throwing. A catch that swallows everything is the real hazard here and
+ * a suite that cannot see this function cannot prove it does not.
+ */
+export async function readCountRows(db: DbInstance): Promise<
+  Array<{ categoryKey: string; openCount: number; titles: string | null; countedAt: Date }>
+> {
+  try {
+    return await db
+      .select({
+        categoryKey: crewQueueCounts.categoryKey,
+        openCount: crewQueueCounts.openCount,
+        titles: crewQueueCounts.titles,
+        countedAt: crewQueueCounts.countedAt,
+      })
+      .from(crewQueueCounts);
+  } catch (cause) {
+    if (!isMissingColumn(cause)) throw cause;
+    const legacy = await db
+      .select({
+        categoryKey: crewQueueCounts.categoryKey,
+        openCount: crewQueueCounts.openCount,
+        countedAt: crewQueueCounts.countedAt,
+      })
+      .from(crewQueueCounts);
+    return legacy.map((row) => ({ ...row, titles: null }));
+  }
+}
+
 export async function readCrewWorkState(): Promise<CrewWorkState> {
   const db = await getDb();
   if (!db) return { available: false, switches: {}, counts: [], changedAt: null };
@@ -117,13 +203,7 @@ export async function readCrewWorkState(): Promise<CrewWorkState> {
       })
       .from(crewWorkSwitches);
 
-    const countRows = await db
-      .select({
-        categoryKey: crewQueueCounts.categoryKey,
-        openCount: crewQueueCounts.openCount,
-        countedAt: crewQueueCounts.countedAt,
-      })
-      .from(crewQueueCounts);
+    const countRows = await readCountRows(db);
 
     const switches: Record<string, boolean> = {};
     let changedAt: Date | null = null;
@@ -135,7 +215,17 @@ export async function readCrewWorkState(): Promise<CrewWorkState> {
 
     /* Counts are filtered the same way and for the same reason. */
     const known = new Set<string>(CREW_WORK_CATEGORIES.map((category) => category.key));
-    const counts = countRows.filter((row) => known.has(row.categoryKey));
+    const counts = countRows
+      .filter((row) => known.has(row.categoryKey))
+      .map((row) => ({
+        categoryKey: row.categoryKey,
+        openCount: row.openCount,
+        /* Parsed HERE rather than on the client: `crew.getState` is the page's
+           whole contract, and a raw JSON string crossing it would make every
+           consumer responsible for the same defensive parse. */
+        titles: parseQueueTitles(row.titles),
+        countedAt: row.countedAt,
+      }));
 
     return { available: true, switches, counts, changedAt };
   } catch (cause) {

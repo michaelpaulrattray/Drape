@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "126848f723ab9c25"
+    "sourceFingerprint": "08d24c2a7b588b8e"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 46
+      "moduleCount": 47
     },
     {
       "id": "domain:studio",
@@ -5837,6 +5837,12 @@
     {
       "id": "module:shared/crewNextUpHold.ts",
       "path": "shared/crewNextUpHold.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewQueueTitles.ts",
+      "path": "shared/crewQueueTitles.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12276,6 +12282,14 @@
       "path": "server/crewNextUpHold.test.ts"
     },
     {
+      "id": "test:server/crewQueueCountRescue.test.ts",
+      "path": "server/crewQueueCountRescue.test.ts"
+    },
+    {
+      "id": "test:server/crewQueueTitles.test.ts",
+      "path": "server/crewQueueTitles.test.ts"
+    },
+    {
       "id": "test:server/crewShiftState.test.ts",
       "path": "server/crewShiftState.test.ts"
     },
@@ -14029,6 +14043,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:shared/crewQueueTitles.ts",
       "kind": "imports"
     },
     {
@@ -28019,6 +28038,11 @@
     {
       "from": "module:server/db/crewWorkSwitches.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewWorkSwitches.ts",
+      "to": "module:shared/crewQueueTitles.ts",
       "kind": "imports"
     },
     {

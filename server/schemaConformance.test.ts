@@ -53,6 +53,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DECLARED_BUT_UNMIGRATED,
+  DECLARED_COLUMNS_BUT_UNMIGRATED,
   conformanceVerdict,
   declaredIndexesFrom,
   declaredSchemaFrom,
@@ -289,6 +290,91 @@ describe("the unmigrated exception list only shrinks", () => {
          proven rather than assumed: removing the first line alone reddened
          this very assertion within the minute, so the pin did its job on the
          first opportunity it had after the incident that wrote the note. */
+    ]);
+  });
+});
+
+
+/*
+ * ─── THE COLUMN-LEVEL EXCEPTION (#285) ──────────────────────────────────────
+ *
+ * ⚠ **THE TABLE LIST COULD NOT EXPRESS THIS, AND THE GAP HAD TEETH.** A column
+ * added to a live table is a founder ceremony exactly as a table is, but until
+ * that ceremony runs the rite exits 1 on the mismatch — so the FIRST additive
+ * column in this repository's history would have blocked every other shift's
+ * doc and briefing push until he woke up and ran one command. The exception
+ * keeps the rite honest (it still reports the column as absent in its line)
+ * without making one shift's pending ceremony everyone else's outage.
+ *
+ * It carries the table list's shrink rule, and these arms are what make that
+ * true rather than intended.
+ */
+describe("a column may be enumerated as unmigrated, and only shrinks too", () => {
+  const declaredWithTitles = () => declaredSchemaFrom(
+    `export const a = mysqlTable("crew_queue_counts", {
+       categoryKey: varchar("categoryKey", { length: 32 }),
+       titles: text("titles"),
+     });`,
+  );
+
+  it("⚠ CONTROL — an UNenumerated missing column is still reported", () => {
+    /* Without this, every arm below could pass on a verdict that had simply
+       stopped looking at columns at all. */
+    const declared = declaredSchemaFrom(
+      `export const a = mysqlTable("crew_queue_counts", {
+         categoryKey: varchar("categoryKey", { length: 32 }),
+         somethingElse: text("somethingElse"),
+       });`,
+    );
+    const verdict = conformanceVerdict(declared, liveSchemaFrom([{ t: "crew_queue_counts", c: "categoryKey" }]));
+    expect(verdict.missingColumns).toEqual(["crew_queue_counts.somethingElse"]);
+  });
+
+  it("tolerates the enumerated column while the ceremony has not run", () => {
+    const verdict = conformanceVerdict(
+      declaredWithTitles(),
+      liveSchemaFrom([{ t: "crew_queue_counts", c: "categoryKey" }]),
+    );
+    expect(verdict.missingColumns).toEqual([]);
+    expect(verdict.problems).toEqual([]);
+  });
+
+  it("⚠ ERRORS when the enumerated column turns out to be PRESENT", () => {
+    /* The day his ceremony runs, the exception has outlived its reason and is
+       an error until its line is deleted — the same rule the table list has,
+       and the one `crew_replies` reddened main for forgetting. */
+    const verdict = conformanceVerdict(
+      declaredWithTitles(),
+      liveSchemaFrom([
+        { t: "crew_queue_counts", c: "categoryKey" },
+        { t: "crew_queue_counts", c: "titles" },
+      ]),
+    );
+    expect(verdict.staleExceptions).toEqual(["crew_queue_counts.titles"]);
+    expect(verdict.problems[0]).toContain("the list only shrinks");
+  });
+
+  it("⚠ every enumerated column is still DECLARED by the code, on a table it names", () => {
+    for (const [qualified, reason] of Object.entries(DECLARED_COLUMNS_BUT_UNMIGRATED)) {
+      const [table, column] = qualified.split(".");
+      const columns = SCHEMA.get(table!);
+      expect(columns, `${qualified} is enumerated and its table is not declared`).toBeDefined();
+      expect([...columns!], `${qualified} is enumerated and no longer declared`).toContain(column);
+      expect(reason.length, `${qualified}'s reason is too thin to be one`).toBeGreaterThan(40);
+    }
+  });
+
+  it("⚠ and the entries are pinned by name — joining this list is a deliberate act", () => {
+    /* The pin and the list move in the SAME commit, always. `crew_replies`
+       reddened main because a ceremony deleted an exception line and not its
+       pin; the reverse — a line added without its pin — is how an exception
+       becomes permanent by arriving quietly. */
+    expect(Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED)).toEqual([
+      /* Joined 2026-08-30 (#285 — the card titles under his background-work
+         switch, migration 0057). It leaves the day he runs
+         `scripts/ceremony-crew-queue-count-titles.mts --production`, and that
+         commit deletes this line too. */
+      "crew_queue_counts.titles",
     ]);
   });
 });

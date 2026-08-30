@@ -74,12 +74,38 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
     + "in BOTH worlds first (a production migration is a founder ceremony).",
 };
 
+/**
+ * COLUMNS the code declares on a table that EXISTS, which the database is known
+ * not to hold yet — each with the reason it is tolerated. Only ever shorter.
+ *
+ * ⚠ **THE TABLE LIST ABOVE COULD NOT EXPRESS THIS, AND THAT GAP HAD TEETH.** A
+ * column added to a live table is a founder ceremony exactly as a table is, but
+ * until it runs the rite exits 1 on the mismatch — so the FIRST additive column
+ * in this repository's history would have blocked every other shift's
+ * doc/briefing push until he woke up and ran one command. Enumerating it keeps
+ * the rite honest (it still says the column is absent) without making one
+ * shift's pending ceremony everyone else's outage.
+ *
+ * Keyed `table.column`, and it carries the same shrink rule as the table list:
+ * the day the column appears, this line and its pin in
+ * `server/schemaConformance.test.ts` are deleted in the SAME commit.
+ */
+export const DECLARED_COLUMNS_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
+  "crew_queue_counts.titles":
+    "migration 0057 (#285 — the card titles under his background-work switch). "
+    + "Production takes it by `scripts/ceremony-crew-queue-count-titles.mts`, which "
+    + "is a FOUNDER act. Both sides of the column already degrade without it: the "
+    + "writer asks SHOW COLUMNS and falls back to the count-only INSERT, and the "
+    + "reader catches ER_BAD_FIELD_ERROR and re-reads without it, so his Crew tab "
+    + "keeps working meanwhile. Delete this line the day the ceremony runs.",
+};
+
 export type ConformanceVerdict = {
   readonly declaredTables: number;
   readonly liveTables: number;
   /** Declared, absent, and NOT enumerated above. */
   readonly missingTables: string[];
-  /** Declared on a table that exists, absent from it. */
+  /** Declared on a table that exists, absent from it, and NOT enumerated above. */
   readonly missingColumns: string[];
   /** A named index the schema declares and the database does not hold. */
   readonly missingIndexes: string[];
@@ -114,7 +140,14 @@ export function conformanceVerdict(
     }
     if (table in DECLARED_BUT_UNMIGRATED) staleExceptions.push(table);
     for (const column of [...columns].sort()) {
-      if (!present.has(column)) missingColumns.push(`${table}.${column}`);
+      const qualified = `${table}.${column}`;
+      if (!present.has(column)) {
+        if (!(qualified in DECLARED_COLUMNS_BUT_UNMIGRATED)) missingColumns.push(qualified);
+        continue;
+      }
+      /* Present AND enumerated as unmigrated — the ceremony has run and the
+         exception outlived its reason. Same shrink rule as a stale table. */
+      if (qualified in DECLARED_COLUMNS_BUT_UNMIGRATED) staleExceptions.push(qualified);
     }
   }
 
@@ -132,8 +165,8 @@ export function conformanceVerdict(
         `${index}: a named index the schema declares and this database does not hold — an index-only ceremony that never ran leaves the table looking perfectly conforming`,
     ),
     ...staleExceptions.map(
-      (table) =>
-        `${table}: listed in DECLARED_BUT_UNMIGRATED and the database HAS it now — delete that line, the list only shrinks`,
+      (name) =>
+        `${name}: listed as unmigrated and the database HAS it now — delete that line, the list only shrinks`,
     ),
   ];
 

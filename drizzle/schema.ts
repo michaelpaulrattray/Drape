@@ -3985,6 +3985,23 @@ export const crewQueueCounts = mysqlTable("crew_queue_counts", {
   /** `bugs` | `security` | `performance` | `housekeeping` | `process`. */
   categoryKey: varchar("categoryKey", { length: 32 }).notNull(),
   openCount: int("openCount").notNull(),
+  /**
+   * The five most recent card titles behind that number, as JSON (#285).
+   *
+   * His question at the live panel — *"am i suppose to see a list under these
+   * categories?"* — and the reason a count alone is not enough here: the queue
+   * is precisely what the freshness pass found rotting, so `Bugs (10)` says
+   * there is a night's work and nothing about whether it is work he wants.
+   *
+   * NULLABLE, and null reads exactly like "no shift has counted yet": the
+   * count alone. `shared/crewQueueTitles.ts` owns the shape, the cap of five
+   * and a parse whose only failure mode is an empty list — this is projected
+   * into `crew.getState`, and his whole Crew tab is that one call.
+   *
+   * It shares this row's `countedAt` BY CONSTRUCTION rather than by two
+   * statements agreeing, which is his card's own bar.
+   */
+  titles: text("titles"),
   countedAt: timestamp("countedAt").notNull().defaultNow(),
 }, (table) => ([
   uniqueIndex("uq_crew_queue_counts_key").on(table.categoryKey),

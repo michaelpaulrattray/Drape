@@ -72,8 +72,16 @@ console.log(`world: ${world.toUpperCase()} · ${new URL(url).hostname}:${port}`)
 
 /** The two tables, with the columns each must end up holding. */
 const TABLES = [
-  { name: "crew_work_switches", columns: ["id", "switchKey", "enabled", "changedByUserId", "changedAt"] },
-  { name: "crew_queue_counts", columns: ["id", "categoryKey", "openCount", "countedAt"] },
+  { name: "crew_work_switches", columns: ["id", "switchKey", "enabled", "changedByUserId", "changedAt"], optional: [] },
+  /* ⚠ `titles` joined this table in migration 0057 (#285) and MUST be named
+     here, because the surplus check below THROWS on a column the design does
+     not list. That check is the right shape — a column nobody expected is a
+     finding — but it makes this list a place a later migration has to be
+     carried to, and a ceremony that refuses the schema it is ceremonially
+     confirming is a rite that fails on a correct database. It is tolerated as
+     ABSENT (`crew_queue_counts.titles` may not exist yet — it has its own
+     ceremony) and refused as UNKNOWN. */
+  { name: "crew_queue_counts", columns: ["id", "categoryKey", "openCount", "countedAt"], optional: ["titles"] },
 ] as const;
 
 const conn = await openDatabase(url);
@@ -137,7 +145,10 @@ try {
       if (!names.includes(column)) throw new Error(`\`${table.name}.${column}\` is missing — not the table the design describes`);
     }
     for (const surplus of names) {
-      if (!(table.columns as readonly string[]).includes(surplus)) {
+      const known =
+        (table.columns as readonly string[]).includes(surplus)
+        || (table.optional as readonly string[]).includes(surplus);
+      if (!known) {
         throw new Error(`\`${table.name}.${surplus}\` is here and the design does not name it — stop and investigate`);
       }
     }
