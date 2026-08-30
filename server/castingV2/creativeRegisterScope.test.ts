@@ -1506,3 +1506,111 @@ describe("PIN THE WORLD, NEVER THE PIECES — his MAX noun law (#237)", () => {
     expect(draftRefusal("Feline humanoid in angular pauldrons.", 400)).toBeNull();
   });
 });
+
+/**
+ * FITTED IS NOT A PIECE — his ruling (#279), on the AUTHOR half.
+ *
+ * The READER half (`conceptDescribe.ts`) has carried this test since the day he
+ * ruled it; the author did not, and the author is where the collision lives.
+ * The sentence above it says *never name a part*; `FACTS STAY` says every
+ * stated feature survives. A bolted-in eye is caught by both.
+ *
+ * ⚠ THESE ARMS PIN A BEHAVIOUR THAT WAS ALREADY CORRECT, and saying so is the
+ * point rather than a caveat. Driven before the clause was written: 18 real
+ * drafts over four seed shapes kept the fitted hardware every time and named a
+ * product never, and the paid frames gate delivered it on 8 of 8 faces. So
+ * nothing here is a repair — it moves a rule off the model's read and onto the
+ * sentence, which is what this repo does with anything a coin currently gets
+ * right.
+ */
+describe("FITTED IS NOT A PIECE — his fitted/worn test on the author (#279)", () => {
+  /** The clause is judged on the sentence, not on the source layout. */
+  const fittedRule = (): string => {
+    const prompt = maxSystemPrompt(400);
+    const at = prompt.indexOf("FITTED IS NOT A PIECE");
+    expect(at, "the clause is in the instruction the engine receives").toBeGreaterThan(-1);
+    return prompt.slice(at, at + 900).replace(/\s+/g, " ");
+  };
+
+  it("states his test, and states it directly under the rule it resolves", () => {
+    const prompt = maxSystemPrompt(400);
+    /*
+      POSITION IS PART OF THE CLAIM. A clause about the piece-ban that sits
+      paragraphs away from the piece-ban is a different instruction: this
+      asserts it follows PIN THE WORLD and precedes that rule's worked example,
+      so the two are read together.
+    */
+    const pieces = prompt.indexOf("PIN THE WORLD, NEVER THE PIECES");
+    const fitted = prompt.indexOf("FITTED IS NOT A PIECE");
+    const example = prompt.indexOf("Worked example of the PIECES rule");
+    expect(pieces).toBeGreaterThan(-1);
+    expect(fitted).toBeGreaterThan(pieces);
+    expect(fitted).toBeLessThan(example);
+
+    const rule = fittedRule();
+    /* His own line: by WHERE it sits, not by what it is made of. */
+    expect(rule, "the test is placement").toContain("where the thing sits, not by what it is made of");
+    expect(rule, "fitted into the body").toContain("Fitted INTO the body it is a FEATURE");
+    expect(rule, "worn on the body").toContain("WORN on the body it is an accessory");
+    /* Anatomy, widened from biology — his build item 1. */
+    expect(rule, "it stands beside the biological features").toContain("like a horn or a tail");
+    expect(rule, "his own specimen").toContain("mechanical eye set into the skull");
+    /* And it must not tell the author to drop it — his "do not flatten it away". */
+    expect(rule, "never flatten the being's own hardware").toContain("Do not flatten one away");
+  });
+
+  it("asks for a TYPE and not a product, showing both of the ones he refused", () => {
+    const rule = fittedRule();
+    for (const type of ["fitted mechanical eye", "integrated facial hardware"]) {
+      expect(rule, type).toContain(type);
+    }
+    for (const sku of ["spiked eye harness", "sleek mechanical eye piece"]) {
+      expect(rule, sku).toContain(sku);
+    }
+  });
+
+  it("⚠ THE NON-CATCH IS ASSERTED OUT LOUD: nothing here became a banned word", () => {
+    /*
+      His build item 3, and the reason is five recorded instances in this repo
+      of a ban that swept ordinary prose (`cropped`, bare `framing`,
+      `reminiscent of`…). "harness", "piece", "eye" and "choker" all have a
+      second sense a casting paragraph legitimately uses, so the two shapes he
+      refused are SHOWN in the instruction and caught by NOTHING. A green suite
+      must never be read as a checker that stops them.
+    */
+    const seed = "a cyborg woman with a mechanical eye";
+    for (const notCaught of [
+      "a spiked eye harness",
+      "a sleek mechanical eye piece",
+      "a black leather choker",
+      "a fitted mechanical eye set into the skull",
+    ]) {
+      expect(pieceNounIn(notCaught, seed), notCaught).toBeNull();
+      expect(neverWrittenIn(notCaught), notCaught).toBeNull();
+    }
+    /* POSITIVE CONTROL on the same checker, so the nulls above are not a dead reader. */
+    expect(pieceNounIn("a high sculpted collar", seed)).toBe("collar");
+  });
+
+  it("the clause itself teaches no word this studio never sends, and no piece the ban would refuse", () => {
+    /*
+      The instruction is text the model reads and imitates, so it is held to
+      the same two checks a draft is. `PIECE_NOUNS` is asked of the CLAUSE
+      alone rather than the whole prompt, because the prompt deliberately
+      quotes "no sculpted collar" one sentence earlier as the thing to avoid.
+    */
+    expect(neverWrittenIn(maxSystemPrompt(400))).toBeNull();
+    expect(pieceNounIn(fittedRule(), "")).toBeNull();
+  });
+
+  it("it reaches the engine — driven at the author, not asserted at the constant", async () => {
+    const seed = "cyborg woman, late 30s, augmented face";
+    const engine = engineAnswering(["Adult cyborg woman, late 30s, a mechanical eye set into the skull, real weathered skin."]);
+    const out = await authorPrompt({ engine, briefText: seed, imagination: "max" });
+    expect(out.mode).toBe("authored");
+    const system = sent(engine, "author")[0]?.system ?? "";
+    expect(system).toContain("FITTED IS NOT A PIECE");
+    /* And a draft that keeps a fitted part as a type is not refused by anything. */
+    expect(draftRefusal(out.content ?? "", 400, null, { text: seed, facts: seedFactsOf(seed, { sex: null, age: null }) })).toBeNull();
+  });
+});
