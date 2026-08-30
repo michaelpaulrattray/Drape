@@ -91,13 +91,11 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
  * `server/schemaConformance.test.ts` are deleted in the SAME commit.
  */
 export const DECLARED_COLUMNS_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
-  "crew_queue_counts.titles":
-    "migration 0057 (#285 — the card titles under his background-work switch). "
-    + "Production takes it by `scripts/ceremony-crew-queue-count-titles.mts`, which "
-    + "is a FOUNDER act. Both sides of the column already degrade without it: the "
-    + "writer asks SHOW COLUMNS and falls back to the count-only INSERT, and the "
-    + "reader catches ER_BAD_FIELD_ERROR and re-reads without it, so his Crew tab "
-    + "keeps working meanwhile. Delete this line the day the ceremony runs.",
+  /* EMPTY, and it emptied the way the rule says it should: `crew_queue_counts.titles`
+     was the first and only entry, and its line was deleted in the same commit that
+     merged, the hour the production ceremony applied migration 0057 (2026-08-31,
+     on the founder's word "say 'merge it' and run the command yourself"). Empty is
+     the correct resting state; an entry here is a debt with a name on it. */
 };
 
 export type ConformanceVerdict = {
@@ -114,11 +112,34 @@ export type ConformanceVerdict = {
   readonly problems: string[];
 };
 
+/**
+ * The two exception lists, injectable.
+ *
+ * ⚠ **THIS PARAMETER EXISTS SO THE SHRINK RULE STAYS PROVEN AFTER THE LISTS GO
+ * EMPTY, AND THAT IS NOT A THEORETICAL WORRY — it happened the day it was
+ * added.** `DECLARED_COLUMNS_BUT_UNMIGRATED`'s only entry left on 2026-08-31,
+ * and the three arms that proved the column rule were all keyed on that entry
+ * existing: one would have FAILED and two would have passed VACUOUSLY, which is
+ * the worse outcome, because a vacuous arm reads as coverage. Driving a
+ * synthetic list makes those arms independent of whatever the real lists happen
+ * to hold — so the guard for the NEXT ceremony is already proven before anyone
+ * needs it, rather than being re-proven by the mistake it exists to catch.
+ *
+ * Production callers pass nothing and get the real lists.
+ */
+export type ConformanceExceptions = {
+  readonly tables?: Readonly<Record<string, string>>;
+  readonly columns?: Readonly<Record<string, string>>;
+};
+
 export function conformanceVerdict(
   declared: DeclaredSchema,
   live: LiveSchema,
   indexes?: { declared: ReadonlyMap<string, string>; live: ReadonlySet<string> },
+  exceptions?: ConformanceExceptions,
 ): ConformanceVerdict {
+  const tableExceptions = exceptions?.tables ?? DECLARED_BUT_UNMIGRATED;
+  const columnExceptions = exceptions?.columns ?? DECLARED_COLUMNS_BUT_UNMIGRATED;
   const missingTables: string[] = [];
   const missingColumns: string[] = [];
   const missingIndexes: string[] = [];
@@ -128,26 +149,26 @@ export function conformanceVerdict(
      finding — the three on `casting_cast_segments` would otherwise triple one
      known absence into four. The TABLE is the thing that is missing. */
   for (const [name, table] of indexes?.declared ?? []) {
-    if (table in DECLARED_BUT_UNMIGRATED) continue;
+    if (table in tableExceptions) continue;
     if (!indexes!.live.has(name)) missingIndexes.push(`${table}.${name}`);
   }
 
   for (const [table, columns] of [...declared].sort(([a], [b]) => a.localeCompare(b))) {
     const present = live.get(table);
     if (!present) {
-      if (!(table in DECLARED_BUT_UNMIGRATED)) missingTables.push(table);
+      if (!(table in tableExceptions)) missingTables.push(table);
       continue;
     }
-    if (table in DECLARED_BUT_UNMIGRATED) staleExceptions.push(table);
+    if (table in tableExceptions) staleExceptions.push(table);
     for (const column of [...columns].sort()) {
       const qualified = `${table}.${column}`;
       if (!present.has(column)) {
-        if (!(qualified in DECLARED_COLUMNS_BUT_UNMIGRATED)) missingColumns.push(qualified);
+        if (!(qualified in columnExceptions)) missingColumns.push(qualified);
         continue;
       }
       /* Present AND enumerated as unmigrated — the ceremony has run and the
          exception outlived its reason. Same shrink rule as a stale table. */
-      if (qualified in DECLARED_COLUMNS_BUT_UNMIGRATED) staleExceptions.push(qualified);
+      if (qualified in columnExceptions) staleExceptions.push(qualified);
     }
   }
 

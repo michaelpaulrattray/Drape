@@ -317,6 +317,19 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
      });`,
   );
 
+  /*
+   * ⚠ A SYNTHETIC exception list, and the reason is the whole point of these
+   * arms. The real `DECLARED_COLUMNS_BUT_UNMIGRATED` is EMPTY as of 2026-08-31
+   * — `crew_queue_counts.titles` left it the hour the production ceremony ran,
+   * exactly as its own line instructed. Keyed on the real list, the arm below
+   * would have gone green while checking nothing, which is worse than red: a
+   * vacuous arm reads as coverage. Driven against a list of our own, the column
+   * rule stays PROVEN for the next ceremony, before anyone needs it.
+   */
+  const PENDING_CEREMONY = {
+    columns: { "crew_queue_counts.titles": "a pending ceremony, modelled here so the rule is provable with the real list empty" },
+  } as const;
+
   it("⚠ CONTROL — an UNenumerated missing column is still reported", () => {
     /* Without this, every arm below could pass on a verdict that had simply
        stopped looking at columns at all. */
@@ -334,6 +347,8 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
     const verdict = conformanceVerdict(
       declaredWithTitles(),
       liveSchemaFrom([{ t: "crew_queue_counts", c: "categoryKey" }]),
+      undefined,
+      PENDING_CEREMONY,
     );
     expect(verdict.missingColumns).toEqual([]);
     expect(verdict.problems).toEqual([]);
@@ -349,6 +364,8 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
         { t: "crew_queue_counts", c: "categoryKey" },
         { t: "crew_queue_counts", c: "titles" },
       ]),
+      undefined,
+      PENDING_CEREMONY,
     );
     expect(verdict.staleExceptions).toEqual(["crew_queue_counts.titles"]);
     expect(verdict.problems[0]).toContain("the list only shrinks");
@@ -369,12 +386,12 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
        reddened main because a ceremony deleted an exception line and not its
        pin; the reverse — a line added without its pin — is how an exception
        becomes permanent by arriving quietly. */
-    expect(Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED)).toEqual([
-      /* Joined 2026-08-30 (#285 — the card titles under his background-work
-         switch, migration 0057). It leaves the day he runs
-         `scripts/ceremony-crew-queue-count-titles.mts --production`, and that
-         commit deletes this line too. */
-      "crew_queue_counts.titles",
-    ]);
+    /* EMPTY, and it emptied on schedule: `crew_queue_counts.titles` joined
+       2026-08-30 (#285, migration 0057) and left 2026-08-31, in the same commit
+       that merged, the hour the production ceremony applied it — which is the
+       rule this pin exists to enforce, observed rather than intended. Empty is
+       the correct resting state; adding an entry is a deliberate act and moves
+       this line with it. */
+    expect(Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED)).toEqual([]);
   });
 });
