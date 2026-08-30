@@ -21,6 +21,8 @@ import "./foundation.css";
 
 export { AppShell } from "./AppShell";
 export { BrandOrb } from "./BrandOrb";
+/* Section 00b (brief 00b §3, §4) — inert topbar chrome. */
+export { ProjectSwitcherStub, WhatsNewStub } from "./ChromeStubs";
 export { BRAND_NAME } from "./brand";
 export { RAIL_DESTINATIONS, Rail } from "./Rail";
 export type { RailAccount, RailDestinationId } from "./Rail";
@@ -82,6 +84,7 @@ export type {
 } from "./primitives";
 
 /* Section 00 (brief 00 §4, §5) — the severity look and popover discipline. */
+export { showsMenuCount } from "./menuCount";
 export { severityLook } from "./severity";
 export type { Severity } from "./severity";
 export { POPOVER_MARKER, usePopover } from "./usePopover";

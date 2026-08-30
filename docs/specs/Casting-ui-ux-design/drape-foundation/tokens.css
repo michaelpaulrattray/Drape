@@ -3,11 +3,19 @@
    Single source of truth. Load once, globally, before any
    component CSS. Never hard-code a hex outside this file.
 
-   Light theme lives on :root. Dark theme is a body attribute:
+   Light theme lives on :root. Dark theme is an attribute:
        <body data-theme="light">   (default)
        <body data-theme="dark">
    Every token below exists in BOTH themes, so no component
    ever needs a theme conditional.
+
+   SHIPPED: the app carries this file at
+   client/src/foundation/tokens.css, with dark on
+   [data-theme="dark"] set on <html> (not <body>) so tokens
+   reach portaled primitives, and the reset scoped to .dp-root
+   so the marketing pages keep Inter. The CANVAS LAYER below
+   ships separately as client/src/styles/canvas-tokens.css.
+   A token-guard test enforces no hex outside these files.
    ============================================================ */
 
 :root {
@@ -38,9 +46,9 @@
 
   /* ---- TEXT (lightest → darkest) -------------------------- */
   --muted:        #B4B4BA;  /* icon glyph on quiet affordance  */
-  --faint:        #A0A0A6;  /* mono metadata, counts           */
-  --meta:         #8E8E94;  /* placeholder, tertiary label     */
-  --metaStrong:   #6B6B70;  /* secondary body copy             */
+  --faint:        #6A6A74;  /* mono metadata, counts           */
+  --meta:         #5E5E68;  /* placeholder, tertiary label     */
+  --metaStrong:   #55555D;  /* secondary body copy             */
   --linkHover:    #5C5C61;  /* link + quiet-text hover         */
   --secondary:    #3E3E42;  /* label on secondary button       */
   --ink:          #111112;  /* primary text, primary button bg */
@@ -65,9 +73,23 @@
   --scrimPill:    rgba(17,17,18,.72);   /* status pill on media*/
   --onScrim:      #FFFFFF;              /* text/glyph on scrim */
 
+  /* ---- ERROR ----------------------------------------------
+     Outside the accent group on purpose: error red is never
+     retintable by brand. Two roles for the same reason the
+     accent has two — --error is the border/fill and is identical
+     in both themes, --errorInk is error TEXT and is lifted in
+     dark to clear the 4.5:1 AA floor (6.91:1 vs 3.40:1).
+     --onError is a label sitting ON the error fill; it is not
+     --onWash, which means "text on accentSolid".
+     --------------------------------------------------------- */
+  --error:        #C0473A;  /* input error border + REQUIRED   */
+  --errorInk:     #C0473A;  /* error TEXT (4.99:1 on white)    */
+  --onError:      #FFFFFF;  /* text/glyph on the --error fill  */
+
   /* ---- ELEVATION ------------------------------------------ */
   --shadowCard:   0 12px 34px rgba(17,17,18,.14);  /* dock, dialog */
   --shadowPop:    0 8px 22px rgba(17,17,18,.11);   /* menu, tooltip*/
+  --viewerScrim:  rgba(17,17,18,.62);  /* image-viewer backdrop  */
 
   /* ---- RADII (do not invent new values) ------------------- */
   --r-pill:  999px;  /* chips, status pills                    */
@@ -179,8 +201,14 @@ body[data-theme="dark"] {
   --accentLine:       rgba(226,104,90,.32);
   --onWash:           #FFFFFF;
 
+  /* --error (border/fill) is deliberately NOT overridden — media-like, it
+     reads the same in both themes. --errorInk is, because text must clear
+     the AA contrast floor on the dark ground. */
+  --errorInk:     #E08A7E;
+
   --shadowCard:   0 12px 34px rgba(0,0,0,.5);
   --shadowPop:    0 8px 22px rgba(0,0,0,.44);
+  --viewerScrim:  rgba(0,0,0,.74);
 
   /* ---- CANVAS LAYER ---- */
   --cvGround:      #141416;

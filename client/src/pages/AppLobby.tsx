@@ -17,7 +17,7 @@ import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
-import { AppShell, CreditsChip } from '@/foundation';
+import { AppShell, CreditsChip, ProjectSwitcherStub, WhatsNewStub } from '@/foundation';
 import type { RailDestinationId } from '@/foundation';
 import { UserCard } from '@/components/UserCard';
 import { LobbyUtilityMenu } from '@/features/lobby/LobbyUtilityMenu';
@@ -97,10 +97,19 @@ export default function AppLobby() {
       breadcrumb={current.crumb}
       current={current.rail}
       width="bare"
+      /* 00b §4: the switcher names a place. Projects do not exist, so it is
+         inert — and "All projects" is true today rather than a placeholder,
+         which is what keeps the stub honest. No projectId reaches any query. */
+      topbarLeft={<ProjectSwitcherStub />}
+      /* 00b §5, left to right: queue pill -> credits -> utility -> what's new,
+         then the shell's own theme toggle. The queue pill is NOT built here —
+         it needs a real jobs feed (section 04) and a fake one would be a lie
+         about what is running. The slot is simply left for it. */
       topbarRight={
         <>
           <CreditsChip balance={creditsData?.balance} onClick={() => setIsBillingOpen(true)} />
           <LobbyUtilityMenu />
+          <WhatsNewStub />
         </>
       }
       account={

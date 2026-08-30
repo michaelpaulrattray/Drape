@@ -17,6 +17,7 @@ export function AppShell({
   breadcrumb,
   current,
   account,
+  topbarLeft,
   topbarRight,
   width = "browse",
   gutter = "default",
@@ -25,6 +26,12 @@ export function AppShell({
   breadcrumb?: string;
   current?: RailDestinationId;
   account?: RailAccount;
+  /**
+   * The topbar's left slot, after the brand block and before the breadcrumb.
+   * Section 00b's inert project switcher lives here — see `Topbar.tsx` for why
+   * it is a slot rather than chrome the shell always draws.
+   */
+  topbarLeft?: ReactNode;
   topbarRight?: ReactNode;
   /**
    * `browse` (1180px) and `working` (1240px) are the two documented content
@@ -62,7 +69,7 @@ export function AppShell({
     <div className="dp-root">
       <Rail current={current} account={account} />
       <div className="dp-main">
-        <Topbar breadcrumb={breadcrumb} right={topbarRight} />
+        <Topbar breadcrumb={breadcrumb} left={topbarLeft} right={topbarRight} />
         <div className={contentClass}>{children}</div>
       </div>
     </div>

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "83d67fe384959d3f"
+    "sourceFingerprint": "edfe775545d7d59f"
   },
   "domains": [
     {
@@ -68,7 +68,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 14
+      "moduleCount": 16
     },
     {
       "id": "domain:home",
@@ -2391,6 +2391,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/foundation/ChromeStubs.tsx",
+      "path": "client/src/foundation/ChromeStubs.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/foundation/Popover.tsx",
       "path": "client/src/foundation/Popover.tsx",
       "domain": "foundation",
@@ -2429,6 +2435,12 @@
     {
       "id": "module:client/src/foundation/index.ts",
       "path": "client/src/foundation/index.ts",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/menuCount.ts",
+      "path": "client/src/foundation/menuCount.ts",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -10386,6 +10398,10 @@
       "path": "client/src/foundation/section00-guard.test.ts"
     },
     {
+      "id": "test:client/src/foundation/section00b-guard.test.ts",
+      "path": "client/src/foundation/section00b-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
     },
@@ -13580,6 +13596,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/components/UserCard.tsx",
+      "to": "module:client/src/foundation/menuCount.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/const.ts",
       "to": "module:shared/const.ts",
       "kind": "imports"
@@ -16211,6 +16232,11 @@
     },
     {
       "from": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
@@ -17782,6 +17808,16 @@
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/BrandOrb.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/ChromeStubs.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/menuCount.ts",
       "kind": "imports"
     },
     {
