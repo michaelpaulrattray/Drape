@@ -21,7 +21,7 @@ import {
   conceptCountLabel,
 } from "../conceptUpload";
 import { ACCEPTED_PICTURE_FILES } from "../pictureBytes";
-import { CastingModal } from "./CastingModal";
+import { CastingModal } from "@/foundation/CastingModal";
 
 /**
  * THE REVIEW STEP — the photograph beside the words, and the cast (#196).
@@ -239,7 +239,7 @@ export function ConceptReviewModal({
       */
       portraitFallback={
         <span
-          className={dragging ? "dpc-signm__drop dpc-signm__drop--over" : "dpc-signm__drop"}
+          className={dragging ? "dpc-modal__drop dpc-modal__drop--over" : "dpc-modal__drop"}
           {...dropHandlers}
         >
           {CONCEPT_DROP_LINE}
@@ -261,7 +261,7 @@ export function ConceptReviewModal({
         — which is where a hand actually aims. Same handler, same state; the two
         attachments are one target between them.
       */}
-      <div className="dpc-signm__bodydrop" {...dropHandlers}>
+      <div className="dpc-modal__bodydrop" {...dropHandlers}>
         <input
           ref={picker}
           type="file"
@@ -276,7 +276,7 @@ export function ConceptReviewModal({
           }}
         />
 
-        <span className="dpc-signm__eyebrow">{CONCEPT_REVIEW_EYEBROW}</span>
+        <span className="dpc-modal__eyebrow">{CONCEPT_REVIEW_EYEBROW}</span>
 
         {/*
           ⚠ THE TITLE AND THE EXPLAINER BOTH TRACK THE STATE, and the refused
@@ -286,7 +286,7 @@ export function ConceptReviewModal({
           that do not exist, on the one surface whose job is saying what will be
           cast. The door's own sentence is the explainer in that state.
         */}
-        <h2 className="dpc-signm__title">
+        <h2 className="dpc-modal__title">
           {empty
             ? CONCEPT_REVIEW_EMPTY_TITLE
             : refused
@@ -295,7 +295,7 @@ export function ConceptReviewModal({
         </h2>
 
         {refused ? null : (
-          <p className="dpc-signm__explainer">
+          <p className="dpc-modal__explainer">
             {empty ? CONCEPT_REVIEW_EMPTY_EXPLAINER : CONCEPT_REVIEW_EXPLAINER}
           </p>
         )}
@@ -309,7 +309,7 @@ export function ConceptReviewModal({
           answer: it threw her picture away to recover from a transport blip.
         */}
         {refused ? (
-          <p className="dpc-signm__note" role="status">
+          <p className="dpc-modal__note" role="status">
             {failure}
           </p>
         ) : null}
@@ -317,11 +317,11 @@ export function ConceptReviewModal({
         {/* Nothing to review yet, and nothing to say about a field that is not there. */}
         {empty || refused ? null : (
           <>
-            <label className="dpc-signm__label" htmlFor="dpc-concept-description">
+            <label className="dpc-modal__label" htmlFor="dpc-concept-description">
               {CONCEPT_REVIEW_LABEL}
             </label>
             {/* The house field box; the textarea inside it carries its own height. */}
-            <div className="dpc-signm__field">
+            <div className="dpc-modal__field">
               <textarea
                 id="dpc-concept-description"
                 value={text}
@@ -343,7 +343,7 @@ export function ConceptReviewModal({
           talking about.
         */}
         {notAPicture ? (
-          <p className="dpc-signm__note" role="status">
+          <p className="dpc-modal__note" role="status">
             {CONCEPT_NOT_A_PICTURE}
           </p>
         ) : null}
@@ -355,20 +355,20 @@ export function ConceptReviewModal({
           a dialog that cannot yet spend is a claim about an action that does not
           exist. The row stays so the actions do not jump when they arrive.
         */}
-        <span className="dpc-signm__costrow">
-          <span className="dpc-signm__count">
+        <span className="dpc-modal__costrow">
+          <span className="dpc-modal__count">
             {ready || description !== null ? conceptCountLabel(text.length) : ""}
           </span>
-          <span className="dpc-signm__cost">
+          <span className="dpc-modal__cost">
             {description !== null ? (
               <>
-                <span className="dpc-signm__tilde">~</span> {priceCredits} credits
+                <span className="dpc-modal__tilde">~</span> {priceCredits} credits
               </>
             ) : null}
           </span>
         </span>
 
-        <div className="dpc-signm__actions">
+        <div className="dpc-modal__actions">
           {/*
             The way out, always in the same place. Its LABEL tracks what the tap
             actually does, which is the third state on this dialog caught saying
@@ -381,7 +381,7 @@ export function ConceptReviewModal({
           <button
             ref={firstAction}
             type="button"
-            className="dpc-signm__ghost"
+            className="dpc-modal__ghost"
             onClick={onDismiss}
           >
             {empty || reading ? CONCEPT_REVIEW_CANCEL : CONCEPT_REVIEW_DISCARD}
@@ -396,7 +396,7 @@ export function ConceptReviewModal({
           {refused ? (
             <button
               type="button"
-              className="dpc-signm__secondary"
+              className="dpc-modal__secondary"
               onClick={() => picker.current?.click()}
             >
               {CONCEPT_REVIEW_ANOTHER}
@@ -411,7 +411,7 @@ export function ConceptReviewModal({
           {empty || refused ? null : (
             <button
               type="button"
-              className="dpc-signm__secondary"
+              className="dpc-modal__secondary"
               disabled={!ready}
               onClick={() => onUse(text.trim())}
             >
@@ -421,7 +421,7 @@ export function ConceptReviewModal({
 
           <button
             type="button"
-            className="dpc-signm__primary"
+            className="dpc-modal__primary"
             disabled={primary.disabled}
             onClick={primary.act}
           >

@@ -29,7 +29,7 @@ import { CastingModal, firstNameOf } from "./CastingModal";
  * right is most of what separates a considered destructive flow from a
  * boilerplate one.
  */
-export function DeleteCastConfirm({
+export function DestructiveConfirm({
   name,
   imageUrl,
   signed = true,
@@ -74,13 +74,13 @@ export function DeleteCastConfirm({
       busy={busy}
       onDismiss={onCancel}
     >
-      <span className="dpc-signm__eyebrow dpc-signm__eyebrow--danger">
+      <span className="dpc-modal__eyebrow dpc-modal__eyebrow--danger">
         PERMANENT · NOT REFUNDABLE
       </span>
 
-      <h2 className="dpc-signm__title">Delete {first}?</h2>
+      <h2 className="dpc-modal__title">Delete {first}?</h2>
 
-      <p className="dpc-signm__explainer">
+      <p className="dpc-modal__explainer">
         {signed
           ? "Their signed face, every canonical view and every take made with them "
             + "go for good, and the credits it cost don't come back. The sheet they "
@@ -93,11 +93,11 @@ export function DeleteCastConfirm({
         Label and field on ONE row, which is what recovers the height the two
         removed paragraphs were using.
       */}
-      <div className="dpc-signm__typerow">
-        <label className="dpc-signm__label" htmlFor="dpc-delete-confirm">
+      <div className="dpc-modal__typerow">
+        <label className="dpc-modal__label" htmlFor="dpc-delete-confirm">
           TYPE {first.toUpperCase()}
         </label>
-        <div className={armed ? "dpc-signm__field is-armed" : "dpc-signm__field"}>
+        <div className={armed ? "dpc-modal__field is-armed" : "dpc-modal__field"}>
           <input
             id="dpc-delete-confirm"
             ref={inputRef}
@@ -112,15 +112,15 @@ export function DeleteCastConfirm({
             }}
           />
           {armed ? (
-            <Check size={13} strokeWidth={2.4} className="dpc-signm__match" aria-hidden="true" />
+            <Check size={13} strokeWidth={2.4} className="dpc-modal__match" aria-hidden="true" />
           ) : null}
         </div>
       </div>
 
-      <div className="dpc-signm__actions">
+      <div className="dpc-modal__actions">
         <button
           type="button"
-          className="dpc-signm__secondary"
+          className="dpc-modal__secondary"
           disabled={busy}
           onClick={onCancel}
         >
@@ -128,7 +128,7 @@ export function DeleteCastConfirm({
         </button>
         <button
           type="button"
-          className={armed ? "dpc-signm__danger is-armed" : "dpc-signm__danger"}
+          className={armed ? "dpc-modal__danger is-armed" : "dpc-modal__danger"}
           disabled={busy || !armed}
           onClick={confirm}
         >
