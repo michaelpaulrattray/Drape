@@ -72,13 +72,6 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
     + "types — and its migration header says it may land ahead of its code, which "
     + "it did. Delete this line the day the Sign promotion merges, and run 0027 "
     + "in BOTH worlds first (a production migration is a founder ceremony).",
-  crew_shift_runs:
-    "migration 0055 (#272 — the live shift row). Dev has it; PRODUCTION TAKES IT BY "
-    + "`scripts/ceremony-crew-shift-runs.mts`, which is a founder act. It fails SOFT "
-    + "until then: `server/db/crewShiftRuns.ts` answers `available: false` on an absent "
-    + "table, so the Crew tab is exactly what it is today plus a strip saying the row "
-    + "is not live yet — the reader rescues MySQL's ER_NO_SUCH_TABLE alone and still "
-    + "throws on everything else. Delete this line the day that ceremony runs.",
   crew_work_switches:
     "migration 0056 (#277 — his background-work switch). Dev has it; PRODUCTION TAKES "
     + "IT BY `scripts/ceremony-crew-work-switches.mts`, a founder act, which creates this "
