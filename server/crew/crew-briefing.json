@@ -1,7 +1,7 @@
 {
-  "edition": 130,
-  "updatedAt": "2026-08-30T14:35:00+10:00",
-  "shift": "foreman-115",
+  "edition": 131,
+  "updatedAt": "2026-08-30T15:05:00+10:00",
+  "shift": "foreman-116",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,25 +145,14 @@
   "needsYou": [
     {
       "id": "prototype-refresh-228",
-      "title": "Step one of your own instruction needs a file only you have — the refreshed prototype is not on this machine",
-      "state": "open",
+      "title": "You dropped the prototype in yourself — step one is done, and your own check passes",
+      "state": "answered",
       "filedAt": "2026-08-30T14:35:00+10:00",
       "issueNumber": 228,
-      "productImpact": "You made this step one, before any code: overwrite the committed `Klieg Studio.dc.html`, `support.js`, `image-slot.js` and `drape-foundation/tokens.css` with the current versions from design — *\"you're reading the stale prototype. That's most of the confusion.\"*\n\nI CANNOT DO IT FROM HERE. I searched this machine: the only copies of those files anywhere are the stale ones already in the repo, and your own check fails on them — the committed copy has no Cinema in the rail and no STAFF group in the account menu. There is nothing to copy from.\n\nI BUILT 00 ANYWAY RATHER THAN STALLING THE LANE, and the reasoning is here so you can overrule it. 00's two sources are the shared-patterns document — which is NOT on your refresh list, so it is current — and the shipped foundation itself, whose tokens I checked already carry the scrim and error groups the README says the stale prototype is missing. Everything the staleness actually affects — Cinema, Crew, Admin, Moderation, Templates, the Home rebuild, the widths — belongs to section 01 and later, not to 00.\n\nIT MATTERS MORE FOR 00b THAN IT DID FOR 00. 00b is the account menu and the utility menu, and the account menu is one of the things the stale copy is missing (the STAFF group). So 00b built against the old copy is a real risk in a way 00 was not.",
-      "workedExample": "The practical difference: 00b has to decide what the account menu contains and in what order. The committed prototype shows it without a STAFF group at all — so an agent reading it would build the menu you had two months ago, then someone would notice and it would be rebuilt. That is the rework pass you told me to avoid, arriving through the spec instead of through the code.",
-      "options": [
-        {
-          "key": "DROP",
-          "label": "Drop the four files in, then 00b runs against the real target",
-          "consequence": "Five minutes of your time, no code. 00b is built once."
-        },
-        {
-          "key": "PROCEED",
-          "label": "Build 00b against the committed copy anyway",
-          "consequence": "00b ships sooner and the account menu is likely rebuilt when the refresh lands."
-        }
-      ],
-      "recommendation": "DROP — it costs you five minutes and it is the difference between building 00b's menus once or twice. If you would rather I pressed on, say PROCEED and I will, with the risk named on the PR."
+      "productImpact": "YOU DID IT, twelve minutes after the desk asked. The four files landed in the tree at 11:50 and they are committed.\n\nYOUR OWN ACCEPTANCE CHECK, run at the refreshed copy rather than taken on trust: the word *Cinema* appears 15 times where it appeared ZERO times before, and *STAFF* appears 12 times where it appeared ZERO. The rail shows eight items including Cinema, and the account menu has a STAFF group. `image-slot.js` turned out to be identical to the copy already committed, so only three of the four actually moved.\n\nIT ARRIVED EXACTLY WHERE IT MATTERED. The old card said this mattered more for 00b than it did for 00, because 00b builds the account menu and the stale copy had no STAFF group in it at all. It does now — line 189, a mono label at 8.5px beside a hairline, with a small count pill on each staff row. That is what 00b was built against tonight instead of against a guess.\n\nNothing is being asked of you on this card. It is here so the record shows the answer rather than the question.",
+      "workedExample": "The account menu in the refreshed prototype is: your name, then Settings / Billing / Share Drape, then a line reading STAFF with a hairline running off to the right, then Admin and Moderation each with a small number beside it, then Sign out in the accent colour. That is precisely the menu that shipped tonight — the one difference being that the numbers are not wired to anything yet, and the frame shows no number rather than showing a made-up one.",
+      "options": [],
+      "recommendation": null
     },
     {
       "id": "bug-reports-no-reader-255",
@@ -737,6 +726,42 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "chrome-section-00b-frames",
+      "title": "The two menus, redesigned — and the six places the product is going, drawn for the first time",
+      "state": "open",
+      "filedAt": "2026-08-30T15:05:00+10:00",
+      "issueNumber": 228,
+      "cardId": null,
+      "question": "THIS IS ON YOUR SCREEN, unlike segment 1 — it is the chrome every surface shows, so it is the first thing in this lane you will actually feel.\n\nWHAT TO LOOK AT FIRST: the six greyed entries. Four in the '…' menu (Documentation, Keyboard shortcuts, Theme, Cookie preferences) and two in the top bar (the folder reading 'All projects', and the megaphone). None of them can be clicked, none can be reached by keyboard, none lights up under the cursor, and each says '— not built yet' when you rest on it. This is your ruling made real, and it is the decision worth your two minutes: is this the level of quiet you meant? They are deliberately duller than the live rows rather than the same weight.\n\nTHEN THE ACCOUNT MENU. It has a STAFF heading now — it used to be two bare lines with no label, which reads as an accident rather than a section — and 'Moderator' reads 'Moderation', so both entries name a place instead of one naming a place and the other naming a person. Your credit balance under your name is in the machine face, because it is a measured number.\n\nONE THING IS DELIBERATELY MISSING and I would rather you heard it from me: the small count numbers beside Admin and Moderation. The pill is built and it disappears at zero rather than showing '(0)', but nothing feeds it a number yet — that needs a reader on the server that does not exist, and your brief pack puts it in the NEXT section. So the frames show the rows with no number, which is the truth, rather than a number I invented for the photograph.\n\nTHE OTHER THING NOT BUILT is the little 'running' pill in the top bar. It needs a real feed of what is casting, and a pill saying '2 running · 40s' over nothing would be a lie about what the studio is doing right now. The space is left for it.",
+      "frames": [
+        {
+          "key": "crew-eye/9cf62737-e77e-4023-811e-9e3f84b0b39d.png",
+          "caption": "The whole top bar, dark. Left of the breadcrumb: the folder and 'All projects' — greyed, not clickable. Right, after your credit chip: the '…' menu, then the megaphone, then the theme switch. The prototype puts an unread dot on that megaphone and I left it off on purpose — a dot promises something to read, and there is nothing there.",
+          "arm": "top bar · dark"
+        },
+        {
+          "key": "crew-eye/900034e1-a1fc-4d92-9518-5f0f5dbd0b84.png",
+          "caption": "The '…' menu open, dark. HELP and PREFERENCES are headings in the machine face with a hairline. Send feedback and Report a bug are live and work exactly as before. The four below them are the greyed ones — this is the contrast to judge.",
+          "arm": "help menu · dark"
+        },
+        {
+          "key": "crew-eye/05cc06b5-da4b-4f73-8384-241b5c36b48d.png",
+          "caption": "The same menu in light, with 'Send feedback' under the cursor so you can see the difference: a live row takes a pale wash, a greyed one does nothing at all. Measured as well as photographed — the live row's background changes, the greyed one's does not.",
+          "arm": "help menu · light, hovered"
+        },
+        {
+          "key": "crew-eye/2e0f26b2-e5d0-4407-9e6e-f9914785b4e1.png",
+          "caption": "The account menu, dark, photographed at the menu itself rather than at the whole page. The STAFF heading with its hairline is the new part. Admin and Moderation carry no number — see the note above; that is honest rather than unfinished by accident.",
+          "arm": "account menu · dark"
+        },
+        {
+          "key": "crew-eye/dfdf431e-17a7-4a7c-87ab-90b140bec42e.png",
+          "caption": "The same account menu in light. Both menus were built and checked in both themes; nothing here was photographed in one and assumed in the other.",
+          "arm": "account menu · light"
+        }
+      ]
+    },
     {
       "id": "foundation-section-00-frames",
       "title": "The nine new parts, in both themes — and one frame that is wrong on purpose",
@@ -1484,6 +1509,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "chrome-section-00b-228",
+      "title": "Lobby segment 2 — the menus onto the grammar, and unbuilt features get drawn",
+      "status": "in-review",
+      "prNumber": 264,
+      "note": "00b built as one PR, as you set it. The account menu and the '…' help menu are now set the way the rest of the studio is set, and six places the product is going are DRAWN and inert rather than absent — Documentation, Keyboard shortcuts, Theme, Cookie preferences, a project switcher reading 'All projects', and What's new. Your ruling, in your own words: *a stub names a place, never a capability, and never carries an unread dot*.\n\nThe pull request also carries YOUR prototype refresh commit, so step one goes through the gate rather than sitting only on this machine.\n\nAFTER THIS THE LANE STOPS. Your instruction: *00 as one PR, 00b as one PR, then stop and show me.*"
+    },
     {
       "id": "foundation-section-00-228",
       "title": "Lobby segment 1 — the nine shared components, with nothing else moving",
@@ -2273,6 +2305,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T15:05:00+10:00",
+      "shift": "foreman-116",
+      "text": "Segment 2 is built and on a pull request, and the lane now STOPS for your eye — your instruction, and the desk is not going to walk past it.\n\nYou supplied the prototype yourself while the shift was reading, so 00b was built against the real target rather than the stale one. Your check passes on the copy you dropped in: Cinema is in the rail, STAFF is in the account menu, both of which were entirely absent before.\n\nTHE PART WORTH TELLING YOU. The work passed 33 automated checks and a full type check, and then was WRONG in the app. The help menu now uses the shared dropdown behaviour the redesign gives every dropdown — which quietly took over closing the panel. The code that clears a half-typed bug report was still hanging off the old close button, so it only ran one of the four ways the panel closes. In practice: type half a bug report, press Escape, open the menu again, and you are staring at your own half-typed form instead of the menu. The old version did not have this problem. Found by opening the app and using it, fixed, and then driven again on both ways of closing it. Nothing in the test suite could have seen it.\n\nI also did NOT do one thing the brief asks for, and it is on the eye card rather than buried: the little numbers beside Admin and Moderation. Your own brief pack puts them in the next section, they need a server reader that does not exist, and this section is not allowed to change what a menu DOES. The pill is built and hides itself at zero; the next section gives it numbers.\n\nYour Fable allowance is still out, so the review arm produced no verdict again — read at the run's own result rather than guessed: one turn, zero cost, no model usage. That is an absent review, not a rejection."
+    },
+    {
       "at": "2026-08-30T14:35:00+10:00",
       "shift": "foreman-115",
       "text": "Segment 1 is merged. Your test — nothing looks different — held at zero changed pixels on every screen that uses the old parts, after a first measurement that said otherwise and turned out to be the camera twice over. The one thing left on your side is the step you called first: the refreshed prototype files are not on this machine, and your own check (eight rail items with Cinema) fails on the copy we have. It mattered less for 00 than it will for 00b, because 00b is the account menu and the stale copy is missing its STAFF group. New card for it rather than reopening the one you already answered."
@@ -2466,11 +2503,6 @@
       "at": "2026-08-29T07:05:00+10:00",
       "shift": "foreman-86",
       "text": "Sixth quiet maintenance night. Two of your questions are still waiting — the edition-83 eye item and the smaller crop question from edition 86 — and nothing tonight needs you. No credits spent, no house money, nothing a customer can see has changed.\n\nBoth clocks checked at the live data rather than assumed. The Janitor is due at 07:35 this morning, just after this is written. The refusal patrol still has no population.\n\nSo I took the worst number the Machinist found: one paid edit in seven does not arrive. You type an ask, wait about two minutes, and get a sentence and your 25 credits back. The note on it said the real problem was that we never record WHY, so nothing can be improved until we do — and fixing that looked like a database change I would have had to wake you for.\n\nIt turned out we DO record it, and have all along. When the money goes back, the refund line on the credit ledger says what happened in plain words — and the credit ledger is the one thing in the product nothing ever deletes. The place everyone had been looking, the operation record, keeps a generic 'that didn't come through' on 19 of the 33. The refund line names the cause on 21 of 32. It was simply never read.\n\nSo instead of a database change and a job for you, tonight is a reader. Every one of those sentences now has a single home in the code, and the same list is used to write them and to read them back, so they cannot drift apart. Not one word of any sentence changed — those lines are receipts you and support can both read, so the test writes each one out in full and fails if a single character moves.\n\nWhat the reading actually says is the useful part, and two things in it are worth your time.\n\nFirst: the biggest NAMED cause is us, not the engine. A third of the failures are a picture that came back healthy, which our own checker then judged to be missing something you had asked for — so we re-render once for free and, if the second one also falls short, refund. That is our own judgement call, not a vendor problem, and it is the single biggest lever on this number.\n\nSecond: a fifth of the total is a deploy landing mid-edit. That is the collision you already ruled on — per-slice billing plus the recovery sweep is the answer, no drain machinery — so those six are working as designed and should not be counted as faults. Taking them out, the fixable part of 'one in seven' is smaller than it has been quoted.\n\nOne honest limit, stated rather than buried: seven different causes share the same fallback sentence, so on a third of them the ledger genuinely cannot tell which it was. The reader says so out loud and names all seven rather than picking one — a report that guessed there would look exactly like a report that knew."
-    },
-    {
-      "at": "2026-08-29T05:05:00+10:00",
-      "shift": "foreman-85",
-      "text": "Fifth quiet maintenance night, and the headline is still that two of your questions are waiting — the edition-83 eye item and the smaller crop question from edition 86. Nothing tonight needs you, and nothing a customer can see has changed.\n\nBoth clocks checked rather than assumed, both negative. The Janitor is not due until 07:35 this morning. The refusal patrol has no population: I re-read it at the live database rather than trusting last night's note, and there are still no new refused tiles past the mark it watches.\n\nWhat I did instead came off the queue. A card from two nights ago said the casting stylesheet held four dead rules — rules pointing at names nothing in the app writes any more. Measured properly over the whole file, it was twenty-two names and thirty-three rules, left behind by ordinary rebuilds: the day Sign moved to the dock, the day the delete and rename dialogs were redone, the day the room was rebuilt.\n\nThe reason it is worth an hour is the one you saw the effects of two nights ago. One of the dead names was a single character away from a live one — the sign portrait's old name beside its new one — so anybody looking up why that portrait was cropped found two rules and no way to tell which one was painting. That is exactly the confusion behind the cropped-face bug I fixed for you on edition 86, and it comes back on every rename until the corpses stop piling up.\n\nSo the file is clean, and there is now a check that fails the build if anyone leaves another one.\n\nThe most useful thing that happened tonight was the reviewer catching my check. It flagged three gaps, all of the same kind: places where my check would look at a dead rule and call it alive. One of them was not theoretical — it was hiding a twenty-second dead rule. That one is your own 'bald' row: you asked for it (I have the ruling), then later ruled that a row with nothing found should not draw at all. The row was removed correctly and its styling was left behind, with a comment above it still describing the row as though it were live. My first check missed it because the only place the name still appeared was inside a written note, and I was reading notes as if they were code.\n\nSo the honest headline is that a check with a blind spot found twenty-one of twenty-two and told me it was done. It is fixed, and the fix has a test that fails on purpose if anyone removes it.\n\nTwo smaller things, both my own tools catching me. I tried to prove nothing moved by photographing the app before and after — and the photographs disagreed. Before believing that, I photographed the same screen three times with no change at all, and those three disagreed too, so the camera was measuring the page's own flicker rather than my change. The frames also turned out to be of a loading screen, which I only knew because I opened the picture instead of trusting the tool that took it. I replaced the camera with arithmetic that cannot flicker: count every rule in the file before and after. Thirty-three gone, nothing added, nothing altered — a rule can only paint by existing, so the change cannot move a pixel."
     }
   ],
   "acknowledgedReplyIds": [
