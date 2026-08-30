@@ -1,6 +1,6 @@
 {
-  "edition": 133,
-  "updatedAt": "2026-08-30T17:05:00+10:00",
+  "edition": 134,
+  "updatedAt": "2026-08-30T17:45:00+10:00",
   "shift": "foreman-117",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -773,11 +773,11 @@
     {
       "id": "chrome-section-00b-frames",
       "title": "The two menus, redesigned — and the six places the product is going, drawn for the first time",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-30T15:05:00+10:00",
       "issueNumber": 228,
       "cardId": null,
-      "question": "THIS IS ON YOUR SCREEN, unlike segment 1 — it is the chrome every surface shows, so it is the first thing in this lane you will actually feel.\n\nWHAT TO LOOK AT FIRST: the six greyed entries. Four in the '…' menu (Documentation, Keyboard shortcuts, Theme, Cookie preferences) and two in the top bar (the folder reading 'All projects', and the megaphone). None of them can be clicked, none can be reached by keyboard, none lights up under the cursor, and each says '— not built yet' when you rest on it. This is your ruling made real, and it is the decision worth your two minutes: is this the level of quiet you meant? They are deliberately duller than the live rows rather than the same weight.\n\nTHEN THE ACCOUNT MENU. It has a STAFF heading now — it used to be two bare lines with no label, which reads as an accident rather than a section — and 'Moderator' reads 'Moderation', so both entries name a place instead of one naming a place and the other naming a person. Your credit balance under your name is in the machine face, because it is a measured number.\n\nONE THING IS DELIBERATELY MISSING and I would rather you heard it from me: the small count numbers beside Admin and Moderation. The pill is built and it disappears at zero rather than showing '(0)', but nothing feeds it a number yet — that needs a reader on the server that does not exist, and your brief pack puts it in the NEXT section. So the frames show the rows with no number, which is the truth, rather than a number I invented for the photograph.\n\nTHE OTHER THING NOT BUILT is the little 'running' pill in the top bar. It needs a real feed of what is casting, and a pill saying '2 running · 40s' over nothing would be a lie about what the studio is doing right now. The space is left for it.",
+      "question": "ANSWERED by you — *\"Yes, that's the level of quiet I meant. Duller than the live rows, no hover, no keyboard, tooltip that says why. Exactly right.\"*\n\nAnd both omissions kept, in your words: no invented staff count, no `2 running · 40s` over nothing. Both spaces left empty.\n\nYour corrections are filed as their own card — drop Theme, a recommendation on Cookie preferences, and the three account-menu labels with the clause under them that matters more than the labels: all three open the SAME settings panel, so none of them gets its own modal now.",
       "frames": [
         {
           "key": "crew-eye/9cf62737-e77e-4023-811e-9e3f84b0b39d.png",
@@ -809,11 +809,11 @@
     {
       "id": "foundation-section-00-frames",
       "title": "The nine new parts, in both themes — and one frame that is wrong on purpose",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-30T14:05:00+10:00",
       "issueNumber": 228,
       "cardId": null,
-      "question": "NOTHING HERE IS ON A CUSTOMER SCREEN YET. These are the shared parts every later lobby section gets assembled from, rendered on the developer gallery. Worth two minutes because the next five segments inherit whatever you think of them now — and because component shapes are cheapest to argue about before they have consumers, which is your own reason for doing 00 before Home.\n\nWHAT TO LOOK AT. The media card in four states: the dashed create tile that always sits first in a grid, an ordinary card, a KEPT card wearing the single accent bar, and one still casting. The staff table with a row opened IN PLACE — that shape replaces five separate dialogs. The transcript. The priced-choice blocks. The milestone rail, whose segments are sized by how big each milestone actually is rather than all being equal.\n\nONE FRAME IS WRONG AND I AM TELLING YOU RATHER THAN QUIETLY RETAKING IT: in the two long shots the marquee row at the bottom is an empty white band. It renders perfectly — the close-up proves it — but a full-page screenshot does not composite a moving, edge-faded element. Judge the marquee at its own frame, not at the long one.",
+      "question": "ANSWERED by you, and all three corrections are BUILT and on a pull request.\n\nThe four-accents card now wears two, like §05. MASCOT and PERFORMER are greyscale — types, not states — and IDENTITY LOCKED keeps its accent. The create tile no longer says NEEDED: it says the action, and a gap tile sits beside it saying NEEDED plus what is blocking, so the difference is visible rather than described.\n\nYOUR CHECK IS ANSWERED WITHOUT A CHANGE: the amount and the reference in the opened table row are NOT tinted — they are the plain ink colour. What reads as a tint is the machine face at 11.5px next to the sans label above it. Nothing was removed, because there was nothing there.\n\nAnd your rule is in the foundation README, in your words: the answer to a long label is never a smaller font.",
       "frames": [
         {
           "key": "crew-eye/e4c7da4e-590c-4563-ade0-19c63671e8aa.png",
@@ -1553,6 +1553,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "section-00-accent-corrections",
+      "title": "Your three section 00 corrections — built, and the frames found two more",
+      "status": "in-review",
+      "prNumber": 269,
+      "note": "All three done and photographed afterwards rather than assumed.\n\nPHOTOGRAPHING THE FIX IS WHAT EARNED ITS KEEP, because it caught two things no test would have.\n\nThe first was mine, made while fixing yours: splitting the create tile from the gap tile left the create tile with a SOLID border instead of a dashed one — the one tile whose whole job is to read as \"you can put something here\". Introduced and caught in the same sitting.\n\nThe second was older and is the more useful finding. On a card, the label and the small grey note beside it shared a row, and the note could not shrink — so the LABEL absorbed everything. On a gap tile carrying a real blocking sentence, \"The Broker\" rendered as \"T.\". A one-character label is not a shorter label, it is no label. Both sides give way together now, and a short note like a timestamp still never truncates.\n\nThat second one is your own new rule biting in a place neither of us was looking: the answer to a long label is never to make one side disappear."
+    },
     {
       "id": "bug-report-inbox-255",
       "title": "A customer's bug report finally reaches a human — your option D, built",
@@ -2356,6 +2363,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T17:45:00+10:00",
+      "shift": "foreman-117",
+      "text": "Your section 00 corrections are built and on a pull request, and your check is answered without a change — the amount and reference in the table row are not tinted at all, they are the plain ink colour, and what reads as a tint is the machine typeface sitting under a sans label. I would rather tell you that than quietly \"fix\" something that was never there.\n\nTHE PART WORTH YOUR TIME. I photographed the sections after making your three fixes rather than trusting them, and the frames caught two things.\n\nOne was mine: separating the create tile from the gap tile left the create tile with a solid border instead of a dashed one — the single tile whose entire job is to look like somewhere you can drop something.\n\nThe other was already there and is more interesting, because it is your own new rule biting somewhere neither of us was looking. On a card, the title and the small grey note beside it share a row, and the note was not allowed to shrink — so the title took the whole hit. With a realistic gap sentence, \"The Broker\" rendered as \"T.\". Both give way together now.\n\nTwo eye items were still showing as open on your page after you had answered them. Fixed in this edition; the sweep is what caught it.\n\nEverything else from tonight is on the desk already: the promotion audit you ruled, the held question answered, the cookie row, and the bug-report inbox."
+    },
+    {
       "at": "2026-08-30T17:05:00+10:00",
       "shift": "foreman-117",
       "text": "You replied twice while I was working and both are answered — the promotion audit and the 00b frames.\n\nTHE AUDIT. You ruled five move instead of six and held the brief text box for a check. That check is done: the shared kit's Field and Input are a wrapper box and a one-line field, and it has no multi-line box at all — so casting's is not a third copy of anything, it is the missing one. Your instinct was still right, just one layer over: three different boxes in the product grow as you type, and three guard against an Asian-language customer pressing Enter mid-character. Casting's is the only one that does both, and that second thing is a money control, because Enter on the casting page spends 160 credits.\n\nTHE BUILD ITSELF IS NOT STARTED, and that is a decision rather than an oversight — it has its own card so you can overrule it. Five components moving and three popovers collapsing is one PR by your instruction, and half of it in the tree is worse than none of it.\n\nTHE COOKIE ROW. You asked whether it is real. It is not, and the answer is better than that: the product sets two cookies, both strictly functional, and has zero third-party trackers of any kind. There is literally nothing a customer could switch off, so my recommendation is that the row should not exist rather than be greyed.\n\nAND THE BUG REPORTS INBOX IS BUILT — your option D from two nights ago. It is on a pull request. One thing about it is worth thirty seconds of yours: it passed 11 automated checks and a full type check, and then was WRONG when I opened the app. One of the four status labels was a white pill with a dark outline, sitting next to three outlined buttons of the same size — so the card read as having four buttons, one of which does nothing when you press it. Nothing in a test could have seen that. Fixed to one rule: a state is filled in, a control is outlined.\n\nYour Fable allowance is still out, so pull requests get no review verdict — that is an absent review, not a rejection."
@@ -2549,11 +2561,6 @@
       "at": "2026-08-29T09:40:00+10:00",
       "shift": "foreman-89",
       "text": "Ninth quiet maintenance night. One thing needs you and it is above: your Fable usage allowance has run out, and it has taken down both the gate's code reviewer and the advisor the night shifts consult before they build. Nothing a customer can see is affected - no credits spent, no house money, nothing on production touched but the briefing you are reading.\n\nLast night's shift found the reviewer broken and guessed, honestly and out loud, that your login token had expired. It had not, and the difference matters because the two guesses point at completely different fixes - one needs your hands, the other fixes itself. The reviewer hides its own error message, so the way to read it was sideways: the advisor the night shifts talk to is the same model on the same subscription of yours, so I asked it a question from this machine. It answered \"You've reached your Fable 5 limit\", twice, four minutes apart - while I kept working on the same machine and the same login. That is the whole diagnosis, and it is the first time anyone here has actually seen the error text; the shift that chased this on the 26th never got it and had to work it out from what was missing.\n\nWhich is the real news: this is the second time in four days. The 26th cost five separate shifts an instance each before it healed by itself once your usage window passed. That card was closed with a note saying exactly what to check if it ever came back - and last night it came back and the note was not found, so the wrong cause got filed. I have linked the two and put it to the housekeeping round as a process finding, because the fix for that is not a better guess, it is looking at the closed cards first.\n\nWhat drains it is worth two minutes of your attention, because it is a decision rather than a bug. Fifteen reviews on Wednesday, fifteen on Thursday, each reading an entire change - one of them alone cost $2.85 - plus twenty-seven night shifts on Thursday, each consulting the advisor once or twice. On the 27th we measured the reviews at about a tenth of your cap and trimmed what they read to protect you. That measurement never counted the advisor, and the advisor is on the same meter. Your own instruction from the 25th covers this: move the token to the co-founder's account if your cap bites. It has now bitten twice, so that is what I recommend - two minutes in a terminal.\n\nI also corrected something the team has quietly had backwards. A red mark on the reviewer has never meant \"the reviewer objects to this change\" - it only ever means the reviewer never ran. The one actually worth knowing is the reverse: a green tick means it ran, and it can still be carrying findings inside its comment. Thursday's refund change went green with two findings in it. Green is not \"nothing found\", and nobody had written that down.\n\nI wrote no product code tonight, deliberately. The obvious build was a step that tells a broken reviewer apart from an objecting one - but once you know a red mark already means only one thing, most of the reason for it disappears, and it would have shipped on the one night when neither the reviewer nor the advisor could read it. Your two older questions are still waiting: the eye item from edition 83, and the smaller crop question from edition 86."
-    },
-    {
-      "at": "2026-08-29T09:05:00+10:00",
-      "shift": "foreman-88",
-      "text": "Eighth quiet maintenance night, and nothing tonight needs you — but there is one thing worth knowing, in the problems list above.\n\nYour two questions are still waiting: the edition-83 eye item and the smaller crop question from edition 86. No credits spent, no house money, nothing a customer can see has changed, nothing on production touched but the briefing you are reading.\n\nThe work was the two small repairs the housekeeping round asked for yesterday, and neither is glamorous. We keep a check that makes sure every one-off script shuts itself down when it finishes — without it, the machine slowly fills with processes that have finished their work and are still sitting there (we once found one alive for three hours). That check was reading the last LINE of a file instead of the last instruction, so a script that shut down correctly, but wrote it on the same line as the instruction before, was turned away. Yesterday's housekeeping hit exactly that and worked around it by splitting the line, which is how a check that cries wolf slowly stops being followed. It reads the code properly now. Nothing it previously accepted or refused has changed its verdict — I ran both versions over all 774 files and every answer is identical.\n\nThe second repair is why the team's local test run kept going red for reasons nobody had caused. Several test files walk the entire project as part of what they check, and they were given five seconds to do it. Under a full run one of them takes twenty. So a shift would sit down, run the tests, see red, and spend half an hour proving it was not their doing. Five of those now have a minute each, with the measured number written beside it so nobody has to guess again later.\n\nAnd the thing worth your two minutes: while merging that, the gate's second-opinion reviewer broke. It errors in one second rather than reading the change. It is filed, the details are above, and my best guess — said as a guess — is an expired login token on your account. Tonight's change went in anyway because it is test-and-tooling only with no product or money in it; anything bigger will wait for the reviewer rather than go round it."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2600,6 +2607,7 @@
     41,
     42,
     43,
-    44
+    44,
+    45
   ]
 }

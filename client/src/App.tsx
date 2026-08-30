@@ -17,6 +17,7 @@ import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AdminCrew from "./pages/AdminCrew";
+import AdminBugReports from "./pages/AdminBugReports";
 import AppLobby from "./pages/AppLobby";
 import CastingFoundation from "./pages/CastingFoundation";
 import CastingRoom from "./pages/CastingRoom";
@@ -107,6 +108,7 @@ function Router() {
           <Route path="/admin/users" component={AdminUserManagement} />
           <Route path="/admin/change-requests" component={AdminChangeRequests} />
           <Route path="/admin/invite-codes" component={AdminInviteCodes} />
+          <Route path="/admin/bug-reports" component={AdminBugReports} />
           {/* The Crew tab (#41). Dark behind CREW_TAB_SCOPE: the route exists,
               and outside the scope its one query answers NOT_FOUND, so the page
               says it is not switched on and the nav never shows the link. */}

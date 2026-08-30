@@ -10,6 +10,7 @@ import {
   BarChart3,
   Ticket,
   Megaphone,
+  Bug,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState";
@@ -20,6 +21,7 @@ const NAV_LINKS = [
   { href: "/admin/audit-logs", icon: Shield, label: "Audit Logs" },
   { href: "/admin/change-requests", icon: ClipboardList, label: "Change Requests" },
   { href: "/admin/invite-codes", icon: Ticket, label: "Invite Codes" },
+  { href: "/admin/bug-reports", icon: Bug, label: "Bug Reports" },
   { href: "/moderator", icon: Eye, label: "Moderator" },
 ] as const;
 
