@@ -59,6 +59,8 @@
  */
 import { z } from "zod";
 
+import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
+
 import briefingJson from "./crew-briefing.json";
 
 /**
@@ -193,6 +195,22 @@ const nextUpSchema = z.object({
     title: z.string().min(1).max(300),
     /** The card's own labels, so `urgent` can be shown without a second list. */
     urgent: z.boolean(),
+    /**
+     * Why a shift has not taken this one yet, when something is stopping it
+     * (#298). Absent means takeable, which is why it is optional rather than
+     * nullable-with-a-default: every edition written before this field existed
+     * still parses, and it says the true thing about those rows.
+     *
+     * `state` is derived from a LABEL and `because` from one line of the card
+     * body — see `shared/crewNextUpHold.ts` for why those two halves are held
+     * to different standards. ⚠ **`.strict()` sits INSIDE `.optional()`**:
+     * `ZodOptional` has no `.strict` in zod 4, and calling it on the wrapper
+     * is how a strictness that reads as present ends up doing nothing.
+     */
+    held: z.object({
+      state: z.enum(CREW_HELD_STATES),
+      because: z.string().min(1).max(CREW_HOLD_REASON_MAX).optional(),
+    }).strict().optional(),
   }).strict()).max(40)
     .refine(uniqueBy<{ issueNumber: number }>("queued card", (item) => String(item.issueNumber)),
       "nextUp.items[].issueNumber must be unique"),

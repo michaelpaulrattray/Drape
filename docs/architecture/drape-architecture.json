@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "52e0ad464605bab6"
+    "sourceFingerprint": "ec6e549e285bdefe"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 45
+      "moduleCount": 46
     },
     {
       "id": "domain:studio",
@@ -5831,6 +5831,12 @@
     {
       "id": "module:shared/const.ts",
       "path": "shared/const.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewNextUpHold.ts",
+      "path": "shared/crewNextUpHold.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12266,6 +12272,10 @@
       "path": "server/crewHeartbeat.test.ts"
     },
     {
+      "id": "test:server/crewNextUpHold.test.ts",
+      "path": "server/crewNextUpHold.test.ts"
+    },
+    {
       "id": "test:server/crewShiftState.test.ts",
       "path": "server/crewShiftState.test.ts"
     },
@@ -14179,6 +14189,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "to": "module:server/routers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
     },
     {
@@ -27399,6 +27414,11 @@
     {
       "from": "module:server/castingV2/zoneScope.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/crewBriefing.ts",
+      "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
     },
     {

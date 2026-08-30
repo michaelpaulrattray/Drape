@@ -8,6 +8,7 @@
  */
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { resolveHold, type CrewHold } from "../../../../../../shared/crewNextUpHold";
 import type { AppRouter } from "../../../../../../server/routers";
 
 type CrewState = inferRouterOutputs<AppRouter>["crew"]["getState"];
@@ -247,6 +248,18 @@ export type CrewNextUpRow = {
    * surface.
    */
   blockedOnYou: boolean;
+  /**
+   * Why no shift has taken this row yet, or `null` when nothing is stopping
+   * one (#298). His question was *"did it skip things or what happened"* —
+   * five rows were skipped and every skip was correct, but the block could
+   * only say one of the four reasons out loud.
+   *
+   * ⚠ **The verdict is `shared/crewNextUpHold.ts`'s, not this file's.** The
+   * sweep that writes the state and the page that draws it must agree on what
+   * "blocked" means, and a second definition here is exactly the drift working
+   * law 4 is about.
+   */
+  hold: CrewHold | null;
 };
 
 export function nextUpRows(
@@ -258,12 +271,31 @@ export function nextUpRows(
       .filter((card) => card.state === "open" && card.issueNumber !== null)
       .map((card) => card.issueNumber as number),
   );
-  return nextUp.items.map((item) => ({
-    issueNumber: item.issueNumber,
-    title: item.title,
-    urgent: item.urgent,
-    blockedOnYou: askingHim.has(item.issueNumber),
-  }));
+  return nextUp.items.map((item) => {
+    const blockedOnYou = askingHim.has(item.issueNumber);
+    return {
+      issueNumber: item.issueNumber,
+      title: item.title,
+      urgent: item.urgent,
+      blockedOnYou,
+      hold: resolveHold({ blockedOnYou, held: item.held ?? null }),
+    };
+  });
+}
+
+/**
+ * Whether any row is held — what the block's footer needs to know before it
+ * tells him a shift takes the first row without a chip.
+ *
+ * ⚠ **The rows are NOT reordered around this**, and #298 says so in as many
+ * words: *"the ordering must not silently reorder around it … Do not quietly
+ * hide blocked rows — he needs to see that seven of eight are stuck, because
+ * that is the real state of his queue and it is the thing that would tell him
+ * to unblock something."* So the position stays the priority order and the
+ * chip explains the skip.
+ */
+export function heldCount(rows: readonly CrewNextUpRow[]): number {
+  return rows.filter((row) => row.hold !== null).length;
 }
 
 /** How many merged timeline items the journal shows before the fold (#74 item

@@ -18,6 +18,7 @@ import {
   milestoneProgress,
   HISTORY_LANDED_VISIBLE,
   foldHistory,
+  heldCount,
   nextUpRows,
   pipelineNotDone,
   recentHistory,
@@ -280,5 +281,88 @@ describe("the journal fold (#74 — his standing Desk rule)", () => {
   it("the boundary itself: exactly the visible count folds nothing", () => {
     const items = Array.from({ length: JOURNAL_FOLD_VISIBLE }, (_, index) => index);
     expect(foldTimeline(items).older).toEqual([]);
+  });
+});
+
+describe("NEXT UP — a skipped row says why, and the reason cannot outlive it (#298)", () => {
+  /**
+   * His question, looking at his own page: *"on my desk it says [8 items] but
+   * its currently working on [#280] did it skip things or what happened"*.
+   *
+   * It skipped five, correctly, for FOUR different reasons — and the block
+   * could render exactly one of them. These arms are the four, plus the
+   * property that makes the fourth safe.
+   */
+  const rowsFor = (items: unknown[], cards: unknown[] = []) =>
+    nextUpRows({ readAt: "2026-08-30T09:00:00Z", items } as never, cards as never);
+  const card = (issueNumber: number | null, state: string) => ({
+    id: `card-${issueNumber}`, title: "t", productImpact: "", workedExample: null,
+    options: [], recommendation: null, state, issueNumber,
+    filedAt: "2026-08-30T00:00:00+10:00",
+  });
+
+  it("a takeable row carries NO chip — the silence is what makes the order readable", () => {
+    /* The first build of this block put a word on every row and he could not
+       see the order for the labels. Only an exception gets a word. */
+    const [row] = rowsFor([{ issueNumber: 281, title: "invite", urgent: false }]);
+    expect(row.hold).toBeNull();
+  });
+
+  it("each held state says its own plain word, never a label name", () => {
+    /* He is not code-savvy: the chip says "Needs Fable", not `awaiting-fable`. */
+    const rows = rowsFor([
+      { issueNumber: 267, title: "labels", urgent: true, held: { state: "blocked" } },
+      { issueNumber: 279, title: "fitted", urgent: true, held: { state: "fable" } },
+      { issueNumber: 293, title: "park", urgent: true, held: { state: "sitting" } },
+    ]);
+    expect(rows.map((row) => row.hold?.word)).toEqual(["Blocked", "Needs Fable", "Needs a sitting"]);
+    expect(rows.map((row) => row.hold?.kind)).toEqual(["blocked", "fable", "sitting"]);
+  });
+
+  it("⚠ his desk outranks a label — an answer he can act on is the one worth showing", () => {
+    const [row] = rowsFor(
+      [{ issueNumber: 267, title: "labels", urgent: true, held: { state: "sitting" } }],
+      [card(267, "open")],
+    );
+    expect(row.hold?.kind).toBe("you");
+    expect(row.hold?.word).toBe("Waiting on you");
+  });
+
+  it("the filer's sentence rides the chip", () => {
+    const [row] = rowsFor([{
+      issueNumber: 267, title: "labels", urgent: true,
+      held: { state: "blocked", because: "the sectioned Settings modal (your section 03 brief)" },
+    }]);
+    expect(row.hold?.because).toBe("the sectioned Settings modal (your section 03 brief)");
+  });
+
+  /**
+   * ⚠ **THE ANTI-ROT PROPERTY, AND IT IS THE WHOLE POINT OF THE DESIGN.**
+   * #298: *"A row whose reason is stale is this bug again"* — `#278` told him
+   * it was blocked for two shifts after it was unblocked, because the state
+   * lived in prose. Removing the label removes the chip AND the sentence in one
+   * act, so a stale reason can never be shown: the state is what renders it.
+   */
+  it("clearing the hold clears the reason with it, in one act", () => {
+    const held = {
+      issueNumber: 267, title: "labels", urgent: true,
+      held: { state: "blocked", because: "a sentence that is now wrong" },
+    };
+    const { held: _dropped, ...unblocked } = held;
+    expect(rowsFor([held])[0].hold?.because).toBe("a sentence that is now wrong");
+    expect(rowsFor([unblocked])[0].hold).toBeNull();
+  });
+
+  it("held rows keep their place, and the count is honest about how many", () => {
+    /* His own instruction: *"Do not quietly hide blocked rows — he needs to see
+       that seven of eight are stuck."* Nothing sorts, nothing filters. */
+    const rows = rowsFor([
+      { issueNumber: 267, title: "a", urgent: true, held: { state: "blocked" } },
+      { issueNumber: 281, title: "b", urgent: false },
+      { issueNumber: 293, title: "c", urgent: false, held: { state: "sitting" } },
+    ]);
+    expect(rows.map((row) => row.issueNumber)).toEqual([267, 281, 293]);
+    expect(heldCount(rows)).toBe(2);
+    expect(heldCount(rowsFor([{ issueNumber: 281, title: "b", urgent: false }]))).toBe(0);
   });
 });

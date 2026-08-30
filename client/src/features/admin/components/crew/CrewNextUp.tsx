@@ -27,7 +27,7 @@
  * — that is his own instruction, and it is why the empty state here is a
  * sentence and never a blank box.
  */
-import { nextUpRows } from "./crewTypes";
+import { heldCount, nextUpRows } from "./crewTypes";
 import type { CrewBriefingView, CrewNeedsYouCard } from "./crewTypes";
 
 /** "read 09:12 UTC · 30 Aug" — the stamp is said, never implied. */
@@ -50,6 +50,7 @@ export function CrewNextUp({
   cards: readonly CrewNeedsYouCard[];
 }) {
   const rows = nextUpRows(nextUp, cards);
+  const held = heldCount(rows);
 
   return (
     <section
@@ -83,10 +84,25 @@ export function CrewNextUp({
               </span>
               <span className="flex-1 min-w-[12rem] text-sm leading-relaxed text-[#0A0A0A]">
                 {row.title}
+                {/* The reason rides UNDER the title rather than beside it: it is
+                    a sentence, and a sentence competing with the chip for the
+                    end of the line is what makes a row wrap to three lines. */}
+                {row.hold?.because && (
+                  <span className="block text-[11px] leading-relaxed text-[#999] mt-0.5">
+                    {row.hold.because}
+                  </span>
+                )}
               </span>
-              {row.blockedOnYou && (
-                <span className="text-[11px] shrink-0 text-[#0A0A0A] font-medium">
-                  Waiting on you
+              {row.hold && (
+                <span
+                  data-testid={`crew-next-up-hold-${row.issueNumber}`}
+                  className={
+                    row.hold.kind === "you"
+                      ? "text-[11px] shrink-0 text-[#0A0A0A] font-medium"
+                      : "text-[11px] shrink-0 text-[#777]"
+                  }
+                >
+                  {row.hold.word}
                 </span>
               )}
               {row.urgent && (
@@ -106,6 +122,17 @@ export function CrewNextUp({
         This is every card you have ordered that is still open, in the order a shift takes them.
         A row marked <span className="text-[#666]">Waiting on you</span> is one your desk above
         still has an open question about.
+        {held > 0 && (
+          <>
+            {" "}
+            <span className="text-[#666]">
+              {held} of {rows.length} {held === 1 ? "is" : "are"} held right now
+            </span>{" "}
+            — a shift works down this list and takes the first row with nothing beside it, so a
+            marked row is one it stepped over rather than ignored. Nothing is reordered or hidden:
+            clearing a hold is what moves work, not the position.
+          </>
+        )}
       </p>
     </section>
   );

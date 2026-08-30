@@ -33,7 +33,11 @@
  *      the order a shift takes them. This is not a view OF the running order,
  *      it IS the running order: `PROGRAM.md` makes a `founder-ordered` card
  *      authorised work taken first, so the page renders the same query a shift
- *      obeys rather than a copy someone maintains.
+ *      obeys rather than a copy someone maintains. ⚠ **And each row now carries
+ *      WHY a shift has not taken it** (#298) — his *"did it skip things or what
+ *      happened"*. The state comes from a hold LABEL and the sentence from one
+ *      line of the card body; `shared/crewNextUpHold.ts` owns both and says why
+ *      those halves are held to different standards.
  *   2. **`answered` → `done`** when the card's issue is CLOSED.
  *   3. **not-merged → `merged`** when the row's PR is MERGED.
  *   4. **`waiting-founder`** is REPORTED against the desk. It is not repaired
@@ -63,6 +67,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { heldStateFromLabels, holdReasonFromBody } from "../shared/crewNextUpHold.js";
 
 const BRIEFING = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -124,7 +130,10 @@ const ordered = gh([
   "--label", "founder-ordered",
   "--state", "open",
   "--limit", "200",
-  "--json", "number,title,labels",
+  /* `body` rides along for the hold REASON (#298). It is the same request, so
+     it costs nothing extra — and it is the only way the sentence a filer wrote
+     reaches his page without somebody transcribing it into the briefing. */
+  "--json", "number,title,labels,body",
 ]) as Json[] | null;
 
 if (ordered === null) {
@@ -148,12 +157,40 @@ if (ordered === null) {
   */
   const items = ordered
     .slice()
-    .map((row) => ({
-      issueNumber: Number(row.number),
-      title: String(row.title).slice(0, 300),
-      urgent: Array.isArray(row.labels)
-        && row.labels.some((label: Json) => label?.name === "urgent"),
-    }))
+    .map((row) => {
+      const labels = Array.isArray(row.labels)
+        ? row.labels.map((label: Json) => String(label?.name ?? ""))
+        : [];
+      /*
+        ⚠ **THE HOLD'S STATE COMES FROM A LABEL AND ITS REASON FROM THE BODY,
+        AND THE REASON IS ONLY EVER WRITTEN BESIDE A LIVE STATE** (#298).
+
+        That asymmetry is the anti-rot property, not a shortcut: `#278` told him
+        it was blocked for two shifts after it was unblocked, because the state
+        lived in prose. Here, removing the label removes the whole row's chip
+        AND its sentence in one act — a reason cannot outlive the state that
+        renders it, whatever the body still says.
+
+        A held card with no marker line keeps its chip. The label alone answers
+        *"why was this skipped"*, and demanding prose would let a filer's
+        omission quietly un-hold a card.
+      */
+      const state = heldStateFromLabels(labels);
+      const because = state === null ? null : holdReasonFromBody(String(row.body ?? ""));
+      return {
+        issueNumber: Number(row.number),
+        title: String(row.title).slice(0, 300),
+        urgent: labels.includes("urgent"),
+        ...(state === null ? {} : { held: { state, ...(because ? { because } : {}) } }),
+      };
+    })
+    /*
+      ⚠ **HELD ROWS ARE NOT SORTED DOWN, AND THAT IS #298's OWN INSTRUCTION**:
+      *"Do not quietly hide blocked rows — he needs to see that seven of eight
+      are stuck, because that is the real state of his queue and it is the thing
+      that would tell him to unblock something."* The position stays the
+      priority order; the chip explains the skip.
+    */
     .sort((a, b) =>
       (a.urgent === b.urgent ? 0 : a.urgent ? -1 : 1) || a.issueNumber - b.issueNumber);
   const before = JSON.stringify(briefing.nextUp?.items ?? null);
@@ -163,6 +200,12 @@ if (ordered === null) {
   } else {
     changes.push(`NEXT UP: unchanged (${items.length}), stamp refreshed`);
   }
+  /* Said out loud whichever way the row above went: a hold is the thing an
+     operator most wants to check before shipping, and "unchanged" hides it. */
+  const holds = items.filter((item) => "held" in item);
+  changes.push(holds.length === 0
+    ? `NEXT UP: no card is held — every row is takeable`
+    : `NEXT UP: ${holds.length} held — ${holds.map((i) => `#${i.issueNumber} ${(i as { held: { state: string } }).held.state}`).join(", ")}`);
 }
 
 /* ─── 2. answered → done, from the issue's own state ─── */
