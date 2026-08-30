@@ -29,6 +29,7 @@ import { adminProcedure, router } from "../_core/trpc";
 import { readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
 import { insertCrewReply, listCrewReplies } from "../db/crewReplies";
+import { listCrewShiftRuns } from "../db/crewShiftRuns";
 
 /** The dark answer, written once so both procedures give the same one. */
 function refuseOutsideScope(): never {
@@ -60,13 +61,21 @@ const replyInput = z.object({
 
 export const crewRouter = router({
   /**
-   * The whole page in one call: the deployed briefing plus every reply.
+   * The whole page in one call: the deployed briefing, every reply, and what
+   * the team is doing right now.
    *
    * The reply projection is explicit at the database (invariant 8,
    * `server/db/crewReplies.ts`) and this procedure adds nothing to it — what
    * comes back is exactly `{ id, cardId, body, createdAt, author }` per reply,
    * because that is what the store hands over and this handler does not spread
-   * a row.
+   * a row. `shiftRuns` is the same discipline in `server/db/crewShiftRuns.ts`.
+   *
+   * ⚠ `shiftRuns` RIDES THIS CALL RATHER THAN GETTING ITS OWN (#272). The page
+   * already re-reads this query every 60s while visible, so the live row is
+   * live for free and the strip can never disagree with the briefing beside it
+   * — two queries would land at two different moments and draw two different
+   * instants as one page. There is no `shiftRuns` MUTATION here and there must
+   * not be: shifts write those rows directly (migration 0055's header).
    */
   getState: adminProcedure.query(async ({ ctx }) => {
     if (!captureCrewTabEnabled(ctx.user.id)) refuseOutsideScope();
@@ -75,8 +84,11 @@ export const crewRouter = router({
        its own `problems` list, which is why this is not in a try. */
     const briefing = readCrewBriefing();
     const replies = await listCrewReplies();
+    /* Degrades to `available: false` on an absent table (the window between
+       this deploy and the founder's ceremony) and throws on anything else. */
+    const shiftRuns = await listCrewShiftRuns();
 
-    return { briefing, replies };
+    return { briefing, replies, shiftRuns };
   }),
 
   /**

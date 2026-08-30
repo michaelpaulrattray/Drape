@@ -15,9 +15,16 @@
  * looks, and the two are compatible by construction: same viewBox, same round
  * caps, and Lucide's default 2 sits beside our 1.7 without a visible seam.
  *
- * The one Lucide glyph to retire on sight is `Sparkles` for Create. It is the
- * universal "AI" mark, it says nothing about making a picture, and it is the
- * single icon most likely to make the product look like every other one.
+ * Two Lucide glyphs to retire on sight:
+ *
+ *   `Sparkles` for Create   — the universal "AI" mark. It says nothing about
+ *                             making a picture and is the single icon most
+ *                             likely to make the product look like every
+ *                             other one. Use `P.image`.
+ *   `Settings` for the gear — eight teeth and an inner circle, illegible at
+ *                             16px beside glyphs of three strokes, and the
+ *                             most over-used icon on the internet.
+ *                             Use `P.settings`.
  *
  * USAGE
  *
@@ -44,12 +51,64 @@ export const P = {
   asset:    'M3.5 5.5h17v13h-17zM3.5 14l4.5-4 4 3.5 3.5-3 5 4.5',
   library:  'M4 5h6v14H4zM12 5h3v14h-3zM17 5.5l3 .6-2.4 12.8-3-.6z',
 
+  /*
+   * Cinema — the eighth destination, drawn here because the set had no key for
+   * it and `video` is spoken for by the composer's video mode. One glyph for
+   * two things is the confusion this house set exists to remove.
+   *
+   * A film frame: the outer run plus two sprocket notches on each side. It
+   * says *film* rather than *screen*, which is the distinction that matters —
+   * Cinema is the wall, the shot list and the takes contact sheet, not a tool
+   * that makes one clip.
+   *
+   * ⚠ CHOSEN AT THE FRAMES, NOT ON PAPER — and the first two drafts were wrong
+   * in ways no amount of reasoning would have caught (founder law 6):
+   *
+   *   - A STRIP OF THREE CELLS ('M3 7h18v10H3zM9 7v10M15 7v10') was drafted
+   *     first and FAILS at 17px: the cells mush into a dark block, and beside
+   *     `library` — three vertical divisions in a rectangle — it is very
+   *     nearly the same glyph. Rendered side by side they are confusable at
+   *     rail size. `E4` in the working set is that shape retested; same result.
+   *   - ITS OWN DOCBLOCK ARGUED PERFORATIONS COULD NOT HOLD at 1.7px/15px.
+   *     That was reasoning, and the render disproves it: TWO notches a side,
+   *     3 units long, hold cleanly at both 15px and 17px. A row of small round
+   *     holes would indeed mush — two short ticks are not that.
+   *
+   * Seven candidates were drawn and looked at (screen+floor, two offset takes,
+   * a 2-cell screen, sprockets top-and-bottom, rails, a bare 16:9 rectangle);
+   * every "screen" shape reads as a MONITOR, and the offset pair reads as
+   * *duplicate*. Only the film frame says cinema.
+   *
+   * The runner-up is ONE notch a side ('M4 5.5h16v13H4zM4 12h4M16 12h4') —
+   * the most legible of all at 15px, and slightly less obviously film at size.
+   * If this ever looks crowded in place, that is the swap.
+   *
+   * NOT a clapperboard: Lucide's is on Templates today, and it is the cliché
+   * this set is getting away from.
+   */
+  cinema:   'M4 4.5h16v15H4zM4 9h3M4 15h3M17 9h3M17 15h3',
+
   /* tool modes — the composer, and node kinds on the canvas */
   video:    'M4 6h11v12H4zM15 10.5l5-3v9l-5-3',
   tryon:    'M4 7l4-2 4 2 4-2 4 2v12H4z',
   ugc:      'M12 4a4 4 0 0 1 4 4v3a4 4 0 0 1-8 0V8a4 4 0 0 1 4-4zM5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3',
   upscale:  'M4 9V4.5h5M20 15v4.5h-5M4 15v4.5h5M20 9V4.5h-5',
   voice:    'M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2',
+
+  /*
+   * Settings — the rail's foot, and anywhere else a gear is meant.
+   *
+   * Two horizontal rails with an offset handle on each: it says *adjust these*
+   * without saying *cog*. Lucide's `Settings` is eight teeth plus an inner
+   * circle, which mushes into a blurred ring at 16px beside glyphs that are
+   * three or four strokes — and it is the most over-used icon on the internet,
+   * the same objection as `Sparkles` for Create.
+   *
+   * `cog` below is the fallback if a cogwheel is genuinely wanted: four teeth
+   * rather than eight, drawn at this set's density so it survives 16px.
+   */
+  settings: 'M3.5 9h10M17 9h3.5M15.2 9a1.8 1.8 0 1 0-3.6 0 1.8 1.8 0 0 0 3.6 0M3.5 15h3.5M10.5 15h10M8.8 15a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 0 0-3.6 0',
+  cog:      'M12 9.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2M12 3.5v2.6M12 17.9v2.6M20.5 12h-2.6M6.1 12H3.5M18 6l-1.8 1.8M7.8 16.2 6 18M18 18l-1.8-1.8M7.8 7.8 6 6',
 
   /* settings sections */
   grid:     'M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z',

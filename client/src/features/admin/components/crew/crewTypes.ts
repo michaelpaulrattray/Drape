@@ -123,3 +123,11 @@ export function foldTimeline<T>(sorted: readonly T[], visible = JOURNAL_FOLD_VIS
 } {
   return { recent: sorted.slice(0, visible), older: sorted.slice(visible) };
 }
+
+/**
+ * The live shift row (#272). Inferred like everything else on this page, so a
+ * column added to `crew_shift_runs` is a type error here rather than a fact
+ * that silently never renders.
+ */
+export type CrewShiftRunsView = CrewState["shiftRuns"];
+export type CrewShiftRunView = CrewShiftRunsView["runs"][number];

@@ -637,7 +637,7 @@ one from whoever owns its road.
   which is why the paragraph is stamped rather than deleted, but its remaining
   open item — *"the `build`/`skin` honesty claim before BASICS widens"* — is
   work on a road he has ruled to delete, and **so are #120 (correct
-  `DEFAULT_CASTING_PATH`, still `wardrobe` at `shared/castingPaths.ts:76`) and
+  `DEFAULT_CASTING_PATH`, still `wardrobe` in `shared/castingPaths.ts`) and
   #63 (two unbuilt basics-default courts)**; both are recommended into #203's
   retirement rather than worked. N2 owns the execution. **This is the class law
   7's second half names — a ruling closed a path and nothing asked what was

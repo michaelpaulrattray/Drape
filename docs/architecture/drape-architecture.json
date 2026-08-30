@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7014b07329734d22"
+    "sourceFingerprint": "9bc78746c2784007"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 50
+      "moduleCount": 51
     },
     {
       "id": "domain:alerting",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 59
+      "moduleCount": 60
     },
     {
       "id": "domain:evidence",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 43
+      "moduleCount": 44
     },
     {
       "id": "domain:studio",
@@ -749,6 +749,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
       "path": "client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
+      "path": "client/src/features/admin/components/crew/CrewWorkingNow.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -4815,6 +4821,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/crewShiftRuns.ts",
+      "path": "server/db/crewShiftRuns.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/dailyQuota.ts",
       "path": "server/db/dailyQuota.ts",
       "domain": "data",
@@ -5777,6 +5789,12 @@
     {
       "id": "module:shared/const.ts",
       "path": "shared/const.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewShiftState.ts",
+      "path": "shared/crewShiftState.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12170,6 +12188,14 @@
       "path": "server/crew/crewTabScope.test.ts"
     },
     {
+      "id": "test:server/crewShiftState.test.ts",
+      "path": "server/crewShiftState.test.ts"
+    },
+    {
+      "id": "test:server/crewShiftWriterBoundary.test.ts",
+      "path": "server/crewShiftWriterBoundary.test.ts"
+    },
+    {
       "id": "test:server/db/castingV2InkDeliveryCrops.test.ts",
       "path": "server/db/castingV2InkDeliveryCrops.test.ts"
     },
@@ -13996,6 +14022,21 @@
     {
       "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "to": "module:server/routers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
+      "to": "module:shared/crewShiftState.ts",
       "kind": "imports"
     },
     {
@@ -18161,6 +18202,11 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
       "kind": "imports"
     },
     {
@@ -27774,6 +27820,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/crewShiftRuns.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewShiftRuns.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/dailyQuota.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -30216,6 +30272,11 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/db/crewReplies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/db/crewShiftRuns.ts",
       "kind": "imports"
     },
     {
