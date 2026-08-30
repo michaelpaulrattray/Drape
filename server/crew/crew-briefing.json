@@ -1,7 +1,7 @@
 {
-  "edition": 134,
-  "updatedAt": "2026-08-30T17:45:00+10:00",
-  "shift": "foreman-117",
+  "edition": 135,
+  "updatedAt": "2026-08-30T15:35:00+10:00",
+  "shift": "foreman-118",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -770,6 +770,57 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "chrome-section-02-frames",
+      "title": "Section 02 — the frame every page sits inside, built to your three rulings",
+      "state": "open",
+      "filedAt": "2026-08-30T15:35:00+10:00",
+      "issueNumber": 270,
+      "cardId": null,
+      "question": "This is the bar and the rail you sent the brief for, built and photographed. Three things are worth your eye, and the third is the one I would most like you to overrule if you disagree.\n\n**One — the search.** It looks like a search field and it is a `<span>`. You cannot click into it, you cannot Tab to it, and Command-K does nothing. I proved that by walking the Tab key through the page rather than by reading the code: ten stops in the chrome, every one a control that does something, and the search is not among them.\n\n**Two — the rail's foot.** Your prototype draws two team-mates' faces there. We have no members feature at all — no page, no data, nothing on the server — so two faces would be two invented people, which is your own sentence from the 00b frames with a picture instead of a number. What ships is the dashed plus and the word Invite, and nothing behind it yet. The two frames side by side show the difference.\n\n**Three — and this is the judgement call.** You said the rail's foot gets a gear. It does, on the lobby. On a **casting** page it is not drawn at all, because casting has no settings panel to open — a gear there would be a dead control, and a tooltip saying \"not built yet\" would be a lie, since settings ARE built, just not reachable from that page. I read your ruling as refusing a second avatar rather than as \"draw it everywhere\". If you meant everywhere, say so and it takes ten minutes.\n\nOne thing I did NOT change, which you may want changed: the credits chip. Your brief describes it with a small conic dot and the sans typeface; ours is the mono one we already ship, and your instruction beside the description was \"exists, keep it\". I kept it. Say the word if the description was the instruction.",
+      "frames": [
+        {
+          "key": "crew-eye/70dbdc8c-e33e-40a0-9f8c-dc903696a0ec.png",
+          "caption": "The new bar, light. Left to right: the projects chip (greyed — projects do not exist, and \"All projects\" is simply true today), a hairline, the page name, then the search in the middle, then your credits, a hairline, and four buttons — report a bug, help, what's new, light/dark — and your own face with a chevron. The wordmark that used to open this bar is gone; the brand orb at the top of the rail was already carrying it two inches away.",
+          "arm": "the bar · light"
+        },
+        {
+          "key": "crew-eye/d5873d6d-0507-4cda-98df-968c134554a3.png",
+          "caption": "The same bar, dark. Nothing moves between themes — this is here so you can see the search field and the chips hold up on the dark surface, which is where you actually work.",
+          "arm": "the bar · dark"
+        },
+        {
+          "key": "crew-eye/34d8e370-3e83-464d-9d55-c9227b5780f9.png",
+          "caption": "YOUR PROTOTYPE'S BAR, for comparison — same file, opened and photographed at the same width. Structure matches element for element. Three differences and each is a decision: it says \"Acme Skincare\" where ours says \"All projects\"; it carries a red \"2 running · 40s\" pill where ours leaves the space empty, because we have no jobs feed and you ruled that a number no server produces is a lie; and its credits chip has a small dot where ours is the mono one you told me to keep.",
+          "arm": "the bar · your prototype"
+        },
+        {
+          "key": "crew-eye/675908e5-46c2-40d6-bf4a-94001099eea6.png",
+          "caption": "The bottom of the rail, ours. A dashed plus, the word Invite, a hairline, and a gear. That is it — no faces, because there is nobody real to draw.",
+          "arm": "rail foot · ours"
+        },
+        {
+          "key": "crew-eye/9ea365a5-08f9-4a6e-a2db-881a2103cb34.png",
+          "caption": "The bottom of the rail in YOUR PROTOTYPE, same crop. Two faces beside the plus — and then, under the hairline, the MR avatar AGAIN. That is the thing you refused: the same face in both corners doing two different things. Ours puts your face in the top corner and a gear here.",
+          "arm": "rail foot · your prototype"
+        },
+        {
+          "key": "crew-eye/9cb54022-503c-4262-aafe-cb7d7da58df6.png",
+          "caption": "The whole lobby inside the finished frame, dark. The rail is eight now — Cinema sits between Templates and Casting, greyed like Create, Templates and Assets, because it does not exist yet. Nothing on the page itself moved: every tile, every heading and every word below the bar is exactly what it was.",
+          "arm": "the whole frame · dark"
+        },
+        {
+          "key": "crew-eye/c2c3874d-3430-4d86-8db3-86bfab3c438d.png",
+          "caption": "THE ONE I WANT YOU TO CHECK HARDEST — the casting page inside the new frame. Casting is frozen in this lane and its content here is byte-for-byte what it was; what changed is the frame around it, which is the whole point of doing the frame first. Note the rail's foot: Invite, and no gear, for the reason in the note above. It also quietly lost a button it should never have had — an account circle down there that opened nothing at all.",
+          "arm": "casting · the frame only"
+        },
+        {
+          "key": "crew-eye/519bd287-703a-4f5f-a5aa-b47d1f69c0e5.png",
+          "caption": "Your account menu in its new corner — opening downward from your face at the top right instead of sideways from the rail. The contents are untouched: same rows, same order, same words. Your three label corrections (Members & invites, Billing & credits, Sign out) are deliberately NOT in this PR — all three are meant to open one settings panel at different sections, and that panel does not exist, so wiring them now is the thing you told me not to do.",
+          "arm": "account menu · relocated"
+        }
+      ]
+    },
     {
       "id": "chrome-section-00b-frames",
       "title": "The two menus, redesigned — and the six places the product is going, drawn for the first time",
@@ -1554,6 +1605,13 @@
   ],
   "pipeline": [
     {
+      "id": "chrome-section-02",
+      "title": "Section 02 — the topbar and rail, finished",
+      "status": "in-review",
+      "prNumber": 273,
+      "note": "Your brief, built as one PR. The bar goes from two zones to three, the rail goes to eight with Cinema, Report a bug becomes its own button instead of a row two clicks inside a menu, and your face moves to the top-right corner where everything reached through it already lives.\n\nWHAT I DID NOT BUILD, and both are your own rule rather than my caution. The queue pill has no jobs feed behind it, so the space is left empty. The member stack has no members feature behind it — none, anywhere in the product — so it draws the Invite affordance and no faces.\n\nYour Theme and Cookie preferences corrections rode in with it, because section 02's own list of what the help menu keeps says the same thing your correction does. Cookie preferences was your open question and the answer is at the code: we set exactly one cookie, the session one, and there are zero tracking libraries in the product — so there is nothing a consent panel would govern, and the row should not exist rather than be greyed. The account-menu labels are NOT here, deliberately.\n\nThe safety net is 23 assertions that were DRIVEN RED six times before I believed them — the search turned back into a text field, Cinema deleted, a Command-K handler added, and so on, each one expected to break a named assertion and each one doing it. One of those checks caught its own mistake on the first run: the rule that stops an unread dot appearing on \"What's new\" was written in a way that would not have seen a dot named `__dot`, so it would have passed with the dot on screen."
+    },
+    {
       "id": "section-00-accent-corrections",
       "title": "Your three section 00 corrections — built, and the frames found two more",
       "status": "in-review",
@@ -2270,6 +2328,13 @@
   ],
   "problems": [
     {
+      "id": "deletion-door-name-collision-274",
+      "title": "A tidying-up check has been reading two different things as one for months, and nobody could have seen it",
+      "detail": "Not urgent and nothing is broken for a customer. It is worth two minutes because of what it means rather than what it costs.\n\nWe have a check that stops anyone deleting code without a written decision about it. Removing the word \"Klieg\" from the top bar tonight made that check go red — and the thing it named was not the thing I had changed. There are TWO pieces of code called BRAND_NAME: the one in the new interface, and an old one buried in the legacy casting engine that nothing has used for a very long time. The check looks them up by NAME ONLY, so for as long as the new one was in use it was vouching for the old one as well.\n\nSo the honest summary is: a check we rely on to tell us what is dead can report \"all clear\" for something nobody has touched in months, purely because something else shares its name. Nothing was deleted; both are written down with reasons. Fixing the check properly means re-taking every reading it has ever produced, which is a night of its own — filed as #274 rather than half-done tonight.",
+      "severity": "info",
+      "state": "open"
+    },
+    {
       "id": "gate-review-arm-broken-219",
       "title": "Your Fable allowance is still out - 24 refusals now, and it has been down about 30 hours",
       "detail": "No change in cause, and tonight it was measured on a real pull request of mine rather than asked about. PR #256's own review job came back with the exhausted-allowance signature exactly: it ran for 880 milliseconds, took one turn, cost $0.00, recorded no model usage at all, and returned an error. That is the same shape this has had since it started.\n\nWhat that means for reading the checks page, and it is easy to get backwards: a RED review check does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A verdict, when there is one, rides a GREEN check as a comment.\n\nOpus is answering fine on the same machine and the same login — it ran tonight's whole shift. It is your Fable 5 allowance specifically.\n\nThe team's rule while it is out is unchanged: measurement-and-record nights, and product changes kept to ones that alter no code path.",
@@ -2362,6 +2427,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-30T15:35:00+10:00",
+      "shift": "foreman-118",
+      "text": "Section 02 is built and on PR #273, with frames in your gallery. Your three rulings are in it as rulings: the search is a span you cannot type into, F1 is reversed once and the rail is fixed at eight, and your face is in one corner with a gear in the other.\n\nTHE PART WORTH YOUR TIME is a question, not a report. Your ruling says the rail's foot gets a gear. It does on the lobby. On a casting page I did NOT draw it, because casting has no settings panel to open — a gear there would be a control that does nothing, and \"not built yet\" would be false, since settings are built and simply not reachable from that page. I read you as refusing a second avatar rather than ordering a gear on every page. If I read you wrong, it is a ten-minute change and I would rather you told me than that it sat there being wrong quietly.\n\nTwo things I left alone on purpose. Your credits chip: the brief describes a different one, and your sentence beside the description was \"exists, keep it\", so it is untouched. And your three account-menu labels: all three are supposed to open one settings panel at different sections, that panel does not exist, and you said to wire nothing rather than wire three separate destinations — so #267 stays open on that half.\n\nThe promotion pass ran, as your brief asks, and it turned your own candidate around. You suggested the icon button might be worth sharing \"if a second surface already has one\". I counted: the shared icon-button component has ONE consumer, and it is the page that exists to display components. The plain CSS class the app actually uses has six. Under your own rule — the one with real customers wins — the shared component is the loser, not the winner. There are also two different components with that same name in the codebase, in two different kits, which is how we ended up with three popovers. Nothing moved: written first, and your promotion decisions are still waiting on you.\n\nYour Fable reviewer is still out. Its job on this PR died in 1.2 seconds with an error it does not describe, so there is no verdict on #273 either way — I read the log rather than the red badge, which is the repair from last week working."
+    },
     {
       "at": "2026-08-30T17:45:00+10:00",
       "shift": "foreman-117",
@@ -2556,11 +2626,6 @@
       "at": "2026-08-29T10:05:00+10:00",
       "shift": "foreman-90",
       "text": "Tenth quiet maintenance night. The one thing that needs you is above and has not changed: your Fable allowance is still out, so the code reviewer and the night shifts' advisor are both still down. I checked twice more and said plainly how long it has actually been - one hour forty-three minutes - because the same fault took about five hours to clear itself on the 26th, and a longer wait is not yet a worse problem. Nothing a customer can see is affected, no credits and no house money were spent, and nothing on production was touched but the briefing you are reading.\n\nWith no code safe to ship while the reviewer is down, I spent the night on something better done with a database than with a keyboard. Three days ago you asked, watching your first register roll: \"why is the cast wearing a wardrobe? should it be in basics?\" That became an urgent card - the studio's default birth state contradicted your own law that casts are born in basics. I went to check whether it was still true, and it is not: it fixed itself, by accident, twenty-one minutes after your last affected roll.\n\nHere is what happened. On the 26th the team shipped the author road - the change that lets your words go to the engine as you wrote them - and part of it says the engine dresses the cast, so a roll on that road records no outfit path at all. That was aimed at the prompt, not at your question, and nobody noticed it also answered your question. I read all 226 rolls on production: thirteen ever carried a wardrobe path, all yours, and the last one was roll 221 at 9:33 that morning. The change landed at 9:54. Every roll since - five of them - carries no path and no outfit line. Both the server and the screen agree: the wardrobe switch is not even drawn on your account any more.\n\nSo nothing is broken, and the urgent flag was pointing at something no account could reach. I have taken the flag off, written the measurement onto the card, and linked it to the retirement you already ruled for this machinery (\"yeah we will retire the wardrobe/basics path obviously\"). I did not change the setting itself - it sits on a road you have already said is being deleted, and changing product code while the reviewer is down is exactly what the team agreed not to do. The card now also records the two conditions that would bring the problem back, so it cannot quietly become live again without somebody seeing it.\n\nThat is the whole night. Three of your eye items are still waiting - the two portrait crops and the concept-reader notes - and they are above whenever you have a minute."
-    },
-    {
-      "at": "2026-08-29T09:40:00+10:00",
-      "shift": "foreman-89",
-      "text": "Ninth quiet maintenance night. One thing needs you and it is above: your Fable usage allowance has run out, and it has taken down both the gate's code reviewer and the advisor the night shifts consult before they build. Nothing a customer can see is affected - no credits spent, no house money, nothing on production touched but the briefing you are reading.\n\nLast night's shift found the reviewer broken and guessed, honestly and out loud, that your login token had expired. It had not, and the difference matters because the two guesses point at completely different fixes - one needs your hands, the other fixes itself. The reviewer hides its own error message, so the way to read it was sideways: the advisor the night shifts talk to is the same model on the same subscription of yours, so I asked it a question from this machine. It answered \"You've reached your Fable 5 limit\", twice, four minutes apart - while I kept working on the same machine and the same login. That is the whole diagnosis, and it is the first time anyone here has actually seen the error text; the shift that chased this on the 26th never got it and had to work it out from what was missing.\n\nWhich is the real news: this is the second time in four days. The 26th cost five separate shifts an instance each before it healed by itself once your usage window passed. That card was closed with a note saying exactly what to check if it ever came back - and last night it came back and the note was not found, so the wrong cause got filed. I have linked the two and put it to the housekeeping round as a process finding, because the fix for that is not a better guess, it is looking at the closed cards first.\n\nWhat drains it is worth two minutes of your attention, because it is a decision rather than a bug. Fifteen reviews on Wednesday, fifteen on Thursday, each reading an entire change - one of them alone cost $2.85 - plus twenty-seven night shifts on Thursday, each consulting the advisor once or twice. On the 27th we measured the reviews at about a tenth of your cap and trimmed what they read to protect you. That measurement never counted the advisor, and the advisor is on the same meter. Your own instruction from the 25th covers this: move the token to the co-founder's account if your cap bites. It has now bitten twice, so that is what I recommend - two minutes in a terminal.\n\nI also corrected something the team has quietly had backwards. A red mark on the reviewer has never meant \"the reviewer objects to this change\" - it only ever means the reviewer never ran. The one actually worth knowing is the reverse: a green tick means it ran, and it can still be carrying findings inside its comment. Thursday's refund change went green with two findings in it. Green is not \"nothing found\", and nobody had written that down.\n\nI wrote no product code tonight, deliberately. The obvious build was a step that tells a broken reviewer apart from an objecting one - but once you know a red mark already means only one thing, most of the reason for it disappears, and it would have shipped on the one night when neither the reviewer nor the advisor could read it. Your two older questions are still waiting: the eye item from edition 83, and the smaller crop question from edition 86."
     }
   ],
   "acknowledgedReplyIds": [
