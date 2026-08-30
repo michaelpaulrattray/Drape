@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "086131c22d54a985"
+    "sourceFingerprint": "77a4a29ca40f4086"
   },
   "domains": [
     {
@@ -10336,6 +10336,10 @@
     {
       "id": "test:client/src/components/appChrome.test.ts",
       "path": "client/src/components/appChrome.test.ts"
+    },
+    {
+      "id": "test:client/src/components/signOutWording.test.ts",
+      "path": "client/src/components/signOutWording.test.ts"
     },
     {
       "id": "test:client/src/features/admin/components/crew/crewTypes.test.ts",
