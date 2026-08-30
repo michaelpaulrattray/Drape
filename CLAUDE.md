@@ -624,7 +624,26 @@ one from whoever owns its road.
   #129 and NOT to this entry, by his own instruction** — the mid-torso pair
   refused 6/16 against the collar-up pair's 1/8, and the framing does not
   wait on that number
-- `CASTING_TWO_PATHS_SCOPE` — `off`/absent, `all`, or `users:<ids>`; whether an
+- `CASTING_TWO_PATHS_SCOPE` — ⚠ **THIS WHOLE ROAD IS RETIRED BY FOUNDER RULING
+  AND THIS ENTRY DID NOT KNOW IT UNTIL 2026-08-30** (found by the freshness
+  pass, #271; the word *"retire"* reached this file only inside the creative
+  register's entry, about the switch not being drawn). **His ruling, verbatim
+  (#203, 2026-08-28): *"yeah we will retire the wardrobe/basics path
+  obviously"*** — answering the rebaseline's own retire-or-fold question in
+  advance, after the author road had already retired the TOGGLE (*"the engine
+  dresses the cast from the prompt; basics is a word, not a mode"*). **Read
+  everything below as the RECORD of a road that ran, not as work with a
+  future**: rows written under it still exist and the sheet still reads them,
+  which is why the paragraph is stamped rather than deleted, but its remaining
+  open item — *"the `build`/`skin` honesty claim before BASICS widens"* — is
+  work on a road he has ruled to delete, and **so are #120 (correct
+  `DEFAULT_CASTING_PATH`, still `wardrobe` at `shared/castingPaths.ts:76`) and
+  #63 (two unbuilt basics-default courts)**; both are recommended into #203's
+  retirement rather than worked. N2 owns the execution. **This is the class law
+  7's second half names — a ruling closed a path and nothing asked what was
+  bolted to it — arriving in the file every agent reads as law, which is the
+  most expensive place for it** (the MAX rule, corrected the same day, is its
+  twin). The entry as it stood: `off`/absent, `all`, or `users:<ids>`; whether an
   account **chooses the path its casts are born on** (Wardrobe / Basics; §10 item
   5 (THE TWO PATHS), design `CASTING_V2_TWO_PATHS_DESIGN.md`). Parent is
   `CASTING_V2_SCOPE`: a path is chosen when a roll is bought and a user outside
