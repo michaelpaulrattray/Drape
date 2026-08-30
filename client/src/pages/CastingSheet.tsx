@@ -4,7 +4,6 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  AppShell,
   Button,
   Dock,
   EmptyState,
@@ -13,6 +12,7 @@ import {
   Instruction,
   Skeleton,
 } from "@/foundation";
+import { AppChrome } from "@/components/AppChrome";
 import { BriefEcho } from "@/features/castingV2/components/BriefEcho";
 import { BriefField } from "@/features/castingV2/components/BriefField";
 import { trpc } from "@/lib/trpc";
@@ -2256,7 +2256,7 @@ export default function CastingSheet() {
   if (!sessionId) return null;
 
   return (
-    <AppShell breadcrumb="Casting / Sheet" current="casting" width="working">
+    <AppChrome breadcrumb="Casting / Sheet" current="casting" width="working">
       <div className="dp-dock-scroll dp-stack" style={{ gap: 22 }}>
         <div className="dp-row" style={{ justifyContent: "space-between" }}>
           <Button variant="quiet" size="small" onClick={() => navigate("/casting")}>
@@ -3406,6 +3406,6 @@ export default function CastingSheet() {
           }}
         />
       ) : null}
-    </AppShell>
+    </AppChrome>
   );
 }

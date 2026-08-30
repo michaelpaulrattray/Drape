@@ -1,5 +1,5 @@
 /**
- * AppLobby — the /app lobby: auth guard, routed view, account modals.
+ * AppLobby — the /app lobby: auth guard and the routed view.
  *
  * M2 moved the chrome to the shared foundation shell (plan §D.4, §D.14): the
  * 76px rail and 56px topbar replace the old 216px text rail and the mobile
@@ -7,29 +7,25 @@
  * follow the theme. All five lobby URLs render this same component, so the
  * shell never remounts between them.
  *
- * What did NOT change here is the information architecture — the views, the
- * account card's contents and the five modals are as they were. The lobby
- * redesign proper (tool tabs, "On the wire", unified sheet) waits for Casting
- * V2 to settle its vocabulary, per §D.14.
+ * #278 took the chrome one step further out. This page used to be the ONLY
+ * place that composed the topbar cluster, the account menu and the account
+ * modals, which is why every casting page had none of them. That composition
+ * now lives in `components/AppChrome.tsx` and every in-app page mounts it, so
+ * what is left here is the auth guard and which view the URL selects — the
+ * page's content and nothing else.
+ *
+ * What did NOT change is the information architecture — the views, the account
+ * card's contents and the modals are as they were.
  */
-import { useEffect, useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
-import { AppShell, CreditsChip, ProjectSwitcherStub, TopbarDivider, WhatsNewStub } from '@/foundation';
 import type { RailDestinationId } from '@/foundation';
-import { UserCard } from '@/components/UserCard';
-import { LobbyUtilityMenu } from '@/features/lobby/LobbyUtilityMenu';
-import { ReportBugButton } from '@/features/lobby/ReportBugButton';
+import { AppChrome } from '@/components/AppChrome';
 import { HomeView } from '@/features/lobby/HomeView';
 import { BoardsView } from '@/features/lobby/BoardsView';
 import { LibraryView } from '@/features/lobby/LibraryView';
-import { BillingModal } from '@/features/billing';
-import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
-import { ReferralModal } from '@/features/referral/ReferralModal';
-import ProfileSettingsModal from '@/components/ProfileSettingsModal';
-import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
 /*
   MobileHeader retired at M2. Below 720px the foundation rail collapses to
@@ -38,28 +34,8 @@ import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 */
 
 export default function AppLobby() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const [location] = useLocation();
-
-  // Account modals — same set the studio sidebar offers
-  const [showSettings, setShowSettings] = useState(false);
-  const [isBillingOpen, setIsBillingOpen] = useState(false);
-  const [isTopupOpen, setIsTopupOpen] = useState(false);
-  const [isReferralOpen, setIsReferralOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [bannerImage, setBannerImage] = useState<string | null>(null);
-
-  const { data: creditsData } = trpc.credits.getBalance.useQuery(undefined, {
-    enabled: !!user,
-    staleTime: 30_000,
-  });
-  const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(undefined, {
-    enabled: !!user,
-  });
-  useEffect(() => {
-    if (profileData?.avatarUrl) setProfileImage(profileData.avatarUrl);
-    if (profileData?.bannerUrl) setBannerImage(profileData.bannerUrl);
-  }, [profileData?.avatarUrl, profileData?.bannerUrl]);
 
   // Redirect to login if not authenticated
   if (!loading && !user) {
@@ -91,104 +67,9 @@ export default function AppLobby() {
     rail: 'home' as RailDestinationId,
   };
 
-  const avatarUrl = profileImage ?? user?.avatarUrl ?? null;
-
   return (
-    <AppShell
-      breadcrumb={current.crumb}
-      current={current.rail}
-      width="bare"
-      /* 00b §4: the switcher names a place. Projects do not exist, so it is
-         inert — and "All projects" is true today rather than a placeholder,
-         which is what keeps the stub honest. No projectId reaches any query. */
-      topbarLeft={<ProjectSwitcherStub />}
-      /* 02 §1d, left to right: queue pill -> credits -> divider -> bug -> help
-         -> what's new, then the shell's own theme toggle and the account chip.
-
-         THE QUEUE PILL IS NOT BUILT HERE and the space is left empty on
-         purpose. It needs a real jobs feed, and `3 running · 40s` over nothing
-         is a lie about what the studio is doing — his own words on the 00b
-         frames: *"A number in a screenshot that no server produces is a lie
-         that survives into the build."*
-
-         REPORT A BUG IS ITS OWN ICON now rather than a row two clicks inside
-         the help menu (02 §1d). */
-      topbarRight={
-        <>
-          <CreditsChip balance={creditsData?.balance} onClick={() => setIsBillingOpen(true)} />
-          <TopbarDivider />
-          <ReportBugButton />
-          <LobbyUtilityMenu />
-          <WhatsNewStub />
-        </>
-      }
-      /* 02 §2c: the rail's foot is the workspace. The member stack has no
-         members to draw — there is no members API — so what ships is the
-         Invite affordance, inert, and the gear, which opens the settings this
-         page already owns. */
-      workspace={{ onOpenSettings: () => setShowSettings(true) }}
-      account={
-        user
-          ? {
-              label: user.name ?? 'Account',
-              avatar: (
-                <ProfileAvatar
-                  src={avatarUrl}
-                  identity={user}
-                  alt={user.name ?? 'User'}
-                  className="w-full h-full rounded-full object-cover"
-                />
-              ),
-              // Same card the old rail's user row opened — parity, not a redesign.
-              menu: (
-                <UserCard
-                  userInitial={(user.name ?? '?').charAt(0).toUpperCase()}
-                  userName={user.name ?? 'Account'}
-                  profileImage={avatarUrl}
-                  profileIdentity={user}
-                  creditsBalance={creditsData?.balance ?? 0}
-                  role={user.role}
-                  onOpenSettings={() => setShowSettings(true)}
-                  onOpenBilling={() => setIsBillingOpen(true)}
-                  onOpenReferral={() => setIsReferralOpen(true)}
-                  onLogout={logout}
-                />
-              ),
-            }
-          : undefined
-      }
-    >
+    <AppChrome breadcrumb={current.crumb} current={current.rail} width="bare">
       {current.view}
-
-      {/* Account modals */}
-      <ProfileSettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        onProfileUpdate={() => refetchProfile()}
-        user={user}
-        profileImage={profileImage}
-        bannerImage={bannerImage}
-        onProfileImageChange={setProfileImage}
-        onBannerImageChange={setBannerImage}
-        creditsBalance={creditsData?.balance || 0}
-        planTier={creditsData?.planTier || 'free'}
-        onOpenBilling={() => { setShowSettings(false); setIsBillingOpen(true); }}
-        onOpenTopup={() => { setShowSettings(false); setIsTopupOpen(true); }}
-      />
-      <BillingModal
-        isOpen={isBillingOpen}
-        onClose={() => setIsBillingOpen(false)}
-        onOpenTopup={() => { setIsBillingOpen(false); setIsTopupOpen(true); }}
-      />
-      <CreditTopupModal
-        isOpen={isTopupOpen}
-        onClose={() => setIsTopupOpen(false)}
-        currentBalance={creditsData?.balance || 0}
-      />
-      <ReferralModal
-        open={isReferralOpen}
-        onClose={() => setIsReferralOpen(false)}
-      />
-    </AppShell>
+    </AppChrome>
   );
 }

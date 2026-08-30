@@ -132,7 +132,17 @@ describe("the deck does not vary by account", () => {
   */
   it("sits on the 1240 column with the tight gutter", async () => {
     const code = await codeOf(PAGE);
-    const shell = code.slice(code.indexOf("<AppShell"), code.indexOf(">", code.indexOf("<AppShell")));
+    /*
+      #278 — the page mounts `AppChrome` now, not `AppShell` directly. The two
+      width props are unchanged and are still the page's own; what moved is who
+      passes them through to the shell. Read at the mount rather than at a name
+      the page no longer uses: this arm went green-on-a-missing-subject when
+      `indexOf` returned -1 and sliced an empty string, which is why it failed
+      loudly here rather than quietly passing.
+    */
+    const at = code.indexOf("<AppChrome");
+    expect(at, "the casting page stopped mounting the app chrome").toBeGreaterThan(-1);
+    const shell = code.slice(at, code.indexOf(">", at));
     expect(shell).toContain('width="working"');
     expect(shell).toContain('gutter="tight"');
   });

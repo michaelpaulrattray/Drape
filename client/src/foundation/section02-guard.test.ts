@@ -41,6 +41,22 @@ const FOUNDATION_CSS = read("foundation/foundation.css");
 const UTILITY_MENU = read("features/lobby/LobbyUtilityMenu.tsx");
 const BUG_BUTTON = read("features/lobby/ReportBugButton.tsx");
 const LOBBY = read("pages/AppLobby.tsx");
+/*
+  #278 — THE CHROME COMPOSER, which used to be `AppLobby.tsx` and is now
+  `AppChrome.tsx`.
+
+  Four arms in this file are about the surface that COMPOSES the topbar cluster,
+  not about the lobby page: does it mount the bug button, does it hand the rail
+  invented members, does it draw a queue pill over nothing, does it bind ⌘K.
+  When the composition moved out of the lobby so every casting page could have
+  it, those arms went green against a file that no longer contains their
+  subject — which is a guard passing because its subject left, the failure mode
+  this file's own header warns about.
+
+  They are REPOINTED rather than relaxed: same assertions, aimed at whoever
+  actually composes the chrome today.
+*/
+const CHROME = read("components/AppChrome.tsx");
 
 /*
   Comments describe the rules; only the code has to obey them. Stripping block
@@ -108,6 +124,7 @@ describe("the search names a place and can never take a keystroke", () => {
       ["Topbar", TOPBAR],
       ["Rail", RAIL],
       ["AppLobby", LOBBY],
+      ["AppChrome", CHROME],
     ] as const) {
       expect(COMMAND_K.test(code(source)), name + " bound a shortcut").toBe(false);
     }
@@ -211,7 +228,7 @@ describe("the account is in one corner and the workspace in the other", () => {
   });
 
   it("no surface hands it any", () => {
-    expect(code(LOBBY)).not.toMatch(/members:/);
+    expect(code(CHROME)).not.toMatch(/members:/);
     expect(/members:/.test("workspace={{ members: [{ id: '1', label: 'Dani' }] }}")).toBe(true);
   });
 
@@ -296,7 +313,7 @@ describe("report a bug is one click", () => {
     expect(BUG_BUTTON).toMatch(/className="dp-iconbtn"/);
     expect(BUG_BUTTON).toMatch(/title="Report a bug"/);
     expect(BUG_BUTTON).toMatch(/mode="bug"/);
-    expect(LOBBY).toMatch(/<ReportBugButton \/>/);
+    expect(CHROME).toMatch(/<ReportBugButton \/>/);
   });
 
   it("the help menu no longer offers it as a row", () => {
@@ -335,7 +352,7 @@ describe("nothing draws a queue pill yet", () => {
    * refuses the literal in `foundation.css` whatever this file says.
    */
   it("leaves the space empty", () => {
-    expect(code(LOBBY)).not.toMatch(/dp-queue|running ·/);
+    expect(code(CHROME)).not.toMatch(/dp-queue|running ·/);
     expect(/running ·/.test("<span>3 running · 40s</span>")).toBe(true);
   });
 });

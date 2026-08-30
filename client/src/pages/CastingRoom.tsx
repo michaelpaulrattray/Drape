@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
 
-import { AppShell, Button, EmptyState, Skeleton } from "@/foundation";
+import { Button, EmptyState, Skeleton } from "@/foundation";
+import { AppChrome } from "@/components/AppChrome";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
@@ -261,7 +262,7 @@ export default function CastingRoom() {
     }));
 
   return (
-    <AppShell breadcrumb="Casting / Room" current="casting" width="working">
+    <AppChrome breadcrumb="Casting / Room" current="casting" width="working">
       <div className="dp-stack" style={{ gap: 22 }}>
         <div className="dp-row" style={{ justifyContent: "space-between" }}>
           <Button variant="quiet" size="small" onClick={() => navigate("/casting")}>
@@ -838,6 +839,6 @@ export default function CastingRoom() {
         ) : null}
 
       </div>
-    </AppShell>
+    </AppChrome>
   );
 }
