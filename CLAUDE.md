@@ -101,6 +101,27 @@ it be challenged before it ships, not after.
    not a call site. Both errors are the same error — a road asserted
    from a graph instead of read at the bytes — and this one had a
    celebrated instrument standing behind it.
+7c. **YOU ALWAYS CHECK AGAINST THE CODEBASE.** (Founder, 2026-08-30, verbatim
+   and in capitals, said to the relay after it read a list of "things needing
+   you" off the Crew briefing and passed it to him unchecked — **three of the
+   five were questions he had already answered days earlier**, one of them
+   settled in this very file.) Law 7b bans guessing; **this bans the subtler
+   thing, which is CITING**. Quoting a document is not checking. A card title,
+   a Crew card, a briefing, a design doc, a plan, a mailbox entry, a commit
+   message, **and CLAUDE.md itself** are all REPORTS in law 1's sense —
+   **the code is the artifact, and it is the only thing that settles what the
+   product does.** Before telling him what exists, what is open, what is built
+   or what a rule is: open the file. A grep is thirty seconds; a confident
+   answer off a stale document costs him a decision he already made.
+   **The measured proof is the day this law was written**: four separate
+   documents were found governing live work while contradicting the code — the
+   redesign running order, `PROGRAM.md`'s standing-exceptions ranking (eight
+   cards, **all closed**), the issue queue (a spot-check of twelve found four
+   wrong), and this file's own MAX ruling, four days superseded while
+   `promptAuthor.ts` had been right the whole time. **In every one of the four
+   the code was correct and the document was not**, which is the direction this
+   law exists to exploit: when a document and the tree disagree, the tree wins
+   and the document is the bug.
 7b. **Never guess — test or confirm before stating.** (Founder, 2026-08-22,
    verbatim: *"why do you always guess put it in stone that you should never
    guess and always test or confirm."*) Law 1 binds reports; this binds
