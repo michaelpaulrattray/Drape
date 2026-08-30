@@ -1,7 +1,7 @@
 {
-  "edition": 154,
-  "updatedAt": "2026-08-31T06:38:19+10:00",
-  "shift": "foreman-132",
+  "edition": 155,
+  "updatedAt": "2026-08-31T09:05:00+10:00",
+  "shift": "foreman-136",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -2896,6 +2896,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T09:05:00+10:00",
+      "shift": "foreman-136",
+      "text": "THE NIGHTS WERE SUPPOSED TO STOP THEMSELVES LAST NIGHT AND THEY DID NOT — I found out why, and it is fixed.\n\nYou asked for this on the park card: when everything is waiting on you, the nights should stop rather than keep starting sessions that conclude there is nothing to do. That was built the night before last, tested properly, and reported to you as live. It was live. It also never ran once.\n\nWHAT ACTUALLY HAPPENED. Three shifts in a row last night worked out correctly that there was nothing to do and that the team should park. All three were right. The team started another session thirty minutes later anyway — three times — and would have carried on doing that all day, about one session every thirty-seven minutes.\n\nTHE REASON IS ALMOST SILLY, AND IT IS WORTH KNOWING BECAUSE IT CAN HAPPEN AGAIN. The little program that starts each night's shifts reads its own instructions once, when it starts up, and then never looks at them again. That program has been running without a break since Saturday afternoon. The parking rule was written into it at 6:11 yesterday morning — fifteen hours after it had already started. So the rule was sitting on disk, correct and tested, and the thing that was actually running had never read it. It has been running a version of its own instructions that no longer exists.\n\nThis is the same shape as a handful of things in this product's history: something built properly, wired up properly, and then quietly not connected to anything. There was no error and no failing test — the rule kept giving the right answer all night to nobody.\n\nWHAT I CHANGED. The program now checks whether its own instructions have been edited, and if they have, it restarts itself to pick them up — between shifts only, never in the middle of one. That matters more than last night's parking: from now on, any change to how the nights run takes effect straight away instead of waiting for something to happen to restart it. I replaced the stale copy that was running, then deliberately edited the file and watched it reload itself, so this is something I saw work rather than something I am telling you should work.\n\nSO: the nights will now genuinely park when everything is waiting on you, and start again by themselves the moment you reply, a card moves, or a day passes. You do not have to touch anything.\n\nONE SMALL TIDY. The account-menu card said three labels were still to do. One of them — \"Log out\" becoming \"Sign out\" — is already done everywhere and has a test keeping it that way. The other two are real and still waiting on your Settings modal brief. The card says so now.\n\nTHE QUEUE: 93 open, 10 urgent, 6 waiting on you, none rotting."
+    },
+    {
       "at": "2026-08-31T06:38:19+10:00",
       "shift": "foreman-132",
       "text": "NOTHING WAS BUILT TONIGHT, AND THAT IS THE RIGHT ANSWER — but two things on this page were wrong, and both are fixed.\n\nEvery one of the six things you have ordered is waiting on you, and your background-work switches are all off. So I built nothing and I am not going to pretend otherwise. What I did instead was re-read the ten urgent cards against the actual code, because a list you use to decide what matters is only as honest as its labels — and that check has now caught something twice.\n\nONE CARD WAS ALREADY FINISHED AND STILL SITTING NEAR THE TOP OF THAT LIST. It said the whole live-view system — your switches, the counts under them, and the \"what is running right now\" row — had shipped with nothing actually calling it. That was true the day it was written, and it has since been fixed: all four are now written into the shift instructions, and this shift ran three of them before it touched anything else. The row you can see on this page is number 15. It is closed, with the evidence on the card.\n\nAND I OWE YOU A CORRECTION ON LAST NIGHT'S NUMBER. The entry below this one tells you that 16 of the 127 shifts on record did nothing. It is 19. The first count only read the top of each report and missed four. Nothing about the conclusion changes — the eight-in-a-row stretch on the 28th is exactly as described — but the run on the 27th was four and then six, not three and then four. The mistake made the waste look smaller than it actually was, and the fix was already written down on the card; it just had not reached this page.\n\nTHE QUEUE: 92 open, 10 urgent, 6 waiting on you, none rotting."
@@ -3089,11 +3094,6 @@
       "at": "2026-08-30T03:20:00+10:00",
       "shift": "foreman-105",
       "text": "One thing tonight, and it is worth your two minutes because the picture explains it faster than I can.\n\nLast night's shift found that our measuring tool - the thing that finds features in a picture - does something odd when you ask it for something that isn't there. It doesn't say \"not there\". It points at the nearest thing that looks like the word. That was a finding about a tool, and it left two questions open: does it reach the actual studio, and where else could it bite?\n\nBoth are answered now. It DOES reach the studio - I drove the studio's own real function, with the real reader, on a picture of an oni with no tusks, and it filed a box around his horns and called them tusks. There is a picture of it on your page: same question, two faces, and on the one with real tusks the box lands correctly on the mouth. The wrong answer scored three times higher than the right one, which is the part that makes it dangerous - a wrong answer that looks small gets ignored, a wrong answer that looks big gets written down as a finding.\n\nI also checked the controls properly, because a court that only proves it can find things when they ARE there proves nothing here. A blank grey picture went through the same code and correctly said \"nothing there\", so the box on the horns is a reading of that picture rather than the function drawing boxes at random.\n\nThen I mapped the whole studio: 25 places ask this kind of question. Only two of the words we ask - glasses and earrings - have ever been tested against pictures that do NOT contain the answer, and both passed. The other 22 have never been checked in that direction. The one I would least like to be wrong is the refund gate: when you take something off a face we re-read the picture to check it went, and a lookalike there would refuse and refund somebody whose edit worked.\n\nThe good news, and I checked it at the live records rather than assuming: the part of the studio I proved this on has never run for a customer - one saved row from before it shipped, and none since. So this is caught before it can bite, not after. Nothing has been changed. There are three possible fixes on the card at the top of your page and my recommendation is the free one, done when the refine work starts rather than tonight.\n\nHousekeeping: your Fable allowance is still out - twenty-second refusal, about thirty-four hours now, past the only precedent we have - so it was another tooling-and-measurement night by the team's own rule. Tonight cost about one and a half cents of house money in three picture-readings. No credits, no renders, nothing on production touched but the briefing you are reading and one picture uploaded for it."
-    },
-    {
-      "at": "2026-08-30T02:35:00+10:00",
-      "shift": "foreman-102",
-      "text": "Your reply landed while I was building, so this edition is only to mark it seen and to say what it settled. You separated the two oni rows with your eye on a thing the measurement genuinely cannot express — WHERE the tusks sit, not how many pixels of them there are — after the shift that ran it had refused to claim it. That is the law working the right way round rather than an argument won: the reader said nothing, the shift reported nothing, and your eye said the thing. #232 and #237 are both closed on your word. #243 stays open and I have re-pointed it on the card: it is no longer the proof, it is the widening — the fixture whose seed does NOT name the anatomy, which is exactly where the lane should matter most.\n\nTonight's own work is edition 108's top card: the casting hero is a showcase now."
     }
   ],
   "acknowledgedReplyIds": [
@@ -3149,11 +3149,11 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T20:37:18.937Z",
+    "readAt": "2026-08-30T22:57:28.626Z",
     "items": [
       {
         "issueNumber": 267,
-        "title": "Account-menu labels: Members & invites, Billing & credits, Log out to Sign out — BLOCKED on the sectioned Settings modal",
+        "title": "Account-menu labels: add Members & invites, and Billing -> Billing & credits — BLOCKED on the sectioned Settings modal (Sign out is DONE and guarded)",
         "urgent": true,
         "held": {
           "state": "blocked",
@@ -3165,8 +3165,7 @@
         "title": "Park the nights when nothing is workable, and remove the journal — the auto-park is what replaces it",
         "urgent": true,
         "held": {
-          "state": "blocked",
-          "because": "the auto-park half is built and live; what is left is removing the journal, which takes away the only place an unattached reply of yours can appear"
+          "state": "blocked"
         }
       },
       {
