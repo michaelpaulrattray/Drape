@@ -1,7 +1,7 @@
 {
-  "edition": 152,
-  "updatedAt": "2026-08-31T05:05:00+10:00",
-  "shift": "foreman-129",
+  "edition": 153,
+  "updatedAt": "2026-08-31T06:06:39+10:00",
+  "shift": "foreman-131",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "journal-removal-293",
+      "title": "Removing the journal takes away the only place an unattached reply of yours can appear",
+      "productImpact": "You asked to remove the journal, because its one irreplaceable job was giving you somewhere to type \"pause the nights\" - and as of tonight the nights park themselves, so that job is gone. The rest of it is genuinely duplicated elsewhere. But it is also the ONLY place on the page where a reply of yours shows up if it is not attached to a card. Remove it as it stands and a reply you type with nothing selected renders nowhere - which has already happened once on this page and is the exact vanishing the design forbids. So this is not a tidy-up, it is a decision about where your words land.",
+      "workedExample": "You open the Crew tab, type \"do the invite one first\" without picking a card, and hit send. Today it appears in the journal and the next shift reads it. With the journal gone and nothing else changed, it is saved to the database and appears on no part of the page - you would have no way of telling whether it was received.",
+      "options": [
+        {
+          "key": "attach",
+          "label": "Remove the journal, and require every reply to be attached to a card",
+          "consequence": "Cleanest page. You lose the ability to say something general - every thought has to be hung on a card first. Nothing can vanish, because everything has a home."
+        },
+        {
+          "key": "keep-inbox",
+          "label": "Remove the journal, but keep a small General box for unattached replies",
+          "consequence": "You keep the freedom to just say something. The page keeps one extra section, which is most of what you wanted gone."
+        },
+        {
+          "key": "hold",
+          "label": "Leave the journal alone for now",
+          "consequence": "Nothing changes. The auto-park is already in, so the journal is no longer doing any work you need - it is just sitting there."
+        }
+      ],
+      "recommendation": "Keep a General box. Your own reason for removing the journal was that it had one job left and the machine now does it - but an unattached reply is a second job, and it is the one that costs you if it breaks. A small box named for what it is keeps the page honest without the risk.",
+      "state": "open",
+      "filedAt": "2026-08-31T06:06:39+10:00",
+      "issueNumber": 293
+    },
     {
       "id": "side-clause-316",
       "title": "You said his right eye. All eight got the left — and the fix costs two rolls of your credits",
@@ -1926,6 +1953,13 @@
   ],
   "pipeline": [
     {
+      "id": "auto-park-293",
+      "title": "The nights park themselves when there is nothing to do, and restart on their own (#293)",
+      "status": "merged",
+      "prNumber": null,
+      "note": "No pull request on this one, and that is not an oversight: the shift runner lives on your machine outside the repository, so it cannot travel in one. Built and driven tonight - four checks on the decision to park, seven on making sure your own \"pause the nights\" can never be undone by a machine, and two on waking back up. All passed. The measurement behind it: eight consecutive do-nothing shifts on the 28th, one every ~31 minutes."
+    },
+    {
       "id": "fitted-hardware-279",
       "title": "A machine part fitted into a being is part of that being — the studio now says so where it writes the prompt (#279)",
       "status": "merged",
@@ -2862,6 +2896,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T06:06:39+10:00",
+      "shift": "foreman-131",
+      "text": "THE NIGHTS NOW STOP BY THEMSELVES WHEN THERE IS NOTHING TO DO — YOUR ORDER, BUILT.\n\nYou said it plainly: \"nights should auto park when decisions are waiting on me and the background work toggle is turned off\". Until tonight they did not. A shift woke up every half hour or so, read every card, found that all of them were waiting on you, wrote \"nothing needed doing\", and shut down — then did it again. That is money spent to conclude nothing.\n\nI MEASURED IT BEFORE BUILDING ANYTHING, because \"it happens a lot\" is not a number. Of the 127 shifts on record, 16 wrote that sentence. They are not scattered — on the 28th, EIGHT of them ran back to back between 2:58am and 6:39am, one every thirty-one minutes. Three more ran inside twenty-two minutes on the 27th, and four more that same afternoon. Had this existed, that one night would have stopped after the third and saved five sessions.\n\nWHAT HAPPENS NOW. Three quiet shifts in a row, with your background switches off, and the team parks: it stops launching entirely. It starts again by itself the moment anything real happens — you reply, a card moves, a pull request appears, a build runs. You do not have to do anything, and the file it leaves says so in plain English. If nothing at all happens it still wakes once a day to look, so a mistake in this costs a day and never the whole program. Running cost while nothing is happening goes from roughly one session every half hour to about one a day.\n\nTHE PART I WAS MOST CAREFUL WITH IS YOUR OWN STOP. When you type \"pause the nights\", that must never be undone by a machine. So a park the team writes for itself is stamped differently from one you write, and only the team's own kind can clear itself. I tested that directly against seven cases — your words, a cap, a failure, an empty file, a near-miss — and all seven landed the right way round.\n\nWHERE I DEPARTED FROM THE CARD, AND I WANT TO BE STRAIGHT ABOUT IT. The card turned your sentence into three conditions, and two of them are written in English that no script can read — \"no card you have ordered is open\" and \"no current focus\". Read literally the first one could never have fired: six cards you ordered are open tonight and every single one is waiting on you, which is exactly the situation you described. So instead of guessing at labels, the test is that three shifts in a row LOOKED — each opened every card, read your replies, and concluded there was nothing. That is better evidence than any label, and it is measured rather than assumed.\n\nWHAT IS LEFT OF THAT ORDER, AND IT NEEDS A WORD FROM YOU. You also said to remove the journal, on the reasoning that its one real job is a place to type \"pause the nights\" — and that is now automatic. I have not removed it, because the journal is also the only place a reply of yours can appear if it is not attached to a card. Take it away without answering that and one of your replies could land nowhere at all, which has happened here before. It is on your desk below with three options.\n\nTHE QUEUE: 92 open, 6 you have ordered (all 6 waiting on you tonight), 11 urgent, nothing rotting. One new card, none closed."
+    },
+    {
       "at": "2026-08-31T05:05:00+10:00",
       "shift": "foreman-129",
       "text": "YOUR FITTED-HARDWARE RULING IS IN — AND THE CARD THAT ASKED FOR IT WAS WRONG ABOUT WHY.\n\nYou ruled it plainly: \"a machine part fitted to a cyborgs face is apart of that being. as long as its actually fitted and not worn.\" A choker is an accessory, a horn is a feature, an eye bolted into the skull is a feature — and it gets named as a TYPE, never as a product.\n\nHalf of that shipped the day you said it, into the part of the studio that looks at a picture you upload and describes it. The other half — the part that WRITES the prompt for a new cast — never got it, and that is where it matters, because two rules meet there and disagree. One says never name a costume part. The other says every fact you typed survives. A bolted-in eye is caught by both, and nothing said which wins.\n\nSO I WENT AND LOOKED BEFORE I TOUCHED ANYTHING. The card said this was \"very likely\" going wrong for you right now. It is not. I ran your own cyborg brief, a bare \"cyborg woman\" with no detail, a brief with a fitted eye AND a worn choker in the same sentence, and your armoured cat with a jaw plate fused into the bone — eighteen real drafts. The hardware survived every single one, always described as a type, never once as a product. The studio was already reading your ruling the way you meant it, without ever having been told.\n\nTHEN I BOUGHT THE PROOF YOU ASKED FOR. Your card's condition was frames, not word-counting — so one roll of your cyborg brief on your account, 160 credits, at the high imagination setting so the studio actually writes rather than passing your words straight through. Eight of eight arrived, no refusals, in two minutes. Every one of them wears it: ports set into the skull, seams across the scalp, a plate along the jaw, a stud below each ear. They are in the gallery below.\n\nI SHIPPED THE RULE ANYWAY, and I want to be straight that it fixes nothing measurable. It stops the studio guessing. Right now it happens to guess your way; a rule the machine gets right by luck is a coin, and it belongs written down. One sentence, sitting directly under the rule it settles. Afterwards, same four briefs: sixteen out of sixteen kept the hardware, none named a product, nothing fell back. And no word was banned — your two bad examples are SHOWN as shapes to avoid and caught by nothing, because \"harness\", \"piece\" and \"eye\" are ordinary words and this studio has been bitten five times by banning ordinary words.\n\n⚠ AND THE FRAMES TURNED UP SOMETHING ELSE, WHICH IS THE PART I WOULD READ IF YOU ONLY READ ONE THING. You asked for his RIGHT eye to glow. It is his LEFT eye. In all eight. The ports are on his left in six of the eight too. Turn it around and read it as a picture rather than as a man and it is perfectly consistent — the glow is on the viewer's right every time. The engine places things by where they sit in the frame and ignores the word \"right\" entirely. We already know this and we already beat it once, on the EDIT road, by quietly adding \"(on the left of the picture as you look at it)\" — twelve renders each way, four wrong without it, none wrong with it. The road that casts a new sheet has no such sentence. It is #316, it needs two rolls of your credits to settle properly, and it is on your desk rather than started, because one clause in that prompt reaches every cast in the product.\n\nTHE QUEUE: 91 open, 6 you have ordered (3 of them held on you), 12 urgent, nothing rotting. One closed tonight, one new one opened."
@@ -3055,11 +3094,6 @@
       "at": "2026-08-30T02:05:00+10:00",
       "shift": "foreman-102",
       "text": "Took your hero correction as the first job, which is what the last shift handed over. The satisfying part was that your reason was better than the bug: the deck reading the roster wasn't just wrong for a fresh customer, it made the section unjudgeable by YOU — you were the only person seeing your own casts in it. Now you see what a stranger sees. I deleted the roster road rather than switching it off, and took the cast id off the type entirely, because a field that is always null is an invitation to wire the navigation back up.\n\nThree things I want to be straight about. First, my own change had a real bug and the drive caught it: the 44px bottom you asked for sat above the narrow-window rule in the stylesheet, so the page measured your number at 1920 and the old one at 700 — right at every width anybody screenshots and wrong at the one they don't. Second, the driver found three defects in ITSELF before it found none in the product, including one arm that read a card mid-swing and reported it the wrong shape; a driver that goes green first time usually isn't looking. Third, two OLD tests turned out to be asserting nothing — one of them sliced the page file backwards the moment the hero gained a line, and two of its three checks were 'must not contain', which pass happily on an empty string. Both fixed here.\n\nYour reference frame for the ticks arrived as a commit with no card, and the last shift flagged it as 'ask before building'. It didn't need asking in the end — you'd already written the amendment onto #240 yourself, so I built to your words and your picture together. The lobby lane is still waiting on you to name segment 1."
-    },
-    {
-      "at": "2026-08-30T00:55:00+10:00",
-      "shift": "foreman-101",
-      "text": "Took your two urgent cards as one brief, which is what #237 itself says they are. The tail was the satisfying one: you called it a framing fact and not an adjective, and the measurement agrees with you flatly — one frame in four today, four in four with the clause. The author law was cleaner than expected too; your own refused sheet was still sitting in the database with 'angular pauldrons, banded vambraces, a high sculpted collar' in it, so I used your failure as the control instead of inventing one, and four drafts under the new law named nothing. Where I have to be straight with you is the mouth. Your oni test does not separate the two blocks, because your own seed says 'prominent lower tusks' and a fact you state already overrides the block — so the old 'mouth closed' was being beaten by your words, not by the lane. I could have shown you three frames and called it proved. It is filed as #243 with the fixture that would actually settle it. One thing I deliberately did NOT do: ban garment, cut and jewellery words. Your law names four kinds of thing and only armour became a hard check, because a banned-word list over the world's clothing refuses good sentences — and I would rather tell you the check is narrower than the law than let a green tick imply otherwise. Your hero correction (#240) arrived while I was building and is the next shift's first job; I did not start it, because leaving half a rebuilt hero on your account overnight is the wrong trade. Your progress-ticks reference frame is carried up with this push."
     }
   ],
   "acknowledgedReplyIds": [
