@@ -46,10 +46,15 @@ import { getDb } from "./connection";
 /**
  * How many recent runs the page receives.
  *
- * #272 asks for the running one "plus the last three shifts". Four is that,
- * exactly, in the case where the newest run is live; when nothing is running he
- * sees four finished runs instead of three, which is strictly more of what he
- * asked for and costs one row.
+ * #272 asks for the running one "plus the last three shifts", so FOUR is the
+ * number that fills that page in the case that matters — a live run on top and
+ * three behind it.
+ *
+ * When nothing is running the fourth row is fetched and **not drawn**:
+ * `CrewWorkingNow` slices the past list to three either way, because "the last
+ * three shifts" is his ask and a list that quietly grows by one when the team
+ * goes idle is a worse surface than a constant one. One wasted row on an
+ * unindexed-by-nothing four-row read is not worth a second query shape.
  */
 export const CREW_SHIFT_RUN_LIMIT = 4;
 
