@@ -12,6 +12,10 @@ import { useState } from "react";
 
 import {
   AppShell,
+  CardMenu,
+  ConfirmDialog,
+  DestructiveConfirm,
+  RenameDialog,
   Button,
   Card,
   Chip,
@@ -59,6 +63,10 @@ import {
  */
 export default function CastingFoundation() {
   const [bar, setBar] = useState("all");
+  /* Section 11 — one specimen open at a time, which is also the rule the
+     promoted overflow menu enforces for real. */
+  const [shown, setShown] = useState<null | "rename" | "delete" | "confirm">(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <AppShell breadcrumb="Casting / Foundation" current="casting" width="working">
@@ -451,6 +459,83 @@ export default function CastingFoundation() {
           copy's stride, and a gap applies between items only, which leaves the loop one gap short
           and visibly jumping. Hover pauses it.
         </p>
+      </section>
+
+      <section className="dp-stack" style={{ gap: 16 }}>
+        <SectionHead
+          eyebrow="11 · Promoted from casting"
+          aside="one shell, different contents"
+        />
+        {/*
+          THE FIVE THE FOUNDER PROMOTED (#262, 2026-08-30). They were app
+          concepts that happened to be built in casting first, and they are on
+          this page for the same reason everything else here is: a shared
+          component nobody can LOOK at is a shared component that drifts.
+
+          The three dialogs run on one `ModalScrim` — his ruling — so what
+          differs below is the card and the copy, never the behaviour. Open each
+          and press Escape: the dismissal is the same code in all three.
+        */}
+        <div className="dp-row" style={{ gap: 10, flexWrap: "wrap" }}>
+          <Button variant="secondary" onClick={() => setShown("rename")}>
+            Rename dialog
+          </Button>
+          <Button variant="secondary" onClick={() => setShown("delete")}>
+            Delete by typing
+          </Button>
+          <Button variant="secondary" onClick={() => setShown("confirm")}>
+            Destructive confirm
+          </Button>
+          <span className="dpc-menuhost" style={{ position: "relative" }}>
+            <CardMenu
+              label="this specimen"
+              open={menuOpen}
+              onToggle={() => setMenuOpen((was) => !was)}
+              onCancel={() => setMenuOpen(false)}
+              align="fromTheLeft"
+              items={[
+                { label: "Rename", onSelect: () => { setMenuOpen(false); setShown("rename"); } },
+                { label: "Delete permanently", danger: true, onSelect: () => { setMenuOpen(false); setShown("delete"); } },
+              ]}
+            />
+          </span>
+        </div>
+        <p className="dp-small">
+          The overflow menu&rsquo;s hover reveal belongs to the card it sits on,
+          so the trigger above is always visible here and fades in on a real
+          card.
+        </p>
+
+        {shown === "rename" ? (
+          <RenameDialog
+            currentName="Maya Rasmussen"
+            imageUrl={null}
+            busy={false}
+            onCancel={() => setShown(null)}
+            onSave={() => setShown(null)}
+          />
+        ) : null}
+        {shown === "delete" ? (
+          <DestructiveConfirm
+            name="Maya Rasmussen"
+            imageUrl={null}
+            signed
+            busy={false}
+            onCancel={() => setShown(null)}
+            onConfirm={() => setShown(null)}
+          />
+        ) : null}
+        {shown === "confirm" ? (
+          <ConfirmDialog
+            title="Discard this sheet?"
+            body="The eight faces on it go, and the credits it cost don't come back."
+            confirmLabel="Discard it"
+            busyLabel="Discarding…"
+            busy={false}
+            onCancel={() => setShown(null)}
+            onConfirm={() => setShown(null)}
+          />
+        ) : null}
       </section>
 
       <Dock>
