@@ -26,6 +26,9 @@ export { ProjectSwitcherStub, WhatsNewStub } from "./ChromeStubs";
 /* Section 02 (brief 02 §1c) — the centred search, a span and never an input. */
 export { SearchStub } from "./ChromeStubs";
 export { BRAND_NAME } from "./brand";
+/* #280 — the house icon set. A new glyph is ADDED TO `P`, never inlined at a call site. */
+export { Icon, P } from "./icons";
+export type { IconName } from "./icons";
 export { RAIL_DESTINATIONS, Rail } from "./Rail";
 export type { RailDestinationId, RailWorkspace } from "./Rail";
 export { Topbar, TopbarDivider } from "./Topbar";

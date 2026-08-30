@@ -185,8 +185,15 @@ describe("the account is in one corner and the workspace in the other", () => {
     );
   });
 
+  /**
+   * ⚠ The gear is still a gear; it is no longer Lucide's (#280, his amendment).
+   * This arm read `<Settings size=` until the house set landed — kept pointing
+   * at the same thing rather than deleted, because the ruling that put a gear
+   * in the foot and the ruling that chose which gear are two different rulings
+   * and both are still live.
+   */
   it("the rail's foot is a gear, and there is no second avatar in it", () => {
-    expect(RAIL).toMatch(/<Settings size=/);
+    expect(RAIL).toMatch(/<Icon d=\{P\.settings\} size=/);
     expect(RAIL).toMatch(/className="dp-memberstack__add"/);
   });
 
