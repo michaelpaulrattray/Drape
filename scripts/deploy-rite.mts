@@ -89,6 +89,7 @@ import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatc
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
 import {
   DECLARED_BUT_UNMIGRATED,
+  DECLARED_COLUMNS_BUT_UNMIGRATED,
   conformanceVerdict,
   declaredIndexesFrom,
   declaredSchemaFrom,
@@ -755,7 +756,9 @@ const schema = await (async (): Promise<{ line: string; problems: string[] }> =>
         live: new Set((indexRows as Array<{ n: string }>).map((row) => row.n)),
       },
     );
-    const enumerated = Object.keys(DECLARED_BUT_UNMIGRATED).length;
+    const enumerated =
+      Object.keys(DECLARED_BUT_UNMIGRATED).length
+      + Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED).length;
     return {
       line:
         `${verdict.declaredTables} tables declared · ${verdict.liveTables} on the service · `

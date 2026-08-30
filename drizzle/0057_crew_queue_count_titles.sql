@@ -1,0 +1,69 @@
+-- THE TITLES UNDER HIS SWITCH — one column on the counts he already has (#285).
+--
+-- Founder, 2026-08-30, on the live panel: "am i suppose to see a list under
+-- these categories?" — then "file it".
+--
+-- ============================================================================
+-- WHY A COLUMN AND NOT A TABLE — the store's split-by-writer law still holds
+-- ============================================================================
+--
+-- `0054_crew_replies.sql` set the rule: the Crew store is split by WHO WRITES.
+-- `crew_queue_counts` already has exactly one writer — a shift, mechanically,
+-- from the queue's own labels — and the titles have the SAME writer, the SAME
+-- moment and the SAME reason to exist. They are not a second fact about the
+-- queue; they are what the number is about.
+--
+-- ⚠ **AND THAT IS THE ARGUMENT FOR ONE COLUMN RATHER THAN A CHILD TABLE.** His
+-- card's own bar is *"the count and the titles share one `countedAt`"*. In a
+-- child table that property holds because two statements both succeeded; in one
+-- column it holds because there is only one statement. A half-written pair —
+-- the count refreshed, the titles from an older reading still sitting beside it
+-- — is the confident-wrong-number failure this whole card is about, and here it
+-- cannot be constructed.
+--
+-- ============================================================================
+-- WHAT IT HOLDS
+-- ============================================================================
+--
+-- A JSON array of at most FIVE `{ "number": 285, "title": "…" }` objects, most
+-- recent first — `shared/crewQueueTitles.ts` owns the shape, the cap and the
+-- parse. GitHub bounds an issue title, five of them bound the value, and `text`
+-- bounds it again by two orders of magnitude; there is no invented length limit
+-- anywhere on this road, because a title silently shortened at the write is a
+-- claim nobody made.
+--
+-- ============================================================================
+-- ⚠ NULLABLE, AND THE CODE RUNS BEFORE THIS DOES
+-- ============================================================================
+--
+-- `migration-before-code` says a new column on a WRITTEN table is in every
+-- INSERT. That hazard is real here and is answered rather than accepted:
+--
+--   * the WRITER (`scripts/crew-count-queue.mts`) asks `SHOW COLUMNS` before it
+--     writes and falls back to the count-only INSERT it does today, so a shift
+--     running against a database without this column still fills his panel;
+--   * the READER (`server/db/crewWorkSwitches.ts`) catches ER_BAD_FIELD_ERROR
+--     and re-reads without the column, so his Crew tab — which is ONE
+--     `crew.getState` call — cannot fall to a blank page in the window between
+--     the deploy and this ceremony;
+--   * `scripts/lib/schemaConformance.mts` enumerates this column in
+--     `DECLARED_COLUMNS_BUT_UNMIGRATED` so the deploy rite stays green for
+--     every OTHER shift meanwhile, and REDDENS the day the column appears so
+--     the exception line is deleted rather than forgotten.
+--
+-- NULL and "no shift has counted yet" are the same fact and read the same way:
+-- no title rows, the count alone, exactly the panel he has today.
+--
+-- ============================================================================
+-- PRODUCTION TAKES IT BY CEREMONY — `scripts/ceremony-crew-queue-count-titles.mts`
+-- ============================================================================
+--
+-- One command, idempotent, prints the port before it alters anything. The day
+-- it runs against production, delete `crew_queue_counts.titles` from
+-- DECLARED_COLUMNS_BUT_UNMIGRATED and its pin in
+-- `server/schemaConformance.test.ts` in the SAME commit — `crew_replies`
+-- reddened main for exactly that mistake.
+--
+-- PURELY ADDITIVE. One nullable column. No row is rewritten, no index moves, no
+-- existing column changes.
+ALTER TABLE `crew_queue_counts` ADD COLUMN `titles` text;

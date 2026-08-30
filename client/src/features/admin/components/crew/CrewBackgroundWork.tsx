@@ -25,6 +25,25 @@
  * do' from 'not offered'."* So every category is drawn always, and `Bugs (0)`
  * is a real answer rather than an absence.
  *
+ * # ⚠ AND THE COUNT NAMES ITS CARDS (#285)
+ *
+ * Founder, at this panel: *"am i suppose to see a list under these
+ * categories?"* — then *"file it"*. Up to five titles, most recent first, with
+ * a `+N more` for the tail. His reason is the one that matters: **a count asks
+ * him to trust the queue, and the queue is precisely what the freshness pass
+ * found rotting.** `Bugs (10)` says there is a night's work and nothing about
+ * whether it is work he wants; the titles turn the switch from *trust the
+ * number* into *see what you are authorising*.
+ *
+ * They are DRAWN AS TEXT, never as links or markdown: they are data written by
+ * whoever filed the card, and his card permits a link only *"if it is free"* —
+ * a link needs an owner/repo string hard-coded here, which is a second list.
+ *
+ * ⚠ **A CATEGORY WITH A COUNT AND NO TITLES DRAWS NO `+N more`.** Between this
+ * shipping and his ceremony the column does not exist, so every row has a real
+ * count and zero titles; subtracting blindly would promise a list that is not
+ * there. `queueTitlesView` owns that rule and is tested directly.
+ *
  * # ⚠ THE COUNT SAYS HOW OLD IT IS, RATHER THAN IMPLYING AN INSTANT
  *
  * The categories are derived from the queue's own labels, so a card relabelled
@@ -36,6 +55,7 @@
  */
 import { useState } from "react";
 
+import { queueTitlesView } from "@shared/crewQueueTitles";
 import {
   CREW_WORK_CATEGORIES,
   CREW_WORK_MASTER_KEY,
@@ -169,6 +189,7 @@ export function CrewBackgroundWork({
           const own = workState.switches[category.key] ?? false;
           const live = backgroundWorkAllowed(workState.switches, category.key);
           const count = countOf(category.key);
+          const titles = queueTitlesView(count?.openCount ?? 0, count?.titles ?? []);
           return (
             <li key={category.key} className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -186,6 +207,37 @@ export function CrewBackgroundWork({
                   {count && <> · counted {ago(count.countedAt, now)}</>}
                   {!count && <> · not counted yet</>}
                 </p>
+                {/*
+                  WHAT THE NUMBER IS ABOUT (#285). Up to five, most recent
+                  first, one line each — his card: *"Truncate on width, never
+                  wrap to three lines. A long card title is normal here."* The
+                  rule truncates rather than wrapping, so a switch panel stays a
+                  switch panel however long a title gets.
+
+                  `truncate` needs every ancestor to allow shrinking; the `div`
+                  above carries `min-w-0` for exactly that reason and the `li`
+                  is the flex parent it shrinks inside.
+                */}
+                {titles.shown.length > 0 && (
+                  <ul className="mt-1.5 ml-0.5 pl-2.5 border-l border-[#EEE] space-y-0.5">
+                    {titles.shown.map((card) => (
+                      <li
+                        key={card.number}
+                        className="text-[11px] leading-[1.5] text-[#666] truncate"
+                        title={`#${card.number} ${card.title}`}
+                      >
+                        <span className="text-[#999] tabular-nums">#{card.number}</span>
+                        {" "}
+                        {card.title}
+                      </li>
+                    ))}
+                    {/* The tail, never a scroll — and never drawn without a head
+                        above it to be the tail OF (`queueTitlesView`). */}
+                    {titles.moreCount > 0 && (
+                      <li className="text-[11px] leading-[1.5] text-[#999]">+{titles.moreCount} more</li>
+                    )}
+                  </ul>
+                )}
               </div>
               <Switch
                 checked={own}
