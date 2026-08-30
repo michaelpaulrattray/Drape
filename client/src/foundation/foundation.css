@@ -231,10 +231,31 @@
   box-shadow: 0 0 0 1.5px var(--raised);
 }
 
+/*
+  ⚠ **THE STACK WAS BUILT FROM THE STALE PROTOTYPE, AND BOTH OF HIS
+  CORRECTIONS ARE THAT ONE FACT** (#281, read at the artifacts).
+
+  The old Canvas prototype draws 22px faces at `-7px` with a per-face
+  `linear-gradient(160deg,…)`; the CURRENT studio prototype
+  (`design_handoff_studio/Klieg Studio.dc.html:81`) draws 21px faces at
+  `-6px` with a per-member `background`. This block took the 21px SIZE from
+  the current pack and the overlap and fill from the stale one — which is his
+  own *"you're reading the stale prototype"* complaint, in CSS.
+
+  His ruling on the fill (verbatim): *"member faces are flat per-member
+  colours, not a gradient — the gradient belongs to the account avatar."* It
+  does: `.dp-account` carries that exact gradient literal, and it keeps it.
+
+  **Flat is all that is expressible today.** The per-member half needs a
+  member with a colour, and there is no membership in the schema at all — no
+  members table, no endpoint, no surface. It arrives with them; a tint hook
+  with no consumer is the thing his own *"two real consumers, or it waits"*
+  rule exists to stop.
+*/
 .dp-memberstack__face {
-  margin-right: -7px;
+  margin-right: -6px;
   overflow: hidden;
-  background: linear-gradient(160deg, var(--media), var(--dashed));
+  background: var(--dashed);
   font: 500 9px var(--font-sans);
   color: var(--linkHover);
 }
@@ -246,7 +267,24 @@
   object-fit: cover;
 }
 
-/* Dashed, because it is an opening rather than a person. */
+/*
+  Dashed, because it is an opening rather than a person.
+
+  ⚠ **NO `:hover` RULE, AND ITS ABSENCE IS THE DECISION** (#281). He asked
+  for two things in one breath — *"Make it live"* and *"give the `+` its hover
+  back"* — and the first cannot be done: there is no Members surface to open,
+  so dropping `aria-disabled` would produce a control that looks clickable and
+  goes nowhere. The hover was justified BY the liveness (*"looks disabled
+  rather than inviting"* — inviting to click), so the two travel together.
+
+  And the house pattern he ratified for stubs says the same thing out loud:
+  `.dp-rail__item--stub:hover` and `.dp-menuitem--stub:hover` both CANCEL
+  hover — *"quiet, no hover, no cursor change"*. A hover response on the one
+  inert affordance in the rail that has none would contradict the rule he set
+  for the rest of it.
+
+  Both land together the day membership exists.
+*/
 .dp-memberstack__add {
   border: 1px dashed var(--muted);
   background: var(--surface);
