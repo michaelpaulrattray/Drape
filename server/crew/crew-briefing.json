@@ -1,6 +1,6 @@
 {
-  "edition": 143,
-  "updatedAt": "2026-08-30T20:15:00+10:00",
+  "edition": 144,
+  "updatedAt": "2026-08-30T20:20:00+10:00",
   "shift": "foreman-121",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -150,7 +150,7 @@
       "workedExample": "The number that shows it worked: your page said 15 things were done and 50 were merely answered, and you read that as lots of decisions and little delivery. It was not true — nothing ever went back to mark a card finished once the work landed. Checking every card against its own issue found 33 that were actually DONE. Done went 12 to 45. And the seven rows telling you that you were blocking things? Every one was a court, a measurement or a patrol that had already RUN and reported — including the lighting court you answered with you said K, and the lobby segment you picked six hours before. They now read as landed, and the page can no longer say you are blocking something your desk says nothing about: it refuses to build.",
       "options": [],
       "recommendation": "Nothing to decide — just look and tell me if it reads right. The fourth card in this set (#293, park the nights and remove the journal) is NOT in this change: its main half is a change to how the runner decides to stop, which does not travel in a code change at all, and its second half removes the box you type replies into. That deserves its own pass rather than riding along.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-30T19:45:00+10:00",
       "issueNumber": 290
     },
@@ -2560,6 +2560,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T20:20:00+10:00",
+      "shift": "foreman-121",
+      "text": "YOU LOOKED AND PASSED IT — your words: \"yes it reads right\". That closes the three notes (#290, #291, #292); nothing is waiting on you from them.\n\nONE THING WORTH SEEING, because it is the whole point of the change. Edition 142 went out a few minutes before those three cards were closed, so for a short while your NEXT UP list was showing three cards you no longer had queued — the exact staleness you filed #291 and #292 about, on the feature built to stop it. Nobody edited a list to fix it. The block is generated from your ordered queue rather than typed, so re-running the one command took it from eleven rows to eight on its own, and this card went from answered to done off its own issue closing. That is the difference between the new blocks and the old ones: the old ones needed a person to remember."
+    },
+    {
       "at": "2026-08-30T19:45:00+10:00",
       "shift": "foreman-121",
       "text": "YOUR THREE NOTES ON THIS PAGE ARE BUILT, as the one pass they asked for. You are reading the result.\n\nWHAT IS NEW. There is a NEXT UP block between your desk and the pipeline. It lists every card you have ordered that is still open — eleven right now — numbered in the order a shift actually takes them: urgent first, oldest first. It is not a list anyone maintains; it is generated from the founder-ordered label, which is the same query a shift obeys, so it cannot drift from what the team really does next. It says out loud when it last looked. And when that list is empty it tells you what a shift does instead, so an empty night reads as your own settings rather than a fault.\n\nWHAT SHRANK. The pipeline held 107 rows and 92 were finished work. It is called Not done yet now and holds only what is still moving, ordered by how much it wants a human — blocked first, then anything waiting on you, then in review. The 92 finished rows are not deleted; they moved down.\n\nWHAT MERGED. Recently answered, Already judged and Recently landed were three lists all meaning the past, which is what you called double ups. They are one block now, Already dealt with, each row tagged with what kind of thing it was.\n\nTHE TWO NUMBERS THAT MATTER. First: you said lots of things read as answered and few as done, and you were reading it right — but the page was wrong, not the team. Nothing ever went back to a card once the work landed. Every card was checked against its own issue tonight and 33 were actually finished; done went from 12 to 45. Second: seven rows told you that you were blocking things while your desk said nothing was. Reading each one's own note, every single one was a court, a measurement or a patrol that had already run and reported — two of them you had personally answered hours earlier. Six more said in review over PRs that merged this morning.\n\nSO THAT IT CANNOT COME BACK. Both of those were states written once, at the moment they became true, and never looked at again — the same fault you found four times elsewhere today. Two things changed. A row that claims you are blocking it must now name an open card on your desk, and if it does not the page refuses to build at all, so the contradiction is caught in the crew's own commit instead of on your screen. And there is one command that re-reads the whole page against the record every shift — issues, PRs and your ordered queue — which is what found tonight's 33.\n\nWHAT I DID NOT DO. Your fourth note (#293 — park the nights, drop the journal) is not in this. Its main half changes how the runner decides to stop working, which is not something a code change can carry, and its other half removes the box you type into. Folding it in would have made one careful pass into a risky one. It is carded with everything I learned tonight on it."
@@ -2753,11 +2758,6 @@
       "at": "2026-08-29T18:05:00+10:00",
       "shift": "foreman-97",
       "text": "Your lobby side lane has its first deliverable: the redesign broken into six segments, in the order I would land them, with one line each on what you would actually see change — the card above. Nothing is built and nothing will be until you name the first one. The honest part you should read before picking: I audited your design handoff against what the server can actually do, and the prompt box across the top of the home screen — Image, Video, Try-on, UGC, Upscale, Voice — is the one thing this lane cannot build. Five of the six are capabilities that do not exist anywhere in the product, and the sixth is the casting entrance, which is frozen in this lane on purpose so the lobby work cannot muddy the casting review waiting for your credits. Templates, the project switcher at the top, team members and rail notifications are out for the same reason and are named on the card's record. What is left is genuinely buildable today with no new capability: the landing page, the library, the canvas page, the Assets tab, honest pages behind the two dead rail items, and your own note L5 about the icons. My recommendation is Home first. The milestone has not moved: N1 is still the task, and the moment your Claude credits are back the team goes straight back to it."
-    },
-    {
-      "at": "2026-08-29T17:10:00+10:00",
-      "shift": "foreman-96",
-      "text": "You said the desk was still showing you things you had already answered, and you were right — but the cause was not that nobody looked. The one tool a night shift reads your replies with was only ever looking at HALF your page: it indexed the cards, never the picture items, so when your verdict landed on something in the gallery it printed \"not in the current briefing\" — which reads as \"that card is gone, nothing to update\". I measured it before touching anything: 20 of your 28 replies carried that sentence, and all 17 items under it were sitting right there on the page. Zero were actually gone. That is why \"Cast it\" and the review modal stayed marked open for three editions after you'd answered them. Both are marked with your own words in this edition, and the tool now reads both halves, prints the state of every item beside your reply, and — the part that stops it recurring — starts every shift by naming any item you have answered that the page still calls open. Driven against your live page tonight: it named exactly the two you did. Also honest about two numbers that had gone stale on this page: the Claude review outage is 8h 44m now (I probed again — twelfth refusal), not the five and a half hours the card still said, and five of your rulings have now shipped with no second reader; and the \"waiting on your eye\" chip was still naming four items you answered days ago. $0 house, 0 credits, no renders, no rolls."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2809,10 +2809,11 @@
     46,
     47,
     48,
-    49
+    49,
+    50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T10:12:33.814Z",
+    "readAt": "2026-08-30T10:16:42.191Z",
     "items": [
       {
         "issueNumber": 267,
