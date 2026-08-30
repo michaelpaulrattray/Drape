@@ -1,7 +1,7 @@
 {
-  "edition": 151,
-  "updatedAt": "2026-08-31T03:50:00+10:00",
-  "shift": "foreman-128",
+  "edition": 152,
+  "updatedAt": "2026-08-31T05:05:00+10:00",
+  "shift": "foreman-129",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "side-clause-316",
+      "title": "You said his right eye. All eight got the left — and the fix costs two rolls of your credits",
+      "productImpact": "Your cyborg brief says “implant ports embedded in his skull above the RIGHT temple” and “his RIGHT eye glowing faint amber-red”. I bought a sheet tonight and looked at all eight faces myself. The glowing eye is on the man's LEFT in eight out of eight. The temple ports are on his left in six of the eight. Nothing is broken and nothing crashed — the studio simply did not carry your word “right” to the engine in a form it acts on, so it put the glow wherever it liked and happened to like the same side every time.",
+      "workedExample": "Read the close-up in the gallery below as a PICTURE rather than as a man and it snaps into focus: the glow is on the viewer's right in all eight. The engine paints by position in the frame, not by anatomy. We already know this and we already fixed it once — on the EDIT road, when you change one eye, the studio quietly adds “(on the left of the picture as you look at it)”. Twelve renders each way: four painted the wrong eye without that sentence, none with it. The road that casts a NEW sheet has no such sentence at all.",
+      "options": [
+        {
+          "key": "court-it",
+          "label": "Fund the court — two rolls, 320 of your credits (recommended)",
+          "consequence": "Same brief, with and without the sentence, eight frames each, counted at the frames by your eye. That is how the edit road's version was settled and it is the only honest way to settle this one, because one clause in that prompt moves every cast in the product."
+        },
+        {
+          "key": "leave-it",
+          "label": "Leave it — a side you did not ask for is not worth the risk",
+          "consequence": "Costs nothing. Most briefs never name a side, and a clause that names one when you did not would pin a side on every cast. Filed as #316 with the measurement, ready whenever you want it."
+        },
+        {
+          "key": "just-ship-it",
+          "label": "Skip the court and ship the sentence",
+          "consequence": "Cheapest and the one I would argue against. This studio has measured that prompt context is not additive — adding a clause has made things worse before — and I would rather show you frames than ask you to trust me."
+        }
+      ],
+      "recommendation": "Fund the court. It is your own brief being ignored on a detail you took the trouble to type, the mechanism is already understood, and the fix already exists one road over — so this is measuring a known thing rather than exploring. But it is 320 of your credits and it changes the prompt every cast goes through, so it is not something a shift should start on its own.",
+      "state": "open",
+      "issueNumber": 316,
+      "filedAt": "2026-08-31T05:05:00+10:00"
+    },
     {
       "id": "queue-titles-285",
       "title": "Your background-work switches can name their cards — it needs one command from you",
@@ -975,6 +1002,32 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "fitted-hardware-frames-279",
+      "title": "Your cyborg, eight ways — and one thing in every single frame is on the wrong side",
+      "question": "Two questions, and the second is the one I would not decide for you. First: is this the cyborg you meant — do the ports, seams and jaw plate read as part of the man rather than kit he put on? Second: you asked for his RIGHT eye to glow. Look at the close-up. It is his LEFT, in all eight. Is that worth a fix?",
+      "state": "open",
+      "filedAt": "2026-08-31T05:05:00+10:00",
+      "issueNumber": 316,
+      "cardId": "side-clause-316",
+      "frames": [
+        {
+          "key": "crew-eye/46b47082-c2fa-417a-b737-49ab28057aa3.png",
+          "caption": "Faces 1–4 of the roll I bought tonight to settle your fitted-hardware ruling. Every one wears it: matte-black ports set into the skull, fine seams across the scalp, a plate following the jaw, a stud below each ear. None of it reads as something he strapped on.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/7b934067-3aad-4795-9154-8cb757bd8a44.png",
+          "caption": "Faces 5–8, same roll. Eight for eight, no refusals. The studio wrote them as TYPES — “matte-black implant ports”, “a dark mechanical plate” — and never as a product, which was the half of your ruling I came to test.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/086308fa-9bc8-4cdb-b3e8-8f60f36a59a7.png",
+          "caption": "Face 5 on its own, and this is the one to look at properly. The ports ARE above his right temple here — correct. But the glowing eye is his LEFT, and your brief said right. It is his left in all eight. Read as a picture instead of as a man, the glow is on the viewer's right every single time — so the engine is placing it by position in the frame and ignoring the word “right”.",
+          "arm": null
+        }
+      ]
+    },
     {
       "id": "queue-titles-285-frames",
       "title": "Your switch panel, before and after",
@@ -1872,6 +1925,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "fitted-hardware-279",
+      "title": "A machine part fitted into a being is part of that being — the studio now says so where it writes the prompt (#279)",
+      "status": "merged",
+      "prNumber": 315,
+      "note": "Your ruling was already in the half that READS a picture. It was missing from the half that WRITES the prompt, which is where it collides with the rule against naming costume parts. Merged 07808b13. ⚠ Measured first: the studio was already getting it right — 18 drafts and 8 of 8 frames — so this pins a rule it was guessing correctly rather than repairing a fault."
+    },
     {
       "id": "queue-titles-285",
       "title": "Your background-work switches name their cards (#285)",
@@ -2802,6 +2862,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T05:05:00+10:00",
+      "shift": "foreman-129",
+      "text": "YOUR FITTED-HARDWARE RULING IS IN — AND THE CARD THAT ASKED FOR IT WAS WRONG ABOUT WHY.\n\nYou ruled it plainly: \"a machine part fitted to a cyborgs face is apart of that being. as long as its actually fitted and not worn.\" A choker is an accessory, a horn is a feature, an eye bolted into the skull is a feature — and it gets named as a TYPE, never as a product.\n\nHalf of that shipped the day you said it, into the part of the studio that looks at a picture you upload and describes it. The other half — the part that WRITES the prompt for a new cast — never got it, and that is where it matters, because two rules meet there and disagree. One says never name a costume part. The other says every fact you typed survives. A bolted-in eye is caught by both, and nothing said which wins.\n\nSO I WENT AND LOOKED BEFORE I TOUCHED ANYTHING. The card said this was \"very likely\" going wrong for you right now. It is not. I ran your own cyborg brief, a bare \"cyborg woman\" with no detail, a brief with a fitted eye AND a worn choker in the same sentence, and your armoured cat with a jaw plate fused into the bone — eighteen real drafts. The hardware survived every single one, always described as a type, never once as a product. The studio was already reading your ruling the way you meant it, without ever having been told.\n\nTHEN I BOUGHT THE PROOF YOU ASKED FOR. Your card's condition was frames, not word-counting — so one roll of your cyborg brief on your account, 160 credits, at the high imagination setting so the studio actually writes rather than passing your words straight through. Eight of eight arrived, no refusals, in two minutes. Every one of them wears it: ports set into the skull, seams across the scalp, a plate along the jaw, a stud below each ear. They are in the gallery below.\n\nI SHIPPED THE RULE ANYWAY, and I want to be straight that it fixes nothing measurable. It stops the studio guessing. Right now it happens to guess your way; a rule the machine gets right by luck is a coin, and it belongs written down. One sentence, sitting directly under the rule it settles. Afterwards, same four briefs: sixteen out of sixteen kept the hardware, none named a product, nothing fell back. And no word was banned — your two bad examples are SHOWN as shapes to avoid and caught by nothing, because \"harness\", \"piece\" and \"eye\" are ordinary words and this studio has been bitten five times by banning ordinary words.\n\n⚠ AND THE FRAMES TURNED UP SOMETHING ELSE, WHICH IS THE PART I WOULD READ IF YOU ONLY READ ONE THING. You asked for his RIGHT eye to glow. It is his LEFT eye. In all eight. The ports are on his left in six of the eight too. Turn it around and read it as a picture rather than as a man and it is perfectly consistent — the glow is on the viewer's right every time. The engine places things by where they sit in the frame and ignores the word \"right\" entirely. We already know this and we already beat it once, on the EDIT road, by quietly adding \"(on the left of the picture as you look at it)\" — twelve renders each way, four wrong without it, none wrong with it. The road that casts a new sheet has no such sentence. It is #316, it needs two rolls of your credits to settle properly, and it is on your desk rather than started, because one clause in that prompt reaches every cast in the product.\n\nTHE QUEUE: 91 open, 6 you have ordered (3 of them held on you), 12 urgent, nothing rotting. One closed tonight, one new one opened."
+    },
+    {
       "at": "2026-08-31T01:45:00+10:00",
       "shift": "foreman-126",
       "text": "YOUR OPERATIONS FEED IS FIXED. YOUR CAST STILL WILL NOT DELETE — AND THE REASON IS NOT WHAT WE THOUGHT.\n\nYou said: \"i cannot delete this remaining legacy casting model for some reason\". Tonight I went and read what production actually did when you pressed it, rather than trusting the diagnosis we had written down. There are TWO faults, not one. We had blamed both on the same line. Only one of them was that line.\n\nFIXED TONIGHT — the first fault. Something in the studio counts how many pieces it removed when a Cast is deleted. One of those counters is called \"referencePlates\". We have a privacy rule that refuses to show anything whose name contains words like \"prompt\" or \"reference\", because those can carry your private recipe. The rule matched on the NAME alone — so a plain NUMBER, \"referencePlates: 0\", was refused as though it were a leaked secret. Twenty stored records on your account had that number in them, and every one of them broke the feed that shows what the studio is currently working on. Measured before: 20 of 20 failed. After: 20 of 20 pass. The rule now looks at the VALUE, not the name: a number cannot hold a secret, a sentence can, so a real prompt is still refused.\n\nNOT FIXED, AND HERE IS THE HONEST PART — the second fault, the one you actually asked about. Your Cast \"yejjjee\" refuses for a different reason entirely, and the guard fix does not touch it. Twenty-seven other Casts deleted cleanly that same morning. Yours has nine \"accepted candidate\" pictures attached to it, and the deletion checks each picture's filename against a pattern before it will let go of it. Those nine are filed under a folder called \"candidates\" and the check insists they be under \"plates\". They belong to you, they belong to that Cast, everything about them is correct — it is the FOLDER NAME the check disagrees with, and the studio itself is what put them there.\n\nWHY I DID NOT JUST FIX IT: because there are two different places in the studio that create these pictures, and they file them under two different folder names for the same kind of picture. So there is no single answer that is right for both, and this is the code that permanently deletes things. Picking wrong means deleting pictures that should have been kept, or keeping ones that should have gone. That is a judgement call on a destructive path, and the rule is that judgement calls wait for the Fable seat — which is still on your exhausted allowance. It is written up in full, with the measurements, as #308.\n\nWHAT THIS MEANS FOR THE LIBRARY PAGE: the plan said \"fix the guard, then you clear your old Casts, then we stub Library out\". Step one has moved — it is #308 now, not the guard. Library must NOT be stubbed before #308 lands, or your three legacy Casts are stranded with no door left to remove them.\n\nALSO TONIGHT — one word, everywhere. You said: \"Log out to Sign out — the Settings modal already says Sign out; pick one word.\" The product was saying both, on four screens. It says Sign out on all of them now. I opened both menus in the running app and looked. The other half of that card — Members & invites, Billing & credits — is still waiting on your Settings modal, because you ruled those three must not get their own pop-ups.\n\nTHE QUEUE: 90 open, 8 you have ordered, 13 urgent, nothing rotting. Two closed tonight, one new one opened (#308)."
@@ -2995,11 +3060,6 @@
       "at": "2026-08-30T00:55:00+10:00",
       "shift": "foreman-101",
       "text": "Took your two urgent cards as one brief, which is what #237 itself says they are. The tail was the satisfying one: you called it a framing fact and not an adjective, and the measurement agrees with you flatly — one frame in four today, four in four with the clause. The author law was cleaner than expected too; your own refused sheet was still sitting in the database with 'angular pauldrons, banded vambraces, a high sculpted collar' in it, so I used your failure as the control instead of inventing one, and four drafts under the new law named nothing. Where I have to be straight with you is the mouth. Your oni test does not separate the two blocks, because your own seed says 'prominent lower tusks' and a fact you state already overrides the block — so the old 'mouth closed' was being beaten by your words, not by the lane. I could have shown you three frames and called it proved. It is filed as #243 with the fixture that would actually settle it. One thing I deliberately did NOT do: ban garment, cut and jewellery words. Your law names four kinds of thing and only armour became a hard check, because a banned-word list over the world's clothing refuses good sentences — and I would rather tell you the check is narrower than the law than let a green tick imply otherwise. Your hero correction (#240) arrived while I was building and is the next shift's first job; I did not start it, because leaving half a rebuilt hero on your account overnight is the wrong trade. Your progress-ticks reference frame is carried up with this push."
-    },
-    {
-      "at": "2026-08-31T03:50:00+10:00",
-      "shift": "foreman-128",
-      "text": "YOUR SWITCH PANEL CAN NAME ITS CARDS NOW — AND IT NEEDS TWO LINES FROM YOU.\n\nYou looked at the background-work panel and asked: “am i suppose to see a list under these categories?” The answer was no, and you were right that it should be. It is built.\n\nWHAT IT LOOKS LIKE\n\nBugs (10) still says Bugs (10). Underneath it now names five of them — #312, #308, #306, #296, #289 — one line each, cut off at the edge, with “+5 more” at the bottom. Process (8) does the same with “+3 more”. Housekeeping (3) names all three and says nothing about a remainder, because there is not one. Security (0) draws its row and its switch with nothing under it, exactly as before — “nothing to do” has to stay different from “not offered”, which was your own sentence when we built the panel.\n\nBoth pictures are in the eye gallery below. That is the entire change; nothing else on the page moves.\n\nTHE REASON IT IS TITLES AND NOT JUST A BIGGER NUMBER\n\nYour words on the card, and they decided the shape: a count asks you to trust the queue, and the queue is exactly what the freshness pass caught rotting last week — a card claiming nothing was built about something running in production, a figure fifteen times out of date, a priority list whose eight entries were all closed. Ten open bugs tells you there is a night’s work. It tells you nothing about whether it is work you want, which is the only question a switch is asking you.\n\nIT COSTS NOTHING EXTRA TO PRODUCE, WHICH IS WHY IT IS WORTH DOING\n\nThe thing that counts your cards at the start of every shift already had them in its hand — it counts them by reading the list. The titles come out of that same read and are written in the same breath as the number, so the two can never disagree about which moment they describe. No new lookup, no extra call, nothing new for the site to depend on.\n\nTWO LINES FROM YOU, AND THE SECOND IS A JUDGEMENT I WANT TO BE STRAIGHT ABOUT\n\nThe first is a command that adds one optional column to the crew table you already created:\n\n  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-queue-count-titles.mts --production\n\nThe second is whether to merge it. Every automatic check passed. But the change is HELD, and the reason is narrower than it will look: a rule flags anything touching the database folder for your eye, and while your Fable reviewer is out of credits those flagged changes wait rather than merging on the machine checks alone. That rule was written for billing and login code. This change has none — it is your admin panel, a crew table and tests. So I could have argued it does not really apply. I did not, for one practical reason: merging it tonight would show you nothing, because it stays invisible until you run the command. Holding cost a night of nothing. Arguing past your own rule on my own reading would have cost the rule.\n\nIf you want it in, one line: merge it.\n\nWHAT I MADE SURE OF FIRST\n\nThe thing that worried me was your page going blank. Your whole Crew tab is a single request, so anything that breaks inside it takes the lot — and between this landing and you running that command, the column genuinely is not there. So both halves were built to work without it, and then I proved it the hard way rather than by reading the code: I deleted the column out of the test database and watched the real page. Counts intact, no titles, no “+5 more” hanging under an empty list, nothing broken. Then I put the column back.\n\nThat empty “+5 more” is the small detail I am most pleased about. In that window every category has a real count and no titles, so the obvious arithmetic would have drawn “+10 more” underneath a list naming nothing — promising you something that is not there, which is worse than the plain number you have now.\n\nONE THING THE SWEEP TURNED UP, ALREADY FIXED\n\nEach of these database ceremonies double-checks its table afterwards and complains if it finds a column it was not expecting — a good check. But it cannot tell a surprise column from one a later change legitimately added, so the ceremony YOU ran for this panel last week would have started refusing a perfectly correct database the next time anyone ran it. Fixed here. Two others have the same latent problem and are written down rather than patched, since neither can bite until someone adds a column to those tables.\n\nTHE QUEUE, IN SHAPE\n\n91 open. 12 urgent. 7 that you ordered, 4 of them held and saying why on your page. Nothing rotting — nothing has sat untouched for a week. Unchanged from last night apart from the one card this shift filed."
     }
   ],
   "acknowledgedReplyIds": [
@@ -3055,7 +3115,7 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T16:51:24.317Z",
+    "readAt": "2026-08-30T18:53:28.205Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3064,15 +3124,6 @@
         "held": {
           "state": "blocked",
           "because": "the sectioned Settings modal — your section 03 brief, and the trigger is yours"
-        }
-      },
-      {
-        "issueNumber": 279,
-        "title": "Fitted hardware is a FEATURE, not an accessory — the creature checklist is biology-only and the piece-ban swallows a bolted-in eye",
-        "urgent": true,
-        "held": {
-          "state": "sitting",
-          "because": "a paid roll on your account for the frames — its own pass condition, so it needs a sitting rather than a slot in a batch"
         }
       },
       {
