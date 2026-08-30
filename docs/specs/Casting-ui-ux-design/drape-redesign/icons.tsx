@@ -8,12 +8,24 @@
  *
  * WHERE THESE REPLACE LUCIDE
  *
- * Only where the icon carries meaning: the rail's destinations, the tool modes
- * in the composer, node kinds on the canvas, the settings sections. Everything
- * incidental — a close X, a chevron, a trash can, a magnifier — stays Lucide.
- * Redrawing a good general set to replace it is effort spent where nobody
- * looks, and the two are compatible by construction: same viewBox, same round
+ * Only where the icon carries meaning or is seen on every page: the rail's
+ * destinations, the topbar chrome, the tool modes in the composer, node kinds
+ * on the canvas, the settings sections.
+ *
+ * WHAT STAYS LUCIDE — and should
+ *
+ *   chevrons, arrows, plus, close X, check, trash, ellipsis, download,
+ *   external-link, lock, star, eye, copy, folder, upload, play/pause
+ *
+ * Those are pure interface furniture: nobody reads them as brand, and Lucide
+ * draws them well. Redrawing a good general set is effort spent where nobody
+ * looks, and the two are compatible by construction — same viewBox, same round
  * caps, and Lucide's default 2 sits beside our 1.7 without a visible seam.
+ *
+ * The account and utility menu rows use these `P` keys where one fits
+ * (`P.settings`, `P.people`, `P.card`, `P.book`, `P.shield`) and Lucide for the
+ * rest. Menu rows are 13px, which is the smallest size anything in this set
+ * should ever be drawn at.
  *
  * Two Lucide glyphs to retire on sight:
  *
@@ -48,45 +60,41 @@ export const P = {
   thread:   'M4 5.5h7v6H4zM13 5.5h7v4h-7zM13 11.5h7v7h-7zM4 13.5h7v5H4z',
   campaign: 'M4 7l4-2 4 2 4-2 4 2v12H4z',
   avatar:   'M12 12.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20.5c1.2-3.4 4-5.2 7.5-5.2s6.3 1.8 7.5 5.2',
-  asset:    'M3.5 5.5h17v13h-17zM3.5 14l4.5-4 4 3.5 3.5-3 5 4.5',
+  /*
+   * Assets — a stack of two frames, offset.
+   *
+   * ⚠ REDRAWN 2026-08-30 on his word ("go with a"). What it replaced —
+   * 'M3.5 5.5h17v13h-17zM3.5 14l4.5-4 4 3.5 3.5-3 5 4.5' — was a rectangle
+   * with a peak line, i.e. `image` shifted by half a unit, and **at 17px the
+   * two read as ONE glyph while sitting four rows apart on the same rail.**
+   * That is the exact confusion this set exists to remove, and it was found by
+   * comparing the paths, then confirmed at the frames.
+   *
+   * A stack is what Assets IS — plural, where Create is singular. Two strokes.
+   *
+   * Chosen from seven candidates rendered beside `image` at 17/15/44px
+   * (`output/_assets-glyph/assets-candidates.png`). Two died on collisions of
+   * their own: a four-square grid is `grid`, and every frame-with-peak variant
+   * still echoes `image`. Runner-up was a corner-fold file shape.
+   *
+   * ⚠ THE KNOWN TRADEOFF, stated rather than hidden: two offset rectangles is
+   * also how Lucide draws `copy`. Acceptable because the contexts never meet —
+   * `copy` lives in menus and row actions, this is a rail destination — but if
+   * a surface ever puts them side by side, this is the glyph that moves.
+   */
+  asset:    'M7 4.5h13.5v11H7zM3.5 8.5v11H17',
   library:  'M4 5h6v14H4zM12 5h3v14h-3zM17 5.5l3 .6-2.4 12.8-3-.6z',
 
   /*
-   * Cinema — the eighth destination, drawn here because the set had no key for
-   * it and `video` is spoken for by the composer's video mode. One glyph for
-   * two things is the confusion this house set exists to remove.
+   * Cinema — a clapperboard: the slate bar hinged over the body, with two
+   * diagonal stripes. Deliberately NOT `video` (a frame with a play spout),
+   * which is the composer's video mode; two destinations wearing one glyph is
+   * the confusion the set exists to avoid.
    *
-   * A film frame: the outer run plus two sprocket notches on each side. It
-   * says *film* rather than *screen*, which is the distinction that matters —
-   * Cinema is the wall, the shot list and the takes contact sheet, not a tool
-   * that makes one clip.
-   *
-   * ⚠ CHOSEN AT THE FRAMES, NOT ON PAPER — and the first two drafts were wrong
-   * in ways no amount of reasoning would have caught (founder law 6):
-   *
-   *   - A STRIP OF THREE CELLS ('M3 7h18v10H3zM9 7v10M15 7v10') was drafted
-   *     first and FAILS at 17px: the cells mush into a dark block, and beside
-   *     `library` — three vertical divisions in a rectangle — it is very
-   *     nearly the same glyph. Rendered side by side they are confusable at
-   *     rail size. `E4` in the working set is that shape retested; same result.
-   *   - ITS OWN DOCBLOCK ARGUED PERFORATIONS COULD NOT HOLD at 1.7px/15px.
-   *     That was reasoning, and the render disproves it: TWO notches a side,
-   *     3 units long, hold cleanly at both 15px and 17px. A row of small round
-   *     holes would indeed mush — two short ticks are not that.
-   *
-   * Seven candidates were drawn and looked at (screen+floor, two offset takes,
-   * a 2-cell screen, sprockets top-and-bottom, rails, a bare 16:9 rectangle);
-   * every "screen" shape reads as a MONITOR, and the offset pair reads as
-   * *duplicate*. Only the film frame says cinema.
-   *
-   * The runner-up is ONE notch a side ('M4 5.5h16v13H4zM4 12h4M16 12h4') —
-   * the most legible of all at 15px, and slightly less obviously film at size.
-   * If this ever looks crowded in place, that is the swap.
-   *
-   * NOT a clapperboard: Lucide's is on Templates today, and it is the cliché
-   * this set is getting away from.
+   * Four strokes plus two stripes, and the stripes are the widest-spaced marks
+   * in the set — a real clapper has six or seven, which fills in at 17px.
    */
-  cinema:   'M4 4.5h16v15H4zM4 9h3M4 15h3M17 9h3M17 15h3',
+  cinema:   'M3.5 9.5h17v9.5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM3.5 9.5 4.4 5.4l16.6 1.9-.5 2.2M9.6 9.2 8.2 5.9M15 9.8l-1.4-3.3',
 
   /* tool modes — the composer, and node kinds on the canvas */
   video:    'M4 6h11v12H4zM15 10.5l5-3v9l-5-3',
@@ -94,6 +102,21 @@ export const P = {
   ugc:      'M12 4a4 4 0 0 1 4 4v3a4 4 0 0 1-8 0V8a4 4 0 0 1 4-4zM5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3',
   upscale:  'M4 9V4.5h5M20 15v4.5h-5M4 15v4.5h5M20 9V4.5h-5',
   voice:    'M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2',
+
+  /*
+   * Topbar chrome — on every page, so the most-seen glyphs after the rail.
+   *
+   * Lucide's versions of these are the densest in its set: `Sun` is a circle
+   * plus eight full-length rays, `Bug` carries antennae, legs and body
+   * segments. At the 15px the topbar uses, both fill in. These are the same
+   * subjects drawn at this set's density — shorter rays, fewer legs.
+   */
+  search:   'M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14M15.5 15.5 20.5 20.5',
+  sun:      'M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2M12 3.6v1.7M12 18.7v1.7M20.4 12h-1.7M5.3 12H3.6M17.9 6.1l-1.2 1.2M7.3 16.7l-1.2 1.2M17.9 17.9l-1.2-1.2M7.3 7.3 6.1 6.1',
+  moon:     'M20 14.6A8.6 8.6 0 0 1 9.4 4a8.6 8.6 0 1 0 10.6 10.6',
+  bug:      'M12 7.4a4.6 4.6 0 0 1 4.6 4.6v2a4.6 4.6 0 0 1-9.2 0v-2A4.6 4.6 0 0 1 12 7.4M9.4 7 7.9 4.4M14.6 7l1.5-2.6M7.4 11.4H4.6M16.6 11.4h2.8M7.4 15.6H5.1M16.6 15.6h2.3',
+  help:     'M12 20.6a8.6 8.6 0 1 0 0-17.2 8.6 8.6 0 0 0 0 17.2M9.6 9.4a2.5 2.5 0 0 1 4.9.6c0 1.7-2.5 2.1-2.5 3.6M12 16.9v.1',
+  megaphone:'M4.5 10v4l12 4.4V5.6zM16.5 9h2a2.6 2.6 0 0 1 0 6h-2M7.2 14.6V19h2.6',
 
   /*
    * Settings — the rail's foot, and anywhere else a gear is meant.
