@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "041f5ca5256950ab"
+    "sourceFingerprint": "c231076fc0588042"
   },
   "domains": [
     {
@@ -12226,6 +12226,10 @@
     {
       "id": "test:server/crew/crewTabScope.test.ts",
       "path": "server/crew/crewTabScope.test.ts"
+    },
+    {
+      "id": "test:server/crewHeartbeat.test.ts",
+      "path": "server/crewHeartbeat.test.ts"
     },
     {
       "id": "test:server/crewShiftState.test.ts",

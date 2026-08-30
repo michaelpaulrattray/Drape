@@ -24,22 +24,34 @@ import {
 const NOW = Date.UTC(2026, 7, 30, 6, 0, 0);
 const minutesAgo = (n: number) => new Date(NOW - n * 60_000);
 
+/**
+ * Inside and outside the window, DERIVED from it (#295).
+ *
+ * These arms used to read `minutesAgo(59)` and `minutesAgo(61)` against an
+ * hour-long window. When #295 widened the window to clear a real shift, all
+ * three literals silently changed meaning — 61 minutes is now a running shift
+ * — and the suite went red rather than passing about the wrong thing, which is
+ * the good outcome and also the reason not to write it that way twice.
+ */
+const insideWindow = () => new Date(NOW - CREW_SHIFT_STALL_MS + 60_000);
+const pastWindow = () => new Date(NOW - CREW_SHIFT_STALL_MS - 60_000);
+
 describe("what a shift run is doing", () => {
   it("a fresh heartbeat is running", () => {
     expect(deriveShiftRunState({ heartbeatAt: minutesAgo(2), endedAt: null }, NOW)).toBe("running");
   });
 
-  it("a heartbeat inside the hour is still running", () => {
-    expect(deriveShiftRunState({ heartbeatAt: minutesAgo(59), endedAt: null }, NOW)).toBe("running");
+  it("a heartbeat inside the window is still running", () => {
+    expect(deriveShiftRunState({ heartbeatAt: insideWindow(), endedAt: null }, NOW)).toBe("running");
   });
 
   /*
     THE ARM THIS FILE EXISTS FOR. An open run whose shift died: nothing wrote
     "failed", nothing wrote `endedAt`, and the page must not say it is working.
   */
-  it("an open run past the hour is STALLED, not running", () => {
-    expect(deriveShiftRunState({ heartbeatAt: minutesAgo(61), endedAt: null }, NOW)).toBe("stalled");
-    expect(deriveShiftRunState({ heartbeatAt: minutesAgo(60 * 9), endedAt: null }, NOW)).toBe("stalled");
+  it("an open run past the window is STALLED, not running", () => {
+    expect(deriveShiftRunState({ heartbeatAt: pastWindow(), endedAt: null }, NOW)).toBe("stalled");
+    expect(deriveShiftRunState({ heartbeatAt: minutesAgo(60 * 24), endedAt: null }, NOW)).toBe("stalled");
   });
 
   /*
@@ -54,8 +66,8 @@ describe("what a shift run is doing", () => {
 
   /*
     `endedAt` WINS OVER EVERYTHING. Without this, every run in the "last three
-    shifts" list would read as stalled the moment it aged past an hour — which
-    is all of them, always.
+    shifts" list would read as stalled the moment it aged past the window —
+    which is all of them, always.
   */
   it("a closed run is finished however old its heartbeat is", () => {
     expect(deriveShiftRunState({ heartbeatAt: minutesAgo(60 * 24 * 30), endedAt: minutesAgo(60 * 24 * 30) }, NOW))
@@ -64,7 +76,7 @@ describe("what a shift run is doing", () => {
 
   it("accepts the ISO strings tRPC puts on the wire, not just Dates", () => {
     expect(deriveShiftRunState({ heartbeatAt: minutesAgo(2).toISOString(), endedAt: null }, NOW)).toBe("running");
-    expect(deriveShiftRunState({ heartbeatAt: minutesAgo(90).toISOString(), endedAt: null }, NOW)).toBe("stalled");
+    expect(deriveShiftRunState({ heartbeatAt: pastWindow().toISOString(), endedAt: null }, NOW)).toBe("stalled");
     expect(deriveShiftRunState({ heartbeatAt: minutesAgo(2).toISOString(), endedAt: minutesAgo(1).toISOString() }, NOW))
       .toBe("finished");
   });

@@ -15,22 +15,79 @@
  * anybody writing anything.
  */
 
-/** The four states a run can be in, all derived from two timestamps. */
+/**
+ * The states a run can be in, all derived from two timestamps.
+ *
+ * ⚠ **`stalled` describes the ROW, never the process** (issue #295). It means
+ * exactly one thing: *no check-in inside the window, and no terminal stamp.*
+ * Whether the shift is dead or is thirty minutes into a build this page cannot
+ * see is **not knowable from here** — nothing reports process liveness to the
+ * database, and a page that guesses is making a claim rather than a reading
+ * (working law 1). The founder read the old copy's guess — *"It has probably
+ * died"* — over a shift that had merged a PR half an hour earlier.
+ *
+ * So the name is kept, its meaning is narrowed, and the surface says the FACT
+ * (*no check-in since HH:MM*) and lets him judge.
+ */
 export type CrewShiftRunState = "running" | "stalled" | "finished";
 
 /**
- * How long a run may go without proving it is alive before the page calls it
- * stalled.
+ * How long a run may go without proving it is alive before the page stops
+ * vouching for it.
  *
- * **One hour, and the number is his**: #272 says *"A row that is neither
- * updated nor stamped for an hour is itself the signal."* It is deliberately
- * coarse — a shift legitimately spends a long time inside one build, a test
- * run or a deploy watch, and a tight window would cry stalled at a shift doing
- * exactly what it should. The cost of the coarseness is that a shift that dies
- * in its first minutes reads as running for up to an hour; the cost of the
- * opposite error is that he stops trusting the strip, which is worse.
+ * # ⚠ IT WAS ONE HOUR AND THAT FIRED ON ONE SHIFT IN THREE (issue #295)
+ *
+ * The hour was his own number in #272 — *"A row that is neither updated nor
+ * stamped for an hour is itself the signal"* — written before any shift had
+ * ever been timed, and the paragraph that carried it already named the risk:
+ * *"a tight window would cry stalled at a shift doing exactly what it should."*
+ * It did. He opened his page at 20:18 and read **"It has probably died"** over
+ * a shift that had merged a PR at 19:46 and shipped a briefing edition at
+ * 20:17 — one minute earlier.
+ *
+ * **Measured over the 83 completed runs the runner has close-stamped**
+ * (`.agents/mailbox/*.md`, launch → exit, 2026-08-27 → 2026-08-30):
+ *
+ * | median | p75 | p90 | p95 | p99 | max |
+ * |---|---|---|---|---|---|
+ * | 47 min | 67 min | 88 min | 99 min | 115 min | 138 min |
+ *
+ * **26 of 83 — 31% — ran longer than an hour.** So the alarm was not
+ * occasionally wrong, it was wrong about a third of the time, and an alarm at
+ * that rate teaches him to scroll past it. The first one he then believes is
+ * the false one, which costs more than having no alarm at all.
+ *
+ * **Three hours.** The bar is that the window must clear the longest run the
+ * team has ever recorded — 138 min — measured with NO heartbeat sent at all,
+ * because the heartbeat is manual and a shift may skip it; a window chosen
+ * against the p99 instead would accuse the tail of legitimate shifts.
+ * `server/crewHeartbeat.test.ts` pins it against that measured maximum rather
+ * than against a literal, so lowering it back reddens and says why.
+ *
+ * ⚠ **Two hours was tried first and the arm refused it**, which is the whole
+ * value of pinning a bar instead of a number: 120 < 138, so the shift that ran
+ * longest would still have been called dead. The guard caught its own author.
+ *
+ * The ceiling is a judgement rather than a measurement and is stated out loud:
+ * a window of a day would never cry wolf and would also never fire on a shift
+ * that really died, so it stays inside a night.
+ *
+ * ⚠ **`drizzle/0055_crew_shift_runs.sql`'s header is SUPERSEDED on this point
+ * and is deliberately not edited** — an applied migration is the record of what
+ * ran, not a place to keep current. It says the hour is *"coarse enough that
+ * the shift's own natural updates (start, close, and `--note` at any point
+ * between) carry it"*, and that sentence is the whole mistake in one line: it
+ * assumed the `--note` between, and there was never a caller for it. The
+ * assumption is what made the hour look safe. This constant and #295 are the
+ * current word; the migration is why it took a founder's own eyes to notice.
+ *
+ * The cost of the coarseness is unchanged and still accepted: a shift that dies
+ * in its first minutes reads as running for up to the window. With the
+ * heartbeat now sent at every meaningful step (#295), a live shift stamps far
+ * more often than this, so the window governs only how long a genuinely dead
+ * one goes unnoticed.
  */
-export const CREW_SHIFT_STALL_MS = 60 * 60 * 1000;
+export const CREW_SHIFT_STALL_MS = 3 * 60 * 60 * 1000;
 
 /** The two fields the verdict is derived from — nothing else is consulted. */
 export type CrewShiftRunTimes = {
@@ -65,6 +122,37 @@ export function deriveShiftRunState(run: CrewShiftRunTimes, now: number): CrewSh
   if (!Number.isFinite(heartbeat)) return "stalled";
 
   return now - heartbeat > CREW_SHIFT_STALL_MS ? "stalled" : "running";
+}
+
+/**
+ * DID THIS RUN EVER CHECK IN? — one owner, because two would disagree (#295).
+ *
+ * `crew-shift-start.mts` stamps `heartbeatAt` equal to `startedAt` at open, so
+ * a run that never sent a `--note` carries the two timestamps IDENTICAL. That
+ * is the whole tell, and it is the only evidence there is that the standing
+ * orders' heartbeat step was skipped.
+ *
+ * ⚠ **It is readable ONLY before the close write.** `crew-shift-close.mts`
+ * sets `heartbeatAt` to now as it stamps the row terminal, which erases the
+ * equality — so the close script reads these two fields in the statement that
+ * selects the target, before it updates anything. Read afterwards, every run
+ * looks like it checked in.
+ *
+ * A tolerance of one second absorbs the two `UTC_TIMESTAMP()` calls in the
+ * insert landing either side of a tick; it is deliberately not larger, because
+ * a real check-in is minutes later, never seconds.
+ */
+export function hasEverCheckedIn(run: {
+  readonly startedAt: Date | string;
+  readonly heartbeatAt: Date | string;
+}): boolean {
+  const started = asMillis(run.startedAt);
+  const heartbeat = asMillis(run.heartbeatAt);
+  /* An unreadable pair cannot prove a skipped check-in. The safe direction here
+     is the OPPOSITE of the stalled verdict's: this drives a finding about a
+     shift's discipline, and accusing on a broken read is the worse error. */
+  if (!Number.isFinite(started) || !Number.isFinite(heartbeat)) return true;
+  return heartbeat - started > 1_000;
 }
 
 /** The seats that may open a run — the same list `PROGRAM.md` names. */

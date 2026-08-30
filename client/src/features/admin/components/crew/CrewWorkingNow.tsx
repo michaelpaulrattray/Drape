@@ -13,9 +13,17 @@
  * - **Working now** — a run with a live heartbeat.
  * - **Nothing running** — no open run. Said plainly, never left blank; #272's
  *   bar is *"With nothing running, it says so — never a stale 'working on'."*
- * - **Stalled** — an open run whose shift died without stamping it. Derived
- *   from the heartbeat in `shared/crewShiftState.ts`, because a shift that dies
- *   cannot write that it died.
+ * - **No check-in** — an open run that has not stamped a step inside the
+ *   window and has not stamped itself finished. Derived from the heartbeat in
+ *   `shared/crewShiftState.ts`, because a shift that dies cannot write that it
+ *   died.
+ *
+ *   ⚠ **It reports the fact and stops there (issue #295).** This block used to
+ *   read *"It has probably died"* — a CLAIM, and the founder read it over a
+ *   shift that had merged a PR thirty minutes earlier and shipped a briefing
+ *   edition one minute earlier. Nothing reports process liveness to the
+ *   database, so *dead* and *inside a long step* are indistinguishable from
+ *   here. The surface says WHEN the last check-in was and lets him judge.
  *
  * A fourth, and it is honest rather than a state of the team: **not live yet**,
  * when the table exists in the code and not in the database. It is drawn as an
@@ -56,6 +64,31 @@ function ago(value: Date | string, now: number): string {
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `${hours} h ago`;
   return `${Math.round(hours / 24)} d ago`;
+}
+
+/**
+ * An absolute wall-clock time, in HIS timezone — "20:17".
+ *
+ * Everything else on this strip is relative ("14 min ago") because a status
+ * strip reads better that way. The no-check-in line is the one place an
+ * absolute time earns its space: #295 asks for *"no check-in since HH:MM"*
+ * precisely so he can compare it against what he knows was happening — a merge
+ * he saw, an edition that landed — instead of doing the subtraction himself.
+ *
+ * The browser's own zone, not UTC: he reads this page on his machine, and a
+ * time he has to convert is a time he will not check.
+ *
+ * ⚠ **24-hour, forced.** The locale default here is `03:48 pm`, and it was
+ * shipped that way for exactly as long as it took to look at it: every other
+ * time in his world is 24-hour — the runner's close-stamps, the shift rows,
+ * his own #295 report quoting `19:46` and `20:17` — so the one clock he would
+ * be comparing against was the one written differently. Caught by rendering
+ * it, not by reading the diff.
+ */
+function clockTime(value: Date | string): string {
+  const then = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(then.getTime())) return "an unreadable time";
+  return then.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 /** The card reference and title, when the run named one. */
@@ -172,9 +205,19 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
 
       {state === "stalled" && open && (
         <>
+          {/*
+            ⚠ THE WORDS ARE A READING, NOT A VERDICT (#295). What is known is
+            the timestamp; what is NOT known is whether the process is alive.
+            Both possibilities are named, in that order, and neither is ranked —
+            the founder is the one with the terminal.
+          */}
           <p className="text-[13px] text-[#C0473A] mb-2">
-            Stalled — this shift has not checked in for over an hour and never stamped itself
-            finished. It has probably died.
+            No check-in since {clockTime(open.heartbeatAt)}
+            {" "}({ago(open.heartbeatAt, now)}), and it has not stamped itself finished.
+            {" "}
+            <span className="text-[#666]">
+              It may be inside a long step, or it may have died — this page cannot tell which.
+            </span>
           </p>
           <RunBody run={open} now={now} />
         </>
