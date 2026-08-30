@@ -356,3 +356,72 @@ describe("nothing draws a queue pill yet", () => {
     expect(/running ·/.test("<span>3 running · 40s</span>")).toBe(true);
   });
 });
+
+describe("the member stack is the CURRENT prototype's, and its fill is his ruling", () => {
+  /**
+   * #281, his verbatim corrections after looking at the live rail: *"`margin-
+   * right` is `-6px`, not `-7px`; and member faces are flat per-member colours,
+   * not a gradient — the gradient belongs to the account avatar."*
+   *
+   * ⚠ **BOTH ARE THE SAME FACT: the stack was built from the STALE prototype.**
+   * The old Canvas pack draws 22px faces at `-7px` with a per-face
+   * `linear-gradient(160deg,…)`; the current studio pack
+   * (`design_handoff_studio/Klieg Studio.dc.html:81`) draws 21px faces at
+   * `-6px` with a per-member `background`. The shipped block took its SIZE from
+   * the current pack and its overlap and fill from the stale one — which is his
+   * own *"you're reading the stale prototype"* complaint wearing CSS.
+   *
+   * So these arms exist to stop a future edit re-reading the wrong pack. A
+   * source read cannot see a cascade; the rendered rail was looked at in both
+   * themes and the frames are on the PR (law 6).
+   */
+  const faceRule = /\.dp-memberstack__face\s*\{[^}]*\}/;
+
+  it("the faces overlap by the current pack's -6px", () => {
+    const rule = code(FOUNDATION_CSS).match(faceRule)?.[0] ?? "";
+    expect(rule, "the matcher must find the rule at all").toMatch(/margin-right/);
+    expect(rule).toMatch(/margin-right:\s*-6px/);
+    expect(rule).not.toMatch(/margin-right:\s*-7px/);
+    expect(/margin-right:\s*-7px/.test("margin-right: -7px;"), "positive control").toBe(true);
+  });
+
+  it("a face is flat; the gradient stays on the account avatar", () => {
+    const rule = code(FOUNDATION_CSS).match(faceRule)?.[0] ?? "";
+    expect(rule, "the matcher must find the rule at all").toMatch(/background/);
+    expect(rule).not.toMatch(/linear-gradient/);
+    expect(
+      /linear-gradient/.test("background: linear-gradient(160deg, var(--media), var(--dashed));"),
+      "positive control",
+    ).toBe(true);
+
+    /* The other half of his sentence: the avatar KEEPS it. An arm that only
+       banned the gradient would pass just as well with it deleted everywhere,
+       which is not what he ruled. */
+    const account = code(FOUNDATION_CSS).match(/\.dp-account\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(account, "the matcher must find .dp-account").toMatch(/border-radius/);
+    expect(account).toMatch(/linear-gradient\(160deg/);
+  });
+
+  /**
+   * ⚠ **THE `+` HAS NO HOVER, AND ITS ABSENCE IS THE DECISION.** He asked for
+   * *"Make it live"* and *"give the `+` its hover back"* in one breath; the
+   * first cannot be done — there is no Members surface, no endpoint and no
+   * membership in the schema — so a hover response here would be an affordance
+   * on a control that goes nowhere. The house stub pattern he ratified says the
+   * same thing out loud: `.dp-rail__item--stub:hover` and
+   * `.dp-menuitem--stub:hover` both CANCEL hover.
+   *
+   * This arm is a TRIPWIRE, not a preference: it fails the day someone adds the
+   * hover, and the fix is to land it WITH the live destination, not to delete
+   * the arm.
+   */
+  it("the + gets its hover back only when Invite has somewhere to go", () => {
+    expect(code(FOUNDATION_CSS)).not.toMatch(/\.dp-memberstack__add:hover/);
+    expect(
+      /\.dp-memberstack__add:hover/.test(".dp-memberstack__add:hover { border-color: var(--ink); }"),
+      "positive control",
+    ).toBe(true);
+    /* The premise of the hold, asserted rather than remembered. */
+    expect(RAIL).toMatch(/className="dp-invite"[\s\S]{0,120}aria-disabled="true"/);
+  });
+});
