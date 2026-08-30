@@ -1,7 +1,7 @@
 {
-  "edition": 150,
-  "updatedAt": "2026-08-31T02:55:00+10:00",
-  "shift": "foreman-127",
+  "edition": 151,
+  "updatedAt": "2026-08-31T03:50:00+10:00",
+  "shift": "foreman-128",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "queue-titles-285",
+      "title": "Your background-work switches can name their cards — it needs one command from you",
+      "productImpact": "You asked, looking at the panel: “am i suppose to see a list under these categories?” It can now. Bugs (10) becomes Bugs (10) with five of them named underneath — #312, #308, #306, #296, #289 — and “+5 more” for the tail. Your own reason on the card is what decided the shape: a bare number asks you to trust the queue, and the queue is exactly what the freshness pass caught rotting. Ten is a night’s work; it says nothing about whether it is work you want. The code is written and tested. It is switched off until you run one command, and it is held from merging for a reason worth thirty seconds of your time.",
+      "workedExample": "The two pictures in the eye gallery below are the same panel: what you have now, and what you would have. Nothing else on the page moves. Titles are plain text, one line each, cut off at the edge rather than wrapping — a long card title is normal here, and this stays a switch panel rather than becoming the queue.",
+      "options": [
+        {
+          "key": "merge-and-run",
+          "label": "Say “merge it”, then run the one command (recommended)",
+          "consequence": "Two lines from you and the titles are on your panel. The command is:  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-queue-count-titles.mts --production  — it adds one optional column to the crew table it already created. Nothing else on the site touches that table."
+        },
+        {
+          "key": "wait-for-fable",
+          "label": "Leave it until your Fable reviewer is back",
+          "consequence": "Costs you nothing except more nights of bare numbers. The change waits in a finished state and a real reviewer reads it before it lands, which for anything touching the database is a fair instinct."
+        },
+        {
+          "key": "run-command-only",
+          "label": "Run the command now and decide about merging later",
+          "consequence": "Safe in either order — the column is optional and nothing reads it until the change is deployed. It just does not show you anything on its own."
+        }
+      ],
+      "recommendation": "Say “merge it” and run the command. The automatic checks all passed; the reason it is held is narrower than it looks. Anything touching the database folder gets flagged for your eye by a rule written for billing and login code, and while your Fable reviewer is out of credits those flagged changes wait. This one has no billing, login or payment code in it at all — it is your admin panel, a crew table, and tests. I did not want to merge past your own rule on my own reading of it, and holding cost nothing, because the feature is invisible until you run the command anyway.",
+      "state": "open",
+      "issueNumber": 285,
+      "filedAt": "2026-08-31T03:50:00+10:00"
+    },
     {
       "id": "members-question-281",
       "title": "Does the studio have workspaces with people in them — and when?",
@@ -948,6 +975,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "queue-titles-285-frames",
+      "title": "Your switch panel, before and after",
+      "question": "This is the whole change. Does naming five cards under each switch tell you what you wanted to know — or is it more than you want on a panel you look at from bed?",
+      "state": "open",
+      "filedAt": "2026-08-31T03:50:00+10:00",
+      "issueNumber": 285,
+      "cardId": "queue-titles-285",
+      "frames": [
+        {
+          "key": "crew-eye/b82b787c-64da-4560-a12b-0fecc2de2c4b.png",
+          "caption": "NOW — what your panel shows today. Bugs (10), Process (8), and nothing about what any of them are.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/7790b333-0a9b-4d68-9481-8408e07f48bb.png",
+          "caption": "AFTER — the same panel with the titles. Five per category, newest first, +5 more and +3 more for the tails. Security (0) still draws its row and its switch with nothing under it, so “nothing to do” stays different from “not offered”.",
+          "arm": null
+        }
+      ]
+    },
     {
       "id": "shell-on-casting-278",
       "title": "The casting page with its top bar back",
@@ -1824,6 +1872,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "queue-titles-285",
+      "title": "Your background-work switches name their cards (#285)",
+      "status": "in-review",
+      "prNumber": 314,
+      "note": "Written, tested and driven in the running app. HELD rather than merged: it adds a database column, and while your Fable reviewer is capped anything touching the database folder waits for your word. One line from you merges it."
+    },
     {
       "id": "nextup-availability-298",
       "title": "Your NEXT UP list now says WHY a card was skipped, instead of looking ignored (#298)",
@@ -2747,11 +2802,6 @@
   ],
   "journal": [
     {
-      "at": "2026-08-31T02:55:00+10:00",
-      "shift": "foreman-127",
-      "text": "YOUR QUEUE NOW TELLS YOU WHY IT SKIPPED SOMETHING — AND YOUR INVITE FACES CAME FROM THE WRONG PROTOTYPE.\n\nTwo things you asked for, both done tonight.\n\n1. “DID IT SKIP THINGS OR WHAT HAPPENED?”\n\nYou looked at your desk, saw eight items, saw a shift working on the sixth, and quite reasonably asked whether it had ignored the first five. It had not. It skipped five and every single skip was correct — the list simply had no way of telling you that. It could say one thing, “Waiting on you”, and those five were stuck for four different reasons.\n\nNow every row that is not takeable says so, in plain words, with the reason underneath. Go and look. #267 says Blocked — it waits on the Settings modal you have not briefed yet. #279 says Needs a sitting — it needs a real roll on your account to prove it, which is a whole night rather than a slot in a batch. #293 says Needs a sitting too, because half of it lives in scripts that are not in the repository at all. #302 says Blocked, on the Cast-deletion bug. #304 says Waiting on you. And under the list: “5 of 8 are held right now — a shift works down this list and takes the first row with nothing beside it.”\n\nNothing is reordered and nothing is hidden. That was your instruction and it was the right one: seeing that five of eight are stuck is exactly what would tell you to go and unblock one.\n\nThe part worth flagging is the bit that usually goes wrong. The REASON is a sentence somebody types, and sentences rot — your #278 card told you it was blocked for two whole shifts after it had been unblocked, for exactly that reason. So the state itself is not a sentence. It is a label on the card, one click to remove. And the sentence is only ever shown while that label is there. The moment somebody unblocks a card the label goes and the sentence goes with it, whatever it still says. A stale reason can no longer reach your page, because the label is the thing that draws it.\n\n2. THE INVITE FACES\n\nYou gave five fixes for the Invite block. Two were tiny — the faces overlap by the wrong amount, and they should be flat colours rather than a gradient. Both are done.\n\nWhat is worth telling you is that they had ONE cause, not two. I opened both design packs. The old Canvas prototype draws those faces 22 pixels wide, overlapping by 7, filled with a gradient. The current studio pack draws them 21 wide, overlapping by 6, each filled with that person’s own colour. The code had taken the SIZE from the current pack and the overlap and the fill from the old one. That is your own “you’re reading the stale prototype” complaint, showing up in the code rather than in a conversation. Both your numbers were right and they were the same mistake.\n\nI looked at it in the running app with two faces put into the stack, since there are no real members to draw. In light mode the gradient washed a 21-pixel circle out to nearly white. Flat reads as a person. You were right.\n\nTHE OTHER THREE ARE ON YOUR DESK, AND ONE OF THEM YOU MAY WANT TO OVERRULE.\n\n“Render real members” and “make it live” cannot be built, and not because they are hard. The product has no idea what a member is: no members table, no members screen, nothing on the server that could return one. Your sentence was “Members & invites already exists in the account menu, so the destination is real” — it does not exist. The prototype draws Members fourteen times, which is where that impression comes from. The card on your desk asks the real question: does the studio have workspaces with people in them, and when?\n\nThe third is the + getting its hover back, and I want to be straight that holding it is a judgement call rather than a blocker. You asked for it in the same breath as “make it live”, and it was the liveness that justified it — hover invites you to click. With Invite going nowhere, a hover is an affordance on a dead control, and the stub pattern you ratified for this rail cancels hover on everything else. If you want it anyway, say so: it is one line, and there is now a test that fails if anyone slips it in without the destination.\n\nTHE QUEUE, IN SHAPE\n\n90 open. 12 urgent. 7 that you ordered, of which 4 are held and now say why on your page. Nothing rotting — nothing has sat untouched for a week. It has not got worse.\n\nONE FINDING FILED, NOT WORKED\n\nWhile fixing the queue’s states I read every OTHER state on your page and asked which ones nothing ever re-checks. Two: the “problems” list, and the status chips at the top. Both are typed by a shift and never read back — the same shape as the thirty-three cards we found marked as waiting when the work was already finished. I wrote it down as a card rather than starting on it: what those should derive from is a real question per field, and one of them may have no mechanical answer at all."
-    },
-    {
       "at": "2026-08-31T01:45:00+10:00",
       "shift": "foreman-126",
       "text": "YOUR OPERATIONS FEED IS FIXED. YOUR CAST STILL WILL NOT DELETE — AND THE REASON IS NOT WHAT WE THOUGHT.\n\nYou said: \"i cannot delete this remaining legacy casting model for some reason\". Tonight I went and read what production actually did when you pressed it, rather than trusting the diagnosis we had written down. There are TWO faults, not one. We had blamed both on the same line. Only one of them was that line.\n\nFIXED TONIGHT — the first fault. Something in the studio counts how many pieces it removed when a Cast is deleted. One of those counters is called \"referencePlates\". We have a privacy rule that refuses to show anything whose name contains words like \"prompt\" or \"reference\", because those can carry your private recipe. The rule matched on the NAME alone — so a plain NUMBER, \"referencePlates: 0\", was refused as though it were a leaked secret. Twenty stored records on your account had that number in them, and every one of them broke the feed that shows what the studio is currently working on. Measured before: 20 of 20 failed. After: 20 of 20 pass. The rule now looks at the VALUE, not the name: a number cannot hold a secret, a sentence can, so a real prompt is still refused.\n\nNOT FIXED, AND HERE IS THE HONEST PART — the second fault, the one you actually asked about. Your Cast \"yejjjee\" refuses for a different reason entirely, and the guard fix does not touch it. Twenty-seven other Casts deleted cleanly that same morning. Yours has nine \"accepted candidate\" pictures attached to it, and the deletion checks each picture's filename against a pattern before it will let go of it. Those nine are filed under a folder called \"candidates\" and the check insists they be under \"plates\". They belong to you, they belong to that Cast, everything about them is correct — it is the FOLDER NAME the check disagrees with, and the studio itself is what put them there.\n\nWHY I DID NOT JUST FIX IT: because there are two different places in the studio that create these pictures, and they file them under two different folder names for the same kind of picture. So there is no single answer that is right for both, and this is the code that permanently deletes things. Picking wrong means deleting pictures that should have been kept, or keeping ones that should have gone. That is a judgement call on a destructive path, and the rule is that judgement calls wait for the Fable seat — which is still on your exhausted allowance. It is written up in full, with the measurements, as #308.\n\nWHAT THIS MEANS FOR THE LIBRARY PAGE: the plan said \"fix the guard, then you clear your old Casts, then we stub Library out\". Step one has moved — it is #308 now, not the guard. Library must NOT be stubbed before #308 lands, or your three legacy Casts are stranded with no door left to remove them.\n\nALSO TONIGHT — one word, everywhere. You said: \"Log out to Sign out — the Settings modal already says Sign out; pick one word.\" The product was saying both, on four screens. It says Sign out on all of them now. I opened both menus in the running app and looked. The other half of that card — Members & invites, Billing & credits — is still waiting on your Settings modal, because you ruled those three must not get their own pop-ups.\n\nTHE QUEUE: 90 open, 8 you have ordered, 13 urgent, nothing rotting. Two closed tonight, one new one opened (#308)."
@@ -2945,6 +2995,11 @@
       "at": "2026-08-30T00:55:00+10:00",
       "shift": "foreman-101",
       "text": "Took your two urgent cards as one brief, which is what #237 itself says they are. The tail was the satisfying one: you called it a framing fact and not an adjective, and the measurement agrees with you flatly — one frame in four today, four in four with the clause. The author law was cleaner than expected too; your own refused sheet was still sitting in the database with 'angular pauldrons, banded vambraces, a high sculpted collar' in it, so I used your failure as the control instead of inventing one, and four drafts under the new law named nothing. Where I have to be straight with you is the mouth. Your oni test does not separate the two blocks, because your own seed says 'prominent lower tusks' and a fact you state already overrides the block — so the old 'mouth closed' was being beaten by your words, not by the lane. I could have shown you three frames and called it proved. It is filed as #243 with the fixture that would actually settle it. One thing I deliberately did NOT do: ban garment, cut and jewellery words. Your law names four kinds of thing and only armour became a hard check, because a banned-word list over the world's clothing refuses good sentences — and I would rather tell you the check is narrower than the law than let a green tick imply otherwise. Your hero correction (#240) arrived while I was building and is the next shift's first job; I did not start it, because leaving half a rebuilt hero on your account overnight is the wrong trade. Your progress-ticks reference frame is carried up with this push."
+    },
+    {
+      "at": "2026-08-31T03:50:00+10:00",
+      "shift": "foreman-128",
+      "text": "YOUR SWITCH PANEL CAN NAME ITS CARDS NOW — AND IT NEEDS TWO LINES FROM YOU.\n\nYou looked at the background-work panel and asked: “am i suppose to see a list under these categories?” The answer was no, and you were right that it should be. It is built.\n\nWHAT IT LOOKS LIKE\n\nBugs (10) still says Bugs (10). Underneath it now names five of them — #312, #308, #306, #296, #289 — one line each, cut off at the edge, with “+5 more” at the bottom. Process (8) does the same with “+3 more”. Housekeeping (3) names all three and says nothing about a remainder, because there is not one. Security (0) draws its row and its switch with nothing under it, exactly as before — “nothing to do” has to stay different from “not offered”, which was your own sentence when we built the panel.\n\nBoth pictures are in the eye gallery below. That is the entire change; nothing else on the page moves.\n\nTHE REASON IT IS TITLES AND NOT JUST A BIGGER NUMBER\n\nYour words on the card, and they decided the shape: a count asks you to trust the queue, and the queue is exactly what the freshness pass caught rotting last week — a card claiming nothing was built about something running in production, a figure fifteen times out of date, a priority list whose eight entries were all closed. Ten open bugs tells you there is a night’s work. It tells you nothing about whether it is work you want, which is the only question a switch is asking you.\n\nIT COSTS NOTHING EXTRA TO PRODUCE, WHICH IS WHY IT IS WORTH DOING\n\nThe thing that counts your cards at the start of every shift already had them in its hand — it counts them by reading the list. The titles come out of that same read and are written in the same breath as the number, so the two can never disagree about which moment they describe. No new lookup, no extra call, nothing new for the site to depend on.\n\nTWO LINES FROM YOU, AND THE SECOND IS A JUDGEMENT I WANT TO BE STRAIGHT ABOUT\n\nThe first is a command that adds one optional column to the crew table you already created:\n\n  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-queue-count-titles.mts --production\n\nThe second is whether to merge it. Every automatic check passed. But the change is HELD, and the reason is narrower than it will look: a rule flags anything touching the database folder for your eye, and while your Fable reviewer is out of credits those flagged changes wait rather than merging on the machine checks alone. That rule was written for billing and login code. This change has none — it is your admin panel, a crew table and tests. So I could have argued it does not really apply. I did not, for one practical reason: merging it tonight would show you nothing, because it stays invisible until you run the command. Holding cost a night of nothing. Arguing past your own rule on my own reading would have cost the rule.\n\nIf you want it in, one line: merge it.\n\nWHAT I MADE SURE OF FIRST\n\nThe thing that worried me was your page going blank. Your whole Crew tab is a single request, so anything that breaks inside it takes the lot — and between this landing and you running that command, the column genuinely is not there. So both halves were built to work without it, and then I proved it the hard way rather than by reading the code: I deleted the column out of the test database and watched the real page. Counts intact, no titles, no “+5 more” hanging under an empty list, nothing broken. Then I put the column back.\n\nThat empty “+5 more” is the small detail I am most pleased about. In that window every category has a real count and no titles, so the obvious arithmetic would have drawn “+10 more” underneath a list naming nothing — promising you something that is not there, which is worse than the plain number you have now.\n\nONE THING THE SWEEP TURNED UP, ALREADY FIXED\n\nEach of these database ceremonies double-checks its table afterwards and complains if it finds a column it was not expecting — a good check. But it cannot tell a surprise column from one a later change legitimately added, so the ceremony YOU ran for this panel last week would have started refusing a perfectly correct database the next time anyone ran it. Fixed here. Two others have the same latent problem and are written down rather than patched, since neither can bite until someone adds a column to those tables.\n\nTHE QUEUE, IN SHAPE\n\n91 open. 12 urgent. 7 that you ordered, 4 of them held and saying why on your page. Nothing rotting — nothing has sat untouched for a week. Unchanged from last night apart from the one card this shift filed."
     }
   ],
   "acknowledgedReplyIds": [
