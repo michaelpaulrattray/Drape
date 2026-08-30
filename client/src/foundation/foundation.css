@@ -1674,3 +1674,164 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 .dp-marquee--pausable:hover .dp-marquee__track { animation-play-state: paused; }
 
 .dp-marquee__item { flex: none; }
+
+/* ------------------------------------------------------- menus and stubs */
+
+/*
+  Section 00b. Two components — the account menu and the utility menu — each
+  shipped its own `<style>` block for the same hover, which is how they drifted
+  apart. The hover lives here once now, and both consume it.
+
+  Weights: 400 for a label, 500 for a name or a mono eyebrow. Never 600 — the
+  foundation says so about itself (`index.ts`), and 600 was the single most
+  common violation in the chrome this section replaces.
+*/
+
+.dp-menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.dp-menuitem {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-5);
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  font: 400 12px var(--font-sans);
+  color: var(--secondary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.dp-menuitem svg {
+  flex: none;
+  color: var(--metaStrong);
+  transition: color var(--t-fast) var(--ease);
+}
+
+.dp-menuitem:hover { background: var(--well); color: var(--ink); }
+.dp-menuitem:hover svg { color: var(--ink); }
+
+.dp-menuitem__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Leaving the account is the one row that is not neutral (brief 00b §2). */
+.dp-menuitem--accent,
+.dp-menuitem--accent svg { color: var(--accentInk); }
+.dp-menuitem--accent:hover { background: var(--accentWash); color: var(--accentInk); }
+.dp-menuitem--accent:hover svg { color: var(--accentInk); }
+
+/*
+  A STUB NAMES A PLACE, NEVER A CAPABILITY (brief 00b §3, generalising the rule
+  `Rail.tsx` already ships). Same treatment as `.dp-rail__item--stub`: quiet,
+  no hover, no cursor change — and in the markup it is a `<span>` with
+  `aria-disabled`, so it is out of the tab order by construction rather than by
+  a `tabindex` somebody has to remember.
+*/
+.dp-menuitem--stub,
+.dp-menuitem--stub svg { color: var(--muted); }
+.dp-menuitem--stub { cursor: default; }
+.dp-menuitem--stub:hover { background: transparent; color: var(--muted); }
+.dp-menuitem--stub:hover svg { color: var(--muted); }
+
+/*
+  The group heading. It was two bare dividers with no label, which reads as an
+  accident rather than a section. Mono, because the eyebrow grammar everywhere
+  else in the product is mono (handoff 10 → Section header).
+*/
+.dp-menugroup {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5) var(--s-2);
+}
+
+.dp-menugroup__label {
+  flex: none;
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.13em;
+  color: var(--faint);
+}
+
+.dp-menugroup__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* Omitted at zero by the component — this never renders `(0)`. */
+.dp-menucount {
+  flex: none;
+  padding: 1px var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--fillStrong);
+  font: 500 9px var(--font-mono);
+  color: var(--metaStrong);
+}
+
+.dp-menu__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5) var(--s-5);
+}
+
+.dp-menu__avatar {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.dp-menu__name {
+  font: 500 12.5px var(--font-sans);
+  color: var(--ink);
+}
+
+/* A measured number is set in mono, wherever it appears (README §2). */
+.dp-menu__meta {
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-menu__rule {
+  height: 1px;
+  margin: var(--s-1) 0;
+  background: var(--border);
+}
+
+/*
+  Inert chrome in the topbar: the project switcher and What's new. Same rule as
+  the menu stubs — a `<span>`, `aria-disabled`, no hover, `--muted`. No unread
+  dot on either: a dot promises something to read, and there is nothing there.
+*/
+.dp-projswitch {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+  padding: 5px var(--s-4) 5px var(--s-3);
+  border-radius: var(--r-btn);
+  font: 400 12px var(--font-sans);
+  color: var(--muted);
+  cursor: default;
+}
+
+.dp-projswitch svg { flex: none; color: var(--muted); }
+
+.dp-iconbtn--stub { color: var(--muted); cursor: default; }
+.dp-iconbtn--stub:hover { background: transparent; }
