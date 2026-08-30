@@ -1,6 +1,6 @@
 {
-  "edition": 127,
-  "updatedAt": "2026-08-30T12:55:00+10:00",
+  "edition": 128,
+  "updatedAt": "2026-08-30T13:20:00+10:00",
   "shift": "foreman-114",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -329,43 +329,12 @@
     },
     {
       "id": "lobby-segments-228",
-      "title": "The lobby redesign, broken into six pieces — tell me which one you want first (#228)",
-      "productImpact": "You authorised the lobby redesign as a side lane while your Claude credits are out, in segments, with your eye between each. Here are the six pieces, in the order I would land them. Nothing is built until you name the first one. One thing you should know before you pick, because it is the biggest single object on the design's home screen: the prompt box across the top — Image / Video / Try-on / UGC / Upscale / Voice — is the one thing this lane cannot honestly build. Five of those six are capabilities the product does not have at all (there is no video, no UGC, no voice, no upscale anywhere in the server), and the sixth is the casting entrance, which is frozen in this lane so it cannot muddy the milestone review. Everything in the six segments below is a piece the product can genuinely serve today, with no new capability and no casting change.",
-      "workedExample": "Segment 1 (Home) is the clearest example of the difference. Today /app is a page title, a grid of your recent work, and three numbered text rows (Casting Studio / Wardrobe / New Canvas). After segment 1 it is the designed landing: a greeting, then WHAT IS RUNNING RIGHT NOW — we already have live job data and have never once shown it on the lobby — then WHAT JUST LANDED, then YOUR CAST with a 'New cast member' tile first. Same data we already hold, arranged the way your design handoff arranges it.",
-      "options": [
-        {
-          "key": "home",
-          "label": "Segment 1 — HOME",
-          "consequence": "The landing page becomes what is running, what just landed, and who you can cast, with a two-card quick start (cast a model / wire a canvas). Largest of the six, and the one that establishes the card grammar every later segment is assembled from — building it first is what stops a rework pass later. Not drawn: the prompt box, for the reason above."
-        },
-        {
-          "key": "library",
-          "label": "Segment 2 — LIBRARY, organised by when you made it",
-          "consequence": "One library grouped TODAY / YESTERDAY / EARLIER THIS WEEK / EARLIER with search, instead of the three separate list pages the rail points at now. It also settles where things live: your design splits Library (what we generated) from Assets (what you supplied), and our data already knows which is which. Not built: the 'Kept / All' lens, because there is no 30-day clearing rule to be honest about."
-        },
-        {
-          "key": "canvas",
-          "label": "Segment 3 — THE CANVAS TAB",
-          "consequence": "Your boards page reads as a designed collection — a dashed 'New canvas' tile first, then board cards with a real picture, node count and last-run line. This is where your own old note L3 gets answered: what a canvas card's picture actually is, and where archived canvases go. Both are your calls; the segment brings you the options rather than choosing. Not built: the template strip and the 'wire it' prompt box (we have no templates and no board-writing agent)."
-        },
-        {
-          "key": "assets",
-          "label": "Segment 4 — ASSETS (the first of the three dead rail items made real)",
-          "consequence": "The Assets item stops being an icon that does nothing and holds what you supplied — your garments today, upload tile first, with real counts. The reference pictures you attach to a Cast are also supplied material, but they belong to a Cast behind a casting flag, so pulling them in here is a casting change: v1 is garments only and the reference question gets carded rather than guessed."
-        },
-        {
-          "key": "stubs",
-          "label": "Segment 5 — CREATE and TEMPLATES made honest",
-          "consequence": "Clicking Create or Templates lands on a page that says in one line what will live there, instead of an icon that does nothing. Declared scaffolding under your own placeholder rule, each linking the real capability's card. One sitting, and it blocks nothing."
-        },
-        {
-          "key": "icons",
-          "label": "Segment 6 — THE RAIL'S ICONS",
-          "consequence": "Your own note L5: the seven rail icons become marks drawn for us in the house language rather than the off-the-shelf set they are today — your words, 'explicitly not generic AI-slop icons'. Pure taste, no capability, entirely your eye. One sitting."
-        }
-      ],
-      "recommendation": "Start with Segment 1, HOME. It is the surface you land on every time you open the app, it is the biggest visible change for the work, and it establishes the card grammar segments 2 to 4 reuse — so building it first is what stops a reconciliation pass later. It is also the largest of the six: if you would rather see something land tonight, segment 6 (the icons) or segment 5 (the two honest pages) are single sittings and neither blocks anything. Full reasoning, the capability audit behind it, and the six things this lane deliberately will NOT build are in docs/specs/LOBBY_REDESIGN_SEGMENT_PROPOSAL.md and on #228.",
-      "state": "open",
+      "title": "The lobby lane - you named the starting point, and corrected what we were reading",
+      "productImpact": "Answered, and the lane is unblocked. You did not pick from my six - you corrected the thing they were written against, which is more useful.\n\nThe stale prototype: taken. Your updated pack is the one being read from now on, and step one is the spec refresh with no code, checked against your own test - the rail should show eight items including Cinema.\n\nThe order: 00 then 00b, not Home, and your reason is on the card because it is the whole point - Home is a surface, surfaces are assembled from the nine components 00 adds, and building Home first means building those nine inline and pulling them out again later. 00's acceptance test being \"nothing looks different\" is a good test and it is written down as one.\n\nThe unbuilt-capability reversal is taken as the ruling it is. Unbuilt things get designed in and greyed out, following the stub pattern the rail already uses - so the prompt box ships with Image live and the other five visible, greyed, \"not built yet\" on hover, not clickable, and no unread dot. Your line \"a stub names a place, never a capability\" is the rule now. The old no-dead-links comment in the code is marked superseded so nobody quotes it back at a reviewer next month.\n\nLibrary as a replacement rather than a reconciliation, Library vs Assets as settled, the Kept/All lens shipping without the 30-day rule behind it - all recorded, including your instruction that if the data cannot answer the split cleanly that is a migration job and not a question to hand back to you.\n\nAnd the one that governs everything else: casting is the only really designed page, so it is the reference and not a subject, and where the briefs are silent the answer is whatever casting already does. Prefer replacing over adapting.\n\nNothing is built yet. Your reply came in at the very end of the shift, and it starts with a spec refresh - starting that with twenty minutes left is how somebody ends up building against a half-refreshed prototype. It is two PRs and then you look, exactly as you asked.\n\nOne thing I did do: the pack you pointed at was sitting on the machine untracked, not in the repository at all, with the tidy-up patrol due tomorrow. It is committed now, so the briefs cannot be swept and the path in your message resolves.",
+      "workedExample": null,
+      "options": [],
+      "recommendation": null,
+      "state": "answered",
       "filedAt": "2026-08-29T18:05:00+10:00",
       "issueNumber": 228
     },
@@ -902,7 +871,7 @@
       "id": "lobby-before-228",
       "title": "Your lobby as it stands tonight — the before pictures, so the segment you pick has something to be measured against",
       "question": "NOTHING HAS BEEN BUILT. The card above still asks you to name segment 1, and it still will after you look at these.\n\nWHY THESE EXIST. Every lobby segment ships with a before-and-after pack: the same screen, shipped against the mockup, in both light and dark. The AFTER half gets taken when a segment is built. The BEFORE half is the same photographs every time, so I took them once tonight rather than five times later — and they are also the fairest way to show you what you are choosing between.\n\nWHAT YOU ARE LOOKING AT. Home, Canvas and Library as they are right now, plus the rail. Photographed in the running app on a test account, not drawn.\n\nTHE ONE THING WORTH YOUR ATTENTION. Look at Home. That is the landing page of the studio: a title, a row of recent work, and three lines of text under the word TOOLS. It is the smallest surface in the product and it is the first thing anyone sees. Everything the design handoff draws for that page — the big composer with its six modes — is five capabilities we do not have and one (image) that is the casting entrance, which this lane is frozen out of. So a Home segment would give you the greeting, what is running right now, what just landed and who you can cast — and it would NOT give you the composer. That is the honest trade, and it is why Home is my recommendation rather than my certainty.\n\nTWO THINGS I DO NOT WANT YOU TO MISREAD.\n1. On the Canvas picture, one card shows a broken-picture symbol. That is not a bug in the product. That object was written by an old test script without saying it was an image, so the browser refuses to paint it; every real place the product saves a picture says so properly (I read all 24). It is rubbish in the test database and it will keep appearing in these shots.\n2. Two of the three Library lists are empty here because the test account has no garments and no looks — not because those pages are broken.\n\nNOTHING IS ASKED OF YOU HERE. Judge the card, not these. If they change your mind about which segment goes first, that is exactly what they are for.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-29T19:05:00+10:00",
       "issueNumber": 228,
       "frames": [
@@ -2234,6 +2203,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T13:20:00+10:00",
+      "shift": "foreman-114",
+      "text": "You named the lobby starting point - 00 then 00b, then stop and show you. Taken exactly like that, and nothing is started, because your reply landed in the last minutes of the shift and its first step is a spec refresh. Beginning that half-done is the one way to waste both PRs.\n\nThe correction about the stale prototype is the useful part and it is now in the team's own instructions rather than only on the card, so the next shift reads your pack and not the old one. Your check - eight items in the rail including Cinema - is written down as the test for that step.\n\nYour reversal on greyed-out features is recorded as a ruling that changes existing code, not just future design: there is a comment in the utility menu justifying the opposite, and it is marked superseded so nobody quotes it at a reviewer next month. The fix living next to it - the one that stopped the menu being unclickable behind the theme toggle - is flagged as NOT superseded, because obeying one half of that file while undoing the other is an easy mistake to make.\n\nOne thing I did without being asked, and I would rather tell you than not: the pack you linked was sitting on my machine untracked - not in the repository at all - and the tidy-up patrol is due tomorrow. I committed the five briefs so they cannot be swept and so your path resolves for whoever picks this up."
+    },
+    {
       "at": "2026-08-30T12:55:00+10:00",
       "shift": "foreman-114",
       "text": "Last one, and then I am done for the night.\n\nThe Fable cap: understood, doing nothing, and I have written on the card that nobody should measure it again. Three of us investigated it on three nights and every reading was right and none of it was needed - it was a date. That is the kind of thing worth saying out loud so the next shift does not make it four.\n\nTonight in one line: your lookalike reader is ruled to N3 and the note is written with the measurements and the list of places it actually affects; your species sentence and its four checks are written down and deliberately not started; the reader court's verdict is void and Sonnet stays; the hero is done; the bug-report reader and the MAX author fixes are specified and waiting. Everything you said tonight is on its issue in your own words.\n\nThe one thing still sitting with you is lobby segment one. Nothing in that lane can start until you name it, and I have not touched it."
@@ -2427,11 +2401,6 @@
       "at": "2026-08-29T02:20:00+10:00",
       "shift": "foreman-83",
       "text": "Third quiet maintenance night. No reply from you (25 of 25, read at both ends), the Janitor is not due until 07:35 this morning, and I checked the refusal patrol's trigger against production rather than assuming — no new content-filter refusals since it last ran, so it does not fire. That left the queue, and I took #198.\n\nWHAT IT WAS, in plain terms. Sign and Delete are the same dialog wearing different words. The line of styling that sizes the portrait in it was aimed one level away from the actual picture, so it has applied to nothing for as long as it has existed — the Sign portrait was just being cut off at the bottom by the frame around it. The Delete portrait, because its grey-out sits in a slightly different place, DID get the instruction. So the same face was cropped two different ways depending on which button you pressed. Nobody noticed because all our renders are the same shape and the two happen to land in nearly the same place.\n\nWHY IT HAD BEEN SITTING THERE. The shift that found it, months of work ago, deliberately did not fix it: the obvious repair moves the face about 27 pixels, and moving faces in two dialogs you have already signed off is your call. That was the right instinct.\n\nWHAT CHANGED TONIGHT IS THAT THE PREMISE TURNED OUT TO BE WRONG. There is a version of the fix where nothing moves at all — anchor the crop to the top, which is where the browser was already cutting. I did not want to take my own word for that, so I measured it: the Delete portrait is identical to the last pixel, and for the Sign portrait I built the version that DOES move and put both through the same measurement, so 'looks the same' is a number with a control behind it rather than an impression. Frames are in your gallery. If you would rather have the centred crop after looking, it is one line.\n\nTHE ONE RISK IN IT, said out loud because it is the part that could have bitten. Fixing this rule meant it also reaches two neighbours it did not reach before — including the concept review you looked at yesterday. Left alone, that would have shoved your uploaded picture to the top of its frame with all the empty space underneath. I found it before shipping, pinned it, and proved it at the screen by building the broken version on purpose and photographing it.\n\nTWO THINGS FILED AND NOT WORKED, because the rule here is that a shift with no brief does not invent one. The sweep this card ordered found four styling rules pointing at things that no longer exist anywhere in the app — dead weight, nothing you would see, filed for the cleanup patrol. And our colour checker turned out to read a three-digit ISSUE NUMBER as a colour code, which is the fourth time this studio has built a checker that owns a word it was never aimed at. Both are cards.\n\nCost: no credits, no renders. Two cents of house money — the concept dialog's reader, because checking that neighbour properly meant opening the real dialog rather than faking it."
-    },
-    {
-      "at": "2026-08-29T01:30:00+10:00",
-      "shift": "foreman-82",
-      "text": "Second quiet maintenance night. You had not replied, no patrol was due, so I took the item last night's shift measured and filed rather than rushing.\n\nWHAT IT WAS. The studio keeps a map of every door it can refuse you at, and a rule that a new refusal cannot ship without appearing on it. Last night we found the upload reader's five refusals missing. Tonight it is the casting brief's own walls — all five of them, including the two that matter most to you: the wall that refuses a real person or a named character, and the wall that refuses something that is not a being. The likeness wall answers a real customer every time somebody types a famous name, and the map had never heard of it. Its twin — the same boundary drawn at the upload reader — went onto the map last night, so until tonight the map showed you exactly one half of one rule.\n\nThe reason is dull and worth one sentence: the map looks for refusals written in three particular shapes, and the casting brief writes its refusals in a fourth. Nothing was broken; it was unseen.\n\nTHREE THINGS FELL OUT OF DOING IT, and they are the part worth your attention.\n\nOne. The \"we can't cast anime or illustration yet\" sentence had been TYPED OUT TWICE, word for word, in two different places in the code, and nothing checked that the two copies still matched. Either one could have been reworded and the studio would have quietly started saying two different things to two sets of customers. One copy now, and a test holds its exact wording.\n\nTwo. The map has been telling us a door is \"unreachable by design\" for doors people walk into every day. What it actually means is narrower — that our automated test run cannot reach that door, which is a fact about our testing and not about your customers. It now says that instead. Small, but it is the map's whole job not to say things that are not true.\n\nThree, and this one is about YOUR product rather than our tooling: the map's note on the Retry button still said it was switched off for everyone with \"live population zero\", when you switched it on for your account on the 27th. So the map was carrying a false claim about what the studio does today. Corrected, and I swept the rest of that file for the same mistake — that was the only one.\n\nI ALSO BROKE THE MAP FOR TEN MINUTES AND IT IS THE BEST FINDING OF THE NIGHT. Writing the new code, I explained in a comment what shape the map searches for — and the map read my explanation as a real refusal and invented a door that does not exist. The tool was reading its own documentation as if it were the product. It now ignores comments the way its sibling reader already did, and I measured that the change removes exactly the phantom and no real door.\n\nONE THING I FOUND AND DELIBERATELY DID NOT CHANGE. Four of the five walls end with \"you have not been charged\". The fifth — the one for a brief too short to cast from — does not. It is defensible and probably fine, but it is your call and not mine, so it is recorded rather than quietly \"fixed\".\n\nCost: nothing. No credits, no renders, no reader calls, no flags moved. Not one customer-visible sentence moved a single character, and the two walls you care about are now pinned letter by letter so that claim is checkable rather than something I am asking you to take on trust."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2475,6 +2444,7 @@
     38,
     39,
     40,
-    41
+    41,
+    42
   ]
 }
