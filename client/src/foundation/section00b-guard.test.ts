@@ -135,12 +135,34 @@ describe("a stub names a place and can never be reached", () => {
     expect(STUB_MARKUP.test(sabotaged), "a button stub must not pass as inert").toBe(false);
   });
 
-  it("both topbar stubs are spans, aria-disabled, and carry the tooltip", () => {
-    for (const stub of ["Projects — not built yet", "What's new — not built yet"]) {
+  /*
+    ⚠ **IT WAS TWO AND IT IS THREE — section 02 §1c added the centred search**,
+    which is a stub of exactly this family and passes exactly these rules.
+
+    THE COUNT IS DERIVED RATHER THAN TYPED. It used to read `.toBe(2)`, and a
+    literal count is a fixture pin: the next stub makes a correct file fail, and
+    the tempting repair is to bump the number, which is a repair to the arm
+    rather than a reading of the file. What the rule actually says is that EVERY
+    inert thing here is `aria-disabled` and EVERY one says why — so the arm is
+    that the two populations are the SAME SIZE, and that each named stub is
+    present. A stub added without its tooltip, or a tooltip without its
+    `aria-disabled`, breaks the equality whatever the total is.
+  */
+  it("every topbar stub is a span, aria-disabled, and carries the tooltip", () => {
+    for (const stub of [
+      "Projects — not built yet",
+      "What's new — not built yet",
+      "Search — not built yet",
+    ]) {
       expect(CHROME_STUBS).toContain(stub);
     }
     expect(CHROME_STUBS).not.toMatch(/<button/);
-    expect(CHROME_STUBS.match(/aria-disabled="true"/g)?.length).toBe(2);
+    const inert = CHROME_STUBS.match(/aria-disabled="true"/g)?.length ?? 0;
+    const explained = CHROME_STUBS.match(/title="[^"]* — not built yet"/g)?.length ?? 0;
+    expect(inert, "a file with no stubs would pass this vacuously").toBeGreaterThan(0);
+    expect(inert, "an inert element with no tooltip, or a tooltip with no aria-disabled").toBe(
+      explained,
+    );
   });
 
   it("the stub look is muted and has no hover, in the CSS as well as the markup", () => {

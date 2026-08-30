@@ -195,23 +195,104 @@
   background: var(--borderSoft);
 }
 
-.dp-account {
-  width: 30px;
-  height: 30px;
-  border: none;
+/*
+  THE RAIL'S FOOT IS THE WORKSPACE NOW (section 02 §2c) — the account chip and
+  its menu moved to the topbar, and what is left here is the member stack, the
+  Invite affordance and the gear.
+
+  ⚠ **NO INVENTED FACES.** The prototype draws two members plus the `+`; this
+  product has no members API, so the stack renders whatever it is GIVEN, which
+  is nothing today, and the `+` alone. His rule from the 00b frames: *"A number
+  in a screenshot that no server produces is a lie that survives into the
+  build."* A face is that sentence with a picture instead of a number.
+*/
+.dp-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  cursor: default;
+}
+
+.dp-memberstack {
+  display: flex;
+  align-items: center;
+}
+
+.dp-memberstack__face,
+.dp-memberstack__add {
+  width: 21px;
+  height: 21px;
+  flex: none;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1.5px var(--raised);
+}
+
+.dp-memberstack__face {
+  margin-right: -7px;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--media), var(--dashed));
+  font: 500 9px var(--font-sans);
+  color: var(--linkHover);
+}
+
+.dp-memberstack__face > img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Dashed, because it is an opening rather than a person. */
+.dp-memberstack__add {
+  border: 1px dashed var(--muted);
+  background: var(--surface);
+  color: var(--metaStrong);
+}
+
+.dp-invite .dp-rail__label { color: var(--metaStrong); }
+
+/*
+  THE ACCOUNT CHIP, at the topbar's right end (section 02 §2b). The avatar is
+  the same 30px circle it was in the rail, sized down to 24px inside a pill
+  that also carries the chevron: *"the face is you, the gear is settings."*
+*/
+.dp-account-anchor { position: relative; display: flex; flex: none; }
+
+.dp-accountchip {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: none;
+  padding: 3px 9px 3px 3px;
+  margin-left: 2px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--meta);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+
+.dp-accountchip:hover { background: var(--fillStrong); }
+
+.dp-account {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
   background: linear-gradient(160deg, var(--media), var(--dashed));
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 500 10.5px var(--font-sans);
+  font: 500 10px var(--font-sans);
   color: var(--linkHover);
   box-shadow: 0 0 0 1px var(--borderCard);
-  cursor: pointer;
-  transition: box-shadow var(--t-fast) var(--ease);
 }
-
-.dp-account:hover { box-shadow: 0 0 0 1px var(--ink); }
 
 .dp-account > img {
   width: 100%;
@@ -220,13 +301,11 @@
   object-fit: cover;
 }
 
-.dp-account-anchor { position: relative; }
-
-/* Opens up and to the right of the chip — the rail is at the viewport edge. */
+/* Opens down and right-aligned — the chip is at the viewport's other edge now. */
 .dp-account-menu {
   position: absolute;
-  left: calc(100% + var(--s-3));
-  bottom: 0;
+  right: 0;
+  top: calc(100% + var(--s-3));
   z-index: 40;
   width: 200px;
   padding: 5px;
@@ -235,7 +314,7 @@
   background: var(--surface);
   box-shadow: var(--shadowPop);
   animation: dp-scaleIn var(--t-mid) var(--ease) both;
-  transform-origin: left bottom;
+  transform-origin: right top;
 }
 
 /* Below ~720px the rail is icon-only (README §7). */
@@ -282,42 +361,108 @@
   z-index: 25;
 }
 
-.dp-topbar__brand {
+/*
+  THREE ZONES: context - search - you (section 02 §1).
+
+  It was two, with 800px of nothing in the middle. The brand wordmark that used
+  to open the bar is GONE (§1a): `BrandOrb` carries the brand at the top of the
+  rail, two inches away, and the space belongs to the project switcher.
+*/
+.dp-topbar__context {
   display: flex;
   align-items: center;
   gap: 11px;
   flex: none;
+  min-width: 0;
 }
 
-/* The brand block is not a switcher until workspaces exist (plan §B-8). */
-.dp-brandblock {
+.dp-topbar__centre {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: var(--s-3);
-  font: 500 12.5px var(--font-sans);
-  color: var(--ink);
+  justify-content: center;
+  min-width: 0;
 }
 
-.dp-brandblock__tile {
-  width: 16px;
-  height: 16px;
-  border-radius: 5px;
-  background: linear-gradient(150deg, var(--accentSolid), var(--accentLine));
+.dp-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
   flex: none;
 }
 
 .dp-topbar__divider {
   width: 1px;
   height: 18px;
+  flex: none;
   background: var(--borderSoft);
 }
+
+/* The one between the balance chips and the icon buttons stands a little off. */
+.dp-topbar__divider--gutter { margin: 0 3px; }
 
 .dp-breadcrumb {
   font: 400 12.5px var(--font-sans);
   color: var(--metaStrong);
+  white-space: nowrap;
 }
 
-.dp-topbar__spacer { flex: 1; }
+/*
+  THE SEARCH (§1c). A `<span>` wearing a field's clothes, and it stays one:
+  see `ChromeStubs.tsx` for his ruling and `section02-guard.test.ts` for the
+  arm that stops it becoming an input again. `cursor: text` is the only place
+  it borrows from a real field; it takes no focus, no keys and no click.
+*/
+.dp-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 400px;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 11px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-md);
+  background: var(--raised);
+  color: var(--meta);
+  cursor: text;
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+
+.dp-search:hover {
+  border-color: var(--sink);
+  background: var(--surface);
+}
+
+.dp-search svg { flex: none; color: var(--meta); }
+
+.dp-search__label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 400 12.5px var(--font-sans);
+  color: var(--meta);
+}
+
+.dp-search__keys {
+  display: flex;
+  gap: 3px;
+  flex: none;
+}
+
+.dp-search__key {
+  padding: 1px 5px;
+  border: 1px solid var(--borderSoft);
+  border-radius: 4px;
+  font: 500 10px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-search__key:first-child { padding: 1px 4px; }
 
 /*
   Credit balance (D-45: visible on every surface that can spend). Mono,

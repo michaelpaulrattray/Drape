@@ -23,10 +23,13 @@ export { AppShell } from "./AppShell";
 export { BrandOrb } from "./BrandOrb";
 /* Section 00b (brief 00b §3, §4) — inert topbar chrome. */
 export { ProjectSwitcherStub, WhatsNewStub } from "./ChromeStubs";
+/* Section 02 (brief 02 §1c) — the centred search, a span and never an input. */
+export { SearchStub } from "./ChromeStubs";
 export { BRAND_NAME } from "./brand";
 export { RAIL_DESTINATIONS, Rail } from "./Rail";
-export type { RailAccount, RailDestinationId } from "./Rail";
-export { Topbar } from "./Topbar";
+export type { RailDestinationId, RailWorkspace } from "./Rail";
+export { Topbar, TopbarDivider } from "./Topbar";
+export type { TopbarAccount } from "./Topbar";
 export {
   applyTheme,
   DEFAULT_THEME,

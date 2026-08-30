@@ -17,10 +17,11 @@ import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
-import { AppShell, CreditsChip, ProjectSwitcherStub, WhatsNewStub } from '@/foundation';
+import { AppShell, CreditsChip, ProjectSwitcherStub, TopbarDivider, WhatsNewStub } from '@/foundation';
 import type { RailDestinationId } from '@/foundation';
 import { UserCard } from '@/components/UserCard';
 import { LobbyUtilityMenu } from '@/features/lobby/LobbyUtilityMenu';
+import { ReportBugButton } from '@/features/lobby/ReportBugButton';
 import { HomeView } from '@/features/lobby/HomeView';
 import { BoardsView } from '@/features/lobby/BoardsView';
 import { LibraryView } from '@/features/lobby/LibraryView';
@@ -101,17 +102,31 @@ export default function AppLobby() {
          inert — and "All projects" is true today rather than a placeholder,
          which is what keeps the stub honest. No projectId reaches any query. */
       topbarLeft={<ProjectSwitcherStub />}
-      /* 00b §5, left to right: queue pill -> credits -> utility -> what's new,
-         then the shell's own theme toggle. The queue pill is NOT built here —
-         it needs a real jobs feed (section 04) and a fake one would be a lie
-         about what is running. The slot is simply left for it. */
+      /* 02 §1d, left to right: queue pill -> credits -> divider -> bug -> help
+         -> what's new, then the shell's own theme toggle and the account chip.
+
+         THE QUEUE PILL IS NOT BUILT HERE and the space is left empty on
+         purpose. It needs a real jobs feed, and `3 running · 40s` over nothing
+         is a lie about what the studio is doing — his own words on the 00b
+         frames: *"A number in a screenshot that no server produces is a lie
+         that survives into the build."*
+
+         REPORT A BUG IS ITS OWN ICON now rather than a row two clicks inside
+         the help menu (02 §1d). */
       topbarRight={
         <>
           <CreditsChip balance={creditsData?.balance} onClick={() => setIsBillingOpen(true)} />
+          <TopbarDivider />
+          <ReportBugButton />
           <LobbyUtilityMenu />
           <WhatsNewStub />
         </>
       }
+      /* 02 §2c: the rail's foot is the workspace. The member stack has no
+         members to draw — there is no members API — so what ships is the
+         Invite affordance, inert, and the gear, which opens the settings this
+         page already owns. */
+      workspace={{ onOpenSettings: () => setShowSettings(true) }}
       account={
         user
           ? {
