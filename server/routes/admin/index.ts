@@ -8,6 +8,7 @@ import { changeRequestsRouter } from "./changeRequests";
 import { overviewRouter } from "./overview";
 import { announcementsRouter } from "./announcements";
 import { inviteCodesRouter } from "./inviteCodes";
+import { bugReportsRouter } from "./bugReports";
 
 /**
  * Admin router — combines all admin sub-routers into a flat namespace.
@@ -35,4 +36,6 @@ export const adminRouter = router({
   ...announcementsRouter._def.procedures,
   // Invite Code Management
   ...inviteCodesRouter._def.procedures,
+  // Bug-report inbox (#255) - the reader a customer's report never had
+  ...bugReportsRouter._def.procedures,
 });

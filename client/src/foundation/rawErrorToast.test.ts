@@ -40,6 +40,16 @@ const EXEMPT: Record<string, string> = {
   // Staff surfaces: the raw text IS the useful text when you are investigating.
   "pages/AdminUserManagement.tsx": "admin support — raw error is the diagnostic (fable-677 §3)",
   "pages/AdminInviteCodes.tsx": "admin support — raw error is the diagnostic (fable-677 §3)",
+  /*
+    The bug-report inbox (#255) is a staff support surface on the same ground,
+    and it is worth one extra sentence because the SUBJECT is customer prose:
+    the only failure an admin sees here is their own status update refusing, and
+    hiding why it refused from the person doing support work is the regression
+    fable-677 §3 names. Nothing a CUSTOMER can trigger reaches a toast on this
+    page — the reader is a query with no user-facing failure path — so the
+    exemption cannot leak a gateway's sentence into anyone's product copy.
+  */
+  "pages/AdminBugReports.tsx": "admin support — raw error is the diagnostic (fable-677 §3)",
   "features/admin/overview/BannerManagement.tsx": "admin support — raw error is the diagnostic",
   "features/moderator/UserInvestigationWidgets.tsx": "moderator support — raw error is the diagnostic",
   "features/moderator/ReconciliationSubTab.tsx": "moderator support — raw error is the diagnostic",
