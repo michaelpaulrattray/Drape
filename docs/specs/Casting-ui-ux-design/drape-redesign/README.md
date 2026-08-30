@@ -1,4 +1,12 @@
-# Drape UI redesign — the running order
+# Drape UI redesign — one brief at a time
+
+> ⚠ **This file was called "the running order" and there is no longer a running
+> order.** Founder, 2026-08-30: *"disregard the plan for earlier and ill just
+> send you a breif per ui/ux re-design and we can figure it out from there."*
+> **A section exists when he sends its brief.** No shift picks the next one, and
+> no list in this folder names it — see `START-HERE.md` for the current state
+> and `BRIEF-RECONCILIATION.md` for what to do with a brief when it arrives.
+> Item 1 below is struck for the same reason; items 2 and 3 stand.
 
 ## Read this first: what this folder is, and is not
 

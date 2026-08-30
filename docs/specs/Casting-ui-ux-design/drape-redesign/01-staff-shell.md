@@ -1,3 +1,5 @@
+> ⚠ **NOT A QUEUED SECTION.** This brief was written under the retired numbered plan (see `START-HERE.md`). It is approved and specified — his reply #43 on #262 — but it runs only when he says so. Its number is a file name, not a position.
+
 # 01 — Staff shell adoption
 
 **Prerequisite: section 00.** Staff-only, so nothing customer-facing can break.

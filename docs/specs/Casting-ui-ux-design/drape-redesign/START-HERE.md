@@ -10,8 +10,33 @@ Read `README.md` next — it carries the running order, the rules, and the reaso
 |---|---|
 | ✅ **00 — Foundation top-up** | Merged. Nine components, four keyframes, the popover hook. Zero changed pixels. |
 | ✅ **00b — Chrome and menus** | Merged. Account menu, utility menu, topbar, the inert-stub rule. |
-| ▶ **01 — Promotion: five parts out of casting** | Next. |
-| | Then 02 Admin & Moderation → 03 Crew → 04 Home → 05 Library & Assets → 06 Canvas tab → 07 Templates → 08 Create → 09 Cinema → 10 Retire the legacy nav. |
+| ▶ **02 — Topbar and rail** | **RUNNING** — card #270. The frame every page sits inside. |
+| ⏸ **01 — Promotion: five parts out of casting** | Approved and specified (his reply #43 on #262), **not yet run**. It is the first thing to take when he next says so — the number is its file name, not its position. |
+
+⚠ **THERE IS NO RUNNING ORDER ANY MORE — struck 2026-08-30 by the founder.**
+This table used to end *"Then 02 Admin & Moderation → 03 Crew → 04 Home → 05
+Library & Assets → 06 Canvas tab → 07 Templates → 08 Create → 09 Cinema → 10
+Retire the legacy nav."* **That list is dead.** His words:
+
+> *"disregard the plan for earlier and ill just send you a breif per ui/ux
+> re-design and we can figure it out from there"*
+
+and, when he parked the lane:
+
+> *"we're switching to one brief per thing, written just before it's built. No
+> more specifying six sections ahead."*
+
+**A section exists when he sends its brief, and not before.** Sections arrive in
+whatever order he needs them — the rails first, then the Settings modal, then
+the credits/subscription modal, then whatever the product asks for next. **The
+file numbers are names, not a queue.** A shift finishing one section STOPS and
+waits; it does not pick the next from any list, including this one.
+
+**Why**, in his words: the mockups were *"designed on a canvas with no
+functions"*, and building six sections ahead of the pages that use them is what
+produced nine shared components of which eight have no consumer. See
+`BRIEF-RECONCILIATION.md` — every brief is reconciled against the codebase
+before it is built.
 
 **Casting is frozen.** Only section 01 touches it, and only to move things out.
 
