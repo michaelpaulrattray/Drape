@@ -1,8 +1,9 @@
 import { Link } from "wouter";
-import { Clapperboard, Film, Frame, Home, Images, Library, Plus, Settings, Sparkles, Users } from "lucide-react";
-import type { ComponentType, ReactNode } from "react";
+import { Plus } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { BrandOrb } from "./BrandOrb";
+import { Icon, P } from "./icons";
 
 /**
  * The 76px rail (foundation README §4, plan §D.5, handoff chapter 01).
@@ -43,6 +44,22 @@ import { BrandOrb } from "./BrandOrb";
  * the topbar's right end, so leaving the account itself in the opposite corner
  * split one thing in two. `Topbar.tsx` owns the chip, its menu and its
  * dismissal behaviour now; this file kept none of it.
+ *
+ * ---------------------------------------------------------------------------
+ * **THE GLYPHS ARE THE HOUSE SET NOW** (#280, his order): every destination
+ * here carries meaning, so every one of them is drawn from `./icons` rather
+ * than from Lucide. Two Lucide glyphs are retired outright on his word —
+ * `Sparkles` for Create (*"the universal AI mark … says nothing about making a
+ * picture"*, replaced by `P.image`) and `Settings` for the foot's gear
+ * (*"eight teeth plus an inner circle, which mushes into a blurred ring at
+ * 16px"*, replaced by `P.settings`, **not** `P.cog` — *"don't use both"*).
+ * `Plus` stays, because the Invite `+` is incidental and redrawing a good
+ * general set where nobody looks is effort spent in the wrong place.
+ *
+ * Stroke is no longer set here. `Icon` fixes it at 1.7 and takes no stroke
+ * prop, which is what makes his rule — *"icons get bigger, never heavier"* —
+ * true by construction rather than by everyone remembering it; the rail's old
+ * 1.8 was the last place it was set by hand.
  */
 
 export type RailDestinationId =
@@ -60,18 +77,25 @@ type Destination = {
   label: string;
   /** Absent = built but not yet: rendered inert, never as a dead link. */
   href?: string;
-  Icon: ComponentType<{ size?: number | string; strokeWidth?: number | string }>;
+  /** A house glyph from `P` — a path string, never a component (#280). */
+  glyph: string;
 };
 
+/**
+ * The eight, in his own order, each against the key he named for it (#280:
+ * *"P.studio, P.image, P.thread, P.campaign, P.avatar, P.asset, P.library,
+ * plus Cinema"* — seven keys listed in rail order with Cinema slotted where
+ * his section-02 ruling puts it, between Templates and Casting).
+ */
 export const RAIL_DESTINATIONS: readonly Destination[] = [
-  { id: "home", label: "Home", href: "/app", Icon: Home },
-  { id: "create", label: "Create", Icon: Sparkles },
-  { id: "canvas", label: "Canvas", href: "/app/boards", Icon: Frame },
-  { id: "templates", label: "Templates", Icon: Clapperboard },
-  { id: "cinema", label: "Cinema", Icon: Film },
-  { id: "casting", label: "Casting", href: "/casting", Icon: Users },
-  { id: "assets", label: "Assets", Icon: Images },
-  { id: "library", label: "Library", href: "/app/models", Icon: Library },
+  { id: "home", label: "Home", href: "/app", glyph: P.studio },
+  { id: "create", label: "Create", glyph: P.image },
+  { id: "canvas", label: "Canvas", href: "/app/boards", glyph: P.thread },
+  { id: "templates", label: "Templates", glyph: P.campaign },
+  { id: "cinema", label: "Cinema", glyph: P.cinema },
+  { id: "casting", label: "Casting", href: "/casting", glyph: P.avatar },
+  { id: "assets", label: "Assets", glyph: P.asset },
+  { id: "library", label: "Library", href: "/app/models", glyph: P.library },
 ];
 
 /**
@@ -118,7 +142,7 @@ export function Rail({
   return (
     <nav className="dp-rail" aria-label="Primary">
       <BrandOrb />
-      {RAIL_DESTINATIONS.map(({ id, label, href, Icon }) =>
+      {RAIL_DESTINATIONS.map(({ id, label, href, glyph }) =>
         href ? (
           <Link
             key={id}
@@ -126,7 +150,7 @@ export function Rail({
             className="dp-rail__item"
             aria-current={id === current ? "page" : undefined}
           >
-            <Icon size={17} strokeWidth={1.8} />
+            <Icon d={glyph} size={17} />
             <span className="dp-rail__label">{label}</span>
           </Link>
         ) : (
@@ -136,7 +160,7 @@ export function Rail({
             aria-disabled="true"
             title={`${label} — not built yet`}
           >
-            <Icon size={17} strokeWidth={1.8} />
+            <Icon d={glyph} size={17} />
             <span className="dp-rail__label">{label}</span>
           </span>
         ),
@@ -165,7 +189,7 @@ export function Rail({
               title="Settings"
               aria-label="Settings"
             >
-              <Settings size={16} strokeWidth={1.8} />
+              <Icon d={P.settings} size={16} />
             </button>
           </>
         ) : null}

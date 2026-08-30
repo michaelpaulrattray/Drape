@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c231076fc0588042"
+    "sourceFingerprint": "bedceac3b02f76a6"
   },
   "domains": [
     {
@@ -68,7 +68,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:home",
@@ -2465,6 +2465,12 @@
     {
       "id": "module:client/src/foundation/foundation.css",
       "path": "client/src/foundation/foundation.css",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/icons.tsx",
+      "path": "client/src/foundation/icons.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -10508,6 +10514,10 @@
       "path": "client/src/features/operations/outcomeSlot.test.ts"
     },
     {
+      "id": "test:client/src/foundation/icons-guard.test.ts",
+      "path": "client/src/foundation/icons-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/rawErrorToast.test.ts",
       "path": "client/src/foundation/rawErrorToast.test.ts"
     },
@@ -18014,6 +18024,11 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/icons.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/menuCount.ts",
       "kind": "imports"
     },
@@ -18060,6 +18075,11 @@
     {
       "from": "module:client/src/foundation/Rail.tsx",
       "to": "module:client/src/foundation/BrandOrb.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/Rail.tsx",
+      "to": "module:client/src/foundation/icons.tsx",
       "kind": "imports"
     },
     {
