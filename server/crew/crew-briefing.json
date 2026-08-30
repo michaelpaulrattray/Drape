@@ -1,7 +1,7 @@
 {
-  "edition": 141,
-  "updatedAt": "2026-08-30T18:45:00+10:00",
-  "shift": "foreman-120",
+  "edition": 142,
+  "updatedAt": "2026-08-30T19:45:00+10:00",
+  "shift": "foreman-121",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,19 +116,19 @@
         "source": "PRs #132, #136, #137, #138, #141, #150, #153, #156 all MERGED (gh, read 27 Aug 08:20); CASTING_CREATIVE_REGISTER_SCOPE=users:1 on production (rite 08:15)"
       },
       {
-        "label": "Retry on refused tiles is ON for you, widened to content-filter tiles",
+        "label": "Your Crew page now says what is planned, not just what shipped",
         "tone": "good",
-        "source": "your reply #10; PR #155 merged 4c6b1a42; CASTING_RETRY_SCOPE=users:1 read back by name 27 Aug 07:10 and by the rite 08:15"
+        "source": "#290/#291/#292 built and driven at the running app 30 Aug; NEXT UP is 11 rows from `gh issue list --label founder-ordered --state open`"
       },
       {
-        "label": "Nothing is waiting on you — the Needs You list is empty",
+        "label": "Done went 12 to 45 — the page had been under-reporting what is finished",
         "tone": "good",
-        "source": "your replies #48 and #49 answered both open cards (cookie-row-267, freshness-closes-271); no open card remains in needsYou at edition 141"
+        "source": "scripts/crew-desk-sweep.mts against every card's own issue, 30 Aug: 33 answered cards whose issues are closed"
       },
       {
-        "label": "83 cards open · 9 urgent · 0 rotting · 1 shift running",
-        "tone": "neutral",
-        "source": "gh issue list read 30 Aug 08:44Z; rotting = open and untouched over a week (0 - the freshness pass re-read all 83 at the code); urgent band derived by queue-standing-exceptions.mts"
+        "label": "Nothing on the page claims you are blocking it any more",
+        "tone": "good",
+        "source": "the 7 waiting-founder rows read at their own notes — all RUN AND REPORTED; the schema now refuses a row that does not name an open card"
       },
       {
         "label": "Production healthy",
@@ -143,6 +143,17 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "crew-page-rebuild-290-292",
+      "title": "Your Crew page, rebuilt to your three notes — take a look at it",
+      "productImpact": "You said you could see what the crew is doing now and what it just shipped, but not what is planned next; that the pipeline was a massive list you could not tell what was going on in; and that the history sections were double ups. All three are fixed on this page you are reading. There is a NEXT UP block above showing every card you have ordered that is still open, numbered in the order a shift takes them. The pipeline is now Not done yet and holds only work that is still moving — its 92 finished rows moved into ONE history block at the bottom, which is also where Recently answered and Already judged went. Three lists became one.",
+      "workedExample": "The number that shows it worked: your page said 15 things were done and 50 were merely answered, and you read that as lots of decisions and little delivery. It was not true — nothing ever went back to mark a card finished once the work landed. Checking every card against its own issue found 33 that were actually DONE. Done went 12 to 45. And the seven rows telling you that you were blocking things? Every one was a court, a measurement or a patrol that had already RUN and reported — including the lighting court you answered with you said K, and the lobby segment you picked six hours before. They now read as landed, and the page can no longer say you are blocking something your desk says nothing about: it refuses to build.",
+      "options": [],
+      "recommendation": "Nothing to decide — just look and tell me if it reads right. The fourth card in this set (#293, park the nights and remove the journal) is NOT in this change: its main half is a change to how the runner decides to stop, which does not travel in a code change at all, and its second half removes the box you type replies into. That deserves its own pass rather than riding along.",
+      "state": "open",
+      "filedAt": "2026-08-30T19:45:00+10:00",
+      "issueNumber": 290
+    },
     {
       "id": "background-switch-ceremony-277",
       "title": "Your background-work switch is built — DONE, you ran it",
@@ -312,7 +323,7 @@
         }
       ],
       "recommendation": "Take (b). It is the smallest change that makes the report reach a person, it uses infrastructure that is already live, it adds no page, and it needs no widening of who may read what - you would be reading your own product's reports. (d) is where this should end up once there is a support team; (a) is only worth doing if you want Slack for its own sake. Whatever you pick, the current state is the one thing that should not stand: a button that thanks somebody and does nothing.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T09:40:00+10:00",
       "issueNumber": 255
     },
@@ -415,7 +426,7 @@
         }
       ],
       "recommendation": "Look at the sphinx strip in your gallery first — that is the one that answers your tail complaint, and the difference is not subtle. Then take 'prove-mouth' if you want the second half settled rather than assumed. I recommend AGAINST the wider word ban: your law names four kinds of thing and I only made a hard check for armour, because those words mean one thing and nothing else. A ban list over the world's clothing refuses good sentences — this codebase has been bitten by that four times, most recently when the word 'framing' threw away a perfectly good description of a beard. The other three classes are still in the author's instruction; they just are not a machine check, and I would rather tell you that than let a green tick imply otherwise.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T00:55:00+10:00",
       "issueNumber": 237
     },
@@ -442,7 +453,7 @@
         }
       ],
       "recommendation": "Look at the four pictures below and say yes or name what to change. The build is done and driven — 124 checks in the running app, both themes, four screen widths — so what is left is taste, and taste is yours.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T22:35:00+10:00",
       "issueNumber": 234
     },
@@ -464,7 +475,7 @@
         }
       ],
       "recommendation": "ANSWERED — you rolled it and filed the residue as #237: the paragraph is one block now but still names armour pieces, and the tail your brief asks for is being hidden by the chest-up crop. That is the next shift's first brief.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T21:10:00+10:00",
       "issueNumber": 230
     },
@@ -502,7 +513,7 @@
         }
       ],
       "recommendation": "Treat it as part of the being. Your cut was aimed at fashion — “spiked metal accents” on a lace-and-leather outfit — and the reader is already told to name a creature’s features. A rule wide enough to strip a cyborg’s face part would also flatten the sci-fi subjects the studio is being built for.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T16:40:00+10:00",
       "issueNumber": 185
     },
@@ -567,7 +578,7 @@
         }
       ],
       "recommendation": "Flip it. The thing you objected to is fixed and measured — five reads, every one inside your 150–250, two clearly different types, none of them naming an eye colour or a seam — and the only reading left that a drive cannot buy is what EIGHT RENDERS off one of these notes actually look like. That needs a real roll on your account, which needs the flip.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T14:20:00+10:00",
       "issueNumber": 185
     },
@@ -599,7 +610,7 @@
         }
       ],
       "recommendation": "Done as you ordered: Follow = the photo of the face you picked + your brief + your Row A sentence, dice never consulted, facts change at the roll never at the follow. Row B stays recorded as a possible second button - not built, per your 'for now'. Your next Follow tap is the live check.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T22:45:00+10:00",
       "issueNumber": 177
     },
@@ -626,7 +637,7 @@
         }
       ],
       "recommendation": "Done: PR #156 merged (56c7386c), the service redeploys with this edition. Your first Follow on your own account is the court — tap Follow on a face you like and say on #154 whether the relatives read as one family.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T05:05:00+10:00",
       "issueNumber": 154
     },
@@ -653,7 +664,7 @@
         }
       ],
       "recommendation": "Done: PR #155 merged (4c6b1a42), CASTING_RETRY_SCOPE=users:1 read back off the service, the service redeployed on the variable change and again with this edition. Tap one on your next refused tile and say if the wait or the wording reads wrong.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T04:05:00+10:00",
       "issueNumber": 122
     },
@@ -680,7 +691,7 @@
         }
       ],
       "recommendation": "Build the author verbatim-first as you ruled, with LOW as the default; rewrite the MAX instruction so it names what it leaves to the engine (otherwise MAX = one face); never let the preset say 'sternum' (that one word flipped a passing prompt to eight refusals); and run #93's rewrite-and-retry on your full cyber-goth brief, which the engine refused 63 of 64 times in every form — raw included. — YOUR ANSWER (reply #8, 16:31): \"B is the studio, for both the rich prompt and the thin one — build the author verbatim-first with LOW as the default. MAX as written gives one face eight times; rewrite the MAX instruction so it always leaves the face and a few axes open (casting call, not a portrait). D had the most realistic-looking humans but missed the brief — take a short realism clause from D's photographic language and test B+R against B. Build the refusal loop: log every refused and passed prompt, find trigger words, measured word→replacement pairs into the author's rewrite list, visible on the expanded prompt. Calibrate the preset's framing to my reference frame (28% head share) and lock framing, lighting and studio across every cast. Never say \"sternum\".\" Filed: the register rebuild to this (author verbatim-first, LOW default, MAX rewritten to leave the face open), the B+R realism court (#128), the refusal-loop patrol (#129), the preset calibration to your 28% frame (#130).",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-26T17:55:00+10:00",
       "issueNumber": 125
     },
@@ -702,7 +713,7 @@
         }
       ],
       "recommendation": "Keep it as built (long refuses, short rolls) — a five-word brief loses nothing on the fallback. Say 'always' if you want the simpler rule. — YOUR ANSWER (reply #9, 17:08): \"always\". Built as PR #134, merged; the 80-character line and every place that stated it are gone.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-26T16:55:00+10:00",
       "issueNumber": 126
     },
@@ -729,7 +740,7 @@
         }
       ],
       "recommendation": "refuse-free. A customer who wrote a paragraph should never pay for a sheet that read none of it; a customer who wrote five words loses nothing by the fallback. — YOUR ANSWER: refuse-free (reply #7) — filed as #126 (urgent): when the brief-reader is genuinely down, a long brief is refused for free before any charge, instead of being charged for a sheet that ignored it.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-26T13:45:00+10:00",
       "issueNumber": 121
     },
@@ -1062,7 +1073,7 @@
       "id": "hero-showcase-240-strips",
       "title": "Your own page, before and after — and the same deck for a stranger",
       "question": "WHAT YOU ARE JUDGING. Two strips, both your verify bot's own casting page at 1440 in dark.\n\nSTRIP ONE — THE SAME ACCOUNT, BEFORE AND ABOVE AFTER. The top half is what shipped this morning: your own signed cast in the middle card, captioned 'Package Three One · 6 frames', under the brief 'a street casting, mid 20s', with four short tick stubs bunched at the left. The bottom half is tonight: the showcase, and the tick row running the full width in six equal parts. That top half is exactly the thing you refused — and it is what a fresh customer would have opened onto an EMPTY column to see.\n\nSTRIP TWO — TWO DIFFERENT ACCOUNTS, ONE DECK. Top is the account with four signed casts, bottom is a brand-new account with none. Same face, same brief, same six ticks. The only difference anywhere in the two frames is how far the current tick has filled, which is the four-second timer.\n\nWHAT I WANT FROM YOUR EYE: whether the tick row now matches the reference frame you filed, and whether the eyebrow 'CAST FROM THESE WORDS' reads right to you now that these are examples rather than your people.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T02:05:00+10:00",
       "issueNumber": 240,
       "cardId": "hero-showcase-240",
@@ -1083,7 +1094,7 @@
       "id": "creature-lane-237-232-strips",
       "title": "The tail, three ways — and the oni test that did NOT separate",
       "question": "WHAT YOU ARE JUDGING. Two strips.\n\nTHE SPHINX STRIP, three rows of four, all from your own brief (production roll 235's seed, byte for byte). Row K is what the studio sends today. Row C is the creature lane. Row A is the creature lane with MAX on top under your new noun law. Look at where the tail is: one frame in K has it, and it is a thread at the edge. Every frame in C and A carries it into the picture, and nobody switched to a full-body shot to do it.\n\nTHE ONI STRIP, three rows of three. Top row today, middle the creature lane, bottom the human control — a goth woman who must still come back mouth closed with no teeth, and does. Here is the honest part: BOTH oni rows have tusks and the machine's measurements do not separate them. My own eye reads the middle row's mouths as heavier and more open at rest, with the tusks reading as teeth rather than as nubs at the corner of a pressed mouth — but that is three frames and my opinion, so I am not calling it a result. Your eye is the one that counts, which is why the strip is in front of you instead of a sentence saying it worked.\n\nTWO REFUSED TILES in the bottom row are the per-render coin you already know about (#93/#129), on bytes this change never touched — not something I broke.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T00:55:00+10:00",
       "issueNumber": 237,
       "cardId": "creature-lane-237-232",
@@ -1104,7 +1115,7 @@
       "id": "casting-hero-234-frames",
       "title": "The new casting hero, photographed in the running app — both themes, and both states",
       "question": "WHAT YOU ARE JUDGING. Whether this is the hero you asked for. Two of these pictures show the deck with real signed cast in it, two show what a customer with an empty roster sees, and one shows the whole thing stacked on a narrow screen.\n\nWHY THE FIRST TWO SHOW SOMEONE ELSE'S CAST. They were taken on the test account, which owns four signed Casts and so is the only account I can photograph the live deck on. On YOUR account those cards will be Kade, Jericho and Shina, with your own briefs under them — same deck, your people.\n\nWHAT TO LOOK FOR. The words under the deck belong to the face above them, always, and they change together. The middle card is the one you can open; the side cards tap themselves into the middle. The block under the quote never changes height when the deck rotates, so nothing jumps.\n\nONE THING I DID NOT SILENTLY FIX. The side cards are clipped by ten to fifteen pixels at the panel's edge. That falls out of the numbers in your own spec, and it reads as the fan continuing past the frame — your sketch draws it that way. Say the word if you want them fully inside.\n\nAND ONE THING I TOOK OUT. The split-face art is gone. Nothing else used it, and the deck replaces it; it is one command away if you miss it.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T22:35:00+10:00",
       "issueNumber": 234,
       "frames": [
@@ -1176,7 +1187,7 @@
       "id": "portrait-crop-198",
       "title": "ANSWERED — you said top crop on both, and the Delete dialog now takes it (#198 closed)",
       "question": "A small one, and the only reason it needs your eye is that the obvious fix would have moved faces.\n\nWHAT WAS WRONG. Sign and Delete are the same dialog with different words. The instruction that sizes the portrait in that dialog had a typo-shaped mistake in it — it was written to point at the picture, and it pointed one level off, so for as long as it has existed it has applied to NOTHING. The Sign portrait was being sized by the browser's default and then simply cut off at the bottom by the frame around it. The Delete portrait, by an accident of where its grey-out lives, DID get the instruction. So the same face in the same dialog shell was being cropped two different ways depending on which button you pressed.\n\nIt has never looked broken, and that is exactly why it survived: our own renders are all the same shape, so cutting the bottom off and cropping properly happen to land in the same place.\n\nWHY IT NEEDED YOU. Making the instruction work as written centres the crop — which slides the face about 27 pixels. That is a change to two dialogs you have already accepted, so the card for this was filed rather than fixed, months ago, waiting for someone to put frames in front of you.\n\nWHAT I DID INSTEAD. Anchored the crop to the TOP, which is where the browser was already cutting. Then measured it rather than trusting my own eye: the Delete portrait is pixel-for-pixel identical, not one pixel of 57,620 changed. The Sign portrait is not quite byte-identical — the picture is scaled by a very slightly different route now — but there is no movement in it, and I proved that by ALSO building the version that does move and measuring both through the same instrument. That is the third panel.\n\n⚠ AND THE THIRD PANEL IS NOT HYPOTHETICAL, WHICH IS THE PART WORTH SEEING. Centred is exactly what your DELETE dialog does today. On a standard 1024x1536 render the Delete portrait shows source rows 128 to 1408 — it takes 128 pixels off the top and 128 off the bottom — while the Sign portrait shows rows 0 to 1280, dropping 256 off the bottom and nothing off the top. So panel three is not a mock-up of a bad idea; it is a photograph of the other half of your own product, and the gap between panel one and panel three is the bug.\n\nTHE QUESTION: the left and middle panels should look the same to you. Do they? And now that you can see both crops side by side — is TOP the one you want in both dialogs, or would you rather I brought Sign across to Delete's centred crop instead? Either is one line; I chose the one that changes nothing you have already approved.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T02:20:00+10:00",
       "issueNumber": 198,
       "frames": [
@@ -1197,7 +1208,7 @@
       "id": "concept-reader-gold-line-185-204",
       "title": "ANSWERED — your two cuts are recorded, and the hard ban stays off (#185)",
       "question": "Two things you sent an hour apart, both fixed and both worth your eye, because the test you set is whether these words would cast EIGHT different people of that type rather than reprint the one in the picture.\n\nFRAME 1 is the goth. What the reader used to say about it: \"A woman in her twenties, slight build, long straight platinum hair with blunt bangs, multiple facial piercings and forearm tattoos. Dark-fashion / gothic-alternative model type, styled with lace bodysuit, leather choker and spiked eye harness.\" What it says now: \"Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted platinum hair, facial piercings and fine-line facial markings, script tattoos on both arms. Athletic build, dark structured fashion in lace, leather and spiked metal accents.\" Your two men still read the way you approved them.\n\nFRAME 2 is a creature from your own reference folder. It used to be answered \"I couldn't find a person in that picture.\" It now reads: \"Reptilian humanoid being of adult presence, solid muscular build, dark pebbled scaled skin with bony ridged crests along the face. Bone-toned spinal ornamentation breaks the scales. Menacing creature-alien performance type.\" A picture with no BEING in it — an object, a place — is still refused, and I kept a control for that in the test run.\n\nTWO THINGS I OWE YOU STRAIGHT.\n\nOne. I did NOT add a code ban on the words you struck (bodysuit, choker, harness, slight), and that was a judgement call I could be wrong about. The reason is that your own PASSING examples use those same kinds of words — \"fitted dark crew-neck top\" is a named garment and \"athletic muscular build\" is build language — so a ban wide enough to catch the bad use also refuses your good ones. It is the \"shave\"/\"shape\" problem this studio has hit three times. So the rule lives in the reader's instruction, and the proof lives in running it on real pictures rather than in a test that can only check itself. If you would rather have the hard ban and accept that it will sometimes refuse a good description, say so and it is one change.\n\nTwo. Across fourteen reads, none used any word on your drop list and every build word came from the short list of families. About one read in three still slips in a single named item — \"a buckled choker\", \"a mechanical eye-piece\". That is the honest remaining gap, not something I am claiming is finished.\n\nTHE QUESTION: do these two read as TYPES you could cast eight different people from, or is there still inventory in them?",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T23:05:00+10:00",
       "issueNumber": 185,
       "frames": [
@@ -1270,7 +1281,7 @@
       "id": "concept-upload-flip-185",
       "title": "Upload a concept — read the two notes, then say flip it (#185)",
       "question": "The only thing left on this feature is your word. Tap a picture on the casting page and what lands in your brief box is now a short casting note you can read in one breath, yours to edit before you spend anything. Six reads went through the shipped reader this afternoon: 173, 182, 220, 210 and 233 characters — every one of them inside the 150–250 you asked for, every one first attempt, and the sixth came back as \"couldn't read that just now\" on a perfectly good photograph (see the last paragraph of the journal — filed, small, not a reason to wait). Nothing about light, set, frame or camera. Nothing about what the person does NOT have. THE QUESTION: read the two notes under the frames below against the two faces. If they are the briefs you would have typed, say so and it goes on for your account. If a note is still saying more than a casting director would, say which words and I will cut them. Nothing is live: the switch is off for everyone including you.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T14:20:00+10:00",
       "issueNumber": 185,
       "frames": [
@@ -1291,7 +1302,7 @@
       "id": "concept-upload-descriptions-185",
       "title": "ANSWERED — you called it a police report, and it is a casting note now (#185)",
       "question": "Your verdict, and it was the right one: \"Too much inventory. For a cast studio it should come back as a type, not a police report... Then eight renders of the same man.\" Built overnight and driven at the real reader. The same face is now read as: \"A man in his mid-forties, European heritage, athletic muscular build, close-cropped dark hair, fitted dark crew-neck top. Rugged, no-nonsense fitness / ex-military presence.\" 173 characters against 1,082. It did not name his eye colour, the seams on his shirt, or \"no tattoos\" — your drop list, held on the very picture that produced the ruling. ⚠ ONE CORRECTION YOU ARE OWED: the two frames under this item were the wrong way round. The face captioned \"the frame it was read from\" was NOT the man that description is of — the words were his neighbour's. I only found it by opening both pictures and re-reading them today. The new item below has the right face against the right words.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T11:00:00+10:00",
       "issueNumber": 185,
       "frames": [
@@ -1312,7 +1323,7 @@
       "id": "framing-court-2-182",
       "title": "ANSWERED - the mid-torso framing is the default, on your word (#182 closed)",
       "question": "Your call tonight: 'chest up is far too tight we need to see the outfit more. run it.' Done — court first, then the sentence and the trim retargeted in one PR, exactly as you sequenced it. Top row is your 2:3 reference (it measures 22% face height). K is what the studio said until tonight — every frame crops at the collar. M and M2 are the new sentence, written to your frame's measured numbers: the outfit's upper body is in every delivered picture, faces land at 21–28% of frame height (middle 23%, against K's 32%). The head-size trim was moved with it — left alone it would have quietly cropped every sheet back toward the tight look you just refused. Grey tiles are the engine's content checker refusing the exact same words it accepted next door — the per-render coin we have measured before, logged for the refusal patrol (#129), not a property of the new sentence you need to trade against. Your next roll carries this framing. If the look reads wrong to your eye, say so — the old sentence is one revert away.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T00:45:00+10:00",
       "issueNumber": 182,
       "frames": [
@@ -1328,7 +1339,7 @@
       "id": "follow-court-177",
       "title": "The Follow court you ordered: brothers vs shortlist — pick a row (#177)",
       "question": "Your word tonight: 'try both and put it on my desk so i can judge.' Done. Every picture below was made the same way — your fitness-creator brief plus the photo of the guy you followed, attached to the engine so his type carries by PICTURE (the thing your own hand test proved words can't do). The only difference between the rows is the one sentence telling the engine how close to stay. When you tap Follow on a cast you like, which of these should come back? Pick a row — or say if you want two buttons (close variations / more of this type).",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T22:45:00+10:00",
       "issueNumber": 177,
       "frames": [
@@ -1358,7 +1369,7 @@
       "id": "family-clause-frames-154",
       "title": "The role family, RE-STRIPPED after the ghost you caught (#176) — the grids you saw were invalid",
       "question": "You were right, and the grids you were being asked to judge were thrown out. Why they all looked Indian: when a sheet is authored, one prompt paints all eight — but the old studio's per-face dice still ran quietly and wrote their invented identities into the record, and the family clause read that record as fact. The man you followed had a record claiming '100% South Asian heritage, goatee, mid-length hair' — none of it ever sent to the engine, none of it on his frame — so every 'relative' faithfully inherited a fiction. Fixed and live with this edition (#176, PR #178): those records are now marked as never-sent and nothing may read them as fact; a Follow holds only what your brief actually stated (those words genuinely went to the engine), and anything your brief didn't state is left open rather than invented. These grids are the same two drives re-run on the fixed road: grid 1 a plain Follow of the anchor, grid 2 the same Follow with the 30s→40s chip edit (your sentence rewritten in place, '30s' nowhere on the wire). Your success test is unchanged: different talent on the same shortlist — not siblings, not clones. One spec question, yours to answer whenever: with heritage unstated in the brief, the family now varies freely (grid 1 has one East Asian face, one Nordic). If you'd rather a Follow match the LOOK of the person you followed, that means reading his apparent heritage off the delivered frame — a small build we'd court first. Say the word and it gets designed; silence keeps the honest-variation behaviour.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T23:20:00+10:00",
       "issueNumber": 154,
       "frames": [
@@ -1383,7 +1394,7 @@
       "id": "author-sat-out-131",
       "title": "The sheet that says the author sat it out (#131) — record line and dock note",
       "question": "Overtaken by #154 (your reply #11): the author no longer sits a follow or a chip edit out, so the dock note is gone and the record line only appears on the handful of sheets rolled before today, in the past tense. Nothing to judge here any more — the family-clause item below is where your eye goes.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T05:05:00+10:00",
       "issueNumber": 131,
       "frames": [
@@ -1398,7 +1409,7 @@
       "id": "retry-button-122",
       "title": "The Retry button (#122) — the failed tile, the tap, the landing",
       "question": "You answered this on the flip card (reply #10) — the button is on, and it is on content-filter tiles too. Frame 4 is that widening: a real refused tile on the dev sheet with the CONTENT FILTER chip, the refunded line, and the same Retry · 20 credits beneath. The first three frames are the engine-error road as built. If the button on a refused tile reads wrong, say so on #122.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T04:05:00+10:00",
       "issueNumber": 122,
       "frames": [
@@ -1428,7 +1439,7 @@
       "id": "framing-court-130",
       "title": "ANSWERED — the frame (#130): you said F2, and F2 is now the block's framing sentence",
       "question": "You answered (reply #13): \"F2\". Done — the locked block's framing sentence is now F2's, word for word: the face about a quarter of the frame's height, the eyes about 30% down, the crop below the collarbones. It is your reference's view carried into our 2:3 shape (~33% head share, the tightest spread of the four rows you judged), live on your account with this deploy — your next roll frames this way. Two riders filed where they belong: whether the trim retires now that the sentence holds head size above the trim's own bar is on #11 with your flagged rolls' readings, and the numeric sentence's refusals stay #129's to measure.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T03:05:00+10:00",
       "issueNumber": 130,
       "frames": [
@@ -1443,7 +1454,7 @@
       "id": "lighting-court-128",
       "title": "ANSWERED — the studio light (#128): you said K, and nothing moves",
       "question": "You answered (reply #15): \"K — keep the light we have. Looked at L2+ too; K still wins.\" Done — the block's lighting line stays your §5e sentence byte for byte, no constant touched, and #128 is closed. L1, L3 and your L2+ block are recorded in the court record as candidates for the advanced-settings lighting list later (N3). One finding stays on the record for the refusal patrol (#129): L2+ refused 2 of 8 at the engine's content filter where the other four lights passed 32 of 32 — a trigger-word lead, not a live problem, since K is what ships.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T02:05:00+10:00",
       "issueNumber": 128,
       "frames": [
@@ -1473,7 +1484,7 @@
       "id": "settings-modal-142",
       "title": "The minimal settings modal (#142) — the gear and the panel, on the casting page",
       "question": "You answered (reply #12): \"imagination should be a slider, but yes as a minimal version for now that's good.\" Taken as the gate passed for the minimal modal, and the slider recorded on #142 as the shape the full N3 modal gives the meter. Nothing changes on your page from this.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-27T01:35:00+10:00",
       "issueNumber": 142,
       "frames": [
@@ -1493,7 +1504,7 @@
       "id": "house-block-rebuilt-144",
       "title": "The locked block rebuilt to your lines (#144) — your thin brief on the NEW block (roll 223) beside 221/222 on the old one",
       "question": "You answered (reply #16): \"Passes — K's light is right and the frame is settled by my F2 answer. The block is done.\" Recorded: the locked block chapter closes with light K and frame F2, both your own words, and nothing in the block moves without a new word from you.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-26T22:55:00+10:00",
       "issueNumber": 144,
       "frames": [
@@ -1518,7 +1529,7 @@
       "id": "prompt-author-court",
       "title": "The Prompt Author court — raw vs LOW author vs MAX author vs today's compiler, on your three briefs",
       "question": "Which row is the studio you want for a basic user, and for a rich brief? And should MAX imagination give one face eight times (as your instruction does today) or eight different inventions?",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-26T17:55:00+10:00",
       "issueNumber": 125,
       "frames": [
@@ -1671,7 +1682,7 @@
       "id": "concept-review-modal",
       "title": "ANSWERED — \"Modal design and function is good now\" (#196 closed; the reader half went to #185)",
       "question": "You asked for the description to open in a modal instead of dropping into the small prompt box. This is it: your picture on the left, the words on the right in a box you can edit, one button that puts them in your brief. Two things to judge. First — is the note the right SIZE and shape now? These reads are 243 characters, a type rather than an inventory, which is the cut you asked for. Second — is seeing the photograph beside the words actually useful, or is it a step in your way? Discard and Escape both cost nothing, and nothing is charged either way; the credits still go at the roll, as they always have.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T15:45:00+10:00",
       "issueNumber": 196,
       "frames": [
@@ -1690,6 +1701,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "crew-page-four-blocks-290-292",
+      "title": "Your three notes on this page, built as the one pass they asked for (#290, #291, #292)",
+      "status": "in-review",
+      "prNumber": null,
+      "note": "NEXT UP is derived from the founder-ordered label rather than typed, so it is the same list a shift obeys. The pipeline keeps only what is not done. One history block replaces three. And two states that used to be written once and never re-read are now checked every shift against the record: a card marked answered whose issue has closed becomes done, and a row claiming you are blocking it must name an open card on your desk or the build refuses."
+    },
     {
       "id": "crew-live-page-272-277",
       "title": "Both panels are LIVE on this page — you ran the ceremonies yourself",
@@ -1721,28 +1739,28 @@
     {
       "id": "chrome-section-02",
       "title": "Section 02 — the topbar and rail, finished",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 273,
       "note": "Your brief, built as one PR. The bar goes from two zones to three, the rail goes to eight with Cinema, Report a bug becomes its own button instead of a row two clicks inside a menu, and your face moves to the top-right corner where everything reached through it already lives.\n\nWHAT I DID NOT BUILD, and both are your own rule rather than my caution. The queue pill has no jobs feed behind it, so the space is left empty. The member stack has no members feature behind it — none, anywhere in the product — so it draws the Invite affordance and no faces.\n\nYour Theme and Cookie preferences corrections rode in with it, because section 02's own list of what the help menu keeps says the same thing your correction does. Cookie preferences was your open question and the answer is at the code: we set exactly one cookie, the session one, and there are zero tracking libraries in the product — so there is nothing a consent panel would govern, and the row should not exist rather than be greyed. The account-menu labels are NOT here, deliberately.\n\nThe safety net is 23 assertions that were DRIVEN RED six times before I believed them — the search turned back into a text field, Cinema deleted, a Command-K handler added, and so on, each one expected to break a named assertion and each one doing it. One of those checks caught its own mistake on the first run: the rule that stops an unread dot appearing on \"What's new\" was written in a way that would not have seen a dot named `__dot`, so it would have passed with the dot on screen."
     },
     {
       "id": "section-00-accent-corrections",
       "title": "Your three section 00 corrections — built, and the frames found two more",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 269,
       "note": "All three done and photographed afterwards rather than assumed.\n\nPHOTOGRAPHING THE FIX IS WHAT EARNED ITS KEEP, because it caught two things no test would have.\n\nThe first was mine, made while fixing yours: splitting the create tile from the gap tile left the create tile with a SOLID border instead of a dashed one — the one tile whose whole job is to read as \"you can put something here\". Introduced and caught in the same sitting.\n\nThe second was older and is the more useful finding. On a card, the label and the small grey note beside it shared a row, and the note could not shrink — so the LABEL absorbed everything. On a gap tile carrying a real blocking sentence, \"The Broker\" rendered as \"T.\". A one-character label is not a shorter label, it is no label. Both sides give way together now, and a short note like a timestamp still never truncates.\n\nThat second one is your own new rule biting in a place neither of us was looking: the answer to a long label is never to make one side disappear."
     },
     {
       "id": "bug-report-inbox-255",
       "title": "A customer's bug report finally reaches a human — your option D, built",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 266,
       "note": "Your ruling, from two nights ago: *\"D is the right long-term answer probably in the admin panel first not the moderator panel yet. no point taking shortcuts.\"*\n\nWhat was broken: the lobby menu offers Send feedback and Report a bug to every customer. Both saved the report and sent a Slack message to a channel that has never existed on production — and NOTHING in the product could read the table. Somebody typed out what went wrong, got told \"Bug report submitted. Thank you!\", and it reached nobody. Zero reports have ever been filed, so nobody has actually been let down yet; that is luck, and it is why you took the long answer.\n\nNow there is a Bug Reports tab in the admin panel: the queue newest first, the person's own words, what page they were on, and four buttons to move a report through New, Reviewing, Resolved or Dismissed.\n\nAdmin only, exactly as you said — and that is guarded rather than promised, because admins automatically inherit every moderator screen, so using the moderator permission would have quietly shipped the moderator panel you deferred while looking like obedience. There is no delete and no export: Resolved and Dismissed both KEEP what the person wrote."
     },
     {
       "id": "chrome-section-00b-228",
       "title": "Lobby segment 2 — the menus onto the grammar, and unbuilt features get drawn",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 264,
       "note": "00b built as one PR, as you set it. The account menu and the '…' help menu are now set the way the rest of the studio is set, and six places the product is going are DRAWN and inert rather than absent — Documentation, Keyboard shortcuts, Theme, Cookie preferences, a project switcher reading 'All projects', and What's new. Your ruling, in your own words: *a stub names a place, never a capability, and never carries an unread dot*.\n\nThe pull request also carries YOUR prototype refresh commit, so step one goes through the gate rather than sitting only on this machine.\n\nAFTER THIS THE LANE STOPS. Your instruction: *00 as one PR, 00b as one PR, then stop and show me.*"
     },
@@ -1770,14 +1788,14 @@
     {
       "id": "reader-outage-sentence-253",
       "title": "The studio blamed the customer when OUR reader went down - fixed on all three roads (#253)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 254,
       "note": "When the reader that turns typed words into an edit does not answer, the studio told the customer her sentence was unclear and asked her to rephrase; two picture readers told her the photograph could not be read and asked her to swap it. She cannot fix either, because neither was the problem. Casting a brief has said this honestly since your \"refuse-free\" ruling; that ruling's second half - name the outage - never reached the editing roads. They now say: \"I couldn't read that just now - the reader that turns your words into an edit didn't answer. Try again in a moment. Nothing was charged.\" No money behaviour changes: every one of these was free before and is free now, and the tests prove it. The wording for a genuinely unreadable reply is untouched, because \"try rephrasing\" is real advice there."
     },
     {
       "id": "author-self-narration-242",
       "title": "The writer sometimes talks about its own job inside the picture instructions - measured, and it was not what we thought (#242)",
-      "status": "waiting-founder",
+      "status": "merged",
       "prNumber": null,
       "note": "A small defect was spotted last night: the paragraph our writer produces occasionally contains a note about ITSELF - a sentence explaining what it did not add - rather than a description of the person. That text goes straight to the image engine, which has no idea what to do with it.\n\nThe card said the cheap way to find out how often was to read the records. I tried that first and it does not work: across both databases the studio has recorded exactly FIVE such paragraphs in its whole life, because MAX is one account's setting and LOW does not use a writer at all. Five is not a rate.\n\nSo I bought one instead - 24 runs on three of your own briefs, 26 cents. It happens about one time in six. And the reason matters more than the rate, because the guess was wrong: we assumed the writer does this when it is told not to add things to a detailed brief. It does the opposite. It happens most on THIN briefs, where the writer starts narrating what it is leaving open - one draft literally told the image engine that jewellery was \"left to the engine\". That is a note about our pipeline sitting inside a picture instruction, and there is a measured case in this project's own history where that kind of sentence made the engine paint all eight faces into one contact sheet.\n\nI did not fix it, and that is deliberate: the obvious fix is to ban the phrases, and I measured that the phrase that looks most like the tell is legitimate four times out of five - it is your own wording. Worse, my deliberately over-wide detector still missed one of the four real cases. A ban built from four examples catches four examples. The full reasoning is written up; it is a decision rather than a repair."
     },
@@ -1805,21 +1823,21 @@
     {
       "id": "departure-gate-246",
       "title": "Measured the removal gate against the lookalike problem - confirmed, and corrected what it costs (#246)",
-      "status": "waiting-founder",
+      "status": "merged",
       "prNumber": null,
       "note": "Last night's shift named the removal gate as the sharpest of 22 unchecked places and did not measure it. Tonight I did. Three things came out. (1) The gate asks twelve different questions of a picture and only TWO of them - glasses and earrings - have ever been measured against pictures that do not contain the answer; the other ten are judged against a threshold of zero, so a single stray pixel is enough to dispute a removal that worked. (2) The fault reproduces: a bald head asked for \"hair\" came back with a hair-shaped patch on bare skin, twice, with a blank-grey control correctly answering nothing and a haired control correctly answering hair. It is one head in three, not every head. (3) The cost was mis-stated to you last night and I corrected it at the code: no money is at risk, because your own catastrophic-only ruling keeps a machine's opinion of a picture off the money path. What is at risk is the record - the face keeps the thing you paid to remove, and the next edit paints it back. Live population is zero: 236 castings, and this gate has never fired for a customer. I also got one of my own test pictures wrong and caught it by looking at the overlay; that is written into the record, because it is the reason the overlay step exists."
     },
     {
       "id": "lookalike-reader-246",
       "title": "Proved the lookalike problem reaches the studio itself, and mapped every place it could bite (#246)",
-      "status": "waiting-founder",
+      "status": "merged",
       "prNumber": null,
       "note": "Last night's finding was about a measuring tool. Tonight I asked the two questions that were left open. First: does it reach the product? Yes - driven through the studio's real function with the real reader, and it filed a box for a feature that is not in the picture. Two controls held either side of it, including the one that matters (a blank grey picture, which correctly answered \"nothing there\" through the same code), so the box is a reading of the picture rather than the function misbehaving on everything. Second: where else could it bite? I went through all 25 places in the studio that ask this kind of question. Only TWO of the words we ask have ever been tested against pictures that do not contain the answer - glasses and earrings - and both passed. The other 22 have never been checked in that direction. The sharpest one is the refund gate: when you take something off a face, we re-read the picture to check it actually went, and a lookalike there would refuse and refund a customer whose edit worked perfectly. Nothing is being changed until you pick a fix; the record is written so nobody reads a green test suite as proof."
     },
     {
       "id": "creature-widening-243",
       "title": "#243 — the creature lane's widening: does it change the PICTURE when nobody types the anatomy",
-      "status": "waiting-founder",
+      "status": "merged",
       "prNumber": null,
       "note": "RAN AND REPORTED. 24 renders, $1.34 of house money, no customer credits. It proves out on the anglerfish (4/4 against 4/4, two readers and my eyes agreeing). Three strips are in your gallery and the card holds the two things I am not claiming. Also produced a tool defect worth its own card (#246): the pixel-counter answers with a lookalike when the thing you ask for is absent, and it fails in the flattering direction."
     },
@@ -1860,22 +1878,22 @@
     },
     {
       "id": "lobby-segment-proposal-228",
-      "title": "Side lane — the lobby redesign: segment proposal, waiting on your pick",
-      "status": "waiting-founder",
+      "title": "Side lane — the lobby redesign: six segments proposed, and you picked (segments 1 and 2 have both shipped)",
+      "status": "merged",
       "prNumber": null,
       "note": "No code, and none until you pick. Six segments proposed in landing order, each with what a customer would see change; the capability audit names what this lane cannot honestly build. Tonight adds the BEFORE photographs of every surface those segments touch, so whichever you name already has something to be measured against. The milestone stays N1 — when your Claude credits refresh, the N1 review outranks any lobby work."
     },
     {
       "id": "reply-reader-both-halves",
       "title": "The tool the night shifts read your replies with could only see half your page — fixed, and it now sweeps for exactly what you caught",
-      "status": "in-review",
-      "prNumber": null,
+      "status": "merged",
+      "prNumber": 229,
       "note": "Measured first: 20 of your 28 replies printed \"not in the current briefing\"; all 17 ids under that sentence WERE in the briefing."
     },
     {
       "id": "concept-feature-line-185",
       "title": "Your cyborg-eye ruling is built — a fitted machine part is part of the being now (#185)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 227,
       "note": "Upload a picture of a cyborg and the casting note keeps her mechanical eye as part of WHO SHE IS, named as a type, instead of stripping it as an accessory or turning it into a product name.\n\nBEFORE: \"...one side of the face fitted with a sleek mechanical eye piece.\"\nAFTER:  \"...integrated mechanical eye plating on one side of the face.\"\n\nThe bug was not a missing rule. It was the WARDROBE rule reaching something it was never about — \"never name a single accessory\" was catching a face. That clause is scoped to a WORN accessory now, and your three lines sit immediately above it as their own rule: on the body as anatomy is a feature, on the outfit as styling is materials, and strapped-on-but-replacing-a-body-part is a feature.\n\nNo word list, on your word. The grey cases you named — strap-on visors, armour-as-skin — are deliberately left undrawn."
     },
@@ -2127,7 +2145,7 @@
     {
       "id": "softer-wording-93",
       "title": "Softer wording on a refused tile (#93) — courted; not built (bar not met)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": null,
       "note": "The court ran tonight ($3.62). Rewording a refused prompt the way you rewrote your cyber-goth brief by hand buys about one extra pass in eight — and your own hand rewrite scored exactly the same. What moves the pass rate is the night: the identical text went from 1 pass in 64 to 3 in 8 with nothing changed, and the thin 'goth woman mid 30s' from 1 in 18 to 8 in 8. So the softener road is not built, by the bar the design set before it fired. What a content-filter tile needs is the same plain Retry the engine-error tiles already have (built, PR #151, switched off) — widened to content-filter tiles. That is the question on the 'retry-flip-122' card."
     },
@@ -2148,7 +2166,7 @@
     {
       "id": "refusal-patrol-129",
       "title": "The refusal patrol, run #1 (#129) — RUN on the real rows plus one probe: no trigger word is attributable, the checker is a coin per render; nothing built",
-      "status": "waiting-founder",
+      "status": "merged",
       "prNumber": null,
       "note": "Your words: 'log every refused and passed prompt, find trigger words, measured word-to-replacement pairs into the author's rewrite list.' First finding: the log already exists — every cast the roll road ever painted carries the exact prompt it was painted from, beside the reason it failed, so nothing had to be built for step one. Read tonight: 144 casts on your account, 13 refused, every refusal ever the engine's content filter. Second finding, the one that changes the plan: on the author road all eight casts of a sheet are painted from ONE identical text — roll 222 had 5 refused and 3 delivered on the SAME words. So there is no 'refused vs passed' difference to find in the rows; the filter is a coin toss per picture on the same text. Probe: the number-stated framing sentences from last night (5 of 24 refused vs 0 of 40 for today's sentence) re-rolled under three swaps — F2, the one recommended on your #130 eye item, delivered 8 of 8 tonight; both swaps 8 of 8. No word attributable; no pair added. The list still holds one measured pair (the 'sternum' word, 8/8 refused, 'collarbones' 0/56), and it guards only the author's own draft — a customer typing that word on Low goes straight to the engine (noted on #93). What this means for you: the cheapest rescue on the evidence is a plain RETRY of the same words before any rewording — the Retry button (#122) and #93's retry-then-reword both rest on it. $0.98 house (estimated first), no credits. Record: docs/specs/REFUSAL_PATROL_2026-08-27.md."
     },
@@ -2162,7 +2180,7 @@
     {
       "id": "lighting-court-128",
       "title": "The lighting court (#128) — RUN: four lights on the locked block, plus the distilled clause, your thin brief × 8 each — sheets in your gallery",
-      "status": "waiting-founder",
+      "status": "merged",
       "prNumber": null,
       "note": "Your words: 'a few different options would be good to look at.' Done on 'goth woman mid 30s' at Low (no author call, so this is exactly what a Low roll sends): K = the block as it stands today (the §5e light, what roll 223 used); L1 = your reference look with a deeper open shadow under the jaw; L2 = your own candidate sentence word for word ('soft frontal beauty lighting, high fill, open shadows, grey seamless with a gentle centre falloff, minimal rim, photoreal fashion studio'); L3 = a clean, even light; R = the original idea from reply #8 — the brief plus a short three-sentence photographic clause and NO block. Everything else identical. What came back: the four block versions delivered 32 of 32 with no refusals and all read as one studio — the light differences are real but subtle, so there is a close-up sheet beside the strip. The no-block version refused 3 of 8 and is a different picture (darker grey, tighter, leather and tattoos invented). Every arm frames tighter than your reference (about 36% head share against your 28%) — that is #130's job, next. Spend: $2.60 house (estimated $2.65 on the issue first), no credits, no rows. Nothing changed in the product: your pick on the sheets is what moves the block's lighting line. Record: docs/specs/LIGHTING_COURT_2026-08-27.md."
     },
@@ -2542,6 +2560,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T19:45:00+10:00",
+      "shift": "foreman-121",
+      "text": "YOUR THREE NOTES ON THIS PAGE ARE BUILT, as the one pass they asked for. You are reading the result.\n\nWHAT IS NEW. There is a NEXT UP block between your desk and the pipeline. It lists every card you have ordered that is still open — eleven right now — numbered in the order a shift actually takes them: urgent first, oldest first. It is not a list anyone maintains; it is generated from the founder-ordered label, which is the same query a shift obeys, so it cannot drift from what the team really does next. It says out loud when it last looked. And when that list is empty it tells you what a shift does instead, so an empty night reads as your own settings rather than a fault.\n\nWHAT SHRANK. The pipeline held 107 rows and 92 were finished work. It is called Not done yet now and holds only what is still moving, ordered by how much it wants a human — blocked first, then anything waiting on you, then in review. The 92 finished rows are not deleted; they moved down.\n\nWHAT MERGED. Recently answered, Already judged and Recently landed were three lists all meaning the past, which is what you called double ups. They are one block now, Already dealt with, each row tagged with what kind of thing it was.\n\nTHE TWO NUMBERS THAT MATTER. First: you said lots of things read as answered and few as done, and you were reading it right — but the page was wrong, not the team. Nothing ever went back to a card once the work landed. Every card was checked against its own issue tonight and 33 were actually finished; done went from 12 to 45. Second: seven rows told you that you were blocking things while your desk said nothing was. Reading each one's own note, every single one was a court, a measurement or a patrol that had already run and reported — two of them you had personally answered hours earlier. Six more said in review over PRs that merged this morning.\n\nSO THAT IT CANNOT COME BACK. Both of those were states written once, at the moment they became true, and never looked at again — the same fault you found four times elsewhere today. Two things changed. A row that claims you are blocking it must now name an open card on your desk, and if it does not the page refuses to build at all, so the contradiction is caught in the crew's own commit instead of on your screen. And there is one command that re-reads the whole page against the record every shift — issues, PRs and your ordered queue — which is what found tonight's 33.\n\nWHAT I DID NOT DO. Your fourth note (#293 — park the nights, drop the journal) is not in this. Its main half changes how the runner decides to stop working, which is not something a code change can carry, and its other half removes the box you type into. Folding it in would have made one careful pass into a risky one. It is carded with everything I learned tonight on it."
+    },
+    {
       "at": "2026-08-30T18:45:00+10:00",
       "shift": "foreman-120",
       "text": "BOTH YOUR REPLIES ARE DONE. You wrote \"Take all five\" and \"drop it\", and all six of those acts are made — in the queue, not in a plan.\n\nWHAT THE FIVE ACTUALLY CHANGE, in plain terms. Nothing is built or unbuilt by any of them; what they remove is six different ways for a future night to be spent on finished work.\n\nCard #20 said in capitals that nothing was built, and the thing it describes has been running on both roads for days — it is the fix for the studio refusing your own brief mid-dogfood, and it reads a brief twice before it walls you. Closed, with the three lines of code that prove it quoted on the card. Your casting hero, #234, is on the casting page right now and its card was still open AND still marked urgent — closed, and the urgent label removed, which is the half that mattered: the new priority list reads that label, so finished work had come back sitting fifth in the do-this-first band. It is gone from it now, checked by re-running the list rather than assumed.\n\nThe two paid experiments in #63 measured the default starting state of the wardrobe/basics road — the road you have already ruled we delete. They are folded into the retirement card, so nobody funds a measurement of something being removed. And #35 and #80 each had half of themselves quietly shipped: the workflow linters are in the gate on every pull request, and the gate can already be fired by hand. Both titles now name only what is actually left — a stall alarm, and three tools.\n\nCOOKIE PREFERENCES: you said drop it, and it was already dropped — it went out in the section 02 chrome work, with your reasoning written at the code. So your word confirms the decision rather than ordering a change. Nothing further is owed on that half; the three account-menu labels stay deliberately unbuilt, as you ruled.\n\nTHE PART WORTH KNOWING: nothing on this page is waiting on you now. Needs You is empty for the first time in a while — and that is a measured zero rather than a tidy one. Every one of these was re-read at the shipped code before it was closed, not taken from the report that recommended it, which is the mistake this whole exercise exists to stop.\n\nTHE QUEUE, one line: 83 cards open, 9 of them urgent, none of them rotting — nothing has sat untouched for a week, because last night's pass read all 83 of them against the actual code. One shift running: this one, named in the strip at the top of the page. Your background switch is still OFF, so nothing ran itself tonight."
@@ -2735,11 +2758,6 @@
       "at": "2026-08-29T17:10:00+10:00",
       "shift": "foreman-96",
       "text": "You said the desk was still showing you things you had already answered, and you were right — but the cause was not that nobody looked. The one tool a night shift reads your replies with was only ever looking at HALF your page: it indexed the cards, never the picture items, so when your verdict landed on something in the gallery it printed \"not in the current briefing\" — which reads as \"that card is gone, nothing to update\". I measured it before touching anything: 20 of your 28 replies carried that sentence, and all 17 items under it were sitting right there on the page. Zero were actually gone. That is why \"Cast it\" and the review modal stayed marked open for three editions after you'd answered them. Both are marked with your own words in this edition, and the tool now reads both halves, prints the state of every item beside your reply, and — the part that stops it recurring — starts every shift by naming any item you have answered that the page still calls open. Driven against your live page tonight: it named exactly the two you did. Also honest about two numbers that had gone stale on this page: the Claude review outage is 8h 44m now (I probed again — twelfth refusal), not the five and a half hours the card still said, and five of your rulings have now shipped with no second reader; and the \"waiting on your eye\" chip was still naming four items you answered days ago. $0 house, 0 credits, no renders, no rolls."
-    },
-    {
-      "at": "2026-08-29T16:55:00+10:00",
-      "shift": "foreman-95",
-      "text": "Your cyborg-eye answer came in overnight and it is built and driven. Thank you for it — the rule you wrote is better than the patch I would have written, because it draws the line by WHERE the thing sits rather than by what it is made of.\n\nWHAT CHANGED. The reader was being told two things that collided on a cyborg: never name an accessory, but do name a creature's features. The accessory rule was written about clothes and it was reaching a face. It now says WORN accessory, and your three lines sit above it as the rule that decides which is which.\n\nI RAN IT ON YOUR OWN CASTS FOLDER, thirteen pictures, same pictures as before, one thing changed. Your cyber-goth reference went from \"a sleek mechanical eye piece\" to \"integrated mechanical eye plating on one side of the face\". Your android with the cat ears came back with \"integrated cat-ear hardware\", which is your phrasing almost word for word.\n\nI THEN READ THAT ONE PICTURE THREE MORE TIMES, because this reader is a coin and one read proves nothing. Four reads after the ruling: the eye is kept every time and never flattened, \"sleek\" is gone every time, and twice it came back in your exact register — \"integrated mechanical eye hardware\", \"integrated mechanical eye plating\".\n\nWHAT IT DID NOT FIX, and I am not patching it without you: the word \"eye-piece\" survives in two of those four reads (\"fitted mechanical eye-piece integrated into the skull\"). Your counterexample is already inside the instruction, word for word, and the reader still reaches for that noun half the time. I could push harder on it, but that would be me writing past your ruling on the strength of four reads, and the taste is yours. My honest read: leave it. The eye is kept, which was the thing that mattered, and \"eye-piece\" is not a word the engine refuses.\n\nTWO OTHER THINGS FROM THE SAME RUN, said because the prompt did change and I would rather you hear them from me. A build word went from 3 in 9 to 5 in 9 — the two that gained are a predatory alien (\"muscular\") and your weathered old man (\"solid\"), both physical types your own build rule allows, and two changes is not a reading. And \"spiked\" still turns up on creature ANATOMY — spiked bone growths on the reptile — which is the second-meaning problem you already refused a ban list for. It sits with the refusal patrol, not here.\n\nThe reviewer is still down — eleven refusals, eight hours now, past every precedent. Three of your rulings have shipped with no second pair of eyes. Everything is driven and sabotage-tested, but that is not the same thing, and the top-up card is on your page whenever you want it."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2792,5 +2810,65 @@
     47,
     48,
     49
-  ]
+  ],
+  "nextUp": {
+    "readAt": "2026-08-30T09:20:15.384Z",
+    "items": [
+      {
+        "issueNumber": 267,
+        "title": "00b corrections: he passed the treatment and corrected the contents — drop Theme, rule on Cookie preferences, and three account-menu labels that must NOT get their own modals",
+        "urgent": true
+      },
+      {
+        "issueNumber": 278,
+        "title": "The shell is empty on every casting page — no account, credits, help or settings",
+        "urgent": true
+      },
+      {
+        "issueNumber": 279,
+        "title": "Fitted hardware is a FEATURE, not an accessory — the creature checklist is biology-only and the piece-ban swallows a bolted-in eye",
+        "urgent": true
+      },
+      {
+        "issueNumber": 290,
+        "title": "NEXT UP — the page shows what is running and what shipped, and has no state that means queued",
+        "urgent": true
+      },
+      {
+        "issueNumber": 291,
+        "title": "The pipeline is a 107-row changelog — and it claims 7 things await him while his desk says 0",
+        "urgent": true
+      },
+      {
+        "issueNumber": 292,
+        "title": "Three history sections say the same thing — and 'done' is never applied, so the page understates what is finished",
+        "urgent": true
+      },
+      {
+        "issueNumber": 293,
+        "title": "Park the nights when nothing is workable, and remove the journal — the auto-park is what replaces it",
+        "urgent": true
+      },
+      {
+        "issueNumber": 262,
+        "title": "BLOCKS 00b: the promotion audit — casting's 23 against foundation's nine, written proposal only",
+        "urgent": false
+      },
+      {
+        "issueNumber": 280,
+        "title": "The house icon set — icons.tsx into foundation, and Sparkles is retired",
+        "urgent": false
+      },
+      {
+        "issueNumber": 281,
+        "title": "The Invite block — three fixes are cheap, and 'render real members' has no members to render",
+        "urgent": false
+      },
+      {
+        "issueNumber": 285,
+        "title": "The switch panel shows a count — show the card titles under it too",
+        "urgent": false
+      }
+    ]
+  }
 }

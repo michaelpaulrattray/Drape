@@ -12,9 +12,14 @@
  * under open items, and "Seen by the crew" follows the same deployed-edition
  * honesty rule. The section renders NOTHING when no items exist — an empty
  * gallery frame would be furniture.
+ *
+ * ⚠ **THE `Already judged` LIST LEFT THIS SECTION (#292).** It was the second
+ * of three history lists on one page, which he read as *"double ups"*. Judged
+ * items are still on the page — tagged *You judged* in the one
+ * `CrewRecentHistory` block — so nothing he decided has been dropped; there is
+ * simply one place for the past instead of three.
  */
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { CrewEyeViewer } from "./CrewEyeViewer";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
@@ -40,11 +45,12 @@ export function CrewEyeGallery({
      are compared against each other, never against another item's. */
   const [viewing, setViewing] = useState<{ itemId: string; index: number } | null>(null);
 
-  if (items.length === 0) return null;
-
   const open = items.filter((item) => item.state === "open");
-  const closed = items.filter((item) => item.state !== "open");
   const viewedItem = viewing ? items.find((item) => item.id === viewing.itemId) : undefined;
+
+  /* Nothing OPEN means nothing to judge: an empty gallery frame would be
+     furniture, and the judged ones are in the history block now. */
+  if (open.length === 0) return null;
 
   return (
     <section>
@@ -119,26 +125,6 @@ export function CrewEyeGallery({
         />
       )}
 
-      {closed.length > 0 && (
-        <div className={cn("bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6", open.length > 0 && "mt-4")}>
-          <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
-            Already judged
-          </h3>
-          <ul className="space-y-2">
-            {closed.map((item) => (
-              <li key={item.id} className="flex items-baseline gap-3 text-sm">
-                <span className="text-[11px] shrink-0 w-16 text-[#999]">
-                  {item.state === "done" ? "Done" : "Answered"}
-                </span>
-                <span className="flex-1 leading-relaxed text-[#666]">{item.title}</span>
-                {item.issueNumber !== null && (
-                  <span className="text-[11px] text-[#BBB] shrink-0">#{item.issueNumber}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }

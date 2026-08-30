@@ -1,12 +1,30 @@
 /**
- * The build pipeline — what the crew has in flight, one row each.
+ * WHAT IS NOT DONE — the pipeline, cut to the rows that can change what he
+ * does (#291).
  *
- * Deliberately the plainest section on the page. It answers one question at a
- * glance ("is anything stuck?") and nothing else; a status board with charts
- * would be the dashboard this page is explicitly not.
+ * His verdict, verbatim: *"yeah your right the current pipeline design is a
+ * mess a massive list i cant tell whats going on"*. It held **107 entries and
+ * 92 were merged** — a changelog presented as a status view, with the fifteen
+ * rows that mattered scattered through it.
+ *
+ * Two changes, and neither is cosmetic:
+ *
+ *  - **the merged rows left.** They are history and they now live in the one
+ *    recent-history block with everything else he has already dealt with.
+ *    This section is only what is still moving, still stuck, or still his.
+ *  - **the order is by how much a row wants a human** — blocked, then waiting
+ *    on him, then in review, then building — rather than by when a shift
+ *    happened to write it down.
+ *
+ * ⚠ **`waiting-founder` IS NOT A WORD A SHIFT MAY SIMPLY TYPE ANY MORE.** Seven
+ * rows here said "Waiting on you" while his desk said nothing was, and both
+ * sections were on the same screen. The schema now refuses a `waiting-founder`
+ * row that does not name an OPEN needs-you card, so the day he answers, the
+ * row goes red in the next shift's own commit instead of quietly outliving his
+ * reply.
  */
 import { cn } from "@/lib/utils";
-import { splitPipeline } from "./crewTypes";
+import { pipelineNotDone } from "./crewTypes";
 import type { CrewPipelineItem } from "./crewTypes";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -31,14 +49,7 @@ function PipelineRow({ item }: { item: CrewPipelineItem }) {
         {STATUS_LABEL[item.status] ?? item.status}
       </span>
       <div className="flex-1 min-w-[12rem]">
-        <span
-          className={cn(
-            "text-sm leading-relaxed",
-            item.status === "merged" ? "text-[#666]" : "text-[#0A0A0A]",
-          )}
-        >
-          {item.title}
-        </span>
+        <span className="text-sm leading-relaxed text-[#0A0A0A]">{item.title}</span>
         {item.note && <span className="text-sm text-[#999]"> — {item.note}</span>}
       </div>
       {item.prNumber !== null && (
@@ -50,39 +61,27 @@ function PipelineRow({ item }: { item: CrewPipelineItem }) {
   );
 }
 
-/**
- * Split into what is MOVING and what has LANDED (#74 items 4 and 6): the
- * founder's gap list named momentum as invisible. "Landed" is derived from the
- * merged status the shifts already record — never a second list.
- */
 export function CrewPipeline({ items }: { items: readonly CrewPipelineItem[] }) {
-  if (items.length === 0) return null;
-  const { inFlight, landed } = splitPipeline(items);
+  const notDone = pipelineNotDone(items);
 
   return (
-    <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">Pipeline</h2>
-      {inFlight.length === 0 ? (
-        <p className="text-sm text-[#999]">Nothing in flight right now.</p>
+    <section
+      className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6"
+      data-testid="crew-pipeline"
+    >
+      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
+        Not done yet {notDone.length > 0 && <span className="text-[#0A0A0A]">· {notDone.length}</span>}
+      </h2>
+      {notDone.length === 0 ? (
+        <p className="text-sm text-[#999]">
+          Nothing is in flight. Everything the crew has started has landed.
+        </p>
       ) : (
         <ul className="space-y-3">
-          {inFlight.map((item) => (
+          {notDone.map((item) => (
             <PipelineRow key={item.id} item={item} />
           ))}
         </ul>
-      )}
-
-      {landed.length > 0 && (
-        <div className="mt-5 pt-5 border-t border-[#EFEFEF]">
-          <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
-            Recently landed
-          </h3>
-          <ul className="space-y-3">
-            {landed.map((item) => (
-              <PipelineRow key={item.id} item={item} />
-            ))}
-          </ul>
-        </div>
       )}
     </section>
   );

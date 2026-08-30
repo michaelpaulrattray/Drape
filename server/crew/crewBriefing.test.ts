@@ -155,6 +155,110 @@ describe("the briefing file", () => {
     ).toThrow(/share one reply namespace/);
   });
 
+  it("⚠ a pipeline row may not claim he is blocking it unless his desk agrees (#291)", () => {
+    /*
+      THE DEFECT THIS REFUSES, MEASURED: seven rows said `waiting-founder`
+      while Needs You was at ZERO open — the same page telling him two
+      different things about the same question, which costs more than either
+      being wrong on its own, because it costs him trust in the whole page.
+
+      `waiting-founder` was a word a shift TYPED, so it survived his own
+      answer. Every arm below is driven through the REAL schema against the
+      REAL briefing, and the positive control is the one that matters: a guard
+      that refuses everything would pass the four negatives on its own.
+    */
+    const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
+    const openCard = { ...valid.needsYou[0], id: "an-open-card", state: "open" };
+    const answeredCard = { ...valid.needsYou[0], id: "an-answered-card", state: "answered" };
+    const row = { id: "a-row", title: "t", status: "waiting-founder", prNumber: null, note: null };
+
+    /* POSITIVE CONTROL — the shape this rule EXISTS to allow. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        needsYou: [openCard],
+        eyeItems: [],
+        pipeline: [{ ...row, cardId: "an-open-card" }],
+      }),
+    ).not.toThrow();
+
+    /* The live defect: a row naming a card he has already answered. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        needsYou: [answeredCard],
+        eyeItems: [],
+        pipeline: [{ ...row, cardId: "an-answered-card" }],
+      }),
+    ).toThrow(/waiting-founder/);
+
+    /* A row naming no card at all — how all seven were written. */
+    expect(() =>
+      crewBriefingSchema.parse({ ...valid, needsYou: [openCard], eyeItems: [], pipeline: [row] }),
+    ).toThrow(/waiting-founder/);
+
+    /* A row naming a card that does not exist. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        needsYou: [openCard],
+        eyeItems: [],
+        pipeline: [{ ...row, cardId: "no-such-card" }],
+      }),
+    ).toThrow(/waiting-founder/);
+
+    /* And the other direction: only a waiting-founder row may carry one, so
+       `cardId` can never become a second general-purpose link nobody reads. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        needsYou: [openCard],
+        eyeItems: [],
+        pipeline: [{ ...row, status: "merged", cardId: "an-open-card" }],
+      }),
+    ).toThrow(/waiting-founder/);
+  });
+
+  it("⚠ NEXT UP is a stamped snapshot, and it says when it looked (#290)", () => {
+    const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
+
+    /* POSITIVE CONTROL first — the real file's own block parses. */
+    expect(() => crewBriefingSchema.parse(valid)).not.toThrow();
+    expect(typeof valid.nextUp.readAt).toBe("string");
+    expect(Number.isNaN(Date.parse(valid.nextUp.readAt))).toBe(false);
+
+    /* The stamp is the honest part (`crew_queue_counts.countedAt`'s argument):
+       a block with no reading time implies an instant it does not have. */
+    const { readAt: _dropped, ...noStamp } = valid.nextUp;
+    expect(() => crewBriefingSchema.parse({ ...valid, nextUp: noStamp })).toThrow();
+
+    /* One row per card: a duplicate would render one line where two cards are
+       queued, and the running order would silently be short. */
+    const item = { issueNumber: 999, title: "t", urgent: false };
+    expect(() =>
+      crewBriefingSchema.parse({ ...valid, nextUp: { readAt: valid.nextUp.readAt, items: [item] } }),
+    ).not.toThrow();
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        nextUp: { readAt: valid.nextUp.readAt, items: [item, item] },
+      }),
+    ).toThrow(/issueNumber must be unique/);
+
+    /* ⚠ `blockedOnYou` is DERIVED at render off his open cards and must never
+       become a field here — a second copy of "he is blocking this" is exactly
+       what put seven false rows in front of him. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        nextUp: {
+          readAt: valid.nextUp.readAt,
+          items: [{ ...item, blockedOnYou: true }],
+        },
+      }),
+    ).toThrow();
+  });
+
   it("the journal cap holds at the schema", () => {
     const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
     const entry = { at: "2026-08-25T00:00:00+10:00", shift: "x", text: "y" };

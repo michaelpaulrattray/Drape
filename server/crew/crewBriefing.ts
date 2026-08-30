@@ -143,6 +143,59 @@ const pipelineItemSchema = z.object({
   status: z.enum(["building", "in-review", "waiting-founder", "merged", "blocked"]),
   prNumber: z.number().int().positive().nullable(),
   note: z.string().nullable(),
+  /**
+   * The needs-you card this row is waiting on — REQUIRED on a
+   * `waiting-founder` row and refused on any other (the refinement below).
+   *
+   * It exists because the page told him two contradictory things at once
+   * (#291): seven pipeline rows said "Waiting on you" while his desk said
+   * nothing was. `waiting-founder` was a status a shift TYPED, so it survived
+   * his own answer — the same write-once-never-re-read shape as the queue,
+   * the standing-exceptions ranking and the `answered` state. Naming the card
+   * makes the claim derivable instead of asserted, and the parse refuses the
+   * disagreement rather than rendering it.
+   */
+  cardId: z.string().max(64).nullable().optional(),
+}).strict();
+
+/**
+ * What a shift's queue reading found waiting — the NEXT UP block (#290).
+ *
+ * His question, verbatim: *"i cant see what its planned as the next shift etc
+ * or can i see it im just missing it"* — and he was not missing it. The
+ * pipeline's five statuses are all happening-now or already-done, so the page
+ * had no state that means QUEUED and his question had nowhere to be answered.
+ *
+ * # IT IS A DERIVED SNAPSHOT AND IT IS NEVER TYPED
+ *
+ * The rows come from `gh issue list --label founder-ordered --state open`,
+ * written mechanically by `scripts/crew-desk-sweep.mts`. **No shift composes
+ * this list**, which is what keeps it from becoming the sixth hand-kept list
+ * found rotting on 2026-08-30.
+ *
+ * ⚠ **`readAt` IS NOT DECORATION — IT IS THE HONEST PART**, for exactly the
+ * reason `crew_queue_counts.countedAt` carries the same stamp: a truly live
+ * list needs the server to hold a GitHub token, which is a founder-level
+ * decision about a credential rather than a shift's call. So the block says
+ * when it looked instead of implying an instant it does not have.
+ *
+ * ⚠ **AND `blockedOnYou` IS DELIBERATELY ABSENT FROM THIS SHAPE.** Whether a
+ * queued card is waiting on HIM is read at render time off the open needs-you
+ * cards, which is the desk's own state — the one rule #291 exists to enforce.
+ * A boolean here would be a second copy of it, and a second copy is what put
+ * seven false "Waiting on you" rows in front of him in the first place.
+ */
+const nextUpSchema = z.object({
+  /** When the queue was read. Rendered out loud, never implied. */
+  readAt: isoDateTime,
+  items: z.array(z.object({
+    issueNumber: z.number().int().positive(),
+    title: z.string().min(1).max(300),
+    /** The card's own labels, so `urgent` can be shown without a second list. */
+    urgent: z.boolean(),
+  }).strict()).max(40)
+    .refine(uniqueBy<{ issueNumber: number }>("queued card", (item) => String(item.issueNumber)),
+      "nextUp.items[].issueNumber must be unique"),
 }).strict();
 
 const problemSchema = z.object({
@@ -245,6 +298,8 @@ export const crewBriefingSchema = z.object({
   /** Courts and measurements waiting on his EYE — frames with captions (#75). */
   eyeItems: z.array(eyeItemSchema)
     .refine(uniqueBy("eye item", (item) => item.id), uniqueMessage("eyeItems[].id")),
+  /** The founder-ordered queue, read from the label rather than composed (#290). */
+  nextUp: nextUpSchema,
   pipeline: z.array(pipelineItemSchema)
     .refine(uniqueBy("item", (item) => item.id), uniqueMessage("pipeline[].id")),
   problems: z.array(problemSchema)
@@ -281,6 +336,31 @@ export const crewBriefingSchema = z.object({
       return item.state !== "open" || card.state === "open";
     }),
   "an eye item's cardId must name a needsYou card, and an open eye item needs an open card (#133)",
+).refine(
+  /*
+    A PIPELINE ROW MAY NOT CLAIM HE IS BLOCKING IT UNLESS HIS DESK AGREES (#291).
+
+    His own reading: *"the current pipeline design is a mess a massive list i
+    cant tell whats going on"* — and underneath it, seven rows saying
+    `waiting-founder` while Needs You was at ZERO open. The same page told him
+    two different things about the same question, which costs more than either
+    being wrong on its own.
+
+    The rule is one line: a `waiting-founder` row NAMES the open card it is
+    waiting on, and nothing else may name one. So the count on this section can
+    never exceed the count on his desk, the day he answers a card its pipeline
+    row goes red in the shift's own commit, and there is no second place where
+    "he is blocking this" is stored. Working law 4, held at the parse.
+  */
+  (briefing) =>
+    briefing.pipeline.every((item) => {
+      if (item.status !== "waiting-founder") return item.cardId == null;
+      if (item.cardId == null) return false;
+      return briefing.needsYou.some(
+        (card) => card.id === item.cardId && card.state === "open",
+      );
+    }),
+  "a waiting-founder pipeline row must name an OPEN needsYou card, and only such a row may carry cardId (#291)",
 );
 
 export type CrewBriefing = z.infer<typeof crewBriefingSchema>;
@@ -307,6 +387,10 @@ export function degradedCrewBriefing(): CrewBriefing {
     },
     needsYou: [],
     eyeItems: [],
+    /* Empty rather than absent: the block renders its own "nothing queued"
+       sentence, and a degraded page saying that is honest — the queue could
+       not be read either. */
+    nextUp: { readAt: new Date().toISOString(), items: [] },
     pipeline: [],
     problems: [{
       id: "briefing-unreadable",

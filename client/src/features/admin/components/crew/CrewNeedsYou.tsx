@@ -12,11 +12,13 @@
  * "yes" without reading the alternatives, and read the alternatives when "yes"
  * is not obviously right.
  *
- * Answered and done cards collapse into a short list at the bottom. They are
- * not deleted from the page — a card he answered last night is how he
- * remembers he answered it.
+ * ⚠ **THE ANSWERED LIST LEFT THIS SECTION (#292).** It used to collapse into a
+ * short list at the bottom headed *Recently answered* — one of THREE history
+ * lists stacked down the page, which he read as *"double ups"*. Answered and
+ * done cards are still on the page and still his memory of what he decided;
+ * they are in the one `CrewRecentHistory` block with everything else already
+ * dealt with. Nothing is deleted, and this section is now only what is open.
  */
-import { cn } from "@/lib/utils";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { shortDate } from "./CrewProgramBanner";
@@ -36,7 +38,6 @@ export function CrewNeedsYou({
   onSend: (input: { cardId: string | null; body: string }) => Promise<unknown>;
 }) {
   const open = cards.filter((card) => card.state === "open");
-  const closed = cards.filter((card) => card.state !== "open");
 
   return (
     <section>
@@ -44,7 +45,7 @@ export function CrewNeedsYou({
         Needs you {open.length > 0 && <span className="text-[#0A0A0A]">· {open.length}</span>}
       </h2>
 
-      {open.length === 0 && closed.length === 0 && (
+      {open.length === 0 && (
         <div className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6 text-sm text-[#999]">
           Nothing is waiting on you. The crew will file a card here when something is.
         </div>
@@ -104,31 +105,6 @@ export function CrewNeedsYou({
         ))}
       </div>
 
-      {closed.length > 0 && (
-        <div className="mt-4 bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-          <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
-            Recently answered
-          </h3>
-          <ul className="space-y-2">
-            {closed.map((card) => (
-              <li key={card.id} className="flex items-baseline gap-3 text-sm">
-                <span
-                  className={cn(
-                    "text-[11px] shrink-0 w-16",
-                    card.state === "done" ? "text-[#999]" : "text-[#666]",
-                  )}
-                >
-                  {card.state === "done" ? "Done" : "Answered"}
-                </span>
-                <span className="flex-1 leading-relaxed text-[#666]">{card.title}</span>
-                {card.issueNumber !== null && (
-                  <span className="text-[11px] text-[#BBB] shrink-0">#{card.issueNumber}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }
