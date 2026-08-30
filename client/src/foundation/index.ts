@@ -40,22 +40,49 @@ export {
   Button,
   Card,
   Chip,
+  CostedOption,
   CreditsChip,
+  DataTable,
   DerivedChip,
   Dock,
   DropZone,
   EmptyState,
+  ExpandableRow,
   Field,
   GradientTile,
+  HoverActions,
   IconButton,
   Input,
   Instruction,
+  Marquee,
+  MediaCard,
   MediaFrame,
+  MilestoneRail,
   Progress,
   RequiredMarker,
   ScopePill,
   SectionHead,
   Skeleton,
   StatusPill,
+  SurfaceBar,
+  Transcript,
 } from "./primitives";
-export type { ButtonVariant } from "./primitives";
+export type {
+  ButtonVariant,
+  Cost,
+  CostSign,
+  DataColumn,
+  DataFact,
+  DataRow,
+  HoverActionItem,
+  MediaCardState,
+  MediaRatio,
+  Milestone,
+  TranscriptEntry,
+} from "./primitives";
+
+/* Section 00 (brief 00 §4, §5) — the severity look and popover discipline. */
+export { severityLook } from "./severity";
+export type { Severity } from "./severity";
+export { POPOVER_MARKER, usePopover } from "./usePopover";
+export type { PopoverPlacement, UsePopoverResult } from "./usePopover";

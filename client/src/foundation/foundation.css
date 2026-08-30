@@ -1104,3 +1104,573 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 [data-sonner-toast] [data-icon] {
   display: none;
 }
+
+/* ============================================================
+   SECTION 00 — the shared parts, once
+   docs/specs/Casting-ui-ux-design/drape-redesign/00-foundation-topup.md
+   Grammar: design_handoff_studio/10-shared-patterns.md
+
+   Every value here resolves through a token. The four keyframes
+   this section adds live in tokens.css beside the other five
+   `dp-` frames rather than here — see the note there.
+   ============================================================ */
+
+/*
+  THE PARENT-HOVER REVEAL — the one rule that cannot be inline, and the whole
+  reason `HoverActions` is a component.
+
+  The prototype put `:hover` on the action row itself, so the buttons appeared
+  only once the cursor was already inside the thin strip at the bottom of the
+  card: you had to find them in order to make them findable.
+
+  `:focus-within` is here beyond the brief and deliberately — a row revealed by
+  hover alone is a row a keyboard user tabs into blind.
+*/
+[data-hoverhost] [data-hoverfade] {
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+[data-hoverhost]:hover [data-hoverfade],
+[data-hoverhost]:focus-within [data-hoverfade] {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------- media card */
+
+.dp-mediacard {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+/*
+  THE ASPECT-RATIO RULE, baked in (brief 00 §5). The width comes from the grid;
+  the height stays `auto` so `aspect-ratio` has an axis to resolve. Pinning both
+  is what stops it resolving at all — three bugs came from that.
+*/
+.dp-mediacard__well {
+  position: relative;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--media);
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+.dp-mediacard:hover .dp-mediacard__well { border-color: var(--lineStrong); }
+
+.dp-mediacard__well img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dp-mediacard__hit {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+/* Pills ON media: mono 8.5px, white on a scrim (grammar: Media card). */
+.dp-mediacard__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 3px 7px;
+  border-radius: var(--r-pill);
+  background: var(--scrimPill);
+  color: var(--onScrim);
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dp-mediacard__corner {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: inline-flex;
+}
+
+/* `kept` is the ONLY accent a card ever carries. */
+.dp-mediacard__well--kept::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  height: 3px;
+  background: var(--accentSolid);
+}
+
+.dp-mediacard__well--pending::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--surface), transparent);
+  opacity: 0.5;
+  animation: dp-sweep 1.5s ease-in-out infinite;
+}
+
+/* `gap` is the dashed create tile generalised. Dashed = not yet. */
+.dp-mediacard__well--gap {
+  border: 1px dashed var(--dashed);
+  background: transparent;
+}
+
+.dp-mediacard:hover .dp-mediacard__well--gap {
+  border-color: var(--ink);
+  background: var(--wellSoft);
+}
+
+.dp-mediacard__gap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dp-mediacard__plus {
+  position: relative;
+  width: 13px;
+  height: 13px;
+}
+
+.dp-mediacard__plus::before,
+.dp-mediacard__plus::after {
+  content: "";
+  position: absolute;
+  background: var(--muted);
+}
+
+.dp-mediacard__plus::before { inset: 6px 0 6px 0; height: 1px; }
+.dp-mediacard__plus::after  { inset: 0 6px 0 6px; width: 1px; }
+
+.dp-mediacard__needed {
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+
+/*
+  THE LABEL ROW IS BELOW THE MEDIA, NEVER OVER IT. A filled slot's caption
+  centres in the card, which on a short 4:3 is exactly where a bottom overlay's
+  text lands. They collided in the prototype; the rule is absolute.
+*/
+.dp-mediacard__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dp-mediacard__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 12.5px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-mediacard__meta {
+  flex: none;
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+/* ---------------------------------------------------------- hover actions */
+
+.dp-hoveractions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 18px 8px 8px;
+  background: linear-gradient(to top, var(--scrimPill), transparent);
+}
+
+.dp-hoveractions__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-chip);
+  background: var(--barGlass);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+
+.dp-hoveractions__btn:hover { background: var(--surface); }
+
+.dp-hoveractions__meta {
+  margin-left: auto;
+  font: 400 10px var(--font-mono);
+  color: var(--onScrim);
+}
+
+/* ------------------------------------------------------------ surface bar */
+
+/*
+  ⚠ FOUR OVERFLOW BUGS CAME FROM THIS ROW. The title takes `min-width: 0` and
+  ellipsis, the meta cluster takes a floor and may wrap, the spacer is
+  `flex: 1 1 0` with `min-width: 0`, and the bar WRAPS. Never `overflow-x: auto`
+  here — a header behind a horizontal scroll is a control nobody finds.
+*/
+.dp-surfacebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 13px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.dp-surfacebar__title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.dp-surfacebar__heading {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 15px var(--font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dp-surfacebar__spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.dp-surfacebar__meta {
+  flex: 0 1 auto;
+  min-width: 96px;
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-surfacebar__right {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Segmented control (grammar: pill-in-well). */
+.dp-segmented {
+  flex: none;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-btn);
+  background: var(--fillStrong);
+}
+
+.dp-segmented__seg {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: var(--r-chip);
+  background: transparent;
+  color: var(--metaStrong);
+  font: 400 11.5px var(--font-sans);
+  cursor: pointer;
+}
+
+.dp-segmented__seg--on {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 500;
+  /* The grammar names a 0-1px-2px shadow here. There is no shadow token at
+     that scale and section 00 adds none (§6: "the token set does not need
+     new colours"), so the active segment is carried by --surface against the
+     --fillStrong well plus the weight change. Two of the three signals, and
+     the two that survive a dark theme. */
+}
+
+/* ------------------------------------------------------------- data table */
+
+.dp-table {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.dp-table__head,
+.dp-table__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+
+.dp-table__head {
+  padding: 8px 15px;
+  background: var(--well);
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.dp-table__row {
+  padding: 11px 15px;
+  border: 0;
+  background: transparent;
+  font: 400 11.5px var(--font-sans);
+  color: var(--secondary);
+}
+
+.dp-table__row--button { cursor: pointer; }
+.dp-table__row--button:hover { background: var(--well); }
+
+.dp-table__rowgroup { border-top: 1px solid var(--ruleSoft); }
+.dp-table__rowgroup--open { background: var(--well); }
+
+.dp-table__cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-table__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 15px 15px;
+}
+
+.dp-table__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 10px 16px;
+}
+
+.dp-table__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dp-table__factvalue {
+  font: 400 11.5px var(--font-mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Plain English, on the well. What a reader needs — not a JSON dump. */
+.dp-table__evidence {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font: 400 11.5px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dp-table__empty { padding: 22px 15px; }
+
+.dp-table__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border-top: 1px solid var(--ruleSoft);
+  background: var(--well);
+}
+
+/* ---------------------------------------------------------- costed option */
+
+.dp-costed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+.dp-costed:hover { border-color: var(--lineStrong); }
+
+.dp-costed__head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+
+.dp-costed__costs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dp-costed__cost {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.dp-costed__sign {
+  flex: none;
+  width: 9px;
+  font: 500 11px var(--font-mono);
+}
+
+/* --------------------------------------------------------- milestone rail */
+
+.dp-milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Segment width is `flex: weight` — equal segments lie about where the work is. */
+.dp-milestones__rail {
+  display: flex;
+  gap: 3px;
+  height: 6px;
+}
+
+.dp-milestones__seg { border-radius: var(--r-pill); }
+.dp-milestones__seg--closed  { background: var(--lineStrong); }
+.dp-milestones__seg--current { background: var(--ink); }
+.dp-milestones__seg--held    { background: var(--muted); }
+.dp-milestones__seg--todo    { background: transparent; box-shadow: inset 0 0 0 1px var(--dashed); }
+
+.dp-milestones__legend {
+  display: flex;
+  gap: 3px;
+}
+
+/* ------------------------------------------------------------- transcript */
+
+.dp-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dp-transcript__entry {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+/*
+  ⚠ 80px, AND IT DOES NOT SHRINK. "night shift" needs 69.3px at 10.5px mono and
+  clips at 64px. The answer is not a smaller font — 10.5px is the mono floor.
+*/
+.dp-transcript__who {
+  flex: none;
+  width: 80px;
+  padding-top: 1px;
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-transcript__spine {
+  flex: none;
+  width: 1px;
+  background: var(--rule);
+}
+
+.dp-transcript__body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding-bottom: 2px;
+}
+
+.dp-transcript__text {
+  font: 400 12px/1.65 var(--font-sans);
+  color: var(--secondary);
+}
+
+.dp-transcript__entry--own .dp-transcript__spine { background: var(--ink); }
+.dp-transcript__entry--own .dp-transcript__who   { color: var(--metaStrong); }
+.dp-transcript__entry--own .dp-transcript__text  { font-weight: 500; color: var(--ink); }
+
+.dp-transcript__ref {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: var(--well);
+}
+
+/* ---------------------------------------------------------------- marquee */
+
+.dp-marquee {
+  position: relative;
+  overflow: hidden;
+  /* Fade edges: --page to transparent, 36px (grammar: motion vocabulary). */
+  /* A mask reads ALPHA only, so `black` here is opacity rather than a colour:
+     it is identical in both themes and is not a token candidate. */
+  mask-image: linear-gradient(90deg, transparent, black 36px, black calc(100% - 36px), transparent);
+}
+
+/*
+  ⚠ NO PADDING AND NO `gap` ON THE TRACK. `translateX(-50%)` has to equal
+  exactly one copy's stride; `gap` applies BETWEEN items only, so a gapped track
+  is one gap short of two full copies and jumps visibly on every loop. Items
+  space themselves with `margin-right` — every item, including the last.
+*/
+.dp-marquee__track {
+  display: flex;
+  width: max-content;
+  padding: 0;
+  gap: 0;
+  animation: dp-marquee linear infinite;
+}
+
+.dp-marquee--pausable:hover .dp-marquee__track { animation-play-state: paused; }
+
+.dp-marquee__item { flex: none; }

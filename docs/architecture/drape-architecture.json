@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4964ffbfee60a8e2"
+    "sourceFingerprint": "83d67fe384959d3f"
   },
   "domains": [
     {
@@ -68,7 +68,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 12
+      "moduleCount": 14
     },
     {
       "id": "domain:home",
@@ -2439,6 +2439,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/foundation/severity.ts",
+      "path": "client/src/foundation/severity.ts",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/foundation/theme.ts",
       "path": "client/src/foundation/theme.ts",
       "domain": "foundation",
@@ -2447,6 +2453,12 @@
     {
       "id": "module:client/src/foundation/tokens.css",
       "path": "client/src/foundation/tokens.css",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/usePopover.ts",
+      "path": "client/src/foundation/usePopover.ts",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -10370,6 +10382,10 @@
       "path": "client/src/foundation/rawErrorToast.test.ts"
     },
     {
+      "id": "test:client/src/foundation/section00-guard.test.ts",
+      "path": "client/src/foundation/section00-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
     },
@@ -17780,12 +17796,22 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/severity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/theme.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/Topbar.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/usePopover.ts",
       "kind": "imports"
     },
     {

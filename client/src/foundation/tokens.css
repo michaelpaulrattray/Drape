@@ -235,6 +235,25 @@
 @keyframes dp-spin   { to { transform:rotate(360deg) } }
 @keyframes dp-scaleIn{ from { opacity:0; transform:scale(.97) } to { opacity:1; transform:none } }
 
+/*
+  SECTION 00's four frames (brief 00 §3). The brief puts them in
+  foundation.css; they live HERE instead, beside their five siblings, because a
+  motion family split across two files is exactly the drift this system keeps
+  paying for — and the brief's own precedence rule puts the shipped foundation
+  above the brief.
+
+  `dp-slidein` is a kept take arriving in the cut strip and `dp-pop` is the star
+  that sent it there: ONE gesture in two halves, and they should stay a matched
+  pair.
+
+  All four are killed by the reduced-motion block below, which is blanket over
+  `.dp-root` — nothing here needs its own opt-out.
+*/
+@keyframes dp-marquee { from { transform:translateX(0) } to { transform:translateX(-50%) } }
+@keyframes dp-slidein { from { opacity:0; transform:translateX(-14px) scale(.94) } to { opacity:1; transform:none } }
+@keyframes dp-pop     { 0% { transform:scale(1) } 45% { transform:scale(1.18) } 100% { transform:scale(1) } }
+@keyframes dp-prog    { from { width:12% } to { width:84% } }
+
 @media (prefers-reduced-motion: reduce) {
   .dp-root,
   .dp-root *,
