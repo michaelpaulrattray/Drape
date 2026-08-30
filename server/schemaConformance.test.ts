@@ -330,10 +330,19 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
     expect(verdict.missingColumns).toEqual(["crew_queue_counts.somethingElse"]);
   });
 
+  /* ⚠ A FIXTURE, not the live list. These two arms used whatever real entry
+     happened to be enumerated, so the mechanism could only be tested while the
+     list was non-empty — and the guard could not reach its own resting state:
+     deleting the last exception, which every ceremony's closing line orders,
+     turned both red. Found the morning #285's ceremony emptied it. */
+  const FIXTURE = { "crew_queue_counts.titles": "a fixture, not a real exception" };
+
   it("tolerates the enumerated column while the ceremony has not run", () => {
     const verdict = conformanceVerdict(
       declaredWithTitles(),
       liveSchemaFrom([{ t: "crew_queue_counts", c: "categoryKey" }]),
+      undefined,
+      FIXTURE,
     );
     expect(verdict.missingColumns).toEqual([]);
     expect(verdict.problems).toEqual([]);
@@ -349,6 +358,8 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
         { t: "crew_queue_counts", c: "categoryKey" },
         { t: "crew_queue_counts", c: "titles" },
       ]),
+      undefined,
+      FIXTURE,
     );
     expect(verdict.staleExceptions).toEqual(["crew_queue_counts.titles"]);
     expect(verdict.problems[0]).toContain("the list only shrinks");
@@ -369,12 +380,13 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
        reddened main because a ceremony deleted an exception line and not its
        pin; the reverse — a line added without its pin — is how an exception
        becomes permanent by arriving quietly. */
-    expect(Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED)).toEqual([
-      /* Joined 2026-08-30 (#285 — the card titles under his background-work
-         switch, migration 0057). It leaves the day he runs
-         `scripts/ceremony-crew-queue-count-titles.mts --production`, and that
-         commit deletes this line too. */
-      "crew_queue_counts.titles",
-    ]);
+    /* `crew_queue_counts.titles` (#285, migration 0057) joined 2026-08-30 and
+       LEFT the next morning: he confirmed the merge, the ceremony reported
+       ALREADY APPLIED on production (`titles: text · nullable`, 5 rows, 0 with
+       titles — deliberately not back-filled, because the titles and the count
+       are ONE reading), and its line and this pin were deleted together in
+       that commit. The list is empty, which is the state it should spend most
+       of its life in. */
+    expect(Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED)).toEqual([]);
   });
 });

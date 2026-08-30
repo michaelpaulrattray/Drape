@@ -90,15 +90,7 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
  * the day the column appears, this line and its pin in
  * `server/schemaConformance.test.ts` are deleted in the SAME commit.
  */
-export const DECLARED_COLUMNS_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
-  "crew_queue_counts.titles":
-    "migration 0057 (#285 — the card titles under his background-work switch). "
-    + "Production takes it by `scripts/ceremony-crew-queue-count-titles.mts`, which "
-    + "is a FOUNDER act. Both sides of the column already degrade without it: the "
-    + "writer asks SHOW COLUMNS and falls back to the count-only INSERT, and the "
-    + "reader catches ER_BAD_FIELD_ERROR and re-reads without it, so his Crew tab "
-    + "keeps working meanwhile. Delete this line the day the ceremony runs.",
-};
+export const DECLARED_COLUMNS_BUT_UNMIGRATED: Readonly<Record<string, string>> = {};
 
 export type ConformanceVerdict = {
   readonly declaredTables: number;
@@ -114,10 +106,26 @@ export type ConformanceVerdict = {
   readonly problems: string[];
 };
 
+/*
+  ⚠ `columnExceptions` is injectable, and the reason is a defect this guard had
+  the day its list first emptied (2026-08-31, #285's ceremony).
+
+  Two arms — "tolerates the enumerated column while the ceremony has not run"
+  and "ERRORS when the enumerated column turns out to be PRESENT" — tested the
+  MECHANISM using whatever real entry happened to be in
+  `DECLARED_COLUMNS_BUT_UNMIGRATED`. So the mechanism could only be tested while
+  the list was non-empty, and **the guard could not reach its own correct
+  resting state**: deleting the last exception, exactly as every ceremony's
+  closing line orders, turned two passing arms red.
+
+  A test of the rule must not depend on live data the rule is about. The
+  parameter defaults to the real list, so every production caller is unchanged.
+*/
 export function conformanceVerdict(
   declared: DeclaredSchema,
   live: LiveSchema,
   indexes?: { declared: ReadonlyMap<string, string>; live: ReadonlySet<string> },
+  columnExceptions: Readonly<Record<string, string>> = DECLARED_COLUMNS_BUT_UNMIGRATED,
 ): ConformanceVerdict {
   const missingTables: string[] = [];
   const missingColumns: string[] = [];
@@ -142,12 +150,12 @@ export function conformanceVerdict(
     for (const column of [...columns].sort()) {
       const qualified = `${table}.${column}`;
       if (!present.has(column)) {
-        if (!(qualified in DECLARED_COLUMNS_BUT_UNMIGRATED)) missingColumns.push(qualified);
+        if (!(qualified in columnExceptions)) missingColumns.push(qualified);
         continue;
       }
       /* Present AND enumerated as unmigrated — the ceremony has run and the
          exception outlived its reason. Same shrink rule as a stale table. */
-      if (qualified in DECLARED_COLUMNS_BUT_UNMIGRATED) staleExceptions.push(qualified);
+      if (qualified in columnExceptions) staleExceptions.push(qualified);
     }
   }
 
