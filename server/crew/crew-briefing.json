@@ -1,7 +1,7 @@
 {
-  "edition": 135,
-  "updatedAt": "2026-08-30T15:35:00+10:00",
-  "shift": "foreman-118",
+  "edition": 136,
+  "updatedAt": "2026-08-30T16:20:00+10:00",
+  "shift": "foreman-119",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,43 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "freshness-closes-271",
+      "title": "The freshness pass is done — 83 cards read at the code, and five of them need one word each from you",
+      "state": "open",
+      "filedAt": "2026-08-30T16:20:00+10:00",
+      "issueNumber": 271,
+      "productImpact": "You said \"some of these seem like they are not relevant anymore double check against the codebase,\" and then \"yeah we need a freshness path done to find whats relevant and whats not.\" That is done. All 83 open cards were read against the actual code rather than against what the card says.\n\nWHAT IT FOUND, in plain terms: of the 45 cards filed on one day back on the 25th, four had already been built or overtaken, four carry numbers that are badly wrong, and 37 are still exactly true. The queue is in better shape than the spot-check suggested — but the four that were wrong were wrong in the expensive direction.\n\nTHE WORST ONE: card #20 says in capitals \"NOTHING IS BUILT\". It is built. It is the fix for you being refused by your own product mid-dogfood — the studio now reads a brief TWICE before it walls you, so a one-off wobble no longer turns you away. It shipped inside the creative register's own build a few days ago, so nobody thought to close its card. A shift picking that card up would have spent a night building it a second time.\n\nAND THE SAME THING WAS TRUE OF THE LIST THAT RANKS EVERYTHING: the team's \"work these first, in this order\" list named eight cards. All eight were closed on the 25th — four of them before the paragraph naming them was five hours old. So for five days, every shift that opened the file to decide what mattered most was reading a list of finished work. That list now reads itself out of the live queue instead of being typed out beside it, so a card closing removes itself.\n\nWHAT I NEED FROM YOU: five one-word decisions, below. I did not close anything — closing your cards is yours.",
+      "workedExample": "The clearest one to picture is #234, your casting hero. You asked for it, it was built, merged and deployed the day before yesterday, and you can see it on the casting page right now. Its card is still open AND still marked urgent — so when the new derived ranking ran for the first time, finished work came back sitting fifth in the \"do this first\" band.\n\nThat is the same rot as the old list, one layer down: the paragraph was wrong before, now the label is. The difference is that a wrong label is one field to fix, in the place the ranking is actually read from — instead of five days of shifts reading a stale paragraph.",
+      "options": [
+        {
+          "key": "close-20",
+          "label": "Close #20 — the ask-twice wall check",
+          "consequence": "Built and running on both roads; the three line numbers are quoted on the card. Leaving it open is how a shift spends a night building it a second time."
+        },
+        {
+          "key": "close-234",
+          "label": "Close #234 — your casting hero",
+          "consequence": "Built, merged and deployed two days ago; you can see it on the casting page now. Its leftover half is already its own card (#238). Closing it also takes finished work out of the top of the priority band."
+        },
+        {
+          "key": "fold-63",
+          "label": "Fold #63 into #203 — the wardrobe/basics retirement",
+          "consequence": "Two unbuilt paid experiments measuring the birth-state default of a road you have ruled we delete. Folding them means nobody funds a measurement of something being removed."
+        },
+        {
+          "key": "retitle-35-80",
+          "label": "Retitle #35 and #80 to what is left of them",
+          "consequence": "Half of each shipped without the card noticing — the workflow linters are in the gate, and the gate can already be fired by hand. The titles still ask for both halves."
+        },
+        {
+          "key": "leave",
+          "label": "Leave all five as they are",
+          "consequence": "Nothing breaks. The cost is that each stays a way for a future shift to start finished work, and the derived priority band keeps showing your hero fifth."
+        }
+      ],
+      "recommendation": "Take all five. They are bookkeeping, not scope: nothing is built or unbuilt by any of them, and each one removes a way for a future shift to spend a night on finished work. If you only want to do one, close #20 — it is the one with a whole night's work behind it."
+    },
     {
       "id": "promotion-build-262",
       "title": "The promotion PR is specified in your order and NOT started — deliberately, and here is why",
@@ -1605,6 +1642,13 @@
   ],
   "pipeline": [
     {
+      "id": "freshness-pass-271",
+      "title": "The queue freshness pass — every open card read against the code",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Your order, done. 83 cards, one line each: built / partly built / obsolete / number stale / still true. Reading only — no product code changed, nothing closed. Full record in the repo at docs/specs/QUEUE_FRESHNESS_PASS_2026-08-30.md. It also fixed two documents that were quietly lying: the team's priority ranking (eight cards, all closed) now derives itself from the live queue, and the project law file did not know you had retired the wardrobe/basics road."
+    },
+    {
       "id": "chrome-section-02",
       "title": "Section 02 — the topbar and rail, finished",
       "status": "in-review",
@@ -2428,6 +2472,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T16:20:00+10:00",
+      "shift": "foreman-119",
+      "text": "The freshness pass you ordered is done — all 83 open cards read against the code, not against what the card says. The headline is that the queue is healthier than the spot-check suggested (37 of the 45 old ones are still exactly true) and that the four wrong ones were wrong expensively.\n\nTHE ONE WORTH KNOWING: card #20 says \"NOTHING IS BUILT\" in capitals, and it is built. It is the fix for the day you got walled by your own product mid-dogfood — the studio reads a brief twice now before refusing it, so a coin-flip refusal no longer turns you away. It went in inside the creative register's own build, so its card never got closed. Somebody would have built it again.\n\nAND THE PRIORITY LIST HAD THE SAME DISEASE, which is the part that bothers me more. The file every shift opens to decide what matters most named eight cards by number — and all eight were closed on the 25th, four of them within hours of being written down. Five days of shifts reading a list of finished work. It now reads itself out of the live queue, so a card closing removes itself from the ranking with no edit anywhere. The first time it ran it turned up your casting hero — built, deployed, still marked urgent, sitting fifth.\n\nTHREE OTHER THINGS. Your section 03 brief, the settings modal, was sitting untracked on disk since 14:50 — the same one-sweep-from-gone state the whole redesign pack was in when we found it. It is committed now, unchanged, and NOT started: the run order after section 02 is yours and this pass was first in it.\n\nThe project law file (CLAUDE.md) did not know you had retired the wardrobe/basics road. You ruled it three days ago; the file still described that road as live with one gate left to clear, which is work on something being deleted. Stamped. Two cards asking shifts to work inside it are recommended into your retirement card rather than worked.\n\nAnd #271's own spot-check had one thing backwards, which I would rather say than quietly fix: it read card #15 as \"the settings modal, unbuilt, and it is his next brief.\" Half of #15 shipped a few days ago with your eye on it, and your new brief is a DIFFERENT settings modal — the account one in the lobby, not the casting one. Merging them would have lost six of your own rulings."
+    },
+    {
       "at": "2026-08-30T15:35:00+10:00",
       "shift": "foreman-118",
       "text": "Section 02 is built and on PR #273, with frames in your gallery. Your three rulings are in it as rulings: the search is a span you cannot type into, F1 is reversed once and the rail is fixed at eight, and your face is in one corner with a gear in the other.\n\nTHE PART WORTH YOUR TIME is a question, not a report. Your ruling says the rail's foot gets a gear. It does on the lobby. On a casting page I did NOT draw it, because casting has no settings panel to open — a gear there would be a control that does nothing, and \"not built yet\" would be false, since settings are built and simply not reachable from that page. I read you as refusing a second avatar rather than ordering a gear on every page. If I read you wrong, it is a ten-minute change and I would rather you told me than that it sat there being wrong quietly.\n\nTwo things I left alone on purpose. Your credits chip: the brief describes a different one, and your sentence beside the description was \"exists, keep it\", so it is untouched. And your three account-menu labels: all three are supposed to open one settings panel at different sections, that panel does not exist, and you said to wire nothing rather than wire three separate destinations — so #267 stays open on that half.\n\nThe promotion pass ran, as your brief asks, and it turned your own candidate around. You suggested the icon button might be worth sharing \"if a second surface already has one\". I counted: the shared icon-button component has ONE consumer, and it is the page that exists to display components. The plain CSS class the app actually uses has six. Under your own rule — the one with real customers wins — the shared component is the loser, not the winner. There are also two different components with that same name in the codebase, in two different kits, which is how we ended up with three popovers. Nothing moved: written first, and your promotion decisions are still waiting on you.\n\nYour Fable reviewer is still out. Its job on this PR died in 1.2 seconds with an error it does not describe, so there is no verdict on #273 either way — I read the log rather than the red badge, which is the repair from last week working."
@@ -2621,11 +2670,6 @@
       "at": "2026-08-29T11:55:00+10:00",
       "shift": "foreman-91",
       "text": "Two things to know and neither needs you tonight. First: last night's briefing never reached you. It was written, checked and pushed on time, and then Railway built it and never started the container - so your page sat on the edition before it. That is written up above; the short version is that it was not our change, your studio was never affected, and you are reading this because tonight's push worked. Second: your Fable allowance is still out, so the code reviewer and the shifts' advisor are both still down. Nearly three hours now, against about five the last time it healed itself, so there is still nothing new to decide - the card at the top of your page is the same one, with the same three options.\n\nWith no product code safe to ship while the reviewer is down, I fixed something the failed deploy exposed. Every night shift starts and finishes by reading your replies with one small script. That script was reading the briefing from our own computer rather than from your page - and it was deciding which of your replies had already been seen from the same wrong copy. Last night made the gap visible for the first time: it printed edition 93 while your page said 92, and two shifts had already written that number down as fact.\n\nThe label was the harmless half. The half worth fixing is this: a reply is 'seen' when the team's next deploy proves it was read. If a shift marked one of your replies read and then the deploy failed - exactly what happened last night - the next shift would have looked at our copy, decided you had been answered, and moved on, while your page still said Not read yet. Your words are the steering wheel here, so a road where one of them could quietly go unanswered is worth closing before it is ever used. It never was: I checked both versions and they mark the same twenty-five replies. The script now reads the briefing from the version actually running on your page, and where it cannot get there it says so on screen instead of silently using ours.\n\nNo credits, no renders, no house money. Nothing on production touched but the briefing you are reading."
-    },
-    {
-      "at": "2026-08-29T10:05:00+10:00",
-      "shift": "foreman-90",
-      "text": "Tenth quiet maintenance night. The one thing that needs you is above and has not changed: your Fable allowance is still out, so the code reviewer and the night shifts' advisor are both still down. I checked twice more and said plainly how long it has actually been - one hour forty-three minutes - because the same fault took about five hours to clear itself on the 26th, and a longer wait is not yet a worse problem. Nothing a customer can see is affected, no credits and no house money were spent, and nothing on production was touched but the briefing you are reading.\n\nWith no code safe to ship while the reviewer is down, I spent the night on something better done with a database than with a keyboard. Three days ago you asked, watching your first register roll: \"why is the cast wearing a wardrobe? should it be in basics?\" That became an urgent card - the studio's default birth state contradicted your own law that casts are born in basics. I went to check whether it was still true, and it is not: it fixed itself, by accident, twenty-one minutes after your last affected roll.\n\nHere is what happened. On the 26th the team shipped the author road - the change that lets your words go to the engine as you wrote them - and part of it says the engine dresses the cast, so a roll on that road records no outfit path at all. That was aimed at the prompt, not at your question, and nobody noticed it also answered your question. I read all 226 rolls on production: thirteen ever carried a wardrobe path, all yours, and the last one was roll 221 at 9:33 that morning. The change landed at 9:54. Every roll since - five of them - carries no path and no outfit line. Both the server and the screen agree: the wardrobe switch is not even drawn on your account any more.\n\nSo nothing is broken, and the urgent flag was pointing at something no account could reach. I have taken the flag off, written the measurement onto the card, and linked it to the retirement you already ruled for this machinery (\"yeah we will retire the wardrobe/basics path obviously\"). I did not change the setting itself - it sits on a road you have already said is being deleted, and changing product code while the reviewer is down is exactly what the team agreed not to do. The card now also records the two conditions that would bring the problem back, so it cannot quietly become live again without somebody seeing it.\n\nThat is the whole night. Three of your eye items are still waiting - the two portrait crops and the concept-reader notes - and they are above whenever you have a minute."
     }
   ],
   "acknowledgedReplyIds": [
