@@ -1,7 +1,7 @@
 {
-  "edition": 136,
-  "updatedAt": "2026-08-30T16:20:00+10:00",
-  "shift": "foreman-119",
+  "edition": 137,
+  "updatedAt": "2026-08-30T17:35:00+10:00",
+  "shift": "foreman-118",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "shift-row-ceremony-272",
+      "title": "You can see what a shift is doing while it does it — one command from you turns it on",
+      "state": "open",
+      "filedAt": "2026-08-30T17:35:00+10:00",
+      "issueNumber": 272,
+      "productImpact": "Your words: \"if my shifts are running and i have no idea what they are working on or doing thats dangerous.\" That is built and it is in review now.\n\nWHAT IT DOES: a strip at the very top of this page, above everything, saying what a shift is working on RIGHT NOW — the card number and title, one sentence on what it intends to change, which seat, when it started, and the branch. Under it, the last three shifts and how each one ended. It updates without a deploy, exactly like your replies do.\n\nWHY IT DID NOT EXIST: the briefing you are reading ships inside the app bundle, so it only reaches you when a shift pushes — which happens at the END of a shift, if at all. The \"written by\" line at the foot names the last shift that WROTE it, never the one that is running. So this page has always described the previous session while the current one edits your product. Today you found a running shift by noticing its browser window on your screen and asking about it.\n\nIT ALSO SAYS WHEN A SHIFT HAS DIED. If a shift stops checking in for over an hour and never stamps itself finished, the strip goes red and says so, rather than showing \"working on\" forever. A shift that dies cannot write that it died, so that verdict is worked out from the timestamps rather than stored.\n\nWHAT I NEED FROM YOU: one command, below. The table it reads lives in the production database, and putting a table there is yours rather than a shift's. Until you run it, nothing is broken — the strip says \"Not live yet\" and prints the command for you.",
+      "workedExample": "This shift opened its own row at 16:51 and within a minute the page read:\n\n  WORKING NOW · live\n  #272 · He cannot see what a shift is doing while it runs\n  A live shift row read from the database, so his page names what is running.\n  foreman-118 · foreman · the focus · started 4 min ago · feat/272-live-shift-row\n\nNow picture that line saying \"#203 · retire the wardrobe/basics path\" instead — a road you have already ruled we delete. You would have seen it at 16:52 and stopped it, instead of reading about a wasted night at six in the morning.\n\nThat is the whole value, and it is why the row is written BEFORE the work starts rather than reported at the end.",
+      "options": [
+        {
+          "key": "run-ceremony",
+          "label": "Run the one command, and the strip goes live",
+          "consequence": "railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-shift-runs.mts --production — it adds one table, touches nothing that exists, and says ALREADY APPLIED if you run it twice. From the next shift on, this page names what is running while it runs."
+        },
+        {
+          "key": "wait",
+          "label": "Leave it until you have looked at the four screenshots",
+          "consequence": "Nothing breaks and nothing is lost. The strip shows 'Not live yet' with the command on it, and shifts keep reporting only at the end — which is the state you called dangerous."
+        }
+      ],
+      "recommendation": "Run it. It is one additive table, it carries no customer data and no money, and it is the difference between finding a running shift by spotting its browser window and reading what it is doing on your own page. The four states are photographed in the PR if you want to see them first."
+    },
     {
       "id": "freshness-closes-271",
       "title": "The freshness pass is done — 83 cards read at the code, and five of them need one word each from you",
@@ -1642,6 +1664,13 @@
   ],
   "pipeline": [
     {
+      "id": "live-shift-row-272",
+      "title": "The live shift row — this page names what is running, while it runs",
+      "status": "merged",
+      "prNumber": 282,
+      "note": "Built, driven and merged (PR #282). All four states were produced in a real database and photographed rather than asserted: running, STALLED (a shift that died), nothing running, and not-live-yet. Two defects were caught by driving rather than reading — both writers printed timestamps in local time while labelling them UTC, and neither said which world it was writing to, which would have left this page saying 'Nothing running' through a whole shift. It now waits on ONE command from you, on the card above."
+    },
+    {
       "id": "freshness-pass-271",
       "title": "The queue freshness pass — every open card read against the code",
       "status": "merged",
@@ -2472,6 +2501,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T17:35:00+10:00",
+      "shift": "foreman-118",
+      "text": "The live shift row you asked for is built and merged (PR #282). From your side it is one strip at the top of this page: what a shift is doing, right now, updating without a deploy the way your replies do — plus the last three shifts underneath.\n\nWHY IT WAS MISSING is worth one line, because it explains the whole shape. This briefing ships inside the app bundle, so it only reaches you when a shift pushes, at the END of a shift. The \"written by\" line at the foot has always named the last shift to write the file, never the one that is running. There was no view, only a report.\n\nFOUR STATES, ALL DRIVEN AND PHOTOGRAPHED rather than argued for — running, a shift that has died, nothing running, and the not-yet-switched-on state. The dead-shift one matters most and is the one I could not have tested by using the product: a shift that dies cannot write that it died, so the page works it out from when the shift last checked in.\n\nTWO THINGS DRIVING IT CAUGHT that reading it would not have. Both writers printed timestamps in this machine's local time and then labelled them \"UTC\" — ten hours out, on a page whose whole job is telling you when something started. And neither said WHICH DATABASE it had written to, which is the nastier one: a shift that writes its row to the dev database has done everything right, seen a success message, and left your page saying \"Nothing running\" for its entire shift. Both fixed.\n\nA GUARD I WROTE CAUGHT ITSELF TWICE, which I would rather tell you than tidy away. The rule is that a shift may only ever write to this one new table and never to the one holding your replies. My check for it first went red on my own scripts because it could not tell a mention in a COMMENT from a real one; I fixed that, and then it went green while seeing nothing at all — the SQL is built in a way that hid every write from it. So it was passing because it was blind. There is now a check that it can SEE the real writes before its silence counts for anything.\n\nAND MAIN WAS RED FOR EVERYONE, in nobody's diff. Last night's freshness pass left a line-number pointer in the project law file, which the gate refuses on principle — a line number rots silently, a name fails loudly. One test failing out of 10,778, blocking every pull request. Fixed on the way past and filed on #271.\n\nONE THING IS YOURS: the strip needs its table in the production database, and that is your command rather than a shift's. It is on the card above. Until you run it the page says \"Not live yet\" and prints the command — nothing breaks in the meantime, and I checked that by taking the table away and confirming your briefing and all five reply boxes still rendered.\n\nNEXT in your run order is #277, the background-work switch. It shares this page and this mechanism, so it is the natural next piece."
+    },
+    {
       "at": "2026-08-30T16:20:00+10:00",
       "shift": "foreman-119",
       "text": "The freshness pass you ordered is done — all 83 open cards read against the code, not against what the card says. The headline is that the queue is healthier than the spot-check suggested (37 of the 45 old ones are still exactly true) and that the four wrong ones were wrong expensively.\n\nTHE ONE WORTH KNOWING: card #20 says \"NOTHING IS BUILT\" in capitals, and it is built. It is the fix for the day you got walled by your own product mid-dogfood — the studio reads a brief twice now before refusing it, so a coin-flip refusal no longer turns you away. It went in inside the creative register's own build, so its card never got closed. Somebody would have built it again.\n\nAND THE PRIORITY LIST HAD THE SAME DISEASE, which is the part that bothers me more. The file every shift opens to decide what matters most named eight cards by number — and all eight were closed on the 25th, four of them within hours of being written down. Five days of shifts reading a list of finished work. It now reads itself out of the live queue, so a card closing removes itself from the ranking with no edit anywhere. The first time it ran it turned up your casting hero — built, deployed, still marked urgent, sitting fifth.\n\nTHREE OTHER THINGS. Your section 03 brief, the settings modal, was sitting untracked on disk since 14:50 — the same one-sweep-from-gone state the whole redesign pack was in when we found it. It is committed now, unchanged, and NOT started: the run order after section 02 is yours and this pass was first in it.\n\nThe project law file (CLAUDE.md) did not know you had retired the wardrobe/basics road. You ruled it three days ago; the file still described that road as live with one gate left to clear, which is work on something being deleted. Stamped. Two cards asking shifts to work inside it are recommended into your retirement card rather than worked.\n\nAnd #271's own spot-check had one thing backwards, which I would rather say than quietly fix: it read card #15 as \"the settings modal, unbuilt, and it is his next brief.\" Half of #15 shipped a few days ago with your eye on it, and your new brief is a DIFFERENT settings modal — the account one in the lobby, not the casting one. Merging them would have lost six of your own rulings."
@@ -2665,11 +2699,6 @@
       "at": "2026-08-29T14:05:00+10:00",
       "shift": "foreman-92",
       "text": "A quiet night with nothing needing you, and one thing worth telling you about. Your Fable allowance is still out, so the code reviewer and the shifts' advisor are both still down - that is the fourth night in a row of tooling-only work. The one number that moved: it has now been out four hours forty minutes, against about five hours the last time it healed itself, so tonight is the first reading at the edge of the only precedent we have rather than inside it. Nothing to decide yet; if tomorrow's first shift asks and it still refuses, the card at the top of your page becomes worth answering.\n\nWhat I fixed is the part of that outage that was ours. Every change the team makes gets read by a second model before it lands, and the result shows as a green or red tick. It turns out a red tick has NEVER meant 'this change was rejected' - the reviewer passes the tick green even when it finds problems, because its findings go into a comment you open separately. Red only ever meant 'no review happened'. Nobody had written that down, so when your allowance ran out on Thursday and the reviewer died after one second, three shifts in a row read the red tick as a verdict and each spent time digging through machine logs to find out it was not one. The tick now says which it is, in one sentence, on the change itself. I proved it on all four ways a review can end before shipping it, then watched it do the right thing live on its own change.\n\nTwo smaller things. The team's own typecheck had been failing for three nights on one leftover file a previous shift left behind - not a real error, but a standing red light is exactly what hides a real one, so it is gone and the check is clean again. And I re-read your studio's rows to check whether the refusal patrol was due: no roll has been cast in forty-six hours and the refusal count has not moved, so it is not, and I spent nothing.\n\nNo credits, no renders, no house money, nothing on production touched but the briefing you are reading."
-    },
-    {
-      "at": "2026-08-29T11:55:00+10:00",
-      "shift": "foreman-91",
-      "text": "Two things to know and neither needs you tonight. First: last night's briefing never reached you. It was written, checked and pushed on time, and then Railway built it and never started the container - so your page sat on the edition before it. That is written up above; the short version is that it was not our change, your studio was never affected, and you are reading this because tonight's push worked. Second: your Fable allowance is still out, so the code reviewer and the shifts' advisor are both still down. Nearly three hours now, against about five the last time it healed itself, so there is still nothing new to decide - the card at the top of your page is the same one, with the same three options.\n\nWith no product code safe to ship while the reviewer is down, I fixed something the failed deploy exposed. Every night shift starts and finishes by reading your replies with one small script. That script was reading the briefing from our own computer rather than from your page - and it was deciding which of your replies had already been seen from the same wrong copy. Last night made the gap visible for the first time: it printed edition 93 while your page said 92, and two shifts had already written that number down as fact.\n\nThe label was the harmless half. The half worth fixing is this: a reply is 'seen' when the team's next deploy proves it was read. If a shift marked one of your replies read and then the deploy failed - exactly what happened last night - the next shift would have looked at our copy, decided you had been answered, and moved on, while your page still said Not read yet. Your words are the steering wheel here, so a road where one of them could quietly go unanswered is worth closing before it is ever used. It never was: I checked both versions and they mark the same twenty-five replies. The script now reads the briefing from the version actually running on your page, and where it cannot get there it says so on screen instead of silently using ours.\n\nNo credits, no renders, no house money. Nothing on production touched but the briefing you are reading."
     }
   ],
   "acknowledgedReplyIds": [
