@@ -1,7 +1,7 @@
 {
-  "edition": 148,
-  "updatedAt": "2026-08-31T00:35:00+10:00",
-  "shift": "foreman-125",
+  "edition": 149,
+  "updatedAt": "2026-08-31T01:45:00+10:00",
+  "shift": "foreman-126",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,6 +111,11 @@
     ],
     "chips": [
       {
+        "label": "Your feed is fixed — your Cast still will not delete, for another reason",
+        "tone": "warn",
+        "source": "PR #307 merged 54dbe031: 20 of 20 poisoned records on your account now pass, all 20 threw before. The delete refusal is #308."
+      },
+      {
         "label": "The top bar and rail are now identical on every page, from one place",
         "tone": "good",
         "source": "PR #305 merged 09e6d994; driven at the running app — 5 surfaces x 2 themes, 85/85 checks, plus a click test on /casting (credits->billing, gear->Settings, account->menu)"
@@ -134,11 +139,6 @@
         "label": "Nothing on the page claims you are blocking it any more",
         "tone": "good",
         "source": "the 7 waiting-founder rows read at their own notes — all RUN AND REPORTED; the schema now refuses a row that does not name an open card"
-      },
-      {
-        "label": "Production healthy",
-        "tone": "good",
-        "source": "last rite 30 Aug 08:18Z (9586ad7c) — health x3 200, schema 64 declared / 64 on the service / 1 enumerated, flags where the record says"
       }
     ]
   },
@@ -1793,6 +1793,20 @@
   ],
   "pipeline": [
     {
+      "id": "guard-counts-301",
+      "title": "The feed that shows what the studio is working on stopped breaking on your account (#301)",
+      "status": "merged",
+      "prNumber": 307,
+      "note": "A privacy rule refused any field whose NAME contained \"reference\" — and one of the numbers the studio writes when it deletes a Cast is called referencePlates. So a plain count, \"0\", was treated as a leaked secret, and twenty stored records on your account each broke the feed. Measured on production before the change: 20 of 20 failed. After: 20 of 20 pass. The rule now reads the VALUE — a number cannot hold a prompt, a sentence can, so a real prompt is still refused."
+    },
+    {
+      "id": "sign-out-wording-267",
+      "title": "The product says \"Sign out\" everywhere now, not \"Log out\" on some screens (#267)",
+      "status": "merged",
+      "prNumber": 309,
+      "note": "Your ruling: \"pick one word\". It was saying both on four screens. Both menus opened in the running app and looked at. The rest of that card — Members & invites, Billing & credits — stays waiting on your Settings modal, because you ruled those three must not acquire their own pop-ups."
+    },
+    {
       "id": "shell-on-every-page-278",
       "title": "The top bar and rail are the same on every page now — your account, credits and settings reach the casting page (#278)",
       "status": "merged",
@@ -2580,6 +2594,13 @@
   ],
   "problems": [
     {
+      "id": "cast-will-not-delete-308",
+      "title": "Your Cast still will not delete — and the reason we had written down was the wrong one",
+      "detail": "This is the thing you asked about, and it is not fixed. What IS fixed tonight is a different fault that we had blamed on the same line.\n\nYour Cast \"yejjjee\" has nine accepted-candidate pictures attached. Before the deletion will let go of a picture it checks the picture's filename against a pattern. Those nine are filed under a folder called \"candidates\"; the check insists they be under \"plates\". They are yours, they belong to that Cast, and the studio itself filed them that way. Twenty-seven other Casts deleted cleanly the same morning — yours is the first you have tried that has one of these pictures.\n\nI did not fix it because two different parts of the studio file the same kind of picture under two different folder names, so no single answer is right for both — and this is the code that deletes permanently. Getting it wrong means either deleting pictures that should have been kept or keeping ones that should have gone. That is a judgement on a destructive path, so it waits for the Fable seat and your allowance.\n\nOne consequence worth having in front of you: Library is the only door left for removing a legacy Cast, so it must NOT be stubbed out before this lands, or your three old Casts are stranded. Written up with the measurements as #308.",
+      "severity": "warning",
+      "state": "open"
+    },
+    {
       "id": "deletion-door-name-collision-274",
       "title": "A tidying-up check has been reading two different things as one for months, and nobody could have seen it",
       "detail": "Not urgent and nothing is broken for a customer. It is worth two minutes because of what it means rather than what it costs.\n\nWe have a check that stops anyone deleting code without a written decision about it. Removing the word \"Klieg\" from the top bar tonight made that check go red — and the thing it named was not the thing I had changed. There are TWO pieces of code called BRAND_NAME: the one in the new interface, and an old one buried in the legacy casting engine that nothing has used for a very long time. The check looks them up by NAME ONLY, so for as long as the new one was in use it was vouching for the old one as well.\n\nSo the honest summary is: a check we rely on to tell us what is dead can report \"all clear\" for something nobody has touched in months, purely because something else shares its name. Nothing was deleted; both are written down with reasons. Fixing the check properly means re-taking every reading it has ever produced, which is a night of its own — filed as #274 rather than half-done tonight.",
@@ -2679,6 +2700,11 @@
     }
   ],
   "journal": [
+    {
+      "at": "2026-08-31T01:45:00+10:00",
+      "shift": "foreman-126",
+      "text": "YOUR OPERATIONS FEED IS FIXED. YOUR CAST STILL WILL NOT DELETE — AND THE REASON IS NOT WHAT WE THOUGHT.\n\nYou said: \"i cannot delete this remaining legacy casting model for some reason\". Tonight I went and read what production actually did when you pressed it, rather than trusting the diagnosis we had written down. There are TWO faults, not one. We had blamed both on the same line. Only one of them was that line.\n\nFIXED TONIGHT — the first fault. Something in the studio counts how many pieces it removed when a Cast is deleted. One of those counters is called \"referencePlates\". We have a privacy rule that refuses to show anything whose name contains words like \"prompt\" or \"reference\", because those can carry your private recipe. The rule matched on the NAME alone — so a plain NUMBER, \"referencePlates: 0\", was refused as though it were a leaked secret. Twenty stored records on your account had that number in them, and every one of them broke the feed that shows what the studio is currently working on. Measured before: 20 of 20 failed. After: 20 of 20 pass. The rule now looks at the VALUE, not the name: a number cannot hold a secret, a sentence can, so a real prompt is still refused.\n\nNOT FIXED, AND HERE IS THE HONEST PART — the second fault, the one you actually asked about. Your Cast \"yejjjee\" refuses for a different reason entirely, and the guard fix does not touch it. Twenty-seven other Casts deleted cleanly that same morning. Yours has nine \"accepted candidate\" pictures attached to it, and the deletion checks each picture's filename against a pattern before it will let go of it. Those nine are filed under a folder called \"candidates\" and the check insists they be under \"plates\". They belong to you, they belong to that Cast, everything about them is correct — it is the FOLDER NAME the check disagrees with, and the studio itself is what put them there.\n\nWHY I DID NOT JUST FIX IT: because there are two different places in the studio that create these pictures, and they file them under two different folder names for the same kind of picture. So there is no single answer that is right for both, and this is the code that permanently deletes things. Picking wrong means deleting pictures that should have been kept, or keeping ones that should have gone. That is a judgement call on a destructive path, and the rule is that judgement calls wait for the Fable seat — which is still on your exhausted allowance. It is written up in full, with the measurements, as #308.\n\nWHAT THIS MEANS FOR THE LIBRARY PAGE: the plan said \"fix the guard, then you clear your old Casts, then we stub Library out\". Step one has moved — it is #308 now, not the guard. Library must NOT be stubbed before #308 lands, or your three legacy Casts are stranded with no door left to remove them.\n\nALSO TONIGHT — one word, everywhere. You said: \"Log out to Sign out — the Settings modal already says Sign out; pick one word.\" The product was saying both, on four screens. It says Sign out on all of them now. I opened both menus in the running app and looked. The other half of that card — Members & invites, Billing & credits — is still waiting on your Settings modal, because you ruled those three must not get their own pop-ups.\n\nTHE QUEUE: 90 open, 8 you have ordered, 13 urgent, nothing rotting. Two closed tonight, one new one opened (#308)."
+    },
     {
       "at": "2026-08-31T00:35:00+10:00",
       "shift": "foreman-125",
@@ -2873,11 +2899,6 @@
       "at": "2026-08-29T22:55:00+10:00",
       "shift": "foreman-100",
       "text": "Read your reply and #237 with it. You are right on both counts and neither is a small edit: the noun discipline has to move INSIDE the paragraph, and the tail clause is a framing fact that needs the house block to know it is casting a creature — which is the same lane split #232 needs for creature mouths. So they are one brief, not two, and the next shift takes them together with your sphinx as the fixture. I did not start it tonight rather than leave a half-changed prompt sitting on your account overnight with no second opinion available. Tonight's hero is merged, deployed and waiting for your eye on the card above it."
-    },
-    {
-      "at": "2026-08-29T22:35:00+10:00",
-      "shift": "foreman-100",
-      "text": "Your hero is rebuilt and it is on a pull request, not yet live. The right half of the casting page now shows the cast you have actually signed with the words that cast them underneath, and an empty account gets six of your creature casts instead of a stock picture. I looked at twenty of your candidates before choosing those six — that part was taste, not a query. Two honest notes: the trait-panel toggle your spec asks for is not built, because the panel it opens does not exist and a dead control is worse than a missing one (#238); and the split-face art is deleted, which is one command to undo if you miss it. The lobby lane is still waiting on you to name segment 1, and the MAX sheet is still waiting on your roll."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2933,7 +2954,7 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T14:25:18.756Z",
+    "readAt": "2026-08-30T15:40:41.059Z",
     "items": [
       {
         "issueNumber": 267,
@@ -2953,11 +2974,6 @@
       {
         "issueNumber": 298,
         "title": "NEXT UP shows order but not availability — five skipped rows look like five ignored rows",
-        "urgent": true
-      },
-      {
-        "issueNumber": 301,
-        "title": "A privacy guard matches referencePlates on a substring — his Cast will not delete, and activeOperations throws",
         "urgent": true
       },
       {
