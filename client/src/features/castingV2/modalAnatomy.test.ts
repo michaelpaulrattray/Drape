@@ -37,7 +37,7 @@ describe("sign and delete share one shell", () => {
     const shell = await readFile(SHELL, "utf8");
     expect(shell).toContain("document.body");
     const css = await readFile(CSS, "utf8");
-    const scrim = css.slice(css.indexOf(".dpc-signm {"), css.indexOf("@keyframes dpc-signm-fade"));
+    const scrim = css.slice(css.indexOf(".dpc-modal {"), css.indexOf("@keyframes dpc-modal-fade"));
     expect(scrim).toContain("position: fixed");
     expect(scrim).toContain("inset: 0");
   });
@@ -52,7 +52,7 @@ describe("the delete dialog never borrows the commit treatment", () => {
       candidate card.
     */
     const css = await readFile(CSS, "utf8");
-    const danger = css.slice(css.indexOf(".dpc-signm__danger {"), css.indexOf(".dpc-signm__danger:focus-visible"));
+    const danger = css.slice(css.indexOf(".dpc-modal__danger {"), css.indexOf(".dpc-modal__danger:focus-visible"));
     expect(danger).toContain("background: var(--fill)");
     expect(danger).toContain("color: var(--muted)");
     expect(danger).toContain("cursor: not-allowed");
@@ -72,7 +72,7 @@ describe("the delete dialog never borrows the commit treatment", () => {
     const css = await readFile(CSS, "utf8");
     expect(css).toContain("filter: grayscale(1)");
     expect(css).toContain("opacity: 0.62");
-    expect(css).toContain(".dpc-signm__eyebrow--danger { color: var(--accentInk); }");
+    expect(css).toContain(".dpc-modal__eyebrow--danger { color: var(--accentInk); }");
   });
 
   it("branches its copy on signed state", async () => {
@@ -137,7 +137,7 @@ describe("the rename dialog", () => {
     // Reassurance, not instruction: it must not stand between the user and the
     // control they opened the dialog for.
     const rename = await readFile(RENAME, "utf8");
-    expect(rename.indexOf("dpc-signm__field")).toBeLessThan(rename.indexOf("dpc-renamem__helper"));
+    expect(rename.indexOf("dpc-modal__field")).toBeLessThan(rename.indexOf("dpc-renamem__helper"));
   });
 
   it("gives the actions air, and does not double it where a cost line already does", async () => {
@@ -149,11 +149,11 @@ describe("the rename dialog", () => {
     */
     const css = await readFile(CSS, "utf8");
     const actions = css.slice(
-      css.indexOf(".dpc-signm__actions {"),
-      css.indexOf(".dpc-signm__secondary"),
+      css.indexOf(".dpc-modal__actions {"),
+      css.indexOf(".dpc-modal__secondary"),
     );
     expect(actions).toContain("margin-top: 18px");
-    expect(css).toContain(".dpc-signm__cost + .dpc-signm__actions { margin-top: 0; }");
+    expect(css).toContain(".dpc-modal__cost + .dpc-modal__actions { margin-top: 0; }");
   });
 });
 
@@ -206,12 +206,12 @@ describe("the concept review shares the shell without inheriting its latch", () 
       one of them leaves the browser's own ring drawing inside the other.
     */
     const review = await readFile(REVIEW, "utf8");
-    expect(review).toContain('className="dpc-signm__field"');
+    expect(review).toContain('className="dpc-modal__field"');
     const css = await readFile(CSS, "utf8");
-    expect(css).toContain(".dpc-signm__field textarea:focus-visible { outline: none; box-shadow: none; }");
+    expect(css).toContain(".dpc-modal__field textarea:focus-visible { outline: none; box-shadow: none; }");
     const field = css.slice(
-      css.indexOf(".dpc-signm__field textarea {"),
-      css.indexOf(".dpc-signm__field textarea::placeholder"),
+      css.indexOf(".dpc-modal__field textarea {"),
+      css.indexOf(".dpc-modal__field textarea::placeholder"),
     );
     /* No drag handle: it could push the body past the portrait it sits beside. */
     expect(field).toContain("resize: none");
@@ -227,13 +227,13 @@ describe("the concept review shows the WHOLE picture she chose", () => {
       remove the very thing the words describe.
     */
     expect(await readFile(REVIEW, "utf8")).toContain("portraitWhole");
-    expect(await readFile(SHELL, "utf8")).toContain("dpc-signm__portrait--whole");
+    expect(await readFile(SHELL, "utf8")).toContain("dpc-modal__portrait--whole");
   });
 
   it("styles it as a DESCENDANT, because a child selector is inert here", async () => {
     /*
       ⚠ THE FINDING THIS ARM EXISTS FOR, measured at the running app rather than
-      read: `CastingModal` wraps the image in a `<span>`, so `.dpc-signm__portrait
+      read: `CastingModal` wraps the image in a `<span>`, so `.dpc-modal__portrait
       > img` matches NOTHING — the sign and delete portraits are sized by the
       browser and clipped by `overflow: hidden` instead. Written the same way,
       this rule computed `object-fit: fill` (the initial value) and looked
@@ -241,8 +241,8 @@ describe("the concept review shows the WHOLE picture she chose", () => {
       restores the child combinator here would put it back to inert, silently.
     */
     const css = await readFile(CSS, "utf8");
-    expect(css).toContain(".dpc-signm__portrait--whole img {");
-    expect(css).not.toContain(".dpc-signm__portrait--whole > img");
+    expect(css).toContain(".dpc-modal__portrait--whole img {");
+    expect(css).not.toContain(".dpc-modal__portrait--whole > img");
   });
 });
 
@@ -268,15 +268,15 @@ describe("all three portraits lay out by ONE mechanism", () => {
   it("the base portrait rule is a DESCENDANT, so it matches at all", async () => {
     /*
       ⚠ THE DEFECT THIS ARM EXISTS FOR (#198), measured at the running app: the
-      rule was written as `.dpc-signm__portrait > img` and `CastingModal` puts a
+      rule was written as `.dpc-modal__portrait > img` and `CastingModal` puts a
       `<span>` between the two, so it matched NOTHING from the day it was
       written. The image computed `object-fit: fill` — the initial value — laid
       out at its own size and was clipped by `overflow: hidden`. On our own 2:3
       renders that looks exactly like the rule working, which is why it survived.
     */
     const css = await readFile(CSS, "utf8");
-    expect(css).toContain(".dpc-signm__portrait img {");
-    expect(css).not.toContain(".dpc-signm__portrait > img");
+    expect(css).toContain(".dpc-modal__portrait img {");
+    expect(css).not.toContain(".dpc-modal__portrait > img");
   });
 
   it("anchors the base crop to the TOP, which is what makes the repair free", async () => {
@@ -288,7 +288,7 @@ describe("all three portraits lay out by ONE mechanism", () => {
       is every render this product makes.
     */
     const css = await readFile(CSS, "utf8");
-    const base = block(css, ".dpc-signm__portrait img");
+    const base = block(css, ".dpc-modal__portrait img");
     expect(base).toContain("object-fit: cover");
     expect(base).toContain("object-position: top");
   });
@@ -322,8 +322,8 @@ describe("all three portraits lay out by ONE mechanism", () => {
       a future reader cannot check.
     */
     const css = await readFile(CSS, "utf8");
-    expect(block(css, ".dpc-signm__portrait--whole img")).toContain("object-position: center");
-    expect(block(css, ".dpc-signm__muted > img")).toContain("object-position: top");
+    expect(block(css, ".dpc-modal__portrait--whole img")).toContain("object-position: center");
+    expect(block(css, ".dpc-modal__muted > img")).toContain("object-position: top");
   });
 
   it("and the base rule is declared BEFORE both, which is what that guard assumes", async () => {
@@ -334,10 +334,10 @@ describe("all three portraits lay out by ONE mechanism", () => {
       reason it was written would be gone.
     */
     const css = await readFile(CSS, "utf8");
-    const base = css.indexOf("\n.dpc-signm__portrait img {");
+    const base = css.indexOf("\n.dpc-modal__portrait img {");
     /* Or an absent base rule is index -1 and every neighbour "comes after" it. */
     expect(base, "no base portrait rule to order against").toBeGreaterThan(-1);
-    for (const selector of [".dpc-signm__portrait--whole img", ".dpc-signm__muted > img"]) {
+    for (const selector of [".dpc-modal__portrait--whole img", ".dpc-modal__muted > img"]) {
       expect(css.indexOf(`\n${selector} {`), selector).toBeGreaterThan(base);
     }
   });
@@ -374,7 +374,7 @@ describe("the trap holds in the state where every end of the list is disabled", 
 
       The trap still "held" — Tab never left the dialog — which is exactly why
       the walk that asks only *did focus escape* passed it. It was caught by
-      reading what that walk PRINTED: `dpc-signm__primary` five times, never the
+      reading what that walk PRINTED: `dpc-modal__primary` five times, never the
       field beside it. Same selector, third time: disabled ends, focus outside
       the card, and now matched-but-unrendered.
 
@@ -449,10 +449,10 @@ describe("focus is INSIDE the card, which is what the trap has always assumed", 
       way out and the picker — and the trap's own wrap needs one of them to hold
       focus before Tab can be caught at all.
     */
-    const actions = review.slice(review.indexOf('className="dpc-signm__actions"'));
+    const actions = review.slice(review.indexOf('className="dpc-modal__actions"'));
     expect(actions.indexOf("ref={firstAction}")).toBeGreaterThan(0);
     expect(actions.indexOf("ref={firstAction}")).toBeLessThan(
-      actions.indexOf('className="dpc-signm__primary"'),
+      actions.indexOf('className="dpc-modal__primary"'),
     );
   });
 

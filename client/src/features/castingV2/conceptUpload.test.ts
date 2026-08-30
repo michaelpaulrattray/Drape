@@ -445,7 +445,7 @@ describe("the review modal says what casts, and never promises a likeness", () =
     const review = withoutProse(await readFile(REVIEW, "utf8"));
     expect(CONCEPT_REVIEW_USE).toBe("Use this brief");
     /* One primary button in the whole dialog, and no second page. */
-    expect(review.split("dpc-signm__primary").length - 1).toBe(1);
+    expect(review.split("dpc-modal__primary").length - 1).toBe(1);
     expect(review).not.toContain("Next");
   });
 });
@@ -732,23 +732,23 @@ describe("Cast it goes through the page's ONE roll flow", () => {
     const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
     expect(CONCEPT_REVIEW_CAST).toBe("Cast it");
     expect(CONCEPT_REVIEW_CAST).not.toMatch(/\d/);
-    expect(review).toContain("dpc-signm__cost");
+    expect(review).toContain("dpc-modal__cost");
     expect(review).toContain("{priceCredits} credits");
     /* The tilde, shared with every other cost line in the product. */
-    expect(review).toContain("dpc-signm__tilde");
+    expect(review).toContain("dpc-modal__tilde");
     /* Server-derived, never a constant on this side (D-15). */
     expect(review).not.toMatch(/priceCredits\s*=\s*\d/);
     const page = withoutProse(await readFile(PAGE, "utf8"));
     expect(page).toContain("priceCredits={price}");
     /* And nothing about a number inside the button itself. */
-    const button = review.slice(review.indexOf('className="dpc-signm__primary"'));
+    const button = review.slice(review.indexOf('className="dpc-modal__primary"'));
     expect(button.slice(0, 300)).not.toContain("priceCredits");
     expect(button.slice(0, 300)).not.toMatch(/\d+\s*credits/);
   });
 
   it("still offers ONE primary in every state — a review, not a wizard", async () => {
     const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
-    expect(review.split("dpc-signm__primary").length - 1).toBe(1);
+    expect(review.split("dpc-modal__primary").length - 1).toBe(1);
     /* Its label and its act are chosen once, so no state can draw two or none. */
     expect(review).toContain("const primary = empty");
     expect(review).toContain("disabled={primary.disabled}");
@@ -778,7 +778,7 @@ describe("two entrances, one read", () => {
     expect(review).toContain("notAPicture: boolean;");
     /* The drop zone stands in the picture's own slot, so nothing moves when one arrives. */
     expect(review).toContain("portraitFallback={");
-    expect(review).toContain("dpc-signm__drop");
+    expect(review).toContain("dpc-modal__drop");
     /*
       ⚠ AND IT SAYS CANCEL, NOT DISCARD — the third state on this dialog caught
       saying something untrue about itself, and the same class as the refusal's
@@ -986,7 +986,7 @@ describe("a refused read keeps her picture and offers a way on", () => {
       and BOTH are asserted, each in its own slice.
     */
     const heading = review.slice(
-      review.indexOf('<h2 className="dpc-signm__title">'),
+      review.indexOf('<h2 className="dpc-modal__title">'),
       review.indexOf("</h2>"),
     );
     expect(heading).toContain("CONCEPT_REVIEW_REFUSED_TITLE");

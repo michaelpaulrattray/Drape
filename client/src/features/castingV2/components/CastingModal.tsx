@@ -121,7 +121,7 @@ export function CastingModal({
         focus frozen on whichever control it started from. The trap "held" — Tab
         never left the dialog — which is why the walk that only asks *did focus
         escape* passed it. It was caught by reading what the walk actually
-        printed: `dpc-signm__primary` five times, never the field beside it.
+        printed: `dpc-modal__primary` five times, never the field beside it.
 
         `getClientRects()` is the standard rendered test and is right where
         `offsetParent` is not: the card's own children are static, but a fixed
@@ -180,7 +180,7 @@ export function CastingModal({
 
   return createPortal(
     <div
-      className="dpc-signm"
+      className="dpc-modal"
       role="dialog"
       aria-modal="true"
       aria-label={label}
@@ -191,21 +191,21 @@ export function CastingModal({
       {/* Clicks inside never dismiss — only the scrim does. */}
       <div
         ref={cardRef}
-        className="dpc-signm__card"
+        className="dpc-modal__card"
         onClick={(event) => event.stopPropagation()}
       >
         <div
           className={
-            portraitWhole ? "dpc-signm__portrait dpc-signm__portrait--whole" : "dpc-signm__portrait"
+            portraitWhole ? "dpc-modal__portrait dpc-modal__portrait--whole" : "dpc-modal__portrait"
           }
         >
           {portrait ? (
-            <span className={portraitMuted ? "dpc-signm__muted" : undefined}>
+            <span className={portraitMuted ? "dpc-modal__muted" : undefined}>
               <img src={portrait} alt="" />
             </span>
           ) : (portraitFallback ?? null)}
         </div>
-        <div className="dpc-signm__body">{children}</div>
+        <div className="dpc-modal__body">{children}</div>
       </div>
     </div>,
     document.body,

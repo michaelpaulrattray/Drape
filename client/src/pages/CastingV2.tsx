@@ -739,7 +739,7 @@ export default function CastingV2() {
                 again and again and the number is actually moving.
               */}
               <span className="dpc-hero__cost">
-                <span className="dpc-signm__tilde">~</span> {price} credits
+                <span className="dpc-modal__tilde">~</span> {price} credits
               </span>
             </div>
           </div>

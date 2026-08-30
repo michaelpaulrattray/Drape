@@ -61,14 +61,14 @@ describe("the sheet dock commits to one candidate", () => {
       new URL("./components/SignConfirm.tsx", import.meta.url),
       "utf8",
     );
-    expect(confirm).toContain("dpc-signm__cost");
+    expect(confirm).toContain("dpc-modal__cost");
     expect(confirm).toContain("{priceCredits} credits");
     // Approximate, and the tilde stays — generation cost varies, and a number
     // presented as exact that then differs is worse than one that never
     // claimed to be.
-    expect(confirm).toContain("dpc-signm__tilde");
+    expect(confirm).toContain("dpc-modal__tilde");
     // Never on the button itself.
-    const signButton = confirm.slice(confirm.indexOf('className="dpc-signm__primary"'));
+    const signButton = confirm.slice(confirm.indexOf('className="dpc-modal__primary"'));
     expect(signButton.slice(0, 300)).not.toContain("priceCredits");
   });
 
@@ -87,9 +87,9 @@ describe("the sheet dock commits to one candidate", () => {
       number presented as exact that then differs is worse than one that never
       claimed to be — so every cost line in the product hedges the same way.
     */
-    expect(sheet).toContain("dpc-signm__tilde");
+    expect(sheet).toContain("dpc-modal__tilde");
     const lobby = await readFile(new URL("../../pages/CastingV2.tsx", import.meta.url), "utf8");
-    expect(lobby).toContain("dpc-signm__tilde");
+    expect(lobby).toContain("dpc-modal__tilde");
     // No price on any immediate-fire button.
     expect(sheet).not.toMatch(/Roll again[^"`]*\d+\s*(cr|credits)/);
 

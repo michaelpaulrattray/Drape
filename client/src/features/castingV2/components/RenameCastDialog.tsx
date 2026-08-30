@@ -69,7 +69,7 @@ export function RenameCastDialog({
 
   return createPortal(
     <div
-      className="dpc-signm"
+      className="dpc-modal"
       role="dialog"
       aria-modal="true"
       aria-label={`Rename ${currentName}`}
@@ -85,7 +85,7 @@ export function RenameCastDialog({
           <span>
             {/* The eyebrow names WHO — the old title said "this cast" and left
                 the user to remember which card they clicked. */}
-            <span className="dpc-signm__eyebrow">
+            <span className="dpc-modal__eyebrow">
               CAST MEMBER · {currentName.toUpperCase()}
             </span>
             {/* Not "Rename this cast?" — a question mark implies a consequence
@@ -95,7 +95,7 @@ export function RenameCastDialog({
         </div>
 
         <div>
-          <div className="dpc-signm__field">
+          <div className="dpc-modal__field">
             <input
               ref={inputRef}
               value={name}
@@ -118,7 +118,7 @@ export function RenameCastDialog({
           </p>
         </div>
 
-        <div className="dpc-signm__actions">
+        <div className="dpc-modal__actions">
           <button
             type="button"
             className="dpc-renamem__secondary"

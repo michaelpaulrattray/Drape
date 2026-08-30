@@ -2523,7 +2523,15 @@
 .dpc-room__delete:hover { opacity: 1; text-decoration: underline; }
 .dpc-room__delete:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
 
-/* ---- the sign-to-roster modal, to spec (2026-08-03) ---- */
+/* ---- the shared modal shell (2026-08-03; renamed from `signm` 2026-08-30) ----
+
+   The prefix used to be `dpc-signm`, after `SignConfirm`, its first consumer.
+   SIX components draw on this block and only one of them is about signing, so
+   the name told every later reader that five of them were borrowing another
+   component's clothes. Renamed on the founder's word (#262): *"the difference
+   between a clean move and five components pointing at classes in another
+   file"* — the shell is promoted to `foundation/` and a promoted component
+   named after a casting concept would carry casting back in with it.        */
 
 /*
   The scrim measures the FULL VIEWPORT, which is only true because the component
@@ -2532,7 +2540,7 @@
   `inset: 0` would resolve against IT — the dock has `backdrop-filter`, so a
   modal mounted inside it renders as an off-screen sliver.
 */
-.dpc-signm {
+.dpc-modal {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -2543,16 +2551,16 @@
   align-items: center;
   justify-content: center;
   padding: 32px;
-  animation: dpc-signm-fade 0.16s ease-out;
+  animation: dpc-modal-fade 0.16s ease-out;
 }
 
-@keyframes dpc-signm-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes dpc-signm-rise {
+@keyframes dpc-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dpc-modal-rise {
   from { opacity: 0; transform: translateY(8px) scale(0.99); }
   to { opacity: 1; transform: none; }
 }
 
-.dpc-signm__card {
+.dpc-modal__card {
   max-width: 664px;
   padding: 22px;
   gap: 22px;
@@ -2563,7 +2571,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  animation: dpc-signm-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: dpc-modal-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 /*
@@ -2571,7 +2579,7 @@
   and forces a premature wrap. The 999 grow factor on the body makes it absorb
   all the slack so the portrait stays near its basis.
 */
-.dpc-signm__portrait {
+.dpc-modal__portrait {
   flex: 1 1 214px;
   min-width: 0;
   max-width: 238px;
@@ -2589,7 +2597,7 @@
   value, laid out at its own size (214x321 in a 214x268 slot) and was CLIPPED by
   the container's `overflow: hidden` — a top-anchored crop that, on our own 2:3
   renders, looked exactly like the rule had worked. Its neighbour
-  `.dpc-signm__muted > img` DID match, because the mute class sits on the span,
+  `.dpc-modal__muted > img` DID match, because the mute class sits on the span,
   so the two dialogs sharing this one shell were laying their portraits out by
   TWO DIFFERENT MECHANISMS.
 
@@ -2602,7 +2610,7 @@
   3.9/255, no displaced silhouette); today vs cover-centre through the same
   instrument is mean 40.1/255 with the silhouette plainly ghosted.
 */
-.dpc-signm__portrait img {
+.dpc-modal__portrait img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2634,11 +2642,11 @@
 
   ⚠ One latent conflict recorded rather than left to be rediscovered: it
   PREDATES this rule and nothing exercises it. A consumer passing `--whole` and
-  `__muted` together would hand `object-fit: cover` to `.dpc-signm__muted > img`
+  `__muted` together would hand `object-fit: cover` to `.dpc-modal__muted > img`
   on order, beating this rule's `contain`. No caller does; `ConceptReviewModal`
   is the only `portraitWhole` and it never mutes.
 */
-.dpc-signm__portrait--whole img {
+.dpc-modal__portrait--whole img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -2652,7 +2660,7 @@
   means *something goes here*, and it is the one place in this feature that
   already says it.
 */
-.dpc-signm__drop {
+.dpc-modal__drop {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2669,7 +2677,7 @@
     color var(--t-fast) var(--ease);
 }
 
-.dpc-signm__drop--over {
+.dpc-modal__drop--over {
   border-style: solid;
   border-color: var(--ink);
   color: var(--ink);
@@ -2681,14 +2689,14 @@
   wraps what was already the body's children and must not become a second box
   between them and the card.
 */
-.dpc-signm__bodydrop {
+.dpc-modal__bodydrop {
   display: block;
   min-width: 0;
 }
 
-.dpc-signm__body { flex: 999 1 300px; min-width: 0; }
+.dpc-modal__body { flex: 999 1 300px; min-width: 0; }
 
-.dpc-signm__eyebrow {
+.dpc-modal__eyebrow {
   display: block;
   font: 500 10px var(--font-mono);
   letter-spacing: 0.12em;
@@ -2696,14 +2704,14 @@
   text-transform: uppercase;
 }
 
-.dpc-signm__title {
+.dpc-modal__title {
   margin: 6px 0 0;
   font: 400 21px/1.35 var(--font-sans);
   letter-spacing: -0.017em;
   color: var(--ink);
 }
 
-.dpc-signm__explainer {
+.dpc-modal__explainer {
   margin: 0;
   padding-top: 3px;
   font: 400 12.5px/1.55 var(--font-sans);
@@ -2711,7 +2719,7 @@
   text-wrap: pretty;
 }
 
-.dpc-signm__label {
+.dpc-modal__label {
   display: block;
   margin-top: 16px;
   font: 500 9.5px var(--font-mono);
@@ -2720,7 +2728,7 @@
   text-transform: uppercase;
 }
 
-.dpc-signm__field {
+.dpc-modal__field {
   margin-top: 6px;
   padding: 10px 12px;
   border: 1px solid var(--borderInput);
@@ -2729,8 +2737,8 @@
 }
 
 /* The wrapper draws the box; the input itself is bare (the foundation law). */
-.dpc-signm__field input,
-.dpc-signm__field textarea {
+.dpc-modal__field input,
+.dpc-modal__field textarea {
   width: 100%;
   border: 0;
   background: none;
@@ -2745,14 +2753,14 @@
   would break the pairing the modal exists to show. The height holds his own
   ~150–250 character target comfortably and scrolls past it rather than growing.
 */
-.dpc-signm__field textarea {
+.dpc-modal__field textarea {
   display: block;
   min-height: 118px;
   line-height: 1.55;
   resize: none;
 }
 
-.dpc-signm__field textarea::placeholder { color: var(--faint); }
+.dpc-modal__field textarea::placeholder { color: var(--faint); }
 
 /*
   NO `.dp-root` PREFIX HERE, and that is the whole point.
@@ -2763,13 +2771,13 @@
   that way the rule silently does nothing and the browser's own focus ring
   draws inside the field instead. The wrapper shows focus; the input never does.
 */
-.dpc-signm__field input:focus,
-.dpc-signm__field input:focus-visible,
-.dpc-signm__field textarea:focus,
-.dpc-signm__field textarea:focus-visible { outline: none; box-shadow: none; }
-.dpc-signm__field:focus-within { border-color: var(--ink); }
+.dpc-modal__field input:focus,
+.dpc-modal__field input:focus-visible,
+.dpc-modal__field textarea:focus,
+.dpc-modal__field textarea:focus-visible { outline: none; box-shadow: none; }
+.dpc-modal__field:focus-within { border-color: var(--ink); }
 
-.dpc-signm__cost {
+.dpc-modal__cost {
   display: block;
   padding: 13px 0 11px;
   text-align: right;
@@ -2782,7 +2790,7 @@
   digit. Shared by all three cost lines (hero, dock, sign modal) so the
   approximation reads the same wherever a price appears.
 */
-.dpc-signm__tilde { color: var(--muted); }
+.dpc-modal__tilde { color: var(--muted); }
 
 /*
   COUNT LEFT, PRICE RIGHT, one row (#196). D-109 puts cost above the button as
@@ -2791,21 +2799,21 @@
   which is the fault D-109 names; on one baseline they read as one meta line,
   the way the sheet dock's `160 credits · 449,920 left` does.
 */
-.dpc-signm__costrow {
+.dpc-modal__costrow {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
-.dpc-signm__count {
+.dpc-modal__count {
   font: 400 11.5px var(--font-mono);
   color: var(--meta);
   padding: 13px 0 11px;
 }
 
 /* Inside the row the cost has already been given its own padding. */
-.dpc-signm__costrow > .dpc-signm__cost { padding-left: 0; }
+.dpc-modal__costrow > .dpc-modal__cost { padding-left: 0; }
 
 /*
   AN ANSWER SHE HAS TO ACT ON, said where she is looking (#196, amendment 2:
@@ -2813,7 +2821,7 @@
   is not a warning about something irreversible, it is the door telling her
   what it could not do, and the two buttons under it are the point.
 */
-.dpc-signm__note {
+.dpc-modal__note {
   margin: 0;
   padding: 12px 0 2px;
   font: 400 12.5px/1.5 var(--font-sans);
@@ -2826,7 +2834,7 @@
   of equals and the eye has nowhere to start. Borderless is the house's own
   answer for a dismissal that costs nothing.
 */
-.dpc-signm__ghost {
+.dpc-modal__ghost {
   padding: 10px 13px;
   border: 1px solid transparent;
   border-radius: 9px;
@@ -2837,8 +2845,8 @@
   transition: color var(--t-fast) var(--ease);
 }
 
-.dpc-signm__ghost:hover { color: var(--ink); }
-.dpc-signm__ghost:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.dpc-modal__ghost:hover { color: var(--ink); }
+.dpc-modal__ghost:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /*
   The actions need air above them. The sign modal gets it from the cost line
@@ -2846,7 +2854,7 @@
   without this the buttons butt straight against the type row and read as part
   of the field rather than as the decision.
 */
-.dpc-signm__actions {
+.dpc-modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 9px;
@@ -2858,11 +2866,11 @@
 }
 
 /* The cost line already supplies the gap where there is one. */
-.dpc-signm__cost + .dpc-signm__actions { margin-top: 0; }
+.dpc-modal__cost + .dpc-modal__actions { margin-top: 0; }
 /* And the concept review's row, which is that line with a count beside it. */
-.dpc-signm__costrow + .dpc-signm__actions { margin-top: 0; }
+.dpc-modal__costrow + .dpc-modal__actions { margin-top: 0; }
 
-.dpc-signm__secondary {
+.dpc-modal__secondary {
   padding: 10px 15px;
   border: 1px solid var(--borderInput);
   border-radius: 9px;
@@ -2872,14 +2880,14 @@
   cursor: pointer;
 }
 
-.dpc-signm__secondary:hover { border-color: var(--ink); }
+.dpc-modal__secondary:hover { border-color: var(--ink); }
 
 /*
   SOLID `--ink`, never accent. Accent means STATE in this product — kept,
   locked, signed, running — and a washed-accent fill reads as disabled while
   colliding with the kept-ring on the card behind the scrim.
 */
-.dpc-signm__primary {
+.dpc-modal__primary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2893,11 +2901,11 @@
   transition: opacity var(--t-fast) var(--ease);
 }
 
-.dpc-signm__primary:hover { opacity: 0.86; }
-.dpc-signm__primary:disabled { opacity: 0.4; cursor: default; }
+.dpc-modal__primary:hover { opacity: 0.86; }
+.dpc-modal__primary:disabled { opacity: 0.4; cursor: default; }
 
-.dpc-signm__secondary:focus-visible,
-.dpc-signm__primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.dpc-modal__secondary:focus-visible,
+.dpc-modal__primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* ---- delete: the same shell, four deliberate differences ---- */
 
@@ -2906,7 +2914,7 @@
   no warning label can, and it is the detail that makes the dialog read as
   considered rather than boilerplate.
 */
-.dpc-signm__muted { display: block; width: 100%; height: 100%; filter: grayscale(1); opacity: 0.62; }
+.dpc-modal__muted { display: block; width: 100%; height: 100%; filter: grayscale(1); opacity: 0.62; }
 /*
   ⚠ TOP, ON HIS WORD — and this rule said `center` until 2026-08-29 (#198).
 
@@ -2929,7 +2937,7 @@
   and the arm beside it says plainly that this selector's cascade hazard is now
   LATENT while `--whole`'s is still live, rather than implying both bite.
 */
-.dpc-signm__muted > img {
+.dpc-modal__muted > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2938,21 +2946,21 @@
 }
 
 /* The warning is read FIRST, which is what lets the body drop to one line. */
-.dpc-signm__eyebrow--danger { color: var(--accentInk); }
+.dpc-modal__eyebrow--danger { color: var(--accentInk); }
 
 /* Label and field share a row — the height the removed paragraphs were using. */
-.dpc-signm__typerow {
+.dpc-modal__typerow {
   display: flex;
   align-items: center;
   gap: 9px;
   margin-top: 16px;
 }
 
-.dpc-signm__typerow .dpc-signm__label { margin-top: 0; flex: none; }
-.dpc-signm__typerow .dpc-signm__field { flex: 1; margin-top: 0; display: flex; align-items: center; gap: 8px; }
+.dpc-modal__typerow .dpc-modal__label { margin-top: 0; flex: none; }
+.dpc-modal__typerow .dpc-modal__field { flex: 1; margin-top: 0; display: flex; align-items: center; gap: 8px; }
 
-.dpc-signm__field.is-armed { border-color: var(--accentLine); }
-.dpc-signm__match { color: var(--accentSolid); flex: none; }
+.dpc-modal__field.is-armed { border-color: var(--accentLine); }
+.dpc-modal__match { color: var(--accentSolid); flex: none; }
 
 /*
   NEVER solid ink — that is the system's "yes, proceed", the same fill as Sign
@@ -2961,7 +2969,7 @@
   KEPT on a candidate card, so a delete button in the kept colour is a genuine
   misread. Armed takes the danger-zone treatment — border and wash.
 */
-.dpc-signm__danger {
+.dpc-modal__danger {
   padding: 10px 16px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -2975,14 +2983,14 @@
     color var(--t-fast) var(--ease);
 }
 
-.dpc-signm__danger.is-armed {
+.dpc-modal__danger.is-armed {
   border-color: var(--accentLine);
   background: var(--accentWash);
   color: var(--accentInk);
   cursor: pointer;
 }
 
-.dpc-signm__danger:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+.dpc-modal__danger:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
 
 /* ---- rename: deliberately lighter than its siblings ---- */
 
@@ -3002,7 +3010,7 @@
   border-radius: 16px;
   background: var(--surface);
   box-shadow: var(--shadowCard);
-  animation: dpc-signm-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: dpc-modal-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .dpc-renamem__head { display: flex; align-items: center; gap: 12px; }
@@ -4645,7 +4653,7 @@
 
 /* ------------------------------------------------------------------ */
 /* THE MINIMAL SETTINGS MODAL (#142) — the gear on the surface and the  */
-/* 440px single-column panel it opens. Shares `.dpc-signm`'s scrim.     */
+/* 440px single-column panel it opens. Shares `.dpc-modal`'s scrim.     */
 /* ------------------------------------------------------------------ */
 .dpc-setbtn {
   display: inline-flex;
@@ -4677,7 +4685,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  animation: dpc-signm-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: dpc-modal-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 .dpc-setm__head {
   display: flex;

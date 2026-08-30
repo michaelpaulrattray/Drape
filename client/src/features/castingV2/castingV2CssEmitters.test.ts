@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * EVERY CLASS THIS STYLESHEET DECLARES IS EMITTED BY SOMETHING.
  *
  * #210, and the class rather than its instance. #198 found ONE broken rule
- * (`.dpc-signm__portrait > img`, a child combinator against a DOM with a
+ * (`.dpc-modal__portrait > img`, a child combinator against a DOM with a
  * wrapper in it) and its law-7 sweep turned up four rules whose class had no
  * emitter at all. Read mechanically over the whole sheet, the real population
  * was TWENTY-TWO classes and thirty-three rules — corpses of surfaces that were
@@ -29,7 +29,7 @@ import { describe, expect, it } from "vitest";
  *
  * WHY A GUARD AND NOT JUST THE DELETION. Dead CSS is cheap on its own — bytes
  * in one stylesheet. What it is not cheap on is READING: `.dpc-sign__portrait`
- * sat one character from the live `.dpc-signm__portrait` for months, so
+ * sat one character from the live `.dpc-modal__portrait` for months, so
  * anybody grepping for the sign portrait's rule found two and had no way to
  * tell which one painted. That is the cost, and it recurs on every rename.
  *
@@ -320,7 +320,7 @@ describe("castingV2.css declares no class the product never emits", { timeout: 6
     const css = await readFile(SHEET, "utf8");
     const classes = declaredClasses(css);
     expect(classes.length).toBeGreaterThan(250);
-    expect(classes).toContain("dpc-signm__portrait");
+    expect(classes).toContain("dpc-modal__portrait");
 
     const sources = await collect(CLIENT_SRC);
     expect(sources.length).toBeGreaterThan(400);
