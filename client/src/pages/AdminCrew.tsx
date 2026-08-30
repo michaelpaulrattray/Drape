@@ -30,22 +30,37 @@ import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
+import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
 /**
- * "checked 12s ago" — coarse on purpose. It re-renders every ten seconds,
- * which is enough for a stamp whose job is to say the page is alive, and
+ * The page's clock — ONE ticker, every ten seconds.
+ *
+ * ⚠ It is shared rather than per-component on purpose (#272): the "checked 12s
+ * ago" stamp and the live shift row's "started 14 min ago" and its stalled
+ * verdict are all elapsed-time readings, and two tickers would let them land on
+ * two different instants and draw two different nows as one page. Working law 4
+ * pointed at a clock.
+ *
+ * Ten seconds is enough for a stamp whose job is to say the page is alive, and
  * far too slow to read as a clock.
  */
-function useCheckedAgo(dataUpdatedAt: number): string {
+function useNow(dataUpdatedAt: number): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 10_000);
     return () => window.clearInterval(timer);
   }, []);
+  /* A fresh read re-bases the clock immediately rather than waiting out the
+     interval, so "checked just now" is true the moment it is true. */
   useEffect(() => {
     setNow(Date.now());
   }, [dataUpdatedAt]);
+  return now;
+}
+
+/** "checked 12s ago" — coarse on purpose. */
+function checkedAgoOf(dataUpdatedAt: number, now: number): string {
   if (!dataUpdatedAt) return "just now";
   const seconds = Math.max(0, Math.round((now - dataUpdatedAt) / 1000));
   if (seconds < 10) return "just now";
@@ -62,7 +77,8 @@ export default function AdminCrew() {
      box keeps its draft, because the boxes are keyed by card id and only
      re-render. The stamp at the foot says when the page last checked. */
   const stateQuery = useCrewState(isAdmin, { live: true });
-  const checkedAgo = useCheckedAgo(stateQuery.dataUpdatedAt);
+  const now = useNow(stateQuery.dataUpdatedAt);
+  const checkedAgo = checkedAgoOf(stateQuery.dataUpdatedAt, now);
   const utils = trpc.useUtils();
 
   const replyMutation = trpc.crew.reply.useMutation({
@@ -184,6 +200,14 @@ export default function AdminCrew() {
 
         {stateQuery.data && (
           <>
+            {/* ABOVE the program (#272). Everything below this describes what
+                the team has DONE; this is what it is doing to his product right
+                now, and it is the only thing on the page that outranks the
+                briefing. `now` comes from the same ticker the "checked" stamp
+                uses, so the strip's "14 min ago" and the page's freshness can
+                never disagree. */}
+            <CrewWorkingNow shiftRuns={stateQuery.data.shiftRuns} now={now} />
+
             <CrewProgramBanner program={stateQuery.data.briefing.program} />
 
             <CrewNeedsYou

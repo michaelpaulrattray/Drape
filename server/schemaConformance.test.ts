@@ -277,6 +277,12 @@ describe("the unmigrated exception list only shrinks", () => {
        costs. */
     expect(Object.keys(DECLARED_BUT_UNMIGRATED)).toEqual([
       "casting_cast_segments",
+      /* Joined 2026-08-30 (#272, migration 0055 — the live shift row). It
+         LEAVES the day the founder runs `scripts/ceremony-crew-shift-runs.mts
+         --production`, and that ceremony's own last line tells him to delete
+         the exception. Per the note above, the line and this pin move in the
+         SAME commit — `crew_replies` went red on main for exactly that. */
+      "crew_shift_runs",
     ]);
   });
 });

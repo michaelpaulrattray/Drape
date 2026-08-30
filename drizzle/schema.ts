@@ -3844,3 +3844,72 @@ export const crewReplies = mysqlTable("crew_replies", {
 
 export type CrewReplyRow = typeof crewReplies.$inferSelect;
 export type InsertCrewReplyRow = typeof crewReplies.$inferInsert;
+
+/**
+ * THE LIVE SHIFT ROW — what the team is doing, while it does it (migration
+ * 0055; issue #272).
+ *
+ * One row is: **one night-shift session**, opened when it chooses its brief and
+ * stamped terminal when it exits.
+ *
+ * # IT IS THE SHIFT'S HALF OF THE STORE, AND THE SPLIT STILL HOLDS
+ *
+ * `crewReplies` above is HIS half — written only by an `adminProcedure` with
+ * his session. This is the shifts' half, and it is the first thing a shift
+ * writes to a production row rather than to the deployed briefing. Migration
+ * `0055`'s header carries the whole argument for that override, including the
+ * sentence in `0054` it overrides; read it before changing this shape.
+ *
+ * What keeps the split honest is unchanged: **neither writer can reach the
+ * other's road.** The shift's tools name this table and no other
+ * (`server/crewShiftWriterBoundary.test.ts` pins it at the source, with a
+ * positive control), and no procedure writes here at all — `crew.getState`
+ * reads, and there is no mutation.
+ *
+ * # `endedAt` + `heartbeatAt` ARE THE STATE. THERE IS NO `status` COLUMN.
+ *
+ * A shift that dies cannot write that it died, so a stored status could never
+ * report the one case #272 names ("shows as stalled, not as working"). The
+ * verdict is derived at read time from the two timestamps (working law 4):
+ * ended ⇒ finished, live heartbeat ⇒ running, stale heartbeat ⇒ stalled.
+ *
+ * # BOUNDED COLUMNS, BECAUSE THIS ONE IS NOT A RULING
+ *
+ * `crewReplies.body` is `text` and never truncated — it holds the founder's
+ * words. Nothing here is his: `intent` is one sentence a shift writes about
+ * itself, and a bounded `varchar` that refuses a runaway paste at the door is
+ * the right shape for a status board.
+ */
+export const crewShiftRuns = mysqlTable("crew_shift_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The shift's own name, as it stamps everything else: `foreman-118`. */
+  shift: varchar("shift", { length: 64 }).notNull(),
+  /** foreman | janitor | warden | machinist | retro — the seat, named on everything it touches. */
+  seat: varchar("seat", { length: 32 }).notNull(),
+  /** focus | sidelane | background | maintenance | patrol. See migration 0055's header. */
+  workKind: varchar("workKind", { length: 16 }).notNull(),
+  /** `#272`, or NULL for work with no card (a patrol on its clock). */
+  cardRef: varchar("cardRef", { length: 64 }),
+  /** The card's title at the moment the shift read it — a snapshot, never a join. */
+  cardTitle: varchar("cardTitle", { length: 255 }),
+  /** One sentence: what this shift intends to change. */
+  intent: varchar("intent", { length: 500 }).notNull(),
+  /** NULL until the shift cuts one. */
+  branch: varchar("branch", { length: 255 }),
+  startedAt: timestamp("startedAt").notNull().defaultNow(),
+  /** Last moment the shift proved it was alive. Stale ⇒ stalled, at read time. */
+  heartbeatAt: timestamp("heartbeatAt").notNull().defaultNow(),
+  /** NULL while running. Set at close, whatever the outcome. */
+  endedAt: timestamp("endedAt"),
+  /** shipped | stopped | failed — NULL exactly while `endedAt` is NULL. */
+  outcome: varchar("outcome", { length: 16 }),
+  /** One sentence on how it ended. */
+  outcomeNote: varchar("outcomeNote", { length: 500 }),
+  prNumber: int("prNumber"),
+}, (table) => ([
+  /* The page asks one question — "the newest few runs" — and orders by start. */
+  index("ix_crew_shift_runs_started").on(table.startedAt),
+]));
+
+export type CrewShiftRunRow = typeof crewShiftRuns.$inferSelect;
+export type InsertCrewShiftRunRow = typeof crewShiftRuns.$inferInsert;
