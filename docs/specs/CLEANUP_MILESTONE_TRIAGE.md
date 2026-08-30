@@ -3385,3 +3385,62 @@ file, and a stale claim in `CLAUDE.md` about a live spendable road. **A state
 claim that never names an entity is invisible to any anchor, and the only
 instrument that has ever found one is a reader.** A clean anchored run is a
 floor and not coverage.
+
+
+## 34. `BRAND_NAME` — ONE NAME, TWO SYMBOLS, AND THE LIVE ONE WAS HIDING THE
+## DEAD ONE (2026-08-30, section 02. One row that necessarily covers two
+## declarations; no deletion is proposed here and none is authorised by it.)
+
+Section 02 §1a drops the brand wordmark from the topbar — his own instruction,
+verbatim: *"The topbar currently opens with a coral tile and the word Klieg. The
+`BrandOrb` already carries the brand at the top of the rail, two inches away.
+Remove it; the space belongs to the project switcher."* `Topbar.tsx` was the
+only `import { BRAND_NAME }` in the tree, and removing it turned the deletion
+door red the same minute.
+
+⚠ **THE SYMBOL THE SWEEP THEN NAMED IS NOT THE ONE THAT LOST ITS CONSUMER, AND
+THAT IS THE WHOLE CONTENT OF THIS ROW.** There are TWO `BRAND_NAME`s:
+
+| declaration | value | consumers |
+|---|---|---|
+| `client/src/foundation/brand.ts` | `"Klieg"` | `Topbar.tsx` until this commit; the foundation barrel re-exports it |
+| `server/casting/geminiPrompts.ts` | `'DRAPE'` | **none** — `geminiService.ts:37` *re-exports* it and nothing imports it back |
+
+The sweep indexes importers by **symbol name alone** (`const uses = new
+Map<string, Use[]>()`, keyed on the name the import statement destructures — read
+at `scripts/sweep-uncalled-exports-disposable.mts`), so the client twin's single
+import was counted as an importer of BOTH. The legacy server constant has been
+production-unreferenced for as long as that has been true, and **it was invisible
+the entire time because a live twin sat in front of it.** That pair is not a
+surprise — `d84525c0` (*"the twin that hid a road"*) catalogued it by name in the
+shadowed-exports table — but this is the first time it changed the door's answer.
+
+**So the row is verdict HELD and it covers both, said out loud rather than left
+to be discovered**, because a name-keyed door cannot be given two verdicts for
+one name. Its `file` names the server declaration, which is the one the sweep
+lists; the `why` names both. Neither is deleted, and for different reasons:
+
+- **`server/casting/geminiPrompts.ts`** is legacy casting-studio code. Its
+  retirement is #29, which the program file calls the FINISH LINE rather than a
+  task — *"it begins only when the founder says V2 is ready to replace legacy"* —
+  and the Atlas's retirement views govern every deletion when it does. Picking
+  one constant out of that module ahead of the module is not a cleanup, it is a
+  head start on a decision that has not been made.
+- **`client/src/foundation/brand.ts`** is the single place the product's name is
+  written, and the public rebrand (plan §O-2, M5b — domain, OAuth redirect,
+  Resend sending domain, Stripe-facing copy) is a live founder-executed
+  workstream that will need exactly such a place. His freeze ruling on this lane
+  says the same thing in general terms about the components segment 00 left
+  without consumers: *"Nothing you've built is wasted … whatever nothing uses by
+  the end gets removed then"* — **at the end, not now.**
+
+What would discharge it: the rebrand landing (the client constant gets a consumer
+again), or the legacy studio's retirement taking the server module whole. Either
+way the row is re-read rather than flipped, because it answers two questions.
+
+⚠ **AND THE INSTRUMENT FINDING IS THE BIGGER HALF.** A door keyed on a bare
+symbol name reports GREEN for a symbol nobody has read, whenever a same-named
+twin anywhere in the tree has a consumer — and it reports the wrong FILE when it
+finally speaks. Filed as its own card rather than repaired here, because
+repairing it means re-taking every reading in this table under a (file, name)
+key, which is a sitting rather than a paragraph.

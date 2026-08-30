@@ -1,4 +1,4 @@
-import { ChevronDown, FolderClosed, Megaphone } from "lucide-react";
+import { ChevronDown, FolderClosed, Megaphone, Search } from "lucide-react";
 
 /**
  * Inert topbar chrome (brief 00b §3, §4).
@@ -55,6 +55,38 @@ export function WhatsNewStub() {
       title="What's new — not built yet"
     >
       <Megaphone size={15} strokeWidth={1.8} aria-hidden="true" />
+    </span>
+  );
+}
+
+/**
+ * The centred search (section 02 §1c).
+ *
+ * ⚠ **IT IS A `<span>` AND IT MAY NEVER BECOME AN `<input>`.** His ruling,
+ * verbatim: *"The search must not be an `<input>`. It's a span, not focusable,
+ * no ⌘K binding. A text field that takes keystrokes and does nothing claims a
+ * capability, which is the one thing a stub may never do."* His brief names
+ * this as the single item in the section most likely to be "improved" into a
+ * lie, so it is guarded in the suite as well as written here: see
+ * `section02-guard.test.ts`.
+ *
+ * **And there is no ⌘K handler, deliberately.** The key chips describe the
+ * shortcut the feature will have when it exists. Binding them to nothing is the
+ * same lie in a different shape — a keystroke that swallows itself.
+ *
+ * `cursor: text` is the one place this stub differs from the others: the shape
+ * is a field, and a text cursor over a field is what the eye expects. It still
+ * takes no focus, no keys and no click.
+ */
+export function SearchStub() {
+  return (
+    <span className="dp-search" aria-disabled="true" title="Search — not built yet">
+      <Search size={13} strokeWidth={2} aria-hidden="true" />
+      <span className="dp-search__label">Search frames, faces, prompts…</span>
+      <span className="dp-search__keys" aria-hidden="true">
+        <span className="dp-search__key">⌘</span>
+        <span className="dp-search__key">K</span>
+      </span>
     </span>
   );
 }

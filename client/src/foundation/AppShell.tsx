@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { Rail, type RailAccount, type RailDestinationId } from "./Rail";
-import { Topbar } from "./Topbar";
+import { Rail, type RailDestinationId, type RailWorkspace } from "./Rail";
+import { Topbar, type TopbarAccount } from "./Topbar";
 
 /**
  * The app shell (plan §D.4): 76px rail + 56px topbar + centred content column.
@@ -17,6 +17,7 @@ export function AppShell({
   breadcrumb,
   current,
   account,
+  workspace,
   topbarLeft,
   topbarRight,
   width = "browse",
@@ -25,9 +26,21 @@ export function AppShell({
 }: {
   breadcrumb?: string;
   current?: RailDestinationId;
-  account?: RailAccount;
   /**
-   * The topbar's left slot, after the brand block and before the breadcrumb.
+   * The account chip. **It renders in the TOPBAR now, not the rail** (section
+   * 02 §2b): the prop keeps its name and its shape, and only its destination
+   * moved. Everything reached through the account already sits at the topbar's
+   * right end, so the chip belongs beside it.
+   */
+  account?: TopbarAccount;
+  /**
+   * The rail's foot (section 02 §2c) — the workspace rather than the account:
+   * the member stack, Invite, and the gear that opens the surface's settings.
+   */
+  workspace?: RailWorkspace;
+  /**
+   * The topbar's left slot: the head of the context zone, before the
+   * breadcrumb. The brand block that used to open the bar is gone (02 §1a).
    * Section 00b's inert project switcher lives here — see `Topbar.tsx` for why
    * it is a slot rather than chrome the shell always draws.
    */
@@ -67,9 +80,9 @@ export function AppShell({
 
   return (
     <div className="dp-root">
-      <Rail current={current} account={account} />
+      <Rail current={current} workspace={workspace} />
       <div className="dp-main">
-        <Topbar breadcrumb={breadcrumb} left={topbarLeft} right={topbarRight} />
+        <Topbar breadcrumb={breadcrumb} left={topbarLeft} right={topbarRight} account={account} />
         <div className={contentClass}>{children}</div>
       </div>
     </div>

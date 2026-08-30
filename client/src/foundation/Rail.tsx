@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Clapperboard, Frame, Home, Images, Library, Sparkles, User, Users } from "lucide-react";
+import { Clapperboard, Film, Frame, Home, Images, Library, Plus, Settings, Sparkles, Users } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
 import { BrandOrb } from "./BrandOrb";
@@ -8,16 +7,23 @@ import { BrandOrb } from "./BrandOrb";
 /**
  * The 76px rail (foundation README §4, plan §D.5, handoff chapter 01).
  *
- * **Seven destinations, from now on** (founder ruling F1, 2026-07-31): Home,
- * Create, Canvas, Templates, Casting, Assets, Library. Four exist; three do
- * not yet, and they render as quiet inert stubs rather than being left out.
+ * ⚠ **EIGHT destinations, from now on** — Home, Create, Canvas, Templates,
+ * Cinema, Casting, Assets, Library. Four exist; four do not yet, and they
+ * render as quiet inert stubs rather than being left out.
  *
- * That reverses the earlier "real routes only" reading of §B-8, deliberately
- * and on the handoff's own rule: **the rail never changes shape**. A navigation
- * bar that grows an item every few weeks teaches people to re-read it every
- * time they open the app, and the muscle memory they build is wrong by
- * construction. Better to show the whole map at once and be honest about which
- * roads are open.
+ * **This is a REVERSAL of founder ruling F1 (2026-07-31), not a contradiction
+ * of it, and it is his own** (section 02, 2026-08-30, verbatim): *"F1 is
+ * reversed. The rail goes to eight with Cinema, inert, between Templates and
+ * Casting. Then the shape is fixed at eight — update the comment so the next
+ * reader sees a reversal rather than a contradiction."* F1 fixed the rail at
+ * seven; Cinema is the eighth and the last. **The shape is fixed at eight.**
+ *
+ * The reason the shape is fixed at all is unchanged: **the rail never changes
+ * shape**. A navigation bar that grows an item every few weeks teaches people
+ * to re-read it every time they open the app, and the muscle memory they build
+ * is wrong by construction. Better to show the whole map at once and be honest
+ * about which roads are open. That is also why the eighth arrives now, while
+ * Cinema is unbuilt, rather than on the day it ships.
  *
  * The stubs are not links and not buttons: no href, no handler, out of the tab
  * order, `aria-disabled`. A control that looks clickable and does nothing is
@@ -27,6 +33,16 @@ import { BrandOrb } from "./BrandOrb";
  *
  * Home/Canvas/Library point at the legacy surfaces they still live on — the
  * shell is adopted route by route (plan §D.12).
+ *
+ * ---------------------------------------------------------------------------
+ * **THE ACCOUNT CHIP IS NOT HERE ANY MORE** (section 02 §2b, his ruling):
+ * *"The account chip moves to the topbar, and the rail's foot gets a gear
+ * instead. Same face in both corners doing two different things is ambiguous.
+ * The face is you, the gear is settings."* Everything reached *through* the
+ * account — credits, billing, settings, notifications, theme — already sits at
+ * the topbar's right end, so leaving the account itself in the opposite corner
+ * split one thing in two. `Topbar.tsx` owns the chip, its menu and its
+ * dismissal behaviour now; this file kept none of it.
  */
 
 export type RailDestinationId =
@@ -34,6 +50,7 @@ export type RailDestinationId =
   | "create"
   | "canvas"
   | "templates"
+  | "cinema"
   | "casting"
   | "assets"
   | "library";
@@ -51,52 +68,52 @@ export const RAIL_DESTINATIONS: readonly Destination[] = [
   { id: "create", label: "Create", Icon: Sparkles },
   { id: "canvas", label: "Canvas", href: "/app/boards", Icon: Frame },
   { id: "templates", label: "Templates", Icon: Clapperboard },
+  { id: "cinema", label: "Cinema", Icon: Film },
   { id: "casting", label: "Casting", href: "/casting", Icon: Users },
   { id: "assets", label: "Assets", Icon: Images },
   { id: "library", label: "Library", href: "/app/models", Icon: Library },
 ];
 
-export type RailAccount = {
-  /** Up to two characters. Omitted rather than faked when unknown. */
-  initials?: string;
-  label: string;
-  /** The app supplies the real avatar; the chip only owns size and ring. */
-  avatar?: ReactNode;
-  /**
-   * The account menu. The shell owns the chip and its open/close behaviour;
-   * what the menu offers is the app's business, so a surface can reach parity
-   * with whatever its old account row exposed.
-   */
-  menu?: ReactNode;
+/**
+ * The rail's foot: the workspace, not the account (section 02 §2c).
+ *
+ * ⚠ **THE MEMBER STACK DRAWS NO FACE IT CANNOT NAME.** The prototype shows
+ * three overlapping avatars; there is no members API in this product — no
+ * router, no query, no table — so three faces here would be three invented
+ * people. His own rule from the 00b frames, verbatim: *"A number in a
+ * screenshot that no server produces is a lie that survives into the build."*
+ * What ships is the affordance the brief asks for and nothing behind it: the
+ * dashed `+` and the word Invite, inert, because the Members surface does not
+ * exist either. When members are real, `members` fills and the stack draws
+ * them — the shape is already here.
+ *
+ * **The gear renders when the surface hands it somewhere to go.** It is not
+ * optional in the design — his ruling is that the foot gets a gear rather than
+ * a second avatar — but a gear on a page with no settings modal would be a
+ * control that looks clickable and does nothing, which is the one thing the
+ * stubs above exist to avoid, and *"Settings — not built yet"* would be a lie
+ * on top of it: settings ARE built, they are simply not reachable from a
+ * casting route. So the shell draws it where a surface owns one, exactly as
+ * `topbarLeft` / `topbarRight` already work.
+ */
+export type RailWorkspace = {
+  /** Real members only. Empty today: nothing in the product produces them. */
+  members?: readonly { id: string; label: string; avatar?: ReactNode }[];
+  /** Opens the surface's own settings. Absent = the gear is not drawn. */
+  onOpenSettings?: () => void;
 };
+
+/** Up to three faces, then the `+` (section 02 §2c). */
+const MEMBER_STACK_MAX = 3;
 
 export function Rail({
   current,
-  account,
+  workspace,
 }: {
   current?: RailDestinationId;
-  account?: RailAccount;
+  workspace?: RailWorkspace;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const footRef = useRef<HTMLDivElement>(null);
-
-  // Escape closes, and a click anywhere outside dismisses — the same contract
-  // shadcn's popovers give, without pulling a portal into the shell.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    const onPointer = (event: MouseEvent) => {
-      if (!footRef.current?.contains(event.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onPointer);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onPointer);
-    };
-  }, [menuOpen]);
+  const members = (workspace?.members ?? []).slice(0, MEMBER_STACK_MAX);
 
   return (
     <nav className="dp-rail" aria-label="Primary">
@@ -124,28 +141,34 @@ export function Rail({
           </span>
         ),
       )}
-      <div className="dp-rail__foot" ref={footRef}>
-        <span className="dp-rail__divider" />
-        <div className="dp-account-anchor">
-          <button
-            type="button"
-            className="dp-account"
-            title={account?.label ?? "Account"}
-            aria-label={account?.label ?? "Account"}
-            aria-haspopup={account?.menu ? "menu" : undefined}
-            aria-expanded={account?.menu ? menuOpen : undefined}
-            onClick={() => account?.menu && setMenuOpen((open) => !open)}
-          >
-            {account?.avatar ?? account?.initials ?? (
-              <User size={14} strokeWidth={1.8} aria-hidden="true" />
-            )}
-          </button>
-          {account?.menu && menuOpen ? (
-            <div className="dp-account-menu" role="menu">
-              {account.menu}
-            </div>
-          ) : null}
-        </div>
+      <div className="dp-rail__foot">
+        <span className="dp-invite" aria-disabled="true" title="Invite — not built yet">
+          <span className="dp-memberstack">
+            {members.map((member) => (
+              <span key={member.id} className="dp-memberstack__face" title={member.label}>
+                {member.avatar}
+              </span>
+            ))}
+            <span className="dp-memberstack__add" aria-hidden="true">
+              <Plus size={9} strokeWidth={2.6} />
+            </span>
+          </span>
+          <span className="dp-rail__label">Invite</span>
+        </span>
+        {workspace?.onOpenSettings ? (
+          <>
+            <span className="dp-rail__divider" />
+            <button
+              type="button"
+              className="dp-iconbtn"
+              onClick={workspace.onOpenSettings}
+              title="Settings"
+              aria-label="Settings"
+            >
+              <Settings size={16} strokeWidth={1.8} />
+            </button>
+          </>
+        ) : null}
       </div>
     </nav>
   );

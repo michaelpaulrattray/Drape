@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7af04d7af111e706"
+    "sourceFingerprint": "7014b07329734d22"
   },
   "domains": [
     {
@@ -78,7 +78,7 @@
     {
       "id": "domain:lobby",
       "name": "lobby",
-      "moduleCount": 12
+      "moduleCount": 14
     },
     {
       "id": "domain:moderator",
@@ -1827,6 +1827,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/lobby/FeedbackForm.tsx",
+      "path": "client/src/features/lobby/FeedbackForm.tsx",
+      "domain": "lobby",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/lobby/HomeView.tsx",
       "path": "client/src/features/lobby/HomeView.tsx",
       "domain": "lobby",
@@ -1865,6 +1871,12 @@
     {
       "id": "module:client/src/features/lobby/RecentWorkSection.tsx",
       "path": "client/src/features/lobby/RecentWorkSection.tsx",
+      "domain": "lobby",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/lobby/ReportBugButton.tsx",
+      "path": "client/src/features/lobby/ReportBugButton.tsx",
       "domain": "lobby",
       "lifecycle": "active"
     },
@@ -10450,6 +10462,10 @@
       "path": "client/src/foundation/section00b-guard.test.ts"
     },
     {
+      "id": "test:client/src/foundation/section02-guard.test.ts",
+      "path": "client/src/foundation/section02-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
     },
@@ -16243,6 +16259,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/lobby/FeedbackForm.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/FeedbackForm.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/lobby/HomeView.tsx",
       "to": "module:client/src/features/boards/hooks/useBoardMutations.ts",
       "kind": "imports"
@@ -16289,17 +16315,12 @@
     },
     {
       "from": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
+      "to": "module:client/src/features/lobby/FeedbackForm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
       "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
-      "to": "module:client/src/lib/failureSentence.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
-      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
@@ -16340,6 +16361,16 @@
     {
       "from": "module:client/src/features/lobby/RecentWorkSection.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/ReportBugButton.tsx",
+      "to": "module:client/src/features/lobby/FeedbackForm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/ReportBugButton.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -17929,7 +17960,7 @@
     },
     {
       "from": "module:client/src/foundation/Topbar.tsx",
-      "to": "module:client/src/foundation/brand.ts",
+      "to": "module:client/src/foundation/ChromeStubs.tsx",
       "kind": "imports"
     },
     {
@@ -18300,6 +18331,11 @@
     {
       "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AppLobby.tsx",
+      "to": "module:client/src/features/lobby/ReportBugButton.tsx",
       "kind": "imports"
     },
     {
