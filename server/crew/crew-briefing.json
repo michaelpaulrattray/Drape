@@ -1,7 +1,7 @@
 {
-  "edition": 149,
-  "updatedAt": "2026-08-31T01:45:00+10:00",
-  "shift": "foreman-126",
+  "edition": 150,
+  "updatedAt": "2026-08-31T02:55:00+10:00",
+  "shift": "foreman-127",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,38 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "members-question-281",
+      "title": "Does the studio have workspaces with people in them — and when?",
+      "productImpact": "The Invite block at the bottom of the left rail is a lone dashed + with the word Invite under it, and you were right that it reads as broken. Two of your five fixes shipped tonight. The other three all wait on this one answer, because the product has no idea what a member IS: no members table, no members screen, and nothing on the server that could return one. So “render real members” has nothing to render, and “make it live” has nowhere to go.",
+      "workedExample": "Sign in and look at the foot of the left rail: a dashed circle with a + in it. If we made it clickable tonight, clicking it would do nothing at all — there is no Members screen behind it. The prototype draws Members fourteen times; the product has a users table and that is the whole of it.",
+      "options": [
+        {
+          "key": "remove-until-built",
+          "label": "Remove the Invite block until membership exists",
+          "consequence": "The foot of the rail keeps the gear and nothing else. Honest, and you lose nothing you can actually use today — but the shape of the product stops being visible there, which is the thing you said you wanted fixed while it is cheap."
+        },
+        {
+          "key": "keep-and-label",
+          "label": "Keep it, plainly marked as not built yet (recommended)",
+          "consequence": "The dashed + and the word Invite stay, greyed, saying “not built yet” on hover and not clickable — exactly the treatment you ruled for Video, Try-on, UGC, Upscale and Voice in the prompt box. It stops reading as broken because it says what it is, and the place stays named for when membership arrives."
+        },
+        {
+          "key": "your-face-plus",
+          "label": "Show your own face beside the +",
+          "consequence": "Your account is a real user row, so drawing your avatar invents nothing. But a stack of one person is not really a member stack, and calling it one is the sort of thing your own instinct warned about — it would look finished while nothing behind it is."
+        },
+        {
+          "key": "build-membership",
+          "label": "Build membership properly",
+          "consequence": "A real feature: a members table, invitations, roles and permissions, and a Members & invites screen behind the account menu. That is a milestone of its own rather than a fix to this block, and it needs your word on when it belongs in the run order."
+        }
+      ],
+      "recommendation": "Keep it and mark it not built yet, now — then build membership properly when you want the feature. Marking it is what you already ruled for every other unbuilt thing on this rail (“a stub names a place, never a capability”), and it keeps the shape of the product visible while it is cheap, which is your own reason. Separately, you also asked for the + to get its hover back: it is held with “make it live”, because a hover on something that goes nowhere is an affordance for a dead control, and the stub pattern you ratified cancels hover everywhere else on this rail. If you want it anyway it is one line — just say so.",
+      "state": "open",
+      "issueNumber": 281,
+      "filedAt": "2026-08-31T02:55:00+10:00"
+    },
     {
       "id": "popover-collapse-304",
       "title": "The last piece of Saturday's approval — and the ground moved under it",
@@ -1793,6 +1825,20 @@
   ],
   "pipeline": [
     {
+      "id": "nextup-availability-298",
+      "title": "Your NEXT UP list now says WHY a card was skipped, instead of looking ignored (#298)",
+      "status": "merged",
+      "prNumber": 311,
+      "note": "You asked “did it skip things or what happened”. It had skipped five and every skip was right — the list just had no way to say so. Each row now carries its reason, and under the list it says how many are held."
+    },
+    {
+      "id": "invite-stack-281",
+      "title": "The little faces beside Invite are drawn from the CURRENT design pack, not the retired one (#281)",
+      "status": "merged",
+      "prNumber": 310,
+      "note": "Your two small corrections turned out to have one cause: the stack was copied from the old prototype. Both fixed. The other three fixes need one answer from you — the card on your desk."
+    },
+    {
       "id": "guard-counts-301",
       "title": "The feed that shows what the studio is working on stopped breaking on your account (#301)",
       "status": "merged",
@@ -2701,6 +2747,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T02:55:00+10:00",
+      "shift": "foreman-127",
+      "text": "YOUR QUEUE NOW TELLS YOU WHY IT SKIPPED SOMETHING — AND YOUR INVITE FACES CAME FROM THE WRONG PROTOTYPE.\n\nTwo things you asked for, both done tonight.\n\n1. “DID IT SKIP THINGS OR WHAT HAPPENED?”\n\nYou looked at your desk, saw eight items, saw a shift working on the sixth, and quite reasonably asked whether it had ignored the first five. It had not. It skipped five and every single skip was correct — the list simply had no way of telling you that. It could say one thing, “Waiting on you”, and those five were stuck for four different reasons.\n\nNow every row that is not takeable says so, in plain words, with the reason underneath. Go and look. #267 says Blocked — it waits on the Settings modal you have not briefed yet. #279 says Needs a sitting — it needs a real roll on your account to prove it, which is a whole night rather than a slot in a batch. #293 says Needs a sitting too, because half of it lives in scripts that are not in the repository at all. #302 says Blocked, on the Cast-deletion bug. #304 says Waiting on you. And under the list: “5 of 8 are held right now — a shift works down this list and takes the first row with nothing beside it.”\n\nNothing is reordered and nothing is hidden. That was your instruction and it was the right one: seeing that five of eight are stuck is exactly what would tell you to go and unblock one.\n\nThe part worth flagging is the bit that usually goes wrong. The REASON is a sentence somebody types, and sentences rot — your #278 card told you it was blocked for two whole shifts after it had been unblocked, for exactly that reason. So the state itself is not a sentence. It is a label on the card, one click to remove. And the sentence is only ever shown while that label is there. The moment somebody unblocks a card the label goes and the sentence goes with it, whatever it still says. A stale reason can no longer reach your page, because the label is the thing that draws it.\n\n2. THE INVITE FACES\n\nYou gave five fixes for the Invite block. Two were tiny — the faces overlap by the wrong amount, and they should be flat colours rather than a gradient. Both are done.\n\nWhat is worth telling you is that they had ONE cause, not two. I opened both design packs. The old Canvas prototype draws those faces 22 pixels wide, overlapping by 7, filled with a gradient. The current studio pack draws them 21 wide, overlapping by 6, each filled with that person’s own colour. The code had taken the SIZE from the current pack and the overlap and the fill from the old one. That is your own “you’re reading the stale prototype” complaint, showing up in the code rather than in a conversation. Both your numbers were right and they were the same mistake.\n\nI looked at it in the running app with two faces put into the stack, since there are no real members to draw. In light mode the gradient washed a 21-pixel circle out to nearly white. Flat reads as a person. You were right.\n\nTHE OTHER THREE ARE ON YOUR DESK, AND ONE OF THEM YOU MAY WANT TO OVERRULE.\n\n“Render real members” and “make it live” cannot be built, and not because they are hard. The product has no idea what a member is: no members table, no members screen, nothing on the server that could return one. Your sentence was “Members & invites already exists in the account menu, so the destination is real” — it does not exist. The prototype draws Members fourteen times, which is where that impression comes from. The card on your desk asks the real question: does the studio have workspaces with people in them, and when?\n\nThe third is the + getting its hover back, and I want to be straight that holding it is a judgement call rather than a blocker. You asked for it in the same breath as “make it live”, and it was the liveness that justified it — hover invites you to click. With Invite going nowhere, a hover is an affordance on a dead control, and the stub pattern you ratified for this rail cancels hover on everything else. If you want it anyway, say so: it is one line, and there is now a test that fails if anyone slips it in without the destination.\n\nTHE QUEUE, IN SHAPE\n\n90 open. 12 urgent. 7 that you ordered, of which 4 are held and now say why on your page. Nothing rotting — nothing has sat untouched for a week. It has not got worse.\n\nONE FINDING FILED, NOT WORKED\n\nWhile fixing the queue’s states I read every OTHER state on your page and asked which ones nothing ever re-checks. Two: the “problems” list, and the status chips at the top. Both are typed by a shift and never read back — the same shape as the thirty-three cards we found marked as waiting when the work was already finished. I wrote it down as a card rather than starting on it: what those should derive from is a real question per field, and one of them may have no mechanical answer at all."
+    },
+    {
       "at": "2026-08-31T01:45:00+10:00",
       "shift": "foreman-126",
       "text": "YOUR OPERATIONS FEED IS FIXED. YOUR CAST STILL WILL NOT DELETE — AND THE REASON IS NOT WHAT WE THOUGHT.\n\nYou said: \"i cannot delete this remaining legacy casting model for some reason\". Tonight I went and read what production actually did when you pressed it, rather than trusting the diagnosis we had written down. There are TWO faults, not one. We had blamed both on the same line. Only one of them was that line.\n\nFIXED TONIGHT — the first fault. Something in the studio counts how many pieces it removed when a Cast is deleted. One of those counters is called \"referencePlates\". We have a privacy rule that refuses to show anything whose name contains words like \"prompt\" or \"reference\", because those can carry your private recipe. The rule matched on the NAME alone — so a plain NUMBER, \"referencePlates: 0\", was refused as though it were a leaked secret. Twenty stored records on your account had that number in them, and every one of them broke the feed that shows what the studio is currently working on. Measured before: 20 of 20 failed. After: 20 of 20 pass. The rule now looks at the VALUE, not the name: a number cannot hold a secret, a sentence can, so a real prompt is still refused.\n\nNOT FIXED, AND HERE IS THE HONEST PART — the second fault, the one you actually asked about. Your Cast \"yejjjee\" refuses for a different reason entirely, and the guard fix does not touch it. Twenty-seven other Casts deleted cleanly that same morning. Yours has nine \"accepted candidate\" pictures attached to it, and the deletion checks each picture's filename against a pattern before it will let go of it. Those nine are filed under a folder called \"candidates\" and the check insists they be under \"plates\". They belong to you, they belong to that Cast, everything about them is correct — it is the FOLDER NAME the check disagrees with, and the studio itself is what put them there.\n\nWHY I DID NOT JUST FIX IT: because there are two different places in the studio that create these pictures, and they file them under two different folder names for the same kind of picture. So there is no single answer that is right for both, and this is the code that permanently deletes things. Picking wrong means deleting pictures that should have been kept, or keeping ones that should have gone. That is a judgement call on a destructive path, and the rule is that judgement calls wait for the Fable seat — which is still on your exhausted allowance. It is written up in full, with the measurements, as #308.\n\nWHAT THIS MEANS FOR THE LIBRARY PAGE: the plan said \"fix the guard, then you clear your old Casts, then we stub Library out\". Step one has moved — it is #308 now, not the guard. Library must NOT be stubbed before #308 lands, or your three legacy Casts are stranded with no door left to remove them.\n\nALSO TONIGHT — one word, everywhere. You said: \"Log out to Sign out — the Settings modal already says Sign out; pick one word.\" The product was saying both, on four screens. It says Sign out on all of them now. I opened both menus in the running app and looked. The other half of that card — Members & invites, Billing & credits — is still waiting on your Settings modal, because you ruled those three must not get their own pop-ups.\n\nTHE QUEUE: 90 open, 8 you have ordered, 13 urgent, nothing rotting. Two closed tonight, one new one opened (#308)."
@@ -2894,11 +2945,6 @@
       "at": "2026-08-30T00:55:00+10:00",
       "shift": "foreman-101",
       "text": "Took your two urgent cards as one brief, which is what #237 itself says they are. The tail was the satisfying one: you called it a framing fact and not an adjective, and the measurement agrees with you flatly — one frame in four today, four in four with the clause. The author law was cleaner than expected too; your own refused sheet was still sitting in the database with 'angular pauldrons, banded vambraces, a high sculpted collar' in it, so I used your failure as the control instead of inventing one, and four drafts under the new law named nothing. Where I have to be straight with you is the mouth. Your oni test does not separate the two blocks, because your own seed says 'prominent lower tusks' and a fact you state already overrides the block — so the old 'mouth closed' was being beaten by your words, not by the lane. I could have shown you three frames and called it proved. It is filed as #243 with the fixture that would actually settle it. One thing I deliberately did NOT do: ban garment, cut and jewellery words. Your law names four kinds of thing and only armour became a hard check, because a banned-word list over the world's clothing refuses good sentences — and I would rather tell you the check is narrower than the law than let a green tick imply otherwise. Your hero correction (#240) arrived while I was building and is the next shift's first job; I did not start it, because leaving half a rebuilt hero on your account overnight is the wrong trade. Your progress-ticks reference frame is carried up with this push."
-    },
-    {
-      "at": "2026-08-29T22:55:00+10:00",
-      "shift": "foreman-100",
-      "text": "Read your reply and #237 with it. You are right on both counts and neither is a small edit: the noun discipline has to move INSIDE the paragraph, and the tail clause is a framing fact that needs the house block to know it is casting a creature — which is the same lane split #232 needs for creature mouths. So they are one brief, not two, and the next shift takes them together with your sphinx as the fixture. I did not start it tonight rather than leave a half-changed prompt sitting on your account overnight with no second opinion available. Tonight's hero is merged, deployed and waiting for your eye on the card above it."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2954,32 +3000,43 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T15:40:41.059Z",
+    "readAt": "2026-08-30T16:51:24.317Z",
     "items": [
       {
         "issueNumber": 267,
         "title": "Account-menu labels: Members & invites, Billing & credits, Log out to Sign out — BLOCKED on the sectioned Settings modal",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "the sectioned Settings modal — your section 03 brief, and the trigger is yours"
+        }
       },
       {
         "issueNumber": 279,
         "title": "Fitted hardware is a FEATURE, not an accessory — the creature checklist is biology-only and the piece-ban swallows a bolted-in eye",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "sitting",
+          "because": "a paid roll on your account for the frames — its own pass condition, so it needs a sitting rather than a slot in a batch"
+        }
       },
       {
         "issueNumber": 293,
         "title": "Park the nights when nothing is workable, and remove the journal — the auto-park is what replaces it",
-        "urgent": true
-      },
-      {
-        "issueNumber": 298,
-        "title": "NEXT UP shows order but not availability — five skipped rows look like five ignored rows",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "sitting",
+          "because": "its main half is the runner scripts, which are not in the repository and so cannot travel in a PR"
+        }
       },
       {
         "issueNumber": 302,
         "title": "Stub Home and Library, blank Canvas — and Library must not be stubbed before he can delete his legacy Casts",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "#308 — Library is the only door left for deleting your three legacy Casts, and stubbing it first strands them"
+        }
       },
       {
         "issueNumber": 281,
