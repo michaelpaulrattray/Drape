@@ -139,6 +139,60 @@ sentence** (#65(1), his ruling: "honest sentence"). Gate: evidence pack
 (both themes) + copy audit before his eyes, per the UI milestone contract.
 Rollback: routes/flags off.
 
+⚠ **AMENDMENT 2026-08-30 — THE LOOKALIKE READER (#246) IS FIXED AT THIS RUNG,
+BY THE FOUNDER'S OWN WORD.** He ruled it twice in one sitting, on both of the
+#246 eye items, verbatim and identically: *"You are correct - add a note to N3
+in the plan so we can fix this at that milestone as it contains of the image
+analyzing and bounding box tech and design."* This is that note.
+
+**The finding**, measured over three sittings on three words (`tusks`, `hair`,
+`eyebrows`) and looked at in the frames rather than inferred: asked where a
+feature is on a picture that does not contain it, the region reader does not
+answer empty — it outlines the nearest lookalike, stably, and **at a pixel
+count that BEATS the real feature when the feature is genuinely there** (absent
+`eyebrows` 6,714 px against real brows at 3,878 and 6,084). It fails UPWARD,
+which is the direction that gets written down as a finding rather than
+distrusted as a null.
+
+**Where it lands**, derived at the code and re-derivable on demand
+(`docs/specs/ABSENT_IS_ANSWER_CALLSITE_CENSUS.md`,
+`scripts/_shift114-absent-callsites-disposable.mts`): **28 production call
+sites in 10 modules; 16 of them, in 5 modules, live on production.** Two belong
+to THIS rung and are the reason he placed the fix here:
+
+- **`faceScan.ts` — `CASTING_FACE_SCAN_SCOPE = all`, EVERY ACCOUNT, and the
+  floor is ZERO for every anatomical word.** `detectionFloorFor` returns 0 for
+  any question the born-worn catalogue does not name, and states its premise
+  outright: *"Anatomy — eyes, ears, hair — has no accessory court and needs
+  none … any pixels at all are the region answering."* That premise is exactly
+  what the three sittings disproved. The panel asks **12 questions** and
+  `hair`, `eyebrows` and `horns` are three of them — the first two are measured,
+  and the third is the floating rectangle he reported himself.
+- **`carriedGeometry.ts` — ungated, and no floor at all.** It is the repair for
+  that same floating-rectangle complaint, and a substitution reproduces the
+  defect with fresh geometry that looks trustworthy.
+
+**Why it is a panel problem and not only a reader problem.** The panel's boxes
+are tap targets: `faceScan` → box → `scannedFaceData` → `faceRows` →
+`<FaceRegions onAsk={askRefine}>`, the paid refine. `FaceRegions`' own docblock
+already states the promise the substitution breaks — *"a rectangle over the
+wrong pixels is a promise that clicking there edits that thing."* So the
+bounding-box work this rung owns cannot be designed as though the reader's
+answer were trustworthy about ABSENCE; the absent case is a first-class state
+of the panel, not an error path.
+
+⚠ **ONE PLACE IS NOT COVERED BY THIS RUNG AND MUST NOT BE FORGOTTEN BEHIND IT.**
+`refineService.ts:8611` is the DEPARTURE GATE — it decides the **refund** on a
+paid removal — and it reads the same reader with `departureFloorFor`, measured
+for glasses and earrings and **zero for everything else**. A substitution there
+means a render that correctly removed the thing is declared a failure: money
+conserved, the customer's correct picture discarded. It is a money-path fix on
+the refine road, not a panel fix, and this amendment records it here only so
+that closing N3 is never read as closing #246. Nine of the panel's twelve words
+are still unmeasured.
+
+**Not repaired now, by his word.** #246 stays open and carries the census.
+
 **N4 — Takes** *(scheduled by the founder's word on the same review: "takes
 actually has a solid use case that i designed with another agent" —
 `CASTING_TAKES_DESIGN.md`, #18)*: built per its design, dark behind its
