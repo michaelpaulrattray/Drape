@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * EVERY CLASS THIS STYLESHEET DECLARES IS EMITTED BY SOMETHING.
  *
  * #210, and the class rather than its instance. #198 found ONE broken rule
- * (`.dpc-signm__portrait > img`, a child combinator against a DOM with a
+ * (`.dpc-modal__portrait > img`, a child combinator against a DOM with a
  * wrapper in it) and its law-7 sweep turned up four rules whose class had no
  * emitter at all. Read mechanically over the whole sheet, the real population
  * was TWENTY-TWO classes and thirty-three rules — corpses of surfaces that were
@@ -29,7 +29,7 @@ import { describe, expect, it } from "vitest";
  *
  * WHY A GUARD AND NOT JUST THE DELETION. Dead CSS is cheap on its own — bytes
  * in one stylesheet. What it is not cheap on is READING: `.dpc-sign__portrait`
- * sat one character from the live `.dpc-signm__portrait` for months, so
+ * sat one character from the live `.dpc-modal__portrait` for months, so
  * anybody grepping for the sign portrait's rule found two and had no way to
  * tell which one painted. That is the cost, and it recurs on every rename.
  *
@@ -46,7 +46,17 @@ import { describe, expect, it } from "vitest";
  */
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
+/*
+  ⚠ TWO SHEETS SINCE #262. The promoted modal + menu block lives in
+  `foundation/modals.css` now, and casting's own components still render its
+  classes. Reading only `castingV2.css` would shrink this guard's population by
+  the whole promoted block — a dead class in there would be invisible to it
+  forever, which is the exact failure the floor arm below exists to catch.
+*/
 const SHEET = join(HERE, "castingV2.css");
+const PROMOTED_SHEET = join(HERE, "..", "..", "foundation", "modals.css");
+const readSheets = async () =>
+  (await readFile(PROMOTED_SHEET, "utf8")) + "\n" + (await readFile(SHEET, "utf8"));
 const CLIENT_SRC = fileURLToPath(new URL("../../", import.meta.url));
 const SERVER = fileURLToPath(new URL("../../../../server/", import.meta.url));
 const SHARED = fileURLToPath(new URL("../../../../shared/", import.meta.url));
@@ -281,7 +291,7 @@ async function walkRoot(root: string): Promise<Array<{ path: string; text: strin
    measured 2026-08-29 under a full `pnpm test`: this suite's slowest arm TIMED OUT; 248ms alone). */
 describe("castingV2.css declares no class the product never emits", { timeout: 60_000 }, () => {
   it("has no dead class outside the tolerated list", async () => {
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const sources = await collect(CLIENT_SRC);
     const tolerated = new Set(TOLERATED_DEAD.map((t) => t.className));
 
@@ -299,7 +309,7 @@ describe("castingV2.css declares no class the product never emits", { timeout: 6
   });
 
   it("tolerated entries are still dead — the list only shrinks", async () => {
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const sources = await collect(CLIENT_SRC);
     const dead = new Set(deadClasses(css, sources));
     for (const { className, why } of TOLERATED_DEAD) {
@@ -317,10 +327,10 @@ describe("castingV2.css declares no class the product never emits", { timeout: 6
       becomes empty, `[]` equals `[]`, and the suite reports PASS over a
       stylesheet nobody checked. 322 classes stood the day this landed.
     */
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const classes = declaredClasses(css);
     expect(classes.length).toBeGreaterThan(250);
-    expect(classes).toContain("dpc-signm__portrait");
+    expect(classes).toContain("dpc-modal__portrait");
 
     const sources = await collect(CLIENT_SRC);
     expect(sources.length).toBeGreaterThan(400);
@@ -342,7 +352,7 @@ describe("castingV2.css declares no class the product never emits", { timeout: 6
       the tokeniser and the regex disagreeing about a boundary, which is the
       likelier mistake and the one that would quietly resurrect a corpse.
     */
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const sources = await collect(CLIENT_SRC);
     const byIndex = new Set(deadClasses(css, sources));
     const byLocator = declaredClasses(css).filter((n) => emittersOf(n, sources).length === 0);

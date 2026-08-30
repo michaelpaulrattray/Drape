@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
-import { CastingModal } from "./CastingModal";
+import { CastingModal } from "@/foundation/CastingModal";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**
@@ -70,29 +70,29 @@ export function SignConfirm({
             The mono eyebrow, index and disposition. Every titled surface in the
             app opens with one; this modal was the exception.
           */}
-          <span className="dpc-signm__eyebrow">
+          <span className="dpc-modal__eyebrow">
             CANDIDATE {indexLabel}
             {disposition ? ` · ${disposition.toUpperCase()}` : ""}
           </span>
 
-          <h2 className="dpc-signm__title">Sign them to your roster</h2>
+          <h2 className="dpc-modal__title">Sign them to your roster</h2>
 
           {/*
             ONE line. The pricing and uniqueness sentences are deliberately not
             restored: the cost is stated below, and "can only be signed once" is
             implied by the roster itself.
           */}
-          <p className="dpc-signm__explainer">
+          <p className="dpc-modal__explainer">
             Locks this face and builds five canonical views. Nothing else on the
             sheet changes.
           </p>
 
-          <label className="dpc-signm__label" htmlFor="dpc-signm-name">
+          <label className="dpc-modal__label" htmlFor="dpc-modal-name">
             THEIR NAME
           </label>
-          <div className="dpc-signm__field">
+          <div className="dpc-modal__field">
             <input
-              id="dpc-signm-name"
+              id="dpc-modal-name"
               ref={inputRef}
               value={name}
               maxLength={CAST_NAME_MAX_LENGTH}
@@ -112,14 +112,14 @@ export function SignConfirm({
             number presented as exact that then differs is worse than one that
             never claimed to be.
           */}
-          <span className="dpc-signm__cost">
-            <span className="dpc-signm__tilde">~</span> {priceCredits} credits
+          <span className="dpc-modal__cost">
+            <span className="dpc-modal__tilde">~</span> {priceCredits} credits
           </span>
 
-          <div className="dpc-signm__actions">
+          <div className="dpc-modal__actions">
             <button
               type="button"
-              className="dpc-signm__secondary"
+              className="dpc-modal__secondary"
               disabled={busy}
               onClick={onCancel}
             >
@@ -127,7 +127,7 @@ export function SignConfirm({
             </button>
             <button
               type="button"
-              className="dpc-signm__primary"
+              className="dpc-modal__primary"
               disabled={busy || !name.trim()}
               onClick={() => onConfirm(name.trim())}
             >

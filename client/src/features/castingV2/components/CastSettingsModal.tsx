@@ -108,7 +108,7 @@ export function CastSettingsModal({
 
   return createPortal(
     <div
-      className="dpc-signm"
+      className="dpc-modal"
       role="dialog"
       aria-modal="true"
       aria-label="Cast settings"
@@ -119,7 +119,7 @@ export function CastSettingsModal({
       <div ref={cardRef} className="dpc-setm__card" onClick={(event) => event.stopPropagation()}>
         <div className="dpc-setm__head">
           <div>
-            <span className="dpc-signm__eyebrow">Settings</span>
+            <span className="dpc-modal__eyebrow">Settings</span>
             <h2 className="dpc-setm__title">How the next cast is made</h2>
           </div>
           <div className="dpc-setm__headactions">

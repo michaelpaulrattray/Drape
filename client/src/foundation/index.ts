@@ -18,6 +18,9 @@ import "@fontsource/jetbrains-mono/500.css";
 // relative to the marketing stylesheet is explicit rather than dependent on
 // which component happens to pull this barrel in first.
 import "./foundation.css";
+/* #262 — the promoted modal + menu block, lifted out of castingV2.css so a
+   promoted component is styled wherever it is mounted, not only on casting. */
+import "./modals.css";
 
 export { AppShell } from "./AppShell";
 export { BrandOrb } from "./BrandOrb";
@@ -26,6 +29,23 @@ export { ProjectSwitcherStub, WhatsNewStub } from "./ChromeStubs";
 /* Section 02 (brief 02 §1c) — the centred search, a span and never an input. */
 export { SearchStub } from "./ChromeStubs";
 export { BRAND_NAME } from "./brand";
+
+/*
+  #262 — THE FIVE PROMOTED FROM CASTING, on his ruling of 2026-08-30:
+  "Five of the six move — modal shell, destructive confirm, overflow menu,
+  rename dialog, delete-by-typing. Casting imports them back, no behaviour
+  change."
+
+  They are app concepts that happened to be built in casting first. Their
+  behaviour is casting's, unchanged — casting's copies had customers in front
+  of them and the foundation's did not, which is what settled every collision.
+*/
+export { CastingModal, firstNameOf } from "./CastingModal";
+export { CardMenu } from "./CardMenu";
+export type { CardMenuItem } from "./CardMenu";
+export { ConfirmDialog } from "./ConfirmDialog";
+export { DestructiveConfirm } from "./DestructiveConfirm";
+export { RenameDialog } from "./RenameDialog";
 /* #280 — the house icon set. A new glyph is ADDED TO `P`, never inlined at a call site. */
 export { Icon, P } from "./icons";
 export type { IconName } from "./icons";

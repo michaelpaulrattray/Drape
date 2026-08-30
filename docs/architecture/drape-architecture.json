@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bedceac3b02f76a6"
+    "sourceFingerprint": "8eaba768d811f87f"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 49
+      "moduleCount": 44
     },
     {
       "id": "domain:client-shared",
@@ -68,7 +68,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 17
+      "moduleCount": 23
     },
     {
       "id": "domain:home",
@@ -1551,20 +1551,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/castingV2/components/CardMenu.tsx",
-      "path": "client/src/features/castingV2/components/CardMenu.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
       "path": "client/src/features/castingV2/components/CastSettingsModal.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/CastingModal.tsx",
-      "path": "client/src/features/castingV2/components/CastingModal.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -1577,18 +1565,6 @@
     {
       "id": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
       "path": "client/src/features/castingV2/components/ConceptUploadCard.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
-      "path": "client/src/features/castingV2/components/ConfirmDialog.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
-      "path": "client/src/features/castingV2/components/DeleteCastConfirm.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -1631,12 +1607,6 @@
     {
       "id": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "path": "client/src/features/castingV2/components/RefinePanel.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
-      "path": "client/src/features/castingV2/components/RenameCastDialog.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -2427,8 +2397,32 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/foundation/CardMenu.tsx",
+      "path": "client/src/foundation/CardMenu.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/CastingModal.tsx",
+      "path": "client/src/foundation/CastingModal.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/foundation/ChromeStubs.tsx",
       "path": "client/src/foundation/ChromeStubs.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/ConfirmDialog.tsx",
+      "path": "client/src/foundation/ConfirmDialog.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/DestructiveConfirm.tsx",
+      "path": "client/src/foundation/DestructiveConfirm.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -2441,6 +2435,12 @@
     {
       "id": "module:client/src/foundation/Rail.tsx",
       "path": "client/src/foundation/Rail.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/RenameDialog.tsx",
+      "path": "client/src/foundation/RenameDialog.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -2483,6 +2483,12 @@
     {
       "id": "module:client/src/foundation/menuCount.ts",
       "path": "client/src/foundation/menuCount.ts",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/modals.css",
+      "path": "client/src/foundation/modals.css",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -10518,6 +10524,10 @@
       "path": "client/src/foundation/icons-guard.test.ts"
     },
     {
+      "id": "test:client/src/foundation/promotion-guard.test.ts",
+      "path": "client/src/foundation/promotion-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/rawErrorToast.test.ts",
       "path": "client/src/foundation/rawErrorToast.test.ts"
     },
@@ -15999,17 +16009,17 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
-      "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "to": "module:client/src/features/castingV2/conceptUpload.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "to": "module:client/src/features/castingV2/pictureBytes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
       "kind": "imports"
     },
     {
@@ -16035,11 +16045,6 @@
     {
       "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
-      "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
       "kind": "imports"
     },
     {
@@ -16153,13 +16158,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
-      "to": "module:shared/inputLimits.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
-      "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
       "kind": "imports"
     },
     {
@@ -18003,6 +18003,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/DestructiveConfirm.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/AppShell.tsx",
       "kind": "imports"
@@ -18019,7 +18024,27 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/CardMenu.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/ChromeStubs.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/ConfirmDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/DestructiveConfirm.tsx",
       "kind": "imports"
     },
     {
@@ -18040,6 +18065,11 @@
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/Rail.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/RenameDialog.tsx",
       "kind": "imports"
     },
     {
@@ -18080,6 +18110,16 @@
     {
       "from": "module:client/src/foundation/Rail.tsx",
       "to": "module:client/src/foundation/icons.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/RenameDialog.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/RenameDialog.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -18519,16 +18559,6 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:client/src/features/castingV2/components/CardMenu.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -18769,11 +18799,6 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/CardMenu.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
       "kind": "imports"
     },
@@ -18784,27 +18809,12 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/HeroDeck.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/PathToggle.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
       "kind": "imports"
     },
     {

@@ -2989,7 +2989,7 @@ export default function CastingSheet() {
                   then differs is worse than one that never claimed to be. It
                   qualifies the COST only — the balance beside it is exact.
                 */}
-                <span className="dpc-signm__tilde">~</span> {price} credits
+                <span className="dpc-modal__tilde">~</span> {price} credits
                 {typeof balance === "number" ? ` · ${balance.toLocaleString()} left` : ""}
               </span>
             ) : null}

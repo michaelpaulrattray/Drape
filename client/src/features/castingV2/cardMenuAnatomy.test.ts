@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 const FEATURE = new URL("./", import.meta.url);
 const COMPONENTS = new URL("./components/", import.meta.url);
 const CSS = new URL("./castingV2.css", import.meta.url);
-const MENU = new URL("./components/CardMenu.tsx", import.meta.url);
+const MENU = new URL("../../foundation/CardMenu.tsx", import.meta.url);
 const ROOM = new URL("../../pages/CastingRoom.tsx", import.meta.url);
 const LOBBY = new URL("../../pages/CastingV2.tsx", import.meta.url);
 

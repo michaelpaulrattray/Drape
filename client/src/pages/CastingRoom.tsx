@@ -12,8 +12,8 @@ import {
   CandidateViewer,
   type ViewerFrame,
 } from "@/features/castingV2/components/CandidateViewer";
-import { CardMenu } from "@/features/castingV2/components/CardMenu";
-import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
+import { CardMenu } from "@/foundation";
+import { DestructiveConfirm } from "@/foundation";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
@@ -766,7 +766,7 @@ export default function CastingRoom() {
         ) : null}
 
         {deleting && data ? (
-          <DeleteCastConfirm
+          <DestructiveConfirm
             name={data.name ?? "this cast"}
             imageUrl={data.anchorUrl}
             busy={deleteCast.isPending}
