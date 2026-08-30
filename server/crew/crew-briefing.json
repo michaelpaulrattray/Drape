@@ -1,7 +1,7 @@
 {
-  "edition": 144,
-  "updatedAt": "2026-08-30T20:20:00+10:00",
-  "shift": "foreman-121",
+  "edition": 145,
+  "updatedAt": "2026-08-30T21:35:00+10:00",
+  "shift": "foreman-122",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1702,6 +1702,13 @@
   ],
   "pipeline": [
     {
+      "id": "shift-heartbeat-295",
+      "title": "Your page stopped calling a working shift dead (#295)",
+      "status": "merged",
+      "prNumber": 297,
+      "note": "Shifts now check in after every meaningful act, so the strip at the top of this page follows a shift along instead of only showing where it began. The window before the page stops vouching for a shift went from one hour to three, measured over 83 real shifts. And the banner reports when the last check-in was rather than guessing that the shift died — because nothing tells that page whether the process is alive, so it genuinely cannot know."
+    },
+    {
       "id": "crew-page-four-blocks-290-292",
       "title": "Your three notes on this page, built as the one pass they asked for (#290, #291, #292)",
       "status": "merged",
@@ -2560,6 +2567,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T21:35:00+10:00",
+      "shift": "foreman-122",
+      "text": "YOUR PAGE STOPPED CALLING A WORKING SHIFT DEAD. You asked \"is the shift running?\" at 20:18 and the page told you it had probably died. It was working: it had merged a pull request at 19:46 and shipped edition 144 at 20:17, one minute before the page called it dead. That is fixed, and there were two separate things wrong.\n\nTHE CHECK-IN WAS NEVER SENT. A shift was always meant to stamp the page as it worked — a line saying what it just did. The machinery for that was built, and written up, and nothing ever called it. So every shift wrote one line when it started and then went silent until it finished, and the page had nothing to tell you apart from the clock. Shifts now check in after every real step: a branch cut, a pull request opened, a pull request merged, an edition written. It is the same sentence the strip shows you, so you get progress rather than just a start time.\n\nTHE HOUR WAS TOO SHORT, AND HERE IS THE NUMBER. That window was picked before any shift had ever been timed. Timed now, over the 83 shifts that have run and finished: the middle one takes 47 minutes, and 26 of the 83 — nearly a third — run longer than an hour. So the alarm was wrong about one time in three, which is exactly how an alarm stops being worth reading. The longest shift ever recorded was 138 minutes; the window is three hours now, which clears it with room and still shows you a genuinely dead shift the same night.\n\nAND THE PAGE STOPPED GUESSING. It used to say \"it has probably died\". Nothing actually tells that page whether a shift is alive or not, so that was a guess dressed up as a fact — and a shift deep in a long build looks identical to a dead one from there. It now reads \"No check-in since 15:48 (5 h ago), and it has not stamped itself finished\", and says plainly that it cannot tell which. You have the terminal; it does not.\n\nONE THING I LIKED. I set the window to two hours first. The check refused it — the longest shift on record is 138 minutes and two hours is 120, so that shift would still have been called dead. The guard caught me before you ever saw it, because it tests the window against a real measurement rather than against the number I typed.\n\nTHE PART THAT STOPS IT COMING BACK A FOURTH TIME. This is the third time on this one feature that something was built, written up, and then called by nothing. The instructions shifts work from live in a file that never gets committed, so no test we write can ever check that they still say the right thing. So the fix is not just an instruction: when a shift closes, it now checks whether it ever checked in, and says so loudly if it did not. Every shift goes through that step, so a shift that quietly stops doing this announces itself instead of waiting to be spotted on your screen.\n\nTHE QUEUE, one line: 87 cards open, 11 of them urgent, 8 of those ordered by you and all listed under NEXT UP — and none rotting; nothing has sat untouched for a week. Nothing is waiting on you tonight. Your background switch is still OFF, and nothing here was chosen by me: #295 was your card."
+    },
+    {
       "at": "2026-08-30T20:20:00+10:00",
       "shift": "foreman-121",
       "text": "YOU LOOKED AND PASSED IT — your words: \"yes it reads right\". That closes the three notes (#290, #291, #292); nothing is waiting on you from them.\n\nONE THING WORTH SEEING, because it is the whole point of the change. Edition 142 went out a few minutes before those three cards were closed, so for a short while your NEXT UP list was showing three cards you no longer had queued — the exact staleness you filed #291 and #292 about, on the feature built to stop it. Nobody edited a list to fix it. The block is generated from your ordered queue rather than typed, so re-running the one command took it from eleven rows to eight on its own, and this card went from answered to done off its own issue closing. That is the difference between the new blocks and the old ones: the old ones needed a person to remember."
@@ -2753,11 +2765,6 @@
       "at": "2026-08-29T19:05:00+10:00",
       "shift": "foreman-98",
       "text": "No reply from you yet on which lobby segment goes first, so nothing was built — that is the rule you set and it held. What I did instead was take the before photographs: Home, Canvas, Library and the rail, in both light and dark, driven in the running app rather than drawn. They are in your gallery above. Every segment has to ship with a before-and-after pack, and this is the before half for all six of them at once, so no later shift spends an hour re-photographing a page it is about to replace. Two things came out of doing it that are worth a line. The broken picture you will see on the Canvas shot is test rubbish, not a fault: that file was saved years ago without saying it was an image, so the browser refuses to paint it — I checked all 24 places the product saves pictures and every one of them says so properly. And my own instrument was wrong twice before it was right: it photographed the dark theme while claiming to photograph the light one, and it recorded that mismatch and passed anyway. It fails on it now. Your Claude usage limit is still out — fourteen refusals, about ten hours. No code review has been possible on our own changes for that whole time, which is why tonight was deliberately a night with no code in it."
-    },
-    {
-      "at": "2026-08-29T18:05:00+10:00",
-      "shift": "foreman-97",
-      "text": "Your lobby side lane has its first deliverable: the redesign broken into six segments, in the order I would land them, with one line each on what you would actually see change — the card above. Nothing is built and nothing will be until you name the first one. The honest part you should read before picking: I audited your design handoff against what the server can actually do, and the prompt box across the top of the home screen — Image, Video, Try-on, UGC, Upscale, Voice — is the one thing this lane cannot build. Five of the six are capabilities that do not exist anywhere in the product, and the sixth is the casting entrance, which is frozen in this lane on purpose so the lobby work cannot muddy the casting review waiting for your credits. Templates, the project switcher at the top, team members and rail notifications are out for the same reason and are named on the card's record. What is left is genuinely buildable today with no new capability: the landing page, the library, the canvas page, the Assets tab, honest pages behind the two dead rail items, and your own note L5 about the icons. My recommendation is Home first. The milestone has not moved: N1 is still the task, and the moment your Claude credits are back the team goes straight back to it."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2813,7 +2820,7 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T10:16:42.191Z",
+    "readAt": "2026-08-30T11:16:20.387Z",
     "items": [
       {
         "issueNumber": 267,
