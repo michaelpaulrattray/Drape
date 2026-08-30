@@ -1,6 +1,6 @@
 {
-  "edition": 126,
-  "updatedAt": "2026-08-30T12:35:00+10:00",
+  "edition": 127,
+  "updatedAt": "2026-08-30T12:55:00+10:00",
   "shift": "foreman-114",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -398,28 +398,12 @@
     },
     {
       "id": "fable-cap-review-arm-219",
-      "title": "Your Claude usage limit has now been out for over nine hours — 85% longer than the one time it healed itself (#219)",
-      "productImpact": "Nothing a customer can see is affected: the product, your credits and the casting studio are all untouched, and the other three gate checks are still running. What is down is the second pair of eyes. Every change the team makes is read by a different model before it lands, and the night shifts consult that same model before they build anything — both ask for Fable by name on your subscription, so both went down together on one cause. It has been erroring after about one second since 8:20 yesterday morning. I probed it again at the top of this shift and it refused again — the thirteenth refusal in a row. The span is now about 9 hours 20 minutes, against about five hours the last time this happened and healed itself. So the reassuring sentence — 'this is the same as last time, it came back on its own' — has run out of evidence behind it. That does not make it a different fault; it means the reading that was doing the reassuring is spent. Five of your rulings have now shipped with no second reader at any point (#225, #226, #227, and tonight's two changes). The cost so far is four consecutive nights where every change was read only by the person who wrote it, and the team has held anything touching money or the product the whole time.",
-      "workedExample": "Tonight is a worked example of what the missing second pair of eyes actually costs, and it is not theoretical. I fixed a bug that had been falsely refusing the team's only way to push work out (see below). Reading the code, the fix looked complete. So I built a harness that recreated the fault on purpose — and it showed the bug still there, in a second place I had not thought to look. Then a second harness, aimed at the new safety net I had just written, found that the safety net itself had a hole in it. Both were caught, and both were caught by me testing my own work rather than by a reviewer. That works, and it is slower and more fragile than a second reader. Three ways out, and my recommendation is the first: (1) top up or raise the Fable allowance at claude.ai/settings/usage — one action, and it brings back both the reviewer and the advisor; (2) point the reviewer at a different model until it recovers — real work, only worth it if (1) is refused; (3) tell us plainly that a change read only by its author is acceptable while this lasts — which is what four nights have been doing in practice without you ever having agreed to it.",
-      "options": [
-        {
-          "key": "wait",
-          "label": "Do nothing - it healed by itself last time, about five hours in",
-          "consequence": "Costs nothing and needs no hands, and there is real evidence for it: the same failure on the 26th cleared on its own once the usage window passed, and no token was ever touched. The catch is that this is now twice in four days, so waiting fixes tonight and not the pattern. Until it clears, every substantial change goes unreviewed - the team holds anything touching money or the product and ships only tooling and tests."
-        },
-        {
-          "key": "remint",
-          "label": "Move the reviewer onto the co-founder's account - your own standing answer",
-          "consequence": "This is what you already ruled for exactly this situation on the 25th: re-mint the token from the co-founder's account if your cap bites. It has now bitten twice. Two minutes in a regular terminal - run `claude setup-token`, paste it to me, and I set the repository secret. It takes fifteen reviews a day off your meter permanently, which is the half that is growing. It does NOT move the night shifts' advisor, which stays on yours."
-        },
-        {
-          "key": "credits",
-          "label": "Add usage credits to your account at claude.ai/settings/usage",
-          "consequence": "Fastest, and it restores the reviewer and the advisor together, but it is real money and it leaves both consumers pointed at the same meter - so the third occurrence is still coming."
-        }
-      ],
-      "recommendation": "remint",
-      "state": "open",
+      "title": "The Fable cap - you said do nothing, and that closes it",
+      "productImpact": "\"Do nothing - fable credits reset in 3 days.\" Understood, and it stops three shifts' worth of investigating something that fixes itself around the 2nd.\n\nWorth being straight about: we measured this three separate ways on three nights, each time correctly, and none of it was needed. It was a billing date. I have written on the card that nobody should measure it a fourth time.\n\nWhat it means meanwhile, so nobody misreads a red tick: the review check on our pull requests will be red or missing until the reset, and neither means anything was rejected - red means no review was produced at all. The rest of the gate is unaffected and still blocks bad merges, so nothing ships unchecked.\n\nYour second sentence is taken as standing instruction rather than background: side-lane tasks run on Opus until the credits come back. That does not name lobby segment one, so the lobby lane is still waiting on you for that - it is the only thing on your desk tonight that nobody can start without you.",
+      "workedExample": null,
+      "options": [],
+      "recommendation": null,
+      "state": "answered",
       "filedAt": "2026-08-29T09:40:00+10:00",
       "issueNumber": 219
     },
@@ -2250,6 +2234,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T12:55:00+10:00",
+      "shift": "foreman-114",
+      "text": "Last one, and then I am done for the night.\n\nThe Fable cap: understood, doing nothing, and I have written on the card that nobody should measure it again. Three of us investigated it on three nights and every reading was right and none of it was needed - it was a date. That is the kind of thing worth saying out loud so the next shift does not make it four.\n\nTonight in one line: your lookalike reader is ruled to N3 and the note is written with the measurements and the list of places it actually affects; your species sentence and its four checks are written down and deliberately not started; the reader court's verdict is void and Sonnet stays; the hero is done; the bug-report reader and the MAX author fixes are specified and waiting. Everything you said tonight is on its issue in your own words.\n\nThe one thing still sitting with you is lobby segment one. Nothing in that lane can start until you name it, and I have not touched it."
+    },
+    {
       "at": "2026-08-30T12:35:00+10:00",
       "shift": "foreman-114",
       "text": "You cleared your whole desk tonight - ten replies in about half an hour, across six cards. Every one of them is now written against its issue in your own words, so none of it lives only in a message. Nothing new was built after the first piece of work; the rest of the shift was making sure your answers landed somewhere they survive.\n\nOn the reader court: you were right and I was wrong, and the mistake is worth naming because it is a specific one rather than bad luck. The Grok arm was timing out at 45 seconds, and I let those cells count as refusals - so a slow reader got scored as a bad one, and my write-up said Grok refused the creature when Grok never answered at all. Sonnet stays, nothing swaps, and the re-run is a bench with completed pairs and a time beside each.\n\nThe rule you slipped into that reply is the part I would flag as bigger than the court it arrived in: props are not in this studio, a tail is anatomy so write it, a staff is a prop so omit it, and if you cannot tell what a thing is, write neither. That last clause is the opposite of what our region reader does - it never writes neither, it always draws something - which is the fault you ruled to N3 twenty minutes earlier. Two answers of yours pointing the same way in the same half hour.\n\nThe hero is marked done on your word. The spec toggle stays open on its own card so it does not vanish behind the green tick.\n\nNothing else was started tonight. The species-rule sentence, the bug-report reader, the MAX author fixes and the Grok bench are four separate shifts' work and they are all specified now, so the next shifts can pick them up without asking you anything."
@@ -2443,11 +2432,6 @@
       "at": "2026-08-29T01:30:00+10:00",
       "shift": "foreman-82",
       "text": "Second quiet maintenance night. You had not replied, no patrol was due, so I took the item last night's shift measured and filed rather than rushing.\n\nWHAT IT WAS. The studio keeps a map of every door it can refuse you at, and a rule that a new refusal cannot ship without appearing on it. Last night we found the upload reader's five refusals missing. Tonight it is the casting brief's own walls — all five of them, including the two that matter most to you: the wall that refuses a real person or a named character, and the wall that refuses something that is not a being. The likeness wall answers a real customer every time somebody types a famous name, and the map had never heard of it. Its twin — the same boundary drawn at the upload reader — went onto the map last night, so until tonight the map showed you exactly one half of one rule.\n\nThe reason is dull and worth one sentence: the map looks for refusals written in three particular shapes, and the casting brief writes its refusals in a fourth. Nothing was broken; it was unseen.\n\nTHREE THINGS FELL OUT OF DOING IT, and they are the part worth your attention.\n\nOne. The \"we can't cast anime or illustration yet\" sentence had been TYPED OUT TWICE, word for word, in two different places in the code, and nothing checked that the two copies still matched. Either one could have been reworded and the studio would have quietly started saying two different things to two sets of customers. One copy now, and a test holds its exact wording.\n\nTwo. The map has been telling us a door is \"unreachable by design\" for doors people walk into every day. What it actually means is narrower — that our automated test run cannot reach that door, which is a fact about our testing and not about your customers. It now says that instead. Small, but it is the map's whole job not to say things that are not true.\n\nThree, and this one is about YOUR product rather than our tooling: the map's note on the Retry button still said it was switched off for everyone with \"live population zero\", when you switched it on for your account on the 27th. So the map was carrying a false claim about what the studio does today. Corrected, and I swept the rest of that file for the same mistake — that was the only one.\n\nI ALSO BROKE THE MAP FOR TEN MINUTES AND IT IS THE BEST FINDING OF THE NIGHT. Writing the new code, I explained in a comment what shape the map searches for — and the map read my explanation as a real refusal and invented a door that does not exist. The tool was reading its own documentation as if it were the product. It now ignores comments the way its sibling reader already did, and I measured that the change removes exactly the phantom and no real door.\n\nONE THING I FOUND AND DELIBERATELY DID NOT CHANGE. Four of the five walls end with \"you have not been charged\". The fifth — the one for a brief too short to cast from — does not. It is defensible and probably fine, but it is your call and not mine, so it is recorded rather than quietly \"fixed\".\n\nCost: nothing. No credits, no renders, no reader calls, no flags moved. Not one customer-visible sentence moved a single character, and the two walls you care about are now pinned letter by letter so that claim is checkable rather than something I am asking you to take on trust."
-    },
-    {
-      "at": "2026-08-28T23:45:00+10:00",
-      "shift": "foreman-81",
-      "text": "Quiet maintenance night — you had not replied yet and no patrol was due, so I took the oldest open item on the queue that needed nobody's eye.\n\nWHAT IT WAS. The studio keeps a map of every door it can refuse you at — every \"I can't do that yet\", every wall, every apology — and a rule that a new refusal cannot ship without its map entry. The upload-a-concept reader you have been testing all week has five of those refusals, and the map could see one. Three were simply absent. The fourth was worse than absent: it shares a name with an older door, so the map had one entry carrying two different features' evidence, and anyone checking it would have been sent to the right line of code under the wrong feature's name. Nothing a customer would ever notice. But the map exists so we can check ourselves, and it was wrong about the newest thing in the studio.\n\nTHE FIX, in one sentence: a refusal that has a sentence you can read is a door, so the five sentences now live in one table and the map reads that table. Moving them word for word also closed something the code itself had flagged and left — the \"there's nobody in that picture\" sentence is deliberately worded the same as the casting brief's own wall about the same boundary, and until tonight that matching was a note in a comment that nothing enforced. Either one could have been reworded and the studio would have told you two different stories about one rule. A test holds them together now.\n\nWHAT I FOUND AND DID NOT FIX. The same blind spot is bigger than the one feature. The casting brief's own four walls — including the two you care most about, the real-person likeness wall and the not-a-being wall — are invisible to the map for exactly the same reason, as is the wardrobe line's door. I did NOT widen the map to sweep everything up: I measured what that would catch and it is about eighty internal decision notes that no customer ever sees, each of which would then have demanded its own map entry. So it is filed with the measurement behind it rather than half-done tonight.\n\nCost: nothing. No credits, no renders, no reader calls, no flags moved, nothing about the studio behaves differently tomorrow than it did tonight."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2490,6 +2474,7 @@
     37,
     38,
     39,
-    40
+    40,
+    41
   ]
 }
