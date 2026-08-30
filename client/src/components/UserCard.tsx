@@ -1,7 +1,7 @@
 /**
  * UserCard — avatar/name/credits header plus the account actions:
  * Settings, Billing, Share Drape, and (for privileged roles) the Admin
- * and Moderation tools, then Log out.
+ * and Moderation tools, then Sign out.
  *
  * Rendered inside the lobby rail's profile popover (its only live consumer —
  * the studio slim header grew its own inline menu). Colors are tokens, never
@@ -127,7 +127,7 @@ export function UserCard({
       )}
 
       <div className="dp-menu__rule" />
-      <UserMenuItem icon={LogOut} label="Log out" onClick={onLogout} accent />
+      <UserMenuItem icon={LogOut} label="Sign out" onClick={onLogout} accent />
     </div>
   );
 }

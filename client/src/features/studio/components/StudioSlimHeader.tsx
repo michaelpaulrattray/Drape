@@ -160,7 +160,7 @@ export function StudioSlimHeader({
                 <button type="button" className={menuItem} onClick={() => { setMenuOpen(false); onOpenBilling(); }}>Billing</button>
                 <button type="button" className={menuItem} onClick={() => { setMenuOpen(false); onOpenReferral(); }}>Referral</button>
                 <div className="my-1 border-t-hairline border-canvas-border" />
-                <button type="button" className={menuItem} onClick={() => { setMenuOpen(false); onLogout(); }}>Log out</button>
+                <button type="button" className={menuItem} onClick={() => { setMenuOpen(false); onLogout(); }}>Sign out</button>
               </div>
             </div>
           )}
