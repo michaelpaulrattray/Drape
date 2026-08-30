@@ -107,6 +107,55 @@ describe("R7-1C operation contract", () => {
     }
   });
 
+  /**
+   * #301 — the guard fires on the VALUE, not on the key name alone.
+   *
+   * The founder could not delete a Cast: `FinalCastDeletionCounts.referencePlates`
+   * is a COUNT, the name contains `reference`, and the deletion's own receipt was
+   * rejected as a leaked secret. The same field in a stored result made every read
+   * of `generation.activeOperations` throw.
+   *
+   * The NEGATIVE arm below is the bug. The POSITIVE arms beside it are the point:
+   * a narrowed guard that no longer bites is worse than the bug it fixed, so each
+   * forbidden name is re-asserted carrying a STRING, and the string forms must
+   * still be refused for the arm to mean anything.
+   */
+  it("lets a forbidden-sounding COUNT through and still refuses the same name carrying content", () => {
+    // The founder's real payload shape: a Cast deletion's receipt.
+    expect(() =>
+      assertPublicOperationResult({
+        modelId: 7,
+        counts: { referencePlates: 3, evidenceCrops: 0, assets: 12 },
+      }),
+    ).not.toThrow();
+
+    // Every value form that cannot carry a prompt, a mask or a credential.
+    for (const value of [
+      { referencePlates: 0 },
+      { promptCount: 4 },
+      { maskApplied: true },
+      { secretRotated: false },
+      { tokenExpiresAt: null },
+      { authorizationRequired: false },
+      { cookieCount: 2 },
+      { base64Bytes: 1024 },
+    ]) {
+      expect(() => assertPublicOperationResult(value)).not.toThrow();
+    }
+
+    // POSITIVE CONTROL — the same names carrying content are still refused.
+    for (const value of [
+      { referencePrompt: "the whole master prompt" },
+      { referencePlates: ["data:image/png;base64,..."] },
+      { maskData: "raw" },
+      { authorizationHeader: "Bearer live-token" },
+      { cookieCount: { value: "app_session_id=…" } },
+      { nested: { deep: { secretMaterial: "k" } } },
+    ]) {
+      expect(() => assertPublicOperationResult(value)).toThrow("forbidden field");
+    }
+  });
+
   it("enforces non-negative conserved credit totals", () => {
     expect(() => assertCreditConservation(900, 300)).not.toThrow();
     expect(() => assertCreditConservation(300, 301)).toThrow("invalid");
