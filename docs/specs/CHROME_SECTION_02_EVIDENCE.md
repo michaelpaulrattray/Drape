@@ -203,3 +203,49 @@ walks the whole client tree for the first and `token-guard` refuses every hex
 outside two carved-out files for the second. A second copy would be working law
 4 pointed at the suite; writing the literal a second time is also what made
 `token-guard` red on this file's first run.
+
+
+---
+
+## 7. Side by side with the prototype — every difference is a ruling
+
+`docs/specs/Casting-ui-ux-design/design_handoff_studio/Klieg Studio.dc.html`
+opened at 1440 and photographed: `10-prototype-topbar.png`,
+`11-prototype-full.png`, `12-prototype-railfoot.png`.
+
+**The topbar matches the prototype's structure element for element** — the
+project chip, the divider, the breadcrumb, the centred search with its two key
+chips, then credits, divider, three icons, theme, account chip with chevron.
+Four differences, and each is a decision rather than a gap:
+
+| prototype | shipped | why |
+|---|---|---|
+| `Acme Skincare` + a brand swatch | `All projects` + a folder glyph, inert | projects do not exist; *"All projects"* is TRUE today, which is what makes the stub honest (00b §4) |
+| queue pill, `2 running · 40s` | nothing, space left | no jobs feed; his own words — *"a number in a screenshot that no server produces is a lie that survives into the build"* |
+| credits `1,240`, conic dot, Archivo 11.5px | the existing chip, mono | his instruction is *"exists, keep it"*; the chip's own docblock says mono because a balance is a machine fact |
+| account chip `MR` | the real avatar + chevron | same shape, real data |
+
+**The rail's foot is where the prototype and his ruling part company, and the
+frames show it plainly.** `12-prototype-railfoot.png` draws two member avatars,
+the dashed `+`, the word Invite, a divider — **and then the `MR` avatar again**,
+which opens Settings. That is exactly the thing he refused: *"Same face in both
+corners doing two different things is ambiguous. The face is you, the gear is
+settings."* Shipped (`03-railfoot-light.png`): the dashed `+`, Invite, a
+divider, a **gear** — and no member avatars, because there is no members API and
+two drawn faces would be two invented people.
+
+**Copy audit.** Every user-visible string this section adds, classified:
+
+| string | class |
+|---|---|
+| `Search frames, faces, prompts…` | **prototype-verified** — byte-identical to the prototype's own label |
+| `⌘` / `K` | **prototype-verified** |
+| `Cinema` | **prototype-verified** — the prototype's own rail label |
+| `Invite` | **prototype-verified** |
+| `Search — not built yet` | **adapted** — the `— not built yet` tooltip is `Rail.tsx`'s established stub form (00b §3), applied to a new stub |
+| `Invite — not built yet` | **adapted**, same form |
+| `Report a bug` / `Help` (button tooltips) | **adapted** — the prototype's `barIcons` say *"Report a bug"* and *"Help & docs"*; the second is shortened because this menu holds no docs yet |
+| `Settings` (the gear's tooltip) | **invented** — the prototype's foot avatar has `title="Settings · Klieg Studio"`, and the workspace name is not a thing this product has |
+
+No string in this section makes a claim about a capability. The four inert
+elements each say what they are on hover.
