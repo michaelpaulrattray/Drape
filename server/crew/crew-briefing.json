@@ -1,7 +1,7 @@
 {
-  "edition": 153,
-  "updatedAt": "2026-08-31T06:06:39+10:00",
-  "shift": "foreman-131",
+  "edition": 154,
+  "updatedAt": "2026-08-31T06:38:19+10:00",
+  "shift": "foreman-132",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -2896,6 +2896,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T06:38:19+10:00",
+      "shift": "foreman-132",
+      "text": "NOTHING WAS BUILT TONIGHT, AND THAT IS THE RIGHT ANSWER — but two things on this page were wrong, and both are fixed.\n\nEvery one of the six things you have ordered is waiting on you, and your background-work switches are all off. So I built nothing and I am not going to pretend otherwise. What I did instead was re-read the ten urgent cards against the actual code, because a list you use to decide what matters is only as honest as its labels — and that check has now caught something twice.\n\nONE CARD WAS ALREADY FINISHED AND STILL SITTING NEAR THE TOP OF THAT LIST. It said the whole live-view system — your switches, the counts under them, and the \"what is running right now\" row — had shipped with nothing actually calling it. That was true the day it was written, and it has since been fixed: all four are now written into the shift instructions, and this shift ran three of them before it touched anything else. The row you can see on this page is number 15. It is closed, with the evidence on the card.\n\nAND I OWE YOU A CORRECTION ON LAST NIGHT'S NUMBER. The entry below this one tells you that 16 of the 127 shifts on record did nothing. It is 19. The first count only read the top of each report and missed four. Nothing about the conclusion changes — the eight-in-a-row stretch on the 28th is exactly as described — but the run on the 27th was four and then six, not three and then four. The mistake made the waste look smaller than it actually was, and the fix was already written down on the card; it just had not reached this page.\n\nTHE QUEUE: 92 open, 10 urgent, 6 waiting on you, none rotting."
+    },
+    {
       "at": "2026-08-31T06:06:39+10:00",
       "shift": "foreman-131",
       "text": "THE NIGHTS NOW STOP BY THEMSELVES WHEN THERE IS NOTHING TO DO — YOUR ORDER, BUILT.\n\nYou said it plainly: \"nights should auto park when decisions are waiting on me and the background work toggle is turned off\". Until tonight they did not. A shift woke up every half hour or so, read every card, found that all of them were waiting on you, wrote \"nothing needed doing\", and shut down — then did it again. That is money spent to conclude nothing.\n\nI MEASURED IT BEFORE BUILDING ANYTHING, because \"it happens a lot\" is not a number. Of the 127 shifts on record, 16 wrote that sentence. They are not scattered — on the 28th, EIGHT of them ran back to back between 2:58am and 6:39am, one every thirty-one minutes. Three more ran inside twenty-two minutes on the 27th, and four more that same afternoon. Had this existed, that one night would have stopped after the third and saved five sessions.\n\nWHAT HAPPENS NOW. Three quiet shifts in a row, with your background switches off, and the team parks: it stops launching entirely. It starts again by itself the moment anything real happens — you reply, a card moves, a pull request appears, a build runs. You do not have to do anything, and the file it leaves says so in plain English. If nothing at all happens it still wakes once a day to look, so a mistake in this costs a day and never the whole program. Running cost while nothing is happening goes from roughly one session every half hour to about one a day.\n\nTHE PART I WAS MOST CAREFUL WITH IS YOUR OWN STOP. When you type \"pause the nights\", that must never be undone by a machine. So a park the team writes for itself is stamped differently from one you write, and only the team's own kind can clear itself. I tested that directly against seven cases — your words, a cap, a failure, an empty file, a near-miss — and all seven landed the right way round.\n\nWHERE I DEPARTED FROM THE CARD, AND I WANT TO BE STRAIGHT ABOUT IT. The card turned your sentence into three conditions, and two of them are written in English that no script can read — \"no card you have ordered is open\" and \"no current focus\". Read literally the first one could never have fired: six cards you ordered are open tonight and every single one is waiting on you, which is exactly the situation you described. So instead of guessing at labels, the test is that three shifts in a row LOOKED — each opened every card, read your replies, and concluded there was nothing. That is better evidence than any label, and it is measured rather than assumed.\n\nWHAT IS LEFT OF THAT ORDER, AND IT NEEDS A WORD FROM YOU. You also said to remove the journal, on the reasoning that its one real job is a place to type \"pause the nights\" — and that is now automatic. I have not removed it, because the journal is also the only place a reply of yours can appear if it is not attached to a card. Take it away without answering that and one of your replies could land nowhere at all, which has happened here before. It is on your desk below with three options.\n\nTHE QUEUE: 92 open, 6 you have ordered (all 6 waiting on you tonight), 11 urgent, nothing rotting. One new card, none closed."
@@ -3089,11 +3094,6 @@
       "at": "2026-08-30T02:35:00+10:00",
       "shift": "foreman-102",
       "text": "Your reply landed while I was building, so this edition is only to mark it seen and to say what it settled. You separated the two oni rows with your eye on a thing the measurement genuinely cannot express — WHERE the tusks sit, not how many pixels of them there are — after the shift that ran it had refused to claim it. That is the law working the right way round rather than an argument won: the reader said nothing, the shift reported nothing, and your eye said the thing. #232 and #237 are both closed on your word. #243 stays open and I have re-pointed it on the card: it is no longer the proof, it is the widening — the fixture whose seed does NOT name the anatomy, which is exactly where the lane should matter most.\n\nTonight's own work is edition 108's top card: the casting hero is a showcase now."
-    },
-    {
-      "at": "2026-08-30T02:05:00+10:00",
-      "shift": "foreman-102",
-      "text": "Took your hero correction as the first job, which is what the last shift handed over. The satisfying part was that your reason was better than the bug: the deck reading the roster wasn't just wrong for a fresh customer, it made the section unjudgeable by YOU — you were the only person seeing your own casts in it. Now you see what a stranger sees. I deleted the roster road rather than switching it off, and took the cast id off the type entirely, because a field that is always null is an invitation to wire the navigation back up.\n\nThree things I want to be straight about. First, my own change had a real bug and the drive caught it: the 44px bottom you asked for sat above the narrow-window rule in the stylesheet, so the page measured your number at 1920 and the old one at 700 — right at every width anybody screenshots and wrong at the one they don't. Second, the driver found three defects in ITSELF before it found none in the product, including one arm that read a card mid-swing and reported it the wrong shape; a driver that goes green first time usually isn't looking. Third, two OLD tests turned out to be asserting nothing — one of them sliced the page file backwards the moment the hero gained a line, and two of its three checks were 'must not contain', which pass happily on an empty string. Both fixed here.\n\nYour reference frame for the ticks arrived as a commit with no card, and the last shift flagged it as 'ask before building'. It didn't need asking in the end — you'd already written the amendment onto #240 yourself, so I built to your words and your picture together. The lobby lane is still waiting on you to name segment 1."
     }
   ],
   "acknowledgedReplyIds": [
@@ -3149,7 +3149,7 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T18:53:28.205Z",
+    "readAt": "2026-08-30T20:37:18.937Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3165,8 +3165,8 @@
         "title": "Park the nights when nothing is workable, and remove the journal — the auto-park is what replaces it",
         "urgent": true,
         "held": {
-          "state": "sitting",
-          "because": "its main half is the runner scripts, which are not in the repository and so cannot travel in a PR"
+          "state": "blocked",
+          "because": "the auto-park half is built and live; what is left is removing the journal, which takes away the only place an unattached reply of yours can appear"
         }
       },
       {
