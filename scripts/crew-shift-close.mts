@@ -28,8 +28,34 @@
  * The stalled verdict is derived at read time from `heartbeatAt`
  * (`shared/crewShiftState.ts`), precisely because the case this script cannot
  * cover is the one that matters most. Nothing here needs to detect it.
+ *
+ * # ⚠ WHAT IT *DOES* DETECT: A SHIFT THAT NEVER CHECKED IN (issue #295)
+ *
+ * The heartbeat — `crew-shift-start.mts --note` — is deliberately manual, and
+ * a manual control's whole risk is that nobody calls it. That is exactly what
+ * happened: the mechanism was designed, documented in its own docblock, and had
+ * **no caller anywhere** for as long as it existed, so `heartbeatAt` was
+ * written once at open and never again — and his page called a working shift
+ * dead while it was mid-merge.
+ *
+ * The standing orders now name the step, but `.agents/` is gitignored, so no
+ * test in this repository can ever see whether that instruction is still there.
+ * **This is therefore the only place the omission can be CAUGHT rather than
+ * promised** — every shift passes through here, whatever else it does.
+ *
+ * So the close still succeeds and the row is still stamped; the script then
+ * says the run never checked in and **exits 2**. Exit 2 is the finding, not a
+ * failure — `crew-desk-sweep.mts` set that convention for the same reason, and
+ * the message says so in as many words. Invariant 7 with the sign flipped: the
+ * control sits on the path everything takes, so it cannot quietly stop
+ * existing.
  */
-import { CREW_SHIFT_OUTCOMES, type CrewShiftOutcome } from "../shared/crewShiftState.js";
+import {
+  CREW_SHIFT_OUTCOMES,
+  CREW_SHIFT_STALL_MS,
+  type CrewShiftOutcome,
+  hasEverCheckedIn,
+} from "../shared/crewShiftState.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 
 const TABLE = "crew_shift_runs";
@@ -106,10 +132,14 @@ try {
     success without naming what it closed is how a shift stamps somebody else's
     run and neither of them finds out.
   */
+  /* ⚠ `heartbeatAt` is selected HERE and nowhere later: the UPDATE below sets
+     it to now, which erases the one piece of evidence that the shift never
+     checked in (`hasEverCheckedIn`'s docblock). Read after the write, every
+     run in the table looks disciplined. */
   const [candidates] = await conn.query<any[]>(
     explicitId !== null
-      ? `SELECT id, shift, seat, intent, startedAt, endedAt FROM \`${TABLE}\` WHERE id = ?`
-      : `SELECT id, shift, seat, intent, startedAt, endedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC LIMIT 1`,
+      ? `SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE id = ?`
+      : `SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC LIMIT 1`,
     explicitId !== null ? [Number(explicitId)] : [],
   );
   if (candidates.length !== 1) {
@@ -124,6 +154,9 @@ try {
     refuse(`run #${target.id} is already closed (${iso(target.endedAt)}). Closing it twice would rewrite the record.`);
   }
   console.log(`closing #${target.id}: ${target.shift} (${target.seat}) — ${target.intent}`);
+  /* Snapshotted BEFORE the write, for the finding printed after it. */
+  const checkedIn = hasEverCheckedIn({ startedAt: target.startedAt, heartbeatAt: target.heartbeatAt });
+  const ranForMs = Date.now() - new Date(target.startedAt).getTime();
 
   const [result] = await conn.query<any>(
     `UPDATE \`${TABLE}\`
@@ -153,6 +186,37 @@ try {
     + `\n  ${iso(row.startedAt)} → ${iso(row.endedAt)}`,
   );
   console.log("\nHis page now reads `Nothing running` unless another seat is open.");
+
+  /*
+    THE FINDING (#295). Reported only once the row is safely terminal — a
+    check that can cost a shift its close is a check that gets skipped, and
+    the record of what happened matters more than the discipline note.
+
+    The bar is HALF the stall window and it DERIVES from that same constant
+    rather than inventing a second number: a run past the FULL window with no
+    check-in has already shown him the banner, so half is the early warning
+    that arrives before it bites. A genuinely short shift — a quiet night, a
+    one-line fix — has no meaningful step to stamp and is not a finding.
+  */
+  if (!checkedIn && ranForMs > CREW_SHIFT_STALL_MS / 2) {
+    const minutes = Math.round(ranForMs / 60_000);
+    console.error(
+      `\n⚠ FINDING — run #${row.id} ran ${minutes} min and NEVER CHECKED IN.`
+      + "\n  `heartbeatAt` still equals `startedAt`, so the heartbeat step in the standing"
+      + "\n  orders was skipped for the whole shift. Past the window that reads as"
+      + "\n  `no check-in` on his page, over a shift that was working — which is"
+      + "\n  issue #295, recurring."
+      + "\n"
+      + "\n  The step, after every meaningful act (branch cut, PR opened, PR merged,"
+      + "\n  edition written):"
+      + "\n    railway.cmd run --service MySQL -- npx tsx scripts/crew-shift-start.mts \\"
+      + "\n      --note '<what just happened>' [--branch <name>]"
+      + "\n"
+      + "\n  The row IS closed and correct. Exit 2 is this finding, not a failure.",
+    );
+    await conn.end();
+    process.exit(2);
+  }
 } catch (cause) {
   console.error(`FAILED: ${(cause as Error).message}`);
   await conn.end();
