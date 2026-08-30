@@ -30,6 +30,8 @@ import { readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
 import { insertCrewReply, listCrewReplies } from "../db/crewReplies";
 import { listCrewShiftRuns } from "../db/crewShiftRuns";
+import { readCrewWorkState, setCrewWorkSwitch } from "../db/crewWorkSwitches";
+import { CREW_WORK_SWITCH_KEYS } from "../../shared/crewWorkSwitches";
 
 /** The dark answer, written once so both procedures give the same one. */
 function refuseOutsideScope(): never {
@@ -57,6 +59,25 @@ const replyInput = z.object({
      spirit; PR #72 re-review). */
   cardId: z.string().min(1).max(64).nullable(),
   body: z.string().trim().min(1).max(4000),
+}).strict();
+
+/**
+ * A switch flip's wire shape.
+ *
+ * `.strict()` (invariant 4), and note what is ABSENT: there is no
+ * `changedByUserId`. Invariant 3 by construction — a forged author is refused
+ * by the parser before any handler runs, and the only id that can reach the
+ * write is the session's.
+ *
+ * `switchKey` is an ENUM over the shared vocabulary rather than a bounded
+ * string, because unlike `crew_replies`' `cardId` there is no rotation to
+ * tolerate here: the keys are a closed set the code owns, and a key nobody
+ * reads would be a switch he can flip that changes nothing — a dead control
+ * wearing a working one's clothes.
+ */
+const workSwitchInput = z.object({
+  switchKey: z.enum(CREW_WORK_SWITCH_KEYS),
+  enabled: z.boolean(),
 }).strict();
 
 export const crewRouter = router({
@@ -87,8 +108,10 @@ export const crewRouter = router({
     /* Degrades to `available: false` on an absent table (the window between
        this deploy and the founder's ceremony) and throws on anything else. */
     const shiftRuns = await listCrewShiftRuns();
+    /* Same degradation, same reason (#277). */
+    const workState = await readCrewWorkState();
 
-    return { briefing, replies, shiftRuns };
+    return { briefing, replies, shiftRuns, workState };
   }),
 
   /**
@@ -109,6 +132,34 @@ export const crewRouter = router({
         body: input.body,
         /* From the session, never from input (invariant 3). */
         authorUserId: ctx.user.id,
+      });
+    }),
+
+  /**
+   * Flip one background-work switch. HIS control, and the only road to it.
+   *
+   * Founder-ordered (#277): with no focus and no named side lane, a shift stops
+   * unless he has turned this on. It INVERTS today's default — maintenance mode
+   * is currently what a shift falls into on its own judgement — and it guards a
+   * failure he named himself, *"we need to ensure if they are waiting a long
+   * time for me they dont completly over engineer security or anything because
+   * they are bored."*
+   *
+   * ⚠ There is deliberately NO procedure that writes `crew_queue_counts`. Those
+   * are the SHIFTS' rows, written by `scripts/crew-count-queue.mts` the way
+   * #272's run rows are; a mutation here would break the split by who writes
+   * (migration 0054's law, migration 0056's header).
+   */
+  setWorkSwitch: adminProcedure
+    .input(workSwitchInput)
+    .mutation(async ({ ctx, input }) => {
+      if (!captureCrewTabEnabled(ctx.user.id)) refuseOutsideScope();
+
+      return setCrewWorkSwitch({
+        switchKey: input.switchKey,
+        enabled: input.enabled,
+        /* From the session, never from input (invariant 3). */
+        changedByUserId: ctx.user.id,
       });
     }),
 });

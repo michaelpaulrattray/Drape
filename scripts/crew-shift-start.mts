@@ -55,6 +55,11 @@ import {
   type CrewShiftSeat,
   type CrewShiftWorkKind,
 } from "../shared/crewShiftState.js";
+import {
+  CREW_WORK_CATEGORIES,
+  CREW_WORK_MASTER_KEY,
+  backgroundWorkAllowed,
+} from "../shared/crewWorkSwitches.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 
 const TABLE = "crew_shift_runs";
@@ -176,6 +181,62 @@ try {
     }
     if (!CREW_SHIFT_WORK_KINDS.includes(kind as CrewShiftWorkKind)) {
       refuse(`--kind "${kind}" is not one of: ${CREW_SHIFT_WORK_KINDS.join(", ")}`);
+    }
+
+    /*
+      ⚠ THE BACKGROUND-WORK GATE (#277) — the arm that makes his switch a
+      CONTROL rather than a documented rule.
+
+      His order inverts today's default: background work is OPT-IN and the
+      switch is his. A rule that lives only in `PROGRAM.md` is precisely the
+      "written, documented, never invoked" class `CLAUDE.md` catalogues at
+      length — so opening a `background` run is REFUSED here unless he has
+      turned the master and at least one category on.
+
+      Read at the same database this row is about to be written to, so a shift
+      cannot be gated by one world's switches while filing into another.
+
+      ⚠ **AN ABSENT SWITCH TABLE REFUSES**, which is the opposite of the
+      READER's behaviour and deliberately so: the reader reports a state and
+      "off" is the honest one, while this decides whether to SPEND A NIGHT. His
+      bar is that an unreadable value reads OFF, and off means this refuses.
+    */
+    if (kind === "background") {
+      const [switchTable] = await conn.query<any[]>("SHOW TABLES LIKE 'crew_work_switches'");
+      const switches: Record<string, boolean> = {};
+      if (switchTable.length === 1) {
+        const [rows] = await conn.query<any[]>("SELECT switchKey, enabled FROM `crew_work_switches`");
+        for (const row of rows) switches[String(row.switchKey)] = Boolean(row.enabled);
+      }
+      const open = CREW_WORK_CATEGORIES.filter((category) => backgroundWorkAllowed(switches, category.key));
+      if (open.length === 0) {
+        /*
+          ⚠ THE REFUSAL NAMES ITS OWN REASON, and the three cases are genuinely
+          different. The first version of this message always said "no category
+          is on" — which was FALSE whenever the master was off and a category
+          was on, and that is the commonest way he will leave it (one tap on the
+          master stops everything without clearing five switches). A refusal
+          that misstates why it refused sends the next shift to the wrong
+          switch. Caught by driving it, not by reading it.
+        */
+        const masterOn = switches[CREW_WORK_MASTER_KEY] ?? false;
+        const categoriesOn = CREW_WORK_CATEGORIES.filter((c) => switches[c.key] ?? false);
+        const because = switchTable.length !== 1
+          ? "the switch table does not exist in this world yet, which reads OFF (his bar)."
+          : !masterOn && categoriesOn.length > 0
+            ? `the master is off — ${categoriesOn.map((c) => c.label).join(", ")} `
+              + `${categoriesOn.length === 1 ? "is" : "are"} switched on, but the master gates everything.`
+            : !masterOn
+              ? "the master is off and no category is on."
+              : "the master is on but no category is.";
+        refuse(
+          `background work is OFF: ${because}`
+          + " With no confirmed focus and no named side lane, WRITE WHY YOU ARE IDLE AND EXIT — "
+          + "an idle night is a correct night, and inventing work is the one unforgivable brief. "
+          + "He turns this on from /admin/crew.",
+        );
+      }
+      console.log(`background work is ON for: ${open.map((c) => c.label).join(", ")}`);
     }
 
     /*

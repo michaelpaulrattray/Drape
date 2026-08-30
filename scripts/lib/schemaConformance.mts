@@ -79,6 +79,17 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
     + "table, so the Crew tab is exactly what it is today plus a strip saying the row "
     + "is not live yet — the reader rescues MySQL's ER_NO_SUCH_TABLE alone and still "
     + "throws on everything else. Delete this line the day that ceremony runs.",
+  crew_work_switches:
+    "migration 0056 (#277 — his background-work switch). Dev has it; PRODUCTION TAKES "
+    + "IT BY `scripts/ceremony-crew-work-switches.mts`, a founder act, which creates this "
+    + "AND `crew_queue_counts` in one command. Fails soft until then: an absent table reads "
+    + "OFF everywhere — the panel says it is not live yet, the shift reader says background "
+    + "work is off, and `crew-shift-start.mts` REFUSES a background run. Delete this line "
+    + "the day that ceremony runs, together with its pin.",
+  crew_queue_counts:
+    "migration 0056 (#277). The counts under his switches, written by a shift from the "
+    + "queue's own labels. Same ceremony as `crew_work_switches` — one command creates both "
+    + "— and the same soft failure: no counts drawn, nothing broken. Delete with its twin.",
 };
 
 export type ConformanceVerdict = {

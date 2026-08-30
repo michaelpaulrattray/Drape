@@ -131,3 +131,10 @@ export function foldTimeline<T>(sorted: readonly T[], visible = JOURNAL_FOLD_VIS
  */
 export type CrewShiftRunsView = CrewState["shiftRuns"];
 export type CrewShiftRunView = CrewShiftRunsView["runs"][number];
+
+/**
+ * His background-work switches and the counts beside them (#277). Inferred, so
+ * a shape change on the server is a type error here rather than a fact that
+ * silently never renders.
+ */
+export type CrewWorkStateView = CrewState["workState"];

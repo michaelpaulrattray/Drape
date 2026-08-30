@@ -29,6 +29,7 @@ import { CrewJournal } from "@/features/admin/components/crew/CrewJournal";
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
+import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
 import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
 import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
@@ -132,6 +133,23 @@ export default function AdminCrew() {
     },
   });
 
+  /*
+    HIS SWITCH. No optimistic write, deliberately — unlike the reply box beside
+    it, where an optimistic append is the right feel. A switch that flips
+    instantly and then silently reverts would tell him background work was off
+    when it was on, which is the exact lie this feature exists to prevent. It
+    waits for the server's own row and re-reads.
+  */
+  const workSwitchMutation = trpc.crew.setWorkSwitch.useMutation({
+    onError: (error) => {
+      console.error("[crew] work switch failed", error);
+      toast.error(readableFailure(error, "That didn't save — the switch is unchanged. Try again."));
+    },
+    onSettled: () => {
+      void utils.crew.getState.invalidate();
+    },
+  });
+
   const send = useCallback(
     (input: { cardId: string | null; body: string }) => replyMutation.mutateAsync(input),
     [replyMutation],
@@ -207,6 +225,16 @@ export default function AdminCrew() {
                 uses, so the strip's "14 min ago" and the page's freshness can
                 never disagree. */}
             <CrewWorkingNow shiftRuns={stateQuery.data.shiftRuns} now={now} />
+
+            {/* Directly under it (#277): the two answer one question — what is
+                happening while he is not looking. */}
+            <CrewBackgroundWork
+              workState={stateQuery.data.workState}
+              now={now}
+              onToggle={(switchKey, enabled) =>
+                workSwitchMutation.mutate({ switchKey: switchKey as never, enabled })}
+              pending={workSwitchMutation.isPending}
+            />
 
             <CrewProgramBanner program={stateQuery.data.briefing.program} />
 
