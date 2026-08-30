@@ -1,6 +1,6 @@
 {
-  "edition": 132,
-  "updatedAt": "2026-08-30T16:20:00+10:00",
+  "edition": 133,
+  "updatedAt": "2026-08-30T17:05:00+10:00",
   "shift": "foreman-117",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -144,36 +144,48 @@
   },
   "needsYou": [
     {
-      "id": "promotion-audit-262",
-      "title": "The promotion audit you asked for — six of casting's 23 move, fifteen stay, and the popover collision you predicted is real",
+      "id": "promotion-build-262",
+      "title": "The promotion PR is specified in your order and NOT started — deliberately, and here is why",
       "state": "open",
-      "filedAt": "2026-08-30T16:20:00+10:00",
+      "filedAt": "2026-08-30T17:05:00+10:00",
       "issueNumber": 262,
-      "productImpact": "THE LIST FIRST, because that is what you asked to see.\n\nMOVE INTO THE SHARED KIT NOW — six. The modal shell (CastingModal), the destructive confirm (ConfirmDialog), the overflow menu (CardMenu), the rename dialog, the delete-by-typing-the-name ceremony, and the brief text box. Every one of them is an app concept that happened to get built in casting first, exactly as you put it.\n\nMOVE LATER — two, each blocked on one cut. The hero deck is general in shape but reaches into casting's own showcase data; the concept upload card is general only in its drag-and-drop entrance, the rest of it is the describer road.\n\nSTAY — fifteen. Faces, briefs, refinement, candidates, versions, paths, the imagination meter, signing. Genuinely about faces, briefs or refinement, by your own test.\n\nYOU WERE RIGHT ABOUT THE POPOVER, AND IT IS ONE WORSE THAN YOU GUESSED. There are THREE separate implementations of 'a panel anchored to what you clicked, closed by Escape or a click outside' — casting's CardMenu, foundation's Popover, and the usePopover hook segment 00 added three days ago. 558 lines across three owners, and two of them are in the same folder.\n\nAND THE MEASUREMENT THAT DECIDES IT CHEAPLY: eight of the nine components segment 00 built have NO CONSUMER anywhere in the product yet — they render only on the internal specimen page. Only the popover hook reached a real surface, one week old, one consumer. So where casting and the new kit collide, casting's version is the one customers actually use and the new copy yields. That is your own instruction ('keeping casting's behaviour'), and the consumer counts say obeying it costs almost nothing.\n\nTHE 148KB OF CSS IS NOT THE PROBLEM YOU FEARED. 96.9% of it is attributable to a single component by its class name, so the split is mechanical rather than a negotiation. There is ONE hard case and it is a naming accident: the shared modal shell's stylesheet is named after the FIRST dialog that used it, so six components draw on a block called 'signm'. Renaming it inside casting before anything moves turns the hard case into an easy one.\n\nNOTHING HAS MOVED. No code changed, nothing was deleted, no pull request is open. This is the list, as you asked.",
-      "workedExample": "Concretely, what promoting the overflow menu means. Today the '···' menu on a cast card is 208 lines living in features/castingV2, and the account menu you looked at last night is a different 182-line implementation living in foundation. Same behaviour, two authors, and a third one in between them.\n\nAfter the move there is one: casting keeps the menu it has — the reveal ladder you ruled on back in August, unchanged, because customers use it daily — and it moves to the shared folder with casting importing it back. The lobby's account menu then points at the same one instead of its own. That is 5,008 bytes of stylesheet moving with it, and 2 import lines changing.\n\nThe thing you would SEE afterwards is nothing at all. That is the intent — this is the same rework-avoidance argument you used to put the foundation before Home.",
+      "productImpact": "You approved a build and it is not built tonight. That is a choice and you should be able to overrule it.\n\nWHAT IT IS: a stylesheet rename inside casting, five components moved into the shared kit, three dialogs rebuilt onto the promoted shell, and three separate popover implementations collapsed into one — all with no visible change anywhere, which is the whole point and also what makes it easy to half-finish.\n\nWHY IT WAITED: it is one PR by your instruction, and a five-component move left half-merged is two versions of the same components in the tree at once. Starting it at the end of a shift is how that happens. It is written out on the card in your exact order, with the one thing that will bite named up front — the rename dialog already does NOT use the shared shell, so it is the drift you predicted rather than a risk of it.\n\nNOTHING IS LOST BY THE WAIT: nothing about this is time-sensitive, no customer sees it, and no other work is blocked by it. The next shift takes it as its first brief.\n\nIf you would rather it had gone tonight at the risk of landing half-done, say so and the next shift will know the trade you want.",
+      "workedExample": "The shape of the risk, concretely. Moving the overflow menu means every place that opens a \"···\" menu points somewhere new. If that lands and the popover reconciliation does not, the product has casting's menu in the shared folder AND two other implementations still alive — which is worse than today, because now there are three copies and one of them has moved house. One PR is right; it just has to be a whole one.",
+      "options": [],
+      "recommendation": null
+    },
+    {
+      "id": "cookie-row-267",
+      "title": "You asked if Cookie preferences is real — it is not, and there is nothing for a customer to consent to",
+      "state": "open",
+      "filedAt": "2026-08-30T17:05:00+10:00",
+      "issueNumber": 267,
+      "productImpact": "YOUR QUESTION, ANSWERED AT THE CODE: *\"Tell me if Cookie preferences is real. If there's no consent mechanism planned, don't promise one.\"*\n\nThere is no consent mechanism, nothing planned — and the part worth your decision, nothing that currently NEEDS one.\n\nThe product sets exactly TWO cookies and both are strictly functional: the one that keeps you signed in, and one that remembers whether a sidebar is open. There are ZERO third-party trackers — no Google Analytics, no Tag Manager, no Posthog, Mixpanel or Hotjar. The page loads two scripts and both are ours.\n\nSo the honest answer is stronger than \"not planned\": a cookie preferences panel would be a panel with no preferences in it. There is nothing a customer could switch off.\n\nRECOMMENDATION: the row should not EXIST rather than be greyed out. If a tracker is ever added, the row arrives with it. That takes the menu to four live rows and TWO honest stubs — the ratio you asked for, reached by dropping two rows instead of one.\n\nTheme is being dropped either way, on your word. Documentation and Keyboard shortcuts stay greyed, on your word.",
+      "workedExample": "The only place the words \"cookie preferences\" appear anywhere in the product is the stub itself, in the menu built two nights ago. Nothing else in the codebase has ever mentioned it. It came from the prototype rather than from a plan — which is exactly the case your quotation-not-requirement rule exists for.",
       "options": [
         {
-          "key": "a",
-          "label": "Approve the six, and the rename that unblocks the shell",
-          "consequence": "The six move in one PR, casting imports them back, no behaviour changes anywhere. The 'signm' stylesheet is renamed inside casting first so the shell's CSS travels with it. The two later ones stay filed. Roughly 10 import sites, 6 files, ~11KB of stylesheet."
+          "key": "drop",
+          "label": "Drop the row entirely",
+          "consequence": "Four live rows, two honest stubs. Nothing promises a panel that would be empty. The row comes back the day a tracker does."
         },
         {
-          "key": "b",
-          "label": "Approve the popover reconciliation ONLY, and hold the other five",
-          "consequence": "The three popover implementations collapse to one — the collision you predicted and the only one that is actively drifting, since the account menu shipped on the newest copy last night. The other five wait for a segment that needs them. Smallest possible change."
-        },
-        {
-          "key": "c",
-          "label": "Approve all eight, cutting the two dependencies as part of the work",
-          "consequence": "The hero deck's data and the upload card's describer road get separated first, which is real work rather than a move, and it touches the casting page you froze in this lane. Slower, and it spends the freeze."
-        },
-        {
-          "key": "d",
-          "label": "Change the split — tell me which of the fifteen you would move, or which of the six you would keep",
-          "consequence": "The document gives one line of reasoning per component so you can disagree with any single verdict without re-reading the code. Disagreement here is about your own test, not about a measurement."
+          "key": "keep",
+          "label": "Keep it greyed as a stub",
+          "consequence": "It names a place you intend to go. Honest under your stub rule, but it is the one stub with nothing behind it even in principle — three live rows against three dead."
         }
       ],
-      "recommendation": "RECOMMEND (a). The six are the ones with no casting dependency at all — five of the six import nothing from the casting folder, and the sixth imports only the shell moving alongside it — so it is a genuine move rather than a rewrite, with no behaviour change intended anywhere. Doing the popover alone (b) is safe but leaves five known duplicates-in-waiting to rediscover later, which is the drift you stopped the lane over. (c) spends the casting freeze for two components that can wait.\n\nThe one thing I would do FIRST under (a), whichever you pick: rename the shell's stylesheet block inside casting. It costs nothing today and it is the difference between the shell moving cleanly and five components pointing at classes in another file."
+      "recommendation": "RECOMMEND dropping it. Your own sentence is the reason — a stub names a place, and this one names a place the product has no reason to visit. Every other stub in that menu is a thing that will exist."
+    },
+    {
+      "id": "promotion-audit-262",
+      "title": "You ruled the audit — five move, not six, and the one you held back has its answer",
+      "state": "answered",
+      "filedAt": "2026-08-30T16:20:00+10:00",
+      "issueNumber": 262,
+      "productImpact": "ANSWERED, and you changed the split in a way the measurement agrees with.\n\nFIVE MOVE, not six: the modal shell, the destructive confirm, the overflow menu, the rename dialog and the delete-by-typing ceremony. The brief text box you held back.\n\nYOUR HELD QUESTION IS ANSWERED, and the answer is not the one the question expected. You asked whether promoting casting's text box would make a third input implementation, since the shared kit already has Field and Input. It would not — they are not the same kind of thing. Field is a wrapper box that holds a label and an input; Input is a one-line text field; casting's is a MULTI-LINE box, and the shared kit has no multi-line box at all. It already borrows Input's own styling and adds eight lines on top. So it is the missing sibling rather than a rival.\n\nBUT YOUR INSTINCT WAS RIGHT, ONE LAYER OVER. There ARE duplicates here, and they are the popover situation again: THREE different boxes in the product grow as you type, and THREE guard against a Japanese, Chinese or Korean customer pressing Enter to finish a character — and casting's is the only one that does both. That second thing is a money control: on the casting page Enter spends 160 credits, so a customer committing their characters would buy a roll they did not ask for.\n\nSo: casting's survives and is promoted as the shared kit's missing multi-line box, and the two OTHER grow-as-you-type copies are what needs reconciling — not Field. That is a separate piece of work and it is written down rather than started.\n\nAND THE DROP-ZONE CHECK YOU ASKED FOR LATER, TAKEN NOW: you are right, the shared kit already has one and the upload card does not use it. The eventual work is smaller than the audit assumed.",
+      "workedExample": "One thing worth knowing before the move starts, because it makes your third instruction sharper than it looks. You said the three dialogs should be built ON the promoted shell rather than beside it, or they will drift the way the popovers did.\n\nOne of them already has. The rename dialog does not use the shared shell today — it builds its own copy and borrows the shell's styling by name. So the drift you are describing is not a risk to avoid; it is already there in one of the three, and the move is what fixes it.",
+      "options": [],
+      "recommendation": null
     },
     {
       "id": "prototype-refresh-228",
@@ -1542,6 +1554,13 @@
   ],
   "pipeline": [
     {
+      "id": "bug-report-inbox-255",
+      "title": "A customer's bug report finally reaches a human — your option D, built",
+      "status": "in-review",
+      "prNumber": 266,
+      "note": "Your ruling, from two nights ago: *\"D is the right long-term answer probably in the admin panel first not the moderator panel yet. no point taking shortcuts.\"*\n\nWhat was broken: the lobby menu offers Send feedback and Report a bug to every customer. Both saved the report and sent a Slack message to a channel that has never existed on production — and NOTHING in the product could read the table. Somebody typed out what went wrong, got told \"Bug report submitted. Thank you!\", and it reached nobody. Zero reports have ever been filed, so nobody has actually been let down yet; that is luck, and it is why you took the long answer.\n\nNow there is a Bug Reports tab in the admin panel: the queue newest first, the person's own words, what page they were on, and four buttons to move a report through New, Reviewing, Resolved or Dismissed.\n\nAdmin only, exactly as you said — and that is guarded rather than promised, because admins automatically inherit every moderator screen, so using the moderator permission would have quietly shipped the moderator panel you deferred while looking like obedience. There is no delete and no export: Resolved and Dismissed both KEEP what the person wrote."
+    },
+    {
       "id": "chrome-section-00b-228",
       "title": "Lobby segment 2 — the menus onto the grammar, and unbuilt features get drawn",
       "status": "in-review",
@@ -2337,6 +2356,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T17:05:00+10:00",
+      "shift": "foreman-117",
+      "text": "You replied twice while I was working and both are answered — the promotion audit and the 00b frames.\n\nTHE AUDIT. You ruled five move instead of six and held the brief text box for a check. That check is done: the shared kit's Field and Input are a wrapper box and a one-line field, and it has no multi-line box at all — so casting's is not a third copy of anything, it is the missing one. Your instinct was still right, just one layer over: three different boxes in the product grow as you type, and three guard against an Asian-language customer pressing Enter mid-character. Casting's is the only one that does both, and that second thing is a money control, because Enter on the casting page spends 160 credits.\n\nTHE BUILD ITSELF IS NOT STARTED, and that is a decision rather than an oversight — it has its own card so you can overrule it. Five components moving and three popovers collapsing is one PR by your instruction, and half of it in the tree is worse than none of it.\n\nTHE COOKIE ROW. You asked whether it is real. It is not, and the answer is better than that: the product sets two cookies, both strictly functional, and has zero third-party trackers of any kind. There is literally nothing a customer could switch off, so my recommendation is that the row should not exist rather than be greyed.\n\nAND THE BUG REPORTS INBOX IS BUILT — your option D from two nights ago. It is on a pull request. One thing about it is worth thirty seconds of yours: it passed 11 automated checks and a full type check, and then was WRONG when I opened the app. One of the four status labels was a white pill with a dark outline, sitting next to three outlined buttons of the same size — so the card read as having four buttons, one of which does nothing when you press it. Nothing in a test could have seen that. Fixed to one rule: a state is filled in, a control is outlined.\n\nYour Fable allowance is still out, so pull requests get no review verdict — that is an absent review, not a rejection."
+    },
+    {
       "at": "2026-08-30T16:20:00+10:00",
       "shift": "foreman-117",
       "text": "Quiet night by design — the lobby lane is stopped for your eye and I did not restart it. What I did instead is the one thing you asked for and did not get: the promotion audit.\n\nWHY IT WAS MISSING. You set the order as spec refresh, then the written audit, then 00b, then stop. Your card landed at 01:53 and 00b merged at 02:33 — the shift that built it read the queue once when it started, three minutes before your card existed, and never saw it. Nothing was disobeyed; the queue moved underneath it. The rule has been changed so a shift re-reads the queue before opening a pull request, not only at start.\n\nWHAT THE AUDIT FOUND. You were right that the parts already exist in the wrong folder, and right that the popover was the likeliest collision — there are three of them, not two. The number that makes the decision easy is one nobody had counted: eight of the nine components built in segment 00 have no consumer in the product at all yet. They exist on an internal specimen page. So the new kit has almost no standing, casting's components have customers, and your rule of keeping casting's behaviour costs essentially nothing to follow.\n\nTHE CSS WORRY WAS BACKWARDS. Your card asked me to say plainly if the single 148KB file makes the split hard. It does not — 96.9% of it belongs to one named component each, measured rather than eyeballed. The one genuinely awkward block is awkward because it was named after the first dialog that used it rather than after what it is, which is a rename inside casting and cheap today.\n\nI also corrected three things in the earlier reading of this card rather than quietly inheriting them, since one of them weakened an argument I am making: the casting menu has two consumers, not the three that was claimed — the third file only mentions it in a comment.\n\nNothing moved. No code changed. The card leads with the list."
@@ -2530,11 +2554,6 @@
       "at": "2026-08-29T09:05:00+10:00",
       "shift": "foreman-88",
       "text": "Eighth quiet maintenance night, and nothing tonight needs you — but there is one thing worth knowing, in the problems list above.\n\nYour two questions are still waiting: the edition-83 eye item and the smaller crop question from edition 86. No credits spent, no house money, nothing a customer can see has changed, nothing on production touched but the briefing you are reading.\n\nThe work was the two small repairs the housekeeping round asked for yesterday, and neither is glamorous. We keep a check that makes sure every one-off script shuts itself down when it finishes — without it, the machine slowly fills with processes that have finished their work and are still sitting there (we once found one alive for three hours). That check was reading the last LINE of a file instead of the last instruction, so a script that shut down correctly, but wrote it on the same line as the instruction before, was turned away. Yesterday's housekeeping hit exactly that and worked around it by splitting the line, which is how a check that cries wolf slowly stops being followed. It reads the code properly now. Nothing it previously accepted or refused has changed its verdict — I ran both versions over all 774 files and every answer is identical.\n\nThe second repair is why the team's local test run kept going red for reasons nobody had caused. Several test files walk the entire project as part of what they check, and they were given five seconds to do it. Under a full run one of them takes twenty. So a shift would sit down, run the tests, see red, and spend half an hour proving it was not their doing. Five of those now have a minute each, with the measured number written beside it so nobody has to guess again later.\n\nAnd the thing worth your two minutes: while merging that, the gate's second-opinion reviewer broke. It errors in one second rather than reading the change. It is filed, the details are above, and my best guess — said as a guess — is an expired login token on your account. Tonight's change went in anyway because it is test-and-tooling only with no product or money in it; anything bigger will wait for the reviewer rather than go round it."
-    },
-    {
-      "at": "2026-08-29T07:40:00+10:00",
-      "shift": "foreman-87",
-      "text": "Seventh quiet maintenance night, and nothing tonight needs you. Your two questions are still waiting — the edition-83 eye item and the smaller crop question from edition 86. No credits spent, no house money, nothing a customer can see has changed, nothing on production touched but the briefing you are reading.\n\nThe housekeeping round came due at 07:35 this morning, so that is what tonight was. It is the unglamorous half of the job — it buys nothing you can see and it stops the next few nights being wasted. Three things came out of it worth your two minutes.\n\nThe first is a small lesson about believing our own notes. A tidy-up three days ago tried to delete a batch of old working files, appeared to hang, and wrote down that this machine cannot do it — a fact about the hardware, nothing to be done. That was wrong. The delete command it started was STILL RUNNING three days later, stuck on a single file, and Windows makes every later attempt on that same file wait in line behind it. So each following night inherited a queue it could not see and concluded the same wrong thing. Once the stuck command was stopped, 31 of the 33 files deleted in seconds. Two are genuinely wedged — a half-finished delete leaves a file in a state only a restart clears — and they are written down rather than fought with.\n\nThe general version, which is the part worth keeping: when one of our tools times out, only the WAITING stops. The thing it started keeps going. If nobody clears it up, the next shift meets a machine that seems broken.\n\nThe second is that our own checks had been failing on this computer for days, and none of it was the product. Shifts leave small throwaway scripts behind while they work, and fifteen of them were breaking four different checks — so every night began with somebody proving the failures were not theirs. That is half an hour a night of nothing. All fifteen were brought up to standard rather than deleted, because our own rule says anything written in the last week is kept, and some of these were hours old. Everything is green again. I have written up the recurring version of this — it will keep happening unless a shift tidies its own scraps before it clocks off — and recommended the cheap fix rather than a rule change.\n\nThe third is a number on our books that was wrong by two and a half times, in the safe direction. We keep a count of code nobody uses any more — the list you clean up before a big change. The count on file said 173 unused pieces. The tool that produced it has two modes: one counts FILES, the other counts the pieces themselves, and an earlier reading took half its row from one and half from the other. The real number is 443. Nothing grew and nothing broke — the figure had simply been read the wrong way round — but anyone planning that clean-up would have planned for a job under half the real size. Both readings are now on the record with the mode they came from.\n\nAlso swept: seven abandoned working folders from earlier nights, and three sets of old notes that had aged past our keep-it-a-week rule. Two folders were deliberately left alone and written up as a question for whoever owns them, rather than guessed at."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2579,6 +2598,8 @@
     39,
     40,
     41,
-    42
+    42,
+    43,
+    44
   ]
 }
