@@ -114,6 +114,8 @@ Two families. **Archivo** for everything a human reads. **JetBrains Mono** for m
 
 Weights: **400 and 500 only.** 600 exists in the webfont and is never used — a 600 heading next to a 500 heading reads as a mistake. Sizes come from this table; a new size needs a new reason.
 
+**The answer to a long label is never a smaller font.** (Founder, 2026-08-30, at the section 00 frames.) When a label does not fit — a speaker column, a table cell, a pill — the fix is the column, the wrap, or the label; it is never a size below the table above. Mono's floor is `10.5px` and prose's is `11.5px`, and going under either to make something fit trades a measurable legibility loss for an invisible layout win. The specimen case: `"night shift"` needs 69.3px at 10.5px mono and clips at 64px, so the COLUMN went to 80px and the type did not move.
+
 ---
 
 ## 3. Accent discipline
@@ -125,6 +127,10 @@ Accent means **kept, selected, or active choice.** It is never decoration, never
 - `--accentWash` + `--accentLine` — the background/border pair for an accent chip or pill. Always together.
 
 **Hover-preview pattern:** an action chip's hover state is the accent wash. That reads as "this will apply", where a resting accent would read "this is already selected". Used on nudge chips, try chips, refine chips.
+
+**One state, one signal.** (Founder, 2026-08-30, at the section 00 frames.) A single fact gets a single accent — a kept card is an underline plus a pill, not an underline AND a pill AND a border AND a check. His reason is about the things that are not good news: *"Four signals for one fact is how a system starts shouting, and it makes the genuinely urgent things — a failed run, a destructive confirm — indistinguishable from a good outcome."*
+
+**Accent never encodes a CATEGORY.** A type is not a state. `MASCOT` and `PERFORMER` are what a cast member IS and are greyscale; `IDENTITY LOCKED` is a state the accent is exactly for. Colour carrying a category is the one job the accent is not allowed to take, because the moment two categories need two colours the system has a palette and no longer has a signal.
 
 **How much accent is right:** almost none. Across the lobby, casting and canvas, accent appears only where something is kept, selected, running or locked — typically two or three elements on a full screen, often zero. If a screen has accent in its headings, its labels, its code, its icons or its dividers, the accent has stopped meaning anything. When in doubt the answer is `--metaStrong`, not accent.
 
