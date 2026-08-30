@@ -1,7 +1,7 @@
 {
-  "edition": 147,
-  "updatedAt": "2026-08-31T00:05:00+10:00",
-  "shift": "foreman-124",
+  "edition": 148,
+  "updatedAt": "2026-08-31T00:35:00+10:00",
+  "shift": "foreman-125",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,6 +111,11 @@
     ],
     "chips": [
       {
+        "label": "The top bar and rail are now identical on every page, from one place",
+        "tone": "good",
+        "source": "PR #305 merged 09e6d994; driven at the running app — 5 surfaces x 2 themes, 85/85 checks, plus a click test on /casting (credits->billing, gear->Settings, account->menu)"
+      },
+      {
         "label": "Every N1 slice is built and live on your account — the gate is your eye",
         "tone": "good",
         "source": "PRs #132, #136, #137, #138, #141, #150, #153, #156 all MERGED (gh, read 27 Aug 08:20); CASTING_CREATIVE_REGISTER_SCOPE=users:1 on production (rite 08:15)"
@@ -134,11 +139,6 @@
         "label": "Production healthy",
         "tone": "good",
         "source": "last rite 30 Aug 08:18Z (9586ad7c) — health x3 200, schema 64 declared / 64 on the service / 1 enumerated, flags where the record says"
-      },
-      {
-        "label": "This page is the Desk",
-        "tone": "good",
-        "source": "your switch-over word before bed; the artifact is a read-only mirror"
       }
     ]
   },
@@ -916,6 +916,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "shell-on-casting-278",
+      "title": "The casting page with its top bar back",
+      "question": "This is the casting page now — your balance top right, the account chip beside it, help and Report a bug, and the gear at the foot of the rail. Is this the full set you meant by \"all of them same as lobby\", or is there something on a working page you would rather NOT have?",
+      "state": "open",
+      "filedAt": "2026-08-31T00:35:00+10:00",
+      "issueNumber": 278,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/00c773b8-eb19-4182-9286-3b353982233c.png",
+          "caption": "The casting page. 442,535 credits top right, account chip beside it, and the gear bottom-left at the foot of the rail. Before tonight this bar held the breadcrumb and nothing else.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/57d4b1e8-44b6-42c4-8816-0a4c6c1487d2.png",
+          "caption": "The gear on casting opening the real Settings box — not a stub. A control that draws but opens nothing is worse than no control, so this was clicked rather than counted.",
+          "arm": null
+        }
+      ]
+    },
     {
       "id": "house-icons-rail-280",
       "title": "Your icon set on the rail — and two glyphs that are the same picture",
@@ -1771,6 +1792,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "shell-on-every-page-278",
+      "title": "The top bar and rail are the same on every page now — your account, credits and settings reach the casting page (#278)",
+      "status": "merged",
+      "prNumber": 305,
+      "note": "You reported this as your own confusion: \"why when im on the casting ppage i cannot access anything in th etopbar or rails?\" It was our defect, not your confusion. Only the lobby was handing the shell its top bar; every casting page passed none of it, so on the four screens where you spend credits there was no account menu, no credits chip, no Report a bug, no help, no What's new and no settings gear. You could not see your own balance from the page that spends it. All of it is there now, from one place rather than copied onto each page, and I clicked every control rather than just counting icons: credits opens billing, the gear opens the real Settings box, the account chip opens its menu. Driven on five screens in both light and dark."
+    },
     {
       "id": "promotion-262",
       "title": "The five shared parts moved out of casting — and the rename box stopped being its own little app (#262)",
@@ -2652,6 +2680,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T00:35:00+10:00",
+      "shift": "foreman-125",
+      "text": "THE TOP BAR IS ON EVERY PAGE NOW — the thing you asked about yesterday, and you were right to be confused.\n\nYou wrote: \"the rails and top bar are the lobby the content within the pages is what changes thats why im confused why when im on the casting ppage i cannot access anything in th etopbar or rails?\" That was not confusion. It was a real hole. Only the lobby was giving the top bar its contents; every casting page gave it nothing. So on the four screens where you actually spend credits there was no account menu, no credits chip, no project name, no Report a bug, no help, no What's new and no settings gear — just a breadcrumb and a lot of empty bar.\n\nWHAT YOU WOULD NOTICE: go to casting and your balance is top right, your account chip is next to it, and the gear is at the foot of the rail where it is everywhere else. Same on the sheet, the room and the foundation page. There are frames below.\n\nI clicked them rather than counting them. A gear that draws and opens nothing is worse than no gear, so the test was: credits opens billing, the gear opens the real Settings box, the account chip opens its menu — all on the casting page. It does.\n\nONE THING I DELIBERATELY DID NOT COPY, and it is worth your knowing because it was nearly a quiet mistake. The lobby keeps its billing pop-ups loaded all the time, even shut. Those shut boxes still ask Stripe questions in the background — including a \"what would this plan change cost you\" question, for anyone on a paid plan. Copying the lobby exactly would have made every visit to a casting page fire that off. So the boxes now load when you open them and not before. You would not see any difference except a normal moment's loading the first time you open billing in a session. The underlying sloppiness is filed as its own job (#306) rather than spread around.\n\nTHE QUEUE: 90 open, 13 urgent, 9 waiting on you, and nothing rotting — no card has sat untouched for a week. Next up is #301, a privacy check that stops one of your Casts from deleting, which is a live bug on your own account."
+    },
+    {
       "at": "2026-08-31T00:05:00+10:00",
       "shift": "foreman-124",
       "text": "SATURDAY'S APPROVAL IS BUILT — AND THE REASON IT TOOK FOUR NIGHTS IS THE MORE USEFUL HALF.\n\nYou approved the component move at 3:39 on Saturday morning: five shared parts out of casting and into the shared kit, the stylesheet renamed first, the three dialogs built on one shell. It did not get built. Three shifts in a row read a handoff note saying \"do NOT move components on #262\" and stood down — and that note was written an HOUR BEFORE you said yes. Each shift copied it forward without opening the card. Tonight's shift opened the card, found your approval at the top of it, and built it.\n\nWHAT YOU WOULD NOTICE: nothing, and that is the acceptance test. Same dialogs, same rename box at its deliberately lighter 428px, same overflow menu. I opened all of it in the running app in both light and dark before it shipped.\n\nWHAT ACTUALLY CHANGED UNDERNEATH. The rename box had quietly become its own little app — it built its own dark overlay, its own Escape key handling and its own everything, while borrowing the shared styling. You predicted this exactly: \"if they land as three independent components they'll drift the way the popovers did.\" It had already drifted, and the drift had a real cost — it was the one dialog with no focus trap, so pressing Tab walked you out of the name field and into the page behind the overlay. That is gone: there is now one piece of code that owns how a dialog behaves, and all three use it.\n\nTHE STYLESHEET CAME WITH THEM. You were right that the rename had to happen first. Moving a part without its styling makes it look wrong the first time another page uses it — so 26 KB moved across too, and I proved nothing was lost by counting every style rule on both sides: 2,285 before, 2,285 after, identical.\n\nONE PIECE OF YOUR FIVE IS NOT BUILT, and it is on your desk rather than quietly skipped — the pop-up collapse. Doing it literally would have broken the Report-a-bug panel and the Help menu you approved the night before. The details and my recommendation are on the card.\n\nTHE QUEUE: 90 open, 14 urgent, 10 waiting on you, and nothing rotting — no card has sat untouched for a week. Two new ones of yours arrived while I worked: a privacy guard stopping a Cast from deleting (#301) and the Home/Library stubs (#302). #301 is a live bug on your own account and is the natural next job."
@@ -2845,11 +2878,6 @@
       "at": "2026-08-29T22:35:00+10:00",
       "shift": "foreman-100",
       "text": "Your hero is rebuilt and it is on a pull request, not yet live. The right half of the casting page now shows the cast you have actually signed with the words that cast them underneath, and an empty account gets six of your creature casts instead of a stock picture. I looked at twenty of your candidates before choosing those six — that part was taste, not a query. Two honest notes: the trait-panel toggle your spec asks for is not built, because the panel it opens does not exist and a dead control is worse than a missing one (#238); and the split-face art is deleted, which is one command to undo if you miss it. The lobby lane is still waiting on you to name segment 1, and the MAX sheet is still waiting on your roll."
-    },
-    {
-      "at": "2026-08-29T21:40:00+10:00",
-      "shift": "foreman-99",
-      "text": "It is live. Merged and deployed at 21:25, health checked three times — so the MAX sheet you roll in the morning is the fixed one, no waiting on me. One thing that is worth your knowing because it cost me twenty minutes: merging a change on GitHub does not deploy it here — the service watches a different branch — so a shift that reads MERGED and stops has shipped nothing. Written into the handoff."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2905,16 +2933,11 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T13:23:03.523Z",
+    "readAt": "2026-08-30T14:25:18.756Z",
     "items": [
       {
         "issueNumber": 267,
         "title": "Account-menu labels: Members & invites, Billing & credits, Log out to Sign out — BLOCKED on the sectioned Settings modal",
-        "urgent": true
-      },
-      {
-        "issueNumber": 278,
-        "title": "The shell is empty on every casting page — no account, credits, help or settings",
         "urgent": true
       },
       {
