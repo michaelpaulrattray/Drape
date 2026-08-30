@@ -99,13 +99,23 @@ keeps its reasoning and gains the closing number.
 | 1440 | 0 | 400 | yes |
 | 1024 | 0 | 353 | yes |
 
-⚠ **THE SEARCH IS NOT ON THE BAR'S TRUE CENTRE, AND THAT IS THE PROTOTYPE'S OWN
-BEHAVIOUR RATHER THAN A SLIP.** Measured at 1440: search centre **672**, bar
-centre **755** — 83px left, and the same 83px at 1024. The centre zone is
-`flex: 1` between two `flex: none` zones, so it is centred in *what is left*,
-and the right cluster is the wider of the two. The prototype's markup is the
-same three-zone flex with the same `justify-content: center`, so copying it
-copies the offset. Recorded rather than silently corrected: making it centre on
+⚠ **THE SEARCH IS NOT ON THE BAR'S TRUE CENTRE, AND THE PROTOTYPE'S IS FURTHER
+OFF THAN OURS — measured on both, not inferred from the CSS.** At 1440:
+
+| | search centre | bar centre | offset |
+|---|---|---|---|
+| shipped | 672 | 755 | **83px left** |
+| the prototype, same width, its own file | 651 | 751 | **100px left** |
+
+The centre zone is `flex: 1` between two `flex: none` zones, so it is centred in
+*what is left*, and the right cluster is the wider of the two. The prototype's
+markup is the same three-zone flex with the same `justify-content: center`, so
+copying it copies the behaviour — and our right cluster is slightly narrower
+than its (no queue pill), which is why ours lands 17px nearer the middle.
+
+**The first version of this paragraph asserted "the same 83px" of the prototype
+from the identical CSS and did not measure it.** It was wrong by 17px, in the
+direction that flatters us. Recorded rather than silently corrected: centring on
 the BAR needs a different layout than the design has, and that is his call.
 
 ⚠ **BELOW THE BRIEF'S WIDTHS THE BAR ALREADY OVERFLOWED, AND THIS SECTION ADDS
