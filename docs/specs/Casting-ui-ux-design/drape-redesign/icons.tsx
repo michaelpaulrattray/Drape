@@ -15,9 +15,16 @@
  * looks, and the two are compatible by construction: same viewBox, same round
  * caps, and Lucide's default 2 sits beside our 1.7 without a visible seam.
  *
- * The one Lucide glyph to retire on sight is `Sparkles` for Create. It is the
- * universal "AI" mark, it says nothing about making a picture, and it is the
- * single icon most likely to make the product look like every other one.
+ * Two Lucide glyphs to retire on sight:
+ *
+ *   `Sparkles` for Create   — the universal "AI" mark. It says nothing about
+ *                             making a picture and is the single icon most
+ *                             likely to make the product look like every
+ *                             other one. Use `P.image`.
+ *   `Settings` for the gear — eight teeth and an inner circle, illegible at
+ *                             16px beside glyphs of three strokes, and the
+ *                             most over-used icon on the internet.
+ *                             Use `P.settings`.
  *
  * USAGE
  *
@@ -50,6 +57,21 @@ export const P = {
   ugc:      'M12 4a4 4 0 0 1 4 4v3a4 4 0 0 1-8 0V8a4 4 0 0 1 4-4zM5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3',
   upscale:  'M4 9V4.5h5M20 15v4.5h-5M4 15v4.5h5M20 9V4.5h-5',
   voice:    'M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2',
+
+  /*
+   * Settings — the rail's foot, and anywhere else a gear is meant.
+   *
+   * Two horizontal rails with an offset handle on each: it says *adjust these*
+   * without saying *cog*. Lucide's `Settings` is eight teeth plus an inner
+   * circle, which mushes into a blurred ring at 16px beside glyphs that are
+   * three or four strokes — and it is the most over-used icon on the internet,
+   * the same objection as `Sparkles` for Create.
+   *
+   * `cog` below is the fallback if a cogwheel is genuinely wanted: four teeth
+   * rather than eight, drawn at this set's density so it survives 16px.
+   */
+  settings: 'M3.5 9h10M17 9h3.5M15.2 9a1.8 1.8 0 1 0-3.6 0 1.8 1.8 0 0 0 3.6 0M3.5 15h3.5M10.5 15h10M8.8 15a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 0 0-3.6 0',
+  cog:      'M12 9.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2M12 3.5v2.6M12 17.9v2.6M20.5 12h-2.6M6.1 12H3.5M18 6l-1.8 1.8M7.8 16.2 6 18M18 18l-1.8-1.8M7.8 7.8 6 6',
 
   /* settings sections */
   grid:     'M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z',
