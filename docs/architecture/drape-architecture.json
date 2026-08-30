@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8eaba768d811f87f"
+    "sourceFingerprint": "35c6b5834b0a1b38"
   },
   "domains": [
     {
@@ -48,7 +48,7 @@
     {
       "id": "domain:client-shared",
       "name": "client-shared",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:data",
@@ -167,6 +167,12 @@
     {
       "id": "module:client/src/components/AnnouncementBanner.tsx",
       "path": "client/src/components/AnnouncementBanner.tsx",
+      "domain": "client-shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/components/AppChrome.tsx",
+      "path": "client/src/components/AppChrome.tsx",
       "domain": "client-shared",
       "lifecycle": "active"
     },
@@ -10328,6 +10334,10 @@
       "path": "client/src/appRoutes.test.ts"
     },
     {
+      "id": "test:client/src/components/appChrome.test.ts",
+      "path": "client/src/components/appChrome.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/components/crew/crewTypes.test.ts",
       "path": "client/src/features/admin/components/crew/crewTypes.test.ts"
     },
@@ -13259,6 +13269,61 @@
     },
     {
       "from": "module:client/src/components/AnnouncementBanner.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/components/ProfileSettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/components/UserCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/billing/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/lobby/ReportBugButton.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/referral/ReferralModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -18479,27 +18544,12 @@
     },
     {
       "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/components/ProfileSettingsModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/components/UserCard.tsx",
+      "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/const.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/billing/index.ts",
       "kind": "imports"
     },
     {
@@ -18519,37 +18569,22 @@
     },
     {
       "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/lobby/ReportBugButton.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/profile/ProfileVisual.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/referral/ReferralModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/lib/trpc.ts",
+      "from": "module:client/src/pages/CastingFoundation.tsx",
+      "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingFoundation.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
     },
     {
@@ -18580,6 +18615,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
     },
     {
@@ -18785,6 +18825,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/imagination.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
     },
     {

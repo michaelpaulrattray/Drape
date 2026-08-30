@@ -4,7 +4,6 @@ import { ArrowRight, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  AppShell,
   Button,
   Card,
   Chip,
@@ -14,6 +13,7 @@ import {
   ScopePill,
   SectionHead,
 } from "@/foundation";
+import { AppChrome } from "@/components/AppChrome";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
@@ -386,9 +386,9 @@ export default function CastingV2() {
 
   if (config.isLoading) {
     return (
-      <AppShell breadcrumb="Casting" current="casting" width="working" gutter="tight">
+      <AppChrome breadcrumb="Casting" current="casting" width="working" gutter="tight">
         <span className="dp-metadata">Loading…</span>
-      </AppShell>
+      </AppChrome>
     );
   }
 
@@ -399,7 +399,7 @@ export default function CastingV2() {
   */
   if (!config.data?.enabled) {
     return (
-      <AppShell breadcrumb="Casting" current="casting" width="working" gutter="tight">
+      <AppChrome breadcrumb="Casting" current="casting" width="working" gutter="tight">
         <div className="dp-stack" style={{ gap: 9, maxWidth: 520 }}>
           <span className="dp-eyebrow">Casting</span>
           <h1 className="dp-headline">Not open on this account yet.</h1>
@@ -408,7 +408,7 @@ export default function CastingV2() {
             charged, and your existing models are unaffected.
           </p>
         </div>
-      </AppShell>
+      </AppChrome>
     );
   }
 
@@ -575,7 +575,7 @@ export default function CastingV2() {
   const shownCasts = scope === "Unsigned" ? [] : casts;
 
   return (
-    <AppShell breadcrumb="Casting" current="casting" width="working" gutter="tight">
+    <AppChrome breadcrumb="Casting" current="casting" width="working" gutter="tight">
       <div className="dp-stack" style={{ gap: 12 }}>
         {/* ---- hero card: copy left, the pair right, one seam between ---- */}
         <div className="dpc-hero">
@@ -1240,6 +1240,6 @@ export default function CastingV2() {
           </span>
         ) : null}
       </section>
-    </AppShell>
+    </AppChrome>
   );
 }

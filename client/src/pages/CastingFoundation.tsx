@@ -11,7 +11,6 @@ import {
 import { useState } from "react";
 
 import {
-  AppShell,
   CardMenu,
   ConfirmDialog,
   DestructiveConfirm,
@@ -45,6 +44,7 @@ import {
   SurfaceBar,
   Transcript,
 } from "@/foundation";
+import { AppChrome } from "@/components/AppChrome";
 
 /**
  * The primitive gallery, on the unlinked `/casting/foundation` route.
@@ -69,7 +69,7 @@ export default function CastingFoundation() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <AppShell breadcrumb="Casting / Foundation" current="casting" width="working">
+    <AppChrome breadcrumb="Casting / Foundation" current="casting" width="working">
       <div className="dp-stack" style={{ gap: 9 }}>
         <span className="dp-eyebrow">Klieg foundation · M1</span>
         <h1 className="dp-headline">
@@ -557,6 +557,6 @@ export default function CastingFoundation() {
           <Button variant="primary">Sign · 500 cr</Button>
         </div>
       </Dock>
-    </AppShell>
+    </AppChrome>
   );
 }
