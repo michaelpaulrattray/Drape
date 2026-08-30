@@ -1,7 +1,7 @@
 {
-  "edition": 146,
-  "updatedAt": "2026-08-30T22:25:00+10:00",
-  "shift": "foreman-123",
+  "edition": 147,
+  "updatedAt": "2026-08-31T00:05:00+10:00",
+  "shift": "foreman-124",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -144,6 +144,28 @@
   },
   "needsYou": [
     {
+      "id": "popover-collapse-304",
+      "title": "The last piece of Saturday's approval — and the ground moved under it",
+      "productImpact": "You asked for the three pop-up panels to collapse into one, with casting's version surviving. Four of your five instructions shipped tonight. This one did not, because doing it literally would have broken two things you personally approved the night before — the Report-a-bug panel and the Help menu with its greyed-out 'Documentation' and 'Keyboard shortcuts' rows you called 'exactly right'.",
+      "workedExample": "Casting's overflow menu takes a simple list: a label and what happens when you click it. That is all it can hold. But the Report-a-bug panel isn't a list — it's a form you type into. And the Help menu turns INTO a form when you pick 'Send feedback'. Neither fits in a box built for menu rows, so folding them onto casting's version would mean rebuilding both, and the greyed stubs would be the first thing lost.",
+      "options": [
+        {
+          "key": "one-behaviour-two-shapes",
+          "label": "One shared behaviour, two shapes (recommended)",
+          "consequence": "There is one piece of code that owns how these panels open, close on Escape, close when you click away, and sit where you clicked. Casting's version of that survives and becomes the only one. On top of it sit two shapes: a menu of actions, and the word-picker in the casting sentence. Nothing else can be reached, so there is no second option to pick by accident — which is what you asked for."
+        },
+        {
+          "key": "literally-one-component",
+          "label": "Literally one component",
+          "consequence": "Buildable, but it means re-shaping the Report-a-bug panel and the Help menu, and those are surfaces you signed off 24 hours ago. It is a bigger change than the sentence implies."
+        }
+      ],
+      "recommendation": "Option one. It leaves exactly one owner of the behaviour, which is the drift you were preventing, without rebuilding two panels you just approved. One more thing worth your eye: when you approved this, the hook in question had ONE user and was three days old — the reason it looked disposable. It has TWO now, which is the exact bar you set that same morning ('two real consumers in the codebase, or it waits').",
+      "state": "open",
+      "filedAt": "2026-08-31T00:05:00+10:00",
+      "issueNumber": 304
+    },
+    {
       "id": "house-icons-collision-280",
       "title": "Two of your glyphs are the same picture — one needs redrawing, and it is your hand",
       "productImpact": "On the rail you are looking at, Create and Assets draw the same thing: a rectangle with a peak line in it. At the size the rail uses they are indistinguishable, and they are four rows apart on the same strip — so someone learning the app has two identical marks for two different places. It is the failure you designed the house set to remove, and it is in the set rather than in the build, which is why it is on your desk instead of fixed.",
@@ -166,7 +188,7 @@
         }
       ],
       "recommendation": "Redraw Assets. Create is the verb and should keep the clearest mark in the set; Assets is the shelf and can afford a different shape.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-30T22:25:00+10:00",
       "issueNumber": 280
     },
@@ -270,7 +292,7 @@
     {
       "id": "promotion-build-262",
       "title": "The promotion PR is specified in your order and NOT started — deliberately, and here is why",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T17:05:00+10:00",
       "issueNumber": 262,
       "productImpact": "You approved a build and it is not built tonight. That is a choice and you should be able to overrule it.\n\nWHAT IT IS: a stylesheet rename inside casting, five components moved into the shared kit, three dialogs rebuilt onto the promoted shell, and three separate popover implementations collapsed into one — all with no visible change anywhere, which is the whole point and also what makes it easy to half-finish.\n\nWHY IT WAITED: it is one PR by your instruction, and a five-component move left half-merged is two versions of the same components in the tree at once. Starting it at the end of a shift is how that happens. It is written out on the card in your exact order, with the one thing that will bite named up front — the rename dialog already does NOT use the shared shell, so it is the drift you predicted rather than a risk of it.\n\nNOTHING IS LOST BY THE WAIT: nothing about this is time-sensitive, no customer sees it, and no other work is blocked by it. The next shift takes it as its first brief.\n\nIf you would rather it had gone tonight at the risk of landing half-done, say so and the next shift will know the trade you want.",
@@ -303,7 +325,7 @@
     {
       "id": "promotion-audit-262",
       "title": "You ruled the audit — five move, not six, and the one you held back has its answer",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T16:20:00+10:00",
       "issueNumber": 262,
       "productImpact": "ANSWERED, and you changed the split in a way the measurement agrees with.\n\nFIVE MOVE, not six: the modal shell, the destructive confirm, the overflow menu, the rename dialog and the delete-by-typing ceremony. The brief text box you held back.\n\nYOUR HELD QUESTION IS ANSWERED, and the answer is not the one the question expected. You asked whether promoting casting's text box would make a third input implementation, since the shared kit already has Field and Input. It would not — they are not the same kind of thing. Field is a wrapper box that holds a label and an input; Input is a one-line text field; casting's is a MULTI-LINE box, and the shared kit has no multi-line box at all. It already borrows Input's own styling and adds eight lines on top. So it is the missing sibling rather than a rival.\n\nBUT YOUR INSTINCT WAS RIGHT, ONE LAYER OVER. There ARE duplicates here, and they are the popover situation again: THREE different boxes in the product grow as you type, and THREE guard against a Japanese, Chinese or Korean customer pressing Enter to finish a character — and casting's is the only one that does both. That second thing is a money control: on the casting page Enter spends 160 credits, so a customer committing their characters would buy a roll they did not ask for.\n\nSo: casting's survives and is promoted as the shared kit's missing multi-line box, and the two OTHER grow-as-you-type copies are what needs reconciling — not Field. That is a separate piece of work and it is written down rather than started.\n\nAND THE DROP-ZONE CHECK YOU ASKED FOR LATER, TAKEN NOW: you are right, the shared kit already has one and the upload card does not use it. The eventual work is smaller than the audit assumed.",
@@ -897,7 +919,7 @@
     {
       "id": "house-icons-rail-280",
       "title": "Your icon set on the rail — and two glyphs that are the same picture",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-30T22:25:00+10:00",
       "issueNumber": 280,
       "cardId": "house-icons-collision-280",
@@ -1749,6 +1771,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "promotion-262",
+      "title": "The five shared parts moved out of casting — and the rename box stopped being its own little app (#262)",
+      "status": "merged",
+      "prNumber": 303,
+      "note": "You approved this on Saturday morning and it sat for four shifts, because each handoff copied a \"don't touch it\" note that was written an hour BEFORE you said yes. That is fixed and the work is in. Five parts every surface needs — the modal shell, the delete-by-typing ceremony, the destructive confirm, the overflow menu and the rename box — now live in the shared kit, and casting borrows them back. Nothing looks different to you: same dialogs, same 428px rename card, same everything."
+    },
     {
       "id": "house-icons-280",
       "title": "Your own icon set is on the rail now, and the sparkle is gone (#280)",
@@ -2623,6 +2652,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T00:05:00+10:00",
+      "shift": "foreman-124",
+      "text": "SATURDAY'S APPROVAL IS BUILT — AND THE REASON IT TOOK FOUR NIGHTS IS THE MORE USEFUL HALF.\n\nYou approved the component move at 3:39 on Saturday morning: five shared parts out of casting and into the shared kit, the stylesheet renamed first, the three dialogs built on one shell. It did not get built. Three shifts in a row read a handoff note saying \"do NOT move components on #262\" and stood down — and that note was written an HOUR BEFORE you said yes. Each shift copied it forward without opening the card. Tonight's shift opened the card, found your approval at the top of it, and built it.\n\nWHAT YOU WOULD NOTICE: nothing, and that is the acceptance test. Same dialogs, same rename box at its deliberately lighter 428px, same overflow menu. I opened all of it in the running app in both light and dark before it shipped.\n\nWHAT ACTUALLY CHANGED UNDERNEATH. The rename box had quietly become its own little app — it built its own dark overlay, its own Escape key handling and its own everything, while borrowing the shared styling. You predicted this exactly: \"if they land as three independent components they'll drift the way the popovers did.\" It had already drifted, and the drift had a real cost — it was the one dialog with no focus trap, so pressing Tab walked you out of the name field and into the page behind the overlay. That is gone: there is now one piece of code that owns how a dialog behaves, and all three use it.\n\nTHE STYLESHEET CAME WITH THEM. You were right that the rename had to happen first. Moving a part without its styling makes it look wrong the first time another page uses it — so 26 KB moved across too, and I proved nothing was lost by counting every style rule on both sides: 2,285 before, 2,285 after, identical.\n\nONE PIECE OF YOUR FIVE IS NOT BUILT, and it is on your desk rather than quietly skipped — the pop-up collapse. Doing it literally would have broken the Report-a-bug panel and the Help menu you approved the night before. The details and my recommendation are on the card.\n\nTHE QUEUE: 90 open, 14 urgent, 10 waiting on you, and nothing rotting — no card has sat untouched for a week. Two new ones of yours arrived while I worked: a privacy guard stopping a Cast from deleting (#301) and the Home/Library stubs (#302). #301 is a live bug on your own account and is the natural next job."
+    },
+    {
       "at": "2026-08-30T22:25:00+10:00",
       "shift": "foreman-123",
       "text": "YOUR ICON SET IS ON THE RAIL, AND THE SPARKLE IS GONE. You drew 21 glyphs for this studio and said Lucide's general-purpose set says nothing about what we do. The eight things down the left edge of the app now wear yours.\n\nTwo retirements landed on your word. Create was a sparkle — the universal AI mark you called the single icon most responsible for the product looking like every other one — and is a picture frame now. The settings gear in the rail's foot was the eight-toothed cog you said mushes into a blurred ring at that size; it is your two sliders, four strokes, and it is plainly legible. Both are gone from the file entirely rather than left unused, so nothing can quietly bring them back.\n\nOne rule of yours is now true by construction rather than by memory: 'icons get bigger, never heavier.' The stroke is fixed at 1.7 inside the icon itself and there is no way for a caller to pass a heavier one — the rail was setting it by hand on every glyph, and that was the last place it could drift.\n\nTHE GAP THE CARD NAMED WAS ALREADY CLOSED. The card said the set had no Cinema glyph and needed your word. It has had one since this morning — the film frame with two notches a side, chosen at the frames after two drafts failed at real size. So nothing waited on you.\n\nTWO THINGS FOR YOUR EYE, both in your set rather than in the build, and neither fixed because both are your hand. Create and Assets are the same picture at rail size — a rectangle with a peak line, differing by half a hair. And two glyphs are byte-for-byte identical: Templates and the Try-on tool mode, which is invisible today because the prompt box has no tool modes yet, and a collision the day it does. The frames are in your gallery with a recommendation.\n\nAND A SWEEP YOU SHOULD SEE. 'Retire Sparkles on sight' reached one surface, because the other three you named do not exist yet — there is no composer, the canvas names its node kinds in words rather than icons, and the settings modal is unbuilt. The sparkle survives at 17 more places: billing, the marketing pages, the waitlist, the old studio, and four inside the casting studio — Follow on a tile, Use as reference, the sheet chip, Dress Model. None of them is one of the four surfaces you listed and your own card forbids a product-wide sweep, so they are filed rather than swept, with the one question that decides them. Guessing house glyphs for them is how a house set stops being a house set.\n\nThe queue: 88 open, 12 urgent, 8 of them ordered by you and all under NEXT UP — one of those filed tonight, about the NEXT UP block itself. Nothing is rotting — nothing has sat untouched for a week. Your background switch is still OFF and nothing here was agent-selected; every line of this traces to a card you filed."
@@ -2816,11 +2850,6 @@
       "at": "2026-08-29T21:40:00+10:00",
       "shift": "foreman-99",
       "text": "It is live. Merged and deployed at 21:25, health checked three times — so the MAX sheet you roll in the morning is the fixed one, no waiting on me. One thing that is worth your knowing because it cost me twenty minutes: merging a change on GitHub does not deploy it here — the service watches a different branch — so a shift that reads MERGED and stops has shipped nothing. Written into the handoff."
-    },
-    {
-      "at": "2026-08-29T21:10:00+10:00",
-      "shift": "foreman-99",
-      "text": "Your MAX verdict was the shift. The stack is gone at the root rather than in the wording: the author's paragraph REPLACES your sentence on the wire, so there is no arrangement of the code that sends two briefs. The differ-by caption is deleted on both meter settings — and it was not only your taste, it was false: one authored prompt paints all eight, so nothing was ever varying along that axis. Three things I want on the record. Your ruling reverses a court finding of our own (the reworded arm lost a fact 2 of 2 runs), so the rewrite ships with a check that reads your raw sentence and re-asks the author when a stated fact goes missing — and if it goes missing twice you get your own words back rather than a paragraph without you in it. That check catches a DROPPED fact and cannot catch a MOVED adjective, which is exactly what the court measured, so your eye is still the gate. And driving it on your own two android seeds found two defects no test would have: the skin rule was telling the author not to write the doll-like look YOU asked for, and the rewrite started narrating its own obedience into the image prompt (\"the texture the user specified\"). Both fixed and both armed. No sheet was rendered tonight — that is yours."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2876,7 +2905,7 @@
     50
   ],
   "nextUp": {
-    "readAt": "2026-08-30T12:09:48.924Z",
+    "readAt": "2026-08-30T13:23:03.523Z",
     "items": [
       {
         "issueNumber": 267,
@@ -2904,9 +2933,14 @@
         "urgent": true
       },
       {
-        "issueNumber": 262,
-        "title": "BLOCKS 00b: the promotion audit — casting's 23 against foundation's nine, written proposal only",
-        "urgent": false
+        "issueNumber": 301,
+        "title": "A privacy guard matches referencePlates on a substring — his Cast will not delete, and activeOperations throws",
+        "urgent": true
+      },
+      {
+        "issueNumber": 302,
+        "title": "Stub Home and Library, blank Canvas — and Library must not be stubbed before he can delete his legacy Casts",
+        "urgent": true
       },
       {
         "issueNumber": 281,
@@ -2916,6 +2950,11 @@
       {
         "issueNumber": 285,
         "title": "The switch panel shows a count — show the card titles under it too",
+        "urgent": false
+      },
+      {
+        "issueNumber": 304,
+        "title": "The popover collapse (#262 item 4) — its premise moved: usePopover now has TWO consumers and both render arbitrary panels",
         "urgent": false
       }
     ]
