@@ -266,6 +266,36 @@ export function assertGenerationOperationProgress(
 
 const FORBIDDEN_RESULT_KEY = /(prompt|reference|mask|base64|secret|token|authorization|cookie)/i;
 
+/**
+ * Whether a value could actually CARRY the thing the key names (#301).
+ *
+ * `FORBIDDEN_RESULT_KEY` is a substring match on key NAMES, and a name alone
+ * cannot say whether a field is a secret. `referencePlates: 3` — the count of
+ * plates a Cast deletion removed — contains `reference`, so the guard rejected
+ * the deletion's own receipt: the founder could not delete a Cast, and every
+ * read of `generation.activeOperations` threw on the stored result of one he
+ * had already tried.
+ *
+ * A number, a boolean, a null or an absent field cannot hold a prompt, a mask
+ * or a credential. A string, an array or an object can. Firing on the VALUE
+ * keeps every real leak in scope — `referencePrompt: "…"` is still refused —
+ * and is a principled line rather than an exception list that grows one field
+ * name at a time. Exempting `referencePlates` by name was the tempting repair
+ * and is the road this class keeps arriving by: the same over-broad-substring
+ * mistake has now been recorded six times in this repository (`cropped`
+ * swallowing "close-cropped stubble", bare `framing` swallowing "a beard
+ * framing a mouth", the typo gate owning the real word "shave"), and the
+ * seventh will be a different word.
+ *
+ * The arrays and objects it still refuses are deliberate: an array named
+ * `referenceIds` may hold numbers today and strings tomorrow, and this guard
+ * runs on the replayable public result of a paid operation, so its default is
+ * refusal wherever content could hide.
+ */
+function couldCarryContent(value: unknown): boolean {
+  return typeof value === "string" || (value !== null && typeof value === "object");
+}
+
 function canonicalize(value: unknown, seen: Set<object>): string {
   if (value === null) return "null";
   if (typeof value === "string" || typeof value === "boolean") return JSON.stringify(value);
@@ -372,7 +402,7 @@ export function assertPublicOperationResult(value: unknown): asserts value is Pu
       return;
     }
     for (const [key, child] of Object.entries(current as Record<string, unknown>)) {
-      if (FORBIDDEN_RESULT_KEY.test(key)) {
+      if (FORBIDDEN_RESULT_KEY.test(key) && couldCarryContent(child)) {
         throw new TypeError(`Operation result contains forbidden field: ${key}`);
       }
       visit(child);
