@@ -1,6 +1,6 @@
 {
-  "edition": 142,
-  "updatedAt": "2026-08-30T19:45:00+10:00",
+  "edition": 143,
+  "updatedAt": "2026-08-30T20:15:00+10:00",
   "shift": "foreman-121",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -118,7 +118,7 @@
       {
         "label": "Your Crew page now says what is planned, not just what shipped",
         "tone": "good",
-        "source": "#290/#291/#292 built and driven at the running app 30 Aug; NEXT UP is 11 rows from `gh issue list --label founder-ordered --state open`"
+        "source": "PR #294 merged e2a314dd, live as edition 143; NEXT UP is 8 rows from `gh issue list --label founder-ordered --state open`, read 30 Aug 10:13Z"
       },
       {
         "label": "Done went 12 to 45 — the page had been under-reporting what is finished",
@@ -1704,8 +1704,8 @@
     {
       "id": "crew-page-four-blocks-290-292",
       "title": "Your three notes on this page, built as the one pass they asked for (#290, #291, #292)",
-      "status": "in-review",
-      "prNumber": null,
+      "status": "merged",
+      "prNumber": 294,
       "note": "NEXT UP is derived from the founder-ordered label rather than typed, so it is the same list a shift obeys. The pipeline keeps only what is not done. One history block replaces three. And two states that used to be written once and never re-read are now checked every shift against the record: a card marked answered whose issue has closed becomes done, and a row claiming you are blocking it must name an open card on your desk or the build refuses."
     },
     {
@@ -2812,11 +2812,11 @@
     49
   ],
   "nextUp": {
-    "readAt": "2026-08-30T09:20:15.384Z",
+    "readAt": "2026-08-30T10:12:33.814Z",
     "items": [
       {
         "issueNumber": 267,
-        "title": "00b corrections: he passed the treatment and corrected the contents — drop Theme, rule on Cookie preferences, and three account-menu labels that must NOT get their own modals",
+        "title": "Account-menu labels: Members & invites, Billing & credits, Log out to Sign out — BLOCKED on the sectioned Settings modal",
         "urgent": true
       },
       {
@@ -2827,21 +2827,6 @@
       {
         "issueNumber": 279,
         "title": "Fitted hardware is a FEATURE, not an accessory — the creature checklist is biology-only and the piece-ban swallows a bolted-in eye",
-        "urgent": true
-      },
-      {
-        "issueNumber": 290,
-        "title": "NEXT UP — the page shows what is running and what shipped, and has no state that means queued",
-        "urgent": true
-      },
-      {
-        "issueNumber": 291,
-        "title": "The pipeline is a 107-row changelog — and it claims 7 things await him while his desk says 0",
-        "urgent": true
-      },
-      {
-        "issueNumber": 292,
-        "title": "Three history sections say the same thing — and 'done' is never applied, so the page understates what is finished",
         "urgent": true
       },
       {
