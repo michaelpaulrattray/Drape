@@ -72,17 +72,6 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
     + "types — and its migration header says it may land ahead of its code, which "
     + "it did. Delete this line the day the Sign promotion merges, and run 0027 "
     + "in BOTH worlds first (a production migration is a founder ceremony).",
-  crew_work_switches:
-    "migration 0056 (#277 — his background-work switch). Dev has it; PRODUCTION TAKES "
-    + "IT BY `scripts/ceremony-crew-work-switches.mts`, a founder act, which creates this "
-    + "AND `crew_queue_counts` in one command. Fails soft until then: an absent table reads "
-    + "OFF everywhere — the panel says it is not live yet, the shift reader says background "
-    + "work is off, and `crew-shift-start.mts` REFUSES a background run. Delete this line "
-    + "the day that ceremony runs, together with its pin.",
-  crew_queue_counts:
-    "migration 0056 (#277). The counts under his switches, written by a shift from the "
-    + "queue's own labels. Same ceremony as `crew_work_switches` — one command creates both "
-    + "— and the same soft failure: no counts drawn, nothing broken. Delete with its twin.",
 };
 
 export type ConformanceVerdict = {

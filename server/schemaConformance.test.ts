@@ -277,17 +277,18 @@ describe("the unmigrated exception list only shrinks", () => {
        costs. */
     expect(Object.keys(DECLARED_BUT_UNMIGRATED)).toEqual([
       "casting_cast_segments",
-      /* `crew_shift_runs` (#272, migration 0055 — the live shift row) joined
-         2026-08-30 and LEFT the same evening: the founder ran
-         `scripts/ceremony-crew-shift-runs.mts --production` (14 columns, 0
-         rows), and the exception line and this pin were deleted together in
-         that commit — which is what the `crew_replies` note above exists to
-         enforce, and it held this time. */
-      /* Joined 2026-08-30 (#277, migration 0056). BOTH leave together, on the
-         ONE ceremony that creates them both — `scripts/ceremony-crew-work-switches.mts`,
-         whose closing line names this pin as well as the exception list. */
-      "crew_work_switches",
-      "crew_queue_counts",
+      /* THREE JOINED AND LEFT ON 2026-08-30, all within the evening, and the
+         list is back to the one table that has never been migrated anywhere.
+         The founder ran both ceremonies himself: `crew_shift_runs` (#272,
+         migration 0055 — the live shift row; 14 columns), then
+         `crew_work_switches` + `crew_queue_counts` (#277, migration 0056 —
+         his background-work panel, one command for the pair).
+
+         Each departure deleted its exception line AND this pin in ONE commit,
+         which is what the `crew_replies` note above exists to enforce. It was
+         proven rather than assumed: removing the first line alone reddened
+         this very assertion within the minute, so the pin did its job on the
+         first opportunity it had after the incident that wrote the note. */
     ]);
   });
 });
