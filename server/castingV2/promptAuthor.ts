@@ -390,6 +390,35 @@ export function maxSystemPrompt(allowance: number): string {
     "PIN THE WORLD, NEVER THE PIECES. Pin materials, mood and species facts. NEVER pin an exact garment, an exact cut, a jewellery piece or an armour piece the request did not name — no pauldrons, no vambraces, no sculpted collar, no named coat, boot, buckle or ring. Naming a kit locks one costume onto every portrait, which is the same failure as locking one face. Say what the wardrobe is MADE OF and what it FEELS like, and leave the parts to the engine. FACES STAY FREE. FACTS STAY PUT.",
     "",
     /*
+      #279, his ruling verbatim where it speaks: *"a machine part fitted to a
+      cyborgs face is apart of that being . as long as its actually fitted and
+      not worn"* — *"A choker is an accessory. A horn is a feature. A
+      mechanical eye bolted into the skull is a feature. Write it as a type,
+      not a SKU."*
+
+      IT SITS DIRECTLY UNDER THE PIECES RULE BECAUSE THAT IS WHERE THE TWO
+      COLLIDE. The sentence above says never name a part; the FACTS STAY rule
+      says every stated feature survives. A bolted-in eye is caught by both,
+      and until this clause nothing here said which wins — the READER half
+      (`conceptDescribe.ts`) carried his test and the author did not.
+
+      ⚠ MEASURED BEFORE IT WAS WRITTEN, and the honest reading is that this
+      PINS the behaviour rather than repairs it (#279, 2026-08-31). Eighteen
+      real drafts across four seed shapes — his own 553-character cyborg brief,
+      a thin cyborg seed, a fitted-eye-plus-worn-choker seed, and his armoured
+      feline with a fused jaw plate — kept the fitted hardware in EVERY
+      non-refused draft and named a product in none; and the paid frames gate
+      delivered it on 8 of 8 faces (roll 237). So the model was already reading
+      the collision his way. That is exactly the state this repo has a law
+      about: a rule the model happens to guess right is a coin, and the rule
+      belongs on the sentence. Nothing here bans a word — his two wrong
+      examples are SHOWN as shapes, never swept, because "harness", "piece" and
+      "eye" are ordinary prose and this file has five recorded instances of an
+      over-broad ban.
+    */
+    "FITTED IS NOT A PIECE. Draw the line by where the thing sits, not by what it is made of. Fitted INTO the body it is a FEATURE and it stays, exactly like a horn or a tail: a mechanical eye set into the skull, a jaw plate, an implant port, plating grown into bone. WORN on the body it is an accessory and the rule above governs it: a choker, a mask, a strap, a piece of jewellery. Name a fitted feature as a TYPE and never as a product — \"fitted mechanical eye\", \"integrated facial hardware\" — never \"spiked eye harness\", never \"sleek mechanical eye piece\". Do not flatten one away either: a being's own hardware is part of what is being cast.",
+    "",
+    /*
       His own golden target and his own failing kit, labelled — the shape
       `conceptDescribe.ts` uses for his granularity ruling, and the specimen is
       the sheet he refused.
