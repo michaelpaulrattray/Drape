@@ -1,6 +1,6 @@
 {
-  "edition": 125,
-  "updatedAt": "2026-08-30T12:05:00+10:00",
+  "edition": 126,
+  "updatedAt": "2026-08-30T12:35:00+10:00",
   "shift": "foreman-114",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -231,52 +231,25 @@
     },
     {
       "id": "reader-rules-court-231",
-      "title": "Your four reader rules — three landed, and the Grok court did NOT go the way my first run said (#231)",
-      "productImpact": "Upload a picture of a hairless creature now and the studio writes down that it is hairless instead of inventing a coat on it. That is three of your four rules in: bare skin reads hairless, worn ornament is materials rather than a collar plate and a bracer, and a species fact now outranks styling when the note will not all fit.\n\nTHE GROK COURT RAN AND IT IS NOT DECIDED, and the reason is the thing worth your minute. Grok read 4 of 12 pictures and my FIRST run reported the other 8 as \"unreadable\" — which reads exactly like Grok refusing your creature and goth pictures, the regression you named yourself. It is not. Every one of those 8 was a TIMEOUT at the 45-second limit our own reader gives it, and it is intermittent: the same photograph read once and timed out once. Had I written up run 1 you would have a verdict on your desk against a model that never got to answer. What the night actually learned is that swapping the reader is not the one-line change the card assumed — a model that needs 90 seconds is a different product decision from one that writes better prose, because she is watching a spinner while it thinks. Where Grok DID answer it was good and noticeably shorter (137-224 characters against Sonnet's 209-300), got heritage right 3 of 3, and correctly refused the object control.\n\nTWO SMALLER THINGS I WANT YOUR EYE ON, both one line to answer. (1) IS THAT A TAIL OR A STAFF? On your feline deity the long banded shape behind his shoulder reads to me as a gold-banded staff, not a tail — but your rule says \"tail included\", so it is your eye that decides. It matters: the readers call it a tail on nearly every read, so if it is a staff then that is not a rule working, it is the reader inventing an anatomy, which is the exact thing rule 1 is against. (2) THE NOTES GOT MORE EXPENSIVE AND I DID NOT MOVE YOUR NUMBERS. Asking for more facts makes a longer first draft, and your 300-character ceiling sends those back to be rewritten, so the rewrite rate roughly doubled (4 in 12, now 13 in 24) — cents of our money and a second wait for her. Both numbers are yours from an explicit ruling, so I left them alone. I would leave them: the rewrite is where the species facts are actually getting caught, so the second pass is buying something real, and raising the ceiling lets inventories back in, which is what the ceiling was for.",
-      "workedExample": "Your own feline deity, through the real reader.\n\nBEFORE: \"Feline humanoid creature, muscular build, with short deep-purple-blue FUR, large pointed ears with pink inner markings, whiskers, sharp yellow eyes and a long tail.\"\n\nAFTER: \"Male feline humanoid, adult, muscular build, with HAIRLESS deep-violet hide, large pink-inner ears, whiskers, a tail and sharp yellow eyes.\"\n\n0 in 4 named the hairlessness before; 3 in 4 after. I am calling that a PARTIAL and not a win: the one read that did not improve is the one that never got rewritten, so the correction is arriving on the second pass rather than the first.",
-      "options": [
-        {
-          "key": "rerun-long",
-          "label": "Rerun Grok at a longer deadline, then show me the pairs",
-          "consequence": "Cheap, text only, no credits. It is the only way to score your third axis — does it decline your edgy-fashion pictures — because right now we cannot tell declining from timing out. If it reads everything at 180 seconds, the real question becomes whether a slower reader is worth better prose, and that comes back to you as its own decision."
-        },
-        {
-          "key": "drop-grok",
-          "label": "Drop it — Sonnet stays the reader",
-          "consequence": "Costs nothing and loses nothing built: the model is a one-line constant now either way. But your own hunch goes untested, and the four reads Grok did manage were genuinely tighter than ours."
-        },
-        {
-          "key": "court-another",
-          "label": "Court a different model instead",
-          "consequence": "Same machinery, same fixtures, one slug changed. Worth saying if you have one in mind — the driver reads the live model list, so it never guesses a name."
-        }
-      ],
-      "recommendation": "RERUN GROK AT A LONGER DEADLINE. Your hunch has not actually been tested yet — the first attempt measured our own 45-second limit, not Grok's reading. It is cents and it is text only, and I will run it next shift unless you say otherwise.",
-      "state": "open",
+      "title": "The reader court - Sonnet stays, and you voided the score for the right reason",
+      "productImpact": "You threw out my court's verdict and you were right to, on a point I should have caught before showing it to you: the Grok arm was dying at 45 seconds, and a model that never answered has not refused anything. Scoring those cells as refusals turned a slow reader into a bad one. Your sentence for it - \"that is not a reader score\" - is now written on the card.\n\nSo: Sonnet stays in production, nothing swaps, and the re-run is a bench only. Same pictures, same spec, same 300-character cap, and the result reported as completed pairs with a time-to-finish beside each - not a win rate, because a win rate over a population that includes non-answers repeats the same mistake in different arithmetic.\n\nYou also split the question in two, which the first court had muddled: the bench answers whether Grok is BETTER, and it does not answer whether we swap. If it is better and slow, that is an infrastructure problem. If it is better and around ten seconds, that is a conversation. And you attached a real product bound to it - no 90-second spinner on upload-a-concept, which is a screen a customer sits and waits at.\n\nYour five scoring rules are on the card in your words. The character cap stays.\n\nOne thing in that reply is bigger than this court and is recorded as its own rule, because it decides what any description may contain rather than how to score one: props are not in this studio - a tail is anatomy so write it, a staff is a prop so omit it, and if you cannot tell what the band behind the shoulder is, write neither. That last clause is the valuable one. It says an unclear thing is left out rather than guessed at, which is the opposite of what the reader you ruled to N3 does.",
+      "workedExample": null,
+      "options": [],
+      "recommendation": null,
+      "state": "answered",
       "filedAt": "2026-08-30T04:40:00+10:00",
       "issueNumber": 231
     },
     {
       "id": "hero-showcase-240",
-      "title": "The casting hero is a showcase now — nobody's shelf, and a click fills the box (#240)",
-      "productImpact": "You were right and it is fixed. The deck on the casting page no longer shows you YOUR OWN signed casts — it shows the same six creature and sci-fi frames to everybody, so somebody who joined ten seconds ago sees exactly what you see, which was your whole point. No card opens a cast room any more. Instead, clicking any card drops that card's brief into the prompt box and puts the caret there, and spends nothing — the same thing the TRY chips do, which is what you agreed to. The peek cards still swing to the middle when you click them, and now they hand over their brief on the way. Your two amendments landed with it: the progress chips under the brief run the full width of the column and divide it into equal parts, and the whole casting page — hero, the two entry cards, the search row and the roster grid — now sits in ONE 1240px container with your padding, so no section can drift out of line at a wide window.",
-      "workedExample": "A fresh account and your verify bot, which owns four signed casts, were both driven tonight at 1920, 1440, 1024 and 700, in both themes. They see the same six faces in the same order, with the same six briefs. That comparison only means something because the control passed too: the bot really does own four casts (its roster grid drew four cards) and the fresh one owns none — otherwise 'the deck no longer varies by account' would just be two empty accounts agreeing about nothing. Then: click the middle card, and the URL does not move while the box fills with 'Adult feline humanoid, hairless violet-blue skin…' and the caret lands in it. Click the right-hand peek, and it swings to the middle AND the box changes to ITS brief.",
-      "options": [
-        {
-          "key": "keep",
-          "label": "Leave the label above the brief reading CAST FROM THESE WORDS",
-          "consequence": "It stays the teaching line, and it is true of all six — those words really did make those faces. The card's own caption says 'Example', so it cannot be read as a claim about your shelf."
-        },
-        {
-          "key": "reword",
-          "label": "Change it to something that says 'examples' outright",
-          "consequence": "Say the words you want and it is one line. What you lose is the sentence that teaches somebody a brief like that is what produced a face like that, which is the whole reason the block is under the deck."
-        }
-      ],
-      "recommendation": "Keep it — and test-drive the page either way: open /casting, click the middle card, click a peek, then narrow the window and check the left edges still line up. The only reason it ever said EXAMPLE CASTS was to stop a stand-in deck being read as YOUR signed people, and that reading is gone now the deck never claims to be anybody's.",
+      "title": "The casting hero - you passed it",
+      "productImpact": "\"Hero showcase is working great.\" Accepted and closed.\n\nOne piece of it is still open on its own card so it does not disappear behind a green light: the spec toggle and the locked-traits pill from your hero spec, which are waiting on the panel they open to exist.",
+      "workedExample": null,
+      "options": [],
+      "recommendation": null,
       "filedAt": "2026-08-30T02:05:00+10:00",
       "issueNumber": 240,
-      "state": "open"
+      "state": "done"
     },
     {
       "id": "creature-lane-237-232",
@@ -867,7 +840,7 @@
       "id": "hero-showcase-240-strips",
       "title": "Your own page, before and after — and the same deck for a stranger",
       "question": "WHAT YOU ARE JUDGING. Two strips, both your verify bot's own casting page at 1440 in dark.\n\nSTRIP ONE — THE SAME ACCOUNT, BEFORE AND ABOVE AFTER. The top half is what shipped this morning: your own signed cast in the middle card, captioned 'Package Three One · 6 frames', under the brief 'a street casting, mid 20s', with four short tick stubs bunched at the left. The bottom half is tonight: the showcase, and the tick row running the full width in six equal parts. That top half is exactly the thing you refused — and it is what a fresh customer would have opened onto an EMPTY column to see.\n\nSTRIP TWO — TWO DIFFERENT ACCOUNTS, ONE DECK. Top is the account with four signed casts, bottom is a brand-new account with none. Same face, same brief, same six ticks. The only difference anywhere in the two frames is how far the current tick has filled, which is the four-second timer.\n\nWHAT I WANT FROM YOUR EYE: whether the tick row now matches the reference frame you filed, and whether the eyebrow 'CAST FROM THESE WORDS' reads right to you now that these are examples rather than your people.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-30T02:05:00+10:00",
       "issueNumber": 240,
       "cardId": "hero-showcase-240",
@@ -2277,6 +2250,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-30T12:35:00+10:00",
+      "shift": "foreman-114",
+      "text": "You cleared your whole desk tonight - ten replies in about half an hour, across six cards. Every one of them is now written against its issue in your own words, so none of it lives only in a message. Nothing new was built after the first piece of work; the rest of the shift was making sure your answers landed somewhere they survive.\n\nOn the reader court: you were right and I was wrong, and the mistake is worth naming because it is a specific one rather than bad luck. The Grok arm was timing out at 45 seconds, and I let those cells count as refusals - so a slow reader got scored as a bad one, and my write-up said Grok refused the creature when Grok never answered at all. Sonnet stays, nothing swaps, and the re-run is a bench with completed pairs and a time beside each.\n\nThe rule you slipped into that reply is the part I would flag as bigger than the court it arrived in: props are not in this studio, a tail is anatomy so write it, a staff is a prop so omit it, and if you cannot tell what a thing is, write neither. That last clause is the opposite of what our region reader does - it never writes neither, it always draws something - which is the fault you ruled to N3 twenty minutes earlier. Two answers of yours pointing the same way in the same half hour.\n\nThe hero is marked done on your word. The spec toggle stays open on its own card so it does not vanish behind the green tick.\n\nNothing else was started tonight. The species-rule sentence, the bug-report reader, the MAX author fixes and the Grok bench are four separate shifts' work and they are all specified now, so the next shifts can pick them up without asking you anything."
+    },
+    {
       "at": "2026-08-30T12:05:00+10:00",
       "shift": "foreman-114",
       "text": "Last note - two more from you after the previous one went out.\n\nOn the lookalike reader: yes, exactly as you said, and it was already done before your message arrived - the note is in the plan at N3 with the measurements and the list of places it actually affects.\n\nOn the species rule: your sentence and your four checks are written down on the card word for word, and nothing has been started. That is deliberate. It changes the house block, which goes into every cast on the author road, and it needs four paid renders to check - so it is a whole shift rather than the last twenty minutes of one, and your own line gave the pause. The live behaviour is untouched tonight, as you asked.\n\nI have set your two rollback conditions up as two separate tests rather than one score, because they guard different things: the goth growing fangs condemns the sentence, and the lamia losing her coils condemns it too, but for the opposite reason. Rolled into one verdict you would not be able to see which happened.\n\nAnd you have now told us three times in three replies not to trust the pixel tool. It is written into the brief as the method rather than as a note - the four checks get judged by eye. You are right about that instrument specifically, which is the part I would not have wanted you to have to say twice: the thing that counted horns as tusks is the same reader you ruled to N3 half an hour earlier."
@@ -2470,11 +2448,6 @@
       "at": "2026-08-28T23:45:00+10:00",
       "shift": "foreman-81",
       "text": "Quiet maintenance night — you had not replied yet and no patrol was due, so I took the oldest open item on the queue that needed nobody's eye.\n\nWHAT IT WAS. The studio keeps a map of every door it can refuse you at — every \"I can't do that yet\", every wall, every apology — and a rule that a new refusal cannot ship without its map entry. The upload-a-concept reader you have been testing all week has five of those refusals, and the map could see one. Three were simply absent. The fourth was worse than absent: it shares a name with an older door, so the map had one entry carrying two different features' evidence, and anyone checking it would have been sent to the right line of code under the wrong feature's name. Nothing a customer would ever notice. But the map exists so we can check ourselves, and it was wrong about the newest thing in the studio.\n\nTHE FIX, in one sentence: a refusal that has a sentence you can read is a door, so the five sentences now live in one table and the map reads that table. Moving them word for word also closed something the code itself had flagged and left — the \"there's nobody in that picture\" sentence is deliberately worded the same as the casting brief's own wall about the same boundary, and until tonight that matching was a note in a comment that nothing enforced. Either one could have been reworded and the studio would have told you two different stories about one rule. A test holds them together now.\n\nWHAT I FOUND AND DID NOT FIX. The same blind spot is bigger than the one feature. The casting brief's own four walls — including the two you care most about, the real-person likeness wall and the not-a-being wall — are invisible to the map for exactly the same reason, as is the wardrobe line's door. I did NOT widen the map to sweep everything up: I measured what that would catch and it is about eighty internal decision notes that no customer ever sees, each of which would then have demanded its own map entry. So it is filed with the measurement behind it rather than half-done tonight.\n\nCost: nothing. No credits, no renders, no reader calls, no flags moved, nothing about the studio behaves differently tomorrow than it did tonight."
-    },
-    {
-      "at": "2026-08-28T23:05:00+10:00",
-      "shift": "foreman-80",
-      "text": "Both of your reader notes are done and merged. The detail is in the item above with the two pictures; here is what is worth knowing behind it.\n\nYour correction was sharper than what the product had built. It had turned your first ruling into a CHARACTER LIMIT, and you came back with a 243-character packing list to prove that a limit is not the test. The reader is now judged on how COARSE its words are, not how many: the hair world rather than the cut, a build family rather than a body size, the wardrobe as materials rather than as garments. Your gold line and your two men are written into the code as the target, and your failing box is written in beside them, labelled as wrong — two good examples show which side of the line to be on, but only the pair shows where the line is.\n\nThe creature fix was one sentence of scope. The reader was asked about \"the person\" in the picture, correctly answered that there was none, and the door refused. It is asked about the BEING now, and it refuses only what is not a being at all. That population is taken from the same list the casting brief's own wall uses, and a test now holds the two together, so if either one drifts later the other complains — the studio should not tell you creatures can be cast in one place and that your creature picture is empty in another.\n\nOne thing I found on the way that was already hurting you. The reader had a banned-word list, and it banned \"framing\". Driving the creature pictures, the reader wrote \"a coarse dark beard framing a jagged-toothed mouth\" — an ordinary sentence about a face — had a perfectly good note thrown out for it, and when the second attempt came back as noise you would have been told \"I couldn't read that picture just now.\" A face \"framed by\" dark hair would have done the same. That was live, on your account, before tonight. Both bare words are gone; only the photographic phrases are banned now.\n\nNothing widened. Upload-a-concept is still your account only, the picture is still never kept, and the whole night cost about sixty cents of house money and no credits."
     }
   ],
   "acknowledgedReplyIds": [
@@ -2515,6 +2488,8 @@
     35,
     36,
     37,
-    38
+    38,
+    39,
+    40
   ]
 }
