@@ -1,6 +1,6 @@
 {
-  "edition": 156,
-  "updatedAt": "2026-08-31T09:35:00+10:00",
+  "edition": 157,
+  "updatedAt": "2026-08-31T09:45:00+10:00",
   "shift": "foreman-136",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -274,7 +274,7 @@
         }
       ],
       "recommendation": "Option one. It leaves exactly one owner of the behaviour, which is the drift you were preventing, without rebuilding two panels you just approved. One more thing worth your eye: when you approved this, the hook in question had ONE user and was three days old — the reason it looked disposable. It has TWO now, which is the exact bar you set that same morning ('two real consumers in the codebase, or it waits').",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-31T00:05:00+10:00",
       "issueNumber": 304
     },
@@ -1080,7 +1080,7 @@
       "id": "shell-on-casting-278",
       "title": "The casting page with its top bar back",
       "question": "This is the casting page now — your balance top right, the account chip beside it, help and Report a bug, and the gear at the foot of the rail. Is this the full set you meant by \"all of them same as lobby\", or is there something on a working page you would rather NOT have?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-31T00:35:00+10:00",
       "issueNumber": 278,
       "cardId": null,
@@ -2896,6 +2896,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T09:45:00+10:00",
+      "shift": "foreman-136",
+      "text": "TWO MORE ANSWERS, BOTH RECORDED — and one of them clears the last card that had been sitting on you since Saturday.\n\nTHE POP-UP PANELS: \"Option one.\" So there is one piece of code that owns how those panels behave — casting's version, which survives and becomes the only one — with two shapes sitting on top of it: a menu of actions, and the word-picker in the casting sentence. Nothing else stays reachable, which was your actual worry: no second option alive to be picked by accident. Your Report-a-bug panel and the Help menu keep the shapes you approved on Saturday, which is what option two would have cost you. It is unblocked and it goes through the normal review like any other change.\n\nTHE CASTING TOP BAR: \"Yes perfect.\" Recorded on the card. That one was already built and merged; your word is what makes it accepted rather than just landed, and it is now on the card rather than only in a reply.\n\nWHERE THAT LEAVES TONIGHT. You answered six things in fifteen minutes and every one is written on its card in your own words. Four of them turned into work somebody can now start — the journal and its General box, the Invite block with your face on it, the pop-up collapse, and the switch-panel titles. One is booked and waiting for your Fable reviewer to come back: the wrong-eye court, two rolls, 320 credits. And exactly one thing still needs a word from you, which is the one in the entry below: whether you meant that WE should run the database command on the switch-panel titles. That is the only thing I am holding.\n\nTHE QUEUE: 93 open, 10 urgent, 2 waiting on you (the Settings-modal brief, and the one word above), none rotting."
+    },
+    {
       "at": "2026-08-31T09:35:00+10:00",
       "shift": "foreman-136",
       "text": "YOUR FOUR ANSWERS ARE IN, AND ALL FOUR ARE RECORDED ON THEIR CARDS — here is what each one actually unblocks, and the single question I am putting back to you.\n\nTHE JOURNAL: \"Keep a General box.\" That was the last thing holding it. The journal goes, the General box replaces the one job it was still doing, and — the part worth saying out loud — your cardless replies are now KEPT rather than removed. The card had originally said to remove that path in the same change; your answer reverses it in the safe direction, so nothing you type can land with nowhere to appear. It is a proper change to the page you steer from, so it goes through the normal review, but nothing is waiting on you any more.\n\nTHE WRONG EYE: \"Fund the court.\" Booked. Two rolls, 320 of your credits, the same brief with and without the sentence, eight frames each, and you judge them. It has not started: it is the kind of work that waits for your Fable reviewer to come back, because one clause in that prompt moves every cast in the product, including briefs that never mention a side.\n\nTHE SWITCH-PANEL TITLES: \"Say 'merge it' and run the command yourself.\" The merge is yours to authorise and you have. ⚠ ONE WORD NEEDS YOU AGAIN, and it is the production database, so I am not guessing at it. The option you picked said YOU would run the one command; you added the word \"yourself\", which most naturally means you want US to run it. Running a migration on your live database on my reading of one word is not a risk worth taking when the answer costs you a sentence. Say \"you run it\" and the next shift does. Either way nothing on your panel changes until that command runs, so waiting costs nothing.\n\nTHE INVITE BLOCK: \"Show your own face beside the +, but keep it stubbed out until membership exists.\" That was not one of the options — it is better than both, and it is now what gets built: your face beside the dashed +, still greyed and not clickable, saying what it is. It will show whoever is signed in rather than you specifically, because hard-coding your face would be a lie on any other account.\n\nAND THE THING THAT WENT WRONG LAST NIGHT IS FIXED — the entry below has the detail. The nights were supposed to park themselves and never did, because the program running them had never read the rule. It reads its own instructions now, and I watched it do it.\n\nTHE QUEUE: 93 open, 10 urgent, 3 genuinely waiting on you now (the Settings-modal brief, the popover decision, and the one word above), none rotting."
@@ -3089,11 +3094,6 @@
       "at": "2026-08-30T04:40:00+10:00",
       "shift": "foreman-107",
       "text": "A quiet, useful night on the team's own tools - nothing in the studio changed, and nothing new needs you.\n\nBefore any change the team makes can go anywhere, it has to pass a set of automatic checks. One of those checks has been failing for the wrong reason: not because anything is broken, but because it runs out of time when your computer is doing something else. Two earlier shifts hit it, wrote it down carefully, and deliberately did NOT fix it - their reasoning was good and I want to repeat it, because it is the right instinct: raising a time limit without knowing why something is slow is how a slow tool becomes permanent. So they left the question open. Tonight I answered it.\n\nThe check builds a complete picture of the codebase and compares it against the one we have on file. It turns out it builds that picture from scratch twenty-two times in a row, from files that have not changed between one build and the next, and about eighty-three per cent of each build is one expensive step being repeated for nothing. That is where the two minutes goes - not growth, just the same work over and over.\n\nI measured the repair rather than proposing it. Reusing that one expensive step takes the check from a hundred and nineteen seconds to nineteen, with all seventeen of its own tests still passing. Six times faster.\n\nBut here is the part worth your attention, and it is the reason I think tonight was worth a night. There is an even faster version - seven seconds - and it is the one anybody would reach for first, including me. I tested it by deliberately breaking the underlying tool and watching whether the check would notice. The nineteen-second version caught it and said so by name. The seven-second version said nothing at all: it had quietly switched off one of the safety checks inside itself, and reported everything as fine over a genuinely broken tool. It would have shipped looking like the bigger win, and we would have had a smoke alarm with the battery taken out.\n\nThat is measured rather than argued - I ran the real check four times, breaking one thing at a time, and it put itself back each time.\n\nI did not ship any of it. The file involved sits on the path every single change travels through, and your Fable reviewer is still out - twenty-fourth refusal, about thirty hours now, well past the only precedent we have. So this is a sixth night of the team's own rule: measurements, tooling and written records may go ahead; anything touching money or the product waits for you. It is written up and queued with the numbers attached, so whoever picks it up is choosing between measured options instead of guessing.\n\nCost: nothing at all. No credits, no renders, no picture readings, no house money - tonight was reading code and running our own tests. Nothing on production was touched but this briefing.\n\nStill waiting on you, unchanged from last night: which lobby segment you want first, and whether that left-hand skull in last night's picture reads as bald to you."
-    },
-    {
-      "at": "2026-08-30T03:50:00+10:00",
-      "shift": "foreman-106",
-      "text": "One thing tonight, and there is a picture on your page that explains it in a glance.\n\nLast night you were told our measuring tool - the thing that finds features in a picture - points at the nearest lookalike when the thing you asked about is not there. That shift named one place as the sharpest of twenty-two unchecked ones: the removal gate. It is the step that runs after you ask for something to be taken OFF a face, where we re-read the picture to check our own work. Tonight I measured it.\n\nIt reproduces. A creature with a completely bare skull, asked \"where is the hair\", came back with a hair-shaped cap painted across the bald skin - twice, so it is settled rather than a wobble. I checked it both ways in the same sitting: a blank grey picture through the same code correctly said \"nothing there\", and a woman with real hair came back correctly on her hair. So the tool can say nothing when there is nothing, and it can find hair when there is hair - it just occasionally invents it. Not every time: two other bald heads answered correctly, so it is about one in three. That is the harder version, not the easier one, because something that is wrong one time in three is never caught by checking it once.\n\nNow the part where I have to correct what you were told. Last night's note said this gate could cost a customer money. I read the code rather than trusting the summary, and it is not true: because of your own ruling that a machine's opinion of a picture never takes somebody's money, a disputed removal is delivered and charged, and Regenerate is the remedy. So no refund is at risk. What IS at risk is quieter and, I think, worse: when the tool wrongly says the thing is still there, we do not update the face's record. The studio goes on believing she has the hair you paid to remove - and the next edit paints it back on. You would get exactly what you asked for, once, and then lose it.\n\nThe good news, checked at the live records rather than assumed: this gate has never run for a customer. Two hundred and thirty-six castings, and not one has reached it. That is the second night in a row where the fault is real and the customer count is zero - which is the argument for fixing it now rather than later, because the refine work is exactly what brings the customers.\n\nI should also tell you I got one of my own test pictures wrong. I picked my test faces off a small contact sheet and called one of them bald; it is not - it has fine wet dark hair, and the tool was right about it. I caught it by painting the answer back onto the picture and opening it full size, which is the step that exists for this. Uncaught, it would have gone to you as a second confirmed fault at four times the size of the real one. It is written into the record, because the lesson is worth more than the arm.\n\nThat is also why the picture on your page ends with a question for you: I read that left-hand skull as bald, but I got this exact call wrong once tonight already, and your eye is the one that counts.\n\nHousekeeping: your Fable allowance is still out - twenty-third refusal, about twenty-nine hours, past the only precedent we have - so it was another measurement-and-record night by the team's own rule. Tonight cost twelve cents of house money in twenty-four picture readings. No credits, no renders, and nothing on production touched but this briefing and one picture uploaded for it."
     }
   ],
   "acknowledgedReplyIds": [
@@ -3150,10 +3150,12 @@
     51,
     52,
     53,
-    54
+    54,
+    55,
+    56
   ],
   "nextUp": {
-    "readAt": "2026-08-30T23:23:37.143Z",
+    "readAt": "2026-08-30T23:29:27.064Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3191,6 +3193,11 @@
       {
         "issueNumber": 304,
         "title": "The popover collapse (#262 item 4) — its premise moved: usePopover now has TWO consumers and both render arbitrary panels",
+        "urgent": false
+      },
+      {
+        "issueNumber": 316,
+        "title": "The roll and refine roads read a named side in OPPOSITE directions — his own case is correct, a typed refine is not",
         "urgent": false
       }
     ]
