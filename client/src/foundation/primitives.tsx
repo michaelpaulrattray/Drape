@@ -413,7 +413,7 @@ export function Progress({ value }: { value: number }) {
    ========================================================================== */
 
 export type MediaRatio = "4/5" | "16/9" | "1/1" | "16/10" | "2.39/1";
-export type MediaCardState = "default" | "kept" | "pending" | "gap";
+export type MediaCardState = "default" | "kept" | "pending" | "gap" | "create";
 
 export type HoverActionItem = {
   icon: ReactNode;
@@ -473,9 +473,15 @@ export function HoverActions({
  *   overlay's text lands. They collided in the prototype; the rule is absolute.
  * - **`state="kept"` is the only accent a card ever carries** — a 3px bar along
  *   the bottom of the media plus one pill.
- * - **`state="gap"` is the dashed create tile generalised** — "New canvas",
- *   "New cast member", "Upload". It must stay FIRST in a collection grid so the
- *   create action never hides behind eight items.
+ * - **The dashed tile is ONE shape with TWO sentences**, and conflating them was
+ *   the brief's own error, corrected by the founder at the frames (2026-08-30).
+ *   `state="create"` says the ACTION and carries no word over the glyph — "New
+ *   canvas", "New cast member", "Upload"; `state="gap"` says **NEEDED** plus
+ *   what is blocking — "The Broker, no wardrobe yet, needed by SC 5". His
+ *   sentence: *"One means you can make one; the other means the production is
+ *   short of one. A card labelled 'New cast member NEEDED' says neither."*
+ *   A CREATE tile must stay FIRST in a collection grid so the create action
+ *   never hides behind eight items.
  *
  * The aspect-ratio rule (§5) is baked in here rather than restated per surface:
  * the grid gives the card a definite width, the media's height stays `auto`,
@@ -514,13 +520,17 @@ export function MediaCard({
   const aspect = ratio.replace("/", " / ");
   const media = (
     <>
-      {state === "gap" ? (
+      {state === "gap" || state === "create" ? (
         <span className="dp-mediacard__gap">
           <span className="dp-mediacard__plus" aria-hidden="true" />
-          <span className="dp-mediacard__needed">NEEDED</span>
+          {/* NEEDED belongs to the GAP only. Founder correction of his own
+              brief (2026-08-30): "One means you can make one; the other means
+              the production is short of one. A card labelled 'New cast member
+              NEEDED' says neither." Same shape, two sentences. */}
+          {state === "gap" ? <span className="dp-mediacard__needed">NEEDED</span> : null}
         </span>
       ) : null}
-      {state !== "gap" && src ? <img src={src} alt={alt ?? ""} /> : null}
+      {state !== "gap" && state !== "create" && src ? <img src={src} alt={alt ?? ""} /> : null}
     </>
   );
 
@@ -531,7 +541,7 @@ export function MediaCard({
           "dp-mediacard__well",
           state === "kept" && "dp-mediacard__well--kept",
           state === "pending" && "dp-mediacard__well--pending",
-          state === "gap" && "dp-mediacard__well--gap",
+          (state === "gap" || state === "create") && "dp-mediacard__well--gap",
         )}
         style={{ aspectRatio: aspect }}
       >

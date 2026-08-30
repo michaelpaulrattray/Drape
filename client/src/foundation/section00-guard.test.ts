@@ -196,3 +196,66 @@ describe("the media card's label row sits below the media", () => {
     expect(/position:\s*absolute/.test(sabotaged)).toBe(true);
   });
 });
+
+/*
+  THE FOUNDER'S THREE CORRECTIONS AT THE SECTION 00 FRAMES (2026-08-30, Crew
+  reply #45). All three are the same rule underneath, in his words: "accent
+  means state, and one state gets one signal." Pinned here because every one of
+  them is the kind of thing a later tidy-up puts back while making a page look
+  more "consistent".
+*/
+describe("one state, one signal — his three corrections", () => {
+  const SPECIMEN = fs.readFileSync(
+    path.resolve(__dirname, "../pages/CastingFoundation.tsx"),
+    "utf8",
+  );
+  const PRIMITIVES = fs.readFileSync(path.resolve(__dirname, "primitives.tsx"), "utf8");
+
+  /** Comments quote the rule; matching on them would pass on the promise. */
+  const code = (s: string) =>
+    s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+
+  it("§04's media example wears two signals, not four", () => {
+    const specimen = code(SPECIMEN);
+    const four = specimen.slice(specimen.indexOf("04 · Cards"), specimen.indexOf("05 · Media cards"));
+
+    expect(four, "the arm is reading nothing").toContain("MediaFrame");
+    expect(four, "no coral border: `selected` was the fourth signal").not.toMatch(/^\s*selected\s*$/m);
+    expect(four, "no check badge beside a SIGNED pill and a kept bar").not.toContain("<Check");
+
+    /* POSITIVE CONTROL — both matchers fire on the shape that shipped. */
+    expect(/^\s*selected\s*$/m.test("            <MediaFrame\n              selected\n")).toBe(true);
+    expect("<Check size={10} />").toContain("<Check");
+  });
+
+  it("a TYPE is never accent; a STATE still is", () => {
+    const specimen = code(SPECIMEN);
+    const pills = specimen.slice(specimen.indexOf("03 · Chips"), specimen.indexOf("04 · Cards"));
+
+    expect(pills, "the arm is reading nothing").toContain("Mascot");
+    expect(
+      pills.slice(pills.indexOf("Mascot") - 60, pills.indexOf("Performer")),
+      "MASCOT is what a cast member IS, not a state — colour may not encode a category",
+    ).not.toContain('tone="accent"');
+    expect(
+      pills.slice(pills.indexOf("Identity locked") - 200),
+      "IDENTITY LOCKED keeps the accent — locked is exactly what accent is for",
+    ).toContain('tone="accent"');
+  });
+
+  it("the create tile says the action; only a gap says NEEDED", () => {
+    const primitives = code(PRIMITIVES);
+
+    expect(primitives).toContain('"default" | "kept" | "pending" | "gap" | "create"');
+    /* The word is rendered under a `state === "gap"` test rather than for the
+       whole dashed shape — his correction of his own brief. */
+    expect(primitives).toMatch(/state === "gap" \? <span className="dp-mediacard__needed">NEEDED<\/span> : null/);
+
+    /* POSITIVE CONTROL — the unconditional shape that shipped would not match. */
+    expect(
+      /state === "gap" \? <span className="dp-mediacard__needed">NEEDED<\/span> : null/.test(
+        '<span className="dp-mediacard__needed">NEEDED</span>',
+      ),
+    ).toBe(false);
+  });
+});

@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   Bookmark,
-  Check,
   Copy,
   Download,
   Lock,
@@ -137,7 +136,12 @@ export default function CastingFoundation() {
           <ScopePill>Unsigned</ScopePill>
         </div>
         <div className="dp-row">
-          <StatusPill tone="accent">Mascot</StatusPill>
+          {/* Types, never states. Founder at the frames (2026-08-30):
+              "MASCOT and PERFORMER shouldn't be coral. Those are types, not
+              states - colour is encoding a category, which is the one thing
+              it's not allowed to do." IDENTITY LOCKED below keeps the accent,
+              because locked IS a state. */}
+          <StatusPill>Mascot</StatusPill>
           <StatusPill>Performer</StatusPill>
           <StatusPill
             tone="accent"
@@ -159,15 +163,16 @@ export default function CastingFoundation() {
           </Card>
 
           <div className="dp-stack" style={{ gap: 9 }}>
+            {/* ONE STATE, ONE SIGNAL. This wore four accents at once - a coral
+                border, a coral check, the SIGNED pill and the kept bar - for a
+                single fact. Founder at the frames (2026-08-30): "Four signals
+                for one fact is how a system starts shouting, and it makes the
+                genuinely urgent things - a failed run, a destructive confirm -
+                indistinguishable from a good outcome." Matched to 05: badge
+                plus caption, no border change, no check. */}
             <MediaFrame
-              selected
               topLeft={<StatusPill tone="onMedia">Signed</StatusPill>}
-              overlay={
-                <>
-                  <Check size={10} strokeWidth={2.1} aria-hidden="true" />
-                  Kept · warm alto
-                </>
-              }
+              overlay={<>Kept · warm alto</>}
             />
             <span className="dp-label">Media card</span>
             <span className="dp-secondary">4:5 · scrim for text over image</span>
@@ -218,11 +223,19 @@ export default function CastingFoundation() {
         <SectionHead eyebrow="05 · Media cards" aside="the create tile stays first" />
         <div className="dp-grid">
           <MediaCard
-            state="gap"
+            state="create"
             ratio="4/5"
             label="New cast member"
             meta="ADD"
             onClick={() => undefined}
+          />
+          {/* The same shape saying the other sentence, shown beside it so the
+              difference is visible rather than described. */}
+          <MediaCard
+            state="gap"
+            ratio="4/5"
+            label="The Broker"
+            meta="no wardrobe yet · needed by SC 5"
           />
           <MediaCard
             ratio="4/5"
