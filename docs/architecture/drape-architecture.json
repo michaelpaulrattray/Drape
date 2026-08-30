@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9bc78746c2784007"
+    "sourceFingerprint": "c454f0668c8de669"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:alerting",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 60
+      "moduleCount": 61
     },
     {
       "id": "domain:evidence",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:studio",
@@ -695,6 +695,12 @@
     {
       "id": "module:client/src/features/admin/adminConstants.ts",
       "path": "client/src/features/admin/adminConstants.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "path": "client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -4827,6 +4833,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/crewWorkSwitches.ts",
+      "path": "server/db/crewWorkSwitches.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/dailyQuota.ts",
       "path": "server/db/dailyQuota.ts",
       "domain": "data",
@@ -5795,6 +5807,12 @@
     {
       "id": "module:shared/crewShiftState.ts",
       "path": "shared/crewShiftState.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewWorkSwitches.ts",
+      "path": "shared/crewWorkSwitches.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -7368,6 +7386,16 @@
       "id": "route:crew.reply",
       "namespace": "crew",
       "name": "reply",
+      "type": "mutation",
+      "auth": "admin",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/crew.ts"
+    },
+    {
+      "id": "route:crew.setWorkSwitch",
+      "namespace": "crew",
+      "name": "setWorkSwitch",
       "type": "mutation",
       "auth": "admin",
       "input": "strict",
@@ -12196,6 +12224,10 @@
       "path": "server/crewShiftWriterBoundary.test.ts"
     },
     {
+      "id": "test:server/crewWorkSwitches.test.ts",
+      "path": "server/crewWorkSwitches.test.ts"
+    },
+    {
       "id": "test:server/db/castingV2InkDeliveryCrops.test.ts",
       "path": "server/db/castingV2InkDeliveryCrops.test.ts"
     },
@@ -13872,6 +13904,21 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:shared/crewWorkSwitches.ts",
       "kind": "imports"
     },
     {
@@ -18172,6 +18219,11 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/AdminHeader.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "kind": "imports"
     },
     {
@@ -27830,6 +27882,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/crewWorkSwitches.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewWorkSwitches.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewWorkSwitches.ts",
+      "to": "module:shared/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/dailyQuota.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -30277,6 +30344,16 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/db/crewShiftRuns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/db/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:shared/crewWorkSwitches.ts",
       "kind": "imports"
     },
     {

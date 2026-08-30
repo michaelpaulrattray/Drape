@@ -3913,3 +3913,82 @@ export const crewShiftRuns = mysqlTable("crew_shift_runs", {
 
 export type CrewShiftRunRow = typeof crewShiftRuns.$inferSelect;
 export type InsertCrewShiftRunRow = typeof crewShiftRuns.$inferInsert;
+
+/**
+ * HIS BACKGROUND-WORK SWITCHES — the steering half of #277 (migration 0056).
+ *
+ * One row is: **one switch the founder has set from `/admin/crew`**. The keys
+ * are `master` plus the five categories (`shared/crewWorkSwitches.ts`).
+ *
+ * # IT IS HIS HALF, WITH THE SAME SPLIT `crewReplies` ESTABLISHED
+ *
+ * Written ONLY by an `adminProcedure` with his session; shifts READ it and can
+ * never write it — the relationship they already have with `crewReplies`, and
+ * the reason a switch a shift could flip is not his switch.
+ *
+ * # ⚠ A MISSING ROW IS OFF, BY CONSTRUCTION RATHER THAN BY DEFAULT
+ *
+ * His bar: *"a fresh install, a lost row, an unreadable value: OFF."* One row
+ * per key makes "off" the ABSENCE of a row, so a truncated table, a failed
+ * ceremony or a half-written insert all fail toward nothing running. There is
+ * no default anyone could get backwards.
+ *
+ * `switchKey` is UNIQUE so the store cannot hold two answers for one switch —
+ * the read is an upsert-and-read, and two rows would make "is it on" depend on
+ * row order.
+ *
+ * # THE ROW IS THE AUDIT RECORD (working law 4)
+ *
+ * `changedByUserId` comes from `ctx.user.id` (invariant 3) and `changedAt` from
+ * the write. A separate audit row would be a second copy of the same fact.
+ */
+export const crewWorkSwitches = mysqlTable("crew_work_switches", {
+  id: int("id").autoincrement().primaryKey(),
+  /** `master` | `bugs` | `security` | `performance` | `housekeeping` | `process`. */
+  switchKey: varchar("switchKey", { length: 32 }).notNull(),
+  enabled: boolean("enabled").notNull().default(false),
+  /** `ctx.user.id`, never from input (invariant 3). */
+  changedByUserId: int("changedByUserId").notNull(),
+  changedAt: timestamp("changedAt").notNull().defaultNow(),
+}, (table) => ([
+  uniqueIndex("uq_crew_work_switches_key").on(table.switchKey),
+]));
+
+export type CrewWorkSwitchRow = typeof crewWorkSwitches.$inferSelect;
+export type InsertCrewWorkSwitchRow = typeof crewWorkSwitches.$inferInsert;
+
+/**
+ * WHAT IS ACTUALLY IN THE QUEUE — the counts beside his switches (migration 0056).
+ *
+ * One row is: **how many open cards carry one category's label**, written by a
+ * shift from the queue itself and stamped with when it looked.
+ *
+ * # IT IS THE SHIFTS' HALF, AND IT IS A DERIVED CACHE RATHER THAN A LIST
+ *
+ * The categories map onto labels that already exist (`bug`, `seat:warden`,
+ * `seat:machinist`, `seat:janitor`, `seat:retro`), so a card relabelled in
+ * GitHub moves category with nobody touching anything. What this table holds is
+ * the COUNT, derived mechanically and never typed by hand — working law 4's
+ * "derive, never mirror" with a timestamp attached rather than a second list.
+ *
+ * ⚠ **`countedAt` IS NOT DECORATION — IT IS THE HONEST PART.** A truly live
+ * count needs the server to hold a GitHub token, which is a founder-level
+ * decision about a credential rather than a shift's call (migration 0056's
+ * header carries the argument). So the page says **"counted 14 min ago"** out
+ * loud instead of implying an instant it does not have.
+ *
+ * `categoryKey` is UNIQUE: the write is an upsert per category, and a second
+ * row would make the count depend on which one the reader saw first.
+ */
+export const crewQueueCounts = mysqlTable("crew_queue_counts", {
+  id: int("id").autoincrement().primaryKey(),
+  /** `bugs` | `security` | `performance` | `housekeeping` | `process`. */
+  categoryKey: varchar("categoryKey", { length: 32 }).notNull(),
+  openCount: int("openCount").notNull(),
+  countedAt: timestamp("countedAt").notNull().defaultNow(),
+}, (table) => ([
+  uniqueIndex("uq_crew_queue_counts_key").on(table.categoryKey),
+]));
+
+export type CrewQueueCountRow = typeof crewQueueCounts.$inferSelect;
+export type InsertCrewQueueCountRow = typeof crewQueueCounts.$inferInsert;

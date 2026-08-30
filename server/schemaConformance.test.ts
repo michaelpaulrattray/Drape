@@ -283,6 +283,11 @@ describe("the unmigrated exception list only shrinks", () => {
          the exception. Per the note above, the line and this pin move in the
          SAME commit — `crew_replies` went red on main for exactly that. */
       "crew_shift_runs",
+      /* Joined 2026-08-30 (#277, migration 0056). BOTH leave together, on the
+         ONE ceremony that creates them both — `scripts/ceremony-crew-work-switches.mts`,
+         whose closing line names this pin as well as the exception list. */
+      "crew_work_switches",
+      "crew_queue_counts",
     ]);
   });
 });

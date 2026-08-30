@@ -34,13 +34,21 @@ import { describe, expect, it } from "vitest";
 
 const REPO = join(__dirname, "..");
 
-/** The two files that may write. Any third one is a decision, not an omission. */
+/**
+ * The files that may write, each with the ONE table it may write.
+ *
+ * A third entry is a decision, not an omission — and the pairing is what makes
+ * this test say something: `crew-count-queue.mts` writing `crew_shift_runs`, or
+ * `crew-shift-start.mts` writing the counts, would each be a boundary breach
+ * that a single shared allowlist could not see.
+ */
 const WRITER_SCRIPTS = [
-  "scripts/crew-shift-start.mts",
-  "scripts/crew-shift-close.mts",
+  { path: "scripts/crew-shift-start.mts", table: "crew_shift_runs" },
+  { path: "scripts/crew-shift-close.mts", table: "crew_shift_runs" },
+  { path: "scripts/crew-count-queue.mts", table: "crew_queue_counts" },
 ] as const;
 
-/** The one table they may name. */
+/** Kept for the arms that ask about the shift-run road specifically. */
 const OWN_TABLE = "crew_shift_runs";
 
 /**
@@ -67,13 +75,31 @@ const FORBIDDEN_TABLES = [
 ] as const;
 
 /**
+ * Tables a shift may READ but must never WRITE — the founder's own half of the
+ * store.
+ *
+ * ⚠ `crew_work_switches` is the sharpest entry this file has ever had, and the
+ * reason is worth stating: **a shift that could write his switches could switch
+ * its own permission on.** The whole point of #277 is that background work is
+ * opt-in and the switch is HIS. So the shift-side reader
+ * (`scripts/crew-work-switches.mts`) and the gate inside
+ * `crew-shift-start.mts` both SELECT from it, which is allowed and necessary,
+ * and any INSERT/UPDATE/DELETE aimed at it is a breach.
+ *
+ * This is the same relationship shifts have with `crew_replies` — except that
+ * one is enforced by the table never appearing in their code at all, and this
+ * one has to permit the read. Hence a second list rather than a wider first one.
+ */
+const READ_ONLY_TABLES = ["crew_work_switches"] as const;
+
+/**
  * The only things an INSERT / UPDATE / DELETE in these scripts may target.
  *
  * `TABLE` is the `const TABLE = "crew_shift_runs"` both writers interpolate —
  * the indirection is pinned by its own arm below, so the allowance cannot be
  * used to smuggle a different table through a renamed constant.
  */
-const ALLOWED_WRITE_TARGETS = ["crew_shift_runs", "TABLE"] as const;
+const ALLOWED_WRITE_TARGETS = ["crew_shift_runs", "crew_queue_counts", "TABLE"] as const;
 
 /** Statements a status-board writer has no business issuing. */
 const FORBIDDEN_STATEMENTS = [
@@ -134,10 +160,22 @@ function writeTargetsIn(source: string): string[] {
 
     `writeTargetsIn` is now pinned by an arm that asserts it FINDS the real
     writes (below). A reader that can only say "no" is not a reader.
+
+    ⚠ AND THE `UPDATE` PATTERN CARRIES A NEGATIVE LOOKBEHIND FOR
+    `ON DUPLICATE KEY `, WHICH IS NOT A CONVENIENCE. MySQL's upsert ends
+    `... ON DUPLICATE KEY UPDATE openCount = VALUES(openCount)`, so a bare
+    \bUPDATE\s+(\w+) reads the COLUMN NAME as a table and reported
+    `crew-count-queue.mts` as writing a table called `openCount`. Left
+    unhandled, the only ways to green are to widen the allowlist with a column
+    name — which would blind the arm to a genuine second table — or to stop
+    using upserts. Both are the tail wagging the dog.
+
+    The lookbehind is itself controlled below: a real `UPDATE <table>` in the
+    same file must still be found.
   */
   const patterns = [
     /\bINSERT\s+INTO\s+[`'"\\\s]*\$?\{?\s*([A-Za-z_][\w]*)/gi,
-    /\bUPDATE\s+[`'"\\\s]*\$?\{?\s*([A-Za-z_][\w]*)/gi,
+    /(?<!ON DUPLICATE KEY )\bUPDATE\s+[`'"\\\s]*\$?\{?\s*([A-Za-z_][\w]*)/gi,
     /\bDELETE\s+FROM\s+[`'"\\\s]*\$?\{?\s*([A-Za-z_][\w]*)/gi,
   ];
   for (const pattern of patterns) {
@@ -163,14 +201,12 @@ function forbiddenStatementsIn(source: string): string[] {
 }
 
 describe("the shift write road is one table wide", () => {
-  it.each(WRITER_SCRIPTS)("%s names its own table", (script) => {
-    expect(sourceOf(script)).toContain(OWN_TABLE);
-  });
-
-  it.each(WRITER_SCRIPTS)("%s binds its table constant to its own table", (script) => {
+  it.each(WRITER_SCRIPTS)("$path binds its table constant to its own table", ({ path, table }) => {
     /* The indirection `ALLOWED_WRITE_TARGETS` permits is pinned here, so a
-       renamed constant cannot carry a different table through the arm below. */
-    expect(sourceOf(script)).toContain(`const TABLE = "${OWN_TABLE}"`);
+       renamed constant cannot carry a different table through the arm below —
+       and it is pinned PER SCRIPT, so the counter cannot borrow the shift-run
+       road's allowance. */
+    expect(sourceOf(path)).toContain(`const TABLE = "${table}"`);
   });
 
   /*
@@ -183,8 +219,8 @@ describe("the shift write road is one table wide", () => {
     clean while every one of their writes sat in plain sight. Asserting the
     reader FINDS them is what makes the next arm's `[]` mean something.
   */
-  it.each(WRITER_SCRIPTS)("%s — the reader can SEE this script's writes", (script) => {
-    expect(writeTargetsIn(sourceOf(script)).length).toBeGreaterThan(0);
+  it.each(WRITER_SCRIPTS)("$path — the reader can SEE this script's writes", ({ path }) => {
+    expect(writeTargetsIn(sourceOf(path)).length).toBeGreaterThan(0);
   });
 
   it("the start script inserts, and the close script updates", () => {
@@ -193,18 +229,43 @@ describe("the shift write road is one table wide", () => {
     expect(stripComments(sourceOf("scripts/crew-shift-close.mts"))).toMatch(/\bUPDATE\b/i);
   });
 
-  it.each(WRITER_SCRIPTS)("%s writes to no table but its own", (script) => {
-    const stray = writeTargetsIn(sourceOf(script))
+  it.each(WRITER_SCRIPTS)("$path writes to no table but its own", ({ path }) => {
+    const stray = writeTargetsIn(sourceOf(path))
       .filter((target) => !ALLOWED_WRITE_TARGETS.includes(target as (typeof ALLOWED_WRITE_TARGETS)[number]));
     expect(stray).toEqual([]);
   });
 
-  it.each(WRITER_SCRIPTS)("%s never names the founder's own half in code", (script) => {
-    expect(forbiddenTablesInCode(sourceOf(script))).toEqual([]);
+  it.each(WRITER_SCRIPTS)("$path never names the founder's own half in code", ({ path }) => {
+    expect(forbiddenTablesInCode(sourceOf(path))).toEqual([]);
   });
 
-  it.each(WRITER_SCRIPTS)("%s issues no DDL and never DELETEs", (script) => {
-    expect(forbiddenStatementsIn(sourceOf(script))).toEqual([]);
+  it.each(WRITER_SCRIPTS)("$path issues no DDL and never DELETEs", ({ path }) => {
+    expect(forbiddenStatementsIn(sourceOf(path))).toEqual([]);
+  });
+
+  /*
+    ⚠ THE #277 ARM, AND THE ONE THAT MATTERS MOST ON THIS PAGE: a shift that
+    could write his switches could switch its own permission on. Reading is
+    allowed and necessary — the gate inside `crew-shift-start.mts` SELECTs from
+    it — so this asks about WRITES specifically rather than banning the name.
+  */
+  it.each([...WRITER_SCRIPTS.map((w) => w.path), "scripts/crew-work-switches.mts"])(
+    "%s never WRITES a founder-owned, read-only table",
+    (path) => {
+      const targets = writeTargetsIn(sourceOf(path));
+      for (const table of READ_ONLY_TABLES) expect(targets).not.toContain(table);
+    },
+  );
+
+  /*
+    And the shift-side switch reader is read-only WHOLE — no writes at all, the
+    same property `crew-read-replies.mts` states about his replies.
+  */
+  it("the switch reader never writes anything", () => {
+    const source = sourceOf("scripts/crew-work-switches.mts");
+    expect(source).toContain("crew_work_switches");
+    expect(writeTargetsIn(source)).toEqual([]);
+    expect(forbiddenStatementsIn(source)).toEqual([]);
   });
 
   /*
@@ -240,6 +301,21 @@ await conn.query("UPDATE crew_replies SET body = 'x'");
 `;
     expect(writeTargetsIn(doctored)).toContain("crew_replies");
     expect(forbiddenTablesInCode(doctored)).toContain("crew_replies");
+  });
+
+  /*
+    THE LOOKBEHIND'S OWN CONTROL. It exists to stop `ON DUPLICATE KEY UPDATE
+    <column>` reading as a table — and it must not, in doing so, hide a real
+    UPDATE that happens to sit in a file containing an upsert.
+  */
+  it("the ON DUPLICATE KEY lookbehind hides the column and NOT a real UPDATE", () => {
+    const upsertOnly = "await conn.query(`INSERT INTO `x` (a) VALUES (?) ON DUPLICATE KEY UPDATE a = VALUES(a)`);";
+    expect(writeTargetsIn(upsertOnly)).not.toContain("a");
+    expect(writeTargetsIn(upsertOnly)).toContain("x");
+
+    const both = `${upsertOnly}
+await conn.query("UPDATE crew_replies SET body = 'x'");`;
+    expect(writeTargetsIn(both)).toContain("crew_replies");
   });
 
   it("catches a write aimed at any other table", () => {
@@ -282,6 +358,6 @@ await conn.query("UPDATE users SET role = 'admin'");
   */
   it("fails loudly if a writer script is missing", () => {
     expect(() => sourceOf("scripts/crew-shift-does-not-exist.mts")).toThrow();
-    for (const script of WRITER_SCRIPTS) expect(sourceOf(script).length).toBeGreaterThan(500);
+    for (const script of WRITER_SCRIPTS) expect(sourceOf(script.path).length).toBeGreaterThan(500);
   });
 });
