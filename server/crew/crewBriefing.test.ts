@@ -19,6 +19,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
+
 import {
   CREW_JOURNAL_CAP,
   crewBriefingSchema,
@@ -257,6 +259,43 @@ describe("the briefing file", () => {
         },
       }),
     ).toThrow();
+  });
+
+  it("a held row carries its state and its reason, and nothing else (#298)", () => {
+    const valid = crewBriefingSchema.parse(JSON.parse(readFileSync(briefingPath, "utf8")));
+    const at = valid.nextUp.readAt;
+    const row = (held: unknown) => ({
+      ...valid,
+      nextUp: { readAt: at, items: [{ issueNumber: 999, title: "t", urgent: false, held }] },
+    });
+
+    /* ⚠ **THE FIELD IS OPTIONAL AND THAT IS THE COMPATIBILITY PROPERTY**:
+       every edition written before it existed still parses, and absent says
+       the true thing about those rows — nothing was stopping a shift. */
+    expect(() => crewBriefingSchema.parse({
+      ...valid,
+      nextUp: { readAt: at, items: [{ issueNumber: 999, title: "t", urgent: false }] },
+    })).not.toThrow();
+
+    for (const state of CREW_HELD_STATES) {
+      expect(() => crewBriefingSchema.parse(row({ state }))).not.toThrow();
+      expect(() => crewBriefingSchema.parse(row({ state, because: "a reason" }))).not.toThrow();
+    }
+
+    /* A state nobody has built a chip for would render as a blank label. */
+    expect(() => crewBriefingSchema.parse(row({ state: "somebody-elses-idea" }))).toThrow();
+    expect(() => crewBriefingSchema.parse(row({}))).toThrow();
+
+    /* ⚠ `.strict()` sits INSIDE `.optional()` — on the wrapper it does nothing
+       in zod 4, which is a strictness that reads as present and is not. This
+       arm is what proves it landed on the object. */
+    expect(() => crewBriefingSchema.parse(row({ state: "blocked", untilWhen: "soon" }))).toThrow();
+
+    /* An empty reason is a filer mid-edit, not a sentence to render. */
+    expect(() => crewBriefingSchema.parse(row({ state: "blocked", because: "" }))).toThrow();
+    expect(() => crewBriefingSchema.parse(
+      row({ state: "blocked", because: "x".repeat(CREW_HOLD_REASON_MAX + 1) }),
+    )).toThrow();
   });
 
   it("the journal cap holds at the schema", () => {
