@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
-import { CastingModal } from "./CastingModal";
+import { CastingModal } from "@/foundation/CastingModal";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**

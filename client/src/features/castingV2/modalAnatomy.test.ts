@@ -9,11 +9,25 @@ import { describe, expect, it } from "vitest";
  * weight tracks stakes, and a rename is a text edit.
  */
 
-const SHELL = new URL("./components/CastingModal.tsx", import.meta.url);
+const SHELL = new URL("../../foundation/CastingModal.tsx", import.meta.url);
 const SIGN = new URL("./components/SignConfirm.tsx", import.meta.url);
-const DELETE = new URL("./components/DeleteCastConfirm.tsx", import.meta.url);
-const RENAME = new URL("./components/RenameCastDialog.tsx", import.meta.url);
-const CSS = new URL("./castingV2.css", import.meta.url);
+const DELETE = new URL("../../foundation/DestructiveConfirm.tsx", import.meta.url);
+const RENAME = new URL("../../foundation/RenameDialog.tsx", import.meta.url);
+/*
+  ⚠ THE DIALOGS' CSS NOW SPANS TWO SHEETS (#262). The shell, the destructive
+  confirm, the overflow menu and the rename dialog were promoted into
+  `foundation/`, and their rules went with them — a component promoted without
+  its CSS is a component that looks different in its new home.
+
+  Read in LOAD ORDER — `foundation/index.ts` imports `modals.css`, and the
+  casting pages import `castingV2.css` after pulling the barrel in — because
+  two arms below assert that one rule is declared BEFORE another, and a reader
+  that concatenated them the other way would pass while the browser disagreed.
+*/
+const MODALS_CSS = new URL("../../foundation/modals.css", import.meta.url);
+const CASTING_CSS = new URL("./castingV2.css", import.meta.url);
+const readCss = async () =>
+  (await readFile(MODALS_CSS, "utf8")) + "\n" + (await readFile(CASTING_CSS, "utf8"));
 
 describe("sign and delete share one shell", () => {
   it("both render through it rather than rebuilding a scrim", async () => {
@@ -36,7 +50,7 @@ describe("sign and delete share one shell", () => {
     */
     const shell = await readFile(SHELL, "utf8");
     expect(shell).toContain("document.body");
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const scrim = css.slice(css.indexOf(".dpc-modal {"), css.indexOf("@keyframes dpc-modal-fade"));
     expect(scrim).toContain("position: fixed");
     expect(scrim).toContain("inset: 0");
@@ -51,7 +65,7 @@ describe("the delete dialog never borrows the commit treatment", () => {
       constructive one. Solid coral is worse: it already means KEPT on a
       candidate card.
     */
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const danger = css.slice(css.indexOf(".dpc-modal__danger {"), css.indexOf(".dpc-modal__danger:focus-visible"));
     expect(danger).toContain("background: var(--fill)");
     expect(danger).toContain("color: var(--muted)");
@@ -69,7 +83,7 @@ describe("the delete dialog never borrows the commit treatment", () => {
     // The arrow means "forward, proceed" and is wrong on a destructive action.
     expect(del).not.toContain("ArrowRight");
 
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     expect(css).toContain("filter: grayscale(1)");
     expect(css).toContain("opacity: 0.62");
     expect(css).toContain(".dpc-modal__eyebrow--danger { color: var(--accentInk); }");
@@ -111,7 +125,7 @@ describe("the rename dialog", () => {
   });
 
   it("is lighter than its siblings, and stays that way", async () => {
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const card = css.slice(css.indexOf(".dpc-renamem {"), css.indexOf(".dpc-renamem__head"));
     expect(card).toContain("max-width: 428px");
     // Against the shared shell's 664.
@@ -119,7 +133,7 @@ describe("the rename dialog", () => {
   });
 
   it("commits in ink, never red, and never on a no-op", async () => {
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const primary = css.slice(
       css.indexOf(".dpc-renamem__primary {"),
       css.indexOf(".dpc-renamem__secondary:focus-visible"),
@@ -147,7 +161,7 @@ describe("the rename dialog", () => {
       as part of the field rather than as the decision being made. The sign
       modal DOES have one, and stacking both would open a gap there.
     */
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const actions = css.slice(
       css.indexOf(".dpc-modal__actions {"),
       css.indexOf(".dpc-modal__secondary"),
@@ -207,7 +221,7 @@ describe("the concept review shares the shell without inheriting its latch", () 
     */
     const review = await readFile(REVIEW, "utf8");
     expect(review).toContain('className="dpc-modal__field"');
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     expect(css).toContain(".dpc-modal__field textarea:focus-visible { outline: none; box-shadow: none; }");
     const field = css.slice(
       css.indexOf(".dpc-modal__field textarea {"),
@@ -240,7 +254,7 @@ describe("the concept review shows the WHOLE picture she chose", () => {
       exactly as though it had worked. A future tidy-up that "consistently"
       restores the child combinator here would put it back to inert, silently.
     */
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     expect(css).toContain(".dpc-modal__portrait--whole img {");
     expect(css).not.toContain(".dpc-modal__portrait--whole > img");
   });
@@ -274,7 +288,7 @@ describe("all three portraits lay out by ONE mechanism", () => {
       out at its own size and was clipped by `overflow: hidden`. On our own 2:3
       renders that looks exactly like the rule working, which is why it survived.
     */
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     expect(css).toContain(".dpc-modal__portrait img {");
     expect(css).not.toContain(".dpc-modal__portrait > img");
   });
@@ -287,7 +301,7 @@ describe("all three portraits lay out by ONE mechanism", () => {
       already clipping to for any image at least as tall as the 4:5 slot, which
       is every render this product makes.
     */
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const base = block(css, ".dpc-modal__portrait img");
     expect(base).toContain("object-fit: cover");
     expect(base).toContain("object-position: top");
@@ -321,7 +335,7 @@ describe("all three portraits lay out by ONE mechanism", () => {
       out loud because an arm that implies both cases bite is an arm whose reason
       a future reader cannot check.
     */
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     expect(block(css, ".dpc-modal__portrait--whole img")).toContain("object-position: center");
     expect(block(css, ".dpc-modal__muted > img")).toContain("object-position: top");
   });
@@ -333,7 +347,7 @@ describe("all three portraits lay out by ONE mechanism", () => {
       `object-position` without declaring it — the arm would still pass and the
       reason it was written would be gone.
     */
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const base = css.indexOf("\n.dpc-modal__portrait img {");
     /* Or an absent base rule is index -1 and every neighbour "comes after" it. */
     expect(base, "no base portrait rule to order against").toBeGreaterThan(-1);
@@ -392,7 +406,7 @@ describe("the trap holds in the state where every end of the list is disabled", 
     const review = await readFile(REVIEW, "utf8");
     expect(review).toContain('type="file"');
     expect(review).toContain('className="dpc-entry__file"');
-    const css = await readFile(CSS, "utf8");
+    const css = await readCss();
     const picker = css.slice(css.indexOf(".dpc-entry__file {"));
     expect(picker.slice(0, 60)).toContain("display: none;");
   });

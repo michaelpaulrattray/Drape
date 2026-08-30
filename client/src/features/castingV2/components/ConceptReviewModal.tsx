@@ -21,7 +21,7 @@ import {
   conceptCountLabel,
 } from "../conceptUpload";
 import { ACCEPTED_PICTURE_FILES } from "../pictureBytes";
-import { CastingModal } from "./CastingModal";
+import { CastingModal } from "@/foundation/CastingModal";
 
 /**
  * THE REVIEW STEP — the photograph beside the words, and the cast (#196).

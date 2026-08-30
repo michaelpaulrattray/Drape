@@ -29,7 +29,7 @@ import { CastingModal, firstNameOf } from "./CastingModal";
  * right is most of what separates a considered destructive flow from a
  * boilerplate one.
  */
-export function DeleteCastConfirm({
+export function DestructiveConfirm({
   name,
   imageUrl,
   signed = true,

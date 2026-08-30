@@ -378,7 +378,7 @@ describe("a scope that closes under a live control never speaks to the customer"
  *     mix-up the photo-beside-words view was adopted to make obvious.
  */
 const REVIEW = new URL("./components/ConceptReviewModal.tsx", import.meta.url);
-const SHELL = new URL("./components/CastingModal.tsx", import.meta.url);
+const SHELL = new URL("../../foundation/CastingModal.tsx", import.meta.url);
 
 describe("the count is a count, not a second copy of a server cap", () => {
   it("says how many characters and nothing about a ceiling", () => {

@@ -46,7 +46,17 @@ import { describe, expect, it } from "vitest";
  */
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
+/*
+  ⚠ TWO SHEETS SINCE #262. The promoted modal + menu block lives in
+  `foundation/modals.css` now, and casting's own components still render its
+  classes. Reading only `castingV2.css` would shrink this guard's population by
+  the whole promoted block — a dead class in there would be invisible to it
+  forever, which is the exact failure the floor arm below exists to catch.
+*/
 const SHEET = join(HERE, "castingV2.css");
+const PROMOTED_SHEET = join(HERE, "..", "..", "foundation", "modals.css");
+const readSheets = async () =>
+  (await readFile(PROMOTED_SHEET, "utf8")) + "\n" + (await readFile(SHEET, "utf8"));
 const CLIENT_SRC = fileURLToPath(new URL("../../", import.meta.url));
 const SERVER = fileURLToPath(new URL("../../../../server/", import.meta.url));
 const SHARED = fileURLToPath(new URL("../../../../shared/", import.meta.url));
@@ -281,7 +291,7 @@ async function walkRoot(root: string): Promise<Array<{ path: string; text: strin
    measured 2026-08-29 under a full `pnpm test`: this suite's slowest arm TIMED OUT; 248ms alone). */
 describe("castingV2.css declares no class the product never emits", { timeout: 60_000 }, () => {
   it("has no dead class outside the tolerated list", async () => {
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const sources = await collect(CLIENT_SRC);
     const tolerated = new Set(TOLERATED_DEAD.map((t) => t.className));
 
@@ -299,7 +309,7 @@ describe("castingV2.css declares no class the product never emits", { timeout: 6
   });
 
   it("tolerated entries are still dead — the list only shrinks", async () => {
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const sources = await collect(CLIENT_SRC);
     const dead = new Set(deadClasses(css, sources));
     for (const { className, why } of TOLERATED_DEAD) {
@@ -317,7 +327,7 @@ describe("castingV2.css declares no class the product never emits", { timeout: 6
       becomes empty, `[]` equals `[]`, and the suite reports PASS over a
       stylesheet nobody checked. 322 classes stood the day this landed.
     */
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const classes = declaredClasses(css);
     expect(classes.length).toBeGreaterThan(250);
     expect(classes).toContain("dpc-modal__portrait");
@@ -342,7 +352,7 @@ describe("castingV2.css declares no class the product never emits", { timeout: 6
       the tokeniser and the regex disagreeing about a boundary, which is the
       likelier mistake and the one that would quietly resurrect a corpse.
     */
-    const css = await readFile(SHEET, "utf8");
+    const css = await readSheets();
     const sources = await collect(CLIENT_SRC);
     const byIndex = new Set(deadClasses(css, sources));
     const byLocator = declaredClasses(css).filter((n) => emittersOf(n, sources).length === 0);

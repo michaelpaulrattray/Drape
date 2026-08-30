@@ -28,11 +28,11 @@ import { briefWithDescription } from "@/features/castingV2/conceptUpload";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
-import { ConfirmDialog } from "@/features/castingV2/components/ConfirmDialog";
+import { ConfirmDialog } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
-import { CardMenu } from "@/features/castingV2/components/CardMenu";
-import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
-import { RenameCastDialog } from "@/features/castingV2/components/RenameCastDialog";
+import { CardMenu } from "@/foundation";
+import { DestructiveConfirm } from "@/foundation";
+import { RenameDialog } from "@/foundation";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import {
   RETENTION_EMPTY_STATE,
@@ -1090,7 +1090,7 @@ export default function CastingV2() {
         missing, which is a defect no amount of styling would have fixed.
       */}
       {renaming ? (
-        <RenameCastDialog
+        <RenameDialog
           currentName={renaming.name || "Unnamed"}
           imageUrl={renaming.imageUrl}
           busy={renameCast.isPending}
@@ -1116,7 +1116,7 @@ export default function CastingV2() {
       ) : null}
 
       {deletingCast ? (
-        <DeleteCastConfirm
+        <DestructiveConfirm
           name={deletingCast.name ?? "this cast"}
           imageUrl={deletingCast.imageUrl}
           busy={deleteCast.isPending}
