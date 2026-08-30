@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "edfe775545d7d59f"
+    "sourceFingerprint": "3de381e2a2019320"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 49
+      "moduleCount": 50
     },
     {
       "id": "domain:alerting",
@@ -93,7 +93,7 @@
     {
       "id": "domain:pages",
       "name": "pages",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:platform",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 42
+      "moduleCount": 43
     },
     {
       "id": "domain:studio",
@@ -2543,6 +2543,12 @@
     {
       "id": "module:client/src/pages/AdminAuditLogs.tsx",
       "path": "client/src/pages/AdminAuditLogs.tsx",
+      "domain": "pages",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/pages/AdminBugReports.tsx",
+      "path": "client/src/pages/AdminBugReports.tsx",
       "domain": "pages",
       "lifecycle": "active"
     },
@@ -5133,6 +5139,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/routes/admin/bugReports.ts",
+      "path": "server/routes/admin/bugReports.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/routes/admin/changeRequests.ts",
       "path": "server/routes/admin/changeRequests.ts",
       "domain": "admin",
@@ -5693,6 +5705,12 @@
     {
       "id": "module:shared/briefLength.ts",
       "path": "shared/briefLength.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/bugReportVocabulary.ts",
+      "path": "shared/bugReportVocabulary.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -6947,6 +6965,26 @@
       "file": "server/routes/boards.ts"
     },
     {
+      "id": "route:bugReports.getBugReportCounts",
+      "namespace": "bugReports",
+      "name": "getBugReportCounts",
+      "type": "query",
+      "auth": "admin",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/admin/bugReports.ts"
+    },
+    {
+      "id": "route:bugReports.getBugReports",
+      "namespace": "bugReports",
+      "name": "getBugReports",
+      "type": "query",
+      "auth": "admin",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/admin/bugReports.ts"
+    },
+    {
       "id": "route:bugReports.submit",
       "namespace": "bugReports",
       "name": "submit",
@@ -6955,6 +6993,16 @@
       "input": "open",
       "rateLimited": true,
       "file": "server/routes/bugReports.ts"
+    },
+    {
+      "id": "route:bugReports.updateBugReportStatus",
+      "namespace": "bugReports",
+      "name": "updateBugReportStatus",
+      "type": "mutation",
+      "auth": "admin",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/admin/bugReports.ts"
     },
     {
       "id": "route:castingV2.abandonSession",
@@ -10594,6 +10642,10 @@
       "path": "server/briefingConformance.test.ts"
     },
     {
+      "id": "test:server/bugReportInbox.test.ts",
+      "path": "server/bugReportInbox.test.ts"
+    },
+    {
       "id": "test:server/bulkRefreshDialog.test.ts",
       "path": "server/bulkRefreshDialog.test.ts"
     },
@@ -13008,6 +13060,11 @@
     {
       "from": "module:client/src/App.tsx",
       "to": "module:client/src/pages/AdminAuditLogs.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/App.tsx",
+      "to": "module:client/src/pages/AdminBugReports.tsx",
       "kind": "imports"
     },
     {
@@ -17963,6 +18020,31 @@
     {
       "from": "module:client/src/pages/AdminAuditLogs.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminBugReports.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminBugReports.tsx",
+      "to": "module:client/src/components/ui/button.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminBugReports.tsx",
+      "to": "module:client/src/features/admin/AdminHeader.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminBugReports.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminBugReports.tsx",
+      "to": "module:shared/bugReportVocabulary.ts",
       "kind": "imports"
     },
     {
@@ -27236,6 +27318,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/bugReports.ts",
+      "to": "module:shared/bugReportVocabulary.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/castingV2.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -29231,6 +29318,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/admin/bugReports.ts",
+      "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/bugReports.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/bugReports.ts",
+      "to": "module:server/security/adminSecurity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/bugReports.ts",
+      "to": "module:shared/bugReportVocabulary.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/admin/changeRequests.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -29288,6 +29395,11 @@
     {
       "from": "module:server/routes/admin/index.ts",
       "to": "module:server/routes/admin/auditLogs.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/index.ts",
+      "to": "module:server/routes/admin/bugReports.ts",
       "kind": "imports"
     },
     {

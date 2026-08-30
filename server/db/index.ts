@@ -188,7 +188,13 @@ export {
 export { exportUserData, type GdprExportData } from "./gdprExport";
 
 // Bug Reports
-export { createBugReport } from "./bugReports";
+export {
+  createBugReport,
+  listBugReports,
+  getBugReportCounts,
+  updateBugReportStatus,
+} from "./bugReports";
+export type { BugReportRow } from "./bugReports";
 
 // Invite Codes (Pre-launch access gating)
 export {
