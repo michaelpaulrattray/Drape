@@ -22,7 +22,18 @@ b.updatedAt = "2026-08-30T11:45:00+10:00";
 
 const NEW_REPLIES = [31, 32, 33, 34, 35, 36];
 
-const find = <T extends { id: string }>(list: T[], id: string): T => {
+/*
+  ⚠ TYPED AS AN INDEXABLE RECORD, NOT A BARE GENERIC (repaired 2026-08-30,
+  foreman-115). `b` is `JSON.parse` output, so it is `any`; a generic
+  `<T extends { id: string }>` handed an `any[]` falls back to its own
+  CONSTRAINT, and every field this script then writes — `state`, `title`,
+  `options` — is "not on type { id: string }". Eight errors, and `pnpm check`
+  has been red on main since this file landed at `d50b1d3e`. It was never seen
+  by CI because that was a rite push to main rather than a PR.
+*/
+type BriefingItem = { id: string } & Record<string, unknown>;
+
+const find = (list: BriefingItem[], id: string): BriefingItem => {
   const hit = list.find((x) => x.id === id);
   if (!hit) throw new Error(`briefing item "${id}" is gone — refusing to write an edition that silently drops it`);
   return hit;
