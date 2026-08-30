@@ -1,6 +1,6 @@
 {
-  "edition": 155,
-  "updatedAt": "2026-08-31T09:05:00+10:00",
+  "edition": 156,
+  "updatedAt": "2026-08-31T09:35:00+10:00",
   "shift": "foreman-136",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -166,7 +166,7 @@
         }
       ],
       "recommendation": "Keep a General box. Your own reason for removing the journal was that it had one job left and the machine now does it - but an unattached reply is a second job, and it is the one that costs you if it breaks. A small box named for what it is keeps the page honest without the risk.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-31T06:06:39+10:00",
       "issueNumber": 293
     },
@@ -193,7 +193,7 @@
         }
       ],
       "recommendation": "Fund the court. It is your own brief being ignored on a detail you took the trouble to type, the mechanism is already understood, and the fix already exists one road over — so this is measuring a known thing rather than exploring. But it is 320 of your credits and it changes the prompt every cast goes through, so it is not something a shift should start on its own.",
-      "state": "open",
+      "state": "answered",
       "issueNumber": 316,
       "filedAt": "2026-08-31T05:05:00+10:00"
     },
@@ -220,7 +220,7 @@
         }
       ],
       "recommendation": "Say “merge it” and run the command. The automatic checks all passed; the reason it is held is narrower than it looks. Anything touching the database folder gets flagged for your eye by a rule written for billing and login code, and while your Fable reviewer is out of credits those flagged changes wait. This one has no billing, login or payment code in it at all — it is your admin panel, a crew table, and tests. I did not want to merge past your own rule on my own reading of it, and holding cost nothing, because the feature is invisible until you run the command anyway.",
-      "state": "open",
+      "state": "answered",
       "issueNumber": 285,
       "filedAt": "2026-08-31T03:50:00+10:00"
     },
@@ -252,7 +252,7 @@
         }
       ],
       "recommendation": "Keep it and mark it not built yet, now — then build membership properly when you want the feature. Marking it is what you already ruled for every other unbuilt thing on this rail (“a stub names a place, never a capability”), and it keeps the shape of the product visible while it is cheap, which is your own reason. Separately, you also asked for the + to get its hover back: it is held with “make it live”, because a hover on something that goes nowhere is an affordance for a dead control, and the stub pattern you ratified cancels hover everywhere else on this rail. If you want it anyway it is one line — just say so.",
-      "state": "open",
+      "state": "answered",
       "issueNumber": 281,
       "filedAt": "2026-08-31T02:55:00+10:00"
     },
@@ -1033,7 +1033,7 @@
       "id": "fitted-hardware-frames-279",
       "title": "Your cyborg, eight ways — and one thing in every single frame is on the wrong side",
       "question": "Two questions, and the second is the one I would not decide for you. First: is this the cyborg you meant — do the ports, seams and jaw plate read as part of the man rather than kit he put on? Second: you asked for his RIGHT eye to glow. Look at the close-up. It is his LEFT, in all eight. Is that worth a fix?",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-31T05:05:00+10:00",
       "issueNumber": 316,
       "cardId": "side-clause-316",
@@ -1059,7 +1059,7 @@
       "id": "queue-titles-285-frames",
       "title": "Your switch panel, before and after",
       "question": "This is the whole change. Does naming five cards under each switch tell you what you wanted to know — or is it more than you want on a panel you look at from bed?",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-31T03:50:00+10:00",
       "issueNumber": 285,
       "cardId": "queue-titles-285",
@@ -2896,6 +2896,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T09:35:00+10:00",
+      "shift": "foreman-136",
+      "text": "YOUR FOUR ANSWERS ARE IN, AND ALL FOUR ARE RECORDED ON THEIR CARDS — here is what each one actually unblocks, and the single question I am putting back to you.\n\nTHE JOURNAL: \"Keep a General box.\" That was the last thing holding it. The journal goes, the General box replaces the one job it was still doing, and — the part worth saying out loud — your cardless replies are now KEPT rather than removed. The card had originally said to remove that path in the same change; your answer reverses it in the safe direction, so nothing you type can land with nowhere to appear. It is a proper change to the page you steer from, so it goes through the normal review, but nothing is waiting on you any more.\n\nTHE WRONG EYE: \"Fund the court.\" Booked. Two rolls, 320 of your credits, the same brief with and without the sentence, eight frames each, and you judge them. It has not started: it is the kind of work that waits for your Fable reviewer to come back, because one clause in that prompt moves every cast in the product, including briefs that never mention a side.\n\nTHE SWITCH-PANEL TITLES: \"Say 'merge it' and run the command yourself.\" The merge is yours to authorise and you have. ⚠ ONE WORD NEEDS YOU AGAIN, and it is the production database, so I am not guessing at it. The option you picked said YOU would run the one command; you added the word \"yourself\", which most naturally means you want US to run it. Running a migration on your live database on my reading of one word is not a risk worth taking when the answer costs you a sentence. Say \"you run it\" and the next shift does. Either way nothing on your panel changes until that command runs, so waiting costs nothing.\n\nTHE INVITE BLOCK: \"Show your own face beside the +, but keep it stubbed out until membership exists.\" That was not one of the options — it is better than both, and it is now what gets built: your face beside the dashed +, still greyed and not clickable, saying what it is. It will show whoever is signed in rather than you specifically, because hard-coding your face would be a lie on any other account.\n\nAND THE THING THAT WENT WRONG LAST NIGHT IS FIXED — the entry below has the detail. The nights were supposed to park themselves and never did, because the program running them had never read the rule. It reads its own instructions now, and I watched it do it.\n\nTHE QUEUE: 93 open, 10 urgent, 3 genuinely waiting on you now (the Settings-modal brief, the popover decision, and the one word above), none rotting."
+    },
+    {
       "at": "2026-08-31T09:05:00+10:00",
       "shift": "foreman-136",
       "text": "THE NIGHTS WERE SUPPOSED TO STOP THEMSELVES LAST NIGHT AND THEY DID NOT — I found out why, and it is fixed.\n\nYou asked for this on the park card: when everything is waiting on you, the nights should stop rather than keep starting sessions that conclude there is nothing to do. That was built the night before last, tested properly, and reported to you as live. It was live. It also never ran once.\n\nWHAT ACTUALLY HAPPENED. Three shifts in a row last night worked out correctly that there was nothing to do and that the team should park. All three were right. The team started another session thirty minutes later anyway — three times — and would have carried on doing that all day, about one session every thirty-seven minutes.\n\nTHE REASON IS ALMOST SILLY, AND IT IS WORTH KNOWING BECAUSE IT CAN HAPPEN AGAIN. The little program that starts each night's shifts reads its own instructions once, when it starts up, and then never looks at them again. That program has been running without a break since Saturday afternoon. The parking rule was written into it at 6:11 yesterday morning — fifteen hours after it had already started. So the rule was sitting on disk, correct and tested, and the thing that was actually running had never read it. It has been running a version of its own instructions that no longer exists.\n\nThis is the same shape as a handful of things in this product's history: something built properly, wired up properly, and then quietly not connected to anything. There was no error and no failing test — the rule kept giving the right answer all night to nobody.\n\nWHAT I CHANGED. The program now checks whether its own instructions have been edited, and if they have, it restarts itself to pick them up — between shifts only, never in the middle of one. That matters more than last night's parking: from now on, any change to how the nights run takes effect straight away instead of waiting for something to happen to restart it. I replaced the stale copy that was running, then deliberately edited the file and watched it reload itself, so this is something I saw work rather than something I am telling you should work.\n\nSO: the nights will now genuinely park when everything is waiting on you, and start again by themselves the moment you reply, a card moves, or a day passes. You do not have to touch anything.\n\nONE SMALL TIDY. The account-menu card said three labels were still to do. One of them — \"Log out\" becoming \"Sign out\" — is already done everywhere and has a test keeping it that way. The other two are real and still waiting on your Settings modal brief. The card says so now.\n\nTHE QUEUE: 93 open, 10 urgent, 6 waiting on you, none rotting."
@@ -3089,11 +3094,6 @@
       "at": "2026-08-30T03:50:00+10:00",
       "shift": "foreman-106",
       "text": "One thing tonight, and there is a picture on your page that explains it in a glance.\n\nLast night you were told our measuring tool - the thing that finds features in a picture - points at the nearest lookalike when the thing you asked about is not there. That shift named one place as the sharpest of twenty-two unchecked ones: the removal gate. It is the step that runs after you ask for something to be taken OFF a face, where we re-read the picture to check our own work. Tonight I measured it.\n\nIt reproduces. A creature with a completely bare skull, asked \"where is the hair\", came back with a hair-shaped cap painted across the bald skin - twice, so it is settled rather than a wobble. I checked it both ways in the same sitting: a blank grey picture through the same code correctly said \"nothing there\", and a woman with real hair came back correctly on her hair. So the tool can say nothing when there is nothing, and it can find hair when there is hair - it just occasionally invents it. Not every time: two other bald heads answered correctly, so it is about one in three. That is the harder version, not the easier one, because something that is wrong one time in three is never caught by checking it once.\n\nNow the part where I have to correct what you were told. Last night's note said this gate could cost a customer money. I read the code rather than trusting the summary, and it is not true: because of your own ruling that a machine's opinion of a picture never takes somebody's money, a disputed removal is delivered and charged, and Regenerate is the remedy. So no refund is at risk. What IS at risk is quieter and, I think, worse: when the tool wrongly says the thing is still there, we do not update the face's record. The studio goes on believing she has the hair you paid to remove - and the next edit paints it back on. You would get exactly what you asked for, once, and then lose it.\n\nThe good news, checked at the live records rather than assumed: this gate has never run for a customer. Two hundred and thirty-six castings, and not one has reached it. That is the second night in a row where the fault is real and the customer count is zero - which is the argument for fixing it now rather than later, because the refine work is exactly what brings the customers.\n\nI should also tell you I got one of my own test pictures wrong. I picked my test faces off a small contact sheet and called one of them bald; it is not - it has fine wet dark hair, and the tool was right about it. I caught it by painting the answer back onto the picture and opening it full size, which is the step that exists for this. Uncaught, it would have gone to you as a second confirmed fault at four times the size of the real one. It is written into the record, because the lesson is worth more than the arm.\n\nThat is also why the picture on your page ends with a question for you: I read that left-hand skull as bald, but I got this exact call wrong once tonight already, and your eye is the one that counts.\n\nHousekeeping: your Fable allowance is still out - twenty-third refusal, about twenty-nine hours, past the only precedent we have - so it was another measurement-and-record night by the team's own rule. Tonight cost twelve cents of house money in twenty-four picture readings. No credits, no renders, and nothing on production touched but this briefing and one picture uploaded for it."
-    },
-    {
-      "at": "2026-08-30T03:20:00+10:00",
-      "shift": "foreman-105",
-      "text": "One thing tonight, and it is worth your two minutes because the picture explains it faster than I can.\n\nLast night's shift found that our measuring tool - the thing that finds features in a picture - does something odd when you ask it for something that isn't there. It doesn't say \"not there\". It points at the nearest thing that looks like the word. That was a finding about a tool, and it left two questions open: does it reach the actual studio, and where else could it bite?\n\nBoth are answered now. It DOES reach the studio - I drove the studio's own real function, with the real reader, on a picture of an oni with no tusks, and it filed a box around his horns and called them tusks. There is a picture of it on your page: same question, two faces, and on the one with real tusks the box lands correctly on the mouth. The wrong answer scored three times higher than the right one, which is the part that makes it dangerous - a wrong answer that looks small gets ignored, a wrong answer that looks big gets written down as a finding.\n\nI also checked the controls properly, because a court that only proves it can find things when they ARE there proves nothing here. A blank grey picture went through the same code and correctly said \"nothing there\", so the box on the horns is a reading of that picture rather than the function drawing boxes at random.\n\nThen I mapped the whole studio: 25 places ask this kind of question. Only two of the words we ask - glasses and earrings - have ever been tested against pictures that do NOT contain the answer, and both passed. The other 22 have never been checked in that direction. The one I would least like to be wrong is the refund gate: when you take something off a face we re-read the picture to check it went, and a lookalike there would refuse and refund somebody whose edit worked.\n\nThe good news, and I checked it at the live records rather than assuming: the part of the studio I proved this on has never run for a customer - one saved row from before it shipped, and none since. So this is caught before it can bite, not after. Nothing has been changed. There are three possible fixes on the card at the top of your page and my recommendation is the free one, done when the refine work starts rather than tonight.\n\nHousekeeping: your Fable allowance is still out - twenty-second refusal, about thirty-four hours now, past the only precedent we have - so it was another tooling-and-measurement night by the team's own rule. Tonight cost about one and a half cents of house money in three picture-readings. No credits, no renders, nothing on production touched but the briefing you are reading and one picture uploaded for it."
     }
   ],
   "acknowledgedReplyIds": [
@@ -3146,10 +3146,14 @@
     47,
     48,
     49,
-    50
+    50,
+    51,
+    52,
+    53,
+    54
   ],
   "nextUp": {
-    "readAt": "2026-08-30T22:57:28.626Z",
+    "readAt": "2026-08-30T23:23:37.143Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3163,10 +3167,7 @@
       {
         "issueNumber": 293,
         "title": "Park the nights when nothing is workable, and remove the journal — the auto-park is what replaces it",
-        "urgent": true,
-        "held": {
-          "state": "blocked"
-        }
+        "urgent": true
       },
       {
         "issueNumber": 302,
