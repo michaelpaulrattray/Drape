@@ -1,7 +1,7 @@
 {
-  "edition": 171,
-  "updatedAt": "2026-08-31T22:25:00+10:00",
-  "shift": "foreman-150",
+  "edition": 172,
+  "updatedAt": "2026-08-31T23:35:00+10:00",
+  "shift": "foreman-151",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -2080,6 +2080,27 @@
           "arm": "before (top) / after (bottom)"
         }
       ]
+    },
+    {
+      "id": "invite-label-350-frames",
+      "title": "Your Invite label, before and after — the whole rail, nothing else changed",
+      "question": "Left is the rail as it was, right is the rail now. One question, and it is a look rather than a number: does Invite sit right at the same size as Home, Casting and Library, or does it now read as too quiet down there? Your prototype value (9.5px) is what shipped, unchanged — this is only asking whether it looks the way you pictured it. The second frame is the same pair in dark. Both are scaled 2x so you can actually see 9.5px type; nothing is cropped or spliced.",
+      "state": "open",
+      "filedAt": "2026-08-31T23:35:00+10:00",
+      "issueNumber": 350,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/7828e5fc-e917-4b62-bbcc-c581159891ec.png",
+          "caption": "LIGHT. LEFT: the rail as it was — Invite rendering at 16px, the page's ordinary text size, because it sits outside the nav item that carries the 9.5px. RIGHT: after, at 9.5px. Every destination label above is identical in both halves, which is the control: if the fix had reached further than intended you would see it there.",
+          "arm": "before (left) / after (right)"
+        },
+        {
+          "key": "crew-eye/a6d5273b-2e78-46ee-b3a3-572813f8e998.png",
+          "caption": "DARK, the same pair. Worth its own frame because the label's colour token differs between themes and the size fix had to be checked in both rather than assumed from one. Money: zero — no render, no credit, no text call.",
+          "arm": "before (left) / after (right)"
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -3009,22 +3030,29 @@
       "status": "merged",
       "prNumber": 339,
       "note": "Merged abc2f9a5 on a green gate. Driven at your own nine rows on production: 0 of 9 passed before, 9 of 9 after, with all nine pictures still on the delete list in both runs. The same check also blocked account deletion and the GDPR export for your account. The Fable reviewer is still capped, so the red review is the outage and not a verdict."
+    },
+    {
+      "id": "invite-label-350",
+      "title": "The Invite label is 9.5px because the CLASS says so, not because a parent does (#350)",
+      "status": "merged",
+      "prNumber": 351,
+      "note": "Merged 197db2c6 on a green gate — both gate-checks runs SUCCESS. Measured in the running browser at 1440x900, both themes, on the lobby and on casting: 16px before, 9.5px after, the eight destination labels unchanged, and the label of whichever destination you are on still bold. A sweep of 120 chrome elements finds nothing else inheriting the page size; the same sweep with the fix switched off finds exactly this one, which is what makes the empty result mean anything. The Fable reviewer is still capped, so the red review check is the outage and not a verdict."
     }
   ],
   "problems": [
     {
       "id": "invite-label-350",
-      "title": "The Invite label size you reported is queued, not fixed — it is the next shift's first job",
-      "detail": "You wrote it up at 21:57 tonight, while this shift was mid-build on your card panel. It is filed as #350 with the fix and the measurement your card asks for. One correction to your diagnosis, which changes the guard rather than the fix: the label is not one step bigger than the nav labels — those are already 9.5px — it sits OUTSIDE the nav item that carries the size, so it inherits the page's ordinary text size instead. Your fix is right; the reason is different, which matters because a test saying “smaller than a nav label” would pass on nothing once both are 9.5px.",
+      "title": "Fixed — the Invite label is the same size as Home and Casting now",
+      "detail": "You reported it at 21:57 last night; it is merged and on your rail. It was rendering at 16px — the page's ordinary text size — against 9.5px for every destination above it. Now 9.5px, measured in the browser rather than read off the stylesheet, in both themes and on the casting page too. Your fix was right and your diagnosis was one step off, which is the only part worth your attention: the nav labels were ALREADY 9.5px, so Invite was not one step too big — it sits outside the nav item that carries the size and was inheriting the page instead. That is why the size went on the label's own class rather than on the Invite rule: the next label put outside a nav item cannot repeat it. Frames below.",
       "severity": "info",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 99 open, 4 items worked, 8 of your own orders waiting — and the rot line is crossed tomorrow",
-      "detail": "99 cards open — the same number as last night, because one closed (#316, on your \"leave it\") and one was filed (#350, your Invite label). FOUR things were worked tonight rather than one: your card panel's second half built and merged, Draft Model deleted on your word, #316 closed, and #350 filed with a correction to its diagnosis. EIGHT carry your own order and are authorised without you saying anything more — and only ONE of those is genuinely waiting on you (#267, the account-menu labels, held behind the Settings modal). NOTHING has rotted yet, measured tonight: no open card has gone a full week untouched. But EIGHT cross that line tomorrow — #4, #10, #12, #13, #17, #19, #21 and #22, all last read on 25 August, all casting research and design drafts. None is urgent and none waits on you; they have simply never been re-read against the code since they were written. A shift re-reading those eight is the thing that stops this line getting worse, and it is the first non-ordered brief available.",
+      "title": "The queue tonight: 98 open, your Invite label closed — and 27 cards go stale tomorrow, not eight",
+      "detail": "98 cards open, one fewer than last night: your Invite label (#350) was filed at 21:57 and is closed at the fix. SEVEN carry your own order and are authorised without you saying anything more; only ONE of those is genuinely waiting on you (#267, the account-menu labels, held behind a Settings modal you have not briefed yet). Two more are held for a reason rather than by neglect — #322 and #304 are judgement work and the Fable reviewer is still capped, so they wait on your credits, not on you. ⚠ A CORRECTION TO LAST NIGHT'S NUMBER, because I went to measure it rather than repeat it: last night's page said EIGHT cards were about to cross the week-untouched line. Counted at the queue itself, it is TWENTY-NINE — 27 once the two you explicitly parked are set aside. Every one of them was last read on 25 August, and the oldest crosses a full week tomorrow morning, not tonight. They are casting research, design drafts and roadmap items; none is urgent and none waits on you. Nothing tonight could touch them: your background-work master switch is OFF, so the only work a shift may take is what you ordered, and none of the 27 is yours. If you want that pile to stop growing, that switch is the lever — turning it on for Process or Debt would let a shift re-read them against the code, one line each, without asking you anything.",
       "state": "open",
-      "severity": "info"
+      "severity": "warning"
     },
     {
       "id": "nights-stopped-silently-331",
@@ -3209,7 +3237,7 @@
     67
   ],
   "nextUp": {
-    "readAt": "2026-08-31T12:12:04.714Z",
+    "readAt": "2026-08-31T13:16:02.314Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3248,11 +3276,6 @@
       {
         "issueNumber": 325,
         "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
-        "urgent": false
-      },
-      {
-        "issueNumber": 350,
-        "title": "The Invite label inherits the document size, not the nav's — and the obvious guard would be vacuous",
         "urgent": false
       }
     ]
