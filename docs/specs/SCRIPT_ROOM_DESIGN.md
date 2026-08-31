@@ -160,14 +160,14 @@ Recommendation is A because the research's deepest structural fact — script,
 scenes, shots, takes, cut are one derivation chain — argues for one surface
 with lenses, not two surfaces with a hand-off.
 
-## 9. Founder gates
+## 9. Founder gates — RULED 2026-09-01
 
-1. The fold-in decision (§8).
-2. Whether Writer-skill assistance (conversation, dramaturgy, coverage
-   proposals) is priced or free — writing is the cheapest stage to subsidise
-   and the strongest hook.
-3. Feature-length productions: one production per act vs one long production
-   (touches canvas performance and billing).
+1. **The fold-in: THIRD TAB.** Ruled by the founder: the Script Room is the
+   third view beside Wall and Desk (option A). One Production, three lenses.
+2. **Writing assistance USES CREDITS.** Ruled by the founder — not free.
+   Pricing itself is set at build time with the rest of the credit table.
+3. Feature-length productions (one per act vs one long): **still open** — the
+   founder has no lean yet; decide when canvas performance is measurable.
 
 ---
 

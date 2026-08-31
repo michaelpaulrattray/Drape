@@ -158,7 +158,11 @@ part of the negative-stack ground — check overlap before adding anything.
 1. **Pricing** of the fan and the "4 more" gesture.
 2. **Scene hierarchy scope** — full ladder at once, or Setup→Takes first with
    scenes later.
-3. **D-62** — where the outfit card lives (Casting / Wardrobe / new domain).
+3. **D-62 — RULED (founder, 2026-09-01): the outfit card lives in CASTING,
+   for now.** His words: "casting at the moment." Recorded as a present-tense
+   placement, not a permanent boundary amendment — D-62's text itself is
+   untouched; if outfit cards later move to Wardrobe, this line is where the
+   history starts.
 4. Whether takes land as their own flag-gated namespace (grammar:
    `off`/`all`/`users:<ids>`, parent `CASTING_V2_SCOPE`, dark until ruled).
 
