@@ -1,7 +1,7 @@
 {
-  "edition": 167,
-  "updatedAt": "2026-08-31T19:45:00+10:00",
-  "shift": "foreman-147",
+  "edition": 168,
+  "updatedAt": "2026-08-31T20:15:00+10:00",
+  "shift": "foreman-148",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "pipeline-panel-325",
+      "title": "All 100 cards are on this page now — one small question, and one half still to come",
+      "productImpact": "Scroll down to Background work. Under your five switches there is a new block headed THE REST OF THE PIPELINE, and it opens with the sentence you were actually asking for: \"100 open in total · 29 on offer above, 71 not\". Below that, every one of those 71 is in a named group with one line saying why it is not offered as background work — Debt because the scope varies and needs your word, Design unbuilt because it is feature work and that is yours to pick, Parked because you stopped it yourself. Nothing in the block is switchable, on purpose: your own rule is that the team never selects the next feature, and a toggle on Design-unbuilt would be that rule with a control attached. This is a glance, not a decision — nothing is blocked on you.",
+      "workedExample": "Your card named seven groups. I added five more so that every card lands somewhere and the numbers add up, and four of them are populations your own card counted but the group list did not carry down: Scope changes (1), Toolbelt (2), Patrols (1), and Queued by you (8) — the cards you ordered by name, put FIRST because what you need to know about one of those is that you asked for it, not that it is also blocked. The fifth is Other (3), which exists so a label invented next week cannot make cards vanish, and it earned itself the moment it shipped: it is holding #219 (the Fable reviewer being down), #228 (the lobby lane) and #231 (the reader court) — three of the most consequential open cards there are, each carrying only \"urgent\" and no category at all. Before tonight those three appeared nowhere on this page.",
+      "options": [
+        {
+          "key": "leave",
+          "label": "Leave all five groups as they are (recommended)",
+          "consequence": "The block stays as you see it, and every open card keeps a home on this page."
+        },
+        {
+          "key": "strike",
+          "label": "Strike one or more — name which",
+          "consequence": "Its cards move into Other, which stays visible, so nothing disappears; the page just says less about why they are not on offer."
+        }
+      ],
+      "recommendation": "Leave all five — but this is a glance, not a decision, so the honest answer is that nothing needs doing. The half still to come is your second question: a way to close a card from this page when it is not relevant. That is NOT built. It needs a new table, which needs one command run against the live database, and that command is your act rather than a shift's. It is a clean next piece of work and nothing above blocks it; #325 stays open for it.",
+      "state": "open",
+      "filedAt": "2026-08-31T20:15:00+10:00",
+      "issueNumber": 325
+    },
     {
       "id": "icon-set-second-half-321",
       "title": "Your 27 glyphs are in — and Assets and Create finally look like two different things",
@@ -2110,6 +2132,14 @@
   ],
   "pipeline": [
     {
+      "id": "pipeline-panel-325",
+      "title": "The whole pipeline is on this page now — all 100, and not one of them switchable (#325)",
+      "status": "merged",
+      "prNumber": 347,
+      "note": "You asked to see the whole pipeline — \"all those other ones should be put them under additional categories so i can see the full pipeline like all 97?\" — and you were right that this page was only showing you part of it. Measured before building anything: 100 cards are open, your five switches reach 29 of them, and the other 71 were invisible here with no way to ask why. Scroll down to Background work and there is now a second block under your switches showing all 100, grouped by the labels the cards already carry, with one line under each group saying why it is not on offer. Debt 27, Design unbuilt 9, Roadmap 6, Parked 5, Lost and found 5, and eight smaller ones. Two things about it are deliberate. First, none of those groups has a switch, and that is your own law rather than a shortcut: Design-unbuilt and Roadmap are feature work, and the rule is that the team never selects the next feature — a toggle on either would be that rule with a control attached. So what each group buys you is the sentence, not a button. Second, the numbers add up: 29 on offer plus 71 not is 100, and the page works that out from the stored rows rather than being told it, so a group that started double-counting would show as a wrong total instead of quietly reading fine — and the counting tool refuses to report a total that does not sum. It needed no command from you and no change to the database; the rows sit in the table your switch counts already use.",
+      "cardId": null
+    },
+    {
       "id": "shift-writer-safety-288",
       "title": "A command that could switch your page to “Nothing running” mid-shift now refuses to (#288)",
       "status": "merged",
@@ -3199,7 +3229,7 @@
     62
   ],
   "nextUp": {
-    "readAt": "2026-08-31T09:01:14.185Z",
+    "readAt": "2026-08-31T10:03:43.966Z",
     "items": [
       {
         "issueNumber": 267,
