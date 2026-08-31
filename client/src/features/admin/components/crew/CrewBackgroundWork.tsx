@@ -70,6 +70,10 @@
  */
 import { useState } from "react";
 
+import {
+  CREW_PIPELINE_VISIBLE_GROUPS,
+  PIPELINE_SWITCHED_KEY,
+} from "@shared/crewPipelineGroups";
 import { queueExclusionSentence } from "@shared/crewQueueExclusions";
 import { queueTitlesView } from "@shared/crewQueueTitles";
 import {
@@ -283,6 +287,131 @@ export function CrewBackgroundWork({
           Some categories are switched on but nothing runs while the master is off.
         </p>
       )}
+
+      <PipelineGroups workState={workState} now={now} />
     </section>
+  );
+}
+
+/**
+ * ZONE 2 — THE REST OF THE PIPELINE (#325).
+ *
+ * Founder, 2026-08-31: *"all those other ones should be put them under
+ * additional categories so i can see the full pipeline like all 97? and should
+ * there be a delete icon next to them so i can close them or remove them myself
+ * if they are not relevant?"*
+ *
+ * Measured the hour this shipped: **100 open, 29 reached by a switch above, 71
+ * reached by nothing.** The panel he looks at from bed could see under a third
+ * of his own pipeline, and the other seventy-one were not merely uncounted —
+ * they were invisible, with no way to ask why.
+ *
+ * # ⚠ VISIBLE, AND NEVER SWITCHABLE — the distinction is the whole design
+ *
+ * There is no `<Switch>` in this component and there must never be one.
+ * `design-unbuilt` and `roadmap` are feature work, and `PROGRAM.md`'s founder
+ * law is *"the team NEVER selects the next feature. Ever."* A switch on either
+ * is that law with a toggle attached. His card argues the second half too:
+ * **eleven switches is worse to operate than five**, on a panel whose stated
+ * purpose is one he reads from bed.
+ *
+ * So what each group buys him is not a control — it is the SENTENCE under the
+ * count saying why it is not on offer. That is the honest answer to *"how do I
+ * see the full pipeline"*, and a stronger one than eleven switches.
+ *
+ * # ⚠ THE TOTAL IS DERIVED FROM THE ROWS, NOT ASSERTED BESIDE THEM
+ *
+ * His bar: *"the counts sum to the real total."* The sum below is over EVERY
+ * group including `switched` — the cards the panel above already reaches — which
+ * is why that group exists at all. Adding the five switch counts instead would
+ * be wrong by however many cards carry two of their labels (today 30 against
+ * 29), and two numbers disagreeing by one, on the panel built because he could
+ * not tell a broken counter from a real zero, is not a rounding matter.
+ */
+function PipelineGroups({ workState, now }: { workState: CrewWorkStateView; now: number }) {
+  const byKey = new Map(workState.groups.map((row) => [row.groupKey, row]));
+
+  /*
+    ⚠ NOTHING COUNTED YET SAYS SO, RATHER THAN DRAWING TWELVE ZEROS. Between
+    this deploy and the next shift's count there are no rows, and "the pipeline
+    is empty" is the most reassuring and most wrong sentence this panel could
+    print — the same rule `countedAt` exists for one section up.
+  */
+  if (workState.groups.length === 0) {
+    return (
+      <div className="mt-5 pt-4 border-t border-[#EEE]">
+        <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-1.5">The rest of the pipeline</h3>
+        <p className="text-[12px] text-[#999]">Not counted yet — the next shift fills this in when it starts.</p>
+      </div>
+    );
+  }
+
+  /* Every group, including `switched`, which is what makes this the real total. */
+  const total = workState.groups.reduce((sum, row) => sum + row.openCount, 0);
+  const onOffer = byKey.get(PIPELINE_SWITCHED_KEY)?.openCount ?? 0;
+  /* One age for the section: the groups are written in one pass, so they share
+     a `countedAt` by construction. The oldest is taken rather than the first,
+     so a row left standing by a skipped count cannot make the section look
+     fresher than it is. */
+  const oldest = workState.groups.reduce<Date | string | null>((worst, row) => {
+    if (worst === null) return row.countedAt;
+    const a = worst instanceof Date ? worst.getTime() : new Date(worst).getTime();
+    const b = row.countedAt instanceof Date ? row.countedAt.getTime() : new Date(row.countedAt).getTime();
+    return b < a ? row.countedAt : worst;
+  }, null);
+
+  return (
+    <div className="mt-5 pt-4 border-t border-[#EEE]">
+      <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-1">The rest of the pipeline</h3>
+      <p className="text-[13px] text-[#0A0A0A] mb-1">
+        {total} open in total
+        <span className="text-[#999]">
+          {" "}· {onOffer} on offer above, {total - onOffer} not
+          {oldest ? ` · counted ${ago(oldest, now)}` : ""}
+        </span>
+      </p>
+      <p className="text-[11px] leading-[1.55] text-[#666] mb-3.5">
+        {/* His card's own sentence, and the reason there are no switches here. */}
+        These are not offered as background work. Each line says why — the ones below feature work
+        are yours to decide, not a shift&apos;s.
+      </p>
+
+      <ul className="space-y-2.5">
+        {CREW_PIPELINE_VISIBLE_GROUPS.map((group) => {
+          const row = byKey.get(group.key);
+          const titles = queueTitlesView(row?.openCount ?? 0, row?.titles ?? []);
+          return (
+            <li key={group.key} className="min-w-0">
+              <p className="text-[13px] text-[#0A0A0A]">
+                {group.label}
+                {/* ZERO IS DRAWN, for the switch rows' reason: `Blocked (0)` is a
+                    real answer, and a group that vanished when it emptied would
+                    make "nothing there" and "not shown" identical. */}
+                <span className="text-[#999]"> ({row ? row.openCount : "—"})</span>
+              </p>
+              <p className="text-[11px] leading-[1.5] text-[#999]">{group.blurb}</p>
+              {titles.shown.length > 0 && (
+                <ul className="mt-1.5 ml-0.5 pl-2.5 border-l border-[#EEE] space-y-0.5">
+                  {titles.shown.map((card) => (
+                    <li
+                      key={card.number}
+                      className="text-[11px] leading-[1.5] text-[#666] truncate"
+                      title={`#${card.number} ${card.title}`}
+                    >
+                      <span className="text-[#999] tabular-nums">#{card.number}</span>
+                      {" "}
+                      {card.title}
+                    </li>
+                  ))}
+                  {titles.moreCount > 0 && (
+                    <li className="text-[11px] leading-[1.5] text-[#999]">+{titles.moreCount} more</li>
+                  )}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
