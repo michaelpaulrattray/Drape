@@ -40,15 +40,19 @@ import {
   DEFAULT_IMAGINATION,
   draftRefusal,
   MAX_SHEET_CHECKLIST,
+  FACTS_FIRST_RULE,
   maxSystemPrompt,
   NEVER_WRITTEN,
+  NO_NEW_SUBJECT_RULE,
   isStacked,
   neverWrittenIn,
   PIECE_NOUNS,
   pieceNounIn,
+  RESOLVE_NOT_STACK_RULE,
   seedFactsOf,
   skinContradictionIn,
   staticPrompt,
+  UNIVERSAL_RULES_HEADING,
   WORD_BUDGET,
 } from "./promptAuthor";
 import { IMAGINATIONS } from "../../shared/imagination";
@@ -1612,5 +1616,100 @@ describe("FITTED IS NOT A PIECE — his fitted/worn test on the author (#279)", 
     expect(system).toContain("FITTED IS NOT A PIECE");
     /* And a draft that keeps a fitted part as a type is not refused by anything. */
     expect(draftRefusal(out.content ?? "", 400, null, { text: seed, facts: seedFactsOf(seed, { sex: null, age: null }) })).toBeNull();
+  });
+});
+
+/**
+ * #327 — MAX IS OVER-AUTHORING. His four corrections, read at his own MAX draft
+ * of his own 553-character cyborg brief, under the *"let opus build it"*
+ * carve-out and its two conditions.
+ *
+ * ⚠ **THESE ARMS PROVE THE INSTRUCTION SAYS IT, NEVER THAT THE MODEL OBEYED
+ * IT.** Three of his six pass items ("costume generic or absent", "one skin
+ * read", "legible at a glance") are judgements with no honest mechanical
+ * reader, and `droppedFactIn` tests PRESENCE where he asked for PROMINENCE.
+ * The evidence is the driven before/after on his own brief — six author drafts
+ * and eight painted frames — and his eye on the strip. A green suite here is
+ * not a passing sheet.
+ */
+describe("#327 — the four corrections to MAX", () => {
+  it("carries all four rules, each by the clause that makes it bite", () => {
+    const max = maxSystemPrompt(200);
+    for (const clause of [
+      /* 1 — no new subject. His live case is wardrobe; the class is backstory/profession/world. */
+      "NO NEW SUBJECT",
+      "keep it generic or leave it out",
+      "no profession, no employer, no organisation, no backstory",
+      "a casting note about a look, not a character",
+      /* 2 — resolve, never stack. */
+      "RESOLVE A CONTRADICTION, NEVER STACK IT",
+      "never a third layer of texture words piled on afterwards",
+      /* 3 — the facts stay first-class, as an ORDERING rule. */
+      "STATED FACTS COME FIRST AND STAY LEGIBLE",
+      "Taste comes AFTER the facts, never wrapped around them",
+      /* 4 — do not restate the block. */
+      "do not restate or paraphrase the studio's own rules or its negatives",
+      "One brief, not a story plus a brief",
+    ]) expect(max, clause).toContain(clause);
+  });
+
+  it("⚠ rule 2 may never read as permission to DROP a stated fact", () => {
+    /* Without this clause, "resolve into one reading" is an instruction to
+       delete one of two stated facts — which is what FACTS STAY forbids and
+       what the court measured the free-reword arm doing (2 of 2). It is the
+       one sentence in rule 2 whose removal changes the rule's meaning. */
+    expect(RESOLVE_NOT_STACK_RULE).toContain("Resolving is not dropping");
+    expect(RESOLVE_NOT_STACK_RULE).toContain("both stated facts survive");
+  });
+
+  it("⚠ the SIX universal rules are not filed under the thin-seed fork", () => {
+    /*
+      They were bullets under "On a thin seed:" while the CODE enforced all six
+      on BOTH branches — including the no-studio rule his rule 4 is about, and
+      his failing draft was of a FINISHED seed. Move any of them back above the
+      heading and this reddens.
+    */
+    const max = maxSystemPrompt(200);
+    const thin = max.indexOf("On a thin seed:");
+    const universal = max.indexOf(UNIVERSAL_RULES_HEADING);
+    expect(thin, "the thin-seed branch is still named").toBeGreaterThan(-1);
+    expect(universal, "the universal heading sits after the thin fork").toBeGreaterThan(thin);
+    for (const clause of [
+      "Do NOT write any camera, lens, framing",
+      "Do NOT write notes about the series",
+      "Do NOT ADD skin or surface words",
+      "Word allowance for YOUR paragraph",
+      "avoid explicit sheer or revealing clothing language",
+      "Write ONE paragraph and nothing else",
+    ]) expect(max.indexOf(clause), clause).toBeGreaterThan(universal);
+  });
+
+  it("⚠ rule 3 points at a worked example that is ABOVE it", () => {
+    /* Its shape decision is taken from his own approved sphinx target, which
+       opens with exactly the compact plain fact list the rule asks for. If the
+       example moves below the rule, the instruction tells the author to look
+       up at nothing. */
+    const max = maxSystemPrompt(200);
+    expect(max.indexOf("Worked example of the PIECES rule"))
+      .toBeLessThan(max.indexOf(FACTS_FIRST_RULE));
+    expect(FACTS_FIRST_RULE).toContain("the way the worked example above opens");
+  });
+
+  it("⚠ AND NO WORD BAN WAS ADDED — said out loud, so a green run is never read as a reader that catches these", () => {
+    /*
+      His four rules are INSTRUCTION rules and nothing else. A ban on
+      "soldier", "wardrobe", "history" or "military" would sweep ordinary prose
+      about a face — this module's own admission test, and the fifth time this
+      repository has met it (`cropped`, `framing`, `reminiscent of`, and the
+      two named in PIECE_NOUNS). The measurement lives in the driven
+      before/after; his eye is the gate.
+    */
+    const banned = [...NEVER_WRITTEN.map((n) => n.word), ...PIECE_NOUNS.map((piece) => piece.word)];
+    for (const word of ["soldier", "operative", "wardrobe", "backstory", "history", "military"]) {
+      expect(banned, `${word} is deliberately NOT banned`).not.toContain(word);
+    }
+    /* And the instruction may still SAY them — a rule has to name what it forbids. */
+    expect(NO_NEW_SUBJECT_RULE).toContain("WARDROBE");
+    expect(NO_NEW_SUBJECT_RULE).toContain("backstory");
   });
 });
