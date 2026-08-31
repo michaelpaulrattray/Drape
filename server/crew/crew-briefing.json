@@ -1,6 +1,6 @@
 {
-  "edition": 170,
-  "updatedAt": "2026-08-31T22:35:00+10:00",
+  "edition": 171,
+  "updatedAt": "2026-08-31T22:25:00+10:00",
   "shift": "foreman-150",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -150,7 +150,7 @@
       "workedExample": "It does not close the card the instant you tap. Doing that from the page would mean putting a password into the live site that can CHANGE things in our code repository — a bigger key than the read-only one already turned down on this same page, and that is your decision to make rather than something to hand over as the side effect of a convenient button. The wait costs about an hour and buys a second pair of eyes: you found four already-finished cards yourself last Saturday just by reading them. And nothing on this road deletes anything — undo leaves the record that you once asked, exactly as your own rule for cards says.",
       "options": [],
       "recommendation": "One command from you turns it on, and it is the last thing this card needs: railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production. Until you run it your page is exactly what it is today — the buttons are withheld rather than drawn dead, so nothing looks broken and nothing pretends to work. This is the same friction you ordered removed on #322, which is queued and unstarted; two shifts have now looked at it and left it, with the reason written down so whoever takes it does not have to work it out again.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-31T20:15:00+10:00",
       "issueNumber": 325
     },
@@ -160,8 +160,8 @@
       "productImpact": "You drew a second batch of icons and pointed out four things wrong with the rail and the topbar. All of it is live. The one you will notice first: Assets and Create were very nearly the same picture — a rectangle with a peak line — sitting four rows apart on the same rail, which is exactly the confusion your house set exists to remove. Your redrawn Assets is a stack of two frames now, and they read as different marks at a glance. Cinema is your clapperboard. And the six icons that sit on EVERY page — search, sun, moon, bug, help, what is new — are yours rather than the general set’s, which matters because the general set draws them densely (its sun is a circle plus eight full-length rays) and at the size the topbar uses they were filling into blobs.",
       "workedExample": "Cinema sat above Casting because your own section-02 brief said so, and you spotted that the brief was wrong — the order is Templates, Casting, Cinema, Assets, Library, and that is what the rail does now. The brand orb was sitting 4px off Home and reading as the first nav item; it has your 12px underneath it, which measures 16px to Home in the running app. And the theme toggle is 28px against its neighbours 30px with a lighter hover, so the shell’s own control reads as separate from the page’s — your observation, and it is visible once you look for it.",
       "options": [],
-      "recommendation": "Have a look at the two pictures below. The only thing left on this card is the pair you kept for yourself: Templates and Try-on are still byte-identical glyphs. Nothing is wrong on screen today, and you said that one is your hand rather than a shift’s — so it is untouched.",
-      "state": "open",
+      "recommendation": "You said \"Looks good.\" — so this is closed as far as you are concerned. The one thing still open on that card is the piece you kept for yourself: Campaign and Try-on are still the same drawing, and which of them changes is your call, not a shift's. Nothing on screen is wrong today.",
+      "state": "done",
       "filedAt": "2026-08-31T18:05:00+10:00",
       "issueNumber": 321
     },
@@ -1127,7 +1127,7 @@
       "id": "icon-set-321-frames",
       "title": "Your 27 glyphs on the rail and in the topbar, both themes",
       "question": "Two things worth your eye. On the rail: Assets (the stack of two frames) against Create (the frame with the peak) — do they read as clearly different now, at the size they actually sit at? And in the topbar: are the six chrome glyphs holding at 15px, or has anything gone thin?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-31T18:05:00+10:00",
       "issueNumber": 321,
       "cardId": "icon-set-second-half-321",
@@ -3205,7 +3205,8 @@
     63,
     64,
     65,
-    66
+    66,
+    67
   ],
   "nextUp": {
     "readAt": "2026-08-31T12:12:04.714Z",
