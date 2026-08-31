@@ -114,6 +114,7 @@ import {
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
+import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
 
 const DRY = process.argv.includes("--dry");
 /*
@@ -441,6 +442,45 @@ if (dirty.length > 0) {
     die(`the briefing does not parse against server/crew/crewBriefing.ts — the push does not fire; his page would fall to the degraded state (#169).\n    ${conformance.why}\n  repair: fix ${BRIEFING_PATH} against the schema, commit, re-run`);
   }
   say(`  briefing parse: ${conformance.ok ? `ok — ${conformance.why}` : `WOULD REFUSE (dry run) — ${conformance.why}`}`);
+}
+
+/*
+  AND THE EYE FRAMES IT NAMES ARE IN THE BUCKET HIS BROWSER WILL ASK (#320).
+
+  The founder: *"this card on my desk isnt rendering correctly"* — broken-image
+  glyphs under the captions. The briefing was right, the allowlist was right,
+  the deploy was SUCCESS; the BYTES were in the dev bucket, because
+  `crew-upload-eye-frame.mts` reads `.env` and succeeds identically against
+  either bucket. Twice repaired by hand, plus a third near-miss on the same
+  script (#265) — three incidents, one script, no guard.
+
+  `R2_PUBLIC_URL` is read OFF THE SERVICE by name and never defaulted: the
+  ambient `.env` names the dev bucket, so a fallback would check the wrong
+  bucket and pass, which is the mistake itself. The key population is read from
+  the briefing AT THE COMMIT BEING PUSHED, so the bytes judged and the bytes
+  deployed are the same by construction. `crew-eye/` objects sit in the public
+  bucket, so this is a credential-free HEAD and the rite never touches an R2
+  secret. Under `--dry` the verdict is reported and the run continues.
+*/
+{
+  const shown = spawnSync("git", ["show", `${sha}:${BRIEFING_PATH}`], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  const base = shown.status !== 0
+    ? undefined
+    : parseVariableLines(railway("variables", "--service", SERVICE, "--kv"))
+      .find((reading) => reading.name === "R2_PUBLIC_URL")?.value;
+  const frames = shown.status !== 0
+    ? { ok: false, why: `the pushed commit carries no briefing at ${BRIEFING_PATH}`, checked: 0, missing: [], unread: [] }
+    : await judgeEyeFramePresence(
+      eyeFrameKeysOf(shown.stdout),
+      base,
+      async (url) => await fetch(url, { method: "HEAD" }).then((response) => response.status).catch(() => null),
+    );
+  if (!frames.ok && !DRY) {
+    die(`an eye frame this edition names is not in the production bucket — the push does not fire; his card would draw broken images (#320).
+    ${frames.why}
+  repair: re-upload the frame(s) against the PRODUCTION R2 variables, put the new key(s) in ${BRIEFING_PATH}, commit, re-run`);
+  }
+  say(`  eye frames: ${frames.ok ? `ok — ${frames.why}` : `WOULD REFUSE (dry run) — ${frames.why}`}`);
 }
 
 /*
