@@ -1,7 +1,7 @@
 {
-  "edition": 163,
-  "updatedAt": "2026-08-31T15:30:00+10:00",
-  "shift": "foreman-143",
+  "edition": 164,
+  "updatedAt": "2026-08-31T16:10:00+10:00",
+  "shift": "foreman-144",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,17 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "three-casts-left-302",
+      "title": "Three old Casts are the only thing holding up the Home and Library clean-out you asked for",
+      "productImpact": "You deleted one and it worked. Three are still there, and they are blocking a job you ordered: cleaning out Home and Library and making Canvas a blank slate. The reason is a sequencing one rather than a technical one — the Library page is the ONLY place in the product that can delete those three, so if we stub Library out first, they are stranded there permanently with no door to reach them. This is not a decision. It is three clicks, and then the clean-out is a clean night's work.",
+      "workedExample": "Open Library. You will see \"Draft Model\" under drafts, and \"Shina\" and \"Jericho\" under your minted Casts. Those three, and nothing else — every other old model on your account is already deleted. Delete them and the block lifts on its own; nothing needs telling.",
+      "options": [],
+      "recommendation": "Delete the three from Library when you next have the page open. If you would rather keep one of them, say which and we will build Library's stub around it instead — that is a real option, it just costs a day and needs saying out loud.",
+      "state": "open",
+      "filedAt": "2026-08-31T16:10:00+10:00",
+      "issueNumber": 302
+    },
     {
       "id": "max-over-authoring-327",
       "title": "MAX stops inventing a character - your four corrections are in, and one of them found a bug",
@@ -1068,7 +1079,7 @@
     {
       "id": "cast-deletes-308",
       "title": "Your last legacy Cast will delete now - and the same fault was quietly blocking two other things",
-      "productImpact": "You said you could not delete that remaining legacy casting model. It is fixed and merged. The reason had nothing to do with you: the deletion path has NEVER been able to remove a Cast that has an accepted candidate on it. Model 35 is not special - it is simply the first one you have tried that has one. ONE THING TO KNOW, and it is bigger than the delete button: the same check runs on ACCOUNT DELETION and on the GDPR DATA EXPORT. With those nine rows on your account, neither of those could have run for you either - your account could not have been deleted and your data could not have been exported. One fix, three roads.",
+      "productImpact": "DONE — you deleted it. \"I deleted it.\" I checked the rows rather than taking the sentence: the nine plate records are gone (zero left in the whole product) and that Cast no longer appears on any surface. ONE THING WORTH KEEPING, because it is bigger than the button: the same broken check ran on ACCOUNT DELETION and on the GDPR DATA EXPORT. While those nine rows sat on your account, your account could not have been deleted and your data could not have been exported. Nobody had pressed either, so nobody had found out. One fix, three roads.",
       "workedExample": "When the studio saves a candidate you accept, it does not copy the picture anywhere - it just promotes the one it already made. So the row that records it points at the file where that picture already lives. The delete then checked that row against a rule which said every record of that type must point at a different folder, and refused. Your user id and your Cast id both matched perfectly; it was only the folder name that disagreed. Nine rows, nine refusals, and the error message said \"ownership is invalid\", which is what sent the first two attempts at this looking in the wrong place. Driven at your own rows on production, before and after: nine refusals became nine passes, and all nine pictures are still on the list to be deleted with the Cast - which was the thing worth checking twice, because a fix that made the check pass by quietly forgetting the files would have left your bytes behind forever.",
       "options": [
         {
@@ -1083,7 +1094,7 @@
         }
       ],
       "recommendation": "Press delete. Everything between you and that button is merged and driven at your real rows; the only thing nobody has done is the click, and it is yours because it is permanent and it is your data. Library is the only door left for clearing legacy Casts, which is why #302 has been waiting behind this.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-31T15:30:00+10:00",
       "issueNumber": 308
     }
@@ -2028,6 +2039,14 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "eye-frames-wrong-bucket-320",
+      "title": "Your cards can no longer draw broken images (#320)",
+      "status": "merged",
+      "prNumber": 341,
+      "note": "You said: \"this card on my desk isnt rendering correctly\" — broken picture glyphs with the captions underneath. The uncomfortable part is that everything we check was GREEN when that happened: the page was right, the permissions were right, the deploy succeeded. The pictures were simply uploaded to the wrong copy of our file storage — the development one instead of the live one — and NOTHING between the upload and your eyes ever asked whether the file was where your browser would look for it. It had happened twice before and been fixed by hand both times. Two things stop it now. Before any update to this page goes live, it checks every picture that page names against the live storage and REFUSES to publish if one is missing. And the upload tool now makes you name which storage you mean, and refuses before it moves a single byte if that is not the one you are pointed at. Proven on the real thing: all 110 pictures this page currently names are present, and a deliberately broken one is caught and named.",
+      "cardId": null
+    },
     {
       "id": "max-over-authoring-327",
       "title": "MAX stops inventing a character - your four corrections (#327)",
@@ -3073,10 +3092,11 @@
     56,
     57,
     58,
-    59
+    59,
+    60
   ],
   "nextUp": {
-    "readAt": "2026-08-31T05:22:06.346Z",
+    "readAt": "2026-08-31T06:04:03.186Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3095,11 +3115,6 @@
           "state": "blocked",
           "because": "#308 — Library is the only door left for deleting your three legacy Casts, and stubbing it first strands them"
         }
-      },
-      {
-        "issueNumber": 308,
-        "title": "Model 35 will not delete — nine accepted_candidate plates fail an evidence-key SHAPE check, and it is not the referencePlates guard",
-        "urgent": true
       },
       {
         "issueNumber": 321,
@@ -3134,11 +3149,6 @@
       {
         "issueNumber": 316,
         "title": "The roll and refine roads read a named side in OPPOSITE directions — his own case is correct, a typed refine is not",
-        "urgent": false
-      },
-      {
-        "issueNumber": 320,
-        "title": "An eye item can name frames that exist only in the dev bucket — his card drew broken images, and this is the second time",
         "urgent": false
       },
       {
