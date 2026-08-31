@@ -1,4 +1,6 @@
-import { ChevronDown, FolderClosed, Megaphone, Search } from "lucide-react";
+import { ChevronDown, FolderClosed } from "lucide-react";
+
+import { Icon, P } from "./icons";
 
 /**
  * Inert topbar chrome (brief 00b §3, §4).
@@ -18,6 +20,15 @@ import { ChevronDown, FolderClosed, Megaphone, Search } from "lucide-react";
  * ⚠ **The prototype puts an unread dot on What's new; we do not.** A dot is a
  * claim that there is something to read, and there is not. That is the line
  * between a stub and a lie, and it is the reason this file has a comment.
+ *
+ * ⚠ **THE GLYPHS ARE THE HOUSE SET'S NOW** (#321, his 27-glyph drop). Search
+ * and What's new are on every page, which he points out makes them *"the
+ * most-seen icons in the product after the rail — and Lucide's versions are the
+ * densest things in its set … at 15px both fill in."* `P.search` and
+ * `P.megaphone` are the same subjects at this set's density. `FolderClosed` and
+ * `ChevronDown` stay Lucide on purpose: they are on his kept list (*"chevrons,
+ * arrows, plus, close, check…"*), and the project switcher's folder is
+ * interface furniture rather than a destination.
  */
 
 /**
@@ -54,7 +65,7 @@ export function WhatsNewStub() {
       aria-disabled="true"
       title="What's new — not built yet"
     >
-      <Megaphone size={15} strokeWidth={1.8} aria-hidden="true" />
+      <Icon d={P.megaphone} size={15} />
     </span>
   );
 }
@@ -81,7 +92,7 @@ export function WhatsNewStub() {
 export function SearchStub() {
   return (
     <span className="dp-search" aria-disabled="true" title="Search — not built yet">
-      <Search size={13} strokeWidth={2} aria-hidden="true" />
+      <Icon d={P.search} size={13} />
       <span className="dp-search__label">Search frames, faces, prompts…</span>
       <span className="dp-search__keys" aria-hidden="true">
         <span className="dp-search__key">⌘</span>

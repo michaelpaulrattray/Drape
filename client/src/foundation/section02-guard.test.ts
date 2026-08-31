@@ -145,16 +145,25 @@ describe("the rail is eight, and its comment records the reversal", () => {
   /**
    * Read as DATA rather than as text: the list is the product's own, imported,
    * so a regex cannot agree with a source line that no longer runs.
+   *
+   * ⚠ **THE ORDER MOVED, AND HE MOVED IT** (#321 defect b, 2026-08-30,
+   * verbatim): *"you have Cinema before Casting. My section-02 brief said that,
+   * and **the brief was wrong**; the prototype is … Templates · Casting ·
+   * Cinema · Assets · Library."* This arm previously pinned Cinema BEFORE
+   * Casting, faithfully, because that is what §2a of his own brief said. It was
+   * a guard doing its job over an instruction its author later corrected — so
+   * the correction is recorded here rather than the arm quietly re-sorted, and
+   * the rest of section 02 stands untouched.
    */
-  it("holds eight destinations with Cinema between Templates and Casting", () => {
+  it("holds eight destinations with Cinema after Casting", () => {
     const order = RAIL_DESTINATIONS.map((destination) => destination.id);
     expect(order).toEqual([
       "home",
       "create",
       "canvas",
       "templates",
-      "cinema",
       "casting",
+      "cinema",
       "assets",
       "library",
     ]);

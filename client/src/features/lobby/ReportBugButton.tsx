@@ -16,8 +16,7 @@
  * half-typed form. The form's own state is remounted rather than cleared, which
  * is the same fix in fewer moving parts.
  */
-import { usePopover } from '@/foundation';
-import { Bug } from 'lucide-react';
+import { Icon, P, usePopover } from '@/foundation';
 
 import { FEEDBACK_PANEL_STYLE, FeedbackForm } from './FeedbackForm';
 
@@ -38,7 +37,7 @@ export function ReportBugButton() {
         title="Report a bug"
         {...surfaceProps}
       >
-        <Bug size={15} strokeWidth={1.8} />
+        <Icon d={P.bug} size={15} />
       </button>
 
       {open && (

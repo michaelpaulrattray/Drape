@@ -13,9 +13,23 @@
 @keyframes dp-orb-driftC  { 0% { transform: translate(0%,0%) scale(.96) }  40% { transform: translate(12%,-14%) scale(1.2) }  75% { transform: translate(-14%,-6%) scale(1) }   100% { transform: translate(0%,0%) scale(.96) } }
 @keyframes dp-orb-driftD  { 0% { transform: translate(0%,0%) scale(1.1) }  45% { transform: translate(-10%,-16%) scale(.92) } 80% { transform: translate(6%,12%) scale(1.14) }   100% { transform: translate(0%,0%) scale(1.1) } }
 
+/*
+  The orb sits ABOVE the nav, not in it (#321 defect a, his own measurement).
+
+  His words: "The prototype puts `margin-bottom: 12px` on the orb element. With
+  the rail's `gap: 4px` that's 16px between the orb and Home ... the orb
+  currently sits 4px off Home and reads as the first nav item. Add it to
+  `.dp-orb` in `brand-orb.css`. Not to the rail's gap — the gap between nav
+  items is correctly 4px."
+
+  So this margin is deliberately here rather than on `.dp-rail`: the rail's own
+  4px is right for the eight destinations and wrong for the brand mark, and a
+  reader who "tidies" this into the rail's gap breaks the eight to fix the one.
+*/
 .dp-orb {
   position: relative;
   flex: none;
+  margin-bottom: 12px;
   animation: dp-orb-breathe 9s ease-in-out infinite;
 }
 

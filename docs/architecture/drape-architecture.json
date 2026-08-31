@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8a339ee8f1cc492e"
+    "sourceFingerprint": "95a336ba5af8336e"
   },
   "domains": [
     {
@@ -18129,6 +18129,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/ChromeStubs.tsx",
+      "to": "module:client/src/foundation/icons.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/DestructiveConfirm.tsx",
       "to": "module:client/src/foundation/CastingModal.tsx",
       "kind": "imports"
@@ -18256,6 +18261,11 @@
     {
       "from": "module:client/src/foundation/Topbar.tsx",
       "to": "module:client/src/foundation/ChromeStubs.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/Topbar.tsx",
+      "to": "module:client/src/foundation/icons.tsx",
       "kind": "imports"
     },
     {

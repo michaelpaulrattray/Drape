@@ -56,8 +56,8 @@
  *    `foundation.css`, shared with the account menu.
  */
 import { useEffect, useState } from 'react';
-import { BookOpen, CircleHelp, Keyboard, MessageSquare } from 'lucide-react';
-import { usePopover } from '@/foundation';
+import { BookOpen, Keyboard, MessageSquare } from 'lucide-react';
+import { Icon as HouseIcon, P, usePopover } from '@/foundation';
 
 import { FeedbackForm } from './FeedbackForm';
 
@@ -109,7 +109,7 @@ export function LobbyUtilityMenu() {
         title="Help"
         {...surfaceProps}
       >
-        <CircleHelp size={15} strokeWidth={1.8} />
+        <HouseIcon d={P.help} size={15} />
       </button>
 
       {open && (
@@ -156,6 +156,17 @@ function MenuGroup({ label }: { label: string }) {
   );
 }
 
+/*
+  ⚠ The house set is imported here as `HouseIcon`, NOT as `Icon` (#321).
+
+  `MenuItem` and `StubItem` below both destructure `icon: Icon` — a Lucide
+  component passed in per row — which would shadow a module-level `Icon` inside
+  those two functions only. It compiles either way today. It stops compiling in
+  the worst possible manner the day somebody renames that parameter: the house
+  `Icon` would quietly take its place, and it takes `d` rather than `size`, so
+  the menu rows would render nothing. The alias makes the two impossible to
+  confuse rather than merely currently-distinguishable.
+*/
 function MenuItem({ icon: Icon, label, onClick }: { icon: Glyph; label: string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="dp-menuitem">
