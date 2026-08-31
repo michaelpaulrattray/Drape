@@ -76,9 +76,10 @@
 -- ============================================================================
 --
 -- Dev takes it now; production takes it by
--- `scripts/ceremony-crew-card-intents.mts`, which is a founder act today
--- (`CLAUDE.local.md` reserves production-database migrations to him; #322 is
--- his own order to change that rule and is carded and unstarted).
+-- `scripts/ceremony-crew-card-intents.mts` OR, since #322 shipped
+-- (2026-09-01), by the deploy rite itself — it applies an additive migration
+-- the code declares before it deploys, and this table is the first thing it
+-- ever applied. Only a DESTRUCTIVE statement is still the founder's.
 --
 -- Until it runs the reader DEGRADES rather than throwing — `crew.getState` is
 -- the ONE call his whole Crew tab makes, so a reader that threw on an absent

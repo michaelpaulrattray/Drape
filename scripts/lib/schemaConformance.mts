@@ -64,35 +64,45 @@ export type LiveSchema = ReadonlyMap<string, ReadonlySet<string>>;
 /**
  * Tables the code declares that the database is KNOWN not to hold, each with
  * the reason it is tolerated. Only ever gets shorter.
+ *
+ * ⚠ **IT IS EMPTY, AND SINCE #322 THAT IS ITS RESTING STATE RATHER THAN A
+ * COINCIDENCE.** This list existed to tolerate the window between a deploy and
+ * the founder's hand on a ceremony command; the deploy rite now APPLIES an
+ * additive migration itself, before it reads this verdict, so an additive
+ * table is never pending across a run and never needs a line here.
+ *
+ * What it is still for is the DESTRUCTIVE class, which the rite refuses to
+ * apply unattended and names instead. A `DROP`, `RENAME`, `MODIFY` or row
+ * rewrite that must land in a world before its code does gets a line here, and
+ * the shrink rule below applies to it unchanged.
+ *
+ * The two entries it held on 2026-09-01 both left in #322's own commit, and
+ * both were `CREATE TABLE`: `casting_cast_segments` (migration 0027, absent
+ * from BOTH worlds since it was written and read by nothing) and
+ * `crew_card_intents` (migration 0059, #325's `Not relevant` tap, which had
+ * been waiting on one command from him — the very cost that produced #322).
  */
-export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
-  casting_cast_segments:
-    "migration 0027, never applied in either world. Nothing reads or writes it — "
-    + "the only mentions in the tree are its own declaration and its two inferred "
-    + "types — and its migration header says it may land ahead of its code, which "
-    + "it did. Delete this line the day the Sign promotion merges, and run 0027 "
-    + "in BOTH worlds first (a production migration is a founder ceremony).",
-  crew_card_intents:
-    "migration 0059 (#325's second half — his `Not relevant` tap). Production "
-    + "takes it by scripts/ceremony-crew-card-intents.mts, which is a founder "
-    + "act today (#322 is his own order to change that rule and is unstarted). "
-    + "Both sides degrade without it: the reader returns `available: false` on "
-    + "ER_NO_SUCH_TABLE and the panel withholds the buttons rather than drawing "
-    + "controls over a store that cannot record them. Delete this line, and its "
-    + "pin in server/schemaConformance.test.ts, the day the ceremony runs.",
-};
+export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {};
+
 
 /**
  * COLUMNS the code declares on a table that EXISTS, which the database is known
  * not to hold yet — each with the reason it is tolerated. Only ever shorter.
  *
  * ⚠ **THE TABLE LIST ABOVE COULD NOT EXPRESS THIS, AND THAT GAP HAD TEETH.** A
- * column added to a live table is a founder ceremony exactly as a table is, but
- * until it runs the rite exits 1 on the mismatch — so the FIRST additive column
- * in this repository's history would have blocked every other shift's
- * doc/briefing push until he woke up and ran one command. Enumerating it keeps
- * the rite honest (it still says the column is absent) without making one
+ * column added to a live table was a founder ceremony exactly as a table was,
+ * and until it ran the rite exited 1 on the mismatch — so the FIRST additive
+ * column in this repository's history would have blocked every other shift's
+ * doc/briefing push until he woke up and ran one command. Enumerating it kept
+ * the rite honest (it still said the column was absent) without making one
  * shift's pending ceremony everyone else's outage.
+ *
+ * ⚠ **THE PAST TENSE IS DELIBERATE (#322, 2026-09-01).** An `ADD COLUMN` the
+ * code declares is now applied by the rite before this verdict is taken, so an
+ * additive column is never pending across a run and needs no line here either.
+ * What is left for both lists is the DESTRUCTIVE class — a narrowing `MODIFY`
+ * that must land in a world ahead of its code is the shape that still gets a
+ * line, and it still only shrinks.
  *
  * Keyed `table.column`, and it carries the same shrink rule as the table list:
  * the day the column appears, this line and its pin in
@@ -129,11 +139,21 @@ export type ConformanceVerdict = {
   A test of the rule must not depend on live data the rule is about. The
   parameter defaults to the real list, so every production caller is unchanged.
 */
+/*
+  `tableExceptions` is injectable for the same reason `columnExceptions` is, and
+  for one more that arrived with #322: the deploy rite now asks this function
+  TWICE. Once with both lists EMPTY, to learn the raw declared-minus-live set
+  the auto-applier plans against — an enumerated table is exactly the one it
+  most needs to see — and once normally, for the verdict it prints. Deriving
+  the raw set here rather than recomputing it in the rite is working law 4: a
+  second subtraction beside this one would drift from it.
+*/
 export function conformanceVerdict(
   declared: DeclaredSchema,
   live: LiveSchema,
   indexes?: { declared: ReadonlyMap<string, string>; live: ReadonlySet<string> },
   columnExceptions: Readonly<Record<string, string>> = DECLARED_COLUMNS_BUT_UNMIGRATED,
+  tableExceptions: Readonly<Record<string, string>> = DECLARED_BUT_UNMIGRATED,
 ): ConformanceVerdict {
   const missingTables: string[] = [];
   const missingColumns: string[] = [];
@@ -144,17 +164,17 @@ export function conformanceVerdict(
      finding — the three on `casting_cast_segments` would otherwise triple one
      known absence into four. The TABLE is the thing that is missing. */
   for (const [name, table] of indexes?.declared ?? []) {
-    if (table in DECLARED_BUT_UNMIGRATED) continue;
+    if (table in tableExceptions) continue;
     if (!indexes!.live.has(name)) missingIndexes.push(`${table}.${name}`);
   }
 
   for (const [table, columns] of [...declared].sort(([a], [b]) => a.localeCompare(b))) {
     const present = live.get(table);
     if (!present) {
-      if (!(table in DECLARED_BUT_UNMIGRATED)) missingTables.push(table);
+      if (!(table in tableExceptions)) missingTables.push(table);
       continue;
     }
-    if (table in DECLARED_BUT_UNMIGRATED) staleExceptions.push(table);
+    if (table in tableExceptions) staleExceptions.push(table);
     for (const column of [...columns].sort()) {
       const qualified = `${table}.${column}`;
       if (!present.has(column)) {

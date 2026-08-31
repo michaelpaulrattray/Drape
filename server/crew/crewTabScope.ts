@@ -24,7 +24,7 @@
  * this flag has is named rather than enforced:
  *
  *   **`crew_replies` (migration 0054) must exist before this is flipped on.**
- *   Production takes it by `scripts/ceremony-crew-replies.mts`, a founder act.
+ *   Production takes it by `scripts/ceremony-crew-replies.mts`, or the next deploy rite — additive migrations apply themselves since #322.
  *
  * That is a precondition of the FLIP, in the house shape the ink studio's table
  * prerequisite already uses. A boot guard could not check it honestly anyway:

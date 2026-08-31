@@ -81,7 +81,7 @@
 */
 import "dotenv/config";
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { openDatabase } from "./lib/dbConnection.mts";
@@ -95,6 +95,11 @@ import {
   declaredSchemaFrom,
   liveSchemaFrom,
 } from "./lib/schemaConformance.mts";
+import {
+  type MissingObjects,
+  autoApplyMigrations,
+  migrationFilesFrom,
+} from "./lib/ceremonyAutoApply.mts";
 import { assetReferencesIn, assetVerdict } from "./lib/staticAssetReferences.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import {
@@ -758,6 +763,49 @@ if (readings.length === 0) die("no variables could be read from the service — 
 const positions = comparePositions(readings);
 if (positions.block.length === 0) die("the flag position table is empty — the receipt would show a clean block over nothing");
 
+/* ── 5a-bis. THE ADDITIVE MIGRATION, APPLIED RATHER THAN ASKED FOR ───────── */
+
+/*
+  HE STOPS BEING THE BOTTLENECK (founder order, 2026-08-31, issue #322):
+
+    *"can you change the rules and allow for auto migration and ceremonies so
+    it doesnt need to ask me to run commands ever again"*
+
+  Three ceremonies by hand in twenty-four hours, each one holding a finished
+  feature still. #285 sat built-and-unmerged for a night waiting on one
+  command, and its own card said so. So the rule reserving production-database
+  migrations to him is gone, and this is what replaces it.
+
+  IT LIVES HERE AND NOWHERE ELSE, ON PURPOSE. The rite already runs on every
+  push, already resolves the world by name rather than by inference, already
+  reads `information_schema`, and already writes a durable receipt. A separate
+  auto-migration process would be a second thing to remember, a second place to
+  get the world wrong, and a second thing that can silently stop running.
+
+  WHAT IT WILL NOT DO, and the asymmetry is the whole design: a statement that
+  DROPS, RENAMES, MODIFIES or rewrites rows is REFUSED and NAMED — never
+  applied, never silently skipped. An additive migration nobody wanted is a
+  dead table; a DROP nobody wanted is data gone from a commercial product's
+  production database, and no test restores it. The refusal quotes the
+  statement, so running it by hand is one command and never a guess.
+
+  ⚠ `--dry` PLANS AND PRINTS AND WRITES NOTHING, exactly as it does for the
+  push. A rehearsal that migrated production would be the worst possible
+  reading of the word.
+*/
+/** One call. Everything it does lives in the lib, where it can be DRIVEN. */
+const autoApply = (
+  connection: Awaited<ReturnType<typeof openDatabase>>,
+  missing: MissingObjects,
+  readBack: () => Promise<MissingObjects>,
+) => autoApplyMigrations({
+  missing,
+  readBack,
+  execute: async (sql) => { await connection.query(sql); },
+  listMigrations: () => migrationFilesFrom(readdirSync, (file) => readFileSync(file, "utf8")),
+  dry: DRY,
+});
+
 /* ── 5b. the SCHEMA, off the same service ───────────────────────────────── */
 
 /*
@@ -774,30 +822,63 @@ if (positions.block.length === 0) die("the flag position table is empty — the 
 
   One `information_schema` query, on a connection this script already opens.
 */
-const schema = await (async (): Promise<{ line: string; problems: string[] }> => {
+const schema = await (async (): Promise<{ line: string; migration: readonly string[]; problems: string[] }> => {
   const url = productionUrl();
-  if (!url) return { line: "(unread — MYSQL_PUBLIC_URL not readable)", problems: [] };
+  if (!url) return { line: "(unread — MYSQL_PUBLIC_URL not readable)", migration: [], problems: [] };
   try {
     const connection = await openDatabase(url);
-    const [rows] = await connection.query<any[]>(
-      `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
-    );
-    const [indexRows] = await connection.query<any[]>(
-      `SELECT DISTINCT INDEX_NAME AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()`,
-    );
-    await connection.end();
     /* Relative, like the receipt path above: the rite runs from the repo root. */
     const schemaSource = readFileSync("drizzle/schema.ts", "utf8");
     const declared = declaredSchemaFrom(schemaSource);
     const declaredIndexes = declaredIndexesFrom(schemaSource);
-    const verdict = conformanceVerdict(
-      declared,
-      liveSchemaFrom(rows as Array<{ t: string; c: string }>),
-      {
+
+    /*
+      ONE READING OF THE SERVICE, TAKEN TWICE — before the migration and after
+      it — so the second is a READ-BACK rather than a repeat of the first
+      (working law 1). It answers two questions from one pair of queries: the
+      raw declared-minus-live set the applier plans against, and the tolerated
+      verdict the receipt prints.
+    */
+    const read = async () => {
+      const [rows] = await connection.query<any[]>(
+        `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
+      );
+      const [indexRows] = await connection.query<any[]>(
+        `SELECT DISTINCT INDEX_NAME AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()`,
+      );
+      /*
+        THE READER IS PROVEN BEFORE ITS ANSWER IS BELIEVED (working law 2). An
+        empty COLUMNS result is the whole basis for deciding to CREATE, and it
+        is also what a wrong database or a silently failed query looks like —
+        and since #322 this reader DECIDES A WRITE rather than only reporting,
+        so the control that was optional when it merely printed is not now.
+      */
+      if ((rows as any[]).length === 0) throw new Error("information_schema returned no columns at all");
+      const live = liveSchemaFrom(rows as Array<{ t: string; c: string }>);
+      const indexes = {
         declared: declaredIndexes,
         live: new Set((indexRows as Array<{ n: string }>).map((row) => row.n)),
-      },
-    );
+      };
+      /* Both exception lists empty: an ENUMERATED table is precisely the one
+         the applier most needs to see, and its indexes with it. */
+      const raw = conformanceVerdict(declared, live, indexes, {}, {});
+      return {
+        verdict: conformanceVerdict(declared, live, indexes),
+        missing: {
+          tables: raw.missingTables,
+          columns: raw.missingColumns,
+          /* `table.index` on the way out of the verdict; bare on the way into
+             the planner, because that is how the database names them. */
+          indexes: raw.missingIndexes.map((name) => name.slice(name.indexOf(".") + 1)),
+        } satisfies MissingObjects,
+      };
+    };
+
+    let { verdict, missing } = await read();
+    const migration = await autoApply(connection, missing, async () => (await read()).missing);
+    if (migration.applied > 0) verdict = (await read()).verdict;
+
+    await connection.end();
     const enumerated =
       Object.keys(DECLARED_BUT_UNMIGRATED).length
       + Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED).length;
@@ -805,14 +886,15 @@ const schema = await (async (): Promise<{ line: string; problems: string[] }> =>
       line:
         `${verdict.declaredTables} tables declared · ${verdict.liveTables} on the service · `
         + `${declaredIndexes.size} named indexes · ${enumerated} enumerated as unmigrated`,
-      problems: verdict.problems,
+      migration: migration.lines,
+      problems: [...migration.problems, ...verdict.problems],
     };
   } catch (error) {
     /* NO ERROR TEXT — same rule as every other database read here: this line
        goes into a mailbox and a driver's error can carry the DSN it was handed.
        An unread schema is stated as unread, never as conforming. */
     void error;
-    return { line: "(unread — the production schema could not be reached)", problems: [] };
+    return { line: "(unread — the production schema could not be reached)", migration: [], problems: [] };
   }
 })();
 
@@ -954,13 +1036,18 @@ if (positions.mismatches.length === 0) {
   say("  CLAUDE.md's paragraph for that flag now says about a decision that moved.");
 }
 say("");
+say(`MIGRATION, applied by this run (#322 — additive only, destructive refused):`);
+for (const line of schema.migration) say(`  ${line}`);
+if (schema.migration.length === 0) say("  (unread — the service could not be reached, so nothing was planned or applied)");
+say("");
 say(`SCHEMA, read off the service: ${schema.line}`);
 if (schema.problems.length === 0) {
   say("  ✓ every table, column and named index the code declares is there");
 } else {
   say(`  *** SCHEMA MISMATCH — ${schema.problems.length} ***`);
   for (const problem of schema.problems) say(`  ! ${problem}`);
-  say("  A ceremony this code depends on has not been run in this world.");
+  say("  Anything REFUSED above is a destructive statement and is yours to run by hand;");
+  say("  anything else here is a ceremony that could not be applied automatically.");
 }
 say("");
 say(`STATIC ASSETS, off the bucket the service names: ${assets.line}`);

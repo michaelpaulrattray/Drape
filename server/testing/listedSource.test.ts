@@ -113,6 +113,13 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " name `scripts/deploy-rite.mts`, which SHOULD throw if it is missing",
   "server/r7-b4-live-consumers.test.ts":
     "lists client/; its three scripts/ reads are fixed names, which should throw",
+  "server/ceremonyAutoApply.test.ts":
+    "lists `drizzle/`, never scripts; its two reads are a migration file from that"
+    + " listing and the fixed name `scripts/deploy-rite.mts`, and BOTH should throw"
+    + " if they are missing — a vanished migration is the one thing the auto-applier"
+    + " must never shrug at. No disposable has ever landed in `drizzle/`; the tree's"
+    + " ~440 untracked ones are all in `scripts/`, which is the population this rule"
+    + " is about",
   "server/testing/listedSource.test.ts":
     "the file that owns the rule — it names the population it scans for",
 };

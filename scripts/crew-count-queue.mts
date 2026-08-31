@@ -311,7 +311,7 @@ try {
   if (present.length !== 1) {
     console.error(
       `REFUSING: \`${TABLE}\` does not exist in this world. It is migration 0056 and production takes it by`
-      + " `scripts/ceremony-crew-work-switches.mts`, which is a FOUNDER act.",
+      + " `scripts/ceremony-crew-work-switches.mts`, which the DEPLOY RITE now applies itself (#322).",
     );
     await conn.end();
     process.exit(1);
@@ -319,7 +319,7 @@ try {
 
   /*
     ⚠ IS THE TITLES COLUMN HERE? Migration 0057, and production takes it by
-    `scripts/ceremony-crew-queue-count-titles.mts`, which is a FOUNDER act — so
+    `scripts/ceremony-crew-queue-count-titles.mts`, which the DEPLOY RITE now applies itself (#322) — so
     this script runs at every shift start in the window before that command. A
     write naming a column the table does not have fails the whole INSERT, which
     would leave his panel UNCOUNTED because a feature it cannot see is not
@@ -331,13 +331,13 @@ try {
   if (!keepsTitles) {
     console.log(
       `  (no \`${TITLES_COLUMN}\` column here — counting only. It is migration 0057 and production takes it by`
-      + " `scripts/ceremony-crew-queue-count-titles.mts`, a FOUNDER act.)",
+      + " `scripts/ceremony-crew-queue-count-titles.mts`, or the next deploy rite, which applies additive migrations itself since #322.)",
     );
   }
 
   /*
     ⚠ AND IS THE EXCLUSIONS COLUMN HERE? Migration 0058 (#324), same shape and
-    the same FOUNDER ceremony.
+    the same ceremony, which the deploy rite now runs itself (#322).
 
     ⚠ **THIS ANSWER DECIDES WHAT `openCount` MEANS, WHICH IS WHY IT IS ASKED
     RATHER THAN ASSUMED.** With the column, the stored count is the OFFERED one
@@ -355,7 +355,7 @@ try {
   if (!keepsExclusions) {
     console.log(
       `  (no \`${EXCLUDED_COLUMN}\` column here — storing TOTALS, as before. It is migration 0058 and production`
-      + " takes it by `scripts/ceremony-crew-queue-count-exclusions.mts`, a FOUNDER act.)",
+      + " takes it by `scripts/ceremony-crew-queue-count-exclusions.mts`, or the next deploy rite, which applies additive migrations itself since #322.)",
     );
   }
 
