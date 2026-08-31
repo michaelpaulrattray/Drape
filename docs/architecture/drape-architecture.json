@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6e1b3a7beabfcdd7"
+    "sourceFingerprint": "33bcda631c58e711"
   },
   "domains": [
     {
@@ -2625,6 +2625,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/pages/AdminFoundation.tsx",
+      "path": "client/src/pages/AdminFoundation.tsx",
+      "domain": "pages",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/pages/AdminInviteCodes.tsx",
       "path": "client/src/pages/AdminInviteCodes.tsx",
       "domain": "pages",
@@ -2645,12 +2651,6 @@
     {
       "id": "module:client/src/pages/AppLobby.tsx",
       "path": "client/src/pages/AppLobby.tsx",
-      "domain": "pages",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/pages/CastingFoundation.tsx",
-      "path": "client/src/pages/CastingFoundation.tsx",
       "domain": "pages",
       "lifecycle": "active"
     },
@@ -13307,6 +13307,11 @@
     },
     {
       "from": "module:client/src/App.tsx",
+      "to": "module:client/src/pages/AdminFoundation.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/App.tsx",
       "to": "module:client/src/pages/AdminInviteCodes.tsx",
       "kind": "imports"
     },
@@ -13323,11 +13328,6 @@
     {
       "from": "module:client/src/App.tsx",
       "to": "module:client/src/pages/AppLobby.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/App.tsx",
-      "to": "module:client/src/pages/CastingFoundation.tsx",
       "kind": "imports"
     },
     {
@@ -18586,6 +18586,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/AdminFoundation.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminFoundation.tsx",
+      "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminFoundation.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminFoundation.tsx",
+      "to": "module:client/src/foundation/Popover.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/AdminInviteCodes.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -18713,21 +18733,6 @@
     {
       "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingFoundation.tsx",
-      "to": "module:client/src/components/AppChrome.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingFoundation.tsx",
-      "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingFoundation.tsx",
-      "to": "module:client/src/foundation/Popover.tsx",
       "kind": "imports"
     },
     {

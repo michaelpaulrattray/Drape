@@ -77,7 +77,7 @@ const clientSrc = path.resolve(__dirname, "..");
 const GUARDED_PATHS = [
   "foundation",
   "features/castingV2",
-  "pages/CastingFoundation.tsx",
+  "pages/AdminFoundation.tsx",
   /* Enrolled with #68's token conversion (PR #77 review finding 1): the
      account menu renders on the themed --surface, and a reintroduced hex is
      exactly the invisible-name defect the founder photographed. */

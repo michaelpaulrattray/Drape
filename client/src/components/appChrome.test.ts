@@ -60,10 +60,13 @@ describe("#278 — every in-app page gets the chrome, from one composition", () 
 
     const mounts = files.filter(({ text }) => /<AppChrome[\s/>]/.test(code(text)));
     const names = mounts.map((f) => f.name).sort();
-    /* The lobby plus the four surfaces his ruling was about. */
+    /* The lobby plus the three casting surfaces his ruling was about — and the
+       component specimen sheet, which wears the real chrome on purpose: it moved
+       to /admin/foundation with #261, and comparing a component against the
+       frame it ships inside is the whole reason the page exists. */
     expect(names).toEqual([
+      "AdminFoundation.tsx",
       "AppLobby.tsx",
-      "CastingFoundation.tsx",
       "CastingRoom.tsx",
       "CastingSheet.tsx",
       "CastingV2.tsx",

@@ -39,7 +39,10 @@ const TOKEN = arg("token");
 const SESSION = arg("session");
 /** Law 9 clicks Follow for real, which costs credits. Opt in deliberately. */
 const OPTIMISTIC = process.argv.includes("--optimistic");
-if (!TOKEN) throw new Error("--token <app_session_id JWT> is required");
+/* An ADMIN session, since #261 moved the primitive gallery to /admin/foundation:
+   a non-admin token still drives the casting surfaces and silently redirects on
+   the gallery. */
+if (!TOKEN) throw new Error("--token <app_session_id JWT for an ADMIN account> is required");
 
 const failures: string[] = [];
 function check(ok: boolean, law: string, detail: string) {
@@ -524,9 +527,12 @@ for (const theme of ["dark", "light"] as const) {
     */
     check(false, `[${theme}] casting sheet audited`, "no --session given, so the sheet was never checked");
   }
+  /* The gallery is a STAFF surface since #261 — /casting/foundation is gone.
+     The --token this script is handed must therefore be an ADMIN session, or
+     the page redirects to /login and every law below it reads as violated. */
   await auditSurface(
     page,
-    `${BASE}/casting/foundation`,
+    `${BASE}/admin/foundation`,
     `${theme} · primitive gallery`,
     "Shared app foundation",
   );

@@ -44,25 +44,66 @@ import {
   SurfaceBar,
   Transcript,
 } from "@/foundation";
+import { Redirect } from "wouter";
+import { toast } from "sonner";
+
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Popover } from "@/foundation/Popover";
 import { AppChrome } from "@/components/AppChrome";
 
 /**
- * The primitive gallery, on the unlinked `/casting/foundation` route.
+ * THE COMPONENT SPECIMEN SHEET — a house tool, at a staff address (#261).
  *
- * This is the shell's proving ground, not the product: it renders every
- * primitive the foundation ships so the light/dark screenshot drive
- * (scripts/drive-foundation-theme-parity.mts) has one page to compare, and so
- * the founder can eyeball the system against the living reference
- * (docs/specs/Casting-ui-ux-design/drape-foundation/Drape Foundation.dc.html).
+ * # What this page is
  *
- * M5 took `/casting` for the real product and left this page its own address
- * rather than deleting it — theme parity is easier to check on one page that
- * exercises everything than across the surfaces that each use a little.
- * Nothing here calls the API, spends a credit, or claims a capability the
- * product does not have; the copy describes the foundation itself.
+ * One page that renders every primitive the foundation ships, so a component's
+ * shape can be checked against real app chrome before anything is built on it.
+ * It is the fixture the light/dark screenshot drive compares
+ * (`scripts/drive-foundation-theme-parity.mts`), the surface the design-law
+ * drive audits (`scripts/drive-casting-design-laws.mts`), and the page the
+ * promotion pass points at
+ * (`docs/specs/Casting-ui-ux-design/drape-redesign/PROMOTION-PASS.md`).
+ *
+ * # Who it is for, and where it is allowed to live
+ *
+ * **Us, and only us — it lives at `/admin/foundation` and nowhere else.**
+ *
+ * Until 2026-09-01 it sat at `/casting/foundation`, inside the customer's own
+ * product namespace, and rendered for anyone including a signed-out stranger.
+ * Nothing here is customer data — every value is invented specimen content —
+ * and that is exactly the problem: a fake ledger, fake prices (`Sign · 500 cr`,
+ * `Roll again · 160 cr`) and a fake transcript of a night shift talking to the
+ * founder, at a public address inside the product a customer pays for.
+ *
+ * The founder ruled the fix twice, and the second sentence settled the choice
+ * the first one left open:
+ *
+ *   2026-08-30: *"fix it by moving the page, not gating it. A component
+ *   specimen has no business inside the `/casting` namespace at all. Move it to
+ *   the staff routes or a dev-only build, then do the sweep you proposed. An
+ *   admin gate on a customer route leaves the wrong thing in the wrong place."*
+ *
+ *   2026-09-01: *"where does this re-usable component page live[?] its not
+ *   public facing or still a follow of casting is it? it should be admin"*
+ *
+ * So it took the staff route rather than a dev-only build: the page has to stay
+ * reachable on production, because that is where a shape gets checked against
+ * the chrome the customer actually sees.
+ *
+ * # Two things that follow from that, for whoever edits this next
+ *
+ * - **The guard below is the page's own, in the shape every other admin page
+ *   uses.** There is no route-level guard anywhere in `App.tsx`; each page owns
+ *   its gate, so a page that consults nothing renders for everyone. That was
+ *   this page for five days.
+ * - **It keeps `AppChrome` on purpose.** Every other admin page wears
+ *   `AdminHeader`; this one must wear the app's real chrome, because the whole
+ *   point is comparing a component against the frame it will ship inside. It
+ *   marks no rail destination as current — it is not one.
  */
-export default function CastingFoundation() {
+export default function AdminFoundation() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+
   const [bar, setBar] = useState("all");
   /* Section 11 — one specimen open at a time, which is also the rule the
      promoted overflow menu enforces for real. */
@@ -73,8 +114,28 @@ export default function CastingFoundation() {
   const [build, setBuild] = useState("athletic");
   const [age, setAge] = useState<string | null>("late twenties");
 
+  /* ─── auth guard, the shape every other admin page uses ───
+     Hooks first, returns after: this page's specimen state is declared above so
+     a signed-out visitor and an admin run the same number of hooks. */
+  if (authLoading) {
+    /* Tokens, not the raw hexes the other admin pages spell out: this file is
+       on the token guard's enrolled list (`foundation/token-guard.test.ts`),
+       and it should be — a specimen sheet that hardcodes a colour is the one
+       page whose own subject it contradicts. */
+    return (
+      <AppChrome breadcrumb="Staff / Foundation" width="working">
+        <span className="dp-metadata">Loading…</span>
+      </AppChrome>
+    );
+  }
+  if (!isAuthenticated) return <Redirect to="/login" />;
+  if (user?.role !== "admin") {
+    toast.error("Access denied. Admin privileges required.");
+    return <Redirect to="/studio" />;
+  }
+
   return (
-    <AppChrome breadcrumb="Casting / Foundation" current="casting" width="working">
+    <AppChrome breadcrumb="Staff / Foundation" width="working">
       <div className="dp-stack" style={{ gap: 9 }}>
         <span className="dp-eyebrow">Klieg foundation · M1</span>
         <h1 className="dp-headline">
@@ -84,8 +145,9 @@ export default function CastingFoundation() {
         </h1>
         <p className="dp-body">
           Tokens, type, chrome and primitives, live in both themes. Toggle the theme in the
-          topbar — nothing on this page branches on it. This route is unlinked: it exists so
-          the system can be checked before a product surface depends on it.
+          topbar — nothing on this page branches on it. This is a staff route behind the
+          admin gate: it exists so the system can be checked before a product surface
+          depends on it.
         </p>
       </div>
 

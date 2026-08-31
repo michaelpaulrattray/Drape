@@ -19,6 +19,10 @@ four sections render every primitive the foundation already shipped (buttons,
 inputs, chips, pills, status, cards, media, skeleton, drop zone, gradient tile,
 empty state, progress). If section 00 leaked into anything, it leaks there.
 
+> ⚠ **`/casting/foundation` is a historical address.** The specimen sheet moved to
+> `/admin/foundation`, behind the admin role guard, on 2026-09-01 (#261). Reproducing
+> anything below goes to the new address; the old one answers 404 for everyone.
+
 Each section was captured as an element screenshot on this branch and on `main`,
 at 1440×1200, light theme, with `document.fonts.ready` awaited, every animation
 and transition killed, the caret hidden and the pointer parked at 0,0.

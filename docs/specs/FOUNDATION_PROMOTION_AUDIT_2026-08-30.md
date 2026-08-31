@@ -55,6 +55,11 @@ order of operations:**
 > Only `usePopover` reached a real surface (one consumer, `LobbyUtilityMenu`,
 > via 00b) and `showsMenuCount` (two).
 
+> ⚠ **The address in the line above is historical.** The specimen sheet moved to
+> `/admin/foundation`, behind the admin role guard, on 2026-09-01 (#261) — the founder
+> ruled a house-only page out of the customer's namespace (*"it should be admin"*).
+> `/casting/foundation` now answers 404 for everyone, admins included.
+
 That is not a criticism of 00 — it built a kit ahead of the surfaces that will
 use it, which is what its brief asked for. It matters because it settles the
 reconciliation question cheaply: **casting's implementations are in front of

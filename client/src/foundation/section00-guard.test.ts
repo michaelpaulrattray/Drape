@@ -206,7 +206,7 @@ describe("the media card's label row sits below the media", () => {
 */
 describe("one state, one signal — his three corrections", () => {
   const SPECIMEN = fs.readFileSync(
-    path.resolve(__dirname, "../pages/CastingFoundation.tsx"),
+    path.resolve(__dirname, "../pages/AdminFoundation.tsx"),
     "utf8",
   );
   const PRIMITIVES = fs.readFileSync(path.resolve(__dirname, "primitives.tsx"), "utf8");
