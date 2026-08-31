@@ -1,6 +1,6 @@
 {
-  "edition": 176,
-  "updatedAt": "2026-09-01T02:05:00+10:00",
+  "edition": 177,
+  "updatedAt": "2026-09-01T02:15:00+10:00",
   "shift": "foreman-153",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "fourth-panel-owner-356",
+      "title": "One menu did not come across, and I would rather you said so than I decided it",
+      "productImpact": "Your #304 ruling named three pop-up panels and they are one now. There is a FOURTH — the little menu under your own face in the top-right corner — that your ruling did not mention, and it still runs its own separate copy of the same behaviour. I left it alone rather than fold it in, because folding it in would move a menu you personally approved two days ago.",
+      "workedExample": "Click your face, top-right. Open the menu, press Escape. On every other panel in the product your keyboard focus now goes back to the button you opened it from; on this one it lands on nothing, so your next Tab starts from the top of the page. It can also sit open while another panel opens, where the others now close each other. Those are the two costs of leaving it, and on a four-row menu they are small.",
+      "options": [
+        {
+          "key": "bring-it-across",
+          "label": "Bring it across too",
+          "consequence": "Then there is genuinely one implementation and nothing to pick by accident, which is closest to your “don't leave a second option alive”. It gains the focus behaviour for free. Cost: the panel gets re-anchored, so its position could shift a pixel or two — and it is a menu you signed off on 30 August, so it would want a before/after frame in front of you before it merged."
+        },
+        {
+          "key": "leave-it",
+          "label": "Leave it where it is (recommended)",
+          "consequence": "It sits in a fixed 56px bar with nothing to clip it and nothing to mis-place it — which is why it was written by hand in the first place, and the file has said so since before your ruling. The three that collapsed were fighting over WHERE the panel lands; this one is not in that fight. Nothing is at risk."
+        }
+      ],
+      "recommendation": "Leave it. Either way the exception is already in the open rather than invisible: a test derives the list of files allowed their own copy straight from the code and goes red if a FIFTH appears, and the file itself says the question was asked and left for you. So this cannot quietly become drift while it waits.",
+      "state": "open",
+      "filedAt": "2026-09-01T02:15:00+10:00",
+      "issueNumber": 356
+    },
     {
       "id": "pipeline-panel-325",
       "title": "You can now tap a card away yourself — one command from you and it is live",
@@ -330,23 +352,12 @@
     },
     {
       "id": "popover-collapse-304",
-      "title": "Built — and one small question I would not answer for you",
-      "productImpact": "Your “Option one” is merged and deployed. One piece of code owns how every pop-up panel in the studio opens, closes and lands; casting's version is the one that survived, exactly as you said. Report-a-bug and the Help menu with its greyed rows are untouched. What is left is a fourth menu your ruling did not mention, and I left it alone rather than decide it for you.",
-      "workedExample": "Click your own face in the top-right corner. That little account menu is a FOURTH hand-written copy of the same behaviour — it opens, it closes on Escape, it closes when you click away. Your ruling named three and this is not one of them, and it is the one menu where moving it across would change where the panel sits, on a menu you approved two days ago. So it still runs its own code. Everything else in the product now runs one.",
-      "options": [
-        {
-          "key": "bring-it-across",
-          "label": "Bring the account menu across too",
-          "consequence": "Then there really is one implementation and nothing else to pick by accident, which is closest to your “don't leave a second option alive”. Cost: the panel is re-anchored, so its position could shift by a pixel or two and would need your eye on a frame before it merged."
-        },
-        {
-          "key": "leave-it",
-          "label": "Leave it where it is (recommended)",
-          "consequence": "It sits in a fixed 56px bar with nothing to clip it and nothing to mis-place it, which is the reason it was written by hand in the first place. Nothing is at risk. The code says out loud that the question was asked and left, and the guard names it as a deliberate exception — so nobody a year from now mistakes it for drift and nobody has to rediscover the question."
-        }
-      ],
-      "recommendation": "Leave it. The three you named were fighting over placement; this one is not in that fight. It is a one-word answer either way and nothing waits on it.",
-      "state": "open",
+      "title": "Built and deployed — your “Option one”, and nothing moved that should not have",
+      "productImpact": "One piece of code now owns how every pop-up panel in the studio opens, closes and lands beside the thing you clicked. There were three, and they disagreed — so a fix to one quietly missed the other two. Casting's version is the one that survived, exactly as you said. Report-a-bug and the Help menu with its greyed rows are untouched.",
+      "workedExample": "Every panel was opened in the running app before and after the change and measured against its own trigger. The card menus and both lobby panels sit at exactly the same distance, to the pixel. One thing moved on purpose and it is in the gallery below. Two faults were fixed on the way: six word-pickers could be open at once in one casting sentence, and pressing Escape on a card menu dropped your keyboard focus onto nothing.",
+      "options": [],
+      "recommendation": "Nothing needed from you here. The one question the build raised is its own card now (#356) and sits below.",
+      "state": "answered",
       "filedAt": "2026-09-01T02:05:00+10:00",
       "issueNumber": 304
     },
