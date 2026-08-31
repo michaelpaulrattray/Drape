@@ -3796,24 +3796,21 @@ export type InsertCastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$in
  *
  * # THE STORE IS SPLIT BY WHO WRITES, AND THIS IS HIS HALF
  *
- * Everything the night shifts say — program, ladder, pipeline, cards, problems
- * — is `server/crew/crew-briefing.json`, a tracked file deployed by the rite
- * every shift already pushes. Everything HE says is this table, written
+ * Everything the night shifts say — program, ladder, pipeline, cards, problems,
+ * journal — is `server/crew/crew-briefing.json`, a tracked file deployed by the
+ * rite every shift already pushes. Everything HE says is this table, written
  * only through an `adminProcedure` mutation with his existing session. Neither
  * writer can reach the other's road, which is what makes the page survive the
  * account swap that prompted it.
  *
  * # `cardId` IS NULLABLE, AND IT IS NEVER VALIDATED AGAINST THE BRIEFING
  *
- * NULL means a GENERAL note — a member of the vocabulary, not a missing value.
- * (It meant a JOURNAL note until #293 removed the journal from his page; his
- * answer to where those words should then land was, verbatim and entire,
- * *"Keep a General box."* The column's meaning did not move — only the box it
- * draws in.) A non-NULL one is checked for SHAPE (≤64 chars) and nothing else:
- * the briefing rotates, so a card he answers tonight may be gone from the
- * edition that lands tomorrow, and a foreign key would turn that ordinary
- * rotation into a refusal of the founder's own words. A reply whose card has
- * left the briefing renders in the General box instead of vanishing.
+ * NULL means a journal note — a member of the vocabulary, not a missing value.
+ * A non-NULL one is checked for SHAPE (≤64 chars) and nothing else: the
+ * briefing rotates, so a card he answers tonight may be gone from the edition
+ * that lands tomorrow, and a foreign key would turn that ordinary rotation into
+ * a refusal of the founder's own words. A reply whose card has left the
+ * briefing renders in the journal thread instead of vanishing.
  *
  * # THE ROW IS THE AUDIT RECORD (working law 4)
  *
@@ -3832,7 +3829,7 @@ export type InsertCastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$in
  */
 export const crewReplies = mysqlTable("crew_replies", {
   id: int("id").autoincrement().primaryKey(),
-  /** The briefing needs-you card this answers; NULL is a general note. */
+  /** The briefing needs-you card this answers; NULL is a journal note. */
   cardId: varchar("cardId", { length: 64 }),
   /** His words, verbatim. Never truncated by us — see the header. */
   body: text("body").notNull(),
