@@ -68,6 +68,11 @@
 import { execFileSync } from "node:child_process";
 
 import {
+  CREW_PIPELINE_GROUPS,
+  pipelineGroupFor,
+  pipelineGroupRowKey,
+} from "../shared/crewPipelineGroups.js";
+import {
   exclusionFor,
   parseQueueExclusions,
   queueExclusionSentence,
@@ -213,6 +218,77 @@ function countOpen(label: string): CategoryReading | null {
   }
 }
 
+/**
+ * THE WHOLE OPEN QUEUE, READ ONCE AND FILED INTO GROUPS (#325).
+ *
+ * ⚠ **`null` ON ANY DOUBT, EXACTLY AS `countOpen` DOES.** A broken `gh` that
+ * returned an empty list here would write TWELVE zeros — his page would read
+ * *"nothing in the pipeline at all"*, which is the most reassuring and most
+ * wrong sentence this panel could ever print. A null leaves every group row
+ * standing with its older `countedAt`, and the page shows the age.
+ *
+ * The 500 cap is checked rather than assumed, for `countOpen`'s stated reason:
+ * a `--limit` shorter than the real population turns a count into a floor
+ * silently. At 100 open today there is room, and the day there is not, this
+ * refuses instead of quietly capping his pipeline at 500.
+ */
+function countPipelineGroups(): {
+  total: number;
+  byGroup: Map<string, Array<{ number: number; title: string }>>;
+} | null {
+  try {
+    const out = execFileSync(
+      "gh",
+      ["issue", "list", "--state", "open", "--limit", "500", "--json", "number,title,createdAt,labels"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+    const rows = JSON.parse(out);
+    if (!Array.isArray(rows)) return null;
+    if (rows.length >= 500) {
+      console.error("REFUSING the pipeline groups: 500 rows came back, which is the limit — the total would be a floor, not a total.");
+      return null;
+    }
+    /* Most recent first, sorted here rather than trusted — `countOpen`'s reason,
+       and the titles under each group are the five he has not seen. */
+    const stamped = rows.map((row: { number?: unknown; title?: unknown; createdAt?: unknown; labels?: unknown }) => ({
+      number: typeof row.number === "number" ? row.number : 0,
+      title: typeof row.title === "string" ? row.title : "",
+      at: typeof row.createdAt === "string" ? Date.parse(row.createdAt) : Number.NaN,
+      /* A row whose labels are unreadable yields an EMPTY list, which files it
+         under `unfiled` — visible, and asking to be looked at. The safe
+         direction is the one that shows him a card. */
+      labels: Array.isArray(row.labels)
+        ? row.labels
+          .map((entry) => (typeof entry === "object" && entry !== null ? (entry as { name?: unknown }).name : undefined))
+          .filter((name): name is string => typeof name === "string")
+        : [],
+    }));
+    stamped.sort((left, right) => {
+      const l = Number.isFinite(left.at) ? left.at : -Infinity;
+      const r = Number.isFinite(right.at) ? right.at : -Infinity;
+      return r - l;
+    });
+    const byGroup = new Map<string, Array<{ number: number; title: string }>>();
+    for (const group of CREW_PIPELINE_GROUPS) byGroup.set(group.key, []);
+    for (const row of stamped) {
+      const key = pipelineGroupFor(row.labels);
+      /* `pipelineGroupFor` is total by construction, so this cannot miss — but
+         a group renamed here and not there would drop cards on the floor, and a
+         dropped card is precisely what this card exists to end. */
+      const bucket = byGroup.get(key);
+      if (!bucket) {
+        console.error(`REFUSING: a card was filed under \`${key}\`, which is not a declared group. The vocabularies have drifted.`);
+        return null;
+      }
+      bucket.push({ number: row.number, title: row.title });
+    }
+    return { total: stamped.length, byGroup };
+  } catch (cause) {
+    console.error(`[warn] could not read the open queue for the pipeline groups: ${(cause as Error).message}`);
+    return null;
+  }
+}
+
 await import("dotenv/config");
 const url = resolveDatabaseUrl();
 if (!url) {
@@ -345,6 +421,85 @@ try {
       + (sentence ? ` · ${sentence}${keepsExclusions ? "" : ", NOT stored — no column yet"}` : ""),
     );
     for (const card of storedTitles) console.log(`      #${card.number} ${card.title}`);
+  }
+
+  /*
+    ⚠ ZONE 2 — THE REST OF THE PIPELINE (#325).
+
+    His question: *"all those other ones should be put them under additional
+    categories so i can see the full pipeline like all 97?"* Measured the hour
+    this shipped: 100 open, 29 reached by a switch label, **71 reached by
+    nothing** — invisible on the panel he looks at from bed, with no way to ask
+    why.
+
+    ⚠ **ONE `gh` CALL FOR ALL OF THEM, AND THAT IS NOT AN OPTIMISATION — IT IS
+    THE ONLY WAY THE PARTITION CAN EXIST.** The five categories above are
+    counted with one call each, per label, and they may legitimately overlap (a
+    card carrying `bug` and `seat:retro` is in both). The groups must NOT
+    overlap: his bar is *"the counts sum to the real total"*, and thirteen
+    independent per-label calls could not produce a sum, only thirteen
+    populations that add up to more than the queue. So the whole open queue is
+    read once and `pipelineGroupFor` files each card exactly once.
+
+    A group whose count is zero is still written — `Blocked (0)` is a real
+    answer, and the panel's own rule since #277 is that a row must never vanish
+    or he cannot tell "nothing there" from "not offered".
+  */
+  const pipeline = countPipelineGroups();
+  if (pipeline === null) {
+    skipped += CREW_PIPELINE_GROUPS.length;
+    console.log("\n  PIPELINE GROUPS SKIPPED — the old rows stand, with their older timestamps");
+  } else {
+    console.log(`\n  the rest of the pipeline — ${pipeline.total} open in total, filed into ${CREW_PIPELINE_GROUPS.length} groups:`);
+    for (const group of CREW_PIPELINE_GROUPS) {
+      const filed = pipeline.byGroup.get(group.key) ?? [];
+      const titles = filed.slice(0, QUEUE_TITLES_PER_CATEGORY).map((row) => ({ number: row.number, title: row.title }));
+      const rowKey = pipelineGroupRowKey(group.key);
+      /* Same upsert, same table, same `countedAt` — the prefix is the whole
+         separation, and the projection filters each side to its own vocabulary
+         so neither can read the other's rows as its own.
+
+         `excluded` is deliberately NOT named here even where the column exists:
+         #324's exclusions are a fact about a SWITCH count (what was taken out of
+         something on offer), and a group is not on offer at all. Leaving it null
+         is the honest value; writing `{}` would be a claim that nothing was
+         excluded from a number nothing could be excluded from. */
+      if (keepsTitles) {
+        await conn.query(
+          `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${TITLES_COLUMN}, countedAt)
+           VALUES (?, ?, ?, UTC_TIMESTAMP())
+           ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), ${TITLES_COLUMN} = VALUES(${TITLES_COLUMN}), countedAt = VALUES(countedAt)`,
+          [rowKey, filed.length, serializeQueueTitles(titles)],
+        );
+      } else {
+        await conn.query(
+          `INSERT INTO \`${TABLE}\` (categoryKey, openCount, countedAt)
+           VALUES (?, ?, UTC_TIMESTAMP())
+           ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), countedAt = VALUES(countedAt)`,
+          [rowKey, filed.length],
+        );
+      }
+      written += 1;
+      console.log(
+        `  ${group.label.padEnd(16)} ${String(filed.length).padStart(3)} open`
+        + (group.queueLabel ? `  (label \`${group.queueLabel}\`)` : ""),
+      );
+    }
+    /* ⚠ THE SUM IS ASSERTED HERE, NOT ONLY ON HIS PAGE. A partition that stops
+       partitioning is a silent wrong number — the panel would still draw twelve
+       tidy rows. This is the writer's own control, on the population it just
+       filed, and it costs one addition. */
+    let sum = 0;
+    for (const group of CREW_PIPELINE_GROUPS) sum += (pipeline.byGroup.get(group.key) ?? []).length;
+    if (sum !== pipeline.total) {
+      console.error(
+        `REFUSING to report a total: the groups sum to ${sum} and the queue holds ${pipeline.total}.`
+        + " The rows are written; the arithmetic is not trustworthy and must be fixed before his page is believed.",
+      );
+      await conn.end();
+      process.exit(1);
+    }
+    console.log(`  ${"".padEnd(16)} ${String(sum).padStart(3)} — sums to the queue's own total ✓`);
   }
 
   /* Read back rather than trusted (working law 1 — the changed rows are the fact). */

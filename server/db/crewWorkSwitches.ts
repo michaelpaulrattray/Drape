@@ -36,6 +36,10 @@
  */
 import { eq } from "drizzle-orm";
 
+import {
+  CREW_PIPELINE_GROUPS,
+  pipelineGroupRowKey,
+} from "../../shared/crewPipelineGroups";
 import { parseQueueExclusions, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
 import { parseQueueTitles, type CrewQueueTitle } from "../../shared/crewQueueTitles";
 import {
@@ -143,11 +147,36 @@ export type CrewQueueCountView = {
  * idle by his choice or the panel is simply dark. #272's reader makes the same
  * distinction for the same reason.
  */
+/**
+ * One row of ZONE 2 — a slice of the pipeline he can SEE and can never switch
+ * on (#325).
+ *
+ * ⚠ **THERE IS NO `enabled` HERE AND THERE MUST NEVER BE ONE.** `design-unbuilt`
+ * and `roadmap` are feature work, and a switch on either is `PROGRAM.md`'s
+ * founder law — *"the team NEVER selects the next feature"* — with a toggle
+ * attached. The absence of the field is the control; `server/crewPipelineGroups.test.ts`
+ * asserts the two vocabularies share no key so one can never be read as the
+ * other.
+ */
+export type CrewPipelineGroupView = {
+  readonly groupKey: string;
+  readonly openCount: number;
+  readonly titles: readonly CrewQueueTitle[];
+  readonly countedAt: Date;
+};
+
 export type CrewWorkState = {
   readonly available: boolean;
   /** key → on/off. A key ABSENT from this map is OFF (see `shared/crewWorkSwitches.ts`). */
   readonly switches: Readonly<Record<string, boolean>>;
   readonly counts: readonly CrewQueueCountView[];
+  /**
+   * The whole pipeline, grouped — including the `switched` row, which is the
+   * arithmetic rather than a group (#325). Empty until a shift has counted, and
+   * the panel draws nothing rather than zeros in that window: twelve confident
+   * zeros and "no shift has looked yet" must not look the same.
+   */
+  readonly groups: readonly CrewPipelineGroupView[];
   /** When he last changed anything — his card asks the page to say so. */
   readonly changedAt: Date | null;
 };
@@ -219,9 +248,80 @@ export async function readCountRows(db: DbInstance): Promise<
   }
 }
 
+/**
+ * ONE TABLE, TWO VOCABULARIES — the switch counts and the pipeline groups
+ * (#325).
+ *
+ * ⚠ **THE PREFIX IS THE WHOLE SEPARATION, AND IT IS READ IN BOTH DIRECTIONS.**
+ * Group rows share `crew_queue_counts` with the switch counts, which is what
+ * makes this feature a row and a line rather than a migration and a founder
+ * ceremony — `shared/crewWorkSwitches.ts`'s own header promises that, and
+ * #324's exclusions were built on the same promise. The switch filter keys on
+ * the bare category names (`bugs`, `process`); the group filter on `group:`
+ * keys. Neither set can match the other's rows, and the failure that would
+ * matter is one direction only: **a group's number appearing under a switch he
+ * can flip** is a control on `design-unbuilt`, which is `PROGRAM.md`'s founder
+ * law with a toggle attached.
+ *
+ * ⚠ **AN UNKNOWN KEY IS DROPPED BY BOTH**, exactly as `readCrewWorkState` drops
+ * an unknown `switchKey`: a renamed group leaving its old row behind, or a
+ * hand-written row, can only ever be noise. Dropping is the safe direction —
+ * the unknown key cannot turn anything on, because nothing asks for it.
+ *
+ * **ORDERED BY THE VOCABULARY, never by the table.** The panel's group order is
+ * MEANING (first match wins in `pipelineGroupFor`, so the order is what his
+ * page says about a card carrying two labels), and a row order that drifted
+ * would silently reorder the reasons under his counts.
+ *
+ * EXPORTED for `server/crewPipelineProjection.test.ts`, which drives the split
+ * directly — a suite that cannot see this function cannot prove the two
+ * populations stay apart.
+ */
+export function splitCountRows(
+  countRows: ReadonlyArray<{
+    categoryKey: string;
+    openCount: number;
+    titles: string | null;
+    excluded: string | null;
+    countedAt: Date;
+  }>,
+): { counts: CrewQueueCountView[]; groups: CrewPipelineGroupView[] } {
+  const known = new Set<string>(CREW_WORK_CATEGORIES.map((category) => category.key));
+  const counts = countRows
+    .filter((row) => known.has(row.categoryKey))
+    .map((row) => ({
+      categoryKey: row.categoryKey,
+      openCount: row.openCount,
+      /* Parsed HERE rather than on the client: `crew.getState` is the page's
+         whole contract, and a raw JSON string crossing it would make every
+         consumer responsible for the same defensive parse. */
+      titles: parseQueueTitles(row.titles),
+      excluded: parseQueueExclusions(row.excluded),
+      countedAt: row.countedAt,
+    }));
+
+  const byRowKey = new Map(countRows.map((row) => [row.categoryKey, row]));
+  const groups: CrewPipelineGroupView[] = [];
+  for (const group of CREW_PIPELINE_GROUPS) {
+    const row = byRowKey.get(pipelineGroupRowKey(group.key));
+    /* An ABSENT row is left out rather than drawn as zero. They are opposite
+       facts: zero means the queue holds none of these, and absent means no
+       shift has counted since this shipped. The panel says which. */
+    if (!row) continue;
+    groups.push({
+      groupKey: group.key,
+      openCount: row.openCount,
+      titles: parseQueueTitles(row.titles),
+      countedAt: row.countedAt,
+    });
+  }
+
+  return { counts, groups };
+}
+
 export async function readCrewWorkState(): Promise<CrewWorkState> {
   const db = await getDb();
-  if (!db) return { available: false, switches: {}, counts: [], changedAt: null };
+  if (!db) return { available: false, switches: {}, counts: [], groups: [], changedAt: null };
 
   try {
     const switchRows = await db
@@ -242,24 +342,13 @@ export async function readCrewWorkState(): Promise<CrewWorkState> {
       if (changedAt === null || row.changedAt > changedAt) changedAt = row.changedAt;
     }
 
-    /* Counts are filtered the same way and for the same reason. */
-    const known = new Set<string>(CREW_WORK_CATEGORIES.map((category) => category.key));
-    const counts = countRows
-      .filter((row) => known.has(row.categoryKey))
-      .map((row) => ({
-        categoryKey: row.categoryKey,
-        openCount: row.openCount,
-        /* Parsed HERE rather than on the client: `crew.getState` is the page's
-           whole contract, and a raw JSON string crossing it would make every
-           consumer responsible for the same defensive parse. */
-        titles: parseQueueTitles(row.titles),
-        excluded: parseQueueExclusions(row.excluded),
-        countedAt: row.countedAt,
-      }));
+    const { counts, groups } = splitCountRows(countRows);
 
-    return { available: true, switches, counts, changedAt };
+    return { available: true, switches, counts, groups, changedAt };
   } catch (cause) {
-    if (isMissingTable(cause)) return { available: false, switches: {}, counts: [], changedAt: null };
+    if (isMissingTable(cause)) {
+      return { available: false, switches: {}, counts: [], groups: [], changedAt: null };
+    }
     throw cause;
   }
 }

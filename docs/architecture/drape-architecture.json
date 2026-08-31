@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8f595e225e2822ea"
+    "sourceFingerprint": "f6417588a158e5e0"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 48
+      "moduleCount": 49
     },
     {
       "id": "domain:studio",
@@ -5837,6 +5837,12 @@
     {
       "id": "module:shared/crewNextUpHold.ts",
       "path": "shared/crewNextUpHold.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewPipelineGroups.ts",
+      "path": "shared/crewPipelineGroups.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12292,6 +12298,14 @@
       "path": "server/crewNextUpHold.test.ts"
     },
     {
+      "id": "test:server/crewPipelineGroups.test.ts",
+      "path": "server/crewPipelineGroups.test.ts"
+    },
+    {
+      "id": "test:server/crewPipelineProjection.test.ts",
+      "path": "server/crewPipelineProjection.test.ts"
+    },
+    {
       "id": "test:server/crewQueueCountRescue.test.ts",
       "path": "server/crewQueueCountRescue.test.ts"
     },
@@ -14065,6 +14079,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:shared/crewPipelineGroups.ts",
       "kind": "imports"
     },
     {
@@ -28089,6 +28108,11 @@
     },
     {
       "from": "module:server/db/crewWorkSwitches.ts",
+      "to": "module:shared/crewPipelineGroups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewWorkSwitches.ts",
       "to": "module:shared/crewQueueExclusions.ts",
       "kind": "imports"
     },
@@ -32480,6 +32504,11 @@
     {
       "from": "module:shared/castingRealization.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewPipelineGroups.ts",
+      "to": "module:shared/crewWorkSwitches.ts",
       "kind": "imports"
     },
     {
