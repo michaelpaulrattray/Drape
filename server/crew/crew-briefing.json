@@ -1,7 +1,7 @@
 {
-  "edition": 175,
-  "updatedAt": "2026-09-01T00:55:00+10:00",
-  "shift": "foreman-152",
+  "edition": 176,
+  "updatedAt": "2026-09-01T02:05:00+10:00",
+  "shift": "foreman-153",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -330,24 +330,24 @@
     },
     {
       "id": "popover-collapse-304",
-      "title": "The last piece of Saturday's approval — and the ground moved under it",
-      "productImpact": "You asked for the three pop-up panels to collapse into one, with casting's version surviving. Four of your five instructions shipped tonight. This one did not, because doing it literally would have broken two things you personally approved the night before — the Report-a-bug panel and the Help menu with its greyed-out 'Documentation' and 'Keyboard shortcuts' rows you called 'exactly right'.",
-      "workedExample": "Casting's overflow menu takes a simple list: a label and what happens when you click it. That is all it can hold. But the Report-a-bug panel isn't a list — it's a form you type into. And the Help menu turns INTO a form when you pick 'Send feedback'. Neither fits in a box built for menu rows, so folding them onto casting's version would mean rebuilding both, and the greyed stubs would be the first thing lost.",
+      "title": "Built — and one small question I would not answer for you",
+      "productImpact": "Your “Option one” is merged and deployed. One piece of code owns how every pop-up panel in the studio opens, closes and lands; casting's version is the one that survived, exactly as you said. Report-a-bug and the Help menu with its greyed rows are untouched. What is left is a fourth menu your ruling did not mention, and I left it alone rather than decide it for you.",
+      "workedExample": "Click your own face in the top-right corner. That little account menu is a FOURTH hand-written copy of the same behaviour — it opens, it closes on Escape, it closes when you click away. Your ruling named three and this is not one of them, and it is the one menu where moving it across would change where the panel sits, on a menu you approved two days ago. So it still runs its own code. Everything else in the product now runs one.",
       "options": [
         {
-          "key": "one-behaviour-two-shapes",
-          "label": "One shared behaviour, two shapes (recommended)",
-          "consequence": "There is one piece of code that owns how these panels open, close on Escape, close when you click away, and sit where you clicked. Casting's version of that survives and becomes the only one. On top of it sit two shapes: a menu of actions, and the word-picker in the casting sentence. Nothing else can be reached, so there is no second option to pick by accident — which is what you asked for."
+          "key": "bring-it-across",
+          "label": "Bring the account menu across too",
+          "consequence": "Then there really is one implementation and nothing else to pick by accident, which is closest to your “don't leave a second option alive”. Cost: the panel is re-anchored, so its position could shift by a pixel or two and would need your eye on a frame before it merged."
         },
         {
-          "key": "literally-one-component",
-          "label": "Literally one component",
-          "consequence": "Buildable, but it means re-shaping the Report-a-bug panel and the Help menu, and those are surfaces you signed off 24 hours ago. It is a bigger change than the sentence implies."
+          "key": "leave-it",
+          "label": "Leave it where it is (recommended)",
+          "consequence": "It sits in a fixed 56px bar with nothing to clip it and nothing to mis-place it, which is the reason it was written by hand in the first place. Nothing is at risk. The code says out loud that the question was asked and left, and the guard names it as a deliberate exception — so nobody a year from now mistakes it for drift and nobody has to rediscover the question."
         }
       ],
-      "recommendation": "Option one. It leaves exactly one owner of the behaviour, which is the drift you were preventing, without rebuilding two panels you just approved. One more thing worth your eye: when you approved this, the hook in question had ONE user and was three days old — the reason it looked disposable. It has TWO now, which is the exact bar you set that same morning ('two real consumers in the codebase, or it waits').",
-      "state": "answered",
-      "filedAt": "2026-08-31T00:05:00+10:00",
+      "recommendation": "Leave it. The three you named were fighting over placement; this one is not in that fight. It is a one-word answer either way and nothing waits on it.",
+      "state": "open",
+      "filedAt": "2026-09-01T02:05:00+10:00",
       "issueNumber": 304
     },
     {
@@ -1123,6 +1123,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "popover-collapse-304-frames",
+      "title": "The two shapes, one behaviour — the word-picker in dark, the card menu in light",
+      "question": "Nothing here needs judging against a number — it needs your eye on whether the panels still look right. One thing DID move and I want to be straight about it: the word-picker in the casting sentence now sits 3.44px lower. It used to be positioned against an invisible box around the word rather than the word itself, so its “9px gap” was really 9px minus whatever the typeface added on that line; it is 9px from the word now, at any type size. That is smaller than an eye can judge without a ruler, and there is no before-picture to compare against because the panel's old position was only ever a measurement — so the question is simply: does it look right where it sits?",
+      "state": "open",
+      "filedAt": "2026-09-01T02:05:00+10:00",
+      "issueNumber": 304,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/88ffc54a-cc18-4e72-84db-d894c0e4e467.png",
+          "caption": "DARK, 1440x900. The word-picker open on “athletic” in a sentence — the same shape the casting sheet uses. The 12px it hangs to the left of the word is unchanged and measured so; the gap under the word is the 3.44px that moved. The cursor sits on the current option, which is the keyboard behaviour you asked for and which this change briefly broke and then fixed. Money: zero — no render, no credit, no text call.",
+          "arm": "the listbox shape"
+        },
+        {
+          "key": "crew-eye/a94526bf-9c32-490d-b7cc-4d301f2d9129.png",
+          "caption": "LIGHT, 1440x900. The card menu open on the same page — the other shape, on the same behaviour underneath. Note what is NOT in this frame: the word-picker from the sentence above is closed, because opening one panel now closes any other. Before this change, six of them could sit open at once in a single sentence. This menu's position is byte-identical to where it sat before the change.",
+          "arm": "the menu shape"
+        }
+      ]
+    },
     {
       "id": "icon-set-321-frames",
       "title": "Your 27 glyphs on the rail and in the topbar, both themes",
@@ -2126,6 +2147,14 @@
   ],
   "pipeline": [
     {
+      "id": "popover-collapse-304",
+      "title": "One piece of code now owns every pop-up panel in the studio (#304)",
+      "status": "merged",
+      "prNumber": 355,
+      "note": "Your “Option one”, built. There were three separate versions of the code that decides how a little panel opens, closes and sits beside the thing you clicked — and they disagreed with each other, so a fix to one quietly missed the other two. There is one now. The card menu is still a menu, the words in the casting sentence are still a picker, and Report-a-bug and Help are untouched to the pixel. Everything was measured in the running app before and after: all four menus land in exactly the same place, to the pixel. Two faults were fixed on the way that you would have hit eventually — six word-pickers could be open at once in one sentence, and pressing Escape on a card menu dropped your keyboard focus onto nothing.",
+      "cardId": null
+    },
+    {
       "id": "card-intents-325b",
       "title": "Tap “Not relevant” and a shift closes the card (#325, second half)",
       "status": "merged",
@@ -3077,8 +3106,8 @@
     },
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 98 open, your Invite label closed — and 27 cards go stale tomorrow, not eight",
-      "detail": "98 cards open, one fewer than last night: your Invite label (#350) was filed at 21:57 and is closed at the fix. SEVEN carry your own order and are authorised without you saying anything more; only ONE of those is genuinely waiting on you (#267, the account-menu labels, held behind a Settings modal you have not briefed yet). Two more are held for a reason rather than by neglect — #322 and #304 are judgement work and the Fable reviewer is still capped, so they wait on your credits, not on you. ⚠ A CORRECTION TO LAST NIGHT'S NUMBER, because I went to measure it rather than repeat it: last night's page said EIGHT cards were about to cross the week-untouched line. Counted at the queue itself, it is TWENTY-NINE — 27 once the two you explicitly parked are set aside. Every one of them was last read on 25 August, and the oldest crosses a full week tomorrow morning, not tonight. They are casting research, design drafts and roadmap items; none is urgent and none waits on you. Nothing tonight could touch them: your background-work master switch is OFF, so the only work a shift may take is what you ordered, and none of the 27 is yours. If you want that pile to stop growing, that switch is the lever — turning it on for Process or Debt would let a shift re-read them against the code, one line each, without asking you anything.",
+      "title": "The queue tonight: 97 open, #304 built — and the stale pile is 27, unchanged",
+      "detail": "97 cards open, one fewer than last night: #304, the pop-up collapse, is built and merged. SIX carry your own order. Of those, ONE is genuinely waiting on you (#267, the account-menu labels, held behind a Settings modal you have not briefed yet), one is yours by choice (#321's Campaign/Try-on pair, which you kept for yourself), one needs a single command from you (#325), and one is judgement work held while the Fable reviewer is capped (#322). ⚠ THE CORRECTION FROM LAST NIGHT STILL STANDS AND THE NUMBER HAS NOT MOVED: 27 cards cross the week-untouched line, every one last read on 25 August, and the oldest crossed a full week this morning. They are casting research, design drafts and roadmap items; none is urgent and none waits on you. Nothing tonight could touch them — your background-work master switch is OFF, so the only work a shift may take is what you ordered. That switch is the lever: turning it on for Process or Debt would let a shift re-read them against the code, one line each, without asking you anything.",
       "state": "open",
       "severity": "warning"
     },
@@ -3106,7 +3135,7 @@
     {
       "id": "gate-review-arm-broken-219",
       "title": "Your Fable allowance is still out - 24 refusals now, and it has been down about 30 hours",
-      "detail": "No change in cause, and tonight it was measured on a real pull request of mine rather than asked about. PR #256's own review job came back with the exhausted-allowance signature exactly: it ran for 880 milliseconds, took one turn, cost $0.00, recorded no model usage at all, and returned an error. That is the same shape this has had since it started.\n\nWhat that means for reading the checks page, and it is easy to get backwards: a RED review check does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A verdict, when there is one, rides a GREEN check as a comment.\n\nOpus is answering fine on the same machine and the same login — it ran tonight's whole shift. It is your Fable 5 allowance specifically.\n\nThe team's rule while it is out is unchanged: measurement-and-record nights, and product changes kept to ones that alter no code path.",
+      "detail": "Tonight's PR (#355) is the 25th refusal: the reviewer died in 946ms on its first turn with only the start-up model in its ledger, so nothing in that diff was judged by it. Read at the run log rather than at the red tick, which is the whole point of the change that made this check say which of the three states it is in. It was merged on the machine gate alone, which your standing rule allows for a change that touches no money or login path. No change in cause, and tonight it was measured on a real pull request of mine rather than asked about. PR #256's own review job came back with the exhausted-allowance signature exactly: it ran for 880 milliseconds, took one turn, cost $0.00, recorded no model usage at all, and returned an error. That is the same shape this has had since it started.\n\nWhat that means for reading the checks page, and it is easy to get backwards: a RED review check does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A verdict, when there is one, rides a GREEN check as a comment.\n\nOpus is answering fine on the same machine and the same login — it ran tonight's whole shift. It is your Fable 5 allowance specifically.\n\nThe team's rule while it is out is unchanged: measurement-and-record nights, and product changes kept to ones that alter no code path.",
       "severity": "warning",
       "state": "open"
     },
@@ -3272,7 +3301,7 @@
     67
   ],
   "nextUp": {
-    "readAt": "2026-08-31T14:13:59.055Z",
+    "readAt": "2026-08-31T15:55:10.267Z",
     "items": [
       {
         "issueNumber": 267,
