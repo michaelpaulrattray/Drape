@@ -174,6 +174,74 @@ export type CrewShiftSeat = (typeof CREW_SHIFT_SEATS)[number];
 export const CREW_SHIFT_WORK_KINDS = ["focus", "sidelane", "patrol", "maintenance", "background"] as const;
 export type CrewShiftWorkKind = (typeof CREW_SHIFT_WORK_KINDS)[number];
 
+/**
+ * HOW RECENTLY A ROW MUST HAVE CHECKED IN TO COUNT AS *LIVE* (issue #288).
+ *
+ * Not the same question as `CREW_SHIFT_STALL_MS` and deliberately not derived
+ * from it. That one asks *"has this row gone quiet long enough that his page
+ * should stop vouching for it"* — a three-hour patience, tuned so a working
+ * shift is never called dead. This one asks the opposite and much sharper
+ * question: *"did somebody stamp this row so recently that a seat is almost
+ * certainly mid-act on it right now?"* A number tuned for the first answers the
+ * second badly in both directions.
+ *
+ * It is used for exactly one thing: `crew-shift-close.mts` refuses to stamp a
+ * row terminal while it looks live, unless `--force` says so out loud. The
+ * incident is #288's — a close typed as a READ closed a running shift's row and
+ * his page went to *"Nothing running"* mid-shift.
+ *
+ * # ⚠ IT IS A JUDGEMENT, NOT A MEASUREMENT, AND THE REASON IS ITSELF A FINDING
+ *
+ * The honest bar would be measured: the gap between a shift's LAST real
+ * check-in and its close, across the runs already recorded. **That gap is not
+ * recoverable from any row.** `crew-shift-close.mts` sets
+ * `heartbeatAt = UTC_TIMESTAMP()` in the same UPDATE that stamps `endedAt`, so
+ * every closed run in `crew_shift_runs` carries a heartbeat equal to its close
+ * and the real last check-in is gone. (`hasEverCheckedIn` survives that only
+ * because the close reads the two fields BEFORE it writes.) So the number below
+ * cannot be measured today, and saying so is better than dressing an invented
+ * figure as evidence.
+ *
+ * What CAN be argued is the direction, and it is one-sided:
+ *
+ *   - it must be **shorter than the shortest run of acts between a shift's last
+ *     heartbeat and its close.** The standing orders put the last heartbeat at
+ *     *edition written*; after it come the deploy rite — which pushes, waits on
+ *     a Railway deployment and takes three health readings, minutes at best —
+ *     and the mailbox entry. Two minutes clears that comfortably.
+ *   - being wrong in the other direction costs **one word.** The refusal names
+ *     `--force`, so a shift that really is closing its own fresh row loses a
+ *     command, not a close. That asymmetry is why a tight bar is the safe one.
+ *
+ * ⚠ And it fires ONLY on a row that has genuinely checked in
+ * (`hasEverCheckedIn`): at open, `heartbeatAt` equals `startedAt`, so a row
+ * opened a minute ago is "fresh" without anybody having stamped anything. A
+ * quiet night that opens a row, finds nothing admissible and closes it is the
+ * commonest short run there is, and it must not be refused.
+ */
+export const CREW_SHIFT_LIVE_HEARTBEAT_MS = 2 * 60 * 1000;
+
+/**
+ * Does this row look like somebody is mid-act on it?
+ *
+ * One owner, for the same reason `deriveShiftRunState` has one: the close
+ * script guards on it and the reader script PRINTS it, and a guard whose
+ * displayed value came from a second implementation would eventually disagree
+ * with the refusal an operator is staring at.
+ */
+export function looksLive(
+  run: { readonly startedAt: Date | string; readonly heartbeatAt: Date | string },
+  now: number,
+): boolean {
+  if (!hasEverCheckedIn(run)) return false;
+  const heartbeat = asMillis(run.heartbeatAt);
+  /* An unreadable heartbeat is not evidence of life — same direction as
+     `hasEverCheckedIn`: this drives a REFUSAL, and blocking an operator on a
+     broken read is the worse error. */
+  if (!Number.isFinite(heartbeat)) return false;
+  return now - heartbeat <= CREW_SHIFT_LIVE_HEARTBEAT_MS;
+}
+
 /** How a run ended. Three members, exactly as #272 names them. */
 export const CREW_SHIFT_OUTCOMES = ["shipped", "stopped", "failed"] as const;
 export type CrewShiftOutcome = (typeof CREW_SHIFT_OUTCOMES)[number];

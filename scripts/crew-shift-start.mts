@@ -61,18 +61,26 @@ import {
   backgroundWorkAllowed,
 } from "../shared/crewWorkSwitches.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const TABLE = "crew_shift_runs";
 
+/* ⚠ EVERY ARGUMENT ENUMERATED — anything else refuses (#288). The incident was
+   on the CLOSE script, but the class is the reader, not the script: this one
+   read its flags by name too, so `--dry-run` here would have opened a run for
+   real just as silently. Both writers are fixed in one commit, because fixing
+   the instance and leaving its sibling is law 7 half done. */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch"],
+  boolean: ["dry-run"],
+});
+
 /** `--flag value`, absent ⇒ null. No shorthand and no clustering: one shape. */
 function arg(name: string): string | null {
-  const index = process.argv.indexOf(`--${name}`);
-  if (index === -1) return null;
-  const value = process.argv[index + 1];
-  /* A flag whose value is the next flag is a typo, never an empty string. */
-  if (value === undefined || value.startsWith("--")) return null;
-  return value;
+  return ARGS.value(name);
 }
+
+const DRY_RUN = ARGS.flag("dry-run");
 
 /**
  * A timestamp as UTC ISO, never a locale string.
@@ -148,6 +156,27 @@ try {
       the scope in the statement that writes).
     */
     const branch = arg("branch");
+    if (DRY_RUN) {
+      /* The SAME row this would write to, resolved the same way — a dry run
+         that reports against a different row than the write would touch is
+         worse than none (#288). */
+      const [candidates] = await conn.query<any[]>(
+        `SELECT id, shift, seat, intent, branch FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC LIMIT 1`,
+      );
+      if (candidates.length !== 1) {
+        refuse("there is no open run to note against. Open one first (without --note).");
+      }
+      const target = candidates[0];
+      console.log(
+        `DRY RUN — nothing written. The heartbeat would set, on run #${target.id} (${target.shift}):`
+        + `\n  heartbeatAt now`
+        + `\n  intent      ${noteMode.slice(0, 500)}`
+        + `\n  branch      ${branch ?? `(unchanged — ${target.branch ?? "none"})`}`
+        + "\nRe-run without --dry-run to perform it.",
+      );
+      await conn.end();
+      process.exit(0);
+    }
     const [result] = await conn.query<any>(
       `UPDATE \`${TABLE}\`
           SET heartbeatAt = UTC_TIMESTAMP(),
@@ -257,6 +286,23 @@ try {
         console.log(`   #${row.id} ${row.shift} (${row.seat}) started ${iso(row.startedAt)} — ${row.intent}`);
       }
       console.log("   If one of these is a dead shift, close it: scripts/crew-shift-close.mts --id <n> --outcome failed\n");
+    }
+
+    if (DRY_RUN) {
+      console.log(
+        "DRY RUN — nothing written. Opening this run would INSERT:"
+        + `\n  shift     ${shift.slice(0, 64)}`
+        + `\n  seat      ${seat}`
+        + `\n  workKind  ${kind}`
+        + `\n  cardRef   ${arg("card")?.slice(0, 64) ?? "(none)"}`
+        + `\n  cardTitle ${arg("title")?.slice(0, 255) ?? "(none)"}`
+        + `\n  intent    ${intent.slice(0, 500)}`
+        + `\n  branch    ${arg("branch")?.slice(0, 255) ?? "(none)"}`
+        + "\n  startedAt / heartbeatAt  now"
+        + "\nRe-run without --dry-run to perform it.",
+      );
+      await conn.end();
+      process.exit(0);
     }
 
     const [result] = await conn.query<any>(

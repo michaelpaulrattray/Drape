@@ -11,6 +11,11 @@
  * ordinary case. Pass one to close a DIFFERENT run — specifically a dead
  * shift's stale row, which `crew-shift-start.mts` prints when it finds one.
  *
+ * `--dry-run` performs no write and prints exactly what the close would set.
+ * `--force` is required to close a row that has checked in within the last
+ * couple of minutes. **To simply LOOK at what is running, do not come here at
+ * all** — `scripts/crew-shift-state.mts` is the reader, and it cannot write.
+ *
  * # ⚠ THIS IS A WRITER, AND IT IS THE ONLY TABLE IT MAY NAME
  *
  * `crew_shift_runs` and nothing else; no DDL, no DELETE. A shift's road to the
@@ -49,24 +54,53 @@
  * the message says so in as many words. Invariant 7 with the sign flipped: the
  * control sits on the path everything takes, so it cannot quietly stop
  * existing.
+ *
+ * # ⚠ THREE GUARDS THIS SCRIPT DID NOT HAVE, AND THE INCIDENT THAT BOUGHT THEM
+ *
+ * Issue #288, 2026-08-30, on PRODUCTION. An operator wanting to READ the live
+ * row typed `--outcome shipped --note probe --dry-run`. There was no
+ * `--dry-run`; the word was ignored and the close was performed, stamping a
+ * RUNNING shift's row terminal so his page read *"Nothing running"* mid-shift.
+ *
+ *   1. **Unknown arguments are refused** (`scripts/lib/strictArgs.mts`). A
+ *      production writer must refuse what it does not understand.
+ *   2. **`--dry-run` exists and is real** — it resolves the target, prints every
+ *      field the UPDATE would set, and writes nothing.
+ *   3. **A row that looks LIVE is refused without `--force`** — `looksLive`,
+ *      `shared/crewShiftState.ts`, which owns the bar and the argument for it.
+ *
+ * The deeper cause was the second defect on that card and it is fixed
+ * elsewhere: **there was no read command at all**, so an operator reaching to
+ * look had nothing but a writer to reach for. That is
+ * `scripts/crew-shift-state.mts`.
  */
 import {
   CREW_SHIFT_OUTCOMES,
   CREW_SHIFT_STALL_MS,
   type CrewShiftOutcome,
   hasEverCheckedIn,
+  looksLive,
 } from "../shared/crewShiftState.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const TABLE = "crew_shift_runs";
 
+/* ⚠ EVERY ARGUMENT ENUMERATED — anything else refuses (#288). A flag added to
+   this script and not to this list is refused, which is the correct direction:
+   the failure is loud and one line from fixed, where the old reader's failure
+   was silent and wrote to production. */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["outcome", "note", "pr", "id"],
+  boolean: ["dry-run", "force"],
+});
+
 function arg(name: string): string | null {
-  const index = process.argv.indexOf(`--${name}`);
-  if (index === -1) return null;
-  const value = process.argv[index + 1];
-  if (value === undefined || value.startsWith("--")) return null;
-  return value;
+  return ARGS.value(name);
 }
+
+const DRY_RUN = ARGS.flag("dry-run");
+const FORCE = ARGS.flag("force");
 
 /** UTC ISO, never a locale string — see `crew-shift-start.mts`'s note. */
 function iso(value: unknown): string {
@@ -157,6 +191,49 @@ try {
   /* Snapshotted BEFORE the write, for the finding printed after it. */
   const checkedIn = hasEverCheckedIn({ startedAt: target.startedAt, heartbeatAt: target.heartbeatAt });
   const ranForMs = Date.now() - new Date(target.startedAt).getTime();
+
+  /*
+    ⚠ IS SOMEBODY MID-ACT ON THIS ROW? (#288)
+
+    The incident closed a row that had checked in minutes earlier. `looksLive`
+    owns the bar and the whole argument for it; what belongs here is the
+    RECOVERY, because a refusal an operator cannot get past is a refusal they
+    learn to route around. It is one word, and the word is printed.
+
+    ⚠ It is checked BEFORE the dry-run report deliberately: a `--dry-run` on a
+    live row should say "I would refuse this", not describe a write that would
+    not happen. A dry run that reports a different verdict from the real one is
+    worse than no dry run.
+  */
+  if (!FORCE && looksLive({ startedAt: target.startedAt, heartbeatAt: target.heartbeatAt }, Date.now())) {
+    const secondsAgo = Math.round((Date.now() - new Date(target.heartbeatAt).getTime()) / 1000);
+    refuse(
+      `run #${target.id} (${target.shift}) checked in ${secondsAgo}s ago — it looks LIVE, and closing a`
+      + " running shift's row is what issue #288 is about: his page reads `Nothing running` while a shift"
+      + " runs.\n  If you meant to LOOK at it:   npx tsx scripts/crew-shift-state.mts"
+      + `\n  If you really mean to close it: add --force${explicitId === null ? ` --id ${target.id}` : ""}`,
+    );
+  }
+
+  /*
+    THE DRY RUN (#288). Every field the UPDATE below would set, printed from the
+    same values it would use — not a paraphrase. Nothing is written.
+  */
+  if (DRY_RUN) {
+    console.log(
+      `\nDRY RUN — nothing written. The close would set, on run #${target.id}:`
+      + `\n  outcome     ${outcome}`
+      + `\n  outcomeNote ${arg("note")?.slice(0, 500) ?? "(unchanged — none given)"}`
+      + `\n  prNumber    ${prNumber === null ? "(unchanged — none given)" : `#${prNumber}`}`
+      + "\n  endedAt     now"
+      + "\n  heartbeatAt now"
+      + `\n\nThe run has ${checkedIn ? "checked in since it opened" : "NEVER checked in"}`
+      + ` and has been open ${Math.round(ranForMs / 60_000)} min.`
+      + "\nRe-run without --dry-run to perform it.",
+    );
+    await conn.end();
+    process.exit(0);
+  }
 
   const [result] = await conn.query<any>(
     `UPDATE \`${TABLE}\`

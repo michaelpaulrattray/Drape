@@ -48,6 +48,25 @@ const WRITER_SCRIPTS = [
   { path: "scripts/crew-count-queue.mts", table: "crew_queue_counts" },
 ] as const;
 
+/**
+ * The shift-run READER, and the reason it is pinned here rather than trusted
+ * (issue #288).
+ *
+ * `crew_shift_runs` had two commands and both of them wrote. An operator who
+ * wanted to LOOK reached for the closest thing — the close script, with
+ * `--dry-run` appended — and a running shift's row was stamped terminal on
+ * production. `crew-shift-state.mts` is the reader that absence created the
+ * pressure for, and its entire value is that it CANNOT write: a read command
+ * that could write would be a third writer, reached for by people who believe
+ * they are only looking.
+ *
+ * It sits in its own list rather than in `WRITER_SCRIPTS` because the assertion
+ * is the opposite one — not *"writes only its own table"* but *"writes
+ * nothing"* — and folding it in would have meant weakening the arm that says
+ * a writer's reader can see its writes.
+ */
+const READER_SCRIPTS = ["scripts/crew-shift-state.mts"] as const;
+
 /** Kept for the arms that ask about the shift-run road specifically. */
 const OWN_TABLE = "crew_shift_runs";
 
@@ -269,6 +288,20 @@ describe("the shift write road is one table wide", () => {
   });
 
   /*
+    ⚠ THE SHIFT READER WRITES NOTHING AT ALL (#288) — not "writes only its own
+    table", which is the writers' bar. This one's whole reason for existing is
+    that an operator can run it while wanting to look, so a write inside it
+    would be reached for by exactly the people least expecting one.
+  */
+  it.each(READER_SCRIPTS)("%s reads the shift runs and writes nothing", (path) => {
+    const source = sourceOf(path);
+    expect(source).toContain(OWN_TABLE);
+    expect(writeTargetsIn(source)).toEqual([]);
+    expect(forbiddenStatementsIn(source)).toEqual([]);
+    expect(forbiddenTablesInCode(source)).toEqual([]);
+  });
+
+  /*
     THE READ ROAD IS UNCHANGED, and this is the arm that would catch the erosion
     happening the other way round: somebody adding a write to the script whose
     docblock promises it never writes.
@@ -345,6 +378,22 @@ await conn.query("UPDATE users SET role = 'admin'");
   ])("catches %s", (_label, statement) => {
     const doctored = `${sourceOf("scripts/crew-shift-close.mts")}\n${statement}\n`;
     expect(forbiddenStatementsIn(doctored)).not.toEqual([]);
+  });
+
+  /*
+    THE READER'S OWN CONTROL. `expect(writeTargetsIn(source)).toEqual([])` is
+    green on a file with no SQL in it at all — including a `crew-shift-state`
+    that was gutted, renamed or never really read the table. So the arm above is
+    driven twice: once against a doctored copy carrying a write (must be seen),
+    and once against the real file asserting it genuinely SELECTs.
+  */
+  it.each(READER_SCRIPTS)("catches a write smuggled into %s", (path) => {
+    const doctored = `${sourceOf(path)}
+await conn.query("UPDATE crew_shift_runs SET outcome = 'shipped'");
+`;
+    expect(writeTargetsIn(doctored)).toContain("crew_shift_runs");
+    expect(writeTargetsIn(sourceOf(path))).toEqual([]);
+    expect(stripComments(sourceOf(path))).toMatch(/\bSELECT\b/i);
   });
 
   it("catches a write appearing in the read-only reply reader", () => {
