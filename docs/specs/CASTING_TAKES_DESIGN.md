@@ -179,6 +179,16 @@ nothing about them presumes cinema.
    The research's voice recommendation (the asset for identity + the `Voice:`
    text line for performance style, typed fallback when no recording exists)
    lands there.
+   **PERSONALITY is the third planned casting feature** (founder, 2026-09-01)
+   — no stub exists yet (verified: zero hits in `CastingRoom.tsx`). The
+   research's shape for it: a plain-text personality line set on the cast
+   (the studied sheets all carried one — *"Character: calm, spontaneous
+   (awkward poses), slightly slouched posture, indifferent"*), stored as
+   words, ridden into every video generation, and translated per shot into
+   RENDERABLE BEHAVIOUR (posture, gaze, timing — never psychology adjectives
+   alone; law 8's ontology). It is what makes a cast directable rather than
+   merely consistent-looking, and the film engine's Acting skill consumes it
+   directly.
 3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
    recommendation is REVERSED. Words are scoped per surface by design:
    the casting page speaks **candidates** (rolling) and **versions**
