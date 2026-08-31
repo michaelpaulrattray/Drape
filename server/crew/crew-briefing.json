@@ -1,7 +1,7 @@
 {
-  "edition": 172,
-  "updatedAt": "2026-08-31T23:35:00+10:00",
-  "shift": "foreman-151",
+  "edition": 173,
+  "updatedAt": "2026-09-01T00:30:00+10:00",
+  "shift": "foreman-152",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,6 +111,11 @@
     ],
     "chips": [
       {
+        "label": "Home, Library and Canvas are cleared for their redesign",
+        "tone": "good",
+        "source": "#302 closed, PR #352 merged bde12831. Measured first: the wardrobe is empty on EVERY account and you hold no boards, so the stubs strand nothing. Nothing deleted, client or server."
+      },
+      {
         "label": "MAX stops inventing a character - your four corrections are in",
         "tone": "good",
         "source": "#327 merged 1fc61be6 (PR #338). On your own cyborg brief: invented backstory 3 of 3 to 0 of 3, language fighting the studio block 3 of 3 to 0 of 3. Frames in your gallery. 32c, no roll."
@@ -121,14 +126,9 @@
         "source": "#324 closed, PR #337 merged 4a0fcbfe. 15 cards carried `bug` when measured and four were yours already ordered (one was #324 itself). Now: Bugs (11, 3 already queued)."
       },
       {
-        "label": "The queue: 101 open - 12 urgent - one thing on your desk - none rotting",
+        "label": "The queue: 98 open · 8 urgent · 6 you ordered · nothing rotting YET",
         "tone": "neutral",
-        "source": "Counted 14:45, not carried: 101 open, 12 urgent, 12 founder-ordered, 0 untouched for a week. #330 stays front: its second half landed last night, the law-file split waits for Fable."
-      },
-      {
-        "label": "Your feed is fixed — your Cast still will not delete, for another reason",
-        "tone": "warn",
-        "source": "PR #307 merged 54dbe031: 20 of 20 poisoned records on your account now pass, all 20 threw before. The delete refusal is #308."
+        "source": "Counted tonight, not carried: 98 open, 8 urgent, 6 you ordered, 1 blocked on you, 0 past the week line. But 25 cross it within 24 hours, all last read 25 Aug. Your master switch is OFF."
       },
       {
         "label": "The top bar and rail are now identical on every page, from one place",
@@ -2101,6 +2101,27 @@
           "arm": "before (left) / after (right)"
         }
       ]
+    },
+    {
+      "id": "lobby-stubs-302-frames",
+      "title": "Your three stubbed pages, side by side — Home, Canvas, Library",
+      "question": "One question, and it is taste rather than a number: is this the right amount of words on a page you are about to redesign? Each page names itself, says \"Being redesigned.\", and then says one thing — where the capability went, or what is untouched. There is no button, no link and nothing greyed out anywhere on any of the three; that is deliberate, because your own rule is that a stub names a place and never a capability. If you would rather they said LESS — just the name and \"Being redesigned.\" — that is one line to delete. If you would rather they said more, tell me what you would want to read there. Second frame is the same three in light.",
+      "state": "open",
+      "filedAt": "2026-09-01T00:30:00+10:00",
+      "issueNumber": 302,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/95d298cb-5022-4b56-8fb6-f8911aaf7895.png",
+          "caption": "DARK. Home, Canvas and Library, left to right, each shot on its own at 1440x900 and joined — nothing is cropped or spliced inside a frame. Note the rail: it still has all eight destinations and still highlights the one you are on, because a stubbed page is still a place. Money: zero — no render, no credit, no text call.",
+          "arm": "Home / Canvas / Library"
+        },
+        {
+          "key": "crew-eye/d2b57259-eb64-487b-85f4-4ca0ae99d69f.png",
+          "caption": "LIGHT, the same three. Worth its own frame rather than assumed from the dark one: the two greys the sentences use are different tokens per theme, and the quieter of them is the one carrying the useful sentence. All five lobby URLs were driven in both themes — 60 readings, 0 failed.",
+          "arm": "Home / Canvas / Library"
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -3037,6 +3058,13 @@
       "status": "merged",
       "prNumber": 351,
       "note": "Merged 197db2c6 on a green gate — both gate-checks runs SUCCESS. Measured in the running browser at 1440x900, both themes, on the lobby and on casting: 16px before, 9.5px after, the eight destination labels unchanged, and the label of whichever destination you are on still bold. A sweep of 120 chrome elements finds nothing else inheriting the page size; the same sweep with the fix switched off finds exactly this one, which is what makes the empty result mean anything. The Fable reviewer is still capped, so the red review check is the outage and not a verdict."
+    },
+    {
+      "id": "lobby-stubs-302",
+      "title": "Home, Library and Canvas are honest stubs now — and nothing was deleted (#302)",
+      "status": "merged",
+      "prNumber": 352,
+      "note": "Merged bde12831 on a green gate — both gate-checks runs SUCCESS, founder-gate SUCCESS. Read at your production rows BEFORE the change was written: you hold ZERO boards, and the wardrobe is empty across EVERY account (0 garments, 0 outfits, 0 looks, 0 sessions) — so nothing of yours is stranded and removing Home's wardrobe door strands nothing at all. The one real consequence, said rather than glossed: two canvases on two other accounts stop being LISTABLE; they are not deleted and still open at their own address. Nothing on the server was touched. The Fable reviewer is still capped, so the red review is the outage and not a verdict."
     }
   ],
   "problems": [
@@ -3237,7 +3265,7 @@
     67
   ],
   "nextUp": {
-    "readAt": "2026-08-31T13:16:02.314Z",
+    "readAt": "2026-08-31T14:13:59.055Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3247,11 +3275,6 @@
           "state": "blocked",
           "because": "the sectioned Settings modal — your section 03 brief, and the trigger is yours"
         }
-      },
-      {
-        "issueNumber": 302,
-        "title": "Stub Home and Library, blank Canvas — and Library must not be stubbed before he can delete his legacy Casts",
-        "urgent": true
       },
       {
         "issueNumber": 321,
