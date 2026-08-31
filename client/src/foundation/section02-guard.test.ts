@@ -236,9 +236,77 @@ describe("the account is in one corner and the workspace in the other", () => {
     expect(/const\s+MEMBERS\b/.test("const MEMBERS = [{ id: '1', label: 'Dani' }];")).toBe(true);
   });
 
-  it("no surface hands it any", () => {
-    expect(code(CHROME)).not.toMatch(/members:/);
-    expect(/members:/.test("workspace={{ members: [{ id: '1', label: 'Dani' }] }}")).toBe(true);
+  /**
+   * ⚠ **THIS ARM USED TO SAY `no surface hands it any`, AND HIS RULING
+   * REPLACED IT** (#281, 2026-08-30, verbatim and entire): *"Show your own
+   * face beside the +, but keep it stubbed out until membership exists."*
+   *
+   * The old arm was `expect(code(CHROME)).not.toMatch(/members:/)`. Deleting
+   * it outright would have removed the only thing standing between this rail
+   * and two invented colleagues, so it is **narrowed rather than dropped**:
+   * the stack may be handed the SIGNED-IN USER and nothing else.
+   *
+   * The distinction that makes both his rulings true at once is that the
+   * constraint was never *"draw no faces"* — it was his own 00b rule, *"a
+   * number in a screenshot that no server produces is a lie."* `user` is a
+   * real `users` row from `auth.me`. Two named colleagues are not.
+   */
+  it("the chrome hands the stack exactly one member, and it is the signed-in user", () => {
+    const chrome = code(CHROME);
+    /* Guarded at the CONDITION, because `members` unguarded by `user` would
+       draw a face for a signed-out visitor — a person the server did not
+       produce, which is the same defect wearing his ruling as cover. */
+    expect(chrome).toMatch(/members:\s*user\s*\n?\s*\?\s*\[/);
+    /* Exactly one entry: one `id:` inside the members literal. */
+    const block = chrome.match(/members:\s*user[\s\S]*?onOpenSettings/)?.[0] ?? "";
+    expect(block, "the matcher must find the members block").toContain("SELF_MEMBER_ID");
+    expect(block.match(/\bid:/g) ?? []).toHaveLength(1);
+    /* And its face is the account chip's own, pointed at the same row — so
+       the rail and the topbar cannot drift into two different people. The
+       NAME is the next arm's subject, not this one's. */
+    expect(block).toMatch(/<ProfileAvatar\s+src=\{avatarUrl\}\s+identity=\{user\}/);
+  });
+
+  /**
+   * ⚠ **THE INVENTED-MEMBER TRIPWIRE, which is what the old arm was really
+   * for.** A literal name in the members list is the failure his own instinct
+   * named — *"a stack of one person is not a member stack"* — and it is the
+   * shape a well-meaning "let's make it look right" change takes.
+   */
+  it("no member is written into the source rather than read off a row", () => {
+    const block = code(CHROME).match(/members:\s*user[\s\S]*?onOpenSettings/)?.[0] ?? "";
+    expect(block, "the matcher must find the members block").toContain("members:");
+    /* The name is READ off the row. `?? "You"` is a fallback for a null name,
+       not a second person — hence `user.name` must appear and no bare string
+       may open the label. */
+    expect(block).toMatch(/label:\s*user\.name/);
+    expect(block).not.toMatch(/label:\s*["'`]/);
+    expect(
+      /label:\s*["'`]/.test("members: user ? [{ id: '1', label: 'Dani' }] : []"),
+      "positive control",
+    ).toBe(true);
+  });
+
+  /**
+   * ⚠ **THE OTHER HALF OF HIS SENTENCE — *"but keep it stubbed out"*.** He
+   * asked for *"make it live"* on 2026-08-30 morning and then ruled the stub
+   * that evening; the face is the part that changed and the inertness is the
+   * part he explicitly kept. There is still no Members surface, no endpoint
+   * and no membership table, so an avatar that made this block look finished
+   * would be the dead control D-180 forbids with a friendlier picture on it.
+   */
+  it("the face does not make Invite live", () => {
+    expect(RAIL).toMatch(/className="dp-invite"[\s\S]{0,120}aria-disabled="true"/);
+    expect(RAIL).toMatch(/title="Invite — not built yet"/);
+    /* Not a button, not a link, and no click handler anywhere in the block. */
+    const foot = RAIL.match(/<span className="dp-invite"[\s\S]*?<\/span>\s*\n\s*\{workspace/)?.[0] ?? "";
+    expect(foot, "the matcher must find the invite block").toContain("dp-memberstack");
+    expect(foot).not.toMatch(/onClick|<button|<Link|href=/);
+    expect(/onClick/.test('<span className="dp-invite" onClick={go}>'), "positive control").toBe(
+      true,
+    );
+    /* And the surface it would open still does not exist. */
+    expect(code(CHROME)).not.toMatch(/members-and-invites|\/app\/members/);
   });
 
   /** The shell still carries the prop; only its destination moved. */

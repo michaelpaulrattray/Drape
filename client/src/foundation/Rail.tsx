@@ -116,10 +116,23 @@ export const RAIL_DESTINATIONS: readonly Destination[] = [
  * router, no query, no table — so three faces here would be three invented
  * people. His own rule from the 00b frames, verbatim: *"A number in a
  * screenshot that no server produces is a lie that survives into the build."*
- * What ships is the affordance the brief asks for and nothing behind it: the
- * dashed `+` and the word Invite, inert, because the Members surface does not
- * exist either. When members are real, `members` fills and the stack draws
- * them — the shape is already here.
+ * When members are real, `members` fills and the stack draws them — the shape
+ * is already here, and this component never constructs one.
+ *
+ * ⚠ **ONE FACE IS NAMEABLE TODAY AND HE RULED THAT IT SHOULD BE DRAWN**
+ * (#281, 2026-08-30, verbatim and entire): *"Show your own face beside the +,
+ * but keep it stubbed out until membership exists."* The signed-in user is a
+ * real `users` row, so `AppChrome` hands exactly that one member and nothing
+ * else — the rule above is untouched, because the constraint was never
+ * *"draw no faces"*, it was *"draw no face no server produces"*.
+ *
+ * ⚠ **AND THE STUB TREATMENT IS THE OTHER HALF OF HIS SENTENCE, NOT AN
+ * OVERSIGHT.** `.dp-invite` keeps `aria-disabled`, `cursor: default` and the
+ * *"not built yet"* title, and the `+` still has no hover. He asked for
+ * *"make it live"* and the hover in the same breath (#281); *"keep it stubbed
+ * out until membership exists"* is him answering that himself, and the
+ * Members surface it would open still does not exist. A face that made this
+ * block look finished would be the invented-data failure in a costume.
  *
  * **The gear renders when the surface hands it somewhere to go.** It is not
  * optional in the design — his ruling is that the foot gets a gear rather than
@@ -131,7 +144,10 @@ export const RAIL_DESTINATIONS: readonly Destination[] = [
  * `topbarLeft` / `topbarRight` already work.
  */
 export type RailWorkspace = {
-  /** Real members only. Empty today: nothing in the product produces them. */
+  /**
+   * Real members only — every entry must be a row a server produced.
+   * Today that is exactly one: the signed-in user, on his #281 ruling.
+   */
   members?: readonly { id: string; label: string; avatar?: ReactNode }[];
   /** Opens the surface's own settings. Absent = the gear is not drawn. */
   onOpenSettings?: () => void;
