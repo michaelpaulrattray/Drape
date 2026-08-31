@@ -1,7 +1,7 @@
 {
-  "edition": 168,
-  "updatedAt": "2026-08-31T20:15:00+10:00",
-  "shift": "foreman-148",
+  "edition": 169,
+  "updatedAt": "2026-08-31T21:20:00+10:00",
+  "shift": "foreman-149",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -292,28 +292,28 @@
     },
     {
       "id": "side-clause-316",
-      "title": "You said his right eye. All eight got the left — and the fix costs two rolls of your credits",
-      "productImpact": "Your cyborg brief says “implant ports embedded in his skull above the RIGHT temple” and “his RIGHT eye glowing faint amber-red”. I bought a sheet tonight and looked at all eight faces myself. The glowing eye is on the man's LEFT in eight out of eight. The temple ports are on his left in six of the eight. Nothing is broken and nothing crashed — the studio simply did not carry your word “right” to the engine in a form it acts on, so it put the glow wherever it liked and happened to like the same side every time.",
-      "workedExample": "Read the close-up in the gallery below as a PICTURE rather than as a man and it snaps into focus: the glow is on the viewer's right in all eight. The engine paints by position in the frame, not by anatomy. We already know this and we already fixed it once — on the EDIT road, when you change one eye, the studio quietly adds “(on the left of the picture as you look at it)”. Twelve renders each way: four painted the wrong eye without that sentence, none with it. The road that casts a NEW sheet has no such sentence at all.",
+      "title": "I had this backwards — your cyborg sheet was RIGHT, 8 out of 8, and I nearly spent 320 of your credits proving a bug that was not there",
+      "productImpact": "Four nights ago I told you your brief had been ignored: you typed “his right eye glowing faint amber-red” and I reported the glow on the wrong side in all eight faces. You corrected me the same night — “The eye is my right looking at the cast, not his actual right eye looking back at me” — and on your meaning those eight frames are 8 out of 8 CORRECT. You got exactly what you asked for. What went wrong after that is worth telling you plainly: your correction landed at 11:25pm, and three minutes later a stale message posted on the same card saying the 320-credit measurement was funded and ready to run. That wrong message was the newest thing on the card for four nights, so any shift that read only the latest note would have spent your credits measuring a problem you had already told us was not one. It is struck out now, your correction is at the top of the card, and the card is retitled. Nothing was spent.",
+      "workedExample": "There IS one real thing left, and it is small. The two roads read the same three words in opposite directions. When you cast a NEW sheet and type “his right eye”, the engine puts it on the right of the picture — which is what you mean. When you REFINE an existing cast and TYPE “his right eye” instead of clicking the eye, the studio quietly translates it the other way, to the man's own right, which is the left of the picture. So the same sentence would land on opposite eyes depending on which screen you were on. It has never bitten you because on a refine you point at the eye with the box — your own words — so the words never have to carry the side at all.",
       "options": [
         {
-          "key": "court-it",
-          "label": "Fund the court — two rolls, 320 of your credits (recommended)",
-          "consequence": "Same brief, with and without the sentence, eight frames each, counted at the frames by your eye. That is how the edit road's version was settled and it is the only honest way to settle this one, because one clause in that prompt moves every cast in the product."
-        },
-        {
           "key": "leave-it",
-          "label": "Leave it — a side you did not ask for is not worth the risk",
-          "consequence": "Costs nothing. Most briefs never name a side, and a clause that names one when you did not would pin a side on every cast. Filed as #316 with the measurement, ready whenever you want it."
+          "label": "Leave it — the road you actually cast on already agrees with you (recommended)",
+          "consequence": "Costs nothing and risks nothing. The new-sheet road does what you mean, and on a refine you point rather than type, so the mismatch sits on a path you do not walk."
         },
         {
-          "key": "just-ship-it",
-          "label": "Skip the court and ship the sentence",
-          "consequence": "Cheapest and the one I would argue against. This studio has measured that prompt context is not additive — adding a clause has made things worse before — and I would rather show you frames than ask you to trust me."
+          "key": "align-refine",
+          "label": "Make the refine road read a typed side the way you mean it",
+          "consequence": "A change to how the studio resolves left and right in a typed refine ask. It is a small edit and a big blast radius — it would change the meaning of every typed side ask anyone ever makes, including on signed Casts — so it is judgement work and would want a proper look rather than a quick patch."
+        },
+        {
+          "key": "court-it",
+          "label": "Measure it — two rolls, 320 of your credits",
+          "consequence": "This was the old recommendation and I no longer recommend it. It was bought to measure a bug on the NEW-sheet road, and that bug turned out to be my misreading of your sentence. There is nothing left there to measure."
         }
       ],
-      "recommendation": "Fund the court. It is your own brief being ignored on a detail you took the trouble to type, the mechanism is already understood, and the fix already exists one road over — so this is measuring a known thing rather than exploring. But it is 320 of your credits and it changes the prompt every cast goes through, so it is not something a shift should start on its own.",
-      "state": "answered",
+      "recommendation": "Leave it. You asked “do we fix it or not?” and my honest answer is not now: the road that casts your sheets already does what you mean, and the road that disagrees is one you reach by pointing rather than by typing. One word from you closes this card either way.",
+      "state": "open",
       "issueNumber": 316,
       "filedAt": "2026-08-31T05:05:00+10:00"
     },
@@ -346,33 +346,28 @@
     },
     {
       "id": "members-question-281",
-      "title": "Does the studio have workspaces with people in them — and when?",
-      "productImpact": "The Invite block at the bottom of the left rail is a lone dashed + with the word Invite under it, and you were right that it reads as broken. Two of your five fixes shipped tonight. The other three all wait on this one answer, because the product has no idea what a member IS: no members table, no members screen, and nothing on the server that could return one. So “render real members” has nothing to render, and “make it live” has nowhere to go.",
-      "workedExample": "Sign in and look at the foot of the left rail: a dashed circle with a + in it. If we made it clickable tonight, clicking it would do nothing at all — there is no Members screen behind it. The prototype draws Members fourteen times; the product has a users table and that is the whole of it.",
+      "title": "Your face is beside the + now — and the block is still stubbed, exactly as you said",
+      "productImpact": "You said: “Show your own face beside the +, but keep it stubbed out until membership exists.” Both halves are live. Sign in and look at the foot of the left rail: your avatar now sits overlapping the dashed +, the same face that is in the top-right corner of every page — not a lookalike, literally the same picture from the same account row, so the two can never drift into two different people. The lone dashed circle you called a broken control now reads as an opening. Nothing else about the block moved: it is still greyed, still says “not built yet” when you hover it, still not clickable, and the + still has no hover — because that was the second half of your sentence, not a caveat I added.",
+      "workedExample": "Hover the + and nothing happens — the dashed circle stays exactly the same colour and the cursor stays an arrow. That is deliberate and it is checked in the running browser rather than assumed, because the Members screen it would open still does not exist: there is no members table, no members endpoint and no members page anywhere in the product. A hover that invites a click that goes nowhere would be worse than the inert circle you were complaining about. When membership is real, the hover and the click land together.",
       "options": [
         {
-          "key": "remove-until-built",
-          "label": "Remove the Invite block until membership exists",
-          "consequence": "The foot of the rail keeps the gear and nothing else. Honest, and you lose nothing you can actually use today — but the shape of the product stops being visible there, which is the thing you said you wanted fixed while it is cheap."
+          "key": "leave",
+          "label": "Leave it as it is (recommended — nothing needed from you)",
+          "consequence": "Your face beside the +, quietly marked not built yet. This is what you asked for and it is already live."
         },
         {
-          "key": "keep-and-label",
-          "label": "Keep it, plainly marked as not built yet (recommended)",
-          "consequence": "The dashed + and the word Invite stay, greyed, saying “not built yet” on hover and not clickable — exactly the treatment you ruled for Video, Try-on, UGC, Upscale and Voice in the prompt box. It stops reading as broken because it says what it is, and the place stays named for when membership arrives."
-        },
-        {
-          "key": "your-face-plus",
-          "label": "Show your own face beside the +",
-          "consequence": "Your account is a real user row, so drawing your avatar invents nothing. But a stack of one person is not really a member stack, and calling it one is the sort of thing your own instinct warned about — it would look finished while nothing behind it is."
+          "key": "hover-anyway",
+          "label": "Give the + its hover back anyway, before membership exists",
+          "consequence": "One line. It would look inviting and still go nowhere, which is the one thing every other stub on that rail avoids — but it is your rail and your call."
         },
         {
           "key": "build-membership",
-          "label": "Build membership properly",
-          "consequence": "A real feature: a members table, invitations, roles and permissions, and a Members & invites screen behind the account menu. That is a milestone of its own rather than a fix to this block, and it needs your word on when it belongs in the run order."
+          "label": "Now build membership properly",
+          "consequence": "A real feature: a members table, invitations, roles, and a Members & invites screen behind the account menu. A milestone of its own, and it needs your word on where it sits in the run order."
         }
       ],
-      "recommendation": "Keep it and mark it not built yet, now — then build membership properly when you want the feature. Marking it is what you already ruled for every other unbuilt thing on this rail (“a stub names a place, never a capability”), and it keeps the shape of the product visible while it is cheap, which is your own reason. Separately, you also asked for the + to get its hover back: it is held with “make it live”, because a hover on something that goes nowhere is an affordance for a dead control, and the stub pattern you ratified cancels hover everywhere else on this rail. If you want it anyway it is one line — just say so.",
-      "state": "answered",
+      "recommendation": "Nothing needed — this is done. The only open thread is the one you deferred yourself: membership is not built and nobody is building it until you say where it belongs in the run order.",
+      "state": "done",
       "issueNumber": 281,
       "filedAt": "2026-08-31T02:55:00+10:00"
     },
@@ -2132,6 +2127,14 @@
   ],
   "pipeline": [
     {
+      "id": "invite-face-281",
+      "title": "Your face is beside the Invite + now, and the block is still stubbed (#281)",
+      "status": "merged",
+      "prNumber": 348,
+      "note": "Your words were “Show your own face beside the +, but keep it stubbed out until membership exists,” and both halves shipped together. The face is your real account avatar, drawn through the same component as the chip in the top-right corner and pointed at the same row — checked in the running browser, the two pictures are byte-for-byte the same file, so the rail and the corner cannot end up showing two different people. Everything that made it a stub stayed: greyed, “not built yet” on hover, not clickable, and no hover on the +. That last one was driven rather than assumed — hovering the + changes neither its colour nor the cursor. Two things are worth knowing. The first attempt did not compile, and the refusal was right: the account lookup deliberately does not hand out an internal user id, and widening it just to label a list would have loosened a sign-in rule for a cosmetic reason. It was done another way. And the test that used to say “no face may ever be drawn here” was narrowed rather than deleted — it now says “exactly one face, and it must be the signed-in person”, so the day someone adds two invented colleagues it still goes red. Nine deliberate breakages were tried against it and all nine were caught.",
+      "cardId": null
+    },
+    {
       "id": "pipeline-panel-325",
       "title": "The whole pipeline is on this page now — all 100, and not one of them switchable (#325)",
       "status": "merged",
@@ -3046,8 +3049,8 @@
   "problems": [
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 100 open, 1 worked, 9 of your own orders waiting, and 3 of those need a word from you",
-      "detail": "100 cards open — the same number as last night, because one closed tonight (#288) and one was filed (#345). One card was worked: #288, merged. NINE carry your own order and are authorised work: #285, #281, #304, #321, #322, #316, #325, #302, #267. THREE of the nine cannot move without you: #302 needs three clicks in Library, and after last night's finding the recommendation there has CHANGED — two of those three Casts are your new-studio work and deleting them is permanent, so nothing was deleted and the question is back with you. #267 waits on your Settings-modal brief. #281's remaining fixes wait on one question — does the studio have workspaces with people in them, and when. Two are your orders that no shift has been able to take on the current model: #322 (migrations running themselves) is a change to how the production database is altered, and #304 (the popover collapse) is a design — both are judgement work and the reviewer is still out, so they are waiting rather than being attempted badly. What is ROTTING: still #316 alone, unchanged for four nights. Its own card contradicts itself on whether a 320-credit measurement was funded — one comment says do not spend, the next says funded, three minutes apart. Nobody should spend anything on it until that is settled from your own reply.",
+      "title": "The queue tonight: 99 open, 2 worked, 8 of your own orders waiting — and nothing rotting, for one more day",
+      "detail": "99 cards open, one fewer than last night: #281 closed tonight and nothing new was filed. TWO were worked, which is the batching rule doing its job — #281 built and merged, and #316's record repaired. EIGHT carry your own order and are authorised work: #285, #304, #321, #322, #316, #325, #302, #267. THREE of those eight cannot move without you: #302 (three Casts in Library, and the delete is permanent — still not done, still waiting on your word), #267 (waits on your Settings-modal brief), and now #316, which is back on your desk with its record corrected and a one-word answer needed. TWO are your orders no shift can take on the current model: #322 (migrations running themselves) and #304 (the popover collapse) are both judgement work, and the reviewer is still out — so they wait rather than being attempted badly. WHAT IS ROTTING: nothing tonight, and that is the first time this line has been able to say so. #316 was the rot for four nights and it is fixed — its card contradicted itself about whether 320 of your credits were authorised. ⚠ But the shape is about to change: EIGHT cards last touched on 25 August cross the one-week line TOMORROW (#4, #10, #12, #13, #17, #19, #21, #22 — mostly casting research and design drafts). None of them is urgent and none is waiting on you; they simply have not been re-read against the code since they were filed. That is a job for a shift, not a decision for you.",
       "state": "open",
       "severity": "info"
     },
@@ -3229,7 +3232,7 @@
     62
   ],
   "nextUp": {
-    "readAt": "2026-08-31T10:03:43.966Z",
+    "readAt": "2026-08-31T10:54:48.958Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3260,11 +3263,6 @@
         "urgent": true
       },
       {
-        "issueNumber": 281,
-        "title": "The Invite block — three fixes are cheap, and 'render real members' has no members to render",
-        "urgent": false
-      },
-      {
         "issueNumber": 285,
         "title": "The switch panel shows a count — show the card titles under it too",
         "urgent": false
@@ -3276,7 +3274,7 @@
       },
       {
         "issueNumber": 316,
-        "title": "The roll and refine roads read a named side in OPPOSITE directions — his own case is correct, a typed refine is not",
+        "title": "A typed refine ask names a side the OPPOSITE way he means it — the roll road is correct and the court is dead (his correction)",
         "urgent": false
       },
       {
