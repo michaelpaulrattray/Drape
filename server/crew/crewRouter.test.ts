@@ -240,3 +240,81 @@ describe("projection — explicit columns only, by construction (§9 arm 5)", ()
     ]);
   });
 });
+
+/**
+ * HIS "NOT RELEVANT" TAP, at the wire (#325's second half).
+ *
+ * Three properties, and the middle one is the whole feature: the tap records an
+ * intent, and **nothing on this surface can answer it**. The `resolution`
+ * columns belong to `scripts/crew-card-intents.mts`, so if the page could set
+ * them the second pair of eyes his card asks for would be the same pair.
+ */
+describe("the card-intent tap — his half, and only his half", () => {
+  it("is dark outside the scope like everything else on this router", async () => {
+    delete process.env.CREW_TAB_SCOPE;
+    const caller = crewRouter.createCaller(contextFor());
+    await expect(caller.setCardIntent({ issueNumber: 312, intent: "close" }))
+      .rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  /*
+    ⚠ THE ARM THAT MATTERS. `.strict()` means an undeclared field is REJECTED
+    rather than silently dropped — and `resolution` is undeclared on purpose.
+    This is driven by PARSING through the real router rather than by grepping
+    for `.strict()`, because a substring test for that token is exactly the
+    instrument this repository has been burned by twice.
+  */
+  it("refuses a resolution sent from the page — that column is the shift's", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const caller = crewRouter.createCaller(contextFor());
+    await expect(
+      caller.setCardIntent({ issueNumber: 312, intent: "close", resolution: "closed" } as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  /* And a forged author is refused by the parser before any handler runs
+     (invariant 3), the same way the reply and switch schemas are shaped. */
+  it("refuses a forged marker id", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const caller = crewRouter.createCaller(contextFor());
+    await expect(
+      caller.setCardIntent({ issueNumber: 312, intent: "close", markedByUserId: 999 } as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("refuses an intent the vocabulary does not name, and a card number that is not one", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const caller = crewRouter.createCaller(contextFor());
+    await expect(caller.setCardIntent({ issueNumber: 312, intent: "delete" as never }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.setCardIntent({ issueNumber: 0, intent: "close" }))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  /*
+    ⚠ CONTROL — the arms above are green on a caller that rejects EVERYTHING, so
+    the shape the page really sends must be seen to get past the parser. With no
+    database in this suite it fails INSIDE the handler, which is the proof it
+    reached one: a parse rejection is BAD_REQUEST, and this is not.
+  */
+  it("⚠ CONTROL — the shape the page sends gets past the parser", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const caller = crewRouter.createCaller(contextFor());
+    await expect(caller.setCardIntent({ issueNumber: 312, intent: "close" }))
+      .rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    /* And `null` — taking the tap back — is a value on the same road rather
+       than a second procedure. */
+    await expect(caller.setCardIntent({ issueNumber: 312, intent: null }))
+      .rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+  });
+
+  it("the state carries the intents, and says so when the table is not there yet", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const caller = crewRouter.createCaller(contextFor());
+    const state = await caller.getState();
+    /* `available: false` is the ceremony window, and it is a different fact
+       from an empty list — the panel withholds the buttons on the first and
+       draws them on the second. */
+    expect(state.cardIntents).toEqual({ available: false, intents: [] });
+  });
+});

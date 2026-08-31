@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ef1b2d7d0b5943d2"
+    "sourceFingerprint": "897d10266b462539"
   },
   "domains": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 61
+      "moduleCount": 62
     },
     {
       "id": "domain:evidence",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 49
+      "moduleCount": 50
     },
     {
       "id": "domain:studio",
@@ -4851,6 +4851,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/crewCardIntents.ts",
+      "path": "server/db/crewCardIntents.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/crewReplies.ts",
       "path": "server/db/crewReplies.ts",
       "domain": "data",
@@ -5831,6 +5837,12 @@
     {
       "id": "module:shared/const.ts",
       "path": "shared/const.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewCardIntents.ts",
+      "path": "shared/crewCardIntents.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -7440,6 +7452,16 @@
       "id": "route:crew.reply",
       "namespace": "crew",
       "name": "reply",
+      "type": "mutation",
+      "auth": "admin",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/crew.ts"
+    },
+    {
+      "id": "route:crew.setCardIntent",
+      "namespace": "crew",
+      "name": "setCardIntent",
       "type": "mutation",
       "auth": "admin",
       "input": "strict",
@@ -12290,6 +12312,10 @@
       "path": "server/crew/crewTabScope.test.ts"
     },
     {
+      "id": "test:server/crewCardIntents.test.ts",
+      "path": "server/crewCardIntents.test.ts"
+    },
+    {
       "id": "test:server/crewHeartbeat.test.ts",
       "path": "server/crewHeartbeat.test.ts"
     },
@@ -14079,6 +14105,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:shared/crewCardIntents.ts",
       "kind": "imports"
     },
     {
@@ -28077,6 +28108,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/crewCardIntents.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewCardIntents.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewCardIntents.ts",
+      "to": "module:shared/crewCardIntents.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/crewReplies.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -30568,6 +30614,11 @@
     },
     {
       "from": "module:server/routes/crew.ts",
+      "to": "module:server/db/crewCardIntents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
       "to": "module:server/db/crewReplies.ts",
       "kind": "imports"
     },
@@ -30579,6 +30630,11 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/db/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:shared/crewCardIntents.ts",
       "kind": "imports"
     },
     {

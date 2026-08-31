@@ -46,6 +46,11 @@ const WRITER_SCRIPTS = [
   { path: "scripts/crew-shift-start.mts", table: "crew_shift_runs" },
   { path: "scripts/crew-shift-close.mts", table: "crew_shift_runs" },
   { path: "scripts/crew-count-queue.mts", table: "crew_queue_counts" },
+  /* JOINED 2026-08-31 (#325). It answers his "not relevant" taps, and it is the
+     first shift writer whose table HE also writes — so it carries an extra arm
+     below that the other three do not need: it may set the resolution columns
+     and must never touch the four that record what he asked for. */
+  { path: "scripts/crew-card-intents.mts", table: "crew_card_intents" },
 ] as const;
 
 /**
@@ -118,7 +123,41 @@ const READ_ONLY_TABLES = ["crew_work_switches"] as const;
  * the indirection is pinned by its own arm below, so the allowance cannot be
  * used to smuggle a different table through a renamed constant.
  */
-const ALLOWED_WRITE_TARGETS = ["crew_shift_runs", "crew_queue_counts", "TABLE"] as const;
+const ALLOWED_WRITE_TARGETS = ["crew_shift_runs", "crew_queue_counts", "crew_card_intents", "TABLE"] as const;
+
+/**
+ * The columns of `crew_card_intents` that are HIS, and that no shift tool may
+ * write (#325, migration 0059).
+ *
+ * ⚠ **THIS TABLE IS THE FIRST ONE BOTH SIDES WRITE, AND THE SPLIT IS BY COLUMN
+ * RATHER THAN BY TABLE** — which is a weaker boundary than `crew_replies`'
+ * (whose whole protection is that the name never appears in shift code) and is
+ * therefore the one that needs an arm. A shift tool that could rewrite `intent`
+ * or `withdrawnAt` could rewrite the record of what he asked for, and then
+ * close a card he had taken back while the row still said he wanted it gone.
+ *
+ * `markedAt` is on the list for the same reason `markedByUserId` is: a
+ * resolution that could move the moment he tapped could make a stale answer
+ * look fresh.
+ */
+const HIS_INTENT_COLUMNS = ["intent", "markedByUserId", "markedAt", "withdrawnAt"] as const;
+
+/**
+ * Which columns a `SET` clause in this source assigns.
+ *
+ * Deliberately NOT a search for the column name anywhere: the intent script
+ * READS all four of his columns and must go on doing so — the pending check and
+ * the refusal messages are built from them. What is forbidden is ASSIGNING one,
+ * so the reader looks inside `SET … WHERE` only.
+ */
+function setColumnsIn(source: string): string[] {
+  const code = stripComments(source);
+  const columns: string[] = [];
+  for (const match of code.matchAll(/\bSET\s+([\s\S]*?)(?:\bWHERE\b|`|"|')/gi)) {
+    for (const assignment of match[1]!.matchAll(/([A-Za-z_][\w]*)\s*=/g)) columns.push(assignment[1]!);
+  }
+  return columns;
+}
 
 /** Statements a status-board writer has no business issuing. */
 const FORBIDDEN_STATEMENTS = [
@@ -240,6 +279,28 @@ describe("the shift write road is one table wide", () => {
   */
   it.each(WRITER_SCRIPTS)("$path — the reader can SEE this script's writes", ({ path }) => {
     expect(writeTargetsIn(sourceOf(path)).length).toBeGreaterThan(0);
+  });
+
+  /*
+    ⚠ THE COLUMN-LEVEL HALF OF THE BOUNDARY (#325). `crew_card_intents` is the
+    first table both roads write, so "writes only its own table" is not enough
+    here: the intent tool may set what a SHIFT decided and must never set what
+    HE asked for. A tool that could rewrite `withdrawnAt` could close a card he
+    had taken back while the row still said he wanted it gone.
+
+    The reader is proven before its silence counts — it must FIND the three
+    columns the script really does set, or `[]` below would mean nothing.
+  */
+  it("the intent tool sets the shift's columns, and the reader can see them", () => {
+    const set = setColumnsIn(sourceOf("scripts/crew-card-intents.mts"));
+    expect(set).toContain("resolution");
+    expect(set).toContain("resolutionNote");
+    expect(set).toContain("resolvedAt");
+  });
+
+  it("the intent tool never SETs a column that is his", () => {
+    const set = setColumnsIn(sourceOf("scripts/crew-card-intents.mts"));
+    for (const column of HIS_INTENT_COLUMNS) expect(set).not.toContain(column);
   });
 
   it("the start script inserts, and the close script updates", () => {
@@ -394,6 +455,33 @@ await conn.query("UPDATE crew_shift_runs SET outcome = 'shipped'");
     expect(writeTargetsIn(doctored)).toContain("crew_shift_runs");
     expect(writeTargetsIn(sourceOf(path))).toEqual([]);
     expect(stripComments(sourceOf(path))).toMatch(/\bSELECT\b/i);
+  });
+
+  /*
+    THE COLUMN ARM'S OWN CONTROL. `expect(set).not.toContain("intent")` is green
+    on a reader that finds nothing at all — the absence-only failure this file
+    already has a paragraph about. So the same reader is driven against a
+    doctored copy that writes his column, and must see it.
+  */
+  it("catches a shift tool rewriting what he asked for", () => {
+    const doctored = `${sourceOf("scripts/crew-card-intents.mts")}
+await conn.query("UPDATE crew_card_intents SET withdrawnAt = NULL WHERE issueNumber = 1");
+`;
+    expect(setColumnsIn(doctored)).toContain("withdrawnAt");
+    expect(setColumnsIn(sourceOf("scripts/crew-card-intents.mts"))).not.toContain("withdrawnAt");
+  });
+
+  /*
+    AND THE READ SIDE OF THE SAME SPLIT: the tool must go on NAMING his columns,
+    because the pending check and both refusal messages are built from them. An
+    arm that banned the words would have forced that reading out of the script
+    to stay green — trading the control that matters for a cosmetic one, which
+    is the mistake `users` is absent from FORBIDDEN_TABLES to avoid.
+  */
+  it("the intent tool still READS his columns, which is what makes it refuse", () => {
+    const code = stripComments(sourceOf("scripts/crew-card-intents.mts"));
+    expect(code).toContain("withdrawnAt IS NULL");
+    expect(code).toMatch(/markedAt/);
   });
 
   it("catches a write appearing in the read-only reply reader", () => {
