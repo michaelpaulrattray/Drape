@@ -5,7 +5,11 @@
 *"there's actually plenty of dialogue in the film and they all sound like
 themselves."* That observation is evidence the job records cannot provide, and
 it pushes against the research's masking-heavy framing of voice consistency.
-**Why it matters:** cast voices are planned development. If description-only
+**Why it matters:** cast voices are planned development — and since
+2026-09-01 confirmed at the code: the casting profile page
+(`client/src/pages/CastingRoom.tsx`) carries the VOICE card stub ("No voice
+yet"; "A designed voice and an audition clip arrive with voice"), built the
+same replace-the-stub way as takes. If description-only
 consistency is already strong, voice clips may only be needed for close
 dialogue rather than every line — a large cost difference for the voice build.
 

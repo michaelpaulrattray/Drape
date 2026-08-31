@@ -171,6 +171,14 @@ nothing about them presumes cinema.
    where a Takes section already exists as a drawn placeholder grid
    (`TAKE_PLACEHOLDERS`, "No takes yet", a "New takes" action). Building
    takes = replacing that stub, not choosing a new surface.
+   **The VOICE feature follows the identical pattern** (founder, 2026-09-01,
+   verified at the code): the same page carries a VOICE card stub — player
+   skeleton at rest, "No voice yet", and its own promise line: *"A designed
+   voice and an audition clip arrive with voice."* Voice is built into the
+   casting studio/profile the same way takes is: replace the stub in place.
+   The research's voice recommendation (the asset for identity + the `Voice:`
+   text line for performance style, typed fallback when no recording exists)
+   lands there.
 3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
    recommendation is REVERSED. Words are scoped per surface by design:
    the casting page speaks **candidates** (rolling) and **versions**
