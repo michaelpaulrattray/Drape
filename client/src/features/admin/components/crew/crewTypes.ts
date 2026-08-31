@@ -331,3 +331,10 @@ export type CrewShiftRunView = CrewShiftRunsView["runs"][number];
  * silently never renders.
  */
 export type CrewWorkStateView = CrewState["workState"];
+
+/**
+ * His "not relevant" taps (#325). Inferred like everything else on this page,
+ * so a column added to `crew_card_intents` is a type error here rather than a
+ * fact that silently never renders.
+ */
+export type CrewCardIntentsView = CrewState["cardIntents"];

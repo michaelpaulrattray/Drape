@@ -160,6 +160,35 @@ export default function AdminCrew() {
     },
   });
 
+  /*
+    HIS "NOT RELEVANT" TAP (#325). Same discipline as the switch above and for
+    the same reason: no optimistic write. A mark that appeared instantly and
+    silently reverted would tell him a card was on its way out when nothing had
+    been recorded, and this one ends in a shift closing something.
+
+    `flyingCard` is the ONE card mid-flight, so a slow round trip dims the
+    button he pressed rather than every button on the panel.
+  */
+  const [flyingCard, setFlyingCard] = useState<number | null>(null);
+  const cardIntentMutation = trpc.crew.setCardIntent.useMutation({
+    onError: (error) => {
+      console.error("[crew] card intent failed", error);
+      toast.error(readableFailure(error, "That didn't save — the card is unchanged. Try again."));
+    },
+    onSettled: () => {
+      setFlyingCard(null);
+      void utils.crew.getState.invalidate();
+    },
+  });
+
+  const markCard = useCallback(
+    (issueNumber: number, intent: "close" | null) => {
+      setFlyingCard(issueNumber);
+      cardIntentMutation.mutate({ issueNumber, intent });
+    },
+    [cardIntentMutation],
+  );
+
   const send = useCallback(
     (input: { cardId: string | null; body: string }) => replyMutation.mutateAsync(input),
     [replyMutation],
@@ -240,10 +269,13 @@ export default function AdminCrew() {
                 happening while he is not looking. */}
             <CrewBackgroundWork
               workState={stateQuery.data.workState}
+              cardIntents={stateQuery.data.cardIntents}
               now={now}
               onToggle={(switchKey, enabled) =>
                 workSwitchMutation.mutate({ switchKey: switchKey as never, enabled })}
+              onIntent={markCard}
               pending={workSwitchMutation.isPending}
+              intentPendingCard={cardIntentMutation.isPending ? flyingCard : null}
             />
 
             <CrewProgramBanner program={stateQuery.data.briefing.program} />

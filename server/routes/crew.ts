@@ -28,9 +28,11 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
 import { readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
+import { readCrewCardIntents, setCrewCardIntent } from "../db/crewCardIntents";
 import { insertCrewReply, listCrewReplies } from "../db/crewReplies";
 import { listCrewShiftRuns } from "../db/crewShiftRuns";
 import { readCrewWorkState, setCrewWorkSwitch } from "../db/crewWorkSwitches";
+import { CREW_CARD_INTENT_KEYS } from "../../shared/crewCardIntents";
 import { CREW_WORK_SWITCH_KEYS } from "../../shared/crewWorkSwitches";
 
 /** The dark answer, written once so both procedures give the same one. */
@@ -80,6 +82,33 @@ const workSwitchInput = z.object({
   enabled: z.boolean(),
 }).strict();
 
+/**
+ * A "not relevant" tap's wire shape (#325).
+ *
+ * `.strict()` (invariant 4), and note what is ABSENT: there is no
+ * `markedByUserId`, and there is **no `resolution`**. The first is invariant 3
+ * by construction, as on the two schemas above. The second is the boundary this
+ * whole feature rests on — `resolution` is the SHIFTS' column, written only by
+ * `scripts/crew-card-intents.mts`, and a field that is not declared cannot be
+ * sent. If the page could answer its own tap, the second pair of eyes his card
+ * asks for would be the same pair.
+ *
+ * `intent` is an ENUM over the shared vocabulary for `switchKey`'s reason — the
+ * keys are a closed set the code owns — and **`null` means he took the tap
+ * back**, which is a value rather than a second procedure because it is the
+ * same control being pressed a second time.
+ *
+ * `issueNumber` is `.int().positive()` and validated for NOTHING ELSE. It is
+ * deliberately not checked against the queue: the server cannot see GitHub
+ * without a token, which is the credential this feature exists to avoid. A
+ * number for a card that does not exist costs one row the shift tool reports
+ * rather than acts on.
+ */
+const cardIntentInput = z.object({
+  issueNumber: z.number().int().positive(),
+  intent: z.enum(CREW_CARD_INTENT_KEYS as unknown as [string, ...string[]]).nullable(),
+}).strict();
+
 export const crewRouter = router({
   /**
    * The whole page in one call: the deployed briefing, every reply, and what
@@ -110,8 +139,13 @@ export const crewRouter = router({
     const shiftRuns = await listCrewShiftRuns();
     /* Same degradation, same reason (#277). */
     const workState = await readCrewWorkState();
+    /* Same degradation, same reason (#325) — and it rides this call rather than
+       getting its own for `shiftRuns`' reason: the taps are drawn ON the card
+       titles this same query carries, so two queries would draw one list from
+       two moments. */
+    const cardIntents = await readCrewCardIntents();
 
-    return { briefing, replies, shiftRuns, workState };
+    return { briefing, replies, shiftRuns, workState, cardIntents };
   }),
 
   /**
@@ -160,6 +194,38 @@ export const crewRouter = router({
         enabled: input.enabled,
         /* From the session, never from input (invariant 3). */
         changedByUserId: ctx.user.id,
+      });
+    }),
+
+  /**
+   * Mark one card *not relevant*, or take the mark back. HIS control (#325).
+   *
+   * Founder-ordered 2026-08-31: *"should there be a delete icon next to them so
+   * i can close them or remove them myself if they are not relevant?"*
+   *
+   * ⚠ **THIS DOES NOT CLOSE THE CARD, AND MUST NOT.** Closing it here needs a
+   * repository WRITE token living in production — a bigger exposure than the
+   * READ token already declined on #285, and one that can change things rather
+   * than only read them. That is a credential decision and it is his. So this
+   * records the intent in his own table exactly as `setWorkSwitch` records a
+   * switch, and a shift closes the card after checking it is genuinely stale.
+   *
+   * ⚠ **AND THERE IS DELIBERATELY NO PROCEDURE THAT RESOLVES ONE.** The
+   * `resolution` columns are the shifts' half, written by
+   * `scripts/crew-card-intents.mts --resolve` the way `crew_queue_counts` is
+   * written by `crew-count-queue.mts`. A mutation here would let the page
+   * answer its own question and the second pair of eyes would be the same pair.
+   */
+  setCardIntent: adminProcedure
+    .input(cardIntentInput)
+    .mutation(async ({ ctx, input }) => {
+      if (!captureCrewTabEnabled(ctx.user.id)) refuseOutsideScope();
+
+      return setCrewCardIntent({
+        issueNumber: input.issueNumber,
+        intent: input.intent,
+        /* From the session, never from input (invariant 3). */
+        markedByUserId: ctx.user.id,
       });
     }),
 });

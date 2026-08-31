@@ -74,15 +74,20 @@ import {
   CREW_PIPELINE_VISIBLE_GROUPS,
   PIPELINE_SWITCHED_KEY,
 } from "@shared/crewPipelineGroups";
+import {
+  indexIntentsByCard,
+  intentSentence,
+  type CrewCardIntentView,
+} from "@shared/crewCardIntents";
 import { queueExclusionSentence } from "@shared/crewQueueExclusions";
-import { queueTitlesView } from "@shared/crewQueueTitles";
+import { queueTitlesView, type CrewQueueTitle } from "@shared/crewQueueTitles";
 import {
   CREW_WORK_CATEGORIES,
   CREW_WORK_MASTER_KEY,
   backgroundWorkAllowed,
 } from "@shared/crewWorkSwitches";
 import { cn } from "@/lib/utils";
-import type { CrewWorkStateView } from "./crewTypes";
+import type { CrewCardIntentsView, CrewWorkStateView } from "./crewTypes";
 
 /** "counted 14 min ago" — coarse, like everything else on this page. */
 function ago(value: Date | string, now: number): string {
@@ -138,15 +143,30 @@ function Switch({
 }
 
 export function CrewBackgroundWork({
-  workState, now, onToggle, pending,
+  workState, cardIntents, now, onToggle, onIntent, pending, intentPendingCard,
 }: {
   workState: CrewWorkStateView;
+  cardIntents: CrewCardIntentsView;
   now: number;
   onToggle: (switchKey: string, enabled: boolean) => void;
+  onIntent: (issueNumber: number, intent: "close" | null) => void;
   pending: boolean;
+  /** Which card's tap is mid-flight, so only that button dims (#325). */
+  intentPendingCard: number | null;
 }) {
   /* Which switch is mid-flight, so only that row dims rather than the panel. */
   const [flying, setFlying] = useState<string | null>(null);
+
+  /*
+    ⚠ `available: false` ON THE INTENTS IS NOT AN EMPTY LIST, AND THE DIFFERENCE
+    IS DRAWN. Between this deploy and his ceremony the table is absent, so an
+    empty map is what BOTH "he has tapped nothing" and "the tap is not live yet"
+    would look like. The buttons are withheld in that window rather than drawn
+    over a store that cannot record them — a control that silently forgets is
+    worse than one that is not there.
+  */
+  const intentsByCard = indexIntentsByCard(cardIntents.intents);
+  const intentsLive = cardIntents.available;
 
   /*
     THE DARK PANEL SAYS SO. `available: false` means the tables are not in this
@@ -250,17 +270,12 @@ export function CrewBackgroundWork({
                 */}
                 {titles.shown.length > 0 && (
                   <ul className="mt-1.5 ml-0.5 pl-2.5 border-l border-[#EEE] space-y-0.5">
-                    {titles.shown.map((card) => (
-                      <li
-                        key={card.number}
-                        className="text-[11px] leading-[1.5] text-[#666] truncate"
-                        title={`#${card.number} ${card.title}`}
-                      >
-                        <span className="text-[#999] tabular-nums">#{card.number}</span>
-                        {" "}
-                        {card.title}
-                      </li>
-                    ))}
+                    <CardTitles
+                      titles={titles.shown}
+                      intents={intentsByCard}
+                      onIntent={intentsLive ? onIntent : null}
+                      pendingCard={intentPendingCard}
+                    />
                     {/* The tail, never a scroll — and never drawn without a head
                         above it to be the tail OF (`queueTitlesView`). */}
                     {titles.moreCount > 0 && (
@@ -288,8 +303,105 @@ export function CrewBackgroundWork({
         </p>
       )}
 
-      <PipelineGroups workState={workState} now={now} />
+      <PipelineGroups
+        workState={workState}
+        now={now}
+        intentsByCard={intentsByCard}
+        onIntent={intentsLive ? onIntent : null}
+        intentPendingCard={intentPendingCard}
+      />
     </section>
+  );
+}
+
+/**
+ * THE CARD TITLES, AND HIS TAP ON EACH OF THEM (#285's list, #325's tap).
+ *
+ * ⚠ **ONE COMPONENT, DRAWN IN BOTH ZONES.** The switch rows and the pipeline
+ * groups rendered this list twice, byte for byte, before the tap existed —
+ * which was harmless while it was five lines and is exactly how a control ends
+ * up living on half a panel. His question was about *"all those other ones"*,
+ * so the tap has to reach every card the page names, and the only way to be
+ * sure of that is for there to be one list.
+ *
+ * # ⚠ THE TAP DOES NOT CLOSE THE CARD, AND THE LABEL SAYS SO
+ *
+ * It reads **Not relevant**, not *Close* and not a bin icon, because what it
+ * does is record what he thinks — a shift closes the card afterwards, having
+ * checked. A control whose label promises the thing it does not do is the
+ * dead-control shape his own stub ruling forbids, wearing a working one's
+ * clothes.
+ *
+ * The confirmation is the SENTENCE that replaces it — *"Marked not relevant —
+ * a shift will check it and close it"* — rather than a toast that vanishes, so
+ * a tap he took at 1am is still visible at 8am. And it is reversible in one
+ * press until a shift acts, which is why there is no confirm dialog: the
+ * cheapest undo beats the cheapest warning.
+ */
+function CardTitles({
+  titles, intents, onIntent, pendingCard,
+}: {
+  titles: readonly CrewQueueTitle[];
+  intents: ReadonlyMap<number, CrewCardIntentView>;
+  /** `null` while the table is absent — the tap is withheld rather than drawn dead. */
+  onIntent: ((issueNumber: number, intent: "close" | null) => void) | null;
+  pendingCard: number | null;
+}) {
+  if (titles.length === 0) return null;
+  return (
+    <>
+      {titles.map((card) => {
+        const intent = intents.get(card.number);
+        const sentence = intentSentence(intent);
+        /* Only a LIVE mark is takeable back. A resolved row keeps a shift's
+           answer on the page rather than offering him an undo that would erase
+           the record of what was done and why. */
+        const marked = sentence !== null && intent?.resolution == null;
+        return (
+          <li key={card.number} className="text-[11px] leading-[1.5] min-w-0">
+            <div className="flex items-start gap-2">
+              {/* ⚠ `flex-1` IS WHAT MAKES THE BUTTONS A COLUMN RATHER THAN A
+                  RAGGED EDGE. Without it the title shrinks to its content and
+                  the tap lands wherever that title happens to end — measured at
+                  the frame, `Not relevant` sat mid-row on the short titles and
+                  at the margin on the long ones, across 56 rows. `min-w-0` is
+                  what lets `truncate` work inside a flex child. */}
+              <span className="flex-1 min-w-0 text-[#666] truncate" title={`#${card.number} ${card.title}`}>
+                <span className="text-[#999] tabular-nums">#{card.number}</span>
+                {" "}
+                {card.title}
+              </span>
+              {/* A resolved card's row is a REPORT, not a control — there is
+                  nothing left for him to press, and drawing a live button
+                  beside a shift's answer would invite him to press it. */}
+              {onIntent !== null && intent?.resolution == null && (
+                <button
+                  type="button"
+                  disabled={pendingCard === card.number}
+                  onClick={() => onIntent(card.number, marked ? null : "close")}
+                  className={cn(
+                    "shrink-0 text-[10px] leading-[1.4] px-1.5 py-[1px] rounded border transition-colors",
+                    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]",
+                    marked
+                      ? "border-[#D5D5D5] text-[#666] hover:text-[#0A0A0A]"
+                      : "border-transparent text-[#BBB] hover:text-[#0A0A0A] hover:border-[#D5D5D5]",
+                    pendingCard === card.number && "opacity-40 cursor-not-allowed",
+                  )}
+                  aria-label={
+                    marked
+                      ? `Undo — keep #${card.number} in the queue`
+                      : `Mark #${card.number} not relevant`
+                  }
+                >
+                  {marked ? "Undo" : "Not relevant"}
+                </button>
+              )}
+            </div>
+            {sentence && <p className="text-[#999] mt-[1px]">{sentence}</p>}
+          </li>
+        );
+      })}
+    </>
   );
 }
 
@@ -328,7 +440,15 @@ export function CrewBackgroundWork({
  * 29), and two numbers disagreeing by one, on the panel built because he could
  * not tell a broken counter from a real zero, is not a rounding matter.
  */
-function PipelineGroups({ workState, now }: { workState: CrewWorkStateView; now: number }) {
+function PipelineGroups({
+  workState, now, intentsByCard, onIntent, intentPendingCard,
+}: {
+  workState: CrewWorkStateView;
+  now: number;
+  intentsByCard: ReadonlyMap<number, CrewCardIntentView>;
+  onIntent: ((issueNumber: number, intent: "close" | null) => void) | null;
+  intentPendingCard: number | null;
+}) {
   const byKey = new Map(workState.groups.map((row) => [row.groupKey, row]));
 
   /*
@@ -392,17 +512,12 @@ function PipelineGroups({ workState, now }: { workState: CrewWorkStateView; now:
               <p className="text-[11px] leading-[1.5] text-[#999]">{group.blurb}</p>
               {titles.shown.length > 0 && (
                 <ul className="mt-1.5 ml-0.5 pl-2.5 border-l border-[#EEE] space-y-0.5">
-                  {titles.shown.map((card) => (
-                    <li
-                      key={card.number}
-                      className="text-[11px] leading-[1.5] text-[#666] truncate"
-                      title={`#${card.number} ${card.title}`}
-                    >
-                      <span className="text-[#999] tabular-nums">#{card.number}</span>
-                      {" "}
-                      {card.title}
-                    </li>
-                  ))}
+                  <CardTitles
+                    titles={titles.shown}
+                    intents={intentsByCard}
+                    onIntent={onIntent}
+                    pendingCard={intentPendingCard}
+                  />
                   {titles.moreCount > 0 && (
                     <li className="text-[11px] leading-[1.5] text-[#999]">+{titles.moreCount} more</li>
                   )}

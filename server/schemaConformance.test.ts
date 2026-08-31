@@ -290,6 +290,12 @@ describe("the unmigrated exception list only shrinks", () => {
          proven rather than assumed: removing the first line alone reddened
          this very assertion within the minute, so the pin did its job on the
          first opportunity it had after the incident that wrote the note. */
+
+      /* JOINED 2026-08-31 — `crew_card_intents` (#325's second half, migration
+         0059, his `Not relevant` tap). It leaves the day he runs
+         `scripts/ceremony-crew-card-intents.mts --production`, and that
+         commit deletes its exception line AND this entry together. */
+      "crew_card_intents",
     ]);
   });
 });

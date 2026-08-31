@@ -4038,3 +4038,66 @@ export const crewQueueCounts = mysqlTable("crew_queue_counts", {
 
 export type CrewQueueCountRow = typeof crewQueueCounts.$inferSelect;
 export type InsertCrewQueueCountRow = typeof crewQueueCounts.$inferInsert;
+
+/**
+ * HIS "NOT RELEVANT" TAP — the intent, recorded (migration 0059; issue #325).
+ *
+ * One row is: **one card he has said something about from his own page**, and
+ * what a shift did about it afterwards.
+ *
+ * Founder, 2026-08-31: *"should there be a delete icon next to them so i can
+ * close them or remove them myself if they are not relevant?"*
+ *
+ * ⚠ **THE TAP IS AN INTENT, NEVER A REPO WRITE.** Closing the card from the
+ * server needs a credential with WRITE access to the repository living in the
+ * deployed service — #285 declined a READ token on this same page for a smaller
+ * benefit. So the road is the one his switches already take: the page records
+ * what he wants here, and a shift acts on it. `shared/crewCardIntents.ts` owns
+ * the vocabulary and the sentence the panel draws back to him.
+ *
+ * ⚠ **TWO WRITERS, ONE TABLE, SPLIT BY COLUMN.** `intent`, `markedByUserId`,
+ * `markedAt` and `withdrawnAt` are HIS — written only by `crew.setCardIntent`
+ * from a session id (invariant 3). `resolution`, `resolutionNote` and
+ * `resolvedAt` are the SHIFTS' — written only by
+ * `scripts/crew-card-intents.mts --resolve`, and no procedure sets them.
+ * `server/crewShiftWriterBoundary.test.ts` reads both roads' bytes and reddens
+ * if either crosses.
+ *
+ * ⚠ **NOTHING HERE EVER DELETES A ROW.** His card's rule for cards — *"CLOSE,
+ * never DELETE"* — applied to the intent itself: taking a tap back sets
+ * `withdrawnAt`. Pending is `withdrawnAt IS NULL AND resolution IS NULL`, and
+ * asking it at the moment of the write is what stops a shift closing a card he
+ * changed his mind about between reading the list and acting on it.
+ *
+ * `issueNumber` is UNIQUE: the tap is an upsert on that key, so tapping twice
+ * cannot leave two rows saying different things about one card.
+ */
+export const crewCardIntents = mysqlTable("crew_card_intents", {
+  id: int("id").autoincrement().primaryKey(),
+  /** A GitHub issue number. Nothing is joined on it — the queue is not in this database. */
+  issueNumber: int("issueNumber").notNull(),
+  /** `close` today; `shared/crewCardIntents.ts` owns the list, so a second meaning is a line rather than a migration. */
+  intent: varchar("intent", { length: 16 }).notNull(),
+  /** `ctx.user.id`, never from input (invariant 3). */
+  markedByUserId: int("markedByUserId").notNull(),
+  markedAt: timestamp("markedAt").notNull().defaultNow(),
+  /** Set when he takes the tap back. The row stays, which is the point. */
+  withdrawnAt: timestamp("withdrawnAt"),
+  /** `closed` | `declined`, or NULL while no shift has acted. The SHIFTS' column. */
+  resolution: varchar("resolution", { length: 16 }),
+  /**
+   * Why, when a shift declined — and it lands on the panel he tapped from.
+   *
+   * His card's bar: *"the next shift acts on the intents, closes what it
+   * confirms, and REPORTS anything it declined to close and why."* A road where
+   * a shift can only agree is not a second pair of eyes, it is a slow repo
+   * write with extra steps.
+   */
+  resolutionNote: varchar("resolutionNote", { length: 500 }),
+  resolvedAt: timestamp("resolvedAt"),
+}, (table) => ([
+  uniqueIndex("uq_crew_card_intents_issue").on(table.issueNumber),
+]));
+
+export type CrewCardIntentRow = typeof crewCardIntents.$inferSelect;
+export type InsertCrewCardIntentRow = typeof crewCardIntents.$inferInsert;

@@ -72,6 +72,14 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
     + "types — and its migration header says it may land ahead of its code, which "
     + "it did. Delete this line the day the Sign promotion merges, and run 0027 "
     + "in BOTH worlds first (a production migration is a founder ceremony).",
+  crew_card_intents:
+    "migration 0059 (#325's second half — his `Not relevant` tap). Production "
+    + "takes it by scripts/ceremony-crew-card-intents.mts, which is a founder "
+    + "act today (#322 is his own order to change that rule and is unstarted). "
+    + "Both sides degrade without it: the reader returns `available: false` on "
+    + "ER_NO_SUCH_TABLE and the panel withholds the buttons rather than drawing "
+    + "controls over a store that cannot record them. Delete this line, and its "
+    + "pin in server/schemaConformance.test.ts, the day the ceremony runs.",
 };
 
 /**
