@@ -1,7 +1,7 @@
 {
-  "edition": 160,
-  "updatedAt": "2026-08-31T12:35:00+10:00",
-  "shift": "foreman-140",
+  "edition": 161,
+  "updatedAt": "2026-08-31T13:35:00+10:00",
+  "shift": "foreman-141",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,14 +111,14 @@
     ],
     "chips": [
       {
-        "label": "Your nights stopped for two hours — and can never do it silently again",
+        "label": "Your bug count was offering you work you had already queued",
         "tone": "good",
-        "source": "#331 + #332 closed. 36 checks green including a negative control, and a real 40,960-character prompt launched and answered — 8,193 past the limit that killed it."
+        "source": "#324 closed, PR #337 merged 4a0fcbfe. 15 cards carried `bug` when measured and four were yours already ordered (one was #324 itself). Now: Bugs (11, 3 already queued)."
       },
       {
-        "label": "The queue: 102 open · 13 urgent · nothing on your desk · none rotting",
+        "label": "The queue: 102 open - 13 urgent - one thing on your desk - none rotting",
         "tone": "neutral",
-        "source": "Counted 12:20, not carried: 102 open, 13 urgent, 14 founder-ordered, 0 cards or eye items open here, 0 untouched for a week. You moved #330 to the front — it is next."
+        "source": "Counted 13:30, not carried: 102 open, 13 urgent, 13 founder-ordered, 0 untouched for a week. #330 stays front: half landed tonight, half waits for Fable."
       },
       {
         "label": "Your feed is fixed — your Cast still will not delete, for another reason",
@@ -138,6 +138,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "queue-count-exclusions-ceremony",
+      "title": "One command turns tonight's fix on - and until you run it, your Security row reads (1)",
+      "productImpact": "The fix that stops your switch panel offering you work you have already queued is merged and tested, but it needs one new column in the production database, and adding one is always your call rather than a shift's. NOTHING IS BROKEN WHILE YOU WAIT - the panel behaves exactly as it did yesterday. There is ONE visible side effect worth knowing about: I labelled the penetration-probe card (#45) as a security card tonight, because your Security row was showing (0) while a real security card existed. Until you run the command, that row reads Security (1) without being able to add the words \"1 parked\" - so it looks like there is a security job on offer when there is not. Running the command makes it read Security (0, 1 parked), which is the true sentence.",
+      "workedExample": "Right now your panel says Bugs (14). Three of those fourteen are cards you ordered yourself - #308, #316 and #320 - already sitting at the top of NEXT UP. Turn Bugs on and a shift could spend the night on something you had already put first. After the command it says Bugs (11, 3 already queued), and those three are gone from the list underneath.",
+      "options": [
+        {
+          "key": "run",
+          "label": "Run it now",
+          "consequence": "railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-queue-count-exclusions.mts --production   (about ten seconds; it prints the port before it changes anything, is safe to run twice, and adds one nullable column - no existing data is touched)"
+        },
+        {
+          "key": "later",
+          "label": "Leave it for now",
+          "consequence": "The panel keeps behaving exactly as it does today. The only cost is that Security keeps reading (1) instead of (0, 1 parked), and the bug count keeps including the three cards you already ordered."
+        }
+      ],
+      "recommendation": "Run it. It is ten seconds, it cannot lose anything, and until it runs the Security row is the one thing tonight's work made slightly less clear rather than more.",
+      "state": "open",
+      "filedAt": "2026-08-31T13:35:00+10:00",
+      "issueNumber": null
+    },
     {
       "id": "journal-removal-293",
       "title": "Removing the journal takes away the only place an unattached reply of yours can appear",
@@ -1948,6 +1970,22 @@
   ],
   "pipeline": [
     {
+      "id": "switch-counts-324",
+      "title": "The switch counts stop offering work you have already queued (#324)",
+      "status": "merged",
+      "prNumber": 337,
+      "note": "Your question was: \"how do we know they are not already scheduled to be fixed in current pipeline or work?\" It was real, and worse than when you asked - 15 cards carried the bug label when I measured and four of them were cards you had personally ordered, sitting at the top of NEXT UP (one was #324 itself, so it is three now). The panel was offering you the same card twice. It now reads Bugs (11, 3 already queued), and it SAYS what it left out rather than just quietly showing a smaller number - a count that shrinks for an invisible reason is the thing this panel exists to prevent. Also: the Security row said (0) while a real security card existed (#45, the penetration probe); it just was not labelled. It is now.",
+      "cardId": null
+    },
+    {
+      "id": "batching-ordered-cards-330",
+      "title": "Small edits: the batching rule now covers your ORDERED CARDS, not just your replies (#330, half)",
+      "status": "merged",
+      "prNumber": null,
+      "note": "You said: \"i thought we already batched things?\" You were right that it existed and right that it was not working. Read at the actual file: it said batch his REPLIES - so a shift facing three small cards you had ordered took one, because they were cards rather than replies. That is fixed, and tonight's shift is the first to use it (two of your cards in one sitting). The OTHER half of #330 - splitting the 186KB law file - is surgery on project law and waits for the Fable reviewer to come back, rather than being attempted on a cheaper seat.",
+      "cardId": null
+    },
+    {
       "id": "general-box-293",
       "title": "The journal is gone; a General box keeps your own notes (#293)",
       "status": "merged",
@@ -2962,7 +3000,7 @@
     56
   ],
   "nextUp": {
-    "readAt": "2026-08-31T02:15:19.650Z",
+    "readAt": "2026-08-31T03:26:46.756Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3030,11 +3068,6 @@
       {
         "issueNumber": 320,
         "title": "An eye item can name frames that exist only in the dev bucket — his card drew broken images, and this is the second time",
-        "urgent": false
-      },
-      {
-        "issueNumber": 324,
-        "title": "The switch counts double-count his queue, cannot see 71 of 97 cards, and Security reads (0) with a security card open",
         "urgent": false
       },
       {
