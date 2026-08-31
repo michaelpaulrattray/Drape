@@ -1,7 +1,7 @@
 {
-  "edition": 166,
-  "updatedAt": "2026-08-31T18:05:00+10:00",
-  "shift": "foreman-146",
+  "edition": 167,
+  "updatedAt": "2026-08-31T19:45:00+10:00",
+  "shift": "foreman-147",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -2110,6 +2110,14 @@
   ],
   "pipeline": [
     {
+      "id": "shift-writer-safety-288",
+      "title": "A command that could switch your page to “Nothing running” mid-shift now refuses to (#288)",
+      "status": "merged",
+      "prNumber": 346,
+      "note": "The live shift row on this page — the strip that tells you what a shift is working on right now — is written by two commands, and yesterday one of them was typed by mistake. Somebody wanted to LOOK at the running shift, and the only way to look was to run the command that CLOSES it, with the word “dry-run” added to make it safe. That word did not exist. It was ignored, the close happened for real, and your page said “Nothing running” while a shift was in the middle of its work. Four things changed. The commands now refuse any word they do not recognise, instead of quietly doing the real thing. “Dry run” exists for real now and prints exactly what would change without changing it. A row that checked in seconds ago is refused outright unless you say “force” — because a row that fresh belongs to a shift that is alive. And the fix that actually removes the cause: there is now a command that just LOOKS. There never was one. The row had two commands and both of them wrote, which is why a person wanting to read reached for a writer — and it cannot write, which is checked rather than promised. Every one of these was driven against the real production row before it merged, and the row was read back afterwards to prove nothing had been written to it.",
+      "cardId": null
+    },
+    {
       "id": "icon-set-second-half-321",
       "title": "Your 27 glyphs, the redrawn Assets, and four rail/topbar defects (#321)",
       "status": "merged",
@@ -3008,8 +3016,8 @@
   "problems": [
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 100 open, 1 worked, 8 of your own orders waiting, and 3 of those need a word from you",
-      "detail": "100 cards open. One was worked tonight (#330, merged). Eight carry your own order and are authorised work: #330 (now part-done), #285, #281, #304, #321, #322, #316, #325. THREE of the eight cannot move without you and are not silently queued: #302 needs three clicks in Library (delete Draft Model, Shina, Jericho) and the Home/Library clean-out unblocks itself; #267 waits on your Settings-modal brief; #281's remaining fixes wait on one question — does the studio have workspaces with people in them, and when. Nothing is rotting faster than last night: the same ten sit at the front and the count has not moved. The one that is starting to smell is #316, whose own card contradicts itself on whether a 320-credit measurement was funded — a shift should settle that from your reply before anyone spends anything, and none has.",
+      "title": "The queue tonight: 100 open, 1 worked, 9 of your own orders waiting, and 3 of those need a word from you",
+      "detail": "100 cards open — the same number as last night, because one closed tonight (#288) and one was filed (#345). One card was worked: #288, merged. NINE carry your own order and are authorised work: #285, #281, #304, #321, #322, #316, #325, #302, #267. THREE of the nine cannot move without you: #302 needs three clicks in Library, and after last night's finding the recommendation there has CHANGED — two of those three Casts are your new-studio work and deleting them is permanent, so nothing was deleted and the question is back with you. #267 waits on your Settings-modal brief. #281's remaining fixes wait on one question — does the studio have workspaces with people in them, and when. Two are your orders that no shift has been able to take on the current model: #322 (migrations running themselves) is a change to how the production database is altered, and #304 (the popover collapse) is a design — both are judgement work and the reviewer is still out, so they are waiting rather than being attempted badly. What is ROTTING: still #316 alone, unchanged for four nights. Its own card contradicts itself on whether a 320-credit measurement was funded — one comment says do not spend, the next says funded, three minutes apart. Nobody should spend anything on it until that is settled from your own reply.",
       "state": "open",
       "severity": "info"
     },
@@ -3191,7 +3199,7 @@
     62
   ],
   "nextUp": {
-    "readAt": "2026-08-31T08:00:45.606Z",
+    "readAt": "2026-08-31T09:01:14.185Z",
     "items": [
       {
         "issueNumber": 267,
