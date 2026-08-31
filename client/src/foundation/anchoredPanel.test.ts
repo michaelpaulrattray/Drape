@@ -70,10 +70,15 @@ const POPOVER = "foundation/Popover.tsx";
 /**
  * The one file in `foundation/` allowed its own dismissal listener, and the
  * reason is written into the file itself: the account chip is a FOURTH
- * hand-rolled owner that his ruling does not name, so #304 left it where it
- * stood rather than deciding for him. When he answers, this exception is
- * deleted along with the listener — and until then it is enumerated here, in
- * the open, rather than being invisible.
+ * hand-rolled owner that #304's ruling did not name, so it was put to the
+ * founder as #356 rather than decided.
+ *
+ * ⚠ **He answered — Crew reply #69, 2026-08-31, verbatim and entire: "Leave
+ * it."** The exception is therefore PERMANENT rather than pending, and this
+ * arm changed with it: it used to prove the question was still open (the file
+ * saying `FILED rather than decided`), which would have gone on passing for
+ * months after he settled it — a guard asserting a stale state is the #278
+ * shape, and it is the reason the assertion below now reads for the ruling.
  */
 const ACCOUNT_CHIP = "Topbar.tsx";
 
@@ -88,14 +93,21 @@ describe("one owner of the panel behaviour", () => {
     expect(DISMISSAL.test('document.addEventListener("pointerdown", onDown, true);')).toBe(true);
   });
 
-  it("keeps the account chip's exception NAMED, with its reason in the file", () => {
+  it("keeps the account chip's exception NAMED, carrying his ruling and not the open question", () => {
     const chip = read(path.join("foundation", ACCOUNT_CHIP));
-    /* The card number is spliced rather than written out: `#304` is a valid
-       hex colour, and `token-guard.test.ts` rightly refuses one in code. Its
-       own message says to move such a reference into a comment — but this one
-       is the assertion, so it is split instead. */
+    /* The card numbers are spliced rather than written out: `#304` and `#356`
+       are both valid hex colours, and `token-guard.test.ts` rightly refuses one
+       in code. Its own message says to move such a reference into a comment —
+       but these are the assertion, so they are split instead. */
     expect(chip).toContain("#" + "304");
-    expect(chip).toMatch(/FILED rather than decided/);
+    expect(chip).toContain("#" + "356");
+    // His words, verbatim, in the file where the question was asked.
+    expect(chip).toMatch(/Crew reply #69/);
+    expect(chip).toMatch(/"Leave it\."/);
+    // And the superseded state must be gone, or both readings sit in one file.
+    expect(chip).not.toMatch(/FILED rather than decided/);
+    // The matcher can find one — or the negative arm above passes on a typo.
+    expect(/FILED rather than decided/.test("so it is FILED rather than decided, and")).toBe(true);
   });
 
   it("has no `usePopover` left to reach for", () => {
