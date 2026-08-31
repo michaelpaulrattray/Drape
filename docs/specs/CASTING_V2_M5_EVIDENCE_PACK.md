@@ -12,6 +12,10 @@ Surfaces in scope: the casting tab (`/casting`), the casting sheet
 (`/casting/s/:sessionId`), and the primitive gallery (`/casting/foundation`,
 unlinked reference).
 
+> ⚠ **`/casting/foundation` is a historical address.** The specimen sheet moved to
+> `/admin/foundation`, behind the admin role guard, on 2026-09-01 (#261). Reproducing
+> anything below goes to the new address; the old one answers 404 for everyone.
+
 ---
 
 ## 1. Mechanized design laws
