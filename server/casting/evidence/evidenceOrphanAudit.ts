@@ -1,4 +1,6 @@
+import type { ModelReferencePlateKind } from "../../../drizzle/schema";
 import { parseEvidenceStorageKey } from "./evidenceDelivery";
+import { type EvidenceStoragePurpose, evidenceKeyKindIsDeclared } from "./evidenceLifecycle";
 
 type EvidencePurpose = "reference_plate" | "evidence_crop";
 type EvidenceStatus =
@@ -28,6 +30,17 @@ interface EvidenceEntityAuditRow {
   storageKey: string;
   createdByOperationId: string;
 }
+
+/**
+ * A plate carries its own provenance, and the audit needs it (#308).
+ *
+ * It used to be handed the literal `"reference_plate"` for every plate, which
+ * meant a plate key was the only shape it would accept. An `accepted_candidate`
+ * plate legitimately names the candidate object it promoted in place, so the
+ * whole of production's plate population would have counted as ownership
+ * mismatches here.
+ */
+type ReferencePlateAuditRow = EvidenceEntityAuditRow & { kind: ModelReferencePlateKind };
 
 interface EvidenceCleanupBatchAuditRow {
   id: string;
@@ -67,10 +80,6 @@ export interface EvidenceOrphanAuditReport {
   clean: boolean;
 }
 
-function expectedKeyKind(purpose: EvidencePurpose): "plate" | "crop" {
-  return purpose === "reference_plate" ? "plate" : "crop";
-}
-
 /**
  * Pure, counts-only rollback audit. No key, URL, prompt, hash, or customer
  * metadata is returned or logged.
@@ -80,7 +89,7 @@ export function auditEvidenceOrphans(input: {
   models: Array<{ id: number; userId: number }>;
   operations: EvidenceOperationAuditRow[];
   receipts: EvidenceReceiptAuditRow[];
-  referencePlates: EvidenceEntityAuditRow[];
+  referencePlates: ReferencePlateAuditRow[];
   crops: Array<EvidenceEntityAuditRow & { plateId: string }>;
   cleanupBatches: EvidenceCleanupBatchAuditRow[];
   cleanupItems: EvidenceCleanupItemAuditRow[];
@@ -115,14 +124,14 @@ export function auditEvidenceOrphans(input: {
   let modelOwnerMismatches = 0;
   const checkOwnedRow = (
     row: { userId: number; modelId: number; storageKey: string },
-    purpose: EvidencePurpose,
+    purpose: EvidenceStoragePurpose,
   ) => {
     try {
       const parsed = parseEvidenceStorageKey(row.storageKey);
       if (
         parsed.userId !== row.userId
         || parsed.modelId !== row.modelId
-        || parsed.kind !== expectedKeyKind(purpose)
+        || !evidenceKeyKindIsDeclared(purpose, parsed.kind)
       ) {
         keyOwnershipMismatches += 1;
       }
@@ -134,7 +143,7 @@ export function auditEvidenceOrphans(input: {
     else if (owner !== row.userId) modelOwnerMismatches += 1;
   };
   for (const receipt of input.receipts) checkOwnedRow(receipt, receipt.purpose);
-  for (const plate of input.referencePlates) checkOwnedRow(plate, "reference_plate");
+  for (const plate of input.referencePlates) checkOwnedRow(plate, plate.kind);
   for (const crop of input.crops) checkOwnedRow(crop, "evidence_crop");
 
   let entityReceiptMismatches = 0;

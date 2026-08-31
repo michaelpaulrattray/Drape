@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6d5f9d3d9b8d9d55"
+    "sourceFingerprint": "f94b774dd7a097e9"
   },
   "domains": [
     {
@@ -10868,6 +10868,10 @@
       "path": "server/casting/evidence/evidenceIdentityRevisionRepair.test.ts"
     },
     {
+      "id": "test:server/casting/evidence/evidenceLifecycle.test.ts",
+      "path": "server/casting/evidence/evidenceLifecycle.test.ts"
+    },
+    {
       "id": "test:server/casting/evidence/evidenceMint.test.ts",
       "path": "server/casting/evidence/evidenceMint.test.ts"
     },
@@ -20127,7 +20131,17 @@
     },
     {
       "from": "module:server/casting/evidence/evidenceOrphanAudit.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/evidenceOrphanAudit.ts",
       "to": "module:server/casting/evidence/evidenceDelivery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/evidenceOrphanAudit.ts",
+      "to": "module:server/casting/evidence/evidenceLifecycle.ts",
       "kind": "imports"
     },
     {
@@ -33134,7 +33148,7 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:server/casting/evidence/evidenceLifecycle.ts",
-      "message": "Marked retire but still imported by 3 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 4 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:server/casting/evidence/evidenceMint.ts",

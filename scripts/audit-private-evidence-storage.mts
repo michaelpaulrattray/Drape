@@ -5,6 +5,7 @@
  */
 import "dotenv/config";
 import mysql, { type RowDataPacket } from "mysql2/promise";
+import type { ModelReferencePlateKind } from "../drizzle/schema";
 import { auditEvidenceOrphans } from "../server/casting/evidence/evidenceOrphanAudit";
 import {
   getConfiguredPrivateEvidenceStorageAdapter,
@@ -83,11 +84,14 @@ async function main(): Promise<void> {
         : String(row.cleanupBatchId),
     }));
     const referencePlates = (await rows(
-      "SELECT id, userId, modelId, storageKey, createdByOperationId FROM model_reference_plates",
+      "SELECT id, userId, modelId, kind, storageKey, createdByOperationId FROM model_reference_plates",
     )).map((row) => ({
       id: String(row.id),
       userId: Number(row.userId),
       modelId: Number(row.modelId),
+      /* #308 — a plate's own provenance decides which object namespace its key
+         may name, so the audit is given it rather than assuming. */
+      kind: String(row.kind) as ModelReferencePlateKind,
       storageKey: String(row.storageKey),
       createdByOperationId: String(row.createdByOperationId),
     }));
