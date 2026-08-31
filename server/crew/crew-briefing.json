@@ -1,7 +1,7 @@
 {
-  "edition": 177,
-  "updatedAt": "2026-09-01T02:15:00+10:00",
-  "shift": "foreman-153",
+  "edition": 178,
+  "updatedAt": "2026-09-01T18:05:00Z",
+  "shift": "foreman-154",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "auto-migrations-322",
+      "issueNumber": 322,
+      "state": "open",
+      "filedAt": "2026-09-01",
+      "title": "You never run a migration command again — built, gate-green, and one word from live",
+      "productImpact": "You asked for this on 31 August: “can you change the rules and allow for auto migration and ceremonies so it doesnt need to ask me to run commands ever again”. It is built. From now on, when a shift adds a new table or a new column to the database, the deploy puts it there itself — no command for you, no card, no waiting. You had run three of those by hand in twenty-four hours and each one was sitting on top of a finished feature. Anything that DELETES or rewrites — dropping a table, renaming a column, narrowing a type — still stops and waits for you, and now it tells you exactly which line to run. That asymmetry is deliberate: a table nobody wanted is a dead table, and a deletion nobody wanted is your customers' data gone, which no test can bring back.",
+      "workedExample": "Your “Not relevant” tap has been dead since 31 August. The button needs a table on the live database, only you could create it, and so it sat. The moment this merges, the very next deploy creates it on its own and prints what it did on the receipt — and your tap starts working without you touching anything. I ran the whole thing against the development database tonight to prove the write path works: two objects created, read back by a second reader that shares no code with the first, then run again to confirm a repeat changes nothing.",
+      "options": [
+        {
+          "key": "merge-it",
+          "label": "Merge it (recommended)",
+          "consequence": "It goes live tonight and your tap works. Nothing in the diff touches money, billing, logins or sessions — the safety label came from a one-line COMMENT I changed in a migration file, which the gate matches on by folder. Every machine check passed and I broke the code sixteen different ways to prove the tests would catch each one."
+        },
+        {
+          "key": "hold-for-fable",
+          "label": "Hold it until your Fable allowance is back",
+          "consequence": "Costs you nothing except time: the code is finished and waiting. Your tap stays dead meanwhile, and so does the rest of #325. I would understand this answer — it is a change that takes something out of your hands."
+        }
+      ],
+      "recommendation": "Merge it. I stopped short of doing it myself because the gate flagged the PR and the standing rule says a flagged PR waits while the reviewer is down — and I was not going to argue my way around a safety rule on the one change whose whole subject is removing a safety gate. But the flag is a false alarm: it fired on a comment. ⚠ One thing to know before you say yes — the first run will ALSO create a second, empty table (`casting_cast_segments`) that the code has declared for months and that nothing reads or writes. That is the new rule working correctly rather than a surprise, and I would rather you heard it from me than found it on a receipt."
+    },
     {
       "id": "fourth-panel-owner-356",
       "title": "One menu did not come across, and I would rather you said so than I decided it",
@@ -2158,6 +2180,13 @@
   ],
   "pipeline": [
     {
+      "id": "auto-migrations-322",
+      "title": "Migrations put themselves in — the deletions still stop and ask you (#322)",
+      "status": "in-review",
+      "prNumber": 357,
+      "note": "Your own order, built. The deploy now creates a table or a column the code needs, on its own, before it ships — and refuses anything that deletes or rewrites, naming the line so you can run it in one command. Proven before it was allowed to write anywhere: the plan was read off the live database without touching it, the real write was driven against the development database and read back by an independent reader, and running it twice changes nothing. ⚠ Your card said the migration history contains no deletions; it does — three dropped indexes and nineteen column rewrites, two of them mixed in with additions inside a single statement. A simpler check would have run those. Waiting on one word from you, because the gate flagged it and the reviewer is still out."
+    },
+    {
       "id": "popover-collapse-304",
       "title": "One piece of code now owns every pop-up panel in the studio (#304)",
       "status": "merged",
@@ -3117,8 +3146,8 @@
     },
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 97 open, #304 built — and the stale pile is 27, unchanged",
-      "detail": "97 cards open, one fewer than last night: #304, the pop-up collapse, is built and merged. SIX carry your own order. Of those, ONE is genuinely waiting on you (#267, the account-menu labels, held behind a Settings modal you have not briefed yet), one is yours by choice (#321's Campaign/Try-on pair, which you kept for yourself), one needs a single command from you (#325), and one is judgement work held while the Fable reviewer is capped (#322). ⚠ THE CORRECTION FROM LAST NIGHT STILL STANDS AND THE NUMBER HAS NOT MOVED: 27 cards cross the week-untouched line, every one last read on 25 August, and the oldest crossed a full week this morning. They are casting research, design drafts and roadmap items; none is urgent and none waits on you. Nothing tonight could touch them — your background-work master switch is OFF, so the only work a shift may take is what you ordered. That switch is the lever: turning it on for Process or Debt would let a shift re-read them against the code, one line each, without asking you anything.",
+      "title": "The queue tonight: 100 open, #322 built — and the stale pile is 27, still unchanged",
+      "detail": "100 cards open. SIX carry your own order, and tonight one of them moved: #322 — migrations putting themselves in — is BUILT and is the card at the top of your desk. It had sat untouched for two days because it read as judgement work. Of the other five: ONE genuinely waits on you (#267, the account-menu labels, held behind a Settings modal you have not briefed), one is yours by choice (#321's Campaign/Try-on pair), one (#325) needed a command from you that #322 is precisely the fix for, and two are finished and waiting on your glance (#285, #304). ⚠ THE STALE PILE HAS NOT MOVED FOR A THIRD NIGHT: 27 cards cross the week-untouched line, every one last read on 25 August. They are casting research, design drafts and roadmap items; none is urgent and none waits on you. Your background-work switch is OFF, which is the whole lever and is yours — nothing tonight touched them.",
       "state": "open",
       "severity": "warning"
     },
@@ -3145,7 +3174,7 @@
     },
     {
       "id": "gate-review-arm-broken-219",
-      "title": "Your Fable allowance is still out - 24 refusals now, and it has been down about 30 hours",
+      "title": "Your Fable allowance is still out - 26 refusals now, and it has been down about three days",
       "detail": "Tonight's PR (#355) is the 25th refusal: the reviewer died in 946ms on its first turn with only the start-up model in its ledger, so nothing in that diff was judged by it. Read at the run log rather than at the red tick, which is the whole point of the change that made this check say which of the three states it is in. It was merged on the machine gate alone, which your standing rule allows for a change that touches no money or login path. No change in cause, and tonight it was measured on a real pull request of mine rather than asked about. PR #256's own review job came back with the exhausted-allowance signature exactly: it ran for 880 milliseconds, took one turn, cost $0.00, recorded no model usage at all, and returned an error. That is the same shape this has had since it started.\n\nWhat that means for reading the checks page, and it is easy to get backwards: a RED review check does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A verdict, when there is one, rides a GREEN check as a comment.\n\nOpus is answering fine on the same machine and the same login — it ran tonight's whole shift. It is your Fable 5 allowance specifically.\n\nThe team's rule while it is out is unchanged: measurement-and-record nights, and product changes kept to ones that alter no code path.",
       "severity": "warning",
       "state": "open"
@@ -3312,7 +3341,7 @@
     67
   ],
   "nextUp": {
-    "readAt": "2026-08-31T15:55:10.267Z",
+    "readAt": "2026-08-31T17:21:23.408Z",
     "items": [
       {
         "issueNumber": 267,
