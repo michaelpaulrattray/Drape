@@ -1,7 +1,7 @@
 {
-  "edition": 164,
-  "updatedAt": "2026-08-31T16:10:00+10:00",
-  "shift": "foreman-144",
+  "edition": 165,
+  "updatedAt": "2026-08-31T17:35:00+10:00",
+  "shift": "foreman-145",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "law-file-split-remainder-330",
+      "title": "The law file is a third smaller. There is 21 KB more that could go, and I recommend leaving it",
+      "productImpact": "This changes how fast your nights move, and nothing a customer sees. The rule book every shift reads first went from 191 KB to 72 KB tonight, which is about fifteen minutes back on every shift, every night. The remaining candidate is a different kind of text: the working laws and the access rules, where the rule and the story of how it was learned are woven into the same paragraph. Splitting those means DECIDING which sentences bind a shift today and which are record — and getting that wrong quietly re-opens a mistake somebody already paid to find.",
+      "workedExample": "The flags were easy because a flag entry is one self-contained block that a shift reads only when it touches that flag's road; it moved whole and nothing had to be judged. Law 7 is the opposite: it holds the rule, three real incidents, a correction of an earlier correction, and an explicit reversal of a verdict this team got wrong twice. Every one of those sentences is there because the short version was misread before.",
+      "options": [
+        {
+          "key": "leave",
+          "label": "Leave it — take the 62% and stop (recommended)",
+          "consequence": "Shifts keep the fifteen minutes a night this already bought, and the rule book stops growing only if we stay disciplined about what goes in it."
+        },
+        {
+          "key": "split",
+          "label": "Split the laws too, on a Fable shift when your credits are back",
+          "consequence": "Another ~two minutes a shift, at the cost of a careful pass over the paragraphs that exist because somebody misread the short version."
+        }
+      ],
+      "recommendation": "Leave it. Tonight took the cheap two thirds with no judgement involved; the remaining 21 KB is exactly where your own warning on the card bites hardest, and it would save a shift about two minutes. If you do want it, it waits for Fable — it is not work for an Opus shift.",
+      "state": "open",
+      "filedAt": "2026-08-31T17:35:00+10:00",
+      "issueNumber": 330
+    },
     {
       "id": "three-casts-left-302",
       "title": "Three old Casts are the only thing holding up the Home and Library clean-out you asked for",
@@ -2040,6 +2062,14 @@
   ],
   "pipeline": [
     {
+      "id": "law-file-split-330",
+      "title": "A night shift now reads a third of what it used to before it can change one line (#330)",
+      "status": "merged",
+      "prNumber": 342,
+      "note": "You asked why simple edits were taking up to an hour, and then asked for this card to go to the front of the queue. One of the two answers is in. Every shift reads the project's rule book in full before it opens a single file, and that book had grown to 191 KB — roughly a quarter of a shift's whole capacity, spent before any work starts. It is 72 KB now. What came out is one thing: the catalogue of the thirty-four feature flags, which is 123 KB on its own and which a shift reads ONE flag at a time — a shift working on tattoos needs the ink entries and was paying for all thirty-four. It moved to its own page, WORD FOR WORD. Nothing was shortened, rewritten or summarised, which was your own condition on this card: several of those paragraphs are long precisely because a shorter version was misread once before, and a summary that loses the correction re-opens the mistake. That is not a promise here, it is measured — the moved text is byte-identical, not one line that stayed behind was altered, and all 41 warning paragraphs survive word for word. The rule book keeps a one-line index so a shift still knows every flag exists and where its rules are. The second half of your card — widening the batching rule so a shift takes two or three of your small ordered cards at once instead of one — was already done. The card stays open for the remaining judgement call, which is my recommendation to leave alone.",
+      "cardId": null
+    },
+    {
       "id": "eye-frames-wrong-bucket-320",
       "title": "Your cards can no longer draw broken images (#320)",
       "status": "merged",
@@ -2921,6 +2951,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-165",
+      "title": "The queue tonight: 100 open, 1 worked, 8 of your own orders waiting, and 3 of those need a word from you",
+      "detail": "100 cards open. One was worked tonight (#330, merged). Eight carry your own order and are authorised work: #330 (now part-done), #285, #281, #304, #321, #322, #316, #325. THREE of the eight cannot move without you and are not silently queued: #302 needs three clicks in Library (delete Draft Model, Shina, Jericho) and the Home/Library clean-out unblocks itself; #267 waits on your Settings-modal brief; #281's remaining fixes wait on one question — does the studio have workspaces with people in them, and when. Nothing is rotting faster than last night: the same ten sit at the front and the count has not moved. The one that is starting to smell is #316, whose own card contradicts itself on whether a 320-credit measurement was funded — a shift should settle that from your reply before anyone spends anything, and none has.",
+      "state": "open",
+      "severity": "info"
+    },
+    {
       "id": "nights-stopped-silently-331",
       "title": "Your nights stopped for about two hours last night and nothing told anyone — you found it yourself",
       "detail": "Between 11:25 and 11:45 yesterday morning, four shifts launched and died in the same second they started. Each one exited with a success code and an empty log, so the runner counted every one as a good shift, waited ten minutes, and launched another into the same wall. Four of your own ordered cards sat untouched. You spotted it by noticing two close-stamps ten minutes apart; no instrument would ever have told you. The cause was found and fixed by the relay: the standing orders had grown past the length Windows allows on a command line, so the shift was never actually starting. That is repaired — the orders are handed over on a different channel with no limit at all. What landed tonight is the part that stops it being SILENT next time, which is the half that matters. Three things now hold. If the standing orders are ever unreadable, missing, truncated or absurdly long, the nights refuse to start and say so with the number, instead of launching into nothing. If two shifts in a row produce nothing at all, the nights stop themselves and leave you a note, then restart on their own the moment anything real happens. And when a launch fails outright, the reason is written down beside the empty log rather than lost with it. One more was found while sweeping for others like it, and it was worse than the original: if the small gatekeeper that decides whether to start a shift had ever gone missing or broken, the nights would have gone quiet FOREVER — no shifts, no notes, no stamps, nothing to notice at all. That is fixed too. There is no pull request for any of this and that is not an omission: these files run the night shifts and deliberately sit outside the codebase, so no automatic test can ever see them. In their place there is a script that drives the real runner against a sandbox — 36 checks, and it includes a deliberate sabotage proving the checks would actually fail if the guard stopped working.",
@@ -3096,7 +3133,7 @@
     60
   ],
   "nextUp": {
-    "readAt": "2026-08-31T06:04:03.186Z",
+    "readAt": "2026-08-31T06:54:45.209Z",
     "items": [
       {
         "issueNumber": 267,
