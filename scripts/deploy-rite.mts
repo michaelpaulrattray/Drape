@@ -822,7 +822,7 @@ const autoApply = (
 
   One `information_schema` query, on a connection this script already opens.
 */
-const schema = await (async (): Promise<{ line: string; migration: string[]; problems: string[] }> => {
+const schema = await (async (): Promise<{ line: string; migration: readonly string[]; problems: string[] }> => {
   const url = productionUrl();
   if (!url) return { line: "(unread — MYSQL_PUBLIC_URL not readable)", migration: [], problems: [] };
   try {
