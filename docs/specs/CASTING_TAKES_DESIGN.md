@@ -153,18 +153,31 @@ clause is appended without a controlled pair (*context-is-not-additive*: a
 subset of context beat its superset); `PHOTOREAL_HUMAN_BLOCKS` already covers
 part of the negative-stack ground — check overlap before adding anything.
 
-## 8. Founder gates — open, not decided
+## 8. Founder gates — CLOSED 2026-09-01, with a standing correction
 
-1. **Pricing** of the fan and the "4 more" gesture.
-2. **Scene hierarchy scope** — full ladder at once, or Setup→Takes first with
-   scenes later.
-3. **D-62 — RULED (founder, 2026-09-01): the outfit card lives in CASTING,
-   for now.** His words: "casting at the moment." Recorded as a present-tense
-   placement, not a permanent boundary amendment — D-62's text itself is
-   untouched; if outfit cards later move to Wardrobe, this line is where the
-   history starts.
-4. Whether takes land as their own flag-gated namespace (grammar:
-   `off`/`all`/`users:<ids>`, parent `CASTING_V2_SCOPE`, dark until ruled).
+⚠ **Architecture correction from the founder, recorded first because this
+document repeatedly got it wrong: CASTS ARE A STANDALONE PRIMITIVE, THE
+CINEMA STUDIO IS A SEPARATE FEATURE THAT MERELY CONSUMES THEM.** His words:
+*"making a cast is its own feature, the cinema studio is its own feature —
+it just happens to link to casts, but you could use casts technically
+anywhere, not just in the cinema studio."* Takes are a CASTING-PAGE feature;
+nothing about them presumes cinema.
+
+1. **Pricing — already answered by the codebase** (founder): takes price on
+   the same pattern as casting a character and refining one. No new decision;
+   read the existing credit-cost modules at build time.
+2. **Scope/home — already answered by the codebase**: the takes surface is
+   the existing casting profile page (`client/src/pages/CastingRoom.tsx`),
+   where a Takes section already exists as a drawn placeholder grid
+   (`TAKE_PLACEHOLDERS`, "No takes yet", a "New takes" action). Building
+   takes = replacing that stub, not choosing a new surface.
+3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
+   recommendation is REVERSED. Words are scoped per surface by design:
+   the casting page speaks **candidates** (rolling) and **versions**
+   (editing); **takes** and **frames** belong to the cinema page. The
+   surfaces are different products with their own languages.
+4. **D-62** — ruled 2026-09-01: outfit cards live in Casting, for now
+   (see gate 3's note above in this file's earlier section).
 
 ## 9. The name
 

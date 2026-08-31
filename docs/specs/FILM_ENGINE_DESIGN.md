@@ -352,11 +352,12 @@ four accepted, one split:
    badge, not editable text). The LOCKS field becomes "Staging locks",
    scoped to shot-specific rules only.
 
-**Vocabulary (founder decision, flagged):** four live words for a generated
-thing — takes, candidates, versions, frames. Recommendation: two — "take"
-(any sampled generation chosen among) and "version" (a chosen state in an
-edit chain); "candidates" folds into takes, "frames" reverts to video
-frames. Casting vocabulary is live product; the rename is the founder's call.
+**Vocabulary — RULED (founder, 2026-09-01): keep it as it is.** The two-noun
+recommendation is REVERSED. Words are scoped per surface by design: the
+casting page speaks **candidates** (rolling) and **versions** (editing);
+**takes** and **frames** are cinema-page words. Casts are a standalone
+primitive consumed by many surfaces — cinema is one of them — so each
+surface keeps its own language.
 
 ## 6. What we deliberately do NOT build
 
