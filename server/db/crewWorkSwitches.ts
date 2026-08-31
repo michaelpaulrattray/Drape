@@ -36,6 +36,7 @@
  */
 import { eq } from "drizzle-orm";
 
+import { parseQueueExclusions, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
 import { parseQueueTitles, type CrewQueueTitle } from "../../shared/crewQueueTitles";
 import {
   CREW_WORK_CATEGORIES,
@@ -50,16 +51,23 @@ const ER_NO_SUCH_TABLE = "ER_NO_SUCH_TABLE";
 
 /**
  * MySQL's "unknown column in field list" — `crew_queue_counts.titles` (#285)
- * before the founder has run its ceremony.
+ * and `crew_queue_counts.excluded` (#324) before the founder has run their
+ * ceremonies.
  *
- * ⚠ **THE SECOND, AND LAST, FAILURE THIS READER RESCUES.** The column is
- * migration 0057 and production takes it by
- * `scripts/ceremony-crew-queue-count-titles.mts`, which is a founder act — so
- * there is a real window in which this code is deployed and the column is not
- * there. His ENTIRE Crew tab is one `crew.getState` call, so an unrescued
- * throw here is a blank page for the founder, which is the failure the briefing
- * parse arm already exists to prevent. Rescued to exactly today's panel: the
- * counts, with no titles under them.
+ * ⚠ **THE SECOND, AND LAST, FAILURE THIS READER RESCUES.** The columns are
+ * migrations 0057 and 0058 and production takes each by a ceremony script,
+ * which is a founder act — so there is a real window in which this code is
+ * deployed and a column is not there. His ENTIRE Crew tab is one
+ * `crew.getState` call, so an unrescued throw here is a blank page for the
+ * founder, which is the failure the briefing parse arm already exists to
+ * prevent. Rescued to exactly today's panel: the counts, with no titles under
+ * them and no exclusion clause beside them.
+ *
+ * ⚠ **THE RETRY DROPS BOTH OPTIONAL COLUMNS, NOT THE ONE IT GUESSES AT.** MySQL
+ * names only the FIRST unknown column in the error, so a reader that dropped
+ * that one and retried would throw again on the second and, worse, would look
+ * like it had a working fallback while having one that fails on the two-absent
+ * case. One retry, both columns gone, and the answer is the panel he has today.
  */
 const ER_BAD_FIELD_ERROR = "ER_BAD_FIELD_ERROR";
 
@@ -110,6 +118,20 @@ export type CrewQueueCountView = {
    * alone rather than as a promise of a list that is not there.
    */
   readonly titles: readonly CrewQueueTitle[];
+  /**
+   * What was left OUT of `openCount`, keyed by reason (#324).
+   *
+   * ⚠ **THIS CHANGES WHAT `openCount` ABOVE MEANS, AND THE TWO ARRIVE
+   * TOGETHER.** Where the writer could store this, `openCount` is the OFFERED
+   * count — cards a shift may actually pick up — and this says what was
+   * subtracted. Where it could not, this is `{}` and `openCount` keeps its old
+   * meaning, every open card carrying the label. The pair is written in one
+   * statement, so it can never describe two moments or two meanings.
+   *
+   * Empty and "nothing was excluded" are deliberately the same value: the panel
+   * draws no clause for either, which is the row he has today.
+   */
+  readonly excluded: CrewQueueExclusions;
   readonly countedAt: Date;
 };
 
@@ -166,7 +188,13 @@ async function requireDb(): Promise<DbInstance> {
  * a suite that cannot see this function cannot prove it does not.
  */
 export async function readCountRows(db: DbInstance): Promise<
-  Array<{ categoryKey: string; openCount: number; titles: string | null; countedAt: Date }>
+  Array<{
+    categoryKey: string;
+    openCount: number;
+    titles: string | null;
+    excluded: string | null;
+    countedAt: Date;
+  }>
 > {
   try {
     return await db
@@ -174,6 +202,7 @@ export async function readCountRows(db: DbInstance): Promise<
         categoryKey: crewQueueCounts.categoryKey,
         openCount: crewQueueCounts.openCount,
         titles: crewQueueCounts.titles,
+        excluded: crewQueueCounts.excluded,
         countedAt: crewQueueCounts.countedAt,
       })
       .from(crewQueueCounts);
@@ -186,7 +215,7 @@ export async function readCountRows(db: DbInstance): Promise<
         countedAt: crewQueueCounts.countedAt,
       })
       .from(crewQueueCounts);
-    return legacy.map((row) => ({ ...row, titles: null }));
+    return legacy.map((row) => ({ ...row, titles: null, excluded: null }));
   }
 }
 
@@ -224,6 +253,7 @@ export async function readCrewWorkState(): Promise<CrewWorkState> {
            whole contract, and a raw JSON string crossing it would make every
            consumer responsible for the same defensive parse. */
         titles: parseQueueTitles(row.titles),
+        excluded: parseQueueExclusions(row.excluded),
         countedAt: row.countedAt,
       }));
 

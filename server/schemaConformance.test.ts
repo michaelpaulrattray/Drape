@@ -387,6 +387,13 @@ describe("a column may be enumerated as unmigrated, and only shrinks too", () =>
        are ONE reading), and its line and this pin were deleted together in
        that commit. The list is empty, which is the state it should spend most
        of its life in. */
-    expect(Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED)).toEqual([]);
+    /* `crew_queue_counts.excluded` (#324, migration 0058) joined 2026-08-31 —
+       what the switch count left out, and why. It leaves the day
+       `scripts/ceremony-crew-queue-count-exclusions.mts` runs against
+       production; this pin and its line in DECLARED_COLUMNS_BUT_UNMIGRATED are
+       deleted in that SAME commit. */
+    expect(Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED)).toEqual([
+      "crew_queue_counts.excluded",
+    ]);
   });
 });

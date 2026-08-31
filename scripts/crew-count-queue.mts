@@ -7,6 +7,15 @@
  *
  * # WHAT IT COUNTS, AND WHY THERE IS NO LIST HERE
  *
+ * ⚠ **AND SINCE #324 IT IS HOW MANY ARE ON OFFER, NOT HOW MANY EXIST.** He
+ * asked at the live panel: *"how do we know they are not already scheduled to
+ * be fixed in current pipeline or work?"* — and two of his thirteen bugs were
+ * `founder-ordered` cards already sitting in NEXT UP, offered a second time as
+ * background work a shift may take on its own judgement. A card he has queued,
+ * or one parked on his own ruling, is subtracted and **named** in the same row
+ * (`shared/crewQueueExclusions.ts`), so the panel reads *Bugs (11, 2 already
+ * queued)* rather than a number that quietly got smaller.
+ *
  * One number per category: **how many OPEN cards carry that category's label**.
  * The labels are `shared/crewWorkSwitches.ts`'s `queueLabel`, and **not one of
  * them was invented for this feature** — `bug`, `seat:warden`,
@@ -59,6 +68,13 @@
 import { execFileSync } from "node:child_process";
 
 import {
+  exclusionFor,
+  parseQueueExclusions,
+  queueExclusionSentence,
+  serializeQueueExclusions,
+  type CrewQueueExclusions,
+} from "../shared/crewQueueExclusions.js";
+import {
   QUEUE_TITLES_PER_CATEGORY,
   parseQueueTitles,
   serializeQueueTitles,
@@ -69,6 +85,7 @@ import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mt
 
 const TABLE = "crew_queue_counts";
 const TITLES_COLUMN = "titles";
+const EXCLUDED_COLUMN = "excluded";
 
 /** WHICH WORLD, named plainly — see `crew-shift-start.mts`'s note. */
 function whichWorld(): "PRODUCTION" | "DEV" {
@@ -80,14 +97,26 @@ function iso(value: unknown): string {
   return value instanceof Date ? `${value.toISOString().replace("T", " ").slice(0, 19)} UTC` : String(value);
 }
 
-/** One category's whole reading: the population, and the five it names. */
+/**
+ * One category's whole reading — BOTH answers, because which one is stored
+ * depends on a column this script has not looked for yet (#324).
+ *
+ * `total` / `allTitles` are the reading this script has always taken: every
+ * open card carrying the label. `offered` / `offeredTitles` / `exclusions` are
+ * the same reading with the cards he has already queued, and the ones parked on
+ * his own ruling, taken out and NAMED.
+ */
 type CategoryReading = {
-  readonly count: number;
-  readonly titles: readonly CrewQueueTitle[];
+  readonly total: number;
+  readonly allTitles: readonly CrewQueueTitle[];
+  readonly offered: number;
+  readonly offeredTitles: readonly CrewQueueTitle[];
+  readonly exclusions: CrewQueueExclusions;
 };
 
 /**
- * How many OPEN issues carry this label, and the five most recent of them.
+ * How many OPEN issues carry this label, the five most recent of them, and
+ * which of them are not actually on offer.
  *
  * ⚠ **A FAILED COUNT IS `null`, NEVER `0`.** They are opposite facts: zero
  * tells him toggling that category on buys nothing, and a broken `gh` telling
@@ -99,12 +128,18 @@ type CategoryReading = {
  * `gh issue list` does not return a total — a `--limit` shorter than the real
  * population would silently cap the answer. 500 is far above any plausible
  * count here and the cap is checked below rather than assumed.
+ *
+ * ⚠ **THE EXCLUSIONS COST NOTHING EXTRA (#324).** `labels` rides the SAME `gh`
+ * response the count and the titles already come out of, so the partition is
+ * one more field on one call rather than a second round trip — which is what
+ * makes "the count, the titles and the exclusions share one `countedAt`" a
+ * property of the statement rather than of three reads agreeing.
  */
 function countOpen(label: string): CategoryReading | null {
   try {
     const out = execFileSync(
       "gh",
-      ["issue", "list", "--state", "open", "--label", label, "--limit", "500", "--json", "number,title,createdAt"],
+      ["issue", "list", "--state", "open", "--label", label, "--limit", "500", "--json", "number,title,createdAt,labels"],
       /* NO `shell: true`. `crew-read-replies.mts` needs one because `railway.cmd`
          is a batch file that cannot be resolved from PATH without it; `gh` is an
          .exe and does not. Driven both ways before choosing (3 rows either way),
@@ -127,20 +162,51 @@ function countOpen(label: string): CategoryReading | null {
       A row with no readable `createdAt` sorts LAST rather than being dropped —
       it is still a real open card, and the count above already includes it.
     */
-    const stamped = rows.map((row: { number?: unknown; title?: unknown; createdAt?: unknown }) => ({
+    const stamped = rows.map((row: {
+      number?: unknown; title?: unknown; createdAt?: unknown; labels?: unknown;
+    }) => ({
       number: typeof row.number === "number" ? row.number : 0,
       title: typeof row.title === "string" ? row.title : "",
       at: typeof row.createdAt === "string" ? Date.parse(row.createdAt) : Number.NaN,
+      /* `gh` returns labels as `[{ id, name, description, color }]`. A row whose
+         labels are unreadable yields an EMPTY list, which makes the card
+         OFFERED — the safe direction here is the one that shows him a card,
+         never the one that silently hides it from a count he is deciding on. */
+      labels: Array.isArray(row.labels)
+        ? row.labels
+          .map((entry) => (typeof entry === "object" && entry !== null
+            ? (entry as { name?: unknown }).name
+            : undefined))
+          .filter((name): name is string => typeof name === "string")
+        : [],
     }));
     stamped.sort((left, right) => {
       const l = Number.isFinite(left.at) ? left.at : -Infinity;
       const r = Number.isFinite(right.at) ? right.at : -Infinity;
       return r - l;
     });
-    const titles: CrewQueueTitle[] = stamped
+    const titlesOf = (list: typeof stamped): CrewQueueTitle[] => list
       .slice(0, QUEUE_TITLES_PER_CATEGORY)
       .map((row) => ({ number: row.number, title: row.title }));
-    return { count: rows.length, titles };
+
+    /* THE PARTITION (#324). First match wins and the vocabulary owns the order,
+       so a card carrying both labels is counted ONCE — exclusions that summed
+       to more than the cards they came from would be arithmetic his panel
+       printed and nobody could reproduce. */
+    const offeredRows: typeof stamped = [];
+    const exclusions: Record<string, number> = {};
+    for (const row of stamped) {
+      const reason = exclusionFor(row.labels);
+      if (reason === null) offeredRows.push(row);
+      else exclusions[reason] = (exclusions[reason] ?? 0) + 1;
+    }
+    return {
+      total: rows.length,
+      allTitles: titlesOf(stamped),
+      offered: offeredRows.length,
+      offeredTitles: titlesOf(offeredRows),
+      exclusions: exclusions as CrewQueueExclusions,
+    };
   } catch (cause) {
     console.error(`[warn] could not count \`${label}\`: ${(cause as Error).message}`);
     return null;
@@ -193,6 +259,30 @@ try {
     );
   }
 
+  /*
+    ⚠ AND IS THE EXCLUSIONS COLUMN HERE? Migration 0058 (#324), same shape and
+    the same FOUNDER ceremony.
+
+    ⚠ **THIS ANSWER DECIDES WHAT `openCount` MEANS, WHICH IS WHY IT IS ASKED
+    RATHER THAN ASSUMED.** With the column, the stored count is the OFFERED one
+    and this row says what was taken out of it. Without it, the stored count is
+    the TOTAL — exactly what this script has always written.
+
+    The one thing that must never happen is the half state: writing the offered
+    count where the reasons cannot be stored. His card names it — *"a count that
+    silently shrinks for an invisible reason is the confident-wrong-number
+    failure this panel already exists to avoid"* — and it would look, on his
+    page, like bugs quietly going away.
+  */
+  const [excludedColumn] = await conn.query<any[]>(`SHOW COLUMNS FROM \`${TABLE}\` LIKE '${EXCLUDED_COLUMN}'`);
+  const keepsExclusions = excludedColumn.length === 1;
+  if (!keepsExclusions) {
+    console.log(
+      `  (no \`${EXCLUDED_COLUMN}\` column here — storing TOTALS, as before. It is migration 0058 and production`
+      + " takes it by `scripts/ceremony-crew-queue-count-exclusions.mts`, a FOUNDER act.)",
+    );
+  }
+
   let written = 0;
   let skipped = 0;
   for (const category of CREW_WORK_CATEGORIES) {
@@ -202,45 +292,76 @@ try {
       console.log(`  ${category.label.padEnd(14)} SKIPPED — the old row stands, with its older timestamp`);
       continue;
     }
+    /* ⚠ WHICH READING IS STORED, decided once, here, by what the table can
+       hold. Count and titles move TOGETHER: naming five cards he cannot pick
+       up, under a number that excludes them, would be a list disagreeing with
+       its own total. */
+    const storedCount = keepsExclusions ? reading.offered : reading.total;
+    const storedTitles = keepsExclusions ? reading.offeredTitles : reading.allTitles;
+
     /* Upsert on the UNIQUE `categoryKey`, so the store can never hold two
        answers for one category and the count cannot depend on row order.
 
-       ⚠ The titles ride the SAME statement as the count, which is what makes
-       "they share one `countedAt`" a property of the schema rather than of two
-       writes both happening to succeed. */
-    if (keepsTitles) {
+       ⚠ The titles and the exclusions ride the SAME statement as the count,
+       which is what makes "they share one `countedAt`" a property of the schema
+       rather than of three writes all happening to succeed. */
+    if (keepsTitles && keepsExclusions) {
+      await conn.query(
+        `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${TITLES_COLUMN}, ${EXCLUDED_COLUMN}, countedAt)
+         VALUES (?, ?, ?, ?, UTC_TIMESTAMP())
+         ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), ${TITLES_COLUMN} = VALUES(${TITLES_COLUMN}),
+           ${EXCLUDED_COLUMN} = VALUES(${EXCLUDED_COLUMN}), countedAt = VALUES(countedAt)`,
+        [category.key, storedCount, serializeQueueTitles(storedTitles), serializeQueueExclusions(reading.exclusions)],
+      );
+    } else if (keepsTitles) {
       await conn.query(
         `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${TITLES_COLUMN}, countedAt)
          VALUES (?, ?, ?, UTC_TIMESTAMP())
          ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), ${TITLES_COLUMN} = VALUES(${TITLES_COLUMN}), countedAt = VALUES(countedAt)`,
-        [category.key, reading.count, serializeQueueTitles(reading.titles)],
+        [category.key, storedCount, serializeQueueTitles(storedTitles)],
+      );
+    } else if (keepsExclusions) {
+      await conn.query(
+        `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${EXCLUDED_COLUMN}, countedAt)
+         VALUES (?, ?, ?, UTC_TIMESTAMP())
+         ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), ${EXCLUDED_COLUMN} = VALUES(${EXCLUDED_COLUMN}), countedAt = VALUES(countedAt)`,
+        [category.key, storedCount, serializeQueueExclusions(reading.exclusions)],
       );
     } else {
       await conn.query(
         `INSERT INTO \`${TABLE}\` (categoryKey, openCount, countedAt)
          VALUES (?, ?, UTC_TIMESTAMP())
          ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), countedAt = VALUES(countedAt)`,
-        [category.key, reading.count],
+        [category.key, storedCount],
       );
     }
     written += 1;
-    console.log(`  ${category.label.padEnd(14)} ${String(reading.count).padStart(3)} open  (label \`${category.queueLabel}\`)`);
-    for (const card of reading.titles) console.log(`      #${card.number} ${card.title}`);
+    /* The excluded cards are named in the LOG whether or not the column can
+       hold them: a shift reading this at 3am should see what it did not offer
+       him even in the window before the ceremony runs. */
+    const sentence = queueExclusionSentence(reading.exclusions);
+    console.log(
+      `  ${category.label.padEnd(14)} ${String(storedCount).padStart(3)} open  (label \`${category.queueLabel}\`)`
+      + (sentence ? ` · ${sentence}${keepsExclusions ? "" : ", NOT stored — no column yet"}` : ""),
+    );
+    for (const card of storedTitles) console.log(`      #${card.number} ${card.title}`);
   }
 
   /* Read back rather than trusted (working law 1 — the changed rows are the fact). */
   const [rows] = await conn.query<any[]>(
-    `SELECT categoryKey, openCount, ${keepsTitles ? `${TITLES_COLUMN}, ` : ""}countedAt FROM \`${TABLE}\` ORDER BY categoryKey`,
+    `SELECT categoryKey, openCount, ${keepsTitles ? `${TITLES_COLUMN}, ` : ""}`
+    + `${keepsExclusions ? `${EXCLUDED_COLUMN}, ` : ""}countedAt FROM \`${TABLE}\` ORDER BY categoryKey`,
   );
   console.log(`\nstored ${rows.length} row(s) · ${written} written, ${skipped} skipped this run`);
   for (const row of rows) {
-    /* Read back through the PARSER his page uses, never through this script's
+    /* Read back through the PARSERS his page uses, never through this script's
        own idea of the shape — a value that writes and reads fine here and
        yields nothing on the panel is exactly the failure being avoided. */
     const named = keepsTitles ? parseQueueTitles(row[TITLES_COLUMN]).length : 0;
+    const back = keepsExclusions ? queueExclusionSentence(parseQueueExclusions(row[EXCLUDED_COLUMN])) : null;
     console.log(
       `  ${String(row.categoryKey).padEnd(14)} ${String(row.openCount).padStart(3)}`
-      + `${keepsTitles ? ` · ${named} named` : ""} · ${iso(row.countedAt)}`,
+      + `${keepsTitles ? ` · ${named} named` : ""}${back ? ` · ${back}` : ""} · ${iso(row.countedAt)}`,
     );
   }
   if (skipped > 0) {

@@ -4002,6 +4002,35 @@ export const crewQueueCounts = mysqlTable("crew_queue_counts", {
    * statements agreeing, which is his card's own bar.
    */
   titles: text("titles"),
+  /**
+   * What the count LEFT OUT, and why, as JSON (#324).
+   *
+   * His question at the live panel — *"how do we know they are not already
+   * scheduled to be fixed in current pipeline or work?"* — and it was real:
+   * two of the thirteen bugs were `founder-ordered` cards already in NEXT UP,
+   * offered to him a second time as background work a shift may take on its
+   * own judgement.
+   *
+   * A `{ "ordered": 2, "parked": 1 }` object keyed by
+   * `shared/crewQueueExclusions.ts`'s vocabulary, which owns the shape, the
+   * first-match-wins rule and a parse whose only failure mode is `{}`. One
+   * column rather than a column per reason because #325 already adds more, and
+   * a reason should be a line of TypeScript rather than a migration and a
+   * founder ceremony.
+   *
+   * ⚠ **AND IT CHANGES WHAT `openCount` MEANS BESIDE IT.** Where this column
+   * exists, `openCount` is the OFFERED count and this says what was subtracted;
+   * where it does not, `openCount` keeps its old meaning — every open card
+   * carrying the label — and the panel is byte-identical to today's. The writer
+   * takes the whole reading or the old one, never half of the new one: a number
+   * that silently shrinks for a reason the page cannot show is the
+   * confident-wrong-number failure this panel exists to prevent.
+   *
+   * NULLABLE, and null reads exactly like "nothing was excluded": the count
+   * alone. Migration 0058; production takes it by
+   * `scripts/ceremony-crew-queue-count-exclusions.mts`.
+   */
+  excluded: text("excluded"),
   countedAt: timestamp("countedAt").notNull().defaultNow(),
 }, (table) => ([
   uniqueIndex("uq_crew_queue_counts_key").on(table.categoryKey),
