@@ -502,3 +502,84 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
     expect(RAIL).toMatch(/className="dp-invite"[\s\S]{0,120}aria-disabled="true"/);
   });
 });
+
+/**
+ * #350 — THE RAIL LABEL CARRIES ITS OWN SIZE.
+ *
+ * The founder saw it: *"The Invite label is inheriting the nav label size … it's
+ * 400 9.5px."* His FIX was right and his diagnosis was one step off, and the
+ * difference is the whole reason these arms are shaped this way. The
+ * destination labels were ALREADY 9.5px — `.dp-rail__item` carries the
+ * shorthand — so Invite was not one step too big relative to the nav. It sits
+ * OUTSIDE any rail item (`Rail.tsx`'s third `dp-rail__label`), `.dp-invite`
+ * declares no font, and it inherited past both to the document: measured in the
+ * running app at **16px**, against 9.5px beside it.
+ *
+ * ⚠ **SO THE OBVIOUS ARM WOULD BE VACUOUS.** *"Invite is smaller than a
+ * destination label"* is false today in the right direction and, once fixed, is
+ * `<=` rather than `<` — it would pass on the bug's absence and on the bug's
+ * return alike. **These assert the VALUE.**
+ *
+ * The limit, stated as this file's header requires: a source read cannot see a
+ * cascade. The computed size was driven in the browser at 1440×900 under both
+ * themes and the numbers are in `docs/specs/INVITE_LABEL_350_EVIDENCE.md`;
+ * these arms are the net that keeps it there.
+ */
+/* The card number stays in the docblock above: `#350` is a valid hex literal
+   and `token-guard.test.ts` rejects one in code, which it did on the first
+   run of this file. */
+describe("the rail label is 9.5px wherever it is used", () => {
+  const CSS = code(FOUNDATION_CSS);
+
+  it("the class declares 9.5px itself rather than borrowing a parent's", () => {
+    expect(CSS).toMatch(/^\.dp-rail__label\s*\{[^}]*9\.5px/m);
+    expect(
+      /^\.dp-rail__label\s*\{[^}]*9\.5px/m.test(".dp-rail__label { color: red; }"),
+      "positive control — a rule without the size must not satisfy this",
+    ).toBe(false);
+  });
+
+  /**
+   * ⚠ The `font` SHORTHAND would reset `font-weight` to `normal` on the label,
+   * and `.dp-rail__item[aria-current="page"]` sets `font-weight: 500` on the
+   * ITEM — the current destination's label is bold by inheritance. A shorthand
+   * here un-bolds the active label while every size assertion still passes.
+   */
+  it("uses font-size, never the shorthand that would eat the active weight", () => {
+    const rule = CSS.match(/^\.dp-rail__label\s*\{[^}]*\}/m)?.[0] ?? "";
+    expect(rule, "the matcher must find the rule").toContain("font-size");
+    expect(rule).not.toMatch(/(^|[\s;{])font\s*:/);
+    expect(
+      /(^|[\s;{])font\s*:/.test(".dp-rail__label { font: 400 9.5px var(--font-sans); }"),
+      "positive control",
+    ).toBe(true);
+    /* And the weight the shorthand would have eaten is still declared. */
+    expect(CSS).toMatch(/\.dp-rail__item\[aria-current="page"\]\s*\{[^}]*font-weight:\s*500/);
+  });
+
+  /**
+   * The CLASS fix, not the instance: the size must not live on the `.dp-invite`
+   * descendant rule, because a FOURTH label outside a rail item would then
+   * repeat the bug in a new place. The PREMISE — that a label really does sit
+   * outside a rail item — is derived from `Rail.tsx` rather than remembered,
+   * because it is the only reason the class needs its own size at all.
+   */
+  it("no call site is a special case — the size is not scoped to .dp-invite", () => {
+    const foot = RAIL.match(/<span className="dp-invite"[\s\S]*?<\/span>\s*\n\s*\{workspace/)?.[0] ?? "";
+    expect(foot, "the matcher must find the invite block").toContain("dp-rail__label");
+    expect(foot, "the label there has no rail item to inherit from").not.toContain("dp-rail__item");
+
+    const inviteRule = CSS.match(/\.dp-invite\s+\.dp-rail__label\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(inviteRule, "the matcher must find the invite label rule").toContain("--metaStrong");
+    expect(inviteRule).not.toMatch(/font-size/);
+    expect(
+      /font-size/.test(".dp-invite .dp-rail__label { font-size: 9.5px; color: var(--metaStrong); }"),
+      "positive control",
+    ).toBe(true);
+    /* The reason the third call site needs the class to carry it: its own
+       parent declares no font, so it has nothing to inherit but the document. */
+    const invite = CSS.match(/(?<![\w-])\.dp-invite\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(invite, "the matcher must find the .dp-invite block").toContain("cursor");
+    expect(invite).not.toMatch(/font/);
+  });
+});
