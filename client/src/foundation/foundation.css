@@ -154,6 +154,27 @@
   transition: background var(--t-fast) var(--ease);
 }
 
+/*
+  THE LABEL CARRIES ITS OWN SIZE (#350). It did not, and the class is why the
+  bug existed: `.dp-rail__item` above sets `font: 400 9.5px`, and for the two
+  destination call sites the label inherits that and is correct. The THIRD call
+  site — `Invite`, in the rail's foot (`Rail.tsx`) — sits outside any rail item,
+  and `.dp-invite` sets no font, so the label inherited straight past it to the
+  document and rendered at **16px** in the running app, measured, against the
+  9.5px beside it.
+
+  His fix was `font-size` on `.dp-invite .dp-rail__label`; this is the same
+  value one level up, so a FOURTH call site outside a rail item cannot repeat
+  it. The nav's shorthand is now redundant on size and deliberately left alone.
+
+  ⚠ **`font-size` ALONE, never the `font` shorthand.** The shorthand would
+  reset `font-weight` on the label, and `.dp-rail__item[aria-current="page"]`
+  sets `font-weight: 500` on the ITEM for the current destination — the label
+  gets that by inheritance. A shorthand here would silently un-bold the active
+  label while every size assertion still passed.
+*/
+.dp-rail__label { font-size: 9.5px; }
+
 .dp-rail__item svg { color: var(--meta); }
 
 .dp-rail__item:hover { background: var(--fillStrong); }
@@ -306,6 +327,8 @@
   color: var(--metaStrong);
 }
 
+/* Colour only. The 9.5px lives on `.dp-rail__label` itself (#350) so that it
+   holds wherever the label is used, not only under `.dp-invite`. */
 .dp-invite .dp-rail__label { color: var(--metaStrong); }
 
 /*
