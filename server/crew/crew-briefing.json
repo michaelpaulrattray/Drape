@@ -1,7 +1,7 @@
 {
-  "edition": 165,
-  "updatedAt": "2026-08-31T17:35:00+10:00",
-  "shift": "foreman-145",
+  "edition": 166,
+  "updatedAt": "2026-08-31T18:05:00+10:00",
+  "shift": "foreman-146",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -144,8 +144,19 @@
   },
   "needsYou": [
     {
+      "id": "icon-set-second-half-321",
+      "title": "Your 27 glyphs are in — and Assets and Create finally look like two different things",
+      "productImpact": "You drew a second batch of icons and pointed out four things wrong with the rail and the topbar. All of it is live. The one you will notice first: Assets and Create were very nearly the same picture — a rectangle with a peak line — sitting four rows apart on the same rail, which is exactly the confusion your house set exists to remove. Your redrawn Assets is a stack of two frames now, and they read as different marks at a glance. Cinema is your clapperboard. And the six icons that sit on EVERY page — search, sun, moon, bug, help, what is new — are yours rather than the general set’s, which matters because the general set draws them densely (its sun is a circle plus eight full-length rays) and at the size the topbar uses they were filling into blobs.",
+      "workedExample": "Cinema sat above Casting because your own section-02 brief said so, and you spotted that the brief was wrong — the order is Templates, Casting, Cinema, Assets, Library, and that is what the rail does now. The brand orb was sitting 4px off Home and reading as the first nav item; it has your 12px underneath it, which measures 16px to Home in the running app. And the theme toggle is 28px against its neighbours 30px with a lighter hover, so the shell’s own control reads as separate from the page’s — your observation, and it is visible once you look for it.",
+      "options": [],
+      "recommendation": "Have a look at the two pictures below. The only thing left on this card is the pair you kept for yourself: Templates and Try-on are still byte-identical glyphs. Nothing is wrong on screen today, and you said that one is your hand rather than a shift’s — so it is untouched.",
+      "state": "open",
+      "filedAt": "2026-08-31T18:05:00+10:00",
+      "issueNumber": 321
+    },
+    {
       "id": "law-file-split-remainder-330",
-      "title": "The law file is a third smaller. There is 21 KB more that could go, and I recommend leaving it",
+      "title": "The law file is a third smaller — you said leave the rest, and it is left",
       "productImpact": "This changes how fast your nights move, and nothing a customer sees. The rule book every shift reads first went from 191 KB to 72 KB tonight, which is about fifteen minutes back on every shift, every night. The remaining candidate is a different kind of text: the working laws and the access rules, where the rule and the story of how it was learned are woven into the same paragraph. Splitting those means DECIDING which sentences bind a shift today and which are record — and getting that wrong quietly re-opens a mistake somebody already paid to find.",
       "workedExample": "The flags were easy because a flag entry is one self-contained block that a shift reads only when it touches that flag's road; it moved whole and nothing had to be judged. Law 7 is the opposite: it holds the rule, three real incidents, a correction of an earlier correction, and an explicit reversal of a verdict this team got wrong twice. Every one of those sentences is there because the short version was misread before.",
       "options": [
@@ -160,20 +171,36 @@
           "consequence": "Another ~two minutes a shift, at the cost of a careful pass over the paragraphs that exist because somebody misread the short version."
         }
       ],
-      "recommendation": "Leave it. Tonight took the cheap two thirds with no judgement involved; the remaining 21 KB is exactly where your own warning on the card bites hardest, and it would save a shift about two minutes. If you do want it, it waits for Fable — it is not work for an Opus shift.",
-      "state": "open",
+      "recommendation": "ANSWERED — \"Leave it\". The remaining 21 KB stays in the rule book, the card is closed, and the 62% cut is banked.",
+      "state": "done",
       "filedAt": "2026-08-31T17:35:00+10:00",
       "issueNumber": 330
     },
     {
       "id": "three-casts-left-302",
-      "title": "Three old Casts are the only thing holding up the Home and Library clean-out you asked for",
-      "productImpact": "You deleted one and it worked. Three are still there, and they are blocking a job you ordered: cleaning out Home and Library and making Canvas a blank slate. The reason is a sequencing one rather than a technical one — the Library page is the ONLY place in the product that can delete those three, so if we stub Library out first, they are stranded there permanently with no door to reach them. This is not a decision. It is three clicks, and then the clean-out is a clean night's work.",
-      "workedExample": "Open Library. You will see \"Draft Model\" under drafts, and \"Shina\" and \"Jericho\" under your minted Casts. Those three, and nothing else — every other old model on your account is already deleted. Delete them and the block lifts on its own; nothing needs telling.",
-      "options": [],
-      "recommendation": "Delete the three from Library when you next have the page open. If you would rather keep one of them, say which and we will build Library's stub around it instead — that is a real option, it just costs a day and needs saying out loud.",
+      "title": "You told me to delete three Casts — two of them are your NEW-studio ones, so I have not",
+      "productImpact": "You replied \"Delete the three from Library when you next have the page open.\" That sentence was MY recommendation on this card, quoted back — and the recommendation was wrong, so I stopped rather than doing it. Two things about it were out of date by the time you read it. First, two of those three are Casts you made in the NEW studio: Shina and Jericho. They only LOOK legacy because the old Library page is where they happen to be listed. Second, permanent deletion is switched on for your account, so there is no undo — they would be gone, along with the credits that made them. And the reason the card gave for deleting them has already evaporated: you unblocked this card yourself this morning, and Casting V2 has its own delete door, so the Library clean-out can be built today with all three still sitting there. Nothing is waiting on this.",
+      "workedExample": "Open Library and you see three: \"Draft Model\" under drafts, \"Shina\" and \"Jericho\" under minted. I read your live account tonight to be sure of that — those three and nothing else, with 45 older models already deleted. Draft Model is a July draft and is plainly the throwaway the card was describing. Shina and Jericho you cast on 2 August in the new studio. Deleting all three does what you said; deleting the first does what the card MEANT.",
+      "options": [
+        {
+          "key": "draft-only",
+          "label": "Delete \"Draft Model\" only — keep Shina and Jericho (recommended)",
+          "consequence": "The July throwaway goes. Your two new-studio Casts stay, and the Library clean-out is built around them. Nothing is delayed by this."
+        },
+        {
+          "key": "all-three",
+          "label": "No, I meant all three — delete them",
+          "consequence": "All three are permanently gone, Shina and Jericho included, along with the credits that made them. There is no undo, so this is the one worth saying deliberately."
+        },
+        {
+          "key": "none",
+          "label": "Leave all three; just build the Library stub around them",
+          "consequence": "Nothing is deleted. The clean-out ships exactly the same way — the three Casts stay reachable through the new studio, which has its own delete door whenever you want one."
+        }
+      ],
+      "recommendation": "Delete \"Draft Model\" only. It is the one the card was really about, and keeping Shina and Jericho costs nothing — the clean-out you ordered can be built today either way. If you did mean all three, say so and it takes thirty seconds; I just did not want an irreversible delete of your V2 work done on a recommendation that had gone stale.",
       "state": "open",
-      "filedAt": "2026-08-31T16:10:00+10:00",
+      "filedAt": "2026-08-31T18:05:00+10:00",
       "issueNumber": 302
     },
     {
@@ -1123,6 +1150,27 @@
   ],
   "eyeItems": [
     {
+      "id": "icon-set-321-frames",
+      "title": "Your 27 glyphs on the rail and in the topbar, both themes",
+      "question": "Two things worth your eye. On the rail: Assets (the stack of two frames) against Create (the frame with the peak) — do they read as clearly different now, at the size they actually sit at? And in the topbar: are the six chrome glyphs holding at 15px, or has anything gone thin?",
+      "state": "open",
+      "filedAt": "2026-08-31T18:05:00+10:00",
+      "issueNumber": 321,
+      "cardId": "icon-set-second-half-321",
+      "frames": [
+        {
+          "key": "crew-eye/bebfe01e-01b1-42cb-b203-6e6636f5b37f.png",
+          "caption": "The rail at 3x, dark on the left and light on the right. Top to bottom: Home, Create, Canvas, Templates, Casting, Cinema, Assets, Library — Casting above Cinema, per your correction of your own brief. The orb now has its 12px, which measures 16px to Home. Assets is your redrawn stack of two frames; compare it to Create four rows up, which is the collision you found.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/d43701af-88b5-4b46-8abe-546ee786e7cb.png",
+          "caption": "The topbar right end at 4x — dark above, light below. Bug, help, what is new, and the sun/moon: all four are your glyphs now rather than the general set’s. The sun is deliberately lighter than Lucide’s (shorter rays), and the toggle sits one step smaller than its three neighbours — 28px against 30px, which is the separation you described.",
+          "arm": null
+        }
+      ]
+    },
+    {
       "id": "fitted-hardware-frames-279",
       "title": "Your cyborg, eight ways — and one thing in every single frame is on the wrong side",
       "question": "Two questions, and the second is the one I would not decide for you. First: is this the cyborg you meant — do the ports, seams and jaw plate read as part of the man rather than kit he put on? Second: you asked for his RIGHT eye to glow. Look at the close-up. It is his LEFT, in all eight. Is that worth a fix?",
@@ -2061,6 +2109,14 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "icon-set-second-half-321",
+      "title": "Your 27 glyphs, the redrawn Assets, and four rail/topbar defects (#321)",
+      "status": "merged",
+      "prNumber": 343,
+      "note": "You said this had never been queued because the card it lived on closed underneath it. It is built and live. Your icon file was copied in WHOLE rather than typed out key by key, and that matters more than it sounds: the risk in landing 27 hand-drawn shapes is a single wrong digit, which no test could see and which would show up only as a slightly-off glyph on the rail. There is now a check comparing the product’s copy against yours character by character — changing one digit in your sun makes it fail. The four defects are closed: the orb’s missing margin, the rail order (your own brief was wrong and you caught it), the theme toggle’s hand-set stroke, and its size. Not closed, on purpose: Templates and Try-on are still the same picture, and you said that pair is yours to settle.",
+      "cardId": null
+    },
     {
       "id": "law-file-split-330",
       "title": "A night shift now reads a third of what it used to before it can change one line (#330)",
@@ -3130,10 +3186,12 @@
     57,
     58,
     59,
-    60
+    60,
+    61,
+    62
   ],
   "nextUp": {
-    "readAt": "2026-08-31T06:54:45.209Z",
+    "readAt": "2026-08-31T08:00:45.606Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3161,11 +3219,6 @@
       {
         "issueNumber": 322,
         "title": "Migrations and ceremonies auto-apply — additive runs itself, destructive still names itself and stops",
-        "urgent": true
-      },
-      {
-        "issueNumber": 330,
-        "title": "Small edits cost an hour: 186KB of law read every shift, and a batching rule that only covers his replies",
         "urgent": true
       },
       {
