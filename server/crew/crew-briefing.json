@@ -1,6 +1,6 @@
 {
-  "edition": 173,
-  "updatedAt": "2026-09-01T00:30:00+10:00",
+  "edition": 174,
+  "updatedAt": "2026-09-01T00:45:00+10:00",
   "shift": "foreman-152",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -149,8 +149,8 @@
       "productImpact": "The half you asked for and did not get last night is built. Every card named on your page — all 56 of them, in both the switch list and the pipeline block — now has a quiet “Not relevant” beside it, in one straight column down the right. Tap it and the row says “Marked not relevant — a shift will check it and close it.” Change your mind and tap Undo, and the card goes back exactly as it was. A shift then closes the card and the line becomes “Closed by a shift” — or, if it disagrees, “Kept open by a shift — still blocking #340”, in its own words, on the row you tapped.",
       "workedExample": "It does not close the card the instant you tap. Doing that from the page would mean putting a password into the live site that can CHANGE things in our code repository — a bigger key than the read-only one already turned down on this same page, and that is your decision to make rather than something to hand over as the side effect of a convenient button. The wait costs about an hour and buys a second pair of eyes: you found four already-finished cards yourself last Saturday just by reading them. And nothing on this road deletes anything — undo leaves the record that you once asked, exactly as your own rule for cards says.",
       "options": [],
-      "recommendation": "One command from you turns it on, and it is the last thing this card needs: railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production. Until you run it your page is exactly what it is today — the buttons are withheld rather than drawn dead, so nothing looks broken and nothing pretends to work. This is the same friction you ordered removed on #322, which is queued and unstarted; two shifts have now looked at it and left it, with the reason written down so whoever takes it does not have to work it out again.",
-      "state": "answered",
+      "recommendation": "⚠ ONE COMMAND FROM YOU AND THE TAPS START WORKING — until you run it, tapping \"Not relevant\" records nothing:\n\n  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production\n\nChecked on production tonight rather than assumed: the table it creates is still absent. Your page is honest meanwhile — the buttons are withheld rather than drawn dead, so nothing looks broken and nothing pretends to work. This is the same friction you ordered removed on #322, which is queued and unstarted.",
+      "state": "open",
       "filedAt": "2026-08-31T20:15:00+10:00",
       "issueNumber": 325
     },
