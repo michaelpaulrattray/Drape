@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "733efe3be66ae616"
+    "sourceFingerprint": "6265d85c9456f79c"
   },
   "domains": [
     {
@@ -78,7 +78,7 @@
     {
       "id": "domain:lobby",
       "name": "lobby",
-      "moduleCount": 14
+      "moduleCount": 15
     },
     {
       "id": "domain:moderator",
@@ -1818,7 +1818,7 @@
       "id": "module:client/src/features/lobby/BoardsView.tsx",
       "path": "client/src/features/lobby/BoardsView.tsx",
       "domain": "lobby",
-      "lifecycle": "active"
+      "lifecycle": "retire"
     },
     {
       "id": "module:client/src/features/lobby/DeleteCastDialog.tsx",
@@ -1836,11 +1836,17 @@
       "id": "module:client/src/features/lobby/HomeView.tsx",
       "path": "client/src/features/lobby/HomeView.tsx",
       "domain": "lobby",
-      "lifecycle": "active"
+      "lifecycle": "retire"
     },
     {
       "id": "module:client/src/features/lobby/LibraryView.tsx",
       "path": "client/src/features/lobby/LibraryView.tsx",
+      "domain": "lobby",
+      "lifecycle": "retire"
+    },
+    {
+      "id": "module:client/src/features/lobby/LobbyStub.tsx",
+      "path": "client/src/features/lobby/LobbyStub.tsx",
       "domain": "lobby",
       "lifecycle": "active"
     },
@@ -10568,6 +10574,10 @@
       "path": "client/src/features/castingV2/wardrobeEditCopy.test.ts"
     },
     {
+      "id": "test:client/src/features/lobby/lobbyStub.test.ts",
+      "path": "client/src/features/lobby/lobbyStub.test.ts"
+    },
+    {
       "id": "test:client/src/features/operations/bridgeOwnership.test.ts",
       "path": "client/src/features/operations/bridgeOwnership.test.ts"
     },
@@ -18679,17 +18689,7 @@
     },
     {
       "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/lobby/BoardsView.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/lobby/HomeView.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AppLobby.tsx",
-      "to": "module:client/src/features/lobby/LibraryView.tsx",
+      "to": "module:client/src/features/lobby/LobbyStub.tsx",
       "kind": "imports"
     },
     {

@@ -14,8 +14,20 @@
  * what is left here is the auth guard and which view the URL selects — the
  * page's content and nothing else.
  *
- * What did NOT change is the information architecture — the views, the account
- * card's contents and the modals are as they were.
+ * #302 changed the information architecture for the first time since: all
+ * three views are STUBS while the founder redesigns them. His words, 2026-08-30:
+ * *"clean up Home and Library, and make the Canvas page a blank slate as well —
+ * we'll be redesigning all of these from scratch later."*
+ *
+ * ⚠ **The five URLs still resolve.** A stubbed page is still a place — the rail
+ * keeps all eight destinations, and `/app/models`, `/app/garments` and
+ * `/app/looks` render the Library stub rather than 404ing.
+ *
+ * ⚠ **`HomeView`, `LibraryView` and `BoardsView` are UNMOUNTED, not deleted,
+ * and neither is anything on the server.** His instruction was to unhook, and
+ * the endpoints behind them are not dead code: `wardrobe.model.listMinted` and
+ * `wardrobe.garments.list` still serve the wardrobe workspace and the legacy
+ * studio. Removing any of it is N8's retirement job, not this card's.
  */
 import type { ReactElement } from 'react';
 import { useLocation } from 'wouter';
@@ -23,9 +35,7 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
 import type { RailDestinationId } from '@/foundation';
 import { AppChrome } from '@/components/AppChrome';
-import { HomeView } from '@/features/lobby/HomeView';
-import { BoardsView } from '@/features/lobby/BoardsView';
-import { LibraryView } from '@/features/lobby/LibraryView';
+import { LobbyStub } from '@/features/lobby/LobbyStub';
 
 /*
   MobileHeader retired at M2. Below 720px the foundation rail collapses to
@@ -48,21 +58,49 @@ export default function AppLobby() {
     return <div style={{ height: '100vh', background: 'var(--surface)' }} />;
   }
 
+  /*
+    The Library stub is one page behind three URLs. The old view took a `kind`
+    and drew a different list per URL; there is no list now, so the three read
+    identically and the breadcrumb drops its second segment — a crumb saying
+    "Library / Garments" over a page that names neither would be the stub
+    claiming a capability, which is the one thing it may not do.
+  */
+  const LIBRARY: { view: ReactElement; crumb: string; rail: RailDestinationId } = {
+    view: (
+      <LobbyStub
+        title="Library"
+        note="The old library is retired. Your casts live in Casting Studio, on the rail."
+      />
+    ),
+    crumb: 'Library',
+    rail: 'library',
+  };
+
   const LOBBY_VIEWS: Record<
     string,
     { view: ReactElement; crumb: string; rail: RailDestinationId }
   > = {
-    '/app/boards': { view: <BoardsView />, crumb: 'Canvas', rail: 'canvas' },
-    '/app/models': { view: <LibraryView kind="models" />, crumb: 'Library / Models', rail: 'library' },
-    '/app/garments': {
-      view: <LibraryView kind="garments" />,
-      crumb: 'Library / Garments',
-      rail: 'library',
+    '/app/boards': {
+      view: (
+        <LobbyStub
+          title="Canvas"
+          note="This is the list page only. Canvases themselves are untouched and still open at their own address."
+        />
+      ),
+      crumb: 'Canvas',
+      rail: 'canvas',
     },
-    '/app/looks': { view: <LibraryView kind="looks" />, crumb: 'Library / Looks', rail: 'library' },
+    '/app/models': LIBRARY,
+    '/app/garments': LIBRARY,
+    '/app/looks': LIBRARY,
   };
   const current = LOBBY_VIEWS[location] ?? {
-    view: <HomeView />,
+    view: (
+      <LobbyStub
+        title="Home"
+        note="Nothing has been removed. Casting, Canvas and your account are all reachable from the rail."
+      />
+    ),
     crumb: 'Home',
     rail: 'home' as RailDestinationId,
   };
