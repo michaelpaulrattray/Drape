@@ -1,7 +1,7 @@
 {
-  "edition": 157,
-  "updatedAt": "2026-08-31T09:45:00+10:00",
-  "shift": "foreman-136",
+  "edition": 158,
+  "updatedAt": "2026-08-31T10:05:00+10:00",
+  "shift": "foreman-138",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1969,7 +1969,7 @@
     {
       "id": "queue-titles-285",
       "title": "Your background-work switches name their cards (#285)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 314,
       "note": "Written, tested and driven in the running app. HELD rather than merged: it adds a database column, and while your Fable reviewer is capped anything touching the database folder waits for your word. One line from you merges it."
     },
@@ -2896,6 +2896,11 @@
   ],
   "journal": [
     {
+      "at": "2026-08-31T10:05:00+10:00",
+      "shift": "foreman-138",
+      "text": "YOUR SWITCH PANEL NAMES ITS CARDS NOW — it is live, you do not have to run anything, and you found the next problem with it before I finished shipping this one.\n\nYou said \"say 'merge it' and run the command yourself\". Done, both halves. The column is on the production database, the card titles are written, the code is merged and — the part that nearly did not happen — it is actually DEPLOYED. Open the Crew tab and the five switches now read Bugs (13) with five of them named underneath, Process (11) with five named, Housekeeping (3) with all three, Performance (1), Security (0). Titles are plain text, one line each, cut off at the edge rather than wrapping.\n\nTHE PART WORTH TWO MINUTES, BECAUSE IT ALMOST SHIPPED AS A LIE. For about twenty minutes tonight every single sign said this was finished. The pull request said merged. The code was on the main branch. The database had the column and the titles were sitting in it. And your page was still showing yesterday's bare numbers, because a merge on GitHub does not actually deploy anything here — deploys only happen when a shift pushes. Nothing looked broken anywhere. The only thing that told the truth was going and reading the deployment list. We already have a card open about exactly this trap, and tonight it landed on the very feature that would have shown it to you.\n\nTWO OF US BUILT THE SAME FIX WITHOUT KNOWING. There were two sessions working in the same folder tonight. We independently hit the same odd little defect and wrote nearly the same repair within minutes of each other. The defect is a nice one: the safety check that is supposed to make us delete a database note once the change is applied could not survive us deleting it — obeying its own instruction turned two of its own tests red. Their sentence for it is better than mine: the guard could not reach its own correct resting state. I dropped my version and kept theirs.\n\nThen that session stopped, seventeen minutes into holding the only copy of the fix, unsaved. In the meantime nobody else could ship anything at all — the safety check was correctly refusing every push. I waited, checked it was really gone rather than just slow, and finished it. First attempt was refused because our architecture map was out of date; regenerating it changed exactly one line, which I read rather than waved through, because 'only one line' is also what a real problem looks like before you look.\n\nI ALSO FOUND THE SAME DEFECT SITTING IN ITS TWIN. There is a second list of the same kind, one function away, with the identical flaw. It has not bitten yet purely by luck — it has never happened to be empty. Filed rather than fixed tonight, because a thing I noticed is a card, not a job I give myself.\n\nYOUR OTHER THREE ANSWERS ARE RECORDED AND NONE OF THEM ARE STARTED. Keep a General box, fund the side-eye court, and show my face beside the plus but keep it stubbed — all three are written down on their cards with what they authorise and, more importantly, what they do not. Two of them you answered as combinations rather than picking one option, and I have said so on the cards so nobody reads them as a simple menu choice later.\n\nAND YOUR OWN QUESTION ABOUT THE COUNTS IS ALREADY THE NEXT JOB. You asked where the 13 bugs come from and whether they are already scheduled. They partly are — two of those 13 are cards you have already ordered, so the same work is being offered to you twice. There are also 71 open cards that no switch can reach at all, and Security reads (0) while a security card exists under a different label. That is filed, it is yours, and it is the first thing the next shift picks up.\n\nNothing was spent tonight — no credits, no renders, no picture-reading. One database column added, and your queue counts refreshed twice."
+    },
+    {
       "at": "2026-08-31T09:45:00+10:00",
       "shift": "foreman-136",
       "text": "TWO MORE ANSWERS, BOTH RECORDED — and one of them clears the last card that had been sitting on you since Saturday.\n\nTHE POP-UP PANELS: \"Option one.\" So there is one piece of code that owns how those panels behave — casting's version, which survives and becomes the only one — with two shapes sitting on top of it: a menu of actions, and the word-picker in the casting sentence. Nothing else stays reachable, which was your actual worry: no second option alive to be picked by accident. Your Report-a-bug panel and the Help menu keep the shapes you approved on Saturday, which is what option two would have cost you. It is unblocked and it goes through the normal review like any other change.\n\nTHE CASTING TOP BAR: \"Yes perfect.\" Recorded on the card. That one was already built and merged; your word is what makes it accepted rather than just landed, and it is now on the card rather than only in a reply.\n\nWHERE THAT LEAVES TONIGHT. You answered six things in fifteen minutes and every one is written on its card in your own words. Four of them turned into work somebody can now start — the journal and its General box, the Invite block with your face on it, the pop-up collapse, and the switch-panel titles. One is booked and waiting for your Fable reviewer to come back: the wrong-eye court, two rolls, 320 credits. And exactly one thing still needs a word from you, which is the one in the entry below: whether you meant that WE should run the database command on the switch-panel titles. That is the only thing I am holding.\n\nTHE QUEUE: 93 open, 10 urgent, 2 waiting on you (the Settings-modal brief, and the one word above), none rotting."
@@ -3155,7 +3160,7 @@
     56
   ],
   "nextUp": {
-    "readAt": "2026-08-30T23:29:27.064Z",
+    "readAt": "2026-08-31T00:01:17.472Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3181,6 +3186,16 @@
         }
       },
       {
+        "issueNumber": 321,
+        "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
+        "urgent": true
+      },
+      {
+        "issueNumber": 322,
+        "title": "Migrations and ceremonies auto-apply — additive runs itself, destructive still names itself and stops",
+        "urgent": true
+      },
+      {
         "issueNumber": 281,
         "title": "The Invite block — three fixes are cheap, and 'render real members' has no members to render",
         "urgent": false
@@ -3198,6 +3213,21 @@
       {
         "issueNumber": 316,
         "title": "The roll and refine roads read a named side in OPPOSITE directions — his own case is correct, a typed refine is not",
+        "urgent": false
+      },
+      {
+        "issueNumber": 320,
+        "title": "An eye item can name frames that exist only in the dev bucket — his card drew broken images, and this is the second time",
+        "urgent": false
+      },
+      {
+        "issueNumber": 324,
+        "title": "The switch counts double-count his queue, cannot see 71 of 97 cards, and Security reads (0) with a security card open",
+        "urgent": false
+      },
+      {
+        "issueNumber": 325,
+        "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
         "urgent": false
       }
     ]
