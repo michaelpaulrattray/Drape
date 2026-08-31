@@ -1,7 +1,7 @@
 {
-  "edition": 179,
-  "updatedAt": "2026-08-31T17:52:06Z",
-  "shift": "foreman-155",
+  "edition": 180,
+  "updatedAt": "2026-08-31T22:20:00Z",
+  "shift": "foreman-160",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -146,11 +146,11 @@
     {
       "id": "auto-migrations-322",
       "issueNumber": 322,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-01",
-      "title": "You never run a migration command again — built, gate-green, and one word from live",
-      "productImpact": "You asked for this on 31 August: “can you change the rules and allow for auto migration and ceremonies so it doesnt need to ask me to run commands ever again”. It is built. From now on, when a shift adds a new table or a new column to the database, the deploy puts it there itself — no command for you, no card, no waiting. You had run three of those by hand in twenty-four hours and each one was sitting on top of a finished feature. Anything that DELETES or rewrites — dropping a table, renaming a column, narrowing a type — still stops and waits for you, and now it tells you exactly which line to run. That asymmetry is deliberate: a table nobody wanted is a dead table, and a deletion nobody wanted is your customers' data gone, which no test can bring back.",
-      "workedExample": "Your “Not relevant” tap has been dead since 31 August. The button needs a table on the live database, only you could create it, and so it sat. The moment this merges, the very next deploy creates it on its own and prints what it did on the receipt — and your tap starts working without you touching anything. I ran the whole thing against the development database tonight to prove the write path works: two objects created, read back by a second reader that shares no code with the first, then run again to confirm a repeat changes nothing.",
+      "title": "You never run a migration command again — you said \"Merge it\", and it is live",
+      "productImpact": "Done, on your word. From tonight the deploy itself puts in any new table or column the code needs, before the site goes up — you are never asked to run one of those commands again. You had run three by hand in one day, and each one was holding a finished feature still. The dangerous kind still stops and asks you: deleting a table, renaming a column, or rewriting rows will refuse to run, name itself and the file it is in, and wait for you. That is the whole point — a table nobody wanted is clutter, but data nobody wanted deleted is gone.",
+      "workedExample": "Your \"Not relevant\" buttons needed a new table. Two nights running, your desk asked you to run a command for it. Tonight nobody asked: the deploy created it on the way past, and the taps are live.",
       "options": [
         {
           "key": "merge-it",
@@ -167,9 +167,9 @@
     },
     {
       "id": "fourth-panel-owner-356",
-      "title": "One menu did not come across, and I would rather you said so than I decided it",
-      "productImpact": "Your #304 ruling named three pop-up panels and they are one now. There is a FOURTH — the little menu under your own face in the top-right corner — that your ruling did not mention, and it still runs its own separate copy of the same behaviour. I left it alone rather than fold it in, because folding it in would move a menu you personally approved two days ago.",
-      "workedExample": "Click your face, top-right. Open the menu, press Escape. On every other panel in the product your keyboard focus now goes back to the button you opened it from; on this one it lands on nothing, so your next Tab starts from the top of the page. It can also sit open while another panel opens, where the others now close each other. Those are the two costs of leaving it, and on a four-row menu they are small.",
+      "title": "\"Leave it.\" — so it is left, and the reason is now written where the question was asked",
+      "productImpact": "Your account menu — the one with your face on it, top right — keeps working exactly as it does today. Nothing moved by a pixel. That is what you chose: the alternative would have re-measured where that menu sits in order to buy two small things (Escape putting you back on the chevron, and it closing when another panel opens), and it was a menu you had already approved.",
+      "workedExample": "There is one thing worth knowing, because it nearly cost a night. The code itself said this question was \"filed rather than decided\", and a test was checking that sentence was still there. Left alone, your answer would have sat in a reply while three places went on telling the next shift to ask you again — which is exactly what happened on #278 and cost two nights. Your words are now in the file, and the test refuses the old sentence.",
       "options": [
         {
           "key": "bring-it-across",
@@ -183,7 +183,7 @@
         }
       ],
       "recommendation": "Leave it. Either way the exception is already in the open rather than invisible: a test derives the list of files allowed their own copy straight from the code and goes red if a FIFTH appears, and the file itself says the question was asked and left for you. So this cannot quietly become drift while it waits.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-01T02:15:00+10:00",
       "issueNumber": 356
     },
@@ -2123,7 +2123,7 @@
       "id": "invite-label-350-frames",
       "title": "Your Invite label, before and after — the whole rail, nothing else changed",
       "question": "Left is the rail as it was, right is the rail now. One question, and it is a look rather than a number: does Invite sit right at the same size as Home, Casting and Library, or does it now read as too quiet down there? Your prototype value (9.5px) is what shipped, unchanged — this is only asking whether it looks the way you pictured it. The second frame is the same pair in dark. Both are scaled 2x so you can actually see 9.5px type; nothing is cropped or spliced.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-31T23:35:00+10:00",
       "issueNumber": 350,
       "cardId": null,
@@ -2144,7 +2144,7 @@
       "id": "lobby-stubs-302-frames",
       "title": "Your three stubbed pages, side by side — Home, Canvas, Library",
       "question": "One question, and it is taste rather than a number: is this the right amount of words on a page you are about to redesign? Each page names itself, says \"Being redesigned.\", and then says one thing — where the capability went, or what is untouched. There is no button, no link and nothing greyed out anywhere on any of the three; that is deliberate, because your own rule is that a stub names a place and never a capability. If you would rather they said LESS — just the name and \"Being redesigned.\" — that is one line to delete. If you would rather they said more, tell me what you would want to read there. Second frame is the same three in light.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-01T00:30:00+10:00",
       "issueNumber": 302,
       "cardId": null,
@@ -2166,7 +2166,7 @@
     {
       "id": "auto-migrations-322",
       "title": "Migrations put themselves in — the deletions still stop and ask you (#322)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 357,
       "note": "Your own order, built. The deploy now creates a table or a column the code needs, on its own, before it ships — and refuses anything that deletes or rewrites, naming the line so you can run it in one command. Proven before it was allowed to write anywhere: the plan was read off the live database without touching it, the real write was driven against the development database and read back by an independent reader, and running it twice changes nothing. ⚠ Your card said the migration history contains no deletions; it does — three dropped indexes and nineteen column rewrites, two of them mixed in with additions inside a single statement. A simpler check would have run those. Waiting on one word from you, because the gate flagged it and the reviewer is still out."
     },
@@ -3122,6 +3122,13 @@
   ],
   "problems": [
     {
+      "id": "quiet-detector-negation-360",
+      "title": "Your nights were being counted as idle when they were not — a shift that worked was helping to stop the team",
+      "detail": "Your nights stop themselves after three shifts in a row report that there was nothing to do. That is the mechanism you asked for, so the team stops spending money to conclude nothing. It was reading the reports wrongly. A shift last night was titled \"NOT a quiet night\" and opened \"This shift had work\"; it had closed one card and filed another. The check looked for the words \"quiet night\" anywhere near the top and found them — inside the denial. So a working shift was counted as an idle one, and the note telling you three shifts had been quiet named a report whose own headline said the opposite. Fixed tonight: a shift now has to DECLARE it, not merely mention it. Quoting the phrase, denying it, or writing about the mechanism cannot trip it any more. Checked against all 155 shift reports ever written: eleven change verdict, and three of those were this exact mistake — including a second one from Sunday that nobody had spotted. It fails in the safe direction: if a genuinely quiet shift forgets to declare itself, the team keeps working rather than stopping.",
+      "severity": "info",
+      "state": "resolved"
+    },
+    {
       "id": "stale-desk-advice-344",
       "title": "Your desk asked you to run a command you had already run — corrected tonight, and it is the second time",
       "detail": "The card about naming your queue's cards sat at the top of your desk telling you to run a database command. You ran it on Monday morning, 31 August. The work was merged, deployed and working the whole time the card was asking for it. Nothing was broken and nothing was at risk here — the cost is your attention, which is the scarce thing. What makes it worth a line rather than a quiet fix is that it is the same shape as the near miss on 31 August, where a card's recommendation told you to delete three Casts four hours after its own notes recorded that two of them were ones you wanted kept. Both cards were correct in their bodies and stale in the one sentence you actually read. The four automatic checks on your page all ask whether a card's STATE is out of date; none asks whether its ADVICE is. That gap is written up as #344 and the weekly review picks it up next.",
@@ -3137,8 +3144,8 @@
     },
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 100 open, nothing new started — every card of yours is now waiting on you",
-      "detail": "100 cards open, unchanged. SIX carry your own order and tonight NONE of them could move, which is why this shift built nothing: #322 (migrations putting themselves in) is finished and needs one word from you; #325 is waiting on #322; #267 is held behind a Settings modal you have not briefed; #321's last piece is the Campaign/Try-on pair you kept for yourself; and #285 and #304 are done and waiting on your glance. Your background-work switch is OFF, so nothing else was admissible — that switch is the whole lever and it is yours. ⚠ THE STALE PILE IS UNCHANGED FOR A FOURTH NIGHT: 27 cards last read on 25 August — a week ago today. They are casting research, design drafts and roadmap items; none is urgent and none waits on you.",
+      "title": "The queue tonight: 99 open, four of your answers landed, and your desk got shorter",
+      "detail": "99 cards open, down from 100. You answered four times last night and all four are done: #322 merged and deployed, #356 closed on \"Leave it.\", and both sets of frames passed. FIVE cards still carry your own order. Of those, #267 is held behind a Settings modal you have not briefed; #321's last piece is the Campaign/Try-on pair you kept for yourself; #325 is now LIVE rather than waiting; and #285 and #304 are finished and only want your glance. Your background-work switch is still OFF, which is the whole lever and it is yours. ⚠ THE STALE PILE: 29 cards last touched on 25 August, measured tonight — the figure the last four editions gave was 27, so it is drifting up rather than down. None is urgent and none waits on you; they are casting research, design drafts and roadmap items.",
       "state": "open",
       "severity": "warning"
     },
@@ -3256,10 +3263,10 @@
     },
     {
       "id": "card-intents-ceremony-unrun",
-      "title": "Your “Not relevant” taps record nothing until you run one command",
-      "detail": "The buttons on your panel are withheld rather than drawn dead, so nothing looks broken — but the table behind them does not exist yet, checked on production tonight rather than assumed. One command turns it on:  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production  — after which a tap records your intent and the next shift closes the card, or says on the row why it kept it open. This is the same friction you ordered removed on #322, which is queued and unstarted. It sits here rather than on #325's card because you have already answered that card, and your own rule (2026-08-29) is that an answered card is marked answered.",
+      "title": "Your “Not relevant” taps are live — and you never had to run the command",
+      "detail": "This row asked you to run one database command so your taps had somewhere to record. It is gone, and you did not run it. You approved the auto-migration work with \"Merge it\" at 20:46, it merged, and tonight's deploy created the table on its own way past. Tap \"Not relevant\" on a card and a shift picks it up: it either closes the card and says what it checked, or keeps it and tells you why on the row. It cannot record a decision about a tap you have taken back.",
       "severity": "warning",
-      "state": "open"
+      "state": "resolved"
     }
   ],
   "acknowledgedReplyIds": [
@@ -3329,10 +3336,14 @@
     64,
     65,
     66,
-    67
+    67,
+    68,
+    69,
+    70,
+    71
   ],
   "nextUp": {
-    "readAt": "2026-08-31T17:48:16.077Z",
+    "readAt": "2026-08-31T22:15:52.811Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3346,11 +3357,6 @@
       {
         "issueNumber": 321,
         "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
-        "urgent": true
-      },
-      {
-        "issueNumber": 322,
-        "title": "Migrations and ceremonies auto-apply — additive runs itself, destructive still names itself and stops",
         "urgent": true
       },
       {
