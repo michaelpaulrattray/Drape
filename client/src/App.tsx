@@ -18,8 +18,8 @@ import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AdminCrew from "./pages/AdminCrew";
 import AdminBugReports from "./pages/AdminBugReports";
+import AdminFoundation from "./pages/AdminFoundation";
 import AppLobby from "./pages/AppLobby";
-import CastingFoundation from "./pages/CastingFoundation";
 import CastingRoom from "./pages/CastingRoom";
 import CastingSheet from "./pages/CastingSheet";
 import CastingV2 from "./pages/CastingV2";
@@ -63,9 +63,10 @@ function Router() {
             the procedures behind these screens refuse it regardless of what
             the client renders.
 
-            The M1 primitive gallery keeps its own address: the light/dark
-            screenshot drive compares one page that exercises every primitive,
-            and that page should not be the product.
+            The M1 primitive gallery is no longer one of these. It is a house
+            tool and it now answers at `/admin/foundation` (#261) — the
+            light/dark screenshot drive still compares one page that exercises
+            every primitive, but that page is not in the customer's namespace.
           */}
           <Route path="/casting" component={CastingV2} />
           {/*
@@ -90,7 +91,6 @@ function Router() {
           <Route path="/casting/cast/:castId">
             {(params) => <CastingRoom key={params.castId} />}
           </Route>
-          <Route path="/casting/foundation" component={CastingFoundation} />
 
           {/* Admin */}
           {/*
@@ -109,6 +109,17 @@ function Router() {
           <Route path="/admin/change-requests" component={AdminChangeRequests} />
           <Route path="/admin/invite-codes" component={AdminInviteCodes} />
           <Route path="/admin/bug-reports" component={AdminBugReports} />
+          {/*
+            The component specimen sheet (#261). It used to answer at
+            `/casting/foundation` — a house-only page, gating on nothing, at a
+            public address inside the customer's own product namespace. The
+            founder ruled the address rather than a gate: "A component specimen
+            has no business inside the /casting namespace at all" (2026-08-30),
+            then "it should be admin" (2026-09-01). The page owns its own admin
+            guard, like every page in this block; the old address is gone rather
+            than hidden, so it answers 404 for everyone including admins.
+          */}
+          <Route path="/admin/foundation" component={AdminFoundation} />
           {/* The Crew tab (#41). Dark behind CREW_TAB_SCOPE: the route exists,
               and outside the scope its one query answers NOT_FOUND, so the page
               says it is not switched on and the nav never shows the link. */}

@@ -31,6 +31,16 @@
  *                     console errors that name /api. Every other console error
  *                     still fails the drive. Never set this for a surface that
  *                     reads real data — it would hide a broken query.
+ *
+ * ⚠ THE STATIC-PREVIEW ROAD NO LONGER REACHES THE GALLERY (#261, 2026-09-01),
+ * and that is a declared cost rather than an oversight. The founder ruled the
+ * specimen sheet out of the customer namespace and behind the admin role guard
+ * ("it should be admin"), so with no backend `useAuth` never resolves a session
+ * and the page redirects to /login instead of drawing. The ordinary road is
+ * unaffected: `verify-bot-local`, the account this script mints for, is an
+ * admin, so a drive against a running `pnpm dev` sees the gallery exactly as
+ * before. If the static road is needed again, point THEME_SHOT_ROUTES at the
+ * public surfaces or restore a session — never at a weakened gate.
  */
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -54,10 +64,11 @@ const WIDTHS = [
  * Every surface on the foundation shell. Extend this as milestones adopt it,
  * rather than writing a second script.
  */
-// The primitive gallery moved to /casting/foundation in M5, when /casting
-// became the product. Theme parity is checked against the gallery, because it
-// is the page that renders every primitive in one place.
-const DEFAULT_ROUTES = ["/casting/foundation", "/casting", "/app", "/app/boards", "/app/models"];
+// The primitive gallery is the first route because it is the page that renders
+// every primitive in one place. It moved OUT of /casting on 2026-09-01 (#261):
+// a house-only specimen sheet had no business inside the customer's namespace,
+// and it now answers at /admin/foundation behind the admin role guard.
+const DEFAULT_ROUTES = ["/admin/foundation", "/casting", "/app", "/app/boards", "/app/models"];
 
 const ROUTES = (process.env.THEME_SHOT_ROUTES ?? DEFAULT_ROUTES.join(","))
   .split(",")
