@@ -1,7 +1,7 @@
 {
-  "edition": 162,
-  "updatedAt": "2026-08-31T14:40:00+10:00",
-  "shift": "foreman-142",
+  "edition": 163,
+  "updatedAt": "2026-08-31T15:30:00+10:00",
+  "shift": "foreman-143",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -166,7 +166,7 @@
         }
       ],
       "recommendation": "Keep it, and let the strap go. The engine has to dress him - the frame is mid-torso, so something has to be there - and a plain coat with one strap is a long way from a tactical rig. If you do want it tighter, that is a rule about what the STUDIO puts people in, which is a different decision from what MAX is allowed to invent.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-31T14:40:00+10:00",
       "issueNumber": 327
     },
@@ -1064,6 +1064,28 @@
       "state": "done",
       "filedAt": "2026-08-25T22:40:00+10:00",
       "issueNumber": 41
+    },
+    {
+      "id": "cast-deletes-308",
+      "title": "Your last legacy Cast will delete now - and the same fault was quietly blocking two other things",
+      "productImpact": "You said you could not delete that remaining legacy casting model. It is fixed and merged. The reason had nothing to do with you: the deletion path has NEVER been able to remove a Cast that has an accepted candidate on it. Model 35 is not special - it is simply the first one you have tried that has one. ONE THING TO KNOW, and it is bigger than the delete button: the same check runs on ACCOUNT DELETION and on the GDPR DATA EXPORT. With those nine rows on your account, neither of those could have run for you either - your account could not have been deleted and your data could not have been exported. One fix, three roads.",
+      "workedExample": "When the studio saves a candidate you accept, it does not copy the picture anywhere - it just promotes the one it already made. So the row that records it points at the file where that picture already lives. The delete then checked that row against a rule which said every record of that type must point at a different folder, and refused. Your user id and your Cast id both matched perfectly; it was only the folder name that disagreed. Nine rows, nine refusals, and the error message said \"ownership is invalid\", which is what sent the first two attempts at this looking in the wrong place. Driven at your own rows on production, before and after: nine refusals became nine passes, and all nine pictures are still on the list to be deleted with the Cast - which was the thing worth checking twice, because a fix that made the check pass by quietly forgetting the files would have left your bytes behind forever.",
+      "options": [
+        {
+          "key": "delete",
+          "label": "Delete it and tell me if it goes",
+          "consequence": "You press it. I did not delete it for you - it is your Cast and the removal is permanent, so that click is yours. If it goes, #308 closes and #302 (stubbing Library) unblocks straight away."
+        },
+        {
+          "key": "still-stuck",
+          "label": "It still will not delete",
+          "consequence": "Then the refusal is a second, different cause and I want the exact hour you tried, so the operation row can be read rather than guessed at."
+        }
+      ],
+      "recommendation": "Press delete. Everything between you and that button is merged and driven at your real rows; the only thing nobody has done is the click, and it is yours because it is permanent and it is your data. Library is the only door left for clearing legacy Casts, which is why #302 has been waiting behind this.",
+      "state": "open",
+      "filedAt": "2026-08-31T15:30:00+10:00",
+      "issueNumber": 308
     }
   ],
   "eyeItems": [
@@ -1992,7 +2014,7 @@
       "id": "max-over-authoring-frames-327",
       "title": "MAX stops writing him a backstory - your cyborg brief, before and after, same eight facts",
       "question": "Top row is the MAX we have today. Bottom row is MAX with your four rules. Two questions. First: is the bottom row what you meant by sharpen the look, do not invent a character? The tactical kit is gone from three of the four, and the eight things you locked are in all eight frames - bald, mid-40s, ports above the RIGHT temple, scalp seams, jaw plate, a stud under each ear, the faint amber-red RIGHT eye, integrated not worn. Second, and it is the one I would not decide for you: the fourth bottom frame still wears a shoulder strap and a belt. Your rule says costume generic or absent. Is one in four acceptable, or does it need another pass?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-08-31T14:40:00+10:00",
       "issueNumber": 327,
       "cardId": "max-over-authoring-327",
@@ -2869,6 +2891,13 @@
       "status": "merged",
       "prNumber": 197,
       "note": "Live on your account. Two rounds of review findings fixed and measured at the running app."
+    },
+    {
+      "id": "cast-deletes-308",
+      "title": "Your last legacy Cast will delete - a plate's origin is not the folder its picture sits in (#308)",
+      "status": "merged",
+      "prNumber": 339,
+      "note": "Merged abc2f9a5 on a green gate. Driven at your own nine rows on production: 0 of 9 passed before, 9 of 9 after, with all nine pictures still on the delete list in both runs. The same check also blocked account deletion and the GDPR export for your account. The Fable reviewer is still capped, so the red review is the outage and not a verdict."
     }
   ],
   "problems": [
@@ -3042,10 +3071,12 @@
     54,
     55,
     56,
-    57
+    57,
+    58,
+    59
   ],
   "nextUp": {
-    "readAt": "2026-08-31T04:26:02.590Z",
+    "readAt": "2026-08-31T05:22:06.346Z",
     "items": [
       {
         "issueNumber": 267,
