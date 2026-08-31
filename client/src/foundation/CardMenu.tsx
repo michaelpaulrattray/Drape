@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal, Trash2 } from "lucide-react";
+
+import { useAnchoredPanel, type PanelAlign } from "./useAnchoredPanel";
 
 /**
  * THE overflow menu. One component, one behaviour, everywhere.
@@ -28,6 +29,20 @@ import { MoreHorizontal, Trash2 } from "lucide-react";
  * the room sits it beside the name. The component owns the trigger, the panel
  * and the behaviour — never where it lives. What every caller must supply is a
  * host element carrying `dpc-menuhost`, which is what the first rung hangs off.
+ *
+ * ---------------------------------------------------------------------------
+ * **#304 — this is now a SHAPE, and the behaviour under it is shared.** His
+ * ruling was "Option one": one owner of how a panel opens, closes and lands,
+ * with shapes on top. What used to be this file's own placement, outside-click
+ * and Escape handling moved to `useAnchoredPanel`, which is CASTING'S
+ * implementation — this one — with two things folded in that it lacked: the
+ * containing-block correction, and focus returning to the trigger on Escape.
+ *
+ * ⚠ **Nothing about this component's API changed and nothing about its
+ * placement moved**, which is measured rather than asserted: both card menus
+ * and the foundation specimen were read in the running app before and after,
+ * and the panel sits at the same offset from its trigger in each
+ * (`output/304/placement-*.json`).
  */
 
 export type CardMenuItem = {
@@ -85,68 +100,33 @@ export function CardMenu({
    * sheet's and the roster's menus is measured byte-identical across this
    * change (`measure-cardmenu-placement-disposable.mts`), which is what makes
    * touching a shared component safe rather than hopeful.
+   *
+   * The two names are the OWNER's type rather than a copy of it — a second
+   * union shadowing the first is working law 4, and these are the placements
+   * every shape on the owner shares.
    */
-  align?: "fromTheRight" | "fromTheLeft";
+  align?: PanelAlign;
 }) {
-  const rootRef = useRef<HTMLSpanElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLSpanElement>(null);
-  const [at, setAt] = useState<{ top: number; right?: number; left?: number } | null>(null);
-
   /*
-    The panel is fixed-positioned in the viewport, so it has to be told where
-    the trigger is — and re-told if anything scrolls or resizes underneath it.
-    Cheaper and more predictable than leaving it open and wrong: a menu that
-    drifts off its card is worse than one that closes.
+    THE SHARED OWNER, in controlled mode. The open state stays the caller's —
+    a roster holds which single card has its menu open, and that is the
+    behaviour those surfaces already had — so the hook is told `open` and
+    reports a close rather than keeping state of its own.
   */
-  useLayoutEffect(() => {
-    if (!open) {
-      setAt(null);
-      return;
-    }
-    const place = () => {
-      const box = triggerRef.current?.getBoundingClientRect();
-      if (!box) return;
-      setAt(align === "fromTheLeft"
-        ? { top: box.bottom + 6, left: Math.max(8, box.left) }
-        : { top: box.bottom + 6, right: Math.max(8, window.innerWidth - box.right) });
-    };
-    place();
-    window.addEventListener("scroll", place, true);
-    window.addEventListener("resize", place);
-    return () => {
-      window.removeEventListener("scroll", place, true);
-      window.removeEventListener("resize", place);
-    };
-  }, [open, align]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) return;
-      onCancel();
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        onCancel();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [open, onCancel]);
+  const panel = useAnchoredPanel<HTMLSpanElement>({
+    align,
+    open,
+    onOpenChange: (next) => {
+      if (!next) onCancel();
+    },
+  });
 
   if (items.length === 0) return null;
 
   return (
-    <span className="dpc-cardmenu" ref={rootRef}>
+    <span className="dpc-cardmenu" {...panel.surfaceProps}>
       <button
-        ref={triggerRef}
+        ref={panel.triggerRef}
         type="button"
         className="dpc-cardmenu__trigger"
         aria-label={`Actions for ${label}`}
@@ -162,20 +142,21 @@ export function CardMenu({
         <MoreHorizontal size={14} strokeWidth={2} aria-hidden="true" />
       </button>
 
-      {open && at
+      {open
         ? createPortal(
           /*
             Portalled, because these cards live in scrolling rows and
             `overflow-x: auto` computes `overflow-y` to auto too. An absolutely
-            positioned panel inside that row is clipped at its edge.
+            positioned panel inside that row is clipped at its edge. Where the
+            panel is MOUNTED is the shape's question; where it LANDS is the
+            owner's, and `panelStyle` is that answer.
           */
           <span
-            ref={panelRef}
+            ref={panel.panelRef}
             className="dpc-cardmenu__panel"
             role="menu"
-            style={at.left === undefined
-              ? { top: at.top, right: at.right }
-              : { top: at.top, left: at.left }}
+            style={panel.panelStyle}
+            {...panel.surfaceProps}
           >
             {items.map((item, index) => (
               <span key={item.label}>

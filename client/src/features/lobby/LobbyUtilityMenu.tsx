@@ -45,9 +45,12 @@
  *    cheap."* So they are shown, inert, and the rule the old comment was
  *    protecting still holds — nothing here claims a capability, it names a
  *    place.
- *  - `usePopover` replaces `absolute right-0 top-10`. The magic offset was
- *    correct only while the panel's ancestor happened not to establish a
- *    containing block; the hook measures.
+ *  - `useAnchoredPanel` replaces `absolute right-0 top-10`. The magic offset
+ *    was correct only while the panel's ancestor happened not to establish a
+ *    containing block; the hook measures. (It was `usePopover` until #304
+ *    collapsed the three popover implementations onto one owner — casting's,
+ *    with this hook's containing-block correction folded into it. The
+ *    placement is unchanged and measured so: `output/304/placement-*.json`.)
  *  - **One width, 264px, in both states.** It was `mode ? 300 : 200`, so the
  *    panel resized when you clicked inside it, which reads as a glitch.
  *  - The eyebrow is mono. It was the sans face at `600 11px`, which is both the
@@ -57,7 +60,7 @@
  */
 import { useEffect, useState } from 'react';
 import { BookOpen, Keyboard, MessageSquare } from 'lucide-react';
-import { Icon as HouseIcon, P, usePopover } from '@/foundation';
+import { Icon as HouseIcon, P, useAnchoredPanel } from '@/foundation';
 
 import { FeedbackForm } from './FeedbackForm';
 
@@ -70,17 +73,17 @@ const PANEL_WIDTH = 264;
 export function LobbyUtilityMenu() {
   const [feedback, setFeedback] = useState(false);
 
-  const popover = usePopover({ placement: 'bottom-end' });
+  const popover = useAnchoredPanel({ align: 'fromTheRight' });
   const { close: closePopover, open, panelRef, panelStyle, surfaceProps, toggle, triggerRef } = popover;
 
   const close = () => closePopover();
 
   /*
     ⚠ THE RESET HANGS OFF `open`, NOT OFF THE CLOSE BUTTON — found by driving it
-    (founder law 6). `usePopover` owns four of the five ways this panel closes:
-    Escape, capture-phase click-away, outside scroll, and a second click on the
-    trigger. All four call the hook's own setter, so a reset written into a local
-    `close()` runs on exactly ONE of them.
+    (founder law 6). The panel hook owns most of the ways this panel closes:
+    Escape, capture-phase click-away, another panel opening, and a second click
+    on the trigger. All of them call the hook's own setter, so a reset written
+    into a local `close()` runs on exactly ONE of them.
 
     What that looked like in the app: type half a message, press Escape, open the
     menu again — and you are staring at the half-typed form instead of the menu.

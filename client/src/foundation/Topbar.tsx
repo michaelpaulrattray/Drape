@@ -121,11 +121,18 @@ export type TopbarAccount = {
  * asks for; the Escape key, the outside-click dismissal and the anchoring are
  * the rail's own implementation carried across, because it was correct.
  *
- * It stays hand-rolled rather than adopting `usePopover`: the hook measures and
- * portals for panels that would otherwise be clipped, and this one sits in a
- * `position: relative` anchor at the end of a 56px bar with nothing to clip it.
- * Section 00's popover discipline is about the three implementations that fight
- * over placement, and this is not one of them.
+ * It stays hand-rolled rather than adopting `useAnchoredPanel`: the hook
+ * measures for panels that would otherwise be clipped or mis-placed, and this
+ * one sits in a `position: relative` anchor at the end of a 56px bar with
+ * nothing to clip it. Section 00's popover discipline is about the three
+ * implementations that fight over placement, and this is not one of them.
+ *
+ * ⚠ **#304 collapsed those three onto one owner and deliberately left this
+ * fourth alone.** His ruling names three, and moving this one would change the
+ * anchoring of a menu he approved — so it is FILED rather than decided, and
+ * this comment is the only place that says the question exists. If the answer
+ * comes back "bring it across", the change is to use the hook here and delete
+ * the two listeners below; nothing else about the chip moves.
  */
 function AccountChip({ account }: { account: TopbarAccount }) {
   const [menuOpen, setMenuOpen] = useState(false);

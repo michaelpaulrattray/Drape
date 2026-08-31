@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6265d85c9456f79c"
+    "sourceFingerprint": "d98b665480df1586"
   },
   "domains": [
     {
@@ -2529,8 +2529,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/foundation/usePopover.ts",
-      "path": "client/src/foundation/usePopover.ts",
+      "id": "module:client/src/foundation/useAnchoredPanel.ts",
+      "path": "client/src/foundation/useAnchoredPanel.ts",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -10590,6 +10590,10 @@
       "path": "client/src/features/operations/outcomeSlot.test.ts"
     },
     {
+      "id": "test:client/src/foundation/anchoredPanel.test.ts",
+      "path": "client/src/foundation/anchoredPanel.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/icons-guard.test.ts",
       "path": "client/src/foundation/icons-guard.test.ts"
     },
@@ -18193,6 +18197,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/CardMenu.tsx",
+      "to": "module:client/src/foundation/useAnchoredPanel.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/ChromeStubs.tsx",
       "to": "module:client/src/foundation/icons.tsx",
       "kind": "imports"
@@ -18284,7 +18293,12 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
-      "to": "module:client/src/foundation/usePopover.ts",
+      "to": "module:client/src/foundation/useAnchoredPanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/Popover.tsx",
+      "to": "module:client/src/foundation/useAnchoredPanel.ts",
       "kind": "imports"
     },
     {
@@ -18705,6 +18719,11 @@
     {
       "from": "module:client/src/pages/CastingFoundation.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingFoundation.tsx",
+      "to": "module:client/src/foundation/Popover.tsx",
       "kind": "imports"
     },
     {

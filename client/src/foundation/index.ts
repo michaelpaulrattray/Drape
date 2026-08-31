@@ -113,5 +113,10 @@ export type {
 export { showsMenuCount } from "./menuCount";
 export { severityLook } from "./severity";
 export type { Severity } from "./severity";
-export { POPOVER_MARKER, usePopover } from "./usePopover";
-export type { PopoverPlacement, UsePopoverResult } from "./usePopover";
+/*
+  THE ONE OWNER of how a panel opens, closes and lands (#304, his "Option one").
+  `usePopover` was the third of three implementations and is gone; `CardMenu`
+  and `Popover` are shapes on this hook rather than rivals to it.
+*/
+export { POPOVER_MARKER, useAnchoredPanel } from "./useAnchoredPanel";
+export type { AnchoredPanel, PanelAlign } from "./useAnchoredPanel";
