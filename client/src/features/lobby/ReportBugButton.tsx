@@ -7,21 +7,21 @@
  * place in the bar. Same form, same mutation, same copy — see `FeedbackForm`,
  * which both entrances share so they cannot drift apart.
  *
- * ⚠ **THE RESET HANGS OFF `open`, NOT OFF THE CLOSE BUTTON.** `usePopover`
- * owns four of the five ways this panel closes — Escape, capture-phase
- * click-away, outside scroll, and a second click on the trigger — so a reset
+ * ⚠ **THE RESET HANGS OFF `open`, NOT OFF THE CLOSE BUTTON.** `useAnchoredPanel`
+ * owns most of the ways this panel closes — Escape, capture-phase click-away,
+ * another panel opening, and a second click on the trigger — so a reset
  * written into a local `close()` runs on exactly one of them. That was found by
  * driving the menu (founder law 6) and it applies here identically: type half a
  * report, press Escape, open it again, and you would be staring at the
  * half-typed form. The form's own state is remounted rather than cleared, which
  * is the same fix in fewer moving parts.
  */
-import { Icon, P, usePopover } from '@/foundation';
+import { Icon, P, useAnchoredPanel } from '@/foundation';
 
 import { FEEDBACK_PANEL_STYLE, FeedbackForm } from './FeedbackForm';
 
 export function ReportBugButton() {
-  const popover = usePopover({ placement: 'bottom-end' });
+  const popover = useAnchoredPanel({ align: 'fromTheRight' });
   const { close, open, panelRef, panelStyle, surfaceProps, toggle, triggerRef } = popover;
 
   return (

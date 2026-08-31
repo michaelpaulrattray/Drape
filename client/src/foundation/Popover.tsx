@@ -1,13 +1,10 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { useAnchoredPanel } from "./useAnchoredPanel";
 
 /**
- * The foundation's first popover.
- *
- * The reconciliation adopted "popover discipline" as a pattern in §3 and nobody
- * had built one, so this is it: **one open at a time, anchored to what was
- * clicked, dismissed by Escape, by an outside click, or by opening another.**
+ * The word-picker inside a sentence — a listbox on a word.
  *
  * One instance with many anchors, not many popovers. The brief echo has up to
  * six adjustable words in a single sentence, and six independently-stateful
@@ -20,6 +17,32 @@ import { cn } from "@/lib/utils";
  * the founder's condition was full keyboard treatment on the underlined spans,
  * and a control you can only reach with a mouse is a control half the people
  * using it do not have.
+ *
+ * ---------------------------------------------------------------------------
+ * **#304 — this is now a SHAPE on `useAnchoredPanel`.** His ruling was "Option
+ * one": one owner of the behaviour, two shapes on it. Open state, Escape,
+ * outside-click and placement are the owner's; what stays here is what makes
+ * this a LISTBOX rather than a menu — the arrow-key walk, focus landing on the
+ * first option, and the option/footer markup.
+ *
+ * Two things changed underneath, and both are stated because neither is
+ * invisible:
+ *
+ * 1. ⚠ **"One open at a time" is now true.** This header has claimed it since
+ *    the file was written and nothing implemented it — every instance held its
+ *    own `useState(false)`, so all six words in the echo could be open
+ *    together. Measured on the foundation page before the collapse: clicking a
+ *    second word left **two** panels open. The owner keeps a registry of one.
+ * 2. ⚠ **The panel is placed from the WORD, not from the word's line box.** It
+ *    was `position: absolute; top: calc(100% + 9px); left: -12px` against the
+ *    inline `.dp-pop` wrapper, whose rect is a line box and therefore a few
+ *    font-metric pixels shy of the button inside it. The 9px and the −12px are
+ *    kept exactly; the anchor is the trigger, so the panel now sits a measured
+ *    9.00px under the word where it sat 5.56px under it — **3.44px lower**,
+ *    nothing sideways. That is a measurement rather than an estimate
+ *    (`output/304/placement-*.json`), and it is the difference between a gap
+ *    that holds at one font size and one that holds at every font size: the
+ *    old distance was 9px minus whatever the line box happened to add.
  */
 
 export type PopoverOption = {
@@ -28,6 +51,14 @@ export type PopoverOption = {
   /** The value currently in force, marked rather than merely highlighted. */
   current?: boolean;
 };
+
+/**
+ * The design's own two numbers, kept: the panel hangs 9px under the word and
+ * 12px to its left, so the option labels rather than the panel's padding line
+ * up under the word.
+ */
+const GAP = 9;
+const NUDGE_X = -12;
 
 export function Popover({
   label,
@@ -50,44 +81,23 @@ export function Popover({
   /** The trigger's visible content — a word inside a sentence. */
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panel = useAnchoredPanel({ align: "fromTheLeft", gap: GAP, nudgeX: NUDGE_X });
+  const { open, placed, setOpen, triggerRef, panelRef } = panel;
   const panelId = useId();
 
   useEffect(() => {
-    if (!open) return;
-
     /*
-      Outside-click and Escape both close, and both are registered only while
-      open. A listener that lives for the component's whole life runs on every
-      click on the page for a control that is shut.
+      ⚠ ON `placed`, NOT ON `open`. The panel spends one commit hidden while the
+      owner measures its width, and `focus()` on a `visibility: hidden` element
+      does nothing and reports nothing. Keyed on `open` alone this ran during
+      that commit and the first arrow key went nowhere — which passed every
+      source arm and was caught by driving the app (founder law 6).
     */
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
-      setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      setOpen(false);
-      // Focus goes back where it came from, or it lands on <body> and the
-      // keyboard user loses their place in the sentence.
-      triggerRef.current?.focus();
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown, true);
+    if (!open || !placed) return;
     // Move focus into the panel so the first arrow key does something.
     const first = panelRef.current?.querySelector<HTMLElement>("[data-popover-option]");
     first?.focus();
-
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
-  }, [open]);
+  }, [open, placed, panelRef]);
 
   const walk = (event: React.KeyboardEvent, direction: 1 | -1) => {
     event.preventDefault();
@@ -107,7 +117,7 @@ export function Popover({
   };
 
   return (
-    <span className="dp-pop">
+    <span className="dp-pop" {...panel.surfaceProps}>
       <button
         ref={triggerRef}
         type="button"
@@ -116,7 +126,7 @@ export function Popover({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        onClick={() => setOpen((was) => !was)}
+        onClick={() => setOpen(!open)}
       >
         {children}
       </button>
@@ -128,6 +138,8 @@ export function Popover({
           role="listbox"
           aria-label={heading}
           className="dp-pop__panel"
+          style={panel.panelStyle}
+          {...panel.surfaceProps}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") walk(event, 1);
             if (event.key === "ArrowUp") walk(event, -1);

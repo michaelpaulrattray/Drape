@@ -44,6 +44,7 @@ import {
   SurfaceBar,
   Transcript,
 } from "@/foundation";
+import { Popover } from "@/foundation/Popover";
 import { AppChrome } from "@/components/AppChrome";
 
 /**
@@ -67,6 +68,10 @@ export default function CastingFoundation() {
      promoted overflow menu enforces for real. */
   const [shown, setShown] = useState<null | "rename" | "delete" | "confirm">(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  /* Section 12 — the sentence popover's two axes, so both can be opened and
+     the "one open at a time" rule can be seen rather than believed. */
+  const [build, setBuild] = useState("athletic");
+  const [age, setAge] = useState<string | null>("late twenties");
 
   return (
     <AppChrome breadcrumb="Casting / Foundation" current="casting" width="working">
@@ -536,6 +541,61 @@ export default function CastingFoundation() {
             onConfirm={() => setShown(null)}
           />
         ) : null}
+      </section>
+
+      <section className="dp-stack" style={{ gap: 16 }}>
+        <SectionHead
+          eyebrow="12 · The anchored panel"
+          aside="one behaviour, two shapes"
+        />
+        {/*
+          HIS RULING ON #304, verbatim and entire: "Option one" — one owner of
+          the behaviour, two shapes on top of it. The two shapes are both here
+          because that is the only way to see that they behave identically: the
+          menu above and the words below open, close on Escape, close on an
+          outside click and land beside their trigger through the same code.
+
+          Open one and then the other without closing the first. Only one stays
+          open, which is a rule `Popover.tsx` has claimed in prose since it was
+          written and nothing implemented until the collapse.
+        */}
+        <p className="dp-body">
+          The sheet reads back{" "}
+          <Popover
+            label={`Change build, currently ${build}`}
+            heading="Build"
+            options={["athletic", "slight", "broad", "willowy"].map((value) => ({
+              value,
+              label: value,
+              current: value === build,
+            }))}
+            onSelect={(value) => setBuild(value)}
+          >
+            {build}
+          </Popover>{" "}
+          and{" "}
+          <Popover
+            label={age ? `Change age, currently ${age}` : "Pin age, currently left to the roll"}
+            heading={age ? "Age" : "Age · varying"}
+            className={age ? undefined : "dp-pop__trigger--open"}
+            options={["early twenties", "late twenties", "thirties", "forties"].map((value) => ({
+              value,
+              label: value,
+              current: value === age,
+            }))}
+            footer={age ? { label: `Undo — let age vary`, onSelect: () => setAge(null) } : null}
+            onSelect={(value) => setAge(value)}
+          >
+            {age ?? "varying"}
+          </Popover>
+          , which is the brief echo's own shape.
+        </p>
+        <p className="dp-small">
+          A word in a sentence is a listbox and the overflow menu in section 11
+          is a menu; underneath they are the same owner, so a placement or
+          dismissal fix lands on both at once rather than on whichever one
+          somebody remembered.
+        </p>
       </section>
 
       <Dock>

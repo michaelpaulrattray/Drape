@@ -1240,10 +1240,16 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 
 .dp-pop__trigger--open:hover { border-bottom-color: var(--metaStrong); }
 
+/*
+  ⚠ NO `position`, `top` or `left` here (#304). The panel is placed by
+  `useAnchoredPanel` — the one owner of where every panel in the product lands —
+  which writes `position: fixed` and measured coordinates as inline style. The
+  9px and the −12px this rule used to carry are the hook's `GAP` and `NUDGE_X`
+  in `Popover.tsx`, unchanged; what moved is who applies them, and it is fixed
+  rather than absolute so the panel is not clipped by an ancestor that happens
+  to hide its overflow.
+*/
 .dp-pop__panel {
-  position: absolute;
-  top: calc(100% + 9px);
-  left: -12px;
   z-index: 40;
   width: 216px;
   padding: var(--s-2);

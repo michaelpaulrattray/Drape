@@ -214,11 +214,17 @@ describe("the popover is measured, never guessed", () => {
   /**
    * `absolute right-0 top-10` is correct only while no ancestor establishes a
    * containing block. The topbar is a `backdrop-filter` glass bar, which is
-   * exactly such an ancestor — see `usePopover`'s header for the measurement it
-   * makes instead.
+   * exactly such an ancestor — see `useAnchoredPanel`'s header for the
+   * measurement it makes instead.
+   *
+   * ⚠ The hook it names changed with #304 and the RULE did not: the three
+   * popover implementations collapsed onto one owner, and this menu is one of
+   * its consumers. An arm pinned to the old name would have gone red for a
+   * rename while a hand-rolled `absolute right-0 top-10` walked past it, which
+   * is the wrong way round — so the offset half below is the half that matters.
    */
-  it("the utility menu uses the hook and no magic offset", () => {
-    expect(UTILITY_MENU).toMatch(/usePopover\(\{ placement: 'bottom-end' \}\)/);
+  it("the utility menu uses the shared panel owner and no magic offset", () => {
+    expect(UTILITY_MENU).toMatch(/useAnchoredPanel\(\{ align: 'fromTheRight' \}\)/);
     const MAGIC = /top-10|right-0|absolute top-4|right-5/;
     /* `code()` because this file's own header QUOTES the offsets it replaced —
        an arm that reads its subject's prose is measuring the prose. */
