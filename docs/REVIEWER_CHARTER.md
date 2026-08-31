@@ -204,7 +204,7 @@ restore the prior state, not invent a new one; refunds keyed on their own
 operation reference so two refund paths cannot collide; recovery fails
 CLOSED (no lock → no guess).
 
-## Flag discipline (CLAUDE.md optional-env-vars sections)
+## Flag discipline (`docs/architecture/FEATURE_FLAGS.md`, carved out of CLAUDE.md by #330)
 
 - **Grammar**: scope flags are `off`/absent, `all`, or `users:<ids>`; absent
   means off. New capability lands DARK behind its flag; with the flag off
@@ -219,9 +219,12 @@ CLOSED (no lock → no guess).
   `information_schema` to `drizzle/schema.ts` and
   `scripts/lib/productionFlagPositions.mts` records where every governed
   variable is meant to stand.
-- **A flag that exists but is not documented in CLAUDE.md is a finding**
-  (`server/claudeMdFlagEnumeration.test.ts` derives the population from the
-  code — the list-stops-being-the-list class).
+- **A flag that exists and has no entry in `docs/architecture/FEATURE_FLAGS.md`
+  is a finding**, and so is an entry with no locator row in CLAUDE.md's flag
+  index (`server/claudeMdFlagEnumeration.test.ts` derives both populations
+  from the code and from each file's own markup — the
+  list-stops-being-the-list class). **The catalogue is the law; the index is
+  a locator.** A rule stated in an index row is the finding, not the fix.
 - **Capability atlas, same commit**: a capability change (new door/refusal/
   gate, moved copy, routing, flags) ships with its
   `docs/architecture/capability-atlas` entry in the same commit —
