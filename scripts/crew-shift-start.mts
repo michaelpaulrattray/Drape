@@ -142,7 +142,7 @@ try {
   if (present.length !== 1) {
     refuse(
       `\`${TABLE}\` does not exist in this world. It is migration 0055 and production takes it by `
-      + "`scripts/ceremony-crew-shift-runs.mts`, which is a FOUNDER act. The shift row cannot be opened "
+      + "`scripts/ceremony-crew-shift-runs.mts`, which the DEPLOY RITE now applies itself (#322). The shift row cannot be opened "
       + "until that has run — say so in the shift report rather than proceeding silently.",
     );
   }

@@ -96,7 +96,7 @@ try {
     */
     console.log(
       `\n${SWITCH_TABLE} does not exist in this world yet (migration 0056 — production takes it by`
-      + " `scripts/ceremony-crew-work-switches.mts`, a FOUNDER act).",
+      + " `scripts/ceremony-crew-work-switches.mts`, or the next deploy rite, which applies additive migrations itself since #322).",
     );
     console.log("VERDICT: background work is OFF. An absent store reads off, which is his bar.");
     await conn.end();

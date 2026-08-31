@@ -167,16 +167,25 @@ describe("the named-index reader — the hole a column check alone leaves", () =
   });
 
   it("does not report an index on a table already enumerated as unmigrated", () => {
-    /* Otherwise the three indexes on `casting_cast_segments` would turn ONE
-       known absence into FOUR findings, and a receipt full of noise is a
-       receipt nobody reads. The TABLE is the thing that is missing. */
+    /* Otherwise the three indexes on a single absent table would turn ONE known
+       absence into FOUR findings, and a receipt full of noise is a receipt
+       nobody reads. The TABLE is the thing that is missing.
+
+       The exception is a FIXTURE rather than whatever happens to be in the live
+       list — see the note above `FIXTURE_TABLE_EXCEPTIONS`. */
     const declared = declaredSchemaFrom(
-      `export const t = mysqlTable("casting_cast_segments", { one: varchar("one", { length: 1 }) });`,
+      `export const t = mysqlTable("a_table_held_back_on_purpose", { one: varchar("one", { length: 1 }) });`,
     );
-    const verdict = conformanceVerdict(declared, liveSchemaFrom([]), {
-      declared: new Map([["uq_casting_cast_segments_public", "casting_cast_segments"]]),
-      live: new Set<string>(),
-    });
+    const verdict = conformanceVerdict(
+      declared,
+      liveSchemaFrom([]),
+      {
+        declared: new Map([["uq_held_back_public", "a_table_held_back_on_purpose"]]),
+        live: new Set<string>(),
+      },
+      {},
+      FIXTURE_TABLE_EXCEPTIONS,
+    );
     expect(verdict.missingIndexes).toEqual([]);
     expect(verdict.problems).toEqual([]);
   });
@@ -238,13 +247,34 @@ describe("the conformance verdict, proven able to say no", () => {
   });
 });
 
+/*
+  ⚠ A FIXTURE, NEVER THE LIVE LIST — the same repair `columnExceptions` already
+  carries, applied to the table list one commit later than it should have been
+  (#322, 2026-09-01).
+
+  The three arms below test the MECHANISM: tolerate an enumerated table, and
+  ERROR when an enumerated one turns out to be present. Until now they reached
+  into `DECLARED_BUT_UNMIGRATED` for a name to use — so the mechanism could only
+  be tested while that list was non-empty, and **the guard could not reach its
+  own correct resting state.** Emptying the list, exactly as every ceremony's
+  closing line orders, turned three passing arms red for a reason that had
+  nothing to do with the rule.
+
+  The columns half already knew this and said so in its own docblock. The class
+  was fixed there and not swept; this is the sweep.
+*/
+const FIXTURE_TABLE_EXCEPTIONS = {
+  a_table_held_back_on_purpose:
+    "a fixture, and long enough to satisfy the reason-length rule this file also asserts",
+} as const;
+
 describe("the unmigrated exception list only shrinks", () => {
   it("tolerates an enumerated table, and ONLY an enumerated one", () => {
     const declared = declaredSchemaFrom(
-      `export const a = mysqlTable("casting_cast_segments", { one: varchar("one", { length: 1 }) });
+      `export const a = mysqlTable("a_table_held_back_on_purpose", { one: varchar("one", { length: 1 }) });
        export const b = mysqlTable("some_other_table", { one: varchar("one", { length: 1 }) });`,
     );
-    const verdict = conformanceVerdict(declared, liveSchemaFrom([]));
+    const verdict = conformanceVerdict(declared, liveSchemaFrom([]), undefined, {}, FIXTURE_TABLE_EXCEPTIONS);
     expect(verdict.missingTables, "the enumerated one is tolerated").toEqual(["some_other_table"]);
   });
 
@@ -253,10 +283,16 @@ describe("the unmigrated exception list only shrinks", () => {
        been paid is an error until its line is deleted. Without this the
        exception is permanent by default. */
     const declared = declaredSchemaFrom(
-      `export const a = mysqlTable("casting_cast_segments", { one: varchar("one", { length: 1 }) });`,
+      `export const a = mysqlTable("a_table_held_back_on_purpose", { one: varchar("one", { length: 1 }) });`,
     );
-    const verdict = conformanceVerdict(declared, liveSchemaFrom([{ t: "casting_cast_segments", c: "one" }]));
-    expect(verdict.staleExceptions).toEqual(["casting_cast_segments"]);
+    const verdict = conformanceVerdict(
+      declared,
+      liveSchemaFrom([{ t: "a_table_held_back_on_purpose", c: "one" }]),
+      undefined,
+      {},
+      FIXTURE_TABLE_EXCEPTIONS,
+    );
+    expect(verdict.staleExceptions).toEqual(["a_table_held_back_on_purpose"]);
     expect(verdict.problems[0]).toContain("the list only shrinks");
   });
 
@@ -270,33 +306,26 @@ describe("the unmigrated exception list only shrinks", () => {
   });
 
   it("⚠ and the entries are pinned by name — joining this list is a deliberate act", () => {
-    /* `crew_replies` joined 2026-08-25 (issue #41) and LEFT the same night:
-       the founder's ceremony applied it on production and `1bc462de` deleted
-       its exception line as that line's own docblock ordered — but not this
-       pin, so main went red until the next shift caught it. The pin and the
-       list move in the SAME commit, always; that is what "deliberate act"
-       costs. */
-    expect(Object.keys(DECLARED_BUT_UNMIGRATED)).toEqual([
-      "casting_cast_segments",
-      /* THREE JOINED AND LEFT ON 2026-08-30, all within the evening, and the
-         list is back to the one table that has never been migrated anywhere.
-         The founder ran both ceremonies himself: `crew_shift_runs` (#272,
-         migration 0055 — the live shift row; 14 columns), then
-         `crew_work_switches` + `crew_queue_counts` (#277, migration 0056 —
-         his background-work panel, one command for the pair).
+    /* `crew_replies` joined 2026-08-25 (issue #41) and LEFT the same night: the
+       founder's ceremony applied it on production and `1bc462de` deleted its
+       exception line as that line's own docblock ordered — but not this pin, so
+       main went red until the next shift caught it. The pin and the list move in
+       the SAME commit, always; that is what "deliberate act" costs.
 
-         Each departure deleted its exception line AND this pin in ONE commit,
-         which is what the `crew_replies` note above exists to enforce. It was
-         proven rather than assumed: removing the first line alone reddened
-         this very assertion within the minute, so the pin did its job on the
-         first opportunity it had after the incident that wrote the note. */
+       ⚠ **IT IS EMPTY NOW, AND THAT IS ITS RESTING STATE (#322, 2026-09-01).**
+       The deploy rite applies an additive migration itself before it reads the
+       conformance verdict, so an additive table is never pending across a run
+       and never needs a line here. `casting_cast_segments` (0027) and
+       `crew_card_intents` (0059) both left in that commit — the second had been
+       waiting on one command from the founder, which is the cost that produced
+       #322 in the first place.
 
-      /* JOINED 2026-08-31 — `crew_card_intents` (#325's second half, migration
-         0059, his `Not relevant` tap). It leaves the day he runs
-         `scripts/ceremony-crew-card-intents.mts --production`, and that
-         commit deletes its exception line AND this entry together. */
-      "crew_card_intents",
-    ]);
+       ⚠ **A NEW ENTRY IS NOW A CLAIM THAT SOMETHING IS DESTRUCTIVE.** The only
+       thing the rite refuses to apply unattended is a `DROP`, `RENAME`,
+       `MODIFY` or row rewrite; anything else that lands here is either that, or
+       an admission that the applier could not see it — and both deserve the
+       argument this assertion forces. */
+    expect(Object.keys(DECLARED_BUT_UNMIGRATED)).toEqual([]);
   });
 });
 
