@@ -96,6 +96,48 @@
  *     banned words, and the suite asserts that non-catch out loud so a green
  *     run is never read as a reader that catches them.
  *
+ * # ⚠ ONE PARAGRAPH IS NECESSARY, ONE BLOCK IS NOT SUFFICIENT, AND NEITHER IS
+ * NOT-NAMING-A-PIECE — #327, 2026-08-31
+ *
+ * The founder read his own MAX draft of his own cyborg brief and refused it
+ * again, one level in (verbatim): *"The max roll brief is over-authoring. The
+ * source was a head/face/augmentation spec. The rewrite invented wardrobe,
+ * black-ops backstory, and a full mood thesis … Max can sharpen and complete
+ * the look, but it should not invent a new character."* Three more with it:
+ * resolve a contradiction instead of stacking it; the lockable facts must stay
+ * first-class instead of dissolving into character prose; and *"don't double
+ * up identity constraints if the locked block is already being appended at
+ * roll."*
+ *
+ * ⚠ **ALL FOUR WERE GAPS IN THE INSTRUCTION, NOT BREACHES OF IT** — checked at
+ * this file before a line was written. `PIN THE WORLD, NEVER THE PIECES` bans
+ * naming the PARTS of a subject and nothing banned introducing the SUBJECT;
+ * `droppedFactIn` passes on every one of his failing drafts, because it tests
+ * PRESENCE and he is asking for PROMINENCE. So the rules are
+ * `NO_NEW_SUBJECT_RULE`, `RESOLVE_NOT_STACK_RULE`, `FACTS_FIRST_RULE` and the
+ * widened `NO_STUDIO_RULE`, and **no word ban rides with any of them** — the
+ * fifth time this repository has met its own admission test.
+ *
+ * ⚠ **AND THE FOURTH RULE TURNED UP A STRUCTURAL DEFECT: SIX UNIVERSAL RULES
+ * WERE FILED UNDER THE THIN-SEED FORK.** `NO_STUDIO_RULE`, `NO_NOTES_RULE`,
+ * `SKIN_RULE`, the word allowance, `FILTER_RULE` and `ONE_PARAGRAPH_RULE` were
+ * bullets under *"On a thin seed:"* while the CODE enforced all six on both
+ * branches — and his failing draft was of a FINISHED seed, so the very
+ * no-studio rule his rule 4 is about was filed under the other fork. They sit
+ * under `UNIVERSAL_RULES_HEADING` now.
+ *
+ * **The before/after his card required, driven on his own 553-character brief
+ * (3 author drafts and 4 painted frames per arm, house money, no roll and no
+ * credit):** invented backstory 3 of 3 → 0 of 3; invented wardrobe 1 of 3 → 0
+ * of 3; stacked skin texture 3 of 3 → 1 of 3; language competing with the
+ * locked block 3 of 3 → 0 of 3; every stated fact present in all six drafts
+ * both ways. At the frames, the tactical kit the brief never asked for went
+ * from 4 of 4 to 1 of 4 (a strap and a belt on the last). The paragraph got
+ * shorter (348/296/296 → 246/262/247 words) and the FACT opening got longer,
+ * which is the answer to *context is not additive*: what was cut is the story,
+ * not the facts. **His eye on the strip is the gate; these numbers are
+ * pointers.**
+ *
  * # What is STRUCTURAL rather than promised
  *
  *   - ONE brief on the wire: the composed prompt is the authored paragraph (or,
@@ -230,9 +272,29 @@ const FILTER_RULE =
   "Keep wording GPT Image 2 safe: no nudity, no sexual language, no gore, no named real person or named character, "
   + "and avoid explicit sheer or revealing clothing language. Never name the breastbone.";
 
+/**
+ * #327 rule 4, his sentence: *"don't double up identity constraints if the
+ * locked block is already being appended at roll"* — *"One brief, not a story
+ * plus a brief."*
+ *
+ * ⚠ **THE MEASURED DEFECT IS WORSE THAN A DUPLICATE: IT IS A CONTRADICTION.**
+ * On the BEFORE arm of his own cyborg brief, draft 0 wrote *"hard light
+ * catching the brow ridge and jaw plate, deep shadow pooling in the eye
+ * sockets"* while the appended block says *"Large soft frontal key just above
+ * the lens, high fill, open shadows"*. Draft 1 wrote a *"glacial palette"*
+ * against the block's *"Skin colour and sheen come from the person, not from a
+ * house grade"*. Draft 2 restated the block's own negatives (no smoothing, no
+ * symmetry). Two prompts arguing is not redundancy — the picture gets the
+ * argument.
+ *
+ * ⚠ **AND THE RULE'S POSITION WAS HALF THE PROBLEM — see `maxSystemPrompt`.**
+ */
 const NO_STUDIO_RULE =
-  "Do NOT write any camera, lens, framing, crop, lighting, background, resolution or realism language — the studio "
-  + "appends its own locked camera/studio block after your text, on every roll, and yours would compete with it.";
+  "Do NOT write any camera, lens, framing, crop, lighting, background, colour-grade, resolution or realism "
+  + "language, and do not restate or paraphrase the studio's own rules or its negatives — the studio appends its "
+  + "own locked camera/studio block after your text, on every roll. Yours would not merely repeat it, it would "
+  + "ARGUE with it: no light direction, no shadow placement, no palette, no \"no smoothing / no symmetry\" "
+  + "negatives of your own. One brief, not a story plus a brief.";
 
 const NO_NOTES_RULE =
   "Do NOT write notes about the series or the process — nothing about how many portraits will be made, what is "
@@ -278,6 +340,94 @@ export const SKIN_CONTRADICTIONS: ReadonlyArray<{ phrase: string; because: strin
   the instruction now says the same thing, because a rule the check does not
   enforce and a check the rule does not describe are how both drift.
 */
+/**
+ * #327 rule 1, his sentence: *"Max can sharpen and complete the look, but it
+ * should not invent a new character. Keep costume generic or omitted unless
+ * the user specified it."*
+ *
+ * ⚠ **IT IS A GAP IN THE INSTRUCTION, NOT A BREACH OF ONE** — checked at his
+ * own draft before a line was written. `PIN THE WORLD, NEVER THE PIECES` bans
+ * naming the PARTS of a subject; nothing banned introducing the SUBJECT. So
+ * *"dark, utilitarian, high-performance textiles with a tactical severity …
+ * without fixing on any particular garment"* passes the piece rule and still
+ * invents a wardrobe the brief never mentions, and *"elite black-ops
+ * bio-engineering"* is a backstory no rule here mentioned at all.
+ *
+ * Measured on the BEFORE arm of his own cyborg brief (3 of 3 drafts): a
+ * soldier/operative history in all three, a dossier-photo frame, and an
+ * invented wardrobe paragraph in one.
+ *
+ * NO WORD BAN RIDES WITH IT, and that is a declared judgement rather than an
+ * omission: "soldier", "wardrobe", "history" and "built" are ordinary prose
+ * about a face, and this module has five recorded instances of an over-broad
+ * ban (`cropped`, `framing`, `reminiscent of`, and the two named in
+ * `PIECE_NOUNS`). The instruction carries it and his eye is the gate.
+ */
+/**
+ * The heading the six universal rules sit under. A CONSTANT because the arm
+ * that proves they are not branch-local reads this exact string rather than a
+ * copy of it — a mirrored heading is a heading that can drift.
+ */
+export const UNIVERSAL_RULES_HEADING = "THESE RULES HOLD WHICHEVER KIND OF SEED IT IS:";
+
+export const NO_NEW_SUBJECT_RULE =
+  "NO NEW SUBJECT. Sharpen and complete what the request names; never introduce a subject it is silent on. "
+  + "WARDROBE is the live case: if the request does not describe clothing, keep it generic or leave it out "
+  + "entirely — do not invent an outfit, a fabric world or a styling direction for one. The same holds for WHO "
+  + "he is: no profession, no employer, no organisation, no backstory, no history, no what-he-has-been-through, "
+  + "no world he comes from. You are writing a casting note about a look, not a character.";
+
+/**
+ * #327 rule 2, his sentence: *"'Pale porcelain skin' and 'heavily weathered'
+ * are both in the source — Max kept both and then added dry/taut/creased/
+ * weather-written-into-skin. Resolve that into one coherent skin read instead
+ * of stacking both."*
+ *
+ * ⚠ **RESOLVING IS NOT DROPPING, and the clause saying so is load-bearing** —
+ * without it this rule reads as permission to delete one of two stated facts,
+ * which is exactly what `FACTS STAY` forbids and what the court measured the
+ * free-reword arm doing. What must not survive is the ARGUMENT between them
+ * and the third pile of texture words stacked on top.
+ */
+export const RESOLVE_NOT_STACK_RULE =
+  "RESOLVE A CONTRADICTION, NEVER STACK IT. Where the request describes one surface two ways, write the single "
+  + "coherent reading that holds both — not both readings side by side, and never a third layer of texture words "
+  + "piled on afterwards. \"Pale porcelain\" and \"heavily weathered\" are ONE skin: say what that skin actually "
+  + "looks like, once. Resolving is not dropping — both stated facts survive inside the one description; what "
+  + "must not survive is the argument between them.";
+
+/**
+ * #327 rule 3, his sentence: *"The lockable facts are getting buried. Bald,
+ * mid-40s, right-temple ports, scalp plate joins, jaw plate, studs under both
+ * ears, faint amber-red right eye, surgically integrated not worn — those need
+ * to stay first-class and explicit. Don't dissolve them into a long prose
+ * paragraph of character writing."*
+ *
+ * ⚠ **THE SHAPE DECISION IS AN ORDERING RULE, and it is taken from his own
+ * approved worked example rather than invented.** The card left it open — *"a
+ * plain clause, a leading sentence, or an ordering rule"* — and the golden
+ * sphinx target already in this instruction, which he wrote and passed, opens
+ * with exactly that: a compact plain list of the stated facts ("Adult feline
+ * humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber
+ * eyes, long tail."), and only then the presence and the materials. So the
+ * rule is what his own example already demonstrates, which is the cheapest
+ * possible thing for a model to obey.
+ *
+ * ⚠ **AND NOTHING MEASURES IT, WHICH IS SAID OUT LOUD RATHER THAN PAPERED
+ * OVER.** `droppedFactIn` tests PRESENCE; he is asking for PROMINENCE. Every
+ * before-arm draft PASSES the fidelity guard — the facts are all there, and
+ * they are dissolved. There is no honest mechanical reader for "legible at a
+ * glance", so his eye on the drafts is the gate and this instruction is the
+ * control (law 9's shape: the reader is not the judge).
+ */
+export const FACTS_FIRST_RULE =
+  "STATED FACTS COME FIRST AND STAY LEGIBLE. Open with the request's own facts, plainly and compactly, before any "
+  + "mood or character writing — the way the worked example above opens. Each stated fact gets its own clause in "
+  + "the request's own terms, readable at a glance, with its placement and its side attached to it (\"above the "
+  + "right temple\", \"below each ear\", \"the right eye\"). Never dissolve a fact into a sentence about who he "
+  + "is: \"a man rebuilt for function\" does not carry \"a dark mechanical plate along the jawline\". Taste comes "
+  + "AFTER the facts, never wrapped around them.";
+
 const SKIN_RULE =
   "Do NOT ADD skin or surface words that fight the studio's own realism rules — no translucent, poreless, flawless, "
   + "airbrushed, waxy or doll-like skin, and no perfect symmetry — and do not reach for a synonym of one either. "
@@ -425,6 +575,19 @@ export function maxSystemPrompt(allowance: number): string {
     */
     "Worked example of the PIECES rule. An armoured feline humanoid should come back like this: \"Adult feline humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber eyes, long tail. Sphinx-cat presence, sovereign and predatory. Dark structured armour in aged bronze and gold with jewel-toned inlay — ceremonial, worn, formidable.\" Heat on top of that is pressure, never parts: \"Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft youthful rounding.\" What it must never become is a kit — \"angular pauldrons, banded vambraces, a high sculpted collar\" — which is a build sheet, not a casting note.",
     "",
+    /*
+      #327 rules 1-3, his four corrections read at his own MAX draft. They sit
+      HERE — after the worked example rule 3 points at, and ABOVE the
+      FINISHED/thin fork — because all three are true of both branches: his
+      failing draft was of a seed that fixes the world, and a rule about
+      inventing a character is not a property of how thin the seed was.
+    */
+    `${NO_NEW_SUBJECT_RULE}`,
+    "",
+    `${RESOLVE_NOT_STACK_RULE}`,
+    "",
+    `${FACTS_FIRST_RULE}`,
+    "",
     "FIRST decide what kind of seed it is — the decision is by CONTENT, never length: if the request already fixes the world (the aesthetic, the skin language, the face language), the seed is FINISHED; otherwise it is thin.",
     "",
     "On a FINISHED seed: HEAT ONLY, inside the same paragraph. Return that look with its pressure raised — more severe, more editorial, denser texture, stronger mood — and add NO new parts. Forbidden on a finished seed: new nouns. No new garment, no jewellery item, no named haircut, no new material, no body part brought into frame that the request did not name, no younger age, no sharper named face. If you catch yourself naming a thing the request did not name, delete it.",
@@ -441,6 +604,19 @@ export function maxSystemPrompt(allowance: number): string {
     "- Invent mood, materials, makeup language, hair language and lighting taste that belong to the seed's world (an editorial line, a universe of styling).",
     "- Do NOT specify an exact face, exact hairstyle, exact eye colour, exact jewellery item, exact garment, exact body type or exact expression. Anything you state is locked on every portrait; anything you leave unsaid the engine decides differently each time — that is how the casting stays a cast and not one person. Never lock a repeating signature item.",
     "- Stay in the studio: more taste, not more world. No scene, no story, no environment, no props.",
+    "",
+    /*
+      ⚠ THESE SIX WERE BULLETS UNDER "On a thin seed:" AND THEY ARE UNIVERSAL —
+      found while building #327 rule 4, and it is working law 4's shape rather
+      than a style preference. The CODE enforces all six on both branches
+      (`neverWrittenIn`, `skinContradictionIn`, `containsHouseSentence`, the
+      allowance re-ask, the blank-line check), so on a FINISHED seed the model
+      was being checked against rules its own instruction filed under the other
+      fork — including the very no-studio rule his rule 4 is about, and his
+      failing draft was of a finished seed. A rule the check enforces and the
+      instruction does not describe is how both drift.
+    */
+    UNIVERSAL_RULES_HEADING,
     `- ${NO_STUDIO_RULE}`,
     `- ${NO_NOTES_RULE}`,
     `- ${SKIN_RULE}`,
