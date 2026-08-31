@@ -1,6 +1,6 @@
 {
-  "edition": 174,
-  "updatedAt": "2026-09-01T00:45:00+10:00",
+  "edition": 175,
+  "updatedAt": "2026-09-01T00:55:00+10:00",
   "shift": "foreman-152",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -150,7 +150,7 @@
       "workedExample": "It does not close the card the instant you tap. Doing that from the page would mean putting a password into the live site that can CHANGE things in our code repository — a bigger key than the read-only one already turned down on this same page, and that is your decision to make rather than something to hand over as the side effect of a convenient button. The wait costs about an hour and buys a second pair of eyes: you found four already-finished cards yourself last Saturday just by reading them. And nothing on this road deletes anything — undo leaves the record that you once asked, exactly as your own rule for cards says.",
       "options": [],
       "recommendation": "⚠ ONE COMMAND FROM YOU AND THE TAPS START WORKING — until you run it, tapping \"Not relevant\" records nothing:\n\n  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production\n\nChecked on production tonight rather than assumed: the table it creates is still absent. Your page is honest meanwhile — the buttons are withheld rather than drawn dead, so nothing looks broken and nothing pretends to work. This is the same friction you ordered removed on #322, which is queued and unstarted.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-08-31T20:15:00+10:00",
       "issueNumber": 325
     },
@@ -3193,6 +3193,13 @@
       "detail": "Fixed and deployed 26 Aug 06:10 (PR #86): the help three-dot now sits in the topbar beside the credits chip and the sun/moon button instead of on top of it. Verified in the running app: the theme flips on click, the help menu still opens and closes, both themes checked by eye.",
       "severity": "info",
       "state": "resolved"
+    },
+    {
+      "id": "card-intents-ceremony-unrun",
+      "title": "Your “Not relevant” taps record nothing until you run one command",
+      "detail": "The buttons on your panel are withheld rather than drawn dead, so nothing looks broken — but the table behind them does not exist yet, checked on production tonight rather than assumed. One command turns it on:  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production  — after which a tap records your intent and the next shift closes the card, or says on the row why it kept it open. This is the same friction you ordered removed on #322, which is queued and unstarted. It sits here rather than on #325's card because you have already answered that card, and your own rule (2026-08-29) is that an answered card is marked answered.",
+      "severity": "warning",
+      "state": "open"
     }
   ],
   "acknowledgedReplyIds": [
