@@ -40,6 +40,10 @@ const read = (relative: string) => fs.readFileSync(path.resolve(CLIENT_SRC, rela
 
 const ICONS = read("foundation/icons.tsx");
 const RAIL = read("foundation/Rail.tsx");
+const TOPBAR = read("foundation/Topbar.tsx");
+const CHROME_STUBS = read("foundation/ChromeStubs.tsx");
+const BUG_BUTTON = read("features/lobby/ReportBugButton.tsx");
+const UTILITY_MENU = read("features/lobby/LobbyUtilityMenu.tsx");
 
 /** Strip comments, so a rule QUOTED in a docblock never satisfies its own arm. */
 const code = (source: string) =>
@@ -214,5 +218,145 @@ describe("one gear, not two", () => {
   /** The fallback still exists — his word was "don't use both", not "delete it". */
   it("P.cog is still available for the day he wants it", () => {
     expect(typeof P.cog).toBe("string");
+  });
+});
+
+
+/**
+ * ⚠ **THE TOPBAR SIX** (#321, his 27-glyph drop).
+ *
+ * His reason for drawing them at all, verbatim: *"These are on every page,
+ * which makes them the most-seen icons in the product after the rail — and
+ * Lucide's versions are the densest things in its set. Sun is a circle plus
+ * eight full-length rays; Bug has antennae, legs and body segments. At 15px
+ * both fill in."*
+ *
+ * The failure this block exists to catch is not a glyph going missing — it is
+ * a REVERSION: a later edit that reaches for `lucide-react` at one of these
+ * five call sites because that import is one line away and nothing complains.
+ * So each arm asserts BOTH halves at the same call site — the house glyph is
+ * drawn AND the Lucide name it replaced is not imported — because either half
+ * alone passes while the other is wrong.
+ *
+ * ⚠ **`P.megaphone` and `P.help` cannot be pinned to a live rail entry the way
+ * the eight destinations are**, so they are read at their source. Stated limit,
+ * the same one the file opens with: a source read cannot see a render. Whether
+ * these six hold at 15px in both themes was driven at the running app and
+ * recorded on the PR (law 6).
+ */
+describe("the topbar six are the house set's, not Lucide's", () => {
+  const lucideNames = (source: string) =>
+    (/import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/.exec(source)?.[1] ?? "")
+      .split(",")
+      .map((name) => name.trim());
+
+  it("all six glyphs exist in P and are real paths", () => {
+    for (const key of ["search", "sun", "moon", "bug", "help", "megaphone"] as const) {
+      expect(typeof P[key], `P.${key} is missing`).toBe("string");
+      expect(P[key].startsWith("M"), `P.${key} is not a path`).toBe(true);
+    }
+  });
+
+  it("the theme toggle draws P.sun/P.moon and imports neither Sun nor Moon", () => {
+    expect(code(TOPBAR)).toMatch(/d=\{theme === "dark" \? P\.sun : P\.moon\}/);
+    const named = lucideNames(TOPBAR);
+    expect(named).not.toContain("Sun");
+    expect(named).not.toContain("Moon");
+  });
+
+  it("search and What's new draw P.search/P.megaphone and import neither", () => {
+    expect(code(CHROME_STUBS)).toMatch(/d=\{P\.search\}/);
+    expect(code(CHROME_STUBS)).toMatch(/d=\{P\.megaphone\}/);
+    const named = lucideNames(CHROME_STUBS);
+    expect(named).not.toContain("Search");
+    expect(named).not.toContain("Megaphone");
+  });
+
+  /**
+   * `FolderClosed` and `ChevronDown` are KEPT, and the arm says so rather than
+   * banning Lucide from the file — his kept list is explicit (*"chevrons,
+   * arrows, plus, close, check, trash, ellipsis…"*), and an arm that forbade
+   * the whole import would read as tidier while enforcing an instruction he
+   * did not give. Same shape as the Invite `Plus` arm above.
+   */
+  it("the project switcher's furniture is still Lucide, which is his rule", () => {
+    const named = lucideNames(CHROME_STUBS);
+    expect(named).toContain("FolderClosed");
+    expect(named).toContain("ChevronDown");
+  });
+
+  it("the bug button draws P.bug and imports no Bug", () => {
+    expect(code(BUG_BUTTON)).toMatch(/d=\{P\.bug\}/);
+    expect(lucideNames(BUG_BUTTON)).not.toContain("Bug");
+  });
+
+  it("the help button draws P.help and imports no CircleHelp", () => {
+    expect(code(UTILITY_MENU)).toMatch(/d=\{P\.help\}/);
+    expect(lucideNames(UTILITY_MENU)).not.toContain("CircleHelp");
+  });
+
+  /**
+   * ⚠ The POSITIVE CONTROL for both halves at once. Every arm above is a pair
+   * of assertions that are each individually satisfiable by an empty file — a
+   * `not.toContain` over a source with no Lucide import at all passes, and so
+   * does a `toMatch` the day someone renames the prop. This drives the two
+   * matchers over a synthetic call site in the shape they are meant to reject.
+   */
+  it("the matchers would see a reversion", () => {
+    const reverted = [
+      'import { Bug, Search, Sun } from "lucide-react";',
+      "<Bug size={15} strokeWidth={1.8} />",
+    ].join("\n");
+    const named = (/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(reverted)?.[1] ?? "")
+      .split(",")
+      .map((name) => name.trim());
+    expect(named).toContain("Bug");
+    expect(named).toContain("Search");
+    expect(named).toContain("Sun");
+    expect(/d=\{P\.bug\}/.test(reverted)).toBe(false);
+    expect(/d=\{P\.bug\}/.test("<Icon d={P.bug} size={15} />")).toBe(true);
+  });
+});
+
+/**
+ * ⚠ **THE PRODUCT'S COPY IS HIS FILE, BYTE FOR BYTE** (#321).
+ *
+ * His instruction: *"Copy the docs file into `client/src/foundation/`. Do not
+ * edit the docs copy to match code."* The risk in a 27-glyph transcription is a
+ * single wrong digit in a path string, which nothing else in this suite could
+ * see and which would show up only as a slightly wrong shape at 17px.
+ *
+ * So the arm compares the `P` blocks of the two files as TEXT. It deliberately
+ * does not compare whole files: the product's copy carries a PROVENANCE
+ * docblock the handoff does not, which is the one thing #280 says it should
+ * add, and comparing everything would forbid exactly that.
+ */
+describe("the product's glyphs are the founder's handoff, unmodified", () => {
+  const REPO_ROOT = path.resolve(CLIENT_SRC, "..", "..");
+  const HANDOFF = path.resolve(
+    REPO_ROOT,
+    "docs/specs/Casting-ui-ux-design/drape-redesign/icons.tsx",
+  );
+
+  const pBlock = (source: string) => {
+    const start = source.indexOf("export const P = {");
+    const end = source.indexOf("} as const;", start);
+    expect(start, "no P block").toBeGreaterThan(-1);
+    expect(end, "no end of P block").toBeGreaterThan(start);
+    return source.slice(start, end);
+  };
+
+  it("the handoff is still in the tree to compare against", () => {
+    expect(fs.existsSync(HANDOFF), "his icon handoff was deleted").toBe(true);
+  });
+
+  it("every path string matches his, exactly", () => {
+    expect(pBlock(ICONS)).toBe(pBlock(fs.readFileSync(HANDOFF, "utf8")));
+  });
+
+  it("the comparison would see one changed digit", () => {
+    const mine = "export const P = {\n  studio: 'M4 10.5L12 4',\n} as const;";
+    const his = "export const P = {\n  studio: 'M4 10.6L12 4',\n} as const;";
+    expect(pBlock(mine)).not.toBe(pBlock(his));
   });
 });

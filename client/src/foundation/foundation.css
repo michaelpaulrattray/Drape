@@ -615,6 +615,26 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 
 .dp-iconbtn:hover { background: var(--fillStrong); }
 
+/*
+  THE SHELL'S OWN CONTROL, one step smaller than the surface's (#321 defect d).
+
+  His measurement, verbatim: "In the prototype it's deliberately one step
+  smaller than the bug/help/what's-new buttons, with a lighter hover — `--fill`
+  rather than `--fillStrong`. It's the shell's own control sitting among the
+  surface's, and the size difference is what separates them. If `.dp-iconbtn` is
+  one fixed size, the toggle needs its own modifier."
+
+  It is one fixed size, so this is that modifier. Two properties and no more:
+  everything else the toggle needs is `.dp-iconbtn`'s already, and a modifier
+  that restates the radius and the colour is a second button waiting to drift.
+*/
+.dp-iconbtn--theme {
+  width: 28px;
+  height: 28px;
+}
+
+.dp-iconbtn--theme:hover { background: var(--fill); }
+
 /* Over media: dark glass only — translucent white measured 2.5:1 (README §6). */
 .dp-btn--onmedia {
   padding: 6px var(--s-4);

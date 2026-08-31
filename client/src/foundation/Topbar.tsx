@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Moon, Sun, User } from "lucide-react";
+import { ChevronDown, User } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useTheme } from "@/contexts/ThemeContext";
 
 import { SearchStub } from "./ChromeStubs";
+import { Icon, P } from "./icons";
 
 /**
  * The 56px glass topbar (foundation README §4, plan §D.6, section 02 §1).
@@ -17,6 +18,23 @@ import { SearchStub } from "./ChromeStubs";
  * carries the brand at the top of the rail, two inches away; the space belongs
  * to the project switcher. `BRAND_NAME` still exists and is still the one place
  * the product's name is written — nothing in the chrome renders it now.
+ *
+ * ⚠ **THE THEME TOGGLE IS THE SHELL'S OWN CONTROL, AND IT IS DRAWN ONE STEP
+ * SMALLER THAN THE SURFACE'S** (#321 defects c and d, his measurement):
+ * *"In the prototype it's deliberately one step smaller than the bug/help/
+ * what's-new buttons, with a lighter hover — `--fill` rather than
+ * `--fillStrong`. It's the shell's own control sitting among the surface's, and
+ * the size difference is what separates them."* Hence `dp-iconbtn--theme`:
+ * 28px against the surface's 30px, and the lighter hover. It is a modifier
+ * rather than a second class because everything else about the button — the
+ * radius, the colour, the transition — is `.dp-iconbtn`'s and should stay
+ * there.
+ *
+ * And its glyphs are the house set's now (`P.sun` / `P.moon`), not Lucide's at
+ * a hand-set 1.8. **This was the last place in the product where a
+ * house-family stroke was set by hand**; `Icon` fixes it at 1.7 and takes no
+ * stroke prop, so his rule — *"icons get bigger, never heavier"* — is true by
+ * construction here rather than by everyone remembering it.
  *
  * The theme toggle is owned by the shell and never by a feature (plan §D.8).
  * `right` is where a surface puts its own chrome — the credits chip, the bug
@@ -65,16 +83,12 @@ export function Topbar({
         {right}
         <button
           type="button"
-          className="dp-iconbtn"
+          className="dp-iconbtn dp-iconbtn--theme"
           onClick={toggleTheme}
           title={`Switch to ${nextTheme} theme`}
           aria-label={`Switch to ${nextTheme} theme`}
         >
-          {theme === "dark" ? (
-            <Sun size={15} strokeWidth={1.8} />
-          ) : (
-            <Moon size={15} strokeWidth={1.8} />
-          )}
+          <Icon d={theme === "dark" ? P.sun : P.moon} size={15} />
         </button>
         {account ? <AccountChip account={account} /> : null}
       </div>

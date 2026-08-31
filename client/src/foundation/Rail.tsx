@@ -9,8 +9,18 @@ import { Icon, P } from "./icons";
  * The 76px rail (foundation README §4, plan §D.5, handoff chapter 01).
  *
  * ⚠ **EIGHT destinations, from now on** — Home, Create, Canvas, Templates,
- * Cinema, Casting, Assets, Library. Four exist; four do not yet, and they
+ * Casting, Cinema, Assets, Library. Four exist; four do not yet, and they
  * render as quiet inert stubs rather than being left out.
+ *
+ * ⚠ **CINEMA SITS AFTER CASTING, AND THE SECTION-02 BRIEF THAT SAID OTHERWISE
+ * IS SUPERSEDED BY ITS OWN AUTHOR** (#321 defect b, 2026-08-30, verbatim):
+ * *"you have Cinema before Casting. My section-02 brief said that, and **the
+ * brief was wrong**; the prototype is … Templates · Casting · Cinema · Assets ·
+ * Library."* So #270 and section 02 are corrected on this one point and on
+ * nothing else — the reversal to eight below is untouched, and the eighth is
+ * still Cinema. Recorded here rather than only in the card because the previous
+ * order was itself pinned in `section02-guard.test.ts`, and a reader who finds
+ * the guard asserting Casting-then-Cinema should see WHY before assuming drift.
  *
  * **This is a REVERSAL of founder ruling F1 (2026-07-31), not a contradiction
  * of it, and it is his own** (section 02, 2026-08-30, verbatim): *"F1 is
@@ -84,16 +94,16 @@ type Destination = {
 /**
  * The eight, in his own order, each against the key he named for it (#280:
  * *"P.studio, P.image, P.thread, P.campaign, P.avatar, P.asset, P.library,
- * plus Cinema"* — seven keys listed in rail order with Cinema slotted where
- * his section-02 ruling puts it, between Templates and Casting).
+ * plus Cinema"* — seven keys listed in rail order, with Cinema after Casting
+ * per his #321 correction of his own section-02 brief.
  */
 export const RAIL_DESTINATIONS: readonly Destination[] = [
   { id: "home", label: "Home", href: "/app", glyph: P.studio },
   { id: "create", label: "Create", glyph: P.image },
   { id: "canvas", label: "Canvas", href: "/app/boards", glyph: P.thread },
   { id: "templates", label: "Templates", glyph: P.campaign },
-  { id: "cinema", label: "Cinema", glyph: P.cinema },
   { id: "casting", label: "Casting", href: "/casting", glyph: P.avatar },
+  { id: "cinema", label: "Cinema", glyph: P.cinema },
   { id: "assets", label: "Assets", glyph: P.asset },
   { id: "library", label: "Library", href: "/app/models", glyph: P.library },
 ];
