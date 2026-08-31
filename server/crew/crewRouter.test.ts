@@ -152,8 +152,8 @@ describe("strictness — invariant 4 at the wire (§9 arm 3)", () => {
     expect(() => parserOf("reply").parse({ cardId: null, body: "   " })).toThrow();
     expect(() => parserOf("reply").parse({ cardId: null, body: "x".repeat(4001) })).toThrow();
     expect(() => parserOf("reply").parse({ cardId: "x".repeat(65), body: "y" })).toThrow();
-    /* The empty string is neither a card id nor a journal note — null is the
-       journal note. A shape no client sends refuses. */
+    /* The empty string is neither a card id nor a general note — null is the
+       general note. A shape no client sends refuses. */
     expect(() => parserOf("reply").parse({ cardId: "", body: "y" })).toThrow();
   });
 });

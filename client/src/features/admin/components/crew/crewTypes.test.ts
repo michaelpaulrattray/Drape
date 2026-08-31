@@ -3,7 +3,8 @@
  * regression for PR #72 gate-review finding 2.
  *
  * Needs You renders reply threads under OPEN cards only; everything else must
- * fall through to the journal. The first version keyed the fall-through on
+ * fall through to the GENERAL box (the journal until #293 removed it — the
+ * rule is unchanged, only the box's name). The first version keyed it on
  * "card still listed", so a reply on an ANSWERED card — listed under
  * "Recently answered", thread nowhere — rendered on no part of the page. His
  * words are the steering wheel; a rendering rule that can drop them is the
@@ -12,7 +13,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  JOURNAL_FOLD_VISIBLE,
+  GENERAL_FOLD_VISIBLE,
   foldTimeline,
   milestoneCountLine,
   milestoneProgress,
@@ -22,7 +23,7 @@ import {
   nextUpRows,
   pipelineNotDone,
   recentHistory,
-  replyFallsToJournal,
+  replyFallsToGeneral,
 } from "./crewTypes";
 
 const CARDS = [
@@ -32,33 +33,33 @@ const CARDS = [
 ] as const;
 
 describe("where a reply renders", () => {
-  it("a cardless reply is a journal note", () => {
-    expect(replyFallsToJournal(null, CARDS)).toBe(true);
+  it("a cardless reply is a general note", () => {
+    expect(replyFallsToGeneral(null, CARDS)).toBe(true);
   });
 
   it("a reply on an OPEN card stays with its card's thread", () => {
-    expect(replyFallsToJournal("open-card", CARDS)).toBe(false);
+    expect(replyFallsToGeneral("open-card", CARDS)).toBe(false);
   });
 
-  it("⚠ a reply on an ANSWERED or DONE card falls to the journal — the card is listed but renders no thread", () => {
-    expect(replyFallsToJournal("answered-card", CARDS)).toBe(true);
-    expect(replyFallsToJournal("done-card", CARDS)).toBe(true);
+  it("⚠ a reply on an ANSWERED or DONE card falls to the General box — the card is listed but renders no thread", () => {
+    expect(replyFallsToGeneral("answered-card", CARDS)).toBe(true);
+    expect(replyFallsToGeneral("done-card", CARDS)).toBe(true);
   });
 
-  it("a reply whose card left the briefing entirely falls to the journal", () => {
-    expect(replyFallsToJournal("a-card-no-briefing-holds", CARDS)).toBe(true);
+  it("a reply whose card left the briefing entirely falls to the General box", () => {
+    expect(replyFallsToGeneral("a-card-no-briefing-holds", CARDS)).toBe(true);
   });
 
   it("exhaustive: every card state routes every reply somewhere", () => {
-    /* The invariant itself: for ANY cardId, the reply renders in the journal
+    /* The invariant itself: for ANY cardId, the reply renders in the General box
        OR under an open card's thread — never neither. */
     const everyCardId = [null, ...CARDS.map((card) => card.id), "gone-card"];
     for (const cardId of everyCardId) {
-      const inJournal = replyFallsToJournal(cardId, CARDS);
+      const inGeneral = replyFallsToGeneral(cardId, CARDS);
       const inOpenThread =
         cardId !== null && CARDS.some((card) => card.id === cardId && card.state === "open");
-      expect(inJournal || inOpenThread, `a reply on ${String(cardId)} renders nowhere`).toBe(true);
-      expect(inJournal && inOpenThread, `a reply on ${String(cardId)} renders twice`).toBe(false);
+      expect(inGeneral || inOpenThread, `a reply on ${String(cardId)} renders nowhere`).toBe(true);
+      expect(inGeneral && inOpenThread, `a reply on ${String(cardId)} renders twice`).toBe(false);
     }
   });
 });
@@ -264,22 +265,22 @@ describe("NEXT UP — blocked-on-him is derived off his desk, never stored (#290
   });
 });
 
-describe("the journal fold (#74 — his standing Desk rule)", () => {
-  it(`shows ${JOURNAL_FOLD_VISIBLE} and folds the rest, order preserved`, () => {
+describe("the General box fold (#74 — his standing Desk rule)", () => {
+  it(`shows ${GENERAL_FOLD_VISIBLE} and folds the rest, order preserved`, () => {
     const items = Array.from({ length: 11 }, (_, index) => index);
     const { recent, older } = foldTimeline(items);
     expect(recent).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
     expect(older).toEqual([8, 9, 10]);
   });
 
-  it("a short timeline folds nothing — no empty disclosure button", () => {
+  it("a short list folds nothing — no empty disclosure button", () => {
     const { recent, older } = foldTimeline([0, 1, 2]);
     expect(recent).toEqual([0, 1, 2]);
     expect(older).toEqual([]);
   });
 
   it("the boundary itself: exactly the visible count folds nothing", () => {
-    const items = Array.from({ length: JOURNAL_FOLD_VISIBLE }, (_, index) => index);
+    const items = Array.from({ length: GENERAL_FOLD_VISIBLE }, (_, index) => index);
     expect(foldTimeline(items).older).toEqual([]);
   });
 });

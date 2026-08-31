@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e5c613701e8d0dc5"
+    "sourceFingerprint": "587c9b5c1c813453"
   },
   "domains": [
     {
@@ -723,8 +723,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
-      "path": "client/src/features/admin/components/crew/CrewJournal.tsx",
+      "id": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
+      "path": "client/src/features/admin/components/crew/CrewGeneral.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -14101,22 +14101,22 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -18417,7 +18417,7 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewJournal.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
       "kind": "imports"
     },
     {

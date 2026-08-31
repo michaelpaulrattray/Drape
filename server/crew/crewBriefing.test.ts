@@ -22,7 +22,6 @@ import { describe, expect, it } from "vitest";
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
 
 import {
-  CREW_JOURNAL_CAP,
   crewBriefingSchema,
   degradedCrewBriefing,
   readCrewBriefing,
@@ -298,13 +297,24 @@ describe("the briefing file", () => {
     )).toThrow();
   });
 
-  it("the journal cap holds at the schema", () => {
+  /**
+   * ⚠ **THE JOURNAL IS GONE AND ITS CAP WITH IT (#293)** — the founder removed
+   * it from his page, so the field, its 40-entry cap and the two arms that
+   * proved the cap are all deleted rather than left standing over nothing.
+   * What replaces them is the arm below: the schema is `.strict()`, so an
+   * edition that still carries a `journal` is REFUSED rather than silently
+   * accepted and never drawn. That is the only journal fact worth a test now,
+   * and it is the one that catches a shift copying an old edition forward.
+   */
+  it("an edition that still carries a journal is refused — the field is gone, not ignored", () => {
     const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
-    const entry = { at: "2026-08-25T00:00:00+10:00", shift: "x", text: "y" };
-    const atCap = { ...valid, journal: Array.from({ length: CREW_JOURNAL_CAP }, () => entry) };
-    expect(() => crewBriefingSchema.parse(atCap)).not.toThrow();
-    const overCap = { ...valid, journal: Array.from({ length: CREW_JOURNAL_CAP + 1 }, () => entry) };
-    expect(() => crewBriefingSchema.parse(overCap)).toThrow();
+    expect(valid.journal).toBeUndefined();
+    expect(() => crewBriefingSchema.parse(valid)).not.toThrow();
+    const withJournal = {
+      ...valid,
+      journal: [{ at: "2026-08-25T00:00:00+10:00", shift: "x", text: "y" }],
+    };
+    expect(() => crewBriefingSchema.parse(withJournal)).toThrow();
   });
 
   it("⚠ the briefing travels INSIDE the bundle — a static import, never a runtime path", () => {
@@ -345,12 +355,16 @@ describe("the degraded state", () => {
     expect(degraded.problems[0]!.severity).toBe("urgent");
     expect(degraded.problems[0]!.state).toBe("open");
     /* The words the founder actually reads: it must say the briefing failed,
-       that his replies are unaffected, and where the fallback is. */
+       that his replies are unaffected, and that the one control on the page
+       still works. ⚠ It used to point him at "the journal in git history" as
+       the fallback; #293 removed the journal, so that sentence would have sent
+       him to a file that no longer holds one. The General box is what is
+       actually still standing on a degraded page, and it is what he is told. */
     expect(degraded.problems[0]!.title.toLowerCase()).toContain("failed to load");
     expect(degraded.problems[0]!.detail).toContain("Your replies are unaffected");
-    expect(degraded.problems[0]!.detail).toContain("git history");
+    expect(degraded.problems[0]!.detail).toContain("General box");
+    expect(degraded.problems[0]!.detail).not.toContain("journal");
     expect(degraded.needsYou).toEqual([]);
-    expect(degraded.journal).toEqual([]);
     expect(degraded.acknowledgedReplyIds).toEqual([]);
   });
 

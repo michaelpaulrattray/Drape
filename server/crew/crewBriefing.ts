@@ -46,7 +46,7 @@
  * At shift close: read his new replies first (`scripts/crew-read-replies.mts`)
  * — merge, never overwrite — then edit the JSON. Bump `edition`, refresh
  * `updatedAt` and `shift`, move pipeline and milestone states to what is
- * actually true, append the journal entry, open or close needs-you cards, and
+ * actually true, open or close needs-you cards, and
  * extend `acknowledgedReplyIds` with every reply id the shift has READ. Then
  * `pnpm check`, this test file, and push through the rite.
  *
@@ -64,26 +64,17 @@ import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpH
 import briefingJson from "./crew-briefing.json";
 
 /**
- * A datetime the page can SORT — `Date.parse` must read it, or the journal's
- * timeline would place the entry at a NaN's arbitrary position instead of
- * this parse reddening the shift's commit, which is the one gate built to
- * catch exactly a shift's typo. (Named for what writers emit — ISO-8601 with
- * an offset — but validated for what readers need.)
+ * A datetime the page can SORT — `Date.parse` must read it, or a timeline
+ * would place the entry at a NaN's arbitrary position instead of this parse
+ * reddening the shift's commit, which is the one gate built to catch exactly
+ * a shift's typo. (Named for what writers emit — ISO-8601 with an offset —
+ * but validated for what readers need.)
  */
 const isoDateTime = z
   .string()
   .min(1)
   .max(64)
   .refine((value) => !Number.isNaN(Date.parse(value)), "not a parseable datetime");
-
-/**
- * How many shift entries the file carries (§2).
- *
- * Not a retention rule — nothing is destroyed. Older history lives in git,
- * which is the whole reason this half is a tracked file. The cap is about what
- * a page can be read down in one sitting.
- */
-export const CREW_JOURNAL_CAP = 40;
 
 const focusSchema = z.object({
   state: z.enum(["confirmed", "proposed", "none"]),
@@ -224,12 +215,6 @@ const problemSchema = z.object({
   state: z.enum(["open", "resolved"]),
 }).strict();
 
-const journalEntrySchema = z.object({
-  at: isoDateTime,
-  shift: z.string(),
-  text: z.string(),
-}).strict();
-
 /**
  * One frame inside an eye item (#75 — his verbatim ask: *"when these things
  * run and require my eyes is there a gallery built into this page so i can
@@ -322,8 +307,6 @@ export const crewBriefingSchema = z.object({
     .refine(uniqueBy("item", (item) => item.id), uniqueMessage("pipeline[].id")),
   problems: z.array(problemSchema)
     .refine(uniqueBy("problem", (problem) => problem.id), uniqueMessage("problems[].id")),
-  /** Shift entries only — his notes arrive as replies. Capped; git holds the rest. */
-  journal: z.array(journalEntrySchema).max(CREW_JOURNAL_CAP),
   acknowledgedReplyIds: z.array(z.number().int().positive()),
 }).strict().refine(
   /*
@@ -416,12 +399,11 @@ export function degradedCrewBriefing(): CrewBriefing {
       detail:
         "The team's half of this page could not be read, so everything above is empty. "
         + "Your replies are unaffected — they live in the database and are still being "
-        + "written and read. The journal in git history is the fallback while a shift "
-        + "repairs the file.",
+        + "written and read, and the General box below still works. A shift is "
+        + "repairing the file.",
       severity: "urgent",
       state: "open",
     }],
-    journal: [],
     acknowledgedReplyIds: [],
   };
 }
