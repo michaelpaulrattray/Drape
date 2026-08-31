@@ -17,6 +17,15 @@
  * BOTH halves: the old address is gone, and the page that took the new one
  * actually refuses.
  *
+ * #364: `/studio` — the legacy studio, carrying legacy casting AND wardrobe —
+ * was unlinked from the navigation by #302 and still resolved for anyone signed
+ * in. The founder ordered it SEALED, not deleted: "they should be completely
+ * unlinked from the public being able to reach them. that way as we continue
+ * development we can cleanly retire them?" So the arms assert three things that
+ * pull against each other on purpose — the route is still registered, the page
+ * refuses everyone but an admin, and it refuses by answering 404 rather than by
+ * saying no (a refusal page tells a stranger there is something there).
+ *
  * Reads are newline-normalized on purpose: these assertions are about tokens
  * on one line, and a CRLF working copy (issue #71) must not fail them.
  */
@@ -29,6 +38,12 @@ const PAGES_DIR = resolve(__dirname, "pages");
 const read = (path: string) => readFileSync(path, "utf8").replace(/\r\n/g, "\n");
 
 const appSource = read(resolve(__dirname, "App.tsx"));
+
+/** Every routed page, read from the directory rather than from a list. */
+const pageFiles = () =>
+  readdirSync(PAGES_DIR)
+    .filter((name) => name.endsWith(".tsx"))
+    .map((name) => ({ name, text: code(read(resolve(PAGES_DIR, name))) }));
 
 /** Comments quote the rule; matching on them would pass on the promise. */
 const code = (s: string) =>
@@ -98,11 +113,6 @@ describe("App routes — the class the #261 sweep named", () => {
      procedures, so it consults a session and never reaches this list. The list
      is "allowed to consult nothing", not "allowed to be public". */
 
-  const pageFiles = () =>
-    readdirSync(PAGES_DIR)
-      .filter((name) => name.endsWith(".tsx"))
-      .map((name) => ({ name, text: code(read(resolve(PAGES_DIR, name))) }));
-
   it("finds the pages it is supposed to find", () => {
     /* A matcher that silently matches nothing is a green suite proving nothing. */
     expect(pageFiles().length).toBeGreaterThan(10);
@@ -115,5 +125,65 @@ describe("App routes — the class the #261 sweep named", () => {
       .sort();
 
     expect(ungated).toEqual(Object.keys(PUBLIC_BY_DESIGN).sort());
+  });
+});
+
+describe("App routes — the legacy studio is sealed, not deleted (#364)", () => {
+  const studio = () => code(read(resolve(PAGES_DIR, "DrapeStudio.tsx")));
+
+  it("keeps the /studio route registered — the door closes, nothing is removed", () => {
+    /*
+      His order was explicit that N8 owns retirement and the Atlas is the
+      deletion authority. A shift that "tidied" this route away would be
+      deleting on a closed door rather than on no callers.
+    */
+    expect(appSource).toContain('<Route path="/studio" component={DrapeStudio} />');
+  });
+
+  it("renders only for an admin", () => {
+    expect(studio()).toMatch(/user\?\.role === 'admin'/);
+  });
+
+  it("answers 404 rather than refusing out loud", () => {
+    /*
+      "A non-admin hitting it must get the SAME answer the address would give if
+      it did not exist" — so NotFound, never a Redirect to a login page and never
+      an access-denied screen.
+    */
+    const text = studio();
+    expect(text).toContain("import NotFound from '@/pages/NotFound'");
+    expect(text).toMatch(/if \(!authLoading && !isAdmin\) \{\s*return <NotFound \/>;/);
+  });
+
+  it("navigates a sealed visitor nowhere — the 404 is not raced by a redirect", () => {
+    /*
+      MEASURED, not reasoned about. The first cut of this seal returned
+      <NotFound /> and a signed-in non-admin still landed on /app, because
+      `useStudioEntry` holds "the ONLY bare-/studio redirect" and it fired on
+      `isAuthenticated`. A 404 that a redirect overtakes is not a 404.
+
+      So both session hooks take `isAdmin`, and the null-tool watcher refuses
+      before it can navigate. All three are asserted because each one is a
+      separate way for the page to move somebody it has already refused.
+    */
+    const text = studio();
+    expect(text).toContain("useSessionRestore(isAdmin)");
+    expect(text).toContain("useStudioEntry({ isAuthenticated: isAdmin, isRestoring })");
+    expect(text).toMatch(/if \(!isAdmin\) return;[\s\S]{0,120}?entryStatus !== 'settled'/);
+  });
+
+  it("and no staff page sends a wrong-role visitor to it", () => {
+    /*
+      Nine admin and moderator pages bounced a non-admin to /studio. Sealing it
+      without moving them would have made every one of those a dead end for
+      exactly the population they exist for — the seal's own second-order
+      defect, and the reason this arm is derived from the directory rather than
+      from a list of the nine.
+    */
+    const offenders = pageFiles()
+      .filter(({ text }) => /Redirect to="\/studio"/.test(text))
+      .map(({ name }) => name);
+
+    expect(offenders).toEqual([]);
   });
 });

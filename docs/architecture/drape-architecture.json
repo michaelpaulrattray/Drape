@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "33bcda631c58e711"
+    "sourceFingerprint": "c702f160ad310157"
   },
   "domains": [
     {
@@ -19198,6 +19198,11 @@
     {
       "from": "module:client/src/pages/DrapeStudio.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/DrapeStudio.tsx",
+      "to": "module:client/src/pages/NotFound.tsx",
       "kind": "imports"
     },
     {
