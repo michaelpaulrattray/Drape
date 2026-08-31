@@ -59,10 +59,21 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { LAW_SURFACES } from "../scripts/lib/lawText.mts";
+
 const REPO_ROOT = join(__dirname, "..");
 
 /** Surfaces under the rule mechanically. See the scope note above. */
-const ENUMERATED_SURFACES = ["CLAUDE.md"] as const;
+/*
+  ⚠ THE COMPANION IS IN SCOPE BECAUSE THE TEXT MOVED INTO IT (2026-08-31, #330).
+  Two thirds of `CLAUDE.md` — the flag catalogue — was carved into
+  `docs/architecture/FEATURE_FLAGS.md`. Leaving this arm at `CLAUDE.md` alone
+  would have quietly narrowed the rule to a third of the prose it used to cover,
+  with nothing going red: the pointers would simply have walked out of scope. The
+  list comes from `scripts/lib/lawText.mts` so the next carve-out is one line
+  there rather than an edit here that nobody remembers to make.
+*/
+const ENUMERATED_SURFACES = LAW_SURFACES;
 
 /**
  * A bare prose pointer: a filename with a code-or-document extension, followed
@@ -125,6 +136,34 @@ describe("a pointer on a live instruction surface names a symbol", () => {
       "`fal-ai/aura-sr`, `esrgan` declared fallback",
     ].join("\n");
     expect(barePointersIn(noise)).toEqual([]);
+  });
+
+  /*
+    ⚠ AND THE SURFACE LIST ITSELF IS PINNED — found by sabotaging it, not by
+    foreseeing it (2026-08-31, #330).
+
+    `ENUMERATED_SURFACES` decides what this rule COVERS, and narrowing it
+    reddens nothing anywhere: a scan that scans less simply passes. Driven —
+    `LAW_SURFACES` was cut back to `["CLAUDE.md"]` alone and every arm in the
+    four re-pointed files stayed green, which would have silently taken two
+    thirds of this repository's flag prose out of the rule.
+
+    An `it.each` over an EMPTY list is the same failure one size worse: vitest
+    generates no test and reports no test, which reads exactly like a pass.
+    So the population is asserted before it is used, and the two members are
+    named — the file every session loads, and the file most of it moved into.
+  */
+  it("⚠ CONTROL — the surface list is the real one, and narrowing it is caught", () => {
+    expect(ENUMERATED_SURFACES.length).toBeGreaterThan(1);
+    expect(
+      ENUMERATED_SURFACES,
+      "the surface every session loads before doing anything",
+    ).toContain("CLAUDE.md");
+    expect(
+      ENUMERATED_SURFACES,
+      "the flag catalogue — 122,893 bytes carved out of CLAUDE.md by #330, and out of this "
+      + "rule's reach the moment it leaves LAW_SURFACES",
+    ).toContain("docs/architecture/FEATURE_FLAGS.md");
   });
 
   it.each(ENUMERATED_SURFACES)("%s carries no bare file:line pointer", (surface) => {

@@ -6,7 +6,8 @@
  * to `CASTING_V2_SCOPE` at the root. That fence is real — twenty
  * `validate…Environment` functions in `castingV2/castingV2Scope.ts`, each
  * throwing rather than warning — and every one of them is described in
- * CLAUDE.md's feature-gated section, because **CLAUDE.md is the document a flip
+ * the flag catalogue (`docs/architecture/FEATURE_FLAGS.md`, carved out
+ * of CLAUDE.md by #330), because **that catalogue is the document a flip
  * is planned from.**
  *
  * ⚠ WHAT HAPPENS WHEN THOSE TWO DISAGREE IS NOT A DOCUMENTATION BUG. It is a
@@ -21,7 +22,7 @@
  *
  *   the code       each `validate<Stem>Environment`'s body, and the `*_SCOPE_ENV`
  *                  constant it names when it refuses
- *   the document   the CLAUDE.md bullet that opens `- \`<THAT FLAG>\``
+ *   the document   the catalogue entry that opens `- \`<THAT FLAG>\``
  *
  * ⚠ THE MAPPING IS SELF-CHECKING RATHER THAN TYPED. A validator's stem is turned
  * into its flag name mechanically (`CastingInkRegionCrop` →
@@ -50,12 +51,24 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { FLAG_CATALOGUE, flagCatalogue } from "../scripts/lib/lawText.mts";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scopeSource = readFileSync(
   path.join(repoRoot, "server/castingV2/castingV2Scope.ts"),
   "utf8",
 );
-const claudeMd = readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8");
+/*
+  ⚠ THE BULLETS MOVED, THE ARM DID NOT (2026-08-31, #330).
+
+  The flag catalogue was carved out of `CLAUDE.md` into
+  `docs/architecture/FEATURE_FLAGS.md`, byte for byte. Left reading `CLAUDE.md`
+  this file would have found no bullet for any flag, and the "has a bullet"
+  assertion below would have caught it loudly — which is the only reason the
+  move was safe to make. The document a flip is planned from is the catalogue
+  now, and `scripts/lib/lawText.mts` owns where that is.
+*/
+const catalogue = flagCatalogue(repoRoot);
 
 /** `IDENTIFIER_SCOPE_ENV` → the flag name it holds. */
 function declaredScopeEnvs(source: string): Record<string, string> {
@@ -116,12 +129,12 @@ function scopeFences(source: string): Fence[] {
   return fences;
 }
 
-/** The CLAUDE.md bullet for one flag, from its own `- \`FLAG\`` to the next. */
+/** The catalogue entry for one flag, from its own `- \`FLAG\`` to the next. */
 function bulletFor(flag: string): string {
-  const start = claudeMd.indexOf(`- \`${flag}\``);
+  const start = catalogue.indexOf(`- \`${flag}\``);
   if (start < 0) return "";
-  const next = claudeMd.indexOf("\n- `", start + 3);
-  return claudeMd.slice(start, next > start ? next : start + 8000);
+  const next = catalogue.indexOf("\n- `", start + 3);
+  return catalogue.slice(start, next > start ? next : start + 8000);
 }
 
 describe("the scope fences, derived from the code", () => {
@@ -169,12 +182,12 @@ describe("the scope fences, derived from the code", () => {
       const bullet = bulletFor(fence.flag);
       expect(
         bullet.length,
-        `${fence.flag} has a boot fence and no bullet in CLAUDE.md's feature-gated section`,
+        `${fence.flag} has a boot fence and no entry in ${FLAG_CATALOGUE}`,
       ).toBeGreaterThan(80);
       for (const parent of fence.parents) {
         expect(
           bullet.includes(parent),
-          `${fence.flag}'s boot fence refuses unless ${parent} covers it, and ${fence.flag}'s CLAUDE.md bullet never mentions ${parent} — whoever plans the flip from that paragraph will set one variable where two were needed, and find out at boot`,
+          `${fence.flag}'s boot fence refuses unless ${parent} covers it, and ${fence.flag}'s entry in ${FLAG_CATALOGUE} never mentions ${parent} — whoever plans the flip from that paragraph will set one variable where two were needed, and find out at boot`,
         ).toBe(true);
       }
     }

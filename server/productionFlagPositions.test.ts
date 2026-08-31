@@ -41,6 +41,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { FLAG_CATALOGUE, flagCatalogue } from "../scripts/lib/lawText.mts";
+
 import {
   PRODUCTION_FLAG_POSITIONS,
   comparePositions,
@@ -235,8 +237,16 @@ describe("the comparator, proven able to say no", () => {
   });
 });
 
-describe("CLAUDE.md and the table do not drift apart", () => {
-  const claude = readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8");
+describe("the flag catalogue and the table do not drift apart", () => {
+  /*
+    ⚠ THE PROSE MOVED, THE ARM DID NOT (2026-08-31, #330). The flag entries were
+    carved out of `CLAUDE.md` into `docs/architecture/FEATURE_FLAGS.md`, byte for
+    byte. Both arms below read those paragraphs, so both follow them. The CONTROL
+    is what would have caught a move that left this pointed at the emptied file,
+    which is why it asserts a length and two specimens rather than only that
+    nothing bad is present.
+  */
+  const claude = flagCatalogue(repoRoot);
 
   it("⚠ carries no instruction forbidding a position the record says production holds", () => {
     /*
@@ -266,7 +276,7 @@ describe("CLAUDE.md and the table do not drift apart", () => {
       if (!stillFlipped) continue;
       expect(
         lowered.includes(sentence.toLowerCase()),
-        `CLAUDE.md forbids a position production already holds for ${flag} — `
+        `${FLAG_CATALOGUE} forbids a position production already holds for ${flag} — `
         + `the record says \`${PRODUCTION_FLAG_POSITIONS[flag]?.position}\`. `
         + `A ruling that landed in a mailbox and never reached this page.`,
       ).toBe(false);
@@ -274,8 +284,9 @@ describe("CLAUDE.md and the table do not drift apart", () => {
   });
 
   it("⚠ CONTROL — the sentences being looked for are the real ones", () => {
-    /* The arm above is absence-only, so on its own it passes over a CLAUDE.md
-       that has been emptied, renamed or moved. This proves the file is the one
+    /* The arm above is absence-only, so on its own it passes over a catalogue
+       that has been emptied, renamed or moved — which #330 made a live
+       possibility rather than a hypothetical. This proves the file is the one
        we think it is and that a positive match is possible at all. */
     expect(claude.length).toBeGreaterThan(50_000);
     expect(claude, "the flag section itself").toContain("CASTING_INK_WORDS_SCOPE");

@@ -213,7 +213,7 @@ jobs:
           track_progress: true
           prompt: |
             You are the Drape Gatekeeper reviewing this pull request.
-            ${{ needs.triage.outputs.deep == 'yes' && 'This diff touches money/auth surfaces: read CLAUDE.md in full first — it is project law, it defines what a defect is here, and money/auth is where its deep context pays.' || 'Read docs/REVIEWER_CHARTER.md in full first — the distilled project law for reviews; it defines what a defect is here. CLAUDE.md remains the authority: open the specific section the charter names whenever a finding turns on detail the charter compresses, but do not read it end to end.' }}
+            ${{ needs.triage.outputs.deep == 'yes' && 'This diff touches money/auth surfaces: read CLAUDE.md in full first — it is project law, it defines what a defect is here, and money/auth is where its deep context pays. If the diff touches a feature flag, read that flag's entry in docs/architecture/FEATURE_FLAGS.md too — the flag catalogue was carved out of CLAUDE.md byte for byte (#330) and CLAUDE.md now carries only a locator index of it.' || 'Read docs/REVIEWER_CHARTER.md in full first — the distilled project law for reviews; it defines what a defect is here. CLAUDE.md remains the authority: open the specific section the charter names whenever a finding turns on detail the charter compresses, but do not read it end to end.' }}
 
             Review the diff for, in priority order:
             1. Correctness bugs — concrete inputs/state that produce wrong

@@ -60,6 +60,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { declaredEnvNames, serverAndSharedSources } from "../scripts/lib/declaredEnvNames.mts";
+import {
+  FLAG_CATALOGUE,
+  cataloguedFlags,
+  flagCatalogue,
+  indexedFlags,
+  lawText,
+} from "../scripts/lib/lawText.mts";
 import { FAL_ALLOWANCES, falAccountCeiling } from "./castingV2/falBudget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -140,15 +147,129 @@ describe("the flag list is the flag list", () => {
     expect(DOCUMENTABLE.length).toBeGreaterThan(DECLARED.length);
   });
 
-  it("names every declared environment variable somewhere in CLAUDE.md", () => {
-    const claude = readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8");
-    const missing = DOCUMENTABLE.filter((name) => !claude.includes(name));
+  it("names every declared environment variable somewhere in the law", () => {
+    /*
+      ⚠ THE POPULATION IS THE LAW SURFACES, NOT `CLAUDE.md` ALONE (2026-08-31,
+      #330). The flag catalogue — 122,893 bytes of it — moved to
+      `docs/architecture/FEATURE_FLAGS.md` byte for byte. Left pointed at
+      `CLAUDE.md` this arm would have gone green over an ABSENCE: every flag
+      that had an entry and now has only an index line still `includes()`, so
+      the failure would have been silent and total. `scripts/lib/lawText.mts`
+      owns the surface list so a future carve-out moves one line, not five arms.
+    */
+    const law = lawText(repoRoot);
+    const missing = DOCUMENTABLE.filter((name) => !law.includes(name));
     expect(
       missing,
-      "these environment variables exist in the code and are absent from CLAUDE.md — "
-      + "a flag that exists but is not on the list is how the list stops being the list. "
-      + "Add a line to the feature-gated section naming its grammar and its parent.",
+      "these environment variables exist in the code and are absent from CLAUDE.md and its "
+      + `flag catalogue (${FLAG_CATALOGUE}) — a flag that exists but is not on the list is how `
+      + "the list stops being the list. Add an entry to the catalogue naming its grammar and its "
+      + "parent, and a locator line to CLAUDE.md's index.",
     ).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ THE INDEX AND THE CATALOGUE NAME THE SAME FLAGS (2026-08-31, #330).
+ *
+ * `CLAUDE.md` keeps a one-line-per-flag INDEX and the catalogue keeps the law.
+ * That is two lists of one population, which is working law 4's own failure
+ * shape — and the arm above cannot see it, because it joins both files and asks
+ * only whether a NAME appears somewhere in the pair. A flag with a catalogue
+ * entry and no index line is invisible to a shift reading `CLAUDE.md`; a flag
+ * with an index line and no entry sends that shift to a page that does not
+ * answer it. Both are the drift the split was warned about.
+ *
+ * Compared as SETS, in both directions, from each file's own markup rather than
+ * from a list typed here (`prose-join-fails-both-ways`: two lists of the same
+ * LENGTH are not the same LIST).
+ */
+describe("the index in CLAUDE.md and the flag catalogue do not drift apart", () => {
+  const claude = readFileSync(path.join(repoRoot, "CLAUDE.md"), "utf8");
+  const indexed = indexedFlags(claude);
+  const catalogued = cataloguedFlags(flagCatalogue(repoRoot));
+
+  it("⚠ CONTROL — both readers found a real population, and neither is the other", () => {
+    /*
+      POSITIVE CONTROL FIRST. Two set comparisons over two empty arrays are
+      equal and prove nothing, which is exactly how an enumeration guard goes
+      green while enumerating nothing. And the two parsers must be genuinely
+      different readers — the index is a table row, the catalogue is a bullet —
+      so a single regex breaking cannot silently empty both.
+    */
+    expect(indexed.length).toBeGreaterThan(30);
+    expect(catalogued.length).toBeGreaterThan(30);
+    expect(indexed, "the root of every casting scope chain").toContain("CASTING_V2_SCOPE");
+    expect(catalogued, "the root of every casting scope chain").toContain("CASTING_V2_SCOPE");
+    expect(indexedFlags(""), "the index reader can answer nothing").toEqual([]);
+    expect(cataloguedFlags(""), "the catalogue reader can answer nothing").toEqual([]);
+  });
+
+  it("⚠ every catalogued flag has an index line, and every index line an entry", () => {
+    expect(
+      catalogued.filter((flag) => !indexed.includes(flag)),
+      "these flags have an entry in the catalogue and no line in CLAUDE.md's index — "
+      + "a shift reading CLAUDE.md cannot learn they exist",
+    ).toEqual([]);
+    expect(
+      indexed.filter((flag) => !catalogued.includes(flag)),
+      `these flags have a line in CLAUDE.md's index and no entry in ${FLAG_CATALOGUE} — `
+      + "the index points a shift at a page that does not answer it",
+    ).toEqual([]);
+  });
+
+  it("⚠ the index carries LOCATORS, and the catalogue is where the law is", () => {
+    /*
+      The one property that makes the split safe, asserted rather than promised.
+      A locator line says which road a flag governs; the moment someone states a
+      RULE in it the index becomes a second law that drifts from the first. A
+      machine cannot judge "is this a rule", so it judges the thing it can: the
+      row stays one short line, and the section says out loud what it is for.
+    */
+    const rows = [...claude.matchAll(/^\| `[A-Z][A-Z0-9_]+` \| .*$/gm)].map((hit) => hit[0]);
+    expect(rows.length, "the index rows themselves").toBeGreaterThan(30);
+    for (const row of rows) {
+      expect(
+        row.length,
+        `this index row is long enough to be carrying a rule rather than a locator — the law belongs in ${FLAG_CATALOGUE}:
+${row}`,
+      ).toBeLessThan(200);
+    }
+    expect(
+      claude,
+      "CLAUDE.md's index must say what it is, or the next reader will treat it as the law",
+    ).toContain("THE CLAUSES BELOW ARE LOCATORS, NOT RULES");
+    expect(claude, "and it must name where the law went").toContain(FLAG_CATALOGUE);
+  });
+
+  it("⚠ the count CLAUDE.md writes out in words is the number of rows it has", () => {
+    /*
+      The `architecturePublicEndpoints` shape, on this list: the index opens by
+      saying how many flags it carries, and a written-out number is exactly the
+      kind of thing that stays put while a row is added beside it. Parsed out of
+      the sentence rather than typed here, and the anchor is controlled first so
+      a reword throws loudly instead of comparing nothing.
+    */
+    const sentence = /\*\*THE ([A-Z-]+) SCOPE FLAGS BELOW ARE INDEXED HERE/.exec(claude);
+    expect(
+      sentence,
+      "CLAUDE.md's flag-index opening sentence has moved or been reworded — re-point this arm at it rather than deleting it",
+    ).not.toBeNull();
+
+    const WORDS: Record<string, number> = {
+      "TWENTY-NINE": 29, THIRTY: 30, "THIRTY-ONE": 31, "THIRTY-TWO": 32,
+      "THIRTY-THREE": 33, "THIRTY-FOUR": 34, "THIRTY-FIVE": 35, "THIRTY-SIX": 36,
+      "THIRTY-SEVEN": 37, "THIRTY-EIGHT": 38, "THIRTY-NINE": 39, FORTY: 40,
+    };
+    const stated = WORDS[sentence![1]!];
+    expect(
+      stated,
+      `CLAUDE.md's flag index states an unrecognised count word "${sentence![1]}" — add it to this table`,
+    ).toBeDefined();
+    expect(
+      indexed.length,
+      "the flag index writes its own size out in words and the table has a different number of rows",
+    ).toBe(stated);
   });
 });
 
