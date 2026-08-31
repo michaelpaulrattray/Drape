@@ -128,11 +128,22 @@ export type TopbarAccount = {
  * implementations that fight over placement, and this is not one of them.
  *
  * ⚠ **#304 collapsed those three onto one owner and deliberately left this
- * fourth alone.** His ruling names three, and moving this one would change the
- * anchoring of a menu he approved — so it is FILED rather than decided, and
- * this comment is the only place that says the question exists. If the answer
- * comes back "bring it across", the change is to use the hook here and delete
- * the two listeners below; nothing else about the chip moves.
+ * fourth alone**, and the question of whether it should follow them was put to
+ * the founder as #356 rather than decided here. **He answered it on
+ * 2026-08-31, Crew reply #69, verbatim and entire: "Leave it."**
+ *
+ * So the chip stays hand-rolled BY RULING, not by omission, and this comment is
+ * where that ruling lives. The two costs he accepted are named rather than
+ * hidden: Escape closes the menu without returning focus to the chevron, and
+ * the menu can sit open beside another panel. Both are small on four rows in a
+ * bar with nothing to clip it — which is the argument the paragraph above has
+ * made since the chip moved here.
+ *
+ * **Do not re-open this by reading the table in #356 and concluding the hook is
+ * tidier.** It is; he was shown that and chose the pixels he had already
+ * approved over it. A FIFTH hand-rolled owner is a different matter and is
+ * caught by `anchoredPanel.test.ts`, which derives its population from the
+ * directory rather than from this sentence.
  */
 function AccountChip({ account }: { account: TopbarAccount }) {
   const [menuOpen, setMenuOpen] = useState(false);
