@@ -58,6 +58,13 @@ import { CreditTopupModal } from "@/features/billing/CreditTopupModal";
 import { ReferralModal } from "@/features/referral/ReferralModal";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 
+/**
+ * The React key for the one member the stack can honestly draw: the signed-in
+ * user (#281). It is a SLOT name, not an identity — `auth.me` returns no `id`
+ * by design (invariant 8) and a list key is not a reason to widen it.
+ */
+const SELF_MEMBER_ID = "self";
+
 export function AppChrome({
   breadcrumb,
   current,
@@ -124,13 +131,55 @@ export function AppChrome({
           <WhatsNewStub />
         </>
       }
-      /* 02 §2c: the rail's foot is the workspace. The member stack has no
-         members to draw — there is no members API — so what ships is the
-         Invite affordance, inert (#281), and the gear, which opens the same
-         settings modal this component owns. The gear is a real control on
-         every page precisely because the modal travels with it; drawing it
-         without one would be the dead control D-180 forbids. */
-      workspace={{ onOpenSettings: () => setShowSettings(true) }}
+      /* 02 §2c: the rail's foot is the workspace — the member stack, Invite,
+         and the gear, which opens the same settings modal this component owns.
+         The gear is a real control on every page precisely because the modal
+         travels with it; drawing it without one would be the dead control
+         D-180 forbids.
+
+         ⚠ **THE STACK DRAWS ONE FACE AND IT IS HIS OWN** (#281, his ruling
+         2026-08-30, verbatim and entire): *"Show your own face beside the +,
+         but keep it stubbed out until membership exists."*
+
+         There is still no membership anywhere — no table in `drizzle/schema.ts`,
+         no endpoint in `server/routers.ts`, no surface — so this list can only
+         ever hold rows a server really produced. `user` is one: it is the same
+         `useAuth` row the account chip renders two inches away, through the
+         SAME `ProfileAvatar`, so the face in the rail and the face in the
+         topbar are the same person by construction rather than by coincidence.
+
+         ⚠ **`members` STAYS DERIVED, NEVER LITERAL.** The moment a name or an
+         id is written here rather than read off a row, this is the invented
+         data his own instinct warned about — *"a stack of one person is not a
+         member stack"* — and the guard in `section02-guard.test.ts` fails on
+         exactly that shape.
+
+         ⚠ **AND NOTHING HERE MAKES IT LIVE.** `aria-disabled`, `cursor:
+         default`, the *"not built yet"* title and the missing `+` hover are
+         all still in place, because the second half of his sentence is an
+         instruction and not a caveat.
+
+         ⚠ **`auth.me` RETURNS NO `id`, AND THAT IS NOT A GAP TO FILL.** Its
+         projection is `name · email · avatarUrl · authProvider · role ·
+         approved · canvasIntroSeen` — enforcement invariant 8, an explicit
+         projection rather than a spread row. A React `key` is not a reason to
+         widen an auth surface, so the key below is a CONSTANT: there is
+         exactly one entry, it never reorders, and `SELF_MEMBER_ID` is a slot
+         name rather than a claim about who anyone is. */
+      workspace={{
+        members: user
+          ? [
+              {
+                id: SELF_MEMBER_ID,
+                label: user.name ?? "You",
+                avatar: (
+                  <ProfileAvatar src={avatarUrl} identity={user} alt={user.name ?? "You"} />
+                ),
+              },
+            ]
+          : [],
+        onOpenSettings: () => setShowSettings(true),
+      }}
       account={
         user
           ? {

@@ -200,11 +200,26 @@
   its menu moved to the topbar, and what is left here is the member stack, the
   Invite affordance and the gear.
 
-  ⚠ **NO INVENTED FACES.** The prototype draws two members plus the `+`; this
-  product has no members API, so the stack renders whatever it is GIVEN, which
-  is nothing today, and the `+` alone. His rule from the 00b frames: *"A number
-  in a screenshot that no server produces is a lie that survives into the
-  build."* A face is that sentence with a picture instead of a number.
+  ⚠ **NO INVENTED FACES — AND ONE REAL ONE.** The prototype draws two members
+  plus the `+`; this product has no members API, so the stack renders whatever
+  it is GIVEN and never constructs a person. His rule from the 00b frames: *"A
+  number in a screenshot that no server produces is a lie that survives into
+  the build."* A face is that sentence with a picture instead of a number.
+
+  ⚠ **WHAT IS GIVEN IS NO LONGER NOTHING** (#281, his ruling 2026-08-30,
+  verbatim and entire): *"Show your own face beside the +, but keep it stubbed
+  out until membership exists."* His own account is a real `users` row, so his
+  face invents nobody — it is the one face in this product that a server does
+  produce. The `+` alone read as a broken control, which was his complaint;
+  one real face beside it reads as an opening.
+
+  ⚠ **AND THE SECOND HALF OF HIS SENTENCE IS THE REASON EVERYTHING BELOW
+  STAYS AS IT IS.** `cursor: default` stays, `aria-disabled` stays, the
+  *"not built yet"* title stays, and `.dp-memberstack__add` still has no
+  `:hover`. He asked for the hover and for *"make it live"* in one breath
+  (see `.dp-memberstack__add` below); *"keep it stubbed out"* is him
+  answering that himself. A face that made this look finished would be the
+  invented-data failure wearing a different costume.
 */
 .dp-invite {
   display: flex;
