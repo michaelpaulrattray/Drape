@@ -1,7 +1,7 @@
 {
-  "edition": 169,
-  "updatedAt": "2026-08-31T21:20:00+10:00",
-  "shift": "foreman-149",
+  "edition": 170,
+  "updatedAt": "2026-08-31T22:35:00+10:00",
+  "shift": "foreman-150",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,22 +145,11 @@
   "needsYou": [
     {
       "id": "pipeline-panel-325",
-      "title": "All 100 cards are on this page now — one small question, and one half still to come",
-      "productImpact": "Scroll down to Background work. Under your five switches there is a new block headed THE REST OF THE PIPELINE, and it opens with the sentence you were actually asking for: \"100 open in total · 29 on offer above, 71 not\". Below that, every one of those 71 is in a named group with one line saying why it is not offered as background work — Debt because the scope varies and needs your word, Design unbuilt because it is feature work and that is yours to pick, Parked because you stopped it yourself. Nothing in the block is switchable, on purpose: your own rule is that the team never selects the next feature, and a toggle on Design-unbuilt would be that rule with a control attached. This is a glance, not a decision — nothing is blocked on you.",
-      "workedExample": "Your card named seven groups. I added five more so that every card lands somewhere and the numbers add up, and four of them are populations your own card counted but the group list did not carry down: Scope changes (1), Toolbelt (2), Patrols (1), and Queued by you (8) — the cards you ordered by name, put FIRST because what you need to know about one of those is that you asked for it, not that it is also blocked. The fifth is Other (3), which exists so a label invented next week cannot make cards vanish, and it earned itself the moment it shipped: it is holding #219 (the Fable reviewer being down), #228 (the lobby lane) and #231 (the reader court) — three of the most consequential open cards there are, each carrying only \"urgent\" and no category at all. Before tonight those three appeared nowhere on this page.",
-      "options": [
-        {
-          "key": "leave",
-          "label": "Leave all five groups as they are (recommended)",
-          "consequence": "The block stays as you see it, and every open card keeps a home on this page."
-        },
-        {
-          "key": "strike",
-          "label": "Strike one or more — name which",
-          "consequence": "Its cards move into Other, which stays visible, so nothing disappears; the page just says less about why they are not on offer."
-        }
-      ],
-      "recommendation": "Leave all five — but this is a glance, not a decision, so the honest answer is that nothing needs doing. The half still to come is your second question: a way to close a card from this page when it is not relevant. That is NOT built. It needs a new table, which needs one command run against the live database, and that command is your act rather than a shift's. It is a clean next piece of work and nothing above blocks it; #325 stays open for it.",
+      "title": "You can now tap a card away yourself — one command from you and it is live",
+      "productImpact": "The half you asked for and did not get last night is built. Every card named on your page — all 56 of them, in both the switch list and the pipeline block — now has a quiet “Not relevant” beside it, in one straight column down the right. Tap it and the row says “Marked not relevant — a shift will check it and close it.” Change your mind and tap Undo, and the card goes back exactly as it was. A shift then closes the card and the line becomes “Closed by a shift” — or, if it disagrees, “Kept open by a shift — still blocking #340”, in its own words, on the row you tapped.",
+      "workedExample": "It does not close the card the instant you tap. Doing that from the page would mean putting a password into the live site that can CHANGE things in our code repository — a bigger key than the read-only one already turned down on this same page, and that is your decision to make rather than something to hand over as the side effect of a convenient button. The wait costs about an hour and buys a second pair of eyes: you found four already-finished cards yourself last Saturday just by reading them. And nothing on this road deletes anything — undo leaves the record that you once asked, exactly as your own rule for cards says.",
+      "options": [],
+      "recommendation": "One command from you turns it on, and it is the last thing this card needs: railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production. Until you run it your page is exactly what it is today — the buttons are withheld rather than drawn dead, so nothing looks broken and nothing pretends to work. This is the same friction you ordered removed on #322, which is queued and unstarted; two shifts have now looked at it and left it, with the reason written down so whoever takes it does not have to work it out again.",
       "state": "open",
       "filedAt": "2026-08-31T20:15:00+10:00",
       "issueNumber": 325
@@ -200,28 +189,12 @@
     },
     {
       "id": "three-casts-left-302",
-      "title": "You told me to delete three Casts — two of them are your NEW-studio ones, so I have not",
-      "productImpact": "You replied \"Delete the three from Library when you next have the page open.\" That sentence was MY recommendation on this card, quoted back — and the recommendation was wrong, so I stopped rather than doing it. Two things about it were out of date by the time you read it. First, two of those three are Casts you made in the NEW studio: Shina and Jericho. They only LOOK legacy because the old Library page is where they happen to be listed. Second, permanent deletion is switched on for your account, so there is no undo — they would be gone, along with the credits that made them. And the reason the card gave for deleting them has already evaporated: you unblocked this card yourself this morning, and Casting V2 has its own delete door, so the Library clean-out can be built today with all three still sitting there. Nothing is waiting on this.",
-      "workedExample": "Open Library and you see three: \"Draft Model\" under drafts, \"Shina\" and \"Jericho\" under minted. I read your live account tonight to be sure of that — those three and nothing else, with 45 older models already deleted. Draft Model is a July draft and is plainly the throwaway the card was describing. Shina and Jericho you cast on 2 August in the new studio. Deleting all three does what you said; deleting the first does what the card MEANT.",
-      "options": [
-        {
-          "key": "draft-only",
-          "label": "Delete \"Draft Model\" only — keep Shina and Jericho (recommended)",
-          "consequence": "The July throwaway goes. Your two new-studio Casts stay, and the Library clean-out is built around them. Nothing is delayed by this."
-        },
-        {
-          "key": "all-three",
-          "label": "No, I meant all three — delete them",
-          "consequence": "All three are permanently gone, Shina and Jericho included, along with the credits that made them. There is no undo, so this is the one worth saying deliberately."
-        },
-        {
-          "key": "none",
-          "label": "Leave all three; just build the Library stub around them",
-          "consequence": "Nothing is deleted. The clean-out ships exactly the same way — the three Casts stay reachable through the new studio, which has its own delete door whenever you want one."
-        }
-      ],
-      "recommendation": "Delete \"Draft Model\" only. It is the one the card was really about, and keeping Shina and Jericho costs nothing — the clean-out you ordered can be built today either way. If you did mean all three, say so and it takes thirty seconds; I just did not want an irreversible delete of your V2 work done on a recommendation that had gone stale.",
-      "state": "open",
+      "title": "Draft Model is deleted, and your two new-studio Casts are exactly where they were",
+      "productImpact": "You said \"Delete “Draft Model” only\", and that is what happened. Your Library now holds Shina and Jericho and nothing else that is live — read back off the database after the deletion, not off the command that did it. Draft Model was your July draft, and it took nothing with it: no cast views, no canvas placements, no boards, no wardrobe looks, all measured at zero, which is what a draft nobody built out looks like.",
+      "workedExample": "It went through the product's own deletion ceremony — the same one the button in the app calls — rather than a hand-written database command, so the receipt, the lock and the storage clean-up all happened the way they do when you press it yourself. Two things are worth your time. Before it fired, the script was pointed at Shina on purpose to see whether it would refuse: it said \"he named Draft Model; this row is Shina. Nothing was touched.\" So a wrong number could not have deleted the wrong Cast. And the first attempt FAILED, which was the product being right — it refused because it could not see which storage bucket to plan the clean-up against. Had it guessed, it would have quietly planned a permanent deletion against the wrong bucket. The bucket was named explicitly on the second attempt, and checked before anything was removed.",
+      "options": [],
+      "recommendation": null,
+      "state": "done",
       "filedAt": "2026-08-31T18:05:00+10:00",
       "issueNumber": 302
     },
@@ -292,28 +265,12 @@
     },
     {
       "id": "side-clause-316",
-      "title": "I had this backwards — your cyborg sheet was RIGHT, 8 out of 8, and I nearly spent 320 of your credits proving a bug that was not there",
-      "productImpact": "Four nights ago I told you your brief had been ignored: you typed “his right eye glowing faint amber-red” and I reported the glow on the wrong side in all eight faces. You corrected me the same night — “The eye is my right looking at the cast, not his actual right eye looking back at me” — and on your meaning those eight frames are 8 out of 8 CORRECT. You got exactly what you asked for. What went wrong after that is worth telling you plainly: your correction landed at 11:25pm, and three minutes later a stale message posted on the same card saying the 320-credit measurement was funded and ready to run. That wrong message was the newest thing on the card for four nights, so any shift that read only the latest note would have spent your credits measuring a problem you had already told us was not one. It is struck out now, your correction is at the top of the card, and the card is retitled. Nothing was spent.",
-      "workedExample": "There IS one real thing left, and it is small. The two roads read the same three words in opposite directions. When you cast a NEW sheet and type “his right eye”, the engine puts it on the right of the picture — which is what you mean. When you REFINE an existing cast and TYPE “his right eye” instead of clicking the eye, the studio quietly translates it the other way, to the man's own right, which is the left of the picture. So the same sentence would land on opposite eyes depending on which screen you were on. It has never bitten you because on a refine you point at the eye with the box — your own words — so the words never have to carry the side at all.",
-      "options": [
-        {
-          "key": "leave-it",
-          "label": "Leave it — the road you actually cast on already agrees with you (recommended)",
-          "consequence": "Costs nothing and risks nothing. The new-sheet road does what you mean, and on a refine you point rather than type, so the mismatch sits on a path you do not walk."
-        },
-        {
-          "key": "align-refine",
-          "label": "Make the refine road read a typed side the way you mean it",
-          "consequence": "A change to how the studio resolves left and right in a typed refine ask. It is a small edit and a big blast radius — it would change the meaning of every typed side ask anyone ever makes, including on signed Casts — so it is judgement work and would want a proper look rather than a quick patch."
-        },
-        {
-          "key": "court-it",
-          "label": "Measure it — two rolls, 320 of your credits",
-          "consequence": "This was the old recommendation and I no longer recommend it. It was bought to measure a bug on the NEW-sheet road, and that bug turned out to be my misreading of your sentence. There is nothing left there to measure."
-        }
-      ],
-      "recommendation": "Leave it. You asked “do we fix it or not?” and my honest answer is not now: the road that casts your sheets already does what you mean, and the road that disagrees is one you reach by pointing rather than by typing. One word from you closes this card either way.",
-      "state": "open",
+      "title": "“Leave it” — so nothing was fixed, and your 320 credits stayed in your account",
+      "productImpact": "You said leave it, and the card is closed. Nothing changed on the roll road, no measurement was funded, and the 320 credits an out-of-date note on that card had authorised were never spent.",
+      "workedExample": "The record stays as it was: your own correction at the top, and the stale funding note kept underneath its banner rather than deleted — a struck claim you cannot read is a claim nobody can check later.",
+      "options": [],
+      "recommendation": null,
+      "state": "done",
       "issueNumber": 316,
       "filedAt": "2026-08-31T05:05:00+10:00"
     },
@@ -1191,7 +1148,7 @@
       "id": "fitted-hardware-frames-279",
       "title": "Your cyborg, eight ways — and one thing in every single frame is on the wrong side",
       "question": "Two questions, and the second is the one I would not decide for you. First: is this the cyborg you meant — do the ports, seams and jaw plate read as part of the man rather than kit he put on? Second: you asked for his RIGHT eye to glow. Look at the close-up. It is his LEFT, in all eight. Is that worth a fix?",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-31T05:05:00+10:00",
       "issueNumber": 316,
       "cardId": "side-clause-316",
@@ -2127,6 +2084,14 @@
   ],
   "pipeline": [
     {
+      "id": "card-intents-325b",
+      "title": "Tap “Not relevant” and a shift closes the card (#325, second half)",
+      "status": "merged",
+      "prNumber": 349,
+      "note": "Your question was “should there be a delete icon next to them so i can close them or remove them myself if they are not relevant?” — and this is it, built the way you approved. Worth knowing what looking at it caught that testing did not: on the first frame the buttons landed wherever each title happened to end, mid-row on the short ones and at the margin on the long ones, across 56 rows. That was fixed and then measured — twelve buttons, one right edge. Ten deliberate breakages were tried against the new guards and all ten were caught, including the two that matter most: a shift being able to rewrite what YOU asked for, and a card you had taken back being closed anyway by a shift working from a list that was a minute out of date.",
+      "cardId": null
+    },
+    {
       "id": "invite-face-281",
       "title": "Your face is beside the Invite + now, and the block is still stubbed (#281)",
       "status": "merged",
@@ -3048,9 +3013,16 @@
   ],
   "problems": [
     {
+      "id": "invite-label-350",
+      "title": "The Invite label size you reported is queued, not fixed — it is the next shift's first job",
+      "detail": "You wrote it up at 21:57 tonight, while this shift was mid-build on your card panel. It is filed as #350 with the fix and the measurement your card asks for. One correction to your diagnosis, which changes the guard rather than the fix: the label is not one step bigger than the nav labels — those are already 9.5px — it sits OUTSIDE the nav item that carries the size, so it inherits the page's ordinary text size instead. Your fix is right; the reason is different, which matters because a test saying “smaller than a nav label” would pass on nothing once both are 9.5px.",
+      "severity": "info",
+      "state": "open"
+    },
+    {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 99 open, 2 worked, 8 of your own orders waiting — and nothing rotting, for one more day",
-      "detail": "99 cards open, one fewer than last night: #281 closed tonight and nothing new was filed. TWO were worked, which is the batching rule doing its job — #281 built and merged, and #316's record repaired. EIGHT carry your own order and are authorised work: #285, #304, #321, #322, #316, #325, #302, #267. THREE of those eight cannot move without you: #302 (three Casts in Library, and the delete is permanent — still not done, still waiting on your word), #267 (waits on your Settings-modal brief), and now #316, which is back on your desk with its record corrected and a one-word answer needed. TWO are your orders no shift can take on the current model: #322 (migrations running themselves) and #304 (the popover collapse) are both judgement work, and the reviewer is still out — so they wait rather than being attempted badly. WHAT IS ROTTING: nothing tonight, and that is the first time this line has been able to say so. #316 was the rot for four nights and it is fixed — its card contradicted itself about whether 320 of your credits were authorised. ⚠ But the shape is about to change: EIGHT cards last touched on 25 August cross the one-week line TOMORROW (#4, #10, #12, #13, #17, #19, #21, #22 — mostly casting research and design drafts). None of them is urgent and none is waiting on you; they simply have not been re-read against the code since they were filed. That is a job for a shift, not a decision for you.",
+      "title": "The queue tonight: 99 open, 4 items worked, 8 of your own orders waiting — and the rot line is crossed tomorrow",
+      "detail": "99 cards open — the same number as last night, because one closed (#316, on your \"leave it\") and one was filed (#350, your Invite label). FOUR things were worked tonight rather than one: your card panel's second half built and merged, Draft Model deleted on your word, #316 closed, and #350 filed with a correction to its diagnosis. EIGHT carry your own order and are authorised without you saying anything more — and only ONE of those is genuinely waiting on you (#267, the account-menu labels, held behind the Settings modal). NOTHING has rotted yet, measured tonight: no open card has gone a full week untouched. But EIGHT cross that line tomorrow — #4, #10, #12, #13, #17, #19, #21 and #22, all last read on 25 August, all casting research and design drafts. None is urgent and none waits on you; they have simply never been re-read against the code since they were written. A shift re-reading those eight is the thing that stops this line getting worse, and it is the first non-ordered brief available.",
       "state": "open",
       "severity": "info"
     },
@@ -3229,10 +3201,14 @@
     59,
     60,
     61,
-    62
+    62,
+    63,
+    64,
+    65,
+    66
   ],
   "nextUp": {
-    "readAt": "2026-08-31T10:54:48.958Z",
+    "readAt": "2026-08-31T12:12:04.714Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3246,11 +3222,7 @@
       {
         "issueNumber": 302,
         "title": "Stub Home and Library, blank Canvas — and Library must not be stubbed before he can delete his legacy Casts",
-        "urgent": true,
-        "held": {
-          "state": "blocked",
-          "because": "#308 — Library is the only door left for deleting your three legacy Casts, and stubbing it first strands them"
-        }
+        "urgent": true
       },
       {
         "issueNumber": 321,
@@ -3273,13 +3245,13 @@
         "urgent": false
       },
       {
-        "issueNumber": 316,
-        "title": "A typed refine ask names a side the OPPOSITE way he means it — the roll road is correct and the court is dead (his correction)",
+        "issueNumber": 325,
+        "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
         "urgent": false
       },
       {
-        "issueNumber": 325,
-        "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
+        "issueNumber": 350,
+        "title": "The Invite label inherits the document size, not the nav's — and the obvious guard would be vacuous",
         "urgent": false
       }
     ]
