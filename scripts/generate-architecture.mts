@@ -55,6 +55,27 @@ type Finding = {
  * still shows live importers.
  */
 const LIFECYCLE: Array<{ prefix: string; status: "active" | "compat" | "retire" | "delete" }> = [
+  /*
+    #302 — UNMOUNTED BY THE FOUNDER'S ORDER, NOT YET REMOVED. He asked for Home
+    and Library stubbed and Canvas blanked while they are redesigned, and for
+    nothing to be deleted with them: `AppLobby` renders `LobbyStub` on all five
+    lobby URLs and imports none of these three.
+
+    ⚠ They are marked here in the SAME commit that unhooked them, because
+    otherwise the Atlas describes three `active` modules with ZERO inbound
+    edges — and zero inbound edges is precisely the reading that says *safe to
+    remove*. That would be true by accident and for the wrong reason: they are
+    not dead code that drifted, they are a deliberate hold, and the retirement
+    view is where a future sweep should meet them with that written down.
+
+    Their own children (`ToolsIndex`, `RecentWorkCard`, `DeleteCastDialog` …)
+    are deliberately NOT listed: which of them still has a live consumer is a
+    question the Atlas's edge graph answers mechanically, and guessing at it
+    here would be a second list shadowing that one.
+  */
+  { prefix: "client/src/features/lobby/HomeView.tsx", status: "retire" },
+  { prefix: "client/src/features/lobby/LibraryView.tsx", status: "retire" },
+  { prefix: "client/src/features/lobby/BoardsView.tsx", status: "retire" },
   { prefix: "client/src/features/casting/", status: "retire" },
   { prefix: "client/src/features/studio/", status: "retire" },
   { prefix: "client/src/components/ui/sidebar.tsx", status: "delete" },
