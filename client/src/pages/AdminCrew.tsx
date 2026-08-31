@@ -8,7 +8,7 @@
  *
  * His reading order: working now → background work → program → needs you →
  * NEXT UP → for your eyes → what is not done → already dealt with → problems
- * → journal. Single column, restrained, no charts and no KPI tiles — this is
+ * → general. Single column, restrained, no charts and no KPI tiles — this is
  * a briefing, not a dashboard.
  *
  * ⚠ **THE LAST THREE BLOCKS ARE #290/#291/#292, WORKED AS THE ONE PASS HE
@@ -33,7 +33,7 @@ import { readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 import { AdminHeader } from "@/features/admin/AdminHeader";
 import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery";
-import { CrewJournal } from "@/features/admin/components/crew/CrewJournal";
+import { CrewGeneral } from "@/features/admin/components/crew/CrewGeneral";
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
@@ -289,12 +289,16 @@ export default function AdminCrew() {
 
             <CrewProblems problems={stateQuery.data.briefing.problems} />
 
-            <CrewJournal
-              journal={stateQuery.data.briefing.journal}
+            {/* THE GENERAL BOX (#293) — this was the journal, which carried the
+                shifts' own entries and his cardless replies in one list. He
+                removed the shift entries ("id remove the journal because
+                nights should auto park…"); asked where his cardless replies
+                should then go, his whole answer was "Keep a General box." */}
+            <CrewGeneral
               replies={stateQuery.data.replies}
               /* Threads render under open needs-you cards AND open eye items
-                 (#75), so the journal's fall-through covers both — a verdict
-                 on a closed eye item must land here, never nowhere. */
+                 (#75), so the General box's fall-through covers both — a
+                 verdict on a closed eye item must land here, never nowhere. */
               cards={[...stateQuery.data.briefing.needsYou, ...stateQuery.data.briefing.eyeItems]}
               acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}

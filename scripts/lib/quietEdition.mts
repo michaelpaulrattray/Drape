@@ -4,8 +4,8 @@
  * The standing orders say a quiet shift — nothing merged, nothing courted, no
  * reply acted on, no card moved — ships NO briefing edition and runs NO rite:
  * the previous edition already says nothing waits on the founder, and a
- * production deploy for a repeated journal line is waste. The founder felt it
- * directly on the morning of 2026-08-27: quiet shifts were burning his Fable
+ * production deploy that changes nothing he can read is waste. The founder felt
+ * it directly on the morning of 2026-08-27: quiet shifts were burning his Fable
  * credits, and TWO quiet shifts after the orders were rewritten (09:45, 10:23)
  * deployed anyway — each a full production deploy for one journal line.
  *
@@ -16,25 +16,39 @@
  *
  * # The verdict, stated exactly
  *
- * A push is a QUIET EDITION when ALL of these hold:
+ * A push is a QUIET EDITION when BOTH of these hold:
  *   1. the commits being pushed touch ONLY the briefing (and, tolerated
  *      alongside it, the generated atlas files — the hooks regenerate those on
  *      every commit, so their presence says nothing about the shift);
- *   2. with `edition`, `updatedAt` and `shift` set aside, everything in the
- *      briefing OUTSIDE `journal` is byte-for-byte what the previous edition
- *      held — no card, no step, no chip, no eye item, no acknowledged reply
- *      moved;
- *   3. every journal entry the edition ADDS matches the quiet pattern (a
- *      header-only bump that adds nothing at all is quieter still and is
- *      refused the same way).
+ *   2. with `edition`, `updatedAt` and `shift` set aside, the briefing is
+ *      byte-for-byte what the previous edition held — no card, no step, no
+ *      chip, no eye item, no pipeline row, no acknowledged reply moved.
  *
- * Anything else PASSES: a quiet line beside a real change is a working shift
- * that happened to say so, and a journal line with news in it is news. The
- * pattern tolerates wrapped text (`nothing\nneeded doing`) because the runner's
- * own line-by-line reading missed exactly that on the 10:23 shift; this guard
- * is the belt to that brace, and a belt with the same hole is not a belt.
+ * Anything else PASSES: an edition that moves one thing he can read is a
+ * working shift, whatever else it does or does not say.
  *
- * Under-refusal is the safe direction (the worst case is today's behaviour);
+ * ⚠ **THIS WAS THREE RULES UNTIL #293, AND THE THIRD DIED WITH THE JOURNAL.**
+ * The briefing carried a `journal` array — the shifts' own prose, rewritten on
+ * every edition — so rule 2 had to EXCLUDE it, and a third rule then read the
+ * entries an edition ADDED and asked whether each matched a quiet pattern
+ * (`quiet night`, `nothing needed doing`, tolerating text wrapped as
+ * `nothing\nneeded doing`). The founder removed the journal from his page, so
+ * **there is no longer anywhere to write prose, and therefore no such thing as
+ * an edition whose only news is prose.** Rule 3 has no population left and is
+ * gone; an edition that changes nothing outside its own header falls out of
+ * rule 2 directly, which is the same verdict by a shorter road.
+ *
+ * ⚠ **The `journal` EXCLUSION stays, and it is a control rather than a
+ * leftover.** This guard's only proof against real bytes is three committed
+ * editions from 2026-08-27 — two quiet deploys the founder paid for and one
+ * working shift — and every one of them was written while the field existed.
+ * Drop the exclusion and the two positive controls flip to "the edition changes
+ * journal", i.e. the instrument stops being verifiable at the specimens that
+ * bought it. Nothing written since #293 can carry the field (the briefing
+ * schema is `.strict()` and no longer declares it), so the clause can never
+ * hide a real change; what it does is keep the historical specimens judgeable.
+ *
+ * Under-refusal is the safe direction (the worst case is the old behaviour);
  * over-refusal on the only push path is how a control gets `--anyway`'d out of
  * existence — so the generated-file tolerance is DERIVED from `.gitattributes`
  * (the `merge=atlas` lines), never listed here (working law 4).
@@ -43,9 +57,6 @@
  */
 
 export const BRIEFING_PATH = "server/crew/crew-briefing.json";
-
-/** The runner's own pattern, with `\s+` so a report wrapped at 80 columns still matches. */
-export const QUIET_PATTERN = /quiet\s+(night|shift)|nothing\s+needed\s+doing/i;
 
 /** The refusal the rite prints — the card's sentence, verbatim. */
 export const QUIET_REFUSAL =
@@ -114,6 +125,9 @@ export const judgeQuietEdition = (input: {
     return { quiet: false, why: `the briefing does not parse (${String(error).split("\n")[0]})` };
   }
 
+  /* `journal` is excluded as a LEGACY field, not a live one — see the header.
+     Nothing written since #293 has it; the editions this guard is proven
+     against all do. */
   const body = (briefing: Record<string, unknown>) =>
     Object.fromEntries(Object.entries(briefing).filter(([key]) => !HEADER_FIELDS.has(key) && key !== "journal"));
   const parentBody = body(parent);
@@ -123,19 +137,5 @@ export const judgeQuietEdition = (input: {
     .sort();
   if (moved.length > 0) return { quiet: false, why: `the edition changes ${moved.join(", ")}` };
 
-  const journalOf = (briefing: Record<string, unknown>): unknown[] =>
-    Array.isArray(briefing.journal) ? briefing.journal : [];
-  const before = new Set(journalOf(parent).map(stable));
-  const added = journalOf(head).filter((entry) => !before.has(stable(entry)));
-  if (added.length === 0) return { quiet: true, why: "the edition adds no journal entry and changes nothing else" };
-  const textOf = (entry: unknown): string =>
-    entry && typeof entry === "object" && typeof (entry as { text?: unknown }).text === "string"
-      ? (entry as { text: string }).text
-      : "";
-  const loud = added.filter((entry) => !QUIET_PATTERN.test(textOf(entry)));
-  if (loud.length > 0) return { quiet: false, why: `the edition adds ${loud.length} journal entr${loud.length === 1 ? "y" : "ies"} with news in ${loud.length === 1 ? "it" : "them"}` };
-  return {
-    quiet: true,
-    why: `the edition adds only ${added.length} quiet journal line${added.length === 1 ? "" : "s"} and changes nothing else`,
-  };
+  return { quiet: true, why: "the edition changes nothing but its own edition number" };
 };

@@ -14,7 +14,15 @@
  *   - red on `status: "done"` — the e55 specimen, with the refusal NAMING the
  *     failing path (arm-asserts-its-own-reason: a refusal for some other
  *     reason must not print PROVEN over this one);
- *   - red on a journal past `CREW_JOURNAL_CAP` — e55's other half;
+ *   - red on a LIST PAST ITS CAP — e55's other half. ⚠ The cap it broke was
+ *     the journal's, and #293 deleted the journal; the arm moved to
+ *     `nextUp.items` (cap 40) rather than being deleted with it, because the
+ *     thing being proven is that a cap refuses, and that population is now the
+ *     live one — the founder-ordered queue is a list shifts append to and it
+ *     has no other guard;
+ *   - red on a briefing that still CARRIES a journal — the schema is
+ *     `.strict()`, so an edition copied forward from before #293 is refused on
+ *     the push path rather than served and never drawn;
  *   - red on bytes that are not JSON at all;
  *   - and the rite actually calls the judge (invariant 7 — the e55 hole was
  *     precisely a parse arm nothing invoked on the push path).
@@ -25,7 +33,6 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { judgeBriefingConformance } from "../scripts/lib/briefingConformance.mts";
-import { CREW_JOURNAL_CAP } from "./crew/crewBriefing";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const realBriefing = readFileSync(path.join(repoRoot, "server/crew/crew-briefing.json"), "utf8");
@@ -45,12 +52,24 @@ describe("judgeBriefingConformance", () => {
     expect(verdict.why, "the refusal must point at the pipeline status, not fail for some other reason").toMatch(/pipeline\.0\.status/);
   });
 
-  it("red on a journal past the cap — e55's other half", () => {
+  it("red on a list past its cap — e55's other half, moved to the queue #293 left standing", () => {
     const briefing = JSON.parse(realBriefing);
-    const template = briefing.journal[0];
-    while (briefing.journal.length <= CREW_JOURNAL_CAP) {
-      briefing.journal.push({ ...template, text: `padding entry ${briefing.journal.length} for the cap arm` });
+    const template = briefing.nextUp.items[0];
+    expect(template, "the cap arm needs a real row to clone").toBeTruthy();
+    /* Unique issue numbers, because the schema also refuses duplicates — an
+       arm that reddens for the wrong reason prints PROVEN over nothing. */
+    while (briefing.nextUp.items.length <= 40) {
+      briefing.nextUp.items.push({ ...template, issueNumber: 900000 + briefing.nextUp.items.length });
     }
+    const verdict = judgeBriefingConformance(JSON.stringify(briefing));
+    expect(verdict.ok).toBe(false);
+    expect(verdict.why, "the refusal must name the capped list, not fail for some other reason").toMatch(/nextUp\.items/);
+  });
+
+  it("red on an edition that still carries a journal — the field is gone, not ignored (#293)", () => {
+    const briefing = JSON.parse(realBriefing);
+    expect(briefing.journal, "the committed briefing must not carry one").toBeUndefined();
+    briefing.journal = [{ at: "2026-08-27T09:55:00+10:00", shift: "foreman-43", text: "an entry copied forward" }];
     const verdict = judgeBriefingConformance(JSON.stringify(briefing));
     expect(verdict.ok).toBe(false);
     expect(verdict.why).toMatch(/journal/);

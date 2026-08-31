@@ -224,7 +224,7 @@ try {
     for (const row of rows) {
       const host = row.cardId === null ? undefined : hosts.get(row.cardId);
       const card = row.cardId === null
-        ? "journal note"
+        ? "general note"
         : host
           ? `${host.kind} ${row.cardId} [${host.state ?? "no state"}] — "${host.title}"`
           : `card ${row.cardId} (not in the current briefing)`;
@@ -241,8 +241,8 @@ try {
       + "them seen on his page.",
     );
     console.log(
-      "And the journal is still his control panel: a cardless \"pause the nights\" / "
-      + "\"stop\" means create .agents/STOP, say so in your journal entry, and exit.",
+      "And the General box is still his control panel: a cardless \"pause the nights\" / "
+      + "\"stop\" means create .agents/STOP, say so in your mailbox entry, and exit.",
     );
   }
 } catch (cause) {

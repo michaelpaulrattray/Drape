@@ -19,18 +19,17 @@ export type CrewNeedsYouCard = CrewBriefingView["needsYou"][number];
 export type CrewEyeItem = CrewBriefingView["eyeItems"][number];
 export type CrewPipelineItem = CrewBriefingView["pipeline"][number];
 export type CrewProblem = CrewBriefingView["problems"][number];
-export type CrewJournalEntry = CrewBriefingView["journal"][number];
 
 /**
  * Anything a reply thread can hang under — a needs-you card or an eye item
- * (#75). Both carry the same id/state/title triple, and `replyFallsToJournal`
- * asks only for id + state, so the journal's fall-through rule covers both
+ * (#75). Both carry the same id/state/title triple, and `replyFallsToGeneral`
+ * asks only for id + state, so the General box's fall-through rule covers both
  * populations with one list.
  */
 export type CrewThreadHost = Pick<CrewNeedsYouCard, "id" | "state" | "title">;
 
 /**
- * Whether a reply renders in the JOURNAL rather than under a needs-you card.
+ * Whether a reply renders in the GENERAL box rather than under a needs-you card.
  *
  * The rule is "does a thread render for its card", not "does the briefing
  * mention its card": Needs You shows reply threads under OPEN cards only, so a
@@ -38,8 +37,11 @@ export type CrewThreadHost = Pick<CrewNeedsYouCard, "id" | "state" | "title">;
  * #292) must fall through here or it renders NOWHERE — the vanishing the
  * design forbids, caught live by the PR #72 gate review. Pure, and tested
  * directly.
+ *
+ * ⚠ It was named for the journal until #293 removed it; the RULE is unchanged
+ * and the box it falls to is the General one now.
  */
-export function replyFallsToJournal(
+export function replyFallsToGeneral(
   cardId: string | null,
   cards: readonly Pick<CrewNeedsYouCard, "id" | "state">[],
 ): boolean {
@@ -298,17 +300,17 @@ export function heldCount(rows: readonly CrewNextUpRow[]): number {
   return rows.filter((row) => row.hold !== null).length;
 }
 
-/** How many merged timeline items the journal shows before the fold (#74 item
- *  7 — his standing Desk rule: last 8, older behind a disclosure). */
-export const JOURNAL_FOLD_VISIBLE = 8;
+/** How many notes the General box shows before the fold (#74 item 7 — his
+ *  standing Desk rule: last 8, older behind a disclosure). */
+export const GENERAL_FOLD_VISIBLE = 8;
 
 /**
- * The fold over an already-sorted (newest-first) list. Generic because the
- * journal folds its MERGED items (shift entries + his orphaned replies), not
- * raw entries — folding before the merge would hide his words, which the
- * design forbids anywhere on this page.
+ * The fold over an already-sorted (newest-first) list. Generic because it is
+ * applied to the items the box actually draws rather than to raw replies —
+ * folding before the list is assembled would hide his words, which the design
+ * forbids anywhere on this page.
  */
-export function foldTimeline<T>(sorted: readonly T[], visible = JOURNAL_FOLD_VISIBLE): {
+export function foldTimeline<T>(sorted: readonly T[], visible = GENERAL_FOLD_VISIBLE): {
   recent: T[];
   older: T[];
 } {

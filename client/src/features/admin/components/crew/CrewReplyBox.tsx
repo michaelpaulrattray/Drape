@@ -2,7 +2,8 @@
  * The reply box — the one control on this page that writes anything.
  *
  * It is the same component under every needs-you card and at the top of the
- * journal; the only difference is `cardId`, which is `null` for a journal note.
+ * General box; the only difference is `cardId`, which is `null` for a general
+ * note.
  * One writer, one shape, so the two cannot drift in what they send or in how
  * they behave when the send fails.
  *

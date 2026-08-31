@@ -100,7 +100,7 @@ describe("staleOpenHosts", () => {
     expect(staleOpenHosts(EDITION_99, gone)).toEqual([]);
   });
 
-  it("a journal note (no cardId) addresses nothing and is never swept", () => {
+  it("a general note (no cardId) addresses nothing and is never swept", () => {
     expect(staleOpenHosts(EDITION_99, [{ id: 23, cardId: null }])).toEqual([]);
   });
 

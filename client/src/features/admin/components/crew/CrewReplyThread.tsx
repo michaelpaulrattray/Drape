@@ -25,7 +25,7 @@ export function CrewReplyThread({
   if (replies.length === 0) return null;
 
   /* Oldest first inside a thread — a conversation reads down. The page's
-     journal reads the other way, and that is deliberate: one is a thread and
+     General box reads the other way, and that is deliberate: one is a thread and
      the other is a feed. An OPTIMISTIC row carries a negative id and is the
      NEWEST thing in the thread, so negatives sort last — a plain id sort put
      the in-flight reply at the top for ~200ms and then jumped it to the

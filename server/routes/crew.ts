@@ -51,10 +51,10 @@ function refuseOutsideScope(): never {
  * not checked against the current briefing: the briefing rotates, and a card he
  * answers tonight may be closed by tomorrow's edition. Refusing his words
  * because a card moved is the one thing this surface must never do — such a
- * reply renders in the journal thread instead.
+ * reply renders in the General box instead.
  */
 const replyInput = z.object({
-  /* `min(1)` because the empty string is neither a card id nor a journal note
+  /* `min(1)` because the empty string is neither a card id nor a general note
      (that is what null is for) — a shape nobody sends refuses (invariant 4's
      spirit; PR #72 re-review). */
   cardId: z.string().min(1).max(64).nullable(),

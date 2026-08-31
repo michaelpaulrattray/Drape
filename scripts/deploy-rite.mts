@@ -364,9 +364,11 @@ if (dirty.length > 0) {
   production deploy for one "nothing needed doing" journal line, on the
   founder's Fable credits. An order the model does not follow needs a
   mechanical guard. This reads the COMMITTED bytes of the push — what changes
-  between origin/main and HEAD, and what the briefing gains — and refuses a
-  push that is only a quiet journal line. A quiet line beside anything else
-  (a card, a step, a chip, an eye item, an acknowledged reply, a file) passes.
+  between origin/main and HEAD — and refuses an edition that moves nothing he
+  can read. Anything that moves (a card, a step, a chip, an eye item, a
+  pipeline row, an acknowledged reply, a file) passes. ⚠ The journal that once
+  made this a three-rule judgement is gone (#293); the module's header keeps
+  the reasoning.
   `scripts/lib/quietEdition.mts` is the owner and states the verdict exactly;
   `server/quietEdition.test.ts` the arms, including the two real editions.
   Under `--dry` the verdict is reported and the run continues — a dry run
