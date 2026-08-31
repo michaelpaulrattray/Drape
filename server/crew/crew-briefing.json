@@ -1,7 +1,7 @@
 {
-  "edition": 178,
-  "updatedAt": "2026-09-01T18:05:00Z",
-  "shift": "foreman-154",
+  "edition": 179,
+  "updatedAt": "2026-08-31T17:52:06Z",
+  "shift": "foreman-155",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -320,27 +320,11 @@
     },
     {
       "id": "queue-titles-285",
-      "title": "Your background-work switches can name their cards — it needs one command from you",
-      "productImpact": "You asked, looking at the panel: “am i suppose to see a list under these categories?” It can now. Bugs (10) becomes Bugs (10) with five of them named underneath — #312, #308, #306, #296, #289 — and “+5 more” for the tail. Your own reason on the card is what decided the shape: a bare number asks you to trust the queue, and the queue is exactly what the freshness pass caught rotting. Ten is a night’s work; it says nothing about whether it is work you want. The code is written and tested. It is switched off until you run one command, and it is held from merging for a reason worth thirty seconds of your time.",
-      "workedExample": "The two pictures in the eye gallery below are the same panel: what you have now, and what you would have. Nothing else on the page moves. Titles are plain text, one line each, cut off at the edge rather than wrapping — a long card title is normal here, and this stays a switch panel rather than becoming the queue.",
-      "options": [
-        {
-          "key": "merge-and-run",
-          "label": "Say “merge it”, then run the one command (recommended)",
-          "consequence": "Two lines from you and the titles are on your panel. The command is:  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-queue-count-titles.mts --production  — it adds one optional column to the crew table it already created. Nothing else on the site touches that table."
-        },
-        {
-          "key": "wait-for-fable",
-          "label": "Leave it until your Fable reviewer is back",
-          "consequence": "Costs you nothing except more nights of bare numbers. The change waits in a finished state and a real reviewer reads it before it lands, which for anything touching the database is a fair instinct."
-        },
-        {
-          "key": "run-command-only",
-          "label": "Run the command now and decide about merging later",
-          "consequence": "Safe in either order — the column is optional and nothing reads it until the change is deployed. It just does not show you anything on its own."
-        }
-      ],
-      "recommendation": "Say “merge it” and run the command. The automatic checks all passed; the reason it is held is narrower than it looks. Anything touching the database folder gets flagged for your eye by a rule written for billing and login code, and while your Fable reviewer is out of credits those flagged changes wait. This one has no billing, login or payment code in it at all — it is your admin panel, a crew table, and tests. I did not want to merge past your own rule on my own reading of it, and holding cost nothing, because the feature is invisible until you run the command anyway.",
+      "title": "Your switch panel names its cards now — it is live, and there is nothing left for you to run",
+      "productImpact": "This is finished and working, and the card was still asking you for something. You asked, looking at the panel: “am i suppose to see a list under these categories?” It can now — and it has been able to since Monday morning. You said “merge it and run the command yourself”, it was merged, and the command was run on 31 August. Tonight I read your live database directly to check rather than trusting the report that said so: the column is there, all 18 rows are filled, and every category is carrying the names of its cards.",
+      "workedExample": "Open the panel and Bugs (12) now lists five of the twelve underneath it: “`answered` conflates ‘he replied’ with ‘no longer needs him’”, “22 scripts read their flags by name”, “pnpm check is RED locally”, “the openrouter LOW banner cannot ever clear”, and “a briefing edition that discusses quiet shifts is classified as one”. That is the difference the card was arguing for: twelve is a night's work and tells you nothing about whether it is work you want, and those five titles let you decide before you flip the switch.",
+      "options": [],
+      "recommendation": "Nothing to run and nothing to answer — glance at the panel and, if it reads the way you wanted, this one closes. ⚠ The part worth telling you: this card kept asking you to run that command for 32 hours after you had already run it, and it was at the top of your desk the whole time. It is the second time in two days a card has gone on giving advice its own newer facts had cancelled — the first was the one that would have had you delete two Casts you had just told us to keep. Nothing on the page checks for it yet; that is #344, and it is the next thing your weekly review looks at.",
       "state": "answered",
       "issueNumber": 285,
       "filedAt": "2026-08-31T03:50:00+10:00"
@@ -3138,6 +3122,13 @@
   ],
   "problems": [
     {
+      "id": "stale-desk-advice-344",
+      "title": "Your desk asked you to run a command you had already run — corrected tonight, and it is the second time",
+      "detail": "The card about naming your queue's cards sat at the top of your desk telling you to run a database command. You ran it on Monday morning, 31 August. The work was merged, deployed and working the whole time the card was asking for it. Nothing was broken and nothing was at risk here — the cost is your attention, which is the scarce thing. What makes it worth a line rather than a quiet fix is that it is the same shape as the near miss on 31 August, where a card's recommendation told you to delete three Casts four hours after its own notes recorded that two of them were ones you wanted kept. Both cards were correct in their bodies and stale in the one sentence you actually read. The four automatic checks on your page all ask whether a card's STATE is out of date; none asks whether its ADVICE is. That gap is written up as #344 and the weekly review picks it up next.",
+      "severity": "warning",
+      "state": "open"
+    },
+    {
       "id": "invite-label-350",
       "title": "Fixed — the Invite label is the same size as Home and Casting now",
       "detail": "You reported it at 21:57 last night; it is merged and on your rail. It was rendering at 16px — the page's ordinary text size — against 9.5px for every destination above it. Now 9.5px, measured in the browser rather than read off the stylesheet, in both themes and on the casting page too. Your fix was right and your diagnosis was one step off, which is the only part worth your attention: the nav labels were ALREADY 9.5px, so Invite was not one step too big — it sits outside the nav item that carries the size and was inheriting the page instead. That is why the size went on the label's own class rather than on the Invite rule: the next label put outside a nav item cannot repeat it. Frames below.",
@@ -3146,8 +3137,8 @@
     },
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 100 open, #322 built — and the stale pile is 27, still unchanged",
-      "detail": "100 cards open. SIX carry your own order, and tonight one of them moved: #322 — migrations putting themselves in — is BUILT and is the card at the top of your desk. It had sat untouched for two days because it read as judgement work. Of the other five: ONE genuinely waits on you (#267, the account-menu labels, held behind a Settings modal you have not briefed), one is yours by choice (#321's Campaign/Try-on pair), one (#325) needed a command from you that #322 is precisely the fix for, and two are finished and waiting on your glance (#285, #304). ⚠ THE STALE PILE HAS NOT MOVED FOR A THIRD NIGHT: 27 cards cross the week-untouched line, every one last read on 25 August. They are casting research, design drafts and roadmap items; none is urgent and none waits on you. Your background-work switch is OFF, which is the whole lever and is yours — nothing tonight touched them.",
+      "title": "The queue tonight: 100 open, nothing new started — every card of yours is now waiting on you",
+      "detail": "100 cards open, unchanged. SIX carry your own order and tonight NONE of them could move, which is why this shift built nothing: #322 (migrations putting themselves in) is finished and needs one word from you; #325 is waiting on #322; #267 is held behind a Settings modal you have not briefed; #321's last piece is the Campaign/Try-on pair you kept for yourself; and #285 and #304 are done and waiting on your glance. Your background-work switch is OFF, so nothing else was admissible — that switch is the whole lever and it is yours. ⚠ THE STALE PILE IS UNCHANGED FOR A FOURTH NIGHT: 27 cards last read on 25 August — a week ago today. They are casting research, design drafts and roadmap items; none is urgent and none waits on you.",
       "state": "open",
       "severity": "warning"
     },
@@ -3341,7 +3332,7 @@
     67
   ],
   "nextUp": {
-    "readAt": "2026-08-31T17:21:23.408Z",
+    "readAt": "2026-08-31T17:48:16.077Z",
     "items": [
       {
         "issueNumber": 267,
