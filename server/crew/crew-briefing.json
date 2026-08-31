@@ -1,7 +1,7 @@
 {
-  "edition": 158,
-  "updatedAt": "2026-08-31T10:05:00+10:00",
-  "shift": "foreman-138",
+  "edition": 159,
+  "updatedAt": "2026-08-31T11:20:00+10:00",
+  "shift": "foreman-139",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,6 +111,16 @@
     ],
     "chips": [
       {
+        "label": "The journal is gone from this page — your own notes now sit in a General box",
+        "tone": "good",
+        "source": "PR #326 merged 643e4b47: your reply \"Keep a General box\" built as written. 170 tests green; the box driven in the running app in three states."
+      },
+      {
+        "label": "The queue: 102 open · 12 urgent · nothing on your desk · none rotting",
+        "tone": "neutral",
+        "source": "Counted at 11:05, not carried: 102 open, 12 urgent, 0 open cards or eye items here, 0 untouched for a week (oldest 6 days). #267 and #302 sit blocked on your Settings-modal brief."
+      },
+      {
         "label": "Your feed is fixed — your Cast still will not delete, for another reason",
         "tone": "warn",
         "source": "PR #307 merged 54dbe031: 20 of 20 poisoned records on your account now pass, all 20 threw before. The delete refusal is #308."
@@ -124,21 +134,6 @@
         "label": "Every N1 slice is built and live on your account — the gate is your eye",
         "tone": "good",
         "source": "PRs #132, #136, #137, #138, #141, #150, #153, #156 all MERGED (gh, read 27 Aug 08:20); CASTING_CREATIVE_REGISTER_SCOPE=users:1 on production (rite 08:15)"
-      },
-      {
-        "label": "Your Crew page now says what is planned, not just what shipped",
-        "tone": "good",
-        "source": "PR #294 merged e2a314dd, live as edition 143; NEXT UP is 8 rows from `gh issue list --label founder-ordered --state open`, read 30 Aug 10:13Z"
-      },
-      {
-        "label": "Done went 12 to 45 — the page had been under-reporting what is finished",
-        "tone": "good",
-        "source": "scripts/crew-desk-sweep.mts against every card's own issue, 30 Aug: 33 answered cards whose issues are closed"
-      },
-      {
-        "label": "Nothing on the page claims you are blocking it any more",
-        "tone": "good",
-        "source": "the 7 waiting-founder rows read at their own notes — all RUN AND REPORTED; the schema now refuses a row that does not name an open card"
       }
     ]
   },
@@ -166,7 +161,7 @@
         }
       ],
       "recommendation": "Keep a General box. Your own reason for removing the journal was that it had one job left and the machine now does it - but an unattached reply is a second job, and it is the one that costs you if it breaks. A small box named for what it is keeps the page honest without the risk.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-31T06:06:39+10:00",
       "issueNumber": 293
     },
@@ -1953,6 +1948,13 @@
   ],
   "pipeline": [
     {
+      "id": "general-box-293",
+      "title": "The journal is gone; a General box keeps your own notes (#293)",
+      "status": "merged",
+      "prNumber": 326,
+      "note": "Your words: \"Keep a General box.\" Built exactly that. The long list of shift entries at the bottom of this page is gone; in its place is GENERAL — the box you type into, and every note of yours that is not attached to a card. Nothing of yours was lost: the two things the journal also did are already done better elsewhere on this page (WORKING NOW says what a shift is doing right now, ALREADY DEALT WITH says what was decided and what landed). ⚠ One line was deliberately left out of the merge and is filed as #328: a comment inside the database schema still calls the box \"the journal\". That file counts as a money/auth surface, and those are not merged while your Fable reviewer is out — so a comment waits rather than holding your whole change for days."
+    },
+    {
       "id": "auto-park-293",
       "title": "The nights park themselves when there is nothing to do, and restart on their own (#293)",
       "status": "merged",
@@ -2953,7 +2955,7 @@
     56
   ],
   "nextUp": {
-    "readAt": "2026-08-31T00:01:17.472Z",
+    "readAt": "2026-08-31T01:09:11.932Z",
     "items": [
       {
         "issueNumber": 267,
@@ -2965,11 +2967,6 @@
         }
       },
       {
-        "issueNumber": 293,
-        "title": "Park the nights when nothing is workable, and remove the journal — the auto-park is what replaces it",
-        "urgent": true
-      },
-      {
         "issueNumber": 302,
         "title": "Stub Home and Library, blank Canvas — and Library must not be stubbed before he can delete his legacy Casts",
         "urgent": true,
@@ -2979,6 +2976,11 @@
         }
       },
       {
+        "issueNumber": 308,
+        "title": "Model 35 will not delete — nine accepted_candidate plates fail an evidence-key SHAPE check, and it is not the referencePlates guard",
+        "urgent": true
+      },
+      {
         "issueNumber": 321,
         "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
         "urgent": true
@@ -2986,6 +2988,11 @@
       {
         "issueNumber": 322,
         "title": "Migrations and ceremonies auto-apply — additive runs itself, destructive still names itself and stops",
+        "urgent": true
+      },
+      {
+        "issueNumber": 327,
+        "title": "MAX is over-authoring: it invents wardrobe and backstory, stacks contradictions, and buries the locked facts in prose",
         "urgent": true
       },
       {
@@ -3021,6 +3028,11 @@
       {
         "issueNumber": 325,
         "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
+        "urgent": false
+      },
+      {
+        "issueNumber": 330,
+        "title": "Small edits cost an hour: 186KB of law read every shift, and a batching rule that only covers his replies",
         "urgent": false
       }
     ]
