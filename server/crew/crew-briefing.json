@@ -1,7 +1,7 @@
 {
-  "edition": 161,
-  "updatedAt": "2026-08-31T13:35:00+10:00",
-  "shift": "foreman-141",
+  "edition": 162,
+  "updatedAt": "2026-08-31T14:40:00+10:00",
+  "shift": "foreman-142",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,14 +111,19 @@
     ],
     "chips": [
       {
+        "label": "MAX stops inventing a character - your four corrections are in",
+        "tone": "good",
+        "source": "#327 merged 1fc61be6 (PR #338). On your own cyborg brief: invented backstory 3 of 3 to 0 of 3, language fighting the studio block 3 of 3 to 0 of 3. Frames in your gallery. 32c, no roll."
+      },
+      {
         "label": "Your bug count was offering you work you had already queued",
         "tone": "good",
         "source": "#324 closed, PR #337 merged 4a0fcbfe. 15 cards carried `bug` when measured and four were yours already ordered (one was #324 itself). Now: Bugs (11, 3 already queued)."
       },
       {
-        "label": "The queue: 102 open - 13 urgent - one thing on your desk - none rotting",
+        "label": "The queue: 101 open - 12 urgent - one thing on your desk - none rotting",
         "tone": "neutral",
-        "source": "Counted 13:30, not carried: 102 open, 13 urgent, 13 founder-ordered, 0 untouched for a week. #330 stays front: half landed tonight, half waits for Fable."
+        "source": "Counted 14:45, not carried: 101 open, 12 urgent, 12 founder-ordered, 0 untouched for a week. #330 stays front: its second half landed last night, the law-file split waits for Fable."
       },
       {
         "label": "Your feed is fixed — your Cast still will not delete, for another reason",
@@ -139,24 +144,40 @@
   },
   "needsYou": [
     {
-      "id": "queue-count-exclusions-ceremony",
-      "title": "One command turns tonight's fix on - and until you run it, your Security row reads (1)",
-      "productImpact": "The fix that stops your switch panel offering you work you have already queued is merged and tested, but it needs one new column in the production database, and adding one is always your call rather than a shift's. NOTHING IS BROKEN WHILE YOU WAIT - the panel behaves exactly as it did yesterday. There is ONE visible side effect worth knowing about: I labelled the penetration-probe card (#45) as a security card tonight, because your Security row was showing (0) while a real security card existed. Until you run the command, that row reads Security (1) without being able to add the words \"1 parked\" - so it looks like there is a security job on offer when there is not. Running the command makes it read Security (0, 1 parked), which is the true sentence.",
-      "workedExample": "Right now your panel says Bugs (14). Three of those fourteen are cards you ordered yourself - #308, #316 and #320 - already sitting at the top of NEXT UP. Turn Bugs on and a shift could spend the night on something you had already put first. After the command it says Bugs (11, 3 already queued), and those three are gone from the list underneath.",
+      "id": "max-over-authoring-327",
+      "title": "MAX stops inventing a character - your four corrections are in, and one of them found a bug",
+      "productImpact": "You said MAX was over-authoring: it invented wardrobe and a black-ops backstory, kept two contradictory skin descriptions and piled a third on top, buried the facts you actually locked in character prose, and repeated what the studio block already says. All four are rules the author is now given. Nothing is banned by word - banning \"soldier\" or \"wardrobe\" would refuse good descriptions of real people, which this studio has been bitten by five times - so the proof is the pictures rather than a green tick. ONE THING TO KNOW: the fourth after-frame still wears a strap and a belt. Three of four are plain. I have not called that a pass.",
+      "workedExample": "Today, given your brief, MAX writes \"a man built and rebuilt for function\" and \"hard light catching the brow ridge, deep shadow pooling in the eye sockets\" - and the studio block appended right underneath says \"large soft frontal key, high fill, open shadows\". Those two sentences argue with each other, and the picture gets the argument. With your rules that whole passage is gone, and the paragraph opens with your eight facts in your own words instead.",
       "options": [
         {
-          "key": "run",
-          "label": "Run it now",
-          "consequence": "railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-queue-count-exclusions.mts --production   (about ten seconds; it prints the port before it changes anything, is safe to run twice, and adds one nullable column - no existing data is touched)"
+          "key": "pass",
+          "label": "Good - keep it",
+          "consequence": "The rules stand as merged and #327 closes."
         },
         {
-          "key": "later",
-          "label": "Leave it for now",
-          "consequence": "The panel keeps behaving exactly as it does today. The only cost is that Security keeps reading (1) instead of (0, 1 parked), and the bug count keeps including the three cards you already ordered."
+          "key": "strap",
+          "label": "A strap and a belt is not generic - go again",
+          "consequence": "I take another pass at rule 1's wardrobe half and re-run the same before/after. Text and frames, about 40 cents of house money, no roll."
+        },
+        {
+          "key": "roll",
+          "label": "Show me a real sheet, not a court",
+          "consequence": "A roll on your account - 160 of your credits, eight faces through the real entrance. I did not do this on my own judgement because they are your credits."
         }
       ],
-      "recommendation": "Run it. It is ten seconds, it cannot lose anything, and until it runs the Security row is the one thing tonight's work made slightly less clear rather than more.",
+      "recommendation": "Keep it, and let the strap go. The engine has to dress him - the frame is mid-torso, so something has to be there - and a plain coat with one strap is a long way from a tactical rig. If you do want it tighter, that is a rule about what the STUDIO puts people in, which is a different decision from what MAX is allowed to invent.",
       "state": "open",
+      "filedAt": "2026-08-31T14:40:00+10:00",
+      "issueNumber": 327
+    },
+    {
+      "id": "queue-count-exclusions-ceremony",
+      "title": "Done - you approved it, I ran it, and your Security row reads (0, 1 parked) again",
+      "productImpact": "You wrote \"I approve you to run it whenever you want\", so I ran it. The column is on the production database, the counts were rewritten in one pass, and the interim wrongness I warned you about last night is gone: your Security row said (1) for a card that is parked, and it now says (0, 1 parked), which is the true sentence. Your Bugs row went from 14 to \"11, 3 already queued\" - the three are #308, #316 and #320, cards you ordered yourself which were being offered back to you a second time as background work.",
+      "workedExample": "Before: Bugs (14) - turn the switch on and a shift could spend the night on #316, which you had already put at the top of NEXT UP. After: Bugs (11, 3 already queued), and those three are no longer in the list underneath it.",
+      "options": [],
+      "recommendation": null,
+      "state": "done",
       "filedAt": "2026-08-31T13:35:00+10:00",
       "issueNumber": null
     },
@@ -1966,9 +1987,32 @@
         }
       ],
       "cardId": null
+    },
+    {
+      "id": "max-over-authoring-frames-327",
+      "title": "MAX stops writing him a backstory - your cyborg brief, before and after, same eight facts",
+      "question": "Top row is the MAX we have today. Bottom row is MAX with your four rules. Two questions. First: is the bottom row what you meant by sharpen the look, do not invent a character? The tactical kit is gone from three of the four, and the eight things you locked are in all eight frames - bald, mid-40s, ports above the RIGHT temple, scalp seams, jaw plate, a stud under each ear, the faint amber-red RIGHT eye, integrated not worn. Second, and it is the one I would not decide for you: the fourth bottom frame still wears a shoulder strap and a belt. Your rule says costume generic or absent. Is one in four acceptable, or does it need another pass?",
+      "state": "open",
+      "filedAt": "2026-08-31T14:40:00+10:00",
+      "issueNumber": 327,
+      "cardId": "max-over-authoring-327",
+      "frames": [
+        {
+          "key": "crew-eye/11623e34-77f8-423d-9b30-36ac4f190c60.png",
+          "caption": "Your own 553-character cyborg brief, both rows, nothing else changed. TOP (today): a black-ops harness, buckles and utility pockets on all four - and your brief never mentions clothing at all. The paragraph behind it invented a soldier, an operative and a dossier photo, and wrote its own lighting over the studio's. BOTTOM (your rules): plain dark coats on three, a strap and belt on the fourth, no invented history in any draft. 32 cents of house money - no roll, none of your credits.",
+          "arm": "before (top) / after (bottom)"
+        }
+      ]
     }
   ],
   "pipeline": [
+    {
+      "id": "max-over-authoring-327",
+      "title": "MAX stops inventing a character - your four corrections (#327)",
+      "status": "merged",
+      "prNumber": 338,
+      "note": "All four rules are in, and rule 4 turned up a real bug on the way: six rules that apply to EVERY brief - including the very do-not-repeat-the-studio-block rule your complaint was about - were written under a heading that only covers SHORT briefs, while the code enforced them on both. Your cyborg brief is a long one, so the rule you were complaining about was filed under the wrong half of the instruction. Measured before and after on your own brief: invented backstory 3 of 3 to 0 of 3, language fighting the studio block 3 of 3 to 0 of 3, and every fact you stated present in all six drafts either way."
+    },
     {
       "id": "switch-counts-324",
       "title": "The switch counts stop offering work you have already queued (#324)",
@@ -2997,10 +3041,11 @@
     53,
     54,
     55,
-    56
+    56,
+    57
   ],
   "nextUp": {
-    "readAt": "2026-08-31T03:26:46.756Z",
+    "readAt": "2026-08-31T04:26:02.590Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3033,11 +3078,6 @@
       {
         "issueNumber": 322,
         "title": "Migrations and ceremonies auto-apply — additive runs itself, destructive still names itself and stops",
-        "urgent": true
-      },
-      {
-        "issueNumber": 327,
-        "title": "MAX is over-authoring: it invents wardrobe and backstory, stacks contradictions, and buries the locked facts in prose",
         "urgent": true
       },
       {
