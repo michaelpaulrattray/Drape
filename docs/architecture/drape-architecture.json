@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dcfdba21a65a31e6"
+    "sourceFingerprint": "8f595e225e2822ea"
   },
   "domains": [
     {
@@ -12302,6 +12302,10 @@
     {
       "id": "test:server/crewQueueTitles.test.ts",
       "path": "server/crewQueueTitles.test.ts"
+    },
+    {
+      "id": "test:server/crewShiftArguments.test.ts",
+      "path": "server/crewShiftArguments.test.ts"
     },
     {
       "id": "test:server/crewShiftState.test.ts",
