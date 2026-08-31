@@ -44,6 +44,21 @@
  * count and zero titles; subtracting blindly would promise a list that is not
  * there. `queueTitlesView` owns that rule and is tested directly.
  *
+ * # ⚠ AND THE COUNT IS WHAT IS ON OFFER, WITH WHAT IT LEFT OUT BESIDE IT (#324)
+ *
+ * Founder, at this panel: *"how do we know they are not already scheduled to be
+ * fixed in current pipeline or work?"* Measured: **two of the thirteen bugs
+ * were `#320` and `#316`, both `founder-ordered` and both already in NEXT UP** —
+ * the same card offered to him twice, once as work he had queued and again as
+ * background work a shift may take on its own judgement.
+ *
+ * So the number is now the OFFERED population, and the reasons ride inside the
+ * same parenthesis: `Bugs (11, 2 already queued)`. **The clause is the whole
+ * fix, not the subtraction** — his card's own sentence is that *a count that
+ * silently shrinks for an invisible reason is the confident-wrong-number
+ * failure this panel already exists to avoid.* A category that excluded nothing
+ * draws no clause and looks exactly as it does today.
+ *
  * # ⚠ THE COUNT SAYS HOW OLD IT IS, RATHER THAN IMPLYING AN INSTANT
  *
  * The categories are derived from the queue's own labels, so a card relabelled
@@ -55,6 +70,7 @@
  */
 import { useState } from "react";
 
+import { queueExclusionSentence } from "@shared/crewQueueExclusions";
 import { queueTitlesView } from "@shared/crewQueueTitles";
 import {
   CREW_WORK_CATEGORIES,
@@ -190,6 +206,9 @@ export function CrewBackgroundWork({
           const live = backgroundWorkAllowed(workState.switches, category.key);
           const count = countOf(category.key);
           const titles = queueTitlesView(count?.openCount ?? 0, count?.titles ?? []);
+          /* WHAT THE NUMBER LEFT OUT (#324) — `null` for the ordinary row, so
+             `Process (12)` looks exactly as it does today. */
+          const excluded = queueExclusionSentence(count?.excluded ?? {});
           return (
             <li key={category.key} className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -197,9 +216,16 @@ export function CrewBackgroundWork({
                   {category.label}
                   {/* ZERO IS A REAL ANSWER AND IS DRAWN. A category with nothing
                       in it must not vanish, or he cannot tell "nothing to do"
-                      from "not offered" — his own sentence. */}
+                      from "not offered" — his own sentence.
+
+                      ⚠ AND THE EXCLUSION IS DRAWN INSIDE THE SAME PARENTHESIS
+                      (#324), never as a second line: the number and the reason
+                      it is smaller than the label's population are ONE fact, and
+                      a count that shrinks with its reason a paragraph away is
+                      the confident-wrong-number failure this panel exists to
+                      prevent. `Bugs (11, 2 already queued)`. */}
                   <span className="text-[#999]">
-                    {" "}({count ? count.openCount : "—"})
+                    {" "}({count ? count.openCount : "—"}{excluded ? `, ${excluded}` : ""})
                   </span>
                 </p>
                 <p className="text-[11px] leading-[1.5] text-[#999]">

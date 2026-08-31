@@ -1,0 +1,90 @@
+-- WHAT THE SWITCH COUNT LEAVES OUT — one column beside the count (#324).
+--
+-- Founder, 2026-08-31, at the live panel: "it says 13 bugs etc where do these
+-- bugs come from how are they calculated etc? how do we know they are not
+-- already scheduled to be fixed in current pipeline or work?"
+--
+-- Measured before it was believed: two of those thirteen were #320 and #316,
+-- both `founder-ordered` and both already in NEXT UP. The count filtered on the
+-- category label alone and excluded nothing, so the same card was offered to
+-- him twice — once as work he had queued, and again as background work a shift
+-- may pick up on its own judgement.
+--
+-- ============================================================================
+-- WHY ONE JSON COLUMN AND NOT A COLUMN PER REASON
+-- ============================================================================
+--
+-- Two reasons ship today (`founder-ordered`, `parked`) and a third is already
+-- carded: #325 groups the other 71 open cards by the labels they carry. A
+-- column per reason puts the vocabulary in the DDL, in the writer, in the
+-- reader and in the panel — working law 4's second list wearing a schema, and
+-- every later reason would then be a migration and a FOUNDER CEREMONY rather
+-- than a line of TypeScript.
+--
+-- `shared/crewQueueExclusions.ts` owns the shape, the vocabulary, the
+-- first-match-wins rule and a parse whose only failure mode is "no exclusions".
+--
+-- ============================================================================
+-- WHY A COLUMN AND NOT A TABLE — 0054's split-by-writer law, unchanged
+-- ============================================================================
+--
+-- `crew_queue_counts` has exactly one writer — a shift, mechanically, from the
+-- queue's own labels. The exclusions have the SAME writer, the SAME moment and
+-- the SAME reason to exist: they are not a second fact about the queue, they
+-- are the rest of the sentence the number is in. In one column that property
+-- holds because there is only one statement; in a child table it would hold
+-- because two statements both happened to succeed, and a half-written pair —
+-- a count refreshed beside an exclusion from an older reading — is exactly the
+-- confident-wrong-number failure this panel exists to prevent.
+--
+-- ============================================================================
+-- ⚠ WHAT `openCount` MEANS AFTER THIS, AND THE ONE THING THAT MUST NOT HAPPEN
+-- ============================================================================
+--
+-- WHERE THIS COLUMN EXISTS, `openCount` is the OFFERED count — cards a shift
+-- may actually pick up — and `excluded` says what was taken out and why. WHERE
+-- IT DOES NOT, `openCount` keeps its old meaning (every open card carrying the
+-- label) and the panel is byte-identical to today's.
+--
+-- That split is deliberate and it is the load-bearing decision here. The
+-- alternative — write the offered count whether or not the reasons can be
+-- stored — would make the number silently shrink for a reason the page cannot
+-- show, which is the failure his card names in as many words. So the writer
+-- asks `SHOW COLUMNS` first and picks the whole reading or the old one, never
+-- half of the new one.
+--
+-- ============================================================================
+-- ⚠ NULLABLE, AND THE CODE RUNS BEFORE THIS DOES
+-- ============================================================================
+--
+-- `migration-before-code` says a new column on a WRITTEN table is in every
+-- INSERT. Answered the same three ways migration 0057 answered it:
+--
+--   * the WRITER (`scripts/crew-count-queue.mts`) asks `SHOW COLUMNS` before it
+--     writes and falls back to the count-only INSERT, so a shift running
+--     against a database without this column still fills his panel;
+--   * the READER (`server/db/crewWorkSwitches.ts`) catches ER_BAD_FIELD_ERROR
+--     and re-reads without the column, so his Crew tab — which is ONE
+--     `crew.getState` call — cannot fall to a blank page in the window between
+--     the deploy and this ceremony;
+--   * `scripts/lib/schemaConformance.mts` enumerates this column in
+--     DECLARED_COLUMNS_BUT_UNMIGRATED so the deploy rite stays green for every
+--     OTHER shift meanwhile, and REDDENS the day the column appears so the
+--     exception line is deleted rather than forgotten.
+--
+-- NULL and "no shift has counted yet" are the same fact and read the same way:
+-- no exclusion clause, the count alone.
+--
+-- ============================================================================
+-- PRODUCTION TAKES IT BY CEREMONY — scripts/ceremony-crew-queue-count-exclusions.mts
+-- ============================================================================
+--
+-- One command, idempotent, prints the port before it alters anything. The day
+-- it runs against production, delete `crew_queue_counts.excluded` from
+-- DECLARED_COLUMNS_BUT_UNMIGRATED and its pin in
+-- `server/schemaConformance.test.ts` in the SAME commit — `crew_replies`
+-- reddened main for exactly that mistake.
+--
+-- PURELY ADDITIVE. One nullable column. No row is rewritten, no index moves, no
+-- existing column changes.
+ALTER TABLE `crew_queue_counts` ADD COLUMN `excluded` text;

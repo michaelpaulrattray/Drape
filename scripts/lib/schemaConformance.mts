@@ -90,7 +90,16 @@ export const DECLARED_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
  * the day the column appears, this line and its pin in
  * `server/schemaConformance.test.ts` are deleted in the SAME commit.
  */
-export const DECLARED_COLUMNS_BUT_UNMIGRATED: Readonly<Record<string, string>> = {};
+export const DECLARED_COLUMNS_BUT_UNMIGRATED: Readonly<Record<string, string>> = {
+  "crew_queue_counts.excluded":
+    "migration 0058 (#324) — what the switch count left out, and why. Production "
+    + "takes it by scripts/ceremony-crew-queue-count-exclusions.mts, which is a "
+    + "founder act. Both sides already run without it: the writer asks SHOW COLUMNS "
+    + "and falls back to today's count-only INSERT, and the reader catches "
+    + "ER_BAD_FIELD_ERROR and re-reads without it, so the Crew tab cannot fall to a "
+    + "blank page meanwhile. Delete this line and its pin in "
+    + "server/schemaConformance.test.ts the day the ceremony runs, in ONE commit.",
+};
 
 export type ConformanceVerdict = {
   readonly declaredTables: number;

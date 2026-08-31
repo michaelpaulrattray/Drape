@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b3a25f3788b96646"
+    "sourceFingerprint": "9ae55a26b8767c10"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:studio",
@@ -5837,6 +5837,12 @@
     {
       "id": "module:shared/crewNextUpHold.ts",
       "path": "shared/crewNextUpHold.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewQueueExclusions.ts",
+      "path": "shared/crewQueueExclusions.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12286,6 +12292,10 @@
       "path": "server/crewQueueCountRescue.test.ts"
     },
     {
+      "id": "test:server/crewQueueExclusions.test.ts",
+      "path": "server/crewQueueExclusions.test.ts"
+    },
+    {
       "id": "test:server/crewQueueTitles.test.ts",
       "path": "server/crewQueueTitles.test.ts"
     },
@@ -14043,6 +14053,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:shared/crewQueueExclusions.ts",
       "kind": "imports"
     },
     {
@@ -28038,6 +28053,11 @@
     {
       "from": "module:server/db/crewWorkSwitches.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewWorkSwitches.ts",
+      "to": "module:shared/crewQueueExclusions.ts",
       "kind": "imports"
     },
     {
