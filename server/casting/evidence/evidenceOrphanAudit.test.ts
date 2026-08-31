@@ -59,6 +59,7 @@ function validState() {
       id: plateId,
       userId: 7,
       modelId: 9,
+      kind: "uploaded_reference" as const,
       storageKey: plateKey,
       createdByOperationId: plateOperationId,
     }],
@@ -271,5 +272,43 @@ describe("R7-7C3 evidence rollback orphan audit", () => {
       storageKey: `users/8/models/9/evidence/plates/${plateId}.webp`,
     };
     expect(auditEvidenceOrphans(state).cleanupLinkMismatches).toBe(1);
+  });
+
+  /*
+    #308 — THE AUDIT KEPT A SECOND COPY OF THE NAMESPACE RULE and inherited the
+    identical defect. It was handed the literal `"reference_plate"` for every
+    plate, so it accepted only a `plates/` key; the entire production plate
+    population is `accepted_candidate` on a `candidates/` key, which it would
+    have counted as nine key-ownership mismatches. An instrument that reports a
+    healthy database as dirty is worse than no instrument.
+  */
+  it("counts an accepted_candidate plate on its promoted candidate object as clean", () => {
+    const state = validState();
+    state.referencePlates = [{
+      ...state.referencePlates[0],
+      kind: "accepted_candidate" as const,
+      storageKey: `users/7/models/9/evidence/candidates/${plateId}.webp`,
+    }];
+    expect(auditEvidenceOrphans(state).keyOwnershipMismatches).toBe(0);
+  });
+
+  it("still counts a plate whose namespace no writer produces", () => {
+    const state = validState();
+    /* An uploaded reference has exactly one shape, and this is not it. */
+    state.referencePlates = [{
+      ...state.referencePlates[0],
+      kind: "uploaded_reference" as const,
+      storageKey: `users/7/models/9/evidence/candidates/${plateId}.webp`,
+    }];
+    expect(auditEvidenceOrphans(state).keyOwnershipMismatches).toBe(1);
+
+    /* And ownership itself is untouched by the widening. */
+    const other = validState();
+    other.referencePlates = [{
+      ...other.referencePlates[0],
+      kind: "accepted_candidate" as const,
+      storageKey: `users/8/models/9/evidence/candidates/${plateId}.webp`,
+    }];
+    expect(auditEvidenceOrphans(other).keyOwnershipMismatches).toBe(1);
   });
 });
