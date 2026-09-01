@@ -195,29 +195,94 @@ describe("a new glyph goes into P, never inline at the call site", () => {
 
 describe("one gear, not two", () => {
   /**
-   * His words: *"`P.cog` is in there as a fallback if a cogwheel is genuinely
-   * wanted later … **Don't use both.**"* `P.cog` exists and is deliberately
-   * unused; this arm fails the day a second surface reaches for it while the
-   * rail still draws `P.settings`.
+   * His rule has not moved: *"`P.cog` is in there as a fallback if a cogwheel
+   * is genuinely wanted later … **Don't use both.**"* **Which one is the gear
+   * HAS moved** — #373, 2026-09-01, verbatim: *"i want to change the setting
+   * icon at the bottom of the rail to a cog — this looks more like a filter
+   * icon"*. He is right at the shape: `P.settings` draws two horizontal rails
+   * with an offset handle on each, which is how FILTERS are drawn.
+   *
+   * ⚠ **BOTH ARMS BELOW ARE INVERTED RATHER THAN DELETED, AND THAT IS THE
+   * POINT.** A correct swap made the previous pair fail together — the rail
+   * arm because it named the old glyph, the absence arm because its subject
+   * had just become the drawn one — and two red arms read as *the swap broke
+   * something*, whose wrong repair is to revert his ruling to make the suite
+   * green. An absence arm that no longer has a subject is not a passing test,
+   * it is a removed one; so the subject is swapped and the guard still fails
+   * the day a SECOND gear appears, in whichever direction it appears.
    */
-  it("P.cog is drawn nowhere while P.settings is the gear", () => {
-    expect(RAIL).toMatch(/P\.settings/);
+  it("P.settings is drawn nowhere while P.cog is the gear", () => {
+    expect(RAIL).toMatch(/P\.cog/);
     const sources = fs
       .readdirSync(path.resolve(CLIENT_SRC, "foundation"))
       .filter((name) => name.endsWith(".tsx") && name !== "icons.tsx")
       .map((name) => code(read(`foundation/${name}`)));
     for (const source of sources) {
-      expect(source).not.toMatch(/P\.cog/);
+      expect(source).not.toMatch(/P\.settings/);
     }
   });
 
   it("the matcher would see it", () => {
-    expect(/P\.cog/.test("<Icon d={P.cog} size={16} />")).toBe(true);
+    expect(/P\.settings/.test("<Icon d={P.settings} size={16} />")).toBe(true);
   });
 
-  /** The fallback still exists — his word was "don't use both", not "delete it". */
-  it("P.cog is still available for the day he wants it", () => {
-    expect(typeof P.cog).toBe("string");
+  /**
+   * The fallback still exists, and it is now the OTHER one — his word was
+   * "don't use both", not "delete it", and that was as true of `P.cog` on the
+   * day it sat unused as it is of `P.settings` now.
+   */
+  it("P.settings is still available for the day he wants it back", () => {
+    expect(typeof P.settings).toBe("string");
+  });
+
+  /**
+   * ⚠ **THE `cog` DOCBLOCK IN `icons.tsx` SAYS "four teeth rather than eight"
+   * AND THAT IS FALSE OF THE PATH ONE LINE BELOW IT — recorded HERE because
+   * it may not be fixed THERE.** `P` in `icons.tsx` is a byte-for-byte mirror
+   * of his handoff (the arms above enforce it), so his sentence in his file is
+   * not a shift's to rewrite; correcting our copy would break the mirror,
+   * which is a worse defect than a wrong comment.
+   *
+   * Counted at the bytes and confirmed at the DOM (**9 paths** in the rendered
+   * button): the centre circle plus **EIGHT** spokes — four on the axes, four
+   * on the diagonals. This arm is that count, so the claim cannot rot further
+   * without something going red.
+   *
+   * **Why it is worth saying out loud rather than shrugging off:** his stated
+   * objection to Lucide's gear was, verbatim, *"eight teeth plus an inner
+   * circle, which mushes into a blurred ring at 16px"* — and the glyph that
+   * now fills that slot is eight teeth plus an inner circle. It survives 16px
+   * for a DIFFERENT reason than the comment gives: Lucide draws a filled gear
+   * outline whose teeth close into a ring, this draws eight separate hairlines
+   * off a 2.6r circle. That is a claim about a RENDER, so it is his eye that
+   * settles it — the 8x magnified before/after is filed at
+   * `output/373-frames/strip-{dark,light}.png` and went to his gallery with
+   * the change, rather than being asserted here.
+   */
+  it("the cog has eight spokes and one centre, whatever the comment says", () => {
+    const spokes = P.cog.split("M").filter(Boolean);
+    expect(spokes).toHaveLength(9);
+    /* The centre is the only arc; the other eight are straight strokes. */
+    expect(spokes.filter((s) => s.includes("a")), "one centre circle").toHaveLength(1);
+    expect(
+      "M1 1v2M2 2v2".split("M").filter(Boolean),
+      "positive control — the splitter must count subpaths, not characters",
+    ).toHaveLength(2);
+  });
+
+  /**
+   * ⚠ **THE RAIL'S FOOT IS THE ONLY PLACE EITHER GEAR IS DRAWN, AND ITS SIZE
+   * DID NOT MOVE.** His order was the glyph and nothing else. The card asking
+   * for it said *"at 17px"* — read at the bytes, the foot has always drawn at
+   * **16**, and 17 is the DESTINATIONS' size; "unchanged in every other
+   * respect" is the binding clause, so 16 stays and this arm pins it.
+   */
+  it("the swap changed the glyph and not the size", () => {
+    expect(RAIL).toMatch(/<Icon d=\{P\.cog\} size=\{16\} \/>/);
+    expect(
+      /<Icon d=\{P\.cog\} size=\{16\} \/>/.test("<Icon d={P.cog} size={17} />"),
+      "positive control — the matcher must reject a resized gear",
+    ).toBe(false);
   });
 });
 

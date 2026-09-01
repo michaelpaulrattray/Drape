@@ -53,7 +53,10 @@
  *   `Settings` for the gear — eight teeth and an inner circle, illegible at
  *                             16px beside glyphs of three strokes, and the
  *                             most over-used icon on the internet.
- *                             Use `P.settings`.
+ *                             Use `P.cog` — his 2026-09-01 correction (#373):
+ *                             `P.settings` read as a FILTER at the rail's
+ *                             foot. `P.settings` is the unused fallback now.
+ *                             ONE gear, never two, in either direction.
  *
  * USAGE
  *

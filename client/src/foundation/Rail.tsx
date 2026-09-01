@@ -62,7 +62,22 @@ import { Icon, P } from "./icons";
  * `Sparkles` for Create (*"the universal AI mark … says nothing about making a
  * picture"*, replaced by `P.image`) and `Settings` for the foot's gear
  * (*"eight teeth plus an inner circle, which mushes into a blurred ring at
- * 16px"*, replaced by `P.settings`, **not** `P.cog` — *"don't use both"*).
+ * 16px"*). His rule on the replacement is unchanged and is ONE GEAR, NEVER
+ * TWO — *"don't use both"*; only WHICH one has moved.
+ *
+ * ⚠ **THE FOOT DRAWS `P.cog`, NOT `P.settings` (#373, his order 2026-09-01,
+ * verbatim): *"i want to change the setting icon at the bottom of the rail to
+ * a cog — this looks more like a filter icon"*.** He is right at the shape:
+ * `P.settings` is two horizontal rails with an offset handle on each, which
+ * is the standard drawing of FILTERS, and at the foot of a rail that already
+ * carries destinations it reads as *narrow what you are looking at* rather
+ * than *configure the workspace*. This reverses his own choice of the day
+ * before, taken at the path string; this one was taken at the render, which
+ * is the better evidence — and his own icon file put `P.cog` here for exactly
+ * this day (*"the fallback if a cogwheel is genuinely wanted later"*). So it
+ * is a one-key swap into a glyph that already existed: no new path, no new
+ * drawing. `P.settings` is now the unused fallback, and `icons-guard.test.ts`
+ * asserts the swap in BOTH directions rather than losing an arm to it.
  * `Plus` stays, because the Invite `+` is incidental and redrawing a good
  * general set where nobody looks is effort spent in the wrong place.
  *
@@ -215,7 +230,7 @@ export function Rail({
               title="Settings"
               aria-label="Settings"
             >
-              <Icon d={P.settings} size={16} />
+              <Icon d={P.cog} size={16} />
             </button>
           </>
         ) : null}
