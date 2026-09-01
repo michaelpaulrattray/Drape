@@ -1,12 +1,29 @@
-/**
- * SystemStatusCard — compact system health card showing uptime, DB latency,
- * active banners, and Stripe webhook status.
- * Fetches live data from the /api/health endpoint.
- */
-
 import { useState, useEffect, useCallback } from "react";
-import { Activity, Database, Megaphone, Server } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+
+/**
+ * SYSTEM (brief 07 §8) — leader rows, mono values, no status badge ramp.
+ *
+ * Uptime, DB latency, active banners and the server start stamp, read live from
+ * `/api/health` on the same 30s cadence as before. **The endpoint, the interval
+ * and every number are unchanged**; what goes is the emerald/amber/red badge
+ * and the `latencyColor` ramp.
+ *
+ * ## Why latency stopped being a traffic light
+ *
+ * `latencyColor` painted <100ms emerald, <500ms amber, else red — so a
+ * perfectly healthy database made the card green, which is §3's whole
+ * argument: *"a healthy platform is as colourful as a broken one, so colour
+ * carries no information."* Latency is a measured number and reads as one now.
+ *
+ * **The one state that keeps colour is the one that is genuinely wrong**: an
+ * unreachable health endpoint. That is `--errorInk`, and it is the only accent
+ * this card can ever show.
+ *
+ * ⚠ `--errorInk` rather than `--error` on the word: `tokens.css` records that
+ * plain `--error` on the dark surface measures 3.40:1, below the 4.5:1 AA
+ * floor, which is why `--errorInk` exists and is overridden in dark and
+ * `--error` deliberately is not.
+ */
 
 interface HealthResponse {
   status: "healthy" | "unhealthy";
@@ -34,12 +51,6 @@ function formatUptime(seconds: number): string {
   return `${m}m`;
 }
 
-function latencyColor(ms: number): string {
-  if (ms < 100) return "text-emerald-600";
-  if (ms < 500) return "text-amber-600";
-  return "text-red-600";
-}
-
 export function SystemStatusCard({ activeBanners, serverStartedAt }: SystemStatusCardProps) {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [error, setError] = useState(false);
@@ -48,8 +59,7 @@ export function SystemStatusCard({ activeBanners, serverStartedAt }: SystemStatu
     try {
       const res = await fetch("/api/health");
       if (res.ok) {
-        const data = await res.json();
-        setHealth(data);
+        setHealth(await res.json());
         setError(false);
       } else {
         setError(true);
@@ -66,63 +76,40 @@ export function SystemStatusCard({ activeBanners, serverStartedAt }: SystemStatu
   }, [fetchHealth]);
 
   const dbStatus = health?.checks.database;
-  const isHealthy = health?.status === "healthy";
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#e0e0e0]">
-      <div className="flex items-center gap-2 mb-4">
-        <Activity className="w-5 h-5 text-[#0A0A0A]" />
-        <h3 className="text-base font-semibold text-[#0A0A0A]">System Status</h3>
-        <Badge
-          className={`text-[10px] ml-auto ${
-            error ? "bg-red-100 text-red-700" : isHealthy ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-          }`}
-        >
-          {error ? "Unreachable" : isHealthy ? "Healthy" : "Degraded"}
-        </Badge>
+    <div className="dp-ov__card">
+      <div className="dp-ov__cardhead">
+        <span className="dp-ov__blocklabel">SYSTEM</span>
+        <span className="dp-ov__spacer" />
+        {error && <span className="dp-ov__unreachable">Unreachable</span>}
       </div>
 
-      <div className="space-y-3">
-        {/* Server Uptime */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[#666]">
-            <Server className="w-3.5 h-3.5" />
-            <span>Server Uptime</span>
-          </div>
-          <span className="text-sm font-medium text-[#0A0A0A] tabular-nums">
+      <div className="dp-ov__leaders">
+        <div className="dp-ov__leader">
+          <span className="dp-ov__leaderlabel">Server uptime</span>
+          <span className="dp-ov__spacer" />
+          <span className="dp-ov__leadervalue">
             {health ? formatUptime(health.uptime) : "—"}
           </span>
         </div>
-
-        {/* DB Latency */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[#666]">
-            <Database className="w-3.5 h-3.5" />
-            <span>DB Latency</span>
-          </div>
-          <span className={`text-sm font-medium tabular-nums ${dbStatus ? latencyColor(dbStatus.latencyMs) : "text-[#999]"}`}>
+        <div className="dp-ov__leader">
+          <span className="dp-ov__leaderlabel">Database latency</span>
+          <span className="dp-ov__spacer" />
+          <span className="dp-ov__leadervalue">
             {dbStatus ? `${dbStatus.latencyMs.toFixed(0)}ms` : "—"}
           </span>
         </div>
-
-        {/* Active Banners */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[#666]">
-            <Megaphone className="w-3.5 h-3.5" />
-            <span>Active Banners</span>
-          </div>
-          <span className="text-sm font-medium text-[#0A0A0A] tabular-nums">
-            {activeBanners}
-          </span>
-        </div>
-
-        {/* Server Started */}
-        <div className="pt-2 border-t border-[#f0f0f0]">
-          <p className="text-[10px] text-[#bbb]">
-            Server started {new Date(serverStartedAt).toLocaleString()}
-          </p>
+        <div className="dp-ov__leader">
+          <span className="dp-ov__leaderlabel">Active banners</span>
+          <span className="dp-ov__spacer" />
+          <span className="dp-ov__leadervalue">{activeBanners}</span>
         </div>
       </div>
+
+      <p className="dp-ov__stamp">
+        Server started {new Date(serverStartedAt).toLocaleString()}
+      </p>
     </div>
   );
 }

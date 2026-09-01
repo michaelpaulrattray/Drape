@@ -1,24 +1,51 @@
-/**
- * HealthMetrics — real-time platform health KPIs + generation trend chart.
- */
 import {
-  Activity,
-  Users,
-  AlertTriangle,
-  Clock,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
-import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { TableHead } from "@/foundation";
+import { axisTick, tooltipStyle, useChartTokens } from "./chartTokens";
+
+/**
+ * LAST 24 HOURS — the four KPIs (brief 07 §6) — and the generation chart (§7).
+ *
+ * Two exports because the brief's section order splits them: *"Needs a human ·
+ * Last 24 hours · Charts · System and banners · Recent alerts."* They were one
+ * component because they were one block on the old page.
+ *
+ * ## What changed, and what deliberately did not
+ *
+ * Restyle only: **every number and every series is the one that was there
+ * before** (§11's last bar). What goes: `text-3xl font-bold`, the four
+ * decorative corner icons, the emerald/amber/red status ramp, the
+ * `animate-pulse` on a healthy dot, and the two `linearGradient` defs.
+ *
+ * ## ⚠ Three sparklines, not four — and no delta at all
+ *
+ * §6 draws a 14-bar sparkline and a delta on every card. Read at the queries:
+ *
+ * - **Three have a real series.** `ts.dailyGenerations` carries 14 days of
+ *   `successRate`, `total` and `failed`.
+ * - **`ACTIVE USERS` has none.** The only 14-day user series is
+ *   `dailySignups`, and at `adminTimeSeriesQueries.ts:107` that is
+ *   `COUNT(*) FROM users WHERE createdAt >= …` — **accounts created, not users
+ *   active**. A different number with a similar shape. His own ruling on the
+ *   00b frames governs: *"a number in a screenshot that no server produces is
+ *   a lie that survives into the build."* So that card ships without one.
+ * - **No card gets a delta.** The value is a *rolling 24-hour* figure
+ *   (`health.total24h`); the only comparable series is *calendar-day*, whose
+ *   last bucket is today-so-far. "Today vs yesterday" would compare a partial
+ *   day against a complete one and report a collapse every morning — the
+ *   wrong-boundary class CLAUDE.md law 7 names. A missing delta is a gap; a
+ *   delta that cries wolf at 09:00 every day on the surface whose whole job is
+ *   "does anything need me" is worse than a gap.
+ *
+ * Both are on #397 with the reasoning, so the next reader does not re-derive it.
+ */
 
 export interface HealthData {
   total24h: number;
@@ -43,14 +70,56 @@ function formatDateLabel(date: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-const TT_STYLE = {
-  backgroundColor: "#fff",
-  border: "1px solid #E5E5E5",
-  borderRadius: "8px",
-  padding: "8px 12px",
-  fontSize: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-};
+/**
+ * The sparkline: 14 bars, the last one `--ink` because it is today (§6).
+ *
+ * A div-per-bar rather than a chart. Fourteen numbers with no axis, no tooltip
+ * and no interaction is not a chart, and mounting a `ResponsiveContainer` in
+ * each of three KPI cards to draw it would cost four ResizeObservers for
+ * something CSS does exactly.
+ */
+function Sparkline({ values }: { values: number[] }) {
+  const max = Math.max(...values, 1);
+  return (
+    <span className="dp-kpi__spark" aria-hidden="true">
+      {values.map((v, i) => (
+        <span
+          key={i}
+          className={`dp-kpi__bar${i === values.length - 1 ? " dp-kpi__bar--today" : ""}`}
+          /* A percentage of the tallest bar, floored so a zero day is still a
+             visible mark rather than a gap that reads as missing data. */
+          style={{ height: `${Math.max((v / max) * 100, 6)}%` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function Kpi({
+  label,
+  value,
+  foot,
+  spark,
+  tone,
+}: {
+  label: string;
+  value: string;
+  foot: string;
+  spark?: number[];
+  /** `attention` and `critical` are the only two that may carry colour (§3). */
+  tone?: "attention" | "critical";
+}) {
+  return (
+    <div
+      className={`dp-kpi${tone ? ` dp-kpi--${tone}` : ""}`}
+    >
+      <span className="dp-kpi__label">{label}</span>
+      <span className="dp-kpi__value">{value}</span>
+      {spark ? <Sparkline values={spark} /> : null}
+      <span className="dp-kpi__foot">{foot}</span>
+    </div>
+  );
+}
 
 export function HealthMetrics({
   data,
@@ -59,195 +128,124 @@ export function HealthMetrics({
   data: HealthData;
   chartData?: DailyGenerationStats[];
 }) {
-  const isHealthy = data.successRate >= 95;
-  const isWarning = data.successRate >= 80 && data.successRate < 95;
+  const series = chartData ?? [];
   const isCritical = data.successRate < 80;
 
-  const statusColor = isHealthy
-    ? "text-emerald-600"
-    : isWarning
-    ? "text-amber-600"
-    : "text-red-600";
-  const statusDot = isHealthy
-    ? "bg-emerald-500"
-    : isWarning
-    ? "bg-amber-500"
-    : "bg-red-500";
+  /* The queue line under GENERATIONS — unchanged words, unchanged thresholds. */
+  const queueFoot =
+    data.processing === 0 && data.pending === 0
+      ? "Nothing in the queue"
+      : [
+          data.processing > 0 ? `${data.processing} processing` : null,
+          data.pending > 0 ? `${data.pending} queued` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
 
   return (
-    <div className="space-y-4">
-      {/* KPI stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Success Rate */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-[#999] uppercase tracking-wider">
-              Success Rate
-            </span>
-            <div className={`w-2.5 h-2.5 rounded-full ${statusDot} animate-pulse`} />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-bold tabular-nums ${statusColor}`}>
-              {data.successRate}%
-            </span>
-            <span className="text-xs text-[#999]">24h</span>
-          </div>
-          <div className="flex items-center gap-3 mt-2 text-[11px] text-[#999]">
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-              {data.completed24h}
-            </span>
-            <span className="flex items-center gap-1">
-              <XCircle className="w-3 h-3 text-red-400" />
-              {data.failed24h}
-            </span>
-          </div>
-        </div>
-
-        {/* Active Users */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-[#999] uppercase tracking-wider">
-              Active Users
-            </span>
-            <Users className="w-4 h-4 text-[#bbb]" />
-          </div>
-          <span className="text-3xl font-bold tabular-nums text-[#0A0A0A]">
-            {data.activeUsers24h}
-          </span>
-          <p className="text-[11px] text-[#999] mt-2">Signed in within 24h</p>
-        </div>
-
-        {/* Generations */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-[#999] uppercase tracking-wider">
-              Generations
-            </span>
-            <Activity className="w-4 h-4 text-[#bbb]" />
-          </div>
-          <span className="text-3xl font-bold tabular-nums text-[#0A0A0A]">
-            {data.total24h}
-          </span>
-          <div className="flex items-center gap-3 mt-2 text-[11px] text-[#999]">
-            {data.processing > 0 && (
-              <span className="flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
-                {data.processing} processing
-              </span>
-            )}
-            {data.pending > 0 && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3 text-amber-500" />
-                {data.pending} queued
-              </span>
-            )}
-            {data.processing === 0 && data.pending === 0 && <span>All clear</span>}
-          </div>
-        </div>
-
-        {/* Failures */}
-        <div className={`rounded-xl border p-5 ${
-          isCritical
-            ? "bg-red-50 border-red-200"
-            : data.failed24h > 0
-            ? "bg-amber-50/50 border-amber-200"
-            : "bg-white border-[#E5E5E5]"
-        }`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-[#999] uppercase tracking-wider">
-              Failures
-            </span>
-            <AlertTriangle className={`w-4 h-4 ${
-              isCritical ? "text-red-500" : data.failed24h > 0 ? "text-amber-500" : "text-[#bbb]"
-            }`} />
-          </div>
-          <span className={`text-3xl font-bold tabular-nums ${
-            isCritical ? "text-red-600" : data.failed24h > 0 ? "text-amber-600" : "text-[#0A0A0A]"
-          }`}>
-            {data.failed24h}
-          </span>
-          <p className="text-[11px] text-[#999] mt-2">
-            {isCritical
+    <section className="dp-ov__section">
+      <TableHead eyebrow="Last 24 hours" />
+      <div className="dp-ov__kpigrid">
+        <Kpi
+          label="SUCCESS RATE"
+          value={`${data.successRate}%`}
+          foot={`${data.completed24h} completed · ${data.failed24h} failed`}
+          spark={series.map((d) => d.successRate)}
+          tone={isCritical ? "critical" : undefined}
+        />
+        <Kpi
+          label="ACTIVE USERS"
+          value={data.activeUsers24h.toLocaleString()}
+          foot="Signed in within 24h"
+          /* No sparkline: see the header note. `dailySignups` is a different
+             number and drawing it here would be a lie. */
+        />
+        <Kpi
+          label="GENERATIONS"
+          value={data.total24h.toLocaleString()}
+          foot={queueFoot}
+          spark={series.map((d) => d.total)}
+        />
+        <Kpi
+          label="FAILURES"
+          value={data.failed24h.toLocaleString()}
+          /* His words, kept — §6 calls this foot well judged. */
+          foot={
+            isCritical
               ? "Investigate immediately"
               : data.failed24h > 0
               ? "Some failures detected"
-              : "No failures in 24h"}
-          </p>
+              : "No failures in 24h"
+          }
+          spark={series.map((d) => d.failed)}
+          tone={isCritical ? "critical" : data.failed24h > 0 ? "attention" : undefined}
+        />
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The generation trend (§7) — a `LineChart`, two series, no gradients.
+ *
+ * *"Two series, distinguished by role not category: completed is `--ink`,
+ * failed is `--accentSolid`. Failure is an attention state, so accent is
+ * legitimate here — this is the one chart where a second colour is earned."*
+ */
+export function GenerationChart({ chartData }: { chartData?: DailyGenerationStats[] }) {
+  const t = useChartTokens();
+  if (!chartData || chartData.length === 0) return null;
+
+  return (
+    <div className="dp-ov__card">
+      <div className="dp-ov__cardhead">
+        <div>
+          <h3 className="dp-ov__cardtitle">Generation activity</h3>
+          <p className="dp-ov__cardsub">Completed vs failed — last 14 days</p>
+        </div>
+        <div className="dp-ov__legend">
+          <span className="dp-ov__legenditem">
+            <span className="dp-ov__swatch" style={{ background: t.ink }} />
+            Completed
+          </span>
+          <span className="dp-ov__legenditem">
+            <span className="dp-ov__swatch" style={{ background: t.accent }} />
+            Failed
+          </span>
         </div>
       </div>
-
-      {/* Generation trend area chart */}
-      {chartData && chartData.length > 0 && (
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-[#0A0A0A]">
-                Generation Activity
-              </h3>
-              <p className="text-[11px] text-[#999] mt-0.5">
-                Completed vs failed — last 14 days
-              </p>
-            </div>
-            <div className="flex items-center gap-4 text-[11px]">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                Completed
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                Failed
-              </span>
-            </div>
-          </div>
-          <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradFailed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f87171" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={formatDateLabel}
-                  tick={{ fontSize: 10, fill: "#999" }}
-                  axisLine={{ stroke: "#e5e5e5" }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "#999" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip contentStyle={TT_STYLE} labelFormatter={formatDateLabel} />
-                <Area
-                  type="monotone"
-                  dataKey="completed"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fill="url(#gradCompleted)"
-                  name="Completed"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="failed"
-                  stroke="#f87171"
-                  strokeWidth={2}
-                  fill="url(#gradFailed)"
-                  name="Failed"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+      <div className="dp-ov__chart">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={t.rule} />
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatDateLabel}
+              tick={axisTick(t)}
+              axisLine={{ stroke: t.border }}
+              tickLine={false}
+            />
+            <YAxis tick={axisTick(t)} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={tooltipStyle(t)} labelFormatter={formatDateLabel} />
+            <Line
+              type="monotone"
+              dataKey="completed"
+              stroke={t.ink}
+              strokeWidth={1.7}
+              dot={false}
+              name="Completed"
+            />
+            <Line
+              type="monotone"
+              dataKey="failed"
+              stroke={t.accent}
+              strokeWidth={1.7}
+              dot={false}
+              name="Failed"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

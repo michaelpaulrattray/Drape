@@ -132,6 +132,35 @@ const GUARDED_PATHS = [
   "pages/AdminChangeRequests.tsx",
   "pages/AdminInviteCodes.tsx",
   "features/admin/UserStatsCards.tsx",
+
+  /*
+    Brief 07 §11, the founder's own bar: *"Zero greens, zero blues, zero
+    ambers. `token-guard` extended over `overview/` and passing."*
+
+    The whole directory this time rather than a selection, because brief 07
+    rebuilt every file in it — the seven cards it names plus the two this card
+    adds. That is the difference from the block above: there, twelve of
+    thirty-four files were rebuilt and enrolling the directory would have meant
+    restyling dialogs no brief had reached; here there is no remainder.
+
+    ⚠ `chartTokens.ts` is on the list and is the one that most needed to be.
+    It is the module that hands colours to recharts, which is exactly where
+    every hard-coded light hex on a staff surface has historically lived — five
+    `TT_STYLE` constants and eight chart props, all of them white-on-white in
+    dark. A guard that covered the components and not their colour source would
+    have missed the actual defect.
+  */
+  "features/admin/overview/AlertsFeed.tsx",
+  "features/admin/overview/BannerManagement.tsx",
+  "features/admin/overview/CreditEconomyCard.tsx",
+  "features/admin/overview/GovernanceCard.tsx",
+  "features/admin/overview/HealthMetrics.tsx",
+  "features/admin/overview/NeedsHuman.tsx",
+  "features/admin/overview/SystemStatusCard.tsx",
+  "features/admin/overview/UserGrowthCard.tsx",
+  "features/admin/overview/chartTokens.ts",
+  "features/admin/overview/overview.css",
+  "pages/AdminOverview.tsx",
 ];
 
 /**

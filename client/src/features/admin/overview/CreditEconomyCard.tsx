@@ -1,16 +1,36 @@
-/**
- * CreditEconomyCard — credit economy stats + daily credit flow area chart.
- */
-import { Coins, ArrowDownCircle, ArrowUpCircle, RotateCcw } from "lucide-react";
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { EmptyState } from "@/foundation";
+import { axisTick, tooltipStyle, useChartTokens } from "./chartTokens";
+
+/**
+ * Credit economy (brief 07 §7's "same treatment" clause).
+ *
+ * ## ⚠ Neither series takes the accent here, and that is the rule applied
+ * rather than an exception to it
+ *
+ * §7 earns a second colour on the generation chart with a stated reason:
+ * *"Failure is an attention state, so accent is legitimate here."* Purchased
+ * and consumed are **both the product working** — credits bought and credits
+ * spent is the business happening, not a fault — so neither is an attention
+ * state and neither may claim the one colour that means *look here*.
+ *
+ * They are told apart by **value**: purchased `--ink`, consumed `--metaStrong`,
+ * with a legend. Spending the accent on a healthy chart is precisely what §3
+ * says leaves nothing left to say urgent.
+ *
+ * ## The three flow figures lose their arrows
+ *
+ * Down-red, up-emerald and a rotating amber — three glyphs tinted three ways
+ * for three numbers that are all normal. The labels say which.
+ */
 
 export interface CreditEconomyData {
   creditsConsumed24h: number;
@@ -38,15 +58,6 @@ function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
-const TT_STYLE = {
-  backgroundColor: "#fff",
-  border: "1px solid #E5E5E5",
-  borderRadius: "8px",
-  padding: "8px 12px",
-  fontSize: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-};
-
 const TYPE_LABELS: Record<string, string> = {
   masterPrompt: "Master Prompt",
   castingImage: "Casting",
@@ -63,153 +74,135 @@ export function CreditEconomyCard({
   data: CreditEconomyData;
   chartData?: DailyCreditFlow[];
 }) {
+  const t = useChartTokens();
   const sortedTypes = [...data.generationsByType24h].sort((a, b) => b.totalCost - a.totalCost);
 
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#0A0A0A]">Credit Economy</h3>
-        <Coins className="w-4 h-4 text-[#bbb]" />
-      </div>
-
-      {/* Circulation badge */}
-      <div className="bg-[#FAFAFA] rounded-lg p-3">
-        <p className="text-[11px] text-[#999] uppercase tracking-wider">In Circulation</p>
-        <p className="text-2xl font-bold tabular-nums text-[#0A0A0A] mt-0.5">
-          {formatNumber(data.totalCreditsInCirculation)}
-        </p>
-      </div>
-
-      {/* Flow stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="text-center">
-          <ArrowDownCircle className="w-4 h-4 text-red-500 mx-auto mb-1" />
-          <p className="text-lg font-bold tabular-nums text-[#0A0A0A]">
-            {formatNumber(data.creditsConsumed24h)}
-          </p>
-          <p className="text-[10px] text-[#999]">Consumed 24h</p>
-        </div>
-        <div className="text-center">
-          <ArrowUpCircle className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
-          <p className="text-lg font-bold tabular-nums text-[#0A0A0A]">
-            {formatNumber(data.creditsPurchased7d)}
-          </p>
-          <p className="text-[10px] text-[#999]">Purchased 7d</p>
-        </div>
-        <div className="text-center">
-          <RotateCcw className="w-4 h-4 text-amber-500 mx-auto mb-1" />
-          <p className="text-lg font-bold tabular-nums text-[#0A0A0A]">
-            {formatNumber(data.creditsRefunded7d)}
-          </p>
-          <p className="text-[10px] text-[#999]">Refunded 7d</p>
-        </div>
-      </div>
-
-      {/* Credit flow area chart */}
-      {chartData && chartData.length > 0 && (
+    <div className="dp-ov__card">
+      <div className="dp-ov__cardhead">
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] text-[#999] uppercase tracking-wider">
-              Daily Credit Flow — 14 days
-            </p>
-            <div className="flex items-center gap-3 text-[10px]">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <h3 className="dp-ov__cardtitle">Credit economy</h3>
+        </div>
+      </div>
+
+      <div className="dp-countrow">
+        <div className="dp-counttile">
+          <span className="dp-ov__tilelabel">IN CIRCULATION</span>
+          <span className="dp-counttile__value">
+            {formatNumber(data.totalCreditsInCirculation)}
+          </span>
+        </div>
+        <div className="dp-counttile">
+          <span className="dp-ov__tilelabel">CONSUMED · 24H</span>
+          <span className="dp-counttile__value">
+            {formatNumber(data.creditsConsumed24h)}
+          </span>
+        </div>
+        <div className="dp-counttile">
+          <span className="dp-ov__tilelabel">PURCHASED · 7D</span>
+          <span className="dp-counttile__value">
+            {formatNumber(data.creditsPurchased7d)}
+          </span>
+        </div>
+        <div className="dp-counttile">
+          <span className="dp-ov__tilelabel">REFUNDED · 7D</span>
+          <span className="dp-counttile__value">
+            {formatNumber(data.creditsRefunded7d)}
+          </span>
+        </div>
+      </div>
+
+      {chartData && chartData.length > 0 && (
+        <div className="dp-ov__block">
+          <div className="dp-ov__blockhead">
+            <span className="dp-ov__blocklabel">DAILY CREDIT FLOW — 14 DAYS</span>
+            <span className="dp-ov__spacer" />
+            <span className="dp-ov__legend">
+              <span className="dp-ov__legenditem">
+                <span className="dp-ov__swatch" style={{ background: t.ink }} />
                 Purchased
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-red-400" />
+              <span className="dp-ov__legenditem">
+                <span className="dp-ov__swatch" style={{ background: t.metaStrong }} />
                 Consumed
               </span>
-            </div>
+            </span>
           </div>
-          <div className="h-[160px]">
+          <div className="dp-ov__chart dp-ov__chart--short">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradPurchased" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradConsumed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f87171" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <LineChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={t.rule} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatDateLabel}
-                  tick={{ fontSize: 9, fill: "#999" }}
-                  axisLine={{ stroke: "#e5e5e5" }}
+                  tick={axisTick(t)}
+                  axisLine={{ stroke: t.border }}
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fontSize: 9, fill: "#999" }}
+                  tick={axisTick(t)}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v) => formatNumber(v)}
                 />
                 <Tooltip
-                  contentStyle={TT_STYLE}
+                  contentStyle={tooltipStyle(t)}
                   labelFormatter={formatDateLabel}
                   formatter={(value: number) => [value.toLocaleString(), undefined]}
                 />
-                <Area
+                <Line
                   type="monotone"
                   dataKey="purchased"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fill="url(#gradPurchased)"
+                  stroke={t.ink}
+                  strokeWidth={1.7}
+                  dot={false}
                   name="Purchased"
                 />
-                <Area
+                <Line
                   type="monotone"
                   dataKey="consumed"
-                  stroke="#f87171"
-                  strokeWidth={2}
-                  fill="url(#gradConsumed)"
+                  stroke={t.metaStrong}
+                  strokeWidth={1.7}
+                  dot={false}
                   name="Consumed"
                 />
-              </AreaChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
       )}
 
-      {/* Generation type breakdown */}
-      {sortedTypes.length > 0 && (
-        <div>
-          <p className="text-[11px] text-[#999] uppercase tracking-wider mb-2">
-            Cost by Type (24h)
-          </p>
-          <div className="space-y-1.5">
-            {sortedTypes.map((t) => {
+      {sortedTypes.length > 0 ? (
+        <div className="dp-ov__block">
+          <span className="dp-ov__blocklabel">COST BY TYPE — 24H</span>
+          <div className="dp-ov__bars">
+            {sortedTypes.map((type) => {
               const maxCost = sortedTypes[0]?.totalCost || 1;
               return (
-                <div key={t.type} className="flex items-center gap-2">
-                  <span className="text-[11px] text-[#666] w-24 truncate">
-                    {TYPE_LABELS[t.type] || t.type}
+                <div key={type.type} className="dp-ov__barrow">
+                  <span className="dp-ov__barlabel">
+                    {TYPE_LABELS[type.type] || type.type}
                   </span>
-                  <div className="flex-1 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#0A0A0A]/30 rounded-full transition-all duration-500"
-                      style={{ width: `${(t.totalCost / maxCost) * 100}%` }}
+                  <span className="dp-ov__bartrack">
+                    <span
+                      className="dp-ov__barfill"
+                      style={{ width: `${(type.totalCost / maxCost) * 100}%` }}
                     />
-                  </div>
-                  <span className="text-[10px] tabular-nums text-[#999] w-16 text-right">
-                    {t.totalCost} cr · {t.count}
+                  </span>
+                  <span className="dp-ov__barvalue">
+                    {type.totalCost} cr · {type.count}
                   </span>
                 </div>
               );
             })}
           </div>
         </div>
-      )}
-      {sortedTypes.length === 0 && (
-        <p className="text-[11px] text-[#999] italic">No generations in the last 24h</p>
+      ) : (
+        <EmptyState
+          title="No generations in the last 24h"
+          body="Credit spend by operation type appears here once casting runs."
+        />
       )}
     </div>
   );

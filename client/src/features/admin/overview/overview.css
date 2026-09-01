@@ -1,0 +1,722 @@
+/* ============================================================
+   ADMIN OVERVIEW — brief 07.
+
+   Every value here is a token or a number the brief states. No colour
+   literal exists in this file, and `token-guard` enrols it.
+
+   The prefix is `dp-ov__` rather than `dp-overview__` for the reason the
+   staff sheet gives: these classes appear in TSX by hand, and a long prefix
+   is the thing that gets abbreviated inconsistently at the fifth call site.
+   ============================================================ */
+
+/* ----------------------------------------------------- the pane (§4) */
+
+.dp-ov {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 26px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.dp-ov__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/*
+  The right-hand meta on a section head. `TableHead`'s own slot takes it —
+  §4's "optional right-aligned meta in 400 11px Archivo --faint".
+*/
+.dp-ov__meta {
+  font: 400 11px var(--font-sans);
+  color: var(--faint);
+}
+
+/*
+  A spacer, never `ml-auto` (§8, and his reason: auto margins resolve to hard
+  pixels under a computed-style read, overflow the row and clip). One class,
+  used everywhere a row needs to push its tail right.
+*/
+.dp-ov__spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+/* --------------------------------------------- needs a human (§5) */
+
+.dp-ov__attngrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: 12px;
+}
+
+/*
+  Dashed while unresolved. Everything in this section is unresolved by
+  construction — an item leaves the list the moment it is handled — so there is
+  no solid variant here; see NeedsHuman.tsx's header.
+*/
+.dp-attn {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px 15px;
+  border: 1px dashed var(--dashed);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 120ms ease;
+}
+
+.dp-attn:hover {
+  border-color: var(--ink);
+}
+
+.dp-attn__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dp-attn__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+/* §5: the dot animates ONLY when the item is urgent. */
+.dp-attn__dot--urgent {
+  background: var(--accentSolid);
+  animation: dp-pulse 1.6s ease-in-out infinite;
+}
+
+.dp-attn__kind {
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--metaStrong);
+}
+
+.dp-attn__when {
+  margin-left: auto;
+  flex: none;
+  font: 400 10px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-attn__line {
+  font: 400 13px/1.5 var(--font-sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.dp-attn__next {
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+/* ------------------------------------------------ last 24 hours (§6) */
+
+.dp-ov__kpigrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(198px, 1fr));
+  gap: 12px;
+}
+
+.dp-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 15px 16px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+/* Non-zero failures. Attention, not alarm. */
+.dp-kpi--attention {
+  border-color: var(--accentLine);
+  background: var(--accentWash);
+}
+
+/* Genuinely urgent — the one red, and only here. */
+.dp-kpi--critical {
+  border-color: var(--error);
+}
+
+.dp-kpi__label {
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.11em;
+  color: var(--faint);
+}
+
+.dp-kpi__value {
+  font: 500 26px var(--font-mono);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ⚠ --errorInk, not --error: plain --error on the dark surface measures
+   3.40:1, below the 4.5:1 AA floor (tokens.css:90–103). Text takes the ink. */
+.dp-kpi--critical .dp-kpi__value {
+  color: var(--errorInk);
+}
+
+.dp-kpi__foot {
+  font: 400 10.5px var(--font-sans);
+  color: var(--faint);
+}
+
+/* The sparkline: 14 bars, the last one --ink because it is today. */
+.dp-kpi__spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 26px;
+}
+
+.dp-kpi__bar {
+  flex: 1;
+  min-width: 1px;
+  border-radius: 1px;
+  background: var(--dotsStrong);
+}
+
+.dp-kpi__bar--today {
+  background: var(--ink);
+}
+
+/* ------------------------------------------------------- cards, charts (§7) */
+
+.dp-ov__card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 17px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+.dp-ov__cardhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dp-ov__cardtitle {
+  font: 500 13px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-ov__cardsub {
+  margin-top: 2px;
+  font: 400 11px var(--font-sans);
+  color: var(--faint);
+}
+
+.dp-ov__pairgrid,
+.dp-ov__sysgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(292px, 1fr));
+  gap: 12px;
+}
+
+.dp-ov__chart {
+  height: 200px;
+}
+
+.dp-ov__chart--short {
+  height: 150px;
+}
+
+/* Legend dots become 8px squares at the series colour (§7). */
+.dp-ov__legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.dp-ov__legenditem,
+.dp-ov__key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-ov__swatch {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+}
+
+/* ------------------------------------------------- blocks inside a card */
+
+.dp-ov__block {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.dp-ov__blockhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dp-ov__blocklabel,
+.dp-ov__tilelabel {
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.11em;
+  color: var(--faint);
+}
+
+.dp-ov__tilefoot {
+  font: 400 10.5px var(--font-sans);
+  color: var(--faint);
+}
+
+.dp-ov__count {
+  font: 400 11px var(--font-mono);
+  color: var(--faint);
+}
+
+/* Leader rows: label left, value right in mono (§8). */
+.dp-ov__leaders {
+  display: flex;
+  flex-direction: column;
+}
+
+.dp-ov__leader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.dp-ov__leader:last-child {
+  border-bottom: none;
+}
+
+.dp-ov__leaderlabel {
+  font: 400 11.5px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-ov__leadervalue {
+  font: 400 11.5px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dp-ov__stamp {
+  font: 400 10.5px var(--font-sans);
+  color: var(--faint);
+}
+
+/* The one state on the system card that is genuinely wrong. */
+.dp-ov__unreachable {
+  font: 400 11px var(--font-sans);
+  color: var(--errorInk);
+}
+
+/* --------------------------------------------- plan distribution stack */
+
+.dp-ov__stack {
+  display: flex;
+  height: 10px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--fill);
+}
+
+.dp-ov__stackpart {
+  height: 100%;
+}
+
+.dp-ov__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.dp-ov__keycol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------------- donut */
+
+.dp-ov__donutrow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.dp-ov__donut {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex: none;
+}
+
+.dp-ov__donutcentre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dp-ov__donuttotal {
+  font: 500 17px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dp-ov__donutcaption {
+  font: 400 9px var(--font-sans);
+  color: var(--faint);
+}
+
+/* ------------------------------------------------- cost-by-type bars */
+
+.dp-ov__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dp-ov__barrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dp-ov__barlabel {
+  flex: none;
+  width: 96px;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp-ov__bartrack {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.dp-ov__barfill {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-sm);
+  background: var(--dotsStrong);
+}
+
+.dp-ov__barvalue {
+  flex: none;
+  width: 74px;
+  text-align: right;
+  font: 400 10px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+
+/* --------------------------------------------------- banners (§8) */
+
+.dp-ov__textarea {
+  min-height: 56px;
+  resize: none;
+  font: 400 12.5px/1.5 var(--font-sans);
+}
+
+/*
+  THE SELECTED BANNER TYPE.
+
+  ⚠ The foundation's `Chip` has NO selected state — `.dp-chip` has `:hover`,
+  `--derived` and `--static` and nothing else. The first shape of this file
+  wrote `dp-chip--on`, a class that does not exist anywhere, so the chosen type
+  looked identical to the three unchosen ones: a control that cannot show what
+  it is set to. Caught by grepping the foundation for the class before writing
+  this pass, not by the drive — the form is behind a click and the drive had
+  never opened it.
+
+  Styled here rather than in the foundation because adding a selected state to
+  a shared primitive is a foundation decision with eight other consumers, and
+  this brief does not own it. Recorded in the section's promotion pass as a
+  real foundation gap.
+*/
+.dp-ov__typechip--on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.dp-ov__formrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dp-ov__formfoot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dp-ov__check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+  cursor: pointer;
+}
+
+.dp-ov__banners {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dp-ov__banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+.dp-ov__banner--off {
+  background: var(--fill);
+}
+
+.dp-ov__bannericon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  color: var(--metaStrong);
+}
+
+.dp-ov__bannerbody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dp-ov__bannertop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dp-ov__bannertitle {
+  font: 500 12px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-ov__bannerkind,
+.dp-ov__bannerlive {
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--metaStrong);
+  padding: 2px 6px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-sm);
+}
+
+.dp-ov__bannermsg {
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp-ov__banneracts {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ------------------------------------------------ recent alerts (§8) */
+
+.dp-ov__sevpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: 400 10px var(--font-mono);
+  border: 1px solid var(--borderInput);
+  color: var(--metaStrong);
+}
+
+.dp-ov__sevpill--critical {
+  border-color: var(--error);
+  color: var(--errorInk);
+}
+
+.dp-ov__sevpill--warning {
+  border-color: var(--accentLine);
+  color: var(--accentInk);
+}
+
+.dp-ov__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 400 11.5px var(--font-sans);
+  color: var(--metaStrong);
+  text-decoration: none;
+}
+
+.dp-ov__link:hover {
+  color: var(--ink);
+}
+
+.dp-ov__chev {
+  width: 11px;
+  height: 11px;
+}
+
+.dp-ov__timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.dp-ov__alert {
+  display: flex;
+  gap: 11px;
+}
+
+.dp-ov__alertrail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  width: 24px;
+}
+
+.dp-ov__alerttile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  color: var(--metaStrong);
+}
+
+.dp-ov__alerttile--critical {
+  background: var(--accentWash);
+  color: var(--accentInk);
+}
+
+.dp-ov__alerticon {
+  width: 12px;
+  height: 12px;
+}
+
+.dp-ov__alertline {
+  flex: 1;
+  width: 1px;
+  min-height: 8px;
+  margin: 3px 0;
+  background: var(--border);
+}
+
+.dp-ov__alertbody {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 12px;
+}
+
+.dp-ov__alertrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dp-ov__alertlabel {
+  font: 500 11.5px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-ov__alertlabel--critical {
+  color: var(--errorInk);
+}
+
+.dp-ov__alertid,
+.dp-ov__alerttime {
+  flex: none;
+  font: 400 10px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-ov__alertmeta {
+  margin-top: 2px;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp-ov__alertmore {
+  font: 400 11px var(--font-sans);
+  color: var(--faint);
+}
+
+/* ----------------------------------------------------- error (§9) */
+
+.dp-ov__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 16px 17px;
+  border: 1px solid var(--error);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+.dp-ov__errortitle {
+  font: 500 12.5px var(--font-sans);
+  color: var(--errorInk);
+}
+
+/* Staff surfaces keep raw error text on purpose (rawErrorToast.test.ts). */
+.dp-ov__errorraw {
+  font: 400 11px var(--font-mono);
+  color: var(--metaStrong);
+  word-break: break-word;
+}

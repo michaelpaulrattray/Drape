@@ -1,6 +1,3 @@
-/**
- * AlertsFeed — live feed of critical and warning audit events with severity timeline.
- */
 import {
   AlertTriangle,
   Shield,
@@ -11,6 +8,34 @@ import {
   CreditCard,
 } from "lucide-react";
 import { Link } from "wouter";
+import { EmptyState, TableHead } from "@/foundation";
+import { actionLabel } from "./actionLabel";
+
+/**
+ * RECENT ALERTS (brief 07 §8) — full width, greyscale, no inner scroll.
+ *
+ * ## `ACTION_CONFIG` loses its colour and background fields
+ *
+ * It mapped thirteen action types to blue / emerald / amber / red. His §3:
+ * *"Thirteen action types tinted four ways is colour encoding a category,
+ * which the system forbids for a concrete reason: it leaves nothing left to
+ * say urgent. Keep the icons and the labels; those do the identifying."*
+ *
+ * So the record is now `{ icon, label }` and severity — which is a *state* —
+ * is the only thing that may carry colour. `foundation/severity.ts` already
+ * held this rule; this is one of the surfaces it was written for.
+ *
+ * ## Four smaller things, each with a reason in the brief
+ *
+ * - **No `max-h` + `overflow-y-auto`.** *"A scrolling region inside a scrolling
+ *   page traps the wheel and hides rows behind an inner edge."* The list is
+ *   capped at 12 with a link out instead.
+ * - **A spacer, not `ml-auto`.** *"Auto margins resolve to hard pixels under
+ *   any computed-style read, overflow the row, and clip."*
+ * - **No `max-w-[280px]`** on the metadata line — it was there because the feed
+ *   used to live in a 2-of-5 rail. The rail is gone, so the truncation is too.
+ * - **The empty state is the primitive**, not a 40px 20%-opacity glyph.
+ */
 
 interface AlertItem {
   id: number;
@@ -22,32 +47,36 @@ interface AlertItem {
   createdAt: Date;
 }
 
-const ACTION_CONFIG: Record<string, { icon: typeof AlertTriangle; label: string; color: string; bg: string }> = {
-  "account.auto_frozen": { icon: Snowflake, label: "Auto-Frozen", color: "text-blue-600", bg: "bg-blue-50" },
-  "account.frozen": { icon: Snowflake, label: "Frozen by staff", color: "text-blue-600", bg: "bg-blue-50" },
-  "account.unfrozen": { icon: Snowflake, label: "Unfrozen", color: "text-emerald-600", bg: "bg-emerald-50" },
-  "admin.account_suspended": { icon: Ban, label: "Suspended", color: "text-red-600", bg: "bg-red-50" },
-  "admin.account_unsuspended": { icon: Ban, label: "Unsuspended", color: "text-emerald-600", bg: "bg-emerald-50" },
-  "admin.ip_blocked": { icon: Globe, label: "IP Blocked", color: "text-red-600", bg: "bg-red-50" },
-  "security.rate_limit": { icon: Shield, label: "Rate Limit", color: "text-amber-600", bg: "bg-amber-50" },
-  "abuse.detected": { icon: AlertTriangle, label: "Abuse", color: "text-red-600", bg: "bg-red-50" },
-  "abuse.credits_exploit_attempt": { icon: Zap, label: "Credit Exploit", color: "text-red-600", bg: "bg-red-50" },
-  "abuse.billing_anomaly": { icon: CreditCard, label: "Billing Anomaly", color: "text-amber-600", bg: "bg-amber-50" },
-  "abuse.global_attack_detected": { icon: Shield, label: "Global Attack", color: "text-red-600", bg: "bg-red-50" },
-  "security.emergency_action": { icon: Shield, label: "Emergency", color: "text-red-600", bg: "bg-red-50" },
-  "billing.stripe_refund_issued": { icon: CreditCard, label: "Refund", color: "text-amber-600", bg: "bg-amber-50" },
+/** §8: the list is capped and links out for the rest. */
+const VISIBLE_LIMIT = 12;
+
+/**
+ * The ICON per action. The label comes from `actionLabel` — see that module for
+ * why a hand-written label map cannot be complete here.
+ */
+const ACTION_ICON: Record<string, typeof AlertTriangle> = {
+  "account.auto_frozen": Snowflake,
+  "account.frozen": Snowflake,
+  "account.unfrozen": Snowflake,
+  "admin.account_suspended": Ban,
+  "admin.account_unsuspended": Ban,
+  "admin.ip_blocked": Globe,
+  "security.rate_limit": Shield,
+  "abuse.detected": AlertTriangle,
+  "abuse.credits_exploit_attempt": Zap,
+  "abuse.billing_anomaly": CreditCard,
+  "abuse.global_attack_detected": Shield,
+  "security.emergency_action": Shield,
+  "billing.stripe_refund_issued": CreditCard,
 };
 
 function getTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - new Date(date).getTime();
-  const diffMins = Math.floor(diffMs / 60000);
+  const diffMins = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
   if (diffMins < 1) return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
+  return `${Math.floor(diffHours / 24)}d ago`;
 }
 
 function getMetadataPreview(metadata: unknown): string {
@@ -62,102 +91,95 @@ function getMetadataPreview(metadata: unknown): string {
 }
 
 export function AlertsFeed({ alerts }: { alerts: AlertItem[] }) {
-  const criticalCount = alerts.filter(a => a.severity === "critical").length;
-  const warningCount = alerts.filter(a => a.severity === "warning").length;
-
-  if (alerts.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-[#0A0A0A]">Recent Alerts</h3>
-          <Shield className="w-4 h-4 text-[#bbb]" />
-        </div>
-        <div className="flex flex-col items-center py-10 text-[#999]">
-          <Shield className="w-10 h-10 mb-3 opacity-20" />
-          <p className="text-sm font-medium">No critical alerts</p>
-          <p className="text-[11px] mt-1">Everything looks good</p>
-        </div>
-      </div>
-    );
-  }
+  const criticalCount = alerts.filter((a) => a.severity === "critical").length;
+  const warningCount = alerts.filter((a) => a.severity === "warning").length;
+  const visible = alerts.slice(0, VISIBLE_LIMIT);
 
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-[#0A0A0A]">Recent Alerts</h3>
-        <Link href="/admin/audit-logs">
-          <button className="text-[11px] text-[#999] hover:text-[#0A0A0A] transition-colors">
-            View all →
-          </button>
-        </Link>
-      </div>
-
-      {/* Severity summary */}
-      <div className="flex items-center gap-2 mb-3">
+    <section className="dp-ov__section">
+      <TableHead eyebrow="Recent alerts">
         {criticalCount > 0 && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          <span className="dp-ov__sevpill dp-ov__sevpill--critical">
             {criticalCount} critical
           </span>
         )}
         {warningCount > 0 && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          <span className="dp-ov__sevpill dp-ov__sevpill--warning">
             {warningCount} warning
           </span>
         )}
-      </div>
+        <Link href="/admin/audit-logs" className="dp-ov__link">
+          All audit entries
+          <svg
+            className="dp-ov__chev"
+            viewBox="0 0 11 11"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+          >
+            <path d="M4 2.5 L7.5 5.5 L4 8.5" />
+          </svg>
+        </Link>
+      </TableHead>
 
-      {/* Timeline feed */}
-      <div className="space-y-0.5 max-h-[460px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
-        {alerts.map((alert, idx) => {
-          const config = ACTION_CONFIG[alert.action] || {
-            icon: AlertTriangle,
-            label: alert.action,
-            color: alert.severity === "critical" ? "text-red-600" : "text-amber-600",
-            bg: alert.severity === "critical" ? "bg-red-50" : "bg-amber-50",
-          };
-          const Icon = config.icon;
-          const preview = getMetadataPreview(alert.metadata);
-          const isCritical = alert.severity === "critical";
+      {alerts.length === 0 ? (
+        <div className="dp-ov__card">
+          <EmptyState
+            title="No critical alerts"
+            body="Security events, freezes and billing anomalies appear here as they happen."
+          />
+        </div>
+      ) : (
+        <div className="dp-ov__card">
+          <div className="dp-ov__timeline">
+            {visible.map((alert, idx) => {
+              const Icon = ACTION_ICON[alert.action] ?? AlertTriangle;
+              const label = actionLabel(alert.action);
+              const preview = getMetadataPreview(alert.metadata);
+              const isCritical = alert.severity === "critical";
 
-          return (
-            <div key={alert.id} className="flex gap-3 group">
-              {/* Timeline connector */}
-              <div className="flex flex-col items-center w-5 flex-shrink-0">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${config.bg}`}>
-                  <Icon className={`w-3 h-3 ${config.color}`} />
-                </div>
-                {idx < alerts.length - 1 && (
-                  <div className="w-px flex-1 bg-[#E5E5E5] my-0.5" />
-                )}
-              </div>
-
-              {/* Content */}
-              <div className={`flex-1 pb-3 ${idx < alerts.length - 1 ? "" : ""}`}>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[11px] font-semibold ${isCritical ? "text-red-700" : "text-[#0A0A0A]"}`}>
-                    {config.label}
-                  </span>
-                  {alert.userId && (
-                    <span className="text-[10px] text-[#bbb]">
-                      #{alert.userId}
+              return (
+                <div key={alert.id} className="dp-ov__alert">
+                  <div className="dp-ov__alertrail">
+                    <span
+                      className={`dp-ov__alerttile${
+                        isCritical ? " dp-ov__alerttile--critical" : ""
+                      }`}
+                    >
+                      <Icon className="dp-ov__alerticon" />
                     </span>
-                  )}
-                  <span className="text-[10px] text-[#bbb] ml-auto flex-shrink-0">
-                    {getTimeAgo(alert.createdAt)}
-                  </span>
+                    {idx < visible.length - 1 && <span className="dp-ov__alertline" />}
+                  </div>
+                  <div className="dp-ov__alertbody">
+                    <div className="dp-ov__alertrow">
+                      <span
+                        className={`dp-ov__alertlabel${
+                          isCritical ? " dp-ov__alertlabel--critical" : ""
+                        }`}
+                      >
+                        {label}
+                      </span>
+                      {alert.userId && (
+                        <span className="dp-ov__alertid">#{alert.userId}</span>
+                      )}
+                      {/* A spacer, never `ml-auto` (§8). */}
+                      <span className="dp-ov__spacer" />
+                      <span className="dp-ov__alerttime">{getTimeAgo(alert.createdAt)}</span>
+                    </div>
+                    {preview && <p className="dp-ov__alertmeta">{preview}</p>}
+                  </div>
                 </div>
-                {preview && (
-                  <p className="text-[10px] text-[#999] truncate mt-0.5 max-w-[280px]">
-                    {preview}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+              );
+            })}
+          </div>
+          {alerts.length > VISIBLE_LIMIT && (
+            <p className="dp-ov__alertmore">
+              {alerts.length - VISIBLE_LIMIT} more in the audit log
+            </p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
