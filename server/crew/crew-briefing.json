@@ -1,7 +1,7 @@
 {
-  "edition": 196,
-  "updatedAt": "2026-09-01T14:51:42Z",
-  "shift": "Foreman - shift 2026-09-02 01:00 AEST (foreman-171)",
+  "edition": 197,
+  "updatedAt": "2026-09-01T16:27:45.779Z",
+  "shift": "Foreman — staff shell (card 395, brief 05)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,29 +111,29 @@
     ],
     "chips": [
       {
-        "label": "You looked at the rebuilt account window and it passed",
+        "label": "Admin and Moderation are inside the studio now, not pages that replace it",
         "tone": "good",
-        "source": "Your reply, entire: \"six pages is right they read as honest\". So Members and Notifications stay visible rather than hidden - the one-line fix on offer is deliberately not taken."
+        "source": "Brief 05, PR #406 merged 46c24e02. Opening Admin used to take the rail, topbar and account menu away. Every page's content is untouched on purpose — your own acceptance test."
       },
       {
-        "label": "Your nights can now tell a slow check from a dead one",
-        "tone": "good",
-        "source": "#368, PR #371 merged ec8a2fc2. On 26 Aug a night burned 40 minutes waiting for a result GitHub was never going to send."
-      },
-      {
-        "label": "The ten-minute figure on that card was wrong by about a hundred times",
+        "label": "Your brief named one header to replace. There were two.",
         "tone": "warn",
-        "source": "Measured over 253 pushes in a week: a check normally starts in 4 seconds, worst case 56. Two earlier ways of measuring said minutes, both wrong the same way."
+        "source": "Moderation had its own copy — its own Studio button, its own Live/Paused pair. Renaming only the one you named would have left it wearing two headers stacked, with nothing to flag it."
       },
       {
-        "label": "Two more of your ordered cards were already finished - now closed",
+        "label": "The four staff briefs behind this one are unblocked",
         "tone": "good",
-        "source": "#285 (card titles under your switches) and #325 (the whole pipeline on one panel). Both live and working; neither had been closed. Your bar re-measured: 99 cards, groups sum to 99."
+        "source": "#396, #397 and #398 are open; #399 stays held on #396, which is your own order — 05 first to 09 last, one shift each. Each was told what changed underneath it before it starts."
       },
       {
-        "label": "The queue: 99 open - 6 urgent - 5 you ordered - 4 starting to rot",
+        "label": "The measuring caught itself being wrong twice before it caught the code",
         "tone": "warn",
-        "source": "Rotting went 0 to 4 tonight: #4, #10, #12, #13, a week untouched, all from the 25 Aug catalogue. Not stuck - just old enough to need re-reading before anyone trusts them."
+        "source": "One check counted the studio's own topbar as a leftover and failed on a correct build; five more passed over nothing at all. Both found by running it against the old build first."
+      },
+      {
+        "label": "The queue: 108 open · 5 urgent · 8 you ordered · 27 rotting",
+        "tone": "warn",
+        "source": "Rotting is flat on last night, and twelve are still the 25 August Lost-and-Found batch crossing the seven-day line together. #395 closed tonight; three of yours came off 'blocked'."
       }
     ]
   },
@@ -1277,6 +1277,41 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "staff-shell-395-frames",
+      "title": "Admin and Moderation now live inside the studio instead of replacing it (brief 05)",
+      "question": "WHAT YOU ARE LOOKING AT. Five frames from tonight's build.\n\nTHE CHANGE IN ONE SENTENCE. Opening Admin used to take the whole app away — the rail vanished, the topbar vanished, your account menu and credits chip vanished, and you landed on a grey page with a small \"Studio\" button in the corner to get back. It read like a different product. Staff is now a surface inside Klieg: same rail, same topbar, same account menu, with one bar across the top carrying the section tabs. There is no \"Studio\" button any more, because the rail is always there.\n\nTHE PAGES THEMSELVES ARE UNTOUCHED, ON PURPOSE. Not one table, card, chart, modal or query changed. That is your own brief's acceptance test — \"same data, same actions, same everything, new frame\" — so the insides still look dated inside the new frame. Briefs 06 to 09 fix them one at a time, and they are all unblocked now.\n\nTHE ONE THING WORTH TWO MINUTES. Open Audit logs and scroll. The bar does not move. Staff pages are working tools and the audit table runs to thousands of rows, so the tabs stay where you left them rather than scrolling off the top. Measured: the bar's top held at 56 pixels while the table moved 1,475.\n\nWHAT YOUR BRIEF COULD NOT KNOW. It names one header to replace. There were two — Moderation had its own copy, with its own \"Studio\" button and its own Live/Paused pair. Renaming just the one you named would have left Moderation wearing two headers stacked on top of each other, and nothing would have flagged it. Both are gone.\n\nTHE HONEST BIT. In dark mode a staff page is a dark frame around white cards. The frame follows the theme; the content inside it never has, because staff has never been dark-tested. That is not something tonight broke — it is something tonight made visible, and it is exactly what 06 to 09 are for. The 134 hard-coded light colours are counted page by page and written down rather than quietly fixed, because your brief said to log them.",
+      "frames": [
+        {
+          "key": "crew-eye/30c82d73-d4ae-4da2-b891-7e4dd0bec4dc.png",
+          "caption": "Admin Overview, dark. The rail and topbar are there; ADMIN / \"Klieg Studio — everything\" sits left, seven tabs beside it, and the auto-refresh switch replaces the old filled black Live/Paused button.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/bc251340-f585-492d-a48b-6dde70145ac2.png",
+          "caption": "The same page in light. The tab labels are sentence case now — \"Audit logs\", not \"Audit Logs\" — matching the rest of the product.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/f76efa08-6bcb-48c3-b0e7-c992b6d15f87.png",
+          "caption": "Moderation. Its five sections are in the bar with their counts, and \"New Request\" keeps the filled button — that is a real action, which is what a filled button is for.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/df256f38-dff5-471c-8a09-9980bba37d21.png",
+          "caption": "Crew reads at your narrower 790px measure rather than the 1240px the other surfaces use — a briefing you read, not a grid you scan.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/a40190d3-15cc-437e-a9ec-4f3746ce96ee.png",
+          "caption": "At 1024 the bar wraps onto two rows and keeps every tab reachable. Nothing hides behind a sideways scrollbar.",
+          "arm": "after"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-02",
+      "issueNumber": 395
+    },
     {
       "id": "change-plan-390-frames",
       "title": "Change plan, before and after - the annual toggle used to look like a tenfold price rise",
@@ -2552,6 +2587,13 @@
   ],
   "pipeline": [
     {
+      "id": "staff-shell-395",
+      "title": "Admin and Moderation come home — they are surfaces inside the studio now, not pages that replace it (brief 05, shift 1 of 5)",
+      "status": "merged",
+      "prNumber": 406,
+      "note": "Opening Admin used to take the whole app away: no rail, no topbar, no account menu, and a small \"Studio\" button to get back. It is one surface inside Klieg now with a single staff bar carrying the tabs. Every page's content is untouched on purpose — your own acceptance test — so they still look dated inside the new frame; 06 to 09 fix that. Worth two minutes: open Audit logs and scroll, and watch the bar stay put. One thing your brief could not know: there were TWO headers, not one — Moderation had its own copy — so renaming only the one you named would have left it wearing two."
+    },
+    {
       "id": "change-plan-form-390",
       "title": "Your six Change plan corrections are live - and none of the mockup's prices went anywhere near the product (card 390)",
       "status": "merged",
@@ -3629,9 +3671,9 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-171",
-      "title": "The queue tonight: 109 open, and the rotting number nearly doubled for a reason worth knowing",
-      "detail": "109 cards open, 5 urgent, NINE of them yours. Three of tonight's are new: #403 and #404 came out of the Change plan work, and #405 is the one-word comment fix.\n\nRotting - open a week and never re-read - is 27, against 14 last night. That looks alarming and is not: nothing was neglected today. The seven-day line simply moved past 25 August, which is the day the whole Lost-and-Found catalogue was filed in one go. Twelve of the 27 are that batch (#55 through #70), all filed the same afternoon, all crossing the line together. It will keep climbing for a few nights on the same arithmetic unless somebody re-reads them.\n\nAll four patrol clocks are still overdue and the Janitor is still worst - that is the fourth night running it has been named and lost to your queue, which now has nine orders in it. The question from last night stands and nobody can answer it but you: would you rather one night went on housekeeping instead of your cards?",
+      "id": "queue-shape-172",
+      "title": "The queue tonight: 108 open, rotting flat at 27 — and the patrol clocks are still overdue",
+      "detail": "108 cards open, 5 urgent, EIGHT of them yours. #395 closed tonight and nothing new was filed.\n\nRotting — open a week and never re-read — is 27, the same as last night. Twelve of those are the Lost-and-Found catalogue filed in one afternoon on 25 August (#55 through #70); they crossed the seven-day line together and will sit there until somebody re-reads them against the code. Nothing is stuck, they are just old enough that nobody should trust what they say without checking.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are overdue, and the Janitor is worst — that is the fifth night running it has been named and not run. Eight cards you ordered outrank patrols, which is correct, and it is also why the clocks keep slipping. If you want a patrol night, say so and it gets one.",
       "severity": "info",
       "state": "open"
     },
@@ -3881,7 +3923,7 @@
     81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T14:51:31.325Z",
+    "readAt": "2026-09-01T16:28:23.674Z",
     "items": [
       {
         "issueNumber": 231,
@@ -3899,33 +3941,19 @@
         "urgent": false
       },
       {
-        "issueNumber": 395,
-        "title": "SHIFT 1 of 5 — Staff shell: Admin and Moderation come home (brief 05, frame only, zero content change)",
-        "urgent": false
-      },
-      {
         "issueNumber": 396,
         "title": "SHIFT 2 of 5 — Staff tables: one pattern, eleven surfaces, rows open in place (brief 06) — BLOCKED on #395",
-        "urgent": false,
-        "held": {
-          "state": "blocked"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 397,
         "title": "SHIFT 3 of 5 — Admin Overview: lead with what needs a human, and colour inverts (brief 07) — BLOCKED on #395",
-        "urgent": false,
-        "held": {
-          "state": "blocked"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 398,
         "title": "SHIFT 4 of 5 — Crew: surface only, and the built content architecture WINS over the mockup (brief 08) — BLOCKED on #395",
-        "urgent": false,
-        "held": {
-          "state": "blocked"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 399,
