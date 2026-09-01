@@ -1,7 +1,7 @@
 {
-  "edition": 182,
-  "updatedAt": "2026-09-01T03:20:00Z",
-  "shift": "foreman-162",
+  "edition": 183,
+  "updatedAt": "2026-09-01T14:35:00+10:00",
+  "shift": "Foreman - shift 2026-09-01 14:35 AEST (foreman-163)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,24 +111,24 @@
     ],
     "chips": [
       {
-        "label": "Two addresses a stranger could type are closed — nothing deleted",
+        "label": "Your account is one window instead of five - and #267 is unblocked and closed",
         "tone": "good",
-        "source": "#261 (PR #363, 127ae609) and #364 (PR #367, 60d16c55), both yours, both merged tonight. 12 driven readings, 10 sabotages. Suite 10,792 passed, 0 failed."
+        "source": "#365 and #267 closed, PR #370 merged 75c3a413. Six frames in your gallery, both themes. 10,822 tests pass, 0 fail."
       },
       {
-        "label": "Home, Library and Canvas are cleared for their redesign",
+        "label": "The components check caught its first duplicate - one commit before it shipped",
         "tone": "good",
-        "source": "#302 closed, PR #352 merged bde12831. Measured first: the wardrobe is empty on EVERY account and you hold no boards, so the stubs strand nothing. Nothing deleted, client or server."
+        "source": "#366's rule, run for the first time under it. The Monthly/Annual switch had been built twice; the new copy is deleted and the shared one gained the badge it lacked."
       },
       {
-        "label": "MAX stops inventing a character - your four corrections are in",
-        "tone": "good",
-        "source": "#327 merged 1fc61be6 (PR #338). On your own cyborg brief: invented backstory 3 of 3 to 0 of 3, language fighting the studio block 3 of 3 to 0 of 3. Frames in your gallery. 32c, no roll."
+        "label": "Four things looked right in the code and were wrong on screen",
+        "tone": "warn",
+        "source": "Text boxes drawing no box, usage bars with no height, a price running off the card, a table with no buttons. All four found by opening the app; none of them visible from the source."
       },
       {
-        "label": "Your bug count was offering you work you had already queued",
+        "label": "The queue: 98 open - 6 urgent - 4 you ordered - nothing rotting",
         "tone": "good",
-        "source": "#324 closed, PR #337 merged 4a0fcbfe. 15 cards carried `bug` when measured and four were yours already ordered (one was #324 itself). Now: Bugs (11, 3 already queued)."
+        "source": "Measured 2026-09-01 14:30 AEST. Two of your ordered cards closed tonight (#365, #267). Nothing open has gone a week without being re-read."
       },
       {
         "label": "The queue: 101 open · 8 urgent · 7 you ordered · nothing rotting yet",
@@ -143,6 +143,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "section-03-settings-365",
+      "issueNumber": 365,
+      "state": "done",
+      "filedAt": "2026-09-01",
+      "title": "Your account is one place now - five separate windows became three, and the parts that are not built say so",
+      "productImpact": "The brief you sent this morning is built and live. Before tonight your account was five separate windows that did not know about each other: a settings box, a billing box, a plan picker, a top-up box and a referrals box. There is one Settings window now, with six pages down the side - Profile, Usage, Billing, Members, Notifications, Security - and two windows that do one job each: Change plan when you are deciding, Add credits when you have run out mid-shoot and just need more. Clicking your credit balance in the top bar opens Add credits, not the plan comparison, because somebody looking at their balance has a credits question rather than a plan question.",
+      "workedExample": "Open your account menu. It now reads Settings, Members & invites, Billing & credits - your three labels from #267 - and all three open the SAME window at a different page, which was the clause you attached to that card and the reason it had been blocked for two days. Go to Billing and you see what you are on, what is left, your referral link, and your invoices, with Change plan and Add credits as buttons rather than as two more windows to find. Members is designed in full and every control is dead, because there is no such thing as a member in this product yet - it says that plainly rather than showing you an empty table that reads as 'you have no colleagues'.\n\nFour things your brief drew that the product cannot honestly say are left out rather than faked: the usage page's per-tool bars (four of those five tools do not exist, and nothing records which tool spent a credit), the card brand and last four digits (Stripe holds your card and only Stripe can show it), seat counts, and 'frames kept'. Your five-plan price ladder is twelve plans in the real product at a hundredth of the prices in the brief, so the comparison shows five columns and works out which five. And four things looked right in the code and were wrong on screen - the text boxes drew no box at all, the usage bars had no height, the top-up price ran off the edge of the card, and the comparison table had no buttons. All four came from opening the app and looking.",
+      "recommendation": "Nothing to decide - this is a receipt. Worth five minutes of your hands, though: open it, press Tab through it, and tell me if the six pages are the right six.",
+      "options": []
+    },
+    {
+      "id": "promotion-pass-section-03",
+      "issueNumber": 365,
+      "state": "done",
+      "filedAt": "2026-09-01",
+      "title": "The components check you asked for caught its first real duplicate - one commit before it shipped",
+      "productImpact": "Two days ago you said we have to make sure the components check runs on UI work, so we are not designing fifty different styles of the same thing. It ran tonight for the first time under that rule, and it found one: the Monthly/Annual switch on the plan window had been built from scratch, while the identical control already existed in the shared kit and was already on your components page. Same shape, same colours, same behaviour, two copies.",
+      "workedExample": "The new copy is deleted and the plan window uses the shared one. The single thing the new copy could do that the old one could not - hold the '2 MONTHS FREE' badge beside the word Annual - was added to the shared one instead, so the next page that needs it gets it too. You should see no difference at all; that is the point of the check.",
+      "recommendation": "Nothing to decide. The written result is in the repository and four more parts are proposed for the shared kit in a small follow-up change - it moves files and changes nothing you can see.",
+      "options": []
+    },
     {
       "id": "casting-focus-change-304",
       "title": "Casting V2 was drawing two focus marks at once - I fixed it while fixing your word-picker, and you may want it back",
@@ -161,7 +183,7 @@
         }
       ],
       "recommendation": "Keep it. It is not a new design - it is casting finally rendering the rule its own code has described all along, and it is the only way your word-picker and your casting rows can look like the same product. If your eye disagrees on the frames, it goes back in one line each.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-01T13:20:00+10:00",
       "issueNumber": 304
     },
@@ -1190,10 +1212,50 @@
   ],
   "eyeItems": [
     {
+      "id": "section-03-frames-365",
+      "title": "Your account, rebuilt - six frames, both themes",
+      "question": "Two things I would rather you ruled on than me. First: are the six pages the right six? Referrals is a block inside Billing rather than a seventh page, because a page you visit twice a year should not own a permanent row - that is your brief's own reasoning and I followed it, but it is a judgement. Second: Members, Notifications and all three Security rows are dead on purpose, because there is nothing behind them. Together that is a lot of greyed-out surface in one window. Your own stub rule warns about the RATIO - four dead rows out of six reads as broken rather than as coming. Look at Members and Notifications and tell me whether it reads as honest or as empty. If it reads as empty, the fix is to hide those two pages until they work, and that is one line each.",
+      "frames": [
+        {
+          "key": "crew-eye/a8fb6397-dfc1-49c5-a8c1-d434121c8474.png",
+          "caption": "Billing: what you are on, what is left, your referral link, your invoices - and the two buttons that used to be two more windows.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/d6103c3d-c6a2-4526-bc3c-bf08225e6df0.png",
+          "caption": "Profile in the light theme. Your email is shown and greyed with the reason beside it rather than hidden - hiding it makes people think the account has no email.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/797e57ff-1311-46fa-8e76-35f9412807b6.png",
+          "caption": "Members: designed in full, every control dead, and it says so. This is the section you named as the example.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/ec5f5d4d-8d9e-4756-8322-5297e0ecf87d.png",
+          "caption": "Change plan, card mode. Three cards, exactly one black button, and the price per credit on every one - it falls at every step up, which is the argument.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/67ac7ae2-3669-4c25-9eb1-0213e88c4e32.png",
+          "caption": "Compare mode: five columns worked out from where you are, value first and price last, and not one row that says the same thing across all five.",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/59e6dc82-476c-4296-b155-bad88888d93b.png",
+          "caption": "Add credits, sitting over the plan window. Every number on it is worked out from four figures the server returns, so the date it names and the amount it charges cannot disagree.",
+          "arm": null
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-01",
+      "issueNumber": 365
+    },
+    {
       "id": "quiet-focus-mark-304-frames",
       "title": "The red box, before and after - and the one change I made that you did not ask for",
       "question": "Two questions, and the second is the one I would rather you ruled on than me. First, the simple one: in the before and after pair, is the quiet grey rule the mark you meant by \"the quieter mark\"? Second, and this is the honest part - fixing your word-picker turned up the same defect in casting studio V2 itself, the surface you told me to copy. Three of its rows were drawing the red ring AND the quiet rule at the same time, so the convention its own code describes has never been on your screen. I fixed those three in the same change rather than leave your word-picker looking different from the thing it was told to match. That IS a visible change to casting, under keyboard focus only, and casting is the one surface you have said is properly designed - so if you would rather it stayed as it was, say so and it is one line each. Money: zero. No render, no credit, no text call.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-01T13:20:00+10:00",
       "issueNumber": 304,
       "cardId": "casting-focus-change-304",
@@ -2248,6 +2310,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "section-03-370",
+      "title": "Section 03 - five account windows became three (#365, #267)",
+      "status": "merged",
+      "prNumber": 370,
+      "note": "Your brief, built and merged the same day you sent it. Nothing about what the buttons DO changed - same profile save, same Stripe calls, same top-up, same referral logic; only where they live and how they look. #267 rides with it and is closed. 10,822 tests pass, 8 deliberate breakages each caught by exactly the check that owns them. The reviewer produced no verdict again (28th time) and the gate says this touches no money or login code, so it merged on the gate."
+    },
     {
       "id": "quiet-focus-mark-304",
       "title": "The red box on the word-picker is gone - and so is a defect in casting you never saw (#304)",
@@ -3455,28 +3524,16 @@
     70,
     71,
     72,
-    73
+    73,
+    74,
+    75
   ],
   "nextUp": {
-    "readAt": "2026-09-01T02:38:31.755Z",
+    "readAt": "2026-09-01T04:23:48.985Z",
     "items": [
-      {
-        "issueNumber": 267,
-        "title": "Account-menu labels: add Members & invites, and Billing -> Billing & credits — BLOCKED on the sectioned Settings modal (Sign out is DONE and guarded)",
-        "urgent": true,
-        "held": {
-          "state": "blocked",
-          "because": "the sectioned Settings modal — your section 03 brief, and the trigger is yours"
-        }
-      },
       {
         "issueNumber": 321,
         "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
-        "urgent": true
-      },
-      {
-        "issueNumber": 365,
-        "title": "SECTION 03 — Settings, plans, credits and referrals: five modals become three, and the unbuilt parts are stubbed not excluded",
         "urgent": true
       },
       {
