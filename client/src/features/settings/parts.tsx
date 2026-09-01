@@ -150,14 +150,25 @@ export function SettingsList({ children }: { children: ReactNode }) {
  * My brief summarised where it should have specified."* The prototype draws
  * `grid-template-columns: repeat(3, 1fr)` inside one border.
  *
- * ⚠ **THE TYPE HERE FOLLOWS HIS CARD, WHICH DIFFERS FROM THE PROTOTYPE MARKUP,
- * AND THAT DIVERGENCE IS DELIBERATE AND DECLARED.** The card specifies label
- * `400 11px --metaStrong`, value `500 22px` mono, note `400 10.5px --faint`;
- * the prototype's own inline style is `400 10.5px --metaStrong`, `500 19px`
- * Archivo, `400 10.5px --metaStrong`. Two of our artifacts say mono — his card
- * and the brief's *"Values in mono; they are measured numbers"* — against the
- * prototype's one, and mono is what `.dp-set__value` has always used for a
- * measured number. The structure is the prototype's; the type is his card's.
+ * ⚠ **THE VALUE'S TYPE WAS A DECLARED DIVERGENCE AND HE HAS NOW RULED ON IT —
+ * reply #81, 2026-09-01, verbatim and entire: *"prototype — 19px, normal
+ * face"*.** So the three numbers are `500 19px` in the sans face, which is what
+ * his drawing always said.
+ *
+ * The divergence is kept here rather than deleted, because it is the reason the
+ * question reached him at all: his #381 card specified `500 22px` **mono** and
+ * the brief said *"Values in mono; they are measured numbers"*, against the
+ * prototype's inline `500 19px` Archivo. **Two of our artifacts said mono and
+ * his drawing said otherwise** — and mono is what `.dp-set__value` has always
+ * used for a measured number, so the count of artifacts pointed the wrong way.
+ * It shipped his card's type with the disagreement stated and the question on
+ * his eye item; he answered in two hours.
+ *
+ * ⚠ **His answer covers the VALUE alone.** The label stays `400 11px
+ * --metaStrong` and the note `400 10.5px --faint` — both differ from the
+ * prototype too, and he was asked about the three numbers and answered about
+ * the three numbers. Widening a one-property ruling is how a brief acquires
+ * instructions nobody gave.
  */
 export function StatCard({
   stats,
