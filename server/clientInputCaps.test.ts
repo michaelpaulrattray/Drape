@@ -68,6 +68,29 @@ async function everyClientSource(dir: string): Promise<string[]> {
   return found;
 }
 
+/**
+ * CAPS WITH ONLY ONE END, each carrying the reason it has only one.
+ *
+ * The arm below wants both ends because a cap re-typed on one side is exactly
+ * the defect it exists to catch. But a cap can lose an end HONESTLY — by its
+ * surface being removed — and that is not a second copy of anything, so failing
+ * on it would push the next person toward re-typing the literal to go green.
+ *
+ * A line here is a claim, so it is checked in BOTH directions: the end named
+ * must still be absent, or the entry reddens and has to be deleted.
+ */
+const SINGLE_ENDED: Record<string, { missing: "client" | "server"; why: string }> = {
+  PROFILE_BIO_MAX_LENGTH: {
+    missing: "client",
+    why:
+      "Card 387 — the founder removed the Bio FIELD from Settings › Profile (*\"remove the bio " +
+      "line from profile its not required\"*), so there is no client input left to cap. The " +
+      "COLUMN, `profile.update`'s schema and every bio already written are untouched: a " +
+      "customer's bio is still in her own GDPR export and on the admin user view. Delete this " +
+      "line the day a bio editor returns.",
+  },
+};
+
 describe("no client input types its own copy of a server cap", () => {
   it("finds the surfaces to sweep — the instrument before its finding", async () => {
     /*
@@ -155,11 +178,38 @@ describe("no client input types its own copy of a server cap", () => {
     for (const name of declared) {
       const inClient = new RegExp(`\\b${name}\\b`).test(clientCode);
       const inServer = new RegExp(`\\b${name}\\b`).test(serverCode);
-      if (!inServer) orphans.push(`${name} — no SERVER reader (the schema re-typed its literal?)`);
-      if (!inClient) orphans.push(`${name} — no CLIENT reader (the input re-typed its literal?)`);
+      const allowed = SINGLE_ENDED[name];
+      if (!inServer && allowed?.missing !== "server") {
+        orphans.push(`${name} — no SERVER reader (the schema re-typed its literal?)`);
+      }
+      if (!inClient && allowed?.missing !== "client") {
+        orphans.push(`${name} — no CLIENT reader (the input re-typed its literal?)`);
+      }
     }
 
     expect(orphans, `a cap lost one of its two ends:\n  ${orphans.join("\n  ")}`).toEqual([]);
+
+    /*
+      ⚠ AND AN ALLOWANCE CANNOT OUTLIVE ITS REASON. A cap excused above must
+      still be missing the end it was excused for; the moment that surface comes
+      back, this reddens and the line has to go. Without it the list is a
+      permanent hole nobody re-reads, which is the shape working law 4 is about
+      and is how the picker arm's own remainder is kept honest one describe up.
+    */
+    const stale: string[] = [];
+    for (const [name, entry] of Object.entries(SINGLE_ENDED)) {
+      if (!declared.includes(name)) {
+        stale.push(`${name} is excused but is no longer declared in shared/inputLimits.ts`);
+        continue;
+      }
+      const code = entry.missing === "client" ? clientCode : serverCode;
+      if (new RegExp(`\\b${name}\\b`).test(code)) {
+        stale.push(
+          `${name} now HAS a ${entry.missing} reader — delete its line, the cap has two ends again`,
+        );
+      }
+    }
+    expect(stale, `an excused cap outlived its reason:\n  ${stale.join("\n  ")}`).toEqual([]);
   });
 });
 

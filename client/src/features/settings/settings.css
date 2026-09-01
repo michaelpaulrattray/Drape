@@ -304,7 +304,10 @@
 /* ---- the Usage stat card: ONE border, three columns (#381 items 1 and 2) ---- */
 .dp-set__statcard {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Set by `StatCard` from the number of stats it was given (#387 item 3
+     dropped one and a fixed 3 would have left a hole). The fallback is the
+     shape the pane had. */
+  grid-template-columns: repeat(var(--dp-statcols, 3), 1fr);
   border: 1px solid var(--borderCard);
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -452,12 +455,29 @@
   color: var(--metaStrong);
 }
 .dp-ref__inputrow { display: flex; align-items: center; gap: var(--s-2); }
+/*
+  ⚠ THE FOOT SUPPLIES THE TYPE ITS LINKS INHERIT — #387 item 4, his words:
+  *"the reddeem a code and who has joined text fonts are huge and dont match the
+  prototype."*
+
+  `.dp-set__linkbtn` is `font: inherit` ON PURPOSE: its third consumer sits
+  INSIDE a sentence (`more credits`, within a `.dp-set__note` in BillingSection)
+  and must take that sentence's size. The two here are direct children of this
+  row, so they inherited the modal body instead — which is why they towered over
+  the `3 friends joined · 1,500 credits earned so far` note beside them. The
+  prototype draws all three as one quiet footer line.
+
+  So the size is set HERE rather than on the link class, which would have made
+  the in-sentence case wrong to fix the standalone one. Same values as
+  `.dp-set__note`, which is the sentence they sit beside.
+*/
 .dp-ref__foot {
   display: flex;
   align-items: center;
   gap: var(--s-5);
   padding-top: var(--s-5);
   border-top: 1px solid var(--rule);
+  font: 400 11px/1.5 var(--font-sans);
 }
 
 /* ---- members (§8) — designed in full, every control inert ---- */

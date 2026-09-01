@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b744c67aec7c0081"
+    "sourceFingerprint": "56f7881ac6a7884e"
   },
   "domains": [
     {
@@ -8366,6 +8366,16 @@
       "file": "server/routes/profile.ts"
     },
     {
+      "id": "route:profile.removeAvatar",
+      "namespace": "profile",
+      "name": "removeAvatar",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/profile.ts"
+    },
+    {
       "id": "route:profile.storageInfo",
       "namespace": "profile",
       "name": "storageInfo",
@@ -10641,6 +10651,10 @@
     {
       "id": "test:client/src/features/settings/section03-guard.test.ts",
       "path": "client/src/features/settings/section03-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/settings387-guard.test.ts",
+      "path": "client/src/features/settings/settings387-guard.test.ts"
     },
     {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",

@@ -1,7 +1,7 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import { randomUUID } from "node:crypto";
 import { getUserById, updateUserProfile, getUserStorageInfo, updateUserStorageUsed, markCanvasIntroSeen } from "../db";
-import { storagePut, storageDelete } from "../storage";
+import { storagePut, storageDelete, storageReadBytes } from "../storage";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
@@ -119,6 +119,78 @@ export const profileRouter = router({
 
       return { success: true, avatarUrl: url };
     }),
+
+  /**
+   * REMOVE THE PROFILE PICTURE — #387 item 5, his words: *"next to profile
+   * image where it says remove code that in so that if you remove it goes to a
+   * default profile image."*
+   *
+   * `Remove` shipped as a stub because there was no server for it. There is
+   * now, and three things about its shape are deliberate:
+   *
+   * - **The row is cleared BEFORE the object is deleted.** The customer's
+   *   action must land even if R2 is unhappy; the other order leaves a row
+   *   pointing at bytes that are gone, which is the failure that shows.
+   * - **The default is not a blank.** Clearing `avatarUrl` puts
+   *   `ProfileAvatar` back on `getProfileVisualDefaults(identity).avatar` —
+   *   the SAME default a brand-new account gets, which is what he asked for.
+   * - **The owner is in the writing statement** (invariant 1):
+   *   `updateUserProfile` scopes on `users.id = userId` and `userId` is
+   *   `ctx.user.id`, never input (invariant 3).
+   *
+   * ⚠ The storage figure is the object's REAL length, not the flat 100 KB
+   * estimate the replace path in `uploadAvatar` subtracts. An avatar is one
+   * small client-compressed object, so reading it to learn its size is cheap
+   * and true; a failed read costs the accounting, never the removal.
+   */
+  removeAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+    const user = await getUserById(ctx.user.id);
+    if (!user) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+    }
+
+    const oldKey = user.avatarKey;
+    if (!user.avatarUrl && !oldKey) {
+      /* Already on the default. Idempotent rather than an error — a second
+         click on a slow connection is not a failure. */
+      return { success: true };
+    }
+
+    const cleared = await updateUserProfile(ctx.user.id, {
+      avatarUrl: null,
+      avatarKey: null,
+    });
+    if (!cleared.success) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: cleared.error || "Failed to remove the picture",
+      });
+    }
+
+    if (oldKey) {
+      let freed = 0;
+      try {
+        freed = (await storageReadBytes(oldKey)).bytes.length;
+      } catch (e) {
+        log.warn({ err: e }, "Could not size the old avatar before deleting it");
+      }
+      try {
+        const deleted = await storageDelete(oldKey);
+        if (deleted.success) {
+          if (freed > 0) await updateUserStorageUsed(ctx.user.id, -freed);
+        } else {
+          log.warn(
+            { errorCode: deleted.errorCode, retryable: deleted.retryable },
+            "Failed to delete removed avatar",
+          );
+        }
+      } catch (e) {
+        log.warn({ err: e }, "Failed to delete removed avatar:");
+      }
+    }
+
+    return { success: true };
+  }),
 
   // Upload banner image
   uploadBanner: protectedProcedure

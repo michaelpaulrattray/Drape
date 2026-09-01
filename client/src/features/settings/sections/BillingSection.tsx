@@ -65,7 +65,31 @@ export function BillingSection({
     },
   });
 
-  const remainingShare = allowance > 0 ? balance / allowance : 0;
+  /*
+    ⚠ **THE LAW-7 SWEEP OF #387 ITEM 2, AND IT FOUND A WORSE ONE HERE.**
+
+    Item 2 was `of 5,000 this month` on an account whose credits never refresh:
+    `refreshMonthlyCredits` is reached only from the Stripe invoice webhook and
+    that webhook returns early for the free tier. The class is *a figure
+    measured against a cycle the product does not run*, and this pane had two
+    more of them, one row apart:
+
+    - `${allowance} credits/mo` on the plan card — the free plan's 5,000 is a
+      one-time signup grant (`INITIAL_CREDITS`), so `/mo` is simply false.
+    - `${percent}% of this month’s allowance left`, which is worse than the one
+      he reported because it does not merely mislead, it goes absurd: `Bar`
+      clamps its ratio to 1 and **the sentence does not**, so on his own
+      production row — balance 24,535 against a free allowance of 5,000 — the
+      pane reads **"491% of this month's allowance left"** beside a bar that is
+      simply full.
+
+    So both are gated on a period that actually RENEWS. `renewsAt` is
+    `currentPeriodEnd` and is already passed in; where it is null there is no
+    cycle, and the honest thing is to show the balance without a denominator
+    rather than invent one. Nothing is dropped on a paying account.
+  */
+  const renews = renewsAt !== null;
+  const remainingShare = renews && allowance > 0 ? balance / allowance : 0;
   const invoices = invoicesData?.invoices ?? [];
 
   return (
@@ -75,7 +99,7 @@ export function BillingSection({
           label={planName}
           note={[
             planPriceInCents > 0 ? `${formatDollars(planPriceInCents)}/mo` : "No charge",
-            allowance > 0 ? `${allowance.toLocaleString()} credits/mo` : null,
+            renews && allowance > 0 ? `${allowance.toLocaleString()} credits/mo` : null,
             renewsAt ? `renews ${formatShortDate(renewsAt)}` : null,
           ]
             .filter(Boolean)
@@ -94,13 +118,24 @@ export function BillingSection({
         <div className="dp-set__minicard">
           <span className="dp-set__minilabel">CREDITS REMAINING</span>
           <span className="dp-set__mininum">{balance.toLocaleString()}</span>
-          <Bar ratio={remainingShare} token="--ink" />
+          {/* A bar needs a denominator. Without a renewing allowance there is
+              none, and an empty track under a real balance reads as nothing
+              left — which is the opposite of true. */}
+          {renews && allowance > 0 ? <Bar ratio={remainingShare} token="--ink" /> : null}
           <span className="dp-set__note">
-            {allowance > 0
+            {renews && allowance > 0
               ? `${Math.round(remainingShare * 100)}% of this month's allowance left · `
               : ""}
+            {/*
+              ⚠ THE LINK CARRIES ITS OWN VERB WHEN NOTHING LEADS IT. Looked at
+              in the running app after the sweep above removed the sentence:
+              `more credits` was left alone under the balance, reading as a
+              fragment rather than as a control. It is a continuation phrase and
+              it only works as one — so where the sentence is gone, so is the
+              continuation.
+            */}
             <button type="button" className="dp-set__linkbtn" onClick={onAddCredits}>
-              more credits
+              {renews && allowance > 0 ? "more credits" : "Add more credits"}
             </button>
           </span>
         </div>
