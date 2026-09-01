@@ -3415,7 +3415,17 @@ the entire time because a live twin sat in front of it.** That pair is not a
 surprise — `d84525c0` (*"the twin that hid a road"*) catalogued it by name in the
 shadowed-exports table — but this is the first time it changed the door's answer.
 
-**So the row is verdict HELD and it covers both, said out loud rather than left
+✅ **THE ROW IS `KEEP` SINCE 2026-09-01 AND THE REASON IS THE HAPPY ONE: THE
+CLIENT TWIN HAS CONSUMERS AGAIN.** Section 03's settings modal writes the
+workspace line as `{BRAND_NAME} · {plan} plan`, and its Profile section names
+the same constant in the workspace-name stub's note — two production importers,
+so the deletion door reads the name as REWIRED and a `HELD` verdict on it is
+refused. **Nothing below is superseded**: the server twin is exactly as
+unreferenced as it was, its blocker is unchanged, and it still dies with #29.
+What changed is only which of the two twins the shared name can honestly be
+described by, and it is once again the live one. The paragraph as it stood:
+
+**So the row was verdict HELD and it covers both, said out loud rather than left
 to be discovered**, because a name-keyed door cannot be given two verdicts for
 one name. Its `file` names the server declaration, which is the one the sweep
 lists; the `why` names both. Neither is deleted, and for different reasons:

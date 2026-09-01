@@ -20,7 +20,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from '@/features/billing/LowBalanceWarning';
-import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
+import { AddCreditsModal } from '@/features/billing/AddCreditsModal';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
@@ -747,11 +747,7 @@ export function CastingTakeover({
         existingDraft={!!editContext?.draft}
       />
 
-      <CreditTopupModal
-        isOpen={isTopupOpen}
-        onClose={() => setIsTopupOpen(false)}
-        currentBalance={creditsData?.balance || 0}
-      />
+      {isTopupOpen ? <AddCreditsModal onClose={() => setIsTopupOpen(false)} /> : null}
       </div>
     </div>
   );

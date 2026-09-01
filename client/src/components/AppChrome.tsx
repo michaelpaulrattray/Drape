@@ -50,12 +50,9 @@ import {
   type RailDestinationId,
 } from "@/foundation";
 import { UserCard } from "@/components/UserCard";
-import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 import { LobbyUtilityMenu } from "@/features/lobby/LobbyUtilityMenu";
 import { ReportBugButton } from "@/features/lobby/ReportBugButton";
-import { BillingModal } from "@/features/billing";
-import { CreditTopupModal } from "@/features/billing/CreditTopupModal";
-import { ReferralModal } from "@/features/referral/ReferralModal";
+import { AccountSurfaces, useAccountSurfaces } from "@/features/settings";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 
 /**
@@ -80,24 +77,35 @@ export function AppChrome({
 }) {
   const { user, logout } = useAuth();
 
-  const [showSettings, setShowSettings] = useState(false);
-  const [isBillingOpen, setIsBillingOpen] = useState(false);
-  const [isTopupOpen, setIsTopupOpen] = useState(false);
-  const [isReferralOpen, setIsReferralOpen] = useState(false);
+  /*
+    SECTION 03 — one state pair for the whole account cluster, not four
+    booleans. `useAccountSurfaces` owns `open` + `section`, and every entry
+    point below is a call into it (brief §2).
+  */
+  const account = useAccountSurfaces();
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [bannerImage, setBannerImage] = useState<string | null>(null);
 
   const { data: creditsData } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: !!user,
     staleTime: 30_000,
   });
-  const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(undefined, {
+  const { data: profileData } = trpc.profile.get.useQuery(undefined, {
     enabled: !!user,
   });
   useEffect(() => {
     if (profileData?.avatarUrl) setProfileImage(profileData.avatarUrl);
-    if (profileData?.bannerUrl) setBannerImage(profileData.bannerUrl);
-  }, [profileData?.avatarUrl, profileData?.bannerUrl]);
+    /*
+      ⚠ THE BANNER IS GONE FROM THIS COMPONENT AND FROM THE PRODUCT'S UI, and
+      it is declared rather than quiet. `profile.uploadBanner` still exists on
+      the server and `profileData.bannerUrl` is still returned; what has been
+      removed is the only control that SET one — in the settings modal section
+      03 replaces. It was safe to remove because a grep across `client/src`
+      finds no surface that ever DISPLAYED a banner: it was an upload with no
+      consumer. The brief's Profile section is avatar, display name, email and
+      workspace name, and adding a fifth row for a picture nobody can see is
+      not something it asks for. Restoring it is one row.
+    */
+  }, [profileData?.avatarUrl]);
 
   const avatarUrl = profileImage ?? user?.avatarUrl ?? null;
 
@@ -124,7 +132,9 @@ export function AppChrome({
          the help menu (02 §1d). */
       topbarRight={
         <>
-          <CreditsChip balance={creditsData?.balance} onClick={() => setIsBillingOpen(true)} />
+          {/* §2: the credits chip opens ADD CREDITS, not Change plan —
+              somebody clicking their balance has a credits question. */}
+          <CreditsChip balance={creditsData?.balance} onClick={account.openAddCredits} />
           <TopbarDivider />
           <ReportBugButton />
           <LobbyUtilityMenu />
@@ -178,7 +188,7 @@ export function AppChrome({
               },
             ]
           : [],
-        onOpenSettings: () => setShowSettings(true),
+        onOpenSettings: () => account.openSettings("profile"),
       }}
       account={
         user
@@ -201,9 +211,9 @@ export function AppChrome({
                   profileIdentity={user}
                   creditsBalance={creditsData?.balance ?? 0}
                   role={user.role}
-                  onOpenSettings={() => setShowSettings(true)}
-                  onOpenBilling={() => setIsBillingOpen(true)}
-                  onOpenReferral={() => setIsReferralOpen(true)}
+                  onOpenSettings={() => account.openSettings("profile")}
+                  onOpenMembers={() => account.openSettings("members")}
+                  onOpenBilling={() => account.openSettings("billing")}
                   onLogout={logout}
                 />
               ),
@@ -214,68 +224,21 @@ export function AppChrome({
       {children}
 
       {/*
-        THE MODALS MOUNT ONLY WHILE OPEN, and that is the one deliberate
-        behaviour change in #278. Each of these already renders `null` when
-        closed, so the output is identical either way — what differs is that a
-        closed modal's HOOKS no longer run.
+        THE THREE SURFACES, MOUNTED ONCE (section 03).
 
-        Measured before deciding: `BillingModal` fires `billing.getPlans` and
-        `billing.getStatus` on mount, and `CreditTopupModal` adds
-        `getSubscriptionDetails` and `previewPlanChange` — the last of which is
-        a Stripe proration read, gated only on `!isFreeUser`, never on
-        `isOpen`. The query client is `new QueryClient()` with stock defaults
-        (staleTime 0), so those refire on every mount. Keeping them mounted
-        unconditionally would have made this fix cost a paying customer a
-        Stripe proration preview on EVERY casting page view — four surfaces
-        that previously fired none.
-
-        The cost of the change is one round trip on the first open of a modal
-        instead of a prewarmed one. The ungated queries inside the modals are
-        the actual defect and are carded separately; this component declines to
-        widen them rather than pretending they are not there.
+        The five modals that used to sit here are gone; `AccountSurfaces` owns
+        the mount AND the queries behind it. The one behaviour worth carrying
+        forward from #278 is preserved inside it and its reason is quoted there:
+        a closed modal's HOOKS must not run, because `previewPlanChange` is a
+        Stripe proration read that was gated only on `!isFreeUser`, so mounting
+        the cluster unconditionally cost a paying customer one on every page
+        view of the four casting surfaces.
       */}
-      {showSettings ? (
-        <ProfileSettingsModal
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-          onProfileUpdate={() => refetchProfile()}
-          user={user}
-          profileImage={profileImage}
-          bannerImage={bannerImage}
-          onProfileImageChange={setProfileImage}
-          onBannerImageChange={setBannerImage}
-          creditsBalance={creditsData?.balance || 0}
-          planTier={creditsData?.planTier || "free"}
-          onOpenBilling={() => {
-            setShowSettings(false);
-            setIsBillingOpen(true);
-          }}
-          onOpenTopup={() => {
-            setShowSettings(false);
-            setIsTopupOpen(true);
-          }}
-        />
-      ) : null}
-      {isBillingOpen ? (
-        <BillingModal
-          isOpen={isBillingOpen}
-          onClose={() => setIsBillingOpen(false)}
-          onOpenTopup={() => {
-            setIsBillingOpen(false);
-            setIsTopupOpen(true);
-          }}
-        />
-      ) : null}
-      {isTopupOpen ? (
-        <CreditTopupModal
-          isOpen={isTopupOpen}
-          onClose={() => setIsTopupOpen(false)}
-          currentBalance={creditsData?.balance || 0}
-        />
-      ) : null}
-      {isReferralOpen ? (
-        <ReferralModal open={isReferralOpen} onClose={() => setIsReferralOpen(false)} />
-      ) : null}
+      <AccountSurfaces
+        state={account}
+        avatarUrl={avatarUrl}
+        onAvatarChange={setProfileImage}
+      />
     </AppShell>
   );
 }

@@ -82,6 +82,14 @@ const GUARDED_PATHS = [
      account menu renders on the themed --surface, and a reintroduced hex is
      exactly the invisible-name defect the founder photographed. */
   "components/UserCard.tsx",
+  /* Section 03 (#365): the three account surfaces — Settings, Change plan and
+     Add credits. Their whole stylesheet is written in tokens and every colour
+     in it flips between themes, which is exactly the population this guard is
+     for; enrolling them the day they land is cheaper than the day one of them
+     goes dark-on-dark. */
+  "features/settings",
+  "features/billing/ChangePlanModal.tsx",
+  "features/billing/AddCreditsModal.tsx",
 ];
 
 /**

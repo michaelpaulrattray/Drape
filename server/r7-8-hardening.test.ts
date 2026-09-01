@@ -6,8 +6,11 @@ const repoFile = (path: string) =>
 
 describe("R7-8 application hardening", () => {
   it("presents truthful sign-in authority without inert account controls", () => {
+    /* SECTION 03 (2026-09-01): the security surface moved out of the retired
+       `ProfileSettingsModal` into the one Settings modal's own section. Same
+       duty, same two claims, new address. */
     const security = repoFile(
-      "client/src/features/profile/SecurityTab.tsx",
+      "client/src/features/settings/sections/SecuritySection.tsx",
     );
     const authRoute = repoFile("server/routes/auth.ts");
 
@@ -19,13 +22,21 @@ describe("R7-8 application hardening", () => {
   });
 
   it("gives the Settings modal explicit dialog and close-button semantics", () => {
-    const modal = repoFile(
-      "client/src/components/ProfileSettingsModal.tsx",
-    );
+    /*
+      SECTION 03 — the modal is `features/settings/SettingsModal.tsx` now, and
+      the dialog semantics moved with it in a way worth stating: `role`,
+      `aria-modal` and the accessible NAME are the shared `ModalScrim`'s, one
+      owner for every promoted dialog, so this arm reads both files. That is
+      stricter than before rather than looser — the old modal hand-rolled all
+      four attributes and a second modal could have shipped without them.
+    */
+    const shell = repoFile("client/src/foundation/CastingModal.tsx");
+    const modal = repoFile("client/src/features/settings/SettingsModal.tsx");
 
-    expect(modal).toContain('role="dialog"');
-    expect(modal).toContain('aria-modal="true"');
-    expect(modal).toContain('aria-labelledby="profile-settings-title"');
+    expect(shell).toContain('role="dialog"');
+    expect(shell).toContain('aria-modal="true"');
+    expect(shell).toContain("aria-label={label}");
+    expect(modal).toContain('label="Settings"');
     expect(modal).toContain('aria-label="Close settings"');
   });
 

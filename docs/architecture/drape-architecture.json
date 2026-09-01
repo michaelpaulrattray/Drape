@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "81732bfeedc54200"
+    "sourceFingerprint": "c47a7f67356b3ad1"
   },
   "domains": [
     {
@@ -23,7 +23,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 9
+      "moduleCount": 8
     },
     {
       "id": "domain:boards",
@@ -48,7 +48,7 @@
     {
       "id": "domain:client-shared",
       "name": "client-shared",
-      "moduleCount": 17
+      "moduleCount": 16
     },
     {
       "id": "domain:data",
@@ -103,7 +103,7 @@
     {
       "id": "domain:profile",
       "name": "profile",
-      "moduleCount": 7
+      "moduleCount": 2
     },
     {
       "id": "domain:providers",
@@ -113,12 +113,17 @@
     {
       "id": "domain:referral",
       "name": "referral",
-      "moduleCount": 3
+      "moduleCount": 2
     },
     {
       "id": "domain:security",
       "name": "security",
       "moduleCount": 9
+    },
+    {
+      "id": "domain:settings",
+      "name": "settings",
+      "moduleCount": 14
     },
     {
       "id": "domain:shared",
@@ -203,12 +208,6 @@
     {
       "id": "module:client/src/components/PageTransition.tsx",
       "path": "client/src/components/PageTransition.tsx",
-      "domain": "client-shared",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ProfileSettingsModal.tsx",
-      "path": "client/src/components/ProfileSettingsModal.tsx",
       "domain": "client-shared",
       "lifecycle": "active"
     },
@@ -855,20 +854,14 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/billing/BillingModal.tsx",
-      "path": "client/src/features/billing/BillingModal.tsx",
+      "id": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "path": "client/src/features/billing/AddCreditsModal.tsx",
       "domain": "billing",
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/billing/CreditTopupModal.tsx",
-      "path": "client/src/features/billing/CreditTopupModal.tsx",
-      "domain": "billing",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/billing/DowngradeConfirmModal.tsx",
-      "path": "client/src/features/billing/DowngradeConfirmModal.tsx",
+      "id": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "path": "client/src/features/billing/ChangePlanModal.tsx",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -2061,38 +2054,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/profile/BillingTab.tsx",
-      "path": "client/src/features/profile/BillingTab.tsx",
-      "domain": "profile",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/profile/NotificationsTab.tsx",
-      "path": "client/src/features/profile/NotificationsTab.tsx",
-      "domain": "profile",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/profile/ProfileTab.tsx",
-      "path": "client/src/features/profile/ProfileTab.tsx",
-      "domain": "profile",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/profile/ProfileVisual.tsx",
       "path": "client/src/features/profile/ProfileVisual.tsx",
-      "domain": "profile",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/profile/SecurityTab.tsx",
-      "path": "client/src/features/profile/SecurityTab.tsx",
-      "domain": "profile",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/profile/UsageTab.tsx",
-      "path": "client/src/features/profile/UsageTab.tsx",
       "domain": "profile",
       "lifecycle": "active"
     },
@@ -2109,15 +2072,93 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/referral/ReferralModal.tsx",
-      "path": "client/src/features/referral/ReferralModal.tsx",
+      "id": "module:client/src/features/referral/useReferralClaim.ts",
+      "path": "client/src/features/referral/useReferralClaim.ts",
       "domain": "referral",
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/referral/useReferralClaim.ts",
-      "path": "client/src/features/referral/useReferralClaim.ts",
-      "domain": "referral",
+      "id": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "path": "client/src/features/settings/AccountSurfaces.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/ReferralBlock.tsx",
+      "path": "client/src/features/settings/ReferralBlock.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/SettingsModal.tsx",
+      "path": "client/src/features/settings/SettingsModal.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/index.ts",
+      "path": "client/src/features/settings/index.ts",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/parts.tsx",
+      "path": "client/src/features/settings/parts.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/planLadder.ts",
+      "path": "client/src/features/settings/planLadder.ts",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/planMath.ts",
+      "path": "client/src/features/settings/planMath.ts",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "path": "client/src/features/settings/sections/BillingSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/MembersSection.tsx",
+      "path": "client/src/features/settings/sections/MembersSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/NotificationsSection.tsx",
+      "path": "client/src/features/settings/sections/NotificationsSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "path": "client/src/features/settings/sections/ProfileSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "path": "client/src/features/settings/sections/SecuritySection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "path": "client/src/features/settings/sections/UsageSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/settings.css",
+      "path": "client/src/features/settings/settings.css",
+      "domain": "settings",
       "lifecycle": "active"
     },
     {
@@ -10590,6 +10631,14 @@
       "path": "client/src/features/operations/outcomeSlot.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/planMath.test.ts",
+      "path": "client/src/features/settings/planMath.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/section03-guard.test.ts",
+      "path": "client/src/features/settings/section03-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },
@@ -13387,22 +13436,7 @@
     },
     {
       "from": "module:client/src/components/AppChrome.tsx",
-      "to": "module:client/src/components/ProfileSettingsModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/AppChrome.tsx",
       "to": "module:client/src/components/UserCard.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/AppChrome.tsx",
-      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/AppChrome.tsx",
-      "to": "module:client/src/features/billing/index.ts",
       "kind": "imports"
     },
     {
@@ -13422,7 +13456,7 @@
     },
     {
       "from": "module:client/src/components/AppChrome.tsx",
-      "to": "module:client/src/features/referral/ReferralModal.tsx",
+      "to": "module:client/src/features/settings/index.ts",
       "kind": "imports"
     },
     {
@@ -13543,11 +13577,6 @@
     {
       "from": "module:client/src/components/Navigation.tsx",
       "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ProfileSettingsModal.tsx",
-      "to": "module:client/src/features/profile/index.ts",
       "kind": "imports"
     },
     {
@@ -14561,53 +14590,73 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/billing/BillingModal.tsx",
-      "to": "module:client/src/features/billing/DowngradeConfirmModal.tsx",
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:client/src/features/settings/planLadder.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/billing/BillingModal.tsx",
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:client/src/features/settings/planMath.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/billing/BillingModal.tsx",
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/billing/CreditTopupModal.tsx",
-      "to": "module:client/src/components/ui/switch.tsx",
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/settings/planLadder.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/settings/planMath.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/billing/CreditTopupModal.tsx",
-      "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/billing/DowngradeConfirmModal.tsx",
-      "to": "module:client/src/lib/failureSentence.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/billing/DowngradeConfirmModal.tsx",
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/billing/index.ts",
-      "to": "module:client/src/features/billing/BillingModal.tsx",
+      "to": "module:client/src/features/billing/AddCreditsModal.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/billing/index.ts",
-      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "to": "module:client/src/features/billing/ChangePlanModal.tsx",
       "kind": "imports"
     },
     {
@@ -14677,7 +14726,7 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
-      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "to": "module:client/src/features/billing/AddCreditsModal.tsx",
       "kind": "imports"
     },
     {
@@ -17156,73 +17205,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/profile/BillingTab.tsx",
-      "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/profile/index.ts",
-      "to": "module:client/src/features/profile/BillingTab.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/index.ts",
-      "to": "module:client/src/features/profile/NotificationsTab.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/index.ts",
-      "to": "module:client/src/features/profile/ProfileTab.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/index.ts",
-      "to": "module:client/src/features/profile/SecurityTab.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/index.ts",
-      "to": "module:client/src/features/profile/UsageTab.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/ProfileTab.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/ProfileTab.tsx",
-      "to": "module:client/src/lib/failureSentence.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/ProfileTab.tsx",
-      "to": "module:client/src/lib/imageUtils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/ProfileTab.tsx",
-      "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/ProfileTab.tsx",
-      "to": "module:shared/inputLimits.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/SecurityTab.tsx",
-      "to": "module:client/src/lib/failureSentence.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/SecurityTab.tsx",
-      "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/profile/UsageTab.tsx",
-      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
@@ -17246,31 +17230,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/referral/ReferralModal.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/referral/ReferralModal.tsx",
-      "to": "module:client/src/components/ui/input.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/referral/ReferralModal.tsx",
-      "to": "module:client/src/features/referral/RedeemCodeModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/referral/ReferralModal.tsx",
-      "to": "module:client/src/lib/failureSentence.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/referral/ReferralModal.tsx",
-      "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/referral/useReferralClaim.ts",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -17278,6 +17237,226 @@
     {
       "from": "module:client/src/features/referral/useReferralClaim.ts",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/features/settings/SettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/SettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/ReferralBlock.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/ReferralBlock.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/ReferralBlock.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/features/settings/planMath.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/features/settings/ReferralBlock.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/MembersSection.tsx",
+      "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/MembersSection.tsx",
+      "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/MembersSection.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/NotificationsSection.tsx",
+      "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:client/src/foundation/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:client/src/lib/imageUtils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "to": "module:shared/pictureFormats.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/features/settings/sections/MembersSection.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/features/settings/sections/NotificationsSection.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/features/settings/sections/ProfileSection.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/SettingsModal.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -17797,7 +17976,7 @@
     },
     {
       "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
-      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "to": "module:client/src/features/billing/AddCreditsModal.tsx",
       "kind": "imports"
     },
     {
@@ -19082,17 +19261,7 @@
     },
     {
       "from": "module:client/src/pages/DrapeStudio.tsx",
-      "to": "module:client/src/components/ProfileSettingsModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/DrapeStudio.tsx",
-      "to": "module:client/src/features/billing/BillingModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/DrapeStudio.tsx",
-      "to": "module:client/src/features/billing/CreditTopupModal.tsx",
+      "to": "module:client/src/features/billing/AddCreditsModal.tsx",
       "kind": "imports"
     },
     {
@@ -19132,7 +19301,7 @@
     },
     {
       "from": "module:client/src/pages/DrapeStudio.tsx",
-      "to": "module:client/src/features/referral/ReferralModal.tsx",
+      "to": "module:client/src/features/settings/index.ts",
       "kind": "imports"
     },
     {

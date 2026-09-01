@@ -46,15 +46,35 @@ describe("profile visual defaults", () => {
       "client/src/components/UserCard.tsx",
       "client/src/features/studio/components/StudioSlimHeader.tsx",
       "client/src/features/boards/BoardHeader.tsx",
-      "client/src/features/profile/ProfileTab.tsx",
+      /*
+        SECTION 03 (2026-09-01) — `ProfileTab.tsx` is gone with the five modals
+        it belonged to, and the settings surface it covered is now the Profile
+        section of the one Settings modal. Same duty, new address.
+      */
+      "client/src/features/settings/sections/ProfileSection.tsx",
+      "client/src/features/settings/sections/MembersSection.tsx",
     ]) {
       expect(source(file)).toMatch(/ProfileAvatar|ProfileCover/);
     }
 
-    const settings = source("client/src/features/profile/ProfileTab.tsx");
-    expect(settings).toContain("<ProfileCover");
+    const settings = source("client/src/features/settings/sections/ProfileSection.tsx");
     expect(settings).toContain("<ProfileAvatar");
     expect(settings).not.toContain("defaultAvatar");
     expect(settings).not.toContain("defaultBanner");
+
+    /*
+      ⚠ **`<ProfileCover` IS NO LONGER ASSERTED ANYWHERE, AND THAT IS A STATED
+      CONSEQUENCE RATHER THAN A LOOSENED ARM.** The cover was the banner, and
+      section 03 removed the banner upload — the only control that ever SET one,
+      for a picture no surface in the product ever displayed (`AppChrome.tsx`
+      carries the reading). `ProfileCover` itself is untouched in
+      `ProfileVisual.tsx` and its defaults are still proven by the arm above, so
+      the day a surface wants a cover it is there. Asserting a cover on a
+      surface that does not draw one would be asserting a component into
+      existence, which is the opposite of what this suite is for.
+    */
+    expect(source("client/src/features/profile/ProfileVisual.tsx")).toContain(
+      "export function ProfileCover",
+    );
   });
 });

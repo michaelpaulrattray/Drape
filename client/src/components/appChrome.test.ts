@@ -114,32 +114,61 @@ describe("#278 — every in-app page gets the chrome, from one composition", () 
     }
   });
 
-  it("the closed modals do not mount — a Stripe proration read is not page furniture", () => {
+  it("the closed account surfaces fire no query — a Stripe proration read is not page furniture", () => {
     /*
-      Measured before this shipped: `BillingModal` fires `billing.getPlans` and
-      `billing.getStatus` on mount, `CreditTopupModal` adds
-      `getSubscriptionDetails` and `previewPlanChange`, and the last is gated on
+      Measured before #278 shipped: `BillingModal` fired `billing.getPlans` and
+      `billing.getStatus` on mount, `CreditTopupModal` added
+      `getSubscriptionDetails` and `previewPlanChange`, and the last was gated on
       `!isFreeUser` — never on `isOpen`. The query client is `new QueryClient()`
-      with stock defaults, so they refire on every mount.
-      Mounting them unconditionally here would have made #278's fix cost a
-      paying customer a Stripe proration preview on EVERY casting page view.
-      The guard exists because the tempting simplification — copy the lobby's
-      unconditional block — reads as more faithful and is the expensive one.
+      with stock defaults, so they refire on every mount. Mounting them
+      unconditionally here would have cost a paying customer a Stripe proration
+      preview on EVERY casting page view.
+
+      ⚠ **THE GUARD MOVED WITH THE THING IT GUARDS (2026-09-01, section 03).**
+      It used to name four booleans and four modal components in this file; all
+      four modals are gone and the cluster is one mount, `AccountSurfaces`, which
+      owns the state pair the brief asks for. So the arm reads BOTH ends — that
+      `AppChrome` mounts the one component, and that the component itself cannot
+      fetch while closed — which is stricter than the old form: the old one
+      proved a render gate and said nothing about the QUERIES, which is what
+      actually costs money.
     */
-    const text = code(readFileSync(join(CLIENT, "components", "AppChrome.tsx"), "utf8"));
+    const chrome = code(readFileSync(join(CLIENT, "components", "AppChrome.tsx"), "utf8"));
+    expect(chrome, "AppChrome no longer mounts the account cluster").toContain(
+      "<AccountSurfaces",
+    );
+
+    const surfaces = code(
+      readFileSync(join(CLIENT, "features", "settings", "AccountSurfaces.tsx"), "utf8"),
+    );
+
+    /* Every query in the cluster's own body is gated on something being open. */
+    const queries = [...surfaces.matchAll(/\.useQuery\(([\s\S]{0,120}?)\)\s*;/g)];
+    expect(queries.length, "AccountSurfaces fires no query at all — the arm is inert")
+      .toBeGreaterThan(0);
+    for (const [, args] of queries) {
+      expect(args, `a query in AccountSurfaces runs while the cluster is closed: ${args}`)
+        .toContain("enabled: anyOpen");
+    }
+
+    /* And nothing renders — so no child's hooks run — until one is open. */
+    expect(surfaces, "AccountSurfaces renders its children while closed").toContain(
+      "if (!anyOpen) return null;",
+    );
+
     for (const [flag, component] of [
-      ["isBillingOpen", "BillingModal"],
-      ["isTopupOpen", "CreditTopupModal"],
-      ["isReferralOpen", "ReferralModal"],
-      ["showSettings", "ProfileSettingsModal"],
+      ["state.changePlan", "ChangePlanModal"],
+      ["state.addCredits", "AddCreditsModal"],
     ]) {
-      const gate = text.indexOf(`{${flag} ?`);
+      const gate = surfaces.indexOf(`{${flag} ?`);
       expect(gate, `${component}'s open-gate \`{${flag} ?\` is gone`).toBeGreaterThan(-1);
-      /* The component must be the very next thing the gate renders. */
       expect(
-        text.slice(gate, gate + 80),
+        surfaces.slice(gate, gate + 120),
         `${component} must be mounted only while open`,
       ).toContain(`<${component}`);
     }
+    const settingsGate = surfaces.indexOf("{state.settings !== null ?");
+    expect(settingsGate, "the Settings open-gate is gone").toBeGreaterThan(-1);
+    expect(surfaces.slice(settingsGate, settingsGate + 120)).toContain("<SettingsModal");
   });
 });
