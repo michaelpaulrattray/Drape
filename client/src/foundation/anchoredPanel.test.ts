@@ -251,3 +251,142 @@ describe("the four consumers", () => {
     expect(source).toMatch(/const NUDGE_X = -12;/);
   });
 });
+
+/**
+ * THE QUIETER FOCUS MARK — his ruling, Crew reply #73 (2026-09-01): **"The
+ * quieter mark"**, on his own earlier note: *"Listbox shape is correct just
+ * not the accent outline color, check casting studio v2 for how it works,
+ * thats how it should work. also menu shape is correct."*
+ *
+ * The measurement that shaped the answer is worth keeping, because the obvious
+ * fix was the wrong one: there is no second COLOUR in casting V2 to copy
+ * across. `tokens.css` paints ONE accent ring on every focusable thing in the
+ * product, and casting V2's word-picker IS this component. What casting V2 has
+ * is a RULE for this shape — *"the border carries focus — no inner ring on a
+ * row"* — and these arms hold that rule where it could not previously be seen.
+ *
+ * ⚠ **AND WHEN IT WAS DRIVEN, CASTING V2 WAS NOT DOING WHAT ITS OWN COMMENT
+ * SAID.** Three of its rows reset the outline at (0,2,0) — the same weight as
+ * the blanket `.dp-root :focus-visible` — and lost the tie on order, so the
+ * accent ring AND the quiet ring both painted. The rows he pointed at as the
+ * reference had never rendered the thing they describe. Measured two
+ * independent ways before it was believed (computed style with a bare probe as
+ * the negative control; the order of the injected stylesheets), and fixed in
+ * the same commit — which is why the arms below are about SPECIFICITY and not
+ * about colour. A colour arm would have passed on the broken tree.
+ *
+ * ⚠ **The card menu is the exception and it runs the OTHER way.** `CardMenu`
+ * portals its panel to `document.body`, so the blanket rule has never reached
+ * it and the `.dp-root ` prefix the others NEED would make its rule match
+ * nothing — written that way first, it fell back to the browser's default
+ * ring. So the arm holds it BARE, deliberately, and says why.
+ *
+ * ⚠ **STATED LIMIT, not a defect found and hidden.** `outline: none` plus a
+ * `box-shadow` is invisible in forced-colors / high-contrast mode, where an
+ * `outline` would survive. That is true of casting V2's rows as well — this
+ * change makes the foundation match his existing convention, it does not make
+ * that convention better. Widening it is a decision about the whole app's
+ * focus grammar, so it is his, and it is not smuggled in here.
+ */
+describe("a panel row wears the quieter focus mark, not the accent ring", () => {
+  /** `--ink` on a surface, `--onScrim` on a scrim; the 1px and the 52% are the rule. */
+  const CONVENTION =
+    /outline:\s*none;[^}]*box-shadow:\s*0 0 0 1px color-mix\(in srgb, var\(--(?:ink|onScrim)\) 52%, transparent\);/;
+
+  /** Every stylesheet a `.dp-root` descendant can be styled by. */
+  const STYLESHEETS = [
+    "foundation/foundation.css",
+    "foundation/modals.css",
+    "foundation/tokens.css",
+    "features/castingV2/castingV2.css",
+  ];
+
+  /** Comments are stripped: a guard must never read the prose describing the bug. */
+  const css = (relative: string) => read(relative).replace(/\/\*[\s\S]*?\*\//g, "");
+
+  const ruleBody = (text: string, selector: string): string => {
+    const at = text.indexOf(`${selector} {`);
+    return at === -1 ? "" : text.slice(at, text.indexOf("}", at) + 1);
+  };
+
+  /**
+   * DERIVED, and this is the arm that matters. The population is every rule in
+   * the app's stylesheets that RESETS the focus outline — found by reading, not
+   * by listing — so a row written next month is judged the day it lands.
+   */
+  const outlineResets = () => {
+    const found: Array<{ file: string; selector: string }> = [];
+    for (const file of STYLESHEETS) {
+      for (const match of css(file).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        if (!/outline:\s*none/.test(match[2])) continue;
+        for (const selector of match[1].split(",").map((s) => s.trim())) {
+          if (selector.includes(":focus-visible")) found.push({ file, selector });
+        }
+      }
+    }
+    return found;
+  };
+
+  it("reads a real population — the sweep cannot pass by finding nothing", () => {
+    expect(outlineResets().length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("every focus reset inside .dp-root out-specifies the blanket accent ring", () => {
+    /*
+      The blanket is `.dp-root :focus-visible` — one class, one pseudo-class,
+      (0,2,0). A reset that only ties with it wins or loses on stylesheet order,
+      which is not a thing anybody can see while writing CSS: the outline comes
+      from one rule and the box-shadow from the other, and BOTH marks draw.
+
+      `.dpc-cardmenu__` is carved out because its panel is portalled OUT of
+      `.dp-root` — the blanket cannot reach it, and the prefix would break it.
+      The carve-out is proven honest by the arm below rather than trusted.
+    */
+    const weak = outlineResets().filter(({ selector }) => {
+      if (selector.includes(".dpc-cardmenu__")) return false;
+      const classes = (selector.match(/\.[\w-]+/g) ?? []).length;
+      const pseudo = (selector.match(/:(?!:)[\w-]+/g) ?? []).length;
+      const elements = (selector.match(/(?:^|[\s>+~])([a-z][\w-]*)/g) ?? []).length;
+      return classes + pseudo + elements <= 2;
+    });
+    expect(weak.map((w) => `${w.file} → ${w.selector}`), "these tie with the blanket and lose").toEqual([]);
+  });
+
+  it("the portalled menu row stays BARE, because the prefix would match nothing", () => {
+    /*
+      `CardMenu` renders its panel through `createPortal` to `document.body`.
+      Adding `.dp-root ` here is the tempting "consistency" fix and it silently
+      turns the rule off — driven, not reasoned: the row fell back to the
+      browser's own default ring.
+    */
+    expect(code(read(CARD_MENU))).toMatch(/createPortal\(/);
+    const body = ruleBody(css("foundation/modals.css"), ".dpc-cardmenu__item:focus-visible");
+    expect(body, "the bare rule is gone from modals.css").not.toBe("");
+    expect(body.replace(/\s+/g, " ")).toMatch(CONVENTION);
+    expect(css("foundation/modals.css")).not.toMatch(/\.dp-root \.dpc-cardmenu__item:focus-visible/);
+  });
+
+  it("the listbox row and casting V2's own rows all carry the one convention", () => {
+    const rows: Array<[string, string]> = [
+      ["foundation/foundation.css", ".dp-root .dp-pop__option:focus-visible"],
+      ["features/castingV2/castingV2.css", ".dp-root .dpc-kept__row:focus-visible"],
+      ["features/castingV2/castingV2.css", ".dp-root .dpc-face__row:focus-visible"],
+    ];
+    for (const [file, selector] of rows) {
+      const body = ruleBody(css(file), selector);
+      expect(body, `${selector} is gone from ${file}`).not.toBe("");
+      expect(body.replace(/\s+/g, " "), selector).toMatch(CONVENTION);
+    }
+  });
+
+  it("keeps a focus mark in the product — quieter, never absent", () => {
+    /*
+      The negative control on the whole change. "The quieter mark" was one of
+      three answers he was given and the other two both end with no ring at all,
+      so deleting the blanket would look like this change succeeding.
+    */
+    expect(css("foundation/tokens.css")).toMatch(
+      /\.dp-root :focus-visible\s*\{[^}]*outline:\s*2px solid var\(--accentSolid\)/,
+    );
+  });
+});

@@ -1290,7 +1290,48 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 }
 
 .dp-pop__option:hover { background: var(--well); }
-.dp-pop__option:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
+/*
+  THE QUIETER FOCUS MARK ON A PANEL ROW — his ruling, Crew reply #73
+  (2026-09-01): **"The quieter mark"**, answering his own earlier note on the
+  word-picker: *"Listbox shape is correct just not the accent outline color,
+  check casting studio v2 for how it works, thats how it should work."*
+
+  ⚠ There was never a second COLOUR to copy across. `tokens.css`'s
+  `.dp-root :focus-visible` paints the product's single accent ring on every
+  focusable thing, and casting V2's word-picker IS this component
+  (`BriefEcho.tsx` is `Popover`'s only consumer). What differs on his two
+  frames is BEHAVIOUR: the listbox moves focus onto the first option the
+  moment the panel is placed, so the ring draws unasked; the card menu leaves
+  focus on its trigger, so nothing is ringed. Identical styling, different
+  behaviour — which is why one read right to him and the other did not.
+
+  So the fix is casting V2's own convention for this exact shape rather than a
+  new one: `.dpc-kept__row` and `.dpc-face__row` both carry
+  *"the border carries focus — no inner ring on a row"*. The keyboard walk is
+  untouched; only what the cursor LOOKS like on a row changes.
+
+  `--ink` rather than `--onScrim` because this panel is `--surface`, not a
+  scrim; the 52% and the 1px are quoted from those two rules unchanged.
+*/
+/*
+  ⚠ `.dp-root ` IS LOAD-BEARING, and it is the second thing driving the app
+  found. `tokens.css` carries the blanket `.dp-root :focus-visible { outline:
+  2px solid var(--accentSolid) }` at (0,2,0); a bare `.dp-pop__option:focus-
+  visible` is (0,2,0) too, and the blanket wins the tie on order — so the row
+  drew `outline: none` from here, the accent ring from there, and BOTH marks at
+  once. Measured in the running app, not reasoned about.
+
+  ⚠ It also means the `outline-offset: -2px` this rule used to carry never did
+  anything: the ring he photographed was the blanket's, at its own +2px, which
+  is why it read as a box AROUND the row rather than inside it.
+
+  This is the same trap `castingV2.css`'s rename field is already commented
+  for, and it is fixed the same way — selected specifically enough to win.
+*/
+.dp-root .dp-pop__option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 52%, transparent);
+}
 .dp-pop__option--quiet { color: var(--metaStrong); }
 
 .dp-pop__mark {
