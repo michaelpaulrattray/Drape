@@ -1,7 +1,7 @@
 {
-  "edition": 194,
-  "updatedAt": "2026-09-01T13:14:27Z",
-  "shift": "Foreman - shift 2026-09-01 23:35 AEST (foreman-170)",
+  "edition": 195,
+  "updatedAt": "2026-09-01T14:35:30Z",
+  "shift": "Foreman - shift 2026-09-02 01:00 AEST (foreman-171)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,6 +138,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "plan-blurb-404",
+      "issueNumber": 404,
+      "title": "One line per plan, in your words - the only slot on the plan card nobody can fill for you",
+      "productImpact": "Your section-03 brief gives each plan card a one-line positioning statement between the price and the button. It has never had one. What was sitting in that slot was \"About 1,428 casting frames\" - which is not a positioning statement, it is what the credits MAKE, and tonight it moved down into the credits block where your own brief puts it.\n\nSo the slot is now empty, deliberately and invisibly - no gap, no placeholder, nothing looks broken. What is missing is a sentence saying who each rung is FOR.",
+      "workedExample": "It would read like this, and the words would be yours:\n\n    Studio                    3,145 CREDITS PER $1\n    $159 / month\n    Where most studios settle - a full campaign a week.\n    [ Upgrade ]\n    500,000 A MONTH - About 1,428 casting frames.\n\nThe reason a shift did not just write twelve of them: that is inventing claims about your product in your voice, which is the one thing the copy rules forbid. And you have already ruled (#391) that twelve rungs fold to seven - so eleven lines written tonight would mean five thrown away and the rest re-cut.",
+      "options": [
+        {
+          "key": "a",
+          "label": "Drop the slot from the design",
+          "consequence": "The cards are already legible - price, value figure, credits and what they make do the work. One less thing to write."
+        },
+        {
+          "key": "b",
+          "label": "Write twelve now",
+          "consequence": "Cheapest to build, most likely to be redone: five of the twelve disappear when the ladder folds."
+        },
+        {
+          "key": "c",
+          "label": "Write seven, after the ladder folds",
+          "consequence": "One small piece of work, copy written once, in your voice. Nothing is blocked while it waits - the empty slot is invisible."
+        }
+      ],
+      "recommendation": "(c) - write it after #391 lands, for the seven rungs that survive. Nothing is waiting on this and the slot's absence cannot be seen, so it can sit as long as you like.",
+      "state": "open",
+      "filedAt": "2026-09-02"
+    },
     {
       "id": "tool-column-401",
       "issueNumber": 401,
@@ -1250,6 +1277,41 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "change-plan-390-frames",
+      "title": "Change plan, before and after - the annual toggle used to look like a tenfold price rise",
+      "question": "WHAT YOU ARE LOOKING AT. Five frames. Two of them are the live studio today; three are tonight's build.\n\nSTART WITH THE ANNUAL PAIR. On the live studio, switching to Annual turns \"$159 / month\" into \"$1,584 / year\" - beside a badge promising 2 MONTHS FREE. Both numbers are correct and the pair is unreadable: the price appears to multiply by ten at the moment we claim to be saving you money, and there is nothing on screen you could divide to check it. On the new one it reads \"$132 / month\" with \"billed yearly\" beneath. Same charge, said in the unit everything else on the card uses.\n\nTHEN THE CARD ITSELF. The Upgrade button has moved up, between the price and the credits - it used to be last, under four lines of detail, furthest from the number it is answering. The tick reading \"Every model and every tool\" is gone from all three cards and appears once underneath: a fact true of every plan cannot help you choose between them, so it was taking up space three times over. And the little grey figure by the plan name is the other way up - \"3,145 CREDITS PER $1\", which climbs as you go up the ladder, instead of \"0.036¢ a credit\", where our twelve plans only differ in the third decimal.\n\nTHE COMPARE PAIR. Same table, and two things changed: the price row keeps its label - it says \"Price a month\" whichever toggle you are on, because a comparison whose unit moves under you is not a comparison - and the value row is inverted like the cards.\n\nWHAT TO JUDGE: whether the annual price reads honestly, whether the button in the middle is better than the button at the bottom, and whether \"3,145 CREDITS PER $1\" is clearer than \"0.036¢ A CREDIT\". Nothing here changes what you are charged, which plans exist, or what any of them cost.",
+      "frames": [
+        {
+          "key": "crew-eye/eb3010a7-c4d2-4090-bcaa-9bb8fb264b7c.png",
+          "caption": "BEFORE - annual on the live studio: \"$1,584 / year\" beside a 2 MONTHS FREE badge, the button last, the same tick on all three cards.",
+          "arm": "before"
+        },
+        {
+          "key": "crew-eye/2f05758e-ade1-4019-b4cf-691cc31e27a7.png",
+          "caption": "AFTER - annual on tonight's build: \"$132 / month\" with \"billed yearly\", the Upgrade button between price and credits, one footnote instead of three ticks.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/eb5432f1-3f3a-49d4-a995-5e395673d6be.png",
+          "caption": "AFTER - the monthly view, for the shape of the card: name and value figure, price, action, then what the credits are and what they make.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/be1c2c8d-cecb-4d03-bd15-4604f30b6043.png",
+          "caption": "BEFORE - compare mode on annual: the row label flips to \"Price a year\" and the totals jump, so the columns stop being comparable to the cards.",
+          "arm": "before"
+        },
+        {
+          "key": "crew-eye/436b3278-3147-4ff1-8ea0-d3c40de66e06.png",
+          "caption": "AFTER - compare mode on annual: \"Price a month\" stays put, \"Credits per dollar\" climbs left to right, and the footer button reads \"$311 / mo\" rather than a year's total.",
+          "arm": "after"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-02",
+      "issueNumber": 390
+    },
     {
       "id": "settings-corrections-387-frames",
       "title": "Your Usage pane, before and after — and the reason it said zero is not the reason anyone expected",
@@ -2490,6 +2552,20 @@
   ],
   "pipeline": [
     {
+      "id": "change-plan-form-390",
+      "title": "Your six Change plan corrections are live - and none of the mockup's prices went anywhere near the product (card 390)",
+      "status": "merged",
+      "prNumber": 402,
+      "note": "All six built. The one worth two minutes is the annual toggle: it used to swap \"$159 / month\" for \"$1,584 / year\" while a badge beside it claimed 2 MONTHS FREE. A customer reads that as a tenfold price rise, and nothing on screen let them check the saving. It now reads \"$132 / month\" with \"billed yearly\" under it - same charge, said in the unit the rest of the view uses. The year's total belongs at the checkout step, where it is what actually gets taken.\n\nAlso: the Upgrade button moved up between the price and the credits, so the decision is not sitting behind four lines of detail; the tick that said \"Every model and every tool\" on all three cards is now one line underneath, because a fact that is true of every plan helps nobody choose; and the value figure was flipped the right way up - \"3,145 CREDITS PER $1\" going UP the ladder, instead of \"0.036¢ a credit\" where twelve rungs separate in the third decimal.\n\nThe thing your card was most worried about: your prototype draws five plans called Starter, Pro, Studio, Agency and Network at $149/$349/$749. Agency and Network do not exist, and the credit figures are about 83 times out. Nothing from the mockup entered the product - two tests now hold it, and the stronger one bans ANY plan name as typed text, ours included, so the whole ladder has to keep coming from the real table."
+    },
+    {
+      "id": "citation-390b",
+      "title": "A one-word correction to my own comment from an hour earlier",
+      "status": "in-review",
+      "prNumber": 405,
+      "note": "The comment I shipped with the fix above named the wrong test file. It is one word and no behaviour, and it is being taken back rather than left, because the very same shift had just corrected a comment in the file next door that had cited a test that has never existed. Writing a second one an hour later is not something to leave lying."
+    },
+    {
       "id": "settings-corrections-387",
       "title": "Your four Settings corrections are built - and the credits-used zero was a true number over the wrong window (card 387)",
       "status": "merged",
@@ -3553,6 +3629,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-171",
+      "title": "The queue tonight: 109 open, and the rotting number nearly doubled for a reason worth knowing",
+      "detail": "109 cards open, 5 urgent, NINE of them yours. Three of tonight's are new: #403 and #404 came out of the Change plan work, and #405 is the one-word comment fix.\n\nRotting - open a week and never re-read - is 27, against 14 last night. That looks alarming and is not: nothing was neglected today. The seven-day line simply moved past 25 August, which is the day the whole Lost-and-Found catalogue was filed in one go. Twelve of the 27 are that batch (#55 through #70), all filed the same afternoon, all crossing the line together. It will keep climbing for a few nights on the same arithmetic unless somebody re-reads them.\n\nAll four patrol clocks are still overdue and the Janitor is still worst - that is the fourth night running it has been named and lost to your queue, which now has nine orders in it. The question from last night stands and nobody can answer it but you: would you rather one night went on housekeeping instead of your cards?",
+      "severity": "info",
+      "state": "open"
+    },
+    {
       "id": "billing-491-percent-387",
       "title": "Your Billing pane has been telling you \"491% of this month's allowance left\" - found by sweeping for the fault you reported",
       "detail": "You reported one wrong number. The rule here is that a bug found once is a pattern until proven otherwise, so I went looking for the same mistake elsewhere - a figure measured against a monthly cycle the product does not actually run.\n\nIt was on the Billing pane twice, and the second one is worse than the one you reported. The little bar under CREDITS REMAINING is capped at full, but the sentence beside it is not - so with 24,535 credits against a nominal 5,000 \"allowance\", your own Billing pane reads \"491% of this month's allowance left\". The plan card had the same shape: \"5,000 credits/mo\" for credits you are given once.\n\nBoth are gone. Where you have a real subscription with a real renewal date, both lines come back and are true. Nothing changed for a paying account.",
@@ -3798,16 +3881,11 @@
     81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T13:14:38.873Z",
+    "readAt": "2026-09-01T14:35:39.149Z",
     "items": [
       {
         "issueNumber": 231,
         "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
-        "urgent": true
-      },
-      {
-        "issueNumber": 390,
-        "title": "Change plan / Compare plans: six form corrections — and the prototype's five-plan ladder is not the product's twelve",
         "urgent": true
       },
       {
