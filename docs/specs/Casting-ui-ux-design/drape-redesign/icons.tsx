@@ -122,16 +122,33 @@ export const P = {
    * Settings — the rail's foot, and anywhere else a gear is meant.
    *
    * Two horizontal rails with an offset handle on each: it says *adjust these*
-   * without saying *cog*. Lucide's `Settings` is eight teeth plus an inner
-   * circle, which mushes into a blurred ring at 16px beside glyphs that are
-   * three or four strokes — and it is the most over-used icon on the internet,
-   * the same objection as `Sparkles` for Create.
+   * without saying *cog*. `settings` is UNUSED since #373 moved the rail's
+   * foot to `cog`; it stays because his rule is "don't use both", not "delete
+   * the other one".
    *
-   * `cog` below is the fallback if a cogwheel is genuinely wanted: four teeth
-   * rather than eight, drawn at this set's density so it survives 16px.
+   * ⚠ **`cog` WAS THE `sun` GLYPH UNDER ANOTHER NAME UNTIL #382, and the
+   * sentence that used to sit here described teeth that were never drawn.**
+   * It read *"four teeth rather than eight, drawn at this set's density"*; the
+   * path was one circle plus EIGHT straight strokes at exactly 45° intervals —
+   * measurably the same construction as `sun` two keys above, which the
+   * topbar draws as the light-theme toggle. So the rail's foot and the theme
+   * button were one picture. His eye caught it the day it shipped, reply #78,
+   * verbatim: *"the cog is incorrect its a star or sun it should be a cog like
+   * in the top bar profile drop down menu."*
+   *
+   * **So `cog` is now the gear that dropdown actually draws** — lucide-react's
+   * `Settings` (ISC), path copied rather than redrawn, because he pointed at a
+   * mark on his screen and a hand-drawn near-miss is a third gear. Its
+   * `<circle>` is written as this set's arc pair since `Icon` splits on M and
+   * renders nothing else. Two subpaths, one of them long.
+   *
+   * ⚠ The objection this docblock used to make against that glyph — *"mushes
+   * into a blurred ring at 16px"* — is kept rather than deleted, and it is
+   * ANSWERED by his own eye: `UserCard.tsx` renders it at 16px in the profile
+   * menu, and that is the render he called correct.
    */
   settings: 'M3.5 9h10M17 9h3.5M15.2 9a1.8 1.8 0 1 0-3.6 0 1.8 1.8 0 0 0 3.6 0M3.5 15h3.5M10.5 15h10M8.8 15a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 0 0-3.6 0',
-  cog:      'M12 9.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2M12 3.5v2.6M12 17.9v2.6M20.5 12h-2.6M6.1 12H3.5M18 6l-1.8 1.8M7.8 16.2 6 18M18 18l-1.8-1.8M7.8 7.8 6 6',
+  cog:      'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6',
 
   /* settings sections */
   grid:     'M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z',

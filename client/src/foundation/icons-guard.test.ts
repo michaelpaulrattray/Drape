@@ -236,38 +236,127 @@ describe("one gear, not two", () => {
   });
 
   /**
-   * ⚠ **THE `cog` DOCBLOCK IN `icons.tsx` SAYS "four teeth rather than eight"
-   * AND THAT IS FALSE OF THE PATH ONE LINE BELOW IT — recorded HERE because
-   * it may not be fixed THERE.** `P` in `icons.tsx` is a byte-for-byte mirror
-   * of his handoff (the arms above enforce it), so his sentence in his file is
-   * not a shift's to rewrite; correcting our copy would break the mirror,
-   * which is a worse defect than a wrong comment.
+   * ⚠ **THE ARM THAT USED TO STAND HERE PINNED A SUN IN PLACE AND CALLED IT A
+   * GEAR** — the specimen is worth more than the fix. It asserted *"the cog has
+   * eight spokes and one centre, whatever the comment says"*, having measured
+   * the subpaths, confirmed 9 paths in the rendered DOM, and reasoned in its own
+   * docblock about why *"eight separate hairlines off a 2.6r circle"* survives
+   * 16px where Lucide's gear would not. **Every one of those readings was
+   * correct. Not one of them asked whether the thing was a cog.** A circle with
+   * eight straight strokes at 45° intervals is an asterisk, and the topbar draws
+   * that same construction one key away as `sun`, the light-theme toggle — so
+   * the rail's foot and the theme button were one picture at 16px. Frames went
+   * to his gallery with the change and it was his eye that read them, reply #78:
+   * *"the cog is incorrect its a star or sun it should be a cog like in the top
+   * bar profile drop down menu."* **Law 9, exactly: the measurement was sound
+   * and the question was wrong.**
    *
-   * Counted at the bytes and confirmed at the DOM (**9 paths** in the rendered
-   * button): the centre circle plus **EIGHT** spokes — four on the axes, four
-   * on the diagonals. This arm is that count, so the claim cannot rot further
-   * without something going red.
-   *
-   * **Why it is worth saying out loud rather than shrugging off:** his stated
-   * objection to Lucide's gear was, verbatim, *"eight teeth plus an inner
-   * circle, which mushes into a blurred ring at 16px"* — and the glyph that
-   * now fills that slot is eight teeth plus an inner circle. It survives 16px
-   * for a DIFFERENT reason than the comment gives: Lucide draws a filled gear
-   * outline whose teeth close into a ring, this draws eight separate hairlines
-   * off a 2.6r circle. That is a claim about a RENDER, so it is his eye that
-   * settles it — the 8x magnified before/after is filed at
-   * `output/373-frames/strip-{dark,light}.png` and went to his gallery with
-   * the change, rather than being asserted here.
+   * So the arms below assert the DRAWING, not a count. `radialStrokes` is the
+   * shape the old glyph was, and both arms below use it — the cog must not be
+   * one, and no two glyphs in the set may be the same one.
    */
-  it("the cog has eight spokes and one centre, whatever the comment says", () => {
-    const spokes = P.cog.split("M").filter(Boolean);
-    expect(spokes).toHaveLength(9);
-    /* The centre is the only arc; the other eight are straight strokes. */
-    expect(spokes.filter((s) => s.includes("a")), "one centre circle").toHaveLength(1);
+
+  /**
+   * One subpath's construction: whether it curves, and — if it is a single
+   * straight stroke — the angle its midpoint sits at around the 24-box centre.
+   * A ring of these at even intervals is a burst, whatever the key is called.
+   */
+  const subpathShape = (sub: string): { curved: boolean; angle?: number } => {
+    const head = sub.match(/^\s*(-?[\d.]+)[\s,]+(-?[\d.]+)/);
+    if (!head) return { curved: false };
+    const x0 = parseFloat(head[1]);
+    const y0 = parseFloat(head[2]);
+    const rest = sub.slice(head[0].length).trim();
+    if (/^[acsqACSQ]/.test(rest)) return { curved: true };
+    /* Numbers may be delimited by a sign alone ("-1.2-1.2"), which a split on
+       whitespace reads as ONE number and a silent NaN — the fault that made
+       this measurement report seven strokes instead of eight the first time. */
+    const nums = (s: string) => (s.match(/-?\d*\.?\d+/g) ?? []).map(Number);
+    let x1 = x0;
+    let y1 = y0;
+    if (/^v/.test(rest)) y1 = y0 + nums(rest)[0];
+    else if (/^V/.test(rest)) y1 = nums(rest)[0];
+    else if (/^h/.test(rest)) x1 = x0 + nums(rest)[0];
+    else if (/^H/.test(rest)) x1 = nums(rest)[0];
+    else if (/^l/.test(rest)) { const [dx, dy] = nums(rest); x1 = x0 + dx; y1 = y0 + dy; }
+    else if (/^-?[\d.]/.test(rest)) { const [ax, ay] = nums(rest); x1 = ax; y1 = ay; }
+    else return { curved: false };
+    const angle = Math.round(
+      ((Math.atan2(12 - (y0 + y1) / 2, (x0 + x1) / 2 - 12) * 180) / Math.PI + 360) % 360,
+    );
+    return { curved: false, angle };
+  };
+
+  /** How many straight strokes radiate from the centre at even intervals. */
+  const radialStrokes = (d: string): number => {
+    const angles = d
+      .split("M")
+      .filter(Boolean)
+      .map(subpathShape)
+      .filter((s) => !s.curved && s.angle !== undefined)
+      .map((s) => s.angle!)
+      .sort((a, b) => a - b);
+    if (angles.length < 4) return 0;
+    const gaps = angles.slice(1).map((a, i) => a - angles[i]);
+    const even = gaps.every((g) => Math.abs(g - gaps[0]) <= 2);
+    return even ? angles.length : 0;
+  };
+
+  /** The glyph as it stood from the set's first day to #382. Kept as the
+   *  positive control: the arm below must REJECT it, or it proves nothing. */
+  const THE_SUN_THAT_WAS_CALLED_A_COG =
+    "M12 9.4a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2M12 3.5v2.6M12 17.9v2.6" +
+    "M20.5 12h-2.6M6.1 12H3.5M18 6l-1.8 1.8M7.8 16.2 6 18M18 18l-1.8-1.8M7.8 7.8 6 6";
+
+  it("the cog is a toothed rim, not a ring of hairlines", () => {
+    expect(radialStrokes(P.cog), "the cog must not be a radial burst").toBe(0);
+    const subs = P.cog.split("M").filter(Boolean);
+    expect(subs, "an outline and a centre").toHaveLength(2);
+    expect(subs.every((s) => s.includes("a")), "both subpaths curve").toBe(true);
+    /* Teeth: the outline turns a corner per tooth face, so the arc count is
+       the thing that distinguishes a gear from a plain ring. */
+    expect((subs[0].match(/a/g) ?? []).length, "a gear has teeth").toBeGreaterThan(15);
+  });
+
+  it("the measurement would have caught the old glyph — positive control", () => {
+    expect(radialStrokes(THE_SUN_THAT_WAS_CALLED_A_COG)).toBe(8);
+    expect(radialStrokes(P.sun), "the topbar's sun is the same construction").toBe(8);
     expect(
-      "M1 1v2M2 2v2".split("M").filter(Boolean),
-      "positive control — the splitter must count subpaths, not characters",
-    ).toHaveLength(2);
+      THE_SUN_THAT_WAS_CALLED_A_COG.split("M").filter(Boolean),
+      "and it was nine subpaths, which is what the old arm asserted and passed on",
+    ).toHaveLength(9);
+  });
+
+  /**
+   * ⚠ **THE SET'S OWN STATED PURPOSE, AS AN ARM.** `icons.tsx` says it of the
+   * clapperboard: *"two destinations wearing one glyph is the confusion the set
+   * exists to avoid."* Nothing checked it. The sweep that found #382's defect
+   * found a second pair on its first run — `campaign` and `tryon` are the same
+   * path string, byte for byte — so this arm ships with that pair named as its
+   * one KNOWN exception rather than silently tolerated. **Closing #383 deletes
+   * the exception; adding a third duplicate reddens this.**
+   */
+  it("no two glyphs are the same drawing, except the one pair on the record", () => {
+    const byPath = new Map<string, string[]>();
+    for (const [name, d] of Object.entries(P)) {
+      byPath.set(d, [...(byPath.get(d) ?? []), name]);
+    }
+    const duplicates = [...byPath.values()]
+      .filter((names) => names.length > 1)
+      .map((names) => names.sort().join("+"))
+      .sort();
+    /* The issue number lives in the docblock above, not in this message: the
+       token guard reads a `#` followed by three or six hex digits as a colour
+       literal, and every issue from 100 up qualifies. It strips comments. */
+    expect(duplicates, "a new duplicate glyph — or the known pair was fixed and this list should shrink")
+      .toEqual(["campaign+tryon"]);
+  });
+
+  it("the duplicate sweep would see a new pair — positive control", () => {
+    const fake = { a: "M1 1v2", b: "M1 1v2", c: "M3 3h4" };
+    const byPath = new Map<string, string[]>();
+    for (const [name, d] of Object.entries(fake)) byPath.set(d, [...(byPath.get(d) ?? []), name]);
+    expect([...byPath.values()].filter((n) => n.length > 1).map((n) => n.join("+"))).toEqual(["a+b"]);
   });
 
   /**

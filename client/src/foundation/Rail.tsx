@@ -78,6 +78,16 @@ import { Icon, P } from "./icons";
  * is a one-key swap into a glyph that already existed: no new path, no new
  * drawing. `P.settings` is now the unused fallback, and `icons-guard.test.ts`
  * asserts the swap in BOTH directions rather than losing an arm to it.
+ *
+ * ⚠ **AND THE GLYPH THAT "ALREADY EXISTED" WAS A SUN — #382, his reply #78
+ * the next morning: *"the cog is incorrect its a star or sun it should be a
+ * cog like in the top bar profile drop down menu."*** Measured after he said
+ * it: `P.cog` was one circle plus eight straight strokes at 45° intervals,
+ * the same construction as `P.sun`, which the topbar draws as the theme
+ * toggle — so this foot and that button were one picture at 16px. The
+ * sentence above is kept because it is the honest record of what #373 knew:
+ * *no new drawing* was true and was the reason nobody looked. `P.cog` is now
+ * lucide's `Settings`, the gear the profile menu already draws.
  * `Plus` stays, because the Invite `+` is incidental and redrawing a good
  * general set where nobody looks is effort spent in the wrong place.
  *
