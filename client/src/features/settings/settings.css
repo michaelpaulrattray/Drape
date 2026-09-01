@@ -432,32 +432,11 @@
 
 /* §6b — the segmented interval control */
 .dp-plan__intervals { display: flex; align-items: center; gap: var(--s-5); margin-bottom: var(--s-7); }
-.dp-plan__segments {
-  display: inline-flex;
-  padding: 3px;
-  border-radius: var(--r-sm);
-  background: var(--fillStrong);
-  gap: 2px;
-}
-.dp-plan__segment {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding: 5px var(--s-5);
-  border: 0;
-  border-radius: var(--r-chip);
-  background: transparent;
-  color: var(--metaStrong);
-  font: 400 11.5px/1.2 var(--font-sans);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.dp-plan__segment[aria-pressed="true"] {
-  background: var(--surface);
-  color: var(--ink);
-  font-weight: 500;
-  box-shadow: 0 1px 2px rgba(17, 17, 18, .08);
-}
+/* ⚠ THERE IS NO `.dp-plan__segments` HERE, AND THAT IS THE POINT.
+   The interval control uses `.dp-segmented` from `foundation.css`, which
+   already existed with a real consumer — the promotion pass's rule 6.
+   The only thing this section needed that the foundation lacked is the
+   ability for a segment to carry a child, folded into the rule there. */
 
 /* Filled accent, never grey and never green — §6b. Grey mono at
    label weight reads as disabled, which fights the thing it sells;

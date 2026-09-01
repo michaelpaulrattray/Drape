@@ -257,10 +257,26 @@ export function ChangePlanModal({
 
         {/* §6b — the interval control */}
         <div className="dp-plan__intervals">
-          <span className="dp-plan__segments" role="group" aria-label="Billing interval">
+          {/*
+            ⚠ **THIS IS THE FOUNDATION'S SEGMENTED CONTROL, NOT A SECOND ONE.**
+            The promotion pass found the collision: `.dp-segmented` already
+            existed in `foundation.css` with a real consumer (`SurfaceBar`), and
+            the first draft of this modal declared a near-identical
+            `.dp-plan__segments` beside it. Its rule 6 settles which survives —
+            *"the one with real customers wins, not the newer one, not the
+            tidier one"* — so the classes here are the foundation's and the
+            duplicate block is deleted. The one thing folded IN is that a
+            segment may now carry a child (the badge), which the sheet's own
+            segments do not use and are unaffected by.
+
+            It is NOT wrapped in `SurfaceBar`: that component is a whole page
+            header — eyebrow, title, meta, right slot — and this is one control
+            inside a modal. Rule: move the part, not the page it came from.
+          */}
+          <span className="dp-segmented" role="group" aria-label="Billing interval">
             <button
               type="button"
-              className="dp-plan__segment"
+              className={`dp-segmented__seg${interval === "monthly" ? " dp-segmented__seg--on" : ""}`}
               aria-pressed={interval === "monthly"}
               onClick={() => setInterval("monthly")}
             >
@@ -268,7 +284,7 @@ export function ChangePlanModal({
             </button>
             <button
               type="button"
-              className="dp-plan__segment"
+              className={`dp-segmented__seg${interval === "annual" ? " dp-segmented__seg--on" : ""}`}
               aria-pressed={interval === "annual"}
               onClick={() => setInterval("annual")}
             >
