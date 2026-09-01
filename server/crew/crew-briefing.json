@@ -1,7 +1,7 @@
 {
-  "edition": 180,
-  "updatedAt": "2026-08-31T22:20:00Z",
-  "shift": "foreman-160",
+  "edition": 181,
+  "updatedAt": "2026-09-01T00:35:00Z",
+  "shift": "foreman-161",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,6 +111,11 @@
     ],
     "chips": [
       {
+        "label": "Two addresses a stranger could type are closed — nothing deleted",
+        "tone": "good",
+        "source": "#261 (PR #363, 127ae609) and #364 (PR #367, 60d16c55), both yours, both merged tonight. 12 driven readings, 10 sabotages. Suite 10,792 passed, 0 failed."
+      },
+      {
         "label": "Home, Library and Canvas are cleared for their redesign",
         "tone": "good",
         "source": "#302 closed, PR #352 merged bde12831. Measured first: the wardrobe is empty on EVERY account and you hold no boards, so the stubs strand nothing. Nothing deleted, client or server."
@@ -126,23 +131,45 @@
         "source": "#324 closed, PR #337 merged 4a0fcbfe. 15 cards carried `bug` when measured and four were yours already ordered (one was #324 itself). Now: Bugs (11, 3 already queued)."
       },
       {
-        "label": "The queue: 98 open · 8 urgent · 6 you ordered · nothing rotting YET",
+        "label": "The queue: 101 open · 8 urgent · 7 you ordered · nothing rotting yet",
         "tone": "neutral",
-        "source": "Counted tonight, not carried: 98 open, 8 urgent, 6 you ordered, 1 blocked on you, 0 past the week line. But 25 cross it within 24 hours, all last read 25 Aug. Your master switch is OFF."
+        "source": "Counted tonight, not carried. 0 past the week line — but 29 cross it TODAY, all last read 25 Aug, and that is the number to watch. Two closed tonight were yours."
       },
       {
         "label": "The top bar and rail are now identical on every page, from one place",
         "tone": "good",
         "source": "PR #305 merged 09e6d994; driven at the running app — 5 surfaces x 2 themes, 85/85 checks, plus a click test on /casting (credits->billing, gear->Settings, account->menu)"
-      },
-      {
-        "label": "Every N1 slice is built and live on your account — the gate is your eye",
-        "tone": "good",
-        "source": "PRs #132, #136, #137, #138, #141, #150, #153, #156 all MERGED (gh, read 27 Aug 08:20); CASTING_CREATIVE_REGISTER_SCOPE=users:1 on production (rite 08:15)"
       }
     ]
   },
   "needsYou": [
+    {
+      "id": "listbox-focus-mark-304",
+      "title": "The red box on the word-picker: it is the whole product’s focus colour, so the fix is a choice rather than a repair",
+      "productImpact": "You looked at the two panels and said the shapes are right but the accent outline colour on the word-picker is not, and to check how casting studio V2 does it. Read at the code before touching anything: casting studio V2 does it IDENTICALLY — the word-picker in the casting sentence is literally the same piece of code as the one in the frame you judged, and the red ring is the product’s single focus colour, written once and used on every focusable thing in the app. So there is no second colour to copy across.",
+      "workedExample": "What actually differs between your two frames is behaviour, not colour. The word-picker puts the cursor on the first option the moment it opens — that is the keyboard fix from this same card, so your first arrow-key press does something — and the red ring is simply what the cursor looks like. The card menu leaves the cursor on the button, so nothing is ringed and it reads clean. Identical styling, different behaviour, and that is why one looked right to you and the other did not.",
+      "options": [
+        {
+          "key": "quiet-mark",
+          "label": "A quieter focus mark on a panel row — RECOMMENDED",
+          "consequence": "Casting V2 already has a rule for exactly this shape on its kept rows: the border carries focus, no ring inside a row. Applying it here keeps the keyboard working, changes one line, and uses a convention you already have rather than inventing one."
+        },
+        {
+          "key": "no-autofocus",
+          "label": "Stop putting the cursor on the first option",
+          "consequence": "The ring disappears entirely on open. The cost is that your first arrow-key press stops doing anything, which is the thing this card added it for."
+        },
+        {
+          "key": "leave-it",
+          "label": "Leave it",
+          "consequence": "Nothing changes. The ring is honest — it is showing you where the keyboard is — it just arrives without being asked for."
+        }
+      ],
+      "recommendation": "The quieter mark. It is your own existing casting-V2 convention, it costs one line, and it keeps the keyboard behaviour you asked for. One sentence settles it and a shift builds it the same night.",
+      "state": "open",
+      "filedAt": "2026-09-01T10:35:00+10:00",
+      "issueNumber": 304
+    },
     {
       "id": "auto-migrations-322",
       "issueNumber": 322,
@@ -1144,7 +1171,7 @@
       "id": "popover-collapse-304-frames",
       "title": "The two shapes, one behaviour — the word-picker in dark, the card menu in light",
       "question": "Nothing here needs judging against a number — it needs your eye on whether the panels still look right. One thing DID move and I want to be straight about it: the word-picker in the casting sentence now sits 3.44px lower. It used to be positioned against an invisible box around the word rather than the word itself, so its “9px gap” was really 9px minus whatever the typeface added on that line; it is 9px from the word now, at any type size. That is smaller than an eye can judge without a ruler, and there is no before-picture to compare against because the panel's old position was only ever a measurement — so the question is simply: does it look right where it sits?",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-01T02:05:00+10:00",
       "issueNumber": 304,
       "cardId": null,
@@ -2163,6 +2190,20 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "specimen-page-261",
+      "title": "The component sheet has left the customer’s part of the product (#261)",
+      "status": "merged",
+      "prNumber": 363,
+      "note": "You asked where it lives and said it should be admin. It does now: /admin/foundation, behind the admin role, and the old /casting/foundation is GONE rather than hidden — it answers 404 even for you, which is what you ruled (\"An admin gate on a customer route leaves the wrong thing in the wrong place\"). It was a house page of invented prices and a made-up transcript of a night shift, sitting at a public address inside the part of the product a customer pays for. The sweep you asked for in the same card ran: every page in the product was read for whether it checks who you are, and that page was the only house one checking nothing. The sweep is a permanent check now rather than something somebody remembered to do — it reads the page folder itself, so a NEW page that checks nothing fails the build instead of waiting to be found by eye."
+    },
+    {
+      "id": "seal-legacy-studio-364",
+      "title": "The old studio is behind your door now — type its address and it is simply not there (#364)",
+      "status": "merged",
+      "prNumber": 367,
+      "note": "Your order, built the same night you gave it. Typing /studio?tool=casting or ?tool=wardrobe now answers the way a made-up address answers — driven against a genuinely made-up address in the same run, so it is the same answer rather than a similar one. No page anywhere says \"access denied\", because that tells a stranger there is something there. Your own account is untouched: both the legacy casting studio and the wardrobe open exactly as before, photographed. NOTHING IS DELETED — not the route, not a component, not one server endpoint, and there is a check that the route STAYS registered so nobody later mistakes a closed door for permission to remove things. Who this takes something from, counted rather than described: three approved accounts besides you, none of whom loses the ability to cast (V2 is open to everyone) and none of whom could find the old studio anyway, because the surfaces that linked to it were unmounted last week."
+    },
     {
       "id": "auto-migrations-322",
       "title": "Migrations put themselves in — the deletions still stop and ask you (#322)",
@@ -3340,10 +3381,11 @@
     68,
     69,
     70,
-    71
+    71,
+    72
   ],
   "nextUp": {
-    "readAt": "2026-08-31T22:15:52.811Z",
+    "readAt": "2026-09-01T00:18:53.893Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3360,6 +3402,11 @@
         "urgent": true
       },
       {
+        "issueNumber": 365,
+        "title": "SECTION 03 — Settings, plans, credits and referrals: five modals become three, and the unbuilt parts are stubbed not excluded",
+        "urgent": true
+      },
+      {
         "issueNumber": 285,
         "title": "The switch panel shows a count — show the card titles under it too",
         "urgent": false
@@ -3372,6 +3419,11 @@
       {
         "issueNumber": 325,
         "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
+        "urgent": false
+      },
+      {
+        "issueNumber": 366,
+        "title": "The promotion pass must be un-skippable: put it on the section card, because the file that wires it cannot be tested",
         "urgent": false
       }
     ]
