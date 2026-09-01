@@ -106,6 +106,7 @@ export type {
   MediaCardState,
   MediaRatio,
   Milestone,
+  SurfaceBarSegment,
   TranscriptEntry,
 } from "./primitives";
 

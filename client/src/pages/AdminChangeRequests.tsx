@@ -30,7 +30,7 @@ import {
 import { ChangeRequestList } from "@/features/admin/ChangeRequestList";
 import { ChangeRequestDetail } from "@/features/admin/ChangeRequestDetail";
 import { ReviewModal } from "@/features/admin/ReviewModal";
-import { AdminHeader } from "@/features/admin/AdminHeader";
+import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 
 export default function AdminChangeRequests() {
   const { user, loading: authLoading } = useAuth();
@@ -118,11 +118,7 @@ export default function AdminChangeRequests() {
   // ─── Guards ──────────────────────────────────────────────────────────────
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#999]" />
-      </div>
-    );
+    return <StaffLoading />;
   }
 
   if (!user) return <Redirect to="/login" />;
@@ -153,23 +149,21 @@ export default function AdminChangeRequests() {
   // ─── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      <AdminHeader
-        title="Change Requests"
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => listQuery.refetch()}
-            className="border-[#D5D5D5] text-[#999] text-xs"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${listQuery.isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        }
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <StaffSurface
+      breadcrumb="Admin / Change requests"
+      /* The page keeps no `lastRefresh` and no auto-refresh preference, so it
+         gets the manual button alone. Inventing the other two would be state
+         no reader produces (brief 05 §4). */
+      bar={
+        <StaffBarAdmin
+          refreshControls={{
+            onRefresh: () => listQuery.refetch(),
+            isRefetching: listQuery.isFetching,
+          }}
+        />
+      }
+    >
+      <main className="space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
@@ -296,6 +290,6 @@ export default function AdminChangeRequests() {
         selectedRequestId={selectedRequestId}
         selectedRequestType={selectedRequest?.type}
       />
-    </div>
+    </StaffSurface>
   );
 }

@@ -38,7 +38,7 @@ import { Loader2, Inbox, ExternalLink } from "lucide-react";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { AdminHeader } from "@/features/admin/AdminHeader";
+import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 import { Button } from "@/components/ui/button";
 
 /* ─── vocabulary ───
@@ -129,17 +129,13 @@ export default function AdminBugReports() {
 
   /* ─── auth guards, the shape every other admin page uses ─── */
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
-      </div>
-    );
+    return <StaffLoading />;
   }
   if (!isAuthenticated) return <Redirect to="/login" />;
-  if (user?.role !== "admin") {
-    toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/app" />;
-  }
+  /* Brief 05 §6 — the redirect is silent now. The `toast.error` that used to
+     sit here fired from the render body, which double-fires under strict mode,
+     and somebody who cannot see Admin does not need telling why. */
+  if (user?.role !== "admin") return <Redirect to="/app" />;
 
   const rows = listQuery.data?.rows ?? [];
   const total = listQuery.data?.total ?? 0;
@@ -151,10 +147,8 @@ export default function AdminBugReports() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      <AdminHeader title="Bug Reports" />
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <StaffSurface breadcrumb="Admin / Bug reports" bar={<StaffBarAdmin />}>
+      <main className="space-y-5">
         {/* ─── filters ─── */}
         <div className="flex flex-wrap gap-2">
           {filters.map((f) => {
@@ -311,6 +305,6 @@ export default function AdminBugReports() {
           </div>
         )}
       </main>
-    </div>
+    </StaffSurface>
   );
 }

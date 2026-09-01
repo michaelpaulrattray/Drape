@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
-import { AdminHeader } from "@/features/admin/AdminHeader";
+import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery";
 import { CrewGeneral } from "@/features/admin/components/crew/CrewGeneral";
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
@@ -196,23 +196,17 @@ export default function AdminCrew() {
 
   /* ─── auth guards, in the shape the other admin pages use ─── */
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
-      </div>
-    );
+    return <StaffLoading />;
   }
   if (!isAuthenticated) return <Redirect to="/login" />;
-  if (user?.role !== "admin") {
-    toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/app" />;
-  }
+  /* Brief 05 §6 — the redirect is silent now. The `toast.error` that used to
+     sit here fired from the render body, which double-fires under strict mode,
+     and somebody who cannot see Admin does not need telling why. */
+  if (user?.role !== "admin") return <Redirect to="/app" />;
 
   return (
-    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      <AdminHeader title="Crew" />
-
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+    <StaffSurface breadcrumb="Admin / Crew" measure="read" bar={<StaffBarAdmin />}>
+      <main className="space-y-4">
         {stateQuery.isLoading && (
           <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6 text-sm text-[#999]">
             Loading the briefing…
@@ -348,6 +342,6 @@ export default function AdminCrew() {
           </>
         )}
       </main>
-    </div>
+    </StaffSurface>
   );
 }

@@ -1818,6 +1818,40 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   cursor: pointer;
 }
 
+/*
+  A segment's count pill (brief 05 §4, item 3).
+
+  ⚠ **Omitted at zero, never `(0)`** — the same rule the account menu's
+  `showsMenuCount` already implements. A staff tab that reads `Blocked IPs 0`
+  is telling you to go and look at nothing.
+
+  Folded IN rather than forked (promotion-pass rule 6): this is the third
+  capability `.dp-segmented` has absorbed rather than the second segmented
+  control it would otherwise have needed.
+*/
+.dp-segmented__count {
+  padding: 1px 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--faint);
+  font: 500 9px var(--font-mono);
+}
+
+.dp-segmented__seg--on .dp-segmented__count {
+  background: var(--fillStrong);
+  color: var(--metaStrong);
+}
+
+/*
+  A segment that is a ROUTE rather than a setting (brief 05 §6: *"Tabs are
+  routes, not local state"*). It is an `<a>`, so middle-click, ctrl-click and
+  the browser's own back button all keep working, which is the whole reason
+  the staff tabs are not `useState`.
+*/
+a.dp-segmented__seg {
+  text-decoration: none;
+}
+
 .dp-segmented__seg--on {
   background: var(--surface);
   color: var(--ink);
@@ -2261,3 +2295,169 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 
 .dp-iconbtn--stub { color: var(--muted); cursor: default; }
 .dp-iconbtn--stub:hover { background: transparent; }
+
+/* -------------------------------------------------------------- staff frame
+
+   Brief 05 §3 — Admin and Moderation come home.
+
+   Staff surfaces are WORKING TOOLS, so the arrangement is the opposite of the
+   lobby's: `overflow: hidden` on the frame, scrolling on the inner pane, so
+   the bar stays put while a 4,000-row audit table scrolls under it. The
+   founder's own reason: a header that scrolls away is a control nobody finds
+   when they are half way down a table.
+
+   ⚠ **The frame is FULL-BLEED and the COLUMN is inside it.** The prototype
+   draws the bar spanning edge to edge with its border-bottom crossing the
+   whole surface (`Klieg Studio.dc.html:988`); the 1240px measurement in the
+   brief's "Content width" paragraph is the column the pane centres, not the
+   bar. Mounting at `working` instead would put the bar inside a padded
+   1240px box with 34px of air above it, which is not what the picture shows.
+   No fourth `AppShell` width is introduced — the width vocabulary stays at
+   three names.
+*/
+
+.dp-staff {
+  height: calc(100vh - var(--topbar-h));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--page);
+}
+
+.dp-staff__pane {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The auth-loading state: the frame with nothing in it yet. */
+.dp-staff--loading {
+  align-items: center;
+  justify-content: center;
+}
+
+.dp-staff__spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--ink);
+  animation: dp-spin 0.8s linear infinite;
+}
+
+/* The content column, centred inside the scrolling pane. */
+.dp-staff__col {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px var(--s-11) 64px;
+}
+
+/*
+  Crew reads at a narrower measure — the founder's 790px. It is a briefing you
+  read rather than a grid you scan, and the page is already `max-w-3xl` (768px)
+  today, so this is his nudge to an existing decision rather than a new one.
+*/
+.dp-staff__col--read {
+  max-width: 790px;
+}
+
+/* ---- the staff bar's refresh cluster ---- */
+
+.dp-staffbar__refresh {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.dp-staffbar__stamp {
+  font: 400 11px var(--font-mono);
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.dp-staffbar__rule {
+  width: 1px;
+  height: 14px;
+  flex: none;
+  background: var(--borderSoft);
+}
+
+/* The divider between the title block and the tabs — taller than the one
+   inside the refresh cluster, per §4 item 2. */
+.dp-staffbar__divide {
+  width: 1px;
+  height: 28px;
+  flex: none;
+  background: var(--borderSoft);
+}
+
+/*
+  The auto-refresh toggle (§4 item 5).
+
+  ⚠ **It replaces a pair of `Live` / `Paused` buttons, one of which was a
+  filled black `bg-[#0A0A0A]`.** A filled dark button is this app's
+  primary-action treatment; spending it on a polling preference made the
+  loudest thing on an admin page a setting nobody ever changes.
+*/
+.dp-staffbar__auto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dp-staffbar__auto:hover {
+  opacity: 0.8;
+}
+
+.dp-staffbar__track {
+  width: 22px;
+  height: 13px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--dotsStrong);
+  position: relative;
+  transition: background 0.14s;
+}
+
+.dp-staffbar__track--on {
+  background: var(--ink);
+}
+
+.dp-staffbar__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: left 0.14s;
+}
+
+.dp-staffbar__track--on .dp-staffbar__knob {
+  left: 11px;
+}
+
+/*
+  The manual refresh icon while a refetch is in flight. `dp-spin` is a keyframe
+  in tokens.css with no class in front of it — every previous consumer reached
+  for Tailwind's `animate-spin`, which is exactly the parallel system the
+  foundation exists to stop.
+*/
+.dp-staffbar__spin {
+  animation: dp-spin 0.9s linear infinite;
+}
+
+.dp-staffbar__autolabel {
+  font: 400 11px var(--font-mono);
+  color: var(--faint);
+}

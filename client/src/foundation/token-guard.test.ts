@@ -90,6 +90,13 @@ const GUARDED_PATHS = [
   "features/settings",
   "features/billing/ChangePlanModal.tsx",
   "features/billing/AddCreditsModal.tsx",
+  /* Brief 05 §4, the founder's own instruction: *"Every hex literal. #D5D5D5,
+     #EBEBEB, #0A0A0A, #999, #bbb, #E5E5E5 all go. token-guard should be
+     extended to cover this file."* The two headers this replaced held six
+     between them, and a staff bar is exactly the population this guard is for
+     — staff surfaces have never been dark-tested, so a hex here is a colour
+     nobody would notice was wrong until the theme flipped. */
+  "features/staff",
 ];
 
 /**
@@ -110,6 +117,19 @@ const HEX_CARVE_OUTS: Record<string, string> = {
   */
   "foundation/token-guard.test.ts":
     "its own positive controls — a planted hex and an arbitrary value, which working law 2 requires it to contain",
+  /*
+    THE SAME SHAPE, ONE FILE OVER. Brief 05's guard BANS `bg-[#EBEBEB]` — the
+    page background all nine staff pages used to wrap themselves in — so it has
+    to contain that string twice: once as the matcher and once as the positive
+    control proving the matcher fires. A guard whose own control its neighbour
+    flags is a guard that cannot be proven, which is the reasoning of the row
+    directly above this one rather than a new argument.
+
+    ⚠ The narrowness matters: this is a TEST file, and it renders nothing. A
+    carve-out for a component would be a different decision.
+  */
+  "features/staff/section05-guard.test.ts":
+    "brief 05's own positive control — it bans `bg-[#EBEBEB]` and so must contain it",
 };
 
 const HEX_LITERAL = /#[0-9a-fA-F]{3,8}\b/g;
