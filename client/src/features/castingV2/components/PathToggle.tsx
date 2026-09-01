@@ -64,8 +64,10 @@ export function PathToggle({
     <div className="dpc-paths">
       <div className="dpc-paths__row" role="group" aria-label={label}>
         {/*
-          The eyebrow is the same chrome tag the TRY row uses, for the same
-          reason: a machine-ish label beside a control, never a sentence.
+          The eyebrow is `.dp-chrome`, the house's machine-ish label: a tag
+          beside a control, never a sentence. ⚠ This used to cite the TRY row
+          as the precedent; #375 removed that row, and the convention it named
+          is the tag's own rather than that one call site's.
         */}
         <span className="dp-chrome">PATH</span>
         {CASTING_PATH_ORDER.map((path) => (

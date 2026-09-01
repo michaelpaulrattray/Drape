@@ -29,9 +29,14 @@ import {
  *     trying to read is hostile. `prefers-reduced-motion` gets no timer at all,
  *     and a hidden tab does not advance.
  *   - **EVERY CARD IS THE SAME KIND OF CONTROL (#240).** A click — centre or
- *     peek — puts that card's brief in the prompt field and submits nothing,
- *     exactly as the TRY chips do. A peek additionally brings itself to the
- *     centre. Nothing here navigates: these are examples of what the studio can
+ *     peek — puts that card's brief in the prompt field and submits nothing.
+ *     A peek additionally brings itself to the centre.
+ *
+ *     ⚠ This used to read *"exactly as the TRY chips do"*, and #375 removed
+ *     those chips PRECISELY because it was exact: two mechanisms for one job
+ *     (working law 4). **The deck is the survivor and it is the better one** —
+ *     a chip filled the box with a sentence somebody wrote, a card fills it
+ *     with the real brief that cast the face you are looking at. Nothing here navigates: these are examples of what the studio can
  *     make, not anybody's signed Cast, so there is no room to open. The deck
  *     does not read the roster and does not vary by account — a fresh customer
  *     and an account with forty signed Casts see the same six faces.
