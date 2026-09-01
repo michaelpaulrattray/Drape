@@ -1,7 +1,7 @@
 {
-  "edition": 197,
-  "updatedAt": "2026-09-01T16:27:45.779Z",
-  "shift": "Foreman — staff shell (card 395, brief 05)",
+  "edition": 198,
+  "updatedAt": "2026-09-01T18:58:30.336Z",
+  "shift": "Foreman — night of 2 September (staff tables, brief 06)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1277,6 +1277,41 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "staff-tables-396-frames",
+      "title": "Twelve staff lists on one table, and the row opens where you clicked it (brief 06)",
+      "question": "WHAT YOU ARE LOOKING AT. Five frames from tonight, both themes.\n\nTHE ONE THING TO TRY. Open Admin → Users, click a row, and act on it. The row opens underneath itself and everything above and below stays on screen, so when you close it the next person is where they were. That is the entire argument for this change and it does not read from a screenshot — it reads from doing it twice.\n\nWHAT I AM ASKING. Three judgements, and none of them is a bug:\n\n1. The expansion opens with a hairline and a rise, and the row keeps its background. I tried it with a shaded background instead and the evidence block — which sits on the shade — disappeared into it. If it reads as not-obviously-open to you, that is the thing to say.\n\n2. Status pills carry colour ONLY where somebody needs to act — suspended, frozen, locked, failed. Everything at rest is grey, and so is every role, including admin, which used to be purple. On a page where everything is coloured, nothing is; but you may want admin loud.\n\n3. The counts above each table follow the same rule, so Suspended and Locked only go red when they are not zero. A red \"0 SUSPENDED\" was the loudest thing on the page saying nothing was wrong.\n\nWHAT IS DELIBERATELY STILL UGLY. The dialogs — suspend, freeze, credits — are untouched and still light-only, so opening one in dark mode gives you a white box. No brief owns them yet; they are counted and on the record rather than half-fixed inside a table brief.",
+      "frames": [
+        {
+          "key": "crew-eye/96759088-618a-4282-bf4d-847649984ee3.png",
+          "caption": "Admin → Users in dark, with a row open. The six counts are grey because nothing needs acting on; FROZEN carries colour, ACTIVE and every role do not.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/7be395d5-e3e9-49ea-a5f7-bca783c8633c.png",
+          "caption": "The same page in light. One flexible column (the person), everything else at a fixed width — which is what makes twelve different tables look like one table.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/941963bf-73bd-46f8-9360-8d69af09ddc3.png",
+          "caption": "Moderation → Audit logs in dark, a row open: the facts grid, then the raw payload, then the actions with the consequence sentence beside them. This page had never been looked at in dark mode.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/6150d571-d9d1-4c84-bf11-e7f5743fae0e.png",
+          "caption": "Change requests. The four coloured count tiles are gone — they were a SECOND filter for the same state as the filter row, and their numbers are the filter's own labels now.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/f478e2c7-4192-4a8a-ac22-8d9885fc0378.png",
+          "caption": "Invite codes at 1024, dark. Nothing scrolls sideways at any width — the columns give way instead of hiding behind an edge.",
+          "arm": "after"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-02",
+      "issueNumber": 396
+    },
     {
       "id": "staff-shell-395-frames",
       "title": "Admin and Moderation now live inside the studio instead of replacing it (brief 05)",
@@ -2587,6 +2622,13 @@
   ],
   "pipeline": [
     {
+      "id": "staff-tables-396",
+      "title": "Eleven staff lists are one table now, and a row opens where you clicked it instead of throwing a window over the page (brief 06, shift 2 of 5)",
+      "status": "merged",
+      "prNumber": 407,
+      "note": "Every list in Admin and Moderation had its own idea of what a table is — six of them drew a real <table> that slid sideways at 1024 and hid columns behind the edge, and each one ended in a column of identical Manage buttons that opened a window over the page.\n\nThey are one table now, and clicking a row opens it UNDERNEATH itself. That is the whole change and it is worth the two minutes: open Admin → Users, click a person, act, close, and the next person is still exactly where they were. Before, the window covered the list and you came back having lost your place — which matters when you are working down 300 rows.\n\nFOUR WINDOWS DELETED. The user detail, the two audit details, and the change-request pane. The dialogs that ASK you something — suspend, freeze, adjust credits, change a role, review a request — all stay. A dialog is right for \"type a reason and confirm\" and wrong for \"show me this\", and that is the only line drawn.\n\nSOMETHING YOUR BRIEF COULD NOT KNOW, AGAIN. It named eleven surfaces. There are twelve: Admin has its own second blocked-IP list, hand-rolled, inside the audit page, with an Unblock button the moderator's copy does not have. Converting eleven and leaving that one would have meant claiming \"no surface hand-rolls rows\" with a hand-rolled list one tab away.\n\nAND THE THING I WOULD MOST WANT YOU TO KNOW. Every destructive button now carries a sentence beside it saying what it does to the person — \"Retiring a code stops anyone new using it. It never affects anyone who already used it.\" Writing those forced two of them to be checked against the code, and two were LIES: blocking an IP does not turn anyone away (nothing on the request path reads that list), and \"asks Slack to confirm\" self-approves because production has no Slack webhook. Both were inherited copy that nobody had ever had to make true. They say what actually happens now."
+    },
+    {
       "id": "staff-shell-395",
       "title": "Admin and Moderation come home — they are surfaces inside the studio now, not pages that replace it (brief 05, shift 1 of 5)",
       "status": "merged",
@@ -3671,9 +3713,9 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-172",
-      "title": "The queue tonight: 108 open, rotting flat at 27 — and the patrol clocks are still overdue",
-      "detail": "108 cards open, 5 urgent, EIGHT of them yours. #395 closed tonight and nothing new was filed.\n\nRotting — open a week and never re-read — is 27, the same as last night. Twelve of those are the Lost-and-Found catalogue filed in one afternoon on 25 August (#55 through #70); they crossed the seven-day line together and will sit there until somebody re-reads them against the code. Nothing is stuck, they are just old enough that nobody should trust what they say without checking.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are overdue, and the Janitor is worst — that is the fifth night running it has been named and not run. Eight cards you ordered outrank patrols, which is correct, and it is also why the clocks keep slipping. If you want a patrol night, say so and it gets one.",
+      "id": "queue-shape-173",
+      "title": "The queue: 108 open, rotting flat at 27 — and the patrol clocks are now a week overdue",
+      "detail": "108 open, 5 urgent, SEVEN of them yours. #396 closed tonight and nothing new was filed.\n\nRotting — open a week and never re-read against the code — is 27, unchanged for a third night. Twelve of those are the Lost-and-Found catalogue filed in one afternoon on 25 August (#55–#70), so it is one batch aging rather than new neglect.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are overdue, the Janitor worst at a sixth night. That is not carelessness: seven cards carrying your word outrank them, and they will keep slipping while that is true. If you would rather a shift spent one night on the Janitor than on brief 07, say so and it will.",
       "severity": "info",
       "state": "open"
     },
@@ -3923,7 +3965,7 @@
     81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T16:28:23.674Z",
+    "readAt": "2026-09-01T18:56:24.662Z",
     "items": [
       {
         "issueNumber": 231,
@@ -3941,11 +3983,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 396,
-        "title": "SHIFT 2 of 5 — Staff tables: one pattern, eleven surfaces, rows open in place (brief 06) — BLOCKED on #395",
-        "urgent": false
-      },
-      {
         "issueNumber": 397,
         "title": "SHIFT 3 of 5 — Admin Overview: lead with what needs a human, and colour inverts (brief 07) — BLOCKED on #395",
         "urgent": false
@@ -3958,10 +3995,7 @@
       {
         "issueNumber": 399,
         "title": "SHIFT 5 of 5 — Moderator investigations: verdict before workings, and the staff lane closes (brief 09) — BLOCKED on #395, #396",
-        "urgent": false,
-        "held": {
-          "state": "blocked"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 401,
