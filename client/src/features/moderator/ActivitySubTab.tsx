@@ -18,15 +18,21 @@
  */
 import { RawPayload, StatePill } from "@/features/staff";
 import { DataTable } from "@/foundation";
-import type { DataRow } from "@/foundation";
+import type { DataRow, RowAction } from "@/foundation";
 
-import { formatDate, formatAction, formatFullDate } from "./moderatorConstants";
+import {
+  formatDate,
+  formatAction,
+  formatFullDate,
+  type OpenChangeRequestOptions,
+} from "./moderatorConstants";
 
 interface ActivitySubTabProps {
   userActivityQuery: any;
+  onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
 }
 
-export function ActivitySubTab({ userActivityQuery }: ActivitySubTabProps) {
+export function ActivitySubTab({ userActivityQuery, onOpenChangeRequest }: ActivitySubTabProps) {
   const activities: any[] = userActivityQuery.data?.logs ?? [];
 
   const rows: DataRow[] = activities.map((log) => ({
@@ -54,7 +60,42 @@ export function ActivitySubTab({ userActivityQuery }: ActivitySubTabProps) {
       log.metadata && Object.keys(log.metadata).length > 0 ? (
         <RawPayload value={log.metadata} />
       ) : undefined,
+    actions: changeRequestAction(log),
   }));
+
+  /*
+    ⚠ **THIS ACTION WAS ALMOST DROPPED SILENTLY, WHICH IS THE WHOLE DANGER OF
+    DELETING A SHARED MODAL.**
+
+    `LogDetailModal` offered "Submit change request" on warning and critical
+    entries, and these rows opened it. Converting them to expansions took the
+    modal away and did not put the action back — reachable elsewhere, so
+    nothing would have looked broken, and the PR body said the investigative
+    tools were untouched while a removal sat inside one.
+
+    It is restored on `AuditLogsTab`'s exact condition — warning or critical
+    only — so the two surfaces offering the same thing agree on when.
+  */
+  function changeRequestAction(log: any): RowAction[] {
+    if (log.severity !== "warning" && log.severity !== "critical") return [];
+    return [
+      {
+        key: "request",
+        label: "Raise a change request",
+        variant: "secondary",
+        onClick: () => {
+          const metadata = log.metadata as Record<string, unknown> | null;
+          onOpenChangeRequest({
+            type: metadata?.ipAddress ? "block_ip" : log.userId ? "flag_account" : "note_incident",
+            targetUserId: log.userId?.toString() || "",
+            targetUserName: (metadata?.userName as string) || undefined,
+            relatedAuditLogId: log.id,
+            ipAddress: (metadata?.ipAddress as string) || undefined,
+          });
+        },
+      },
+    ];
+  }
 
   return (
     <DataTable

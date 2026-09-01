@@ -267,25 +267,77 @@ describe("brief 06 §5 — a destructive action cannot be written without its co
       one is the worst possible use of a mechanism whose whole value is that it
       is accurate.
 
-      The arm is narrow on purpose — it holds the ONE claim that was wrong,
-      rather than trying to judge English. A wider rule would be a rule nobody
-      could satisfy.
+      ⚠ **AND IT WAS NARROW BY ONE INSTANCE, WHICH THE REVIEW OF THE FIX
+      CAUGHT.** The first shape held only claims containing the word `block`,
+      so the sentence *"Approving asks Slack to confirm"* walked straight past
+      it — and `sendApprovalToSlack` **auto-approves when the admin-actions
+      webhook is unconfigured**, which production's is. Same defect, same
+      commit, one word away from the matcher. That is working law 7 exactly:
+      the fix without its sweep is half done.
+
+      **The population is now the enumerated set of controls CLAUDE.md's
+      "Currently not enforced" list names as inert**, and each carries the
+      phrases that would claim it works. Adding a row is how a later inert
+      control joins; it is a small list on purpose, because a rule that tried
+      to judge English generally is a rule nobody could satisfy.
     */
+    const INERT_CONTROLS = [
+      {
+        control: "IP blocking",
+        mentions: /\bblock/i,
+        overclaims: /turns away|blocks .* for everyone|will be refused|cannot reach/i,
+        why: "an IP block is recorded and never checked on the request path",
+        specimen:
+          "Blocking an IP turns away everyone behind it, which on a shared office network is more people.",
+      },
+      {
+        control: "the Slack approval flow",
+        mentions: /slack/i,
+        /* "asks Slack to confirm" / "requires Slack confirmation" — the claim
+           that a second person is in the loop. Saying the words WITH the
+           caveat is fine, which is why the caveat's own phrasing is excluded
+           below rather than the word "Slack" being banned. */
+        overclaims: /asks Slack to confirm|requires Slack confirmation|wait for Slack approval/i,
+        why: "the approval flow auto-approves when the admin-actions webhook is unconfigured, and production has none",
+        specimen: "Approving asks Slack to confirm, and then signs this person out.",
+      },
+    ];
+
+    /*
+      ⚠ **IT READS EVERY USER-VISIBLE STRING, NOT ONLY THE ONES WRITTEN AT A
+      `consequence:` KEY — AND THE NEGATIVE CONTROL IS WHAT FORCED THAT.**
+
+      The first shape matched `consequence:` followed by a literal. Change
+      requests writes `consequence: approvalConsequence(detail)` — a CALL — and
+      composes its seven sentences inside a function, so the arm was blind to
+      the entire file the second finding was about. It caught the IP-block
+      sentence only because that one happened to be written inline.
+
+      Comments are stripped first, so this file and the docblocks explaining
+      the rule can quote the wrong sentences freely.
+    */
+    let read = 0;
     for (const { name, text } of tableSurfaces()) {
-      for (const match of text.matchAll(/consequence:[\s\S]{0,40}?"([^"]*)"/g)) {
+      const source = code(text);
+      for (const match of source.matchAll(/["`]([^"`\n]{25,})["`]/g)) {
         const sentence = match[1];
-        if (!/block/i.test(sentence)) continue;
-        expect(
-          sentence,
-          `${name}: an IP block is recorded, not enforced — this note claims otherwise`,
-        ).not.toMatch(/turns away|blocks .* for everyone|will be refused|cannot reach/i);
+        read += 1;
+        for (const inert of INERT_CONTROLS) {
+          if (!inert.mentions.test(sentence)) continue;
+          expect(
+            sentence,
+            `${name}: ${inert.why} — this string claims otherwise`,
+          ).not.toMatch(inert.overclaims);
+        }
       }
     }
+    expect(read, "the arm read no sentences at all").toBeGreaterThanOrEqual(20);
 
-    /* POSITIVE CONTROL — the matcher fires on the sentence that shipped. */
-    expect(
-      "Blocking an IP turns away everyone behind it, which on a shared office network is more people.",
-    ).toMatch(/turns away|blocks .* for everyone|will be refused|cannot reach/i);
+    /* POSITIVE CONTROLS — each matcher fires on the sentence that shipped. */
+    for (const inert of INERT_CONTROLS) {
+      expect(inert.specimen, `${inert.control}'s matcher is blind`).toMatch(inert.overclaims);
+      expect(inert.specimen).toMatch(inert.mentions);
+    }
   });
 
   it("every destructive action in the product carries a real sentence", () => {

@@ -50,10 +50,20 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
   const requests: any[] = data?.requests ?? [];
   const summary = data?.summary;
 
+  /*
+    ⚠ **"Closed" IS TWO STATUSES AND THE COUNT ALWAYS KNEW IT.** The option
+    label adds `cancelledCount + expiredCount`, so a moderator with one expired
+    request read `Closed (1)`, selected it, and got *"None of your requests are
+    in that state."* — the count and the predicate disagreed, and an expired
+    request was invisible under every filter but All.
+  */
+  const CLOSED = ["cancelled", "expired"];
   const filtered =
     statusFilter === "all"
       ? requests
-      : requests.filter((request: any) => request.status === statusFilter);
+      : statusFilter === "cancelled"
+        ? requests.filter((request: any) => CLOSED.includes(request.status))
+        : requests.filter((request: any) => request.status === statusFilter);
 
   const rows: DataRow[] = filtered.map((request: any) => ({
     id: String(request.id),

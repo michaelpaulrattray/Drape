@@ -172,7 +172,7 @@ export function UserInvestigationTab({
               </div>
 
               {userDetailTab === "overview" && (
-                <ActivitySubTab userActivityQuery={userActivityQuery} />
+                <ActivitySubTab userActivityQuery={userActivityQuery} onOpenChangeRequest={onOpenChangeRequest} />
               )}
               {userDetailTab === "credits" && (
                 <CreditsSubTab

@@ -48,6 +48,29 @@ interface ChangeRequest {
 }
 
 /**
+ * ⚠ **WHAT "SENSITIVE" ACTUALLY BUYS TODAY, WHICH IS LESS THAN ITS NAME.**
+ *
+ * A sensitive type routes through `sendApprovalToSlack`, and that function
+ * **auto-approves the moment the admin-actions webhook is unconfigured** —
+ * `resolvedBy: "system (Slack not configured)"`, read at
+ * `server/slack/slackApproval.ts`. Production has no such webhook (CLAUDE.md's
+ * "Currently not enforced" list says so, and it is why the flow is on that
+ * list at all).
+ *
+ * So the second pair of eyes is a hope rather than a control, and a
+ * consequence note promising one would be the same defect this card already
+ * shipped once and corrected for the IP-block sentences. **That correction
+ * stopped one instance short of its own class** (working law 7), which the
+ * review of the fix caught; this is the sweep.
+ *
+ * It is a caveat rather than a rewrite because the wiring is real and the
+ * webhook is one environment variable away — what is false is only the
+ * promise that it is confirming anything today.
+ */
+const SLACK_CAVEAT =
+  " It is meant to wait for a second pair of eyes in Slack; with no Slack webhook configured it runs on the next poll without one.";
+
+/**
  * The request types where APPROVING cannot be taken back from this surface —
  * money leaves, credits move, or somebody loses access.
  *
@@ -169,7 +192,9 @@ export function ChangeRequestList({
         sentence; what changed is which button the compiler holds.
       */
       const irreversible = IRREVERSIBLE_TYPES.includes(detail.type);
-      const label = sensitive ? `${config.approveLabel} (Slack)` : config.approveLabel;
+      /* The `(Slack)` suffix said a confirmation step exists. It says what it
+         is instead, and the sentence beside it carries the caveat. */
+      const label = sensitive ? `${config.approveLabel} — second sign-off` : config.approveLabel;
 
       if (irreversible) {
         actions.push({
@@ -305,17 +330,23 @@ function approvalConsequence(detail: any): string {
          consulted on the request path. See that file's note. */
       return `Approving records ${detail.ipAddress} on the block list. It does not turn anyone away yet — nothing on the request path checks that list.`;
     case "suspend_user":
-      return "Approving asks Slack to confirm, and then signs this person out and blocks every sign-in until it is lifted.";
+      return `Approving signs this person out and blocks every sign-in until it is lifted.${SLACK_CAVEAT}`;
     case "unsuspend_user":
-      return "Approving asks Slack to confirm, and then lets this person sign in again.";
+      return `Approving lets this person sign in again.${SLACK_CAVEAT}`;
     default:
       return "Denying closes this request without doing anything to the account it names.";
   }
 }
 
+/**
+ * ⚠ `approved` here does NOT mean a person approved it. With no webhook
+ * configured the flow marks itself approved as `system (Slack not
+ * configured)`, so this label says *cleared* rather than *approved by
+ * somebody* — the same correction as `SLACK_CAVEAT` above, one line over.
+ */
 function slackStatusLabel(status: string | null | undefined, executing: boolean): string {
-  if (status === "approved") return executing ? "Slack approved — running" : "Slack approved";
-  if (status === "denied") return "Slack denied — this will not run";
-  if (status === "expired") return "Slack approval expired — this will not run";
-  return "Waiting on Slack confirmation";
+  if (status === "approved") return executing ? "Cleared — running now" : "Cleared to run";
+  if (status === "denied") return "Refused in Slack — this will not run";
+  if (status === "expired") return "The sign-off window closed — this will not run";
+  return "Waiting on a sign-off";
 }

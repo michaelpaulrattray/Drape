@@ -816,7 +816,11 @@ export function ExpandableRow({
   );
 
   return (
-    <div className={cn("dp-table__rowgroup", open && "dp-table__rowgroup--open")}>
+    /* No `--open` modifier: the panel's own hairline and rise are the signal,
+       and the rule that used to back that className was removed with the well
+       behind an open row (§5). A className with no rule is a promise nothing
+       keeps. */
+    <div className="dp-table__rowgroup">
       {expandable ? (
         <button
           type="button"
@@ -1068,11 +1072,23 @@ export function TableSearch({
   const committed = useRef(value);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* The parent may reset the term (a filter reset, a tab change). Adopt it,
-     but never fight the person typing: only when it differs from what we last
-     sent up. */
+  /*
+    The parent may reset the term (a filter reset, a tab change). Adopt it, but
+    never fight the person typing: only when it differs from what we last sent
+    up.
+
+    ⚠ **THE PENDING TIMER MUST DIE WITH IT.** Type into the audit user-id
+    search and hit Reset inside the 300ms window, and the stale timer fired
+    `commit(next)` afterwards — re-applying the term the person had just
+    cleared, so the filters un-reset themselves. It is a narrow race and it is
+    the one path where the component fights the person using it.
+  */
   useEffect(() => {
     if (value !== committed.current) {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
       committed.current = value;
       setDraft(value);
     }

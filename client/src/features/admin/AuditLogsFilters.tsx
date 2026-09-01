@@ -2,7 +2,6 @@ import { RowId, StatePill } from "@/features/staff";
 import { Button, DataTable, Skeleton, TableFilter, TableHead, TableSearch } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import {
-  SEVERITY_COLORS,
   formatAction,
   formatDate,
   type AuditLog,

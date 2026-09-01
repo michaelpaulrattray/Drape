@@ -2800,3 +2800,14 @@ a.dp-segmented__seg {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* A paragraph inside an evidence block. Two of them are two paragraphs — a
+   `\n\n` in a JSX text node collapses, which is how a description and its
+   summary shipped as one run-on. */
+.dp-table__para {
+  margin: 0;
+}
+
+.dp-table__para + .dp-table__para {
+  margin-top: 9px;
+}
