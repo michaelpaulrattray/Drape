@@ -1,7 +1,7 @@
 {
-  "edition": 193,
-  "updatedAt": "2026-09-01T11:56:00.000Z",
-  "shift": "Foreman - shift 2026-09-01 21:56 AEST (foreman-169)",
+  "edition": 194,
+  "updatedAt": "2026-09-01T13:14:27Z",
+  "shift": "Foreman - shift 2026-09-01 23:35 AEST (foreman-170)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,6 +138,17 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "tool-column-401",
+      "issueNumber": 401,
+      "title": "The credits-by-tool chart you asked for: your taxonomy is filed, and one honest sentence about what it will show",
+      "productImpact": "You asked why Usage does not break credits down by tool, and then you told us how to categorise it: by what was made - image, video, text - and \"it can grow\". That is recorded as card #401 and it is the right shape; a product tool gets renamed and retired, an output kind does not.\n\nThe honest part, which is better said now than discovered afterwards: even with a perfect column, TODAY'S CHART IS ONE BAR. Everything that spends a credit in the studio right now is image work - rolling, refining, retrying, signing. The text calls (the brief reader, the author) run on our money and charge you nothing. So the block comes back the day a second kind of thing exists, not the day the column ships.",
+      "workedExample": "Why it is not already built: it means adding a column to the credit ledger and writing to it at the moment you are charged. That is your money path, the automatic code reviewer has been out for about five days, and the visible effect today is zero. I would rather it landed on its own with a second reader than rode along beside four display fixes. It is one small piece of work whenever you want it.\n\nNothing is being guessed at your history: your 622 existing rows have no honest answer - over half of them record no engine at all - so nothing gets backfilled. A made-up label in a chart is worse than no chart.",
+      "options": [],
+      "recommendation": null,
+      "state": "open",
+      "filedAt": "2026-09-01"
+    },
     {
       "id": "credits-used-window-381",
       "issueNumber": 381,
@@ -1240,6 +1251,41 @@
   ],
   "eyeItems": [
     {
+      "id": "settings-corrections-387-frames",
+      "title": "Your Usage pane, before and after — and the reason it said zero is not the reason anyone expected",
+      "question": "WHAT YOU ARE LOOKING AT. Two pairs and one single. First pair: the Usage pane on the live studio, then on tonight's build. Second pair: the Refer a friend footer, the same way. Last one: Profile, where Remove now works.\n\nTHE THING WORTH TWO MINUTES, and it is the diagnosis rather than the fix. You said Usage was showing you had used no credits. It was — and the sum was RIGHT. Your last paid roll was 30 August. The month rolled over on 1 September. The pane was adding up \"this month\", and this month, at the moment you looked, genuinely had nothing in it. Adding harder would have given you the same zero.\n\nSo there was nothing wrong with the arithmetic and two things wrong with the WINDOW. Your account has no billing period at all — it is a free plan, so there is no monthly cycle recorded against it — and the pane invented a calendar month to stand in for one. Worse, the \"of 5,000 this month\" it measured you against does not exist: a free account's credits are handed over once, at signup, and NOTHING ever tops them back up. That line was promising you a refill that never comes.\n\nIt now says what it actually knows. Where there is a real billing period it uses that period and its real allowance. Where there is not, it says \"in the last 30 days\" and tells you what you have left. Your figure moves when you cast, which is the thing you were telling us it did not do.\n\nTHE ONE I WENT LOOKING FOR AFTERWARDS IS WORSE THAN THE ONE YOU REPORTED. The same mistake — measuring against a cycle that does not run — was on the Billing pane twice, and one of them is embarrassing: the bar is capped at full but the sentence beside it is not, so on your own account (24,535 credits against a 5,000 \"allowance\") that pane has been reading \"491% of this month's allowance left\". Both are gone.\n\nALSO IN THESE FRAMES. \"Frames made\" is gone, and not because it was confusing — because it was false. It was counting charged operations, and on your account those are nineteen different things including \"Mint package\" and \"Evidence package synchronization\", neither of which makes a frame, while \"Refresh views\" makes several for one charge. You said not to keep a number nobody can name, so it went. The Refer a friend links were 16px against an 11px sentence and are 11px now. Bio is gone from Profile on your word — the field only; anything already written is still in your own data export. And Remove actually removes: I put a real picture on a test account, clicked it, and checked afterwards that the picture went back to the default AND the file left our storage rather than being left behind.\n\nNOTHING HERE NEEDS A DECISION unless the last-30-days window is not what you want. If you would rather Usage showed all time, or the current calendar month with an honest label, say so and it is one line.",
+      "frames": [
+        {
+          "arm": "before",
+          "key": "crew-eye/e39d3537-c6fd-4784-a056-4cadbd1355b1.png",
+          "caption": "BEFORE — \"Usage this month\", credits used 0, \"of 500,000 this month\". The account behind this frame made 194 charged casts in the last 30 days."
+        },
+        {
+          "arm": "after",
+          "key": "crew-eye/f36aea77-3586-40c5-8436-ac5171da0d78.png",
+          "caption": "AFTER — \"Usage in the last 30 days\", 7,895 used, and the note says what is left instead of an allowance that never renews. Two tiles, not three."
+        },
+        {
+          "arm": "before",
+          "key": "crew-eye/7f3e8aca-909f-43f6-81e0-fc37188a3ea8.png",
+          "caption": "BEFORE — \"Redeem a code\" and \"Who has joined\" at 16px, towering over the row they sit on."
+        },
+        {
+          "arm": "after",
+          "key": "crew-eye/9d2a6c45-0e8f-4d05-a534-743e951b0f22.png",
+          "caption": "AFTER — both at 11px, the size of the sentence beside them, as your prototype draws them."
+        },
+        {
+          "arm": "after",
+          "key": "crew-eye/6993321d-7a86-4225-bb60-c823e3ed8168.png",
+          "caption": "Profile — Remove is a real control beside Upload, and the Bio row is gone. Driven end to end: the picture returns to the account default and the file leaves storage."
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-01",
+      "issueNumber": 387
+    },
+    {
       "id": "account-menu-374-frames",
       "title": "You said the account menu is perfect - closed. Frames kept for reference.",
       "question": "No question, a look and one correction you will probably enjoy.\n\nWHAT CHANGED. Everything in the menu is now set from your prototype rather than nudged toward it. The avatar is gone from inside the menu - you just clicked it to open the thing, so drawing it again 30px below was costing the width. In its place the second line now reads \"1,240 credits · Owner\": the number in the typewriter face because it is measured, the words in the normal one. Every group is separated by a real line now instead of a barely-there one, the rows run edge to edge, and all seven rows carry an icon including Sign out - your own reversal, and you were right that half-and-half reads as an oversight.\n\nTHE CORRECTION, and it is about your section 3. You wrote that the menu should be 216px and \"looks like ~240px\" - about 15% too big. Measured on the shipped menu before I touched it: it was 200px. It was 16 pixels too NARROW, not 24 too wide. Two of your other three figures were already correct - the labels were 12px and the row padding was 8px, exactly as specified.\n\nSo your reading was right and your numbers were not. It DID read loose - because of the avatar block and a slightly oversized name, not because of its width. Every value comes off your prototype either way, which is what you asked for. I am telling you because a wrong number left standing is how a future brief inherits it.",
@@ -1265,7 +1311,7 @@
           "arm": "in context, dark"
         }
       ],
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-01",
       "issueNumber": 374
     },
@@ -1285,7 +1331,7 @@
           "arm": "usage numbers after your ruling, light"
         }
       ],
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-01",
       "issueNumber": 381
     },
@@ -2444,6 +2490,13 @@
   ],
   "pipeline": [
     {
+      "id": "settings-corrections-387",
+      "title": "Your four Settings corrections are built - and the credits-used zero was a true number over the wrong window (card 387)",
+      "status": "merged",
+      "prNumber": 400,
+      "note": null
+    },
+    {
       "id": "usage-numbers-381b",
       "title": "The Usage numbers are 19px in the normal face now - your answer, built (#381)",
       "status": "merged",
@@ -3500,16 +3553,23 @@
   ],
   "problems": [
     {
+      "id": "billing-491-percent-387",
+      "title": "Your Billing pane has been telling you \"491% of this month's allowance left\" - found by sweeping for the fault you reported",
+      "detail": "You reported one wrong number. The rule here is that a bug found once is a pattern until proven otherwise, so I went looking for the same mistake elsewhere - a figure measured against a monthly cycle the product does not actually run.\n\nIt was on the Billing pane twice, and the second one is worse than the one you reported. The little bar under CREDITS REMAINING is capped at full, but the sentence beside it is not - so with 24,535 credits against a nominal 5,000 \"allowance\", your own Billing pane reads \"491% of this month's allowance left\". The plan card had the same shape: \"5,000 credits/mo\" for credits you are given once.\n\nBoth are gone. Where you have a real subscription with a real renewal date, both lines come back and are true. Nothing changed for a paying account.",
+      "severity": "info",
+      "state": "resolved"
+    },
+    {
       "id": "credits-used-zero-387",
-      "title": "You told us tonight that Usage shows you have used no credits - that is a real regression and it is first in line tomorrow",
-      "detail": "Your words: \"its also showing that i've used no credits\". You have rolled paid casts within the last few days, so zero is not credible.\n\nThis is the SECOND wrong reading of the same number in two days. It used to show 115,695 - your entire history - against a 5,000 monthly allowance. Last night's repair scoped it to one window and it has swung to nothing. A third wrong reading would be worse than no number at all, so it is being diagnosed against your actual spend rows rather than patched again at the component.\n\nIt is card #387 with the other four corrections you sent, and it is the first thing the next shift takes. Tonight's shift was already inside the account menu when your card landed.",
-      "severity": "urgent",
-      "state": "open"
+      "title": "The Usage zero you reported is fixed - and the number was never wrong, the window was",
+      "detail": "Your words: \"its also showing that i've used no credits\".\n\nRead against your real spend rows before anything was changed: your last paid roll was 30 August, the month rolled over on 1 September, and the pane was summing \"this month\". The zero was arithmetically correct and completely useless.\n\nTwo real faults sat underneath it. Your account has no billing period, so the pane invented a calendar month to measure against; and the \"5,000 this month\" it compared you to does not renew at all - a free account is given its credits once and nothing ever tops them up. The pane now uses your real billing period where there is one, and \"the last 30 days\" where there is not, with what you have left instead of a fictional allowance.\n\nFixed and deployed with this edition. Frames are on your desk below.",
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "queue-shape-169",
-      "title": "The queue tonight: 97 open, and FIVE of them are your orders",
-      "detail": "97 cards open. FIVE are yours: #231 (the reader court - it needs the Fable seat and cannot run while your allowance is out), and four sent tonight - #387, #390, #391 and #392.\n\n#321 CLOSED tonight, which is the one worth noticing: it had been restated in five handoffs in a row as \"built, waiting on your eye\". Edition 190 asked you directly instead of restating it a sixth time, and it closed within the day.\n\n#391 is not really a UI card - folding the plan ladder from twelve rungs to six is a pricing decision, and it is yours rather than a shift's. #392 is a one-attribute bug: a suspended customer's only appeal link still points at the old domain.\n\n14 have sat untouched for over a week - unchanged, because tonight went to your orders rather than the stale pile. All four patrol clocks are now due or overdue, and they keep losing to your cards. That is the right order; it is worth saying out loud that it has a cost.\n\nYou sent four cards tonight while shifts were mid-build. None was lost - a shift re-reads the queue before it opens anything, which is the only reason they were seen the same night.",
+      "title": "The queue tonight: 98 open, and TEN of them are your orders",
+      "detail": "98 cards open. TEN are yours, and five of those arrived in one burst late tonight: #395 through #399 are the staff-pages lane you sent, in order, with four of the five deliberately blocked behind the first. The rest are #390 (Change plan corrections), #391 (your plan-ladder ruling - a pricing decision, not something a shift should build), #392 (a suspended customer's appeal link still points at the old domain), #231 (the reader court, which needs the Fable seat and cannot run while it is capped), and #401, which is the piece of tonight's card I deliberately did not build.\n\nRotting - open a week, never re-read: 14. Same as last night.\n\nOne thing worth naming: all four patrol clocks are now overdue, and the Janitor worst of all. Your orders outrank patrols and there are ten of them, so on current form the Janitor will keep losing. If you would rather a shift spent one night on housekeeping instead of your queue, say so - otherwise it keeps waiting.",
       "severity": "info",
       "state": "open"
     },
@@ -3738,16 +3798,11 @@
     81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T11:52:45.213Z",
+    "readAt": "2026-09-01T13:14:38.873Z",
     "items": [
       {
         "issueNumber": 231,
         "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
-        "urgent": true
-      },
-      {
-        "issueNumber": 387,
-        "title": "Settings panes: the tool breakdown needs a tool column, credits-used now reads zero, and four smaller corrections",
         "urgent": true
       },
       {
@@ -3763,6 +3818,48 @@
       {
         "issueNumber": 392,
         "title": "A suspended customer's only appeal link points at the pre-rebrand domain — one invisible attribute, not a branding change",
+        "urgent": false
+      },
+      {
+        "issueNumber": 395,
+        "title": "SHIFT 1 of 5 — Staff shell: Admin and Moderation come home (brief 05, frame only, zero content change)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 396,
+        "title": "SHIFT 2 of 5 — Staff tables: one pattern, eleven surfaces, rows open in place (brief 06) — BLOCKED on #395",
+        "urgent": false,
+        "held": {
+          "state": "blocked"
+        }
+      },
+      {
+        "issueNumber": 397,
+        "title": "SHIFT 3 of 5 — Admin Overview: lead with what needs a human, and colour inverts (brief 07) — BLOCKED on #395",
+        "urgent": false,
+        "held": {
+          "state": "blocked"
+        }
+      },
+      {
+        "issueNumber": 398,
+        "title": "SHIFT 4 of 5 — Crew: surface only, and the built content architecture WINS over the mockup (brief 08) — BLOCKED on #395",
+        "urgent": false,
+        "held": {
+          "state": "blocked"
+        }
+      },
+      {
+        "issueNumber": 399,
+        "title": "SHIFT 5 of 5 — Moderator investigations: verdict before workings, and the staff lane closes (brief 09) — BLOCKED on #395, #396",
+        "urgent": false,
+        "held": {
+          "state": "blocked"
+        }
+      },
+      {
+        "issueNumber": 401,
+        "title": "A credit charge does not record WHAT it made — his toolKind column (split from card 387 item 1)",
         "urgent": false
       }
     ]
