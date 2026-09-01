@@ -1,7 +1,7 @@
 {
-  "edition": 199,
-  "updatedAt": "2026-09-01T20:51:26.592Z",
-  "shift": "Foreman — night of 2 September (the admin dashboard, brief 07)",
+  "edition": 200,
+  "updatedAt": "2026-09-01T22:22:19.702Z",
+  "shift": "Foreman — night of 2 September (the Crew tab's own surface, brief 08)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,6 +111,11 @@
     ],
     "chips": [
       {
+        "label": "Crew now works in dark mode, and nothing it says has moved",
+        "tone": "good",
+        "source": "PR #409, merged 56d2ba5b. 208 hard-coded colours to zero across thirteen components; driven both themes at 1440 and 1024."
+      },
+      {
         "label": "Admin and Moderation are inside the studio now, not pages that replace it",
         "tone": "good",
         "source": "Brief 05, PR #406 merged 46c24e02. Opening Admin used to take the rail, topbar and account menu away. Every page's content is untouched on purpose — your own acceptance test."
@@ -129,11 +134,6 @@
         "label": "The measuring caught itself being wrong twice before it caught the code",
         "tone": "warn",
         "source": "One check counted the studio's own topbar as a leftover and failed on a correct build; five more passed over nothing at all. Both found by running it against the old build first."
-      },
-      {
-        "label": "The queue: 108 open · 5 urgent · 8 you ordered · 27 rotting",
-        "tone": "warn",
-        "source": "Rotting is flat on last night, and twelve are still the 25 August Lost-and-Found batch crossing the seven-day line together. #395 closed tonight; three of yours came off 'blocked'."
       }
     ]
   },
@@ -1277,6 +1277,41 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "eye-398-crew-surface",
+      "title": "Crew in dark mode — does the before/after read the way you expected?",
+      "issueNumber": 398,
+      "filedAt": "2026-09-01T22:22:19.702Z",
+      "state": "open",
+      "question": "Your brief 08 said the surface only: type, tokens, section grammar, width — and that if the diff moved a paragraph, dropped a quote, added a second progress number or split history apart, it had gone wrong. None of those moved, and there are tests holding each one. What I want your eye on is whether the page still reads like a briefing rather than a dashboard, and whether the eye gallery breaking out to the wider measure is the right call at your screen size.",
+      "frames": [
+        {
+          "key": "crew-eye/cda394e2-72d0-418b-a567-2591bd5d4875.png",
+          "arm": "before",
+          "caption": "Crew last night, in dark mode. The page is a white sheet inside a dark app — Crew had never been dark-tested, and this is what that looked like."
+        },
+        {
+          "key": "crew-eye/7f7e7a88-a106-4ebb-929b-c5193ab9c74e.png",
+          "arm": "after",
+          "caption": "The same region tonight. Same words, same order, same counts — the surface follows the theme now."
+        },
+        {
+          "key": "crew-eye/d2476a18-3add-4ee8-aca4-6faddd24dd47.png",
+          "arm": "after · your quote",
+          "caption": "Your confirming quote lost its italic (it already had a rule and an attribution) and its clock is 24-hour now — it read 07:17 pm directly above a shift row reading 20:17. Found by looking at the page, not by a test."
+        },
+        {
+          "key": "crew-eye/f6e9fff1-8487-4319-800a-4754ddb6ebc6.png",
+          "arm": "after · the one exception",
+          "caption": "The eye gallery is the only section that breaks out past the 790px reading column, to 1240px — your §2. This is the width you would judge frames at."
+        },
+        {
+          "key": "crew-eye/0245ec04-bb86-4094-926a-5baabbe7cbff.png",
+          "arm": "after · light",
+          "caption": "The same page in light mode, so the change is a theme rather than a repaint."
+        }
+      ]
+    },
     {
       "id": "admin-overview-397-frames",
       "title": "The dashboard leads with what needs you, and almost nothing is coloured (brief 07)",
@@ -2657,6 +2692,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-409-crew-surface",
+      "title": "Crew takes the house type and tokens (brief 08)",
+      "status": "merged",
+      "note": "#398 · the fourth of your five staff briefs",
+      "prNumber": 409
+    },
+    {
       "id": "admin-overview-397",
       "title": "The dashboard opens with what needs a person, and colour finally means something (brief 07, shift 3 of 5)",
       "status": "merged",
@@ -4007,7 +4049,7 @@
     81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T20:48:34.419Z",
+    "readAt": "2026-09-01T22:20:57.206Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4022,11 +4064,6 @@
       {
         "issueNumber": 392,
         "title": "A suspended customer's only appeal link points at the pre-rebrand domain — one invisible attribute, not a branding change",
-        "urgent": false
-      },
-      {
-        "issueNumber": 398,
-        "title": "SHIFT 4 of 5 — Crew: surface only, and the built content architecture WINS over the mockup (brief 08) — BLOCKED on #395",
         "urgent": false
       },
       {
