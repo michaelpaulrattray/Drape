@@ -1,7 +1,7 @@
 {
-  "edition": 187,
-  "updatedAt": "2026-09-01T07:08:11.222Z",
-  "shift": "Foreman - shift 2026-09-01 16:05 AEST (foreman-165)",
+  "edition": 188,
+  "updatedAt": "2026-09-01T07:57:03.309Z",
+  "shift": "Foreman - shift 2026-09-01 17:55 AEST (foreman-166)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1221,8 +1221,8 @@
           "consequence": "A real piece of design work, and it cannot be proven to work until your Fable allowance is back - so it would ship untested, which is how the last three dead controls got written."
         }
       ],
-      "recommendation": "ANSWERED - your reply #77: \"A. The road already exists; what it needs is one honest sentence, not a second road nobody can test yet.\" Recorded verbatim at the TOP of card #368 rather than only in a comment, and the new-button clause is struck from it. The remaining work is small and specific - make the label road say what it really does, and make the second press work - and it is the next shift's first job.",
-      "state": "answered",
+      "recommendation": "DONE - your answer \"A\" is built and merged (PR #380), and no new button was made. The label road now says what it really does, in the two places that describe it, and a check keeps those sentences honest. Nothing here is waiting on you.",
+      "state": "done",
       "issueNumber": 368,
       "filedAt": "2026-09-01T15:45:00+10:00"
     }
@@ -2358,6 +2358,13 @@
   ],
   "pipeline": [
     {
+      "id": "reviewer-road-honest-368",
+      "title": "The reviewer's manual button works once - and the instructions now say so (#368)",
+      "status": "merged",
+      "prNumber": 380,
+      "note": "Your words: \"A. The road already exists; what it needs is one honest sentence, not a second road nobody can test yet.\" So nothing new was built.\n\nWhat was wrong: when a night wants a second opinion on its own work, it asks for one by sticking a label on the pull request. Our own instructions said that re-runs the reviewer. It does - the FIRST time. Ask twice and nothing happens, because the label is already there and GitHub only reacts to it going ON. Worse, the command still reports success, so the night thinks it asked and sits waiting for an answer that was never requested.\n\nI measured it rather than taking the card's word for it, on a closed card so no review run was spent: first press, one event. Second press, still one, and the command exited happily. Take the label off and put it back, two events. So the recipe is remove-then-add, and that is now written where anyone reading the instructions will see it.\n\nA check was added so those sentences cannot quietly go back to the confident version - it finds every file in the project that hands out the command and insists each one hands out the fix beside it, so a file written next year is covered without anyone remembering to update the check.\n\nWorth saying because it is the sort of thing that flatters a report: when I tried to prove the new check could actually FAIL, it turned out it had been passing itself. The check quotes the command in its own text, so it counted itself as a file that documents the button - and satisfied its own rule. Renaming the command everywhere else broke nothing. Fixed, and the reason is written into the file."
+    },
+    {
       "id": "rail-cog-373",
       "title": "The rail's gear is a cog now - you were right that it read as a filter (#373)",
       "status": "merged",
@@ -3400,9 +3407,9 @@
       "state": "resolved"
     },
     {
-      "id": "queue-shape-165",
-      "title": "The queue tonight: 98 open, three of your orders done - and the stale pile went 0 to 14 for an honest reason",
-      "detail": "98 cards open, 6 urgent. THREE of them were yours by order and all three are built, merged and live tonight - #373, #372 and #375. THREE of your orders are still open: #321 (the icon set's second half - built already, it wants your eye and not a rebuild), #368 (you answered it an hour ago; the small remaining fix is the next shift's first job) and #374 (Section 04, the account menu - a section, not a small one).\n\nTHE STALE PILE, and the number moved a lot: last night's edition said 4 cards had gone a week untouched. Tonight it is 14. That is not a week of neglect - 29 open cards were all filed in one sitting on 25 August, and they are crossing the seven-day line together, in a batch, hours apart. FIFTEEN MORE cross within the next day, so this number goes to about 29 and then stops. Nothing is stuck; they simply need re-reading against the code before anyone trusts what they say, which is the same freshness pass that found four documents contradicting the code last week.\n\nWorth saying because it nearly went in wrong: my first count said ZERO, because it compared dates by day and these are seven days and two hours old. The four the last shift reported were real; so are tonight's fourteen.",
+      "id": "queue-shape-166",
+      "title": "The queue tonight: 97 open, and TWO of your orders left - the stale pile is 14, exactly as predicted",
+      "detail": "97 cards open, 6 urgent. TWO of your orders are still open, and neither is a rebuild:\n\n#321 - the icon set's second half. BUILT ALREADY. It wants your eye, not work. Three shifts in a row have now passed that same sentence along; it is not stuck, it is finished and waiting.\n#374 - Section 04, the account menu. A section rather than a small card, so it gets its own night.\n\n#368 came off the list tonight - that is the one you answered yesterday evening.\n\nTHE STALE PILE is 14, which is what last night's edition said it would be and for the reason it gave: 29 cards were all filed in one sitting on 25 August and are crossing the seven-day line together. About fifteen more cross within the day, so expect roughly 29 and then a stop. Nothing is stuck. They need re-reading against the code before anyone trusts what they say - which is exactly what tonight's card turned out to need, and two of its three claims did not survive it.",
       "state": "open",
       "severity": "warning"
     },
@@ -3429,8 +3436,8 @@
     },
     {
       "id": "gate-review-arm-broken-219",
-      "title": "Your Fable allowance is still out - 27 refusals now, and it has been down about four days",
-      "detail": "Tonight’s PR (#369) is the 27th refusal, and it was read at the action log rather than at the red tick: the reviewer returned `is_error: true` after about twenty seconds with no verdict of any kind. So nothing in that diff was judged by it, and it was merged on the machine gate alone - which your standing rule allows for a change that touches no money and no login path. This one is a stylesheet and a test file.\n\nThe thing that is easy to get backwards: a RED review check does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A real verdict rides a GREEN check as a comment.\n\nOpus is answering fine on the same machine and the same login - it ran tonight’s whole shift. It is your Fable 5 allowance specifically, and N1 stays open until it can do the milestone read.",
+      "title": "Your Fable allowance is still out - about five days now, and tonight's red tick was NOT one of them",
+      "detail": "Still down. Every pull request since has merged on the machine gate alone, which your standing rule allows for a change that touches no money and no login path.\n\nTONIGHT IS DIFFERENT AND WORTH ONE PARAGRAPH, because the page would otherwise show you another red tick and you would reasonably read it as another refusal. Tonight's change edits the reviewer's own settings file. The reviewer refuses to run on any change to its own settings - that is a deliberate safety rule on their side, not ours - so our gate deliberately turns the tick RED rather than letting it go green over a review that never happened. I read the action log rather than the tick, and it says in its own words: \"NO VERDICT - the reviewer cannot run on its own change\". The change was reviewed by hand instead and that review is written on the pull request, which is what that rule asks for.\n\nThe thing that is easy to get backwards, and it is why the log gets read every time: a RED review tick does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A real verdict rides a GREEN tick, as a comment.\n\nOpus is answering fine on the same machine and the same login - it ran tonight's whole shift. It is your Fable 5 allowance specifically, and N1 stays open until it can do the milestone read.",
       "severity": "warning",
       "state": "open"
     },
@@ -3606,17 +3613,12 @@
     77
   ],
   "nextUp": {
-    "readAt": "2026-09-01T07:08:23.117Z",
+    "readAt": "2026-09-01T07:55:20.702Z",
     "items": [
       {
         "issueNumber": 321,
         "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
         "urgent": true
-      },
-      {
-        "issueNumber": 368,
-        "title": "The stall alarm: a shift must stop waiting when no check suite will ever arrive — and review.yml still has no manual re-trigger",
-        "urgent": false
       },
       {
         "issueNumber": 374,
