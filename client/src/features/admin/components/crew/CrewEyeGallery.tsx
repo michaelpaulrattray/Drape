@@ -18,6 +18,24 @@
  * items are still on the page — tagged *You judged* in the one
  * `CrewRecentHistory` block — so nothing he decided has been dropped; there is
  * simply one place for the past instead of three.
+ *
+ * # ⚠ THIS IS THE ONE SECTION THAT BREAKS THE READING COLUMN (brief 08 §2)
+ *
+ * Crew is a 790px column. This section — and only this section — goes to the
+ * 1240px working measure, because its whole job is judging pictures and *"at
+ * 790px a four-up grid gives 180px tiles — too small to see what you are being
+ * asked to decide."* It is a full-bleed wrapper on the section, never a wider
+ * page: everything above and below it stays at the reading measure.
+ *
+ * # ⚠ AND THERE IS NO KEPT TILE, BECAUSE THERE IS NO KEPT ITEM
+ *
+ * §6 asks for the casting keeper grammar — a `3px --accentSolid` underline plus
+ * a pill when kept. This gallery renders `state === "open"` only; #292 moved
+ * every judged item into the history block, which was his own ruling. So a kept
+ * tile cannot occur here, and styling one would be a dead state that reads as
+ * tested. What ships is the other half of the same sentence: dashed while
+ * undecided — true of every tile on this surface by construction, the same way
+ * `NeedsHuman`'s cards are dashed one surface over.
  */
 import { useState } from "react";
 import { CrewEyeViewer } from "./CrewEyeViewer";
@@ -25,6 +43,7 @@ import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { shortDate } from "./CrewProgramBanner";
 import { eyeFrameSrc } from "./eyeFrameSrc";
+import { TableHead } from "@/foundation";
 import type { CrewEyeItem, CrewReplyView } from "./crewTypes";
 
 export function CrewEyeGallery({
@@ -53,26 +72,26 @@ export function CrewEyeGallery({
   if (open.length === 0) return null;
 
   return (
-    <section>
-      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
-        For your eyes {open.length > 0 && <span className="text-[#0A0A0A]">· {open.length}</span>}
-      </h2>
+    <section className="dp-crew__section dp-crew__bleed">
+      <TableHead eyebrow="For your eyes">
+        <span className="dp-crew__meta">{open.length} open</span>
+      </TableHead>
 
-      <div className="space-y-4">
+      <div className="dp-crew__stack">
         {open.map((item) => (
-          <article key={item.id} className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <h3 className="text-base font-semibold text-[#0A0A0A]">{item.title}</h3>
-              <span className="text-[11px] text-[#BBB] shrink-0">
+          <article key={item.id} className="dp-crew__card">
+            <div className="dp-crew__cardhead">
+              <h3 className="dp-crew__title">{item.title}</h3>
+              <span className="dp-crew__ref">
                 {item.issueNumber !== null && <>#{item.issueNumber} · </>}
                 filed {shortDate(item.filedAt)}
               </span>
             </div>
 
             {/* The question leads — what he is judging, not just the picture. */}
-            <p className="mt-3 text-sm leading-relaxed text-[#0A0A0A]">{item.question}</p>
+            <p className="dp-crew__body dp-crew__gap">{item.question}</p>
 
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="dp-crew__frames">
               {item.frames.map((frame, frameIndex) => (
                 <figure key={frame.key}>
                   {/* The thumbnail is the overview; the click opens the
@@ -81,26 +100,24 @@ export function CrewEyeGallery({
                     type="button"
                     onClick={() => setViewing({ itemId: item.id, index: frameIndex })}
                     aria-label={`View full size: ${frame.caption}`}
-                    className="block w-full rounded-lg overflow-hidden border border-[#E5E5E5] bg-[#F6F6F6] cursor-zoom-in"
+                    className="dp-crew__frame"
                   >
                     <img
                       src={eyeFrameSrc(frame.key)}
                       alt={frame.caption}
                       loading="lazy"
-                      className="w-full h-auto block"
+                      className="dp-crew__frameimg"
                     />
                   </button>
-                  <figcaption className="mt-1.5 text-[12px] leading-snug text-[#666]">
-                    {frame.arm && (
-                      <span className="font-medium text-[#0A0A0A] mr-1.5">{frame.arm}</span>
-                    )}
+                  <figcaption className="dp-crew__caption">
+                    {frame.arm && <span className="dp-crew__arm">{frame.arm}</span>}
                     {frame.caption}
                   </figcaption>
                 </figure>
               ))}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-[#EFEFEF]">
+            <div className="dp-crew__rule dp-crew__rule--tight">
               <CrewReplyThread
                 replies={replies.filter((reply) => reply.cardId === item.id)}
                 acknowledgedReplyIds={acknowledgedReplyIds}
@@ -124,7 +141,6 @@ export function CrewEyeGallery({
           onClose={() => setViewing(null)}
         />
       )}
-
     </section>
   );
 }

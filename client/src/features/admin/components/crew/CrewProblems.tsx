@@ -7,8 +7,18 @@
  * renders whenever there is anything to render and never hides behind an empty
  * check on the briefing as a whole — the one case where the page is most broken
  * is the case where this section is the only thing with anything in it.
+ *
+ * ⚠ **THIS IS THE ONE SECTION WHERE COLOUR IS LEGITIMATE (brief 08 §6).** His
+ * words: *"A problem is urgent; a waiting card is not."* Urgent takes
+ * `--errorInk`; a warning does not. Before this brief, urgent wore the same
+ * ink border as everything else on the page, so the section that exists to
+ * flag trouble looked exactly like the section that lists rungs.
+ *
+ * `--errorInk` and never plain `--error`, because this is TEXT: `tokens.css`
+ * records `--error` on the dark surface at 3.40:1, below the AA floor.
  */
 import { cn } from "@/lib/utils";
+import { TableHead } from "@/foundation";
 import type { CrewProblem } from "./crewTypes";
 
 const SEVERITY_ORDER: Record<string, number> = { urgent: 0, warning: 1, info: 2 };
@@ -26,25 +36,27 @@ export function CrewProblems({ problems }: { problems: readonly CrewProblem[] })
   if (open.length === 0) return null;
 
   return (
-    <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">Problems</h2>
-      <ul className="space-y-4">
+    <section className="dp-crew__card">
+      {/* No count: §3 moves the counts that were already rendered inline, and
+          this section never had one. A new number is content, not surface. */}
+      <TableHead eyebrow="Problems" />
+      <ul className="dp-crew__probs dp-crew__gap">
         {open.map((problem) => (
           <li key={problem.id}>
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div className="dp-crew__focus">
               <span
                 className={cn(
-                  "text-[11px] px-2 py-0.5 rounded-full border shrink-0",
-                  problem.severity === "urgent"
-                    ? "border-[#0A0A0A] text-[#0A0A0A]"
-                    : "border-[#D5D5D5] text-[#999]",
+                  "dp-crew__sev",
+                  problem.severity === "urgent" && "dp-crew__sev--urgent",
                 )}
               >
                 {SEVERITY_LABEL[problem.severity] ?? problem.severity}
               </span>
-              <h3 className="text-sm font-medium text-[#0A0A0A]">{problem.title}</h3>
+              <h3 className="dp-crew__title">{problem.title}</h3>
             </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-[#666]">{problem.detail}</p>
+            <p className="dp-crew__body dp-crew__body--soft dp-crew__gap--tight">
+              {problem.detail}
+            </p>
           </li>
         ))}
       </ul>

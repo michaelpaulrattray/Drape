@@ -161,6 +161,25 @@ const GUARDED_PATHS = [
   "features/admin/overview/chartTokens.ts",
   "features/admin/overview/overview.css",
   "pages/AdminOverview.tsx",
+
+  /*
+    Brief 08 §5/§8, the founder's own bar: *"Every hex literal goes … Zero hex
+    literals under `components/crew/`; `token-guard` extended and passing."*
+
+    The whole directory, like brief 07's and unlike brief 06's file list —
+    there is nothing under `components/crew/` that brief 08 does not own, so
+    the narrow enrolment that directory-level guarding was avoiding has no
+    population here.
+
+    ⚠ **THE PAGE IS ON THE LIST TOO, AND IT WAS NOT IN THE BRIEF.** §8's bar
+    names the components directory; `AdminCrew.tsx` held nine more literals in
+    three state cards (loading, flag-dark, fault) that the mockup never
+    described because they are the page's own failure states rather than the
+    briefing. Guarding the directory and leaving the page that mounts it is
+    how a surface reads as clean while its worst-case screens do not.
+  */
+  "features/admin/components/crew",
+  "pages/AdminCrew.tsx",
 ];
 
 /**
@@ -194,6 +213,33 @@ const HEX_CARVE_OUTS: Record<string, string> = {
   */
   "features/staff/section05-guard.test.ts":
     "brief 05's own positive control — it bans `bg-[#EBEBEB]` and so must contain it",
+  /*
+    ⚠ **THE TRAP THIS FILE'S OWN DOCBLOCK PREDICTS, MET IN THE WILD (#398).**
+    Enrolling `features/admin/components/crew` caught SIX offenders and every
+    one of them is an issue number in a `describe`/`it` TITLE — `(#291)`,
+    `(#292)` ×3, `(#290)`, `(#298)`. A title is a string, not a comment, so
+    `code()` never reaches it, and every digit is a hex digit.
+
+    The docblock's prescription is *"move the reference into a comment"*, and
+    it is the right prescription — but brief 08 §8's own bar is that
+    `crewTypes.test.ts` **passes untouched**, which is how that brief proves a
+    surface-only change did not move what the page derives. Renaming six tests
+    to satisfy a colour guard would spend that proof on nothing.
+
+    So the exemption is the file, and its narrowness is the whole argument:
+    this is a TEST of pure derivation functions. It renders no markup, imports
+    no stylesheet and will never carry a colour — the same reasoning as the row
+    directly above, which also says a carve-out for a COMPONENT would be a
+    different decision. The rest of the directory is guarded by directory, so
+    a new component under `crew/` is measured the moment it exists.
+
+    ⚠ It is self-cleaning rather than permanent: the honesty arm below reddens
+    the day this file stops containing a hex-shaped string, and its message
+    says to remove this row. A shift that later moves those titles into
+    comments is told to delete the exemption in the same run.
+  */
+  "features/admin/components/crew/crewTypes.test.ts":
+    "issue numbers in test titles, in the one file brief 08 §8 requires to pass untouched — a pure-derivation test that renders nothing",
 };
 
 const HEX_LITERAL = /#[0-9a-fA-F]{3,8}\b/g;

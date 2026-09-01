@@ -67,6 +67,15 @@
  * GitHub token, which is his decision rather than a shift's (migration 0056's
  * header). So the age is printed. A number without its age is the confident
  * wrong number this whole card is about.
+ *
+ * # ⚠ BRIEF 08 NEVER SAW THIS COMPONENT — AND IT IS THE BIGGEST FILE HERE
+ *
+ * #277/#285/#324/#325 all landed after the mockup was drawn, so §6 does not
+ * list it; it held 49 of the directory's 199 colour literals, more than any
+ * other file. It is restyled to the same grammar under §8's bar, and no
+ * behaviour is touched: the switch is still a real `<button role="switch">`,
+ * every count keeps its age and its exclusion clause, and the *Not relevant*
+ * tap keeps the sentence that replaces it.
  */
 import { useState } from "react";
 
@@ -87,6 +96,7 @@ import {
   backgroundWorkAllowed,
 } from "@shared/crewWorkSwitches";
 import { cn } from "@/lib/utils";
+import { TableHead } from "@/foundation";
 import type { CrewCardIntentsView, CrewWorkStateView } from "./crewTypes";
 
 /** "counted 14 min ago" — coarse, like everything else on this page. */
@@ -107,6 +117,10 @@ function ago(value: Date | string, now: number): string {
  * A real `<button role="switch">` with `aria-checked` rather than a styled
  * `div`: this is the one control on this panel and it must be reachable by
  * keyboard like the reply boxes beside it.
+ *
+ * ⚠ Its focus ring is the shell's blanket `.dp-root :focus-visible` rule now,
+ * not a hand-written outline colour. That was the last hex on this control and
+ * it was the one that mattered least in light mode and most in dark.
  */
 function Switch({
   checked, disabled, onChange, label,
@@ -124,20 +138,9 @@ function Switch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={cn(
-        "relative shrink-0 w-9 h-5 rounded-full border transition-colors",
-        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]",
-        checked ? "bg-[#0A0A0A] border-[#0A0A0A]" : "bg-white border-[#D5D5D5]",
-        disabled && "opacity-40 cursor-not-allowed",
-      )}
+      className={cn("dp-crew__switch", checked && "dp-crew__switch--on")}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "absolute top-[2px] w-[14px] h-[14px] rounded-full transition-all",
-          checked ? "left-[20px] bg-white" : "left-[2px] bg-[#999]",
-        )}
-      />
+      <span aria-hidden className="dp-crew__knob" />
     </button>
   );
 }
@@ -176,15 +179,15 @@ export function CrewBackgroundWork({
   */
   if (!workState.available) {
     return (
-      <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-        <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-2">Background work</h2>
-        <p className="text-[14px] text-[#666]">Not live yet.</p>
-        <p className="text-[12px] text-[#999] mt-1">
+      <section className="dp-crew__card">
+        <TableHead eyebrow="Background work" />
+        <p className="dp-crew__mission dp-crew__body--soft dp-crew__gap">Not live yet.</p>
+        <p className="dp-crew__body dp-crew__body--quiet dp-crew__gap--tight">
           The switches need their tables in this database — one command, and it is yours to run:
-          {" "}
-          <span className="font-mono text-[11px] text-[#666]">
-            railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-work-switches.mts --production
-          </span>
+        </p>
+        <p className="dp-crew__command dp-crew__gap--tight">
+          railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-work-switches.mts
+          --production
         </p>
       </section>
     );
@@ -199,13 +202,14 @@ export function CrewBackgroundWork({
   };
 
   return (
-    <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-4 mb-1">
-        <div className="min-w-0">
-          <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-1">Background work</h2>
-          <p className="text-[14px] text-[#0A0A0A]">
+    <section className="dp-crew__card">
+      <TableHead eyebrow="Background work" />
+
+      <div className="dp-crew__switchrow dp-crew__gap">
+        <div className="dp-crew__min">
+          <p className="dp-crew__mission">
             {master ? "On" : "Off"}
-            <span className="text-[#999]">
+            <span className="dp-crew__body--quiet">
               {workState.changedAt ? ` · changed ${ago(workState.changedAt, now)}` : ""}
             </span>
           </p>
@@ -218,13 +222,13 @@ export function CrewBackgroundWork({
         />
       </div>
 
-      <p className="text-[12px] leading-[1.55] text-[#666] mb-4">
+      <p className="dp-crew__conseq dp-crew__gap--tight">
         {master
           ? "With no focus confirmed and no side lane named, shifts may work the categories switched on below."
           : "With no focus confirmed and no side lane named, shifts stop and write why they are idle."}
       </p>
 
-      <ul className="space-y-2.5">
+      <ul className="dp-crew__cats dp-crew__gap">
         {CREW_WORK_CATEGORIES.map((category) => {
           const own = workState.switches[category.key] ?? false;
           const live = backgroundWorkAllowed(workState.switches, category.key);
@@ -234,9 +238,9 @@ export function CrewBackgroundWork({
              `Process (12)` looks exactly as it does today. */
           const excluded = queueExclusionSentence(count?.excluded ?? {});
           return (
-            <li key={category.key} className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className={cn("text-[13px]", live ? "text-[#0A0A0A]" : "text-[#666]")}>
+            <li key={category.key} className="dp-crew__switchrow">
+              <div className="dp-crew__min">
+                <p className={cn("dp-crew__catname", !live && "dp-crew__catname--off")}>
                   {category.label}
                   {/* ZERO IS A REAL ANSWER AND IS DRAWN. A category with nothing
                       in it must not vanish, or he cannot tell "nothing to do"
@@ -248,11 +252,11 @@ export function CrewBackgroundWork({
                       a count that shrinks with its reason a paragraph away is
                       the confident-wrong-number failure this panel exists to
                       prevent. `Bugs (11, 2 already queued)`. */}
-                  <span className="text-[#999]">
+                  <span className="dp-crew__count">
                     {" "}({count ? count.openCount : "—"}{excluded ? `, ${excluded}` : ""})
                   </span>
                 </p>
-                <p className="text-[11px] leading-[1.5] text-[#999]">
+                <p className="dp-crew__blurb">
                   {category.blurb}
                   {count && <> · counted {ago(count.countedAt, now)}</>}
                   {!count && <> · not counted yet</>}
@@ -264,12 +268,12 @@ export function CrewBackgroundWork({
                   rule truncates rather than wrapping, so a switch panel stays a
                   switch panel however long a title gets.
 
-                  `truncate` needs every ancestor to allow shrinking; the `div`
-                  above carries `min-w-0` for exactly that reason and the `li`
-                  is the flex parent it shrinks inside.
+                  The ellipsis needs every ancestor to allow shrinking; the
+                  `div` above carries `min-width: 0` for exactly that reason and
+                  the `li` is the flex parent it shrinks inside.
                 */}
                 {titles.shown.length > 0 && (
-                  <ul className="mt-1.5 ml-0.5 pl-2.5 border-l border-[#EEE] space-y-0.5">
+                  <ul className="dp-crew__titles">
                     <CardTitles
                       titles={titles.shown}
                       intents={intentsByCard}
@@ -279,7 +283,7 @@ export function CrewBackgroundWork({
                     {/* The tail, never a scroll — and never drawn without a head
                         above it to be the tail OF (`queueTitlesView`). */}
                     {titles.moreCount > 0 && (
-                      <li className="text-[11px] leading-[1.5] text-[#999]">+{titles.moreCount} more</li>
+                      <li className="dp-crew__blurb">+{titles.moreCount} more</li>
                     )}
                   </ul>
                 )}
@@ -298,7 +302,7 @@ export function CrewBackgroundWork({
       {/* The master's meaning, said once rather than repeated per row. A row can
           be on while the master is off; it simply does not run. */}
       {!master && Object.entries(workState.switches).some(([key, on]) => on && key !== CREW_WORK_MASTER_KEY) && (
-        <p className="text-[11px] text-[#999] mt-4 pt-3 border-t border-[#EEE]">
+        <p className="dp-crew__foot">
           Some categories are switched on but nothing runs while the master is off.
         </p>
       )}
@@ -358,16 +362,17 @@ function CardTitles({
            the record of what was done and why. */
         const marked = sentence !== null && intent?.resolution == null;
         return (
-          <li key={card.number} className="text-[11px] leading-[1.5] min-w-0">
-            <div className="flex items-start gap-2">
-              {/* ⚠ `flex-1` IS WHAT MAKES THE BUTTONS A COLUMN RATHER THAN A
+          <li key={card.number} className="dp-crew__cardtitle">
+            <div className="dp-crew__cardrow">
+              {/* ⚠ `flex: 1` IS WHAT MAKES THE BUTTONS A COLUMN RATHER THAN A
                   RAGGED EDGE. Without it the title shrinks to its content and
                   the tap lands wherever that title happens to end — measured at
                   the frame, `Not relevant` sat mid-row on the short titles and
-                  at the margin on the long ones, across 56 rows. `min-w-0` is
-                  what lets `truncate` work inside a flex child. */}
-              <span className="flex-1 min-w-0 text-[#666] truncate" title={`#${card.number} ${card.title}`}>
-                <span className="text-[#999] tabular-nums">#{card.number}</span>
+                  at the margin on the long ones, across 56 rows. `min-width: 0`
+                  is what lets the ellipsis work inside a flex child. */}
+              <span className="dp-crew__cardname" title={`#${card.number} ${card.title}`}>
+                {/* An issue number is a measured value, so it is mono (§4). */}
+                <span className="dp-crew__mono">#{card.number}</span>
                 {" "}
                 {card.title}
               </span>
@@ -379,14 +384,7 @@ function CardTitles({
                   type="button"
                   disabled={pendingCard === card.number}
                   onClick={() => onIntent(card.number, marked ? null : "close")}
-                  className={cn(
-                    "shrink-0 text-[10px] leading-[1.4] px-1.5 py-[1px] rounded border transition-colors",
-                    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]",
-                    marked
-                      ? "border-[#D5D5D5] text-[#666] hover:text-[#0A0A0A]"
-                      : "border-transparent text-[#BBB] hover:text-[#0A0A0A] hover:border-[#D5D5D5]",
-                    pendingCard === card.number && "opacity-40 cursor-not-allowed",
-                  )}
+                  className={cn("dp-crew__tap", marked && "dp-crew__tap--marked")}
                   aria-label={
                     marked
                       ? `Undo — keep #${card.number} in the queue`
@@ -397,7 +395,7 @@ function CardTitles({
                 </button>
               )}
             </div>
-            {sentence && <p className="text-[#999] mt-[1px]">{sentence}</p>}
+            {sentence && <p className="dp-crew__taken">{sentence}</p>}
           </li>
         );
       })}
@@ -459,9 +457,11 @@ function PipelineGroups({
   */
   if (workState.groups.length === 0) {
     return (
-      <div className="mt-5 pt-4 border-t border-[#EEE]">
-        <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-1.5">The rest of the pipeline</h3>
-        <p className="text-[12px] text-[#999]">Not counted yet — the next shift fills this in when it starts.</p>
+      <div className="dp-crew__rule dp-crew__rule--tight">
+        <h3 className="dp-crew__subhead">The rest of the pipeline</h3>
+        <p className="dp-crew__blurb dp-crew__gap--tight">
+          Not counted yet — the next shift fills this in when it starts.
+        </p>
       </div>
     );
   }
@@ -481,37 +481,37 @@ function PipelineGroups({
   }, null);
 
   return (
-    <div className="mt-5 pt-4 border-t border-[#EEE]">
-      <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-1">The rest of the pipeline</h3>
-      <p className="text-[13px] text-[#0A0A0A] mb-1">
+    <div className="dp-crew__rule dp-crew__rule--tight">
+      <h3 className="dp-crew__subhead">The rest of the pipeline</h3>
+      <p className="dp-crew__catname dp-crew__gap--tight">
         {total} open in total
-        <span className="text-[#999]">
+        <span className="dp-crew__count">
           {" "}· {onOffer} on offer above, {total - onOffer} not
           {oldest ? ` · counted ${ago(oldest, now)}` : ""}
         </span>
       </p>
-      <p className="text-[11px] leading-[1.55] text-[#666] mb-3.5">
+      <p className="dp-crew__conseq dp-crew__gap--tight">
         {/* His card's own sentence, and the reason there are no switches here. */}
         These are not offered as background work. Each line says why — the ones below feature work
         are yours to decide, not a shift&apos;s.
       </p>
 
-      <ul className="space-y-2.5">
+      <ul className="dp-crew__cats dp-crew__gap">
         {CREW_PIPELINE_VISIBLE_GROUPS.map((group) => {
           const row = byKey.get(group.key);
           const titles = queueTitlesView(row?.openCount ?? 0, row?.titles ?? []);
           return (
-            <li key={group.key} className="min-w-0">
-              <p className="text-[13px] text-[#0A0A0A]">
+            <li key={group.key} className="dp-crew__min">
+              <p className="dp-crew__catname">
                 {group.label}
                 {/* ZERO IS DRAWN, for the switch rows' reason: `Blocked (0)` is a
                     real answer, and a group that vanished when it emptied would
                     make "nothing there" and "not shown" identical. */}
-                <span className="text-[#999]"> ({row ? row.openCount : "—"})</span>
+                <span className="dp-crew__count"> ({row ? row.openCount : "—"})</span>
               </p>
-              <p className="text-[11px] leading-[1.5] text-[#999]">{group.blurb}</p>
+              <p className="dp-crew__blurb">{group.blurb}</p>
               {titles.shown.length > 0 && (
-                <ul className="mt-1.5 ml-0.5 pl-2.5 border-l border-[#EEE] space-y-0.5">
+                <ul className="dp-crew__titles">
                   <CardTitles
                     titles={titles.shown}
                     intents={intentsByCard}
@@ -519,7 +519,7 @@ function PipelineGroups({
                     pendingCard={intentPendingCard}
                   />
                   {titles.moreCount > 0 && (
-                    <li className="text-[11px] leading-[1.5] text-[#999]">+{titles.moreCount} more</li>
+                    <li className="dp-crew__blurb">+{titles.moreCount} more</li>
                   )}
                 </ul>
               )}

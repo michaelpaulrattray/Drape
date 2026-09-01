@@ -15,6 +15,14 @@
  * only — the viewer adds no address of any kind. Esc, the close button, and a
  * backdrop click all dismiss; arrow keys page; focus lands on the dialog on
  * open so the keyboard works immediately.
+ *
+ * ⚠ **THIS FILE HELD NO HEX AND STILL CHANGED (#398).** Its colours were
+ * `white/60`, `black/40` and an inline `rgba(10,10,10,.92)` — invisible to the
+ * hex guard by construction, and every one of them a scrim value the token
+ * file already owns. A viewer sits OFF the page's ground, so its text is
+ * `--onScrim` and never `--ink`: `--ink` flips with the theme and the scrim
+ * does not, which is white-on-white the first time somebody reads this page in
+ * light mode.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -71,8 +79,7 @@ export function CrewEyeViewer({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex flex-col"
-      style={{ background: "rgba(10, 10, 10, 0.92)" }}
+      className="dp-crew__viewer"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -82,18 +89,15 @@ export function CrewEyeViewer({
     >
       {/* Top bar: position, 1:1 toggle, close. Stops propagation so its own
           clicks never fall through to the backdrop dismiss. */}
-      <div
-        className="flex items-center justify-between px-4 py-3 shrink-0"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <span className="text-[12px] tabular-nums text-white/60">
+      <div className="dp-crew__viewerbar" onClick={(event) => event.stopPropagation()}>
+        <span className="dp-crew__viewerpos">
           {index + 1} / {frames.length}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="dp-crew__focus">
           <button
             type="button"
             onClick={() => setActualSize((size) => !size)}
-            className="text-[12px] px-2.5 py-1 rounded-full border border-white/25 text-white/80 hover:text-white hover:border-white/60 transition-colors"
+            className="dp-crew__viewerbtn"
           >
             {actualSize ? "Fit to screen" : "View 1:1"}
           </button>
@@ -101,7 +105,7 @@ export function CrewEyeViewer({
             type="button"
             onClick={onClose}
             aria-label="Close viewer"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+            className="dp-crew__viewerclose"
           >
             <X className="w-4 h-4" />
           </button>
@@ -112,27 +116,20 @@ export function CrewEyeViewer({
           container scrolls, so a 1536x2304 render is inspectable pixel for
           pixel. Clicks on the image itself do not dismiss. */}
       <div
-        className={cn(
-          "flex-1 min-h-0",
-          actualSize ? "overflow-auto" : "flex items-center justify-center overflow-hidden",
-        )}
+        className={cn("dp-crew__viewerstage", actualSize && "dp-crew__viewerstage--actual")}
       >
         <img
           src={eyeFrameSrc(frame.key)}
           alt={frame.caption}
           onClick={(event) => event.stopPropagation()}
-          className={cn(actualSize ? "block m-auto" : "max-w-[92vw] max-h-full object-contain")}
-          style={actualSize ? { maxWidth: "none" } : undefined}
+          className="dp-crew__viewerimg"
         />
       </div>
 
       {/* Caption stays with the picture — he never loses what he is judging. */}
-      <div
-        className="shrink-0 px-6 py-4 text-center"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <p className="text-[13px] leading-snug text-white/85 max-w-3xl mx-auto">
-          {frame.arm && <span className="font-semibold text-white mr-2">{frame.arm}</span>}
+      <div className="dp-crew__viewercap" onClick={(event) => event.stopPropagation()}>
+        <p>
+          {frame.arm && <span className="dp-crew__viewerarm">{frame.arm}</span>}
           {frame.caption}
         </p>
       </div>
@@ -144,7 +141,7 @@ export function CrewEyeViewer({
           type="button"
           aria-label="Previous frame"
           onClick={(event) => { event.stopPropagation(); page(prev); }}
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white bg-black/40 hover:bg-black/60 transition-colors"
+          className="dp-crew__viewernav dp-crew__viewernav--prev"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -154,7 +151,7 @@ export function CrewEyeViewer({
           type="button"
           aria-label="Next frame"
           onClick={(event) => { event.stopPropagation(); page(next); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white bg-black/40 hover:bg-black/60 transition-colors"
+          className="dp-crew__viewernav dp-crew__viewernav--next"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

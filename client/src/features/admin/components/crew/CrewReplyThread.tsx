@@ -7,11 +7,15 @@
  * timestamp theatre — the label means the team's own next push proved it was
  * read, which is the only claim we can make truthfully.
  *
- * Plain text with line breaks, no markdown (design §10). `whitespace-pre-wrap`
- * is the whole renderer: what he typed is what he sees.
+ * Plain text with line breaks, no markdown (design §10). `white-space:
+ * pre-wrap` is the whole renderer: what he typed is what he sees.
+ *
+ * ⚠ **THE TICK IS GONE (brief 08 §6).** His words: *"Acknowledged replies get a
+ * quiet `--faint` marker, not a colour."* The sentence already says *Seen by
+ * the crew*; a check glyph beside it is a second marker for one fact, which is
+ * the same argument that took the italic off the quote. Seen and unseen now
+ * differ by their words and by weight of grey, never by hue or by an icon.
  */
-import { Check } from "lucide-react";
-
 import { shortDate } from "./CrewProgramBanner";
 import type { CrewReplyView } from "./crewTypes";
 
@@ -34,26 +38,20 @@ export function CrewReplyThread({
   const ordered = [...replies].sort((a, b) => rank(a.id) - rank(b.id));
 
   return (
-    <ul className="space-y-3">
+    <ul className="dp-crew__thread">
       {ordered.map((reply) => {
         const seen = acknowledgedReplyIds.includes(reply.id);
         return (
-          <li key={reply.id} className="pl-3 border-l-2 border-[#0A0A0A]">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="text-[11px] font-medium text-[#0A0A0A]">{reply.author}</span>
-              <span className="text-[11px] text-[#BBB]">{shortDate(String(reply.createdAt))}</span>
-              {seen ? (
-                <span className="text-[11px] text-[#999] inline-flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  Seen by the crew
-                </span>
-              ) : (
-                <span className="text-[11px] text-[#BBB]">Not read yet</span>
-              )}
+          <li key={reply.id} className="dp-crew__entry">
+            <div className="dp-crew__entryhead">
+              <span className="dp-crew__who">{reply.author}</span>
+              {/* A time is a measured value, so it is mono (§4). */}
+              <span className="dp-crew__mono">{shortDate(String(reply.createdAt))}</span>
+              <span className={seen ? "dp-crew__seen" : "dp-crew__unseen"}>
+                {seen ? "Seen by the crew" : "Not read yet"}
+              </span>
             </div>
-            <p className="mt-1 text-sm leading-relaxed text-[#0A0A0A] whitespace-pre-wrap">
-              {reply.body}
-            </p>
+            <p className="dp-crew__said">{reply.body}</p>
           </li>
         );
       })}

@@ -11,6 +11,9 @@
  * the item came from. **That distinction is ours, not his.** One heading now,
  * one list, and the kind is a tag on the row.
  *
+ * ⚠ **BRIEF 08 §7 FORBIDS SPLITTING THIS BACK APART**, in as many words: *"If
+ * the diff … splits history back apart, it has gone wrong."* It is one list.
+ *
  * # THE `done` TAG IS DERIVED, WHICH IS THE HALF THAT WAS BROKEN
  *
  * `answered` used to be written by a shift the moment he replied and never
@@ -19,9 +22,13 @@
  * way round to be wrong. `scripts/crew-desk-sweep.mts` now promotes
  * `answered → done` from the issue's own state every shift. This component
  * only renders what that sweep found.
+ *
+ * ⚠ **AND §6 ASKS FOR IT DIMMER THROUGHOUT** — `--metaStrong` bodies, mono
+ * dates and ids, no card per entry. His reason: *"It is memory, not work."*
  */
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { TableHead } from "@/foundation";
 import { foldHistory, recentHistory } from "./crewTypes";
 import type { CrewEyeItem, CrewNeedsYouCard, CrewPipelineItem } from "./crewTypes";
 
@@ -51,41 +58,30 @@ export function CrewRecentHistory({
   const hidden = showAll ? 0 : older.length;
 
   return (
-    <section
-      className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6"
-      data-testid="crew-recent-history"
-    >
-      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
-        Already dealt with
-      </h2>
+    <section className="dp-crew__card" data-testid="crew-recent-history">
+      {/* ⚠ NO COUNT IN THE META. §3 moves the count that was ALREADY rendered
+          inline — `Needs you · 3` — into the head's right slot. This section
+          never had one, and adding a number here would be content rather than
+          surface, which is the one thing §1 forbids. */}
+      <TableHead eyebrow="Already dealt with" />
 
-      <ul className="space-y-2">
+      <ul className="dp-crew__hist dp-crew__gap">
         {visible.map((row) => (
-          <li key={row.key} className="flex items-baseline gap-3 text-sm">
-            <span
-              className={cn(
-                "text-[11px] shrink-0 w-24",
-                row.done ? "text-[#999]" : "text-[#666]",
-              )}
-            >
+          <li key={row.key} className="dp-crew__histrow">
+            <span className={cn("dp-crew__kind", row.done && "dp-crew__kind--done")}>
               {KIND_LABEL[row.kind] ?? row.kind}
             </span>
-            <span className="flex-1 leading-relaxed text-[#666]">{row.title}</span>
+            <span className="dp-crew__histtitle">{row.title}</span>
+            {/* An issue number is a measured value, so it is mono (§4). */}
             {row.issueNumber !== null && (
-              <span className="text-[11px] text-[#BBB] shrink-0 tabular-nums">
-                #{row.issueNumber}
-              </span>
+              <span className="dp-crew__mono">#{row.issueNumber}</span>
             )}
           </li>
         ))}
       </ul>
 
       {hidden > 0 && (
-        <button
-          type="button"
-          onClick={() => setShowAll(true)}
-          className="mt-4 text-[11px] uppercase tracking-[0.12em] text-[#999] hover:text-[#0A0A0A] transition-colors"
-        >
+        <button type="button" onClick={() => setShowAll(true)} className="dp-crew__more">
           Show {hidden} older
         </button>
       )}

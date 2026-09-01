@@ -22,8 +22,14 @@
  * row that does not name an OPEN needs-you card, so the day he answers, the
  * row goes red in the next shift's own commit instead of quietly outliving his
  * reply.
+ *
+ * ⚠ **THE HEADING KEEPS ITS WORDS (#398 §1).** Brief 08's §3 calls this section
+ * `THE PIPELINE`. It says *Not done yet*, which is #291 — his own ruling above
+ * — and §1 is explicit that where the mockup and the built Crew disagree on
+ * content, the built one wins. The head changed FACE, not words.
  */
 import { cn } from "@/lib/utils";
+import { TableHead } from "@/foundation";
 import { pipelineNotDone } from "./crewTypes";
 import type { CrewPipelineItem } from "./crewTypes";
 
@@ -36,27 +42,18 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function PipelineRow({ item }: { item: CrewPipelineItem }) {
+  const wantsAHuman = item.status === "waiting-founder" || item.status === "blocked";
   return (
-    <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <span
-        className={cn(
-          "text-[11px] shrink-0 w-24",
-          item.status === "waiting-founder" || item.status === "blocked"
-            ? "text-[#0A0A0A] font-medium"
-            : "text-[#999]",
-        )}
-      >
+    <li className="dp-crew__row">
+      <span className={cn("dp-crew__status", wantsAHuman && "dp-crew__status--wants")}>
         {STATUS_LABEL[item.status] ?? item.status}
       </span>
-      <div className="flex-1 min-w-[12rem]">
-        <span className="text-sm leading-relaxed text-[#0A0A0A]">{item.title}</span>
-        {item.note && <span className="text-sm text-[#999]"> — {item.note}</span>}
-      </div>
-      {item.prNumber !== null && (
-        <span className="text-[11px] text-[#BBB] shrink-0 tabular-nums">
-          PR {item.prNumber}
-        </span>
-      )}
+      <span className="dp-crew__rowmain">
+        {item.title}
+        {item.note && <span className="dp-crew__rowwhy">{item.note}</span>}
+      </span>
+      {/* A PR number is a measured value, so it is mono (§4). */}
+      {item.prNumber !== null && <span className="dp-crew__mono">PR {item.prNumber}</span>}
     </li>
   );
 }
@@ -65,19 +62,16 @@ export function CrewPipeline({ items }: { items: readonly CrewPipelineItem[] }) 
   const notDone = pipelineNotDone(items);
 
   return (
-    <section
-      className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6"
-      data-testid="crew-pipeline"
-    >
-      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
-        Not done yet {notDone.length > 0 && <span className="text-[#0A0A0A]">· {notDone.length}</span>}
-      </h2>
+    <section className="dp-crew__card" data-testid="crew-pipeline">
+      <TableHead eyebrow="Not done yet">
+        {notDone.length > 0 && <span className="dp-crew__meta">{notDone.length} open</span>}
+      </TableHead>
       {notDone.length === 0 ? (
-        <p className="text-sm text-[#999]">
+        <p className="dp-crew__body dp-crew__body--quiet dp-crew__gap">
           Nothing is in flight. Everything the crew has started has landed.
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="dp-crew__rows dp-crew__gap">
           {notDone.map((item) => (
             <PipelineRow key={item.id} item={item} />
           ))}

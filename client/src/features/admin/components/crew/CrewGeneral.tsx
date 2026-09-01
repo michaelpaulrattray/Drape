@@ -29,11 +29,16 @@
  * would render on no part of the page at all — the vanishing the design
  * forbids, caught live by the PR #72 gate review. This box is where those
  * words land.
+ *
+ * ⚠ **BRIEF 08 NEVER SAW THIS COMPONENT** — #293 landed after the mockup was
+ * drawn, so its §6 does not list it. It is restyled to the same grammar under
+ * §8's bar (zero hex literals under `components/crew/`), and nothing it says
+ * or does has changed.
  */
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { shortDate } from "./CrewProgramBanner";
+import { TableHead } from "@/foundation";
 import { foldTimeline, replyFallsToGeneral } from "./crewTypes";
 import type { CrewReplyView, CrewThreadHost } from "./crewTypes";
 
@@ -70,8 +75,8 @@ export function CrewGeneral({
   const visibleItems = showOlder ? items : recent;
 
   return (
-    <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999]">General</h2>
+    <section className="dp-crew__card">
+      <TableHead eyebrow="General" />
 
       <CrewReplyBox
         cardId={null}
@@ -81,34 +86,36 @@ export function CrewGeneral({
       />
 
       {items.length === 0 ? (
-        <p className="mt-5 pt-5 border-t border-[#EFEFEF] text-sm text-[#999]">
+        <p className="dp-crew__rule dp-crew__body dp-crew__body--quiet">
           Nothing here yet. Anything you write that is not about a card shows up here.
         </p>
       ) : (
-        <ul className="mt-5 pt-5 border-t border-[#EFEFEF] space-y-5">
+        <ul className="dp-crew__rule dp-crew__notes">
           {visibleItems.map((item) => (
-            <li key={`reply-${item.reply.id}`} className="pl-3 border-l-2 border-[#0A0A0A]">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="text-[11px] font-medium text-[#0A0A0A]">{item.reply.author}</span>
-                <span className="text-[11px] text-[#BBB]">
-                  {shortDate(String(item.reply.createdAt))}
-                </span>
+            <li key={`reply-${item.reply.id}`} className="dp-crew__entry">
+              <div className="dp-crew__entryhead">
+                <span className="dp-crew__who">{item.reply.author}</span>
+                <span className="dp-crew__mono">{shortDate(String(item.reply.createdAt))}</span>
                 {item.orphanedFrom !== null && (
-                  <span className="text-[11px] text-[#BBB]">
+                  <span className="dp-crew__unseen">
                     {cardTitles.has(item.orphanedFrom)
                       ? <>on “{cardTitles.get(item.orphanedFrom)}”</>
                       : <>on “{item.orphanedFrom}”, a card since closed</>}
                   </span>
                 )}
-                <span className="text-[11px] text-[#BBB]">
+                <span
+                  className={
+                    acknowledgedReplyIds.includes(item.reply.id)
+                      ? "dp-crew__seen"
+                      : "dp-crew__unseen"
+                  }
+                >
                   {acknowledgedReplyIds.includes(item.reply.id)
                     ? "Seen by the crew"
                     : "Not read yet"}
                 </span>
               </div>
-              <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap text-[#0A0A0A]">
-                {item.reply.body}
-              </p>
+              <p className="dp-crew__said">{item.reply.body}</p>
             </li>
           ))}
         </ul>
@@ -118,7 +125,7 @@ export function CrewGeneral({
         <button
           type="button"
           onClick={() => setShowOlder((open) => !open)}
-          className="mt-4 text-[11px] text-[#999] hover:text-[#0A0A0A] transition-colors"
+          className="dp-crew__more"
         >
           {showOlder
             ? "Show fewer"
