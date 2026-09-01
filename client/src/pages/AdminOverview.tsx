@@ -2,11 +2,11 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
 import { useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   HealthMetrics,
+  GenerationChart,
+  NeedsHuman,
   UserGrowthCard,
   CreditEconomyCard,
   GovernanceCard,
@@ -14,7 +14,37 @@ import {
   BannerManagement,
   SystemStatusCard,
 } from "@/features/admin/overview";
+import "@/features/admin/overview/overview.css";
+import { Button, Skeleton, TableHead } from "@/foundation";
 import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
+
+/**
+ * The admin dashboard (brief 07).
+ *
+ * ## One column, sections stacked (§4)
+ *
+ * The `lg:grid-cols-5` split with `col-span-3` / `col-span-2` is gone. His
+ * reason: *"That split puts alerts in a narrow right rail where each row
+ * truncates at `max-w-[280px]`, and it means the page has two reading orders
+ * depending on width."*
+ *
+ * Section order is his: **Needs a human · Last 24 hours · Charts · System and
+ * banners · Recent alerts**, and every grid inside them is
+ * `repeat(auto-fit, minmax(N, 1fr))` — never a fixed column count.
+ *
+ * ## What did NOT change
+ *
+ * Both queries, their inputs, their 30s refetch, their `staleTime`, the
+ * auto-refresh toggle and the manual refresh. §1: *"The `admin.getOverview` and
+ * `admin.getTimeSeries` queries are untouched."* §11's last bar is that every
+ * number, series and action is identical to before, and that is the thing this
+ * shift measured against `main`.
+ *
+ * ## The `Data as of …` footer is deleted (§9)
+ *
+ * It was 10px centred at `#bbb` — below the type floor — and it said the same
+ * thing the staff bar's own stamp says, which is the correct home for it.
+ */
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -81,29 +111,33 @@ export default function AdminOverview() {
         />
       }
     >
-      <main className="space-y-6">
-        {/* Loading skeleton */}
+      <main className="dp-ov">
+        {/* §9 — the primitive, at each section's real height. */}
         {isLoading && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-28 animate-pulse" />
-              ))}
+          <>
+            <section className="dp-ov__section">
+              <TableHead eyebrow="Last 24 hours" />
+              <div className="dp-ov__kpigrid">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} style={{ height: 118 }} />
+                ))}
+              </div>
+            </section>
+            <Skeleton style={{ height: 268 }} />
+            <div className="dp-ov__pairgrid">
+              <Skeleton style={{ height: 340 }} />
+              <Skeleton style={{ height: 340 }} />
             </div>
-            <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-56 animate-pulse" />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-80 animate-pulse" />
-              <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-80 animate-pulse" />
-            </div>
-          </div>
+          </>
         )}
 
-        {/* Error state */}
+        {/* §9 — the `--error` family, one line of what failed, the raw message
+            in mono, and Retry. Staff surfaces keep raw error text on purpose. */}
         {overviewQuery.isError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <p className="text-red-700 font-medium">Failed to load dashboard data</p>
-            <p className="text-red-500 text-sm mt-1">{overviewQuery.error?.message}</p>
-            <Button variant="outline" size="sm" onClick={handleRefresh} className="mt-3">
+          <div className="dp-ov__error">
+            <p className="dp-ov__errortitle">The dashboard could not load.</p>
+            <p className="dp-ov__errorraw">{overviewQuery.error?.message}</p>
+            <Button variant="secondary" size="small" onClick={handleRefresh}>
               Retry
             </Button>
           </div>
@@ -111,52 +145,52 @@ export default function AdminOverview() {
 
         {data && (
           <>
-            {/* Health metrics + generation chart (full width) */}
-            <HealthMetrics
-              data={data.health}
-              chartData={ts?.dailyGenerations}
-            />
+            {/* 1 · The only section that can disappear. */}
+            <NeedsHuman governance={data.governance} alerts={data.alerts} />
 
-            {/* Two-column layout: left charts, right alerts */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-              {/* Left — 3 cols */}
-              <div className="lg:col-span-3 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <UserGrowthCard
-                    data={data.users}
-                    chartData={ts?.dailySignups}
-                  />
-                  <GovernanceCard
-                    data={data.governance}
-                    chartData={ts?.changeRequestDist}
-                  />
-                </div>
-                <CreditEconomyCard
-                  data={data.credits}
-                  chartData={ts?.dailyCreditFlow}
+            {/* 2 · Last 24 hours */}
+            <HealthMetrics data={data.health} chartData={ts?.dailyGenerations} />
+
+            {/* 3 · Charts.
+                ⚠ NO EYEBROW HERE, ON PURPOSE. §4 names exactly four:
+                `NEEDS A HUMAN`, `LAST 24 HOURS`, `SYSTEM`, `RECENT ALERTS` —
+                five sections, four heads. The charts carry their own card
+                titles ("Generation activity", "User growth", "Governance",
+                "Credit economy"), so a fifth head would label a group whose
+                members are already labelled. Driven and looked at: it read as
+                one redundant word above four titled cards. */}
+            <section className="dp-ov__section">
+              <GenerationChart chartData={ts?.dailyGenerations} />
+              <div className="dp-ov__pairgrid">
+                <UserGrowthCard data={data.users} chartData={ts?.dailySignups} />
+                <GovernanceCard
+                  data={data.governance}
+                  chartData={ts?.changeRequestDist}
                 />
               </div>
+              <CreditEconomyCard data={data.credits} chartData={ts?.dailyCreditFlow} />
+            </section>
 
-              {/* Right — 2 cols */}
-              <div className="lg:col-span-2 space-y-6">
+            {/* 4 · System and banners.
+                ⚠ The eyebrow reads "System and banners", which is §4's own name
+                for this section in its ORDER list, rather than §4's one-word
+                `SYSTEM` in its eyebrow list. His brief says both, and driven
+                the one-word version printed SYSTEM twice, six pixels apart —
+                once as the section head and again as the card's own label. The
+                section covers two cards; naming both is what the head is for. */}
+            <section className="dp-ov__section">
+              <TableHead eyebrow="System and banners" />
+              <div className="dp-ov__sysgrid">
                 <SystemStatusCard
                   activeBanners={data.system.activeBanners}
                   serverStartedAt={data.system.serverStartedAt}
                 />
                 <BannerManagement />
-                <AlertsFeed alerts={data.alerts} />
               </div>
-            </div>
+            </section>
 
-            {/* Footer */}
-            <div className="text-center text-[10px] text-[#bbb] pb-4">
-              Data as of {new Date(data.fetchedAt).toLocaleString()}
-              {overviewQuery.isRefetching && (
-                <Badge variant="secondary" className="ml-2 text-[10px]">
-                  Refreshing...
-                </Badge>
-              )}
-            </div>
+            {/* 5 · Recent alerts — full width now, so nothing truncates. */}
+            <AlertsFeed alerts={data.alerts} />
           </>
         )}
       </main>

@@ -1,8 +1,23 @@
-/**
- * GovernanceCard — change request metrics + status donut chart.
- */
-import { ClipboardList, AlertCircle, Link2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { EmptyState } from "@/foundation";
+import { tooltipStyle, useChartTokens } from "./chartTokens";
+
+/**
+ * Governance — change requests (brief 07 §7's "same treatment" clause).
+ *
+ * ## `STATUS_COLORS` was four hues for four statuses
+ *
+ * pending amber, approved emerald, rejected red, completed blue. §3 kills the
+ * hue-per-category and it also says what survives: *"Severity — critical vs
+ * warning — is the only thing that may carry colour."*
+ *
+ * **Pending is the one segment that is a state somebody must act on**, so it —
+ * and only it — takes the accent. The other three are outcomes: things that
+ * already happened and need nobody. They walk a greyscale value ramp.
+ *
+ * That is the whole rule in one chart: the eye lands on the slice that wants a
+ * person, and a donut of finished work is quiet.
+ */
 
 export interface GovernanceData {
   pendingChangeRequests: number;
@@ -16,13 +31,6 @@ export interface ChangeRequestDistribution {
   count: number;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "#f59e0b",
-  approved: "#10b981",
-  rejected: "#ef4444",
-  completed: "#3b82f6",
-};
-
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
   approved: "Approved",
@@ -30,14 +38,9 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "Completed",
 };
 
-const TT_STYLE = {
-  backgroundColor: "#fff",
-  border: "1px solid #E5E5E5",
-  borderRadius: "8px",
-  padding: "8px 12px",
-  fontSize: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-};
+/** The greyscale ramp the non-pending statuses walk, in a fixed order so the
+ *  donut does not repaint itself when a count changes rank. */
+const RESOLVED_ORDER = ["approved", "completed", "rejected"];
 
 export function GovernanceCard({
   data,
@@ -46,51 +49,56 @@ export function GovernanceCard({
   data: GovernanceData;
   chartData?: ChangeRequestDistribution[];
 }) {
+  const t = useChartTokens();
   const hasChartData = chartData && chartData.length > 0;
   const totalRequests = chartData?.reduce((sum, d) => sum + d.count, 0) || 0;
+  const ramp = [t.metaStrong, t.faint, t.dots];
+
+  /** Pending is accent; everything else is a fixed step on the grey ramp. */
+  const fillFor = (status: string): string => {
+    if (status === "pending") return t.accent;
+    const i = RESOLVED_ORDER.indexOf(status);
+    return ramp[i === -1 ? ramp.length - 1 : i];
+  };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#0A0A0A]">Governance</h3>
-        <ClipboardList className="w-4 h-4 text-[#bbb]" />
+    <div className="dp-ov__card">
+      <div className="dp-ov__cardhead">
+        <div>
+          <h3 className="dp-ov__cardtitle">Governance</h3>
+        </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-[#FAFAFA] rounded-lg p-3">
-          <p className="text-[11px] text-[#999] uppercase tracking-wider">Pending</p>
-          <p className="text-2xl font-bold tabular-nums text-[#0A0A0A] mt-0.5">
+      <div className="dp-countrow">
+        <div className="dp-counttile">
+          <span className="dp-ov__tilelabel">PENDING</span>
+          <span
+            className={`dp-counttile__value${
+              data.pendingChangeRequests > 0 ? " dp-counttile__value--alert" : ""
+            }`}
+          >
             {data.pendingChangeRequests}
-          </p>
+          </span>
           {data.urgentChangeRequests > 0 && (
-            <p className="text-[10px] text-amber-600 flex items-center gap-1 mt-1">
-              <AlertCircle className="w-3 h-3" />
+            <span className="dp-ov__tilefoot">
               {data.urgentChangeRequests} urgent
-            </p>
+            </span>
           )}
         </div>
-        <div className="bg-[#FAFAFA] rounded-lg p-3">
-          <p className="text-[11px] text-[#999] uppercase tracking-wider">This Week</p>
-          <p className="text-2xl font-bold tabular-nums text-[#0A0A0A] mt-0.5">
-            {data.changeRequestsThisWeek}
-          </p>
-          <p className="text-[10px] text-[#999] flex items-center gap-1 mt-1">
-            <Link2 className="w-3 h-3" />
+        <div className="dp-counttile">
+          <span className="dp-ov__tilelabel">THIS WEEK</span>
+          <span className="dp-counttile__value">{data.changeRequestsThisWeek}</span>
+          <span className="dp-ov__tilefoot">
             {data.activeReferrals} active referrals
-          </p>
+          </span>
         </div>
       </div>
 
-      {/* Donut chart */}
-      {hasChartData && totalRequests > 0 && (
-        <div>
-          <p className="text-[11px] text-[#999] uppercase tracking-wider mb-2">
-            Request Status
-          </p>
-          <div className="flex items-center gap-4">
-            <div className="w-[120px] h-[120px] relative">
+      {hasChartData && totalRequests > 0 ? (
+        <div className="dp-ov__block">
+          <span className="dp-ov__blocklabel">REQUEST STATUS</span>
+          <div className="dp-ov__donutrow">
+            <div className="dp-ov__donut">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -105,45 +113,39 @@ export function GovernanceCard({
                     strokeWidth={0}
                   >
                     {chartData!.map((entry) => (
-                      <Cell
-                        key={entry.status}
-                        fill={STATUS_COLORS[entry.status] || "#ccc"}
-                      />
+                      <Cell key={entry.status} fill={fillFor(entry.status)} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={TT_STYLE} />
+                  <Tooltip contentStyle={tooltipStyle(t)} />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Center label */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-lg font-bold tabular-nums text-[#0A0A0A]">
-                  {totalRequests}
-                </span>
-                <span className="text-[9px] text-[#999]">total</span>
+              <div className="dp-ov__donutcentre">
+                <span className="dp-ov__donuttotal">{totalRequests}</span>
+                <span className="dp-ov__donutcaption">total</span>
               </div>
             </div>
-            <div className="flex-1 space-y-1.5">
+            <div className="dp-ov__keycol">
               {chartData!.map((entry) => (
-                <div key={entry.status} className="flex items-center gap-2">
+                <div key={entry.status} className="dp-ov__leader">
                   <span
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: STATUS_COLORS[entry.status] || "#ccc" }}
+                    className="dp-ov__swatch"
+                    style={{ background: fillFor(entry.status) }}
                   />
-                  <span className="text-[11px] text-[#666] flex-1">
+                  <span className="dp-ov__leaderlabel">
                     {STATUS_LABELS[entry.status] || entry.status}
                   </span>
-                  <span className="text-[11px] tabular-nums font-medium text-[#0A0A0A]">
-                    {entry.count}
-                  </span>
+                  <span className="dp-ov__spacer" />
+                  <span className="dp-ov__leadervalue">{entry.count}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      )}
-
-      {(!hasChartData || totalRequests === 0) && (
-        <p className="text-[11px] text-[#999] italic">No change requests yet</p>
+      ) : (
+        <EmptyState
+          title="No change requests"
+          body="Requests raised by staff appear here with their status."
+        />
       )}
     </div>
   );

@@ -1,35 +1,60 @@
-/**
- * BannerManagement — admin UI for creating, toggling, and deleting platform banners.
- * Designed for the light-theme admin overview page.
- */
-
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   ANNOUNCEMENT_MESSAGE_MAX_LENGTH,
   ANNOUNCEMENT_TITLE_MAX_LENGTH,
 } from "@shared/inputLimits";
 import {
-  Megaphone,
-  Plus,
-  Trash2,
-  ToggleLeft,
-  ToggleRight,
   AlertTriangle,
   Info,
   Wrench,
   Sparkles,
-  X,
 } from "lucide-react";
+import { Button, Chip, EmptyState, Field, Input, Skeleton } from "@/foundation";
+
+/**
+ * BANNERS (brief 07 §8) — *"keeps every action. Its create form uses the
+ * foundation's field and button primitives."*
+ *
+ * Every mutation, its payload and its invalidations are untouched: create,
+ * toggle, delete, with the same three `onSuccess` refreshes and the same
+ * toasts. This is a restyle.
+ *
+ * ## `TYPE_CONFIG` loses its colour, like `ACTION_CONFIG` next door
+ *
+ * Info blue, warning amber, maintenance orange, feature emerald — four hues for
+ * four *kinds* of banner, which is §3's forbidden shape and the reason it is
+ * forbidden: with all four spent on category, nothing is left to mean urgent.
+ * The icon and the label identify the kind.
+ *
+ * ⚠ **Selection needed its own style, because the foundation's `Chip` has
+ * none.** `.dp-chip` carries `:hover`, `--derived` and `--static` and no
+ * selected state at all, so the first shape of this file — which reached for a
+ * `dp-chip--on` that does not exist — left the chosen type looking exactly
+ * like the three unchosen ones. `.dp-ov__typechip--on` in this section's sheet
+ * is the fix; the foundation gap is recorded in the promotion pass rather than
+ * patched here, since `Chip` has eight other consumers.
+ *
+ * ## `Live` is greyscale, and that is the rule rather than an oversight
+ *
+ * It was `bg-green-100 text-green-700`. Brief 06 settled the test: *"a status
+ * may carry accent, and only where somebody needs to act."* A live banner is
+ * doing exactly what an admin told it to do — it wants no one. It reads as a
+ * state without shouting.
+ *
+ * ⚠ **The delete confirmation is still `window.confirm`, deliberately left.**
+ * `DestructiveConfirm` is in the foundation and this is the surface that should
+ * eventually use it, but swapping it changes an action's mechanism inside a PR
+ * whose bar is *"every number, series and action identical to before"*. It is
+ * recorded in this section's promotion pass instead of smuggled in here.
+ */
 
 const TYPE_CONFIG = {
-  info: { label: "Info", icon: Info, color: "bg-blue-100 text-blue-700" },
-  warning: { label: "Warning", icon: AlertTriangle, color: "bg-amber-100 text-amber-700" },
-  maintenance: { label: "Maintenance", icon: Wrench, color: "bg-orange-100 text-orange-700" },
-  feature: { label: "Feature", icon: Sparkles, color: "bg-emerald-100 text-emerald-700" },
+  info: { label: "Info", icon: Info },
+  warning: { label: "Warning", icon: AlertTriangle },
+  maintenance: { label: "Maintenance", icon: Wrench },
+  feature: { label: "Feature", icon: Sparkles },
 } as const;
 
 type BannerType = keyof typeof TYPE_CONFIG;
@@ -85,137 +110,136 @@ export function BannerManagement() {
       toast.error("Title and message are required");
       return;
     }
-    createMutation.mutate({ title: title.trim(), message: message.trim(), type, isActive, startsAt: null, endsAt: null });
+    createMutation.mutate({
+      title: title.trim(),
+      message: message.trim(),
+      type,
+      isActive,
+      startsAt: null,
+      endsAt: null,
+    });
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#e0e0e0]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Megaphone className="w-5 h-5 text-[#0A0A0A]" />
-          <h3 className="text-base font-semibold text-[#0A0A0A]">Platform Banners</h3>
-          {data && <Badge variant="secondary" className="text-xs">{data.total}</Badge>}
-        </div>
+    <div className="dp-ov__card">
+      <div className="dp-ov__cardhead">
+        <span className="dp-ov__blocklabel">BANNERS</span>
+        {data && <span className="dp-ov__count">{data.total}</span>}
+        <span className="dp-ov__spacer" />
         <Button
-          size="sm"
-          variant={showForm ? "outline" : "default"}
-          onClick={() => showForm ? resetForm() : setShowForm(true)}
-          className={showForm ? "border-[#ccc]" : "bg-[#0A0A0A] text-white hover:bg-[#222]"}
+          size="small"
+          variant={showForm ? "secondary" : "primary"}
+          onClick={() => (showForm ? resetForm() : setShowForm(true))}
         >
-          {showForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-          {showForm ? "Cancel" : "New Banner"}
+          {showForm ? "Cancel" : "New banner"}
         </Button>
       </div>
 
-      {/* Create Form */}
       {showForm && (
-        <div className="mb-4 p-4 rounded-xl bg-[#f5f5f5] border border-[#e0e0e0] space-y-3">
-          <input
-            type="text"
-            placeholder="Banner title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={ANNOUNCEMENT_TITLE_MAX_LENGTH}
-            className="w-full px-3 py-2 rounded-lg border border-[#ddd] bg-white text-sm text-[#0A0A0A] placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20"
-          />
-          <textarea
-            placeholder="Banner message (shown to all users)"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            maxLength={ANNOUNCEMENT_MESSAGE_MAX_LENGTH}
-            rows={2}
-            className="w-full px-3 py-2 rounded-lg border border-[#ddd] bg-white text-sm text-[#0A0A0A] placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20 resize-none"
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            {(Object.keys(TYPE_CONFIG) as BannerType[]).map((t) => {
-              const cfg = TYPE_CONFIG[t];
-              return (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    type === t ? cfg.color + " ring-2 ring-offset-1 ring-[#0A0A0A]/30" : "bg-[#eee] text-[#666] hover:bg-[#ddd]"
-                  }`}
-                >
-                  {cfg.label}
-                </button>
-              );
-            })}
-            <label className="flex items-center gap-1.5 ml-auto text-xs text-[#666] cursor-pointer">
+        <div className="dp-panel">
+          <Field>
+            <Input
+              type="text"
+              placeholder="Scheduled maintenance on Sunday"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={ANNOUNCEMENT_TITLE_MAX_LENGTH}
+            />
+          </Field>
+          <Field>
+            <textarea
+              className="dp-input dp-ov__textarea"
+              placeholder="Shown to every signed-in customer until you turn it off."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              maxLength={ANNOUNCEMENT_MESSAGE_MAX_LENGTH}
+              rows={2}
+            />
+          </Field>
+          <div className="dp-ov__formrow">
+            {(Object.keys(TYPE_CONFIG) as BannerType[]).map((key) => (
+              <Chip
+                key={key}
+                onClick={() => setType(key)}
+                className={`dp-ov__typechip${type === key ? " dp-ov__typechip--on" : ""}`}
+                aria-pressed={type === key}
+              >
+                {TYPE_CONFIG[key].label}
+              </Chip>
+            ))}
+            <span className="dp-ov__spacer" />
+            <label className="dp-ov__check">
               <input
                 type="checkbox"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="rounded"
               />
               Activate immediately
             </label>
           </div>
-          <div className="flex justify-end">
+          <div className="dp-ov__formfoot">
             <Button
-              size="sm"
+              variant="primary"
+              size="small"
               onClick={handleCreate}
               disabled={createMutation.isPending}
-              className="bg-[#0A0A0A] text-white hover:bg-[#222]"
             >
-              {createMutation.isPending ? "Creating..." : "Create Banner"}
+              {createMutation.isPending ? "Creating…" : "Create banner"}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Banner List */}
       {isLoading ? (
-        <div className="text-sm text-[#999] py-4 text-center">Loading banners...</div>
+        <Skeleton style={{ height: 64 }} />
       ) : !data?.items.length ? (
-        <div className="text-sm text-[#999] py-4 text-center">No banners yet. Create one to notify users.</div>
+        <EmptyState
+          title="No banners yet"
+          body="A banner appears at the top of the app for every signed-in customer."
+        />
       ) : (
-        <div className="space-y-2">
+        <div className="dp-ov__banners">
           {data.items.map((banner) => {
             const cfg = TYPE_CONFIG[banner.type as BannerType] ?? TYPE_CONFIG.info;
             const Icon = cfg.icon;
             return (
               <div
                 key={banner.id}
-                className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
-                  banner.isActive ? "bg-[#f9f9f9] border-[#d0d0d0]" : "bg-[#fafafa] border-[#eee] opacity-60"
-                }`}
+                className={`dp-ov__banner${banner.isActive ? "" : " dp-ov__banner--off"}`}
               >
-                <Icon className="w-4 h-4 mt-0.5 shrink-0 text-[#666]" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-medium text-[#0A0A0A] truncate">{banner.title}</span>
-                    <Badge className={`text-[10px] px-1.5 py-0 ${cfg.color}`}>{cfg.label}</Badge>
-                    {banner.isActive && <Badge className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700">Live</Badge>}
+                <Icon className="dp-ov__bannericon" />
+                <div className="dp-ov__bannerbody">
+                  <div className="dp-ov__bannertop">
+                    <span className="dp-ov__bannertitle">{banner.title}</span>
+                    <span className="dp-ov__bannerkind">{cfg.label}</span>
+                    {banner.isActive && <span className="dp-ov__bannerlive">Live</span>}
                   </div>
-                  <p className="text-xs text-[#666] line-clamp-1">{banner.message}</p>
+                  <p className="dp-ov__bannermsg">{banner.message}</p>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => toggleMutation.mutate({ id: banner.id, isActive: !banner.isActive })}
+                <div className="dp-ov__banneracts">
+                  <Button
+                    size="small"
+                    variant="quiet"
+                    onClick={() =>
+                      toggleMutation.mutate({ id: banner.id, isActive: !banner.isActive })
+                    }
                     disabled={toggleMutation.isPending}
-                    className="p-1.5 rounded-lg hover:bg-[#eee] transition-colors"
-                    title={banner.isActive ? "Deactivate" : "Activate"}
                   >
-                    {banner.isActive ? (
-                      <ToggleRight className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <ToggleLeft className="w-4 h-4 text-[#999]" />
-                    )}
-                  </button>
-                  <button
+                    {banner.isActive ? "Turn off" : "Turn on"}
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="quiet"
+                    destructive
                     onClick={() => {
                       if (confirm("Delete this banner permanently?")) {
                         deleteMutation.mutate({ id: banner.id });
                       }
                     }}
                     disabled={deleteMutation.isPending}
-                    className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                    title="Delete"
                   >
-                    <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
-                  </button>
+                    Delete
+                  </Button>
                 </div>
               </div>
             );

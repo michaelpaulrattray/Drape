@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e3f46701e1a06ab2"
+    "sourceFingerprint": "3b32f27620d2baf4"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 50
+      "moduleCount": 54
     },
     {
       "id": "domain:alerting",
@@ -811,6 +811,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/admin/overview/NeedsHuman.tsx",
+      "path": "client/src/features/admin/overview/NeedsHuman.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
       "path": "client/src/features/admin/overview/SystemStatusCard.tsx",
       "domain": "admin",
@@ -823,8 +829,26 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/admin/overview/actionLabel.ts",
+      "path": "client/src/features/admin/overview/actionLabel.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/overview/chartTokens.ts",
+      "path": "client/src/features/admin/overview/chartTokens.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/admin/overview/index.ts",
       "path": "client/src/features/admin/overview/index.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/overview/overview.css",
+      "path": "client/src/features/admin/overview/overview.css",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -10446,6 +10470,10 @@
       "path": "client/src/features/admin/components/crew/crewTypes.test.ts"
     },
     {
+      "id": "test:client/src/features/admin/overview/section07-guard.test.ts",
+      "path": "client/src/features/admin/overview/section07-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
       "path": "client/src/features/casting/castingPrices.test.ts"
     },
@@ -14386,13 +14414,18 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/overview/BannerManagement.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "from": "module:client/src/features/admin/overview/AlertsFeed.tsx",
+      "to": "module:client/src/features/admin/overview/actionLabel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/AlertsFeed.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/overview/BannerManagement.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14406,6 +14439,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/overview/CreditEconomyCard.tsx",
+      "to": "module:client/src/features/admin/overview/chartTokens.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/CreditEconomyCard.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/GovernanceCard.tsx",
+      "to": "module:client/src/features/admin/overview/chartTokens.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/GovernanceCard.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
+      "to": "module:client/src/features/admin/overview/chartTokens.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/index.ts",
       "to": "module:client/src/features/admin/overview/AlertsFeed.tsx",
       "kind": "imports"
@@ -14413,6 +14476,11 @@
     {
       "from": "module:client/src/features/admin/overview/index.ts",
       "to": "module:client/src/features/admin/overview/BannerManagement.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/chartTokens.ts",
       "kind": "imports"
     },
     {
@@ -14432,6 +14500,11 @@
     },
     {
       "from": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/admin/overview/NeedsHuman.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/index.ts",
       "to": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
       "kind": "imports"
     },
@@ -14441,8 +14514,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "from": "module:client/src/features/admin/overview/NeedsHuman.tsx",
+      "to": "module:client/src/features/admin/overview/actionLabel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/NeedsHuman.tsx",
+      "to": "module:client/src/features/admin/overview/GovernanceCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/NeedsHuman.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
+      "to": "module:client/src/features/admin/overview/chartTokens.ts",
       "kind": "imports"
     },
     {
@@ -18702,22 +18790,17 @@
     },
     {
       "from": "module:client/src/pages/AdminOverview.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminOverview.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminOverview.tsx",
       "to": "module:client/src/features/admin/overview/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/AdminOverview.tsx",
       "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminOverview.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
