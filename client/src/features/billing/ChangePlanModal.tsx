@@ -42,7 +42,7 @@
  * do not exist**, the rungs at those positions are `Studio Plus` and
  * `Business`, and the credit figures are ~83× apart. Every name, price, credit
  * count and perk on this surface comes from `PLAN_TIERS` through
- * `billing.getPlans`; `section03-guard.test.ts` asserts that no prototype
+ * `billing.getPlans`; `card390-guard.test.ts` asserts that no prototype
  * figure has been typed in.
  *
  * The six, and where each lives:
