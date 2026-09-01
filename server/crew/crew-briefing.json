@@ -1,7 +1,7 @@
 {
-  "edition": 188,
-  "updatedAt": "2026-09-01T07:57:03.309Z",
-  "shift": "Foreman - shift 2026-09-01 17:55 AEST (foreman-166)",
+  "edition": 189,
+  "updatedAt": "2026-09-01T08:54:02.811Z",
+  "shift": "Foreman - shift 2026-09-01 18:19 AEST (foreman-167)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1229,6 +1229,31 @@
   ],
   "eyeItems": [
     {
+      "id": "cog-is-a-cog-382-frames",
+      "title": "You were right about the cog, and it turned out to be measurable - here it is beside the sun it used to be",
+      "question": "No question this time, only a look - you already gave the verdict and this is it built. What you said: \"the cog is incorrect its a star or sun it should be a cog like in the top bar profile drop down menu.\" You were right, and it was not a matter of taste. The rail's cog and the sun in your top bar were literally the same drawing: a circle with eight straight lines coming off it at even angles, differing only in how big the circle was. Two names, one picture, four inches apart on the same screen. It is now the gear your own profile dropdown draws - the same one, copied rather than re-drawn by hand, because you pointed at a mark on your screen and a near-miss would have given you a THIRD gear instead of an answer. The frames put the two side by side at 8x so you can see they are now different things. If the gear reads heavy or blurry at real size, say so - it is one key back.",
+      "frames": [
+        {
+          "key": "crew-eye/fa3fe34e-88d7-4630-b983-e914b2cec502.png",
+          "caption": "DARK, magnified 8x from the real render. LEFT is the rail's settings gear as it ships now. RIGHT is your top bar's theme toggle, untouched. The right-hand one is also what the LEFT one used to be - same construction, slightly different size - which is the whole of what you spotted.",
+          "arm": "rail cog | topbar sun, dark"
+        },
+        {
+          "key": "crew-eye/cded92f6-eb0b-4507-a015-ab18422620f6.png",
+          "caption": "LIGHT, the same pair. Included because a stroke that holds on black can fill in on white, and the gear has more line in it than anything else on that rail.",
+          "arm": "rail cog | topbar sun, light"
+        },
+        {
+          "key": "crew-eye/b096d3ac-6e00-4803-8604-b5b54106bce1.png",
+          "caption": "The whole rail, dark, so the gear is judged BESIDE its neighbours rather than on its own. A glyph can look right alone and wrong in a row - this is the row.",
+          "arm": "the rail in context, dark"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-01",
+      "issueNumber": 382
+    },
+    {
       "id": "cog-and-invite-frames-373-372",
       "title": "Two small things you asked for, side by side - the cog, and Invite lighting up",
       "question": "One question and it is only about the cog. You asked for a cogwheel and you have one, but it is eight spokes around a circle - and the icon you were replacing, the one you rejected months ago, you rejected in these words: \"eight teeth plus an inner circle, which mushes into a blurred ring at 16px\". So the thing I have put in its place is, described plainly, eight teeth and an inner circle. It survives the small size for a different reason - thin separate strokes rather than a filled gear outline - and to my eye it reads clearly. But that is a judgement about a picture, and yours is the one that counts. The frames are magnified 8x so you can see the actual pixels rather than a re-drawing. If it reads as a blur at real size, say so and it is one key back. Invite needs no question, only a look: resting on the left, hovered on the right.",
@@ -1254,7 +1279,7 @@
           "arm": "invite - resting | hover, light"
         }
       ],
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-01",
       "issueNumber": 373
     },
@@ -2358,6 +2383,13 @@
   ],
   "pipeline": [
     {
+      "id": "cog-is-a-cog-382",
+      "title": "The rail's cog is an actual cog now - you were right that it was a sun (#382)",
+      "status": "merged",
+      "prNumber": 384,
+      "note": "Your words: \"invite is correct, the cog is incorrect its a star or sun it should be a cog like in the top bar profile drop down menu.\"\n\nYou were right, and the interesting part is that it was measurable rather than a matter of taste. The rail's cog and the sun on your theme toggle were THE SAME DRAWING: one circle plus eight straight lines at even 45-degree angles around it. The only difference between them was how big the circle was and how long the lines were. So the bottom of your rail and the top of your screen were showing you the same picture and calling it two things.\n\nIt is now the gear your profile dropdown already draws, at the same size, copied rather than re-drawn - you pointed at a mark on your screen, and hand-drawing something close to it would have given you a third gear instead of an answer.\n\nWORTH A MINUTE, because it is about how the team checks itself: there was a test guarding this glyph, and it had been holding the sun in place. It asserted \"the cog has eight spokes and one centre\". It counted them. It confirmed nine shapes in the rendered page. It even wrote a paragraph reasoning about why eight thin lines survive at small size where a solid gear would not. Every one of those readings was correct - and not one of them asked whether the thing was a cog. Your eye did that in a sentence. The test now asserts the DRAWING, with the old sun kept beside it as the thing it has to reject.\n\nThe same sweep found a second one while it was looking: two glyphs in the set, `campaign` and `tryon`, are the identical path - one shirt shape under two names. Filed as its own card, because somebody has to decide what a campaign looks like and that is a drawing decision rather than a copy."
+    },
+    {
       "id": "reviewer-road-honest-368",
       "title": "The reviewer's manual button works once - and the instructions now say so (#368)",
       "status": "merged",
@@ -3407,9 +3439,9 @@
       "state": "resolved"
     },
     {
-      "id": "queue-shape-166",
-      "title": "The queue tonight: 97 open, and TWO of your orders left - the stale pile is 14, exactly as predicted",
-      "detail": "97 cards open, 6 urgent. TWO of your orders are still open, and neither is a rebuild:\n\n#321 - the icon set's second half. BUILT ALREADY. It wants your eye, not work. Three shifts in a row have now passed that same sentence along; it is not stuck, it is finished and waiting.\n#374 - Section 04, the account menu. A section rather than a small card, so it gets its own night.\n\n#368 came off the list tonight - that is the one you answered yesterday evening.\n\nTHE STALE PILE is 14, which is what last night's edition said it would be and for the reason it gave: 29 cards were all filed in one sitting on 25 August and are crossing the seven-day line together. About fifteen more cross within the day, so expect roughly 29 and then a stop. Nothing is stuck. They need re-reading against the code before anyone trusts what they say - which is exactly what tonight's card turned out to need, and two of its three claims did not survive it.",
+      "id": "queue-shape-167",
+      "title": "The queue tonight: 99 open, and FOUR of your orders now - the stale pile is still 14",
+      "detail": "99 cards open, 7 urgent. FOUR of your orders are open, up from two, because two arrived today:\n\n#381 - Section 03's panes follow your written brief where your prototype draws cards. Your own words: \"section 03 isnt just usage corrections most of the pages are designed incorrectly.\" A section-sized job, so its own night.\n#374 - Section 04, the account menu. Also a section, also its own night.\n#321 - the icon set's second half. BUILT ALREADY. It wants your eye, not work. Four shifts have now passed that sentence along, which is worth saying plainly: it is finished and waiting, not stuck.\n#231 - the reader court. That one is a judgement job rather than an execution job, so it waits for the Fable seat rather than being attempted on the cheaper model.\n\n#382 came ON and came straight OFF tonight - that is your cog, filed from your reply and shipped in the same shift.\n\nTHE STALE PILE is 14, unchanged. It is the same batch as last night: 29 cards filed in one sitting on 25 August, crossing the seven-day line together over about a day. Expect it to read around 29 tomorrow and then stop climbing. That is a batch ageing, not five days of neglect - the number would be misleading without this sentence.",
       "state": "open",
       "severity": "warning"
     },
@@ -3610,14 +3642,25 @@
     74,
     75,
     76,
-    77
+    77,
+    78
   ],
   "nextUp": {
-    "readAt": "2026-09-01T07:55:20.702Z",
+    "readAt": "2026-09-01T08:54:04.438Z",
     "items": [
+      {
+        "issueNumber": 231,
+        "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
+        "urgent": true
+      },
       {
         "issueNumber": 321,
         "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
+        "urgent": true
+      },
+      {
+        "issueNumber": 381,
+        "title": "Section 03's panes follow the brief's prose where the prototype draws cards — every section re-read, not just Usage",
         "urgent": true
       },
       {
