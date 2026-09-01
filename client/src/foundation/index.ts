@@ -68,7 +68,6 @@ export {
   Button,
   Card,
   Chip,
-  CostedOption,
   CreditsChip,
   DataTable,
   DerivedChip,
@@ -82,10 +81,10 @@ export {
   IconButton,
   Input,
   Instruction,
+  LeaderRow,
   Marquee,
   MediaCard,
   MediaFrame,
-  MilestoneRail,
   MiniList,
   Progress,
   RequiredMarker,
@@ -101,12 +100,9 @@ export {
   TableHead,
   TableSearch,
   TableSort,
-  Transcript,
 } from "./primitives";
 export type {
   ButtonVariant,
-  Cost,
-  CostSign,
   DataColumn,
   DataFact,
   DataRow,
@@ -114,10 +110,8 @@ export type {
   MediaCardState,
   MediaRatio,
   FilterOption,
-  Milestone,
   RowAction,
   SurfaceBarSegment,
-  TranscriptEntry,
 } from "./primitives";
 
 /* Section 00 (brief 00 §4, §5) — the severity look and popover discipline. */

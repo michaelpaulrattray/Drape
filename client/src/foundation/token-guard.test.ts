@@ -180,6 +180,37 @@ const GUARDED_PATHS = [
   */
   "features/admin/components/crew",
   "pages/AdminCrew.tsx",
+
+  /*
+    Brief 09 §6/§8, the founder's own bar: *"Zero hex literals under
+    `features/moderator/`; `token-guard` extended and passing."*
+
+    ⚠ **FILE BY FILE, LIKE BRIEF 06'S BLOCK AND UNLIKE 07'S AND 08'S — because
+    this directory holds exactly one file no brief owns.** `ChangeRequestModal
+    .tsx` is one of the five staff FORM modals, filed as its own card, and it
+    holds **89** hex literals of its own. Enrolling the directory would have
+    meant restyling a dialog this brief does not describe, inside the PR that
+    ends the staff lane.
+
+    Measured before and after, so the remainder is a number rather than a
+    feeling: **203 literals across these six files → 0**, with 89 left in the
+    one file that has a card on it.
+
+    ⚠ `StatsCards.tsx` is on this list and is NOT one of the brief's four
+    surfaces. It is the count row at the top of the same page, it carried four
+    Tailwind tints, and `.dp-countrow` already existed to draw it — leaving it
+    would have made the page's top strip the only coloured thing on it. Its own
+    docblock says so; a file enrolled without that sentence is a scope change
+    hiding in a list.
+  */
+  "features/moderator/CreditsSubTab.tsx",
+  "features/moderator/FlaggedDiscrepanciesCard.tsx",
+  "features/moderator/ReconciliationSubTab.tsx",
+  "features/moderator/StatsCards.tsx",
+  "features/moderator/UserInvestigationTab.tsx",
+  "features/moderator/UserInvestigationWidgets.tsx",
+  "features/moderator/investigations.css",
+  "pages/ModeratorDashboard.tsx",
 ];
 
 /**

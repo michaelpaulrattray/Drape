@@ -1251,6 +1251,53 @@ export function TableHead({ eyebrow, children }: { eyebrow: string; children?: R
 }
 
 /**
+ * THE LEADER ROW — label · spacer · measured value in mono.
+ *
+ * Brief 09 §9: *"the most-used row in the product, and it should be a component
+ * by the end of this PR."* Its specification is that brief's §4c; the CSS block
+ * carries the full reasoning, including the second implementation this
+ * deliberately does not absorb and why.
+ *
+ * ⚠ **`subtotal` puts the weight on the LABEL, never the value** (his §6: *"No
+ * `font-medium` doing the work of a subtotal"*). The type offers no way to
+ * bolden a figure, so a call site cannot reintroduce that by hand.
+ *
+ * ⚠ **`attention` is the one colour this row can carry, and it is `--accentInk`
+ * rather than a red or an amber.** His §3 is the argument: when every figure is
+ * coloured the one that means *something is wrong* has no way to stand out, so
+ * the error colour is reserved for the discrepancy alone, one component up.
+ */
+export function LeaderRow({
+  label,
+  value,
+  subtotal = false,
+  small = false,
+  attention = false,
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  /** A hairline above and `500` on the label — for a total, never a figure. */
+  subtotal?: boolean;
+  /** The `By type` sub-blocks, one step down (§4c). */
+  small?: boolean;
+  /** `--accentInk` on the value. For a failure rate, not for a spend. */
+  attention?: boolean;
+}) {
+  const classes = ["dp-leader"];
+  if (subtotal) classes.push("dp-leader--subtotal");
+  if (small) classes.push("dp-leader--small");
+  return (
+    <div className={classes.join(" ")}>
+      <span className="dp-leader__label">{label}</span>
+      <span className="dp-leader__spacer" />
+      <span className={`dp-leader__value${attention ? " dp-leader__value--attention" : ""}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/**
  * The `when / what / amount` list inside an expansion's sub-tab (§5.2).
  *
  * `amount` is coloured ONLY where it is a state — a credit spend is what the
@@ -1286,163 +1333,6 @@ export function MiniList({
   );
 }
 
-export type CostSign = "+" | "−" | "!" | "=";
-export type Cost = { sign: CostSign; text: ReactNode };
-
-const COST_SIGN_COLOR: Record<CostSign, string> = {
-  "+": "var(--ink)",
-  "−": "var(--metaStrong)",
-  "!": "var(--errorInk)",
-  "=": "var(--faint)",
-};
-
-/**
- * A choice with its consequence priced — Crew decisions, run scopes, model
- * picks.
- *
- * **A decision with no stated consequence is a conversation, not a decision.**
- * This component is the mechanism that stops us shipping the former: you cannot
- * render one without saying what it costs.
- */
-export function CostedOption({
-  optionKey,
-  label,
-  costs,
-  onClick,
-}: {
-  optionKey: string;
-  label: ReactNode;
-  costs: Cost[];
-  onClick?: () => void;
-}) {
-  return (
-    <button type="button" className="dp-costed" onClick={onClick}>
-      <span className="dp-costed__head">
-        <span className="dp-chrome">{optionKey}</span>
-        <span className="dp-label">{label}</span>
-      </span>
-      <span className="dp-costed__costs">
-        {costs.map((cost, index) => (
-          <span key={index} className="dp-costed__cost">
-            <span className="dp-costed__sign" style={{ color: COST_SIGN_COLOR[cost.sign] }}>
-              {cost.sign}
-            </span>
-            <span className="dp-secondary">{cost.text}</span>
-          </span>
-        ))}
-      </span>
-    </button>
-  );
-}
-
-export type Milestone = {
-  id: string;
-  name: string;
-  /** Segment width is proportional to this. Equal segments lie about where the work is. */
-  weight: number;
-  done: number;
-  total: number;
-};
-
-/**
- * Plan progress as a proportional rail. Crew today; the shape of any
- * plan-progress display we add later.
- *
- * ⚠ **Segment width is `flex: weight`, not `flex: 1`.** A rail of equal
- * segments says a nine-item milestone and a two-item one are the same size,
- * which is precisely the thing a progress display exists to communicate.
- *
- * The three states are DERIVED from the counts rather than passed in beside
- * them — a `status` field next to `done`/`total` is a second list shadowing a
- * source of truth, and it drifts.
- */
-export function MilestoneRail({
-  milestones,
-  held = false,
-}: {
-  milestones: Milestone[];
-  held?: boolean;
-}) {
-  return (
-    <div className="dp-milestones">
-      <div className="dp-milestones__rail">
-        {milestones.map((milestone) => {
-          const closed = milestone.total > 0 && milestone.done >= milestone.total;
-          const started = milestone.done > 0;
-          return (
-            <span
-              key={milestone.id}
-              className={cn(
-                "dp-milestones__seg",
-                closed && "dp-milestones__seg--closed",
-                !closed && started && "dp-milestones__seg--current",
-                !closed && started && held && "dp-milestones__seg--held",
-                !started && "dp-milestones__seg--todo",
-              )}
-              style={{ flex: milestone.weight }}
-              title={`${milestone.id} · ${milestone.name} · ${milestone.done}/${milestone.total}`}
-            />
-          );
-        })}
-      </div>
-      <div className="dp-milestones__legend">
-        {milestones.map((milestone) => (
-          <span key={milestone.id} className="dp-metadata" style={{ flex: milestone.weight }}>
-            {milestone.id}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export type TranscriptEntry = {
-  who: string;
-  when: string;
-  body: ReactNode;
-  /** A ruling, a decision, a citation — whatever the entry produced. */
-  ref?: { kind: string; text: ReactNode } | null;
-  /**
-   * The reader's own entries are weighted and get a solid spine.
-   *
-   * A flag rather than `who === "you"`: keying a look on the spelling of a
-   * label is how a contract breaks the day someone writes "founder".
-   */
-  own?: boolean;
-};
-
-/**
- * A two-speaker conversation record. Crew today.
- *
- * ⚠ **The speaker column is 80px and does not shrink.** `"night shift"` needs
- * 69.3px at 10.5px mono and clips at 64px — and the answer is not a smaller
- * font: 10.5px is the mono floor in this system.
- */
-export function Transcript({ entries }: { entries: TranscriptEntry[] }) {
-  return (
-    <div className="dp-transcript">
-      {entries.map((entry, index) => (
-        <div
-          key={index}
-          className={cn("dp-transcript__entry", entry.own && "dp-transcript__entry--own")}
-        >
-          <span className="dp-transcript__who">{entry.who}</span>
-          <span className="dp-transcript__spine" aria-hidden="true" />
-          <div className="dp-transcript__body">
-            <span className="dp-transcript__when dp-metadata">{entry.when}</span>
-            <span className="dp-transcript__text">{entry.body}</span>
-            {entry.ref ? (
-              <span className="dp-transcript__ref">
-                <span className="dp-chrome">{entry.ref.kind}</span>
-                <span className="dp-secondary">{entry.ref.text}</span>
-              </span>
-            ) : null}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /**
  * The auto-scrolling row on the Canvas tab header (grammar: *Motion

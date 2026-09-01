@@ -78,33 +78,25 @@ describe("the marquee track carries no gap and no padding", () => {
   });
 });
 
-describe("the transcript speaker column is 80px and does not shrink", () => {
-  /**
-   * "night shift" needs 69.3px at the 10.5px mono floor and clips at 64px, and
-   * the answer to a long label is never a smaller font. Driven at the app: the
-   * rendered column is 80px with `scrollWidth === clientWidth`, so the string
-   * is not clipped.
-   */
-  const who = block(FOUNDATION_CSS, ".dp-transcript__who");
+/*
+  ⚠ **THE TRANSCRIPT ARMS WERE HERE AND THEIR SUBJECT IS DELETED (#399, brief 09
+  §9).** `Transcript` was one of three section-00 components that reached the end
+  of the staff lane with ZERO consumers — its own docblock said *"Crew today"*,
+  Crew shipped without it, and #410 measured that a two-speaker record does not
+  fit a one-speaker page. His standing agreement: *"Anything still at zero after
+  five staff briefs and Settings should be deleted rather than carried."*
 
-  it("pins the width and refuses to flex", () => {
-    expect(who).toMatch(/width:\s*80px/);
-    expect(who).toMatch(/flex:\s*none/);
-  });
+  The arms are removed rather than left pointing at nothing, and the way they
+  died is worth keeping: `block()` REFUSED — *"selector .dp-transcript__who is
+  gone — the guard below guards nothing"* — instead of matching an empty string
+  and passing. A guard that reports its own subject's disappearance is the
+  difference between a deletion being noticed and a suite going quietly green
+  over four fewer rules.
 
-  it("keeps the font at or above the 10.5px mono floor", () => {
-    const size = who.match(/font:\s*\d+\s+([\d.]+)px/);
-    expect(size, "the speaker label must declare its own size").not.toBeNull();
-    expect(Number(size![1])).toBeGreaterThanOrEqual(10.5);
-  });
-
-  it("rejects a shrunken column and a sub-floor font", () => {
-    const sabotaged = "  flex: 0 1 auto;\n  width: 64px;\n  font: 400 9px var(--font-mono);\n";
-    expect(/width:\s*80px/.test(sabotaged)).toBe(false);
-    expect(/flex:\s*none/.test(sabotaged)).toBe(false);
-    expect(Number(sabotaged.match(/font:\s*\d+\s+([\d.]+)px/)![1])).toBeLessThan(10.5);
-  });
-});
+  The 80px measurement itself is recorded in `PROMOTION_PASS_SECTION_09.md`, so
+  a future transcript does not have to rediscover that "night shift" needs
+  69.3px at the 10.5px mono floor.
+*/
 
 describe("the surface bar wraps and never scrolls sideways", () => {
   /**

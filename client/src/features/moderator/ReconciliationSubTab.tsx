@@ -1,22 +1,54 @@
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { trpc } from "@/lib/trpc";
-import {
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Calendar,
-  X,
-  ArrowRightLeft,
-  Download,
-  ShieldAlert,
-  ShieldCheck,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { downloadReconciliationCsv } from "./reconciliation-csv";
 import { useState } from "react";
 import { toast } from "sonner";
+import { X } from "lucide-react";
+
+import { Button, ConfirmDialog, EmptyState, LeaderRow, Skeleton, TableHead } from "@/foundation";
+import { trpc } from "@/lib/trpc";
 import { UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
+
+import { downloadReconciliationCsv } from "./reconciliation-csv";
+import "./investigations.css";
+
+/**
+ * RECONCILIATION — *"Do this account's credits and generations agree?"*
+ *
+ * Rebuilt to brief 09 (`09-moderator-investigations.md`). The old surface ran
+ * backwards: a banner, two dense columns, then a six-row table whose LAST line
+ * was the discrepancy — his words, *"the answer to the entire view, in 12px, at
+ * the bottom."*
+ *
+ * The order is now **subject → verdict → evidence → action**, and the
+ * discrepancy is a 30px mono figure directly under the subject, appearing
+ * **once**: the row that used to repeat it at the bottom is deleted, and the
+ * workings end at *Recorded charges*.
+ *
+ * ## What did NOT change, deliberately
+ *
+ * His §5 and §7: every query, mutation, CSV export and date filter is the one
+ * that was here. `getUserReconciliation`, `getUserDetails`, `unfreezeAccount`
+ * and `downloadReconciliationCsv` are untouched, and the three-way headline
+ * logic is kept because — his §4b — *"it is well judged. Only the tone
+ * changes."*
+ *
+ * ## ⚠ Five colours became one
+ *
+ * Emerald, red, amber, blue and purple are gone. Earned, spent, refunds,
+ * completed, gross and net are all `--ink` mono and **the sign carries the
+ * direction**; the blue and purple column dots are gone because *"two columns
+ * headed Credit transactions and Generation records do not need colour-coding
+ * — the headings identify them."*
+ *
+ * What is left: `--accentInk` on a frozen account and on a failure count, and
+ * `--errorInk` on exactly one number — the discrepancy, when it is non-zero.
+ * That is the whole argument: *"when everything is coloured, the discrepancy is
+ * not."*
+ *
+ * ## ⚠ The `(info as any)` casts are gone
+ *
+ * His §4c asked for it in passing and the types were already there:
+ * `credits.byType` is a record of `{ totalAmount, count }`, so the cast was
+ * hiding a shape the router already declares.
+ */
 
 interface ReconciliationSubTabProps {
   userId: number;
@@ -26,8 +58,34 @@ interface ReconciliationSubTabProps {
   setEndDate: (v: string) => void;
 }
 
-function formatNumber(n: number): string {
-  return n.toLocaleString();
+const formatNumber = (n: number): string => n.toLocaleString();
+
+/**
+ * `+2,400` / `−1,860` / `0`. The sign is the information colour used to carry
+ * (his §3: *"Signs carry the direction, not colour"*).
+ *
+ * ⚠ **ZERO TAKES NO SIGN, AND THAT WAS A REAL DEFECT CAUGHT BY LOOKING.** The
+ * first shape wrote the minus unconditionally for a spend, so an account that
+ * has never spent anything read **`−0`** — a number that does not exist,
+ * printed in a ledger, in the one pane whose whole job is arithmetic. Every arm
+ * passed over it; the frame did not.
+ *
+ * The minus is U+2212, not the hyphen `toLocaleString` returns: at mono weight
+ * 400 a hyphen is visibly shorter than the plus it sits under, and a column of
+ * signed figures is where that shows.
+ */
+const signed = (n: number): string => {
+  if (n === 0) return "0";
+  return n > 0 ? `+${formatNumber(n)}` : `−${formatNumber(Math.abs(n))}`;
+};
+
+/** A figure that is a deduction by nature — spent, refunded out. Zero stays 0. */
+const negated = (n: number): string => (n === 0 ? "0" : `−${formatNumber(Math.abs(n))}`);
+
+/** Sentence case for a machine label — `admin_add` and `castingRoll` both. */
+function sentenceCase(raw: string): string {
+  const spaced = raw.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim().toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 export function ReconciliationSubTab({
@@ -37,8 +95,7 @@ export function ReconciliationSubTab({
   endDate,
   setEndDate,
 }: ReconciliationSubTabProps) {
-  const [unfreezeNotes, setUnfreezeNotes] = useState("");
-  const [showUnfreezeForm, setShowUnfreezeForm] = useState(false);
+  const [confirmingUnfreeze, setConfirmingUnfreeze] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -47,19 +104,15 @@ export function ReconciliationSubTab({
     { enabled: !!userId }
   );
 
-  const userQuery = trpc.moderator.getUserDetails.useQuery(
-    { userId },
-    { enabled: !!userId }
-  );
+  const userQuery = trpc.moderator.getUserDetails.useQuery({ userId }, { enabled: !!userId });
   const isFrozen = !!userQuery.data?.user?.frozenAt;
   const frozenAt = userQuery.data?.user?.frozenAt;
   const frozenReason = userQuery.data?.user?.frozenReason;
 
   const unfreezeMutation = trpc.moderatorReconciliation.unfreezeAccount.useMutation({
     onSuccess: () => {
-      toast.success("Account unfrozen successfully");
-      setShowUnfreezeForm(false);
-      setUnfreezeNotes("");
+      toast.success("Account unfrozen");
+      setConfirmingUnfreeze(false);
       utils.moderator.getUserDetails.invalidate({ userId });
       utils.moderatorReconciliation.getFlaggedUsers.invalidate();
     },
@@ -70,315 +123,282 @@ export function ReconciliationSubTab({
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-full bg-[#E5E5E5]" />
-        <Skeleton className="h-40 w-full bg-[#E5E5E5]" />
-        <Skeleton className="h-40 w-full bg-[#E5E5E5]" />
+      <div className="dp-inv__stack">
+        <Skeleton style={{ height: 78 }} />
+        <Skeleton style={{ height: 150 }} />
+        <Skeleton style={{ height: 150 }} />
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="bg-white rounded-xl border border-[#E5E5E5] py-8 text-center text-[#999]">
-        No data available
-      </div>
+      <EmptyState
+        title="No reconciliation for this account"
+        body="Nothing has been charged or generated in the selected range."
+      />
     );
   }
 
   const { credits, generations, reconciliation } = data;
   const hasFailures = generations.failed > 0;
   const failureRateHigh = generations.failureRate > 20;
+  const fault = reconciliation.hasDiscrepancy;
+
+  /*
+    THE THREE-WAY HEADLINE, kept from the original and re-voiced. His §4b:
+    `All Clear` becomes `The ledgers agree.` — a sentence rather than a status
+    word, because the pane answers a question.
+  */
+  const headline = fault
+    ? `${formatNumber(Math.abs(reconciliation.discrepancy))} credits unaccounted for.`
+    : hasFailures
+      ? "Failures were refunded."
+      : "The ledgers agree.";
+
+  const verdictClass = fault
+    ? "dp-inv__verdict dp-inv__verdict--fault"
+    : hasFailures
+      ? "dp-inv__verdict dp-inv__verdict--refunded"
+      : "dp-inv__verdict";
 
   return (
-    <div className="space-y-3">
-      {/* Frozen Account Banner */}
+    <div className="dp-inv__stack">
+      {/* ── 1 · SUBJECT — only when there is something to say (§4a) ── */}
       {isFrozen && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-800">Account Frozen</p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Frozen {frozenAt ? new Date(frozenAt).toLocaleDateString() : ""}
-                {frozenReason ? ` — ${frozenReason}` : ""}
-              </p>
-              {!showUnfreezeForm ? (
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
-                    onClick={() => setShowUnfreezeForm(true)}
-                  >
-                    <ShieldCheck className="w-3 h-3 mr-1" />
-                    Unfreeze Account
-                  </Button>
-                </div>
-              ) : (
-                <div className="mt-2 space-y-2">
-                  <textarea
-                    value={unfreezeNotes}
-                    onChange={(e) => setUnfreezeNotes(e.target.value)}
-                    placeholder="Review notes (required) — explain why the account is being unfrozen..."
-                    className="w-full bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] placeholder:text-[#CCC] resize-none"
-                    rows={2}
-                    maxLength={UNFREEZE_NOTES_MAX_LENGTH}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                      disabled={!unfreezeNotes.trim() || unfreezeMutation.isPending}
-                      onClick={() => unfreezeMutation.mutate({ userId, notes: unfreezeNotes.trim() })}
-                    >
-                      {unfreezeMutation.isPending ? "Unfreezing..." : "Confirm Unfreeze"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs text-[#999] hover:text-[#0A0A0A]"
-                      onClick={() => { setShowUnfreezeForm(false); setUnfreezeNotes(""); }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
+        <div className="dp-inv__subject">
+          <div className="dp-inv__subjectbody">
+            <p className="dp-inv__subjecttitle">Account frozen</p>
+            <p className="dp-inv__subjectreason">
+              {frozenAt && (
+                <>
+                  Frozen{" "}
+                  <span className="dp-inv__subjectstamp">
+                    {new Date(frozenAt).toLocaleDateString()}
+                  </span>
+                </>
               )}
+              {frozenReason ? ` — ${frozenReason}` : ""}
+            </p>
+            <div className="dp-inv__subjectaction">
+              <Button variant="secondary" size="small" onClick={() => setConfirmingUnfreeze(true)}>
+                Unfreeze account
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Date Range Filter + Export */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Calendar className="w-3.5 h-3.5 text-[#999]" />
-        <span className="text-xs text-[#999]">Date Range:</span>
-        <div className="relative">
+      {/* ── 2 · VERDICT — the answer, and the largest figure in the pane (§4b) ── */}
+      <div className={verdictClass}>
+        <div className="dp-inv__verdictmain">
+          <p className="dp-inv__eyebrow">Reconciliation</p>
+          <p className="dp-inv__verdictline">{headline}</p>
+          <p className="dp-inv__verdictsummary">{reconciliation.summary}</p>
+        </div>
+        <div className="dp-inv__verdictfigure">
+          <p className="dp-inv__eyebrow">Discrepancy</p>
+          <p
+            className={`dp-inv__verdictvalue${fault ? " dp-inv__verdictvalue--fault" : ""}`}
+          >
+            {signed(reconciliation.discrepancy)}
+          </p>
+        </div>
+      </div>
+
+      {/* ── 3 · EVIDENCE — the two columns (§4c) ── */}
+      <div className="dp-inv__columns">
+        <div className="dp-inv__card">
+          <TableHead eyebrow="Credit transactions" />
+          <div className="dp-inv__cardbody">
+            <LeaderRow label="Total earned" value={signed(credits.totalEarned)} />
+            <LeaderRow label="Total spent" value={negated(credits.totalSpent)} />
+            <LeaderRow
+              label="Gross generation deductions"
+              value={formatNumber(credits.grossGenerationDeductions)}
+              subtotal
+            />
+            {credits.totalRefunds > 0 && (
+              <LeaderRow label="Refunds" value={signed(credits.totalRefunds)} />
+            )}
+            <LeaderRow
+              label="Net generation cost"
+              value={formatNumber(credits.netGenerationCost)}
+              subtotal
+            />
+            <div className="dp-inv__subblock">
+              <p className="dp-inv__eyebrow">By type</p>
+              {Object.entries(credits.byType).map(([type, info]) => (
+                <LeaderRow
+                  key={type}
+                  small
+                  label={sentenceCase(type)}
+                  value={`${signed(info.totalAmount)} (${info.count})`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="dp-inv__card">
+          <TableHead eyebrow="Generation records" />
+          <div className="dp-inv__cardbody">
+            <LeaderRow label="Total generations" value={formatNumber(generations.total)} />
+            <LeaderRow label="Completed" value={formatNumber(generations.completed)} />
+            <LeaderRow
+              label="Failed"
+              attention={hasFailures}
+              value={
+                failureRateHigh
+                  ? `${formatNumber(generations.failed)} (${generations.failureRate}%)`
+                  : formatNumber(generations.failed)
+              }
+            />
+            <LeaderRow label="Pending" value={formatNumber(generations.pending)} />
+            <LeaderRow
+              label="Completed cost"
+              value={formatNumber(generations.creditsOnCompleted)}
+              subtotal
+            />
+            {generations.creditsOnPending > 0 && (
+              <LeaderRow label="Pending cost" value={formatNumber(generations.creditsOnPending)} />
+            )}
+            <div className="dp-inv__subblock">
+              <p className="dp-inv__eyebrow">By type</p>
+              {generations.byType.map((entry) => (
+                <LeaderRow
+                  key={entry.type}
+                  small
+                  label={sentenceCase(entry.type)}
+                  value={`${formatNumber(entry.totalCost)} (${entry.totalCount})`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4 · EVIDENCE — the workings (§4d) ── */}
+      <div className="dp-inv__card">
+        <TableHead eyebrow="Reconciliation" />
+        <div className="dp-inv__cardbody">
+          <LeaderRow
+            label="Gross generation deductions"
+            value={formatNumber(reconciliation.grossGenerationDeductions)}
+          />
+          {reconciliation.totalRefunds > 0 && (
+            <LeaderRow
+              label="Refunds (failures, cancellations, corrections)"
+              value={negated(reconciliation.totalRefunds)}
+            />
+          )}
+          <LeaderRow
+            label="Net generation cost (credits)"
+            value={formatNumber(reconciliation.netGenerationCost)}
+            subtotal
+          />
+          <LeaderRow
+            label="Completed generation recorded cost"
+            value={formatNumber(reconciliation.completedGenerationCost)}
+          />
+          {reconciliation.pendingGenerationCost > 0 && (
+            <LeaderRow
+              label="Pending generation cost"
+              value={formatNumber(reconciliation.pendingGenerationCost)}
+            />
+          )}
+          <LeaderRow
+            label="Recorded charges (all records)"
+            value={formatNumber(reconciliation.expectedCost)}
+            subtotal
+          />
+          {/*
+            ⚠ THE DISCREPANCY ROW IS DELETED FROM HERE ON PURPOSE (§4d).
+            It is the verdict, it is at the top at 30px, and *"repeating it at
+            the bottom in 12px is the same double-count the Crew work removed."*
+            The workings end at Recorded charges.
+          */}
+        </div>
+      </div>
+
+      {/* ── 5 · ACTION — filters and export, one wrapping row (§4e) ── */}
+      <div className="dp-inv__filters">
+        <span className="dp-inv__eyebrow">Date range</span>
+        <span className="dp-inv__datefield">
           <input
             type="date"
+            className="dp-inv__date"
+            aria-label="Reconciliation start date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1 text-xs text-[#0A0A0A]"
           />
           {startDate && (
-            <button onClick={() => setStartDate("")} className="absolute right-1 top-1/2 -translate-y-1/2">
-              <X className="w-3 h-3 text-[#999] hover:text-[#0A0A0A]" />
+            <button
+              type="button"
+              className="dp-inv__dateclear"
+              aria-label="Clear start date"
+              onClick={() => setStartDate("")}
+            >
+              <X size={12} />
             </button>
           )}
-        </div>
-        <span className="text-xs text-[#CCC]">—</span>
-        <div className="relative">
+        </span>
+        <span className="dp-inv__dash">—</span>
+        <span className="dp-inv__datefield">
           <input
             type="date"
+            className="dp-inv__date"
+            aria-label="Reconciliation end date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1 text-xs text-[#0A0A0A]"
           />
           {endDate && (
-            <button onClick={() => setEndDate("")} className="absolute right-1 top-1/2 -translate-y-1/2">
-              <X className="w-3 h-3 text-[#999] hover:text-[#0A0A0A]" />
+            <button
+              type="button"
+              className="dp-inv__dateclear"
+              aria-label="Clear end date"
+              onClick={() => setEndDate("")}
+            >
+              <X size={12} />
             </button>
           )}
-        </div>
-        <div className="ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5]"
-            onClick={() => downloadReconciliationCsv(data, userId, startDate || undefined, endDate || undefined)}
-          >
-            <Download className="w-3.5 h-3.5 mr-1" />
-            CSV
-          </Button>
-        </div>
+        </span>
+        {/* A spacer, never `ml-auto` — his §4e and §7 both name it. */}
+        <span className="dp-inv__filterspacer" />
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={() =>
+            downloadReconciliationCsv(data, userId, startDate || undefined, endDate || undefined)
+          }
+        >
+          Export CSV
+        </Button>
       </div>
 
-      {/* Reconciliation Summary Banner */}
-      <div className={`rounded-xl border p-4 ${
-        reconciliation.hasDiscrepancy
-          ? "bg-red-50 border-red-200"
-          : hasFailures
-            ? "bg-amber-50 border-amber-200"
-            : "bg-emerald-50 border-emerald-200"
-      }`}>
-        <div className="flex items-start gap-3">
-          {reconciliation.hasDiscrepancy ? (
-            <XCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
-          ) : hasFailures ? (
-            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-          ) : (
-            <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
-          )}
-          <div>
-            <p className={`text-sm font-medium ${
-              reconciliation.hasDiscrepancy ? "text-red-800" : hasFailures ? "text-amber-800" : "text-emerald-800"
-            }`}>
-              {reconciliation.hasDiscrepancy ? "Discrepancy Detected" : hasFailures ? "Failed Generations (Refunded)" : "All Clear"}
-            </p>
-            <p className={`text-xs mt-0.5 ${
-              reconciliation.hasDiscrepancy ? "text-red-700" : hasFailures ? "text-amber-700" : "text-emerald-700"
-            }`}>{reconciliation.summary}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Side-by-Side Comparison */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Credits Side */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-          <h4 className="text-xs font-medium text-[#0A0A0A] flex items-center gap-1.5 mb-3">
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            Credit Transactions
-          </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-[#999]">Total Earned</span>
-              <span className="text-emerald-700 font-mono">+{formatNumber(credits.totalEarned)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-[#999]">Total Spent</span>
-              <span className="text-red-700 font-mono">-{formatNumber(credits.totalSpent)}</span>
-            </div>
-            <div className="border-t border-[#E5E5E5] pt-2 flex justify-between text-xs">
-              <span className="text-[#999]">Gross Generation Deductions</span>
-              <span className="text-[#0A0A0A] font-mono">{formatNumber(credits.grossGenerationDeductions)}</span>
-            </div>
-            {credits.totalRefunds > 0 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-emerald-600">Refunds</span>
-                <span className="text-emerald-700 font-mono">+{formatNumber(credits.totalRefunds)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-xs font-medium">
-              <span className="text-[#666]">Net Generation Cost</span>
-              <span className="text-[#0A0A0A] font-mono">{formatNumber(credits.netGenerationCost)}</span>
-            </div>
-            {/* Credit type breakdown */}
-            <div className="border-t border-[#E5E5E5] pt-2 space-y-1">
-              <p className="text-[10px] text-[#999] uppercase tracking-wider">By Type</p>
-              {Object.entries(credits.byType).map(([type, info]) => (
-                <div key={type} className="flex justify-between text-[11px]">
-                  <span className="text-[#999] capitalize">{type.replace(/_/g, " ")}</span>
-                  <span className="text-[#666] font-mono">
-                    {(info as any).totalAmount > 0 ? "+" : ""}{formatNumber((info as any).totalAmount)} ({(info as any).count})
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Generations Side */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-          <h4 className="text-xs font-medium text-[#0A0A0A] flex items-center gap-1.5 mb-3">
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
-            Generation Records
-          </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-[#999]">Total Generations</span>
-              <span className="text-[#0A0A0A] font-mono">{formatNumber(generations.total)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-[#999]">Completed</span>
-              <span className="text-emerald-700 font-mono">{formatNumber(generations.completed)}</span>
-            </div>
-            <div className="flex justify-between text-xs items-center">
-              <span className="text-[#999]">Failed</span>
-              <span className="flex items-center gap-1">
-                {hasFailures ? (
-                  <AlertTriangle className="w-3 h-3 text-amber-600" />
-                ) : (
-                  <CheckCircle className="w-3 h-3 text-emerald-600" />
-                )}
-                <span className={`font-mono ${hasFailures ? "text-amber-700" : "text-[#666]"}`}>
-                  {formatNumber(generations.failed)}
-                </span>
-                {failureRateHigh && (
-                  <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">
-                    {generations.failureRate}%
-                  </Badge>
-                )}
-              </span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-[#999]">Pending</span>
-              <span className="text-[#666] font-mono">{formatNumber(generations.pending)}</span>
-            </div>
-            <div className="border-t border-[#E5E5E5] pt-2 flex justify-between text-xs font-medium">
-              <span className="text-[#666]">Completed Cost</span>
-              <span className="text-[#0A0A0A] font-mono">{formatNumber(generations.creditsOnCompleted)}</span>
-            </div>
-            {generations.creditsOnPending > 0 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-[#999]">Pending Cost</span>
-                <span className="text-amber-700 font-mono">{formatNumber(generations.creditsOnPending)}</span>
-              </div>
-            )}
-            {/* Generation type breakdown */}
-            <div className="border-t border-[#E5E5E5] pt-2 space-y-1">
-              <p className="text-[10px] text-[#999] uppercase tracking-wider">By Type</p>
-              {generations.byType.map((entry) => (
-                <div key={entry.type} className="flex justify-between text-[11px]">
-                  <span className="text-[#999] capitalize">{entry.type.replace(/([A-Z])/g, " $1").trim()}</span>
-                  <span className="text-[#666] font-mono">
-                    {formatNumber(entry.totalCost)} ({entry.totalCount})
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Reconciliation Details */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-        <h4 className="text-xs font-medium text-[#0A0A0A] flex items-center gap-1.5 mb-3">
-          <ArrowRightLeft className="w-3.5 h-3.5" />
-          Reconciliation Details
-        </h4>
-        <table className="w-full text-xs">
-          <tbody className="divide-y divide-[#F0F0F0]">
-            <tr>
-              <td className="py-1.5 text-[#999]">Gross generation deductions</td>
-              <td className="py-1.5 text-right font-mono text-[#0A0A0A]">{formatNumber(reconciliation.grossGenerationDeductions)}</td>
-            </tr>
-            {reconciliation.totalRefunds > 0 && (
-              <tr>
-                <td className="py-1.5 text-emerald-600">Refunds (failures, cancellations, corrections)</td>
-                <td className="py-1.5 text-right font-mono text-emerald-700">-{formatNumber(reconciliation.totalRefunds)}</td>
-              </tr>
-            )}
-            <tr>
-              <td className="py-1.5 text-[#666] font-medium">Net generation cost (credits)</td>
-              <td className="py-1.5 text-right font-mono text-[#0A0A0A] font-medium">{formatNumber(reconciliation.netGenerationCost)}</td>
-            </tr>
-            <tr>
-              <td className="py-1.5 text-[#999]">Completed generation recorded cost</td>
-              <td className="py-1.5 text-right font-mono text-[#0A0A0A]">{formatNumber(reconciliation.completedGenerationCost)}</td>
-            </tr>
-            {reconciliation.pendingGenerationCost > 0 && (
-              <tr>
-                <td className="py-1.5 text-[#999]">Pending generation cost</td>
-                <td className="py-1.5 text-right font-mono text-amber-700">{formatNumber(reconciliation.pendingGenerationCost)}</td>
-              </tr>
-            )}
-            <tr>
-              <td className="py-1.5 text-[#999]">Recorded charges (all records)</td>
-              <td className="py-1.5 text-right font-mono text-[#0A0A0A]">{formatNumber(reconciliation.expectedCost)}</td>
-            </tr>
-            <tr>
-              <td className="py-1.5 text-[#666] font-medium">Discrepancy</td>
-              <td className={`py-1.5 text-right font-mono font-medium ${
-                reconciliation.hasDiscrepancy ? "text-red-700" : "text-emerald-700"
-              }`}>
-                {reconciliation.discrepancy > 0 ? "+" : ""}{formatNumber(reconciliation.discrepancy)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {/*
+        UNFREEZE — through the promoted dialog, with the review notes inside it
+        (§4a). It was an inline form with a `bg-emerald-600` confirm: *"a green
+        primary on a security action, and the only place in the product that
+        would be green."*
+      */}
+      {confirmingUnfreeze && (
+        <ConfirmDialog
+          title="Unfreeze this account?"
+          body="They will be able to generate and spend credits again immediately."
+          notes={{
+            label: "Review notes (required)",
+            placeholder: "Explain why the account is being unfrozen…",
+            maxLength: UNFREEZE_NOTES_MAX_LENGTH,
+          }}
+          cancelLabel="Cancel"
+          confirmLabel="Unfreeze account"
+          busyLabel="Unfreezing…"
+          busy={unfreezeMutation.isPending}
+          onCancel={() => setConfirmingUnfreeze(false)}
+          onConfirm={(notes) => unfreezeMutation.mutate({ userId, notes })}
+        />
+      )}
     </div>
   );
 }

@@ -1,32 +1,52 @@
 /**
- * Extracted sub-components for UserInvestigationTab: UserTable + UserDetailCard.
+ * The user list and the subject band for Moderation → User investigation.
+ *
+ * ## ⚠ THE LIST WAS A HAND-ROLLED TABLE ONE BRIEF AFTER THAT WAS BANNED, AND
+ * THE ARM THAT SHOULD HAVE HELD IT COULD NOT SEE IT
+ *
+ * Brief 06 §8 bans three things by name: a surface drawing its own `<table>`,
+ * an `overflow-x-auto` scroller, and an Actions column. **This file had all
+ * three, still, one brief later** — and not because #396 skipped it.
+ *
+ * `section06-guard.test.ts` derives its population as *files that mount
+ * `<DataTable` or `<TableHead`*. This file mounted neither, so it was in no
+ * population at all. Its own docblock claims *"a file that draws rows without
+ * mounting `DataTable` is caught by the hand-rolling arm"* — **and that arm
+ * iterates the same population.** An absence assertion over a set that cannot
+ * contain the offender is green for the same reason an empty one is.
+ *
+ * The guard's population is widened in this PR to every `.tsx` under
+ * `features/admin` and `features/moderator`, with this file's previous shape as
+ * the positive control.
+ *
+ * ## The Actions column is gone, not moved
+ *
+ * Its only control was an eye icon that did what clicking the row already did.
+ *
+ * ## The freeze dialog is the promoted one now
+ *
+ * It was a fifth hand-rolled `Dialog` with `bg-emerald-600` and `bg-red-600`
+ * confirms — his §4 on the green: *"a green primary on a security action, and
+ * the only place in the product that would be green."* `ConfirmDialog` gained
+ * an optional required-notes block in this PR precisely so this and the
+ * unfreeze in `ReconciliationSubTab` could both stop drawing their own.
+ *
+ * ⚠ **`FREEZE_OR_UNFREEZE_MAX_LENGTH` survives the move and still must.** One
+ * box submits to whichever procedure the button chose, so its room has to
+ * satisfy both schemas; the dialog takes the number as a prop and derives its
+ * counter from the same value, so the two cannot drift.
  */
-import {
-  Eye,
-  User,
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-  ShieldAlert,
-  ShieldCheck,
-  AlertTriangle,
-} from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
-import { trpc } from "@/lib/trpc";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
+
+import { RolePill, RowId, RowStack, StatePill, pageRange } from "@/features/staff";
+import { Button, ConfirmDialog, DataTable } from "@/foundation";
+import type { DataRow } from "@/foundation";
+import { trpc } from "@/lib/trpc";
 import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
+
+import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
+import "./investigations.css";
 
 /**
  * This dialog's single box submits to whichever procedure the button chose,
@@ -39,7 +59,9 @@ const FREEZE_OR_UNFREEZE_MAX_LENGTH = Math.min(
   UNFREEZE_NOTES_MAX_LENGTH,
 );
 
-// ── User Table ──
+const PAGE_SIZE = 20;
+
+// ── The list ──
 
 export function UserTable({
   usersQuery,
@@ -48,142 +70,144 @@ export function UserTable({
   userPage,
   setUserPage,
   userTotalPages,
+  subTabs,
+  subTab,
+  onSubTab,
+  panel,
 }: {
   usersQuery: any;
   selectedUserId: number | null;
-  onSelectUser: (id: number) => void;
+  /** `null` closes the open investigation — never a sentinel number. */
+  onSelectUser: (id: number | null) => void;
   userPage: number;
   setUserPage: (fn: (p: number) => number) => void;
   userTotalPages: number;
+  /** The investigation's four sub-tabs, carried by the OPEN row only. */
+  subTabs: { value: string; label: string }[];
+  subTab: string;
+  onSubTab: (value: string) => void;
+  panel: ReactNode;
 }) {
-  return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">User</th>
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Role</th>
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Last Active</th>
-              <th className="px-4 py-3 text-right text-[10px] font-medium text-[#999] uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {usersQuery.isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-[#F0F0F0]">
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-32 bg-[#E5E5E5]" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 bg-[#E5E5E5]" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 bg-[#E5E5E5]" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-24 bg-[#E5E5E5]" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-8 bg-[#E5E5E5] ml-auto" /></td>
-                </tr>
-              ))
-            ) : usersQuery.data?.users?.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-[#999] text-sm">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              usersQuery.data?.users?.map((u: any) => (
-                <tr
-                  key={u.id}
-                  className={`border-b border-[#F0F0F0] cursor-pointer transition-colors ${
-                    selectedUserId === u.id ? "bg-blue-50" : "hover:bg-[#FAFAFA]"
-                  }`}
-                  onClick={() => onSelectUser(u.id)}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {u.avatarUrl ? (
-                        <img src={u.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-[#F0F0F0] flex items-center justify-center text-xs font-medium text-[#666]">
-                          {(u.name || "U").charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-[#0A0A0A]">{u.name || "Unnamed"}</p>
-                        <p className="text-xs text-[#999]">
-                          <span className="font-mono text-[#CCC]">#{u.id}</span>{" "}
-                          {u.email}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge className={
-                      u.role === "admin" ? "bg-red-50 text-red-700" :
-                      u.role === "moderator" ? "bg-amber-50 text-amber-700" :
-                      "bg-gray-100 text-gray-600"
-                    }>
-                      {u.role}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.suspendedAt ? (
-                      <Badge className="bg-red-50 text-red-700">Suspended</Badge>
-                    ) : (
-                      <Badge className="bg-emerald-50 text-emerald-700">Active</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-[#999]">
-                    {u.lastLoginAt ? formatDate(new Date(u.lastLoginAt)) : "Never"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-7 w-7 p-0"
-                      onClick={(e) => { e.stopPropagation(); onSelectUser(u.id); }}
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+  const users: any[] = usersQuery.data?.users ?? [];
+  /*
+    ⚠ The REAL total, not `userTotalPages * PAGE_SIZE`. `pageRange`'s own
+    docblock bans exactly that: *"rather than inventing a total from the page
+    size."* The procedure returns one; the page count above it is derived from
+    the same field.
+  */
+  const total: number | undefined = usersQuery.data?.total;
 
-      {/* User Pagination */}
-      {userTotalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E5E5]">
-          <span className="text-xs text-[#999]">
-            Page {userPage + 1} of {userTotalPages}
-          </span>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setUserPage(p => Math.max(0, p - 1))}
-              disabled={userPage === 0}
-              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setUserPage(p => p + 1)}
-              disabled={userPage + 1 >= userTotalPages}
-              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-            >
-              <ChevronRight className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+  const rows: DataRow[] = users.map((u) => ({
+    id: String(u.id),
+    /*
+      ⚠ **THE INVESTIGATION IS THE ROW'S OWN EXPANSION, and that is brief 06's
+      pattern rather than a workaround.** `DataRow` already carries `subTabs` /
+      `subTab` / `panel` — *"sub-tabs inside the expansion, only where the
+      record has them"* — which is precisely what an investigation is.
+
+      It also answers the one place brief 09's picture and the tree disagreed:
+      §4 draws Reconciliation as a working pane at 1240px, and it was living in
+      a `lg:col-span-1` sidebar about 380px wide. `.dp-table__panel` is the full
+      table width, so the discrepancy finally has room to be the largest figure
+      on screen — and the founder's own words about this pattern hold:
+      *"click a person, act, close — the next person is still where they were."*
+
+      ⚠ Carried by the OPEN row only. Handing every row a rendered
+      investigation would mount twenty copies of four queries.
+    */
+    ...(selectedUserId === u.id ? { subTabs, subTab, onSubTab, panel } : {}),
+    /*
+      ⚠ **EVERY ROW CARRIES ITS FACTS, AND THAT IS WHAT MAKES IT CLICKABLE AT
+      ALL.** `ExpandableRow` computes `expandable` from `facts || evidence ||
+      actions || panel`, and a row with none of them renders as plain markup
+      with no click handler. The first shape of this table gave the panel to the
+      open row only — so a closed row had nothing, and nothing could ever open.
+      It drew perfectly and was inert; the browser found it, no source read
+      could have.
+
+      These five come from the LIST query and nothing else. Credits and plan
+      live on the detail query and appear in the subject band once it is open —
+      a fact drawn from a reader this row does not have would be a number no
+      server produces.
+    */
+    facts: [
+      { label: "ACCOUNT", value: `#${u.id}` },
+      { label: "EMAIL", value: u.email || "—" },
+      { label: "ROLE", value: u.role },
+      { label: "JOINED", value: u.createdAt ? formatDate(new Date(u.createdAt)) : "—" },
+      {
+        label: "LAST ACTIVE",
+        value: u.lastSignedIn ? formatDate(new Date(u.lastSignedIn)) : "Never",
+      },
+    ],
+    cells: [
+      <RowStack
+        key="who"
+        name={u.name || "Unnamed"}
+        meta={
+          <>
+            <RowId>#{u.id}</RowId> {u.email}
+          </>
+        }
+      />,
+      <RolePill key="role" role={u.role} />,
+      u.suspendedAt ? (
+        <StatePill key="state" label="Suspended" attention />
+      ) : u.frozenAt ? (
+        <StatePill key="state" label="Frozen" attention />
+      ) : (
+        <StatePill key="state" label="Active" />
+      ),
+      /*
+        ⚠ **`lastSignedIn`, NOT `lastLoginAt` — the one displayed value in this
+        PR that changes, and it changes from a wrong one.** `moderator.listUsers`
+        returns `lastSignedIn` (`server/routes/moderator.ts:153`); nothing has
+        ever returned `lastLoginAt`, so this column read **"Never" for every
+        account, always**, including accounts that signed in the same day.
+
+        His §8 asks that every number be identical to before. This one is the
+        stated exception rather than a quiet correction: a column headed *Last
+        active* that cannot say anything but "Never" is not a number to
+        preserve. Found by driving the surface, not by reading it.
+      */
+      <span key="seen">{u.lastSignedIn ? formatDate(new Date(u.lastSignedIn)) : "Never"}</span>,
+    ],
+  }));
+
+  return (
+    <DataTable
+      columns={[
+        { label: "User", width: "1 1 0" },
+        { label: "Role", width: "0 0 104px" },
+        { label: "State", width: "0 0 104px" },
+        { label: "Last active", width: "0 0 148px" },
+      ]}
+      rows={rows}
+      loading={usersQuery.isLoading}
+      openId={selectedUserId === null ? null : String(selectedUserId)}
+      onOpenChange={(id) => onSelectUser(id === null ? null : Number(id))}
+      empty={{
+        title: "No users match that search.",
+        body: "Try a different name, email or id.",
+      }}
+      footer={{
+        meta: pageRange({
+          offset: userPage * PAGE_SIZE,
+          count: users.length,
+          total,
+        }),
+        onBack: () => setUserPage((p) => Math.max(0, p - 1)),
+        onNext: () => setUserPage((p) => p + 1),
+        backDisabled: userPage === 0,
+        nextDisabled: userPage + 1 >= userTotalPages,
+      }}
+    />
   );
 }
 
-// ── Freeze Action Button with Confirmation Modal ──
+// ── Freeze / unfreeze, through the promoted dialog ──
 
-function FreezeActionButton({
+function FreezeAction({
   userId,
   isFrozen,
   isAdmin,
@@ -194,150 +218,67 @@ function FreezeActionButton({
   isAdmin: boolean;
   userName?: string;
 }) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [reason, setReason] = useState("");
+  const [open, setOpen] = useState(false);
   const utils = trpc.useUtils();
 
+  const done = (message: string) => {
+    toast.success(message);
+    setOpen(false);
+    utils.moderator.getUserDetails.invalidate({ userId });
+    utils.moderatorReconciliation.getFlaggedUsers.invalidate();
+  };
+
   const freezeMutation = trpc.moderatorReconciliation.freezeAccount.useMutation({
-    onSuccess: () => {
-      toast.success("Account frozen successfully");
-      setDialogOpen(false);
-      setReason("");
-      utils.moderator.getUserDetails.invalidate({ userId });
-      utils.moderatorReconciliation.getFlaggedUsers.invalidate();
-    },
+    onSuccess: () => done("Account frozen"),
     onError: (err) => toast.error(err.message || "Failed to freeze account"),
   });
 
   const unfreezeMutation = trpc.moderatorReconciliation.unfreezeAccount.useMutation({
-    onSuccess: () => {
-      toast.success("Account unfrozen successfully");
-      setDialogOpen(false);
-      setReason("");
-      utils.moderator.getUserDetails.invalidate({ userId });
-      utils.moderatorReconciliation.getFlaggedUsers.invalidate();
-    },
+    onSuccess: () => done("Account unfrozen"),
     onError: (err) => toast.error(err.message || "Failed to unfreeze account"),
   });
 
   if (isAdmin) return null;
 
-  const isPending = freezeMutation.isPending || unfreezeMutation.isPending;
+  const busy = freezeMutation.isPending || unfreezeMutation.isPending;
   const displayName = userName || `User #${userId}`;
 
   return (
-    <div className="pt-2">
-      <Button
-        size="sm"
-        variant="outline"
-        className={`w-full ${
-          isFrozen
-            ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-            : "border-red-300 text-red-700 hover:bg-red-50"
-        }`}
-        onClick={() => setDialogOpen(true)}
-      >
-        {isFrozen ? (
-          <><ShieldCheck className="w-3 h-3 mr-2" /> Unfreeze Account</>
-        ) : (
-          <><ShieldAlert className="w-3 h-3 mr-2" /> Freeze Account</>
-        )}
+    <>
+      <Button variant="secondary" size="small" destructive={!isFrozen} onClick={() => setOpen(true)}>
+        {isFrozen ? "Unfreeze account" : "Freeze account"}
       </Button>
-
-      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!isPending) { setDialogOpen(open); if (!open) setReason(""); } }}>
-        <DialogContent className="bg-white border-[#E5E5E5] max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-[#0A0A0A] flex items-center gap-2">
-              {isFrozen ? (
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              ) : (
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              )}
-              {isFrozen ? "Unfreeze Account" : "Freeze Account"}
-            </DialogTitle>
-            <DialogDescription className="text-[#666]">
-              {isFrozen
-                ? `You are about to unfreeze ${displayName}'s account. This will restore their ability to generate content and use credits.`
-                : `You are about to freeze ${displayName}'s account. This will prevent them from generating content or using credits until the account is unfrozen.`
-              }
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-2">
-            {!isFrozen && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-xs text-red-700 font-medium">This action will immediately:</p>
-                <ul className="text-xs text-red-600 mt-1 space-y-0.5 list-disc list-inside">
-                  <li>Block all new generations</li>
-                  <li>Prevent credit usage</li>
-                  <li>Show a frozen notice to the user</li>
-                </ul>
-              </div>
-            )}
-
-            <div>
-              <label className="text-xs font-medium text-[#666] block mb-1">
-                {isFrozen ? "Review notes (required)" : "Reason for freezing (required)"}
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder={isFrozen ? "Explain why the account is being unfrozen..." : "Explain why this account should be frozen..."}
-                className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm text-[#0A0A0A] placeholder:text-[#CCC] resize-none focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/10"
-                rows={3}
-                /*
-                  THE ONE FIELD WITH TWO DESTINATIONS. The button decides
-                  whether this text is `freezeAccount`'s `reason` or
-                  `unfreezeAccount`'s `notes` — two schemas, and it cannot name
-                  either. It takes the MIN, here, where having two destinations
-                  is visible; they agree at 500 today and this stays correct on
-                  the day one of them moves.
-                */
-                maxLength={FREEZE_OR_UNFREEZE_MAX_LENGTH}
-              />
-              {/* The counter was a THIRD hand-typed copy of this number. */}
-              <p className="text-[10px] text-[#CCC] mt-1 text-right">{reason.length}/{FREEZE_OR_UNFREEZE_MAX_LENGTH}</p>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-[#E5E5E5] text-[#666]"
-              onClick={() => { setDialogOpen(false); setReason(""); }}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              className={isFrozen
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                : "bg-red-600 hover:bg-red-700 text-white"
-              }
-              disabled={!reason.trim() || isPending}
-              onClick={() => {
-                if (isFrozen) {
-                  unfreezeMutation.mutate({ userId, notes: reason.trim() });
-                } else {
-                  freezeMutation.mutate({ userId, reason: reason.trim() });
-                }
-              }}
-            >
-              {isPending
-                ? (isFrozen ? "Unfreezing..." : "Freezing...")
-                : (isFrozen ? "Confirm Unfreeze" : "Confirm Freeze")
-              }
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      {open && (
+        <ConfirmDialog
+          title={isFrozen ? "Unfreeze this account?" : "Freeze this account?"}
+          body={
+            isFrozen
+              ? `${displayName} will be able to generate and spend credits again immediately.`
+              : `${displayName} will be blocked from generating and from spending credits, and will see a frozen notice, until someone unfreezes them.`
+          }
+          notes={{
+            label: isFrozen ? "Review notes (required)" : "Reason for freezing (required)",
+            placeholder: isFrozen
+              ? "Explain why the account is being unfrozen…"
+              : "Explain why this account should be frozen…",
+            maxLength: FREEZE_OR_UNFREEZE_MAX_LENGTH,
+          }}
+          cancelLabel="Cancel"
+          confirmLabel={isFrozen ? "Unfreeze account" : "Freeze account"}
+          busyLabel={isFrozen ? "Unfreezing…" : "Freezing…"}
+          busy={busy}
+          onCancel={() => setOpen(false)}
+          onConfirm={(text) => {
+            if (isFrozen) unfreezeMutation.mutate({ userId, notes: text });
+            else freezeMutation.mutate({ userId, reason: text });
+          }}
+        />
+      )}
+    </>
   );
 }
 
-// ── User Detail Card ──
+// ── The subject band (§5: "Subject first … one band, not repeated in three widgets") ──
 
 export function UserDetailCard({
   userDetailsQuery,
@@ -348,94 +289,76 @@ export function UserDetailCard({
   selectedUserId: number;
   onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
 }) {
+  if (userDetailsQuery.isLoading || !userDetailsQuery.data) return null;
+
+  const user = userDetailsQuery.data.user;
+  const credits = userDetailsQuery.data.credits;
+
+  /*
+    ⚠ **NO NAME, NO AVATAR, NO JOINED DATE HERE — the row above IS the
+    subject.** His §5: *"Subject first. Who this account is, its state, when it
+    joined, what it is on. One band, NOT REPEATED IN THREE WIDGETS."* The row's
+    own cells and facts already say who and when; what this band adds is the two
+    figures only the detail query knows, the states that need saying, and the
+    actions.
+  */
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <User className="w-4 h-4 text-blue-600" />
-        <h3 className="text-sm font-semibold text-[#0A0A0A]">User #{selectedUserId}</h3>
+    <div className="dp-inv__stack">
+      <div className="dp-inv__subjecthead">
+        <div className="dp-inv__subjectfacts">
+          <span className="dp-inv__fact">
+            <span className="dp-inv__eyebrow">Credits</span>
+            <span className="dp-inv__factvalue">{credits?.balance?.toLocaleString() ?? "—"}</span>
+          </span>
+          <span className="dp-inv__fact">
+            <span className="dp-inv__eyebrow">Plan</span>
+            <span className="dp-inv__factvalue">{credits?.planTier || "free"}</span>
+          </span>
+        </div>
       </div>
 
-      {userDetailsQuery.isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-12 w-full bg-[#E5E5E5]" />
-          <Skeleton className="h-8 w-3/4 bg-[#E5E5E5]" />
-          <Skeleton className="h-8 w-1/2 bg-[#E5E5E5]" />
-        </div>
-      ) : userDetailsQuery.data ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            {userDetailsQuery.data.user.avatarUrl ? (
-              <img src={userDetailsQuery.data.user.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-[#F0F0F0] flex items-center justify-center text-lg font-medium text-[#666]">
-                {(userDetailsQuery.data.user.name || "U").charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <p className="font-medium text-[#0A0A0A]">{userDetailsQuery.data.user.name || "Unnamed"}</p>
-              <p className="text-xs text-[#999]">{userDetailsQuery.data.user.email}</p>
-            </div>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-[#999]">Credits</span>
-              <span className="font-medium text-[#0A0A0A]">{userDetailsQuery.data.credits?.balance?.toLocaleString() ?? "—"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#999]">Plan</span>
-              <Badge className={
-                userDetailsQuery.data.credits?.planTier === "enterprise" ? "bg-amber-50 text-amber-700" :
-                userDetailsQuery.data.credits?.planTier === "studio" ? "bg-purple-50 text-purple-700" :
-                userDetailsQuery.data.credits?.planTier === "starter" ? "bg-emerald-50 text-emerald-700" :
-                "bg-gray-100 text-gray-600"
-              }>
-                {userDetailsQuery.data.credits?.planTier || "free"}
-              </Badge>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#999]">Joined</span>
-              <span className="text-xs text-[#666]">{formatDate(new Date(userDetailsQuery.data.user.createdAt))}</span>
-            </div>
-            {userDetailsQuery.data.user.suspendedAt && (
-              <div className="p-2 rounded-lg bg-red-50 border border-red-200">
-                <p className="text-red-700 text-xs font-medium">Suspended</p>
-                <p className="text-[#666] text-xs mt-1">{userDetailsQuery.data.user.suspendedReason || "No reason"}</p>
-              </div>
-            )}
-            {userDetailsQuery.data.user.frozenAt && (
-              <div className="p-2 rounded-lg bg-amber-50 border border-amber-200">
-                <p className="text-amber-700 text-xs font-medium flex items-center gap-1">
-                  <ShieldAlert className="w-3 h-3" /> Account Frozen
-                </p>
-                <p className="text-[#666] text-xs mt-1">{userDetailsQuery.data.user.frozenReason || "No reason"}</p>
-              </div>
-            )}
-            <FreezeActionButton
-              userId={selectedUserId}
-              isFrozen={!!userDetailsQuery.data.user.frozenAt}
-              isAdmin={userDetailsQuery.data.user.role === "admin"}
-              userName={userDetailsQuery.data.user.name || userDetailsQuery.data.user.email}
-            />
-            <div className="pt-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
-                onClick={() => onOpenChangeRequest({
-                  type: "flag_account",
-                  targetUserId: selectedUserId.toString(),
-                  targetUserName: userDetailsQuery.data?.user.name || userDetailsQuery.data?.user.email || undefined,
-                })}
-              >
-                <FileText className="w-3 h-3 mr-2" />
-                Submit Change Request
-              </Button>
-            </div>
+      {/*
+        A state band only when there IS a state. His §4a: *"When the account is
+        not frozen, no band. Do not add an 'account in good standing' card."*
+      */}
+      {user.suspendedAt && (
+        <div className="dp-inv__subject">
+          <div className="dp-inv__subjectbody">
+            <p className="dp-inv__subjecttitle">Account suspended</p>
+            <p className="dp-inv__subjectreason">{user.suspendedReason || "No reason recorded"}</p>
           </div>
         </div>
-      ) : (
-        <p className="text-[#999] text-sm">User not found</p>
       )}
+      {user.frozenAt && (
+        <div className="dp-inv__subject">
+          <div className="dp-inv__subjectbody">
+            <p className="dp-inv__subjecttitle">Account frozen</p>
+            <p className="dp-inv__subjectreason">{user.frozenReason || "No reason recorded"}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="dp-inv__actions">
+        <FreezeAction
+          userId={selectedUserId}
+          isFrozen={!!user.frozenAt}
+          isAdmin={user.role === "admin"}
+          userName={user.name || user.email}
+        />
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={() =>
+            onOpenChangeRequest({
+              type: "flag_account",
+              targetUserId: selectedUserId.toString(),
+              targetUserName: user.name || user.email || undefined,
+            })
+          }
+        >
+          Submit change request
+        </Button>
+      </div>
     </div>
   );
 }
