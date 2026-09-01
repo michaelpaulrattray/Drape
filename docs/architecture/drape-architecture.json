@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3b32f27620d2baf4"
+    "sourceFingerprint": "76ba259a01706c2b"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 54
+      "moduleCount": 55
     },
     {
       "id": "domain:alerting",
@@ -753,6 +753,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
       "path": "client/src/features/admin/components/crew/CrewWorkingNow.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/crew.css",
+      "path": "client/src/features/admin/components/crew/crew.css",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -10470,6 +10476,10 @@
       "path": "client/src/features/admin/components/crew/crewTypes.test.ts"
     },
     {
+      "id": "test:client/src/features/admin/components/crew/section08-guard.test.ts",
+      "path": "client/src/features/admin/components/crew/section08-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/overview/section07-guard.test.ts",
       "path": "client/src/features/admin/overview/section07-guard.test.ts"
     },
@@ -14135,6 +14145,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14194,6 +14209,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
@@ -14225,7 +14245,7 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
-      "to": "module:client/src/lib/utils.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14249,13 +14269,33 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14270,12 +14310,22 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewProblems.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProblems.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14290,17 +14340,17 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewRecentHistory.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewRecentHistory.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
-      "to": "module:client/src/components/ui/textarea.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14326,6 +14376,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
