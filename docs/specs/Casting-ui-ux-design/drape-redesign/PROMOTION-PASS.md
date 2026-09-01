@@ -35,6 +35,51 @@ A written list, filed as a card, before any code moves:
 
 Then one PR. No behaviour changes. **The thing you should see afterwards is nothing at all.**
 
+## ⚠ THE PASS IS AN ITEM ON THE SECTION'S CARD, AND THE CARD CANNOT CLOSE WITHOUT IT
+
+**Founder, 2026-09-01, verbatim (#366):**
+
+> "i think the components page is important so we are not designing 50 different
+> styles of the same components and can easily look at our designs and make
+> improvements etc. **so we have to ensure promotion passes run on ui
+> improvements.**"
+
+He asked because it had not been running. The pass was written on 2026-08-30
+and ran ONCE, for section 02, because that card happened to say so — and the
+instruction to run it lived only inside this document, which nothing reads.
+Its sibling `BRIEF-RECONCILIATION.md` was wired into the standing orders and
+this was not, so the check BEFORE a section was automatic and the check AFTER
+was not. That is invariant 7 — *a control that is not invoked does not exist* —
+and the fourth instance in one week.
+
+**The rule, and it binds every UI section from here:**
+
+- **A UI section card carries the promotion pass as an explicit item**, written
+  on the card when the card is filed, not remembered at the end.
+- **The card cannot close with that item undischarged.** "Nothing was
+  promotable" is a discharge; silence is not.
+- **The pass's written output is linked from the card**, as
+  `PROMOTION_PASS_SECTION_02.md` already is.
+
+**Two copies of this rule exist on purpose** — the standing orders (§2c) make it
+happen, the card makes it checkable. Two copies of a rule usually drift, and
+that is accepted here for one reason: **`.agents/` is gitignored, so no test can
+ever assert that §2c still says what it says.** A shift that edited the
+paragraph away would turn the pass off silently and nothing would go red. The
+card is a GitHub issue — not gitignored, not local, and visible to him — so the
+requirement lives somewhere its absence can be seen.
+
+**And the measure of whether it is working is the specimen page** (`/admin/foundation`,
+#261): one place he can open and see every shared part at once. The pass feeds
+that page; the page is how he judges the pass. Neither is worth much alone.
+
+**The evidence it was already needed, from one week of this codebase:** three
+popover implementations alive at once, one of them built three days before the
+audit found it; a rename dialog carrying its own scrim and portal and therefore
+no focus trap at all; Create and Assets rendering as the same picture four rows
+apart on the same rail; `campaign` and `tryon` byte-identical. Every one is a
+component built twice because nobody counted.
+
 ## What this pass is not
 
 - Not a refactor. If a promotion needs the component rewritten to be general, it is not ready — leave it and log it.

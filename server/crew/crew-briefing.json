@@ -1,7 +1,7 @@
 {
-  "edition": 181,
-  "updatedAt": "2026-09-01T00:35:00Z",
-  "shift": "foreman-161",
+  "edition": 182,
+  "updatedAt": "2026-09-01T03:20:00Z",
+  "shift": "foreman-162",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -144,10 +144,32 @@
   },
   "needsYou": [
     {
+      "id": "casting-focus-change-304",
+      "title": "Casting V2 was drawing two focus marks at once - I fixed it while fixing your word-picker, and you may want it back",
+      "productImpact": "You told me to make the word-picker work the way casting studio V2 works. When I opened casting V2 to copy it, it was not doing what its own code says it does. Three of its rows - the kept list, the face list and the face expander - each draw TWO focus marks at the same time: the quiet grey rule they are written to draw, and the red ring on top of it. A rule-priority tie nobody had spotted meant the red one always won the argument and the quiet one drew anyway. So the convention you pointed me at has never once been on your screen.",
+      "workedExample": "Put the keyboard on a face in the face list today and you get a grey hairline with a red rectangle sitting just outside it - two marks for one cursor. After tonight you get the grey hairline alone, which is what that code has always said it wanted. It only shows when you drive with the keyboard; nothing changes for a mouse. I fixed all three in the same change because leaving them would have meant your word-picker looked deliberately different from the thing you told it to match. But casting is the one surface you have said had real design put into it, so changing how it looks without asking is the part I want on your desk rather than buried in a merge.",
+      "options": [
+        {
+          "key": "keep",
+          "label": "Keep it - casting marks a focused row the quiet way, everywhere - RECOMMENDED",
+          "consequence": "The whole studio speaks one language for a focused row, and it is the language casting already wrote down. Nothing else changes; the red ring stays the focus colour everywhere else in the app."
+        },
+        {
+          "key": "revert-casting",
+          "label": "Put casting back the way it looked, and leave the word-picker quiet",
+          "consequence": "One line each, three lines total. The cost is that casting keeps drawing two marks for one cursor, and your word-picker will look different from the surface it was told to copy - which is the thing your original note was about."
+        }
+      ],
+      "recommendation": "Keep it. It is not a new design - it is casting finally rendering the rule its own code has described all along, and it is the only way your word-picker and your casting rows can look like the same product. If your eye disagrees on the frames, it goes back in one line each.",
+      "state": "open",
+      "filedAt": "2026-09-01T13:20:00+10:00",
+      "issueNumber": 304
+    },
+    {
       "id": "listbox-focus-mark-304",
-      "title": "The red box on the word-picker: it is the whole product’s focus colour, so the fix is a choice rather than a repair",
-      "productImpact": "You looked at the two panels and said the shapes are right but the accent outline colour on the word-picker is not, and to check how casting studio V2 does it. Read at the code before touching anything: casting studio V2 does it IDENTICALLY — the word-picker in the casting sentence is literally the same piece of code as the one in the frame you judged, and the red ring is the product’s single focus colour, written once and used on every focusable thing in the app. So there is no second colour to copy across.",
-      "workedExample": "What actually differs between your two frames is behaviour, not colour. The word-picker puts the cursor on the first option the moment it opens — that is the keyboard fix from this same card, so your first arrow-key press does something — and the red ring is simply what the cursor looks like. The card menu leaves the cursor on the button, so nothing is ringed and it reads clean. Identical styling, different behaviour, and that is why one looked right to you and the other did not.",
+      "title": "The red box on the word-picker is gone - you said \"The quieter mark\" and it is live",
+      "productImpact": "Open the word-picker in a brief sentence and the option your cursor lands on used to be wrapped in a red box - the product’s alarm colour, on a row nobody had asked to alarm about. It now carries a thin grey rule instead: you can still see exactly where the keyboard is, and it no longer shouts. Nothing about the keyboard changed - first arrow key still works, Escape still puts you back on the word.",
+      "workedExample": "The answer turned out to be bigger than the card said, in a way worth one minute of your time. Casting studio V2 - the thing you told me to copy - was not doing what its own code says it does. Three of its rows (the kept list, the face list, the face expander) were each drawing TWO focus marks at once: the quiet grey rule they intend, plus the red ring on top of it, because of a rule-priority tie nobody had noticed. So the convention you pointed at had never actually reached the screen. All three are fixed in the same change, which is why the whole studio now marks a focused row the same quiet way. It shows only when you use the keyboard, and it is one line each to put back if your eye disagrees.",
       "options": [
         {
           "key": "quiet-mark",
@@ -165,8 +187,8 @@
           "consequence": "Nothing changes. The ring is honest — it is showing you where the keyboard is — it just arrives without being asked for."
         }
       ],
-      "recommendation": "The quieter mark. It is your own existing casting-V2 convention, it costs one line, and it keeps the keyboard behaviour you asked for. One sentence settles it and a shift builds it the same night.",
-      "state": "open",
+      "recommendation": "Nothing to decide - this is done. If you want to glance at it, the before and after pictures are in your eye gallery below.",
+      "state": "done",
       "filedAt": "2026-09-01T10:35:00+10:00",
       "issueNumber": 304
     },
@@ -390,7 +412,7 @@
       "workedExample": "Every panel was opened in the running app before and after the change and measured against its own trigger. The card menus and both lobby panels sit at exactly the same distance, to the pixel. One thing moved on purpose and it is in the gallery below. Two faults were fixed on the way: six word-pickers could be open at once in one casting sentence, and pressing Escape on a card menu dropped your keyboard focus onto nothing.",
       "options": [],
       "recommendation": "Nothing needed from you here. The one question the build raised is its own card now (#356) and sits below.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-01T02:05:00+10:00",
       "issueNumber": 304
     },
@@ -1168,10 +1190,46 @@
   ],
   "eyeItems": [
     {
+      "id": "quiet-focus-mark-304-frames",
+      "title": "The red box, before and after - and the one change I made that you did not ask for",
+      "question": "Two questions, and the second is the one I would rather you ruled on than me. First, the simple one: in the before and after pair, is the quiet grey rule the mark you meant by \"the quieter mark\"? Second, and this is the honest part - fixing your word-picker turned up the same defect in casting studio V2 itself, the surface you told me to copy. Three of its rows were drawing the red ring AND the quiet rule at the same time, so the convention its own code describes has never been on your screen. I fixed those three in the same change rather than leave your word-picker looking different from the thing it was told to match. That IS a visible change to casting, under keyboard focus only, and casting is the one surface you have said is properly designed - so if you would rather it stayed as it was, say so and it is one line each. Money: zero. No render, no credit, no text call.",
+      "state": "open",
+      "filedAt": "2026-09-01T13:20:00+10:00",
+      "issueNumber": 304,
+      "cardId": "casting-focus-change-304",
+      "frames": [
+        {
+          "key": "crew-eye/7fe28187-5def-4666-931a-ae5d96cd53ff.png",
+          "caption": "BEFORE, dark, 1440x900. The word-picker open on \"athletic\" with the keyboard on the first option - this is the red box you photographed. Worth knowing: that ring is not even the rule written on this row. The row’s own rule was losing a priority tie and never drew at all, so what you were looking at was the app-wide focus colour leaking through.",
+          "arm": "before - dark"
+        },
+        {
+          "key": "crew-eye/49f71bc7-db38-45f5-9fcf-8292a536149e.png",
+          "caption": "AFTER, dark, same page, same keystroke. The thin grey rule around \"athletic\" is casting V2’s own convention for a row: the border carries focus, nothing rings inside it. Same position, same panel, same keyboard.",
+          "arm": "after - dark"
+        },
+        {
+          "key": "crew-eye/2aa5c0b5-b26e-41a5-a0a2-b86894489966.png",
+          "caption": "BEFORE, light. The same red box - it reads even louder against the pale panel, which is probably why it caught your eye.",
+          "arm": "before - light"
+        },
+        {
+          "key": "crew-eye/74ea5331-30e5-47a1-a0bc-5902f9e663e5.png",
+          "caption": "AFTER, light. The dark hairline does the same job at a whisper. Both themes were driven, not assumed.",
+          "arm": "after - light"
+        },
+        {
+          "key": "crew-eye/970f9599-c36f-421b-b14f-498f9f19dfdb.png",
+          "caption": "The card menu, dark, with the keyboard walked onto \"Rename\" - the shape you said was already correct. It shows no mark at all until a keyboard reaches it, which is exactly why it read clean to you and the word-picker did not; now that a keyboard IS on it, it speaks the same quiet language. This panel needed the OPPOSITE fix, and writing it the same way as its sibling silently broke it - caught by pressing a key, not by reading.",
+          "arm": "the menu, keyboard-focused"
+        }
+      ]
+    },
+    {
       "id": "popover-collapse-304-frames",
       "title": "The two shapes, one behaviour — the word-picker in dark, the card menu in light",
       "question": "Nothing here needs judging against a number — it needs your eye on whether the panels still look right. One thing DID move and I want to be straight about it: the word-picker in the casting sentence now sits 3.44px lower. It used to be positioned against an invisible box around the word rather than the word itself, so its “9px gap” was really 9px minus whatever the typeface added on that line; it is 9px from the word now, at any type size. That is smaller than an eye can judge without a ruler, and there is no before-picture to compare against because the panel's old position was only ever a measurement — so the question is simply: does it look right where it sits?",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-01T02:05:00+10:00",
       "issueNumber": 304,
       "cardId": null,
@@ -2191,6 +2249,20 @@
   ],
   "pipeline": [
     {
+      "id": "quiet-focus-mark-304",
+      "title": "The red box on the word-picker is gone - and so is a defect in casting you never saw (#304)",
+      "status": "merged",
+      "prNumber": 369,
+      "note": "Your word, built the same night: \"The quieter mark\". The option your cursor lands on now carries a thin grey rule instead of the red ring. What made it more than a one-liner: driving it showed the red ring was not the rule written on that row at all - the row’s rule was losing a priority tie and never drawing - and the same tie is lost by three rows inside casting studio V2, the surface you named as the reference. Those three have been drawing two marks at once and were fixed with it. Before and after pictures are in your gallery."
+    },
+    {
+      "id": "promotion-pass-un-skippable-366",
+      "title": "The components check can no longer be skipped - it is written on the card now (#366)",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Your words: \"so we have to ensure promotion passes run on ui improvements.\" The problem was that the instruction to run it lived only in a file no test can read, which is why it had run exactly once. It is now an item on the section card itself - a card cannot be closed with it undischarged, and the written result has to be linked. Section 03 carries it. Section 02’s card got its already-finished result linked too, which nobody had done. No product code changed."
+    },
+    {
       "id": "specimen-page-261",
       "title": "The component sheet has left the customer’s part of the product (#261)",
       "status": "merged",
@@ -3185,8 +3257,8 @@
     },
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 99 open, four of your answers landed, and your desk got shorter",
-      "detail": "99 cards open, down from 100. You answered four times last night and all four are done: #322 merged and deployed, #356 closed on \"Leave it.\", and both sets of frames passed. FIVE cards still carry your own order. Of those, #267 is held behind a Settings modal you have not briefed; #321's last piece is the Campaign/Try-on pair you kept for yourself; #325 is now LIVE rather than waiting; and #285 and #304 are finished and only want your glance. Your background-work switch is still OFF, which is the whole lever and it is yours. ⚠ THE STALE PILE: 29 cards last touched on 25 August, measured tonight — the figure the last four editions gave was 27, so it is drifting up rather than down. None is urgent and none waits on you; they are casting research, design drafts and roadmap items.",
+      "title": "The queue tonight: 100 open, your one answer landed, and nothing in it is rotting",
+      "detail": "100 cards open. You answered once last night - \"The quieter mark\" - and it is built, merged and on your page below. Nine cards closed in the last twelve hours. SIX cards still carry your own order: #365 (section 03, the settings and billing modals - the big one, and it unblocks #267), #321 (the icon set’s second half), #325, #285 and #368 (a new one filed while I was working: a shift must stop waiting when no check will ever arrive). #267 is held behind the Settings modal that #365 builds, so #365 releases it. Eight cards carry the urgent label. Your background-work switch is still OFF, which is the whole lever and it is yours - the two things built tonight were both yours by order, which that switch does not gate.\n\nTHE STALE PILE, measured tonight rather than carried: ZERO cards untouched for a week. The last four editions quoted 27 then 29 and said it was drifting up; read at the queue itself just now, every open card has been touched since 25 August. The figure was stale about staleness, which is the joke it deserves.",
       "state": "open",
       "severity": "warning"
     },
@@ -3213,8 +3285,8 @@
     },
     {
       "id": "gate-review-arm-broken-219",
-      "title": "Your Fable allowance is still out - 26 refusals now, and it has been down about three days",
-      "detail": "Tonight's PR (#355) is the 25th refusal: the reviewer died in 946ms on its first turn with only the start-up model in its ledger, so nothing in that diff was judged by it. Read at the run log rather than at the red tick, which is the whole point of the change that made this check say which of the three states it is in. It was merged on the machine gate alone, which your standing rule allows for a change that touches no money or login path. No change in cause, and tonight it was measured on a real pull request of mine rather than asked about. PR #256's own review job came back with the exhausted-allowance signature exactly: it ran for 880 milliseconds, took one turn, cost $0.00, recorded no model usage at all, and returned an error. That is the same shape this has had since it started.\n\nWhat that means for reading the checks page, and it is easy to get backwards: a RED review check does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A verdict, when there is one, rides a GREEN check as a comment.\n\nOpus is answering fine on the same machine and the same login — it ran tonight's whole shift. It is your Fable 5 allowance specifically.\n\nThe team's rule while it is out is unchanged: measurement-and-record nights, and product changes kept to ones that alter no code path.",
+      "title": "Your Fable allowance is still out - 27 refusals now, and it has been down about four days",
+      "detail": "Tonight’s PR (#369) is the 27th refusal, and it was read at the action log rather than at the red tick: the reviewer returned `is_error: true` after about twenty seconds with no verdict of any kind. So nothing in that diff was judged by it, and it was merged on the machine gate alone - which your standing rule allows for a change that touches no money and no login path. This one is a stylesheet and a test file.\n\nThe thing that is easy to get backwards: a RED review check does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A real verdict rides a GREEN check as a comment.\n\nOpus is answering fine on the same machine and the same login - it ran tonight’s whole shift. It is your Fable 5 allowance specifically, and N1 stays open until it can do the milestone read.",
       "severity": "warning",
       "state": "open"
     },
@@ -3382,10 +3454,11 @@
     69,
     70,
     71,
-    72
+    72,
+    73
   ],
   "nextUp": {
-    "readAt": "2026-09-01T00:18:53.893Z",
+    "readAt": "2026-09-01T02:38:31.755Z",
     "items": [
       {
         "issueNumber": 267,
@@ -3412,18 +3485,13 @@
         "urgent": false
       },
       {
-        "issueNumber": 304,
-        "title": "The popover collapse (#262 item 4) — its premise moved: usePopover now has TWO consumers and both render arbitrary panels",
-        "urgent": false
-      },
-      {
         "issueNumber": 325,
         "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
         "urgent": false
       },
       {
-        "issueNumber": 366,
-        "title": "The promotion pass must be un-skippable: put it on the section card, because the file that wires it cannot be tested",
+        "issueNumber": 368,
+        "title": "The stall alarm: a shift must stop waiting when no check suite will ever arrive — and review.yml still has no manual re-trigger",
         "urgent": false
       }
     ]
