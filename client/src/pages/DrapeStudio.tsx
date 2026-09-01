@@ -18,10 +18,8 @@ import { WardrobeWorkspaceSection } from '@/features/wardrobe';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 
 // Casting tool imports
-import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
-import { BillingModal } from '@/features/billing/BillingModal';
-import { ReferralModal } from '@/features/referral/ReferralModal';
-import ProfileSettingsModal from '@/components/ProfileSettingsModal';
+import { AccountSurfaces, useAccountSurfaces } from '@/features/settings';
+import { AddCreditsModal } from '@/features/billing/AddCreditsModal';
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from '@/features/billing/LowBalanceWarning';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
@@ -82,19 +80,21 @@ export default function DrapeStudio() {
   const [requestedTier, setRequestedTier] = useState<MintTier>('core');
 
   // Sidebar: profile, billing, referral modals
-  const [showSettings, setShowSettings] = useState(false);
-  const [isBillingOpen, setIsBillingOpen] = useState(false);
-  const [isReferralOpen, setIsReferralOpen] = useState(false);
+  /* Section 03 — the same one state pair `AppChrome` uses. The legacy studio
+     is admin-only since #364, and it keeps its account cluster rather than
+     losing one: it mounts the SAME three surfaces, so there is no second
+     settings implementation left alive anywhere. */
+  const account = useAccountSurfaces();
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [bannerImage, setBannerImage] = useState<string | null>(null);
-  const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(
+  const { data: profileData } = trpc.profile.get.useQuery(
     undefined,
     { enabled: isAuthenticated },
   );
   useEffect(() => {
     if (profileData?.avatarUrl) setProfileImage(profileData.avatarUrl);
-    if (profileData?.bannerUrl) setBannerImage(profileData.bannerUrl);
-  }, [profileData?.avatarUrl, profileData?.bannerUrl]);
+    /* The banner went with the modal that was the only thing that set one —
+       see `AppChrome`'s note; nothing in the product ever displayed it. */
+  }, [profileData?.avatarUrl]);
 
   // Orchestrated transition phases
   const baseTransition = useStudioTransition(activeTool);
@@ -349,9 +349,9 @@ export default function DrapeStudio() {
           profileImage={profileImage}
           creditsBalance={creditsData?.balance || 0}
           onOpenTopup={() => setIsTopupOpen(true)}
-          onOpenSettings={() => setShowSettings(true)}
-          onOpenBilling={() => setIsBillingOpen(true)}
-          onOpenReferral={() => setIsReferralOpen(true)}
+          onOpenSettings={() => account.openSettings('profile')}
+          onOpenBilling={() => account.openSettings('billing')}
+          onOpenReferral={() => account.openSettings('billing')}
           onLogout={logout}
           primaryAction={
             activeTool === 'casting' && currentModelId !== null && !canvas.isMinted && hasHeadshot
@@ -457,38 +457,10 @@ export default function DrapeStudio() {
         onResolvePackage={() => openCastingDetails()}
       />
 
-      <CreditTopupModal
-        isOpen={isTopupOpen}
-        onClose={() => setIsTopupOpen(false)}
-        currentBalance={creditsData?.balance || 0}
-      />
+      {isTopupOpen ? <AddCreditsModal onClose={() => setIsTopupOpen(false)} /> : null}
 
-      {/* Sidebar modals — settings, billing, referral */}
-      <ProfileSettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        onProfileUpdate={() => refetchProfile()}
-        user={user}
-        profileImage={profileImage}
-        bannerImage={bannerImage}
-        onProfileImageChange={setProfileImage}
-        onBannerImageChange={setBannerImage}
-        creditsBalance={creditsData?.balance || 0}
-        planTier={creditsData?.planTier || 'free'}
-        onOpenBilling={() => { setShowSettings(false); setIsBillingOpen(true); }}
-        onOpenTopup={() => { setShowSettings(false); setIsTopupOpen(true); }}
-      />
-
-      <BillingModal
-        isOpen={isBillingOpen}
-        onClose={() => setIsBillingOpen(false)}
-        onOpenTopup={() => { setIsBillingOpen(false); setIsTopupOpen(true); }}
-      />
-
-      <ReferralModal
-        open={isReferralOpen}
-        onClose={() => setIsReferralOpen(false)}
-      />
+      {/* Settings, Change plan and Add credits — one mount, section 03. */}
+      <AccountSurfaces state={account} avatarUrl={profileImage} onAvatarChange={setProfileImage} />
     </div>
   );
 }

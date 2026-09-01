@@ -41,7 +41,7 @@
  * this file does not grow a query.
  */
 import { useLocation } from 'wouter';
-import { Settings, CreditCard, Gift, LogOut, LayoutDashboard, Eye } from 'lucide-react';
+import { Settings, CreditCard, Users, LogOut, LayoutDashboard, Eye } from 'lucide-react';
 import { showsMenuCount } from '@/foundation/menuCount';
 import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
@@ -57,8 +57,9 @@ interface UserCardProps {
   /** Audit entries above `info` in the last 24h. Omitted at zero. See §01. */
   moderationCount?: number;
   onOpenSettings: () => void;
+  /** #267 — Settings at its Members section. Never a modal of its own. */
+  onOpenMembers: () => void;
   onOpenBilling: () => void;
-  onOpenReferral: () => void;
   onLogout: () => void;
 }
 
@@ -72,8 +73,8 @@ export function UserCard({
   adminCount,
   moderationCount,
   onOpenSettings,
+  onOpenMembers,
   onOpenBilling,
-  onOpenReferral,
   onLogout,
 }: UserCardProps) {
   const [, navigate] = useLocation();
@@ -99,9 +100,22 @@ export function UserCard({
         </span>
       </div>
 
+      {/*
+        #267 — HIS THREE LABELS, and the binding clause under them: *"all three
+        open the SAME Settings modal at different sections, so none of them may
+        be wired to an individual modal now — every one added is one more to
+        unpick later."* Section 03 is what made that possible; before it there
+        was no sectioned modal to point at.
+
+        ⚠ **`Share Drape` IS GONE AND ITS DESTINATION IS NOT.** `ReferralModal`
+        is deleted; referrals are a block inside Billing (brief §9, *"referral
+        credits are billing"*), which `Billing & credits` opens. Removing the
+        row is the consolidation, not a capability loss — his own list for this
+        menu names three items and this is not one of them.
+      */}
       <UserMenuItem icon={Settings} label="Settings" onClick={onOpenSettings} />
-      <UserMenuItem icon={CreditCard} label="Billing" onClick={onOpenBilling} />
-      <UserMenuItem icon={Gift} label="Share Drape" onClick={onOpenReferral} />
+      <UserMenuItem icon={Users} label="Members & invites" onClick={onOpenMembers} />
+      <UserMenuItem icon={CreditCard} label="Billing & credits" onClick={onOpenBilling} />
 
       {isModerator && (
         <>

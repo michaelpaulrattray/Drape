@@ -1,0 +1,737 @@
+/* ============================================================
+   SECTION 03 — Settings, Change plan, Add credits.
+   Brief: docs/specs/Casting-ui-ux-design/drape-redesign/
+          03-settings-billing-credits.md
+
+   Five modals became three surfaces. This sheet owns the three,
+   and it owns nothing else — the scrim, the focus trap and the
+   Escape behaviour are ModalScrim's, promoted out of casting in
+   #262, and this brief is its first consumer outside casting.
+
+   ⚠ EVERY LITERAL BELOW THAT NAMES A COLOUR IS A TOKEN. The
+   mockup has no token file so it writes hex; token-guard rejects
+   raw hex in this tree, which is the mechanical half of
+   BRIEF-RECONCILIATION Q5.
+   ============================================================ */
+
+/* ---- layering: Settings < Change plan < Add credits ---------
+   The brief gives 40 / 44 / 46. `.dpc-modal` is already 60 for
+   every promoted dialog, so the ORDER is what is reproduced and
+   not the absolute numbers — dropping the shared shell to 40
+   would put casting's sign dialog under things it must cover. */
+.dpc-modal.dp-set__scrim   { z-index: 60; }
+.dpc-modal.dp-plan__scrim  { z-index: 64; }
+.dpc-modal.dp-topup__scrim { z-index: 66; }
+
+/* ============================================================
+   1 · SETTINGS
+   ============================================================ */
+
+.dp-set__card {
+  position: relative;
+  width: 100%;
+  max-width: 880px;
+  height: 100%;
+  max-height: 620px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadowCard);
+  overflow: hidden;
+}
+
+/* Header and footer are `flex: none` and only the body scrolls —
+   §3 rule 1, and it is not a style preference: in both cases the
+   prototype put an action inside the scrolling pane, the most
+   reachable remaining control was a subscription cancellation. */
+.dp-set__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--rule);
+  flex: none;
+}
+
+.dp-set__title { font: 500 14px/1.2 var(--font-sans); color: var(--ink); }
+.dp-set__workspace { font: 400 12px/1.2 var(--font-sans); color: var(--metaStrong); }
+
+.dp-set__close {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--meta);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.dp-set__close:hover { background: var(--fillStrong); color: var(--ink); }
+
+.dp-set__body { flex: 1; min-height: 0; display: flex; }
+
+.dp-set__nav {
+  width: 186px;
+  flex: none;
+  border-right: 1px solid var(--rule);
+  padding: var(--s-5) var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+}
+
+.dp-set__navitem {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-3) 11px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--secondary);
+  font: 400 12.5px/1.2 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.dp-set__navitem svg { color: var(--meta); flex: none; }
+.dp-set__navitem:hover { background: var(--wellSoft); color: var(--ink); }
+.dp-set__navitem[aria-current="true"] {
+  background: var(--fillStrong);
+  color: var(--ink);
+  font-weight: 500;
+}
+.dp-set__navitem[aria-current="true"] svg { color: var(--ink); }
+
+/* Sign out lives at the NAV's foot, never beside Done — §4:
+   "it is destructive-adjacent and must not sit beside Done,
+   where a mis-click ends the session." */
+.dp-set__signout {
+  margin-top: auto;
+  padding: var(--s-3) 11px;
+  border: 0;
+  background: transparent;
+  color: var(--accentInk);
+  font: 400 11.5px/1.2 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.dp-set__signout:hover { text-decoration: underline; }
+
+.dp-set__pane {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 22px var(--s-9) 26px;
+}
+
+.dp-set__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  padding: var(--s-5) 18px;
+  border-top: 1px solid var(--rule);
+  flex: none;
+}
+.dp-set__saveline { font: 400 11.5px/1.2 var(--font-sans); color: var(--faint); }
+
+/* §3 rule 2 — a spacer, never `margin-left: auto`, because any
+   computed-style read resolves auto to a hard pixel value which
+   then overflows the row and clips in every export. */
+.dp-set__spacer { flex: 1; }
+
+/* A link that is a button — used where a sentence carries an action
+   ("more credits", "Redeem a code", "Who has joined"). It is a real
+   <button> so it keeps the keyboard behaviour a link would not. */
+/* Quiet, not accent. `Sign out` is the ONE accent-coloured control in this
+   modal because §4 asks for it there; two coral links side by side in the
+   referral foot read as an alarm rather than as prose. */
+.dp-set__linkbtn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--metaStrong);
+  font: inherit;
+  cursor: pointer;
+}
+.dp-set__linkbtn:hover { color: var(--linkHover); text-decoration: underline; }
+
+/* ---- the leader / hairline row grammar, used by every section ---- */
+.dp-set__group { display: flex; flex-direction: column; }
+.dp-set__group + .dp-set__group { margin-top: var(--s-8); }
+.dp-set__grouphead {
+  font: 500 12.5px/1.3 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: var(--s-1);
+}
+.dp-set__groupnote {
+  font: 400 11.5px/1.5 var(--font-sans);
+  color: var(--metaStrong);
+  margin-bottom: var(--s-6);
+}
+
+.dp-set__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  padding: var(--s-5) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.dp-set__row:last-child { border-bottom: 0; }
+.dp-set__rowtext { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dp-set__label { font: 400 12.5px/1.3 var(--font-sans); color: var(--ink); }
+.dp-set__note { font: 400 11px/1.5 var(--font-sans); color: var(--metaStrong); }
+.dp-set__control { display: flex; align-items: center; gap: var(--s-3); flex: none; }
+
+/* A field in a settings row. `Field` supplies the box; this only gives it a
+   width, because a row's control column is `flex: none` and an input with no
+   width collapses to its own content. */
+.dp-set__field { width: 220px; }
+.dp-set__field--narrow { width: 130px; }
+/* The email field is real and disabled — shown, never hidden (§5). */
+.dp-set__field--off { background: var(--fill); }
+.dp-set__field--off .dp-input { color: var(--metaStrong); }
+.dp-ref__input { flex: 1; min-width: 0; }
+
+.dp-set__value {
+  font: 400 12px/1.3 var(--font-mono);
+  color: var(--metaStrong);
+  white-space: nowrap;
+}
+
+/* ---- toggle ---- */
+.dp-set__toggle {
+  position: relative;
+  width: 30px;
+  height: 17px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--borderCard);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+.dp-set__toggle[aria-checked="true"] { background: var(--ink); }
+.dp-set__toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: left 160ms var(--ease);
+}
+.dp-set__toggle[aria-checked="true"]::after { left: 15px; }
+.dp-set__toggle[aria-disabled="true"] { cursor: default; opacity: .55; }
+
+/* ---- the stub treatment, one rule for every inert control ----
+   His law: honest or dark, never pretending. aria-disabled, out
+   of the tab order, and it says why on hover. */
+.dp-set__stub { color: var(--muted); cursor: default; }
+.dp-set__stubnote {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--s-2);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-chip);
+  background: var(--fill);
+  color: var(--faint);
+  font: 400 9px/1.4 var(--font-mono);
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+/* ---- avatar row ---- */
+.dp-set__avatar {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--media);
+}
+.dp-set__avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---- usage bars: greyscale by rank, never coloured by tool ---- */
+/* ⚠ `display: block` IS LOAD-BEARING: this is a <span>, and an inline element
+   ignores `height`, so the bar rendered as nothing at all on both the spend
+   rows and the storage row. Caught by opening the app, not by any arm. */
+.dp-set__bar {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--fill);
+  overflow: hidden;
+}
+.dp-set__barfill { display: block; position: absolute; inset: 0 auto 0 0; border-radius: var(--r-pill); }
+.dp-set__statrow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.dp-set__statvalue { font: 500 15px/1.2 var(--font-mono); color: var(--ink); }
+.dp-set__statnote { font: 400 11.5px/1.4 var(--font-sans); color: var(--metaStrong); }
+
+/* ---- billing cards ---- */
+.dp-set__cards { display: flex; flex-wrap: wrap; gap: var(--s-5); }
+.dp-set__minicard {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: var(--s-6) 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.dp-set__minilabel {
+  font: 400 9.5px/1.4 var(--font-mono);
+  letter-spacing: .12em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.dp-set__mininum { font: 500 20px/1 var(--font-mono); color: var(--ink); }
+
+.dp-set__invoice {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--rule);
+  font: 400 11.5px/1.4 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+/* ---- referral block (§9) — a block in Billing, not a modal ---- */
+.dp-ref {
+  padding: var(--s-7) 17px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+.dp-ref__fields { display: flex; flex-wrap: wrap; gap: var(--s-5); }
+.dp-ref__field {
+  flex: 1 1 240px;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.dp-ref__link {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 11px/1.4 var(--font-mono);
+  color: var(--metaStrong);
+}
+.dp-ref__inputrow { display: flex; align-items: center; gap: var(--s-2); }
+.dp-ref__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--rule);
+}
+
+/* ---- members (§8) — designed in full, every control inert ---- */
+.dp-mem__invite {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-5) var(--s-6);
+  border: 1px dashed var(--dashed);
+  border-radius: var(--r-lg);
+  color: var(--meta);
+  font: 400 12px/1.3 var(--font-sans);
+}
+.dp-mem__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  padding: var(--s-5) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.dp-mem__tile {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--media);
+}
+.dp-mem__tile img { width: 100%; height: 100%; object-fit: cover; }
+.dp-mem__roles { display: flex; flex-direction: column; gap: var(--s-3); }
+.dp-mem__role {
+  display: flex;
+  gap: 5px;
+  font: 400 11.5px/1.5 var(--font-sans);
+  color: var(--metaStrong);
+}
+.dp-mem__rolename { color: var(--ink); flex: none; }
+
+/* ============================================================
+   2 · CHANGE PLAN
+   ============================================================ */
+
+.dp-plan__card {
+  position: relative;
+  width: 100%;
+  max-width: 880px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadowCard);
+  overflow: hidden;
+}
+.dp-plan__pane {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s-8) var(--s-9) var(--s-9);
+}
+
+/* §6a — the reason to act, above everything. Every number in it
+   is derived in planMath.ts; nothing here is written. */
+.dp-plan__reason {
+  padding: var(--s-6) 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-7);
+  margin-bottom: var(--s-8);
+}
+.dp-plan__reasonhead { font: 500 13px/1.4 var(--font-sans); color: var(--ink); margin-bottom: var(--s-2); }
+.dp-plan__reasonbody { font: 400 11.5px/1.6 var(--font-sans); color: var(--metaStrong); }
+.dp-plan__reasonstat { flex: none; text-align: right; }
+
+/* §6b — the segmented interval control */
+.dp-plan__intervals { display: flex; align-items: center; gap: var(--s-5); margin-bottom: var(--s-7); }
+/* ⚠ THERE IS NO `.dp-plan__segments` HERE, AND THAT IS THE POINT.
+   The interval control uses `.dp-segmented` from `foundation.css`, which
+   already existed with a real consumer — the promotion pass's rule 6.
+   The only thing this section needed that the foundation lacked is the
+   ability for a segment to carry a child, folded into the rule there. */
+
+/* Filled accent, never grey and never green — §6b. Grey mono at
+   label weight reads as disabled, which fights the thing it sells;
+   there is no green anywhere in this system. */
+.dp-plan__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-chip);
+  background: var(--accentSolid);
+  color: var(--onWash);
+  font: 500 8.5px/1.4 var(--font-mono);
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+.dp-plan__modeswitch {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--metaStrong);
+  font: 400 11.5px/1.2 var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dp-plan__modeswitch:hover { color: var(--linkHover); text-decoration: underline; }
+
+/* §6c — auto-fill, never auto-fit and never a wrapping flex row:
+   a flex row gives a two-card last line 52% more width than a
+   three-card first line, which destroys the like-for-like read. */
+.dp-plan__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  gap: var(--s-5);
+}
+
+.dp-plan__tier {
+  position: relative;
+  padding: 17px 17px 18px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+.dp-plan__tier--current { border-color: var(--accentLine); background: var(--accentWash); }
+.dp-plan__tier--fits { box-shadow: var(--shadowPop); }
+
+.dp-plan__tab {
+  position: absolute;
+  left: 15px;
+  top: -8px;
+  padding: 2px var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--surface);
+  font: 500 8.5px/1.5 var(--font-mono);
+  letter-spacing: .09em;
+  white-space: nowrap;
+}
+
+.dp-plan__tierhead { display: flex; align-items: baseline; gap: var(--s-3); }
+.dp-plan__tiername { font: 500 15px/1.2 var(--font-sans); letter-spacing: -.02em; color: var(--ink); }
+.dp-plan__unit {
+  margin-left: auto;
+  font: 400 10px/1.4 var(--font-mono);
+  letter-spacing: .04em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.dp-plan__price {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font: 500 28px/1 var(--font-sans);
+  letter-spacing: -.038em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.dp-plan__per { font: 400 11.5px/1.2 var(--font-sans); color: var(--metaStrong); letter-spacing: 0; }
+.dp-plan__blurb { font: 400 11px/1.55 var(--font-sans); color: var(--metaStrong); }
+.dp-plan__credits { font: 500 12.5px/1.3 var(--font-mono); color: var(--ink); }
+.dp-plan__creditsunit {
+  font: 400 10px/1.3 var(--font-mono);
+  letter-spacing: .06em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.dp-plan__rollover { font: 400 11px/1.5 var(--font-sans); color: var(--metaStrong); }
+.dp-plan__rollover--loss { color: var(--accentInk); }
+.dp-plan__perks { display: flex; flex-direction: column; gap: 7px; }
+.dp-plan__perk {
+  display: flex;
+  gap: 7px;
+  font: 400 11.5px/1.45 var(--font-sans);
+  color: var(--secondary);
+}
+.dp-plan__perk svg { flex: none; margin-top: 2px; color: var(--meta); }
+
+.dp-plan__here {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4) 0;
+  border: 1px solid var(--accentLine);
+  border-radius: var(--r-btn);
+  background: var(--accentWash);
+  color: var(--accentInk);
+  font: 500 11px/1.2 var(--font-mono);
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+
+/* §6d — compare mode */
+.dp-plan__compare {
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.dp-plan__comparegrid { display: grid; grid-template-columns: 132px repeat(5, 1fr); }
+.dp-plan__cell {
+  padding: var(--s-4);
+  box-shadow: inset 0 -1px 0 var(--rule), inset -1px 0 0 var(--rule);
+  font: 400 11.5px/1.4 var(--font-sans);
+  color: var(--secondary);
+  min-width: 0;
+}
+.dp-plan__cell--head { font: 500 12px/1.4 var(--font-sans); color: var(--ink); }
+.dp-plan__cell--label { font: 400 11px/1.4 var(--font-sans); color: var(--metaStrong); }
+.dp-plan__cell--mono { font: 400 11.5px/1.4 var(--font-mono); white-space: nowrap; }
+.dp-plan__cell--price { color: var(--ink); }
+.dp-plan__cell--current { background: var(--accentWash); }
+.dp-plan__youarehere {
+  display: block;
+  font: 500 8.5px/1.5 var(--font-mono);
+  letter-spacing: .09em;
+  color: var(--accentInk);
+  white-space: nowrap;
+}
+.dp-plan__footnote {
+  padding: var(--s-5) var(--s-4);
+  font: 400 11px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+/* §6f — the cross-link to Add credits */
+.dp-plan__cross {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin-top: var(--s-8);
+  padding: var(--s-5) 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+}
+
+.dp-plan__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  padding: var(--s-5) 18px;
+  border-top: 1px solid var(--rule);
+  flex: none;
+}
+.dp-plan__help { font: 400 11.5px/1.2 var(--font-sans); color: var(--metaStrong); }
+
+/* ============================================================
+   3 · ADD CREDITS
+   ============================================================ */
+
+.dp-topup__card {
+  position: relative;
+  width: 100%;
+  max-width: 436px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadowCard);
+  overflow: hidden;
+}
+.dp-topup__pane { flex: 1; min-height: 0; overflow-y: auto; padding: var(--s-8) 22px var(--s-7); }
+.dp-topup__eyebrow {
+  font: 400 9.5px/1.4 var(--font-mono);
+  letter-spacing: .12em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.dp-topup__title {
+  font: 500 17px/1.25 var(--font-sans);
+  letter-spacing: -.022em;
+  color: var(--ink);
+  margin: var(--s-2) 0 var(--s-5);
+}
+.dp-topup__reason { font: 400 12px/1.6 var(--font-sans); color: var(--metaStrong); }
+
+.dp-topup__adjust {
+  margin-top: var(--s-7);
+  padding: 15px var(--s-7);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+.dp-topup__adjustrow { display: flex; align-items: center; gap: var(--s-3); }
+.dp-topup__pricerow { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
+.dp-topup__struck {
+  font: 400 11.5px/1.4 var(--font-sans);
+  color: var(--faint);
+  text-decoration: line-through;
+}
+.dp-topup__due {
+  font: 500 30px/1 var(--font-sans);
+  letter-spacing: -.036em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.dp-topup__duenote { font: 400 11px/1.4 var(--font-sans); color: var(--metaStrong); white-space: nowrap; }
+
+.dp-topup__select {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-4) var(--s-6);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--ink);
+  color: var(--surface);
+  font: 500 12.5px/1.2 var(--font-sans);
+  cursor: pointer;
+}
+.dp-topup__select svg { margin-left: auto; transition: transform var(--t-fast) var(--ease); }
+.dp-topup__select[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+.dp-topup__options {
+  margin-top: var(--s-2);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--shadowPop);
+  max-height: 210px;
+  overflow-y: auto;
+  padding: var(--s-1);
+}
+.dp-topup__option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: 0;
+  border-radius: var(--r-chip);
+  background: transparent;
+  color: var(--ink);
+  font: 400 12px/1.3 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.dp-topup__option:hover { background: var(--well); }
+.dp-topup__optionprice {
+  margin-left: auto;
+  font: 400 11px/1.3 var(--font-mono);
+  color: var(--metaStrong);
+  white-space: nowrap;
+}
+
+.dp-topup__bullets { display: flex; flex-direction: column; gap: var(--s-4); margin-top: var(--s-7); }
+.dp-topup__bullet { display: flex; gap: var(--s-3); font: 400 11.5px/1.55 var(--font-sans); color: var(--secondary); }
+.dp-topup__bullet svg { flex: none; margin-top: 2px; color: var(--meta); }
+.dp-topup__renewal { margin-top: var(--s-6); font: 400 10.5px/1.6 var(--font-sans); color: var(--faint); }
+
+.dp-topup__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-5) 18px;
+  border-top: 1px solid var(--rule);
+  flex: none;
+}
+
+/* ============================================================
+   The two global rules the brief asks for as rules and not as
+   per-element patches (§3): a pill's contents and every mono
+   micro-label are nowrap, because letter-spacing puts each a
+   fraction over its own box and it wraps mid-word in exports.
+   ============================================================ */
+.dp-set__card [class*="__badge"],
+.dp-set__card [class*="__pill"],
+.dp-plan__card [class*="__badge"],
+.dp-plan__card [class*="__pill"],
+.dp-topup__card [class*="__badge"],
+.dp-topup__card [class*="__pill"] { white-space: nowrap; }

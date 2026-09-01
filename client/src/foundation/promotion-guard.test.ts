@@ -128,7 +128,17 @@ describe("the three dialogs are one shell with different contents", () => {
     */
     const shell = code(await readFile(new URL("CastingModal.tsx", FOUNDATION), "utf8"));
     expect(shell.match(/createPortal\(/g) ?? []).toHaveLength(1);
-    expect(shell.match(/className="dpc-modal"/g) ?? []).toHaveLength(1);
+    /*
+      ⚠ THE SCRIM CLASS IS NO LONGER A BARE ATTRIBUTE (2026-09-01, section 03):
+      the shell takes an optional `scrimClassName` so the three account surfaces
+      can declare their own stacking order, so it reads
+      `` className={scrimClassName ? `dpc-modal ${scrimClassName}` : "dpc-modal"} ``.
+      What this arm is counting is unchanged — that ONE element in the family
+      carries the scrim class — so it counts the string literal rather than the
+      attribute form. A second `"dpc-modal"` anywhere in the file is still a
+      second owner however it is spelled.
+    */
+    expect(shell.match(/"dpc-modal"/g) ?? []).toHaveLength(1);
     expect(shell.match(/key === "Escape"/g) ?? []).toHaveLength(1);
   });
 });

@@ -240,7 +240,12 @@ describe("no picture picker types its own copy of the door's format list", () =>
   /*
     THE ENUMERATED REMAINDER, AND IT ONLY SHRINKS.
 
-    Four legacy surfaces carry an accept literal today. They are NOT swept into
+    Three legacy surfaces carry an accept literal today. ⚠ It was FOUR until
+    2026-09-01: `features/profile/ProfileTab.tsx` was deleted with section 03,
+    and its replacement (`features/settings/sections/ProfileSection.tsx`) takes
+    the vocabulary from `shared/pictureFormats.ts` rather than inheriting the
+    debt — so the line came off, which is what this suite's last arm exists to
+    force. They are NOT swept into
     the derivation, deliberately: each mirrors a different server truth (the
     avatar upload, the garment rack, the legacy ink panel — none of them the
     casting door's `INK_DESIGN_FORMATS`), and rewriting retire-lane surfaces to
@@ -254,7 +259,6 @@ describe("no picture picker types its own copy of the door's format list", () =>
   */
   const LEGACY_ACCEPT_LITERALS = [
     "features/casting/evidence/InkAddPanel.tsx",
-    "features/profile/ProfileTab.tsx",
     "features/studio/components/ModelUploadZone.tsx",
     "features/wardrobe/components/RackPanel.tsx",
   ];

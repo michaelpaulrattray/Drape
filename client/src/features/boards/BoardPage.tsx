@@ -25,7 +25,7 @@ import { CastPickerModal } from './canvas/CastPickerModal';
 import { DottedGridBackground } from './canvas/DottedGridBackground';
 import { BrandLoader } from '@/components/BrandLoader';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
-import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
+import { AddCreditsModal } from '@/features/billing/AddCreditsModal';
 import { FirstRunIntro } from './components/FirstRunIntro';
 import { useGenerationJobs } from './stores/useGenerationJobs';
 import { useOptimisticFills } from './stores/useOptimisticFills';
@@ -2471,12 +2471,11 @@ function BoardPageImpl() {
         />
       )}
 
-      {/* D-45(2): top-up from the header popover */}
-      <CreditTopupModal
-        isOpen={isTopupOpen}
-        onClose={() => setIsTopupOpen(false)}
-        currentBalance={headerCredits?.balance || 0}
-      />
+      {/* D-45(2): top-up from the header popover — section 03's Add credits,
+          which reads the balance off `billing.getStatus` itself rather than
+          being handed one, so the figure it shows and the figure it charges
+          against come from the same read. */}
+      {isTopupOpen ? <AddCreditsModal onClose={() => setIsTopupOpen(false)} /> : null}
 
       {/* Version history modal */}
       {versionHistoryItemId !== null && (() => {

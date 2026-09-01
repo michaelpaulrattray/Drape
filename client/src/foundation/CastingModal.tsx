@@ -58,6 +58,7 @@ import { createPortal } from "react-dom";
 export function ModalScrim({
   label,
   cardClassName,
+  scrimClassName,
   busy,
   onDismiss,
   children,
@@ -65,6 +66,17 @@ export function ModalScrim({
   label: string;
   /** The card's own class — this is where the three dialogs differ. */
   cardClassName: string;
+  /**
+   * An EXTRA class on the scrim, for stacking one of these above another.
+   *
+   * Section 03 is the first place two of these are open at once — Settings is
+   * behind Change plan, which is behind Add credits — and `.dpc-modal` carries
+   * one `z-index` for every consumer. Rather than let the later mount win by
+   * DOM order (it does today, and it is an accident that it does), the section
+   * declares its own layer and the shell takes it. Empty for every existing
+   * consumer, so nothing that has a customer in front of it moves.
+   */
+  scrimClassName?: string;
   busy: boolean;
   onDismiss: () => void;
   children: ReactNode;
@@ -131,7 +143,7 @@ export function ModalScrim({
 
   return createPortal(
     <div
-      className="dpc-modal"
+      className={scrimClassName ? `dpc-modal ${scrimClassName}` : "dpc-modal"}
       role="dialog"
       aria-modal="true"
       aria-label={label}

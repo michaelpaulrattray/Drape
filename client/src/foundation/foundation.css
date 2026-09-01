@@ -1704,6 +1704,14 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 }
 
 .dp-segmented__seg {
+  /* `inline-flex` and the gap are section 03's one addition (#365): the annual
+     segment carries the `2 MONTHS FREE` badge beside its label. The sheet's own
+     segments hold text alone and are unchanged by it — folding the loser's one
+     extra capability into the winner is the promotion pass's rule 6, and the
+     alternative was a second segmented control. */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 11px;
   border: 0;
   border-radius: var(--r-chip);
