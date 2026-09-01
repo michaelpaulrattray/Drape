@@ -30,9 +30,14 @@
  *
  * ✅ **The one thing the brief demands of the data is already true of ours.**
  * *"Cost per credit … must descend monotonically up the ladder"* — his prototype
- * had Starter beating Pro on value and needed a data fix. Ours descends at
- * every rung, which `planLadder.test.ts` asserts against the real table rather
+ * had Starter beating Pro on value and needed a data fix. Ours improves at
+ * every rung, which `planMath.test.ts` asserts against the real table rather
  * than a fixture, so a future price edit that breaks the argument goes red.
+ *
+ * ⚠ **THE FIGURE IS PRINTED THE OTHER WAY UP SINCE CARD 390** — credits per
+ * dollar (2,778 → 6,250), which ASCENDS. Same claim, same arm, opposite
+ * direction; the surfaces read `formatCreditsPerDollar`, and this header said
+ * `planLadder.test.ts` for a file that has never existed.
  */
 /**
  * The tier key as the CLIENT sees it — a string off the wire.

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "56f7881ac6a7884e"
+    "sourceFingerprint": "865eea30c9c351f3"
   },
   "domains": [
     {
@@ -10643,6 +10643,10 @@
     {
       "id": "test:client/src/features/operations/outcomeSlot.test.ts",
       "path": "client/src/features/operations/outcomeSlot.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/card390-guard.test.ts",
+      "path": "client/src/features/settings/card390-guard.test.ts"
     },
     {
       "id": "test:client/src/features/settings/planMath.test.ts",

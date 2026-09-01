@@ -225,3 +225,63 @@ export function annualPrice(monthlyInCents: number): number {
 export function monthsFree(): number {
   return Math.round(12 - 12 * ANNUAL_RATE);
 }
+
+/**
+ * WHAT A YEAR COSTS, SAID BY THE MONTH — card 390 item 2.
+ *
+ * ⚠ **A CUSTOMER TOGGLING FROM `$149 / month` TO `$1,490 / year` READS A
+ * TENFOLD PRICE RISE.** That is his design agent's sentence and it is the whole
+ * reason this exists: the annual toggle was rendering the YEAR's total against
+ * a `2 MONTHS FREE` badge, so the one control that claims a saving was the one
+ * making the number bigger — and the badge became unverifiable, because nothing
+ * on screen was comparable to the monthly figure beside it.
+ *
+ * So every price the plan surfaces show is a MONTH's price in both intervals,
+ * with `billed yearly` carrying the interval. **The full annual figure belongs
+ * in the confirm step**, where it is what actually gets charged.
+ *
+ * ⚠ **DERIVED FROM `annualPrice`, NEVER FROM `ANNUAL_RATE` A SECOND TIME.**
+ * The figure a customer divides in their head must be the figure we charge
+ * divided by twelve; computing it from the rate would let a rounding change in
+ * `annualPrice` put the two a cent apart, which is exactly the class of defect
+ * `alignToPreview` exists to close one surface further down.
+ */
+export function monthlyEquivalent(monthlyInCents: number): number {
+  return Math.round(annualPrice(monthlyInCents) / 12);
+}
+
+/**
+ * Credits per dollar — the value argument, the right way up (card 390 item 4).
+ *
+ * ⚠ **`0.036¢ A CREDIT` IS NOT A VALUE ARGUMENT.** His agent's reading, and it
+ * is right at the arithmetic: at sub-penny precision our twelve rungs separate
+ * in the THIRD decimal, so the number that exists to show a descent needs three
+ * decimals to show one at all — and a figure a customer cannot hold in their
+ * head is not an argument, whatever it proves.
+ *
+ * Inverted, the same fact reads as a whole number that goes UP as you climb:
+ * **2,778 credits per $1 on Starter, 6,250 on Ultimate.** Every adjacent pair
+ * differs by hundreds, so the ladder argues for itself at a glance.
+ *
+ * ⚠ **THE MONOTONIC CHECK SURVIVES THE INVERSION AND CHANGES DIRECTION.** Cost
+ * per credit had to DESCEND up the ladder; credits per dollar must ASCEND. It
+ * is the same claim — *"the figure must improve at every rung"* — and
+ * `planMath.test.ts` asserts it against `PLAN_TIERS` itself rather than a
+ * fixture, so a future price edit that breaks the argument still goes red.
+ *
+ * `centsPerCredit` stays, and is not dead: `AddCreditsModal` sells credit PACKS
+ * with it in a two-value sentence (*"0.036¢ a credit, down from 0.041¢"*) where
+ * the descent is stated in words rather than read off a ladder. That surface is
+ * outside this card and is filed rather than swept.
+ */
+export function creditsPerDollar(priceInCents: number, credits: number): number {
+  if (priceInCents <= 0) return 0;
+  return credits / (priceInCents / 100);
+}
+
+/** `2,778` — credits per dollar, whole, because fractions of a credit buy nothing. */
+export function formatCreditsPerDollar(priceInCents: number, credits: number): string {
+  const perDollar = creditsPerDollar(priceInCents, credits);
+  if (perDollar <= 0) return "free";
+  return Math.round(perDollar).toLocaleString("en-US");
+}
