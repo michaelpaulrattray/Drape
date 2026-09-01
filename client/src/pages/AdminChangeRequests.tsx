@@ -2,22 +2,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
 import { useState, useMemo, useEffect } from "react";
-import {
-  ClipboardList,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   TYPE_CONFIG,
@@ -27,8 +11,8 @@ import {
   ALL_STATUSES,
   ALL_PRIORITIES,
 } from "@/features/admin/ChangeRequestConstants";
+import { TableFilter, TableHead } from "@/foundation";
 import { ChangeRequestList } from "@/features/admin/ChangeRequestList";
-import { ChangeRequestDetail } from "@/features/admin/ChangeRequestDetail";
 import { ReviewModal } from "@/features/admin/ReviewModal";
 import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 
@@ -164,119 +148,72 @@ export default function AdminChangeRequests() {
       }
     >
       <main className="space-y-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button
-            onClick={() => { setStatusFilter("pending"); setPage(0); }}
-            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "pending" ? "border-amber-400 ring-1 ring-amber-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span className="text-2xl font-bold text-amber-600">{summary.pendingCount}</span>
-            </div>
-            <div className="text-sm text-[#999]">Pending Review</div>
-          </button>
-          <button
-            onClick={() => { setStatusFilter("approved"); setPage(0); }}
-            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "approved" ? "border-emerald-400 ring-1 ring-emerald-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-emerald-600" />
-              <span className="text-2xl font-bold text-emerald-600">{summary.approvedCount}</span>
-            </div>
-            <div className="text-sm text-[#999]">Approved</div>
-          </button>
-          <button
-            onClick={() => { setStatusFilter("denied"); setPage(0); }}
-            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "denied" ? "border-red-400 ring-1 ring-red-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <XCircle className="w-4 h-4 text-red-600" />
-              <span className="text-2xl font-bold text-red-600">{summary.deniedCount}</span>
-            </div>
-            <div className="text-sm text-[#999]">Denied</div>
-          </button>
-          <button
-            onClick={() => { setStatusFilter("all"); setPage(0); }}
-            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "all" ? "border-blue-400 ring-1 ring-blue-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <ClipboardList className="w-4 h-4 text-blue-600" />
-              <span className="text-2xl font-bold text-blue-600">{summary.totalCount}</span>
-            </div>
-            <div className="text-sm text-[#999]">Total Requests</div>
-          </button>
-        </div>
+        {/*
+          ⚠ THE FOUR SUMMARY TILES ARE GONE, AND THEY WERE A SECOND FILTER.
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3">
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[160px] bg-white border-[#E5E5E5] text-[#0A0A0A]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              {ALL_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s === "all" ? "All Statuses" : STATUS_CONFIG[s]?.label || s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          They read `12 Pending Review`, `3 Approved`, `1 Denied`,
+          `16 Total Requests` — and clicking one set `statusFilter`. So this
+          page had TWO controls for one piece of state, in two different
+          shapes, and after brief 06 added the filter row below it would have
+          had two visible at once with no way to tell they were the same thing.
 
-          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[180px] bg-white border-[#E5E5E5] text-[#0A0A0A]">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {ALL_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {TYPE_CONFIG[t]?.label || t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          The counts were the useful half and they survive as the filter's own
+          option labels, which is where a count earns its place: it tells you
+          what choosing that option would show you. Same resolution as the bug
+          report queue's five pills and My requests' five tiles — three
+          surfaces, one answer.
+        */}
+        <TableHead eyebrow="Change requests">
+          <TableFilter
+            label="Status"
+            value={statusFilter}
+            onChange={(value) => { setStatusFilter(value); setPage(0); }}
+            options={ALL_STATUSES.map((status) => ({
+              value: status,
+              label: statusLabel(status, summary),
+            }))}
+          />
+          <TableFilter
+            label="Type"
+            value={typeFilter}
+            onChange={(value) => { setTypeFilter(value); setPage(0); }}
+            options={[
+              { value: "all", label: "All types" },
+              ...ALL_TYPES.map((type) => ({ value: type, label: TYPE_CONFIG[type]?.label || type })),
+            ]}
+          />
+          <TableFilter
+            label="Priority"
+            value={priorityFilter}
+            onChange={(value) => { setPriorityFilter(value); setPage(0); }}
+            options={ALL_PRIORITIES.map((priority) => ({
+              value: priority,
+              label: priority === "all" ? "All priorities" : PRIORITY_CONFIG[priority]?.label || priority,
+            }))}
+          />
+        </TableHead>
 
-          <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[150px] bg-white border-[#E5E5E5] text-[#0A0A0A]">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              {ALL_PRIORITIES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p === "all" ? "All Priorities" : PRIORITY_CONFIG[p]?.label || p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Content: List + Detail */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-2 space-y-2">
-            <ChangeRequestList
-              requests={requests}
-              isLoading={listQuery.isLoading}
-              selectedRequestId={selectedRequestId}
-              onSelect={setSelectedRequestId}
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </div>
-
-          <div className="lg:col-span-3">
-            <ChangeRequestDetail
-              selectedRequestId={selectedRequestId}
-              selectedRequest={selectedRequest}
-              isLoading={detailQuery.isLoading}
-              slackStatus={slackStatusQuery.data?.slackStatus}
-              isSlackExecuting={executeAfterSlackMutation.isPending}
-              onApprove={() => openReviewDialog("approved")}
-              onDeny={() => openReviewDialog("denied")}
-            />
-          </div>
-        </div>
+        {/* Brief 06 §2 — one table, rows opening in place. The 2/5 + 3/5 grid
+            is gone: at 1280px its list column was 400px wide, so a request's
+            title truncated to make room for a pane that was empty until you
+            clicked something. */}
+        <ChangeRequestList
+          requests={requests}
+          isLoading={listQuery.isLoading}
+          selectedRequestId={selectedRequestId}
+          onSelect={setSelectedRequestId}
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          selectedRequest={selectedRequest}
+          detailLoading={detailQuery.isLoading}
+          slackStatus={slackStatusQuery.data?.slackStatus}
+          isSlackExecuting={executeAfterSlackMutation.isPending}
+          onApprove={() => openReviewDialog("approved")}
+          onDeny={() => openReviewDialog("denied")}
+        />
       </main>
 
       <ReviewModal
@@ -292,4 +229,38 @@ export default function AdminChangeRequests() {
       />
     </StaffSurface>
   );
+}
+
+/**
+ * A status's label with its count, where the summary has one.
+ *
+ * ⚠ **It shows a count only for the four the summary actually reports.** The
+ * procedure returns pending, approved, denied, pendingExecution and total —
+ * so `cancelled` and `expired` get their bare labels rather than a `(0)` that
+ * would be a number no reader produces.
+ */
+function statusLabel(
+  status: string,
+  summary: {
+    pendingCount: number;
+    approvedCount: number;
+    deniedCount: number;
+    pendingExecutionCount: number;
+    totalCount: number;
+  },
+): string {
+  const base = status === "all" ? "All statuses" : STATUS_CONFIG[status]?.label || status;
+  const count =
+    status === "all"
+      ? summary.totalCount
+      : status === "pending"
+        ? summary.pendingCount
+        : status === "approved"
+          ? summary.approvedCount
+          : status === "denied"
+            ? summary.deniedCount
+            : status === "pending_execution"
+              ? summary.pendingExecutionCount
+              : undefined;
+  return count ? `${base} (${count})` : base;
 }

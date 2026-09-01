@@ -148,30 +148,66 @@ describe("a state never wears a control's clothes", () => {
    * Found in the running app, not by an assertion: `reviewing` shipped as a
    * white pill with a dark border, which is the treatment of the three OUTLINED
    * workflow buttons on the same row — the card read as having four buttons and
-   * one of them did nothing. The rule that fixes it is one line: every status is
-   * FILLED, every action is OUTLINED. It is pinned here because a tidy-up that
-   * "harmonises the pills" would quietly undo it.
+   * one of them did nothing.
+   *
+   * ⚠ **THE MECHANISM CHANGED UNDER THIS ARM AND THE ARM SAID SO** (brief 06,
+   * 2026-09-02). The card became a table row, so `STATUS_STYLES` — a map of
+   * hex fills this arm read line by line — no longer exists, and the arm's own
+   * *"the arm is reading nothing"* control fired the moment it went. That is
+   * the one thing an arm must do when its subject is deleted, and it is why
+   * this file is being rewritten rather than deleted.
+   *
+   * **The defect is now prevented structurally rather than by a rule about
+   * fills**: a state is a `StatePill` in a CELL, an action is a `Button` in the
+   * EXPANSION, and the two are never on the same line — so the resemblance the
+   * founder saw cannot be drawn. The arms below hold that separation, which is
+   * a stronger claim than the colour one it replaces.
    */
   const PAGE = path.join(__dirname, "../client/src/pages/AdminBugReports.tsx");
 
-  it("gives every status a fill, so none of them reads as a button", () => {
+  it("draws status as a state pill, never as anything button-shaped", () => {
     const source = code(PAGE);
-    const block = source.slice(source.indexOf("const STATUS_STYLES"), source.indexOf("const CATEGORY_LABELS"));
 
-    expect(block, "the arm is reading nothing").toContain("dismissed:");
+    expect(source, "the arm is reading nothing").toContain("ATTENTION_STATUS");
+    expect(
+      source,
+      "the status cell must be a StatePill — the one place the accent rule lives",
+    ).toMatch(/<StatePill[^>]*label=\{STATUS_LABELS\[status\]\}/);
 
-    for (const status of ["new", "reviewing", "resolved", "dismissed"]) {
-      const line = block.split("\n").find((l) => l.trim().startsWith(`${status}:`)) ?? "";
-      expect(line, `${status} has no style line`).not.toBe("");
-      expect(line, `${status} must carry a background fill`).toMatch(/bg-\[#[0-9A-Fa-f]{6}\]/);
-      expect(
-        line,
-        `${status} must not wear a white fill — that is the outlined action buttons' treatment on the same row`,
-      ).not.toMatch(/bg-white\b/);
-    }
+    expect(
+      source,
+      "a status must never be rendered as a <button> or a Button — that is what made the card read as having four buttons",
+    ).not.toMatch(/<[Bb]utton[^>]*>\s*\{STATUS_LABELS\[status\]\}/);
 
-    /* POSITIVE CONTROL — the matcher fires on the shape that shipped and was wrong. */
-    expect('  reviewing: "bg-white text-[#0A0A0A] border-[#0A0A0A]",').toMatch(/bg-white\b/);
+    /* POSITIVE CONTROL — the matcher fires on the shape that shipped and was
+       wrong, written here as the button form of the same expression. */
+    expect("<Button size=\"small\">{STATUS_LABELS[status]}</Button>").toMatch(
+      /<[Bb]utton[^>]*>\s*\{STATUS_LABELS\[status\]\}/,
+    );
+  });
+
+  it("puts the workflow actions in the expansion, where no state pill sits", () => {
+    const source = code(PAGE);
+
+    /* Every action is a `RowAction` in `actions:`, which `ExpandableRow` draws
+       inside the panel. A state cannot reach that array: `RowAction` has no
+       pill shape, and the cells array has no Button in it. */
+    const cells = source.slice(source.indexOf("cells: ["), source.indexOf("facts: ["));
+    expect(cells, "the arm is reading nothing").toContain("StatePill");
+    expect(
+      cells,
+      "no control may sit in a row's cells — the Actions column is exactly what this brief removed",
+    ).not.toMatch(/<Button|onClick=/);
+
+    const actions = source.slice(source.indexOf("actions: STATUSES.filter"));
+    expect(actions, "the arm is reading nothing").toContain("Mark ${STATUS_LABELS[s].toLowerCase()}");
+    expect(
+      actions,
+      "an action's label must read as an instruction, not as a bare state name",
+    ).toContain("`Mark ");
+
+    /* POSITIVE CONTROL — the cells matcher fires on a cell carrying a control. */
+    expect('cells: [<Button onClick={x}>Manage</Button>], facts: [').toMatch(/<Button|onClick=/);
   });
 });
 

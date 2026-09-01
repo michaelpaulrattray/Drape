@@ -1,36 +1,42 @@
 /**
- * My Requests tab — list of moderator's change requests with status summary.
+ * Moderation → My requests, on the one staff table pattern (brief 06).
+ *
+ * A moderator's own change requests and what an admin did with them.
+ *
+ * # The five summary tiles are one filter now
+ *
+ * The old head drew five coloured count tiles — amber pending, emerald
+ * approved, red denied, grey closed, plain total — and none of them did
+ * anything when clicked. Five numbers, no action. They are the filter's option
+ * labels now, which is where a count earns its place: it tells you what
+ * choosing that option would show you.
+ *
+ * ⚠ **The filter is CLIENT-SIDE and says so.** `getMyChangeRequests` takes no
+ * status argument, so filtering here narrows the page you already have rather
+ * than asking the server for another one — and the range in the footer counts
+ * what is on screen. Adding a status argument would be changing a query, which
+ * §7 forbids.
  */
-import { RefreshCw, FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
-const STATUS_BADGES: Record<string, string> = {
-  pending: "bg-amber-50 text-amber-700",
-  approved: "bg-emerald-50 text-emerald-700",
-  denied: "bg-red-50 text-red-700",
-  cancelled: "bg-gray-100 text-gray-600",
-  expired: "bg-gray-100 text-gray-600",
-};
-
-const PRIORITY_BADGES: Record<string, string> = {
-  low: "bg-gray-100 text-gray-600",
-  normal: "bg-blue-50 text-blue-700",
-  high: "bg-amber-50 text-amber-700",
-  urgent: "bg-red-50 text-red-700",
-};
+import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
+import { DataTable, TableFilter, TableHead } from "@/foundation";
+import type { DataRow } from "@/foundation";
 
 const TYPE_LABELS: Record<string, string> = {
-  refund_credits: "Refund Credits",
-  add_credits: "Add Credits",
-  flag_account: "Flag Account",
-  note_incident: "Note Incident",
-  suspend_user: "Suspend User",
-  unsuspend_user: "Unsuspend User",
+  refund_credits: "Refund credits",
+  add_credits: "Add credits",
+  flag_account: "Flag account",
+  note_incident: "Note incident",
+  suspend_user: "Suspend user",
+  unsuspend_user: "Unsuspend user",
   block_ip: "Block IP",
   other: "Other",
 };
+
+/** Waiting on somebody is the only state a moderator needs to act on. */
+const ATTENTION_STATUS = new Set(["pending"]);
+const ATTENTION_PRIORITY = new Set(["high", "urgent"]);
 
 interface MyRequestsTabProps {
   data: any;
@@ -38,108 +44,120 @@ interface MyRequestsTabProps {
   refetch: () => void;
 }
 
-export function MyRequestsTab({ data, isLoading, refetch }: MyRequestsTabProps) {
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-20 w-full bg-[#E5E5E5]" />
-        ))}
-      </div>
-    );
-  }
+export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const requests = data?.requests || [];
+  const requests: any[] = data?.requests ?? [];
   const summary = data?.summary;
 
+  /*
+    ⚠ **"Closed" IS TWO STATUSES AND THE COUNT ALWAYS KNEW IT.** The option
+    label adds `cancelledCount + expiredCount`, so a moderator with one expired
+    request read `Closed (1)`, selected it, and got *"None of your requests are
+    in that state."* — the count and the predicate disagreed, and an expired
+    request was invisible under every filter but All.
+  */
+  const CLOSED = ["cancelled", "expired"];
+  const filtered =
+    statusFilter === "all"
+      ? requests
+      : statusFilter === "cancelled"
+        ? requests.filter((request: any) => CLOSED.includes(request.status))
+        : requests.filter((request: any) => request.status === statusFilter);
+
+  const rows: DataRow[] = filtered.map((request: any) => ({
+    id: String(request.id),
+    cells: [
+      <RowStack
+        key="what"
+        name={
+          <>
+            <RowId>#{request.id}</RowId> {request.title}
+          </>
+        }
+        meta={`${TYPE_LABELS[request.type] || request.type} · about ${request.targetUserName || `user ${request.targetUserId}`}`}
+      />,
+      <StatePill
+        key="status"
+        label={request.status}
+        attention={ATTENTION_STATUS.has(request.status)}
+      />,
+      <StatePill
+        key="priority"
+        label={request.priority}
+        attention={ATTENTION_PRIORITY.has(request.priority)}
+      />,
+      <span key="when">{new Date(request.createdAt).toLocaleDateString()}</span>,
+    ],
+    facts: [
+      { label: "RAISED", value: new Date(request.createdAt).toLocaleString() },
+      { label: "ABOUT", value: request.targetUserName || `User #${request.targetUserId}` },
+      ...(request.creditAmount
+        ? [{ label: "CREDITS", value: `${request.creditAmount}` }]
+        : []),
+      ...(request.reviewedByName
+        ? [
+            { label: "REVIEWED BY", value: request.reviewedByName },
+            {
+              label: "REVIEWED",
+              value: request.reviewedAt ? new Date(request.reviewedAt).toLocaleString() : "—",
+            },
+          ]
+        : []),
+    ],
+    evidence: (
+      <>
+        {request.description}
+        {request.reviewNotes ? `\n\nThey said: ${request.reviewNotes}` : ""}
+      </>
+    ),
+  }));
+
   return (
-    <div className="space-y-4">
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-amber-700">{summary.pendingCount}</p>
-            <p className="text-xs text-amber-600">Pending</p>
-          </div>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-emerald-700">{summary.approvedCount}</p>
-            <p className="text-xs text-emerald-600">Approved</p>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-red-700">{summary.deniedCount}</p>
-            <p className="text-xs text-red-600">Denied</p>
-          </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-gray-600">{summary.cancelledCount + summary.expiredCount}</p>
-            <p className="text-xs text-gray-500">Closed</p>
-          </div>
-          <div className="bg-white border border-[#E5E5E5] rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-[#0A0A0A]">{summary.totalCount}</p>
-            <p className="text-xs text-[#999]">Total</p>
-          </div>
-        </div>
-      )}
-
-      {/* Refresh */}
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={refetch} className="border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5]">
-          <RefreshCw className="w-3 h-3 mr-2" />
-          Refresh
-        </Button>
-      </div>
-
-      {/* Request List */}
-      {requests.length === 0 ? (
-        <div className="bg-white border border-[#E5E5E5] rounded-xl py-12 text-center">
-          <FileText className="w-10 h-10 text-[#CCC] mx-auto mb-3" />
-          <p className="text-[#999]">No change requests yet</p>
-          <p className="text-xs text-[#CCC] mt-1">Use the "New Change Request" button to submit one</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {requests.map((req: any) => (
-            <div key={req.id} className="bg-white border border-[#E5E5E5] rounded-xl p-4 hover:bg-[#FAFAFA] transition-colors">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-[#CCC]">#{req.id}</span>
-                    <Badge className={STATUS_BADGES[req.status] || "bg-gray-100 text-gray-600"}>
-                      {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                    </Badge>
-                    <Badge className={PRIORITY_BADGES[req.priority] || "bg-gray-100 text-gray-600"}>
-                      {req.priority.charAt(0).toUpperCase() + req.priority.slice(1)}
-                    </Badge>
-                    <Badge className="bg-[#F0F0F0] text-[#666]">
-                      {TYPE_LABELS[req.type] || req.type}
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-medium text-[#0A0A0A] truncate">{req.title}</p>
-                  <p className="text-xs text-[#999] mt-1 line-clamp-2">{req.description}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-[#CCC]">
-                    <span>Target: {req.targetUserName || `User ${req.targetUserId}`}</span>
-                    {req.creditAmount && <span>{req.creditAmount} credits</span>}
-                    <span>{new Date(req.createdAt).toLocaleString()}</span>
-                  </div>
-                </div>
-                {req.status !== "pending" && req.reviewedByName && (
-                  <div className="text-right shrink-0">
-                    <p className="text-xs text-[#CCC]">Reviewed by</p>
-                    <p className="text-xs text-[#999]">{req.reviewedByName}</p>
-                    {req.reviewNotes && (
-                      <p className="text-xs text-[#CCC] mt-1 max-w-[200px] truncate" title={req.reviewNotes}>
-                        "{req.reviewNotes}"
-                      </p>
-                    )}
-                    {req.reviewedAt && (
-                      <p className="text-xs text-[#CCC] mt-0.5">{new Date(req.reviewedAt).toLocaleString()}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="dp-stack" style={{ gap: 16 }}>
+      <TableHead eyebrow="My requests">
+        <TableFilter
+          label="Status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: "all", label: countedLabel("All", summary?.totalCount) },
+            { value: "pending", label: countedLabel("Waiting", summary?.pendingCount) },
+            { value: "approved", label: countedLabel("Approved", summary?.approvedCount) },
+            { value: "denied", label: countedLabel("Denied", summary?.deniedCount) },
+            {
+              value: "cancelled",
+              label: countedLabel(
+                "Closed",
+                summary ? summary.cancelledCount + summary.expiredCount : undefined,
+              ),
+            },
+          ]}
+        />
+      </TableHead>
+      <DataTable
+        columns={[
+          { label: "Request", width: "1 1 0" },
+          { label: "Status", width: "0 0 104px" },
+          { label: "Priority", width: "0 0 92px" },
+          { label: "Raised", width: "0 0 118px" },
+        ]}
+        rows={rows}
+        loading={isLoading}
+        empty={{
+          title:
+            statusFilter === "all"
+              ? "You have not raised any change requests."
+              : "None of your requests are in that state.",
+          body: 'Use "New change request" above to raise one.',
+        }}
+        footer={{ meta: pageRange({ offset: 0, count: filtered.length, total: filtered.length }) }}
+      />
     </div>
   );
+}
+
+/** A count earns its place on a filter option: it says what choosing it shows. */
+function countedLabel(label: string, count: number | undefined): string {
+  return count ? `${label} (${count})` : label;
 }

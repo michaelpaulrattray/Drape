@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e5efd60e13c1ba83"
+    "sourceFingerprint": "e3f46701e1a06ab2"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 53
+      "moduleCount": 50
     },
     {
       "id": "domain:alerting",
@@ -83,7 +83,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 18
+      "moduleCount": 17
     },
     {
       "id": "domain:operations",
@@ -133,7 +133,7 @@
     {
       "id": "domain:staff",
       "name": "staff",
-      "moduleCount": 4
+      "moduleCount": 5
     },
     {
       "id": "domain:studio",
@@ -148,7 +148,7 @@
     {
       "id": "domain:ui-primitives",
       "name": "ui-primitives",
-      "moduleCount": 53
+      "moduleCount": 52
     },
     {
       "id": "domain:unassigned",
@@ -553,12 +553,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/ui/table.tsx",
-      "path": "client/src/components/ui/table.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/components/ui/tabs.tsx",
       "path": "client/src/components/ui/tabs.tsx",
       "domain": "ui-primitives",
@@ -607,12 +601,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/admin/AuditLogDetailModal.tsx",
-      "path": "client/src/features/admin/AuditLogDetailModal.tsx",
-      "domain": "admin",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/admin/AuditLogTable.tsx",
       "path": "client/src/features/admin/AuditLogTable.tsx",
       "domain": "admin",
@@ -643,12 +631,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/admin/ChangeRequestDetail.tsx",
-      "path": "client/src/features/admin/ChangeRequestDetail.tsx",
-      "domain": "admin",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/admin/ChangeRequestList.tsx",
       "path": "client/src/features/admin/ChangeRequestList.tsx",
       "domain": "admin",
@@ -669,12 +651,6 @@
     {
       "id": "module:client/src/features/admin/UserBadges.tsx",
       "path": "client/src/features/admin/UserBadges.tsx",
-      "domain": "admin",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/admin/UserDetailModal.tsx",
-      "path": "client/src/features/admin/UserDetailModal.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -1945,12 +1921,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/moderator/LogDetailModal.tsx",
-      "path": "client/src/features/moderator/LogDetailModal.tsx",
-      "domain": "moderator",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "path": "client/src/features/moderator/MyRequestsTab.tsx",
       "domain": "moderator",
@@ -2175,6 +2145,12 @@
     {
       "id": "module:client/src/features/staff/index.ts",
       "path": "client/src/features/staff/index.ts",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/staffTable.tsx",
+      "path": "client/src/features/staff/staffTable.tsx",
       "domain": "staff",
       "lifecycle": "active"
     },
@@ -10682,6 +10658,10 @@
       "path": "client/src/features/staff/section05-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/staff/section06-guard.test.ts",
+      "path": "client/src/features/staff/section06-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },
@@ -13966,11 +13946,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/components/ui/table.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/components/ui/tabs.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -14051,68 +14026,18 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/AuditLogDetailModal.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogDetailModal.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogDetailModal.tsx",
-      "to": "module:client/src/components/ui/dialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogDetailModal.tsx",
-      "to": "module:client/src/features/admin/adminConstants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
-      "to": "module:client/src/components/ui/input.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
-      "to": "module:client/src/components/ui/select.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
       "to": "module:client/src/features/admin/adminConstants.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/AuditLogTable.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/AuditLogTable.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AuditLogTable.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14121,23 +14046,28 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "from": "module:client/src/features/admin/AuditLogTable.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "from": "module:client/src/features/admin/AuditLogTable.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
       "to": "module:client/src/features/admin/adminConstants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14151,38 +14081,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/ChangeRequestDetail.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/ChangeRequestDetail.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/ChangeRequestDetail.tsx",
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/features/admin/ChangeRequestAttachments.tsx",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/ChangeRequestDetail.tsx",
-      "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14417,11 +14332,6 @@
     },
     {
       "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/AuditLogDetailModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
       "to": "module:client/src/features/admin/AuditLogsFilters.tsx",
       "kind": "imports"
     },
@@ -14442,11 +14352,6 @@
     },
     {
       "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/ChangeRequestDetail.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
       "to": "module:client/src/features/admin/ChangeRequestList.tsx",
       "kind": "imports"
     },
@@ -14463,11 +14368,6 @@
     {
       "from": "module:client/src/features/admin/index.ts",
       "to": "module:client/src/features/admin/UserBadges.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/UserDetailModal.tsx",
       "kind": "imports"
     },
     {
@@ -14591,43 +14491,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/UserDetailModal.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/UserDetailModal.tsx",
-      "to": "module:client/src/components/ui/dialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/UserDetailModal.tsx",
-      "to": "module:client/src/features/admin/UserBadges.tsx",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/admin/UserFilters.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/UserFilters.tsx",
-      "to": "module:client/src/components/ui/input.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/UserFilters.tsx",
-      "to": "module:client/src/components/ui/select.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/UserTable.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/UserTable.tsx",
       "to": "module:client/src/features/admin/UserBadges.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -16787,37 +16667,32 @@
     },
     {
       "from": "module:client/src/features/moderator/ActivitySubTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/ActivitySubTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/ActivitySubTab.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -16827,12 +16702,17 @@
     },
     {
       "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -16927,42 +16807,32 @@
     },
     {
       "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
-      "to": "module:client/src/components/ui/select.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -16997,11 +16867,6 @@
     },
     {
       "from": "module:client/src/features/moderator/index.ts",
-      "to": "module:client/src/features/moderator/LogDetailModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/index.ts",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
@@ -17026,38 +16891,13 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/LogDetailModal.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/LogDetailModal.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/LogDetailModal.tsx",
-      "to": "module:client/src/components/ui/dialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/LogDetailModal.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -17496,6 +17336,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/staffTable.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/staff/StaffBar.tsx",
       "to": "module:client/src/features/admin/components/crew/useCrewState.ts",
       "kind": "imports"
@@ -17508,6 +17353,11 @@
     {
       "from": "module:client/src/features/staff/StaffSurface.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/staffTable.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -18542,6 +18392,11 @@
     },
     {
       "from": "module:client/src/foundation/primitives.tsx",
+      "to": "module:client/src/foundation/icons.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/primitives.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -18622,27 +18477,12 @@
     },
     {
       "from": "module:client/src/pages/AdminAuditLogs.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminAuditLogs.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminAuditLogs.tsx",
       "to": "module:client/src/features/admin/adminConstants.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/AdminAuditLogs.tsx",
       "to": "module:client/src/features/admin/AuditActionModals.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminAuditLogs.tsx",
-      "to": "module:client/src/features/admin/AuditLogDetailModal.tsx",
       "kind": "imports"
     },
     {
@@ -18667,6 +18507,11 @@
     },
     {
       "from": "module:client/src/pages/AdminAuditLogs.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminAuditLogs.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -18677,12 +18522,12 @@
     },
     {
       "from": "module:client/src/pages/AdminBugReports.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/AdminBugReports.tsx",
-      "to": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -18702,22 +18547,7 @@
     },
     {
       "from": "module:client/src/pages/AdminChangeRequests.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminChangeRequests.tsx",
-      "to": "module:client/src/components/ui/select.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminChangeRequests.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminChangeRequests.tsx",
-      "to": "module:client/src/features/admin/ChangeRequestDetail.tsx",
       "kind": "imports"
     },
     {
@@ -18733,6 +18563,11 @@
     {
       "from": "module:client/src/pages/AdminChangeRequests.tsx",
       "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminChangeRequests.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -18842,12 +18677,12 @@
     },
     {
       "from": "module:client/src/pages/AdminInviteCodes.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/AdminInviteCodes.tsx",
-      "to": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -18908,11 +18743,6 @@
     {
       "from": "module:client/src/pages/AdminUserManagement.tsx",
       "to": "module:client/src/features/admin/UserActionModals.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminUserManagement.tsx",
-      "to": "module:client/src/features/admin/UserDetailModal.tsx",
       "kind": "imports"
     },
     {
@@ -19478,11 +19308,6 @@
     {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/ModeratorDashboard.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {

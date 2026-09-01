@@ -1,3 +1,24 @@
+/**
+ * The six counts above Admin → Users.
+ *
+ * ⚠ **IT WAS SIX COLOURS AND IT IS NOW ONE, AND THAT WAS FOUND AT THE FRAME.**
+ * Every figure had its own: black total, emerald active, red suspended, amber
+ * locked, blue new-this-month, purple admins. Sat directly above a table whose
+ * whole colour rule is *"status may carry accent, and only where somebody needs
+ * to act"* (brief 06 §4), it read as a different product — and the founder's own
+ * argument applies exactly: **when everything is coloured, nothing is.**
+ *
+ * Two of the six are states an admin acts on — `suspended` and `locked` — and
+ * they carry accent **only when they are not zero.** A red `0 SUSPENDED` is the
+ * loudest thing on the page saying nothing is wrong.
+ *
+ * `admins` deliberately stays greyscale though it is arresting: a role is what
+ * someone IS, not something needing attention, which is the same sentence that
+ * took the purple crown off the role pill one file over.
+ *
+ * These stay TILES rather than becoming a table — they are not a list of
+ * records, and the dashboard shape belongs to brief 07.
+ */
 interface UserStatsData {
   totalUsers: number;
   activeUsers: number;
@@ -12,30 +33,30 @@ interface UserStatsCardsProps {
 }
 
 const statCards = [
-  { key: "totalUsers", label: "Total Users", color: "text-[#0A0A0A]" },
-  { key: "activeUsers", label: "Active", color: "text-emerald-600" },
-  { key: "suspendedUsers", label: "Suspended", color: "text-red-500" },
-  { key: "lockedUsers", label: "Locked", color: "text-amber-500" },
-  { key: "newUsersThisMonth", label: "New This Month", color: "text-blue-600" },
-  { key: "adminCount", label: "Admins", color: "text-purple-600" },
+  { key: "totalUsers", label: "Total" },
+  { key: "activeUsers", label: "Active" },
+  /* The two an admin is scanning for — accent, but only when non-zero. */
+  { key: "suspendedUsers", label: "Suspended", attentionWhenSet: true },
+  { key: "lockedUsers", label: "Locked", attentionWhenSet: true },
+  { key: "newUsersThisMonth", label: "New this month" },
+  { key: "adminCount", label: "Admins" },
 ] as const;
 
 export function UserStatsCards({ stats }: UserStatsCardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      {statCards.map(({ key, label, color }) => (
-        <div
-          key={key}
-          className="bg-white rounded-xl p-4 border border-[#E5E5E5] hover:shadow-sm transition-shadow"
-        >
-          <div className={`text-2xl font-bold ${color}`}>
-            {stats?.[key] ?? 0}
+    <div className="dp-countrow">
+      {statCards.map((card) => {
+        const value = stats?.[card.key] ?? 0;
+        const alert = "attentionWhenSet" in card && card.attentionWhenSet && value > 0;
+        return (
+          <div key={card.key} className="dp-counttile">
+            <span className="dp-chrome">{card.label}</span>
+            <span className={`dp-counttile__value${alert ? " dp-counttile__value--alert" : ""}`}>
+              {value}
+            </span>
           </div>
-          <div className="text-xs text-[#999] mt-1 font-medium uppercase tracking-wide">
-            {label}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

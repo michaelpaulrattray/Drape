@@ -2,14 +2,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
 import { useState, useEffect } from "react";
-import {
-  Download,
-  Activity,
-  Globe,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button as FoundationButton } from "@/foundation";
+
 import { toast } from "sonner";
 import {
   PAGE_SIZE,
@@ -18,7 +12,6 @@ import {
 import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 import { AuditStatsCards, AbuseAlertsPanel, AuditFiltersBar } from "@/features/admin/AuditLogsFilters";
 import { AuditLogTable } from "@/features/admin/AuditLogTable";
-import { AuditLogDetailModal } from "@/features/admin/AuditLogDetailModal";
 import { SuspendUserModal, BlockIpModal } from "@/features/admin/AuditActionModals";
 import { BlockedIPsTab } from "@/features/admin/BlockedIPsTab";
 
@@ -212,16 +205,14 @@ export default function AdminAuditLogs() {
           /* The page's own action, carried across untouched — its styling is
              page content and belongs to brief 06, not to the frame. */
           right={
-            <Button
-              variant="outline"
-              size="sm"
+            <FoundationButton
+              variant="secondary"
+              size="small"
               onClick={handleExportCsv}
               disabled={exportMutation.isPending}
-              className="border-[#D5D5D5] text-[#666] text-xs"
             >
-              {exportMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-              Export CSV
-            </Button>
+              {exportMutation.isPending ? "Exporting…" : "Export CSV"}
+            </FoundationButton>
           }
         />
       }
@@ -234,41 +225,35 @@ export default function AdminAuditLogs() {
           alertsLoading={alertsQuery.isLoading}
         />
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-[#E5E5E5] pb-2">
-          <Button
-            variant={activeTab === "logs" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("logs")}
-            className={activeTab === "logs"
-              ? "bg-[#0A0A0A] hover:bg-[#222] text-white"
-              : "text-[#999] hover:text-[#0A0A0A] hover:bg-[#F0F0F0]"
-            }
-          >
-            <Activity className="w-4 h-4 mr-2" />
-            Audit Logs
-          </Button>
-          <Button
-            variant={activeTab === "blocked-ips" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("blocked-ips")}
-            className={activeTab === "blocked-ips"
-              ? "bg-[#0A0A0A] hover:bg-[#222] text-white"
-              : "text-[#999] hover:text-[#0A0A0A] hover:bg-[#F0F0F0]"
-            }
-          >
-            <Globe className="w-4 h-4 mr-2" />
-            Blocked IPs
-            {blockedIpsQuery.data?.total ? (
-              <Badge className="ml-2 bg-red-50 text-red-700 border-red-200">{blockedIpsQuery.data.total}</Badge>
-            ) : null}
-          </Button>
+        {/* The page's two panes. `.dp-segmented` is the house's one segmented
+            control — the same one the staff bar draws — rather than a third
+            pair of hand-styled buttons. The count is omitted at zero, which is
+            `showsMenuCount`'s rule and the staff bar's. */}
+        <div className="dp-segmented" role="tablist" aria-label="Audit view">
+          {([
+            { value: "logs", label: "Audit logs" },
+            { value: "blocked-ips", label: "Blocked IPs", count: blockedIpsQuery.data?.total },
+          ] as const).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === option.value}
+              className={`dp-segmented__seg${activeTab === option.value ? " dp-segmented__seg--on" : ""}`}
+              onClick={() => setActiveTab(option.value)}
+            >
+              {option.label}
+              {"count" in option && option.count ? (
+                <span className="dp-segmented__count">{option.count}</span>
+              ) : null}
+            </button>
+          ))}
         </div>
 
         {/* Audit Logs Tab */}
         {activeTab === "logs" && (
           <>
-            <AbuseAlertsPanel alertsData={alertsQuery.data} onSelectLog={setSelectedLog} />
+            <AbuseAlertsPanel alertsData={alertsQuery.data} />
             <AuditFiltersBar
               severityFilter={severityFilter}
               setSeverityFilter={setSeverityFilter}
@@ -285,7 +270,14 @@ export default function AdminAuditLogs() {
               hasMore={logsQuery.data?.hasMore || false}
               page={page}
               setPage={setPage}
+              selectedLog={selectedLog}
               onSelectLog={setSelectedLog}
+              userDetails={userDetailsQuery.data ?? undefined}
+              onFilterByUser={setUserIdSearch}
+              onSuspendUser={(userId) => { setSuspendingUserId(userId); setSuspendModalOpen(true); }}
+              onUnsuspendUser={handleUnsuspendUser}
+              unsuspendPending={unsuspendMutation.isPending}
+              onBlockIp={(ip) => { setBlockIpAddress(ip); setBlockIpModalOpen(true); }}
             />
           </>
         )}
@@ -302,17 +294,9 @@ export default function AdminAuditLogs() {
         )}
       </main>
 
-      {/* Modals */}
-      <AuditLogDetailModal
-        log={selectedLog}
-        onClose={() => setSelectedLog(null)}
-        userDetails={userDetailsQuery.data ?? undefined}
-        onFilterByUser={setUserIdSearch}
-        onSuspendUser={(userId) => { setSuspendingUserId(userId); setSuspendModalOpen(true); }}
-        onUnsuspendUser={handleUnsuspendUser}
-        unsuspendPending={unsuspendMutation.isPending}
-        onBlockIp={(ip) => { setBlockIpAddress(ip); setBlockIpModalOpen(true); }}
-      />
+      {/* The two FORM modals stay: both need a typed reason before they fire,
+          and a dialog is right for "type a reason and confirm" and wrong for
+          "show me this". The detail modal, which only showed, is gone. */}
       <SuspendUserModal
         open={suspendModalOpen}
         onOpenChange={setSuspendModalOpen}

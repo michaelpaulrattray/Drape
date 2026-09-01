@@ -1,63 +1,115 @@
 /**
- * Activity sub-tab within User Investigation — shows recent audit log entries for a user.
+ * Moderation → User investigation → Activity, on the one staff table pattern.
+ *
+ * ⚠ **THIS IS ONE OF THE TWO SURFACES BRIEF 06 CLAIMS THAT LIVE INSIDE THE
+ * TOOL BRIEF 09 OWNS**, and the founder settled it himself in 09 §1: *"`
+ * ActivitySubTab` and `GenerationsSubTab` are table-shaped and were covered by
+ * brief 06."* So the two sub-tabs are converted here and **nothing around them
+ * is touched** — the investigation tool's own frame, its user picker and its
+ * other two sub-tabs are brief 09's.
+ *
+ * # The row opens instead of opening the audit modal
+ *
+ * Every row used to open `LogDetailModal` — the same dialog moderation's main
+ * audit table opened, mounted on the dashboard, reached from two places. The
+ * row expands now, so a moderator reading an account's history in a 400px-tall
+ * scroller no longer loses it to a dialog. That was the modal's last consumer
+ * and it is deleted.
  */
-import { Activity, Eye } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RawPayload, StatePill } from "@/features/staff";
+import { DataTable } from "@/foundation";
+import type { DataRow, RowAction } from "@/foundation";
+
 import {
-  AuditLog,
-  SEVERITY_COLORS,
   formatDate,
   formatAction,
+  formatFullDate,
+  type OpenChangeRequestOptions,
 } from "./moderatorConstants";
 
 interface ActivitySubTabProps {
   userActivityQuery: any;
-  onSelectLog: (log: AuditLog) => void;
+  onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
 }
 
-export function ActivitySubTab({ userActivityQuery, onSelectLog }: ActivitySubTabProps) {
-  if (userActivityQuery.isLoading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full bg-[#E5E5E5] rounded-lg" />
-        ))}
-      </div>
-    );
-  }
+export function ActivitySubTab({ userActivityQuery, onOpenChangeRequest }: ActivitySubTabProps) {
+  const activities: any[] = userActivityQuery.data?.logs ?? [];
 
-  const activities = userActivityQuery.data?.logs || [];
+  const rows: DataRow[] = activities.map((log) => ({
+    id: String(log.id),
+    cells: [
+      <StatePill
+        key="severity"
+        label={log.severity}
+        attention={log.severity === "critical" || log.severity === "warning"}
+      />,
+      <span key="action">{formatAction(log.action)}</span>,
+      <span key="when">{formatDate(log.createdAt)}</span>,
+    ],
+    facts: [
+      { label: "ENTRY", value: `#${log.id}` },
+      { label: "WHEN", value: formatFullDate(log.createdAt) },
+      { label: "ACTION", value: log.action },
+      {
+        label: "RESOURCE",
+        value: log.resourceType ? `${log.resourceType} ${log.resourceId ?? ""}` : "—",
+      },
+      { label: "IP", value: log.ipAddress || "—" },
+    ],
+    evidence:
+      log.metadata && Object.keys(log.metadata).length > 0 ? (
+        <RawPayload value={log.metadata} />
+      ) : undefined,
+    actions: changeRequestAction(log),
+  }));
 
-  if (activities.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-[#E5E5E5] py-8 text-center">
-        <Activity className="w-6 h-6 mx-auto mb-2 text-[#CCC]" />
-        <p className="text-sm text-[#999]">No recent activity</p>
-      </div>
-    );
+  /*
+    ⚠ **THIS ACTION WAS ALMOST DROPPED SILENTLY, WHICH IS THE WHOLE DANGER OF
+    DELETING A SHARED MODAL.**
+
+    `LogDetailModal` offered "Submit change request" on warning and critical
+    entries, and these rows opened it. Converting them to expansions took the
+    modal away and did not put the action back — reachable elsewhere, so
+    nothing would have looked broken, and the PR body said the investigative
+    tools were untouched while a removal sat inside one.
+
+    It is restored on `AuditLogsTab`'s exact condition — warning or critical
+    only — so the two surfaces offering the same thing agree on when.
+  */
+  function changeRequestAction(log: any): RowAction[] {
+    if (log.severity !== "warning" && log.severity !== "critical") return [];
+    return [
+      {
+        key: "request",
+        label: "Raise a change request",
+        variant: "secondary",
+        onClick: () => {
+          const metadata = log.metadata as Record<string, unknown> | null;
+          onOpenChangeRequest({
+            type: metadata?.ipAddress ? "block_ip" : log.userId ? "flag_account" : "note_incident",
+            targetUserId: log.userId?.toString() || "",
+            targetUserName: (metadata?.userName as string) || undefined,
+            relatedAuditLogId: log.id,
+            ipAddress: (metadata?.ipAddress as string) || undefined,
+          });
+        },
+      },
+    ];
   }
 
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] divide-y divide-[#F0F0F0] max-h-[400px] overflow-y-auto">
-      {activities.map((log: any) => (
-        <button
-          key={log.id}
-          onClick={() => onSelectLog(log as AuditLog)}
-          className="w-full px-4 py-3 text-left hover:bg-[#FAFAFA] transition-colors flex items-center gap-3"
-        >
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <Badge className={`text-[10px] ${SEVERITY_COLORS[log.severity as keyof typeof SEVERITY_COLORS]}`}>
-                {log.severity}
-              </Badge>
-              <span className="text-xs text-[#0A0A0A] truncate">{formatAction(log.action)}</span>
-            </div>
-            <p className="text-[10px] text-[#999] mt-0.5">{formatDate(log.createdAt)}</p>
-          </div>
-          <Eye className="w-3.5 h-3.5 text-[#CCC] shrink-0" />
-        </button>
-      ))}
-    </div>
+    <DataTable
+      columns={[
+        { label: "Severity", width: "0 0 104px" },
+        { label: "What happened", width: "1 1 0" },
+        { label: "When", width: "0 0 148px" },
+      ]}
+      rows={rows}
+      loading={userActivityQuery.isLoading}
+      empty={{
+        title: "No recorded activity for this account.",
+        body: "Anything they do that the audit log watches will appear here.",
+      }}
+    />
   );
 }

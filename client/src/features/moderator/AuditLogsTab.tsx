@@ -1,33 +1,42 @@
 /**
- * Audit Logs tab — abuse alerts, filters, paginated log table.
+ * Moderation → Audit logs, on the one staff table pattern (brief 06).
+ *
+ * `LogDetailModal` is gone. Its eight facts, its raw metadata and its "Submit
+ * change request" button are this row's expansion.
+ *
+ * # The abuse-alerts banner stays, and it is NOT the table
+ *
+ * The critical alerts above the table are a different question — *what needs
+ * looking at right now* rather than *what happened* — and the brief's §1 does
+ * not touch them. They keep their own treatment; what changed is that the five
+ * alert rows and the log rows no longer draw two different kinds of pill for
+ * the same severity word.
+ *
+ * # Two actions became one
+ *
+ * Every row had an eye button and, on warnings, a flag button. The eye opened
+ * the modal, which is now what clicking the row does — so it is gone rather
+ * than kept as a control that does what the row already does.
  */
-import {
-  X,
-  Eye,
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-  AlertCircle,
-  Calendar,
-  Download,
-  RotateCcw,
-  AlertTriangle,
-} from "lucide-react";
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
+
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+
+import { RawPayload, RowId, StatePill, pageRange } from "@/features/staff";
+import { Button, DataTable, TableFilter, TableHead, TableSearch } from "@/foundation";
+import type { DataRow, RowAction } from "@/foundation";
+import { trpc } from "@/lib/trpc";
+
 import {
   AuditLog,
-  SEVERITY_COLORS,
-  CATEGORY_COLORS,
   formatDate,
   formatAction,
+  formatFullDate,
   getActionCategory,
   type OpenChangeRequestOptions,
 } from "./moderatorConstants";
+
+const PAGE_SIZE = 20;
 
 interface AuditLogsTabProps {
   logsQuery: any;
@@ -45,7 +54,8 @@ interface AuditLogsTabProps {
   endDate: string;
   setEndDate: (v: string) => void;
   totalPages: number;
-  onSelectLog: (log: AuditLog) => void;
+  selectedLog: AuditLog | null;
+  onSelectLog: (log: AuditLog | null) => void;
   onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
   onResetFilters: () => void;
 }
@@ -66,12 +76,14 @@ export function AuditLogsTab({
   endDate,
   setEndDate,
   totalPages,
+  selectedLog,
   onSelectLog,
   onOpenChangeRequest,
   onResetFilters,
 }: AuditLogsTabProps) {
   const [isExporting, setIsExporting] = useState(false);
-  const hasFilters = severityFilter !== "all" || categoryFilter !== "all" || userIdSearch || startDate || endDate;
+  const hasFilters =
+    severityFilter !== "all" || categoryFilter !== "all" || userIdSearch || startDate || endDate;
 
   const exportQuery = trpc.moderatorExports.exportAuditLogsCsv.useQuery(
     {
@@ -107,249 +119,230 @@ export function AuditLogsTab({
     }
   };
 
+  const logs: AuditLog[] = logsQuery.data?.logs ?? [];
+
+  const rows: DataRow[] = logs.map((log) => {
+    const category = getActionCategory(log.action);
+    const open = selectedLog?.id === log.id;
+    return {
+      id: String(log.id),
+      cells: [
+        <StatePill
+          key="severity"
+          label={log.severity}
+          attention={log.severity === "critical" || log.severity === "warning"}
+        />,
+        <span key="action" className="dp-table__pair">
+          <span className="dp-table__pairmain">{formatAction(log.action)}</span>
+          {category ? <span className="dp-table__id">{category}</span> : null}
+        </span>,
+        <RowId key="user">{log.userId ? `#${log.userId}` : "system"}</RowId>,
+        <RowId key="ip">{log.ipAddress || "—"}</RowId>,
+        <span key="when">{formatDate(log.createdAt)}</span>,
+      ],
+      facts: [
+        { label: "ENTRY", value: `#${log.id}` },
+        { label: "WHEN", value: formatFullDate(log.createdAt) },
+        { label: "ACTION", value: log.action },
+        {
+          label: "RESOURCE",
+          value: log.resourceType ? `${log.resourceType} ${log.resourceId ?? ""}` : "—",
+        },
+        { label: "IP", value: log.ipAddress || "—" },
+        { label: "USER AGENT", value: log.userAgent || "—" },
+      ],
+      evidence:
+        log.metadata && Object.keys(log.metadata).length > 0 ? (
+          <RawPayload value={log.metadata} />
+        ) : undefined,
+      actions: open ? logActions(log) : [],
+    };
+  });
+
+  function logActions(log: AuditLog): RowAction[] {
+    if (log.severity !== "warning" && log.severity !== "critical") return [];
+    return [
+      {
+        key: "request",
+        label: "Raise a change request",
+        variant: "secondary",
+        onClick: () => {
+          const metadata = log.metadata as Record<string, unknown> | null;
+          onOpenChangeRequest({
+            type: metadata?.ipAddress
+              ? "block_ip"
+              : log.userId
+                ? "flag_account"
+                : "note_incident",
+            targetUserId: log.userId?.toString() || "",
+            targetUserName: (metadata?.userName as string) || undefined,
+            relatedAuditLogId: log.id,
+            ipAddress: (metadata?.ipAddress as string) || undefined,
+          });
+        },
+      },
+    ];
+  }
+
   return (
-    <div className="space-y-4">
-      {/* Abuse Alerts Banner */}
-      {(alertsQuery.data?.criticalCount || 0) > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertCircle className="w-4 h-4 text-red-600" />
-            <h4 className="text-sm font-semibold text-red-800">Active Abuse Alerts</h4>
-            <Badge className="bg-red-100 text-red-700 text-[10px]">{alertsQuery.data?.criticalCount}</Badge>
-          </div>
-          <div className="space-y-1.5">
-            {alertsQuery.data?.alerts.slice(0, 5).map((alert: any) => (
-              <div
-                key={alert.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-white hover:bg-red-50 border border-red-100 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>{alert.severity}</Badge>
-                  <span className="text-sm text-[#0A0A0A]">{formatAction(alert.action)}</span>
-                  <span className="text-xs text-[#999]">{formatDate(alert.createdAt)}</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                  onClick={() => {
-                    const metadata = alert.metadata as Record<string, unknown> | null;
-                    onOpenChangeRequest({
-                      type: metadata?.ipAddress ? "block_ip" : "flag_account",
-                      targetUserId: alert.userId?.toString() || "",
-                      targetUserName: metadata?.userName as string || undefined,
-                      relatedAuditLogId: alert.id,
-                      ipAddress: metadata?.ipAddress as string || undefined,
-                    });
-                  }}
-                >
-                  <FileText className="w-3 h-3 mr-1" /> Request Action
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="dp-stack" style={{ gap: 16 }}>
+      {(alertsQuery.data?.criticalCount || 0) > 0 ? (
+        <AbuseAlerts alertsQuery={alertsQuery} onOpenChangeRequest={onOpenChangeRequest} />
+      ) : null}
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">User ID</label>
-            <input
-              type="text"
-              value={userIdSearch}
-              onChange={(e) => { setUserIdSearch(e.target.value); setPage(() => 0); }}
-              placeholder="e.g., 42"
-              className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs text-[#0A0A0A] placeholder:text-[#CCC] w-24"
-            />
-          </div>
-          <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">Severity</label>
-            <select
-              value={severityFilter}
-              onChange={(e) => { setSeverityFilter(e.target.value); setPage(() => 0); }}
-              className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs text-[#0A0A0A]"
-            >
-              <option value="all">All</option>
-              <option value="info">Info</option>
-              <option value="warning">Warning</option>
-              <option value="critical">Critical</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">Category</label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setPage(() => 0); }}
-              className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs text-[#0A0A0A]"
-            >
-              <option value="all">All</option>
-              <option value="billing">Billing</option>
-              <option value="model">Model</option>
-              <option value="security">Security</option>
-              <option value="abuse">Abuse</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">Date Range</label>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-3 h-3 text-[#999]" />
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => { setStartDate(e.target.value); setPage(() => 0); }}
-                className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] w-32"
-              />
-              <span className="text-xs text-[#999]">—</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => { setEndDate(e.target.value); setPage(() => 0); }}
-                className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] w-32"
-              />
-            </div>
-          </div>
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={onResetFilters} className="text-xs text-[#999] hover:text-[#0A0A0A]">
-              <RotateCcw className="w-3 h-3 mr-1" /> Reset
-            </Button>
-          )}
-          <div className="ml-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={isExporting || logsQuery.isLoading}
-              className="border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5]"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5" />
-              {isExporting ? "Exporting..." : "Export CSV"}
-            </Button>
-          </div>
-        </div>
+      <TableHead eyebrow="Audit">
+        <TableSearch
+          label="Show only one user's entries, by id"
+          placeholder="User id"
+          value={userIdSearch}
+          onChange={(value) => {
+            setUserIdSearch(value);
+            setPage(() => 0);
+          }}
+        />
+        <TableFilter
+          label="Severity"
+          value={severityFilter}
+          onChange={(value) => {
+            setSeverityFilter(value);
+            setPage(() => 0);
+          }}
+          options={[
+            { value: "all", label: "All" },
+            { value: "info", label: "Info" },
+            { value: "warning", label: "Warning" },
+            { value: "critical", label: "Critical" },
+          ]}
+        />
+        <TableFilter
+          label="Category"
+          value={categoryFilter}
+          onChange={(value) => {
+            setCategoryFilter(value);
+            setPage(() => 0);
+          }}
+          options={[
+            { value: "all", label: "All categories" },
+            { value: "billing", label: "Billing" },
+            { value: "model", label: "Model" },
+            { value: "security", label: "Security" },
+            { value: "abuse", label: "Abuse" },
+          ]}
+        />
+        {/* Two native date inputs, kept as they were: a date range is the one
+            filter here with no segmented or select form, and the brief adds no
+            control for it. */}
+        <input
+          type="date"
+          className="dp-tableselect"
+          aria-label="From date"
+          value={startDate}
+          onChange={(event) => {
+            setStartDate(event.target.value);
+            setPage(() => 0);
+          }}
+        />
+        <input
+          type="date"
+          className="dp-tableselect"
+          aria-label="To date"
+          value={endDate}
+          onChange={(event) => {
+            setEndDate(event.target.value);
+            setPage(() => 0);
+          }}
+        />
+        {hasFilters ? (
+          <Button variant="quiet" size="small" onClick={onResetFilters}>
+            Reset
+          </Button>
+        ) : null}
+        <Button
+          variant="quiet"
+          size="small"
+          onClick={handleExport}
+          disabled={isExporting || logsQuery.isLoading}
+        >
+          {isExporting ? "Exporting…" : "Export CSV"}
+        </Button>
+      </TableHead>
+
+      <DataTable
+        columns={[
+          { label: "Severity", width: "0 0 104px" },
+          { label: "Action", width: "1 1 0" },
+          { label: "User", width: "0 0 92px" },
+          { label: "IP", width: "0 0 148px" },
+          { label: "When", width: "0 0 148px" },
+        ]}
+        rows={rows}
+        loading={logsQuery.isLoading}
+        openId={selectedLog ? String(selectedLog.id) : null}
+        onOpenChange={(id) =>
+          onSelectLog(id === null ? null : logs.find((log) => String(log.id) === id) ?? null)
+        }
+        empty={{
+          title: "No audit entries match those filters.",
+          body: "Widen the severity or category, or clear the date range.",
+        }}
+        footer={{
+          meta: pageRange({
+            offset: page * PAGE_SIZE,
+            count: logs.length,
+            total: logsQuery.data?.total,
+          }),
+          onBack: () => setPage((p) => Math.max(0, p - 1)),
+          onNext: () => setPage((p) => Math.min(totalPages - 1, p + 1)),
+          backDisabled: page === 0,
+          nextDisabled: page >= totalPages - 1,
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * The critical alerts, above the table. A different question from the log —
+ * *what needs looking at right now* rather than *what happened* — so it keeps
+ * its own shape, drawn on the accent tokens rather than a red wash.
+ */
+function AbuseAlerts({
+  alertsQuery,
+  onOpenChangeRequest,
+}: {
+  alertsQuery: any;
+  onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
+}) {
+  return (
+    <div className="dp-alertpanel">
+      <div className="dp-tablehead">
+        <span className="dp-eyebrow">Needs looking at</span>
+        <span className="dp-tablehead__rule" />
+        <span className="dp-small">{alertsQuery.data?.criticalCount} critical in the last day</span>
       </div>
-
-      {/* Log Table */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
-                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Time</th>
-                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Severity</th>
-                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Action</th>
-                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">User</th>
-                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">IP</th>
-                <th className="text-right px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logsQuery.isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-[#F0F0F0]">
-                    <td className="px-4 py-3" colSpan={6}>
-                      <Skeleton className="h-5 w-full bg-[#E5E5E5]" />
-                    </td>
-                  </tr>
-                ))
-              ) : logsQuery.data?.logs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-[#999] text-sm">
-                    <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-[#CCC]" />
-                    No audit logs found matching the current filters
-                  </td>
-                </tr>
-              ) : (
-                logsQuery.data?.logs.map((log: any) => {
-                  const category = getActionCategory(log.action);
-                  return (
-                    <tr
-                      key={log.id}
-                      className="border-b border-[#F0F0F0] hover:bg-[#FAFAFA] cursor-pointer transition-colors"
-                      onClick={() => onSelectLog(log as AuditLog)}
-                    >
-                      <td className="px-4 py-3 text-xs text-[#999] whitespace-nowrap">{formatDate(log.createdAt)}</td>
-                      <td className="px-4 py-3">
-                        <Badge className={SEVERITY_COLORS[log.severity as keyof typeof SEVERITY_COLORS]}>{log.severity}</Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-[#0A0A0A]">{formatAction(log.action)}</span>
-                          {category && <Badge className={`text-[10px] ${CATEGORY_COLORS[category]}`}>{category}</Badge>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-[#666] font-mono">{log.userId ? `#${log.userId}` : "—"}</td>
-                      <td className="px-4 py-3 text-xs text-[#999] font-mono">{log.ipAddress || "—"}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-[#999] hover:text-[#0A0A0A]"
-                            onClick={(e) => { e.stopPropagation(); onSelectLog(log as AuditLog); }}
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </Button>
-                          {(log.severity === "warning" || log.severity === "critical") && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const metadata = log.metadata as Record<string, unknown> | null;
-                                onOpenChangeRequest({
-                                  type: metadata?.ipAddress ? "block_ip" : log.userId ? "flag_account" : "note_incident",
-                                  targetUserId: log.userId?.toString() || "",
-                                  targetUserName: metadata?.userName as string || undefined,
-                                  relatedAuditLogId: log.id,
-                                  ipAddress: metadata?.ipAddress as string || undefined,
-                                });
-                              }}
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {alertsQuery.data?.alerts.slice(0, 5).map((alert: any) => (
+        <div key={alert.id} className="dp-alertpanel__row">
+          <StatePill label={alert.severity} attention />
+          <span className="dp-alertpanel__what">{formatAction(alert.action)}</span>
+          <span className="dp-table__id">{formatDate(alert.createdAt)}</span>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => {
+              const metadata = alert.metadata as Record<string, unknown> | null;
+              onOpenChangeRequest({
+                type: metadata?.ipAddress ? "block_ip" : "flag_account",
+                targetUserId: alert.userId?.toString() || "",
+                targetUserName: (metadata?.userName as string) || undefined,
+                relatedAuditLogId: alert.id,
+                ipAddress: (metadata?.ipAddress as string) || undefined,
+              });
+            }}
+          >
+            Raise a request
+          </Button>
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E5E5]">
-            <span className="text-xs text-[#999]">
-              Page {page + 1} of {totalPages} ({logsQuery.data?.total || 0} total)
-            </span>
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-              >
-                <ChevronLeft className="w-3 h-3" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-              >
-                <ChevronRight className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+      ))}
     </div>
   );
 }

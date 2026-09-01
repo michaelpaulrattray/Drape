@@ -1,5 +1,5 @@
-import { Check, X } from "lucide-react";
-import { useState } from "react";
+import { Check, ChevronDown, ChevronUp, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import type {
   ButtonHTMLAttributes,
@@ -10,6 +10,10 @@ import type {
 } from "react";
 
 import { cn } from "@/lib/utils";
+/* The house glyph set. `icons.tsx` imports nothing, so this is a leaf edge and
+   not a cycle. Chevrons stay Lucide by that file's own rule — they are
+   interface furniture nobody reads as brand. */
+import { Icon, P } from "./icons";
 
 /**
  * Foundation primitives (build order per README §11 items 3–6).
@@ -691,9 +695,66 @@ export type DataColumn = {
   label: string;
   /** A flex string, not a grid track: `0 0 104px` for pills and stamps, `1 1 0` for the column that gives way. */
   width: string;
+  /** Cell and header alignment. Default `start`. */
+  align?: "start" | "center" | "end";
 };
 
 export type DataFact = { label: string; value: ReactNode };
+
+/**
+ * A row action, and the reason this is a typed union rather than a `ReactNode`.
+ *
+ * Brief 06 §5: *"Every destructive action needs that note, and it must be
+ * specific."* A note that a call site is asked to *remember* is a note that
+ * goes missing on the fourth surface, so the type asks for it instead:
+ * `destructive: true` cannot be written without `consequence`, and TypeScript
+ * refuses the build otherwise. Same mechanism as `CostedOption` — you cannot
+ * render one without saying what it costs.
+ *
+ * ⚠ **The consequence says what happens to WHOM, not what the button is
+ * called.** *"Retiring a code never affects anyone who already used it"* is
+ * his own example; *"This will deactivate the code"* is the button label
+ * wearing a sentence and fails the brief.
+ */
+export type RowAction =
+  | {
+      key: string;
+      label: ReactNode;
+      onClick?: () => void;
+      variant?: ButtonVariant;
+      disabled?: boolean;
+      destructive?: false;
+      href?: never;
+    }
+  /*
+    A LINK action — `Link` from wouter, so ctrl-click and middle-click keep
+    working.
+
+    ⚠ **It is its own arm so that `href` and `disabled` cannot be written
+    together.** The render path below draws an `<a>` for a link, and an anchor
+    has no disabled state — so the combination would have type-checked, looked
+    ordinary at the call site, and produced a control that says it is
+    unavailable and navigates anyway. `never` makes it unrepresentable rather
+    than leaving it for the first caller to discover.
+  */
+  | {
+      key: string;
+      label: ReactNode;
+      href: string;
+      destructive?: false;
+      onClick?: never;
+      disabled?: never;
+      variant?: never;
+    }
+  | {
+      key: string;
+      label: ReactNode;
+      onClick: () => void;
+      disabled?: boolean;
+      destructive: true;
+      /** What it does, to whom, in one sentence. Required by the type. */
+      consequence: string;
+    };
 
 export type DataRow = {
   id: string;
@@ -702,17 +763,27 @@ export type DataRow = {
   facts?: DataFact[];
   /** Plain-English paragraph on `--well`. What a reader needs, not a JSON dump. */
   evidence?: ReactNode;
-  actions?: ReactNode;
+  actions?: RowAction[];
+  /** Sub-tabs inside the expansion — only where the record has them (§5.2). */
+  subTabs?: { value: string; label: string }[];
+  subTab?: string;
+  onSubTab?: (value: string) => void;
+  /** Whatever the chosen sub-tab shows. Free-form because the records differ. */
+  panel?: ReactNode;
 };
 
 /**
  * A row that opens IN PLACE (brief 00 §2).
  *
- * This is what replaces `UserDetailModal`, `AuditLogDetailModal`,
- * `LogDetailModal`, `ReviewModal` and `ChangeRequestDetail` for read-and-decide
- * flows: five modals whose whole job was to show a handful of facts about the
- * row you just clicked. **Modals stay only where a form must be filled** — a
- * dialog is right for "type a reason and confirm", wrong for "show me this".
+ * It replaced four surfaces whose whole job was to show a handful of facts
+ * about the row you just clicked: `UserDetailModal`, `AuditLogDetailModal`,
+ * `LogDetailModal` and — a side pane rather than a modal, which brief 06's own
+ * §2 could not know — `ChangeRequestDetail`.
+ *
+ * ⚠ **`ReviewModal` was on that list and does NOT belong on it.** It asks for
+ * typed review notes before an approval fires. **Modals stay where a form must
+ * be filled** — a dialog is right for "type a reason and confirm" and wrong for
+ * "show me this", and that line is the whole rule.
  */
 export function ExpandableRow({
   columns,
@@ -725,19 +796,31 @@ export function ExpandableRow({
   open: boolean;
   onToggle: () => void;
 }) {
-  const expandable = Boolean(row.facts || row.evidence || row.actions);
+  const expandable = Boolean(row.facts || row.evidence || row.actions || row.panel);
   const cells = row.cells.map((cell, index) => (
     <span
       key={columns[index]?.label ?? index}
-      className="dp-table__cell"
+      className={cn("dp-table__cell", alignClass(columns[index]?.align))}
       style={{ flex: columns[index]?.width }}
     >
       {cell}
     </span>
   ));
 
+  /* Every destructive action's note, in the order the buttons sit. One
+     destructive action is his drawing exactly; several read as several lines,
+     which is the honest shape when a row can end three different things. */
+  const consequences = (row.actions ?? []).filter(
+    (action): action is Extract<RowAction, { destructive: true }> =>
+      action.destructive === true,
+  );
+
   return (
-    <div className={cn("dp-table__rowgroup", open && "dp-table__rowgroup--open")}>
+    /* No `--open` modifier: the panel's own hairline and rise are the signal,
+       and the rule that used to back that className was removed with the well
+       behind an open row (§5). A className with no rule is a promise nothing
+       keeps. */
+    <div className="dp-table__rowgroup">
       {expandable ? (
         <button
           type="button"
@@ -752,7 +835,7 @@ export function ExpandableRow({
       )}
       {open && expandable ? (
         <div className="dp-table__panel">
-          {row.facts ? (
+          {row.facts && row.facts.length > 0 ? (
             <div className="dp-table__facts">
               {row.facts.map((fact) => (
                 <span key={fact.label} className="dp-table__fact">
@@ -762,12 +845,74 @@ export function ExpandableRow({
               ))}
             </div>
           ) : null}
-          {row.evidence ? <p className="dp-table__evidence">{row.evidence}</p> : null}
-          {row.actions ? <div className="dp-table__actions">{row.actions}</div> : null}
+          {row.subTabs && row.subTabs.length > 0 ? (
+            <div className="dp-segmented" role="tablist" aria-label="Detail">
+              {row.subTabs.map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab.value === row.subTab}
+                  className={cn(
+                    "dp-segmented__seg",
+                    tab.value === row.subTab && "dp-segmented__seg--on",
+                  )}
+                  onClick={() => row.onSubTab?.(tab.value)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {row.panel}
+          {row.evidence ? <div className="dp-table__evidence">{row.evidence}</div> : null}
+          {row.actions && row.actions.length > 0 ? (
+            <div className="dp-table__actions">
+              {row.actions.map((action) =>
+                action.destructive !== true && "href" in action && action.href ? (
+                  <Link
+                    key={action.key}
+                    href={action.href}
+                    className="dp-btn dp-btn--quiet dp-btn--small"
+                  >
+                    {action.label}
+                  </Link>
+                ) : (
+                  <Button
+                    key={action.key}
+                    size="small"
+                    /* Destructive is a hover state on a secondary button, never
+                       a resting red — the house rule `Button` already owns. */
+                    variant={
+                      action.destructive === true ? "secondary" : action.variant ?? "quiet"
+                    }
+                    destructive={action.destructive === true}
+                    disabled={action.disabled}
+                    onClick={action.onClick}
+                  >
+                    {action.label}
+                  </Button>
+                ),
+              )}
+              {consequences.length > 0 ? (
+                <span className="dp-table__consequence">
+                  {consequences.map((action) => (
+                    <span key={action.key}>{action.consequence}</span>
+                  ))}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
   );
+}
+
+function alignClass(align: DataColumn["align"]) {
+  if (align === "center") return "dp-table__cell--center";
+  if (align === "end") return "dp-table__cell--end";
+  return undefined;
 }
 
 /**
@@ -781,25 +926,75 @@ export function DataTable({
   columns,
   rows,
   footer,
-  emptyLabel = "Nothing to show",
+  empty,
+  loading,
+  loadingRows = 5,
+  openId: controlledOpenId,
+  onOpenChange,
 }: {
   columns: DataColumn[];
   rows: DataRow[];
-  footer?: { meta: ReactNode; onBack?: () => void; onNext?: () => void };
-  emptyLabel?: string;
+  footer?: {
+    meta: ReactNode;
+    onBack?: () => void;
+    onNext?: () => void;
+    /** Disabled rather than hidden — a control that vanishes moves the row under the cursor. */
+    backDisabled?: boolean;
+    nextDisabled?: boolean;
+  };
+  /** What is missing, and what to do about it (§6). */
+  empty?: { title: string; body: string };
+  /**
+   * Skeleton ROWS at the real row height, never a centred spinner (§6): a
+   * spinner in a full-width cell collapses the table to one line and the whole
+   * page jumps when the data lands.
+   */
+  loading?: boolean;
+  loadingRows?: number;
+  /**
+   * Controlled expansion, for the surfaces where opening a row is what enables
+   * that row's detail query. Leave both out and the table keeps its own state.
+   */
+  openId?: string | null;
+  onOpenChange?: (id: string | null) => void;
 }) {
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [uncontrolledOpenId, setUncontrolledOpenId] = useState<string | null>(null);
+  const controlled = controlledOpenId !== undefined;
+  const openId = controlled ? controlledOpenId : uncontrolledOpenId;
+  const toggle = (id: string) => {
+    const next = openId === id ? null : id;
+    if (!controlled) setUncontrolledOpenId(next);
+    onOpenChange?.(next);
+  };
+
   return (
     <div className="dp-table">
       <div className="dp-table__head">
         {columns.map((column) => (
-          <span key={column.label} className="dp-table__cell" style={{ flex: column.width }}>
+          <span
+            key={column.label}
+            className={cn("dp-table__cell", alignClass(column.align))}
+            style={{ flex: column.width }}
+          >
             {column.label}
           </span>
         ))}
       </div>
-      {rows.length === 0 ? (
-        <div className="dp-table__empty dp-secondary">{emptyLabel}</div>
+      {loading ? (
+        Array.from({ length: loadingRows }).map((_, index) => (
+          <div key={index} className="dp-table__rowgroup">
+            <div className="dp-table__row">
+              <Skeleton className="dp-table__skeleton" />
+            </div>
+          </div>
+        ))
+      ) : rows.length === 0 ? (
+        <div className="dp-table__empty">
+          <EmptyState
+            title={empty?.title ?? "Nothing to show"}
+            body={empty?.body ?? "Nothing matches the current view."}
+          />
+        </div>
       ) : (
         rows.map((row) => (
           <ExpandableRow
@@ -807,26 +1002,286 @@ export function DataTable({
             columns={columns}
             row={row}
             open={openId === row.id}
-            onToggle={() => setOpenId((was) => (was === row.id ? null : row.id))}
+            onToggle={() => toggle(row.id)}
           />
         ))
       )}
       {footer ? (
         <div className="dp-table__foot">
-          <span className="dp-metadata">{footer.meta}</span>
+          <span className="dp-table__range">{footer.meta}</span>
           <span className="dp-surfacebar__spacer" />
           {footer.onBack ? (
-            <Button variant="quiet" size="small" onClick={footer.onBack}>
+            <Button
+              variant="quiet"
+              size="small"
+              onClick={footer.onBack}
+              disabled={footer.backDisabled}
+            >
               Back
             </Button>
           ) : null}
           {footer.onNext ? (
-            <Button variant="quiet" size="small" onClick={footer.onNext}>
+            <Button
+              variant="quiet"
+              size="small"
+              onClick={footer.onNext}
+              disabled={footer.nextDisabled}
+            >
               Next
             </Button>
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------- the table's filter cluster
+ *
+ * Brief 06 §3. These sit ABOVE a `DataTable` and are its section head: a mono
+ * eyebrow, a hairline that takes the slack, then the filters.
+ *
+ * ⚠ **The segmented control is `.dp-segmented`, the SurfaceBar's, reused.** It
+ * already had nine consumers and his §3 CSS describes it almost line for line;
+ * building a second one is how this repo ended up with three popovers.
+ */
+
+/**
+ * A real, debounced search input — NOT the topbar's `SearchStub`.
+ *
+ * The two look alike and mean opposite things: the stub is a `<span>` because
+ * global search does not exist, and this is an `<input>` because admin search
+ * does. His §3: *"Do not copy the topbar's stub treatment into a surface where
+ * the feature exists."*
+ */
+export function TableSearch({
+  value,
+  onChange,
+  placeholder = "Search",
+  label,
+  delay = 300,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  label: string;
+  /** 300ms, so typing filters as you go without a request per keystroke. */
+  delay?: number;
+}) {
+  const [draft, setDraft] = useState(value);
+  const committed = useRef(value);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /*
+    The parent may reset the term (a filter reset, a tab change). Adopt it, but
+    never fight the person typing: only when it differs from what we last sent
+    up.
+
+    ⚠ **THE PENDING TIMER MUST DIE WITH IT.** Type into the audit user-id
+    search and hit Reset inside the 300ms window, and the stale timer fired
+    `commit(next)` afterwards — re-applying the term the person had just
+    cleared, so the filters un-reset themselves. It is a narrow race and it is
+    the one path where the component fights the person using it.
+  */
+  useEffect(() => {
+    if (value !== committed.current) {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+      committed.current = value;
+      setDraft(value);
+    }
+  }, [value]);
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  const commit = (next: string) => {
+    committed.current = next;
+    onChange(next);
+  };
+
+  return (
+    <form
+      className="dp-tablesearch"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (timer.current) clearTimeout(timer.current);
+        commit(draft);
+      }}
+    >
+      <Icon d={P.search} size={12} className="dp-tablesearch__glyph" />
+      <input
+        className="dp-tablesearch__input"
+        type="search"
+        value={draft}
+        aria-label={label}
+        placeholder={placeholder}
+        onChange={(event) => {
+          const next = event.target.value;
+          setDraft(next);
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => commit(next), delay);
+        }}
+      />
+    </form>
+  );
+}
+
+export type FilterOption = { value: string; label: string };
+
+/**
+ * Four options or fewer: segmented, because a segmented control's whole value
+ * is showing every state at once. More than four: a select, because past four
+ * it is a cramped row of unreadable stubs (§3).
+ *
+ * **The component decides, not the call site** — the rule is the same on all
+ * eleven surfaces, so a surface cannot get it wrong by choosing.
+ */
+export function TableFilter({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+  label: string;
+}) {
+  if (options.length <= 4) {
+    return (
+      <div className="dp-segmented" role="group" aria-label={label}>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={option.value === value}
+            className={cn(
+              "dp-segmented__seg",
+              option.value === value && "dp-segmented__seg--on",
+            )}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <select
+      className="dp-tableselect"
+      aria-label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/**
+ * Sort stays a select whatever its length, because it pairs with a direction
+ * toggle and the pair reads as one control (§3). The toggle is a chevron, not
+ * the `↑` / `↓` text button it replaces.
+ */
+export function TableSort({
+  value,
+  options,
+  onChange,
+  direction,
+  onDirectionChange,
+}: {
+  value: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+  direction: "asc" | "desc";
+  onDirectionChange: (direction: "asc" | "desc") => void;
+}) {
+  return (
+    <span className="dp-tablesort">
+      <select
+        className="dp-tableselect"
+        aria-label="Sort by"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <IconButton
+        label={
+          direction === "asc"
+            ? "Sorted oldest first — switch to newest first"
+            : "Sorted newest first — switch to oldest first"
+        }
+        className="dp-tablesort__dir"
+        onClick={() => onDirectionChange(direction === "asc" ? "desc" : "asc")}
+      >
+        {direction === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </IconButton>
+    </span>
+  );
+}
+
+/**
+ * The head above a table: eyebrow, hairline, filters (§3).
+ *
+ * Its own name rather than `SectionHead`'s: that one is a baseline-aligned
+ * title row with a bottom rule, this is a wrapping cluster whose rule runs
+ * THROUGH it. Two different shapes, and folding them would give one component
+ * a mode switch.
+ */
+export function TableHead({ eyebrow, children }: { eyebrow: string; children?: ReactNode }) {
+  return (
+    <div className="dp-tablehead">
+      <span className="dp-eyebrow">{eyebrow}</span>
+      <span className="dp-tablehead__rule" />
+      {children ? <span className="dp-tablehead__filters">{children}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * The `when / what / amount` list inside an expansion's sub-tab (§5.2).
+ *
+ * `amount` is coloured ONLY where it is a state — a credit spend is what the
+ * product is for, and colouring it says a healthy action is a problem (his
+ * argument in brief 09 §3, which is the same rule one surface over).
+ */
+export function MiniList({
+  entries,
+  empty,
+}: {
+  entries: { key: string; when: ReactNode; what: ReactNode; amount?: ReactNode; alert?: boolean }[];
+  empty: string;
+}) {
+  if (entries.length === 0) {
+    return <p className="dp-minilist__empty">{empty}</p>;
+  }
+  return (
+    <div className="dp-minilist">
+      {entries.map((entry) => (
+        <div key={entry.key} className="dp-minilist__row">
+          <span className="dp-minilist__when">{entry.when}</span>
+          <span className="dp-minilist__what">{entry.what}</span>
+          {entry.amount !== undefined ? (
+            <span
+              className={cn("dp-minilist__amount", entry.alert && "dp-minilist__amount--alert")}
+            >
+              {entry.amount}
+            </span>
+          ) : null}
+        </div>
+      ))}
     </div>
   );
 }

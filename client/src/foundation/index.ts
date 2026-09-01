@@ -86,6 +86,7 @@ export {
   MediaCard,
   MediaFrame,
   MilestoneRail,
+  MiniList,
   Progress,
   RequiredMarker,
   ScopePill,
@@ -93,6 +94,13 @@ export {
   Skeleton,
   StatusPill,
   SurfaceBar,
+  /* Brief 06 — the staff table's head and its filter cluster. Eleven consumers
+     on the day they land, which is what `PROMOTION-PASS.md` asks of a
+     foundation addition: two real consumers in the codebase, or it waits. */
+  TableFilter,
+  TableHead,
+  TableSearch,
+  TableSort,
   Transcript,
 } from "./primitives";
 export type {
@@ -105,7 +113,9 @@ export type {
   HoverActionItem,
   MediaCardState,
   MediaRatio,
+  FilterOption,
   Milestone,
+  RowAction,
   SurfaceBarSegment,
   TranscriptEntry,
 } from "./primitives";

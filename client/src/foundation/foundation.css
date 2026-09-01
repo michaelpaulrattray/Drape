@@ -1865,9 +1865,16 @@ a.dp-segmented__seg {
 
 /* ------------------------------------------------------------- data table */
 
+/*
+  Brief 06 §4. **Not a `<table>`, and no `overflow-x`** — flex rows with
+  `min-width: 0` and ellipsis, so a staff table always fits its column and
+  never slides sideways. A table that scrolls horizontally hides columns behind
+  an edge: the reader cannot tell there is more, and on a trackpad they find it
+  by accident.
+*/
 .dp-table {
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-xl);
   background: var(--surface);
   overflow: hidden;
 }
@@ -1882,11 +1889,13 @@ a.dp-segmented__seg {
 }
 
 .dp-table__head {
-  padding: 8px 15px;
+  padding: 9px 15px;
+  border-bottom: 1px solid var(--rule);
   background: var(--well);
   font: 500 8.5px var(--font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--faint);
 }
 
@@ -1901,26 +1910,61 @@ a.dp-segmented__seg {
 .dp-table__row--button { cursor: pointer; }
 .dp-table__row--button:hover { background: var(--well); }
 
-.dp-table__rowgroup { border-top: 1px solid var(--ruleSoft); }
-.dp-table__rowgroup--open { background: var(--well); }
+.dp-table__rowgroup + .dp-table__rowgroup { border-top: 1px solid var(--ruleSoft); }
 
 .dp-table__cell {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dp-table__cell--center { justify-content: center; }
+.dp-table__cell--end { justify-content: flex-end; }
+
+/* A stack of two facts — a name over its email — keeps the flexible basis. */
+.dp-table__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dp-table__stack > span {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.dp-table__stackname { font: 500 12px var(--font-sans); color: var(--ink); }
+.dp-table__stackmeta { font: 400 11px var(--font-sans); color: var(--metaStrong); }
+
+/* A mono id, quiet: `#4417`, never `#CCC` grey sans (§4). */
+.dp-table__id { font: 400 11px var(--font-mono); color: var(--faint); }
+
+.dp-table__skeleton { height: 15px; width: 100%; }
+
+/*
+  The expansion (§5). It opens with a full-width hairline and rises; the row
+  itself does NOT change background — the hairline and the content are the
+  signal, and a well behind the panel would swallow the evidence block that
+  sits ON the well.
+*/
 .dp-table__panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 4px 15px 15px;
+  gap: 14px;
+  padding: 2px 15px 16px;
+  border-top: 1px solid var(--rule);
+  animation: dp-rise 0.2s ease-out both;
 }
 
 .dp-table__facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
-  gap: 10px 16px;
+  gap: 12px;
 }
 
 .dp-table__fact {
@@ -1930,37 +1974,211 @@ a.dp-segmented__seg {
   min-width: 0;
 }
 
+/*
+  ⚠ `word-break: break-all` is load-bearing, not tidiness. These values are
+  ids, hashes, IPs, emails and user agents; one unbroken 64-character value
+  otherwise blows the whole grid open and the table beside it.
+*/
 .dp-table__factvalue {
-  font: 400 11.5px var(--font-mono);
-  color: var(--ink);
-  overflow-wrap: anywhere;
+  font: 400 12px var(--font-mono);
+  color: var(--secondary);
+  word-break: break-all;
 }
 
 /* Plain English, on the well. What a reader needs — not a JSON dump. */
 .dp-table__evidence {
   margin: 0;
-  padding: 10px 12px;
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  font: 400 11.5px/1.6 var(--font-sans);
+  padding: 12px 13px;
+  border-radius: var(--r-md);
+  background: var(--well);
+  font: 400 11.5px/1.65 var(--font-sans);
   color: var(--metaStrong);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.dp-table__evidence pre {
+  margin: 0;
+  font: 400 11px/1.55 var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .dp-table__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 9px;
 }
 
-.dp-table__empty { padding: 22px 15px; }
+/*
+  The consequence note (§5.4) — *"Retiring a code never affects anyone who
+  already used it."* It sits BESIDE the button rather than inside a dialog,
+  which is the entire argument for expand-in-place over a modal.
+*/
+.dp-table__consequence {
+  flex: 1;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--faint);
+  text-wrap: pretty;
+}
+
+.dp-table__empty { padding: 26px 15px; }
 
 .dp-table__foot {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 15px;
+  padding: 10px 15px;
   border-top: 1px solid var(--ruleSoft);
   background: var(--well);
+}
+
+.dp-table__range { font: 400 10.5px var(--font-mono); color: var(--faint); }
+
+.dp-table__foot .dp-btn[disabled] {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------- the table's head and filters */
+
+.dp-tablehead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 11px;
+}
+
+.dp-tablehead__rule {
+  flex: 1;
+  min-width: 20px;
+  height: 1px;
+  background: var(--rule);
+}
+
+.dp-tablehead__filters {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/*
+  A REAL search field, and it is deliberately a different shape from the
+  topbar's `SearchStub`: that one is a `<span>` because global search does not
+  exist, this is an `<input>` because admin search does (§3).
+*/
+.dp-tablesearch {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  min-width: 180px;
+}
+
+.dp-tablesearch__glyph {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--meta);
+}
+
+.dp-tablesearch__input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: 400 11.5px var(--font-sans);
+  color: var(--ink);
+}
+
+/* The field owns the focus ring; an inner outline draws a box inside a box. */
+.dp-tablesearch__input:focus { outline: none; }
+.dp-tablesearch:focus-within { border-color: var(--ink); }
+.dp-tablesearch__input::placeholder { color: var(--faint); }
+.dp-tablesearch__input::-webkit-search-cancel-button { filter: grayscale(1); }
+
+.dp-tableselect {
+  padding: 6px 10px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font: 400 11.5px var(--font-sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dp-tablesort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dp-tablesort__dir {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-sm);
+  color: var(--metaStrong);
+}
+
+/* ----------------------------------- the when/what/amount list in a panel */
+
+.dp-minilist {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--borderSoft);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.dp-minilist__row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.dp-minilist__row + .dp-minilist__row { border-top: 1px solid var(--ruleSoft); }
+
+.dp-minilist__when {
+  flex: 0 0 52px;
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-minilist__what {
+  flex: 1;
+  min-width: 0;
+  font: 400 11.5px var(--font-sans);
+  color: var(--secondary);
+  overflow-wrap: anywhere;
+}
+
+.dp-minilist__amount {
+  flex: none;
+  text-align: right;
+  font: 400 11px var(--font-mono);
+  color: var(--metaStrong);
+}
+
+/* Coloured ONLY where the number is a state. A credit spend is what the
+   product is FOR; colouring it red says a healthy action is a problem. */
+.dp-minilist__amount--alert { color: var(--accentInk); }
+
+.dp-minilist__empty {
+  margin: 0;
+  font: 400 11.5px var(--font-sans);
+  color: var(--faint);
 }
 
 /* ---------------------------------------------------------- costed option */
@@ -2460,4 +2678,136 @@ a.dp-segmented__seg {
 .dp-staffbar__autolabel {
   font: 400 11px var(--font-mono);
   color: var(--faint);
+}
+
+/* ------------------------------------------------- the abuse-alerts panel
+ *
+ * Moderation's audit view, above the table (brief 06). A different question
+ * from the log — *what needs looking at right now* rather than *what
+ * happened* — so it keeps a shape of its own rather than being a table with
+ * five rows. On the accent tokens, which is the one place on staff where a
+ * whole panel earns them.
+ */
+.dp-alertpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 15px;
+  border: 1px solid var(--accentLine);
+  border-radius: var(--r-xl);
+  background: var(--accentWash);
+}
+
+.dp-alertpanel__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.dp-alertpanel__what {
+  flex: 1;
+  min-width: 120px;
+  font: 400 11.5px var(--font-sans);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------- the count row
+ *
+ * A row of plain counts above a table (brief 06's audit surface). NOT the
+ * dashboard tile — brief 07 owns that shape. One rule governs the figures:
+ * a count carries accent ONLY where it is the thing a reader came to check,
+ * because three coloured figures out of four means the fourth cannot stand
+ * out.
+ */
+.dp-countrow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 12px;
+}
+
+.dp-counttile {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+.dp-counttile__value {
+  font: 400 21px var(--font-mono);
+  color: var(--ink);
+}
+
+.dp-counttile__value--alert { color: var(--accentInk); }
+
+.dp-counttile__skeleton { height: 22px; width: 64px; }
+
+/* ----------------------------------------- a plain panel above a table
+ *
+ * The invite-codes create form sits in one. It is `Card` without the card's
+ * interactive and raised modes — a surface with a border and a radius, which
+ * is all a form needs.
+ */
+.dp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+.dp-inviteform__code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dp-inviteform__code .dp-field { flex: 1; }
+
+.dp-inviteform__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+}
+
+/*
+  A cell holding a value and a quiet qualifier beside it — an action and its
+  category, a generation kind and its cast.
+
+  ⚠ **It exists because the two ran TOGETHER on screen.** They were two spans
+  inside one cell span, so the cell's own `gap` never applied to them and
+  `Security → Immutable_log` + `security` read as `Immutable_logsecurity`.
+  Every assertion passed; a frame caught it (founder law 6).
+*/
+.dp-table__pair {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dp-table__pairmain {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A paragraph inside an evidence block. Two of them are two paragraphs — a
+   `\n\n` in a JSX text node collapses, which is how a description and its
+   summary shipped as one run-on. */
+.dp-table__para {
+  margin: 0;
+}
+
+.dp-table__para + .dp-table__para {
+  margin-top: 9px;
 }

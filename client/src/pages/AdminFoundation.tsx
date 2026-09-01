@@ -42,6 +42,10 @@ import {
   Skeleton,
   StatusPill,
   SurfaceBar,
+  TableFilter,
+  TableHead,
+  TableSearch,
+  TableSort,
   Transcript,
 } from "@/foundation";
 import { Redirect } from "wouter";
@@ -106,6 +110,13 @@ export default function AdminFoundation() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   const [bar, setBar] = useState("all");
+  /* Section 07b — the staff table's own head, so its three controls can be
+     driven here rather than only on a staff surface with real rows. */
+  const [specimenSearch, setSpecimenSearch] = useState("");
+  const [specimenSeverity, setSpecimenSeverity] = useState("all");
+  const [specimenCategory, setSpecimenCategory] = useState("all");
+  const [specimenSort, setSpecimenSort] = useState("when");
+  const [specimenDirection, setSpecimenDirection] = useState<"asc" | "desc">("desc");
   /* Section 11 — one specimen open at a time, which is also the rule the
      promoted overflow menu enforces for real. */
   const [shown, setShown] = useState<null | "rename" | "delete" | "confirm">(null);
@@ -382,6 +393,57 @@ export default function AdminFoundation() {
 
       <section className="dp-stack" style={{ gap: 16 }}>
         <SectionHead eyebrow="07 · Data table" aside="rows open in place" />
+        {/*
+          Brief 06 — the staff table's head and filter cluster, on the specimen
+          page because this page is how the promotion pass is judged (#366:
+          *"so we are not designing 50 different styles of the same
+          components"*). Eleven staff surfaces draw exactly this row.
+
+          The two filters below show the rule working in both directions:
+          three options is a segmented control, six is a select, and
+          `TableFilter` decides rather than the call site.
+        */}
+        <TableHead eyebrow="07b · Table head">
+          <TableSearch
+            label="A real, debounced search — not the topbar's stub"
+            placeholder="Name, email or id"
+            value={specimenSearch}
+            onChange={setSpecimenSearch}
+          />
+          <TableFilter
+            label="Severity"
+            value={specimenSeverity}
+            onChange={setSpecimenSeverity}
+            options={[
+              { value: "all", label: "All" },
+              { value: "warning", label: "Warning" },
+              { value: "critical", label: "Critical" },
+            ]}
+          />
+          <TableFilter
+            label="Category"
+            value={specimenCategory}
+            onChange={setSpecimenCategory}
+            options={[
+              { value: "all", label: "All categories" },
+              { value: "billing", label: "Billing" },
+              { value: "model", label: "Model" },
+              { value: "security", label: "Security" },
+              { value: "abuse", label: "Abuse" },
+              { value: "refunds", label: "Refunds" },
+            ]}
+          />
+          <TableSort
+            value={specimenSort}
+            onChange={setSpecimenSort}
+            direction={specimenDirection}
+            onDirectionChange={setSpecimenDirection}
+            options={[
+              { value: "when", label: "When" },
+              { value: "severity", label: "Severity" },
+            ]}
+          />
+        </TableHead>
         <DataTable
           columns={[
             { label: "SEVERITY", width: "0 0 104px" },
@@ -405,12 +467,21 @@ export default function AdminFoundation() {
               ],
               evidence:
                 "A refund was issued by hand after a roll failed on all eight slices. The customer kept nothing and was charged nothing.",
-              actions: (
-                <>
-                  <Button variant="secondary" size="small">Open the customer</Button>
-                  <Button variant="quiet" size="small">Copy reference</Button>
-                </>
-              ),
+              /* Brief 06 §5: a destructive action cannot be written without
+                 its consequence — the union type refuses the build otherwise,
+                 which is why this specimen carries one. */
+              actions: [
+                { key: "open", label: "Open the customer", variant: "secondary" },
+                { key: "copy", label: "Copy reference" },
+                {
+                  key: "reverse",
+                  label: "Reverse the refund",
+                  onClick: () => undefined,
+                  destructive: true,
+                  consequence:
+                    "Reversing takes the 160 credits back off the customer's balance; it does not re-charge their card.",
+                },
+              ],
             },
             {
               id: "b",

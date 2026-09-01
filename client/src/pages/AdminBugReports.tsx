@@ -34,12 +34,20 @@
 import { useState } from "react";
 import { Redirect } from "wouter";
 import { toast } from "sonner";
-import { Loader2, Inbox, ExternalLink } from "lucide-react";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
-import { Button } from "@/components/ui/button";
+import {
+  RowId,
+  RowStack,
+  StatePill,
+  StaffBarAdmin,
+  StaffLoading,
+  StaffSurface,
+  pageRange,
+} from "@/features/staff";
+import { DataTable, TableFilter, TableHead } from "@/foundation";
+import type { DataRow, RowAction } from "@/foundation";
 
 /* ─── vocabulary ───
    Read from `shared/`, never retyped here. #27 is the standing card for the
@@ -55,27 +63,19 @@ import {
 } from "@shared/bugReportVocabulary";
 
 /**
- * Greyscale, with weight carrying the meaning — `new` is the only status that
- * asks for attention, so it is the only one at full contrast.
+ * ⚠ **THE FOUR-BUTTON DEFECT THIS PAGE ONCE HAD IS WHY THE COLOUR RULE IS ONE
+ * FUNCTION NOW.** The card version drew every status as a filled pill *because*
+ * every action beside it was outlined — the first attempt gave `reviewing` a
+ * white fill with a dark border, which was the same shape, size and treatment
+ * as the three workflow buttons inches away, and the card read as having four
+ * buttons, one of which did nothing.
  *
- * ⚠ **EVERY STATUS IS FILLED, BECAUSE EVERY ACTION ON THIS CARD IS OUTLINED.**
- * That is the whole rule and it is not decoration. The first version gave
- * `reviewing` a white fill with a dark border, which is the same shape, size
- * and treatment as the three outlined workflow buttons sitting inches away on
- * the same row — looked at in the running app, the card read as having FOUR
- * buttons, one of which does nothing when you press it. A state that looks
- * like a control is a dead control by appearance (plan §O), and no assertion
- * about the status text could have seen it. Founder law 6, earned.
- *
- * So: state = filled, control = outlined, one rule, pinned by an arm in
- * `bugReportInbox.test.ts` because this is exactly the shape a tidy-up undoes.
+ * The row treatment settles it structurally rather than by rule: a state is a
+ * `StatePill` in a cell, an action is a `Button` in the expansion, and the two
+ * are never on the same line. `new` is the only status asking for attention,
+ * so it is the only one carrying accent (brief 06 §4).
  */
-const STATUS_STYLES: Record<Status, string> = {
-  new: "bg-[#0A0A0A] text-white border-[#0A0A0A]",
-  reviewing: "bg-[#E4E4E4] text-[#0A0A0A] border-[#E4E4E4]",
-  resolved: "bg-[#F4F4F4] text-[#666] border-[#F4F4F4]",
-  dismissed: "bg-[#F4F4F4] text-[#999] border-[#F4F4F4]",
-};
+const ATTENTION_STATUS = new Set(["new"]);
 
 const PAGE_SIZE = 25;
 
@@ -137,173 +137,105 @@ export default function AdminBugReports() {
      and somebody who cannot see Admin does not need telling why. */
   if (user?.role !== "admin") return <Redirect to="/app" />;
 
-  const rows = listQuery.data?.rows ?? [];
+  const reports = listQuery.data?.rows ?? [];
   const total = listQuery.data?.total ?? 0;
   const counts = countsQuery.data;
 
-  const filters: Array<{ key: Status | "all"; label: string; count: number | undefined }> = [
-    { key: "all", label: "All", count: counts?.total },
-    ...STATUSES.map((s) => ({ key: s, label: STATUS_LABELS[s], count: counts?.[s] })),
+  /*
+    Five options — so `TableFilter` draws a select rather than a segmented row,
+    which is the rule doing its job: five cramped stubs is what the segmented
+    control stops being good at.
+
+    ⚠ The COUNTS the pills carried are gone from the filter and are not
+    reinvented anywhere: a `<select>` option cannot hold a pill, and inventing
+    a second counts row beside it would be a surface the brief does not draw.
+    The range in the footer says how many the current filter has.
+  */
+  const filterOptions = [
+    { value: "all", label: counts?.total ? `All (${counts.total})` : "All" },
+    ...STATUSES.map((status) => ({
+      value: status,
+      label: counts?.[status] ? `${STATUS_LABELS[status]} (${counts[status]})` : STATUS_LABELS[status],
+    })),
   ];
+
+  const rows: DataRow[] = reports.map((report) => {
+    const status = report.status as Status;
+    return {
+      id: String(report.id),
+      cells: [
+        <RowStack
+          key="who"
+          name={report.reporterName || report.reporterEmail || `User #${report.userId}`}
+          meta={
+            BUG_REPORT_CATEGORY_LABELS[
+              report.category as keyof typeof BUG_REPORT_CATEGORY_LABELS
+            ] ?? report.category
+          }
+        />,
+        <StatePill key="status" label={STATUS_LABELS[status]} attention={ATTENTION_STATUS.has(status)} />,
+        <RowId key="page">{report.page || "—"}</RowId>,
+        <span key="when">{formatWhen(report.createdAt)}</span>,
+      ],
+      facts: [
+        { label: "REPORT", value: `#${report.id}` },
+        { label: "FROM", value: report.reporterEmail || `user #${report.userId}` },
+        { label: "SENT", value: formatWhen(report.createdAt) },
+        { label: "PAGE", value: report.page || "not recorded" },
+        { label: "VIEWPORT", value: report.viewport || "not recorded" },
+      ],
+      /* The customer's own words — the whole reason this page exists. */
+      evidence: report.description,
+      actions: STATUSES.filter((s) => s !== status).map(
+        (s): RowAction => ({
+          key: s,
+          label: `Mark ${STATUS_LABELS[s].toLowerCase()}`,
+          onClick: () => updateStatus.mutate({ id: report.id, status: s }),
+          disabled: updateStatus.isPending,
+        }),
+      ),
+    };
+  });
 
   return (
     <StaffSurface breadcrumb="Admin / Bug reports" bar={<StaffBarAdmin />}>
-      <main className="space-y-5">
-        {/* ─── filters ─── */}
-        <div className="flex flex-wrap gap-2">
-          {filters.map((f) => {
-            const active = statusFilter === f.key;
-            return (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(f.key);
-                  setOffset(0);
-                }}
-                aria-pressed={active}
-                className={`h-8 px-3 rounded-full border text-xs transition-colors ${
-                  active
-                    ? "bg-[#0A0A0A] text-white border-[#0A0A0A]"
-                    : "bg-white text-[#666] border-[#D5D5D5] hover:text-[#0A0A0A]"
-                }`}
-              >
-                {f.label}
-                {/* Hidden at zero rather than showing "(0)" — an empty count is
-                    noise on a filter row, and a MISSING count is honest while
-                    the counts are still loading. */}
-                {f.count ? <span className="ml-1.5 tabular-nums opacity-60">{f.count}</span> : null}
-              </button>
-            );
-          })}
-        </div>
+      <main className="dp-stack" style={{ gap: 16 }}>
+        <TableHead eyebrow="Bug reports">
+          <TableFilter
+            label="Status"
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value as Status | "all");
+              setOffset(0);
+            }}
+            options={filterOptions}
+          />
+        </TableHead>
 
-        {/* ─── the queue ─── */}
-        {listQuery.isLoading ? (
-          <div className="bg-white rounded-2xl border border-[#E5E5E5] p-12 flex justify-center">
-            <Loader2 className="w-5 h-5 animate-spin text-[#999]" />
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-[#E5E5E5] p-12 text-center">
-            <Inbox className="w-6 h-6 mx-auto text-[#CCC]" aria-hidden="true" />
-            <p className="mt-3 text-sm text-[#0A0A0A]">
-              {statusFilter === "all"
+        <DataTable
+          columns={[
+            { label: "From", width: "1 1 0" },
+            { label: "Status", width: "0 0 104px" },
+            { label: "Page", width: "0 0 210px" },
+            { label: "Sent", width: "0 0 168px" },
+          ]}
+          rows={rows}
+          loading={listQuery.isLoading}
+          empty={{
+            title:
+              statusFilter === "all"
                 ? "No bug reports yet."
-                : `No ${STATUS_LABELS[statusFilter].toLowerCase()} reports.`}
-            </p>
-            <p className="mt-1 text-xs text-[#999]">
-              Reports sent from the lobby menu arrive here.
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {rows.map((report) => (
-              <li
-                key={report.id}
-                className="bg-white rounded-2xl border border-[#E5E5E5] p-5"
-              >
-                {/* header row: who, when, where, status */}
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`h-6 px-2.5 inline-flex items-center rounded-full border text-[11px] ${
-                          STATUS_STYLES[report.status as Status]
-                        }`}
-                      >
-                        {STATUS_LABELS[report.status as Status]}
-                      </span>
-                      <span className="text-xs text-[#666]">
-                        {BUG_REPORT_CATEGORY_LABELS[report.category as keyof typeof BUG_REPORT_CATEGORY_LABELS] ?? report.category}
-                      </span>
-                      <span className="text-xs text-[#BBB]">·</span>
-                      <span className="text-xs text-[#999] tabular-nums">
-                        {formatWhen(report.createdAt)}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 text-xs text-[#666] truncate">
-                      {/* A report is worthless for support if you cannot answer
-                          the person who sent it. A deleted account still shows
-                          its report — the join is a leftJoin on purpose. */}
-                      {report.reporterName || report.reporterEmail || `User #${report.userId}`}
-                      {report.reporterEmail && report.reporterName ? (
-                        <span className="text-[#AAA]"> · {report.reporterEmail}</span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {/* the workflow */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {STATUSES.filter((s) => s !== report.status).map((s) => (
-                      <Button
-                        key={s}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full border-[#D5D5D5] h-7 px-2.5 text-[11px]"
-                        disabled={updateStatus.isPending}
-                        onClick={() => updateStatus.mutate({ id: report.id, status: s })}
-                      >
-                        {STATUS_LABELS[s]}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* the customer's own words — the whole reason this page exists */}
-                <p className="mt-3 text-sm text-[#0A0A0A] whitespace-pre-wrap break-words">
-                  {report.description}
-                </p>
-
-                {/* context, quiet */}
-                {(report.page || report.viewport) && (
-                  <div className="mt-3 pt-3 border-t border-[#F0F0F0] flex flex-wrap gap-3 text-[11px] text-[#999]">
-                    {report.page ? (
-                      <span className="inline-flex items-center gap-1 font-mono break-all">
-                        <ExternalLink className="w-3 h-3 shrink-0" aria-hidden="true" />
-                        {report.page}
-                      </span>
-                    ) : null}
-                    {report.viewport ? (
-                      <span className="font-mono tabular-nums">{report.viewport}</span>
-                    ) : null}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* ─── paging: shown only when there is more than one page ─── */}
-        {total > PAGE_SIZE && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-[#999] tabular-nums">
-              {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-full border-[#D5D5D5]"
-                disabled={offset === 0}
-                onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
-              >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-full border-[#D5D5D5]"
-                disabled={offset + PAGE_SIZE >= total}
-                onClick={() => setOffset((o) => o + PAGE_SIZE)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+                : `No ${STATUS_LABELS[statusFilter as Status].toLowerCase()} reports.`,
+            body: "Reports sent from the lobby menu arrive here.",
+          }}
+          footer={{
+            meta: pageRange({ offset, count: reports.length, total }),
+            onBack: () => setOffset((o) => Math.max(0, o - PAGE_SIZE)),
+            onNext: () => setOffset((o) => o + PAGE_SIZE),
+            backDisabled: offset === 0,
+            nextDisabled: offset + PAGE_SIZE >= total,
+          }}
+        />
       </main>
     </StaffSurface>
   );
