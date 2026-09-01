@@ -291,25 +291,62 @@ describe("the account is in one corner and the workspace in the other", () => {
   });
 
   /**
-   * ⚠ **THE OTHER HALF OF HIS SENTENCE — *"but keep it stubbed out"*.** He
-   * asked for *"make it live"* on 2026-08-30 morning and then ruled the stub
-   * that evening; the face is the part that changed and the inertness is the
-   * part he explicitly kept. There is still no Members surface, no endpoint
-   * and no membership table, so an avatar that made this block look finished
-   * would be the dead control D-180 forbids with a friendlier picture on it.
+   * ⚠ **THIS ARM HELD THE HOLD, AND #372 DISCHARGED IT — SO IT NOW ASSERTS THE
+   * OTHER SIDE OF THE SAME RULE RATHER THAN BEING DELETED.**
+   *
+   * It read *"the face does not make Invite live"*, on his #281 ruling: *"Show
+   * your own face beside the +, but keep it stubbed out until membership
+   * exists."* The premise of that hold was that **there was nowhere to go** —
+   * no Members surface — so a clickable block would have been the dead control
+   * D-180 forbids. `SettingsModal`'s `members` section now exists and
+   * `openSettings("members")` opens at it, and he ordered the door: *"the + on
+   * invite … should now have a hover effect and open into the members setting
+   * page as a door"*.
+   *
+   * **The rule that survives is the one worth guarding: the block is live IF
+   * AND ONLY IF it was handed a destination.** Both shapes are asserted — the
+   * `<button>` where `onOpenMembers` is passed and the inert `<span>` where it
+   * is not — because a guard that only checked the live half would pass the
+   * day someone made it unconditionally clickable again.
+   *
+   * ⚠ **The STACK is a separate question that #372 did not open.** There is
+   * still no membership model, so the no-invented-faces arms below stand.
    */
-  it("the face does not make Invite live", () => {
-    expect(RAIL).toMatch(/className="dp-invite"[\s\S]{0,120}aria-disabled="true"/);
-    expect(RAIL).toMatch(/title="Invite — not built yet"/);
-    /* Not a button, not a link, and no click handler anywhere in the block. */
-    const foot = RAIL.match(/<span className="dp-invite"[\s\S]*?<\/span>\s*\n\s*\{workspace/)?.[0] ?? "";
-    expect(foot, "the matcher must find the invite block").toContain("dp-memberstack");
-    expect(foot).not.toMatch(/onClick|<button|<Link|href=/);
-    expect(/onClick/.test('<span className="dp-invite" onClick={go}>'), "positive control").toBe(
-      true,
+  it("Invite is live only where it was given somewhere to go", () => {
+    /* The live shape: a real button, with a title that says what it does. */
+    expect(RAIL).toMatch(/<button[\s\S]{0,200}className="dp-invite"/);
+    expect(RAIL).toMatch(/onClick=\{onOpenMembers\}/);
+    expect(RAIL).toMatch(/title="Invite — members and invites"/);
+    /* A stale title on a working control is worse than none — his bar. */
+    expect(RAIL).not.toMatch(/title="Invite — not built yet"[\s\S]{0,80}onClick/);
+
+    /* The stub shape is NOT deleted: no destination, no door. */
+    expect(RAIL).toMatch(
+      /className="dp-invite" aria-disabled="true" title="Invite — not built yet"/,
     );
-    /* And the surface it would open still does not exist. */
-    expect(code(CHROME)).not.toMatch(/members-and-invites|\/app\/members/);
+
+    /* And it is a CONDITION, not two blocks that happen to coexist. */
+    expect(RAIL).toMatch(/\{onOpenMembers \? \(/);
+    expect(/\{onOpenMembers \? \(/.test("{onOpenMembers ? ("), "positive control").toBe(true);
+  });
+
+  /**
+   * ⚠ **THE DOOR OPENS AT `members`, NOT AT `profile`** — his bar, verbatim:
+   * *"Clicking anywhere on the Invite block opens Settings at Members, not at
+   * Profile."* The two calls sit four lines apart in `AppChrome`, take the same
+   * shape, and differ only in a string, which is exactly the pair a copy-paste
+   * gets wrong silently.
+   */
+  it("the shell opens Members, and does not reuse the gear's section", () => {
+    expect(code(CHROME)).toMatch(
+      /onOpenMembers:\s*\(\)\s*=>\s*account\.openSettings\("members"\)/,
+    );
+    expect(
+      /onOpenMembers:\s*\(\)\s*=>\s*account\.openSettings\("members"\)/.test(
+        'onOpenMembers: () => account.openSettings("profile"),',
+      ),
+      "positive control — the matcher must reject the gear's section",
+    ).toBe(false);
   });
 
   /** The shell still carries the prop; only its destination moved. */
@@ -483,26 +520,55 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
   });
 
   /**
-   * ⚠ **THE `+` HAS NO HOVER, AND ITS ABSENCE IS THE DECISION.** He asked for
-   * *"Make it live"* and *"give the `+` its hover back"* in one breath; the
-   * first cannot be done — there is no Members surface, no endpoint and no
-   * membership in the schema — so a hover response here would be an affordance
-   * on a control that goes nowhere. The house stub pattern he ratified says the
-   * same thing out loud: `.dp-rail__item--stub:hover` and
-   * `.dp-menuitem--stub:hover` both CANCEL hover.
+   * ⚠ **THE TRIPWIRE FIRED AND WAS ANSWERED THE WAY IT ASKED TO BE (#372).**
    *
-   * This arm is a TRIPWIRE, not a preference: it fails the day someone adds the
-   * hover, and the fix is to land it WITH the live destination, not to delete
-   * the arm.
+   * Its own instruction read: *"it fails the day someone adds the hover, and
+   * the fix is to land it WITH the live destination, not to delete the arm."*
+   * The hover landed with the destination, so the arm is kept and repointed at
+   * the thing that now matters — **the hover is SCOPED to the live shape.** An
+   * unscoped `.dp-memberstack__add:hover` would light the stub up too, on any
+   * surface that passes no destination: the original defect wearing the fix's
+   * clothes.
    */
-  it("the + gets its hover back only when Invite has somewhere to go", () => {
-    expect(code(FOUNDATION_CSS)).not.toMatch(/\.dp-memberstack__add:hover/);
+  it("the + hovers inside the door and nowhere else", () => {
+    const css = code(FOUNDATION_CSS);
+    /* No unscoped rule — the tripwire's original subject, still guarded. */
+    expect(css).not.toMatch(/(?<!button\.dp-invite:hover )\.dp-memberstack__add:hover/);
+    expect(css).toMatch(/button\.dp-invite:hover \.dp-memberstack__add/);
+    /* His value, unchanged from the day he asked for it. */
+    expect(css).toMatch(
+      /button\.dp-invite:hover \.dp-memberstack__add[\s\S]{0,160}border-color: var\(--ink\)/,
+    );
+    /* Keyboard reaches it too — a door reachable only by mouse is half a door. */
+    expect(css).toMatch(/button\.dp-invite:focus-visible \.dp-memberstack__add/);
     expect(
-      /\.dp-memberstack__add:hover/.test(".dp-memberstack__add:hover { border-color: var(--ink); }"),
+      /button\.dp-invite:hover \.dp-memberstack__add/.test(
+        ".dp-memberstack__add:hover { border-color: var(--ink); }",
+      ),
+      "positive control — an unscoped rule must not satisfy the scoped matcher",
+    ).toBe(false);
+  });
+
+  /**
+   * ⚠ **#350's DEFECT, ONE ELEMENT CHANGE LATER.** `.dp-rail__label` carries
+   * only `font-size`; family and weight are INHERITED, and a `<button>` does
+   * not inherit them — the UA stylesheet hands it the system font. So promoting
+   * this block from `<span>` to `<button>` would have rendered `Invite` in
+   * Arial beside nine labels in the app's sans, silently. That is #350's class
+   * exactly: a label outside a rail item inheriting past the thing meant to
+   * style it.
+   */
+  it("the Invite block states its own font, because a button does not inherit one", () => {
+    const invite = code(FOUNDATION_CSS).match(/\.dp-invite \{[^}]*\}/)?.[0] ?? "";
+    expect(invite, "the matcher must find .dp-invite").toContain("display: flex");
+    expect(invite).toMatch(/font-family: var\(--font-sans\)/);
+    expect(invite, "weight too — a button does not inherit that either").toMatch(/font-weight: 400/);
+    /* ⚠ And NOT the shorthand, which would carry a size and re-scope #350. */
+    expect(invite).not.toMatch(/(^|[\s;{])font\s*:/);
+    expect(
+      /font-family: var\(--font-sans\)/.test(".dp-invite { display: flex; }"),
       "positive control",
-    ).toBe(true);
-    /* The premise of the hold, asserted rather than remembered. */
-    expect(RAIL).toMatch(/className="dp-invite"[\s\S]{0,120}aria-disabled="true"/);
+    ).toBe(false);
   });
 });
 
@@ -568,7 +634,17 @@ describe("the rail label is 9.5px wherever it is used", () => {
    * because it is the only reason the class needs its own size at all.
    */
   it("no call site is a special case — the size is not scoped to .dp-invite", () => {
-    const foot = RAIL.match(/<span className="dp-invite"[\s\S]*?<\/span>\s*\n\s*\{workspace/)?.[0] ?? "";
+    /*
+      ⚠ **THE MATCHER NAMED THE ELEMENT AND THE TOKEN AFTER IT, AND BOTH MOVED
+      (#372).** It read `<span className="dp-invite" … </span> {workspace`; the
+      block now renders a `<button>` where it has a destination, and the
+      condition ends in `)}` rather than `{workspace`. **It failed loudly on its
+      own self-check rather than passing over an empty string**, which is the
+      only reason this was noticed — an absence arm without that check would
+      have gone green on nothing. Repointed at the CLASS, which is what #350 is
+      about, and deliberately not at either element.
+    */
+    const foot = RAIL.match(/className="dp-invite"[\s\S]*?dp-rail__label[\s\S]{0,40}<\/span>/)?.[0] ?? "";
     expect(foot, "the matcher must find the invite block").toContain("dp-rail__label");
     expect(foot, "the label there has no rail item to inherit from").not.toContain("dp-rail__item");
 
@@ -583,6 +659,34 @@ describe("the rail label is 9.5px wherever it is used", () => {
        parent declares no font, so it has nothing to inherit but the document. */
     const invite = CSS.match(/(?<![\w-])\.dp-invite\s*\{[^}]*\}/)?.[0] ?? "";
     expect(invite, "the matcher must find the .dp-invite block").toContain("cursor");
-    expect(invite).not.toMatch(/font/);
+    /*
+      ⚠ **THIS READ `not.toMatch(/font/)` AND HAD TO NARROW — SAY WHICH WAY AND
+      WHY (#372).** #350's subject is the SIZE: it must live on
+      `.dp-rail__label` so a fourth call site outside a rail item cannot repeat
+      the bug. While this block was a `<span>` that declared nothing, "no font
+      at all" was an exact proxy for "no size". It stopped being one when the
+      block became a `<button>`: a button does not inherit family or weight
+      from the document, so it MUST state them or `Invite` renders in the UA's
+      system font beside nine labels in the app's sans — #350's own defect in a
+      new place.
+
+      So the arm now names the size directly, and the two positive controls
+      below are the whole point: a `font-size` here fails, and so does the
+      `font:` SHORTHAND, which is the tempting way to write this and carries a
+      size inside it.
+    */
+    expect(invite).not.toMatch(/font-size/);
+    expect(invite).not.toMatch(/(^|[\s;{])font\s*:/);
+    expect(invite, "family and weight are required of a button, and are not a size").toMatch(
+      /font-family: var\(--font-sans\)/,
+    );
+    expect(
+      /font-size/.test(".dp-invite { font-size: 9.5px; }"),
+      "positive control — a size here must fail",
+    ).toBe(true);
+    expect(
+      /(^|[\s;{])font\s*:/.test(".dp-invite { font: 400 9.5px var(--font-sans); }"),
+      "positive control — the shorthand carries a size and must fail too",
+    ).toBe(true);
   });
 });

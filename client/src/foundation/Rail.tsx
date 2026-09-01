@@ -166,6 +166,21 @@ export type RailWorkspace = {
   members?: readonly { id: string; label: string; avatar?: ReactNode }[];
   /** Opens the surface's own settings. Absent = the gear is not drawn. */
   onOpenSettings?: () => void;
+  /**
+   * ⚠ **THE INVITE BLOCK'S DOOR (#372, his order 2026-09-01, verbatim): *"the
+   * + on invite at the bottom of the lobby rail should now have a hover effect
+   * and open into the members setting page as a door"*.**
+   *
+   * Optional, and its absence is what keeps the stub honest BY CONSTRUCTION
+   * rather than by anyone remembering. A surface that has no Members section
+   * to open passes nothing here and gets the inert block it always had —
+   * `aria-disabled`, no hover, *"not built yet"* on the title. A surface that
+   * has one passes this, and the block becomes a real focusable button.
+   *
+   * This is the same shape as `onOpenSettings` directly above, for the same
+   * reason: the shell never invents a destination it cannot reach.
+   */
+  onOpenMembers?: () => void;
 };
 
 /** Up to three faces, then the `+` (section 02 §2c). */
@@ -179,6 +194,7 @@ export function Rail({
   workspace?: RailWorkspace;
 }) {
   const members = (workspace?.members ?? []).slice(0, MEMBER_STACK_MAX);
+  const onOpenMembers = workspace?.onOpenMembers;
 
   return (
     <nav className="dp-rail" aria-label="Primary">
@@ -207,19 +223,61 @@ export function Rail({
         ),
       )}
       <div className="dp-rail__foot">
-        <span className="dp-invite" aria-disabled="true" title="Invite — not built yet">
-          <span className="dp-memberstack">
-            {members.map((member) => (
-              <span key={member.id} className="dp-memberstack__face" title={member.label}>
-                {member.avatar}
+        {/*
+          ⚠ **TWO SHAPES, AND WHICH ONE RENDERS IS DECIDED BY WHETHER THERE IS
+          SOMEWHERE TO GO (#372).**
+
+          `onOpenMembers` present → a real `<button>`: focusable, in the tab
+          order where a destination would be, with a title that says what it
+          actually does. `onOpenMembers` absent → the inert `<span>` this block
+          has always been, `aria-disabled`, *"not built yet"*, no hover.
+
+          The hold that kept it inert was correct and is now discharged: it was
+          held (#281) because *"there was no Members surface to open"*, and
+          `SettingsModal`'s `members` section now exists and `openSettings(section)`
+          already opens at it — the account menu's own rows call exactly that.
+          Nothing new was built to make this work, which is the tell that the
+          door was the only missing piece.
+
+          ⚠ **THE MEMBER STACK IS UNCHANGED AND STILL HONEST.** There is still
+          no membership model — no table, no endpoint — so `members` still holds
+          only rows a server really produced (today: the signed-in user). The
+          DOOR opens; the STACK does not start inventing people.
+        */}
+        {onOpenMembers ? (
+          <button
+            type="button"
+            className="dp-invite"
+            onClick={onOpenMembers}
+            title="Invite — members and invites"
+          >
+            <span className="dp-memberstack">
+              {members.map((member) => (
+                <span key={member.id} className="dp-memberstack__face" title={member.label}>
+                  {member.avatar}
+                </span>
+              ))}
+              <span className="dp-memberstack__add" aria-hidden="true">
+                <Plus size={9} strokeWidth={2.6} />
               </span>
-            ))}
-            <span className="dp-memberstack__add" aria-hidden="true">
-              <Plus size={9} strokeWidth={2.6} />
             </span>
+            <span className="dp-rail__label">Invite</span>
+          </button>
+        ) : (
+          <span className="dp-invite" aria-disabled="true" title="Invite — not built yet">
+            <span className="dp-memberstack">
+              {members.map((member) => (
+                <span key={member.id} className="dp-memberstack__face" title={member.label}>
+                  {member.avatar}
+                </span>
+              ))}
+              <span className="dp-memberstack__add" aria-hidden="true">
+                <Plus size={9} strokeWidth={2.6} />
+              </span>
+            </span>
+            <span className="dp-rail__label">Invite</span>
           </span>
-          <span className="dp-rail__label">Invite</span>
-        </span>
+        )}
         {workspace?.onOpenSettings ? (
           <>
             <span className="dp-rail__divider" />
