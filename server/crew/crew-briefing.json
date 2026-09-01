@@ -1,6 +1,6 @@
 {
-  "edition": 195,
-  "updatedAt": "2026-09-01T14:35:30Z",
+  "edition": 196,
+  "updatedAt": "2026-09-01T14:51:42Z",
   "shift": "Foreman - shift 2026-09-02 01:00 AEST (foreman-171)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -2561,7 +2561,7 @@
     {
       "id": "citation-390b",
       "title": "A one-word correction to my own comment from an hour earlier",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 405,
       "note": "The comment I shipped with the fix above named the wrong test file. It is one word and no behaviour, and it is being taken back rather than left, because the very same shift had just corrected a comment in the file next door that had cited a test that has never existed. Writing a second one an hour later is not something to leave lying."
     },
@@ -3881,7 +3881,7 @@
     81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T14:35:39.149Z",
+    "readAt": "2026-09-01T14:51:31.325Z",
     "items": [
       {
         "issueNumber": 231,
