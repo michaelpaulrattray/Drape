@@ -248,18 +248,40 @@ describe("section 03 — five modals became three surfaces", () => {
      and the prototype draws a card, the prototype wins."*
      ========================================================================== */
 
-  it("card 381 — the Usage stats are ONE bordered card in three columns, never three stacked rows", () => {
+  it("card 381 — the Usage stats are ONE bordered card in a column per stat, never stacked rows", () => {
+    /*
+      ⚠ THIS ARM PINNED `repeat(3, 1fr)` UNTIL #387, AND THE LITERAL WAS THE
+      WRONG THING TO PIN. Three was the number of stats the pane happened to
+      have; when `Frames made` went (it counted 19 kinds of charged operation
+      and called them frames) the CSS still said three and the two survivors sat
+      in a third of the card each with a hole where the third had been.
+
+      A count in the stylesheet is a second copy of `stats.length` — working law
+      4 — so the arm now proves the DERIVATION instead, which is strictly
+      stronger: it fails on a hard-coded count coming back AND on a `StatCard`
+      that stops feeding the variable, neither of which the literal could see.
+    */
     const usage = code(read(join(SECTIONS_DIR, "UsageSection.tsx")));
     const css = code(read(join(HERE, "settings.css")));
+    const parts = code(read(join(HERE, "parts.tsx")));
 
     expect(usage, "the stats went back to stacked rows").not.toContain("dp-set__statrow");
     expect(usage, "the stat card is not used").toContain("StatCard");
 
     const card = css.slice(
       css.indexOf(".dp-set__statcard"),
-      css.indexOf(".dp-set__statcard") + 260,
+      css.indexOf(".dp-set__statcard") + 320,
     );
-    expect(card, "the stat card lost its three columns").toContain("repeat(3, 1fr)");
+    expect(card, "the stat card lost its per-stat columns").toMatch(
+      /grid-template-columns:\s*repeat\(var\(--dp-statcols[^)]*\)[^;]*\)/,
+    );
+    expect(card, "the column count went back to a literal").not.toMatch(
+      /grid-template-columns:\s*repeat\(\s*\d/,
+    );
+    expect(
+      parts.slice(parts.indexOf("export function StatCard"), parts.indexOf("export function StatCard") + 900),
+      "StatCard stopped telling the grid how many stats it has",
+    ).toMatch(/--dp-statcols["\s]*\]?\s*:\s*stats\.length/);
     expect(card, "the stat card lost its border").toMatch(/border:\s*1px solid var\(--borderCard\)/);
 
     /* Item 2: each COLUMN stacks label above value above note. A three-column

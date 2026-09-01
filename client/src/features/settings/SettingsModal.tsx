@@ -99,7 +99,7 @@ export function SettingsModal({
   const pane = useMemo(() => {
     switch (section) {
       case "usage":
-        return <UsageSection allowance={allowance} periodStart={periodStart} />;
+        return <UsageSection allowance={allowance} balance={balance} periodStart={periodStart} />;
       case "billing":
         return (
           <BillingSection

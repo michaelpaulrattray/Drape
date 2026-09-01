@@ -26,7 +26,7 @@
  * writes the next one; a component that cannot be rendered without a reason
  * string leaves neither.
  */
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 export function SettingsGroup({
   title,
@@ -175,8 +175,19 @@ export function StatCard({
 }: {
   stats: { label: string; value: string; note?: string }[];
 }) {
+  /*
+    ⚠ THE COLUMN COUNT IS DERIVED FROM THE STATS, NEVER FIXED AT THREE.
+    `#387` dropped `Frames made` — a label that counted 19 kinds of charged
+    operation and called them frames — and a hard `repeat(3, 1fr)` would have
+    left the two survivors at a third of the card each with a hole where the
+    third used to be. Working law 4: the grid is a view of the list, not a
+    second copy of its length.
+  */
   return (
-    <div className="dp-set__statcard">
+    <div
+      className="dp-set__statcard"
+      style={{ "--dp-statcols": stats.length } as CSSProperties}
+    >
       {stats.map((stat) => (
         <div className="dp-set__statcell" key={stat.label}>
           <span className="dp-set__statlabel">{stat.label}</span>

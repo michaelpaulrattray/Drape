@@ -8,9 +8,13 @@
  *
  * ## What the reconciliation changed (BRIEF-RECONCILIATION Q3, Q4)
  *
- * - **`Remove` has no server.** `server/routes/profile.ts` has `uploadAvatar`
- *   and `uploadBanner` and no removal of either, so Remove ships as a stub
- *   rather than as a button that silently does nothing.
+ * - **`Remove` HAS a server now — #387 item 5.** It shipped as a stub because
+ *   `server/routes/profile.ts` had `uploadAvatar` and `uploadBanner` and no
+ *   removal of either; he asked for the other half: *"next to profile image
+ *   where it says remove code that in so that if you remove it goes to a
+ *   default profile image."* `profile.removeAvatar` clears the row and deletes
+ *   the object, and the picture falls back to the SAME default a new account
+ *   gets — `getProfileVisualDefaults(identity).avatar`, not a blank.
  * - **`Workspace name` has no server.** There is no workspace, team or
  *   organisation row anywhere in `drizzle/schema.ts`; the name in the top bar
  *   is the workspace's own (`WORKSPACE_NAME`). The field is drawn and inert, and
@@ -24,18 +28,15 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
-import { Field, Input } from "@/foundation";
+import { Button, Field, Input } from "@/foundation";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { compressImage, AVATAR_COMPRESSION } from "@/lib/imageUtils";
 import { WORKSPACE_NAME } from "@/foundation/brand";
 import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
-import {
-  PROFILE_BIO_MAX_LENGTH,
-  PROFILE_DISPLAY_NAME_MAX_LENGTH,
-} from "@shared/inputLimits";
+import { PROFILE_DISPLAY_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
-import { SettingsField, SettingsGroup, StubControl, StubNote } from "../parts";
+import { SettingsField, SettingsGroup } from "../parts";
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -60,13 +61,11 @@ export function ProfileSection({
 }) {
   const { data: profile, refetch } = trpc.profile.get.useQuery();
   const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
     setDisplayName(profile.displayName || profile.name || "");
-    setBio(profile.bio || "");
   }, [profile]);
 
   const updateProfile = trpc.profile.update.useMutation({
@@ -90,6 +89,19 @@ export function ProfileSection({
     },
   });
 
+  const removeAvatar = trpc.profile.removeAvatar.useMutation({
+    onSuccess: () => {
+      /* The parent holds the displayed avatar, so it is told rather than left
+         to re-read: "" is the absence the chip already understands. */
+      onAvatarChange("");
+      void refetch();
+    },
+    onError: (error) => {
+      logRawFailure("profile.removeAvatar", error);
+      toast.error(readableFailure(error, "That picture could not be removed."));
+    },
+  });
+
   /* Commit on blur — the footer says changes save as you edit, and a Save
      button is on the brief's do-not list. */
   const commitName = () => {
@@ -97,12 +109,6 @@ export function ProfileSection({
     const current = profile?.displayName || profile?.name || "";
     if (!next || next === current) return;
     updateProfile.mutate({ displayName: next });
-  };
-
-  const commitBio = () => {
-    const next = bio.trim();
-    if (next === (profile?.bio || "")) return;
-    updateProfile.mutate({ bio: next });
   };
 
   const pickAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,10 +171,30 @@ export function ProfileSection({
                 style={{ display: "none" }}
               />
             </label>
-            {/* No removal exists on the server — see the docblock. */}
-            <StubControl reason="Removing a picture is not built yet">
-              <StubNote>REMOVE</StubNote>
-            </StubControl>
+            {/*
+              Only offered when there IS one to remove — a Remove beside a
+              default picture is a control with nothing to do, and the default
+              is what removing lands on.
+
+              ⚠ **IT ASKS THE SERVER, NOT THE `avatarUrl` PROP**, and that is
+              working law 4 rather than fussiness. The prop is filled by two
+              different hosts: `AppChrome` resolves it
+              (`profileImage ?? user?.avatarUrl ?? null`) while `DrapeStudio`
+              passes a session-local `useState(null)`. So on the legacy studio
+              the prop is null for somebody who HAS a picture, and a Remove
+              gated on it would have been invisible to exactly the person who
+              wanted it. `profile.get` is the one thing that knows.
+            */}
+            {profile?.avatarUrl ? (
+              <Button
+                variant="secondary"
+                size="small"
+                disabled={removeAvatar.isPending}
+                onClick={() => removeAvatar.mutate()}
+              >
+                {removeAvatar.isPending ? "Removing…" : "Remove"}
+              </Button>
+            ) : null}
           </span>
           <span className="dp-set__fieldnote">
             JPG, PNG or WebP · up to 5 MB · square works best
@@ -198,30 +224,22 @@ export function ProfileSection({
       </SettingsField>
 
       {/*
-        ⚠ **BIO IS NOT IN THE BRIEF’S PROFILE TABLE AND IT IS KEPT ANYWAY**, as a
-        deliberate carry-over rather than an addition. The modal this replaces
-        was the only place a bio could be written, and unlike the banner (which
-        nothing in the product displays and which therefore went) a bio IS read:
-        it is in the customer’s own GDPR export (`server/db/gdprExport.ts`) and
-        on the admin user view (`server/db/admin.ts`). Deleting the only editor
-        for text a customer wrote, while staff and her own export can still see
-        it, is a capability loss the brief did not ask for — §8’s own stub rules
-        say never stub something that already exists, and this is the same
-        instinct one row over.
-      */}
-      <SettingsField label="Bio" note="A line about you, on your own export and nowhere public.">
-        <Field compact className="dp-set__fullfield">
-          <Input
-            value={bio}
-            maxLength={PROFILE_BIO_MAX_LENGTH}
-            placeholder="A line about you"
-            onChange={(event) => setBio(event.target.value)}
-            onBlur={commitBio}
-            aria-label="Bio"
-          />
-        </Field>
-      </SettingsField>
+        ⚠ **BIO IS GONE ON HIS WORD — #387 item 5, verbatim: *"remove the bio
+        line from profile its not required."***
 
+        It was kept here deliberately once, and the argument is worth keeping
+        because it says exactly what this change does and does not do: a bio IS
+        read elsewhere — it is in the customer's own GDPR export
+        (`server/db/gdprExport.ts`) and on the admin user view
+        (`server/db/admin.ts`) — so removing the only editor is a capability
+        loss rather than a tidy-up.
+
+        He has ruled, so the FIELD goes. **Nothing else does**: `users.bio`
+        stays, `profile.update` still accepts it, and every bio already written
+        is still in its owner's export. This removes a control, not a customer's
+        words — which is the same line the bug-report inbox draws, and it is the
+        reversible half if he wants the field back.
+      */}
       {/*
         §5: *"Email is shown and disabled, not hidden. Hiding it makes people
         think the account has no email; disabling it with a reason answers the
