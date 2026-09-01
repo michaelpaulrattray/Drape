@@ -34,9 +34,22 @@
  *
  * #272 puts all three out of scope in as many words: *"He does not need to
  * watch it work; he needs to know what it is doing and be able to stop it."*
+ *
+ * # ⚠ BRIEF 08 NEVER SAW THIS COMPONENT, AND ITS RED IS A STATED DEPARTURE
+ *
+ * #272 landed after the mockup was drawn, so §6 does not list it. Its §7 bans
+ * colour by state except on warn chips and Problems — and this component has
+ * two coloured things: the no-check-in reading, and a `failed` outcome in the
+ * short list beneath.
+ *
+ * **Both stay, as `--errorInk`.** They are the *problem* class §6 admits, not
+ * decoration: a shift that has stopped checking in is the single thing on this
+ * page worth acting on tonight, and brief 07's own rule one surface over is
+ * that fine is colourless and red means urgent. Nothing else here is coloured.
  */
 import { deriveShiftRunState } from "@shared/crewShiftState";
 import { cn } from "@/lib/utils";
+import { TableHead } from "@/foundation";
 import type { CrewShiftRunView, CrewShiftRunsView } from "./crewTypes";
 
 /** How a run's kind reads in a sentence. `background` is called out by name. */
@@ -95,8 +108,8 @@ function clockTime(value: Date | string): string {
 function CardLine({ run }: { run: CrewShiftRunView }) {
   if (!run.cardRef && !run.cardTitle) return null;
   return (
-    <span className="text-[#0A0A0A]">
-      {run.cardRef && <span className="font-medium">{run.cardRef}</span>}
+    <span>
+      {run.cardRef && <span className="dp-crew__strong">{run.cardRef}</span>}
       {run.cardRef && run.cardTitle && " · "}
       {run.cardTitle}
     </span>
@@ -106,13 +119,16 @@ function CardLine({ run }: { run: CrewShiftRunView }) {
 function RunBody({ run, now }: { run: CrewShiftRunView; now: number }) {
   return (
     <>
-      <p className="text-[14px] leading-[1.5] text-[#0A0A0A]">
+      <p className="dp-crew__mission">
         <CardLine run={run} />
       </p>
-      <p className="text-[13px] leading-[1.55] text-[#444] mt-1">{run.intent}</p>
-      <p className="text-[11px] text-[#999] mt-2">
-        {run.shift} · {run.seat} · {KIND_LABEL[run.workKind] ?? run.workKind} · started {ago(run.startedAt, now)}
-        {run.branch && <> · <span className="font-mono text-[10px]">{run.branch}</span></>}
+      <p className="dp-crew__body dp-crew__body--soft dp-crew__gap--tight">{run.intent}</p>
+      {/* A shift id, a seat, an elapsed time and a branch are all measured
+          values, so the whole line is mono (§4). */}
+      <p className="dp-crew__mono dp-crew__gap--tight">
+        {run.shift} · {run.seat} · {KIND_LABEL[run.workKind] ?? run.workKind} · started{" "}
+        {ago(run.startedAt, now)}
+        {run.branch && <> · {run.branch}</>}
       </p>
     </>
   );
@@ -126,20 +142,22 @@ function RunBody({ run, now }: { run: CrewShiftRunView; now: number }) {
  */
 function PastRun({ run, now }: { run: CrewShiftRunView; now: number }) {
   return (
-    <li className="flex items-baseline gap-2 text-[12px] leading-[1.6]">
+    <li className="dp-crew__pastrow">
       <span
         className={cn(
-          "shrink-0 text-[10px] uppercase tracking-[0.08em] w-[52px]",
-          run.outcome === "failed" ? "text-[#C0473A]" : "text-[#999]",
+          "dp-crew__outcome",
+          run.outcome === "failed" && "dp-crew__outcome--failed",
         )}
       >
         {OUTCOME_LABEL[run.outcome ?? ""] ?? "—"}
       </span>
-      <span className="text-[#444] min-w-0">
-        {run.cardRef && <span className="text-[#0A0A0A]">{run.cardRef} </span>}
+      <span>
+        {run.cardRef && <span className="dp-crew__strong">{run.cardRef} </span>}
         {run.outcomeNote ?? run.intent}
-        {run.prNumber && <span className="text-[#999]"> · PR #{run.prNumber}</span>}
-        <span className="text-[#999]"> · {run.shift}, {ago(run.endedAt ?? run.startedAt, now)}</span>
+        {run.prNumber && <span className="dp-crew__body--quiet"> · PR #{run.prNumber}</span>}
+        <span className="dp-crew__body--quiet">
+          {" "}· {run.shift}, {ago(run.endedAt ?? run.startedAt, now)}
+        </span>
       </span>
     </li>
   );
@@ -155,15 +173,15 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
   */
   if (!shiftRuns.available) {
     return (
-      <section className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-        <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-2">Working now</h2>
-        <p className="text-[14px] text-[#666]">Not live yet.</p>
-        <p className="text-[12px] text-[#999] mt-1">
+      <section className="dp-crew__card">
+        <TableHead eyebrow="Working now" />
+        <p className="dp-crew__mission dp-crew__body--soft dp-crew__gap">Not live yet.</p>
+        <p className="dp-crew__body dp-crew__body--quiet dp-crew__gap--tight">
           The shift row needs its table in this database — one command, and it is yours to run:
-          {" "}
-          <span className="font-mono text-[11px] text-[#666]">
-            railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-shift-runs.mts --production
-          </span>
+        </p>
+        <p className="dp-crew__command dp-crew__gap--tight">
+          railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-shift-runs.mts
+          --production
         </p>
       </section>
     );
@@ -178,55 +196,53 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
   const past = runs.filter((run) => run.id !== open?.id).slice(0, 3);
 
   return (
-    <section
-      className={cn(
-        "bg-white rounded-2xl border p-5 sm:p-6",
-        state === "stalled" ? "border-[#C0473A]" : "border-[#E5E5E5]",
-      )}
-    >
-      <div className="flex items-baseline justify-between gap-3 mb-2">
-        <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999]">Working now</h2>
+    <section className={cn("dp-crew__card", state === "stalled" && "dp-crew__card--alert")}>
+      <TableHead eyebrow="Working now">
         {state === "running" && (
-          /* The one live signal on the page. `aria-hidden` because the state is
-             already said in words below — a screen reader should not hear a
-             decoration. */
-          <span className="flex items-center gap-1.5 text-[11px] text-[#0A0A0A]">
-            <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] animate-pulse" />
+          /* The one live signal on the page. `aria-hidden` on the dot because
+             the state is already said in words below — a screen reader should
+             not hear a decoration. */
+          <span className="dp-crew__live">
+            <span aria-hidden className="dp-crew__dot" />
             live
           </span>
         )}
-      </div>
+      </TableHead>
 
       {state === null && (
-        <p className="text-[14px] text-[#666]">Nothing running.</p>
+        <p className="dp-crew__mission dp-crew__body--soft dp-crew__gap">Nothing running.</p>
       )}
 
-      {state === "running" && open && <RunBody run={open} now={now} />}
+      {state === "running" && open && (
+        <div className="dp-crew__gap">
+          <RunBody run={open} now={now} />
+        </div>
+      )}
 
       {state === "stalled" && open && (
-        <>
+        <div className="dp-crew__gap">
           {/*
             ⚠ THE WORDS ARE A READING, NOT A VERDICT (#295). What is known is
             the timestamp; what is NOT known is whether the process is alive.
             Both possibilities are named, in that order, and neither is ranked —
             the founder is the one with the terminal.
           */}
-          <p className="text-[13px] text-[#C0473A] mb-2">
+          <p className="dp-crew__alert">
             No check-in since {clockTime(open.heartbeatAt)}
             {" "}({ago(open.heartbeatAt, now)}), and it has not stamped itself finished.
             {" "}
-            <span className="text-[#666]">
+            <span className="dp-crew__body--soft">
               It may be inside a long step, or it may have died — this page cannot tell which.
             </span>
           </p>
           <RunBody run={open} now={now} />
-        </>
+        </div>
       )}
 
       {past.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-[#EEE]">
-          <h3 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-2">Recent shifts</h3>
-          <ul className="space-y-1">
+        <div className="dp-crew__rule dp-crew__rule--tight">
+          <h3 className="dp-crew__subhead">Recent shifts</h3>
+          <ul className="dp-crew__past dp-crew__gap--tight">
             {past.map((run) => <PastRun key={run.id} run={run} now={now} />)}
           </ul>
         </div>

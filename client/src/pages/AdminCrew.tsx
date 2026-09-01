@@ -18,6 +18,25 @@
  * separate sections all meant "the past". Each is one question he asks, and
  * each now has exactly one place to be answered.
  *
+ * # ⚠ BRIEF 08 (#398) CHANGED THE SURFACE AND NOTHING ELSE
+ *
+ * His §1 is a warning rather than an instruction: *"Crew is already built, and
+ * its content architecture is better than my prototype's … where my prototype
+ * and the built Crew disagree on content, the built one wins."* So every
+ * section keeps its words, its order, its quotes and its one progress number;
+ * what changed is the face — house section heads, mono on every measured
+ * value, tokens instead of hex, no weight above 500, no italic.
+ *
+ * Two things worth knowing about this file in particular:
+ *
+ *  - **The 790px column is NOT here and never was this brief's to add.** #395
+ *    gave `StaffSurface` its `measure="read"` and this page already asked for
+ *    it. What `crew.css` owns is the 26px gap between sections and the ONE
+ *    full-bleed exception, which is the eye gallery.
+ *  - **The three state cards above were absent from the brief** — it describes
+ *    the briefing, not the page's own failure states — and they held nine of
+ *    the surface's colour literals between them. They are on the same grammar.
+ *
  * # Two auth layers, and neither is decoration
  *
  * The route is admin-only in the client the way its neighbours are, and
@@ -32,6 +51,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
+import "@/features/admin/components/crew/crew.css";
 import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery";
 import { CrewGeneral } from "@/features/admin/components/crew/CrewGeneral";
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
@@ -206,9 +226,9 @@ export default function AdminCrew() {
 
   return (
     <StaffSurface breadcrumb="Admin / Crew" measure="read" bar={<StaffBarAdmin />}>
-      <main className="space-y-4">
+      <main className="dp-crew">
         {stateQuery.isLoading && (
-          <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6 text-sm text-[#999]">
+          <div className="dp-crew__card dp-crew__body dp-crew__body--quiet">
             Loading the briefing…
           </div>
         )}
@@ -224,26 +244,26 @@ export default function AdminCrew() {
             malformed scope — the stamp at the foot says the check failed and
             the next tick retries (PR #135 review, findings 1–2). */}
         {!stateQuery.data && stateQuery.isError && stateQuery.error.data?.code === "NOT_FOUND" && (
-          <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
-            <h2 className="text-sm font-semibold text-[#0A0A0A]">This page isn’t switched on yet</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#666]">
+          <div className="dp-crew__card">
+            <h2 className="dp-crew__title">This page isn’t switched on yet</h2>
+            <p className="dp-crew__body dp-crew__body--soft dp-crew__gap--tight">
               The crew briefing is built but dark. It turns on when{" "}
-              <span className="font-medium text-[#0A0A0A]">CREW_TAB_SCOPE</span> is set — and the{" "}
-              <span className="font-medium text-[#0A0A0A]">crew_replies</span> table has to be
-              created first, by running the ceremony against production.
+              <span className="dp-crew__strong">CREW_TAB_SCOPE</span> is set — and the{" "}
+              <span className="dp-crew__strong">crew_replies</span> table has to be created
+              first, by running the ceremony against production.
             </p>
           </div>
         )}
 
         {!stateQuery.data && stateQuery.isError && stateQuery.error.data?.code !== "NOT_FOUND" && (
-          <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
-            <h2 className="text-sm font-semibold text-[#0A0A0A]">Something is wrong with this page</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#666]">
+          <div className="dp-crew__card">
+            <h2 className="dp-crew__title">Something is wrong with this page</h2>
+            <p className="dp-crew__body dp-crew__body--soft dp-crew__gap--tight">
               The tab is switched on, but the briefing could not be loaded. That usually means a
               configuration fault on the server rather than anything you did — the crew will see the
               same error and fix it. Nothing you have written is lost.
             </p>
-            <p className="mt-2 text-[11px] text-[#999]">
+            <p className="dp-crew__mono dp-crew__gap--tight">
               {readableFailure(stateQuery.error, "The server refused the request.")}
             </p>
           </div>
@@ -334,7 +354,7 @@ export default function AdminCrew() {
             {/* The edition number, said plainly — there is no history UI and git
                 holds the old ones (design §10) — and when the page last checked
                 for a new one (#133): an honest liveness signal, not a spinner. */}
-            <p className="pt-2 text-[11px] text-[#BBB] text-center" data-testid="crew-edition-stamp">
+            <p className="dp-crew__stamp" data-testid="crew-edition-stamp">
               Briefing edition {stateQuery.data.briefing.edition}, written by{" "}
               {stateQuery.data.briefing.shift} · checked {checkedAgo}
               {stateQuery.isError && " · the last check failed — trying again"}

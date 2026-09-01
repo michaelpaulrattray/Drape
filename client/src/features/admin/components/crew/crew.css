@@ -1,0 +1,1143 @@
+/* ============================================================
+   THE CREW TAB — brief 08 (#398).
+
+   Every value here is a token or a number the brief states. No colour
+   literal exists in this file and `token-guard` enrols the directory.
+
+   ⚠ **THIS SHEET IS THE SURFACE AND NOTHING ELSE.** Brief 08 §1 is a
+   warning rather than an instruction: *"Crew is already built, and its
+   content architecture is better than my prototype's … where my prototype
+   and the built Crew disagree on content, the built one wins."* So every
+   class below replaces a hex literal, a Tailwind size or a `font-semibold`
+   with the house device. Nothing here moves a paragraph, drops a quote,
+   adds a second progress number or splits a list.
+
+   The prefix is `dp-crew` for the reason the staff and overview sheets
+   give: these class names are typed by hand in TSX, and a long prefix is
+   what gets abbreviated inconsistently at the fifth call site.
+
+   ⚠ **THE COLUMN IS NOT HERE, AND THAT IS DELIBERATE.** #395 gave
+   `StaffSurface` a `measure="read"` → `.dp-staff__col--read`, 790px, and
+   the page already asks for it. §2's width is the shell's; what this sheet
+   owns is the gap between sections and the ONE full-bleed exception.
+   ============================================================ */
+
+/* --------------------------------------------------------- the page (§2) */
+
+/*
+  26px between sections, from §2. The page carried `space-y-4` (16px) — a
+  Tailwind default nobody chose, on a surface whose sections are each a
+  different question.
+*/
+.dp-crew {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* Head + body, for the sections that are a head over loose cards. */
+.dp-crew__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/*
+  The right-hand meta on a `TableHead`. §3: the inline count `Needs you · 3`
+  moves here as `3 open`, and the hairline is what separates the two — which
+  is why the middle dot goes.
+*/
+.dp-crew__meta {
+  font: 400 11px var(--font-sans);
+  color: var(--faint);
+}
+
+/*
+  ⚠ **THE ONE FULL-BLEED SECTION (§2).** The eye gallery judges pictures,
+  and at 790px a two-up grid gives tiles too small to decide anything with.
+  It breaks out to the 1240px working measure — as a wrapper on the section,
+  never by widening the page, so every other section stays at the reading
+  measure his brief asks for.
+
+  `margin-inline` of half the difference is what makes a child wider than
+  its parent without either of them knowing about the other.
+
+  ⚠ **THE AVAILABLE WIDTH IS NOT `100vw`.** The rail takes `--rail-w` and
+  the pane takes `--s-11` of padding on each side, so a breakout measured
+  against the viewport overshoots by ~140px and hands the pane a horizontal
+  scrollbar — on the one section whose job is to be looked at. The 80px is
+  that padding plus a scrollbar allowance; the `min()` means a narrow window
+  degrades to the pane's own width rather than scrolling. Measured at 1440
+  (1240px, the full working measure) and at 1024 (868px inside 884px).
+*/
+.dp-crew__bleed {
+  --dp-crew-bleed: min(1240px, calc(100vw - var(--rail-w) - 80px));
+  width: var(--dp-crew-bleed);
+  margin-inline: calc((100% - var(--dp-crew-bleed)) / 2);
+}
+
+/* ----------------------------------------------------- the card shell (§5) */
+
+.dp-crew__card {
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  background: var(--surface);
+  padding: 18px 19px;
+}
+
+/*
+  A divider inside a card. `--rule` is the token for exactly this, and it is
+  the only line that appears inside a Crew card.
+*/
+.dp-crew__rule {
+  margin-top: var(--s-8);
+  padding-top: var(--s-8);
+  border-top: 1px solid var(--rule);
+}
+
+.dp-crew__rule--tight {
+  margin-top: var(--s-7);
+  padding-top: var(--s-6);
+}
+
+/*
+  The two vertical steps this page uses inside a card. Two named classes
+  rather than an inline `style` at each call site: an inline style is a
+  literal wearing a different hat, and the whole point of the sheet is that
+  the values are in one place.
+*/
+.dp-crew__gap {
+  margin-top: var(--s-6);
+}
+
+.dp-crew__gap--tight {
+  margin-top: var(--s-2);
+}
+
+/*
+  The shrinkable half of a two-column row. Every ellipsis on this page needs
+  it: a flex child's default `min-width: auto` refuses to shrink below its
+  content, so a long card title pushes the switch off the row instead of
+  truncating.
+*/
+.dp-crew__min {
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------ type (§4) */
+
+/*
+  ⚠ **NO WEIGHT ABOVE 500 ANYWHERE ON THIS PAGE.** §4: *"`font-semibold`
+  goes everywhere. The foundation states of itself that 600 is never used."*
+  Emphasis on this surface is size, colour and space.
+*/
+.dp-crew__title {
+  font: 500 14px var(--font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.dp-crew__mission {
+  font: 400 14px/1.65 var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-crew__body {
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-crew__body--soft {
+  color: var(--metaStrong);
+}
+
+.dp-crew__body--quiet {
+  color: var(--meta);
+}
+
+/* An option's consequence, and any secondary sentence sitting under one. */
+.dp-crew__conseq {
+  font: 400 12.5px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+/*
+  ⚠ **EVERY MEASURED VALUE IS MONO (§4)** — step numbers, rung keys, dates,
+  times, counts, issue numbers. This is the biggest visual change in the
+  brief and the one that makes Crew look like the rest of the product.
+*/
+.dp-crew__mono {
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+/* Step numbers and rung keys sit a half-step up from a date. */
+.dp-crew__num {
+  font: 400 11px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-crew__num--ink {
+  color: var(--ink);
+}
+
+/* An inner heading — `The ladder`, `Recommendation`, `Recent shifts` (§3). */
+.dp-crew__subhead {
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--metaStrong);
+}
+
+/* Inline emphasis inside a sentence. Never a weight above 500. */
+.dp-crew__strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* A command he is asked to run. Mono because it is a literal to be copied. */
+.dp-crew__command {
+  font: 400 11px var(--font-mono);
+  color: var(--metaStrong);
+  word-break: break-all;
+}
+
+/* ------------------------------------------------------------ quote (§4) */
+
+/*
+  ⚠ **NO ITALIC.** §4: *"A verbatim quote is already marked by its left rule
+  and its attribution; italic is a third marker for one fact, and there is
+  no italic anywhere else in the product."* The 2px `--ink` rule and the
+  attribution stay exactly as they were — the quote's WORDS are untouchable
+  (§1), only its face changes.
+*/
+.dp-crew__quote {
+  margin-top: var(--s-2);
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--ink);
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--secondary);
+  font-style: normal;
+}
+
+.dp-crew__quoteWho {
+  color: var(--meta);
+}
+
+/* ------------------------------------------------------------ chips (§5) */
+
+.dp-crew__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.dp-crew__chipcell {
+  max-width: 16rem;
+}
+
+.dp-crew__chip {
+  display: inline-block;
+  padding: 2px var(--s-3);
+  border: 1px solid var(--borderSoft);
+  border-radius: var(--r-pill);
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-crew__chip--good {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/*
+  ⚠ **THE ONE COLOUR ON THE BANNER, AND IT IS THE HOUSE RED.** §5 names it:
+  `CHIP_TONE.warn`'s hard-coded `#C0473A` IS `--errorInk`, and its own
+  argument — *"a warn chip is a problem wearing a smaller badge"* — stands
+  once it is a token. `--errorInk` rather than `--error` because this is
+  TEXT: plain `--error` measures 3.40:1 on the dark surface, below AA.
+*/
+.dp-crew__chip--warn {
+  border-color: var(--errorInk);
+  color: var(--errorInk);
+}
+
+.dp-crew__chipsrc {
+  margin-top: 2px;
+  padding-left: var(--s-1);
+  font: 400 10px/1.4 var(--font-sans);
+  color: var(--faint);
+}
+
+/* ------------------------------------------------- the program banner (§6) */
+
+.dp-crew__focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s-3);
+}
+
+/*
+  The milestone track. §6: `--fill` track with an `--ink` fill.
+
+  ⚠ **ONE NUMBER, READ OFF THE STEPS.** §7 forbids a second progress number
+  beside it and #74's own rule is that the bar is derived from the step
+  states so it moves the day work starts. The sentence under it is that same
+  reading in words, not a second measurement.
+*/
+.dp-crew__track {
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.dp-crew__fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  transition: width var(--t-mid) var(--ease);
+}
+
+.dp-crew__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+}
+
+.dp-crew__step {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-5);
+}
+
+.dp-crew__stepnum {
+  flex: none;
+  width: 16px;
+}
+
+.dp-crew__steptext {
+  flex: 1;
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-crew__steptext--done {
+  color: var(--meta);
+}
+
+.dp-crew__stepstate {
+  flex: none;
+}
+
+/* ---- the rung bar (§6): filled done, ringed current, light queued, dashed parked */
+
+.dp-crew__rungbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-1);
+  margin-bottom: var(--s-5);
+}
+
+.dp-crew__rungcell {
+  flex: 1;
+  min-width: 0;
+}
+
+.dp-crew__rungseg {
+  display: block;
+  height: 8px;
+  border-radius: 3px;
+}
+
+.dp-crew__rungseg--done {
+  background: var(--ink);
+}
+
+.dp-crew__rungseg--current {
+  background: var(--surface);
+  border: 2px solid var(--ink);
+}
+
+.dp-crew__rungseg--queued {
+  background: var(--border);
+}
+
+.dp-crew__rungseg--parked {
+  background: transparent;
+  border: 1px dashed var(--dashed);
+}
+
+/*
+  The key under each segment. `truncate` stays (§6's own note): with eight
+  rungs inside 790px they need it, and a wrapped key would make the bar two
+  rows tall for no gain.
+*/
+.dp-crew__rungkey {
+  display: block;
+  margin-top: var(--s-1);
+  font: 400 10px var(--font-mono);
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp-crew__rungkey--current {
+  color: var(--ink);
+}
+
+.dp-crew__rungs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.dp-crew__rung {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-5);
+}
+
+.dp-crew__rungid {
+  flex: none;
+  width: 56px;
+}
+
+.dp-crew__rungtitle {
+  flex: 1;
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-crew__rungtitle--current {
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------- needs you (§6) */
+
+/*
+  ⚠ **THE EMPTY STATE STAYS, AND BRIEF 07's RULE IS EXPLICITLY REVERSED
+  HERE.** §6: *"Nothing is waiting on you"* is the answer to the question
+  this page exists to answer, and its absence would read as a loading
+  failure. It is a `--well` block rather than a full card — present, and
+  visibly not a thing to act on.
+*/
+.dp-crew__well {
+  padding: var(--s-6) var(--s-7);
+  border-radius: var(--r-lg);
+  background: var(--well);
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--meta);
+}
+
+.dp-crew__cardhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px var(--s-5);
+}
+
+/* `#398 · filed 1 Sep 09:12` — a reference and a date, so mono (§4). */
+.dp-crew__ref {
+  flex: none;
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-crew__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+/*
+  An option row. §6: label and consequence on SEPARATE LINES rather than run
+  together with an em dash — at 790px a long consequence wraps under the
+  label and the dash is left orphaned at the end of the first line.
+*/
+.dp-crew__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin-top: var(--s-5);
+}
+
+.dp-crew__optlabel {
+  display: block;
+  font: 500 12.5px var(--font-sans);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------- the eye (§6) */
+
+.dp-crew__frames {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s-7);
+  margin-top: var(--s-7);
+}
+
+/*
+  ⚠ **DASHED, AND THERE IS NO KEPT STATE — BECAUSE THERE IS NO KEPT TILE.**
+  §6 asks for the casting keeper grammar (a `3px --accentSolid` underline
+  plus a pill when kept). `CrewEyeGallery` renders `state === "open"` only:
+  #292 moved every judged item into the one history block, which was his own
+  ruling. So a kept tile cannot occur here, and building its styling would
+  be a dead state that reads as tested. Dashed-while-undecided is true of
+  every tile on this surface by construction — the same reason `NeedsHuman`
+  is dashed one surface over.
+*/
+.dp-crew__frame {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px dashed var(--dashed);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--media);
+  cursor: zoom-in;
+}
+
+.dp-crew__frame:hover {
+  border-color: var(--lineStrong);
+}
+
+.dp-crew__frameimg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.dp-crew__caption {
+  margin-top: var(--s-2);
+  font: 400 12px/1.45 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-crew__arm {
+  margin-right: var(--s-2);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------- next up (§4) */
+
+.dp-crew__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.dp-crew__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s-5);
+}
+
+/* The position IS the answer (#290), so it is what the eye lands on. */
+.dp-crew__pos {
+  flex: none;
+  width: 22px;
+  text-align: right;
+}
+
+.dp-crew__rowmain {
+  flex: 1;
+  min-width: 12rem;
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-crew__rowwhy {
+  display: block;
+  margin-top: 2px;
+  font: 400 11px/1.55 var(--font-sans);
+  color: var(--meta);
+}
+
+.dp-crew__hold {
+  flex: none;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-crew__hold--you {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.dp-crew__urgent {
+  flex: none;
+  font: 400 9px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+
+.dp-crew__foot {
+  margin-top: var(--s-7);
+  padding-top: var(--s-7);
+  border-top: 1px solid var(--rule);
+  font: 400 11px/1.55 var(--font-sans);
+  color: var(--meta);
+}
+
+/* -------------------------------------------------------- pipeline (§6) */
+
+/*
+  §6: solid where merged, dashed where waiting. Nothing here is merged — the
+  merged rows left for the history block (#291) — so the marker is the state
+  word's weight, and the dash is what the SEGMENT bar carries. A status word
+  that wants a human is ink; the rest is quiet.
+*/
+.dp-crew__status {
+  flex: none;
+  width: 92px;
+  font: 400 11px var(--font-sans);
+  color: var(--meta);
+}
+
+.dp-crew__status--wants {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------- problems (§6) */
+
+/*
+  ⚠ **THIS IS THE ONE SECTION WHERE `--error` IS LEGITIMATE (§6).** A
+  problem is urgent; a waiting card is not. `--errorInk` rather than
+  `--error` because it is a text colour, and plain `--error` on the dark
+  surface is 3.40:1 — below the AA floor `tokens.css` records.
+*/
+.dp-crew__sev {
+  flex: none;
+  padding: 2px var(--s-3);
+  border: 1px solid var(--borderSoft);
+  border-radius: var(--r-pill);
+  font: 400 11px var(--font-sans);
+  color: var(--meta);
+}
+
+.dp-crew__sev--urgent {
+  border-color: var(--errorInk);
+  color: var(--errorInk);
+}
+
+.dp-crew__probs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-7);
+}
+
+/* --------------------------------------------------- working now (§ new) */
+
+/*
+  ⚠ **BRIEF 08 NEVER SAW THIS COMPONENT.** #272 landed after the mockup was
+  drawn, and §6 does not list it. It is restyled to the same grammar under
+  §8's bar (zero hex under `components/crew/`).
+
+  ⚠ **AND ITS RED IS A STATED DEPARTURE FROM §7.** §7 bans colour by state
+  except warn chips and Problems. A shift that has stopped checking in is
+  the one thing on this page worth acting on tonight — the *problem* class
+  §6 admits, and brief 07's own rule one surface over (fine is colourless,
+  red means urgent). It is `--errorInk`, and nothing else here gains a
+  colour.
+*/
+.dp-crew__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font: 400 11px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-crew__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.dp-crew__card--alert {
+  border-color: var(--errorInk);
+}
+
+.dp-crew__alert {
+  margin-bottom: var(--s-3);
+  font: 400 13px/1.55 var(--font-sans);
+  color: var(--errorInk);
+}
+
+.dp-crew__past {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.dp-crew__pastrow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  font: 400 12px/1.6 var(--font-sans);
+  color: var(--secondary);
+}
+
+.dp-crew__outcome {
+  flex: none;
+  width: 52px;
+  font: 400 9px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+
+.dp-crew__outcome--failed {
+  color: var(--errorInk);
+}
+
+/* --------------------------------------------- background work (§ new) */
+
+/*
+  ⚠ **ALSO ABSENT FROM §6** — #277/#285/#324/#325, and the largest file in
+  the directory. Same grammar, no behaviour touched: the switch stays a real
+  `<button role="switch">`, the counts keep their age and their exclusion
+  clause, and the *Not relevant* tap keeps its sentence.
+*/
+.dp-crew__switch {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--borderSoft);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.dp-crew__switch--on {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.dp-crew__switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dp-crew__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--meta);
+  transition: all var(--t-fast) var(--ease);
+}
+
+.dp-crew__switch--on .dp-crew__knob {
+  left: 20px;
+  background: var(--surface);
+}
+
+.dp-crew__switchrow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-7);
+}
+
+.dp-crew__cats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.dp-crew__catname {
+  font: 400 13px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-crew__catname--off {
+  color: var(--metaStrong);
+}
+
+/* The count, its age, and what it left out — one fact, one parenthesis. */
+.dp-crew__count {
+  color: var(--meta);
+}
+
+.dp-crew__blurb {
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--meta);
+}
+
+.dp-crew__titles {
+  margin-top: var(--s-2);
+  margin-left: 2px;
+  padding-left: var(--s-3);
+  border-left: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dp-crew__cardtitle {
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--metaStrong);
+  min-width: 0;
+}
+
+.dp-crew__cardrow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+/*
+  ⚠ `flex: 1` IS LOAD-BEARING and its reason is on the record: without it the
+  title shrinks to its content and the tap lands wherever that title happens
+  to end — measured across 56 rows. `min-width: 0` is what lets the ellipsis
+  work inside a flex child.
+*/
+.dp-crew__cardname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp-crew__tap {
+  flex: none;
+  padding: 1px var(--s-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-btn);
+  background: transparent;
+  font: 400 10px/1.4 var(--font-sans);
+  color: var(--faint);
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.dp-crew__tap:hover {
+  color: var(--ink);
+  border-color: var(--borderSoft);
+}
+
+.dp-crew__tap--marked {
+  border-color: var(--borderSoft);
+  color: var(--metaStrong);
+}
+
+.dp-crew__tap:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dp-crew__taken {
+  margin-top: 1px;
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--meta);
+}
+
+/* ----------------------------------------------- thread + reply box (§6) */
+
+.dp-crew__thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.dp-crew__entry {
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--ink);
+}
+
+.dp-crew__entryhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--s-3);
+}
+
+/* §6: author `500 11.5px`, time mono `--faint`. */
+.dp-crew__who {
+  font: 500 11.5px var(--font-sans);
+  color: var(--ink);
+}
+
+/*
+  §6: *"Acknowledged replies get a quiet `--faint` marker, not a colour."*
+  So the seen/unseen pair differs by WORD and by weight of colour, never by
+  hue — which is also why the tick is gone: the sentence already says it.
+*/
+.dp-crew__seen {
+  font: 400 10.5px var(--font-mono);
+  color: var(--meta);
+}
+
+.dp-crew__unseen {
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-crew__said {
+  margin-top: var(--s-1);
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+/*
+  The box uses the foundation's `Field` and `Button` (§6). `.dp-field` is
+  built around a single-line input, so a textarea inside it needs its items
+  aligned to the top — one modifier, rather than a foundation change for one
+  consumer.
+*/
+.dp-crew__replybox {
+  margin-top: var(--s-5);
+}
+
+.dp-crew__replyfield {
+  align-items: flex-start;
+}
+
+.dp-crew__replyinput {
+  flex: 1;
+  min-width: 0;
+  min-height: 66px;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: vertical;
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-crew__replyinput::placeholder {
+  color: var(--meta);
+}
+
+.dp-crew__replyfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  margin-top: var(--s-3);
+}
+
+/* --------------------------------------------------------- history (§6) */
+
+/*
+  §6: dimmer throughout — `--metaStrong` bodies, mono dates, no card per
+  entry. It is memory, not work.
+*/
+.dp-crew__hist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.dp-crew__histrow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-5);
+}
+
+.dp-crew__kind {
+  flex: none;
+  width: 92px;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-crew__kind--done {
+  color: var(--meta);
+}
+
+.dp-crew__histtitle {
+  flex: 1;
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+/* A disclosure that is a word, not a button. */
+.dp-crew__more {
+  margin-top: var(--s-7);
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--meta);
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.dp-crew__more:hover {
+  color: var(--ink);
+}
+
+/* --------------------------------------------------- the general box (§6) */
+
+.dp-crew__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+}
+
+/* ------------------------------------------------------ the edition stamp */
+
+.dp-crew__stamp {
+  padding-top: var(--s-3);
+  text-align: center;
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+/* ------------------------------------------------------- the viewer (§6) */
+
+/*
+  The judging surface. It is the one place on this page that is not on the
+  page's own ground: a viewer takes the whole screen so what is behind it
+  must recede, which is what `--viewerScrim` is for. Its own text sits on
+  that scrim, so `--onScrim` — NOT `--ink`, which flips with the theme while
+  the scrim does not.
+*/
+.dp-crew__viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--viewerScrim);
+}
+
+.dp-crew__viewerbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding: var(--s-5) var(--s-7);
+}
+
+.dp-crew__viewerpos {
+  font: 400 11px var(--font-mono);
+  color: var(--onScrim);
+  opacity: 0.6;
+}
+
+.dp-crew__viewerbtn {
+  padding: var(--s-1) var(--s-4);
+  border: 1px solid var(--onScrim);
+  border-radius: var(--r-pill);
+  background: transparent;
+  font: 400 12px var(--font-sans);
+  color: var(--onScrim);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.dp-crew__viewerbtn:hover {
+  opacity: 1;
+}
+
+.dp-crew__viewerclose {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--onScrim);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.dp-crew__viewerclose:hover {
+  opacity: 1;
+}
+
+.dp-crew__viewerstage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.dp-crew__viewerstage--actual {
+  display: block;
+  overflow: auto;
+}
+
+.dp-crew__viewerimg {
+  max-width: 92vw;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.dp-crew__viewerstage--actual .dp-crew__viewerimg {
+  display: block;
+  margin: auto;
+  max-width: none;
+  max-height: none;
+}
+
+.dp-crew__viewercap {
+  flex: none;
+  padding: var(--s-7) var(--s-9);
+  text-align: center;
+  font: 400 13px/1.45 var(--font-sans);
+  color: var(--onScrim);
+  opacity: 0.85;
+}
+
+.dp-crew__viewerarm {
+  margin-right: var(--s-3);
+  font-weight: 500;
+}
+
+.dp-crew__viewernav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--scrimChip);
+  color: var(--onScrim);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+
+.dp-crew__viewernav:hover {
+  background: var(--scrimChipHov);
+}
+
+.dp-crew__viewernav--prev { left: var(--s-5); }
+.dp-crew__viewernav--next { right: var(--s-5); }

@@ -18,10 +18,22 @@
  * done cards are still on the page and still his memory of what he decided;
  * they are in the one `CrewRecentHistory` block with everything else already
  * dealt with. Nothing is deleted, and this section is now only what is open.
+ *
+ * ⚠ **BRIEF 08 KEEPS THE EMPTY STATE, AND SAYS SO IN AS MANY WORDS (#398 §4).**
+ * Brief 07's rule is that a section with nothing to show disappears. That rule
+ * is REVERSED here, by his own §6: *"Nothing is waiting on you"* is the answer
+ * to the question this page exists to answer, and its absence would read as a
+ * loading failure. It is a `--well` block rather than a card — present, and
+ * visibly not a thing to act on.
+ *
+ * ⚠ **AND THE OPTIONS ARE TWO LINES NOW, NOT ONE (§6).** Label and consequence
+ * were run together with an em dash; at 790px a long consequence wraps under
+ * the label and the dash is left orphaned at the end of the first line.
  */
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { shortDate } from "./CrewProgramBanner";
+import { TableHead } from "@/foundation";
 import type { CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
 
 export function CrewNeedsYou({
@@ -40,56 +52,56 @@ export function CrewNeedsYou({
   const open = cards.filter((card) => card.state === "open");
 
   return (
-    <section>
-      <h2 className="text-[11px] uppercase tracking-[0.12em] text-[#999] mb-3">
-        Needs you {open.length > 0 && <span className="text-[#0A0A0A]">· {open.length}</span>}
-      </h2>
+    <section className="dp-crew__section">
+      {/* §3: the inline count moves to the head's right-hand meta. The hairline
+          is what separates the label from the count, so the middle dot goes. */}
+      <TableHead eyebrow="Needs you">
+        {open.length > 0 && <span className="dp-crew__meta">{open.length} open</span>}
+      </TableHead>
 
       {open.length === 0 && (
-        <div className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6 text-sm text-[#999]">
+        <div className="dp-crew__well">
           Nothing is waiting on you. The crew will file a card here when something is.
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="dp-crew__stack">
         {open.map((card) => (
-          <article key={card.id} className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sm:p-6">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <h3 className="text-base font-semibold text-[#0A0A0A]">{card.title}</h3>
-              <span className="text-[11px] text-[#BBB] shrink-0">
+          <article key={card.id} className="dp-crew__card">
+            <div className="dp-crew__cardhead">
+              <h3 className="dp-crew__title">{card.title}</h3>
+              <span className="dp-crew__ref">
                 {card.issueNumber !== null && <>#{card.issueNumber} · </>}
                 filed {shortDate(card.filedAt)}
               </span>
             </div>
 
             {/* Product impact first — his standing order, held by the layout. */}
-            <p className="mt-3 text-sm leading-relaxed text-[#0A0A0A]">{card.productImpact}</p>
+            <p className="dp-crew__body dp-crew__gap">{card.productImpact}</p>
 
             {card.workedExample && (
-              <p className="mt-3 text-sm leading-relaxed text-[#666]">{card.workedExample}</p>
+              <p className="dp-crew__body dp-crew__body--soft dp-crew__gap">{card.workedExample}</p>
             )}
 
             {card.recommendation && (
-              <p className="mt-4 text-sm leading-relaxed text-[#0A0A0A]">
-                <span className="text-[11px] uppercase tracking-[0.12em] text-[#999] mr-2">
-                  Recommendation
-                </span>
-                {card.recommendation}
-              </p>
+              <div className="dp-crew__gap">
+                <span className="dp-crew__subhead">Recommendation</span>
+                <p className="dp-crew__body dp-crew__gap--tight">{card.recommendation}</p>
+              </div>
             )}
 
             {card.options.length > 0 && (
-              <ul className="mt-3 space-y-2">
+              <ul className="dp-crew__options">
                 {card.options.map((option) => (
-                  <li key={option.key} className="text-sm leading-relaxed">
-                    <span className="font-medium text-[#0A0A0A]">{option.label}</span>
-                    <span className="text-[#666]"> — {option.consequence}</span>
+                  <li key={option.key}>
+                    <span className="dp-crew__optlabel">{option.label}</span>
+                    <span className="dp-crew__conseq">{option.consequence}</span>
                   </li>
                 ))}
               </ul>
             )}
 
-            <div className="mt-5 pt-4 border-t border-[#EFEFEF]">
+            <div className="dp-crew__rule dp-crew__rule--tight">
               <CrewReplyThread
                 replies={replies.filter((reply) => reply.cardId === card.id)}
                 acknowledgedReplyIds={acknowledgedReplyIds}
@@ -104,7 +116,6 @@ export function CrewNeedsYou({
           </article>
         ))}
       </div>
-
     </section>
   );
 }
