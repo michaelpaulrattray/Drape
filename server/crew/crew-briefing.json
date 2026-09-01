@@ -1,7 +1,7 @@
 {
-  "edition": 183,
-  "updatedAt": "2026-09-01T14:35:00+10:00",
-  "shift": "Foreman - shift 2026-09-01 14:35 AEST (foreman-163)",
+  "edition": 184,
+  "updatedAt": "2026-09-01T15:45:00+10:00",
+  "shift": "Foreman - shift 2026-09-01 15:45 AEST (foreman-164)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,34 +111,24 @@
     ],
     "chips": [
       {
-        "label": "Your account is one window instead of five - and #267 is unblocked and closed",
+        "label": "Your nights can now tell a slow check from a dead one",
         "tone": "good",
-        "source": "#365 and #267 closed, PR #370 merged 75c3a413. Six frames in your gallery, both themes. 10,822 tests pass, 0 fail."
+        "source": "#368, PR #371 merged ec8a2fc2. On 26 Aug a night burned 40 minutes waiting for a result GitHub was never going to send."
       },
       {
-        "label": "The components check caught its first duplicate - one commit before it shipped",
-        "tone": "good",
-        "source": "#366's rule, run for the first time under it. The Monthly/Annual switch had been built twice; the new copy is deleted and the shared one gained the badge it lacked."
-      },
-      {
-        "label": "Four things looked right in the code and were wrong on screen",
+        "label": "The ten-minute figure on that card was wrong by about a hundred times",
         "tone": "warn",
-        "source": "Text boxes drawing no box, usage bars with no height, a price running off the card, a table with no buttons. All four found by opening the app; none of them visible from the source."
+        "source": "Measured over 253 pushes in a week: a check normally starts in 4 seconds, worst case 56. Two earlier ways of measuring said minutes, both wrong the same way."
       },
       {
-        "label": "The queue: 98 open - 6 urgent - 4 you ordered - nothing rotting",
+        "label": "Two more of your ordered cards were already finished - now closed",
         "tone": "good",
-        "source": "Measured 2026-09-01 14:30 AEST. Two of your ordered cards closed tonight (#365, #267). Nothing open has gone a week without being re-read."
+        "source": "#285 (card titles under your switches) and #325 (the whole pipeline on one panel). Both live and working; neither had been closed. Your bar re-measured: 99 cards, groups sum to 99."
       },
       {
-        "label": "The queue: 101 open · 8 urgent · 7 you ordered · nothing rotting yet",
-        "tone": "neutral",
-        "source": "Counted tonight, not carried. 0 past the week line — but 29 cross it TODAY, all last read 25 Aug, and that is the number to watch. Two closed tonight were yours."
-      },
-      {
-        "label": "The top bar and rail are now identical on every page, from one place",
-        "tone": "good",
-        "source": "PR #305 merged 09e6d994; driven at the running app — 5 surfaces x 2 themes, 85/85 checks, plus a click test on /casting (credits->billing, gear->Settings, account->menu)"
+        "label": "The queue: 99 open - 6 urgent - 5 you ordered - 4 starting to rot",
+        "tone": "warn",
+        "source": "Rotting went 0 to 4 tonight: #4, #10, #12, #13, a week untouched, all from the 25 Aug catalogue. Not stuck - just old enough to need re-reading before anyone trusts them."
       }
     ]
   },
@@ -265,7 +255,7 @@
       "workedExample": "It does not close the card the instant you tap. Doing that from the page would mean putting a password into the live site that can CHANGE things in our code repository — a bigger key than the read-only one already turned down on this same page, and that is your decision to make rather than something to hand over as the side effect of a convenient button. The wait costs about an hour and buys a second pair of eyes: you found four already-finished cards yourself last Saturday just by reading them. And nothing on this road deletes anything — undo leaves the record that you once asked, exactly as your own rule for cards says.",
       "options": [],
       "recommendation": "⚠ ONE COMMAND FROM YOU AND THE TAPS START WORKING — until you run it, tapping \"Not relevant\" records nothing:\n\n  railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-card-intents.mts --production\n\nChecked on production tonight rather than assumed: the table it creates is still absent. Your page is honest meanwhile — the buttons are withheld rather than drawn dead, so nothing looks broken and nothing pretends to work. This is the same friction you ordered removed on #322, which is queued and unstarted.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-31T20:15:00+10:00",
       "issueNumber": 325
     },
@@ -396,7 +386,7 @@
       "workedExample": "Open the panel and Bugs (12) now lists five of the twelve underneath it: “`answered` conflates ‘he replied’ with ‘no longer needs him’”, “22 scripts read their flags by name”, “pnpm check is RED locally”, “the openrouter LOW banner cannot ever clear”, and “a briefing edition that discusses quiet shifts is classified as one”. That is the difference the card was arguing for: twelve is a night's work and tells you nothing about whether it is work you want, and those five titles let you decide before you flip the switch.",
       "options": [],
       "recommendation": "Nothing to run and nothing to answer — glance at the panel and, if it reads the way you wanted, this one closes. ⚠ The part worth telling you: this card kept asking you to run that command for 32 hours after you had already run it, and it was at the top of your desk the whole time. It is the second time in two days a card has gone on giving advice its own newer facts had cancelled — the first was the one that would have had you delete two Casts you had just told us to keep. Nothing on the page checks for it yet; that is #344, and it is the next thing your weekly review looks at.",
-      "state": "answered",
+      "state": "done",
       "issueNumber": 285,
       "filedAt": "2026-08-31T03:50:00+10:00"
     },
@@ -1208,6 +1198,28 @@
       "state": "done",
       "filedAt": "2026-08-31T15:30:00+10:00",
       "issueNumber": 308
+    },
+    {
+      "id": "reviewer-manual-road-368",
+      "title": "One word: should we add a second manual button for the reviewer, or fix the one that already exists?",
+      "productImpact": "This does not touch anything a customer sees - it is about how your nights get a second opinion on their own work. The card said the reviewer has no manual re-trigger and that adding one was a one-line change. Neither turned out to be true. The reviewer DOES have a manual road today (adding a label to the pull request), and the button the card asked for cannot carry a review at all: the tool the reviewer runs on supports being started that way but is then given no pull request to attach its answer to, so it would run and post nothing. That is the shape of thing that has quietly gone dead here three times.",
+      "workedExample": "The real defect is smaller and worth fixing: the label road works exactly ONCE per pull request. Adding a label that is already there tells GitHub nothing, so the second time a night asks for another look, nothing happens and nothing says so. Removing the label and re-adding it works. So the choice is: (A) write that down as the recipe and leave the new button alone until the reviewer is back and it can actually be tested, or (B) build the button anyway in the different mode that would be needed.",
+      "options": [
+        {
+          "key": "fix-the-road",
+          "label": "A - fix the road we have, skip the new button",
+          "consequence": "One sentence changes in the nights' instructions and the second look works every time. No untested machinery, and the button can still be built later if you want it."
+        },
+        {
+          "key": "build-the-button",
+          "label": "B - build the button anyway",
+          "consequence": "A real piece of design work, and it cannot be proven to work until your Fable allowance is back - so it would ship untested, which is how the last three dead controls got written."
+        }
+      ],
+      "recommendation": "A. The road already exists; what it needs is one honest sentence, not a second road nobody can test yet.",
+      "state": "open",
+      "issueNumber": 368,
+      "filedAt": "2026-09-01T15:45:00+10:00"
     }
   ],
   "eyeItems": [
@@ -1359,7 +1371,7 @@
       "id": "queue-titles-285-frames",
       "title": "Your switch panel, before and after",
       "question": "This is the whole change. Does naming five cards under each switch tell you what you wanted to know — or is it more than you want on a panel you look at from bed?",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-31T03:50:00+10:00",
       "issueNumber": 285,
       "cardId": "queue-titles-285",
@@ -3300,6 +3312,13 @@
       "status": "merged",
       "prNumber": 352,
       "note": "Merged bde12831 on a green gate — both gate-checks runs SUCCESS, founder-gate SUCCESS. Read at your production rows BEFORE the change was written: you hold ZERO boards, and the wardrobe is empty across EVERY account (0 garments, 0 outfits, 0 looks, 0 sessions) — so nothing of yours is stranded and removing Home's wardrobe door strands nothing at all. The one real consequence, said rather than glossed: two canvases on two other accounts stop being LISTABLE; they are not deleted and still open at their own address. Nothing on the server was touched. The Fable reviewer is still capped, so the red review is the outage and not a verdict."
+    },
+    {
+      "id": "stall-alarm-368",
+      "title": "Your nights stop waiting when a check will never arrive (#368)",
+      "status": "merged",
+      "prNumber": 371,
+      "note": "Merged ec8a2fc2 on a green gate (gate-checks PASS, founder-gate PASS, no money or sign-in code in it). The `review` check is red and that is the Fable outage again - read at the run log, it did not complete and produced no verdict, so nothing here was judged. 10,838 tests pass, 0 fail. Proven twice against a real running check: it watched this very change's gate from start to finish and never once cried wolf."
     }
   ],
   "problems": [
@@ -3529,7 +3548,7 @@
     75
   ],
   "nextUp": {
-    "readAt": "2026-09-01T04:23:48.985Z",
+    "readAt": "2026-09-01T05:37:54.521Z",
     "items": [
       {
         "issueNumber": 321,
@@ -3537,18 +3556,23 @@
         "urgent": true
       },
       {
-        "issueNumber": 285,
-        "title": "The switch panel shows a count — show the card titles under it too",
+        "issueNumber": 372,
+        "title": "The Invite + becomes a live door into Settings → Members, and gets its hover — the hold is discharged",
         "urgent": false
       },
       {
-        "issueNumber": 325,
-        "title": "The whole pipeline on one panel — all 97 visible, switches only where unattended work is safe, and close-by-intent without a write token",
+        "issueNumber": 373,
+        "title": "The rail's gear becomes P.cog — his eye says the current glyph reads as a filter, and the guard must invert with it",
         "urgent": false
       },
       {
-        "issueNumber": 368,
-        "title": "The stall alarm: a shift must stop waiting when no check suite will ever arrive — and review.yml still has no manual re-trigger",
+        "issueNumber": 374,
+        "title": "SECTION 04 — Account menu: one implementation, and the brief's 'topbar inline menu' is actually the legacy studio's",
+        "urgent": false
+      },
+      {
+        "issueNumber": 375,
+        "title": "Remove the TRY chips from the casting hero and grow the prompt box — filed on a comment 2026-08-30 and lost when #240 closed",
         "urgent": false
       }
     ]
