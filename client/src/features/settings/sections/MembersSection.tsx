@@ -29,7 +29,7 @@
 import { Icon, P } from "@/foundation";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 
-import { SettingsGroup, StubControl, StubNote } from "../parts";
+import { SettingsGroup, SettingsList, StubControl, StubNote } from "../parts";
 
 const ROLE_NOTES: { role: string; note: string }[] = [
   { role: "Owner", note: "Everything, plus billing and deleting the workspace." },
@@ -68,31 +68,40 @@ export function MembersSection({
 
         {/* The one row that can honestly be drawn: the signed-in account. */}
         {user ? (
-          <div className="dp-mem__row">
-            <span className="dp-mem__tile">
-              <ProfileAvatar
-                src={avatarUrl}
-                identity={user}
-                alt={user.name ?? "You"}
-                className="w-full h-full object-cover"
-              />
-            </span>
-            <span className="dp-set__rowtext">
-              <span className="dp-set__label">{user.name ?? "You"}</span>
-              <span className="dp-set__note">{user.email ?? ""}</span>
-            </span>
-            <span className="dp-set__spacer" />
-            <StubControl reason="Roles are not built yet">
-              <StubNote>OWNER</StubNote>
-            </StubControl>
-          </div>
+          <SettingsList>
+            <div className="dp-mem__row">
+              <span className="dp-mem__tile">
+                <ProfileAvatar
+                  src={avatarUrl}
+                  identity={user}
+                  alt={user.name ?? "You"}
+                  className="w-full h-full object-cover"
+                />
+              </span>
+              <span className="dp-set__rowtext">
+                <span className="dp-set__label">{user.name ?? "You"}</span>
+                <span className="dp-set__note">{user.email ?? ""}</span>
+              </span>
+              <span className="dp-set__spacer" />
+              <StubControl reason="Roles are not built yet">
+                <StubNote>OWNER</StubNote>
+              </StubControl>
+            </div>
+          </SettingsList>
         ) : null}
       </SettingsGroup>
 
-      <SettingsGroup
-        title="What each role will be able to do"
-        note="Written down now so the feature has a target rather than being invented later under pressure."
-      >
+      {/*
+        The role table is ONE bordered card carrying its own heading (#381), the
+        way the prototype draws it — not a page-level section heading over loose
+        paragraphs. It is a reference panel, and a border is what says so.
+      */}
+      <div className="dp-set__stackcard">
+        <span className="dp-set__label">What each role will be able to do</span>
+        <p className="dp-set__note">
+          Written down now so the feature has a target rather than being invented later
+          under pressure.
+        </p>
         <div className="dp-mem__roles">
           {ROLE_NOTES.map((entry) => (
             <p className="dp-mem__role" key={entry.role}>
@@ -101,11 +110,11 @@ export function MembersSection({
             </p>
           ))}
         </div>
-        <p className="dp-set__note" style={{ marginTop: "var(--s-6)" }}>
+        <p className="dp-set__note">
           Project access is set per project — open a project&apos;s settings to choose who can
           reach it.
         </p>
-      </SettingsGroup>
+      </div>
     </>
   );
 }

@@ -26,6 +26,15 @@
  * The sign-in method row is kept for the same reason: it is read off
  * `authProvider`, which is real, and it answers the question the password row
  * raises for a Google account.
+ *
+ * ## ⚠ EVERY ROW IS ITS OWN BORDERED CARD, AND DELETE IS THE ACCENT ONE (#381)
+ *
+ * The prototype draws each action row as a card — `padding: 13px 15px; border:
+ * 1px solid var(--borderCard); border-radius: 10px` — and draws the destructive
+ * one differently: `--accentLine` border on `--accentWash`, with its label and
+ * note in `--accentInk`. The brief's hairline grammar flattened all five into
+ * one undivided column, so the one row you must not mis-click looked exactly
+ * like the four you may. His ruling: the prototype wins on form.
  */
 import { useState } from "react";
 import { toast } from "sonner";
@@ -35,7 +44,7 @@ import { Button, Field, Input } from "@/foundation";
 import { ModalScrim } from "@/foundation/CastingModal";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
-import { SettingsGroup, SettingsRow, StubControl, StubNote } from "../parts";
+import { SettingsCard, SettingsGroup, StubControl, StubNote } from "../parts";
 
 export function SecuritySection({
   user,
@@ -97,46 +106,47 @@ export function SecuritySection({
   return (
     <>
       <SettingsGroup title="Security">
-        <SettingsRow label="Sign-in method" note={user?.email ?? ""}>
+        <SettingsCard label="Sign-in method" note={user?.email ?? ""}>
           <span className="dp-set__value">{providerLabel}</span>
-        </SettingsRow>
+        </SettingsCard>
 
-        <SettingsRow label="Password" note="Changing your password from here is coming.">
+        <SettingsCard label="Password" note="Changing your password from here is coming.">
           <StubControl reason="Changing a password from here is not built yet">
             <StubNote>CHANGE</StubNote>
           </StubControl>
-        </SettingsRow>
+        </SettingsCard>
 
-        <SettingsRow
+        <SettingsCard
           label="Two-factor authentication"
           note="Not enabled — recommended for owners."
         >
           <StubControl reason="Two-factor authentication is not built yet">
             <StubNote>ENABLE</StubNote>
           </StubControl>
-        </SettingsRow>
+        </SettingsCard>
 
-        <SettingsRow
+        <SettingsCard
           label="Active sessions"
           note="Seeing where you are signed in, and signing those places out, is coming."
         >
           <StubControl reason="Reviewing active sessions is not built yet">
             <StubNote>REVIEW</StubNote>
           </StubControl>
-        </SettingsRow>
+        </SettingsCard>
       </SettingsGroup>
 
       <SettingsGroup title="Your data">
-        <SettingsRow
+        <SettingsCard
           label="Export your data"
           note="Everything on this account, as one JSON file."
         >
           <Button variant="secondary" size="small" onClick={runExport} disabled={exporting}>
             {exporting ? "Preparing…" : "Export"}
           </Button>
-        </SettingsRow>
+        </SettingsCard>
 
-        <SettingsRow
+        <SettingsCard
+          tone="accent"
           label="Delete account"
           note="Permanent. Your casts, boards and wardrobe go with it."
         >
@@ -148,7 +158,7 @@ export function SecuritySection({
           >
             Delete
           </Button>
-        </SettingsRow>
+        </SettingsCard>
       </SettingsGroup>
 
       {confirmingDelete ? (

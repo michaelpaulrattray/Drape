@@ -16,6 +16,16 @@
  *   product (§8), so the plan line names credits and the renewal and stops.
  * - **The credits bar fill is `--ink`, not accent** — §5: *"A quantity is not a
  *   state; the sentence beside it carries the warning."*
+ *
+ * ## ⚠ THE PLAN ROW IS A CARD AND THE INVOICES ARE A BORDERED LIST (#381)
+ *
+ * The prototype draws the plan as `padding: 16px 17px; border: 1px solid
+ * var(--borderCard); border-radius: 12px` and the invoices as one bordered
+ * container with hairlines between the rows. The brief's hairline grammar put
+ * the plan — the most important line on the page, and the one carrying two
+ * money buttons — in the same undivided column as everything else.
+ *
+ * The heading is `Billing & plan`, which is the prototype's, not `Plan`.
  */
 import { toast } from "sonner";
 
@@ -23,7 +33,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
-import { Bar, SettingsGroup, SettingsRow } from "../parts";
+import { Bar, SettingsCard, SettingsGroup, SettingsList } from "../parts";
 import { ReferralBlock } from "../ReferralBlock";
 import { formatDollars, formatShortDate } from "../planMath";
 
@@ -60,8 +70,8 @@ export function BillingSection({
 
   return (
     <>
-      <SettingsGroup title="Plan">
-        <SettingsRow
+      <SettingsGroup title="Billing & plan">
+        <SettingsCard
           label={planName}
           note={[
             planPriceInCents > 0 ? `${formatDollars(planPriceInCents)}/mo` : "No charge",
@@ -77,7 +87,7 @@ export function BillingSection({
           <Button variant="primary" size="small" onClick={onAddCredits}>
             Add credits
           </Button>
-        </SettingsRow>
+        </SettingsCard>
       </SettingsGroup>
 
       <div className="dp-set__cards" style={{ marginTop: "var(--s-7)" }}>
@@ -119,23 +129,25 @@ export function BillingSection({
 
       <div style={{ marginTop: "var(--s-8)" }}>
         <SettingsGroup title="Invoices">
-        {invoices.length === 0 ? (
-          <p className="dp-set__note">No invoices yet.</p>
-        ) : (
-          invoices.map((invoice) => (
-            <div className="dp-set__invoice" key={invoice.id}>
-              <span>{formatShortDate(new Date(invoice.date))}</span>
-              <span>{formatDollars(invoice.amount)}</span>
-              <span className="dp-set__spacer" />
-              {invoice.pdfUrl ? (
-                <a href={invoice.pdfUrl} target="_blank" rel="noreferrer">
-                  PDF
-                </a>
-              ) : (
-                <span className="dp-set__value">—</span>
-              )}
-            </div>
-          ))
+          {invoices.length === 0 ? (
+            <p className="dp-set__note">No invoices yet.</p>
+          ) : (
+            <SettingsList>
+              {invoices.map((invoice) => (
+                <div className="dp-set__invoice" key={invoice.id}>
+                  <span>{formatShortDate(new Date(invoice.date))}</span>
+                  <span>{formatDollars(invoice.amount)}</span>
+                  <span className="dp-set__spacer" />
+                  {invoice.pdfUrl ? (
+                    <a href={invoice.pdfUrl} target="_blank" rel="noreferrer">
+                      PDF
+                    </a>
+                  ) : (
+                    <span className="dp-set__value">—</span>
+                  )}
+                </div>
+              ))}
+            </SettingsList>
           )}
         </SettingsGroup>
       </div>

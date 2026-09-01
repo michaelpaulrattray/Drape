@@ -15,8 +15,16 @@
  * kind of small dishonesty that costs more trust than the emails are worth."*
  * The defaults matter now rather than later, because when the store is built it
  * will be built to match what this page has been promising.
+ *
+ * ## ⚠ EVERY ROW IS ITS OWN BORDERED CARD (#381)
+ *
+ * The prototype draws these as five separate cards — `padding: 12px 14px;
+ * border: 1px solid var(--borderCard); border-radius: 10px`, gap between them —
+ * and the brief's *"hairline grammar, no cards inside cards"* is what produced
+ * five undivided rows instead. His ruling: *"where my brief describes a row
+ * inline and the prototype draws a card, the prototype wins."*
  */
-import { SettingsGroup, SettingsRow, SettingsToggle, StubNote } from "../parts";
+import { SettingsCard, SettingsGroup, SettingsToggle, StubNote } from "../parts";
 
 const NOT_BUILT = "Notification settings are not built yet";
 
@@ -48,9 +56,9 @@ export function NotificationsSection() {
       }
     >
       {ROWS.map((row) => (
-        <SettingsRow key={row.label} label={row.label} note={row.note}>
+        <SettingsCard key={row.label} label={row.label} note={row.note}>
           <SettingsToggle on={row.on} reason={NOT_BUILT} />
-        </SettingsRow>
+        </SettingsCard>
       ))}
     </SettingsGroup>
   );
