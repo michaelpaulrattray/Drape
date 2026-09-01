@@ -47,6 +47,22 @@ interface ChangeRequest {
   createdAt: string | Date | null;
 }
 
+/**
+ * The request types where APPROVING cannot be taken back from this surface —
+ * money leaves, credits move, or somebody loses access.
+ *
+ * `SENSITIVE_TYPES` is a different question and both are needed: that one asks
+ * *does Slack have to confirm it*, this one asks *can it be undone*. Suspension
+ * is in both; a Stripe refund is only in this one.
+ */
+const IRREVERSIBLE_TYPES = [
+  "stripe_refund",
+  "refund_credits",
+  "add_credits",
+  "suspend_user",
+  "unsuspend_user",
+];
+
 /** The states an admin is here to act on. Everything else has been dealt with. */
 const ATTENTION_STATUS = new Set(["pending", "pending_execution"]);
 const ATTENTION_PRIORITY = new Set(["high", "urgent"]);
@@ -134,21 +150,46 @@ export function ChangeRequestList({
     if (detail.status === "pending") {
       const config = getActionConfig(detail.type);
       const sensitive = SENSITIVE_TYPES.includes(detail.type);
-      actions.push({
-        key: "approve",
-        label: sensitive ? `${config.approveLabel} (Slack)` : config.approveLabel,
-        onClick: onApprove,
-        variant: "primary",
-      });
-      actions.push({
-        key: "deny",
-        label: config.denyLabel,
-        onClick: onDeny,
-        destructive: true,
-        /* His §5, and these were already written on the page — one sentence per
-           request type, saying what approving actually does to somebody. */
-        consequence: approvalConsequence(detail),
-      });
+
+      /*
+        ⚠ THE DESTRUCTIVE FLAG SITS ON **APPROVE**, NOT ON DENY, AND THE FIRST
+        VERSION HAD IT THE OTHER WAY ROUND.
+
+        Deny is the reversible half: it closes a request and does nothing to
+        the account it names. **Approve is the act that moves money and ends
+        access** — a Stripe refund that cannot be undone from here, a credit
+        adjustment, a suspension. Hanging §5's compile-time guarantee on Deny
+        meant the type was guarding the button that needed it least, and
+        Approve never wore the destructive hover treatment.
+
+        `IRREVERSIBLE_TYPES` is the set where approving cannot be taken back
+        from this surface. The other four — flag, note, block_ip, other — are
+        records rather than acts, so Approve stays a plain primary there and
+        the consequence rides Deny instead. Every branch still carries a
+        sentence; what changed is which button the compiler holds.
+      */
+      const irreversible = IRREVERSIBLE_TYPES.includes(detail.type);
+      const label = sensitive ? `${config.approveLabel} (Slack)` : config.approveLabel;
+
+      if (irreversible) {
+        actions.push({
+          key: "approve",
+          label,
+          onClick: onApprove,
+          destructive: true,
+          consequence: approvalConsequence(detail),
+        });
+        actions.push({ key: "deny", label: config.denyLabel, onClick: onDeny });
+      } else {
+        actions.push({ key: "approve", label, onClick: onApprove, variant: "primary" });
+        actions.push({
+          key: "deny",
+          label: config.denyLabel,
+          onClick: onDeny,
+          destructive: true,
+          consequence: approvalConsequence(detail),
+        });
+      }
     }
 
     if (detail.status === "pending_execution") {
@@ -260,7 +301,9 @@ function approvalConsequence(detail: any): string {
     case "stripe_refund":
       return `Approving issues a ${detail.refundAmountCents ? `$${(detail.refundAmountCents / 100).toFixed(2)}` : "—"} Stripe refund to the customer's card and takes ${detail.creditsToDeduct ?? "—"} credits back off their balance, floored at zero. Neither half can be undone from here.`;
     case "block_ip":
-      return `Approving blocks ${detail.ipAddress} for everyone behind it, which on a shared network is more people than the one this is about.`;
+      /* Same correction as `AuditLogTable`'s: the block is RECORDED and never
+         consulted on the request path. See that file's note. */
+      return `Approving records ${detail.ipAddress} on the block list. It does not turn anyone away yet — nothing on the request path checks that list.`;
     case "suspend_user":
       return "Approving asks Slack to confirm, and then signs this person out and blocks every sign-in until it is lifted.";
     case "unsuspend_user":

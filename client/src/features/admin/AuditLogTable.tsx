@@ -146,8 +146,22 @@ export function AuditLogTable({
         label: "Block this IP",
         onClick: () => onBlockIp(log.ipAddress!),
         destructive: true,
+        /* ⚠ WHAT THIS SENTENCE SAYS AND WHAT IT ORIGINALLY SAID.
+
+           It read "Blocking an IP turns away everyone behind it" — which is
+           what a block MEANS, and is not what this product does. CLAUDE.md's
+           "Currently not enforced" list has it, and it is re-verified at the
+           bytes: the only non-test callers of `isIpBlocked` are its own
+           declaration and `blockIp`'s duplicate check, so nothing on the
+           request path ever consults the list.
+
+           §5's rule is that the consequence says what it does, TO WHOM. A note
+           describing an inert control as a live one is the worst possible use
+           of a mechanism whose whole value is accuracy — an admin would block
+           an abusive address, read that everyone behind it is turned away, and
+           stop watching. */
         consequence:
-          "Blocking an IP turns away everyone behind it, which on a shared office or mobile network is more people than the one you are looking at.",
+          "This records the address on the block list. It does not turn anyone away yet — nothing on the request path checks that list, so treat it as a note for later rather than a defence.",
       });
     }
     return actions;

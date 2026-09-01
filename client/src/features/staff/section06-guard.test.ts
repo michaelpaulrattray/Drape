@@ -204,6 +204,90 @@ describe("brief 06 §5 — a destructive action cannot be written without its co
     expect("      consequence?: string;").toMatch(/consequence\?:/);
   });
 
+  it("a link action cannot also be disabled — the shape is unrepresentable", () => {
+    /*
+      From the review of this card: an `<a>` has no disabled state, so
+      `{ href, disabled }` would have type-checked, read ordinarily at the call
+      site, and produced a control that says it is unavailable and navigates
+      anyway. The link arm carries `disabled?: never`.
+    */
+    const source = code(PRIMITIVES);
+    const union = source.slice(
+      source.indexOf("export type RowAction ="),
+      source.indexOf("export type DataRow"),
+    );
+
+    expect(union, "the arm is reading nothing").toContain("href: string;");
+    expect(union, "a link action must not accept disabled").toContain("disabled?: never;");
+    expect(union, "a button action must not accept href").toContain("href?: never;");
+  });
+
+  /*
+    ⚠ **THE FIRST SHAPE OF THIS MATCHER COULD NOT TELL THE TWO CASES APART.**
+    It was `key: "approve",[\s\S]{0,160}destructive: true`, and the wrong shape
+    — approve as a plain primary followed immediately by a destructive deny —
+    sits well inside 160 characters, so the positive control matched too. The
+    matcher must not cross into the NEXT action, which is what the tempered
+    `(?:(?!key:)…)` does.
+  */
+  const APPROVE_IS_DESTRUCTIVE = /key: "approve",(?:(?!key:)[\s\S])*?destructive: true/;
+
+  it("the change-request approve button is the one the type guards", () => {
+    /*
+      Also from the review, and it is a real inversion: Deny closes a request
+      and does nothing to the account it names, while APPROVE issues the Stripe
+      refund. The compile-time guarantee was hung on the reversible half.
+    */
+    const source = code(read("features/admin/ChangeRequestList.tsx"));
+
+    expect(source, "the arm is reading nothing").toContain("IRREVERSIBLE_TYPES");
+    for (const type of ["stripe_refund", "refund_credits", "suspend_user"]) {
+      expect(source, `${type} must be treated as irreversible on approve`).toContain(`"${type}"`);
+    }
+    expect(
+      source,
+      "the approve branch for an irreversible type must be the destructive one",
+    ).toMatch(APPROVE_IS_DESTRUCTIVE);
+
+    /* POSITIVE CONTROL — the matcher does not fire on the shape that was wrong. */
+    expect(
+      'key: "approve", onClick: onApprove, variant: "primary" }); actions.push({ key: "deny", destructive: true',
+    ).not.toMatch(APPROVE_IS_DESTRUCTIVE);
+  });
+
+  it("no consequence note claims a control the product does not run", () => {
+    /*
+      ⚠ THE SHARPEST ARM HERE, AND IT EXISTS BECAUSE THIS CARD SHIPPED THE
+      DEFECT INTO REVIEW.
+
+      Two consequence sentences said blocking an IP "turns away everyone behind
+      it". CLAUDE.md's "Currently not enforced" list says IP blocking is
+      recorded and never checked, and it is true at the bytes: `isIpBlocked`
+      has no request-path caller. A note describing an inert control as a live
+      one is the worst possible use of a mechanism whose whole value is that it
+      is accurate.
+
+      The arm is narrow on purpose — it holds the ONE claim that was wrong,
+      rather than trying to judge English. A wider rule would be a rule nobody
+      could satisfy.
+    */
+    for (const { name, text } of tableSurfaces()) {
+      for (const match of text.matchAll(/consequence:[\s\S]{0,40}?"([^"]*)"/g)) {
+        const sentence = match[1];
+        if (!/block/i.test(sentence)) continue;
+        expect(
+          sentence,
+          `${name}: an IP block is recorded, not enforced — this note claims otherwise`,
+        ).not.toMatch(/turns away|blocks .* for everyone|will be refused|cannot reach/i);
+      }
+    }
+
+    /* POSITIVE CONTROL — the matcher fires on the sentence that shipped. */
+    expect(
+      "Blocking an IP turns away everyone behind it, which on a shared office network is more people.",
+    ).toMatch(/turns away|blocks .* for everyone|will be refused|cannot reach/i);
+  });
+
   it("every destructive action in the product carries a real sentence", () => {
     /*
       The type proves a string is PRESENT. This proves the strings are not the

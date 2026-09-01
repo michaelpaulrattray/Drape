@@ -721,11 +721,30 @@ export type RowAction =
       key: string;
       label: ReactNode;
       onClick?: () => void;
-      /** A link action — `Link` from wouter, so ctrl-click keeps working. */
-      href?: string;
       variant?: ButtonVariant;
       disabled?: boolean;
       destructive?: false;
+      href?: never;
+    }
+  /*
+    A LINK action — `Link` from wouter, so ctrl-click and middle-click keep
+    working.
+
+    ⚠ **It is its own arm so that `href` and `disabled` cannot be written
+    together.** The render path below draws an `<a>` for a link, and an anchor
+    has no disabled state — so the combination would have type-checked, looked
+    ordinary at the call site, and produced a control that says it is
+    unavailable and navigates anyway. `never` makes it unrepresentable rather
+    than leaving it for the first caller to discover.
+  */
+  | {
+      key: string;
+      label: ReactNode;
+      href: string;
+      destructive?: false;
+      onClick?: never;
+      disabled?: never;
+      variant?: never;
     }
   | {
       key: string;
@@ -846,7 +865,7 @@ export function ExpandableRow({
           {row.actions && row.actions.length > 0 ? (
             <div className="dp-table__actions">
               {row.actions.map((action) =>
-                action.destructive !== true && action.href ? (
+                action.destructive !== true && "href" in action && action.href ? (
                   <Link
                     key={action.key}
                     href={action.href}
