@@ -1,7 +1,7 @@
 {
-  "edition": 185,
-  "updatedAt": "2026-09-01T15:55:00+10:00",
-  "shift": "Foreman - shift 2026-09-01 15:55 AEST (foreman-164)",
+  "edition": 186,
+  "updatedAt": "2026-09-01T16:05:00+10:00",
+  "shift": "Foreman - shift 2026-09-01 16:05 AEST (foreman-164)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1264,7 +1264,7 @@
           "arm": null
         }
       ],
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-01",
       "issueNumber": 365
     },
@@ -3554,12 +3554,17 @@
     76
   ],
   "nextUp": {
-    "readAt": "2026-09-01T05:37:54.521Z",
+    "readAt": "2026-09-01T05:49:30.384Z",
     "items": [
       {
         "issueNumber": 321,
         "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
         "urgent": true
+      },
+      {
+        "issueNumber": 368,
+        "title": "The stall alarm: a shift must stop waiting when no check suite will ever arrive — and review.yml still has no manual re-trigger",
+        "urgent": false
       },
       {
         "issueNumber": 372,
