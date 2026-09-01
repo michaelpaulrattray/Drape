@@ -1,21 +1,6 @@
-import {
-  AlertCircle,
-  Activity,
-  Search,
-  User,
-  X,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RowId, StatePill } from "@/features/staff";
+import { Button, DataTable, Skeleton, TableFilter, TableHead, TableSearch } from "@/foundation";
+import type { DataRow } from "@/foundation";
 import {
   SEVERITY_COLORS,
   formatAction,
@@ -53,92 +38,123 @@ interface AuditLogsFiltersProps {
   setUserIdSearch: (v: string) => void;
   setPage: (fn: (p: number) => number) => void;
   onResetFilters: () => void;
-  onSelectLog: (log: AuditLog) => void;
 }
 
+/**
+ * The four counts above the audit table.
+ *
+ * ⚠ **Only one of them carries colour now, and that is brief 06 §4's rule
+ * applied to a figure rather than a pill**: `Critical alerts` is the number a
+ * reader opens this page to check. Total logs, last 24 hours and warnings are
+ * facts about volume — they were emerald-adjacent black, red and amber, and
+ * when three figures out of four are coloured the fourth cannot stand out.
+ *
+ * They stay tiles rather than becoming a table: they are not a list of
+ * records, and brief 07 owns the dashboard shape.
+ */
 export function AuditStatsCards({
   statsData,
   statsLoading,
   alertsData,
   alertsLoading,
 }: Pick<AuditLogsFiltersProps, "statsData" | "statsLoading" | "alertsData" | "alertsLoading">) {
+  const tiles: { label: string; value: number | undefined; loading: boolean; alert?: boolean }[] = [
+    { label: "Total entries", value: statsData?.totalLogs, loading: statsLoading },
+    { label: "Last 24 hours", value: statsData?.last24Hours, loading: statsLoading },
+    {
+      label: "Critical alerts",
+      value: alertsData?.criticalCount,
+      loading: alertsLoading,
+      alert: (alertsData?.criticalCount || 0) > 0,
+    },
+    { label: "Warnings", value: alertsData?.warningCount, loading: alertsLoading },
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
-        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Total Logs</p>
-        {statsLoading ? (
-          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
-        ) : (
-          <p className="text-2xl font-bold text-[#0A0A0A] mt-1">{statsData?.totalLogs || 0}</p>
-        )}
-      </div>
-
-      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
-        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Last 24 Hours</p>
-        {statsLoading ? (
-          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
-        ) : (
-          <p className="text-2xl font-bold text-[#0A0A0A] mt-1">{statsData?.last24Hours || 0}</p>
-        )}
-      </div>
-
-      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
-        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Critical Alerts</p>
-        {alertsLoading ? (
-          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
-        ) : (
-          <p className="text-2xl font-bold text-red-600 mt-1">{alertsData?.criticalCount || 0}</p>
-        )}
-      </div>
-
-      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
-        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Warnings</p>
-        {alertsLoading ? (
-          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
-        ) : (
-          <p className="text-2xl font-bold text-amber-600 mt-1">{alertsData?.warningCount || 0}</p>
-        )}
-      </div>
+    <div className="dp-countrow">
+      {tiles.map((tile) => (
+        <div key={tile.label} className="dp-counttile">
+          <span className="dp-chrome">{tile.label}</span>
+          {tile.loading ? (
+            <Skeleton className="dp-counttile__skeleton" />
+          ) : (
+            <span className={`dp-counttile__value${tile.alert ? " dp-counttile__value--alert" : ""}`}>
+              {tile.value ?? 0}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
 
+/**
+ * The critical alerts, above the table.
+ *
+ * ⚠ **It was the detail modal's second entrance and that entrance is gone.**
+ * Clicking an alert used to open `AuditLogDetailModal`; with rows opening in
+ * place, setting `selectedLog` to an alert would try to open a row that is
+ * very likely not on the current page — so the panel would silently do
+ * nothing. **This is the class of defect deleting a shared modal creates:
+ * every OTHER entrance to it becomes a dead control**, and grepping for the
+ * component name is what finds them.
+ *
+ * The five alerts are the same table pattern instead, expanding in place
+ * against their own rows. Nothing was lost: the modal showed exactly these
+ * facts.
+ */
 export function AbuseAlertsPanel({
   alertsData,
-  onSelectLog,
-}: Pick<AuditLogsFiltersProps, "alertsData" | "onSelectLog">) {
+}: Pick<AuditLogsFiltersProps, "alertsData">) {
   if (!alertsData || (alertsData.criticalCount || 0) === 0) return null;
 
+  const rows: DataRow[] = alertsData.alerts.slice(0, 5).map((alert) => ({
+    id: String(alert.id),
+    cells: [
+      <StatePill key="severity" label={alert.severity} attention />,
+      <span key="action">{formatAction(alert.action)}</span>,
+      <RowId key="user">{alert.userId ? `#${alert.userId}` : "system"}</RowId>,
+      <span key="when">{formatDate(alert.createdAt)}</span>,
+    ],
+    facts: [
+      { label: "ENTRY", value: `#${alert.id}` },
+      { label: "ACTION", value: alert.action },
+      { label: "WHEN", value: formatDate(alert.createdAt) },
+      { label: "USER", value: alert.userId ? `#${alert.userId}` : "system" },
+    ],
+  }));
+
   return (
-    <div className="bg-red-50 rounded-xl border border-red-200 p-4">
-      <h3 className="text-red-700 font-semibold flex items-center gap-2 mb-3">
-        <AlertCircle className="w-5 h-5" />
-        Active Abuse Alerts
-      </h3>
-      <div className="space-y-2">
-        {alertsData.alerts.slice(0, 5).map((alert) => (
-          <div
-            key={alert.id}
-            className="flex items-center justify-between p-3 rounded-lg bg-white hover:bg-red-50/50 cursor-pointer transition-colors border border-red-100"
-            onClick={() => onSelectLog(alert as AuditLog)}
-          >
-            <div className="flex items-center gap-3">
-              <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>
-                {alert.severity}
-              </Badge>
-              <span className="text-[#0A0A0A]">{formatAction(alert.action)}</span>
-              {alert.userId && (
-                <span className="text-[#999] text-sm">User #{alert.userId}</span>
-              )}
-            </div>
-            <span className="text-[#999] text-sm">{formatDate(alert.createdAt)}</span>
-          </div>
-        ))}
+    <div className="dp-alertpanel">
+      <div className="dp-tablehead">
+        <span className="dp-eyebrow">Needs looking at</span>
+        <span className="dp-tablehead__rule" />
+        <span className="dp-small">{alertsData.criticalCount} critical</span>
       </div>
+      <DataTable
+        columns={[
+          { label: "Severity", width: "0 0 104px" },
+          { label: "Action", width: "1 1 0" },
+          { label: "User", width: "0 0 92px" },
+          { label: "When", width: "0 0 148px" },
+        ]}
+        rows={rows}
+      />
     </div>
   );
 }
 
+/**
+ * Audit logs' section head and filter cluster (brief 06 §3).
+ *
+ * Severity (4) and Category (5) show the rule working in both directions: four
+ * options or fewer is segmented, more is a select, and `TableFilter` decides —
+ * so a surface cannot get it wrong by choosing.
+ *
+ * The **Reset** button survives because filters here stack four deep and
+ * clearing them one at a time is four clicks; it appears only when something
+ * is actually set.
+ */
 export function AuditFiltersBar({
   severityFilter,
   setSeverityFilter,
@@ -149,56 +165,46 @@ export function AuditFiltersBar({
   setPage,
   onResetFilters,
 }: Omit<AuditLogsFiltersProps, "statsData" | "statsLoading" | "alertsData" | "alertsLoading" | "onSelectLog">) {
+  const filtered = severityFilter !== "all" || categoryFilter !== "all" || userIdSearch !== "";
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#CCC]" />
-            <Input
-              placeholder="Search by User ID..."
-              value={userIdSearch}
-              onChange={(e) => {
-                setUserIdSearch(e.target.value);
-                setPage(() => 0);
-              }}
-              className="pl-10 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]"
-            />
-          </div>
-        </div>
-        <Select value={severityFilter} onValueChange={(v) => { setSeverityFilter(v); setPage(() => 0); }}>
-          <SelectTrigger className="w-full md:w-40 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
-            <SelectValue placeholder="Severity" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-[#E5E5E5]">
-            <SelectItem value="all">All Severities</SelectItem>
-            <SelectItem value="info">Info</SelectItem>
-            <SelectItem value="warning">Warning</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(() => 0); }}>
-          <SelectTrigger className="w-full md:w-40 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-[#E5E5E5]">
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="billing">Billing</SelectItem>
-            <SelectItem value="model">Model</SelectItem>
-            <SelectItem value="security">Security</SelectItem>
-            <SelectItem value="abuse">Abuse</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onResetFilters}
-          className="text-[#999] hover:text-[#0A0A0A]"
-        >
-          <X className="w-4 h-4 mr-2" />
+    <TableHead eyebrow="Audit">
+      <TableSearch
+        label="Show only one user's entries, by id"
+        placeholder="User id"
+        value={userIdSearch}
+        onChange={(value) => {
+          setUserIdSearch(value);
+          setPage(() => 0);
+        }}
+      />
+      <TableFilter
+        label="Severity"
+        value={severityFilter}
+        onChange={(value) => { setSeverityFilter(value); setPage(() => 0); }}
+        options={[
+          { value: "all", label: "All" },
+          { value: "info", label: "Info" },
+          { value: "warning", label: "Warning" },
+          { value: "critical", label: "Critical" },
+        ]}
+      />
+      <TableFilter
+        label="Category"
+        value={categoryFilter}
+        onChange={(value) => { setCategoryFilter(value); setPage(() => 0); }}
+        options={[
+          { value: "all", label: "All categories" },
+          { value: "billing", label: "Billing" },
+          { value: "model", label: "Model" },
+          { value: "security", label: "Security" },
+          { value: "abuse", label: "Abuse" },
+        ]}
+      />
+      {filtered ? (
+        <Button variant="quiet" size="small" onClick={onResetFilters}>
           Reset
         </Button>
-      </div>
-    </div>
+      ) : null}
+    </TableHead>
   );
 }

@@ -1,18 +1,25 @@
-import { Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+/**
+ * Admin → Users, the section head and its filter cluster (brief 06 §3).
+ *
+ * ⚠ **THE SEARCH IS REAL AND STAYS REAL.** His §3, verbatim: *"The prototype
+ * draws search as a grey chip because the prototype has no data. Admin search
+ * works today — `onSearch`, Enter-to-submit, server-side. Keep it working. Do
+ * not copy the topbar's stub treatment into a surface where the feature
+ * exists."*
+ *
+ * What went: the separate **Search** button. It was a filled `bg-[#0A0A0A]` —
+ * the app's one primary-action treatment — spent on submitting a search box.
+ * Enter still submits; typing filters after 300ms.
+ *
+ * Status has five options and stays a select. Role has four and is segmented.
+ * That decision is `TableFilter`'s, not this file's.
+ */
+import { TableFilter, TableHead, TableSearch, TableSort } from "@/foundation";
 
 interface UserFiltersProps {
   searchInput: string;
   onSearchInputChange: (value: string) => void;
-  onSearch: () => void;
+  onSearch: (value: string) => void;
   statusFilter: "all" | "active" | "suspended" | "locked" | "frozen";
   onStatusFilterChange: (value: "all" | "active" | "suspended" | "locked" | "frozen") => void;
   roleFilter: "all" | "user" | "admin" | "moderator";
@@ -37,67 +44,56 @@ export function UserFilters({
   onSortOrderChange,
 }: UserFiltersProps) {
   return (
-    <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="flex-1 flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999]" />
-            <Input
-              placeholder="Search by name, email, or ID..."
-              value={searchInput}
-              onChange={(e) => onSearchInputChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              className="pl-10 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#999]"
-            />
-          </div>
-          <Button onClick={onSearch} className="bg-[#0A0A0A] hover:bg-[#222] text-white">
-            Search
-          </Button>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Select value={statusFilter} onValueChange={(v) => onStatusFilterChange(v as typeof statusFilter)}>
-            <SelectTrigger className="w-[130px] bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-              <SelectItem value="frozen">Frozen</SelectItem>
-              <SelectItem value="locked">Locked</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={roleFilter} onValueChange={(v) => onRoleFilterChange(v as typeof roleFilter)}>
-            <SelectTrigger className="w-[120px] bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
-              <SelectValue placeholder="Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="user">Users</SelectItem>
-              <SelectItem value="moderator">Moderators</SelectItem>
-              <SelectItem value="admin">Admins</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={(v) => onSortByChange(v as typeof sortBy)}>
-            <SelectTrigger className="w-[140px] bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="createdAt">Join Date</SelectItem>
-              <SelectItem value="lastSignedIn">Last Active</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
-            className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]"
-          >
-            {sortOrder === "asc" ? "↑" : "↓"}
-          </Button>
-        </div>
-      </div>
-    </div>
+    <TableHead eyebrow="Users">
+      <TableSearch
+        label="Search users by name, email or id"
+        placeholder="Name, email or id"
+        value={searchInput}
+        onChange={(value) => {
+          onSearchInputChange(value);
+          onSearch(value);
+        }}
+      />
+      <TableFilter
+        label="Status"
+        value={statusFilter}
+        onChange={(value) => onStatusFilterChange(value as UserFiltersProps["statusFilter"])}
+        /* ⚠ "All statuses", not "All". Five options makes this a SELECT, and a
+           closed select shows only its current value — so a bare "All" sat in
+           the filter row saying nothing about what it filtered. Caught at the
+           frame, not by an assertion (founder law 6). The segmented Role filter
+           beside it needs no such help: it shows every option at once, which is
+           the whole reason four-or-fewer is segmented. */
+        options={[
+          { value: "all", label: "All statuses" },
+          { value: "active", label: "Active" },
+          { value: "suspended", label: "Suspended" },
+          { value: "frozen", label: "Frozen" },
+          { value: "locked", label: "Locked" },
+        ]}
+      />
+      <TableFilter
+        label="Role"
+        value={roleFilter}
+        onChange={(value) => onRoleFilterChange(value as UserFiltersProps["roleFilter"])}
+        options={[
+          { value: "all", label: "All" },
+          { value: "user", label: "Users" },
+          { value: "moderator", label: "Moderators" },
+          { value: "admin", label: "Admins" },
+        ]}
+      />
+      <TableSort
+        value={sortBy}
+        onChange={(value) => onSortByChange(value as UserFiltersProps["sortBy"])}
+        direction={sortOrder}
+        onDirectionChange={onSortOrderChange}
+        options={[
+          { value: "createdAt", label: "Joined" },
+          { value: "lastSignedIn", label: "Last active" },
+          { value: "name", label: "Name" },
+        ]}
+      />
+    </TableHead>
   );
 }

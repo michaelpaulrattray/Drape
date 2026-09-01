@@ -1,8 +1,16 @@
 /**
- * Blocked IPs tab — table of blocked IP addresses.
+ * Moderation → Blocked IPs, on the one staff table pattern (brief 06).
+ *
+ * ⚠ **A moderator SEES this list and cannot change it** — there is no unblock
+ * procedure on the moderator router, and this brief adds none (§7: *"Do not add
+ * a query or change a mutation"*). So the row expands to show the block's
+ * reason and dates and offers nothing, which is the honest shape: the admin
+ * copy of this list one panel over is the one with the Unblock action.
  */
-import { Globe } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RowId, StatePill, pageRange } from "@/features/staff";
+import { DataTable } from "@/foundation";
+import type { DataRow } from "@/foundation";
+
 import { formatDate } from "./moderatorConstants";
 
 interface BlockedIPsTabProps {
@@ -10,53 +18,54 @@ interface BlockedIPsTabProps {
 }
 
 export function BlockedIPsTab({ blockedIpsQuery }: BlockedIPsTabProps) {
+  const ips: any[] = blockedIpsQuery.data?.ips ?? [];
+
+  const rows: DataRow[] = ips.map((ip) => {
+    const lifted = ip.expiresAt !== null && new Date(ip.expiresAt) <= new Date();
+    return {
+      id: String(ip.id),
+      cells: [
+        <RowId key="ip">{ip.ipAddress}</RowId>,
+        <span key="reason">{ip.reason}</span>,
+        <StatePill
+          key="state"
+          label={lifted ? "expired" : ip.expiresAt ? "temporary" : "permanent"}
+          attention={!lifted}
+        />,
+        <span key="blocked">{formatDate(new Date(ip.createdAt))}</span>,
+      ],
+      facts: [
+        { label: "ADDRESS", value: ip.ipAddress },
+        { label: "BLOCKED BY", value: `Admin #${ip.blockedBy}` },
+        { label: "BLOCKED", value: formatDate(new Date(ip.createdAt)) },
+        { label: "EXPIRES", value: ip.expiresAt ? formatDate(new Date(ip.expiresAt)) : "Never" },
+      ],
+      evidence: ip.reason,
+    };
+  });
+
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">IP Address</th>
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Reason</th>
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Blocked By</th>
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Expires</th>
-              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Blocked At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {blockedIpsQuery.isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <tr key={i} className="border-b border-[#F0F0F0]">
-                  <td className="px-4 py-3" colSpan={5}>
-                    <Skeleton className="h-6 w-full bg-[#E5E5E5]" />
-                  </td>
-                </tr>
-              ))
-            ) : blockedIpsQuery.data?.ips.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-[#999]">
-                  <Globe className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  No blocked IPs
-                </td>
-              </tr>
-            ) : (
-              blockedIpsQuery.data?.ips.map((ip: any) => (
-                <tr key={ip.id} className="border-b border-[#F0F0F0] hover:bg-[#FAFAFA] transition-colors">
-                  <td className="px-4 py-3 font-mono text-sm text-[#0A0A0A]">{ip.ipAddress}</td>
-                  <td className="px-4 py-3 text-sm text-[#666]">{ip.reason}</td>
-                  <td className="px-4 py-3 text-sm text-[#666]">Admin #{ip.blockedBy}</td>
-                  <td className="px-4 py-3 text-sm text-[#666]">
-                    {ip.expiresAt ? formatDate(new Date(ip.expiresAt)) : "Permanent"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[#666]">
-                    {formatDate(new Date(ip.createdAt))}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+    <div className="dp-stack" style={{ gap: 16 }}>
+      <div className="dp-tablehead">
+        <span className="dp-eyebrow">Blocked IPs</span>
+        <span className="dp-tablehead__rule" />
+        <span className="dp-small">An admin blocks and unblocks these</span>
       </div>
+      <DataTable
+        columns={[
+          { label: "Address", width: "0 0 148px" },
+          { label: "Reason", width: "1 1 0" },
+          { label: "Block", width: "0 0 104px" },
+          { label: "Blocked", width: "0 0 148px" },
+        ]}
+        rows={rows}
+        loading={blockedIpsQuery.isLoading}
+        empty={{
+          title: "No IP addresses are blocked.",
+          body: "An admin blocks these from the audit log.",
+        }}
+        footer={{ meta: pageRange({ offset: 0, count: ips.length, total: blockedIpsQuery.data?.total }) }}
+      />
     </div>
   );
 }

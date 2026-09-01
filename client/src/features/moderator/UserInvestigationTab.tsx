@@ -11,7 +11,6 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import {
-  AuditLog,
   type OpenChangeRequestOptions,
 } from "./moderatorConstants";
 import { ActivitySubTab } from "./ActivitySubTab";
@@ -34,7 +33,6 @@ interface UserInvestigationTabProps {
   selectedUserId: number | null;
   setSelectedUserId: (id: number | null) => void;
   userTotalPages: number;
-  onSelectLog: (log: AuditLog) => void;
   onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
   creditTypeFilter: string;
   setCreditTypeFilter: (v: string) => void;
@@ -78,7 +76,6 @@ export function UserInvestigationTab({
   selectedUserId,
   setSelectedUserId,
   userTotalPages,
-  onSelectLog,
   onOpenChangeRequest,
   creditTypeFilter,
   setCreditTypeFilter,
@@ -175,7 +172,7 @@ export function UserInvestigationTab({
               </div>
 
               {userDetailTab === "overview" && (
-                <ActivitySubTab userActivityQuery={userActivityQuery} onSelectLog={onSelectLog} />
+                <ActivitySubTab userActivityQuery={userActivityQuery} />
               )}
               {userDetailTab === "credits" && (
                 <CreditsSubTab

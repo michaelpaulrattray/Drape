@@ -1,9 +1,27 @@
 /**
- * Flagged Referrals Tab — shows referrals with sameIpFlag=true for moderator review.
+ * Moderation → Flagged referrals, on the one staff table pattern (brief 06).
+ *
+ * Referrals where the referee's IP matched the referrer's within 24 hours —
+ * i.e. somebody probably referring themselves.
+ *
+ * # Three columns became facts, and the table got readable
+ *
+ * The old table had SEVEN columns in a `<table>` inside no scroller, three of
+ * which were stacked pairs: two IPs over an "Exact match" badge, two credit
+ * lines, a name over an id. At 1280px the referrer and referee names each had
+ * about 150px. **The identifying column — who referred whom — takes the
+ * flexible basis now, and the pairs are facts inside the expansion**, which is
+ * where a two-line value has room to be read.
+ *
+ * The **Exact match** badge is the one that mattered and it is a state pill in
+ * a column of its own: a same-IP flag where the addresses are byte-identical
+ * is the strongest signal on this surface, and it was a 10px badge stacked
+ * under two mono addresses.
  */
-import { AlertTriangle, Flag, User, Globe, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
+import { DataTable } from "@/foundation";
+import type { DataRow } from "@/foundation";
+
 import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
@@ -34,14 +52,6 @@ interface FlaggedReferralsTabProps {
   onOpenChangeRequest: (options: OpenChangeRequestOptions) => void;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-amber-50 text-amber-700",
-  signed_up: "bg-blue-50 text-blue-700",
-  completed: "bg-emerald-50 text-emerald-700",
-  subscribed: "bg-green-50 text-green-700",
-  expired: "bg-gray-100 text-gray-600",
-};
-
 export function FlaggedReferralsTab({
   data,
   isLoading,
@@ -49,160 +59,106 @@ export function FlaggedReferralsTab({
   setPage,
   onOpenChangeRequest,
 }: FlaggedReferralsTabProps) {
-  const totalPages = Math.ceil((data?.total || 0) / PAGE_SIZE);
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
-      </div>
+  const rows: DataRow[] = items.map((item) => {
+    const exactMatch = Boolean(
+      item.referrerIp && item.referredIp && item.referrerIp === item.referredIp,
     );
-  }
-
-  if (!data?.items.length) {
-    return (
-      <div className="text-center py-16 text-[#999]">
-        <Flag className="w-12 h-12 mx-auto mb-3 opacity-40" />
-        <p className="text-lg font-medium text-[#666]">No flagged referrals</p>
-        <p className="text-sm mt-1">No same-IP referrals detected yet</p>
-      </div>
-    );
-  }
+    return {
+      id: String(item.id),
+      cells: [
+        <RowStack
+          key="who"
+          name={
+            <>
+              <RowId>#{item.referrerUserId}</RowId> {item.referrerName || "Unknown"}
+            </>
+          }
+          meta={`referred ${item.referredName || item.referredEmail || "somebody who never signed up"}`}
+        />,
+        <StatePill key="match" label={exactMatch ? "same IP" : "near match"} attention={exactMatch} />,
+        <span key="status">{item.status.replace("_", " ")}</span>,
+        <span key="credits">
+          {item.referrerCredited || item.referredCredited ? `${item.creditsAwarded} cr` : "—"}
+        </span>,
+        <span key="when">{formatDate(item.createdAt)}</span>,
+      ],
+      facts: [
+        {
+          label: "REFERRER",
+          value: `${item.referrerName || "Unknown"} · ${item.referrerEmail || "no email"} · #${item.referrerUserId}`,
+        },
+        {
+          label: "REFEREE",
+          value: item.referredUserId
+            ? `${item.referredName || "Unknown"} · ${item.referredEmail || "no email"} · #${item.referredUserId}`
+            : "Never signed up",
+        },
+        { label: "REFERRER IP", value: item.referrerIp || "—" },
+        { label: "REFEREE IP", value: item.referredIp || "—" },
+        {
+          label: "REFERRER PAID",
+          value: item.referrerCredited ? `${item.creditsAwarded} credits` : "not paid",
+        },
+        {
+          label: "REFEREE PAID",
+          value: item.referredCredited ? `${item.creditsAwarded} credits` : "not paid",
+        },
+        { label: "STARTED", value: formatDate(item.createdAt) },
+        { label: "COMPLETED", value: item.completedAt ? formatDate(item.completedAt) : "—" },
+      ],
+      evidence: exactMatch
+        ? "Both sides signed up from the same IP address within 24 hours. That is one household, one office, or one person with two accounts — the flag cannot tell them apart, which is why it is a queue and not a block."
+        : "The referee's address matched the referrer's within 24 hours.",
+      actions: [
+        {
+          key: "review",
+          label: "Raise a change request",
+          onClick: () =>
+            onOpenChangeRequest({
+              type: "flag_account",
+              targetUserId: String(item.referrerUserId),
+              targetUserName: item.referrerName || undefined,
+              ipAddress: item.referrerIp || undefined,
+            }),
+          variant: "secondary",
+        },
+      ],
+    };
+  });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
-          <h3 className="text-lg font-semibold text-[#0A0A0A]">
-            Flagged Referrals
-          </h3>
-          <Badge className="bg-amber-50 text-amber-700">{data.total}</Badge>
-        </div>
-        <p className="text-sm text-[#999]">
-          Referrals where referee IP matched referrer IP within 24 hours
-        </p>
+    <div className="dp-stack" style={{ gap: 16 }}>
+      <div className="dp-tablehead">
+        <span className="dp-eyebrow">Flagged referrals</span>
+        <span className="dp-tablehead__rule" />
+        <span className="dp-small">Referee's IP matched the referrer's within 24 hours</span>
       </div>
-
-      <div className="rounded-xl border border-[#E5E5E5] overflow-hidden bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
-              <th className="text-left px-4 py-3 text-[#999] font-medium text-xs">Referrer</th>
-              <th className="text-left px-4 py-3 text-[#999] font-medium text-xs">Referee</th>
-              <th className="text-left px-4 py-3 text-[#999] font-medium text-xs">IPs</th>
-              <th className="text-left px-4 py-3 text-[#999] font-medium text-xs">Status</th>
-              <th className="text-left px-4 py-3 text-[#999] font-medium text-xs">Credits</th>
-              <th className="text-left px-4 py-3 text-[#999] font-medium text-xs">Date</th>
-              <th className="text-right px-4 py-3 text-[#999] font-medium text-xs">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.map((item) => (
-              <tr key={item.id} className="border-b border-[#F0F0F0] hover:bg-[#FAFAFA] transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-[#CCC]" />
-                    <div>
-                      <p className="text-[#0A0A0A] font-medium">{item.referrerName || "Unknown"}</p>
-                      <p className="text-[#999] text-xs">ID: {item.referrerUserId}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-[#CCC]" />
-                    <div>
-                      <p className="text-[#0A0A0A] font-medium">
-                        {item.referredName || item.referredEmail || "Not signed up"}
-                      </p>
-                      {item.referredUserId && (
-                        <p className="text-[#999] text-xs">ID: {item.referredUserId}</p>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-red-500" />
-                      <span className="text-[#666] text-xs font-mono">{item.referrerIp || "—"}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-red-500" />
-                      <span className="text-[#666] text-xs font-mono">{item.referredIp || "—"}</span>
-                    </div>
-                    {item.referrerIp && item.referredIp && item.referrerIp === item.referredIp && (
-                      <Badge className="bg-red-50 text-red-700 text-[10px]">Exact match</Badge>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge className={STATUS_COLORS[item.status] || "bg-gray-100 text-gray-600"}>
-                    {item.status}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="text-[#666] text-xs space-y-0.5">
-                    <p>Referrer: {item.referrerCredited ? `✓ ${item.creditsAwarded}` : "—"}</p>
-                    <p>Referee: {item.referredCredited ? `✓ ${item.creditsAwarded}` : "—"}</p>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-[#999] text-xs">
-                  {formatDate(item.createdAt)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-amber-700 hover:text-amber-800 hover:bg-amber-50"
-                    onClick={() =>
-                      onOpenChangeRequest({
-                        type: "flag_account",
-                        targetUserId: String(item.referrerUserId),
-                        targetUserName: item.referrerName || undefined,
-                        ipAddress: item.referrerIp || undefined,
-                      })
-                    }
-                  >
-                    <Flag className="w-3.5 h-3.5 mr-1" />
-                    Review
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-sm text-[#999]">
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, data.total)} of {data.total}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page === 0}
-              onClick={() => setPage(page - 1)}
-              className="text-[#666]"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page >= totalPages - 1}
-              onClick={() => setPage(page + 1)}
-              className="text-[#666]"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <DataTable
+        columns={[
+          { label: "Referral", width: "1 1 0" },
+          { label: "Match", width: "0 0 104px" },
+          { label: "Status", width: "0 0 104px" },
+          { label: "Credits", width: "0 0 88px" },
+          { label: "Started", width: "0 0 148px" },
+        ]}
+        rows={rows}
+        loading={isLoading}
+        empty={{
+          title: "No flagged referrals.",
+          body: "Nothing has tripped the same-IP check yet.",
+        }}
+        footer={{
+          meta: pageRange({ offset: page * PAGE_SIZE, count: items.length, total }),
+          onBack: () => setPage(page - 1),
+          onNext: () => setPage(page + 1),
+          backDisabled: page === 0,
+          nextDisabled: page >= totalPages - 1,
+        }}
+      />
     </div>
   );
 }

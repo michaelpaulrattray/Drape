@@ -15,7 +15,6 @@ import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 import { UserStatsCards } from "@/features/admin/UserStatsCards";
 import { UserFilters } from "@/features/admin/UserFilters";
 import { UserTable } from "@/features/admin/UserTable";
-import { UserDetailModal } from "@/features/admin/UserDetailModal";
 import { SuspendModal, CreditModal, RoleChangeModal } from "@/features/admin/UserActionModals";
 
 const ITEMS_PER_PAGE = 20;
@@ -110,7 +109,7 @@ export default function AdminUserManagement() {
   });
 
   // Handlers
-  const handleSearch = () => { setSearch(searchInput); setPage(0); };
+  const handleSearch = (value: string) => { setSearch(value); setPage(0); };
 
   const handleSuspend = () => {
     if (!selectedUserId || !suspendReason.trim()) return;
@@ -180,6 +179,9 @@ export default function AdminUserManagement() {
           onSortOrderChange={setSortOrder}
         />
 
+        {/* Brief 06 §2 — the row opens in place. `selectedUserId` is now the
+            OPEN ROW rather than a modal's subject, so the detail query below is
+            unchanged: same procedure, same input, a different trigger. */}
         <UserTable
           users={usersQuery.data?.users}
           isLoading={usersQuery.isLoading}
@@ -188,31 +190,27 @@ export default function AdminUserManagement() {
           total={usersQuery.data?.total || 0}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={setPage}
+          selectedUserId={selectedUserId}
           onSelectUser={(id) => { setSelectedUserId(id); setActiveTab("profile"); }}
+          detail={userDetailsQuery.data ?? undefined}
+          detailLoading={userDetailsQuery.isLoading}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          activityLogs={userActivityQuery.data?.logs}
+          activityLoading={userActivityQuery.isLoading}
+          onSuspend={() => setSuspendModalOpen(true)}
+          onUnsuspend={() => { if (selectedUserId) unsuspendMutation.mutate({ userId: selectedUserId }); }}
+          unsuspendPending={unsuspendMutation.isPending}
+          onPromote={() => { setRoleChangeTarget("moderator"); setRoleModalOpen(true); }}
+          onDemote={() => { setRoleChangeTarget("user"); setRoleModalOpen(true); }}
+          onAddCredits={() => { setCreditAction("add"); setCreditModalOpen(true); }}
+          onDeductCredits={() => { setCreditAction("deduct"); setCreditModalOpen(true); }}
+          onFreeze={() => setFreezeModalOpen(true)}
+          onUnfreeze={() => setUnfreezeModalOpen(true)}
+          freezePending={freezeMutation.isPending}
+          unfreezePending={unfreezeMutation.isPending}
         />
       </main>
-
-      <UserDetailModal
-        open={!!selectedUserId}
-        onClose={() => setSelectedUserId(null)}
-        selectedUser={userDetailsQuery.data ?? undefined}
-        isLoading={userDetailsQuery.isLoading}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        activityLogs={userActivityQuery.data?.logs}
-        activityLoading={userActivityQuery.isLoading}
-        onSuspend={() => setSuspendModalOpen(true)}
-        onUnsuspend={() => { if (selectedUserId) unsuspendMutation.mutate({ userId: selectedUserId }); }}
-        unsuspendPending={unsuspendMutation.isPending}
-        onPromote={() => { setRoleChangeTarget("moderator"); setRoleModalOpen(true); }}
-        onDemote={() => { setRoleChangeTarget("user"); setRoleModalOpen(true); }}
-        onAddCredits={() => { setCreditAction("add"); setCreditModalOpen(true); }}
-        onDeductCredits={() => { setCreditAction("deduct"); setCreditModalOpen(true); }}
-        onFreeze={() => setFreezeModalOpen(true)}
-        onUnfreeze={() => setUnfreezeModalOpen(true)}
-        freezePending={freezeMutation.isPending}
-        unfreezePending={unfreezeMutation.isPending}
-      />
 
       <SuspendModal
         open={suspendModalOpen}

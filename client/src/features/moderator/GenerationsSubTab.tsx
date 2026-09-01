@@ -1,31 +1,36 @@
 /**
- * Generations sub-tab within User Investigation — shows generation history with filters.
+ * Moderation → User investigation → Generations, on the one staff table
+ * pattern. Brief 09 §1 assigns it here: *"table-shaped and covered by brief
+ * 06."*
+ *
+ * # Three summary tiles became one honest line
+ *
+ * The head drew emerald "Completed", red "Failed" and blue "Credits Used" —
+ * and the colour was the problem his brief 09 §3 names one surface over:
+ * **spending credits is what the product is for, and colouring it red says a
+ * normal, revenue-generating action is a problem.** They are one sentence in
+ * the head now, and the only figure that keeps any accent is a failure, on the
+ * rows where there is one.
+ *
+ * # Everything a moderator actually needed was below the fold
+ *
+ * A generation's error message was a truncated red line inside a card; it is
+ * the evidence block now, wrapped, where a stack trace can be read. The
+ * duration, the model and the cost were three greys of the same size; they are
+ * facts with labels.
+ *
+ * Every query, the CSV export and both date filters are unchanged (§7).
  */
-import {
-  Image,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
-  XCircle,
-  Clock as ClockIcon,
-  Calendar,
-  X,
-  Download,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate } from "./moderatorConstants";
-import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+
+import { RowId, StatePill, pageRange } from "@/features/staff";
+import { Button, DataTable, TableFilter, TableHead } from "@/foundation";
+import type { DataRow } from "@/foundation";
+import { trpc } from "@/lib/trpc";
+
+import { formatDate } from "./moderatorConstants";
+
+const PAGE_SIZE = 20;
 
 interface GenerationsSubTabProps {
   generationHistoryQuery: any;
@@ -77,202 +82,151 @@ export function GenerationsSubTab({
       a.download = `generation-history-user-${userId}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`Exported ${result.data.total} generation records (${result.data.summary.failedCount} failed, ${result.data.summary.totalCreditsUsed} credits used)`);
+      toast.success(
+        `Exported ${result.data.total} generation records (${result.data.summary.failedCount} failed, ${result.data.summary.totalCreditsUsed} credits used)`,
+      );
     }
   };
 
+  const generations: any[] = generationHistoryQuery.data?.generations ?? [];
+  const total: number = generationHistoryQuery.data?.total ?? 0;
+  const summary = generationHistoryQuery.data?.summary;
+
+  const rows: DataRow[] = generations.map((gen) => ({
+    id: String(gen.id),
+    cells: [
+      <StatePill key="status" label={gen.status} attention={gen.status === "failed"} />,
+      <span key="type" className="dp-table__pair">
+        <span className="dp-table__pairmain">{(gen.type || "unknown").replace("_", " ")}</span>
+        {gen.modelName ? <span className="dp-table__id">{gen.modelName}</span> : null}
+      </span>,
+      <RowId key="id">#{gen.id}</RowId>,
+      <span key="cost">{gen.pointsCost > 0 ? `${gen.pointsCost} cr` : "—"}</span>,
+      <span key="when">{formatDate(new Date(gen.createdAt))}</span>,
+    ],
+    facts: [
+      { label: "GENERATION", value: `#${gen.id}` },
+      { label: "KIND", value: gen.type || "unknown" },
+      { label: "CAST", value: gen.modelName || "—" },
+      { label: "COST", value: gen.pointsCost > 0 ? `${gen.pointsCost} credits` : "free" },
+      { label: "STARTED", value: formatDate(new Date(gen.createdAt)) },
+      {
+        label: "TOOK",
+        value:
+          gen.completedAt && gen.createdAt
+            ? `${((new Date(gen.completedAt).getTime() - new Date(gen.createdAt).getTime()) / 1000).toFixed(1)}s`
+            : "—",
+      },
+    ],
+    evidence: gen.errorMessage || undefined,
+  }));
+
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Image className="w-4 h-4 text-violet-600" />
-          <h4 className="text-sm font-semibold text-[#0A0A0A]">Generation History</h4>
-        </div>
+    <div className="dp-stack" style={{ gap: 16 }}>
+      <TableHead eyebrow="Generations">
+        {summary ? (
+          <span className="dp-small">
+            {summary.completedCount} finished, {summary.failedCount} failed,{" "}
+            {summary.totalCreditsUsed} credits
+          </span>
+        ) : null}
+        <TableFilter
+          label="Status"
+          value={genStatusFilter}
+          onChange={(value) => {
+            setGenStatusFilter(value);
+            setGenPage(() => 0);
+          }}
+          options={[
+            { value: "all", label: "All" },
+            { value: "completed", label: "Finished" },
+            { value: "failed", label: "Failed" },
+            { value: "processing", label: "Running" },
+            { value: "pending", label: "Queued" },
+          ]}
+        />
+        <TableFilter
+          label="Kind"
+          value={genTypeFilter}
+          onChange={(value) => {
+            setGenTypeFilter(value);
+            setGenPage(() => 0);
+          }}
+          options={[
+            { value: "all", label: "All kinds" },
+            { value: "masterPrompt", label: "Master prompt" },
+            { value: "castingImage", label: "Casting image" },
+            { value: "fullBody", label: "Full body" },
+            { value: "multiView", label: "Multi view" },
+            { value: "iteration", label: "Iteration" },
+            { value: "upscale", label: "Upscale" },
+          ]}
+        />
+        <input
+          type="date"
+          className="dp-tableselect"
+          aria-label="From date"
+          value={startDate}
+          onChange={(event) => {
+            setStartDate(event.target.value);
+            setGenPage(() => 0);
+          }}
+        />
+        <input
+          type="date"
+          className="dp-tableselect"
+          aria-label="To date"
+          value={endDate}
+          onChange={(event) => {
+            setEndDate(event.target.value);
+            setGenPage(() => 0);
+          }}
+        />
+        {startDate || endDate ? (
+          <Button
+            variant="quiet"
+            size="small"
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+              setGenPage(() => 0);
+            }}
+          >
+            Clear dates
+          </Button>
+        ) : null}
         <Button
-          variant="outline"
-          size="sm"
+          variant="quiet"
+          size="small"
           onClick={handleExportCsv}
           disabled={exportQuery.isFetching}
-          className="h-7 text-xs border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5]"
         >
-          {exportQuery.isFetching ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-          CSV
+          {exportQuery.isFetching ? "Exporting…" : "Export CSV"}
         </Button>
-      </div>
+      </TableHead>
 
-      {/* Generation Summary */}
-      {generationHistoryQuery.data?.summary && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-center">
-            <p className="text-[10px] text-emerald-600">Completed</p>
-            <p className="text-sm font-bold text-emerald-700">{generationHistoryQuery.data.summary.completedCount}</p>
-          </div>
-          <div className="p-2 rounded-lg bg-red-50 border border-red-200 text-center">
-            <p className="text-[10px] text-red-600">Failed</p>
-            <p className="text-sm font-bold text-red-700">{generationHistoryQuery.data.summary.failedCount}</p>
-          </div>
-          <div className="p-2 rounded-lg bg-blue-50 border border-blue-200 text-center">
-            <p className="text-[10px] text-blue-600">Credits Used</p>
-            <p className="text-sm font-bold text-blue-700">{generationHistoryQuery.data.summary.totalCreditsUsed}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Generation Filters */}
-      <div className="flex gap-2">
-        <Select value={genStatusFilter} onValueChange={(v) => { setGenStatusFilter(v); setGenPage(() => 0); }}>
-          <SelectTrigger className="w-1/2 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] text-xs h-8">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={genTypeFilter} onValueChange={(v) => { setGenTypeFilter(v); setGenPage(() => 0); }}>
-          <SelectTrigger className="w-1/2 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] text-xs h-8">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="masterPrompt">Master Prompt</SelectItem>
-            <SelectItem value="castingImage">Casting Image</SelectItem>
-            <SelectItem value="fullBody">Full Body</SelectItem>
-            <SelectItem value="multiView">Multi View</SelectItem>
-            <SelectItem value="iteration">Iteration</SelectItem>
-            <SelectItem value="upscale">Upscale</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Date Range Filter */}
-      <div className="flex gap-2 items-center">
-        <div className="relative flex-1">
-          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#999] pointer-events-none" />
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); setGenPage(() => 0); }}
-            className="w-full h-8 pl-7 pr-2 rounded-lg bg-[#F8F8F8] border border-[#E5E5E5] text-[#0A0A0A] text-xs"
-            placeholder="From"
-          />
-        </div>
-        <span className="text-[#CCC] text-xs">–</span>
-        <div className="relative flex-1">
-          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#999] pointer-events-none" />
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); setGenPage(() => 0); }}
-            className="w-full h-8 pl-7 pr-2 rounded-lg bg-[#F8F8F8] border border-[#E5E5E5] text-[#0A0A0A] text-xs"
-            placeholder="To"
-          />
-        </div>
-        {(startDate || endDate) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setStartDate(""); setEndDate(""); setGenPage(() => 0); }}
-            className="h-8 w-8 p-0 text-[#999] hover:text-[#0A0A0A]"
-            title="Clear dates"
-          >
-            <X className="w-3.5 h-3.5" />
-          </Button>
-        )}
-      </div>
-
-      {/* Generation List */}
-      {generationHistoryQuery.isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full bg-[#E5E5E5]" />
-          ))}
-        </div>
-      ) : generationHistoryQuery.data?.generations.length === 0 ? (
-        <p className="text-[#999] text-sm text-center py-4">No generations found</p>
-      ) : (
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {generationHistoryQuery.data?.generations.map((gen: any) => (
-            <div key={gen.id} className="p-2.5 rounded-lg bg-[#F8F8F8] border border-[#E5E5E5]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {gen.status === "completed" ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  ) : gen.status === "failed" ? (
-                    <XCircle className="w-3.5 h-3.5 text-red-600" />
-                  ) : (
-                    <ClockIcon className="w-3.5 h-3.5 text-amber-600" />
-                  )}
-                  <span className="text-sm text-[#0A0A0A]">#{gen.id}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={
-                    gen.status === "completed" ? "bg-emerald-50 text-emerald-700" :
-                    gen.status === "failed" ? "bg-red-50 text-red-700" :
-                    gen.status === "processing" ? "bg-amber-50 text-amber-700" :
-                    "bg-gray-100 text-gray-600"
-                  }>
-                    {gen.status}
-                  </Badge>
-                  {gen.pointsCost > 0 && (
-                    <span className="text-xs text-[#999]">{gen.pointsCost} cr</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge className="bg-violet-50 text-violet-700 text-xs">
-                  {(gen.type || "unknown").replace("_", " ")}
-                </Badge>
-                {gen.modelName && (
-                  <span className="text-xs text-[#999] truncate">Model: {gen.modelName}</span>
-                )}
-              </div>
-              {gen.errorMessage && (
-                <p className="text-xs text-red-600 mt-1 truncate">Error: {gen.errorMessage}</p>
-              )}
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[10px] text-[#CCC]">{formatDate(new Date(gen.createdAt))}</span>
-                {gen.completedAt && gen.createdAt && (
-                  <span className="text-[10px] text-[#CCC]">{((new Date(gen.completedAt).getTime() - new Date(gen.createdAt).getTime()) / 1000).toFixed(1)}s</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Generation Pagination */}
-      {(generationHistoryQuery.data?.total || 0) > 20 && (
-        <div className="flex items-center justify-between pt-3 border-t border-[#E5E5E5]">
-          <span className="text-xs text-[#999]">
-            Page {genPage + 1} of {Math.ceil((generationHistoryQuery.data?.total || 0) / 20)}
-          </span>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setGenPage(p => Math.max(0, p - 1))}
-              disabled={genPage === 0}
-              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setGenPage(p => p + 1)}
-              disabled={(genPage + 1) * 20 >= (generationHistoryQuery.data?.total || 0)}
-              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-            >
-              <ChevronRight className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <DataTable
+        columns={[
+          { label: "Status", width: "0 0 104px" },
+          { label: "What", width: "1 1 0" },
+          { label: "Id", width: "0 0 88px" },
+          { label: "Cost", width: "0 0 88px" },
+          { label: "Started", width: "0 0 148px" },
+        ]}
+        rows={rows}
+        loading={generationHistoryQuery.isLoading}
+        empty={{
+          title: "No generations match those filters.",
+          body: "Widen the kind or status, or clear the dates.",
+        }}
+        footer={{
+          meta: pageRange({ offset: genPage * PAGE_SIZE, count: generations.length, total }),
+          onBack: () => setGenPage((p) => Math.max(0, p - 1)),
+          onNext: () => setGenPage((p) => p + 1),
+          backDisabled: genPage === 0,
+          nextDisabled: (genPage + 1) * PAGE_SIZE >= total,
+        }}
+      />
     </div>
   );
 }

@@ -97,6 +97,41 @@ const GUARDED_PATHS = [
      — staff surfaces have never been dark-tested, so a hex here is a colour
      nobody would notice was wrong until the theme flipped. */
   "features/staff",
+  /*
+    Brief 06 §8, the founder's own bar: *"Zero hex literals across all eleven
+    surfaces; token-guard extended to cover them."*
+
+    ⚠ **ENROLLED FILE BY FILE RATHER THAN BY DIRECTORY, AND THAT IS A
+    DELIBERATE NARROWNESS.** `features/admin` and `features/moderator` hold
+    thirty-four files between them; twelve are the staff LISTS this brief
+    rebuilt, and the rest are the investigative tools brief 09 owns and five
+    FORM modals (suspend, credits, role change, review, freeze) which no brief
+    has reached yet. Enrolling the directories would have meant restyling
+    dialogs this brief does not describe, in the same PR — so what is on this
+    list is exactly what was rebuilt and read at zero.
+
+    **The remainder is counted rather than forgotten** — see
+    `docs/specs/PROMOTION_PASS_SECTION_06.md` §5 — and each enrols with the
+    brief that rewrites it, which is how `features/staff` arrived here one
+    brief ago.
+  */
+  "features/admin/UserTable.tsx",
+  "features/admin/UserFilters.tsx",
+  "features/admin/AuditLogTable.tsx",
+  "features/admin/AuditLogsFilters.tsx",
+  "features/admin/BlockedIPsTab.tsx",
+  "features/admin/ChangeRequestList.tsx",
+  "features/moderator/ActivitySubTab.tsx",
+  "features/moderator/AuditLogsTab.tsx",
+  "features/moderator/BlockedIPsTab.tsx",
+  "features/moderator/FlaggedReferralsTab.tsx",
+  "features/moderator/GenerationsSubTab.tsx",
+  "features/moderator/MyRequestsTab.tsx",
+  "pages/AdminAuditLogs.tsx",
+  "pages/AdminBugReports.tsx",
+  "pages/AdminChangeRequests.tsx",
+  "pages/AdminInviteCodes.tsx",
+  "features/admin/UserStatsCards.tsx",
 ];
 
 /**

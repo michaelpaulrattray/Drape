@@ -1,9 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
-import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
 import { StaffBarModeration, StaffLoading, StaffSurface } from "@/features/staff";
+import { Button } from "@/foundation";
 import type { SurfaceBarSegment } from "@/foundation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -13,7 +12,6 @@ import {
   BlockedIPsTab,
   MyRequestsTab,
   FlaggedReferralsTab,
-  LogDetailModal,
   ChangeRequestModal,
   StatsCards,
   FlaggedDiscrepanciesCard,
@@ -282,16 +280,13 @@ export default function ModeratorDashboard() {
             onRefresh: handleRefresh,
             isRefetching: logsQuery.isRefetching,
           }}
-          /* The moderator's one action, carried across from the header it
-             replaces. Its styling is page content and belongs to brief 09. */
+          /* The moderator's one action. It is the foundation's primary
+             button now rather than the same colour hand-written — brief 05
+             left it as page content and brief 06 is where page content is
+             detoked. */
           right={
-            <Button
-              size="sm"
-              onClick={() => openChangeRequest()}
-              className="bg-[#0A0A0A] hover:bg-[#222] text-white text-xs"
-            >
-              <FileText className="w-3.5 h-3.5 mr-1" />
-              New Request
+            <Button variant="primary" size="small" onClick={() => openChangeRequest()}>
+              New change request
             </Button>
           }
         />
@@ -318,6 +313,7 @@ export default function ModeratorDashboard() {
             startDate={logStartDate} setStartDate={setLogStartDate}
             endDate={logEndDate} setEndDate={setLogEndDate}
             totalPages={totalPages}
+            selectedLog={selectedLog}
             onSelectLog={setSelectedLog}
             onOpenChangeRequest={openChangeRequest}
             onResetFilters={handleResetFilters}
@@ -333,7 +329,7 @@ export default function ModeratorDashboard() {
             userPage={userPage} setUserPage={setUserPage}
             selectedUserId={selectedUserId} setSelectedUserId={setSelectedUserId}
             userTotalPages={userTotalPages}
-            onSelectLog={setSelectedLog} onOpenChangeRequest={openChangeRequest}
+            onOpenChangeRequest={openChangeRequest}
             creditTypeFilter={creditTypeFilter} setCreditTypeFilter={setCreditTypeFilter}
             creditPage={creditPage} setCreditPage={setCreditPage}
             creditStartDate={creditStartDate} setCreditStartDate={setCreditStartDate}
@@ -363,11 +359,6 @@ export default function ModeratorDashboard() {
         )}
       </main>
 
-      <LogDetailModal
-        selectedLog={selectedLog}
-        onClose={() => setSelectedLog(null)}
-        onOpenChangeRequest={(opts) => { openChangeRequest(opts); setSelectedLog(null); }}
-      />
 
       <ChangeRequestModal
         open={changeRequestOpen}
