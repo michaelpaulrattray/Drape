@@ -1,7 +1,7 @@
 {
-  "edition": 190,
-  "updatedAt": "2026-09-01T10:20:00.000Z",
-  "shift": "Foreman - shift 2026-09-01 19:12 AEST (foreman-168)",
+  "edition": 191,
+  "updatedAt": "2026-09-01T11:30:00.000Z",
+  "shift": "Foreman - shift 2026-09-01 21:30 AEST (foreman-169)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1240,6 +1240,36 @@
   ],
   "eyeItems": [
     {
+      "id": "account-menu-374-frames",
+      "title": "Your account menu, rebuilt from your drawing - and it was 16px NARROWER than you thought, not wider",
+      "question": "No question, a look and one correction you will probably enjoy.\n\nWHAT CHANGED. Everything in the menu is now set from your prototype rather than nudged toward it. The avatar is gone from inside the menu - you just clicked it to open the thing, so drawing it again 30px below was costing the width. In its place the second line now reads \"1,240 credits · Owner\": the number in the typewriter face because it is measured, the words in the normal one. Every group is separated by a real line now instead of a barely-there one, the rows run edge to edge, and all seven rows carry an icon including Sign out - your own reversal, and you were right that half-and-half reads as an oversight.\n\nTHE CORRECTION, and it is about your section 3. You wrote that the menu should be 216px and \"looks like ~240px\" - about 15% too big. Measured on the shipped menu before I touched it: it was 200px. It was 16 pixels too NARROW, not 24 too wide. Two of your other three figures were already correct - the labels were 12px and the row padding was 8px, exactly as specified.\n\nSo your reading was right and your numbers were not. It DID read loose - because of the avatar block and a slightly oversized name, not because of its width. Every value comes off your prototype either way, which is what you asked for. I am telling you because a wrong number left standing is how a future brief inherits it.",
+      "frames": [
+        {
+          "key": "crew-eye/2d79150d-03f8-46a3-8ab5-b39612f0fad3.png",
+          "caption": "BEFORE, dark. The avatar repeated inside the menu, a bare \"1,240 credits\", groups divided by almost nothing, and rows inset from the edge. 200px wide.",
+          "arm": "before, dark"
+        },
+        {
+          "key": "crew-eye/71b8fc51-1372-4be9-883e-6ecc863e6ef0.png",
+          "caption": "AFTER, dark, same account. 216px. No avatar, \"1,240 credits · Owner\" with the number in mono, real lines between the groups, rows edge to edge, and the Admin and Moderation glyphs are your set's now rather than borrowed ones.",
+          "arm": "after, dark"
+        },
+        {
+          "key": "crew-eye/86b50b12-6c8d-4ade-a549-dd0727950644.png",
+          "caption": "AFTER, light. Included because the thin separators are the part most likely to disappear on white - last night's specimen was a bar whose track was technically there and invisible.",
+          "arm": "after, light"
+        },
+        {
+          "key": "crew-eye/9cfae6f2-2d1e-4ebc-881f-a525e6edb30e.png",
+          "caption": "In context under the chip, dark. Worth a glance for one thing: the credits chip in the bar says 1,240 and the menu says it again. Your own brief argued that pairing it with the role earns the repeat. This is that judgement, rendered.",
+          "arm": "in context, dark"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-01",
+      "issueNumber": 374
+    },
+    {
       "id": "section-03-form-381-frames",
       "title": "Settings, rebuilt from your drawing - four frames, both themes",
       "question": "Two things worth your eye, and one of them is a real question.\n\nTHE LOOK. These are the panes as they ship, photographed in the running app in both themes. Usage is the one you enumerated: one bordered card, three columns, each column stacking. Storage is a card with its own label and the note under the bar. Security has every row as its own card with Delete account tinted red.\n\nTHE QUESTION, and it is small. On the Usage card, the three numbers are in the typewriter face at 22px, because your card said mono and your brief says \"values in mono; they are measured numbers.\" Your PROTOTYPE draws them in the normal face at 19px. I went with your card and the brief - two artifacts against one - and wrote the disagreement into the code so it is one line to reverse. If the numbers read too big or too typewritery beside everything else, say so and it goes back to 19 and the normal face.\n\nOne thing you may notice in the frames that is NOT a defect: the account shown is the test bot, so the plan says Studio and the numbers are its numbers, not yours.",
@@ -1271,7 +1301,7 @@
     },
     {
       "id": "cog-is-a-cog-382-frames",
-      "title": "You were right about the cog, and it turned out to be measurable - here it is beside the sun it used to be",
+      "title": "You judged the cog and said it is now correct - closed, and the same gear is on your account menu tonight",
       "question": "No question this time, only a look - you already gave the verdict and this is it built. What you said: \"the cog is incorrect its a star or sun it should be a cog like in the top bar profile drop down menu.\" You were right, and it was not a matter of taste. The rail's cog and the sun in your top bar were literally the same drawing: a circle with eight straight lines coming off it at even angles, differing only in how big the circle was. Two names, one picture, four inches apart on the same screen. It is now the gear your own profile dropdown draws - the same one, copied rather than re-drawn by hand, because you pointed at a mark on your screen and a near-miss would have given you a THIRD gear instead of an answer. The frames put the two side by side at 8x so you can see they are now different things. If the gear reads heavy or blurry at real size, say so - it is one key back.",
       "frames": [
         {
@@ -1290,7 +1320,7 @@
           "arm": "the rail in context, dark"
         }
       ],
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-01",
       "issueNumber": 382
     },
@@ -2424,6 +2454,13 @@
   ],
   "pipeline": [
     {
+      "id": "account-menu-374",
+      "title": "Your account menu is built from your drawing now - and the second menu it was meant to merge with turned out to be the drawing itself (#374)",
+      "status": "merged",
+      "prNumber": 389,
+      "note": "WHAT YOU WILL SEE. Click your avatar. The menu is 216px instead of 200, there is no avatar repeated inside it, and the second line reads \"1,240 credits · Owner\" - the number in the typewriter face, the words in the normal one. Groups are divided by lines you can actually see. Rows run edge to edge. All seven rows carry an icon from your own set, Sign out included, all at one stroke weight - the hand-set heavier stroke is gone.\n\nTHE THING WORTH TWO MINUTES. Your brief opens by saying there are two account menus and comparing this file against \"the topbar's inline menu\". The topbar renders this file. There is no inline menu in it.\n\nRead at the actual files before anything was built: every row of that comparison is your PROTOTYPE. \"Owner · Klieg Studio\" is word for word what your mockup draws; the shield and the list are the two icons in its staff section. And two of the five rows could not describe any code file at all, because the only other account menu we have has no staff section in it.\n\nThe card had already tried to correct this and got it wrong the other way - it said the column was the old studio's menu. It was not that either. This is the mockup agent problem you named yourself: it was drawn on a blank canvas, so it cannot know which of the things it describes are ours and which are its own.\n\nNONE OF WHICH CHANGES THE ANSWER, because the defect is real - two menus do exist and they have drifted - and you had already ruled: \"legacy casting studio is getting retired thats the answer it doesnt need a new menu\". So the old studio's menu is left exactly as it is, with a dated note in the file quoting you, and a check that fails if a THIRD one ever appears. Your brief is corrected in the same change so the next person to read it learns the right file.\n\nTHREE THINGS YOUR BRIEF ASKED FOR THAT DO NOT EXIST YET. Your section 2 says to take a fresh icons file in which the settings icon has become a proper cog and the two-slider mark has been renamed to \"filters\". That drop has not arrived - both copies we have still show the two-slider mark under the settings name. Following it literally would have put the FILTER icon on the Settings row, which is the exact collision your paragraph warns about. It draws the cog you approved last night instead - the one you pointed at when you said \"it should be a cog like in the top bar profile drop down menu\", which is literally this menu.\n\nYour Sign out icon does not exist either. Rather than draw one and hand you a near-miss, it is the same borrowed-and-declared route we used for the cog, and it is labelled in the file as a stand-in for a glyph you own. Send yours and it is one line.\n\nONE THING THAT IS A STUB WITH A STRAIGHT FACE: \"Owner\". There is no such role in the product - the database knows about admins and moderators and nothing else, and there is no members table at all. It ships because your Members page already shows you OWNER on your own row, and because with nobody else in the workspace it is not untrue. It now comes from ONE place that both screens read, so they cannot drift apart - which is exactly the fault we fixed last night with Klieg vs Klieg Studio, and it was not worth repeating a day later for a second word."
+    },
+    {
       "id": "section-03-form-381",
       "title": "Settings is built from your drawing now, not from your words about it (#381)",
       "status": "merged",
@@ -3466,9 +3503,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-20260901",
-      "title": "Where the queue stands tonight - 99 open, and 14 of them have not been looked at in a week",
-      "detail": "99 cards open. 6 marked urgent. 3 are things you ordered and have not been built yet: #231 (the reader court - it needs the Fable seat, not this one), #374 (section 04, the account menu - its own night), and #321.\n\n#321 is the one worth a word from you, and it is the reason this line is here. It is marked urgent and founder-ordered and it is ALREADY BUILT - it shipped days ago and the only thing left on it is your eye. Five separate nights in a row have now opened it, checked, found it built, and written \"do not rebuild this\" into their handover for the next one. That is five nights paying to re-discover the same fact. Either close it, or tell us what on it still needs looking at, and it stops costing anything.\n\n14 cards are open and have not been touched in over a week. That number is the one to watch: it was not measured before this week, so there is nothing to compare it to yet, but it will be here every edition from now on and you will see whether it is growing.",
+      "id": "credits-used-zero-387",
+      "title": "You told us tonight that Usage shows you have used no credits - that is a real regression and it is first in line tomorrow",
+      "detail": "Your words: \"its also showing that i've used no credits\". You have rolled paid casts within the last few days, so zero is not credible.\n\nThis is the SECOND wrong reading of the same number in two days. It used to show 115,695 - your entire history - against a 5,000 monthly allowance. Last night's repair scoped it to one window and it has swung to nothing. A third wrong reading would be worse than no number at all, so it is being diagnosed against your actual spend rows rather than patched again at the component.\n\nIt is card #387 with the other four corrections you sent, and it is the first thing the next shift takes. Tonight's shift was already inside the account menu when your card landed.",
+      "severity": "urgent",
+      "state": "open"
+    },
+    {
+      "id": "queue-shape-169",
+      "title": "The queue tonight: 98 open, and FIVE of them are your orders now",
+      "detail": "98 cards open. 6 marked urgent. FIVE are yours - #231 (the reader court, which needs the Fable seat and cannot run while your allowance is out), #321, #387 and #390, both sent tonight, and #374 which closed an hour ago.\n\n14 have sat untouched for over a week - unchanged from last night, because tonight went to your order rather than the stale pile.\n\nOne thing to note about the shape: you sent two cards tonight (#387, #390) while a shift was mid-build. Both are queued and neither was lost - the shift re-reads the queue before it opens anything, which is how they were seen at all.",
       "severity": "info",
       "state": "open"
     },
@@ -3492,13 +3536,6 @@
       "detail": "You reported it at 21:57 last night; it is merged and on your rail. It was rendering at 16px — the page's ordinary text size — against 9.5px for every destination above it. Now 9.5px, measured in the browser rather than read off the stylesheet, in both themes and on the casting page too. Your fix was right and your diagnosis was one step off, which is the only part worth your attention: the nav labels were ALREADY 9.5px, so Invite was not one step too big — it sits outside the nav item that carries the size and was inheriting the page instead. That is why the size went on the label's own class rather than on the Invite rule: the next label put outside a nav item cannot repeat it. Frames below.",
       "severity": "info",
       "state": "resolved"
-    },
-    {
-      "id": "queue-shape-167",
-      "title": "The queue tonight: 99 open, and FOUR of your orders now - the stale pile is still 14",
-      "detail": "99 cards open, 7 urgent. FOUR of your orders are open, up from two, because two arrived today:\n\n#381 - Section 03's panes follow your written brief where your prototype draws cards. Your own words: \"section 03 isnt just usage corrections most of the pages are designed incorrectly.\" A section-sized job, so its own night.\n#374 - Section 04, the account menu. Also a section, also its own night.\n#321 - the icon set's second half. BUILT ALREADY. It wants your eye, not work. Four shifts have now passed that sentence along, which is worth saying plainly: it is finished and waiting, not stuck.\n#231 - the reader court. That one is a judgement job rather than an execution job, so it waits for the Fable seat rather than being attempted on the cheaper model.\n\n#382 came ON and came straight OFF tonight - that is your cog, filed from your reply and shipped in the same shift.\n\nTHE STALE PILE is 14, unchanged. It is the same batch as last night: 29 cards filed in one sitting on 25 August, crossing the seven-day line together over about a day. Expect it to read around 29 tomorrow and then stop climbing. That is a batch ageing, not five days of neglect - the number would be misleading without this sentence.",
-      "state": "open",
-      "severity": "warning"
     },
     {
       "id": "nights-stopped-silently-331",
@@ -3698,10 +3735,11 @@
     75,
     76,
     77,
-    78
+    78,
+    79
   ],
   "nextUp": {
-    "readAt": "2026-09-01T10:01:56.290Z",
+    "readAt": "2026-09-01T11:16:02.840Z",
     "items": [
       {
         "issueNumber": 231,
@@ -3714,9 +3752,14 @@
         "urgent": true
       },
       {
-        "issueNumber": 374,
-        "title": "SECTION 04 — Account menu: one implementation, and the brief's 'topbar inline menu' is actually the legacy studio's",
-        "urgent": false
+        "issueNumber": 387,
+        "title": "Settings panes: the tool breakdown needs a tool column, credits-used now reads zero, and four smaller corrections",
+        "urgent": true
+      },
+      {
+        "issueNumber": 390,
+        "title": "Change plan / Compare plans: six form corrections — and the prototype's five-plan ladder is not the product's twelve",
+        "urgent": true
       }
     ]
   }
