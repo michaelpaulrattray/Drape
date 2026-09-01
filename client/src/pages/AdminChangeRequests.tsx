@@ -126,7 +126,7 @@ export default function AdminChangeRequests() {
   }
 
   if (!user) return <Redirect to="/login" />;
-  if (user.role !== "admin") return <Redirect to="/studio" />;
+  if (user.role !== "admin") return <Redirect to="/app" />;
 
   // ─── Derived data ────────────────────────────────────────────────────────
 

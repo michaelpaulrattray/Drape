@@ -34,10 +34,46 @@ import { openCastingDetails } from '@/features/casting/components/PackageHealthD
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
 import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 import type { MintTier } from '@shared/boardTypes';
+import NotFound from '@/pages/NotFound';
+
+/**
+ * THE LEGACY STUDIO — SEALED BEHIND THE ADMIN ROLE (#364, 2026-09-01).
+ *
+ * The founder's order, verbatim:
+ *
+ *   "are the old legacy studio and wardrobe links removed from the live site
+ *    meaning i shouldnt be able to access them if i type /castinglegacy or
+ *    whatever its handle is. they should be completely unlinked from the public
+ *    being able to reach them. that way as we continue development we can
+ *    cleanly retire them?"
+ *
+ * and on the wardrobe, which rides inside this same page:
+ *
+ *   "the wardrobe will be made legacy eventually as it will get retired same as
+ *    legacy casting we only need it in the codebase to see how it works as we
+ *    work through our v2 redesign … i just dont want remnants of old legacy
+ *    stuff lying around as we continue development"
+ *
+ * ⚠ **SEALED, NOT DELETED.** Nothing here is removed — not the route, not a
+ * component, not one server endpoint. N8 owns retirement and the Atlas is the
+ * deletion authority: a module goes when its retirement view shows no live
+ * callers, never because a door closed. This closes the door.
+ *
+ * ⚠ **AND A NON-ADMIN GETS THE 404, NOT A REFUSAL.** #302 unlinked the three
+ * lobby views and left the ROUTE resolving for anyone signed in, which is the
+ * same distinction the specimen sheet failed on three days earlier (#261):
+ * unlinked is not a control. An "access denied" page would be its softer
+ * cousin — it tells a stranger there is something here. The address answers
+ * exactly as an address that does not exist.
+ */
 
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+  /* The seal. Declared here because the two redirect effects below have to
+     know about it: without that, a signed-out visitor would be bounced to
+     /login — a different answer from the one a non-existent address gives. */
+  const isAdmin = isAuthenticated && user?.role === 'admin';
 
   // Studio store
   const { activeTool, canvas, setCanvas, wardrobeStart } = useStudioStore();
@@ -65,12 +101,24 @@ export default function DrapeStudio() {
   const transition = baseTransition;
 
   // Session persistence — restore on mount, auto-save on changes
-  const { isRestoring } = useSessionRestore(isAuthenticated);
+  /*
+    Both of these take `isAdmin` rather than `isAuthenticated` (#364), and that
+    is the seal's real teeth rather than a tidy-up.
+
+    `useStudioEntry` holds "the ONLY bare-/studio redirect": a signed-in visitor
+    at a bare /studio is sent to /app. Left on `isAuthenticated`, a sealed
+    visitor would be bounced to the lobby instead of meeting the 404 — a
+    different answer from the one a non-existent address gives, and the drive
+    measured exactly that before this line changed. `useSessionRestore` follows
+    for the same reason and one more: a page nobody but an admin can see should
+    not be restoring anybody's session behind it.
+  */
+  const { isRestoring } = useSessionRestore(isAdmin);
   useSessionAutoSave();
 
   // URL-driven entry: resolves ?tool/?new/?modelId/?sessionId once auth
   // and the localStorage restore have settled; bare /studio → /app.
-  const { entryStatus } = useStudioEntry({ isAuthenticated, isRestoring });
+  const { entryStatus } = useStudioEntry({ isAuthenticated: isAdmin, isRestoring });
 
   // Null-tool watcher — with the studio lobby retired, landing on
   // activeTool=null without the wardrobe-start screen means "leave the
@@ -78,11 +126,12 @@ export default function DrapeStudio() {
   // fire while the async entry above is still resolving (see the
   // invariants documented in useStudioEntry).
   useEffect(() => {
+    if (!isAdmin) return; // sealed: nothing on this page navigates for anyone else (#364)
     if (entryStatus !== 'settled') return;
     if (activeTool === null && !wardrobeStart) {
       navigate('/app');
     }
-  }, [entryStatus, activeTool, wardrobeStart, navigate]);
+  }, [isAdmin, entryStatus, activeTool, wardrobeStart, navigate]);
 
   // Casting stores — only what the studio shell itself needs; the casting
   // surface's own wiring lives in CastingWorkspace (shared with the D-35
@@ -113,19 +162,31 @@ export default function DrapeStudio() {
     }
   }, [refetchCredits, setIsTopupOpen]);
 
-  // Auth redirect
+  /*
+    Auth redirect — and the pre-launch gate under it. Both are kept and both are
+    now unreachable in practice: this page renders for admins alone (#364), and
+    an admin is by definition signed in and approved. They stay because the seal
+    is a door, not a deletion, and because a page that reopens would need them.
+
+    THE `isAdmin` EARLY RETURN IS THE LOAD-BEARING PART. Without it a signed-out
+    visitor is sent to /login, which is a different answer from the one a
+    non-existent address gives — and telling a stranger where to sign in is
+    telling them something is here.
+  */
   useEffect(() => {
+    if (!isAdmin) return;
     if (!authLoading && !isAuthenticated) {
       navigate('/login');
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [isAdmin, authLoading, isAuthenticated, navigate]);
 
   // Pre-launch gate
   useEffect(() => {
+    if (!isAdmin) return;
     if (!authLoading && isAuthenticated && user && !user.approved && user.role !== 'admin') {
       navigate('/login?error=no_code');
     }
-  }, [authLoading, isAuthenticated, user, navigate]);
+  }, [isAdmin, authLoading, isAuthenticated, user, navigate]);
 
   // Keyboard shortcuts (admin debug)
   useDebugShortcuts();
@@ -252,6 +313,16 @@ export default function DrapeStudio() {
     const fullBodyAsset = currentAssets.find((a) => a.viewType === 'frontFull' && a.storageUrl);
     return fullBodyAsset?.storageUrl || null;
   }, [canvas.uploadedModelUrl, canvas.castFullBodyUrl, currentAssets]);
+
+  /*
+    THE SEAL (#364). As soon as the session has resolved, anyone who is not an
+    admin gets the 404 — signed out, signed in, approved, unapproved alike. It
+    sits ahead of the restore/entry wait on purpose: those two depend on the
+    session, so a sealed visitor must never be held behind them.
+  */
+  if (!authLoading && !isAdmin) {
+    return <NotFound />;
+  }
 
   // Loading state — held until the URL entry has resolved, so no stale
   // tool (or nothing at all) flashes while an async resume is in flight
