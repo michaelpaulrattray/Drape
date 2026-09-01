@@ -20,8 +20,9 @@
  *     is an invitation to wire it back up.
  *   - **A click fills the prompt with that card's brief and does not submit**
  *     (his ruling on the same card: *"i agree with your reccomendation"*),
- *     exactly as the TRY chips behave. That is what turns a showcase into an
- *     invitation, and it is why every entry still carries the REAL sentence
+ *     — which is what turns a showcase into an invitation. ⚠ This clause used
+ *     to end *"exactly as the TRY chips behave"*; #375 removed them for that
+ *     exact reason, so the deck is now the only thing that does it, and it is why every entry still carries the REAL sentence
  *     that cast its own face — a card whose words did not produce its picture
  *     would teach the customer a brief that does not work.
  */

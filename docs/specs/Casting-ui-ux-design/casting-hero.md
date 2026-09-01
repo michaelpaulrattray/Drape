@@ -6,7 +6,7 @@
 >
 > > *"oh you messed up the casting hero, it's not meant to actually take people to a signed cast these are just images of potential casts you can make in the studio otherwise when a fresh user comes to the casting page they wouldnt see any images?"*
 >
-> **The deck is a SHOWCASE.** One curated set, the same for every account, signed casts or not — images of *what you can make in this studio*, each paired with the real brief that produced it. It does not read the roster. **No card opens a cast room.** Clicking any card — centre or peek — puts that card's brief in the prompt field and does not submit, exactly as the TRY chips do (his ruling on the same card: *"i agree with your reccomendation"*); a peek additionally brings itself to the centre.
+> **The deck is a SHOWCASE.** One curated set, the same for every account, signed casts or not — images of *what you can make in this studio*, each paired with the real brief that produced it. It does not read the roster. **No card opens a cast room.** Clicking any card — centre or peek — puts that card's brief in the prompt field and does not submit (his ruling on the same card: *"i agree with your reccomendation"*). ⚠ This behaviour used to be described as *"exactly as the TRY chips do"*; **#375 removed the chips precisely BECAUSE it was identical**, so the deck is now the only thing that does it; a peek additionally brings itself to the centre.
 >
 > The sections below have been corrected in place. Where this note and an older line still disagree, this note wins.
 
@@ -51,7 +51,7 @@ One card, two columns, wrapping to stacked below ~700px.
 │                                   │  ▬▬ ── ── ── ──             │
 │ ⚙ Prefer controls? Set the spec   │                             │
 │                                   │                             │
-│ TRY  (chip)(chip)(chip)(chip)     │                             │
+│ ~ 160 credits                     │                             │
 └───────────────────────────────────┴────────────────────────────┘
 ```
 
@@ -83,31 +83,41 @@ The two `flex-basis` values are the load-bearing numbers. They let the columns s
 | Cast it | `padding: 8px 14px; border-radius: var(--r-btn); background: var(--ink); color: var(--surface); 500 12px` + 12px arrow. `flex: none`. Hover `opacity: .86` |
 | Spec toggle | icon + `400 11.5px`, `--metaStrong` → `--ink` on hover. Label flips between "Prefer controls? Set the casting spec" and "Hide the casting spec" |
 | Locked-traits pill | only when ≥1 trait is set: `--accentWash` bg, `0 0 0 1px var(--accentLine)` ring, `--accentInk` text, `500 9.5px` mono. Reads "3 traits locked" |
-| TRY row | mono `500 10px` `.1em` `--muted` label, then the seed chips |
+| Cost line | `.dpc-hero__costrow` — its own row under the field, left-aligned, `400 10.5px var(--font-mono)`, `--meta`. **No balance** (his ruling 2026-08-03) |
 
 ### The headline is two sentences, deliberately
 
 **"Say who you need. Meet eight of them."** The second sentence is the product's actual differentiator — that a brief returns a *sheet of candidates*, not one image. Cutting it to a single line loses the only fact a new user needs.
 
-### Seed chips — the detail that gets broken
+## 3a. The seed chips are REMOVED — and the seed law is not
 
-```css
-flex: none;                 /* ← REQUIRED */
-white-space: nowrap;        /* ← REQUIRED */
-padding: 5px 10px;
-border: 1px solid var(--border);
-border-radius: var(--r-pill);
-background: var(--surface);
-font: 400 11.5px var(--font-sans);
-color: var(--secondary);
-```
-Hover: `border-color: var(--accentLine); background: var(--accentWash); color: var(--accentInk)`.
+⚠ **THE TRY ROW IS GONE (#375, his order 2026-09-01), verbatim:** *"we said we would remove the 'try' quick prompts because the casting hero now serves as that now and try to balance that right box somehow"* — first said on 2026-08-30, filed as a comment on #240, and lost when that card closed.
 
-`flex: none` is not optional. These are flex children in a wrapping row; with the default `flex-shrink: 1` they compress below their own text and each chip breaks onto two lines, which drags the whole column taller. This exact bug shipped in the prototype twice.
+**His reasoning, which is the whole of it:** the deck IS the try row now, and it does the job better. A chip filled the box with a sentence somebody wrote; a deck card fills it with the **real brief that cast a real face you are looking at**. §4 pins the two behaviours as identical — *"clicking any card puts that card's brief into the prompt field, and does not submit"* — so this was **two mechanisms for one job**, which is working law 4, and the deck is the one with the evidence attached.
 
-Chips must be **labels, not sentences** — "Skincare founder, 40s", "Gym rat, ring light", "Bodega owner, gravelly", "Night-routine whisper". Four of them. If a chip needs a comma and more than four words, it's prose and belongs in the placeholder instead.
+### ⚠ THE SEED LAW SURVIVES THE CHIPS, AND IT IS RECORDED HERE BECAUSE ITS ONLY HOME WAS THE DELETED CONSTANT
 
-Clicking a chip fills the prompt field; it does **not** submit. The user should see what they're about to send.
+Six founder clauses lived in the docblock over `CASTING_SEEDS` in `CastingV2.tsx`, each learned from a seed that broke it. **They were never about chips.** They govern every example sentence this product puts in front of somebody — which now means the deck's briefs, and any future one. Deleting the array would have deleted the law.
+
+> **Seed law (founder, 2026-07-31): every example brief must be one the compiler fully honours TODAY.** An example is a promise about what the product can do, and one the system silently strips is a worse lie than no example — the user taps it, pays, and gets something that ignored half of what they clicked.
+
+1. **Honest** — fully honoured today. No voice-only concepts, no presentation or lighting words (the framing law strips them by design), photoreal humans only until a cohort certifies more.
+2. **A tiny story** — an archetype plus one vivid detail. The test is whether a stranger would tap it out of curiosity; a demographic description nobody would touch is capability-honest and useless.
+3. **Rest-state and permanent** — structural and visible in a still, closed-mouth frame: a scar, a shaved head, freckles, bleached brows. Never a performed expression. Two candidates were cut by this: *"gap-toothed grin"* (performance) and *"scar through one eyebrow"*, which came back as a faint brow break rather than a scar.
+4. **Verified** — it ships only once a sample tile has been generated and the detail confirmed to render.
+5. **A brief this audience would really type** (founder, 2026-08-01) — *"Interesting is not the bar; recognisable is."* A blacksmith with soot in the creases is a good brief and not what someone opening this product came to cast. **And no pronouns**: *"Freckles she never covered"* pinned sex by accident, on a word nobody noticed writing.
+6. **Sex is stated wherever the detail is sex-coded** (founder, 2026-08-01) — curation, not capability. *"Bleached brows"* left open read costume-y on male tiles; nothing malfunctioned, the brief simply said nothing about sex. Examples that leave it open must have details that read well on anybody.
+
+**Capability-versioning stands too**: when Voice ships, a voice example returns; when a cohort certifies, an anime one joins. Re-enabling is a deliberate edit, never an act of memory.
+
+### The prompt box grew into the space (#375)
+
+His second sentence: *"to balance the space we could maybe make the prompt box slightly bigger?"* The removal frees **77px** (the TRY row's measured height at 1440), and it goes back into the field:
+
+- **Rests at three lines** rather than one. It is the page's primary action and the thing a 160-credit roll is typed into; the grow-on-input behaviour is unchanged.
+- **Caps at seven lines rather than four**, scoped to the hero (`.dpc-hero__field .dpc-brieffield`). The sheet's own brief box keeps its four-line cap — a different surface's decision, made in a different sitting.
+
+⚠ **The cap is the part measured rather than chosen.** His briefs run 250–350 characters, and at the four-line cap a brief of that length **scrolled at every width tested** — at 1024, where the column is narrowest, even a 250-character one needed six lines. Seven clears the whole range at 1920 / 1440 / 1024 / 700.
 
 ---
 
@@ -138,7 +148,7 @@ Transition on the centre-swap: `transform .52s var(--ease), opacity .52s ease, b
 
 - Advances every ~4s.
 - **Pauses on hover of the whole right column** (`onMouseEnter` / `onMouseLeave` → a `heroHeld` flag). A moving target the user is trying to read is hostile.
-- **Clicking any card puts that card's brief into the prompt field, and does not submit** — the TRY chips' behaviour exactly (§3). This is the founder's ruling on #240 and it replaces *"clicking the centre opens that cast member's room"*, which was built, refused and removed: nothing in the deck is anybody's property, so there is no room to open.
+- **Clicking any card puts that card's brief into the prompt field, and does not submit** — which was the TRY chips' behaviour exactly, and is why #375 removed them (§3a). This is the founder's ruling on #240 and it replaces *"clicking the centre opens that cast member's room"*, which was built, refused and removed: nothing in the deck is anybody's property, so there is no room to open.
 - Clicking a **peek** additionally brings it to centre and releases the hold.
 
 Both clicks are required. A carousel where the off-centre cards are decorative teaches the user the deck isn't interactive.
@@ -195,7 +205,7 @@ No entry carries a cast id. The field is absent rather than null: a field that i
 ## 7. Definition of done
 
 - [ ] Deck visible without scrolling at 1440×900, with both peeks in frame.
-- [ ] Seed chips are one line each at every width from 344px column upward.
+- [ ] The prompt box rests at three lines and a 250–350 character brief does not scroll, at 1920 / 1440 / 1024 / 700 (#375 — the seed chips this line used to name are removed; see §3a).
 - [ ] Brief text always matches the centre card.
 - [ ] Rotation pauses on hover; peeks are clickable; **no card navigates anywhere**, and a click on any card fills the prompt field without submitting.
 - [ ] The same deck is drawn for an account with signed casts and for a fresh one.

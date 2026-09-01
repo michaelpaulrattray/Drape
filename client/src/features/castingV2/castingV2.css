@@ -2265,9 +2265,24 @@
 
 .dpc-dock__cost { margin-left: 14px; }
 
-.dpc-hero__cost {
-  /* In the TRY row, pushed to its end — no row of its own to leave a gap. */
-  margin-left: auto;
+/*
+  ⚠ **THE COST LINE OUTLIVED THE ROW IT WAS FOLDED INTO (#375).**
+
+  It read *"In the TRY row, pushed to its end — no row of its own to leave a
+  gap"*, and `margin-left: auto` was what pushed it past four seed chips. The
+  chips are gone on his order, so there is nothing left to push past: the auto
+  margin now shoves a lone price to the far right edge of a 576px column,
+  which is not where a price belongs relative to the button that spends it
+  (D-15).
+
+  Its own row, left-aligned under the field — which is where it lived BEFORE
+  it was folded in, and the reason it was folded in (*"pushed the seeds down
+  and left a gap between the box and them"*) cannot apply to a row with no
+  seeds under it.
+*/
+.dpc-hero__costrow {
+  gap: 7px;
+  margin-top: 2px;
 }
 
 /*
@@ -2349,6 +2364,47 @@
 */
 .dp-field.dpc-briefrow {
   align-items: flex-start;
+}
+
+/*
+  ⚠ **THE HERO'S BRIEF BOX IS TALLER THAN THE SHEET'S, AND THE NUMBERS ARE
+  MEASURED RATHER THAN CHOSEN (#375).**
+
+  His order was two things: remove the TRY chips, *"and to balance the space we
+  could maybe make the prompt box slightly bigger"*. The removal frees **77px**
+  in the left column (the TRY row's measured height at 1440); this is what goes
+  back into the box.
+
+  **Two different complaints, and only measuring told them apart:**
+
+  1. **Resting height.** The box rests at ONE line and grows on input, so the
+     page's primary action — the thing a 160-credit roll is typed into — reads
+     as a search field. `min-height` makes it rest at three lines. The grow
+     behaviour is untouched: it still expands as you type, it simply starts
+     from a size that says *a paragraph goes here*.
+
+  2. **The cap, which is the real defect and was not what the card described.**
+     The shared cap is four lines, and his own briefs run 250–350 characters.
+     Measured at the running app, by typing real briefs of that length:
+
+       | viewport | box width | 250 chars | 302 chars | 336 chars |
+       |---|---|---|---|---|
+       | 1920 / 1440 | 458px | 4 lines ✅ | 4 lines ✅ | **5 — scrolled** |
+       | 1024        | 309px | **6 — scrolled** | **6** | **7** |
+       | 700         | 422px | 4 ✅ | **5 — scrolled** | **5** |
+
+     So a brief of his stated length scrolled at every width tested, and at
+     1024 even the SHORT one did. Seven lines clears the whole range.
+
+  ⚠ **SCOPED TO THE HERO ON PURPOSE.** `.dpc-brieffield` is shared with the
+  sheet's brief box, whose four-line cap is a different surface's decision made
+  in a different sitting. Widening the shared rule would have changed a surface
+  nobody asked about — the tempting one-line version of this fix, and the
+  wrong one.
+*/
+.dpc-hero__field .dpc-brieffield {
+  min-height: calc(3 * 1.45em);
+  max-height: calc(7 * 1.45em);
 }
 
 .dp-field.dpc-briefrow > svg {

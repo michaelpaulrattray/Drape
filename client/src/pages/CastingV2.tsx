@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
   Button,
   Card,
-  Chip,
   DropZone,
   Field,
   Input,
@@ -65,83 +64,24 @@ import "@/features/castingV2/castingV2.css";
 const ROLL_PRICE_FALLBACK = 0;
 
 /**
- * Seed chips — starting points, not presets. One tap fills the box; nothing is
- * applied until the user reads it and rolls.
+ * ⚠ **THE SEED CHIPS ARE REMOVED (#375, his order 2026-09-01) AND THE SEED LAW
+ * IS NOT LOST WITH THEM — it moved, whole, to `docs/specs/Casting-ui-ux-design/
+ * casting-hero.md` §3a.**
  *
- * **Seed law (founder, 2026-07-31): every seed must be a brief the compiler
- * fully honours TODAY.** A seed is a promise about what the product can do,
- * and a seed the system silently strips is a worse lie than no seed — the user
- * taps it, pays, and gets something that ignored half of what they clicked.
+ * Six founder clauses lived in the docblock over this constant, every one of
+ * them learned from a seed that broke it: honest to today's capability, a tiny
+ * story rather than a demographic, rest-state and permanent rather than
+ * performed, verified by a generated tile, a brief this audience would really
+ * type, and sex stated wherever the detail is sex-coded. **Deleting the array
+ * would have deleted the law**, and the law is not about chips — it is about
+ * every example sentence this product ever puts in front of somebody, which
+ * now means the DECK's briefs.
  *
- * Four clauses, all founder-set, all learned from a seed that broke one:
- *
- *   1. **Honest** — the compiler must fully honour it today. No voice-only
- *      concepts (M8b), no presentation or lighting words (the framing law
- *      strips them by design), photoreal humans only until M9 certifies more.
- *   2. **A tiny story** — an archetype plus one vivid detail, in the register
- *      of "Bodega owner, Brooklyn, gravelly". The test is whether a stranger
- *      would tap it out of curiosity. A demographic description nobody would
- *      touch is capability-honest and useless.
- *   3. **Rest-state and permanent** — the detail must be structural and
- *      visible in a still, closed-mouth frame: a scar, a shaved head,
- *      freckles, bleached brows. Never a performed expression; a grin is
- *      performance, and mouth-closed framing would hide it anyway.
- *   4. **Verified** — a seed ships only once a sample tile has been generated
- *      and the detail confirmed to render. Two candidates were cut by this:
- *      "gap-toothed grin" (performance) and "scar through one eyebrow", which
- *      came back as a faint brow break rather than a scar.
- *
- * Seeds are **capability-versioned**: when Voice ships a voice seed returns,
- * when a cohort certifies at M9 an anime seed joins. `requires` records the
- * gate so re-enabling is a deliberate edit rather than an act of memory.
- *
- * Deliberately loose: these state little, so the sheet's own latitude is what
- * the user sees demonstrated. Stated facts lock; everything else varies.
+ * The chips went because the deck does their job better: a chip filled the box
+ * with a sentence someone wrote, a deck card fills it with the real brief that
+ * cast a real face you are looking at. Two mechanisms for one job is working
+ * law 4, and the deck is the one with the evidence attached.
  */
-const CASTING_SEEDS: Array<{ label: string; shows: string; requires?: string }> = [
-  /*
-    A FIFTH CLAUSE, founder 2026-08-01: a seed must be a brief this audience
-    would actually type.
-
-    The previous set obeyed every other clause and still missed. A blacksmith
-    with soot in the creases and a nurse at the end of a double shift are good
-    briefs — they are simply not what someone opening this product came to cast.
-    People here are making UGC creators, AI influencers, models and founders,
-    and a seed row is a claim about what the product is FOR. Interesting is not
-    the bar; recognisable is.
-
-    CLAUSE 6 (founder, 2026-08-01): a seed whose DETAIL or ARCHETYPE is
-    strongly sex-coded states its sex. Curation, not capability.
-
-    "Beauty creator, late 20s, bleached brows" left sex open and the male
-    tiles read costume-y. Nothing malfunctioned — the system obeyed a brief
-    that said nothing about sex, exactly as it should. The seed gambled and
-    lost. "Silver at the temples" is the same bet: idiomatically a phrase
-    about men, and it had been sitting open too.
-
-    So the four split deliberately. Two leave sex open because their details
-    read well on anybody — a shaved head, freckles — and those are the seeds
-    that demonstrate latitude. Two state it, because their details do not.
-
-    This does not contradict clause 5. That one is about pinning sex by
-    ACCIDENT, on a word nobody noticed writing; this one is about pinning it
-    on purpose, where the alternative is a tile that undersells the product.
-
-    AND NO PRONOUNS (clause 5) — "Freckles she never covered" made the founder ask whether
-    the sex lock was intended — it was not. The interpreter reads "she"
-    correctly and pins sex, so that seed quietly closed an axis it existed to
-    demonstrate. A seed showing latitude must not spend it on a word nobody
-    noticed writing — which is why the two that DO state sex say so in plain
-    words rather than leaking it.
-  */
-  // Sex left OPEN — the detail reads well on anyone, so these are the two
-  // seeds that demonstrate latitude.
-  { label: "Runway model, early 20s, shaved head", shows: "category + age lock, look varies" },
-  { label: "UGC creator, mid-20s, freckles across the nose", shows: "creator-type, sex varies" },
-  // Sex STATED — the detail is sex-coded, so leaving it open was a gamble.
-  { label: "A skincare founder in his 40s, silver at the temples", shows: "founder-type, age reads in the hair" },
-  { label: "A beauty creator in her late 20s, bleached brows", shows: "influencer-type, grooming detail renders" },
-];
 
 /**
  * F3: UNSIGNED is the vocabulary everywhere; DRAFT is retired. But the *casing*
@@ -669,10 +609,12 @@ export default function CastingV2() {
               THE PATH, CHOSEN BEFORE THE MONEY (design §6; founder ruling
               2026-08-21, *"this is the way foward 100%"*).
 
-              Under the brief field and above the TRY row, which is where §6
-              puts it — between the sentence and the seeds, so the tradeoff is
-              read on the way to the button rather than beside it. It is not a
-              modal and it is not a step: one control, two states, default
+              Under the brief field and above the cost line, which is where §6
+              put it when the anchor below it was the TRY row (#375 removed
+              that row; the spec's §6 moved with it in the same commit). The
+              intent is unchanged and is what the anchor was FOR: the tradeoff
+              is read on the way to the button rather than beside it. It is not
+              a modal and it is not a step: one control, two states, default
               Wardrobe.
 
               ABSENT, never disabled, when the scope is off — §6's own words,
@@ -712,32 +654,35 @@ export default function CastingV2() {
               />
             ) : null}
             {/*
-              Nudge chips. One tap fills the box — they do not roll, and they
-              carry no price of their own. A chip that both spends and hides
-              the cost is how a one-tap affordance stops reading as a purchase;
-              the priced button sits directly above them (D-15).
+              THE COST LINE — all that is left of the TRY row (#375).
+
+              ⚠ **THE SEED CHIPS ARE GONE ON HIS ORDER**, verbatim: *"we said we
+              would remove the 'try' quick prompts because the casting hero now
+              serves as that now and try to balance that right box somehow"*.
+
+              His reasoning is the duplication working law 4 exists to prevent.
+              **The deck IS the try row now, and it does the job better**: a chip
+              filled the box with a sentence somebody wrote, and a deck card
+              fills it with the REAL brief that cast a REAL face you are looking
+              at — `casting-hero.md` §4 pins the two behaviours as identical
+              (*"clicking any card puts that card's brief into the prompt field,
+              and does not submit"*), so this was two mechanisms for one job.
+
+              ⚠ **THE COST SURVIVES THE ROW IT LIVED IN, AND THAT IS THE PART
+              WORTH CHECKING.** It was folded INTO the TRY row rather than given
+              a line, on the reasoning that *"a price is metadata and metadata
+              should not cost a row"* — and the row it was folded into has just
+              been deleted. That reason is spent: there are no seeds left to
+              push down, so the gap it was avoiding cannot open. It gets its own
+              line back, at the same optical distance from the priced button
+              (D-15: the price sits with the thing that spends).
+
+              NO BALANCE HERE (founder ruling, 2026-08-03), unchanged. Casting
+              from the lobby happens once; "how much is left" answers a question
+              nobody is asking yet, and it earns its place on the sheet where
+              the number actually moves.
             */}
-            <div className="dp-row" style={{ gap: 7 }}>
-              <span className="dp-chrome">TRY</span>
-              {CASTING_SEEDS.map((seed) => (
-                <Chip key={seed.label} onClick={() => setBrief(seed.label)}>
-                  {seed.label}
-                </Chip>
-              ))}
-              {/*
-                THE COST, IN THE ROW THAT IS ALREADY THERE.
-
-                It had its own line under the field, which pushed the seeds down
-                and left a gap between the box and them — a price is metadata
-                and metadata should not cost a row. Folded to the end of the TRY
-                row it sits at the same optical distance from the button and
-                takes no vertical space at all.
-
-                NO BALANCE HERE (founder ruling, 2026-08-03). Casting from the
-                lobby happens once; "how much is left" answers a question nobody
-                is asking yet. It earns its place on the sheet, where you roll
-                again and again and the number is actually moving.
-              */}
+            <div className="dp-row dpc-hero__costrow">
               <span className="dpc-hero__cost">
                 <span className="dpc-modal__tilde">~</span> {price} credits
               </span>
