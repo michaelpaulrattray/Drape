@@ -1,7 +1,7 @@
 {
-  "edition": 189,
-  "updatedAt": "2026-09-01T08:54:02.811Z",
-  "shift": "Foreman - shift 2026-09-01 18:19 AEST (foreman-167)",
+  "edition": 190,
+  "updatedAt": "2026-09-01T10:20:00.000Z",
+  "shift": "Foreman - shift 2026-09-01 19:12 AEST (foreman-168)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,6 +138,17 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "credits-used-window-381",
+      "issueNumber": 381,
+      "state": "done",
+      "filedAt": "2026-09-01",
+      "title": "The 115,695 was real - it was your whole history sitting next to a monthly allowance",
+      "productImpact": "You read \"115,695 credits used - of 5,000 this month\" and called it two different windows on one line. It was exactly that, and the measurement is unambiguous: the number the page was showing is a counter that starts at zero the day your account is made and only ever goes up. Nothing resets it when a month turns. Your ledger's all-time total is 115,695 across 622 spends - the same number to the credit. So the page was showing you everything you have ever spent, beside what you are allowed this month.\n\nThe whole page reads from one window now, and it says which window at the top. Every figure on it - credits used, frames made, the daily average - comes from that same window, so no two numbers on the page can be measuring different lengths of time again.",
+      "workedExample": "You are on the free plan, which has no billing period at all - so the window is the calendar month. Today is the 1st, so the page will read a small number, and that number will be true. Before tonight it would have read 115,695 whatever day you opened it.",
+      "recommendation": "Nothing needed from you. It is live. The one thing worth knowing is that the SAME bug is sitting on your Change plan and Add credits windows - the \"credits a day\" and \"days left\" figures there read the same lifetime counter and divide it by one month's days. Nobody has ever seen it: it only draws for an account with a real Stripe billing period, and there are zero of those on production today. It goes live the moment the first person subscribes, so it is filed as #385 rather than left in a comment.",
+      "options": []
+    },
     {
       "id": "section-03-settings-365",
       "issueNumber": 365,
@@ -1228,6 +1239,36 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "section-03-form-381-frames",
+      "title": "Settings, rebuilt from your drawing - four frames, both themes",
+      "question": "Two things worth your eye, and one of them is a real question.\n\nTHE LOOK. These are the panes as they ship, photographed in the running app in both themes. Usage is the one you enumerated: one bordered card, three columns, each column stacking. Storage is a card with its own label and the note under the bar. Security has every row as its own card with Delete account tinted red.\n\nTHE QUESTION, and it is small. On the Usage card, the three numbers are in the typewriter face at 22px, because your card said mono and your brief says \"values in mono; they are measured numbers.\" Your PROTOTYPE draws them in the normal face at 19px. I went with your card and the brief - two artifacts against one - and wrote the disagreement into the code so it is one line to reverse. If the numbers read too big or too typewritery beside everything else, say so and it goes back to 19 and the normal face.\n\nOne thing you may notice in the frames that is NOT a defect: the account shown is the test bot, so the plan says Studio and the numbers are its numbers, not yours.",
+      "frames": [
+        {
+          "key": "crew-eye/91104c79-216e-46c7-b798-aaf2943f860b.png",
+          "caption": "DARK, Usage. One bordered card in three columns; each column reads label, then number, then note. Storage below it is now a card of its own with the figure on the label's line, the bar full width beneath, and the note under the bar. Before tonight this pane had NO bordered box on it at all - measured, not remembered.",
+          "arm": "Usage, dark"
+        },
+        {
+          "key": "crew-eye/c5335693-3b23-4c96-bc17-6b5bdbb318b6.png",
+          "caption": "LIGHT, the same pane. This is the one to judge the number size on - the typewriter face at 22px against the rest of the panel.",
+          "arm": "Usage, light"
+        },
+        {
+          "key": "crew-eye/a1f33b2d-789f-4692-9e99-623b747b362e.png",
+          "caption": "DARK, Security. Six rows, six cards, and Delete account is the red-tinted one. Before tonight all six sat in one undivided column separated by hairlines, so the row that permanently deletes your account looked exactly like the row that shows which email you signed in with.",
+          "arm": "Security, dark"
+        },
+        {
+          "key": "crew-eye/7f70bb4f-5ee5-462b-b645-1e6e2ba4a72e.png",
+          "caption": "LIGHT, Profile. The fields stack now - label, box, note - the way your drawing has them, instead of a label on the left with a narrow box pinned to the right. Workspace name is shown and disabled with the real name in it, the same treatment Email has, rather than an empty slot with a grey chip in it.",
+          "arm": "Profile, light"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-01",
+      "issueNumber": 381
+    },
     {
       "id": "cog-is-a-cog-382-frames",
       "title": "You were right about the cog, and it turned out to be measurable - here it is beside the sun it used to be",
@@ -2383,6 +2424,13 @@
   ],
   "pipeline": [
     {
+      "id": "section-03-form-381",
+      "title": "Settings is built from your drawing now, not from your words about it (#381)",
+      "status": "merged",
+      "prNumber": 386,
+      "note": "Your words: \"section 03 isnt just usage corrections most of the pages are designed incorrectly missing cards and borders and correct layout\" and \"where my brief describes a row inline and the prototype draws a card, the prototype wins. Open it beside each section rather than building from my prose.\"\n\nThat is what happened, all six pages, with your prototype open beside each one.\n\nUSAGE. The three numbers were three lines stacked down the page; they are one bordered card in three columns now, each column reading label, then the number, then the note under it.\n\nTHE BARS. You said they had no track. They had one - and you were still right, because you could not see it. It was painted in a grey nine points away from the panel behind it, on a bar six pixels tall. It is the lighter grey your drawing uses now, with a thin ring round it, and the check that guards it MEASURES the difference between the bar and the panel rather than trusting what the stylesheet claims.\n\nTHE REST OF THE SWEEP, because you said every section and not just Usage: Storage is its own card with the note under the bar instead of promoted into a heading; Billing's plan is a card and its invoices a bordered list; every Notifications and Security row is its own card, and Delete account is the red-tinted one - the row you must not mis-click no longer looks identical to the four you may; Members is a bordered list plus a bordered role panel; and Profile's fields stack, label above the box, note beneath.\n\nTHE ONE-BAR CHART. You gave two options and preferred the first - map the engine column to a tool and draw real bars. You also said to MEASURE before building, and that is what decided it. On your 622 real spend rows the engine column holds three values: castingV2 on 462 of them, a Gemini model id on 29, and NOTHING AT ALL on 131 - and those 131 are 53% of every credit you have spent. The two values that do exist both mean the same tool. So it would have drawn one named bar and a bigger unlabelled one, which is your own objection arriving one step later. The block is out until something actually records which tool spent a credit. Your option 2.\n\nTwo things NOT done, and said rather than quietly skipped. Change plan and Add credits are on your card, and your prototype does not draw them - it draws the two buttons that open them and stops. There is nothing to read them against, and inventing a layout for them is exactly the mistake this card is about. And the sweep for the same bug elsewhere found one; it is filed as #385 rather than folded in here."
+    },
+    {
       "id": "cog-is-a-cog-382",
       "title": "The rail's cog is an actual cog now - you were right that it was a sun (#382)",
       "status": "merged",
@@ -3418,6 +3466,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-20260901",
+      "title": "Where the queue stands tonight - 99 open, and 14 of them have not been looked at in a week",
+      "detail": "99 cards open. 6 marked urgent. 3 are things you ordered and have not been built yet: #231 (the reader court - it needs the Fable seat, not this one), #374 (section 04, the account menu - its own night), and #321.\n\n#321 is the one worth a word from you, and it is the reason this line is here. It is marked urgent and founder-ordered and it is ALREADY BUILT - it shipped days ago and the only thing left on it is your eye. Five separate nights in a row have now opened it, checked, found it built, and written \"do not rebuild this\" into their handover for the next one. That is five nights paying to re-discover the same fact. Either close it, or tell us what on it still needs looking at, and it stops costing anything.\n\n14 cards are open and have not been touched in over a week. That number is the one to watch: it was not measured before this week, so there is nothing to compare it to yet, but it will be here every edition from now on and you will see whether it is growing.",
+      "severity": "info",
+      "state": "open"
+    },
+    {
       "id": "quiet-detector-negation-360",
       "title": "Your nights were being counted as idle when they were not — a shift that worked was helping to stop the team",
       "detail": "Your nights stop themselves after three shifts in a row report that there was nothing to do. That is the mechanism you asked for, so the team stops spending money to conclude nothing. It was reading the reports wrongly. A shift last night was titled \"NOT a quiet night\" and opened \"This shift had work\"; it had closed one card and filed another. The check looked for the words \"quiet night\" anywhere near the top and found them — inside the denial. So a working shift was counted as an idle one, and the note telling you three shifts had been quiet named a report whose own headline said the opposite. Fixed tonight: a shift now has to DECLARE it, not merely mention it. Quoting the phrase, denying it, or writing about the mechanism cannot trip it any more. Checked against all 155 shift reports ever written: eleven change verdict, and three of those were this exact mistake — including a second one from Sunday that nobody had spotted. It fails in the safe direction: if a genuinely quiet shift forgets to declare itself, the team keeps working rather than stopping.",
@@ -3646,7 +3701,7 @@
     78
   ],
   "nextUp": {
-    "readAt": "2026-09-01T08:54:04.438Z",
+    "readAt": "2026-09-01T10:01:56.290Z",
     "items": [
       {
         "issueNumber": 231,
@@ -3656,11 +3711,6 @@
       {
         "issueNumber": 321,
         "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
-        "urgent": true
-      },
-      {
-        "issueNumber": 381,
-        "title": "Section 03's panes follow the brief's prose where the prototype draws cards — every section re-read, not just Usage",
         "urgent": true
       },
       {
