@@ -49,6 +49,24 @@ function formatDateLabel(date: string): string {
 }
 
 /**
+ * The plans, in the order their greyscale steps are assigned.
+ *
+ * ⚠ **KEYED BY PLAN NAME, NEVER BY ARRAY POSITION**, and the first shape of
+ * this file got it wrong. `planDistribution` is built from
+ * `.groupBy(credits.planTier)` with **no ORDER BY**
+ * (`server/db/adminOverviewQueries.ts:148`), so its row order is whatever MySQL
+ * returns — indexing the ramp by position meant the darkest step landed on an
+ * arbitrary plan and could silently swap between refetches. The legend swapped
+ * with it, so nothing on screen was ever *wrong*; the ramp's own claim to run
+ * "darkest first" was simply not enforced by anything.
+ *
+ * This is the class `GovernanceCard`'s `RESOLVED_ORDER` fixes one file over,
+ * for the identical reason, and law 7 says that fix's sweep should have reached
+ * here in the same commit. It did not; the gate's reviewer found the sibling.
+ */
+const PLAN_ORDER = ["free", "starter", "pro", "enterprise"];
+
+/**
  * The greyscale steps a stacked distribution walks, darkest first.
  *
  * Four tokens rather than four opacities of one: an opacity ramp over a
@@ -57,6 +75,12 @@ function formatDateLabel(date: string): string {
  */
 function planRamp(t: ReturnType<typeof useChartTokens>): string[] {
   return [t.ink, t.metaStrong, t.faint, t.dots];
+}
+
+/** A plan the list does not know keeps the quietest step rather than the first. */
+function planFill(plan: string, ramp: string[]): string {
+  const index = PLAN_ORDER.indexOf(plan);
+  return ramp[index === -1 ? ramp.length - 1 : Math.min(index, ramp.length - 1)];
 }
 
 export function UserGrowthCard({
@@ -107,23 +131,23 @@ export function UserGrowthCard({
         <div className="dp-ov__block">
           <span className="dp-ov__blocklabel">PLAN DISTRIBUTION</span>
           <div className="dp-ov__stack">
-            {data.planDistribution.map((p, i) => (
+            {data.planDistribution.map((p) => (
               <span
                 key={p.plan}
                 className="dp-ov__stackpart"
                 style={{
                   width: `${(p.count / totalPlanUsers) * 100}%`,
-                  background: ramp[i % ramp.length],
+                  background: planFill(p.plan, ramp),
                 }}
               />
             ))}
           </div>
           <div className="dp-ov__keys">
-            {data.planDistribution.map((p, i) => (
+            {data.planDistribution.map((p) => (
               <span key={p.plan} className="dp-ov__key">
                 <span
                   className="dp-ov__swatch"
-                  style={{ background: ramp[i % ramp.length] }}
+                  style={{ background: planFill(p.plan, ramp) }}
                 />
                 {p.plan} ({p.count})
               </span>

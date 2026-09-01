@@ -79,6 +79,12 @@ function formatDateLabel(date: string): string {
  * something CSS does exactly.
  */
 function Sparkline({ values }: { values: number[] }) {
+  /* ⚠ `[]` IS TRUTHY, so `spark ? <Sparkline/> : null` at the call site cannot
+     catch this: `getOverview` and `getTimeSeries` are independent queries and
+     the page renders on the first alone, so during the lag `values` is empty
+     and a fixed-26px strip with no bars in it painted a gap where the
+     sparkline belongs. The guard is here rather than at three call sites. */
+  if (values.length === 0) return null;
   const max = Math.max(...values, 1);
   return (
     <span className="dp-kpi__spark" aria-hidden="true">

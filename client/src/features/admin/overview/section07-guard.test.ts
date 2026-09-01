@@ -341,6 +341,70 @@ describe("§6 — the KPI card", () => {
   });
 });
 
+/* ------------------- the reviewer's two findings, held so they cannot return */
+
+describe("a colour ramp is keyed by name, never by row position", () => {
+  /**
+   * Found by the gate's reviewer on PR #408, and it is law 7 pointed at this
+   * card's own repair: `GovernanceCard` fixes exactly this class with
+   * `RESOLVED_ORDER`, and the sweep did not reach the sibling one file over.
+   *
+   * `planDistribution` comes from `.groupBy(credits.planTier)` with **no ORDER
+   * BY**, so `ramp[i]` assigned the darkest step to whichever row MySQL
+   * happened to return first, and it could swap between refetches.
+   */
+  it("neither card indexes a ramp by array position", () => {
+    for (const name of ["UserGrowthCard.tsx", "GovernanceCard.tsx"]) {
+      const body = code(read(path.join(HERE, name)));
+      expect(body, `${name} indexes a colour ramp by position`).not.toMatch(
+        /ramp\[\s*(?:i|index|idx)\s*(?:%|\])/,
+      );
+    }
+  });
+
+  it("both key their ramp off a declared order", () => {
+    expect(code(read(path.join(HERE, "UserGrowthCard.tsx")))).toContain("PLAN_ORDER");
+    expect(code(read(path.join(HERE, "GovernanceCard.tsx")))).toContain("RESOLVED_ORDER");
+  });
+
+  it("POSITIVE CONTROL: the matcher fires on the expression that was here", () => {
+    expect("background: ramp[i % ramp.length],").toMatch(/ramp\[\s*(?:i|index|idx)\s*(?:%|\])/);
+    expect("style={{ background: ramp[i % ramp.length] }}").toMatch(
+      /ramp\[\s*(?:i|index|idx)\s*(?:%|\])/,
+    );
+    /* And spares the keyed form that replaced it. */
+    expect("background: planFill(p.plan, ramp),").not.toMatch(
+      /ramp\[\s*(?:i|index|idx)\s*(?:%|\])/,
+    );
+  });
+});
+
+describe("an empty series draws nothing, not an empty strip", () => {
+  /**
+   * Also the reviewer's. `getOverview` and `getTimeSeries` are independent
+   * queries and the page renders on the first alone, so `values` is `[]` during
+   * the lag — and **`[]` is truthy**, so the call site's `spark ? … : null`
+   * could not catch it. A fixed-26px container with no bars painted a gap where
+   * the sparkline belongs.
+   */
+  it("Sparkline returns null on an empty series", () => {
+    const body = code(read(path.join(HERE, "HealthMetrics.tsx")));
+    const fn = body.slice(body.indexOf("function Sparkline"), body.indexOf("function Kpi"));
+    expect(fn.length).toBeGreaterThan(100);
+    expect(fn).toContain("values.length === 0");
+    expect(fn).toContain("return null");
+  });
+
+  it("POSITIVE CONTROL: the slice is the real function and would show its absence", () => {
+    const body = code(read(path.join(HERE, "HealthMetrics.tsx")));
+    const fn = body.slice(body.indexOf("function Sparkline"), body.indexOf("function Kpi"));
+    expect(fn).toContain("dp-kpi__bar");
+    expect(fn.replace("values.length === 0", "values.length < 0")).not.toContain(
+      "values.length === 0",
+    );
+  });
+});
+
 /* ------------------------------------------------------ §7 — the charts */
 
 describe("§7 — charts follow the theme and carry no gradient", () => {
