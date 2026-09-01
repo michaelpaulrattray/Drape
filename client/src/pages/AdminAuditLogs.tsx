@@ -15,7 +15,7 @@ import {
   PAGE_SIZE,
   type AuditLog,
 } from "@/features/admin/adminConstants";
-import { AdminHeader } from "@/features/admin/AdminHeader";
+import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 import { AuditStatsCards, AbuseAlertsPanel, AuditFiltersBar } from "@/features/admin/AuditLogsFilters";
 import { AuditLogTable } from "@/features/admin/AuditLogTable";
 import { AuditLogDetailModal } from "@/features/admin/AuditLogDetailModal";
@@ -86,17 +86,13 @@ export default function AdminAuditLogs() {
 
   // Auth guards
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
-      </div>
-    );
+    return <StaffLoading />;
   }
   if (!isAuthenticated) return <Redirect to="/login" />;
-  if (user?.role !== "admin") {
-    toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/app" />;
-  }
+  /* Brief 05 §6 — the redirect is silent now. The `toast.error` that used to
+     sit here fired from the render body, which double-fires under strict mode,
+     and somebody who cannot see Admin does not need telling why. */
+  if (user?.role !== "admin") return <Redirect to="/app" />;
 
   // Handlers
   const handleRefresh = () => {
@@ -202,31 +198,35 @@ export default function AdminAuditLogs() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      <AdminHeader
-        title="Audit Logs"
-        refreshControls={{
-          autoRefresh,
-          onToggleAutoRefresh: () => setAutoRefresh(!autoRefresh),
-          onRefresh: handleRefresh,
-          isRefetching: logsQuery.isRefetching,
-          lastRefresh,
-        }}
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCsv}
-            disabled={exportMutation.isPending}
-            className="border-[#D5D5D5] text-[#666] text-xs"
-          >
-            {exportMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-            Export CSV
-          </Button>
-        }
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <StaffSurface
+      breadcrumb="Admin / Audit logs"
+      bar={
+        <StaffBarAdmin
+          refreshControls={{
+            autoRefresh,
+            onToggleAutoRefresh: () => setAutoRefresh(!autoRefresh),
+            onRefresh: handleRefresh,
+            isRefetching: logsQuery.isRefetching,
+            lastRefresh,
+          }}
+          /* The page's own action, carried across untouched — its styling is
+             page content and belongs to brief 06, not to the frame. */
+          right={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={exportMutation.isPending}
+              className="border-[#D5D5D5] text-[#666] text-xs"
+            >
+              {exportMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
+              Export CSV
+            </Button>
+          }
+        />
+      }
+    >
+      <main className="space-y-6">
         <AuditStatsCards
           statsData={statsQuery.data}
           statsLoading={statsQuery.isLoading}
@@ -335,6 +335,6 @@ export default function AdminAuditLogs() {
         isPending={blockIpMutation.isPending}
         onCancel={() => { setBlockIpModalOpen(false); setBlockIpAddress(""); setBlockIpReason(""); setBlockIpDuration("permanent"); }}
       />
-    </div>
+    </StaffSurface>
   );
 }

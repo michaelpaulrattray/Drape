@@ -1,6 +1,10 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
+import { StaffBarModeration, StaffLoading, StaffSurface } from "@/features/staff";
+import type { SurfaceBarSegment } from "@/foundation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -11,10 +15,9 @@ import {
   FlaggedReferralsTab,
   LogDetailModal,
   ChangeRequestModal,
-  ModeratorHeader,
   StatsCards,
   FlaggedDiscrepanciesCard,
-  TabNavigation,
+  MODERATOR_TABS,
   PAGE_SIZE,
   type AuditLog,
   type ModeratorTab,
@@ -235,33 +238,66 @@ export default function ModeratorDashboard() {
 
   // ── Guards ──
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
-      </div>
-    );
-  }
+  if (loading) return <StaffLoading />;
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (isUnauthorized) return <Redirect to="/app" />;
 
   const totalPages = Math.ceil((logsQuery.data?.total || 0) / PAGE_SIZE);
   const userTotalPages = Math.ceil((usersQuery.data?.total || 0) / PAGE_SIZE);
 
+  /*
+    The bar's segments, derived from the one tab list plus the THREE counts
+    this page already reads. `TabNavigation` drew exactly these and no others,
+    so nothing here is a new query — brief 05 §5: *"Where a tab has no reader
+    for a number, no pill. Do not add a query in this PR."*
+
+    `count` is omitted at zero by the segment itself, so a quiet moderation
+    queue shows five plain tabs rather than five zeroes.
+  */
+  const COUNTS: Partial<Record<ModeratorTab, number | undefined>> = {
+    "blocked-ips": blockedIpsQuery.data?.total,
+    "flagged-referrals": flaggedReferralsQuery.data?.total,
+    "my-requests": myRequestsQuery.data?.summary?.pendingCount,
+  };
+  const tabs: SurfaceBarSegment[] = MODERATOR_TABS.map(({ id, label }) => ({
+    value: id,
+    label,
+    count: COUNTS[id],
+  }));
+
   // ── Render ──
 
   return (
-    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      <ModeratorHeader
-        lastRefresh={lastRefresh}
-        autoRefresh={autoRefresh}
-        onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)}
-        onRefresh={handleRefresh}
-        isRefetching={logsQuery.isRefetching}
-        onNewChangeRequest={() => openChangeRequest()}
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <StaffSurface
+      breadcrumb="Moderation"
+      bar={
+        <StaffBarModeration
+          tabs={tabs}
+          value={activeTab}
+          onChange={(value) => setActiveTab(value as ModeratorTab)}
+          refreshControls={{
+            lastRefresh,
+            autoRefresh,
+            onToggleAutoRefresh: () => setAutoRefresh(!autoRefresh),
+            onRefresh: handleRefresh,
+            isRefetching: logsQuery.isRefetching,
+          }}
+          /* The moderator's one action, carried across from the header it
+             replaces. Its styling is page content and belongs to brief 09. */
+          right={
+            <Button
+              size="sm"
+              onClick={() => openChangeRequest()}
+              className="bg-[#0A0A0A] hover:bg-[#222] text-white text-xs"
+            >
+              <FileText className="w-3.5 h-3.5 mr-1" />
+              New Request
+            </Button>
+          }
+        />
+      }
+    >
+      <main className="space-y-6">
         <StatsCards statsQuery={statsQuery} alertsQuery={alertsQuery} />
 
         <FlaggedDiscrepanciesCard
@@ -270,14 +306,6 @@ export default function ModeratorDashboard() {
             setActiveTab("users");
           }}
           autoRefreshInterval={autoRefresh ? 60000 : false}
-        />
-
-        <TabNavigation
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          blockedIpCount={blockedIpsQuery.data?.total}
-          flaggedReferralCount={flaggedReferralsQuery.data?.total}
-          pendingRequestCount={myRequestsQuery.data?.summary?.pendingCount}
         />
 
         {activeTab === "audit-logs" && (
@@ -362,6 +390,6 @@ export default function ModeratorDashboard() {
         crOriginalAmountCents={crOriginalAmountCents} setCrOriginalAmountCents={setCrOriginalAmountCents}
         crOriginalCredits={crOriginalCredits} setCrOriginalCredits={setCrOriginalCredits}
       />
-    </div>
+    </StaffSurface>
   );
 }

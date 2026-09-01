@@ -1,5 +1,6 @@
 import { Check, X } from "lucide-react";
 import { useState } from "react";
+import { Link } from "wouter";
 import type {
   ButtonHTMLAttributes,
   CSSProperties,
@@ -584,6 +585,44 @@ export function MediaCard({
  * `overflow-x: auto` on this bar** — a header behind a horizontal scroll is a
  * control nobody finds.
  */
+export type SurfaceBarSegment = {
+  value: string;
+  label: string;
+  /**
+   * A count pill beside the label.
+   *
+   * ⚠ **Omitted at zero, never `(0)`** — enforced here rather than left to
+   * each caller, because "omit at zero" is a rule that only holds if the one
+   * place that draws the pill is the place that decides. `undefined` and `0`
+   * both mean no pill; the pill is a reason to look.
+   */
+  count?: number;
+  /**
+   * Present = this segment is a ROUTE and renders as a link (brief 05 §6).
+   * Absent = it is a setting and calls `onChange`.
+   *
+   * The two coexist because both are real: the admin sections ARE seven URLs
+   * and must keep deep links, bookmarks and the back button working, while
+   * the moderator's five tabs are one page's own state and turning them into
+   * routes would restructure that page's data loading — which is a content
+   * change, and out of this brief's scope.
+   */
+  href?: string;
+};
+
+/**
+ * A segment's inner content — label plus its optional count. One writer, so
+ * the link form and the button form cannot drift apart.
+ */
+function segmentBody(option: SurfaceBarSegment) {
+  return (
+    <>
+      {option.label}
+      {option.count ? <span className="dp-segmented__count">{option.count}</span> : null}
+    </>
+  );
+}
+
 export function SurfaceBar({
   eyebrow,
   title,
@@ -595,8 +634,11 @@ export function SurfaceBar({
   title: ReactNode;
   segments?: {
     value: string;
-    options: { value: string; label: string }[];
-    onChange: (value: string) => void;
+    options: SurfaceBarSegment[];
+    /** Optional: a route-driven tab set has no local setter. */
+    onChange?: (value: string) => void;
+    /** Accessible name for the group — "Section" on the staff bar. */
+    label?: string;
   };
   meta?: ReactNode;
   right?: ReactNode;
@@ -608,22 +650,34 @@ export function SurfaceBar({
         <span className="dp-surfacebar__heading">{title}</span>
       </div>
       {segments ? (
-        <div className="dp-segmented" role="tablist">
-          {segments.options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="tab"
-              aria-selected={option.value === segments.value}
-              className={cn(
-                "dp-segmented__seg",
-                option.value === segments.value && "dp-segmented__seg--on",
-              )}
-              onClick={() => segments.onChange(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="dp-segmented" role="tablist" aria-label={segments.label}>
+          {segments.options.map((option) => {
+            const on = option.value === segments.value;
+            const className = cn("dp-segmented__seg", on && "dp-segmented__seg--on");
+            return option.href ? (
+              <Link
+                key={option.value}
+                href={option.href}
+                role="tab"
+                aria-selected={on}
+                aria-current={on ? "page" : undefined}
+                className={className}
+              >
+                {segmentBody(option)}
+              </Link>
+            ) : (
+              <button
+                key={option.value}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                className={className}
+                onClick={() => segments.onChange?.(option.value)}
+              >
+                {segmentBody(option)}
+              </button>
+            );
+          })}
         </div>
       ) : null}
       <span className="dp-surfacebar__spacer" />

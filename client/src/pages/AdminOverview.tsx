@@ -14,7 +14,7 @@ import {
   BannerManagement,
   SystemStatusCard,
 } from "@/features/admin/overview";
-import { AdminHeader } from "@/features/admin/AdminHeader";
+import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -51,39 +51,37 @@ export default function AdminOverview() {
 
   // Auth guards
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
-      </div>
-    );
+    return <StaffLoading />;
   }
   if (!isAuthenticated) return <Redirect to="/login" />;
-  if (user?.role !== "admin") {
-    toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/app" />;
-  }
+  /* Brief 05 §6 — the redirect is silent now. The `toast.error` that used to
+     sit here fired from the render body, which double-fires under strict mode,
+     and somebody who cannot see Admin does not need telling why. */
+  if (user?.role !== "admin") return <Redirect to="/app" />;
 
   const data = overviewQuery.data;
   const ts = timeSeriesQuery.data;
   const isLoading = overviewQuery.isLoading && !data;
 
   return (
-    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      <AdminHeader
-        title="Admin Overview"
-        refreshControls={{
-          autoRefresh,
-          onToggleAutoRefresh: () => {
-            setAutoRefresh(!autoRefresh);
-            toast.info(autoRefresh ? "Auto-refresh paused" : "Auto-refresh enabled (30s)");
-          },
-          onRefresh: handleRefresh,
-          isRefetching: overviewQuery.isRefetching,
-          lastRefresh,
-        }}
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <StaffSurface
+      breadcrumb="Admin / Overview"
+      bar={
+        <StaffBarAdmin
+          refreshControls={{
+            autoRefresh,
+            onToggleAutoRefresh: () => {
+              setAutoRefresh(!autoRefresh);
+              toast.info(autoRefresh ? "Auto-refresh paused" : "Auto-refresh enabled (30s)");
+            },
+            onRefresh: handleRefresh,
+            isRefetching: overviewQuery.isRefetching,
+            lastRefresh,
+          }}
+        />
+      }
+    >
+      <main className="space-y-6">
         {/* Loading skeleton */}
         {isLoading && (
           <div className="space-y-4">
@@ -162,6 +160,6 @@ export default function AdminOverview() {
           </>
         )}
       </main>
-    </div>
+    </StaffSurface>
   );
 }

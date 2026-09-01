@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9d989395422797f1"
+    "sourceFingerprint": "e5efd60e13c1ba83"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 54
+      "moduleCount": 53
     },
     {
       "id": "domain:alerting",
@@ -83,7 +83,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 19
+      "moduleCount": 18
     },
     {
       "id": "domain:operations",
@@ -129,6 +129,11 @@
       "id": "domain:shared",
       "name": "shared",
       "moduleCount": 50
+    },
+    {
+      "id": "domain:staff",
+      "name": "staff",
+      "moduleCount": 4
     },
     {
       "id": "domain:studio",
@@ -593,12 +598,6 @@
       "id": "module:client/src/contexts/ThemeContext.tsx",
       "path": "client/src/contexts/ThemeContext.tsx",
       "domain": "unassigned",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/admin/AdminHeader.tsx",
-      "path": "client/src/features/admin/AdminHeader.tsx",
-      "domain": "admin",
       "lifecycle": "active"
     },
     {
@@ -1952,12 +1951,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/moderator/ModeratorHeader.tsx",
-      "path": "client/src/features/moderator/ModeratorHeader.tsx",
-      "domain": "moderator",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "path": "client/src/features/moderator/MyRequestsTab.tsx",
       "domain": "moderator",
@@ -1972,12 +1965,6 @@
     {
       "id": "module:client/src/features/moderator/StatsCards.tsx",
       "path": "client/src/features/moderator/StatsCards.tsx",
-      "domain": "moderator",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/moderator/TabNavigation.tsx",
-      "path": "client/src/features/moderator/TabNavigation.tsx",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -2002,6 +1989,12 @@
     {
       "id": "module:client/src/features/moderator/moderatorConstants.ts",
       "path": "client/src/features/moderator/moderatorConstants.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/moderatorTabs.ts",
+      "path": "client/src/features/moderator/moderatorTabs.ts",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -2159,6 +2152,30 @@
       "id": "module:client/src/features/settings/settings.css",
       "path": "client/src/features/settings/settings.css",
       "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/StaffBar.tsx",
+      "path": "client/src/features/staff/StaffBar.tsx",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/StaffLoading.tsx",
+      "path": "client/src/features/staff/StaffLoading.tsx",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/StaffSurface.tsx",
+      "path": "client/src/features/staff/StaffSurface.tsx",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/index.ts",
+      "path": "client/src/features/staff/index.ts",
+      "domain": "staff",
       "lifecycle": "active"
     },
     {
@@ -10661,6 +10678,10 @@
       "path": "client/src/features/settings/settings387-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/staff/section05-guard.test.ts",
+      "path": "client/src/features/staff/section05-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },
@@ -14010,16 +14031,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/AdminHeader.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/AdminHeader.tsx",
-      "to": "module:client/src/features/admin/components/crew/useCrewState.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/admin/AuditActionModals.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -16996,7 +17007,7 @@
     },
     {
       "from": "module:client/src/features/moderator/index.ts",
-      "to": "module:client/src/features/moderator/ModeratorHeader.tsx",
+      "to": "module:client/src/features/moderator/moderatorTabs.ts",
       "kind": "imports"
     },
     {
@@ -17007,11 +17018,6 @@
     {
       "from": "module:client/src/features/moderator/index.ts",
       "to": "module:client/src/features/moderator/StatsCards.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/index.ts",
-      "to": "module:client/src/features/moderator/TabNavigation.tsx",
       "kind": "imports"
     },
     {
@@ -17037,16 +17043,6 @@
     {
       "from": "module:client/src/features/moderator/LogDetailModal.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/ModeratorHeader.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/ModeratorHeader.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {
@@ -17097,11 +17093,6 @@
     {
       "from": "module:client/src/features/moderator/StatsCards.tsx",
       "to": "module:client/src/components/ui/skeleton.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/TabNavigation.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
       "kind": "imports"
     },
     {
@@ -17487,6 +17478,36 @@
     {
       "from": "module:client/src/features/settings/SettingsModal.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/StaffBar.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/StaffLoading.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/StaffSurface.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/StaffBar.tsx",
+      "to": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/StaffBar.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/StaffSurface.tsx",
+      "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
     },
     {
@@ -18616,11 +18637,6 @@
     },
     {
       "from": "module:client/src/pages/AdminAuditLogs.tsx",
-      "to": "module:client/src/features/admin/AdminHeader.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminAuditLogs.tsx",
       "to": "module:client/src/features/admin/AuditActionModals.tsx",
       "kind": "imports"
     },
@@ -18646,6 +18662,11 @@
     },
     {
       "from": "module:client/src/pages/AdminAuditLogs.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminAuditLogs.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -18661,7 +18682,7 @@
     },
     {
       "from": "module:client/src/pages/AdminBugReports.tsx",
-      "to": "module:client/src/features/admin/AdminHeader.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
@@ -18691,11 +18712,6 @@
     },
     {
       "from": "module:client/src/pages/AdminChangeRequests.tsx",
-      "to": "module:client/src/features/admin/AdminHeader.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminChangeRequests.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "kind": "imports"
     },
@@ -18716,17 +18732,17 @@
     },
     {
       "from": "module:client/src/pages/AdminChangeRequests.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminChangeRequests.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminCrew.tsx",
-      "to": "module:client/src/features/admin/AdminHeader.tsx",
       "kind": "imports"
     },
     {
@@ -18786,6 +18802,11 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
@@ -18826,7 +18847,7 @@
     },
     {
       "from": "module:client/src/pages/AdminInviteCodes.tsx",
-      "to": "module:client/src/features/admin/AdminHeader.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
@@ -18856,12 +18877,12 @@
     },
     {
       "from": "module:client/src/pages/AdminOverview.tsx",
-      "to": "module:client/src/features/admin/AdminHeader.tsx",
+      "to": "module:client/src/features/admin/overview/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/AdminOverview.tsx",
-      "to": "module:client/src/features/admin/overview/index.ts",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
@@ -18882,11 +18903,6 @@
     {
       "from": "module:client/src/pages/AdminUserManagement.tsx",
       "to": "module:client/src/components/ui/dialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminUserManagement.tsx",
-      "to": "module:client/src/features/admin/AdminHeader.tsx",
       "kind": "imports"
     },
     {
@@ -18912,6 +18928,11 @@
     {
       "from": "module:client/src/pages/AdminUserManagement.tsx",
       "to": "module:client/src/features/admin/UserTable.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminUserManagement.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
@@ -19461,7 +19482,22 @@
     },
     {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
+      "to": "module:client/src/components/ui/button.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/features/moderator/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/ModeratorDashboard.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/ModeratorDashboard.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {

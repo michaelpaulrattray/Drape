@@ -45,7 +45,6 @@ import {
   Transcript,
 } from "@/foundation";
 import { Redirect } from "wouter";
-import { toast } from "sonner";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Popover } from "@/foundation/Popover";
@@ -96,10 +95,12 @@ import { AppChrome } from "@/components/AppChrome";
  *   uses.** There is no route-level guard anywhere in `App.tsx`; each page owns
  *   its gate, so a page that consults nothing renders for everyone. That was
  *   this page for five days.
- * - **It keeps `AppChrome` on purpose.** Every other admin page wears
- *   `AdminHeader`; this one must wear the app's real chrome, because the whole
- *   point is comparing a component against the frame it will ship inside. It
- *   marks no rail destination as current — it is not one.
+ * - **It keeps `AppChrome` on purpose, and it is now the only staff page that
+ *   wears it BARE.** Brief 05 put every other staff page inside `StaffSurface`
+ *   — the same chrome plus the staff bar and its tabs. This one deliberately
+ *   stays outside that frame: it is a specimen sheet, not a staff surface, and
+ *   the founder ruled it gets no tab. Putting it in the frame would draw a
+ *   staff bar whose tabs do not include the page you are looking at.
  */
 export default function AdminFoundation() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -129,10 +130,11 @@ export default function AdminFoundation() {
     );
   }
   if (!isAuthenticated) return <Redirect to="/login" />;
-  if (user?.role !== "admin") {
-    toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/app" />;
-  }
+  /* Brief 05 §6 — the redirect is silent now. The `toast.error` that used to
+     sit here fired from the render body, which double-fires under strict mode,
+     and somebody who cannot see Admin does not need telling why. Swept across
+     all nine staff pages together (working law 7: fix the class). */
+  if (user?.role !== "admin") return <Redirect to="/app" />;
 
   return (
     <AppChrome breadcrumb="Staff / Foundation" width="working">
@@ -357,8 +359,13 @@ export default function AdminFoundation() {
               value: bar,
               options: [
                 { value: "all", label: "Everything" },
-                { value: "decide", label: "To decide" },
-                { value: "log", label: "Log" },
+                /* Brief 05 folded a count pill into the segmented control. The
+                   specimen carries one because a capability the foundation
+                   gained that this page does not show is one he cannot see —
+                   and the third segment carries none, so the "omitted at zero"
+                   rule is visible rather than described. */
+                { value: "decide", label: "To decide", count: 3 },
+                { value: "log", label: "Log", count: 0 },
               ],
               onChange: setBar,
             }}

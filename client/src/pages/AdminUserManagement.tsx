@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { AdminHeader } from "@/features/admin/AdminHeader";
+import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
 import { UserStatsCards } from "@/features/admin/UserStatsCards";
 import { UserFilters } from "@/features/admin/UserFilters";
 import { UserTable } from "@/features/admin/UserTable";
@@ -140,32 +140,30 @@ export default function AdminUserManagement() {
   };
 
   // Auth guards
-  if (loading) {
-    return <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center"><RefreshCw className="w-8 h-8 text-[#CCC] animate-spin" /></div>;
-  }
+  if (loading) return <StaffLoading />;
   if (!isAuthenticated) return <Redirect to="/" />;
-  if (user?.role !== "admin") { toast.error("Access denied. Admin privileges required."); return <Redirect to="/app" />; }
+  /* Brief 05 §6 — the redirect is silent now. The `toast.error` that used to
+     sit here fired from the render body, which double-fires under strict mode,
+     and somebody who cannot see Admin does not need telling why. */
+  if (user?.role !== "admin") return <Redirect to="/app" />;
 
   const totalPages = Math.ceil((usersQuery.data?.total || 0) / ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      <AdminHeader
-        title="User Management"
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { usersQuery.refetch(); statsQuery.refetch(); }}
-            className="border-[#D5D5D5] text-[#999] text-xs"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${usersQuery.isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        }
-      />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <StaffSurface
+      breadcrumb="Admin / Users"
+      /* Manual refresh only — this page keeps no stamp and no auto-refresh
+         preference, and the frame does not invent either (brief 05 §4). */
+      bar={
+        <StaffBarAdmin
+          refreshControls={{
+            onRefresh: () => { usersQuery.refetch(); statsQuery.refetch(); },
+            isRefetching: usersQuery.isFetching,
+          }}
+        />
+      }
+    >
+      <main className="space-y-6">
         <UserStatsCards stats={statsQuery.data} />
 
         <UserFilters
@@ -297,6 +295,6 @@ export default function AdminUserManagement() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </StaffSurface>
   );
 }
