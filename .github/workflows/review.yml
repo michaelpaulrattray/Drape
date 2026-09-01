@@ -27,6 +27,13 @@
 #   - a second look is DELIBERATE: apply the `needs-fable` label. Any other
 #     label event is ignored (a `labeled` event for `urgent` or `parked`
 #     must not buy a full review).
+#     ⚠ THE LABEL IS A ONE-SHOT BUTTON, NOT A STATE (issue #368). It works
+#     by the `labeled` EVENT, and GitHub delivers no such event when the
+#     label is already on the PR — so `--add-label needs-fable` a second
+#     time exits 0 and starts nothing. A THIRD look needs
+#     `--remove-label needs-fable` first, then the add. Measured at the
+#     issue timeline 2026-09-01 (1 event, then 1, then 2 after a removal),
+#     and pinned by server/reviewerManualRoad.test.ts.
 #
 # THE READING IS TIERED (#161, founder-approved 2026-08-27: reviews on his
 # token used ~10% of his cap; Fable stays the reviewer — "it finds things

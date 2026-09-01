@@ -40,7 +40,21 @@
 # `track_progress` (the sticky review comment) is pull_request/issue-only
 # per its own input doc, so a dispatched review would post nowhere. Its
 # manual road is the `labeled` event it already listens to —
-# `gh pr edit <n> --add-label needs-fable` re-runs it with full PR context.
+# `gh pr edit <n> --add-label needs-fable` runs it with full PR context.
+#
+# ⚠ THAT BUTTON WORKS ONCE, AND PRESSING IT AGAIN REPORTS SUCCESS WHILE
+# DOING NOTHING (issue #368). Re-applying a label the PR ALREADY carries is
+# a no-op on GitHub's side: no `labeled` event is delivered, so no review
+# starts — and `gh` still exits 0, which is what makes it silent. Measured
+# at the issue timeline 2026-09-01: press one → one `labeled` event; press
+# two, label already present → still one; remove-then-add → two. To press
+# it a second time, take the label off first:
+#
+#   gh pr edit <n> --remove-label needs-fable
+#   gh pr edit <n> --add-label needs-fable
+#
+# server/reviewerManualRoad.test.ts keeps this sentence and the workflow it
+# describes from drifting apart.
 
 name: Gate
 
