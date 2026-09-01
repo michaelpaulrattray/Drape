@@ -322,8 +322,22 @@
    the card. Same picture, one weight. */
 .dp-set__statcell + .dp-set__statcell { border-left: 1px solid var(--borderCard); }
 .dp-set__statlabel { font: 400 11px/1.3 var(--font-sans); color: var(--metaStrong); }
+/*
+  ⚠ **THE PROTOTYPE WON — his reply #81, 2026-09-01, verbatim and entire:
+  *"prototype — 19px, normal face"*.**
+
+  This was a DECLARED divergence rather than a slip: his #381 card said `500
+  22px` mono and the brief said *"Values in mono; they are measured numbers"*,
+  against the prototype's own inline `500 19px` Archivo. Two of our artifacts
+  said mono and his drawing said otherwise, so the question went to him with the
+  frames rather than being settled by counting artifacts. He picked the drawing.
+
+  ⚠ **His answer covers the VALUE and nothing else** — the label and the note
+  are untouched, because he was asked about the three numbers and answered about
+  the three numbers.
+*/
 .dp-set__statnum {
-  font: 500 22px/1.15 var(--font-mono);
+  font: 500 19px/1.15 var(--font-sans);
   color: var(--ink);
   letter-spacing: -.02em;
 }
