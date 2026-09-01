@@ -443,6 +443,36 @@ describe("§5 — the card shell is one declaration, in tokens", () => {
     }
   });
 
+  /*
+    ⚠ **EVERY TAILWIND WIDTH CAP THAT MOVED INTO THE SHEET IS PINNED HERE, AND
+    THIS ARM EXISTS BECAUSE ONE OF THEM DID NOT MAKE THE MOVE** (PR #409
+    review). The diff removed three — `max-w-3xl` on the viewer caption,
+    `max-w-[16rem]` on a program chip, `max-w-[92vw]` on the viewer image — and
+    the caption's was lost, so a long caption ran the full width of a 2560px
+    screen under the frame it describes.
+
+    A cap is invisible until the window is wide enough, which is why no drive
+    at 1440 or 1024 could have caught it and why it is pinned rather than
+    remembered. The reviewer found this one; the arm is what stops the next.
+  */
+  it("every width cap that moved out of Tailwind still exists in the sheet", () => {
+    const caps: [string, string][] = [
+      [".dp-crew__viewercap p", "the viewer caption — was max-w-3xl"],
+      [".dp-crew__chipcell", "a program chip — was max-w-[16rem]"],
+      [".dp-crew__viewerimg", "the viewer image — was max-w-[92vw]"],
+    ];
+    for (const [selector, why] of caps) {
+      /* A selector may contain a space (`.dp-crew__viewercap p`), so it is
+         escaped whole rather than by a hand-rolled character class — the first
+         shape of this arm prefixed a stray backslash and matched nothing,
+         which reads as "the rule is missing" on a rule that is right there. */
+      const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const rule = CSS.match(new RegExp(`${escaped}\\s*\\{[^}]*\\}`))?.[0];
+      expect(rule, `${selector} is missing (${why})`).toBeTruthy();
+      expect(rule, `${selector} lost its width cap (${why})`).toContain("max-width:");
+    }
+  });
+
   it("the viewer sits on the scrim tokens rather than on page ink", () => {
     const viewer = CSS.match(/\.dp-crew__viewer\s*\{[^}]*\}/)?.[0] ?? "";
     expect(viewer).toContain("var(--viewerScrim)");

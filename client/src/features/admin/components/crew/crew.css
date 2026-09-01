@@ -1104,6 +1104,18 @@
   max-height: none;
 }
 
+/*
+  ⚠ **THE MEASURE ON THE CAPTION IS LOAD-BEARING AND THIS RULE DROPPED IT
+  ONCE** (PR #409 review). The markup it replaced carried `max-w-3xl mx-auto`;
+  without it a two-sentence caption on a 2560px monitor becomes one ~2400px
+  line under the frame being judged — the worst place in the product to make
+  reading hard, since the caption is what tells him what he is looking at.
+
+  Found by the reviewer, not by the sweep: the class here is *a Tailwind width
+  cap that must survive the move into CSS*, and there were three
+  (`max-w-3xl`, `max-w-[16rem]`, `max-w-[92vw]`). Two came across and this one
+  did not. The arm below pins all three.
+*/
 .dp-crew__viewercap {
   flex: none;
   padding: var(--s-7) var(--s-9);
@@ -1111,6 +1123,11 @@
   font: 400 13px/1.45 var(--font-sans);
   color: var(--onScrim);
   opacity: 0.85;
+}
+
+.dp-crew__viewercap p {
+  max-width: 48rem;
+  margin-inline: auto;
 }
 
 .dp-crew__viewerarm {
