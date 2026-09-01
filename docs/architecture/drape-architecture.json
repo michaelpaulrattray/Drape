@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "aa0383c1f8d4193f"
+    "sourceFingerprint": "d6d1ca81df9a34ca"
   },
   "domains": [
     {
@@ -12509,6 +12509,10 @@
     {
       "id": "test:server/floorParity.test.ts",
       "path": "server/floorParity.test.ts"
+    },
+    {
+      "id": "test:server/gateStallAlarm.test.ts",
+      "path": "server/gateStallAlarm.test.ts"
     },
     {
       "id": "test:server/health.test.ts",
