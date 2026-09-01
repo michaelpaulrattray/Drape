@@ -138,7 +138,7 @@ export default function AdminBugReports() {
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (user?.role !== "admin") {
     toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/studio" />;
+    return <Redirect to="/app" />;
   }
 
   const rows = listQuery.data?.rows ?? [];

@@ -131,7 +131,7 @@ export default function AdminFoundation() {
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (user?.role !== "admin") {
     toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/studio" />;
+    return <Redirect to="/app" />;
   }
 
   return (
