@@ -3063,7 +3063,22 @@
 }
 
 /* The border carries focus — no inner ring on a row, same law as the field. */
-.dpc-kept__row:focus-visible {
+/*
+  ⚠ `.dp-root ` IS LOAD-BEARING ON ALL THREE OF THESE, and it was missing until
+  2026-09-01 (#304). `tokens.css`'s blanket `.dp-root :focus-visible { outline:
+  2px solid var(--accentSolid); outline-offset: 2px }` is (0,2,0); a bare
+  `.dpc-…:focus-visible` is (0,2,0) too, and the blanket is later in the applied
+  cascade, so it won the `outline` while these rules kept the `box-shadow` —
+  **both marks drew at once**, and the comment above described a product that
+  was never on the screen. The rename field two hundred lines up is commented
+  for this exact trap; these three had it and nobody had looked.
+
+  Measured two independent ways in the running app before it was believed: the
+  computed style on a focused row (the accent ring present, with a bare probe as
+  the negative control), and the order of the injected stylesheets, where the
+  blanket sits in a later tag than this file.
+*/
+.dp-root .dpc-kept__row:focus-visible {
   outline: none;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--onScrim) 52%, transparent);
 }
@@ -3331,7 +3346,8 @@
   opacity: 1;
 }
 
-.dpc-face__open:focus-visible {
+/* `.dp-root ` for the reason given on `.dpc-kept__row` — it loses the tie without it. */
+.dp-root .dpc-face__open:focus-visible {
   outline: none;
   opacity: 0.9;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--onScrim) 52%, transparent);
@@ -3352,7 +3368,8 @@
 
 
 /* The border carries focus — no inner ring on a row, same law as the field. */
-.dpc-face__row:focus-visible {
+/* `.dp-root ` for the reason given on `.dpc-kept__row` — it loses the tie without it. */
+.dp-root .dpc-face__row:focus-visible {
   outline: none;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--onScrim) 52%, transparent);
 }

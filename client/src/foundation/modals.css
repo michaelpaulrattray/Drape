@@ -126,7 +126,39 @@
 }
 
 .dpc-cardmenu__item:hover { background: var(--well); }
-.dpc-cardmenu__item:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
+/*
+  THE SAME QUIETER MARK, because this is the same shape (the law-7 class sweep
+  behind his reply #73). A row inside a floating panel drawing a 2px accent
+  ring INSIDE itself had exactly two members in the tree — this one and
+  `.dp-pop__option` — and leaving one of them on the old rule is how a surface
+  ends up with two conventions for one thing, which is the defect #304 exists
+  to close.
+
+  ⚠ Nothing he judged changes. He wrote *"also menu shape is correct"* looking
+  at a frame with the menu OPEN, and there is no ring in it: `CardMenu` leaves
+  focus on its trigger, so this rule only paints once a keyboard walks into the
+  panel — and when it does, it now paints his convention rather than a second
+  one. `.dpc-card__open` was read in the same sweep and is NOT a member: it is
+  a picture tile in the deck, where an outer ring would be clipped by the
+  neighbouring cards, so its inner ring is the right answer there.
+*/
+/*
+  ⚠ AND THIS ONE IS BARE ON PURPOSE — the opposite of its sibling, for a reason
+  that only driving the app can show you. `CardMenu` PORTALS its panel to
+  `document.body`, so the row is OUTSIDE `.dp-root`: `tokens.css`'s blanket
+  `.dp-root :focus-visible` has never reached it (this rule was always the only
+  one painting here, which is why its `-2px` was real where the listbox's was
+  not), and the `.dp-root ` prefix that the listbox NEEDS would make this rule
+  match nothing at all.
+
+  Measured, because it was written the other way first: prefixed, this row fell
+  back to the browser's own default focus ring — a change that passes every
+  source arm and is visible in one keyboard press.
+*/
+.dpc-cardmenu__item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 52%, transparent);
+}
 .dpc-cardmenu__item:disabled { opacity: 0.6; cursor: default; }
 
 /* Destructive reveals itself on hover, per the foundation button law. */
