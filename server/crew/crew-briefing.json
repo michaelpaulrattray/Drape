@@ -1,7 +1,7 @@
 {
-  "edition": 198,
-  "updatedAt": "2026-09-01T18:58:30.336Z",
-  "shift": "Foreman — night of 2 September (staff tables, brief 06)",
+  "edition": 199,
+  "updatedAt": "2026-09-01T20:51:26.592Z",
+  "shift": "Foreman — night of 2 September (the admin dashboard, brief 07)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1277,6 +1277,41 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "admin-overview-397-frames",
+      "title": "The dashboard leads with what needs you, and almost nothing is coloured (brief 07)",
+      "question": "WHAT YOU ARE LOOKING AT. Five frames from tonight, both themes, plus the banner form.\n\nTHE ONE THING TO TRY. Open Admin. The first thing on the page is NEEDS A HUMAN with the three things actually waiting. Then imagine the day nothing is waiting — that whole section is simply not there, and the page starts at LAST 24 HOURS. That was your instruction and it is the strongest thing this page now does, but it is the one thing a screenshot cannot show you, because today there are three items to show.\n\nWHAT I AM ASKING. Three judgements, none of them a bug:\n\n1. THE CREDIT CHART HAS TWO GREY LINES. Purchased is black, consumed is mid-grey. Your rule is that the accent colour means something needs attention — and credits being bought and spent is the business working, not a fault, so neither line earned it. The cost is that the two lines are told apart by darkness rather than by hue. If that reads as too subtle, say so; it is a rule I applied rather than a look I chose.\n\n2. THE PLAN BAR IS A GREY LADDER. Free, Starter, Pro, Enterprise used to be grey, blue, purple and black. They are four steps of one grey now, darkest first, with the legend naming each. Same argument: a plan is not an emergency.\n\n3. THE ALERT ROWS ARE JOINED BY A HAIRLINE you can barely see. That is the colour your brief specified, and I measured that the lines are really there — 8 to 14 pixels each. But I could not see them in my own screenshots, which usually means a reader will not either.\n\nWHAT IS DELIBERATELY STILL UGLY, AND IT IS THE SECOND NIGHT I HAVE SAID IT. The five staff dialogs — suspend, freeze, adjust credits, change role, review — are still light-only, so opening one in dark mode gives you a white box. No brief owns them. It has now been reported twice, which is the point at which it should probably become a card of its own rather than a paragraph in mine.",
+      "frames": [
+        {
+          "key": "crew-eye/c3480dfe-e374-4ece-b005-6e8dbbd14920.png",
+          "caption": "Admin Overview in light. NEEDS A HUMAN first, with dashed cards — dashed means not yet — then the four numbers. Only the dots are coloured, because only they are urgent.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/e9e50454-06b1-43f5-8a30-dc44ab4832e1.png",
+          "caption": "The same page in dark, and the chart follows it. This is the bit your brief called most likely to be missed: on main that line is emerald in BOTH themes, because the colour was written into the code rather than read from the theme.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/2202149e-1a50-4818-ab7f-6064d37610b1.png",
+          "caption": "The alerts list, light. Every row now reads as words — \"Credits · admin added\" — where before nine of these twelve showed the raw code name. Full width, so nothing is cut off at 280 pixels any more.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/1710da9f-f2ce-493f-9dee-406a50c5d8e8.png",
+          "caption": "The same list in dark. The critical row at the top is the only thing wearing red; everything else identifies itself with an icon and its name.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/d3841de2-dbca-46be-9d9d-a5b9b30b1d61.png",
+          "caption": "The banner form. The chosen type is the filled one — which sounds obvious, and was broken: the selected chip had no styling at all, so all four looked identical. Found by checking, not by testing.",
+          "arm": "after"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-02",
+      "issueNumber": 397
+    },
     {
       "id": "staff-tables-396-frames",
       "title": "Twelve staff lists on one table, and the row opens where you clicked it (brief 06)",
@@ -2622,6 +2657,13 @@
   ],
   "pipeline": [
     {
+      "id": "admin-overview-397",
+      "title": "The dashboard opens with what needs a person, and colour finally means something (brief 07, shift 3 of 5)",
+      "status": "merged",
+      "prNumber": 408,
+      "note": "Admin used to open on four cards telling you everything was fine. It opens on NEEDS A HUMAN now — the things actually waiting on you, stated once, at the top — and when nothing is waiting THAT SECTION DISAPPEARS ENTIRELY. No empty card, no \"all clear\". Its absence is the message, which was your own instruction and is the part I would most want you to see working.\n\nTHE SECOND CHANGE IS COLOUR, AND IT TOUCHES EVERY CARD. Before, a healthy platform was exactly as colourful as a broken one: green for good, amber for warning, thirteen kinds of audit event tinted four different ways, charts in emerald and coral with gradient fills. Colour was decorating categories, so it could not mean anything. Now fine is colourless, coral means something wants attention, and red means genuinely urgent. Worth two minutes: open Admin and look at how few things are coloured — then look at the Failures card when it is not zero.\n\nWHAT I DID NOT BUILD, AND WHY. Your brief asks NEEDS A HUMAN to show four things. Two of them — pending change requests and critical alerts — the page already has. The other two, unanswered Crew cards and flagged discrepancies, would each need a second database call, which your own brief forbids on this page. So it shows the two it can prove and I have written the other two down rather than drawing a row that reads zero forever and looks like it works.\n\nSame reasoning twice more: ACTIVE USERS gets no little sparkline, because the only 14-day figure we have counts accounts CREATED, not people active — a different number with a similar shape, and drawing it there would be a lie. And no card gets a \"+4% since yesterday\", because the big number is a rolling 24 hours while the only daily figures we hold are calendar days, so \"vs yesterday\" would compare half of today against all of yesterday and report a crash every single morning.\n\nTHE THING THAT MOST NEEDED A HUMAN LOOKING AT IT. Every automated check passed — 62 of them — and then I opened the page and the very first card said \"security.unauthorized_admin_access\". Nine of the twelve rows in the alerts list were showing raw code names like that. It was not an oversight: the list can show ANY kind of event, while the table of friendly names only ever knew thirteen of them, so it could never be complete. It reads as words now, derived from the event itself rather than from a list somebody has to remember to extend."
+    },
+    {
       "id": "staff-tables-396",
       "title": "Eleven staff lists are one table now, and a row opens where you clicked it instead of throwing a window over the page (brief 06, shift 2 of 5)",
       "status": "merged",
@@ -3713,9 +3755,9 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-173",
-      "title": "The queue: 108 open, rotting flat at 27 — and the patrol clocks are now a week overdue",
-      "detail": "108 open, 5 urgent, SEVEN of them yours. #396 closed tonight and nothing new was filed.\n\nRotting — open a week and never re-read against the code — is 27, unchanged for a third night. Twelve of those are the Lost-and-Found catalogue filed in one afternoon on 25 August (#55–#70), so it is one batch aging rather than new neglect.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are overdue, the Janitor worst at a sixth night. That is not carelessness: seven cards carrying your word outrank them, and they will keep slipping while that is true. If you would rather a shift spent one night on the Janitor than on brief 07, say so and it will.",
+      "id": "queue-shape-174",
+      "title": "The queue: 106 open, rotting still flat at 27 — and the patrol clocks are a week overdue",
+      "detail": "106 open, 5 urgent, SIX of them carrying your word. #397 closed tonight and nothing new was filed.\n\nRotting — open a week and never re-read against the code — is 27 for a FOURTH night running. Twelve of those are the Lost-and-Found catalogue filed in one afternoon on 25 August, so it is one batch aging together rather than fresh neglect. It is not getting worse; it is also not getting better, and it will not while your ordered cards outrank it.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are overdue, the Janitor worst at a seventh night. Briefs 08 and 09 are the next two of your five and they are both unblocked. If you would rather a shift spent one night clearing the Janitor's backlog than shipping brief 08, that is a one-word answer and it will happen.",
       "severity": "info",
       "state": "open"
     },
@@ -3965,7 +4007,7 @@
     81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T18:56:24.662Z",
+    "readAt": "2026-09-01T20:48:34.419Z",
     "items": [
       {
         "issueNumber": 231,
@@ -3980,11 +4022,6 @@
       {
         "issueNumber": 392,
         "title": "A suspended customer's only appeal link points at the pre-rebrand domain — one invisible attribute, not a branding change",
-        "urgent": false
-      },
-      {
-        "issueNumber": 397,
-        "title": "SHIFT 3 of 5 — Admin Overview: lead with what needs a human, and colour inverts (brief 07) — BLOCKED on #395",
         "urgent": false
       },
       {
