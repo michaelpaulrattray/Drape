@@ -39,6 +39,7 @@ const run = (over: Partial<GateRun> = {}): GateRun => ({
   status: "in_progress",
   conclusion: null,
   createdAt: at(60_000),
+  updatedAt: at(0),
   ...over,
 });
 
@@ -76,11 +77,45 @@ describe("a run that EXISTS is never a stall, whatever the clock says", () => {
 
   it("a COMPLETED run reports its conclusion and never a stall", () => {
     const v = decideStall({
-      runs: [run({ status: "completed", conclusion: "failure", createdAt: at(20 * 60_000) })],
+      runs: [
+        run({
+          status: "completed",
+          conclusion: "failure",
+          createdAt: at(20 * 60_000),
+          updatedAt: at(12 * 60_000),
+        }),
+      ],
       pushedAt: at(21 * 60_000),
       now: NOW,
     });
     expect(v).toMatchObject({ kind: "complete", conclusion: "failure" });
+  });
+
+  /*
+   * ⚠ FOUND BY DRIVING IT, NOT BY READING IT. Watching PR #371's own gate, the
+   * last line printed `COMPLETE — the gate finished 8.2m ago: success` two
+   * seconds after it finished: the reporter was reading the run's AGE and
+   * calling it a finish time, so a shift would have believed it missed the
+   * result by eight minutes. A claim about when something ended is read from
+   * the field that says when it ended.
+   */
+  it("a finish time is read from updatedAt, never from the run's age", () => {
+    const v = decideStall({
+      runs: [
+        run({
+          status: "completed",
+          conclusion: "success",
+          createdAt: at(8.2 * 60_000),
+          updatedAt: at(2_000), // finished two seconds ago
+        }),
+      ],
+      pushedAt: at(9 * 60_000),
+      now: NOW,
+    });
+    expect(v).toMatchObject({ kind: "complete", finishedMsAgo: 2_000 });
+    const line = describeVerdict(v);
+    expect(line).toContain("finished 0.0m ago");
+    expect(line).not.toContain("finished 8.2m ago");
   });
 
   it("a RE-RUN supersedes the run it replaced — the newest row decides", () => {

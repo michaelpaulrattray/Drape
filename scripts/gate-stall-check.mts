@@ -127,12 +127,20 @@ function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: Ga
   ) as { headRefOid: string; headRefName: string; isDraft: boolean; state: string };
   const sha = head.headRefOid;
 
-  const runs = api<{ workflow_runs: Array<{ status: string; conclusion: string | null; created_at: string }> }>(
+  const runs = api<{
+    workflow_runs: Array<{
+      status: string;
+      conclusion: string | null;
+      created_at: string;
+      updated_at: string;
+    }>;
+  }>(
     `repos/:owner/:repo/actions/workflows/${gate!.id}/runs?head_sha=${sha}&per_page=50`,
   ).workflow_runs.map<GateRun>((r) => ({
     status: r.status,
     conclusion: r.conclusion,
     createdAt: r.created_at,
+    updatedAt: r.updated_at,
   }));
 
   const suites = api<{ check_suites: Suite[] }>(

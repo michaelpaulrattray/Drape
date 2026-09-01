@@ -102,6 +102,17 @@ export type GateRun = {
   conclusion: string | null;
   /** ISO. When GitHub created the run — i.e. when the suite appeared. */
   createdAt: string;
+  /**
+   * ISO. GitHub's `updated_at`, which for a completed run is when it finished.
+   *
+   * ⚠ IT IS HERE BECAUSE THE FIRST DRAFT CLAIMED A FINISH TIME OFF THE RUN'S
+   * AGE. Watching PR #371's own gate, the last line printed `COMPLETE — the
+   * gate finished 8.2m ago: success` two seconds after it finished: the run
+   * was 8.2 minutes OLD, and `createdAt` cannot answer "when did it end".
+   * A shift reading that would think it had missed the result by eight
+   * minutes. Nothing in the source looked wrong; only driving it showed it.
+   */
+  updatedAt: string;
 };
 
 export type StallInput = {
@@ -118,7 +129,7 @@ export type StallInput = {
 };
 
 export type StallVerdict =
-  | { kind: "complete"; conclusion: string | null; ageMs: number }
+  | { kind: "complete"; conclusion: string | null; ageMs: number; finishedMsAgo: number }
   | { kind: "running"; ageMs: number; beyondP99: boolean }
   | { kind: "waiting"; sincePushMs: number; findingAtMs: number }
   | { kind: "stall"; sincePushMs: number; findingAtMs: number }
@@ -147,7 +158,12 @@ export function decideStall(input: StallInput): StallVerdict {
     )[0]!;
     const ageMs = ms(newest.createdAt, now);
     if (newest.status === "completed") {
-      return { kind: "complete", conclusion: newest.conclusion, ageMs };
+      return {
+        kind: "complete",
+        conclusion: newest.conclusion,
+        ageMs,
+        finishedMsAgo: ms(newest.updatedAt, now),
+      };
     }
     return { kind: "running", ageMs, beyondP99: ageMs > GATE_DURATION.p99Ms };
   }
@@ -176,7 +192,7 @@ export function describeVerdict(v: StallVerdict): string {
   const mins = (n: number) => `${(n / 60_000).toFixed(1)}m`;
   switch (v.kind) {
     case "complete":
-      return `COMPLETE — the gate finished ${mins(v.ageMs)} ago: ${v.conclusion ?? "no conclusion"}.`;
+      return `COMPLETE — the gate finished ${mins(v.finishedMsAgo)} ago (the run took ${mins(v.ageMs - v.finishedMsAgo)}): ${v.conclusion ?? "no conclusion"}.`;
     case "running":
       return v.beyondP99
         ? `RUNNING — ${mins(v.ageMs)} old, past the measured p99 (${mins(GATE_DURATION.p99Ms)}). Alive, not stalled; keep waiting or check the run.`
