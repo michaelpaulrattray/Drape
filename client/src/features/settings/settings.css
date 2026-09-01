@@ -253,7 +253,22 @@
   white-space: nowrap;
 }
 
-/* ---- avatar row ---- */
+.dp-set__panecol--narrow { max-width: 460px; }
+
+/* ---- stacked fields (Profile), the shape the prototype draws ---- */
+.dp-set__stackfield { display: flex; flex-direction: column; gap: var(--s-2); }
+.dp-set__stackfield + .dp-set__stackfield { margin-top: var(--s-6); }
+.dp-set__fieldlabel { font: 500 11.5px/1.3 var(--font-sans); color: var(--ink); }
+.dp-set__fieldnote { font: 400 10.5px/1.5 var(--font-sans); color: var(--metaStrong); }
+.dp-set__fullfield { width: 100%; }
+/* ---- avatar block ---- */
+.dp-set__avatarblock {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin-bottom: var(--s-8);
+}
+.dp-set__avataractions { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .dp-set__avatar {
   width: 56px;
   height: 56px;
@@ -268,25 +283,102 @@
 /* ⚠ `display: block` IS LOAD-BEARING: this is a <span>, and an inline element
    ignores `height`, so the bar rendered as nothing at all on both the spend
    rows and the storage row. Caught by opening the app, not by any arm. */
+/* ⚠ THE TRACK IS `--rule`, NOT `--fill` (#381 item 3). He read the bars as
+   having no track at all; the track was there and was `--fill`, which in dark
+   is #232326 against a #1A1A1D pane — a 9-point difference nobody can see. The
+   prototype's own track is `var(--rule)`, and a track you cannot see is the
+   same thing as no track, because the bar's whole job is to show the REMAINDER
+   as well as the fill. */
 .dp-set__bar {
   display: block;
   position: relative;
   width: 100%;
   height: 6px;
   border-radius: var(--r-pill);
-  background: var(--fill);
+  background: var(--rule);
+  box-shadow: inset 0 0 0 1px var(--borderCard);
   overflow: hidden;
 }
 .dp-set__barfill { display: block; position: absolute; inset: 0 auto 0 0; border-radius: var(--r-pill); }
-.dp-set__statrow {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-3);
-  padding: var(--s-4) 0;
-  border-bottom: 1px solid var(--rule);
+
+/* ---- the Usage stat card: ONE border, three columns (#381 items 1 and 2) ---- */
+.dp-set__statcard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  overflow: hidden;
 }
-.dp-set__statvalue { font: 500 15px/1.2 var(--font-mono); color: var(--ink); }
-.dp-set__statnote { font: 400 11.5px/1.4 var(--font-sans); color: var(--metaStrong); }
+.dp-set__statcell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: var(--s-6) 15px;
+}
+/* The divider is a BORDER on the cell, not a shadow: the prototype's
+   `box-shadow: 0 0 0 0.5px` paints on all four sides and doubles at every
+   internal seam, which reads as a heavier rule between the columns than around
+   the card. Same picture, one weight. */
+.dp-set__statcell + .dp-set__statcell { border-left: 1px solid var(--borderCard); }
+.dp-set__statlabel { font: 400 11px/1.3 var(--font-sans); color: var(--metaStrong); }
+.dp-set__statnum {
+  font: 500 22px/1.15 var(--font-mono);
+  color: var(--ink);
+  letter-spacing: -.02em;
+}
+.dp-set__statnote { font: 400 10.5px/1.4 var(--font-sans); color: var(--faint); }
+
+/* Three columns of numbers cannot survive a narrow modal; one per line is the
+   honest fallback and keeps the single border. */
+@media (max-width: 640px) {
+  .dp-set__statcard { grid-template-columns: 1fr; }
+  .dp-set__statcell + .dp-set__statcell {
+    border-left: 0;
+    border-top: 1px solid var(--borderCard);
+  }
+}
+
+/* ---- a row the prototype draws as its own card ---- */
+.dp-set__cardrow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  padding: 13px 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-md);
+}
+.dp-set__cardrow + .dp-set__cardrow { margin-top: var(--s-3); }
+.dp-set__cardrow--accent {
+  border-color: var(--accentLine);
+  background: var(--accentWash);
+}
+.dp-set__cardrow--accent .dp-set__label,
+.dp-set__cardrow--accent .dp-set__note { color: var(--accentInk); }
+
+/* ---- a card whose contents STACK (Storage) ---- */
+.dp-set__stackcard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: var(--s-6) 15px;
+  margin-top: var(--s-8);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+}
+.dp-set__stackhead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+
+/* ---- a bordered list of like things (Members, invoices) ---- */
+.dp-set__list {
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.dp-set__list > * { padding-left: 15px; padding-right: 15px; }
+.dp-set__list > * + * { border-top: 1px solid var(--rule); }
+/* Inside a list the row grammar keeps its hairlines from the container, so its
+   own bottom border would double the last seam. */
+.dp-set__list .dp-set__row { border-bottom: 0; }
 
 /* ---- billing cards ---- */
 .dp-set__cards { display: flex; flex-wrap: wrap; gap: var(--s-5); }
@@ -365,18 +457,21 @@
   color: var(--meta);
   font: 400 12px/1.3 var(--font-sans);
 }
+.dp-set__group > .dp-mem__invite + .dp-set__list { margin-top: var(--s-4); }
 .dp-mem__row {
   display: flex;
   align-items: center;
   gap: var(--s-5);
   padding: var(--s-5) 0;
-  border-bottom: 1px solid var(--rule);
 }
+/* A circle, as the prototype draws it (#381) — a person is a circle in this
+   system and a frame is a rounded square; a square avatar in a member list
+   reads as a thumbnail of something rather than as somebody. */
 .dp-mem__tile {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   flex: none;
-  border-radius: var(--r-sm);
+  border-radius: 50%;
   overflow: hidden;
   background: var(--media);
 }

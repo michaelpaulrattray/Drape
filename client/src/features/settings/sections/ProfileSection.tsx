@@ -13,8 +13,9 @@
  *   rather than as a button that silently does nothing.
  * - **`Workspace name` has no server.** There is no workspace, team or
  *   organisation row anywhere in `drizzle/schema.ts`; the name in the top bar
- *   is the product's own (`BRAND_NAME`). The field is drawn and inert, and the
- *   note says which name it is going to be.
+ *   is the workspace's own (`WORKSPACE_NAME`). The field is drawn and inert, and
+ *   the note says which name it is going to be — read from the SAME constant
+ *   the modal header reads, which is #381's actual finding.
  * - **`Changes save as you edit` is a promise the footer makes, so this section
  *   keeps it** — the display name commits on blur rather than on a Save button
  *   the brief forbids (§10).
@@ -27,14 +28,14 @@ import { Field, Input } from "@/foundation";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { compressImage, AVATAR_COMPRESSION } from "@/lib/imageUtils";
-import { BRAND_NAME } from "@/foundation/brand";
+import { WORKSPACE_NAME } from "@/foundation/brand";
 import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
 import {
   PROFILE_BIO_MAX_LENGTH,
   PROFILE_DISPLAY_NAME_MAX_LENGTH,
 } from "@shared/inputLimits";
 
-import { SettingsGroup, SettingsRow, StubControl, StubNote } from "../parts";
+import { SettingsField, SettingsGroup, StubControl, StubNote } from "../parts";
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -138,7 +139,13 @@ export function ProfileSection({
 
   return (
     <SettingsGroup title="Profile">
-      <div className="dp-set__row">
+      {/*
+        The prototype's avatar block (#381): picture, then the two actions
+        BESIDE it, then the constraint line under the actions. There is no
+        "Picture" label — the picture is the label — and the constraint line
+        belongs under the button it constrains, not opposite it.
+      */}
+      <div className="dp-set__avatarblock">
         <span className="dp-set__avatar">
           <ProfileAvatar
             src={avatarUrl}
@@ -147,29 +154,29 @@ export function ProfileSection({
             className="w-full h-full object-cover"
           />
         </span>
-        <span className="dp-set__rowtext">
-          <span className="dp-set__label">Picture</span>
-          <span className="dp-set__note">JPG, PNG or WebP · up to 5 MB · square works best</span>
-        </span>
-        <span className="dp-set__spacer" />
-        <span className="dp-set__control">
-          <label className="dp-btn dp-btn--secondary dp-btn--small" style={{ cursor: "pointer" }}>
-            {uploading ? "Uploading…" : "Upload"}
-            <input
-              type="file"
-              accept={AVATAR_ACCEPT}
-              onChange={pickAvatar}
-              style={{ display: "none" }}
-            />
-          </label>
-          {/* No removal exists on the server — see the docblock. */}
-          <StubControl reason="Removing a picture is not built yet">
-            <StubNote>REMOVE</StubNote>
-          </StubControl>
-        </span>
+        <div className="dp-set__avataractions">
+          <span className="dp-set__control">
+            <label className="dp-btn dp-btn--secondary dp-btn--small" style={{ cursor: "pointer" }}>
+              {uploading ? "Uploading…" : "Upload"}
+              <input
+                type="file"
+                accept={AVATAR_ACCEPT}
+                onChange={pickAvatar}
+                style={{ display: "none" }}
+              />
+            </label>
+            {/* No removal exists on the server — see the docblock. */}
+            <StubControl reason="Removing a picture is not built yet">
+              <StubNote>REMOVE</StubNote>
+            </StubControl>
+          </span>
+          <span className="dp-set__fieldnote">
+            JPG, PNG or WebP · up to 5 MB · square works best
+          </span>
+        </div>
       </div>
 
-      <SettingsRow label="Display name" note="Shown on shared canvases and comments.">
+      <SettingsField label="Display name" note="Shown on shared canvases and comments.">
         {/*
           ⚠ `Input` IS A BARE BORDERLESS <input> AND MUST SIT INSIDE `Field`.
           Caught by opening the app: rendered on its own it draws no box at all,
@@ -179,7 +186,7 @@ export function ProfileSection({
           ring is deliberately on the WRAPPER, so a bare Input is also a control
           you cannot see yourself focus.
         */}
-        <Field compact className="dp-set__field">
+        <Field compact className="dp-set__fullfield">
           <Input
             value={displayName}
             maxLength={PROFILE_DISPLAY_NAME_MAX_LENGTH}
@@ -188,7 +195,7 @@ export function ProfileSection({
             aria-label="Display name"
           />
         </Field>
-      </SettingsRow>
+      </SettingsField>
 
       {/*
         ⚠ **BIO IS NOT IN THE BRIEF’S PROFILE TABLE AND IT IS KEPT ANYWAY**, as a
@@ -202,8 +209,8 @@ export function ProfileSection({
         say never stub something that already exists, and this is the same
         instinct one row over.
       */}
-      <SettingsRow label="Bio" note="A line about you, on your own export and nowhere public.">
-        <Field compact className="dp-set__field">
+      <SettingsField label="Bio" note="A line about you, on your own export and nowhere public.">
+        <Field compact className="dp-set__fullfield">
           <Input
             value={bio}
             maxLength={PROFILE_BIO_MAX_LENGTH}
@@ -213,18 +220,18 @@ export function ProfileSection({
             aria-label="Bio"
           />
         </Field>
-      </SettingsRow>
+      </SettingsField>
 
       {/*
         §5: *"Email is shown and disabled, not hidden. Hiding it makes people
         think the account has no email; disabling it with a reason answers the
         question they actually have."*
       */}
-      <SettingsRow
+      <SettingsField
         label="Email"
         note="Contact support to change the address on the account."
       >
-        <Field compact className="dp-set__field dp-set__field--off">
+        <Field compact className="dp-set__fullfield dp-set__field--off">
           <Input
             value={user?.email ?? profile?.email ?? ""}
             readOnly
@@ -232,16 +239,32 @@ export function ProfileSection({
             aria-label="Email"
           />
         </Field>
-      </SettingsRow>
+      </SettingsField>
 
-      <SettingsRow
+      {/*
+        ⚠ SHOWN AND DISABLED, exactly as Email is — not a naked stub chip.
+        Looked at in the running app (#381): stacked, the chip alone sat where a
+        field should be and read as a missing control rather than an inert one.
+        His own §5 ruling on Email is the precedent and it applies word for word
+        here: *"Hiding it makes people think the account has no email; disabling
+        it with a reason answers the question they actually have."* The name in
+        the box is the true one — every workspace IS this name today — so the
+        field is honest, out of the tab order, and says why on hover.
+      */}
+      <SettingsField
         label="Workspace name"
-        note={`Appears in the top bar and on client shares. Every workspace is ${BRAND_NAME} until workspaces exist.`}
+        note={`Appears in the top bar and on client shares. Every workspace is ${WORKSPACE_NAME} until workspaces exist.`}
       >
-        <StubControl reason="Renaming a workspace is not built yet">
-          <StubNote>NOT BUILT YET</StubNote>
-        </StubControl>
-      </SettingsRow>
+        <Field compact className="dp-set__fullfield dp-set__field--off">
+          <Input
+            value={WORKSPACE_NAME}
+            readOnly
+            disabled
+            title="Renaming a workspace is not built yet"
+            aria-label="Workspace name"
+          />
+        </Field>
+      </SettingsField>
     </SettingsGroup>
   );
 }

@@ -34,7 +34,7 @@ import { useMemo } from "react";
 import { X } from "lucide-react";
 
 import { ModalScrim } from "@/foundation/CastingModal";
-import { Button, Icon, P, BRAND_NAME } from "@/foundation";
+import { Button, Icon, P, WORKSPACE_NAME } from "@/foundation";
 
 import "./settings.css";
 import { ProfileSection } from "./sections/ProfileSection";
@@ -60,6 +60,9 @@ export const SETTINGS_SECTIONS = [
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]["id"];
 
+/** The three panes the prototype draws in a capped column rather than full width. */
+const NARROW = new Set<SettingsSection>(["profile", "notifications", "security"]);
+
 export function SettingsModal({
   section,
   onSection,
@@ -74,7 +77,7 @@ export function SettingsModal({
   planPriceInCents,
   allowance,
   balance,
-  creditsUsed,
+  periodStart,
   renewsAt,
 }: {
   section: SettingsSection;
@@ -90,13 +93,13 @@ export function SettingsModal({
   planPriceInCents: number;
   allowance: number;
   balance: number;
-  creditsUsed: number;
+  periodStart: Date | null;
   renewsAt: Date | null;
 }) {
   const pane = useMemo(() => {
     switch (section) {
       case "usage":
-        return <UsageSection allowance={allowance} creditsUsed={creditsUsed} />;
+        return <UsageSection allowance={allowance} periodStart={periodStart} />;
       case "billing":
         return (
           <BillingSection
@@ -124,7 +127,7 @@ export function SettingsModal({
   }, [
     section,
     allowance,
-    creditsUsed,
+    periodStart,
     planName,
     planPriceInCents,
     balance,
@@ -147,7 +150,7 @@ export function SettingsModal({
       <header className="dp-set__head">
         <span className="dp-set__title">Settings</span>
         <span className="dp-set__workspace">
-          {BRAND_NAME} · {planName} plan
+          {WORKSPACE_NAME} · {planName} plan
         </span>
         <button
           type="button"
@@ -178,7 +181,19 @@ export function SettingsModal({
           </button>
         </nav>
 
-        <div className="dp-set__pane">{pane}</div>
+        <div className="dp-set__pane">
+          {/*
+            THE COLUMN CAP (#381). The prototype caps Profile at 440px and
+            Notifications and Security at 460px, and leaves Usage, Billing and
+            Members full width — a form column and a data table want different
+            measures. It is applied HERE rather than inside three sections,
+            because the pane owns the scroll and a max-width set on the pane
+            itself would strand the scrollbar in the middle of the modal.
+          */}
+          <div className={NARROW.has(section) ? "dp-set__panecol dp-set__panecol--narrow" : "dp-set__panecol"}>
+            {pane}
+          </div>
+        </div>
       </div>
 
       <footer className="dp-set__foot">

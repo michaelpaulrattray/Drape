@@ -27,7 +27,22 @@
 const DAY_MS = 86_400_000;
 
 export type BillingCycle = {
-  /** Credits spent so far this cycle. */
+  /**
+   * ⚠ **THIS IS A LIFETIME FIGURE WEARING A CYCLE'S NAME — SEE #385.**
+   *
+   * It reads `points.creditsUsed`, which is set to 0 when the row is created
+   * and only ever incremented (`server/db/credits.ts`); nothing resets it at a
+   * period boundary. This comment said *"Credits spent so far this cycle"* until
+   * #381's law-7 sweep, and that sentence is how the defect survived — the
+   * Usage pane had the identical bug and he caught it by eye
+   * (`115,695 credits used · of 5,000 this month`).
+   *
+   * **Measured on production the day it was found: ZERO rows can reach
+   * `readCycle` at all** — nobody has both `currentPeriodStart` and
+   * `currentPeriodEnd`, so no customer has ever been shown a number derived
+   * from this. It goes live the moment the first subscription exists, which is
+   * why it is carded rather than left as a comment.
+   */
   spent: number;
   /** Credits still on the balance. */
   remaining: number;

@@ -239,6 +239,155 @@ describe("section 03 — five modals became three surfaces", () => {
     expect(label, "a text label was given the flexible track").not.toContain("flex: 1");
   });
 
+
+  /* ==========================================================================
+     #381 — HIS FORM CORRECTIONS. Every arm below exists because he read the
+     built pane against his own prototype and the two disagreed, so each one
+     names the shape the prototype draws rather than the shape the brief
+     described. His ruling, verbatim: *"where my brief describes a row inline
+     and the prototype draws a card, the prototype wins."*
+     ========================================================================== */
+
+  it("card 381 — the Usage stats are ONE bordered card in three columns, never three stacked rows", () => {
+    const usage = code(read(join(SECTIONS_DIR, "UsageSection.tsx")));
+    const css = code(read(join(HERE, "settings.css")));
+
+    expect(usage, "the stats went back to stacked rows").not.toContain("dp-set__statrow");
+    expect(usage, "the stat card is not used").toContain("StatCard");
+
+    const card = css.slice(
+      css.indexOf(".dp-set__statcard"),
+      css.indexOf(".dp-set__statcard") + 260,
+    );
+    expect(card, "the stat card lost its three columns").toContain("repeat(3, 1fr)");
+    expect(card, "the stat card lost its border").toMatch(/border:\s*1px solid var\(--borderCard\)/);
+
+    /* Item 2: each COLUMN stacks label above value above note. A three-column
+       grid whose cells lay their contents out in a row is the same defect in a
+       nicer box. */
+    const cell = css.slice(
+      css.indexOf(".dp-set__statcell {"),
+      css.indexOf(".dp-set__statcell {") + 200,
+    );
+    expect(cell, "a stat column stopped stacking").toContain("flex-direction: column");
+  });
+
+  it("card 381 — the bar has a track you can see, and `--fill` is the value it must not be", () => {
+    /*
+      He read the bars as having NO track. The track existed and was `--fill`,
+      which in dark is #232326 against a #1A1A1D pane — nine points, on a 6px
+      bar. His prototype's own track is `var(--rule)`.
+
+      This arm is written as a POSITIVE CONTROL on the wrong value rather than
+      only on the right one: `background: var(--fill)` is the exact declaration
+      that shipped and read as absent, and it is what a future tidy-up would
+      most plausibly restore.
+    */
+    const css = code(read(join(HERE, "settings.css")));
+    const bar = css.slice(css.indexOf(".dp-set__bar {"), css.indexOf(".dp-set__barfill"));
+    expect(bar, "the bar has no track at all").toMatch(/background:\s*var\(--/);
+    expect(bar, "the track went back to --fill, which cannot be seen against the pane").not.toMatch(
+      /background:\s*var\(--fill\)/,
+    );
+    expect(bar, "the track lost the ring that separates it from the pane").toContain("box-shadow");
+  });
+
+  it("card 381 — nothing renders a LIFETIME counter against a MONTHLY allowance", () => {
+    /*
+      His first live defect: `115,695 credits used · of 5,000 this month`.
+      `points.creditsUsed` is set to 0 at row creation and only incremented, so
+      it is an all-time figure; the allowance beside it is monthly.
+
+      The arm is on the WIRE — what `AccountSurfaces` hands the modal — because
+      that is where the wrong number entered, and a check on the pane's copy
+      would pass the day somebody re-plumbs the same field under another name.
+    */
+    const surfaces = code(read(join(HERE, "AccountSurfaces.tsx")));
+    expect(surfaces, "the lifetime counter is being passed into Settings again").not.toContain(
+      "creditsUsed",
+    );
+    expect(surfaces, "the period the window is scoped to is not passed").toContain("periodStart");
+
+    const usage = code(read(join(SECTIONS_DIR, "UsageSection.tsx")));
+    expect(usage, "Usage takes a credits figure it cannot scope to a window").not.toMatch(
+      /creditsUsed:\s*number/,
+    );
+    expect(usage, "Usage no longer sums a real per-day window").toContain("getDailyUsage");
+  });
+
+  it("card 381 — the one-bar chart is gone, and it is gone because it was measured", () => {
+    /*
+      His item 6, and his own option 2. Measured on his 622 real spend rows
+      before anything was built: every one of them is `type: "generation"`, so
+      the fold the block drew produced ONE bar at 100% — *"a single bar at 100%
+      conveys less than nothing"* — and `engineUsed`, the column his preferred
+      option 1 would map, is NULL on 53% of his spend by credits and holds a
+      subsystem name and a model id on the rest.
+    */
+    const usage = code(read(join(SECTIONS_DIR, "UsageSection.tsx")));
+    expect(usage, "the by-type fold came back").not.toContain("byType");
+    expect(usage, "a per-tool ramp came back without a reader behind it").not.toContain(
+      "RANK_TOKENS",
+    );
+  });
+
+  it("card 381 — the workspace name has ONE source, and it is not the product name", () => {
+    /*
+      He read the header as `Klieg` against a pane he remembered as `Klieg
+      Studio`. Driven before the change: nothing in the product rendered `Klieg
+      Studio` at all — `BRAND_NAME` stood in for the workspace in both places.
+      Both of his own specifications say otherwise (brief §4's header line, and
+      the prototype's `{{ workspace }}`), so the workspace got its own constant.
+
+      The arm is that the two surfaces read the SAME one. That is the class; the
+      string is the instance.
+    */
+    const modal = code(read(join(HERE, "SettingsModal.tsx")));
+    const profile = code(read(join(SECTIONS_DIR, "ProfileSection.tsx")));
+    expect(modal, "the header names the workspace with the product name again").not.toContain(
+      "BRAND_NAME",
+    );
+    expect(modal, "the header stopped reading the workspace constant").toContain("WORKSPACE_NAME");
+    expect(profile, "the Profile note stopped reading the same constant").toContain(
+      "WORKSPACE_NAME",
+    );
+  });
+
+  it("card 381 — Notifications and Security rows are CARDS, and the destructive one is the accent card", () => {
+    const notifications = code(read(join(SECTIONS_DIR, "NotificationsSection.tsx")));
+    const security = code(read(join(SECTIONS_DIR, "SecuritySection.tsx")));
+    expect(notifications, "the toggle rows went back to hairline rows").not.toContain(
+      "<SettingsRow",
+    );
+    expect(notifications, "the toggle rows are not cards").toContain("<SettingsCard");
+    expect(security, "the action rows went back to hairline rows").not.toContain("<SettingsRow");
+    expect(security, "Delete account lost the accent card that sets it apart").toContain(
+      'tone="accent"',
+    );
+
+    const css = code(read(join(HERE, "settings.css")));
+    const cardRow = css.slice(css.indexOf(".dp-set__cardrow {"), css.indexOf(".dp-set__cardrow +"));
+    expect(cardRow, "a card row lost its border").toMatch(
+      /border:\s*1px solid var\(--borderCard\)/,
+    );
+  });
+
+  it("card 381 — Profile's fields STACK, which is one of the four questions he named", () => {
+    /*
+      *"what is a CARD vs a ROW · what carries a BORDER · what STACKS vs sits
+      inline · where notes belong and how long."* The prototype stacks every
+      Profile field — label, then the box, then the note — inside a capped
+      column; the built pane had them as leader rows with a 220px input in a
+      `flex: none` track.
+    */
+    const profile = code(read(join(SECTIONS_DIR, "ProfileSection.tsx")));
+    expect(profile, "Profile went back to leader rows").not.toContain("<SettingsRow");
+    expect(profile, "Profile's fields do not stack").toContain("<SettingsField");
+    expect(profile, "the field lost its full width inside the capped column").toContain(
+      "dp-set__fullfield",
+    );
+  });
+
   it("the mutations are untouched — every retired call site still calls the same procedure", () => {
     /*
       §1: *"Excluded from this brief: what the mutations do. Same profile

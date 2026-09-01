@@ -1,41 +1,56 @@
 /**
- * Settings → Usage (brief §5).
+ * Settings → Usage (brief §5, rebuilt against the prototype on #381).
  *
- * ## ⚠ THE PER-TOOL BARS HAVE NO SERVER, AND THIS IS THE SECTION THE
- * RECONCILIATION CHANGED MOST (BRIEF-RECONCILIATION Q3)
+ * ## ⚠ ONE WINDOW FOR THE WHOLE PANE — HIS FIRST LIVE DEFECT
  *
- * The brief draws five bars — *"Video 2,140 (72%) · Image 1,380 (46%) · Try-on
- * 780 (26%) · UGC 340 (12%) · Upscale 120 (5%)"*. Measured at the code:
+ * He read `115,695 credits used · of 5,000 this month` and named it exactly:
+ * *"a used figure 23× the allowance is two different windows on one line,
+ * almost certainly all-time against monthly."* Measured at his own production
+ * rows before a line was changed:
  *
- * - **Four of those five tools do not exist.** Video, Try-on, UGC and Upscale
- *   are four of the five greyed entries in the prompt box — his own section-00b
- *   ruling put them there as stubs, *"visible, greyed, not built yet on hover"*.
- * - **Nothing records a tool against a spend.** `credit_transactions` carries a
- *   `type` (`generation`, `purchase`, `refund`, …) and an `engineUsed`, and
- *   `usage.getStats` folds by that `type`. There is no tool column, so there is
- *   no reader that could answer the question the bars ask.
+ * - `points.creditsUsed` = **115,695**, and the ledger's ALL-TIME sum of his
+ *   spend rows is **115,695** over 622 rows. It is a lifetime counter: it is
+ *   set to 0 when the row is made and only ever incremented
+ *   (`server/db/credits.ts`). Nothing resets it at a period boundary.
+ * - He is on the **free** plan, so `currentPeriodStart` and `currentPeriodEnd`
+ *   are both **null** — there is no billing period to scope it to either.
  *
- * His own 00b words settle what to do: *"A number in a screenshot that no
- * server produces is a lie that survives into the build."* So the bars are
- * drawn from the fold that DOES exist — spend by kind of transaction — and the
- * five tool names are not printed at all. The greyscale-by-rank treatment,
- * which is the design decision in that paragraph, is kept exactly.
+ * So the number was lifetime and the allowance was monthly, on one line. The
+ * pane now declares ONE window and every figure in it comes from that window:
+ * the billing period when there is one, otherwise the calendar month, which is
+ * what a monthly allowance is measured against. It is summed from
+ * `usage.getDailyUsage`, whose rows are already per-day, so the window has a
+ * real edge instead of *"now minus N days"*.
  *
- * **What is real here:** credits used and the allowance (`billing.getStatus` +
- * `PLAN_TIERS`), frames made (`usage.getStats.totalGenerations`), and storage
- * (`profile.storageInfo`). Cast members and *"84 kept"* have no reader either
- * and are absent rather than invented.
+ * ## ⚠ THE PER-TOOL BARS ARE GONE, AND THAT IS HIS OWN OPTION 2, TAKEN ON A
+ * MEASUREMENT HE ORDERED FIRST
+ *
+ * His card put two options and preferred the first — map `engineUsed` to a
+ * tool and draw real bars — but required a measurement before any build, in
+ * case that column separates too few things to be worth a chart. Read on his
+ * 622 real spend rows:
+ *
+ * | `engineUsed` | rows | credits |
+ * |---|---|---|
+ * | `castingV2` | 462 | 45,295 |
+ * | **(null)** | 131 | **61,100** |
+ * | `gemini-3-pro-image-preview` | 29 | 9,300 |
+ *
+ * **The majority of his spend by credits — 53% — has no engine recorded at
+ * all**, and the two values that do exist are a subsystem name and a model id
+ * that map to the SAME tool. A model→tool map over that draws one named bar
+ * and an unlabellable bar larger than it, which is his own objection one step
+ * later: *"a single bar at 100% conveys less than nothing."*
+ *
+ * The block that shipped was worse still: it folded by transaction `type`,
+ * and every one of his 622 spend rows is `generation` — **one bar, at 100%,
+ * always.** So the block is omitted until something records a tool, which is
+ * option 2 in his words. What would bring it back is a tool column on the
+ * transaction, not a cleverer read of this one.
  */
 import { trpc } from "@/lib/trpc";
 
-import { Bar, SettingsGroup } from "../parts";
-
-/**
- * The greyscale ramp, widest first — §5: *"Greyscale, not colour-coded. Tool is
- * a category, and colour never encodes a category. Rank is carried by bar
- * length and the ramp."*
- */
-const RANK_TOKENS = ["--ink", "--secondary", "--metaStrong", "--meta", "--muted"];
+import { Bar, SettingsGroup, StatCard } from "../parts";
 
 /** `1.2 GB` — bytes at the precision a storage line is read at. */
 function formatBytes(bytes: number): string {
@@ -45,91 +60,104 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
-/** `purchase` → `Purchase`. The fold's keys are its own vocabulary. */
-function titleCase(key: string): string {
-  return key.replace(/_/g, " ").replace(/^./, (first) => first.toUpperCase());
+/**
+ * THE WINDOW, and the day it starts.
+ *
+ * `getDailyUsage` keys its rows on `new Date(createdAt).toISOString()` — UTC
+ * days — so the window edge is computed in UTC too. Comparing a UTC row key
+ * against a local-time boundary is how a day lands in the wrong month for ten
+ * hours a day on this machine.
+ */
+function windowStart(
+  periodStart: Date | null,
+): { firstDay: string; label: string; days: number; elapsedDays: number } {
+  const now = new Date();
+  const start =
+    periodStart && periodStart.getTime() <= now.getTime()
+      ? periodStart
+      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const firstDay = start.toISOString().slice(0, 10);
+  const days = Math.max(
+    1,
+    Math.ceil((now.getTime() - start.getTime()) / 86_400_000) + 1,
+  );
+  return {
+    firstDay,
+    label: periodStart ? "this billing period" : "this month",
+    /* `getDailyUsage` caps at 90; a period longer than that is an annual plan,
+       and the cap is stated rather than silently truncating the answer. */
+    days: Math.min(90, days),
+    elapsedDays: days,
+  };
 }
 
 export function UsageSection({
   allowance,
-  creditsUsed,
+  periodStart,
 }: {
   allowance: number;
-  creditsUsed: number;
+  periodStart: Date | null;
 }) {
-  const { data: stats } = trpc.usage.getStats.useQuery({ days: 30 });
+  const { firstDay, label, days, elapsedDays } = windowStart(periodStart);
+  const { data: daily } = trpc.usage.getDailyUsage.useQuery({ days });
   const { data: storage } = trpc.profile.storageInfo.useQuery();
 
-  const spendRows = Object.entries(stats?.byType ?? {})
-    .filter(([, value]) => value.credits > 0)
-    .sort((a, b) => b[1].credits - a[1].credits)
-    .slice(0, RANK_TOKENS.length);
-  const widest = spendRows[0]?.[1].credits ?? 0;
+  const inWindow = (daily ?? []).filter((row) => row.date >= firstDay);
+  const creditsUsed = inWindow.reduce((sum, row) => sum + row.creditsUsed, 0);
+  const framesMade = inWindow.reduce((sum, row) => sum + row.generationCount, 0);
+  /*
+    ⚠ THE DIVISOR IS DAYS ELAPSED, NOT ROWS RETURNED. The first draft divided by
+    `inWindow.length`, which is zero while the query is in flight and on the
+    first instant of a new period — and it rendered `across 0 days` under a
+    figure, which is the shape of nonsense this whole card is about. A window
+    that has begun is at least one day old.
+  */
+  const perDay = Math.round(creditsUsed / elapsedDays);
 
   const storageUsed = storage?.used ?? 0;
   const storageLimit = storage?.limit ?? 0;
 
   return (
     <>
-      <SettingsGroup title="Usage" note="The last 30 days on this account.">
-        <div className="dp-set__statrow">
-          <span className="dp-set__statvalue">{creditsUsed.toLocaleString()}</span>
-          <span className="dp-set__statnote">
-            credits used{allowance > 0 ? ` · of ${allowance.toLocaleString()} this month` : ""}
-          </span>
-        </div>
-        <div className="dp-set__statrow">
-          <span className="dp-set__statvalue">
-            {(stats?.totalGenerations ?? 0).toLocaleString()}
-          </span>
-          <span className="dp-set__statnote">frames made</span>
-        </div>
-        <div className="dp-set__statrow">
-          <span className="dp-set__statvalue">
-            {Math.round(stats?.averagePerDay ?? 0).toLocaleString()}
-          </span>
-          <span className="dp-set__statnote">credits a day, on average</span>
-        </div>
+      <SettingsGroup title={`Usage ${label}`}>
+        <StatCard
+          stats={[
+            {
+              label: "Credits used",
+              value: creditsUsed.toLocaleString(),
+              note: allowance > 0 ? `of ${allowance.toLocaleString()} ${label}` : undefined,
+            },
+            { label: "Frames made", value: framesMade.toLocaleString(), note: "that spent credits" },
+            {
+              label: "Credits a day",
+              value: perDay.toLocaleString(),
+              note: `averaged over ${elapsedDays} ${elapsedDays === 1 ? "day" : "days"}`,
+            },
+          ]}
+        />
       </SettingsGroup>
 
-      <SettingsGroup
-        title="Where the credits went"
-        note="Grouped the way the ledger groups them. The studio does not yet record which tool spent a credit, so this is by kind of movement rather than by tool."
-      >
-        {spendRows.length === 0 ? (
-          <p className="dp-set__note">Nothing spent in the last 30 days.</p>
-        ) : (
-          spendRows.map(([key, value], index) => (
-            <div className="dp-set__row" key={key}>
-              <span className="dp-set__rowtext" style={{ flex: "0 0 120px" }}>
-                <span className="dp-set__label">{titleCase(key)}</span>
-              </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <Bar
-                  ratio={widest > 0 ? value.credits / widest : 0}
-                  token={RANK_TOKENS[index] ?? "--muted"}
-                />
-              </span>
-              <span className="dp-set__value">{value.credits.toLocaleString()}</span>
-            </div>
-          ))
-        )}
-      </SettingsGroup>
-
-      <SettingsGroup
-        title="Storage"
-        note="Unkept frames clear after 30 days, which is most of what you free up."
-      >
-        <div className="dp-set__row">
-          <span style={{ flex: 1, minWidth: 0 }}>
-            <Bar ratio={storageLimit > 0 ? storageUsed / storageLimit : 0} token="--ink" />
-          </span>
+      {/*
+        Storage is a CARD carrying its OWN label, not a bare row under a section
+        heading with its note promoted into that heading (#381 items 4 and 5).
+        The prototype draws label and figure on one row, the bar full-width
+        beneath, the note beneath that — so the note sits with the thing it
+        explains, and there is no second heading saying "Storage" above a card
+        whose first word is Storage.
+      */}
+      <div className="dp-set__stackcard">
+        <div className="dp-set__stackhead">
+          <span className="dp-set__label">Storage</span>
           <span className="dp-set__value">
             {formatBytes(storageUsed)}
             {storageLimit > 0 ? ` of ${formatBytes(storageLimit)}` : ""}
           </span>
         </div>
-      </SettingsGroup>
+        <Bar ratio={storageLimit > 0 ? storageUsed / storageLimit : 0} token="--ink" />
+        <span className="dp-set__note">
+          Unkept frames clear after 30 days, which is most of what you free up.
+        </span>
+      </div>
     </>
   );
 }

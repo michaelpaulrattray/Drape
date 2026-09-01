@@ -28,7 +28,7 @@ export { BrandOrb } from "./BrandOrb";
 export { ProjectSwitcherStub, WhatsNewStub } from "./ChromeStubs";
 /* Section 02 (brief 02 §1c) — the centred search, a span and never an input. */
 export { SearchStub } from "./ChromeStubs";
-export { BRAND_NAME } from "./brand";
+export { BRAND_NAME, WORKSPACE_NAME } from "./brand";
 
 /*
   #262 — THE FIVE PROMOTED FROM CASTING, on his ruling of 2026-08-30:

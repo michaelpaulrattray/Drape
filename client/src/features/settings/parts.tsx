@@ -1,10 +1,24 @@
 /**
  * The row grammar every Settings section is written in.
  *
- * Section 03 §5: *"All rows use the leader / hairline grammar — label and note
- * left, control right, `--rule` between. **No cards inside cards.**"* Six
- * sections all drawing that shape by hand is six chances for one of them to
- * drift, which is working law 4; it is drawn once here.
+ * ⚠ **THE BRIEF'S HAIRLINE RULE IS SUPERSEDED BY HIS OWN PROTOTYPE (#381).**
+ * §5 said *"All rows use the leader / hairline grammar — label and note left,
+ * control right, `--rule` between. **No cards inside cards.**"* and this file
+ * built exactly that. His correction, 2026-09-01, verbatim: *"section 03 isnt
+ * just usage corrections most of the pages are designed incorrectly missing
+ * cards and borders and correct layout"* … *"where my brief describes a row
+ * inline and the prototype draws a card, **the prototype wins**. Open it beside
+ * each section rather than building from my prose."*
+ *
+ * Read at `design_handoff_studio/Klieg Studio.dc.html` beside every pane: the
+ * prototype draws **bordered cards** for Notifications rows, Security rows, the
+ * Billing plan row and Storage; a **bordered list** for Members and Invoices;
+ * and a **three-column bordered card** for the Usage stats. The hairline row
+ * survives only where the prototype really does draw one.
+ *
+ * So there are three shapes here now, not one, and the inner content of a row
+ * and a card is ONE function (`RowBody`) rather than two copies — the whole
+ * reason the grammar was centralised in the first place.
  *
  * ⚠ **`Stub` IS A COMPONENT ON PURPOSE, NOT A PROP.** The founder's placeholder
  * law has three conditions and two of them are mechanical — out of the tab
@@ -32,7 +46,15 @@ export function SettingsGroup({
   );
 }
 
-export function SettingsRow({
+/**
+ * The inside of a row, drawn ONCE.
+ *
+ * A hairline row and a bordered card differ only in their container; letting
+ * each write its own label/note/spacer/control is working law 4 in miniature,
+ * and it is how the two would drift apart the first time one of them is
+ * touched.
+ */
+function RowBody({
   label,
   note,
   children,
@@ -42,7 +64,7 @@ export function SettingsRow({
   children?: ReactNode;
 }) {
   return (
-    <div className="dp-set__row">
+    <>
       <span className="dp-set__rowtext">
         <span className="dp-set__label">{label}</span>
         {note ? <span className="dp-set__note">{note}</span> : null}
@@ -54,6 +76,131 @@ export function SettingsRow({
       */}
       <span className="dp-set__spacer" />
       {children ? <span className="dp-set__control">{children}</span> : null}
+    </>
+  );
+}
+
+export function SettingsRow({
+  label,
+  note,
+  children,
+}: {
+  label: ReactNode;
+  note?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="dp-set__row">
+      <RowBody label={label} note={note}>
+        {children}
+      </RowBody>
+    </div>
+  );
+}
+
+/**
+ * A row the prototype draws as its own bordered card.
+ *
+ * Notifications, Security and the Billing plan row are all this shape in
+ * `Klieg Studio.dc.html` — `padding: 12-16px 14-17px; border: 1px solid
+ * var(--borderCard); border-radius: 10-12px`, with a gap between cards rather
+ * than a hairline between rows. `tone="accent"` is the one variant the
+ * prototype has: the Delete workspace card, `--accentLine` on `--accentWash`.
+ */
+export function SettingsCard({
+  label,
+  note,
+  tone,
+  children,
+}: {
+  label: ReactNode;
+  note?: ReactNode;
+  tone?: "accent";
+  children?: ReactNode;
+}) {
+  return (
+    <div className={tone === "accent" ? "dp-set__cardrow dp-set__cardrow--accent" : "dp-set__cardrow"}>
+      <RowBody label={label} note={note}>
+        {children}
+      </RowBody>
+    </div>
+  );
+}
+
+/**
+ * A bordered container whose children are divided by hairlines — the prototype's
+ * Members list and its invoice list, both `border: 1px solid var(--borderCard);
+ * border-radius: 11px; overflow: hidden` with `box-shadow: 0 0 0 0.5px` between
+ * rows.
+ *
+ * This is the ONE place the hairline grammar survives, and it survives because
+ * the prototype draws it: a list of like things reads as a list, and giving each
+ * member its own card would say they were separate subjects.
+ */
+export function SettingsList({ children }: { children: ReactNode }) {
+  return <div className="dp-set__list">{children}</div>;
+}
+
+/**
+ * The Usage stats: ONE bordered card in three columns, each column stacking
+ * label → value → note.
+ *
+ * His item 1 and 2 on #381, and he names the cause as his own brief's: *"§5
+ * said 'three stat rows' and gave the inline format. You built exactly that …
+ * My brief summarised where it should have specified."* The prototype draws
+ * `grid-template-columns: repeat(3, 1fr)` inside one border.
+ *
+ * ⚠ **THE TYPE HERE FOLLOWS HIS CARD, WHICH DIFFERS FROM THE PROTOTYPE MARKUP,
+ * AND THAT DIVERGENCE IS DELIBERATE AND DECLARED.** The card specifies label
+ * `400 11px --metaStrong`, value `500 22px` mono, note `400 10.5px --faint`;
+ * the prototype's own inline style is `400 10.5px --metaStrong`, `500 19px`
+ * Archivo, `400 10.5px --metaStrong`. Two of our artifacts say mono — his card
+ * and the brief's *"Values in mono; they are measured numbers"* — against the
+ * prototype's one, and mono is what `.dp-set__value` has always used for a
+ * measured number. The structure is the prototype's; the type is his card's.
+ */
+export function StatCard({
+  stats,
+}: {
+  stats: { label: string; value: string; note?: string }[];
+}) {
+  return (
+    <div className="dp-set__statcard">
+      {stats.map((stat) => (
+        <div className="dp-set__statcell" key={stat.label}>
+          <span className="dp-set__statlabel">{stat.label}</span>
+          <span className="dp-set__statnum">{stat.value}</span>
+          {stat.note ? <span className="dp-set__statnote">{stat.note}</span> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A field that STACKS — label above, control beneath, note under that.
+ *
+ * The prototype draws every Profile field this way (`flex-direction: column;
+ * gap: 6px`, the whole pane capped at 440px), and #381's four questions name it
+ * explicitly: *"what STACKS vs sits inline."* A leader row puts a 220px input in
+ * a `flex: none` column against a label, which is the shape for a SETTING you
+ * flick; a field somebody types their own name into wants its full width and
+ * its label directly above it.
+ */
+export function SettingsField({
+  label,
+  note,
+  children,
+}: {
+  label: ReactNode;
+  note?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="dp-set__stackfield">
+      <span className="dp-set__fieldlabel">{label}</span>
+      {children}
+      {note ? <span className="dp-set__fieldnote">{note}</span> : null}
     </div>
   );
 }
