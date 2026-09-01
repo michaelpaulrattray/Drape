@@ -1,7 +1,7 @@
 {
-  "edition": 186,
-  "updatedAt": "2026-09-01T16:05:00+10:00",
-  "shift": "Foreman - shift 2026-09-01 16:05 AEST (foreman-164)",
+  "edition": 187,
+  "updatedAt": "2026-09-01T07:08:11.222Z",
+  "shift": "Foreman - shift 2026-09-01 16:05 AEST (foreman-165)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1221,13 +1221,43 @@
           "consequence": "A real piece of design work, and it cannot be proven to work until your Fable allowance is back - so it would ship untested, which is how the last three dead controls got written."
         }
       ],
-      "recommendation": "A. The road already exists; what it needs is one honest sentence, not a second road nobody can test yet.",
-      "state": "open",
+      "recommendation": "ANSWERED - your reply #77: \"A. The road already exists; what it needs is one honest sentence, not a second road nobody can test yet.\" Recorded verbatim at the TOP of card #368 rather than only in a comment, and the new-button clause is struck from it. The remaining work is small and specific - make the label road say what it really does, and make the second press work - and it is the next shift's first job.",
+      "state": "answered",
       "issueNumber": 368,
       "filedAt": "2026-09-01T15:45:00+10:00"
     }
   ],
   "eyeItems": [
+    {
+      "id": "cog-and-invite-frames-373-372",
+      "title": "Two small things you asked for, side by side - the cog, and Invite lighting up",
+      "question": "One question and it is only about the cog. You asked for a cogwheel and you have one, but it is eight spokes around a circle - and the icon you were replacing, the one you rejected months ago, you rejected in these words: \"eight teeth plus an inner circle, which mushes into a blurred ring at 16px\". So the thing I have put in its place is, described plainly, eight teeth and an inner circle. It survives the small size for a different reason - thin separate strokes rather than a filled gear outline - and to my eye it reads clearly. But that is a judgement about a picture, and yours is the one that counts. The frames are magnified 8x so you can see the actual pixels rather than a re-drawing. If it reads as a blur at real size, say so and it is one key back. Invite needs no question, only a look: resting on the left, hovered on the right.",
+      "frames": [
+        {
+          "key": "crew-eye/96c65ab0-6d04-4323-9ead-a5663a322f80.png",
+          "caption": "THE COG, dark, magnified 8x from the real 16px render. Left is what was there - two horizontal rails with a handle on each, which is the standard drawing of a filter. Right is what ships. This is the pair your question is about.",
+          "arm": "cog - before | after, dark"
+        },
+        {
+          "key": "crew-eye/1e12bfaf-ec3f-4ab7-8203-cbf1f34598ef.png",
+          "caption": "The same pair in the light theme. Both were driven in the running app, not assumed from the file.",
+          "arm": "cog - before | after, light"
+        },
+        {
+          "key": "crew-eye/2d9da2ec-bf26-43df-8d87-85db97d4b6c2.png",
+          "caption": "INVITE, dark, magnified 4x. Resting on the left, pointed at on the right - the dashed circle goes to full white. Your original value for it, unchanged since you asked for it.",
+          "arm": "invite - resting | hover, dark"
+        },
+        {
+          "key": "crew-eye/48867bbf-4849-4732-a249-40d92963558b.png",
+          "caption": "Invite in the light theme: the same lift, dashed grey to near-black. Keyboard focus does the same thing, so it is not mouse-only.",
+          "arm": "invite - resting | hover, light"
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-01",
+      "issueNumber": 373
+    },
     {
       "id": "section-03-frames-365",
       "title": "Your account, rebuilt - six frames, both themes",
@@ -2328,6 +2358,27 @@
   ],
   "pipeline": [
     {
+      "id": "rail-cog-373",
+      "title": "The rail's gear is a cog now - you were right that it read as a filter (#373)",
+      "status": "merged",
+      "prNumber": 377,
+      "note": "Your words: \"this looks more like a filter icon\". It did - the old mark was two horizontal rails with a handle on each, which is how every product on the internet draws \"filter these results\". Nothing else moved: same size, same weight, same place, same behaviour. There is an 8x magnified before-and-after in your gallery. Two things on the card turned out not to match the code and are on the card rather than quietly worked around: it said the gear draws at 17px when it has always drawn at 16 (17 is the size of the rail's destinations), and the icon file's own note calls the cog \"four teeth rather than eight\" when it has eight - which matters, because your objection to the icon it replaced was \"eight teeth plus an inner circle\". I did NOT correct that note, because that block is a byte-for-byte copy of the file you drew and breaking the copy is worse than a wrong comment; the correction lives in the check instead."
+    },
+    {
+      "id": "invite-door-372",
+      "title": "Invite is a real door now - it hovers, and it opens your Members page (#372)",
+      "status": "merged",
+      "prNumber": 378,
+      "note": "Your words: \"the + on invite at the bottom of the lobby rail should now have a hover effect and open into the members setting page as a door\". The dashed + lights up when you point at it, and clicking anywhere on the block - the face, the +, the word - opens Settings straight at Members. It reaches by keyboard too. You asked for this once before and it was held, correctly, because there was nowhere to go; last night's Settings window gave it somewhere, and nothing new had to be built to make the door work. Two things deliberately unchanged: the greyed-out version still exists for any page with no Members page behind it, and the member stack still shows only your own face, because there is still no membership in the product. One bug this nearly shipped and did not: turning that block into a button makes the browser drop our typeface, so the word \"Invite\" would have quietly come out in Arial next to nine labels in our own font - the same fault you spotted yourself as #350, one element change later."
+    },
+    {
+      "id": "hero-try-chips-375",
+      "title": "The TRY chips are gone from casting and the prompt box grew - and it was hiding a worse problem (#375)",
+      "status": "merged",
+      "prNumber": 379,
+      "note": "Your words, said twice: \"we said we would remove the 'try' quick prompts because the casting hero now serves as that now\". You were right at the code - the spec already says clicking a deck card fills the prompt box without submitting, which is exactly what a chip did, so it was two things doing one job and the deck is the one with a real face and a real brief attached. THE PART YOU DID NOT ASK ABOUT AND SHOULD KNOW: you asked to make the box \"slightly bigger\" for balance. Measuring it found the box was cutting your own briefs off. It showed four lines; your briefs run 250-350 characters; typing real briefs of that length at four window sizes, they scrolled out of sight at EVERY size, and on a 1024-wide window even a short one did. So you could not read the end of your own sentence before spending 160 credits on it. It rests at three lines now and holds seven, and all twelve of those measurements now fit. Only the casting page changed - the same box on the candidate sheet was left alone."
+    },
+    {
       "id": "section-03-370",
       "title": "Section 03 - five account windows became three (#365, #267)",
       "status": "merged",
@@ -3350,8 +3401,8 @@
     },
     {
       "id": "queue-shape-165",
-      "title": "The queue tonight: 100 open, your one answer landed, and nothing in it is rotting",
-      "detail": "100 cards open. You answered once last night - \"The quieter mark\" - and it is built, merged and on your page below. Nine cards closed in the last twelve hours. SIX cards still carry your own order: #365 (section 03, the settings and billing modals - the big one, and it unblocks #267), #321 (the icon set’s second half), #325, #285 and #368 (a new one filed while I was working: a shift must stop waiting when no check will ever arrive). #267 is held behind the Settings modal that #365 builds, so #365 releases it. Eight cards carry the urgent label. Your background-work switch is still OFF, which is the whole lever and it is yours - the two things built tonight were both yours by order, which that switch does not gate.\n\nTHE STALE PILE, measured tonight rather than carried: ZERO cards untouched for a week. The last four editions quoted 27 then 29 and said it was drifting up; read at the queue itself just now, every open card has been touched since 25 August. The figure was stale about staleness, which is the joke it deserves.",
+      "title": "The queue tonight: 98 open, three of your orders done - and the stale pile went 0 to 14 for an honest reason",
+      "detail": "98 cards open, 6 urgent. THREE of them were yours by order and all three are built, merged and live tonight - #373, #372 and #375. THREE of your orders are still open: #321 (the icon set's second half - built already, it wants your eye and not a rebuild), #368 (you answered it an hour ago; the small remaining fix is the next shift's first job) and #374 (Section 04, the account menu - a section, not a small one).\n\nTHE STALE PILE, and the number moved a lot: last night's edition said 4 cards had gone a week untouched. Tonight it is 14. That is not a week of neglect - 29 open cards were all filed in one sitting on 25 August, and they are crossing the seven-day line together, in a batch, hours apart. FIFTEEN MORE cross within the next day, so this number goes to about 29 and then stops. Nothing is stuck; they simply need re-reading against the code before anyone trusts what they say, which is the same freshness pass that found four documents contradicting the code last week.\n\nWorth saying because it nearly went in wrong: my first count said ZERO, because it compared dates by day and these are seven days and two hours old. The four the last shift reported were real; so are tonight's fourteen.",
       "state": "open",
       "severity": "warning"
     },
@@ -3551,10 +3602,11 @@
     73,
     74,
     75,
-    76
+    76,
+    77
   ],
   "nextUp": {
-    "readAt": "2026-09-01T05:49:30.384Z",
+    "readAt": "2026-09-01T07:08:23.117Z",
     "items": [
       {
         "issueNumber": 321,
@@ -3567,23 +3619,8 @@
         "urgent": false
       },
       {
-        "issueNumber": 372,
-        "title": "The Invite + becomes a live door into Settings → Members, and gets its hover — the hold is discharged",
-        "urgent": false
-      },
-      {
-        "issueNumber": 373,
-        "title": "The rail's gear becomes P.cog — his eye says the current glyph reads as a filter, and the guard must invert with it",
-        "urgent": false
-      },
-      {
         "issueNumber": 374,
         "title": "SECTION 04 — Account menu: one implementation, and the brief's 'topbar inline menu' is actually the legacy studio's",
-        "urgent": false
-      },
-      {
-        "issueNumber": 375,
-        "title": "Remove the TRY chips from the casting hero and grow the prompt box — filed on a comment 2026-08-30 and lost when #240 closed",
         "urgent": false
       }
     ]
