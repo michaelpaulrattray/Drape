@@ -28,12 +28,40 @@
  * ## What the reconciliation changed (BRIEF-RECONCILIATION Q3)
  *
  * The brief's ladder is five rungs at `2.79¢ … 1.87¢`; **ours is twelve** at
- * 0.036¢ down to 0.016¢. The population of both modes is derived from
+ * 0.036¢ down to 0.016¢ a credit. The population of both modes is derived from
  * `billing.getPlans` in `planLadder.ts` — see its header for the whole reading
  * — and the compare control says `Compare plans` rather than `Compare all 5`.
+ *
+ * ## Card 390 — his six form corrections, and the one thing they must not do
+ *
+ * ⚠ **THE PROTOTYPE WINS ON FORM AND ON NOTHING ELSE.** His own rule, verbatim:
+ * *"the credits and things like that in the mockup are obviously not the same
+ * as the live server that is the source of truth a mockup isnt."* The mockup
+ * draws five rungs called Starter · Pro · Studio · **Agency** · **Network** at
+ * `$149 / $349 / $749` with `6,000` credits on Studio. **`Agency` and `Network`
+ * do not exist**, the rungs at those positions are `Studio Plus` and
+ * `Business`, and the credit figures are ~83× apart. Every name, price, credit
+ * count and perk on this surface comes from `PLAN_TIERS` through
+ * `billing.getPlans`; `section03-guard.test.ts` asserts that no prototype
+ * figure has been typed in.
+ *
+ * The six, and where each lives:
+ *
+ * 1. **The action moved into the middle** — §6c's order is name + unit → price
+ *    → blurb → **action** → credits block → perks, and it ran last, so the
+ *    decision sat behind four lines of detail.
+ * 2. **Annual shows the MONTHLY EQUIVALENT** (`monthlyEquivalent`), everywhere
+ *    including compare mode's row label and the footer primary.
+ * 3. **The per-card perk list is gone** — it was the one fact that does not
+ *    differ, and it is in the footnote where §6d puts such things.
+ * 4. **The unit price is inverted** to credits per dollar
+ *    (`formatCreditsPerDollar`), whole numbers that ASCEND up the ladder.
+ * 5. **§6c's blurb slot ships EMPTY and says so** — the frames line that was
+ *    filling it is what the credits make and now sits in the credits block.
+ * 6. **`.dp-plan__tab--inline`** replaces an inline style override.
  */
 import { useMemo, useState } from "react";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
@@ -43,11 +71,10 @@ import { ConfirmDialog } from "@/foundation";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import "@/features/settings/settings.css";
 import {
-  annualPrice,
-  formatDollars,
   formatShortDate,
   formatWholeDollars,
-  formatCentsPerCredit,
+  formatCreditsPerDollar,
+  monthlyEquivalent,
   monthsFree,
   readBurn,
   readCycle,
@@ -62,6 +89,18 @@ import {
 } from "@/features/settings/planLadder";
 
 type Interval = "monthly" | "annual";
+
+/**
+ * The one thing that is true of every rung, said ONCE for both modes.
+ *
+ * §6d: *"a row where all plans agree carries no decision value; it belongs in
+ * the footnote."* Card mode used to say it twelve times as a check-mark list on
+ * every card and compare mode said it once, correctly, underneath. Two copies
+ * of one sentence in one file is working law 4 in miniature — so there is one,
+ * and the two modes read it.
+ */
+const ONE_FOR_EVERY_PLAN =
+  "Every plan carries every model and every tool — the only differences are the ones shown above.";
 
 export function ChangePlanModal({
   onClose,
@@ -158,6 +197,8 @@ export function ChangePlanModal({
     return rungs;
   }, [plans]);
 
+  const currentName = ladder.find((plan) => plan.id === currentId)?.name ?? null;
+
   const cycle = useMemo(() => readCycle(status), [status]);
   const burn = useMemo(() => (cycle ? readBurn(cycle) : null), [cycle]);
   const projected = cycle && burn ? Math.round(burn.perDay * cycle.cycleLength) : 0;
@@ -174,8 +215,16 @@ export function ChangePlanModal({
     [ladder, currentId, recommended],
   );
 
+  /*
+    ⚠ **EVERY PRICE ON THIS SURFACE IS A MONTH'S PRICE, IN BOTH INTERVALS**
+    (card 390 item 2). The annual toggle used to swap `$159 / month` for
+    `$1,584 / year` beside a `2 MONTHS FREE` badge — a tenfold rise standing
+    next to a claim of a saving, with nothing on screen to check the claim
+    against. The interval now changes the RATE, not the unit, and the year's
+    total is shown at the confirm step, which is where it is charged.
+  */
   const priceOf = (plan: LadderPlan) =>
-    interval === "annual" ? annualPrice(plan.priceInCents) : plan.priceInCents;
+    interval === "annual" ? monthlyEquivalent(plan.priceInCents) : plan.priceInCents;
 
   const act = (plan: LadderPlan) => {
     setPending(plan.id);
@@ -215,9 +264,15 @@ export function ChangePlanModal({
     >
       <header className="dp-set__head">
         <span className="dp-set__title">Change plan</span>
-        <span className="dp-set__workspace">
-          {ladder.find((plan) => plan.id === currentId)?.name ?? "Free"} today
-        </span>
+        {/*
+          ⚠ **THE HEADER SAYS NOTHING UNTIL IT KNOWS**, rather than falling back
+          to `Free`. Found by this card's own no-typed-plan-name arm and worth
+          keeping on its merits: the fallback ran for the moment between opening
+          the modal and `getPlans` landing, so a paying customer's first frame
+          read `Free today`. A blank is honest; a wrong plan name on a billing
+          surface is the one thing a customer would screenshot.
+        */}
+        {currentName ? <span className="dp-set__workspace">{currentName} today</span> : null}
         <button
           type="button"
           className="dp-set__close"
@@ -314,6 +369,7 @@ export function ChangePlanModal({
             onAct={act}
           />
         ) : (
+          <>
           <div className="dp-plan__grid">
             {trio.map((plan) => {
               const isCurrent = plan.id === currentId;
@@ -336,39 +392,38 @@ export function ChangePlanModal({
                   <span className="dp-plan__tierhead">
                     <span className="dp-plan__tiername">{plan.name}</span>
                     <span className="dp-plan__unit">
-                      {formatCentsPerCredit(plan.priceInCents, plan.credits)} A CREDIT
+                      {/*
+                        ⚠ **THE NOUN IS ON THE CARD AND NOT IN COMPARE MODE**,
+                        because compare mode has a row LABEL saying `Credits per
+                        dollar` and the card has nothing. The first draft read
+                        `3,145 PER $1` — looked at in the running app, it is a
+                        number with no unit sitting where `0.036¢ A CREDIT` used
+                        to name one. The old figure was hard to read; a nounless
+                        one is not readable at all.
+                      */}
+                      {formatCreditsPerDollar(plan.priceInCents, plan.credits)} CREDITS PER $1
                     </span>
                   </span>
                   <span className="dp-plan__price">
                     {formatWholeDollars(priceOf(plan))}
-                    <span className="dp-plan__per">
-                      / {interval === "annual" ? "year" : "month"}
-                    </span>
+                    <span className="dp-plan__per">/ month</span>
                   </span>
-                  <span className="dp-plan__credits">
-                    {plan.credits.toLocaleString()}{" "}
-                    <span className="dp-plan__creditsunit">A MONTH</span>
-                  </span>
-                  {frames > 0 ? (
-                    <span className="dp-plan__blurb">
-                      About {frames.toLocaleString()} casting frames.
-                    </span>
+                  {interval === "annual" ? (
+                    <span className="dp-plan__interval">billed yearly</span>
                   ) : null}
-                  <span
-                    className={
-                      rollover.isLoss
-                        ? "dp-plan__rollover dp-plan__rollover--loss"
-                        : "dp-plan__rollover"
-                    }
-                  >
-                    {rollover.text}
-                  </span>
-                  <span className="dp-plan__perks">
-                    <span className="dp-plan__perk">
-                      <Check size={12} strokeWidth={1.8} />
-                      Every model and every tool
-                    </span>
-                  </span>
+                  {/*
+                    ⚠ **§6c'S BLURB SLOT IS DELIBERATELY EMPTY, AND THAT IS THE
+                    HONEST ANSWER RATHER THAN A GAP NOBODY NOTICED** (card 390
+                    item 5). It asks for *"one line, a positioning statement"*.
+                    There is no server field for one, and there never was —
+                    what filled the slot was `About N casting frames`, which is
+                    not a positioning statement but what the CREDITS make, so
+                    it has moved into the credits block below where §6c puts
+                    it. Writing twelve marketing lines here would be inventing
+                    user-visible claims (the quotation-not-requirement law), and
+                    #391 may fold the ladder to seven rungs, so eleven of them
+                    could be discarded copy. **The slot is his to fill: carded.**
+                  */}
                   {isCurrent ? (
                     <span className="dp-plan__here">ON THIS ONE</span>
                   ) : (
@@ -384,10 +439,50 @@ export function ChangePlanModal({
                           : "Downgrade"}
                     </Button>
                   )}
+                  {/*
+                    §6c's CREDITS BLOCK, in its own order: *"credits + A MONTH;
+                    then what it makes; then what expires."* It sits AFTER the
+                    action because §6c puts it there — the decision is made on
+                    the name, the value and the price, and the detail supports
+                    it rather than gating it (card 390 item 1).
+                  */}
+                  <span className="dp-plan__block">
+                    <span className="dp-plan__credits">
+                      {plan.credits.toLocaleString()}{" "}
+                      <span className="dp-plan__creditsunit">A MONTH</span>
+                    </span>
+                    {frames > 0 ? (
+                      <span className="dp-plan__makes">
+                        About {frames.toLocaleString()} casting frames.
+                      </span>
+                    ) : null}
+                    <span
+                      className={
+                        rollover.isLoss
+                          ? "dp-plan__rollover dp-plan__rollover--loss"
+                          : "dp-plan__rollover"
+                      }
+                    >
+                      {rollover.text}
+                    </span>
+                  </span>
                 </article>
               );
             })}
           </div>
+          {/*
+            ⚠ **THE ONE PERK ON THE CARDS WAS THE ONE THAT DOES NOT DIFFER**
+            (card 390 item 3). Every card carried the same `✓ Every model and
+            every tool`, which is §6d's own test of a worthless row —
+            *"a row where all plans agree carries no decision value; it belongs
+            in the footnote"* — applied to a card instead of a table. It is a
+            true sentence and it is not lost: it moves to the footnote, which
+            is the same place compare mode already, correctly, put it.
+            **The check-mark list returns the day a perk actually moves per
+            rung, which today none does.**
+          */}
+          <p className="dp-plan__footnote">{ONE_FOR_EVERY_PLAN}</p>
+          </>
         )}
 
         {/* §6f — the honest version of "Expand credit limit" */}
@@ -427,9 +522,16 @@ export function ChangePlanModal({
             disabled={pending === offered.id}
             onClick={() => act(offered)}
           >
+            {/*
+              The footer primary quotes the SAME monthly figure the columns do
+              — his §6e example is `Upgrade to Agency · $122.58`, which is the
+              monthly equivalent and not the year. A button carrying a year's
+              total under a table of monthly prices is the tenfold read again,
+              on the one control most likely to be pressed.
+            */}
             {pending === offered.id
               ? "Working…"
-              : `Upgrade to ${offered.name} · ${formatDollars(priceOf(offered))}`}
+              : `Upgrade to ${offered.name} · ${formatWholeDollars(priceOf(offered))} / mo`}
           </Button>
         ) : null}
       </footer>
@@ -504,20 +606,28 @@ function CompareGrid({
             : "—",
       },
       {
-        label: "Cost per credit",
+        label: "Credits per dollar",
         mono: true,
-        read: (plan) => formatCentsPerCredit(plan.priceInCents, plan.credits),
+        read: (plan) => formatCreditsPerDollar(plan.priceInCents, plan.credits),
       },
       {
         label: "Unspent credits",
         read: (plan) => rolloverSentence(plan.rolloverPercent).text,
       },
       {
-        label: interval === "annual" ? "Price a year" : "Price a month",
+        /*
+          ⚠ **THE LABEL DOES NOT MOVE WITH THE TOGGLE** (card 390 item 2, and
+          §6d's row 6 says `Price a month` flatly). A comparison whose unit
+          changes under the customer is not a comparison; the interval changes
+          the RATE and the row goes on measuring the same thing.
+        */
+        label: "Price a month",
         mono: true,
         price: true,
         read: (plan) =>
-          formatWholeDollars(interval === "annual" ? annualPrice(plan.priceInCents) : plan.priceInCents),
+          formatWholeDollars(
+            interval === "annual" ? monthlyEquivalent(plan.priceInCents) : plan.priceInCents,
+          ),
       },
     ];
 
@@ -530,9 +640,15 @@ function CompareGrid({
             {plan.name}
             {/* FITS YOUR USE outranks YOU ARE HERE — §6d. */}
             {plan.id === recommendedId ? (
-              <span className="dp-plan__tab" style={{ position: "static", display: "inline-block" }}>
-                FITS YOUR USE
-              </span>
+              /*
+                ⚠ **A MODIFIER, NOT AN INLINE STYLE** (card 390 item 6). This
+                read `style={{ position: "static", display: "inline-block" }}`,
+                which made `.dp-plan__tab` correct in only one of its two
+                contexts — the card's absolute tab — and left the other one
+                overridden at the element. *"Inline styles beating a class is
+                how the CSS drifts."*
+              */
+              <span className="dp-plan__tab dp-plan__tab--inline">FITS YOUR USE</span>
             ) : plan.id === currentId ? (
               <span className="dp-plan__youarehere">YOU ARE HERE</span>
             ) : null}
@@ -570,8 +686,17 @@ function CompareGrid({
         ))}
       </div>
       <p className="dp-plan__footnote">
-        Every plan carries every model and every tool — the rows above are the only things
-        that change.
+        {ONE_FOR_EVERY_PLAN}
+        {/*
+          ⚠ **THE TABLE HAS TO SAY THIS TOO** — found by looking at the frames
+          rather than by the arms. Item 2 keeps the row label at `Price a
+          month`, which is right: a comparison whose unit moves under the
+          customer is not a comparison. But then the annual table shows `$132`
+          with nothing anywhere saying the charge arrives once a year, while
+          each CARD carries `billed yearly` under its price. A table that omits
+          the thing the cards state is the same lie a step quieter.
+        */}
+        {interval === "annual" ? " Annual plans are charged once a year." : ""}
       </p>
     </div>
   );
