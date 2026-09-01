@@ -206,13 +206,13 @@ export function AppChrome({
                   className="w-full h-full rounded-full object-cover"
                 />
               ),
-              // Same card the old rail's user row opened — parity, not a redesign.
+              /* Section 04 (#374) — `UserCard` is THE account menu, and this is
+                 its one live consumer. The avatar above is the chip you click;
+                 the menu no longer repeats it, so no image props come down
+                 here any more. */
               menu: (
                 <UserCard
-                  userInitial={(user.name ?? "?").charAt(0).toUpperCase()}
                   userName={user.name ?? "Account"}
-                  profileImage={avatarUrl}
-                  profileIdentity={user}
                   creditsBalance={creditsData?.balance ?? 0}
                   role={user.role}
                   onOpenSettings={() => account.openSettings("profile")}

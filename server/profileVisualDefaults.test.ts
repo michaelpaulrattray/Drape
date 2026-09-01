@@ -42,8 +42,16 @@ describe("profile visual defaults", () => {
       // in-app page mounts, so this arm covers the casting surfaces too rather
       // than the lobby alone. The lobby is not listed twice — it has no avatar
       // of its own any more, and asserting one there would be asserting a copy.
+      //
+      // SECTION 04 (#374, 2026-09-01) — `UserCard.tsx` came OFF this list, and
+      // for the third time it is a move rather than a loss. The account menu
+      // deliberately draws no avatar now; the founder's §2a: *"You just clicked
+      // the avatar to open this; repeating it 30px below tells you nothing and
+      // costs the width that makes the two lines fit."* The avatar for that
+      // surface is the CHIP — the same `ProfileAvatar` call, in `AppChrome.tsx`
+      // above, one line up, still asserted. Listing the menu as well would be
+      // asserting a copy, which is the reason the lobby is not listed twice.
       "client/src/components/AppChrome.tsx",
-      "client/src/components/UserCard.tsx",
       "client/src/features/studio/components/StudioSlimHeader.tsx",
       "client/src/features/boards/BoardHeader.tsx",
       /*

@@ -423,19 +423,71 @@ button.dp-invite:focus-visible .dp-memberstack__add {
 }
 
 /* Opens down and right-aligned — the chip is at the viewport's other edge now. */
+/*
+  THE ACCOUNT MENU'S SHELL (section 04 §2, #374), set from the prototype at
+  `Klieg Studio.dc.html:179` rather than adjusted toward it — his §3 measured
+  the shipped menu about 15% larger than designed and named the reason: *"a menu
+  is a place where 1px per row compounds visibly."*
+
+  ⚠ **`--r-lg` IS 12px HERE, NOT THE 11px HIS BRIEF ANNOTATES IT WITH.** §2 asks
+  for `var(--r-lg)` and comments it `11px`; the token whose value is 11px is
+  `--r-md`, and the prototype's own literal is `11px`. The value is the thing he
+  drew, so `--r-md` is what this takes.
+
+  Rows are full-bleed — `padding: 0` and `overflow: hidden` on the shell — which
+  is why the row radius is zeroed below. `--shadowCard` rather than `--shadowPop`
+  because the prototype's literal `0 12px 34px rgba(17,17,18,.14)` IS
+  `--shadowCard`, exactly.
+*/
 .dp-account-menu {
   position: absolute;
   right: 0;
   top: calc(100% + var(--s-3));
   z-index: 40;
-  width: 200px;
-  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  width: 216px;
   border: 1px solid var(--borderCard);
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow: var(--shadowPop);
+  box-shadow: var(--shadowCard);
+  overflow: hidden;
   animation: dp-scaleIn var(--t-mid) var(--ease) both;
   transform-origin: right top;
+}
+
+/*
+  ⚠ **THE TWO RULES BELOW ARE SCOPED TO THIS MENU ON PURPOSE.** `.dp-menuitem`
+  and `.dp-menugroup` are the row grammar SHARED with `LobbyUtilityMenu` (00b's
+  whole point — the two shipped the same hover twice and drifted). Section 04's
+  departures belong to the account menu alone: the
+  utility menu is inset by its own 6px shell padding, so its rows keep their
+  radius, and a `border-top` on its `HELP` heading would draw a rule across the
+  top of the panel.
+
+  **Every separator here is `--fillStrong`, never `--rule`** (§2, §4). It is
+  heavier than a hairline on purpose: these divide GROUPS, and the group
+  structure is what makes the menu readable at a glance. The one `--rule` in the
+  menu is the hairline that fills the STAFF heading's row, which divides nothing.
+
+  The 13px horizontal padding is off the spacing scale (4 / 6 / 8 / 10 / 12) and
+  stays a literal, as this file's own `.dp-projswitch` already does — §3 is
+  explicit that values come FROM the prototype, and 12px would be the adjusting-
+  toward it forbids.
+*/
+.dp-account-menu .dp-menuitem {
+  padding: 8px 13px;
+  border-radius: 0;
+}
+
+.dp-account-menu .dp-menugroup {
+  padding: 9px 13px 5px;
+  border-top: 1px solid var(--fillStrong);
+}
+
+/* Leaving the account is the last group of one, so it carries the last rule. */
+.dp-account-menu .dp-menuitem--accent {
+  border-top: 1px solid var(--fillStrong);
 }
 
 /* Below ~720px the rail is icon-only (README §7). */
@@ -2139,37 +2191,53 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   color: var(--metaStrong);
 }
 
+/*
+  THE IDENTITY BLOCK (section 04 §2a). Two stacked lines and no avatar: you just
+  clicked the avatar to open this menu, and repeating it 30px below tells you
+  nothing while costing the width that makes the second line fit.
+
+  `.dp-menu__avatar` and `.dp-menu__rule` are gone with it — the avatar had one
+  consumer and this was it, and the free-standing rule above Sign out is now a
+  `border-top` on the row itself, so the last group is divided the same way as
+  every other group.
+*/
 .dp-menu__identity {
   display: flex;
-  align-items: center;
-  gap: var(--s-4);
-  padding: var(--s-4) var(--s-5) var(--s-5);
-}
-
-.dp-menu__avatar {
-  width: 30px;
-  height: 30px;
-  flex: none;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 1px solid var(--border);
+  flex-direction: column;
+  gap: 1px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--fillStrong);
 }
 
 .dp-menu__name {
-  font: 500 12.5px var(--font-sans);
+  font: 500 12px var(--font-sans);
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+  `1,240 credits · Owner` — the balance answers *what can I spend*, the role
+  answers *what am I allowed to do*, and that pair is the thing the avatar
+  cannot say. A bare balance duplicated the chip in the same bar.
+
+  Baseline-aligned, because the two faces have different metrics and aligning
+  the boxes would leave the number sitting low.
+*/
+.dp-menu__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-1);
+  min-width: 0;
+  font: 400 10.5px var(--font-sans);
+  color: var(--metaStrong);
 }
 
 /* A measured number is set in mono, wherever it appears (README §2). */
-.dp-menu__meta {
-  font: 400 10.5px var(--font-mono);
-  color: var(--faint);
-}
-
-.dp-menu__rule {
-  height: 1px;
-  margin: var(--s-1) 0;
-  background: var(--border);
+.dp-menu__balance {
+  flex: none;
+  font-family: var(--font-mono);
 }
 
 /*

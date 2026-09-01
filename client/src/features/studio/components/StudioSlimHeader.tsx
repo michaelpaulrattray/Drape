@@ -9,6 +9,39 @@
  * referral / log out. Tool switching does not relocate — navigation between
  * environments happens via the lobby and the library chooser (the
  * decomposition law: the USER composes the sequence).
+ *
+ * ---------------------------------------------------------------------------
+ * ⚠ **THE PROFILE POPOVER BELOW IS THE PRODUCT'S SECOND ACCOUNT MENU, AND IT IS
+ * DELIBERATELY FROZEN. DO NOT "FIX" IT, DO NOT PORT IT, DO NOT DELETE IT.**
+ * (#374, 2026-09-01.)
+ *
+ * Section 04 set out to collapse the two account menus into one. The founder
+ * answered the question before a line was written, verbatim and entire:
+ *
+ *   > *"legacy casting studio is getting retired thats the answer it doesnt
+ *   > need a new menu"*
+ *
+ * So the drift between this menu and `components/UserCard.tsx` is real and is
+ * NOT repaired by convergence. `UserCard` is THE account menu — it is what
+ * `AppChrome` renders into the topbar — and this one keeps whatever it has
+ * until its host goes.
+ *
+ * **Its host is one file: `pages/DrapeStudio.tsx`**, the legacy studio, sealed
+ * behind the admin role since #364 and retiring at N8. (`BoardHeader.tsx`
+ * mentions this component in a comment and does not render it; its own avatar
+ * popover carries a balance and a Top up button and no account actions at all.)
+ * So this menu is reachable today by an admin, on a page that is going.
+ *
+ * **Why the comment rather than the edit:** removing a working menu from a
+ * surface he can still open is a behaviour change he did not order, and
+ * rebuilding it would be building against a page scheduled for deletion. The
+ * next reader who finds two account menus and no explanation would "fix" one of
+ * them — which is exactly how this was re-derived twice already. This paragraph
+ * is the deliverable that stops a third time.
+ *
+ * `client/src/components/accountMenuPopulation.test.ts` names this file as the
+ * known second with its expiry, so the day `DrapeStudio` goes the arm tightens
+ * rather than silently passing — and a THIRD account menu reddens it now.
  */
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, PanelLeft } from 'lucide-react';

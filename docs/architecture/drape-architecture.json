@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "db76014e26f59480"
+    "sourceFingerprint": "b253576bb3d9b221"
   },
   "domains": [
     {
@@ -10427,6 +10427,10 @@
       "path": "client/src/appRoutes.test.ts"
     },
     {
+      "id": "test:client/src/components/accountMenuPopulation.test.ts",
+      "path": "client/src/components/accountMenuPopulation.test.ts"
+    },
+    {
       "id": "test:client/src/components/appChrome.test.ts",
       "path": "client/src/components/appChrome.test.ts"
     },
@@ -13969,7 +13973,7 @@
     },
     {
       "from": "module:client/src/components/UserCard.tsx",
-      "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {

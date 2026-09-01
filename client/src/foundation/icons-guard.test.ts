@@ -211,14 +211,31 @@ describe("one gear, not two", () => {
    * it is a removed one; so the subject is swapped and the guard still fails
    * the day a SECOND gear appears, in whichever direction it appears.
    */
-  it("P.settings is drawn nowhere while P.cog is the gear", () => {
+  /**
+   * ⚠ **THIS ARM WATCHED `foundation/` ALONE UNTIL #374, AND THE SECOND GEAR
+   * IT EXISTS TO CATCH WAS ABOUT TO APPEAR OUTSIDE IT.** The account menu is
+   * `components/UserCard.tsx`; brief 04 §2b instructs it to draw `P.settings`,
+   * believing that key is now a cog. It is not — it is the two-slider mark, the
+   * filter glyph his own #373 was complaining about — so following that
+   * sentence literally would have put the filter mark on a Settings row, one
+   * click from the rail's real gear, and this arm would have stayed green
+   * because the file is one directory over.
+   *
+   * The walk is the whole client now. Measured before widening it: `P.settings`
+   * appears in no client source at all, so nothing legitimate is being banned.
+   */
+  it("P.settings is drawn nowhere in the client while P.cog is the gear", () => {
     expect(RAIL).toMatch(/P\.cog/);
     const sources = fs
-      .readdirSync(path.resolve(CLIENT_SRC, "foundation"))
-      .filter((name) => name.endsWith(".tsx") && name !== "icons.tsx")
-      .map((name) => code(read(`foundation/${name}`)));
-    for (const source of sources) {
-      expect(source).not.toMatch(/P\.settings/);
+      .globSync("**/*.tsx", { cwd: CLIENT_SRC })
+      .map((name) => name.split(path.sep).join("/"))
+      .filter((name) => name !== "foundation/icons.tsx" && !name.endsWith(".test.tsx"));
+    expect(sources.length, "a walk that found nothing would pass vacuously").toBeGreaterThan(50);
+    expect(sources).toContain("components/UserCard.tsx");
+    for (const name of sources) {
+      expect(code(read(name)), `${name} draws the filter mark as a gear`).not.toMatch(
+        /P\.settings/,
+      );
     }
   });
 
@@ -450,6 +467,47 @@ describe("the topbar six are the house set's, not Lucide's", () => {
   });
 
   /**
+   * THE ACCOUNT MENU'S SIX (#374, brief 04 §5): *"`Settings`, `Users`,
+   * `CreditCard`, `LogOut`, `LayoutDashboard` and `Eye` all gone from the
+   * Lucide import."* Same both-halves shape as the five above — the house glyph
+   * is drawn AND the name it replaced is not imported — because a file that
+   * dropped the import while drawing nothing passes either half alone.
+   *
+   * ⚠ Settings draws **`P.cog`**, not `P.settings`. `P.settings` in this tree
+   * is the two-slider mark, which is how FILTERS are drawn; §2b's instruction
+   * to use `P.settings` assumes a fresh icon drop that has not arrived. The cog
+   * he means is `P.cog`, and #382's ruling put it there by pointing AT this
+   * menu: *"it should be a cog like in the top bar profile drop down menu."*
+   * The one-gear arm above still holds — `P.settings` is drawn nowhere.
+   */
+  it("the account menu draws the house set and imports none of the six", () => {
+    const USER_CARD = read("components/UserCard.tsx");
+    for (const [glyph, lucide] of [
+      ["cog", "Settings"],
+      ["people", "Users"],
+      ["card", "CreditCard"],
+      ["grid", "LayoutDashboard"],
+      ["shield", "Eye"],
+      ["exit", "LogOut"],
+    ] as const) {
+      expect(code(USER_CARD), `the account menu stopped drawing P.${glyph}`).toMatch(
+        new RegExp(`P\\.${glyph}\\b`),
+      );
+      expect(lucideNames(USER_CARD), `${lucide} came back`).not.toContain(lucide);
+    }
+  });
+
+  it("and it sets no stroke by hand — Icon fixes it at 1.7", () => {
+    /*
+      The last hand-set stroke in the chrome went with #321(c). This one was
+      `strokeWidth={1.8}` on every row, which is why the menu's glyphs read
+      heavier than the rail's directly above them.
+    */
+    expect(code(read("components/UserCard.tsx"))).not.toMatch(/strokeWidth/);
+    expect(/strokeWidth/.test("<Settings size={13} strokeWidth={1.8} />")).toBe(true);
+  });
+
+  /**
    * ⚠ The POSITIVE CONTROL for both halves at once. Every arm above is a pair
    * of assertions that are each individually satisfiable by an empty file — a
    * `not.toContain` over a source with no Lucide import at all passes, and so
@@ -506,6 +564,54 @@ describe("the product's glyphs are the founder's handoff, unmodified", () => {
 
   it("every path string matches his, exactly", () => {
     expect(pBlock(ICONS)).toBe(pBlock(fs.readFileSync(HANDOFF, "utf8")));
+  });
+
+  /**
+   * ⚠ **ONE GLYPH IN THIS SET WAS NOT DRAWN BY HIM, AND IT MUST NEVER STOP
+   * SAYING SO** (#374).
+   *
+   * Brief 04 §2e instructs the Sign out row to draw `P.exit` *"from
+   * `icons.tsx`"*. There was no `exit` in either copy of his file — the fresh
+   * drop §2b describes has not arrived — so the row could not carry the icon he
+   * ruled it must carry. It is lucide's `log-out` path, copied rather than
+   * redrawn on #382's own precedent, and **mirrored into his file so the arm
+   * above still catches a transcription slip in the other 27**.
+   *
+   * That mirroring is the risk this arm answers. #382 established that both
+   * copies move together — *"his own newer word, applied to both files in one
+   * act"* — but #382 was copying a mark he had POINTED AT. Here he named a key
+   * and not a drawing, so a stand-in now sits inside the file that is supposed
+   * to be his authorship. **The declaration is the only thing separating the
+   * two, and a declaration nothing checks is a comment.**
+   *
+   * When his set gains an `exit`, take his: this arm's list empties and the
+   * arm goes with it.
+   */
+  const STAND_INS = ["exit"] as const;
+
+  it("a glyph the founder did not draw declares itself, in BOTH copies", () => {
+    for (const source of [ICONS, fs.readFileSync(HANDOFF, "utf8")]) {
+      for (const key of STAND_INS) {
+        const entry = pBlock(source).indexOf(`\n  ${key}:`);
+        expect(entry, `no ${key} entry`).toBeGreaterThan(-1);
+        // The docblock immediately above it, back to the previous entry.
+        const preamble = pBlock(source).slice(0, entry);
+        const declaration = preamble.slice(preamble.lastIndexOf("/*"));
+        expect(
+          declaration,
+          `${key} is a stand-in for a glyph he owns and must say so where it is drawn`,
+        ).toMatch(/stand-in for a glyph he owns/);
+      }
+    }
+  });
+
+  it("the declaration arm would see one that stopped saying it", () => {
+    const stripped = "export const P = {\n  /* a gear */\n  exit: 'M9 21H5',\n} as const;";
+    const entry = pBlock(stripped).indexOf("\n  exit:");
+    const preamble = pBlock(stripped).slice(0, entry);
+    expect(/stand-in for a glyph he owns/.test(preamble.slice(preamble.lastIndexOf("/*")))).toBe(
+      false,
+    );
   });
 
   it("the comparison would see one changed digit", () => {

@@ -196,6 +196,29 @@ export const P = {
   bell:     'M12 4a5.5 5.5 0 0 0-5.5 5.5c0 4-1.5 5.5-1.5 5.5h14s-1.5-1.5-1.5-5.5A5.5 5.5 0 0 0 12 4zM10 18.5a2 2 0 0 0 4 0',
   shield:   'M12 3.5l7 2.5v6c0 4-3 7-7 8.5-4-1.5-7-4.5-7-8.5V6zM9 12l2.2 2.2L15.5 10',
   book:     'M5 4h14v16l-7-3.5L5 20z',
+
+  /*
+   * Leaving the account — the account menu's last row (#374, brief 04 §2e).
+   *
+   * ⚠ **HIS BRIEF SAYS `P.exit` IS IN `icons.tsx` AND IT IS NOT** — not in the
+   * committed `drape-redesign/icons.tsx`, not in the superseded
+   * `icons-original.tsx`. The fresh drop §2b promises has not arrived, and the
+   * row cannot carry an icon he ruled it must carry without one.
+   *
+   * **So this is lucide-react's `log-out` (ISC), path copied rather than
+   * redrawn** — the same answer #382 reached for `cog`, and for its reason:
+   * *"he pointed at a mark on his screen and a hand-drawn near-miss is a third
+   * gear."* A door open on the left, an arrow leaving through it. Drawn
+   * through `Icon`, so it takes this set's 1.7 stroke rather than lucide's 2.
+   *
+   * lucide writes the arrow as a `<polyline>` and the bar as a `<line>`; both
+   * are rewritten as subpaths here because `Icon` splits on M and renders
+   * nothing else. Three subpaths.
+   *
+   * **It is his to overwrite.** The moment his set gains an `exit`, take his:
+   * this is a stand-in for a glyph he owns, and it is flagged as one on #374.
+   */
+  exit:     'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
 } as const;
 
 export type IconName = keyof typeof P;
