@@ -234,13 +234,39 @@
   produce. The `+` alone read as a broken control, which was his complaint;
   one real face beside it reads as an opening.
 
-  ⚠ **AND THE SECOND HALF OF HIS SENTENCE IS THE REASON EVERYTHING BELOW
-  STAYS AS IT IS.** `cursor: default` stays, `aria-disabled` stays, the
-  *"not built yet"* title stays, and `.dp-memberstack__add` still has no
-  `:hover`. He asked for the hover and for *"make it live"* in one breath
-  (see `.dp-memberstack__add` below); *"keep it stubbed out"* is him
-  answering that himself. A face that made this look finished would be the
-  invented-data failure wearing a different costume.
+  ⚠ **THE SECOND HALF OF HIS SENTENCE HELD EVERYTHING BELOW INERT, AND IT IS
+  DISCHARGED (#372, his order 2026-09-01, verbatim): *"the + on invite at the
+  bottom of the lobby rail should now have a hover effect and open into the
+  members setting page as a door"*.**
+
+  The hold was correct when it was written and its reason is gone rather than
+  overruled. It read: *"He asked for the hover and for 'make it live' in one
+  breath"* — and the first could not be done, because there was no Members
+  surface to open, so a hover would have been an affordance on a control that
+  went nowhere. `SettingsModal`'s `members` section now exists and
+  `openSettings("members")` already opens at it. The two always travelled
+  together; they land together.
+
+  ⚠ **THE STUB SHAPE IS NOT DELETED — IT IS THE `:not(button)` HALF BELOW**,
+  and that is deliberate. `Rail.tsx` renders a `<button>` only where a
+  destination was passed, so a surface with nowhere to go still gets
+  `aria-disabled`, `cursor: default`, *"not built yet"* and no hover. The
+  honesty is structural, not remembered.
+
+  ⚠ **AND THE MEMBER STACK IS UNTOUCHED.** There is still no membership model
+  — no table, no endpoint — so it still renders only rows a server produced.
+  The DOOR opens; the STACK stays stubbed, which is his own *"keep it stubbed
+  out until membership exists"*.
+
+  ⚠ **`font` IS SET HERE NOW AND IT IS LOAD-BEARING — #350's DEFECT WOULD HAVE
+  REPEATED THROUGH THE ELEMENT CHANGE.** `.dp-rail__label` carries only
+  `font-size: 9.5px`; family and weight are INHERITED. A `<button>` does not
+  inherit them — the UA stylesheet gives it the system font — so promoting this
+  block from `<span>` to `<button>` would have quietly rendered `Invite` in
+  Arial beside nine labels in the app's sans, which is #350 exactly: a label
+  outside a rail item inheriting past the thing that was supposed to style it.
+  The value is `.dp-rail__item`'s own, so the foot and the destinations cannot
+  drift apart.
 */
 .dp-invite {
   display: flex;
@@ -248,7 +274,20 @@
   align-items: center;
   gap: var(--s-2);
   cursor: default;
+  /* Button reset. FAMILY AND WEIGHT ONLY — never a size: #350 rules that the
+     rail label size lives on .dp-rail__label and nowhere else, and the
+     shorthand would have quietly put a second copy of it here. */
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-sans);
+  font-weight: 400;
 }
+
+/* The live shape. Only what differs from the stub — a second full block here
+   is the drift a modifier exists to prevent. */
+button.dp-invite { cursor: pointer; }
 
 .dp-memberstack {
   display: flex;
@@ -306,25 +345,31 @@
 /*
   Dashed, because it is an opening rather than a person.
 
-  ⚠ **NO `:hover` RULE, AND ITS ABSENCE IS THE DECISION** (#281). He asked
-  for two things in one breath — *"Make it live"* and *"give the `+` its hover
-  back"* — and the first cannot be done: there is no Members surface to open,
-  so dropping `aria-disabled` would produce a control that looks clickable and
-  goes nowhere. The hover was justified BY the liveness (*"looks disabled
-  rather than inviting"* — inviting to click), so the two travel together.
+  ⚠ **THE HOVER IS BACK, AND IT IS SCOPED TO THE LIVE SHAPE (#372).** #281
+  held it, and the hold's own words say why it is now safe: *"the hover was
+  justified BY the liveness ('looks disabled rather than inviting' — inviting
+  to click), so the two travel together"*. They do, and they arrive together:
+  the rule below fires only inside `button.dp-invite`, which `Rail.tsx` renders
+  only where a Members destination was passed.
 
-  And the house pattern he ratified for stubs says the same thing out loud:
-  `.dp-rail__item--stub:hover` and `.dp-menuitem--stub:hover` both CANCEL
-  hover — *"quiet, no hover, no cursor change"*. A hover response on the one
-  inert affordance in the rail that has none would contradict the rule he set
-  for the rest of it.
+  So the house stub pattern is intact rather than contradicted. Where there is
+  nowhere to go the block is still a `<span>`, still `aria-disabled`, and this
+  selector still does not match it — the same *"quiet, no hover, no cursor
+  change"* that `.dp-rail__item--stub:hover` and `.dp-menuitem--stub:hover`
+  give the other stubs.
 
-  Both land together the day membership exists.
+  His value, unchanged from the day he asked for it: `--ink` on the border.
 */
 .dp-memberstack__add {
   border: 1px dashed var(--muted);
   background: var(--surface);
   color: var(--metaStrong);
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+button.dp-invite:hover .dp-memberstack__add,
+button.dp-invite:focus-visible .dp-memberstack__add {
+  border-color: var(--ink);
 }
 
 /* Colour only. The 9.5px lives on `.dp-rail__label` itself (#350) so that it

@@ -189,6 +189,10 @@ export function AppChrome({
             ]
           : [],
         onOpenSettings: () => account.openSettings("profile"),
+        /* #372 — the Invite block's door. `openSettings(section)` is the same
+           call the account menu's three rows already make; the rail needed a
+           destination, not a mechanism. */
+        onOpenMembers: () => account.openSettings("members"),
       }}
       account={
         user
