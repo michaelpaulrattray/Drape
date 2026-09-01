@@ -1,7 +1,7 @@
 {
-  "edition": 192,
-  "updatedAt": "2026-09-01T11:34:00.000Z",
-  "shift": "Foreman - shift 2026-09-01 21:30 AEST (foreman-169)",
+  "edition": 193,
+  "updatedAt": "2026-09-01T11:56:00.000Z",
+  "shift": "Foreman - shift 2026-09-01 21:56 AEST (foreman-169)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1241,7 +1241,7 @@
   "eyeItems": [
     {
       "id": "account-menu-374-frames",
-      "title": "Your account menu, rebuilt from your drawing - and it was 16px NARROWER than you thought, not wider",
+      "title": "You said the account menu is perfect - closed. Frames kept for reference.",
       "question": "No question, a look and one correction you will probably enjoy.\n\nWHAT CHANGED. Everything in the menu is now set from your prototype rather than nudged toward it. The avatar is gone from inside the menu - you just clicked it to open the thing, so drawing it again 30px below was costing the width. In its place the second line now reads \"1,240 credits · Owner\": the number in the typewriter face because it is measured, the words in the normal one. Every group is separated by a real line now instead of a barely-there one, the rows run edge to edge, and all seven rows carry an icon including Sign out - your own reversal, and you were right that half-and-half reads as an oversight.\n\nTHE CORRECTION, and it is about your section 3. You wrote that the menu should be 216px and \"looks like ~240px\" - about 15% too big. Measured on the shipped menu before I touched it: it was 200px. It was 16 pixels too NARROW, not 24 too wide. Two of your other three figures were already correct - the labels were 12px and the row padding was 8px, exactly as specified.\n\nSo your reading was right and your numbers were not. It DID read loose - because of the avatar block and a slightly oversized name, not because of its width. Every value comes off your prototype either way, which is what you asked for. I am telling you because a wrong number left standing is how a future brief inherits it.",
       "frames": [
         {
@@ -1265,37 +1265,27 @@
           "arm": "in context, dark"
         }
       ],
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-01",
       "issueNumber": 374
     },
     {
       "id": "section-03-form-381-frames",
-      "title": "Settings, rebuilt from your drawing - four frames, both themes",
+      "title": "You answered the Usage type question - prototype, 19px, normal face - and it is built. New frames below.",
       "question": "Two things worth your eye, and one of them is a real question.\n\nTHE LOOK. These are the panes as they ship, photographed in the running app in both themes. Usage is the one you enumerated: one bordered card, three columns, each column stacking. Storage is a card with its own label and the note under the bar. Security has every row as its own card with Delete account tinted red.\n\nTHE QUESTION, and it is small. On the Usage card, the three numbers are in the typewriter face at 22px, because your card said mono and your brief says \"values in mono; they are measured numbers.\" Your PROTOTYPE draws them in the normal face at 19px. I went with your card and the brief - two artifacts against one - and wrote the disagreement into the code so it is one line to reverse. If the numbers read too big or too typewritery beside everything else, say so and it goes back to 19 and the normal face.\n\nOne thing you may notice in the frames that is NOT a defect: the account shown is the test bot, so the plan says Studio and the numbers are its numbers, not yours.",
       "frames": [
         {
-          "key": "crew-eye/91104c79-216e-46c7-b798-aaf2943f860b.png",
-          "caption": "DARK, Usage. One bordered card in three columns; each column reads label, then number, then note. Storage below it is now a card of its own with the figure on the label's line, the bar full width beneath, and the note under the bar. Before tonight this pane had NO bordered box on it at all - measured, not remembered.",
-          "arm": "Usage, dark"
+          "key": "crew-eye/65e7adf6-2bef-41cf-ab5e-9c0a416ed4a1.png",
+          "caption": "DARK, the Usage card as it ships now. The three numbers are 19px in the normal face, exactly as your prototype draws them - they were 22px in the typewriter face until your answer.",
+          "arm": "usage numbers after your ruling, dark"
         },
         {
-          "key": "crew-eye/c5335693-3b23-4c96-bc17-6b5bdbb318b6.png",
-          "caption": "LIGHT, the same pane. This is the one to judge the number size on - the typewriter face at 22px against the rest of the panel.",
-          "arm": "Usage, light"
-        },
-        {
-          "key": "crew-eye/a1f33b2d-789f-4692-9e99-623b747b362e.png",
-          "caption": "DARK, Security. Six rows, six cards, and Delete account is the red-tinted one. Before tonight all six sat in one undivided column separated by hairlines, so the row that permanently deletes your account looked exactly like the row that shows which email you signed in with.",
-          "arm": "Security, dark"
-        },
-        {
-          "key": "crew-eye/7f70bb4f-5ee5-462b-b645-1e6e2ba4a72e.png",
-          "caption": "LIGHT, Profile. The fields stack now - label, box, note - the way your drawing has them, instead of a label on the left with a narrow box pinned to the right. Workspace name is shown and disabled with the real name in it, the same treatment Email has, rather than an empty slot with a grey chip in it.",
-          "arm": "Profile, light"
+          "key": "crew-eye/632c9a4c-a439-48cd-aeb8-8bfdd38259e7.png",
+          "caption": "LIGHT, the same card. The zeros are real for the test account this was photographed on - it has a balance and has never spent. It is NOT evidence about the zero you reported on your own account, which is a separate problem and is card #387.",
+          "arm": "usage numbers after your ruling, light"
         }
       ],
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-01",
       "issueNumber": 381
     },
@@ -2454,6 +2444,13 @@
   ],
   "pipeline": [
     {
+      "id": "usage-numbers-381b",
+      "title": "The Usage numbers are 19px in the normal face now - your answer, built (#381)",
+      "status": "merged",
+      "prNumber": 393,
+      "note": "You said: \"prototype - 19px, normal face\". That is what they are.\n\nWhy they were not already: your own card for section 03 specified those numbers as 22px in the typewriter face, and your brief says \"Values in mono; they are measured numbers\". Your prototype draws them at 19px in the normal face. So two of the three things we had said mono and your drawing said otherwise - and counting them would have given the wrong answer.\n\nRather than pick, last night's shift built your card's version, wrote the disagreement into the file, and put the question on the frames. You answered in two hours. That is the shape worth keeping: where your own instructions disagree with your own drawing, it is a question for you rather than a judgement for us.\n\nOnly the three numbers changed. The label above them and the small note below them also differ from your prototype and are untouched - you were asked about the numbers and answered about the numbers."
+    },
+    {
       "id": "account-menu-374",
       "title": "Your account menu is built from your drawing now - and the second menu it was meant to merge with turned out to be the drawing itself (#374)",
       "status": "merged",
@@ -3511,8 +3508,8 @@
     },
     {
       "id": "queue-shape-169",
-      "title": "The queue tonight: 98 open, and SIX of them are your orders now",
-      "detail": "98 cards open. 6 marked urgent. SIX are yours - #231 (the reader court, which needs the Fable seat and cannot run while your allowance is out), #321, and FOUR you sent tonight: #387, #390, #391 and #374, which closed an hour ago.\n\n#391 is the one that is not really a UI card: folding the plan ladder from twelve rungs to six is a pricing decision, and it is yours rather than a shift's.\n\n14 have sat untouched for over a week - unchanged from last night, because tonight went to your order rather than the stale pile.\n\nOne thing about the shape: you sent three cards tonight while a shift was mid-build. None was lost - a shift re-reads the queue before it opens anything, which is the only reason they were seen.",
+      "title": "The queue tonight: 97 open, and FIVE of them are your orders",
+      "detail": "97 cards open. FIVE are yours: #231 (the reader court - it needs the Fable seat and cannot run while your allowance is out), and four sent tonight - #387, #390, #391 and #392.\n\n#321 CLOSED tonight, which is the one worth noticing: it had been restated in five handoffs in a row as \"built, waiting on your eye\". Edition 190 asked you directly instead of restating it a sixth time, and it closed within the day.\n\n#391 is not really a UI card - folding the plan ladder from twelve rungs to six is a pricing decision, and it is yours rather than a shift's. #392 is a one-attribute bug: a suspended customer's only appeal link still points at the old domain.\n\n14 have sat untouched for over a week - unchanged, because tonight went to your orders rather than the stale pile. All four patrol clocks are now due or overdue, and they keep losing to your cards. That is the right order; it is worth saying out loud that it has a cost.\n\nYou sent four cards tonight while shifts were mid-build. None was lost - a shift re-reads the queue before it opens anything, which is the only reason they were seen the same night.",
       "severity": "info",
       "state": "open"
     },
@@ -3736,19 +3733,16 @@
     76,
     77,
     78,
-    79
+    79,
+    80,
+    81
   ],
   "nextUp": {
-    "readAt": "2026-09-01T11:25:13.547Z",
+    "readAt": "2026-09-01T11:52:45.213Z",
     "items": [
       {
         "issueNumber": 231,
         "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
-        "urgent": true
-      },
-      {
-        "issueNumber": 321,
-        "title": "The icon set's second half: his 27 glyphs, the redrawn Assets, and four rail/topbar defects — none of it queued because #280 closed",
         "urgent": true
       },
       {
@@ -3763,7 +3757,12 @@
       },
       {
         "issueNumber": 391,
-        "title": "His direction: fold the plan ladder from twelve rungs to six — a pricing decision, not a UI card",
+        "title": "His ladder ruling: twelve rungs fold to SEVEN, with the top one hidden and offered by email on request",
+        "urgent": false
+      },
+      {
+        "issueNumber": 392,
+        "title": "A suspended customer's only appeal link points at the pre-rebrand domain — one invisible attribute, not a branding change",
         "urgent": false
       }
     ]
