@@ -1,55 +1,90 @@
 /**
- * UserCard — avatar/name/credits header plus the account actions:
- * Settings, Billing, Share Drape, and (for privileged roles) the Admin
- * and Moderation tools, then Sign out.
+ * UserCard — THE account menu. Name and balance, the three account rows,
+ * the staff group for privileged roles, then Sign out.
  *
- * Rendered inside the lobby rail's profile popover (its only live consumer —
- * the studio slim header grew its own inline menu). Colors are tokens, never
- * hardcoded light values: the popover sits on var(--surface), which is dark
- * in the default theme. Role gating mirrors the server:
- * Admin needs role === 'admin' (adminProcedure), Moderation shows for
- * admins and moderators (moderatorProcedure).
+ * Rendered by `AppChrome.tsx` into `Topbar`'s `account.menu` slot — the
+ * topbar's avatar chip is its only live consumer since section 02 moved the
+ * account out of the rail's foot. Role gating mirrors the server: Admin needs
+ * `role === 'admin'` (adminProcedure), Moderation shows for admins and
+ * moderators (moderatorProcedure).
  *
  * ---------------------------------------------------------------------------
- * Section 00b (`docs/specs/Casting-ui-ux-design/drape-redesign/00b-chrome-and-menus.md`)
- * brought this onto the foundation grammar. **What it does is unchanged** —
- * same items, same handlers, same role gating, same modals. What changed is
- * how it is set:
+ * ## Section 04 (`.../drape-redesign/04-account-menu.md`, #374)
  *
- *  - `fontWeight: 600` in three places is gone. The foundation says of itself
- *    that 600 "is never used" (`foundation/index.ts`), and this file was the
- *    largest single source of the violation.
- *  - The credit balance is mono. It is a measured number, and measured numbers
- *    are mono everywhere else in the product.
- *  - The `<style>` block is gone. It shipped the same hover that
- *    `LobbyUtilityMenu` shipped separately, which is how the two drifted; it
- *    lives in `foundation.css` as `.dp-menuitem`, once.
- *  - Tailwind spacing and `rounded-lg` gave way to the `--s-*` and `--r-*`
- *    scales.
- *  - The staff group has a `STAFF` heading. It was two bare dividers with no
- *    label, which reads as an accident rather than a section.
- *  - `Moderator` reads `Moderation`, so both labels name a place.
+ * Set from the prototype (`design_handoff_studio/Klieg Studio.dc.html:179-202`)
+ * rather than adjusted toward it — §3's own instruction, because *"a menu is a
+ * place where 1px per row compounds visibly."*
  *
- * ⚠ **THE COUNT PILLS ARE PROP-DRIVEN AND NOTHING PASSES THEM YET.** The look
- * is here and proven (`section00b-guard.test.ts`), and it omits at zero rather
- * than rendering `(0)`. The NUMBERS are section 01's — `START-HERE.md` assigns
- * them there in as many words ("Staff count badges … covered in brief 01 §3"),
- * they need a server reader that does not exist (pending change requests +
- * unanswered Crew cards; audit rows above `info` in 24h), and 00b's own scope
- * clause excludes "any change to what the menus do". Wiring a new query into
- * the lobby's account menu is exactly that change. So 01 passes the numbers and
- * this file does not grow a query.
+ * ⚠ **THE BRIEF'S §1 TABLE COMPARES THIS FILE AGAINST HIS OWN DRAWING AND
+ * CALLS THE DRAWING A FILE.** Its right-hand column is headed *"The topbar's
+ * inline menu"*; the topbar renders THIS component and has no inline menu. Read
+ * at the artifacts (#374, and the table is corrected in the brief itself):
+ * every row of that column is the PROTOTYPE — `Owner · Klieg Studio` verbatim,
+ * a shield for Admin, a list for Moderation — and two of the five are
+ * impossible for any code file, because the only other account menu in the tree
+ * (`StudioSlimHeader.tsx`) has no staff group at all.
+ *
+ * **The defect it reports is real all the same**: two account menus exist and
+ * they have drifted. His answer settles what to do about the other one —
+ * *"legacy casting studio is getting retired thats the answer it doesnt need a
+ * new menu"* — so `StudioSlimHeader`'s is FROZEN, not ported and not deleted,
+ * and it dies with `DrapeStudio` at N8. `accountMenuPopulation.test.ts` is the
+ * arm that stops a THIRD one growing.
+ *
+ * What changed here, and why each one:
+ *
+ *  - **No avatar in the identity block** (§2a). You just clicked the avatar to
+ *    open this; repeating it 30px below costs the width that makes the two
+ *    lines fit.
+ *  - **`1,240 credits · Owner`** — balance in mono because it is a measured
+ *    number, `credits · Owner` in the sans face. A bare balance duplicated the
+ *    chip in the same bar; pairing it with the role answers *what can I spend*
+ *    and *what am I allowed to do* in one line, which is the pair the avatar
+ *    cannot say. **No workspace name** — it is in the topbar's project chip and
+ *    the Settings header already, so it is the one of the three that can go.
+ *    ⚠ `Owner` is a stub and is declared as one: `WORKSPACE_ROLE_LABEL`.
+ *  - **Every row carries an icon, Sign out included** (§2b), and they come from
+ *    the house set at `Icon`'s fixed 1.7 stroke — the hand-set `strokeWidth`
+ *    is gone with the Lucide import. His own reversal, verbatim: *"I first
+ *    specified icons on the staff rows only … That was wrong twice over"* —
+ *    nobody infers a category from an absence, and the `STAFF` heading does
+ *    that job explicitly. With all six iconed, the count pill becomes the ONLY
+ *    thing marking a staff row, which is exactly right: the pill means *there
+ *    is work waiting*.
+ *  - **Settings draws `P.cog`, not `P.settings`.** ⚠ §2b asks for a fresh
+ *    `icons.tsx` in which `P.settings` is a cog and the two-slider mark has
+ *    become `P.filters`. **That drop has not arrived** — both copies of his
+ *    icon file still have `settings` as the two-slider mark and neither has a
+ *    `filters` key — so using `P.settings` here would ship the filter/settings
+ *    collision the brief is warning against. The cog he means is `P.cog`, put
+ *    there by his own #382 (*"it should be a cog like in the top bar profile
+ *    drop down menu"* — this menu), and `P.settings` stays the unused fallback
+ *    his #373 word preserved.
+ *
+ * ⚠ **THE COUNT PILLS ARE STILL PROP-DRIVEN AND NOTHING PASSES THEM.** The look
+ * is proven (`section00b-guard.test.ts`) and it omits at zero rather than
+ * rendering `(0)`. The NUMBERS are section 01's — they need a server reader that
+ * does not exist (pending change requests + unanswered Crew cards; audit rows
+ * above `info` in 24h) — and §4 says in as many words: *"Do not add a query to
+ * this component for the staff numbers. They arrive as props."*
+ *
+ * ---------------------------------------------------------------------------
+ * ## Section 00b, still binding
+ *
+ *  - `fontWeight: 600` is never used; the foundation says so about itself.
+ *  - The `<style>` block is gone — the hover lives in `foundation.css` as
+ *    `.dp-menuitem`, once, shared with `LobbyUtilityMenu`. That sharing is why
+ *    section 04's departures from the shared grammar are scoped to
+ *    `.dp-account-menu` rather than written into the row itself.
+ *  - The staff group has a `STAFF` heading; `Moderator` reads `Moderation`, so
+ *    both labels name a place.
  */
 import { useLocation } from 'wouter';
-import { Settings, CreditCard, Users, LogOut, LayoutDashboard, Eye } from 'lucide-react';
+import { Icon, P, WORKSPACE_ROLE_LABEL } from '@/foundation';
 import { showsMenuCount } from '@/foundation/menuCount';
-import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
 interface UserCardProps {
-  userInitial: string;
   userName: string;
-  profileImage?: string | null;
-  profileIdentity?: { name?: string | null; email?: string | null } | string;
   creditsBalance: number;
   role?: string | null;
   /** Pending change requests + unanswered Crew cards. Omitted at zero. See §01. */
@@ -64,10 +99,7 @@ interface UserCardProps {
 }
 
 export function UserCard({
-  userInitial,
   userName,
-  profileImage,
-  profileIdentity,
   creditsBalance,
   role,
   adminCount,
@@ -84,19 +116,10 @@ export function UserCard({
   return (
     <div className="dp-menu">
       <div className="dp-menu__identity">
-        <span className="dp-menu__avatar">
-          <ProfileAvatar
-            src={profileImage}
-            identity={profileIdentity ?? userName ?? userInitial}
-            alt="Profile"
-            className="w-full h-full object-cover"
-          />
-        </span>
-        <span className="flex-1 min-w-0 flex flex-col">
-          <span className="dp-menu__name truncate">{userName}</span>
-          <span className="dp-menu__meta truncate">
-            {creditsBalance.toLocaleString()} credits
-          </span>
+        <span className="dp-menu__name">{userName}</span>
+        <span className="dp-menu__meta">
+          <span className="dp-menu__balance">{creditsBalance.toLocaleString()}</span>
+          <span>credits · {WORKSPACE_ROLE_LABEL}</span>
         </span>
       </div>
 
@@ -113,9 +136,9 @@ export function UserCard({
         row is the consolidation, not a capability loss — his own list for this
         menu names three items and this is not one of them.
       */}
-      <UserMenuItem icon={Settings} label="Settings" onClick={onOpenSettings} />
-      <UserMenuItem icon={Users} label="Members & invites" onClick={onOpenMembers} />
-      <UserMenuItem icon={CreditCard} label="Billing & credits" onClick={onOpenBilling} />
+      <UserMenuItem glyph={P.cog} label="Settings" onClick={onOpenSettings} />
+      <UserMenuItem glyph={P.people} label="Members & invites" onClick={onOpenMembers} />
+      <UserMenuItem glyph={P.card} label="Billing & credits" onClick={onOpenBilling} />
 
       {isModerator && (
         <>
@@ -125,14 +148,14 @@ export function UserCard({
           </div>
           {isAdmin && (
             <UserMenuItem
-              icon={LayoutDashboard}
+              glyph={P.grid}
               label="Admin"
               count={adminCount}
               onClick={() => navigate('/admin/overview')}
             />
           )}
           <UserMenuItem
-            icon={Eye}
+            glyph={P.shield}
             label="Moderation"
             count={moderationCount}
             onClick={() => navigate('/moderator')}
@@ -140,14 +163,14 @@ export function UserCard({
         </>
       )}
 
-      <div className="dp-menu__rule" />
-      <UserMenuItem icon={LogOut} label="Sign out" onClick={onLogout} accent />
+      <UserMenuItem glyph={P.exit} label="Sign out" onClick={onLogout} accent />
     </div>
   );
 }
 
 interface UserMenuItemProps {
-  icon: React.ComponentType<{ size?: number | string; strokeWidth?: number | string }>;
+  /** A path from the house set. Never a Lucide component — `Icon` fixes stroke. */
+  glyph: string;
   label: string;
   onClick: () => void;
   /** Rendered as a pill on the right. Omitted at zero — never `(0)`. */
@@ -155,14 +178,14 @@ interface UserMenuItemProps {
   accent?: boolean;
 }
 
-function UserMenuItem({ icon: Icon, label, onClick, count, accent }: UserMenuItemProps) {
+function UserMenuItem({ glyph, label, onClick, count, accent }: UserMenuItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`dp-menuitem${accent ? ' dp-menuitem--accent' : ''}`}
     >
-      <Icon size={13} strokeWidth={1.8} />
+      <Icon d={glyph} size={13} />
       <span className="dp-menuitem__label">{label}</span>
       {showsMenuCount(count) ? <span className="dp-menucount">{count}</span> : null}
     </button>

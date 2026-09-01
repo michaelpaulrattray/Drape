@@ -286,9 +286,40 @@ describe("the staff group is a section rather than an accident", () => {
     expect(USER_CARD).not.toMatch(/label="Moderator"/);
   });
 
-  it("sets the credit balance in mono", () => {
+  /**
+   * ⚠ **THE WHOLE LINE WAS MONO UNTIL #374 AND ONLY THE NUMBER SHOULD BE.**
+   *
+   * 00b set `.dp-menu__meta` — then a bare `1,240 credits` — in mono entire,
+   * on the right principle stated slightly too wide: a measured number is
+   * mono, and `credits` is a word. Section 04 §2a makes the line
+   * `1,240 credits · Owner`, so the two faces are now visible side by side and
+   * the seam matters: the balance is mono, everything after it is the sans
+   * face, and the row is baseline-aligned because the two have different
+   * metrics.
+   *
+   * The arm is split rather than moved, so the mono half cannot be quietly lost
+   * while the sans half passes.
+   */
+  it("sets the credit balance in mono, and only the balance", () => {
     // It is a measured number. Measured numbers are mono everywhere else.
-    expect(block(FOUNDATION_CSS, ".dp-menu__meta")).toMatch(/font:\s*400 10\.5px var\(--font-mono\)/);
+    expect(block(FOUNDATION_CSS, ".dp-menu__balance")).toMatch(
+      /font-family:\s*var\(--font-mono\)/,
+    );
+    const line = block(FOUNDATION_CSS, ".dp-menu__meta");
+    expect(line).toMatch(/font:\s*400 10\.5px var\(--font-sans\)/);
+    expect(line, "the words beside the number are not a measured number").not.toMatch(
+      /--font-mono/,
+    );
+    expect(line, "two faces on one line align on the baseline, never the box").toMatch(
+      /align-items:\s*baseline/,
+    );
+  });
+
+  it("the balance and the words are actually separate elements", () => {
+    // A single span cannot carry two faces, so this is what makes the rule
+    // above expressible at all — and it is the shape a reversion would undo.
+    expect(USER_CARD).toMatch(/<span className="dp-menu__balance">/);
+    expect(USER_CARD).toMatch(/credits · \{WORKSPACE_ROLE_LABEL\}/);
   });
 });
 

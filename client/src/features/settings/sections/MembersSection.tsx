@@ -26,7 +26,7 @@
  * Reviewer line is the one that sells the feature: it tells an agency they can
  * bring a client in without risk."*
  */
-import { Icon, P } from "@/foundation";
+import { Icon, P, WORKSPACE_ROLE_LABEL } from "@/foundation";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 
 import { SettingsGroup, SettingsList, StubControl, StubNote } from "../parts";
@@ -83,8 +83,10 @@ export function MembersSection({
                 <span className="dp-set__note">{user.email ?? ""}</span>
               </span>
               <span className="dp-set__spacer" />
+              {/* #374 — the same word the account menu now shows beside the
+                  balance, read from one constant so the two cannot drift. */}
               <StubControl reason="Roles are not built yet">
-                <StubNote>OWNER</StubNote>
+                <StubNote>{WORKSPACE_ROLE_LABEL.toUpperCase()}</StubNote>
               </StubControl>
             </div>
           </SettingsList>
