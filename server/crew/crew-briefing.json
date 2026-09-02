@@ -1,7 +1,7 @@
 {
-  "edition": 209,
-  "updatedAt": "2026-09-02T07:21:27.019Z",
-  "shift": "Foreman — night of 2 September (your darker line is live, THE PROGRAM is at the top of this page, and eight stale rows below are cleared)",
+  "edition": 210,
+  "updatedAt": "2026-09-02T08:46:37.510Z",
+  "shift": "Foreman — night of 2 September (the fourth list of finished work is gone from this page, and the one section that was empty now tells you what it is for)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1391,10 +1391,35 @@
   ],
   "eyeItems": [
     {
+      "id": "history-deleted-438",
+      "title": "The long list of finished work is gone, and the empty section now says what it is for",
+      "question": "You asked whether ALREADY DEALT WITH and NOT DONE YET were sections you even needed. I measured both before answering, and they turned out to be in opposite states — so the answer is different for each, and the numbers are the reason.\n\nALREADY DEALT WITH was drawing 281 rows. It was the FOURTH place this page told you something was finished: WORKING NOW names the last shifts and what each shipped, THE PROGRAM ticks a milestone's steps as they land, and that block listed everything, forever. It is gone.\n\nNOT DONE YET was drawing NOTHING, because every one of its 163 rows had already merged — and that is the argument for KEEPING it. It is the only place on this page a piece of work shows up that is blocked, or waiting on you, or in review, and is not in NEXT UP and not a milestone step. Delete it and that work is invisible until someone happens to open GitHub, which is exactly what happened to you before.\n\nSo what it needed was not deleting, it was an honest empty line. It used to say \"Nothing is in flight. Everything the crew has started has landed.\" — which describes the rows and teaches you nothing. It now says \"Nothing is stuck. Blocked work and anything waiting on you appears here.\" The second sentence is the point: an empty box should tell you what a FULL one would mean, otherwise \"nothing is stuck\" and \"this section is broken\" look identical.\n\nNothing was thrown away. Every merged row and every answered card is still in the file behind this page, and that file is in version control.\n\nWorth two minutes: scroll to the bottom of this page. It is shorter, and the third frame shows you what NOT DONE YET will look like the next time something actually is stuck.",
+      "state": "open",
+      "filedAt": "2026-09-02T08:46:37.510Z",
+      "issueNumber": 438,
+      "frames": [
+        {
+          "key": "crew-eye/70b30769-ebfb-4fb7-a34e-98f6867450ab.png",
+          "arm": "the bottom of this page · dark",
+          "caption": "The end of the page now: FOR YOUR EYES, then NOT DONE YET, then PROBLEMS, then GENERAL. The 281-row list that used to sit between NOT DONE YET and PROBLEMS is gone."
+        },
+        {
+          "key": "crew-eye/ffaf9772-2e20-414e-b492-94cc0e9cbf32.png",
+          "arm": "the empty section, close up",
+          "caption": "NOT DONE YET with nothing stuck — which is today. Read the sentence: it tells you what would appear here, so an empty box is information rather than a maybe-broken one."
+        },
+        {
+          "key": "crew-eye/adddc358-b27a-4c6d-b159-8a541ade4666.png",
+          "arm": "the same section with something in it",
+          "caption": "The same section driven with one row deliberately marked still-moving. This is what you would see if work were stuck — the line disappears and the row takes its place. I checked this rather than only checking the empty case, because an empty-only check passes when the section is broken."
+        }
+      ]
+    },
+    {
       "id": "line-and-order-437",
       "title": "Your darker line is live, and this page has been reordered",
       "question": "Two things you asked for, both shipped tonight, and one number I would rather you had than found.\n\nFIRST, the line. The two 'alert feed' frames are Admin → Overview. The short vertical ticks joining one alert to the next used to sit 19 shades of 255 away from the card behind them, which is exactly why you could not see them; they are now 55 away in light and 57 in dark. That is your option D. Worth two minutes on the real page rather than the frame — a screenshot flatters a faint line.\n\nSECOND, this page. THE PROGRAM is now first, then WORKING NOW, then NEXT UP, as you asked.\n\n⚠ THE NUMBER: the program block is tall, so WORKING NOW now begins about two screens down on a normal window. Before tonight THE PROGRAM was nearly FOUR screens down, so the trade went the way you chose — but two screens is more than 'below the fold' and you should hear it from me. I have deliberately not shrunk, collapsed or pinned the banner, because that is the split you already declined. If it reads badly, one word and it becomes a new instruction.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T07:21:27.020Z",
       "issueNumber": 437,
       "frames": [
@@ -2976,6 +3001,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-447-history-deleted",
+      "title": "The fourth list of finished work is deleted; the one empty section explains itself",
+      "status": "merged",
+      "note": "#438 — your question, answered with a measurement: 281 rows in one section and none in the other, so one went and one stayed.",
+      "prNumber": 447
+    },
+    {
       "id": "pr-443-alert-connector",
       "title": "The line between your alerts is one you can follow now",
       "status": "merged",
@@ -4130,11 +4162,18 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0902-late",
-      "title": "The queue: 78 open, 22 carrying your word, 1 urgent, 8 rotting",
-      "detail": "Measured tonight rather than carried: 78 open, 22 of them founder-ordered, 1 urgent (#231, the reader court, which needs the Fable seat), 6 parked.\n\nRotting — open a week and never re-read against the code — is 8, and it is worth knowing WHICH eight: every one is a Lost-and-Found or designed-but-unbuilt card filed on 25 August (#10, #14, #18, #22, #30, #55, #61, #65). None is a bug and none is waiting on a shift; they are ideas parked until something asks for them. So the rotting number is stable rather than growing, and it is not a backlog of broken things.\n\n⚠ The honest caveat, repeated from last night: the drop from 27 to 8 came from a large clear-out earlier today, not from anything a shift did. Two nights now at 8, which starts to look like the real floor.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are still overdue. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
+      "id": "queue-shape-0902-night",
+      "title": "The queue: 75 open, 18 carrying your word, 1 urgent, 8 rotting — the same eight as last night",
+      "detail": "Measured tonight, not carried over. 75 open (was 78), 18 of them ordered by you, 6 parked. One urgent: #231, the reader court, which needs the Fable seat and cannot run on this one.\n\nRotting — open a week and never re-read against the code — is 8, and it is the SAME EIGHT as last night, by number: #10, #14, #18, #22, #30, #55, #61, #65. Every one is a Lost-and-Found or designed-but-unbuilt card from 25 August. None is a bug and none is waiting on a shift; they are ideas parked until something asks for them. So the number is stable rather than growing, which is the thing a bare count cannot tell you.\n\n⚠ Three fell off the open list tonight and only one of them was built: #438 (this shift), #445 (its fix had merged this morning while its card stayed open — a record fix, not a build), and one closed elsewhere. One new card was filed: #448, a type inconsistency this shift's own new check turned up in a different section, filed rather than fixed under a card about this one.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are still overdue. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
       "severity": "info",
       "state": "open"
+    },
+    {
+      "id": "queue-shape-0902-late",
+      "title": "The queue: 78 open, 22 carrying your word, 1 urgent, 8 rotting",
+      "detail": "Replaced by tonight's reading, the row below this one.\n\n— resolved 2 September (#438).\n\nMeasured tonight rather than carried: 78 open, 22 of them founder-ordered, 1 urgent (#231, the reader court, which needs the Fable seat), 6 parked.\n\nRotting — open a week and never re-read against the code — is 8, and it is worth knowing WHICH eight: every one is a Lost-and-Found or designed-but-unbuilt card filed on 25 August (#10, #14, #18, #22, #30, #55, #61, #65). None is a bug and none is waiting on a shift; they are ideas parked until something asks for them. So the rotting number is stable rather than growing, and it is not a backlog of broken things.\n\n⚠ The honest caveat, repeated from last night: the drop from 27 to 8 came from a large clear-out earlier today, not from anything a shift did. Two nights now at 8, which starts to look like the real floor.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are still overdue. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "queue-shape-174",
@@ -4405,10 +4444,11 @@
     97,
     98,
     99,
-    100
+    100,
+    101
   ],
   "nextUp": {
-    "readAt": "2026-09-02T07:22:37.835Z",
+    "readAt": "2026-09-02T08:44:39.186Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4496,18 +4536,8 @@
         "urgent": false
       },
       {
-        "issueNumber": 438,
-        "title": "Delete ALREADY DEALT WITH from the Crew tab; keep THE PIPELINE and give it an honest empty state",
-        "urgent": false
-      },
-      {
         "issueNumber": 441,
         "title": "The open row needs a background — an expanded profile is the same colour as every other row",
-        "urgent": false
-      },
-      {
-        "issueNumber": 445,
-        "title": "Text entry never wears the accent focus ring — the red box on every non-foundation text field, fixed at the root (his frame, 2 Sep)",
         "urgent": false
       }
     ]
