@@ -112,9 +112,58 @@ describe("§1 — a paragraph's order does not move", () => {
     expect(body.indexOf("item.question")).toBeLessThan(body.indexOf("item.frames.map"));
   });
 
-  it("working now is mounted above the program banner", () => {
+  /**
+   * ⚠ **INVERTED, NOT DELETED (#437, 2026-09-02).** This arm read *"working now
+   * is mounted above the program banner"* and pinned #272's reasoning. **The
+   * founder reversed it** — *"yes the easier fix"*, taking THE PROGRAM whole to
+   * the top of the page — so the arm now pins HIS order instead. An arm removed
+   * to let a change through stops guarding the thing it was written for.
+   *
+   * ⚠ **And it pins the WHOLE order rather than the one pair it used to.** Two
+   * of the three comments this move overturned were arguing for adjacencies no
+   * test had ever held, so a later shift could have restored either of them and
+   * nothing would have gone red. The section order of this page is the founder's
+   * repeatedly, and it is the thing he actually looks at; it is worth deriving
+   * from one list.
+   *
+   * A deliberate future reorder edits this list and quotes him, exactly as this
+   * one did.
+   */
+  /* The card is named in the docblock above rather than in this title: the
+     foundation token guard reads `#437` in a STRING as a hex literal (every
+     issue number from #100 up is valid hex) and strips comments, which is what
+     its own failure message tells you to do. */
+  it("the page is mounted in the order he ruled", () => {
     const body = code(PAGE_TEXT);
-    expect(body.indexOf("<CrewWorkingNow")).toBeLessThan(body.indexOf("<CrewProgramBanner"));
+    /* His table on #437, top to bottom. */
+    const HIS_ORDER = [
+      "<CrewProgramBanner",
+      "<CrewWorkingNow",
+      "<CrewNextUp",
+      "<CrewBackgroundWork",
+      "<CrewNeedsYou",
+      "<CrewEyeGallery",
+      "<CrewPipeline",
+      "<CrewRecentHistory",
+      "<CrewProblems",
+      "<CrewGeneral",
+    ];
+    const at = HIS_ORDER.map((tag) => {
+      const index = body.indexOf(tag);
+      /* A section that stops being mounted must REDDEN, never quietly sort to
+         the front — `indexOf` returns -1, which is less than everything. */
+      expect(index, `${tag} is not mounted`).toBeGreaterThan(-1);
+      return index;
+    });
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+  });
+
+  it("POSITIVE CONTROL: the order matcher fires on the arrangement that was here", () => {
+    const was = "<CrewWorkingNow /><CrewBackgroundWork /><CrewProgramBanner /><CrewNextUp />";
+    const at = ["<CrewProgramBanner", "<CrewWorkingNow", "<CrewNextUp"].map((t) =>
+      was.indexOf(t),
+    );
+    expect(at).not.toEqual([...at].sort((a, b) => a - b));
   });
 });
 

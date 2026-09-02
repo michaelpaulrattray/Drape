@@ -271,16 +271,54 @@ export default function AdminCrew() {
 
         {stateQuery.data && (
           <>
-            {/* ABOVE the program (#272). Everything below this describes what
-                the team has DONE; this is what it is doing to his product right
-                now, and it is the only thing on the page that outranks the
-                briefing. `now` comes from the same ticker the "checked" stamp
+            {/* FIRST ON THE PAGE, on his own instruction (#437, 2026-09-02):
+                he was offered a split that would put only the one-line mission
+                up here — with a recommendation FOR it — and answered "yes the
+                easier fix", taking the whole banner instead.
+
+                ⚠ **The cost is known and accepted, and is not a defect to
+                report later**: this is the tallest block on the page (chips,
+                mission, focus, his quote, milestone, progress, steps, rungs),
+                so WORKING NOW sits below the fold on a short window. Do NOT
+                "help" by shrinking, collapsing, truncating or making it sticky
+                — every one of those is the split he declined wearing a
+                different name. If it reads badly he will say so, and that will
+                be a new instruction. */}
+            <CrewProgramBanner program={stateQuery.data.briefing.program} />
+
+            {/* ⚠ REVERSED BY HIS ORDER (#437). This said "ABOVE the program
+                (#272) … the only thing on the page that outranks the briefing"
+                — honest reasoning that lost to his, not clutter, and kept here
+                so nobody restores the old order as a fix.
+
+                It still leads everything that describes what the team has
+                DONE. `now` comes from the same ticker the "checked" stamp
                 uses, so the strip's "14 min ago" and the page's freshness can
                 never disagree. */}
             <CrewWorkingNow shiftRuns={stateQuery.data.shiftRuns} now={now} />
 
-            {/* Directly under it (#277): the two answer one question — what is
-                happening while he is not looking. */}
+            {/* WHAT IS PLANNED (#290) — moved directly under WORKING NOW on
+                his instruction (#437, 2026-09-02: *"moving the next up card in
+                the crew tab under working now"*). What is happening and what
+                happens next are one question in two halves, and four sections
+                used to sit between them.
+
+                ⚠ **Its own earlier reasoning is REVERSED and kept**: it said
+                "it sits under Needs You rather than above it because a
+                question waiting on him outranks a queue that is merely next."
+                NEXT UP is now ABOVE Needs You, which is exactly what that
+                sentence argued against. A docblock left arguing the opposite
+                of the code is the failure this repository keeps re-finding. */}
+            <CrewNextUp
+              nextUp={stateQuery.data.briefing.nextUp}
+              cards={stateQuery.data.briefing.needsYou}
+            />
+
+            {/* ⚠ ITS ADJACENCY IS BROKEN BY HIS ORDER (#437), and the reason
+                is kept rather than deleted: #277 put this directly under
+                WORKING NOW because "the two answer one question — what is
+                happening while he is not looking." NEXT UP now sits between
+                them on his word. The reasoning was sound; it lost to his. */}
             <CrewBackgroundWork
               workState={stateQuery.data.workState}
               cardIntents={stateQuery.data.cardIntents}
@@ -291,8 +329,6 @@ export default function AdminCrew() {
               pending={workSwitchMutation.isPending}
               intentPendingCard={cardIntentMutation.isPending ? flyingCard : null}
             />
-
-            <CrewProgramBanner program={stateQuery.data.briefing.program} />
 
             <CrewNeedsYou
               cards={stateQuery.data.briefing.needsYou}
@@ -308,17 +344,6 @@ export default function AdminCrew() {
               acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}
               onSend={send}
-            />
-
-            {/* WHAT IS PLANNED (#290) — the missing middle. The page now reads
-                working now → what needs you → next up → what is not done →
-                one history block: four short answers to four questions he
-                actually asks, instead of one 107-row scroll. It sits under
-                Needs You rather than above it because a question waiting on
-                him outranks a queue that is merely next. */}
-            <CrewNextUp
-              nextUp={stateQuery.data.briefing.nextUp}
-              cards={stateQuery.data.briefing.needsYou}
             />
 
             <CrewPipeline items={stateQuery.data.briefing.pipeline} />
