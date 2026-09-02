@@ -1,7 +1,7 @@
 {
-  "edition": 221,
-  "updatedAt": "2026-09-02T18:57:43.569Z",
-  "shift": "Foreman — night of 3 September (two thirds of what we ship was never checked; now it is, and every door into the live site is written down)",
+  "edition": 222,
+  "updatedAt": "2026-09-02T20:18:58.201Z",
+  "shift": "Foreman — night of 3 September (the two counters in your account menu had never once shown a number)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1478,6 +1478,26 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "menu-badges-416",
+      "title": "Two counters that had never shown a number — and what the Moderation one is about to tell you about your own account",
+      "state": "open",
+      "filedAt": "2026-09-02T20:18:58.201Z",
+      "issueNumber": 416,
+      "question": "You asked for a count beside Admin and beside Moderation in the account menu. Both are live.\n\nWhat is worth ten seconds of your eye is not that they work — it is WHAT THEY SAY. Admin 5 is five change requests waiting on you, the same five the Change requests tab shows. Moderation 1 is one account whose credits and records disagree.\n\nIn the frames that account is our test bot. ON YOUR OWN SITE IT WILL BE YOU, at −11,600 — and I would rather you saw that here than discovered it by clicking. Nothing is frozen and nothing is at risk. But that number was recorded as +1,050 a week ago, so it has moved a long way with nobody watching, and it is filed (#462) for a proper look at the rows.\n\nThe question for you, if you have a view: MODERATION counts things to ACT on — flagged referrals plus credit mismatches. The older written plan said it should count audit-log entries instead. I went against that on purpose, because the audit log fills every day whether anything is wrong or not, so it would never read zero and would stop meaning anything. Say the word and it changes.",
+      "frames": [
+        {
+          "key": "crew-eye/8f4142d0-e6f3-45cf-924d-f7a98a54f725.png",
+          "arm": "The account menu — dark",
+          "caption": "Admin 5, Moderation 1. Until this shift both were blank, always, whatever the numbers were."
+        },
+        {
+          "key": "crew-eye/0fc0acdc-631a-4151-a9c5-460c91ab6b43.png",
+          "arm": "The account menu — light",
+          "caption": "The same menu in the light theme. At zero the pill disappears entirely rather than drawing a (0)."
+        }
+      ]
+    },
     {
       "id": "count-pill-415",
       "title": "The requests waiting on you are on the bar of every admin page now — and one frame shows why it nearly shipped wrong",
@@ -3224,6 +3244,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-463-menu-badges",
+      "title": "The Admin and Moderation counters in your account menu work now — they never had",
+      "status": "merged",
+      "prNumber": 463,
+      "note": "#416, your ask on 1 September: “in the profile drop down menu in the top bar next to admin and moderator the notification count should sit next to each also e.g admin 4 or moderator 6”.\n\nThe odd part is that the menu could already draw them. The two little number pills were designed, built, styled and placed months ago — and the one screen that opens the menu was handing them nothing at all. So they sat there, permanently blank, and nothing looked broken: no error, no red test, just a menu that never said anything. Two lines of wiring were missing.\n\nThey are wired, and I checked them in the running app rather than trusting the tests: the menu now reads Admin 5, Moderation 1 — the exact numbers in the database at that moment. Frames for both themes are in your gallery below.\n\nWHAT EACH ONE COUNTS, because I had to choose and you can change either in a sentence. ADMIN is requests waiting on you — the same number as the pill on the Change requests tab and the card on Overview, so the three can never disagree. MODERATION is things a moderator must ACT on: flagged referrals plus accounts whose credits and records disagree. The old written plan said it should count audit-log entries instead, and I did not follow it — the audit log fills up every day whether anything is wrong or not, so that badge would never be zero, and a number that is always lit tells you nothing.\n\n⚠ ONE THING TO EXPECT. When you open the menu it will say Moderation 1, and clicking through shows YOUR account, flagged over a credit discrepancy of −11,600. Nothing has frozen and nothing is at risk — that scan has been look-only since February and freezes nobody. But the code's own notes record that number as +1,050 a week ago, so it has drifted a long way with nothing noticing. I have written it up with the full arithmetic and one unproven lead (it tracks suspiciously close to the cost of failed generations, which may be counted as charged when they were never charged). It needs an hour at the actual rows before anyone touches the formula."
+    },
+    {
       "id": "pr-459-push-paths",
       "title": "Nothing reaches the live site unchecked — and every way in is written down",
       "status": "merged",
@@ -4434,6 +4461,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0903-late",
+      "title": "The queue: 75 open, 11 carrying your word, 1 urgent, 8 rotting — the same eight for a sixth night",
+      "severity": "info",
+      "state": "open",
+      "detail": "Measured at close. 75 open (was 74 — I closed one and filed two). 11 of them are cards you ordered; 6 parked.\n\nOne urgent, and it has now been stepped over by five shifts in a row: #231, the reader court. That is not neglect — a court is judgement work and these night shifts run on the cheaper model, which is not the seat for it. Four shifts declined it quietly and none of them left the marker that switches the next shift to the reviewing model. I have written that marker tonight, so the next shift takes #231 and nothing else.\n\nRotting — open a week, never re-read against the code — is 8, and it is the SAME EIGHT as the last five nights: #10, #14, #18, #22, #30, #55, #61, #65. All Lost-and-Found or designed-but-unbuilt from 25 August. None is a bug and none waits on you. Stable, not growing."
+    },
+    {
       "id": "queue-shape-0903-night",
       "title": "The queue: 74 open, 14 carrying your word, 1 urgent, 8 rotting — the same eight for a third night",
       "detail": "Measured tonight. 74 open (was 75), 14 of them ordered by you, 6 parked. One urgent: #231, the reader court — it needs the Fable seat and cannot run on this one.\n\nRotting — open a week and never re-read against the code — is 8, and it is the SAME EIGHT as the last two nights: #10, #14, #18, #22, #30, #55, #61, #65. All Lost-and-Found or designed-but-unbuilt cards from 25 August. None is a bug and none is waiting on you. The number is stable rather than growing, which is what a bare count cannot tell you.\n\nTwo new cards were filed tonight and both came out of this shift's own work rather than from browsing: #455 (the AUTO 30s switch sits over a reader that refreshes every 60s on two pages) and #457 (a request ARRIVING while you sit still reaches the bar on your next click rather than immediately — a decision about cost, with a recommendation on the card).",
@@ -4723,7 +4757,7 @@
     104
   ],
   "nextUp": {
-    "readAt": "2026-09-02T18:56:36.503Z",
+    "readAt": "2026-09-02T20:18:36.443Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4758,11 +4792,6 @@
       {
         "issueNumber": 414,
         "title": "Crew takes his drawing's design devices — ticks, state pills, skeletons — without the mock data",
-        "urgent": false
-      },
-      {
-        "issueNumber": 416,
-        "title": "The account menu's Admin and Moderation badges are built and wired to nothing — plus the moderator's flags",
         "urgent": false
       },
       {
