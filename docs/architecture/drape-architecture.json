@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "abc35553dd2a258c"
+    "sourceFingerprint": "913c9cc253800083"
   },
   "domains": [
     {
@@ -14646,7 +14646,12 @@
     },
     {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
-      "to": "module:client/src/features/admin/UserBadges.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserActionModals.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -16907,6 +16912,11 @@
     {
       "from": "module:client/src/features/moderator/ChangeRequestModal.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/ChangeRequestModal.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
