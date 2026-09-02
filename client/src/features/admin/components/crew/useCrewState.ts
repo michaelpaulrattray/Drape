@@ -10,18 +10,29 @@
  */
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { STAFF_REFRESH_INTERVAL_MS } from "@/features/staff/useStaffRefresh";
 
 /** How often the briefing is re-read. It only changes on a deploy. */
 const CREW_STALE_MS = 30_000;
 
 /**
- * How often the PAGE re-reads it while it is open and visible (#133 — his
- * ask, verbatim: *"is there a way to have the desk page auto refresh on every
- * update or whatever to make it feel more live? because i keep hard
- * refreshing it"*). A deploy lands about every few minutes at the busiest;
- * a minute is the coarsest interval that still beats his hand on F5.
+ * How often the PAGE re-reads it while it is open, visible and the panel-wide
+ * `AUTO` switch is on (#133 — his ask, verbatim: *"is there a way to have the
+ * desk page auto refresh on every update or whatever to make it feel more
+ * live? because i keep hard refreshing it"*).
+ *
+ * ⚠ **IT WAS 60s AND IS NOW THE STAFF INTERVAL (#415).** Not a tuning
+ * decision — the bar Crew now shares draws a switch LABELLED `AUTO 30s`, and a
+ * control that names its own period must not sit over a page using another
+ * one. Deriving it from `STAFF_REFRESH_INTERVAL_MS` rather than restating
+ * `30_000` means the label and the timer cannot drift apart later: there is
+ * one number and the bar draws it.
+ *
+ * The re-export is kept because the name says what this value MEANS on this
+ * page, and a reader of `useCrewState` should not have to know the staff bar
+ * to find out how often it polls.
  */
-export const CREW_LIVE_INTERVAL_MS = 60_000;
+export const CREW_LIVE_INTERVAL_MS = STAFF_REFRESH_INTERVAL_MS;
 
 export function useCrewState(enabled: boolean, options?: { live?: boolean }) {
   const live = options?.live === true;

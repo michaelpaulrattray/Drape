@@ -594,15 +594,17 @@ describe("brief 05 §4 / #413 — the refresh cluster is all three parts or none
   const clusterPages = () =>
     staffPages().filter(({ text }) => /refreshControls=\{/.test(code(text)));
 
-  it("the population is real — more than half the staff pages provide the cluster", () => {
+  it("the population is real — all but one staff page provides the cluster", () => {
     /*
       An absence arm over an empty list is the cheapest false pass there is, and
-      this one would go green if the prop were renamed. Seven of the nine pages
-      provide it; Crew and the specimen sheet are the two that do not, and the
-      arm below names each and its reason.
+      this one would go green if the prop were renamed.
+
+      ⚠ **It was 7 of 9 and is now 8 of 9 (#415).** Crew came in on his word;
+      the specimen sheet is the only page left out, and it mounts no bar at all.
+      The arm below names it and its reason.
     */
     const names = clusterPages().map((p) => p.name);
-    expect(names.length, `pages providing refreshControls: ${names.join(", ")}`).toBe(7);
+    expect(names.length, `pages providing refreshControls: ${names.join(", ")}`).toBe(8);
   });
 
   /**
@@ -710,27 +712,30 @@ describe("brief 05 §4 / #413 — the refresh cluster is all three parts or none
     expect(/autoRefresh/.test(before)).toBe(false);
   });
 
-  it("the two pages outside the cluster are exactly Crew and the specimen sheet", () => {
+  it("the ONE page outside the cluster is the specimen sheet", () => {
     /*
       ⚠ AN ENUMERATED EXCEPTION, NOT A SILENCE — and it is deliberately brittle.
 
       `AdminFoundation` mounts no staff bar at all (his ruling: the specimen
-      sheet gets no tab), so it has nothing to hang a cluster on.
+      sheet gets no tab), so it has nothing to hang a cluster on. That is the
+      only page left, and it is the only one whose reason is structural.
 
-      `AdminCrew` states its own freshness inline — *"{shift} · checked 2
-      minutes ago"* — which is why it was left out of #413 rather than
-      overlooked. ⚠ **#415 §3 REVERSES THAT on his word** (*"even thought crew
-      has its own refresh principles should we just fold it into the same as
-      overview so everything is consistent"*), and #413's instruction to record
-      Crew's exception in a docblock is superseded by it. **So this arm goes RED
-      the day #415 lands**, which is the point: that shift must delete Crew's
-      inline line in the same commit, or the page states its freshness twice.
+      ✅ **CREW LEFT THIS LIST 2026-09-02 (#415), AND THIS ARM IS WHY THE TWO
+      HALVES SHIPPED TOGETHER.** #413 left Crew out because it stated its own
+      freshness inline — *"{shift} · checked 2 minutes ago"* — and #415 §3
+      reversed that on his word (*"even thought crew has its own refresh
+      principles should we just fold it into the same as overview so everything
+      is consistent"*). The arm was written to go RED the day #415 landed
+      precisely so the shift folding Crew in could not forget to delete the
+      inline line, and it did exactly that: it fired, and the timestamp came out
+      of `AdminCrew.tsx` in the same commit. The arm below holds the half that
+      survived — the SHIFT NAME, which the bar cannot say.
     */
     const outside = staffPages()
       .filter(({ text }) => !/refreshControls=\{/.test(code(text)))
       .map(({ name }) => name)
       .sort();
-    expect(outside).toEqual(["AdminCrew.tsx", "AdminFoundation.tsx"]);
+    expect(outside).toEqual(["AdminFoundation.tsx"]);
   });
 
   it("the shared hook returns all five fields, and none of them is optional to ask for", () => {
@@ -798,14 +803,18 @@ describe("#453 — the auto-refresh toggle is one switch, not one per page", () 
    */
   const PRIVATE_COPY = /const\s*\[\s*autoRefresh\s*,\s*setAutoRefresh\s*\]\s*=\s*useState\s*\(/;
 
-  it("the population is real — seven staff surfaces carry the switch", () => {
+  it("the population is real — eight staff surfaces carry the switch", () => {
     /*
       An absence arm over an empty list is the cheapest false pass there is.
-      Crew (#415 §3) and the specimen sheet carry no cluster at all; the arm
-      above this one names each and its reason.
+
+      ⚠ **Seven until #415 folded Crew in.** The specimen sheet is the only
+      surface carrying no cluster at all; the arm above this one names it and
+      its reason. The number moving is the point — a shared switch that reaches
+      one more page is a page that could have kept a private copy instead, and
+      the arm below is what proves it did not.
     */
     const names = clusterPages().map((p) => p.name);
-    expect(names.length, `surfaces carrying the toggle: ${names.join(", ")}`).toBe(7);
+    expect(names.length, `surfaces carrying the toggle: ${names.join(", ")}`).toBe(8);
   });
 
   it("NO staff surface keeps a private copy of the switch", () => {

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { BRAND_NAME, SurfaceBar, type SurfaceBarSegment } from "@/foundation";
 import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState";
+import { useStaffCounts } from "./useStaffCounts";
 
 /**
  * The staff bar — one bar for Admin and Moderation (brief 05 §4).
@@ -57,9 +58,25 @@ import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState
  * a licence to pass one.** It stays optional only because `AdminOverview`,
  * `AdminAuditLogs` and `ModeratorDashboard` predate the hook and still build
  * their controls inline; the guard names those three, so folding one in is a
- * deliberate act. The one surface legitimately outside the cluster is
- * `AdminCrew`, which states its freshness inline — and #415 folds even that in
- * on his word.
+ * deliberate act.
+ *
+ * ✅ **CREW IS IN THE CLUSTER AS OF #415** — his word, verbatim: *"even thought
+ * crew has its own refresh principles should we just fold it into the same as
+ * overview so everything is consistent"*. The sentence above used to name it as
+ * the one legitimate exception; the only surface outside now is
+ * `AdminFoundation`, which mounts no bar at all.
+ *
+ * ## The count pill (#415)
+ *
+ * **His ask:** *"if mods sent 5 requests to the admin panel it shold show 5
+ * requests pending"*. It is a pill on the `Change requests` tab and not a
+ * separate notification button, because the tab already navigates there and a
+ * button beside it would be two doors to one room.
+ *
+ * ⚠ **The number comes from `useStaffCounts` and NOWHERE ELSE**, so the pill,
+ * Overview's `NeedsHuman` card and (next, #416) the account menu badge cannot
+ * disagree. Omit-at-zero is owned one layer down by `SurfaceBarSegment` —
+ * enforced where the pill is DRAWN, never at each caller.
  *
  * ## Both bars are titled `Klieg Console`, and the tagline is gone (#417)
  *
@@ -107,6 +124,12 @@ const CREW_TAB_INDEX = 2;
 const CREW_TAB = { value: "/admin/crew", label: "Crew" };
 
 /**
+ * The one tab that carries a count today (#415) — named as a route so the
+ * pill follows the tab through any reordering of the list above.
+ */
+const CHANGE_REQUESTS_TAB = "/admin/change-requests";
+
+/**
  * ⚠ **`/admin/foundation` IS NOT HERE AND MUST NOT BE ADDED.** It is the
  * component specimen sheet — a house tool that happens to sit behind an admin
  * guard, not a staff surface. The founder ruled it in the brief itself: *"It
@@ -124,6 +147,52 @@ export type StaffRefreshControls = {
 };
 
 /**
+ * The admin bar's segments — the tab list with Crew spliced in and the count
+ * pill attached.
+ *
+ * ⚠ **IT IS A PURE FUNCTION AND EXPORTED FOR ONE REASON: THE PILL NEEDS A
+ * POSITIVE CONTROL.** `pnpm test` has no DOM (`vitest.config.ts`: *"component
+ * rendering stays out"*), so an arm about a pill can otherwise only read the
+ * source and assert an absence — and an absence-only expectation is green in
+ * exactly the state this card exists to fix, which is a count that never
+ * appears. Driving this with `5` and with `0` is a reading that can fail.
+ *
+ * Two things it settles, both of which a positional implementation gets wrong
+ * the first time the founder reorders §5:
+ *
+ * - **The pill is attached BY ROUTE, never by index.** Crew is spliced into the
+ *   middle of the list conditionally, so an index would already be wrong today
+ *   for half the admins.
+ * - **Nothing here decides whether a pill is DRAWN.** `count: 0` is passed
+ *   through as it is; `SurfaceBarSegment` owns omit-at-zero, enforced at the
+ *   one place that draws it rather than at each caller.
+ */
+export function adminSegments({
+  crewVisible,
+  pendingChangeRequests,
+}: {
+  crewVisible: boolean;
+  pendingChangeRequests: number;
+}): SurfaceBarSegment[] {
+  /*
+    Derived, never a second list (working law 4). The Crew entry is spliced
+    into the one source above rather than kept as a parallel array — and it is
+    the single legitimately-conditional tab: `crew.getState` answers NOT_FOUND
+    outside `CREW_TAB_SCOPE`, so the query SUCCEEDING is the flag, and no flag
+    value ever reaches the client.
+  */
+  const tabs = crewVisible
+    ? [...ADMIN_TABS.slice(0, CREW_TAB_INDEX), CREW_TAB, ...ADMIN_TABS.slice(CREW_TAB_INDEX)]
+    : ADMIN_TABS;
+
+  return tabs.map((tab) => ({
+    ...tab,
+    href: tab.value,
+    count: tab.value === CHANGE_REQUESTS_TAB ? pendingChangeRequests : undefined,
+  }));
+}
+
+/**
  * The admin bar. Its tabs are ROUTES — clicking Users navigates to
  * `/admin/users` — so deep links, bookmarks and the back button keep working,
  * and no page's data loading is restructured by this card.
@@ -137,18 +206,8 @@ export function StaffBarAdmin({
 }) {
   const [location] = useLocation();
   const crewVisible = useCrewTabVisible();
-
-  /*
-    Derived, never a second list (working law 4). The Crew entry is spliced
-    into the one source above rather than kept as a parallel array — and it is
-    the single legitimately-conditional tab: `crew.getState` answers NOT_FOUND
-    outside `CREW_TAB_SCOPE`, so the query SUCCEEDING is the flag, and no flag
-    value ever reaches the client.
-  */
-  const tabs = crewVisible
-    ? [...ADMIN_TABS.slice(0, CREW_TAB_INDEX), CREW_TAB, ...ADMIN_TABS.slice(CREW_TAB_INDEX)]
-    : ADMIN_TABS;
-  const options: SurfaceBarSegment[] = tabs.map((tab) => ({ ...tab, href: tab.value }));
+  const { pendingChangeRequests } = useStaffCounts();
+  const options = adminSegments({ crewVisible, pendingChangeRequests });
 
   return (
     <SurfaceBar

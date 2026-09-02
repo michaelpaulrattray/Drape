@@ -827,11 +827,33 @@ describe("§7 — nothing is coloured by state except the three sanctioned sites
 
 describe("§7 — the query, the flag and the mutations are untouched", () => {
   it("the tab is still absent when crew.getState is not ok", () => {
-    /* §7: "Do not touch useCrewState or the visibility flag. The query
-       succeeding is the flag; that is right." */
+    /*
+      §7: "Do not touch useCrewState or the visibility flag. The query
+      succeeding is the flag; that is right."
+
+      ⚠ **THE VISIBILITY FLAG IS UNTOUCHED; THE PAGE'S LIVENESS MOVED (card
+      415).** This arm used to pin the page's call as `{ live: true }`, which is
+      a fact about POLLING and not about the tab gate this arm is named for.
+      #415 folded Crew into the panel-wide `AUTO` switch on his word, so the
+      page now asks for `{ live: autoRefresh }` — and the arm below would have
+      gone red over a change §7 does not forbid, while never having checked the
+      gate it claims to defend.
+
+      So it asserts the gate itself now: the tab is drawn from the query's
+      SUCCESS, and `useCrewTabVisible` still asks with no options at all — which
+      is what keeps every other admin page from polling the briefing.
+    */
     const hook = code(read(path.join(HERE, "useCrewState.ts")));
     expect(hook).toContain("crew.getState");
-    expect(code(PAGE_TEXT)).toContain("useCrewState(isAdmin, { live: true })");
+    expect(hook, "the tab exists iff the query succeeded — no flag on the wire").toMatch(
+      /return query\.isSuccess/,
+    );
+    expect(hook, "the nav gate asks for no live polling").toMatch(
+      /useCrewState\(isAuthenticated && user\?\.role === "admin"\)/,
+    );
+    expect(hook, "and `live` is opt-in, so the default is never to poll").toMatch(
+      /const live = options\?\.live === true/,
+    );
   });
 
   it("adds no query and changes no mutation", () => {
