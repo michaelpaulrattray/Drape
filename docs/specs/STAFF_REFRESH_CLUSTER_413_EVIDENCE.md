@@ -182,6 +182,44 @@ Recorded on both cards.
 
 ---
 
+## 7b · ⚠ THE GATE REVIEW FOUND A THIRD SIBLING, AND IT WAS THE MOST-READ ONE
+
+The sweep in §6 corrected the false premise in the brief and in both page
+comments — **and missed `StaffBar.tsx`'s own docblock**, which said in the
+component every future staff page imports that Users and Change requests *"have
+only a refetch"* and that a stamp or toggle for them *"would be a number no
+state produces."* Every clause false on this branch, three lines above the
+renderer.
+
+**A guard that reddens a partial cluster at PR time is worth less than it looks
+while a document beside the code still teaches the partial cluster as the
+design.** Corrected in this branch, with the superseded sentence struck rather
+than deleted.
+
+### ⚠ And an arm for that class was written and then REMOVED — deliberately
+
+The obvious repair is an arm banning the retired sentence from `client/src`,
+mirroring the retired-titles arm already in this file. **It was written, it went
+red, and two of its hits were correct-by-design**: this file's own control
+string, and the corrected docblock itself — **because the correction QUOTES the
+sentence it corrects**, which is this repository's documented practice and is
+what makes a correction readable.
+
+**The arm cannot tell a quotation from an assertion**, and shipping it would
+have forced every future author to correct a document without saying what it
+used to say. That is the *specimen-joins-the-vocabulary* failure, and a guard
+that punishes the right practice is worse than no guard. It was removed and the
+attempt is recorded here instead of a green arm that proves nothing.
+
+**The reviewer's second finding is filed, not fixed**: the manual-refresh toast
+on all four pages fires when the refetch is DISPATCHED, not when data lands —
+the same shape the hook's own docblock rejects for the stamp. It exactly mirrors
+`AdminOverview.tsx:76-80`, which this PR deliberately leaves untouched, so it is
+pre-existing behaviour consistently copied rather than a new defect. It belongs
+to the promotion pass that unifies the inline three (#415).
+
+---
+
 ## 8 · Checks
 
 - `pnpm check` exit 0
