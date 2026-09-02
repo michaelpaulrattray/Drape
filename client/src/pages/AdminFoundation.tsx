@@ -6,9 +6,8 @@ import {
   Lock,
   RotateCcw,
   Search,
-  Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import {
   CardMenu,
@@ -50,6 +49,7 @@ import { Redirect } from "wouter";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Popover } from "@/foundation/Popover";
+import { BORROWED, Icon, LUCIDE_FURNITURE, P, type IconName } from "@/foundation/icons";
 import { AppChrome } from "@/components/AppChrome";
 
 /**
@@ -333,7 +333,7 @@ export default function AdminFoundation() {
               <HoverActions
                 meta="4:5"
                 items={[
-                  { icon: <Sparkles size={12} strokeWidth={1.9} />, title: "Use as reference" },
+                  { icon: <Icon d={P.asset} size={12} />, title: "Use as reference" },
                   { icon: <Download size={12} strokeWidth={1.9} />, title: "Download" },
                   { icon: <Copy size={12} strokeWidth={1.9} />, title: "Copy image" },
                   { icon: <Bookmark size={12} strokeWidth={1.9} />, title: "Save to assets" },
@@ -678,10 +678,64 @@ export default function AdminFoundation() {
         </p>
       </section>
 
+      <section className="dp-stack" style={{ gap: 16 }}>
+        <SectionHead
+          eyebrow="13 · The house icons"
+          aside={`${Object.keys(P).length} so far — drawn from P, never listed here`}
+        />
+        {/*
+          THE SET, SHOWN (founder, 2026-09-02). His words: "should the
+          standardized icon family/glyphs we use be stored somewhere to keep it
+          consistent across the app build and design like on the featured
+          components page or something?" — and: "29 glyphs isnt the cap its
+          just what we have so far."
+
+          The set is stored in one place already (`foundation/icons.tsx`, the
+          `P` map, guarded against inline SVGs and transcription drift). What
+          nobody could do was SEE it: this sheet drew every primitive and not
+          one house glyph, and its own sample rows still wore the sparkle. So
+          this section iterates `P`. It names no key by hand and states no
+          count — a glyph added to the map appears here on the next render,
+          which is the only way "so far" stays true. `icons-guard.test.ts`
+          refuses a hand-typed key inside this section.
+
+          Sizes are the four the product actually draws at (the module's own
+          "SIZES IN USE"): 11 inside pills, 13 in menu rows, 15 default, 17 on
+          the rail. Nothing larger, because nothing larger is used, and a glyph
+          that only reads at 24 is a defect this row would hide.
+
+          A borrowed glyph says so beside itself (`BORROWED`), because a gallery
+          that presents lucide's gear as his drawing misleads exactly the
+          person this page exists for.
+        */}
+        <div
+          className="dp-grid dp-grid--dense"
+          style={{ "--dp-grid-min": "168px" } as CSSProperties}
+        >
+          {(Object.entries(P) as [IconName, string][]).map(([name, d]) => (
+            <div key={name} className="dp-stack" style={{ gap: 6 }}>
+              <div className="dp-row" style={{ gap: 12, alignItems: "flex-end" }}>
+                <Icon d={d} size={11} />
+                <Icon d={d} size={13} />
+                <Icon d={d} size={15} />
+                <Icon d={d} size={17} />
+              </div>
+              <span className="dp-metadata">P.{name}</span>
+              {BORROWED[name] ? <span className="dp-small">{BORROWED[name]}</span> : null}
+            </div>
+          ))}
+        </div>
+        <p className="dp-small" style={{ maxWidth: 720 }}>
+          Stroke 1.7 at every size; icons get bigger, never heavier. One gear, never two.
+          A new glyph is added to the map, never inlined where it is used. Stays Lucide, as
+          furniture: {LUCIDE_FURNITURE.join(", ")}.
+        </p>
+      </section>
+
       <Dock>
         <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
           <Field className="dp-split__main">
-            <Sparkles size={13} strokeWidth={1.9} aria-hidden="true" />
+            <Icon d={P.image} size={13} />
             <Input placeholder="Sticky dock — the persistent input for a working surface" />
           </Field>
           <Button variant="secondary">Roll again · 160 cr</Button>

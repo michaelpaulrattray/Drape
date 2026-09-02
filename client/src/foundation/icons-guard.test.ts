@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { P } from "./icons";
+import { BORROWED, P } from "./icons";
 import { RAIL_DESTINATIONS } from "./Rail";
 
 /**
@@ -49,6 +49,25 @@ const UTILITY_MENU = read("features/lobby/LobbyUtilityMenu.tsx");
 const code = (source: string) =>
   source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
+/**
+ * Every name a source imports from lucide-react — across EVERY import line,
+ * with an alias stripped back to the ORIGINAL name (`Sparkles as Sp` reads as
+ * `Sparkles`), comments removed first so a quoted import never counts.
+ *
+ * ⚠ Reviewer finding on #433 (law 7, the class): the earlier shape took the
+ * FIRST `import {…} from "lucide-react"` only and compared names by exact
+ * equality, so a second import line or an alias carried a retired glyph past
+ * the arm, and `"".split(",")` is a one-element array, so its precondition
+ * could never redden. Every lucide-import arm in this file reads through
+ * this one function now, and the positive controls below drive both shapes.
+ */
+const lucideImports = (source: string): string[] =>
+  [...code(source).matchAll(/import\s*\{([^}]*)\}\s*from\s*["']lucide-react["']/g)]
+    .flatMap((match) => match[1].split(","))
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => name.split(/\s+as\s+/)[0].trim());
+
 describe("the retired glyphs are gone from the rail, not merely unused", () => {
   /**
    * His words on Sparkles: *"the universal AI glyph, it says nothing about
@@ -61,21 +80,23 @@ describe("the retired glyphs are gone from the rail, not merely unused", () => {
    * `pnpm check` and the deletion door both see it.
    */
   it("Rail.tsx imports neither Sparkles nor Settings from Lucide", () => {
-    const lucideImport = /import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(RAIL);
-    expect(lucideImport, "the rail stopped importing from Lucide in a shape this arm reads").not
-      .toBeNull();
-    const named = (lucideImport?.[1] ?? "").split(",").map((s) => s.trim());
+    const named = lucideImports(RAIL);
+    expect(named.length, "the rail stopped importing from Lucide in a shape this arm reads").toBeGreaterThan(0);
     expect(named).not.toContain("Sparkles");
     expect(named).not.toContain("Settings");
   });
 
-  it("the matcher would see them", () => {
+  it("the matcher would see them — on one line, on a SECOND line, and behind an alias", () => {
     const before = 'import { Clapperboard, Plus, Settings, Sparkles } from "lucide-react";';
-    const named = (/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(before)?.[1] ?? "")
-      .split(",")
-      .map((s) => s.trim());
-    expect(named).toContain("Sparkles");
-    expect(named).toContain("Settings");
+    expect(lucideImports(before)).toContain("Sparkles");
+    expect(lucideImports(before)).toContain("Settings");
+    const secondLine = 'import { Plus } from "lucide-react";\nimport { Sparkles } from "lucide-react";';
+    expect(lucideImports(secondLine)).toContain("Sparkles");
+    const aliased = 'import { Plus, Sparkles as Sp } from "lucide-react";';
+    expect(lucideImports(aliased)).toContain("Sparkles");
+    const quotedOnly = '/* import { Sparkles } from "lucide-react"; */\nimport { Plus } from "lucide-react";';
+    expect(lucideImports(quotedOnly)).not.toContain("Sparkles");
+    expect(lucideImports("nothing here")).toEqual([]);
   });
 
   /**
@@ -85,10 +106,7 @@ describe("the retired glyphs are gone from the rail, not merely unused", () => {
    * a different instruction from the one he gave.
    */
   it("the Invite plus is still Lucide, which is what he asked for", () => {
-    const named = (/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(RAIL)?.[1] ?? "")
-      .split(",")
-      .map((s) => s.trim());
-    expect(named).toContain("Plus");
+    expect(lucideImports(RAIL)).toContain("Plus");
   });
 });
 
@@ -785,5 +803,78 @@ describe("the topbar chrome is the PROTOTYPE's drawing, not a redraw of it", () 
       );
     expect(at(11)).toBe("M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M16.5 16.5 21 21");
     expect(at(10.9)).not.toBe(at(11));
+  });
+});
+
+/**
+ * THE SET IS SHOWN ON THE SPECIMEN SHEET, DERIVED FROM `P` (founder,
+ * 2026-09-02: *"should the standardized icon family/glyphs we use be stored
+ * somewhere to keep it consistent … like on the featured components page"*,
+ * and *"29 glyphs isnt the cap its just what we have so far"*).
+ *
+ * Working law 4 is the whole arm: a gallery that LISTS keys is a second copy
+ * of the set that drifts the first time a glyph is added, and it would still
+ * render, so nothing else would notice. The sheet must iterate the map and
+ * count from it. Source reads, in the shape of the arms above, each paired
+ * with a positive control on a synthetic string.
+ */
+describe("the specimen sheet shows the whole set, derived from P", () => {
+  const SHEET = read("pages/AdminFoundation.tsx");
+  const galleryOf = (source: string) => {
+    const start = source.indexOf("13 · The house icons");
+    expect(start, "the gallery section is gone from the sheet").toBeGreaterThan(-1);
+    const end = source.indexOf("</section>", start);
+    expect(end, "the gallery section has no end").toBeGreaterThan(start);
+    return source.slice(start, end);
+  };
+
+  it("draws the gallery by iterating P", () => {
+    expect(code(galleryOf(SHEET))).toMatch(/Object\.entries\(P\)/);
+  });
+
+  it("counts the set from P rather than stating a number", () => {
+    expect(code(galleryOf(SHEET))).toMatch(/Object\.keys\(P\)\.length/);
+    expect(code(galleryOf(SHEET))).not.toMatch(/\b(2[0-9]|[3-9][0-9]) so far\b/);
+  });
+
+  it("names no key by hand inside the gallery", () => {
+    expect(code(galleryOf(SHEET))).not.toMatch(/\bP\.[a-z]+\b/);
+  });
+
+  it("the matcher would catch a hand-typed key, and a typed count", () => {
+    const listed = '13 · The house icons" /><Icon d={P.studio} /><Icon d={P.image} /></section>';
+    expect(code(galleryOf(listed))).toMatch(/\bP\.[a-z]+\b/);
+    const counted = '13 · The house icons" aside="29 so far" /></section>';
+    expect(code(galleryOf(counted))).toMatch(/\b(2[0-9]|[3-9][0-9]) so far\b/);
+  });
+
+  /**
+   * The reference sheet is the one page that must not wear the retired glyph:
+   * it is where a shift looks to learn what the house does. It carried the
+   * sparkle in two sample rows until this section landed.
+   */
+  it("the sheet imports no Sparkles from Lucide, on any line, under any alias", () => {
+    const named = lucideImports(SHEET);
+    expect(named.length, "the sheet stopped importing from Lucide in a shape this arm reads").toBeGreaterThan(0);
+    expect(named).not.toContain("Sparkles");
+  });
+
+  /**
+   * A borrowed glyph declares itself in two places that must agree: the
+   * `BORROWED` map the sheet reads, and the entry's own docblock in `P`. A key
+   * in one and not the other is either a borrowed path presented as his, or
+   * one of his listed as borrowed — both are the drift this map exists to stop.
+   */
+  it("every BORROWED key is in P and its own docblock names lucide", () => {
+    const keys = Object.keys(BORROWED);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      expect(P, `${key} is not in P`).toHaveProperty(key);
+      const entry = ICONS.indexOf(`\n  ${key}:`);
+      expect(entry, `no ${key} entry`).toBeGreaterThan(-1);
+      const preamble = ICONS.slice(0, entry);
+      const declaration = preamble.slice(preamble.lastIndexOf("/*"));
+      expect(declaration.toLowerCase(), `${key}'s docblock does not name lucide`).toContain("lucide");
+    }
   });
 });

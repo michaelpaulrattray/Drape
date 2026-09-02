@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2eb54fb1abdb9786"
+    "sourceFingerprint": "89cbd10f0a32aab1"
   },
   "domains": [
     {
@@ -18807,6 +18807,11 @@
     {
       "from": "module:client/src/pages/AdminFoundation.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminFoundation.tsx",
+      "to": "module:client/src/foundation/icons.tsx",
       "kind": "imports"
     },
     {

@@ -43,8 +43,9 @@
  *
  * WHAT STAYS LUCIDE — and should
  *
- *   chevrons, arrows, plus, close X, check, trash, ellipsis, download,
- *   external-link, lock, star, eye, copy, folder, upload, play/pause
+ *   The list is `LUCIDE_FURNITURE` below — data, kept in one place so the
+ *   specimen sheet at `/admin/foundation` can draw it under the gallery and
+ *   this comment cannot drift from it (working law 4).
  *
  * Those are pure interface furniture: nobody reads them as brand, and Lucide
  * draws them well. Redrawing a good general set is effort spent where nobody
@@ -250,6 +251,62 @@ export const P = {
 } as const;
 
 export type IconName = keyof typeof P;
+
+/**
+ * THE SET IS SHOWN, NOT ONLY STORED (founder, 2026-09-02).
+ *
+ * His question: *"should the standardized icon family/glyphs we use be stored
+ * somewhere to keep it consistent across the app build and design like on the
+ * featured components page or something?"* — and his correction in the same
+ * breath: *"29 glyphs isnt the cap its just what we have so far."*
+ *
+ * The storing half was already this file. The showing half is section 13 of
+ * the specimen sheet (`pages/AdminFoundation.tsx`), which iterates `P` — it
+ * never names a key by hand and never states a count, so a glyph added above
+ * appears on the sheet with nobody touching the sheet (working law 4: derive,
+ * never mirror). `icons-guard.test.ts` holds it to that.
+ *
+ * Two small pieces of data ride with it, kept HERE so the sheet stays derived:
+ */
+
+/**
+ * What stays Lucide — interface furniture nobody reads as brand: the module
+ * docblock's "WHAT STAYS LUCIDE" list, as data, so the sheet can draw the
+ * boundary. Those are pure interface furniture: nobody reads them as brand,
+ * and Lucide draws them well. Adding a house glyph for one of these is a
+ * decision, not a tidy-up — it is exactly the effort-where-nobody-looks the
+ * docblock warns against.
+ */
+export const LUCIDE_FURNITURE = [
+  "chevrons",
+  "arrows",
+  "plus",
+  "close X",
+  "check",
+  "trash",
+  "ellipsis",
+  "download",
+  "external-link",
+  "lock",
+  "star",
+  "eye",
+  "copy",
+  "folder",
+  "upload",
+  "play/pause",
+] as const;
+
+/**
+ * Glyphs in `P` that are NOT his drawing, and why — so the sheet can say so
+ * beside them rather than present a borrowed path as his authorship. Each key
+ * must exist in `P` and its own docblock above must name lucide; the guard
+ * checks both, so a borrowed glyph cannot be added here quietly, nor one of
+ * his listed here by mistake.
+ */
+export const BORROWED: Readonly<Partial<Record<IconName, string>>> = {
+  cog: "lucide-react's Settings, path copied on his word (card 382): he pointed at the gear already on his screen.",
+  exit: "lucide-react's log-out, a stand-in until his set gains an exit glyph (card 374). His to overwrite.",
+};
 
 /**
  * A path string may hold several subpaths. Split on M so each becomes its own
