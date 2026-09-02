@@ -424,11 +424,10 @@ is exactly this door.
    outcomes set two engine defaults.
 5. Skills roster scope for v1 — Writer+DP+Stager is a plausible minimum;
    Acting Coach and Editor can start as parts of the DP.
-6. **(2026-09-02, from the marriage review)** Whether "propose/read-back"
-   text assistance is free while generation carries the credits — the Desk
-   skeleton's "Propose more shots · free" button vs the 2026-09-01 "writing
-   assistance uses credits" ruling. Recommendation on file: thinking free,
-   rendering paid. One of these must give; the button copy follows the call.
+6. **RULED (founder, 2026-09-02: "agreed"): thinking free, rendering
+   paid.** Proposals, read-backs and script development are free; credits
+   are spent where frames are drawn (the take fan). The Desk's "free"
+   button copy stands; every paid button states its price.
 
 ---
 

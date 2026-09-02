@@ -167,12 +167,24 @@ with lenses, not two surfaces with a hand-off.
    ⚠ **Seating collision found 2026-09-02 (marriage review): the skeleton's
    third tab is already the COMPOSER**, and the Desk's left rail is already
    headed SCRIPT. The ruling's intent (a peer lens) needs a seat.
-   Recommendation pending the founder's word: **four tabs in pipeline order
-   — SCRIPT · WALL · DESK · COMPOSER** (write / oversee / work / cut); the
-   Desk's script rail stays as navigator, the Script tab holds the Page, the
-   dramaturgy chips and the live manifest.
-2. **Writing assistance USES CREDITS.** Ruled by the founder — not free.
-   Pricing itself is set at build time with the rest of the credit table.
+   **Resolved as a founder LEANING (2026-09-02 — his words: "i guess? not
+   sure"), shape confirmed, seat provisional:** four tabs; the **Script tab
+   is the dedicated development room** and the **Desk is where the script
+   has automatically become scenes**. The main road bypasses the Script tab
+   entirely: the script is uploaded on entering the studio, the AI splits it
+   into scenes, and the user lands on the Desk with takes ready to draw —
+   his described intent, verbatim: "you uploaded your script on entering
+   the studio and ai looked at the script and split it up into different
+   scenes in which you can generate takes for them." The Script tab serves
+   the other two entries (develop from an idea; keep rewriting
+   mid-production with downstream staleness flags). Ratify the seat when
+   the full skeleton brief is reviewed.
+2. **Writing assistance USES CREDITS — SCOPED 2026-09-02 (founder:
+   "agreed"): thinking free, rendering paid.** Script help, scene
+   proposals, read-backs and dramaturgy are free (text calls, cents);
+   credits are spent where frames are drawn — the take fan is the billing
+   unit. The Desk's "Propose more shots · free" button is correct as drawn;
+   the paid side states its price on the button ("4 more takes · 24 cr").
 3. Feature-length productions (one per act vs one long): **still open** — the
    founder has no lean yet; decide when canvas performance is measurable.
 

@@ -136,11 +136,11 @@ honest only if the rule ships with it.
 Each of these is spec'd and researched; none is visible in four still
 frames. This list is the build's conscience:
 
-1. **The takes fan + notes flow** (shot view): Keep · More takes · **Give a
-   note**; a note files into its slot and shows as a chip; THE PROMPT drawer
-   read-only with "Edit (starts a new setup)". (Superseded the five-field
-   DIRECTION form — the earlier prototype screen still shows the old form;
-   the design agent needs the notes-flow brief.)
+1. ✅ **Struck 2026-09-02 — the shot-view screen (Image #27) shows the
+   notes flow already built as ruled**: "1 kept · 4 more takes 24 cr · Give
+   a note", the empty-state line "No notes on this shot — the model is
+   working from the scene alone", the muted "all direction fields" link,
+   and THE PROMPT drawer read-only. Price on the paid button. Faithful.
 2. **State flips at story events** (Phase B-1): the shelf shows states; the
    *flip at the event boundary with automatic downstream inheritance* is the
    mechanic. A state chip on the scene timeline, overridable.
@@ -188,9 +188,13 @@ the measured failure list of the studio we studied, each fixed structurally:
 ## 5. Disposition
 
 - §1's 18 items: **build to the skeleton** — it is faithful.
-- §2's three collisions: **founder rules**, then the specs and the design
-  agent get the outcome (2a seats the Script tab; 2b sets one button's copy
-  and one pricing sentence; 2c is a build commitment).
+- §2's three collisions — **all answered 2026-09-02**: 2a resolved as a
+  leaning (four tabs; Script = development room, Desk = script-become-
+  scenes; main road uploads the script on entry and lands on the Desk;
+  ratify the seat at the skeleton-brief review); 2b RULED "agreed" —
+  thinking free, rendering paid; 2c explained to the founder — a build
+  commitment, no decision needed. The founder is delivering the full
+  skeleton brief for a deeper audit.
 - §3's ten mechanics: **carried into the build issues verbatim** when the
   founder green-lights construction; this file is their index.
 
