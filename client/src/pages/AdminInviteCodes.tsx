@@ -10,6 +10,8 @@ import {
   StaffLoading,
   StaffSurface,
   pageRange,
+  useStaffRefresh,
+  STAFF_REFRESH_INTERVAL_MS,
 } from "@/features/staff";
 import { Shuffle } from "lucide-react";
 import { Button, DataTable, Field, IconButton, Input, TableHead } from "@/foundation";
@@ -70,9 +72,19 @@ export default function AdminInviteCodes() {
   const isAdmin = isAuthenticated && user?.role === "admin";
 
   /* ─── queries / mutations ─── */
+  /*
+    ⚠ #413 — THE CLUSTER BELONGS HERE BECAUSE THE LIST GOES STALE WITHOUT
+    ANYONE ON THIS PAGE TOUCHING IT. A code is redeemed by somebody else,
+    somewhere else, at a moment nobody here controls — so `4 of 5 uses left`
+    can be wrong the instant it is drawn, and there was no stamp saying when it
+    was read and no way to ask again.
+  */
+  const [autoRefresh, setAutoRefresh] = useState(false);
+
   const codesQuery = trpc.admin.listInviteCodes.useQuery(undefined, {
     enabled: isAdmin,
     staleTime: 10_000,
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
   });
 
   const utils = trpc.useUtils();
@@ -117,6 +129,17 @@ export default function AdminInviteCodes() {
     toast.success("Copied to clipboard");
     setTimeout(() => setCopiedId(null), 2000);
   }, []);
+
+  const refreshControls = useStaffRefresh({
+    autoRefresh,
+    setAutoRefresh,
+    dataUpdatedAt: codesQuery.dataUpdatedAt,
+    isRefetching: codesQuery.isFetching,
+    onRefresh: () => {
+      codesQuery.refetch();
+      toast.success("Invite codes refreshed");
+    },
+  });
 
   /* ─── auth guards ─── */
   if (authLoading) {
@@ -173,7 +196,10 @@ export default function AdminInviteCodes() {
   });
 
   return (
-    <StaffSurface breadcrumb="Admin / Invite codes" bar={<StaffBarAdmin />}>
+    <StaffSurface
+      breadcrumb="Admin / Invite codes"
+      bar={<StaffBarAdmin refreshControls={refreshControls} />}
+    >
       <main className="space-y-6">
         {/*
           The create form, on the foundation's own field and button primitives.
