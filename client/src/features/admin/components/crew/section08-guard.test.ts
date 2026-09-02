@@ -129,26 +129,36 @@ describe("§1 — a paragraph's order does not move", () => {
    * A deliberate future reorder edits this list and quotes him, exactly as this
    * one did.
    */
+  /**
+   * HIS TABLE, top to bottom: the phrase the page's docblock uses for each
+   * section, beside the tag it mounts.
+   *
+   * ⚠ **ONE LIST, READ BY BOTH ARMS.** It was two — a tag array here and a
+   * phrase/tag table in the docblock arm — which is working law 4 inverted
+   * even though it happened to fail closed. A second list shadowing a source
+   * of truth always drifts from it, and this one is the founder's order,
+   * which is the last thing that should be written down twice.
+   */
+  const HIS_ORDER: [string, string][] = [
+    ["the program", "<CrewProgramBanner"],
+    ["working now", "<CrewWorkingNow"],
+    ["next up", "<CrewNextUp"],
+    ["background work", "<CrewBackgroundWork"],
+    ["needs you", "<CrewNeedsYou"],
+    ["for your eyes", "<CrewEyeGallery"],
+    ["what is not done", "<CrewPipeline"],
+    ["already dealt with", "<CrewRecentHistory"],
+    ["problems", "<CrewProblems"],
+    ["general", "<CrewGeneral"],
+  ];
+
   /* The card is named in the docblock above rather than in this title: the
      foundation token guard reads `#437` in a STRING as a hex literal (every
      issue number from #100 up is valid hex) and strips comments, which is what
      its own failure message tells you to do. */
   it("the page is mounted in the order he ruled", () => {
     const body = code(PAGE_TEXT);
-    /* His table on #437, top to bottom. */
-    const HIS_ORDER = [
-      "<CrewProgramBanner",
-      "<CrewWorkingNow",
-      "<CrewNextUp",
-      "<CrewBackgroundWork",
-      "<CrewNeedsYou",
-      "<CrewEyeGallery",
-      "<CrewPipeline",
-      "<CrewRecentHistory",
-      "<CrewProblems",
-      "<CrewGeneral",
-    ];
-    const at = HIS_ORDER.map((tag) => {
+    const at = HIS_ORDER.map(([, tag]) => {
       const index = body.indexOf(tag);
       /* A section that stops being mounted must REDDEN, never quietly sort to
          the front — `indexOf` returns -1, which is less than everything. */
@@ -186,32 +196,24 @@ describe("§1 — a paragraph's order does not move", () => {
    * docblock would make the arm compare the sentence to itself.
    */
   it("the reading order in the page's own docblock matches the order it mounts", () => {
-    /* The docblock's phrase for each section, in the same rows as the JSX tag. */
-    const SAYS: [string, string][] = [
-      ["the program", "<CrewProgramBanner"],
-      ["working now", "<CrewWorkingNow"],
-      ["next up", "<CrewNextUp"],
-      ["background work", "<CrewBackgroundWork"],
-      ["needs you", "<CrewNeedsYou"],
-      ["for your eyes", "<CrewEyeGallery"],
-      ["what is not done", "<CrewPipeline"],
-      ["already dealt with", "<CrewRecentHistory"],
-      ["problems", "<CrewProblems"],
-      ["general", "<CrewGeneral"],
-    ];
-
-    /* The arrow list in the FIRST docblock, which is the reading-order
-       sentence. Anchored to the arrows so a later paragraph mentioning a
-       section name in prose cannot be mistaken for the list. */
+    /*
+      ⚠ THE SENTENCE IS CUT AT ITS FULL STOP, NOT AT THE END OF THE DOCBLOCK.
+      The first shape sliced to the end of the block and fell back to a bare
+      `indexOf(phrase)` for the two phrases the line wrap leaves without a
+      trailing arrow — so a later paragraph in the same docblock could have
+      supplied the match instead of the list. It cannot mis-resolve today (the
+      reviewer traced every landing point), but the arm claimed to be anchored
+      and for two of ten rows it was not. Bounded here so the claim is true.
+    */
     const head = PAGE_TEXT.slice(0, PAGE_TEXT.indexOf("*/"));
-    const sentence = head.slice(head.indexOf("His reading order:")).toLowerCase();
-    expect(sentence, "the reading-order sentence is gone from the docblock").toContain("→");
+    const from = head.indexOf("His reading order:");
+    expect(from, "the reading-order sentence is gone from the docblock").toBeGreaterThan(-1);
+    const stop = head.indexOf("**", head.indexOf("→ general"));
+    const sentence = head.slice(from, stop > from ? stop : undefined).toLowerCase();
+    expect(sentence, "the reading-order sentence has lost its arrows").toContain("→");
 
-    const prose = SAYS.map(([phrase]) => {
-      const index = sentence.indexOf(`${phrase} →`);
-      /* The LAST section has no trailing arrow. */
-      const tail = sentence.indexOf(phrase);
-      const at = index > -1 ? index : tail;
+    const prose = HIS_ORDER.map(([phrase]) => {
+      const at = sentence.indexOf(phrase);
       expect(at, `the docblock's reading order never names "${phrase}"`).toBeGreaterThan(-1);
       return at;
     });
@@ -220,7 +222,7 @@ describe("§1 — a paragraph's order does not move", () => {
 
     /* And the two statements must be the SAME order, not merely each sorted. */
     const body = code(PAGE_TEXT);
-    const mounted = SAYS.map(([, tag]) => body.indexOf(tag));
+    const mounted = HIS_ORDER.map(([, tag]) => body.indexOf(tag));
     expect(mounted).toEqual([...mounted].sort((a, b) => a - b));
   });
 
