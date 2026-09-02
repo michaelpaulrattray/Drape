@@ -59,7 +59,12 @@
  */
 import type { Connection } from "mysql2/promise";
 
-/** Below this, a READ balance shouts. Days of ordinary use, not weeks. */
+/**
+ * Below this, `low` is true. Nothing prints it any more (founder, 2026-09-02:
+ * a balance is a reading, never a problem); the floor exists so the reader's
+ * arithmetic has a boundary the suite can prove, and so a future finding about
+ * a top-up that stopped landing has a number to reason against.
+ */
 export const FAL_LOW_BALANCE_USD = 20;
 
 /**
@@ -469,7 +474,8 @@ export async function readFalTraffic(
 /**
  * The one line a state block or a deploy receipt prints.
  *
- * A read balance shouts when low, exactly like the OpenRouter line. A derived
+ * A read balance is the figure, exactly like the OpenRouter line — the shout
+ * retired on the founder's word, 2026-09-02, see `falLine`. A derived
  * figure says **derived**, says the window it covers, and says that it is a
  * FLOOR whenever anything in it went unpriced or unseen — because a spend
  * figure that quietly omits the face scans looks identical to one that includes

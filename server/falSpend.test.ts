@@ -63,19 +63,50 @@ describe("the balance is asked for, and its refusal is a reading", () => {
     expect(falLine(balance)).toBe("fal $24.50 USD remaining");
   });
 
+  /**
+   * Every word fal's shout actually carried on a real receipt, declared ONCE
+   * and read by both the arm and its positive control (reviewer finding on
+   * #440, law 4).
+   */
+  const RETIRED_SHOUT = ["LOW", "***", "MOVING", "look at the spend", "covers the outage", "dies at dispatch"] as const;
+  const assertNoShout = (line: string) => {
+    for (const banned of RETIRED_SHOUT) {
+      if (line.includes(banned)) throw new Error(`the retired shout is back: "${banned}"`);
+    }
+  };
+
   it("does NOT shout below the floor — a balance is a reading, never a problem (founder, 2026-09-02)", () => {
     const line = falLine({ ok: true, remaining: 4, currency: "USD", low: true });
     /* The same retirement as the OpenRouter line, same day, both providers:
-       the figures are present and none of the alarm vocabulary is. Each
-       banned word was actually printed on a receipt, so the list is a record
-       and not a guess. */
+       the figures are present and none of the alarm vocabulary is. */
     expect(line).toBe("fal $4.00 USD remaining");
-    for (const banned of ["LOW", "***", "MOVING", "look at the spend", "covers the outage", "dies at dispatch"]) {
-      expect(line, `the retired shout is back: "${banned}"`).not.toContain(banned);
-    }
-    /* The floor is still a number the reader computes against — the boundary
-       arm below needs it — and it is still $20. */
-    expect(FAL_LOW_BALANCE_USD).toBe(20);
+    expect(() => assertNoShout(line)).not.toThrow();
+  });
+
+  it("the banned-word arm can fail — the retired shout, driven through the SAME arm, reddens", () => {
+    const retired = "fal *** LOW: $4.00 USD remaining — below $20. Auto top-up covers the outage; money is MOVING — look at the spend. ***";
+    expect(() => assertNoShout(retired)).toThrow(/retired shout is back/);
+    expect(RETIRED_SHOUT.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * The boundary arm the comments cite — it did not exist for fal until the
+   * reviewer on #440 read the sentence that claimed it did (law 7b). Driven
+   * through the real reader with a fake `fetch`, like the OpenRouter one.
+   */
+  it("puts the boundary on the right side — exactly at the floor is not below it", async () => {
+    const just = await readFalBalance(
+      KEY,
+      respond({ username: "klieg", credits: { current_balance: FAL_LOW_BALANCE_USD, currency: "USD" } }),
+    );
+    expect(just.ok && just.remaining).toBe(FAL_LOW_BALANCE_USD);
+    expect(just.ok && just.low, "exactly at the floor is not below it").toBe(false);
+    const under = await readFalBalance(
+      KEY,
+      respond({ username: "klieg", credits: { current_balance: FAL_LOW_BALANCE_USD - 0.01, currency: "USD" } }),
+    );
+    expect(under.ok && under.low, "a cent under the floor is below it").toBe(true);
+    expect(falLine(under)).toBe(`fal $${(FAL_LOW_BALANCE_USD - 0.01).toFixed(2)} USD remaining`);
   });
 
   /*

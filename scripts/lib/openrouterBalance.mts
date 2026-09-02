@@ -370,9 +370,10 @@ export function booksLine(activity: OpenRouterActivity): string {
 /**
  * The one line a state block prints.
  *
- * Shaped so the shout cannot be missed in a wall of monospace, and so an
- * UNREAD says unread rather than falling back to a comfortable number — an
- * unreadable balance and a healthy one must never look the same.
+ * Shaped so an UNREAD says unread rather than falling back to a comfortable
+ * number — an unreadable balance and a healthy one must never look the same.
+ * (It used to be shaped so a shout could not be missed; the shout retired on
+ * the founder's word, 2026-09-02 — the paragraph inside says why.)
  */
 export function balanceLine(balance: OpenRouterBalance): string {
   if (!balance.ok) return `openrouter UNREAD — ${balance.why}`;

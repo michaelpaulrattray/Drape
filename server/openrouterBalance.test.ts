@@ -86,25 +86,34 @@ describe("the OpenRouter balance is read, never remembered", () => {
     expect(balanceLine(balance)).toContain("$9.76 remaining of $210.00");
   });
 
+  /**
+   * Every word the shout actually carried on a real receipt, declared ONCE:
+   * the arm reads it, and the positive control drives the retired line through
+   * the same arm (reviewer finding on #440, law 4 — a control that re-declares
+   * a subset of the list proves `includes` works, not that the arm can fail).
+   */
+  const RETIRED_SHOUT = ["LOW", "***", "not firing", "spend line", "covers the outage", "dies at dispatch"] as const;
+  const assertNoShout = (line: string) => {
+    for (const banned of RETIRED_SHOUT) {
+      if (line.includes(banned)) throw new Error(`the retired shout is back: "${banned}"`);
+    }
+  };
+
   it("does NOT shout below the floor — a balance is a reading, never a problem (founder, 2026-09-02)", () => {
     const line = balanceLine({ ok: true, remaining: 9.76, total: 210, used: 200.24, low: true });
     /* The consequence clause MOVED TWICE (2026-08-16, 2026-08-19) and then the
        whole shout was retired on his word. What is asserted now is the
        opposite of what this arm used to assert: the figures are present, and
        none of the alarm vocabulary is — not the marker, not the accusation,
-       not the instruction to go and look. Each banned word is one the line
-       carried on a real receipt, so the arm is a list of things that were
-       actually printed, not a guess at what somebody might print. */
+       not the instruction to go and look. */
     expect(line).toContain("$9.76 remaining of $210.00");
-    for (const banned of ["LOW", "***", "not firing", "spend line", "covers the outage", "dies at dispatch"]) {
-      expect(line, `the retired shout is back: "${banned}"`).not.toContain(banned);
-    }
+    expect(() => assertNoShout(line)).not.toThrow();
   });
 
-  it("the banned-word arm can fail — the retired shout, driven through it, reddens", () => {
+  it("the banned-word arm can fail — the retired shout, driven through the SAME arm, reddens", () => {
     const retired = "openrouter *** LOW: $9.76 remaining of $210.00 — below $20. Look at the spend line. ***";
-    const hits = ["LOW", "***", "spend line"].filter((banned) => retired.includes(banned));
-    expect(hits).toEqual(["LOW", "***", "spend line"]);
+    expect(() => assertNoShout(retired)).toThrow(/retired shout is back/);
+    expect(RETIRED_SHOUT.length, "an emptied list would pass the arm above on anything").toBeGreaterThan(0);
   });
 
   it("is quiet above the floor, and identical in shape to below it", async () => {
