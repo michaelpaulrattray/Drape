@@ -1,7 +1,7 @@
 {
-  "edition": 206,
-  "updatedAt": "2026-09-02T04:20:08.100Z",
-  "shift": "Foreman — night of 2 September (the topbar icons are your drawings now, #423 / #417)",
+  "edition": 207,
+  "updatedAt": "2026-09-02T05:04:28.563Z",
+  "shift": "Foreman — night of 2 September (the admin pill has colour, #422; and one of your two line options does nothing)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -141,27 +141,32 @@
     {
       "id": "alert-hairline-422",
       "issueNumber": 422,
-      "title": "One of your two staff-frame rulings needs a second word — \"darker\" has nowhere to go",
+      "title": "Your line options, built and measured — and option C does not actually do anything",
       "state": "open",
       "filedAt": "2026-09-02T04:20:08.100Z",
-      "productImpact": "You gave two rulings on the admin frames: the admin role pill gets colour, and the faint line between alert rows should be DARKER because you could not see it. The first is unambiguous and is queued.\n\nThe second has no obvious next step, and I would rather ask than guess. That line uses the lightest of five border colours, and all five sit inside about 2% of each other — in light mode the range is #ECECEE to #E4E4E7, which is eight steps out of 255. Moving it to the darkest one would be invisible. In DARK mode the first two are literally the same colour, so a change there would do nothing at all.\n\nSo \"darker\" cannot be satisfied inside the border palette. It needs either a properly darker grey from the text palette — a different kind of line, more visible than any border on the page — or the line stays its colour and gets thicker instead.",
-      "workedExample": "The line in question is the short vertical connector between two alert rows on Admin → Overview: it is 1 pixel wide and between 8 and 14 pixels tall, joining one alert's icon to the next.\n\nAn earlier shift measured that the lines genuinely exist at that size and still could not see them in its own screenshots — which matches what you said.\n\nIf it goes to a text grey it will read as a deliberate timeline, closer to a thin rule than to a border. If it gets thicker instead it stays a hairline in character and just becomes findable.",
-      "recommendation": "My recommendation is to see it rather than decide it in words: next shift builds both versions and puts one frame in front of you with the two side by side, and you point. It is ten minutes and it removes the guessing.\n\nNothing is blocked meanwhile — the admin pill half of that card can ship on its own.",
+      "productImpact": "You said \"show me both, then I'll pick\". Both are built and photographed on the real page, in both themes — and measuring them turned up something worth a minute before you point.\n\nOption C was \"keep the colour, make it thicker\". It does not work. Making a line wider does not change its colour, and the colour is the entire reason you could not see it: that line differs from the card behind it by 19 shades out of 255. At two pixels it is still 19 shades. It is a thicker invisible line.\n\nOption B — the text grey — works: 95 shades of difference instead of 19. It is very visible.\n\nAnd there is a THIRD I have added without being asked, because the choice you were given was built on an incomplete reading and I would rather say so. You were told \"darker cannot be done inside the line colours\". That was wrong — whoever wrote it stopped at the five border colours and did not look further down the same list, where there are six more, getting steadily darker. One of them lands neatly between doing nothing and shouting.",
+      "workedExample": "The line is the short vertical connector between two alert rows on Admin → Overview — 1 pixel wide, 8 to 14 pixels tall, joining one alert's icon to the next. There are eleven of them on your page right now.\n\nHow far each option is from the card behind it, out of 255:\n\n  today            19\n  C  thicker       19   ← unchanged, that is the point\n  D  darker line   55\n  B  text grey     95\n\nIn dark mode it is 16 today, 16 for C, 57 for D, 110 for B.\n\nOn the sheets in your gallery: today and C both read as nothing. B and D both read as a real connector. B is heavier — at that weight the line starts competing with the alert icons it is joining.",
+      "recommendation": "D — the darker line. It answers \"I could not see it\" (three times the difference), and it keeps the thing a hairline instead of turning it into a text rule. B is the safe second choice if you want it unmissable.\n\nWhichever you pick is one line of CSS and ships the same night. Nothing is blocked meanwhile — the other half of that card, the admin pill, is already built and in review.",
       "options": [
         {
-          "key": "a",
-          "label": "Show me both, then I'll pick",
-          "consequence": "One frame, two candidates side by side on the real page. The admin pill ships in the same shift without waiting for your answer."
+          "key": "d",
+          "label": "D — the darker line (my recommendation)",
+          "consequence": "Three times today's difference. Visible, and it still reads as a line rather than as text. One line of CSS."
         },
         {
           "key": "b",
-          "label": "Make it a real line — use a text grey",
-          "consequence": "Clearly visible, and it becomes a timeline rather than a border. The strongest reading of \"darker\"."
+          "label": "B — the text grey",
+          "consequence": "Five times today's difference. Unmistakable, and the strongest reading of \"darker\" — but it reads as a rule rather than a hairline, and slightly competes with the icons."
         },
         {
           "key": "c",
-          "label": "Keep the colour, make it thicker",
-          "consequence": "Stays a hairline in character; findable without introducing a new kind of line."
+          "label": "C — thicker anyway",
+          "consequence": "Ships what you asked for, but the measurement says it will not fix what you complained about. Recording it as an option rather than quietly dropping it."
+        },
+        {
+          "key": "leave",
+          "label": "Leave it as it is",
+          "consequence": "No change. The connectors stay effectively invisible, which is where they were when you raised it."
         }
       ]
     },
@@ -1359,11 +1364,42 @@
   ],
   "eyeItems": [
     {
+      "id": "admin-pill-and-hairline-422",
+      "title": "Your admin pill has colour — and your two line options, side by side",
+      "question": "Two things, and the second is the one I need a word on.\n\nFIRST, the admin pill: open the two 'accounts' frames. Three of the seven accounts are admins and you can now find them in one scan. What I want your eye on is the bottom row — that account is both FROZEN and ADMIN, and the two pills are the EXACT same colour, because we only have one accent. I am telling you that rather than letting you find it. In the frames the column headings keep them apart; I think it reads fine, but your eye is the one that counts.\n\nSECOND, the line sheets: each is the same alerts feed four times over. Read them top to bottom. TODAY is what you complained about. C is 'thicker' — and I would ask you to look at how little it changes, because that is the honest finding here. B and D are the two that actually do something.",
+      "state": "open",
+      "filedAt": "2026-09-02T05:04:28.563Z",
+      "issueNumber": 422,
+      "cardId": "alert-hairline-422",
+      "frames": [
+        {
+          "key": "crew-eye/dbf933b3-e613-472d-8db2-81d784c5e855.png",
+          "arm": "accounts · dark",
+          "caption": "Admin → Users. Three ADMIN pills now carry colour; USER stays grey, ACTIVE stays grey, and the 'Admins 3' tile at the top stays grey too. The bottom row is the one to look at: FROZEN and ADMIN, side by side, identical colour."
+        },
+        {
+          "key": "crew-eye/a752edd5-e223-4c93-9715-7ee9a5dbb7ad.png",
+          "arm": "accounts · light",
+          "caption": "The same page in light. Same reading — the pill is findable without being loud."
+        },
+        {
+          "key": "crew-eye/cd44d7d8-35a1-4a25-9926-17095a72fbdd.png",
+          "arm": "the four line options · dark",
+          "caption": "One alerts feed, four times. Top to bottom: TODAY, then B (text grey), then C (same colour, twice as thick), then D (a darker line — the one you were not offered). Same page, same alerts, nothing else changed."
+        },
+        {
+          "key": "crew-eye/98f74328-0756-4727-aaa6-43e58ff253a0.png",
+          "arm": "the four line options · light",
+          "caption": "The same four in light, where the difference between today and C is hardest to see — which is the finding, not a flaw in the picture."
+        }
+      ]
+    },
+    {
       "id": "topbar-glyphs-423-frames",
       "title": "The six topbar icons — what shipped, what you drew, what ships now",
       "issueNumber": 423,
       "filedAt": "2026-09-02T04:20:08.100Z",
-      "state": "open",
+      "state": "done",
       "question": "The first sheet is the one to look at, and read it left to right: BEFORE is what was on your screen, HIS is your prototype, AFTER is tonight. Two rows are worth your attention for opposite reasons. \"What's new\" was a MEGAPHONE and yours is a SPEAKER — a different object, not a rounder corner. And the moon and the question mark are, honestly, almost identical; I am telling you that rather than letting a table of six imply six visible changes. What I would like your eye on is whether the new bug and the new speaker read clearly at the real size — the small icons in the left column of each pair are the actual 15px.",
       "frames": [
         {
@@ -1388,7 +1424,7 @@
       "title": "Both staff pages now say Klieg Console",
       "issueNumber": 417,
       "filedAt": "2026-09-02T04:20:08.100Z",
-      "state": "open",
+      "state": "done",
       "question": "You said to pick something more relevant and left the word to me, so this is a decision taken rather than a question handed back — one line reverses it. The taglines are gone as well: the small ADMIN above the title already says which panel you are in, and the tabs already say what is in it, so \"— everything\" was saying it a third time. Does the pair read as one tool to you, or does losing the tagline make the moderation page feel unlabelled?",
       "frames": [
         {
@@ -2883,6 +2919,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-442-admin-pill",
+      "title": "The admin badge gets colour, so you can spot who has the keys",
+      "status": "merged",
+      "note": "#422 — your ruling. The rule that banned it was inverted rather than deleted, and four other files were quoting it.",
+      "prNumber": 442
+    },
+    {
       "id": "pr-431-klieg-console",
       "title": "The staff pages stop borrowing the workspace name",
       "status": "merged",
@@ -4017,8 +4060,8 @@
   "problems": [
     {
       "id": "queue-shape-174",
-      "title": "The queue: 106 open, rotting still flat at 27 — and the patrol clocks are a week overdue",
-      "detail": "106 open, 5 urgent, SIX of them carrying your word. #397 closed tonight and nothing new was filed.\n\nRotting — open a week and never re-read against the code — is 27 for a FOURTH night running. Twelve of those are the Lost-and-Found catalogue filed in one afternoon on 25 August, so it is one batch aging together rather than fresh neglect. It is not getting worse; it is also not getting better, and it will not while your ordered cards outrank it.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are overdue, the Janitor worst at a seventh night. Briefs 08 and 09 are the next two of your five and they are both unblocked. If you would rather a shift spent one night clearing the Janitor's backlog than shipping brief 08, that is a one-word answer and it will happen.",
+      "title": "The queue: 78 open, 19 carrying your word, 8 rotting — and the patrol clocks are still overdue",
+      "detail": "78 open tonight, 19 of them carrying your word, 1 urgent. Three new cards were filed while this shift worked (#438, #439, #441) and one closed.\n\nRotting — open a week and never re-read against the code — is 8. ⚠ That is not an improvement to celebrate: it was 27 for four nights running, and the drop came from a large clear-out earlier today rather than from anything a shift did tonight. The shape is genuinely better than it was; I would want another night's reading before calling it a trend.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) remain overdue, the Janitor worst. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
       "severity": "info",
       "state": "open"
     },
@@ -4279,10 +4322,13 @@
     92,
     93,
     94,
-    95
+    95,
+    96,
+    97,
+    98
   ],
   "nextUp": {
-    "readAt": "2026-09-02T04:20:31.999Z",
+    "readAt": "2026-09-02T05:29:57.007Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4291,7 +4337,7 @@
       },
       {
         "issueNumber": 11,
-        "title": "The framing trim needs ROLLS, not a build — his eye on strips from his own flagged sheets",
+        "title": "Retire the framing trim — his eye passed the framing sentence (2 Sep, rule 15); flag off, trim step deleted",
         "urgent": false
       },
       {
@@ -4365,13 +4411,33 @@
         "urgent": false
       },
       {
-        "issueNumber": 432,
-        "title": "The house icon set is shown on the specimen sheet, derived from the map — his 'fix it', and 28 is not a cap",
+        "issueNumber": 435,
+        "title": "Casting hero column + Cast settings modal (brief 10) — the left column is centred, so it floats beside a full deck",
         "urgent": false
       },
       {
-        "issueNumber": 435,
-        "title": "Casting hero column + Cast settings modal (brief 10) — the left column is centred, so it floats beside a full deck",
+        "issueNumber": 436,
+        "title": "Staff dialogs take the house grammar (brief 11) — and Submit request scrolls out of reach on the request form",
+        "urgent": false
+      },
+      {
+        "issueNumber": 437,
+        "title": "The Crew tab reorders: THE PROGRAM to the top, then WORKING NOW, then NEXT UP",
+        "urgent": false
+      },
+      {
+        "issueNumber": 438,
+        "title": "Delete ALREADY DEALT WITH from the Crew tab; keep THE PIPELINE and give it an honest empty state",
+        "urgent": false
+      },
+      {
+        "issueNumber": 439,
+        "title": "Eight stale PROBLEMS rows on the Crew page — seven resolve, the OpenRouter one is corrected and never written again (his word)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 441,
+        "title": "The open row needs a background — an expanded profile is the same colour as every other row",
         "urgent": false
       }
     ]
