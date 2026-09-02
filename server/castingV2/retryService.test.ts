@@ -204,7 +204,6 @@ function dependencies(outcome: "delivers" | "fails" = "delivers", enabled = true
   return {
     engine: engineThat(outcome),
     retryEnabled: () => enabled,
-    trimEnabled: () => false,
     markRunning: vi.fn(async () => {
       journal.push("running");
       return { operationId: RETRY_OPERATION_ID, chargeReferenceId: `op:${RETRY_OPERATION_ID}:charge` };

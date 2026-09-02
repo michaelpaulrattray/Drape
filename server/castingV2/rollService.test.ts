@@ -1223,3 +1223,87 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
     }
   });
 });
+
+/**
+ * ⚠ THE FRAMING TRIM IS RETIRED, AND THESE ARE THE ARMS THAT OUTLIVE IT.
+ *
+ * The founder judged the framing on his own flagged sheets (2026-09-03, card
+ * #11, verbatim: *"11 heads look fine."*) and rule 15 of
+ * `PROMPT_AUTHOR_RULING_2026-08-26.md` retires the trim on that word. Deleting
+ * it took `framingTrimStep.test.ts`'s sheet arm with it — **the one arm that
+ * asserted every frame on a sheet leaves at ONE size** — so the contract it held
+ * is re-asserted here, on the road that is left.
+ *
+ * Both arms are AT THE WIRE (invariant 5): what the engine was asked for and
+ * what the row was handed, never a constant read back beside itself. A sheet
+ * that renders large again, or a second copy of identical bytes written to R2
+ * for every face, reddens here.
+ */
+describe("the retired framing trim — the contracts its own suite used to hold", () => {
+  /** An engine that records the box it was ASKED for, and delivers. */
+  function engineRecording(boxes: string[]) {
+    return () => ({
+      id: "fal:test",
+      generateCandidate: vi.fn(async (request: { size: string }) => {
+        boxes.push(request.size);
+        journal.push("dispatch");
+        return {
+          bytes: Buffer.from("image"),
+          contentType: "image/png",
+          latencyMs: 1,
+          provenance: { provider: "fal" as const, model: "openai/gpt-image-2", providerRef: "req" },
+        };
+      }),
+    });
+  }
+
+  it("⚠ every slice is rendered at the box it is DELIVERED at — never larger", async () => {
+    const boxes: string[] = [];
+    await createRoll(
+      { ...(baseDependencies() as object), engine: engineRecording(boxes) } as never,
+      INPUT,
+    );
+
+    /* POSITIVE CONTROL FIRST. An `every`/`not.toContain` over an empty array is
+       green on a roll that dispatched nothing at all, which is the shape this
+       repository calls `absence-only-expect-passes-on-nothing`. */
+    expect(boxes, "the roll dispatched a full sheet — without this the arms below prove nothing")
+      .toHaveLength(8);
+    expect(new Set(boxes), "one sheet, one box").toEqual(new Set(["1024x1536"]));
+    /* The trim's render box, named so a reader can see what is being refused. */
+    expect(boxes).not.toContain("1536x2304");
+  });
+
+  it("⚠ one frame is one object — the kept original is not written, and the row says so", async () => {
+    const stored: string[] = [];
+    await createRoll(
+      {
+        ...(baseDependencies() as object),
+        engine: engineRecording([]),
+        storeImage: vi.fn(async (input: { contentType: string }) => {
+          stored.push(input.contentType);
+          return { key: "casting-v2/candidates/x.png" };
+        }),
+      } as never,
+      INPUT,
+    );
+
+    const db = await import("../db/castingV2");
+    const landings = (db.landCandidate as unknown as { mock: { calls: any[][] } }).mock.calls;
+    expect(landings, "eight faces landed — the control for the assertion below").toHaveLength(8);
+
+    /* ONE png a face. While the trim ran, a TRIMMED frame stored twice: the
+       delivered crop and the 1536x2304 original it was cut from. With no crop
+       the two are the same bytes, so a second write would double R2 to record
+       that nothing was cut. Sixteen here means the kept original came back.
+
+       ⚠ `stores a WebP beside the frame` above counts png writes too, and it
+       predates this arm — driven under sabotage, both go red together. That is
+       stated rather than hidden: the write count was ALREADY guarded, and what
+       this arm adds is the line below, which nothing else asserts. */
+    expect(stored.filter((type) => type === "image/png")).toHaveLength(8);
+    for (const [landing] of landings) {
+      expect(landing.sourceKey, "no candidate carries a kept original any more").toBeNull();
+    }
+  });
+});

@@ -49,8 +49,6 @@ import {
   CASTING_BORN_INK_SCOPE_ENV,
   CASTING_TWO_PATHS_SCOPE_ENV,
   validateCastingTwoPathsEnvironment,
-  CASTING_FRAMING_TRIM_SCOPE_ENV,
-  validateCastingFramingTrimEnvironment,
   CASTING_BRIEF_FIDELITY_SCOPE_ENV,
   CASTING_CREATIVE_REGISTER_SCOPE_ENV,
   validateCastingBriefFidelityEnvironment,
@@ -494,17 +492,6 @@ export function validateEnv(): void {
   */
   validateCastingTwoPathsEnvironment({
     scope: process.env[CASTING_TWO_PATHS_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-  });
-
-  /*
-    THE FRAMING TRIM, on the same reasoning as the two paths above: it gates THE
-    ROLL — the render size, the framing sentence, and a trim on the delivered
-    bytes — so its parent is the casting scope and nothing narrower. A user
-    outside casting has no roll to trim.
-  */
-  validateCastingFramingTrimEnvironment({
-    scope: process.env[CASTING_FRAMING_TRIM_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
 

@@ -43,7 +43,6 @@ import type { Imagination } from "../../shared/imagination";
 import type { CastStyle } from "../../shared/castStyles";
 import {
   captureCastingBornInkEnabled,
-  captureCastingFramingTrimEnabled,
   captureCastingBriefFidelityEnabled,
   captureCastingCreativeRegisterEnabled,
   captureCastingTwoPathsEnabled,
@@ -85,9 +84,6 @@ import { storageDelete, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
-import { createFalRegionReader } from "./falRegionReader";
-import { extentOf } from "./inkReferenceCrop";
-import { applyFramingTrim, FRAMING_TRIM_RENDER } from "./framingTrimStep";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
@@ -591,17 +587,6 @@ export async function createRoll(
   const readInk = captureCastingBornInkEnabled(input.userId);
 
   /*
-    ⚠ THE FRAMING TRIM, CAPTURED ONCE FOR THE WHOLE ROLL.
-
-    Read here and handed down to every slice rather than re-read per candidate:
-    a flag consulted eight times in one request is a request that can disagree
-    with itself, and a roll whose frames were rendered at two different sizes is
-    a sheet nobody can compare — which is the exact thing this feature exists to
-    fix. Every scope in this program captures at request entry for that reason.
-  */
-  const trimEnabled = captureCastingFramingTrimEnabled(input.userId);
-
-  /*
     THE BRIEF FIDELITY BUILD, CAPTURED ONCE FOR THE WHOLE ROLL — same rule as
     every scope in this program and the same reason: a flag consulted twice in
     one request is a request that can disagree with itself.
@@ -890,29 +875,18 @@ export async function createRoll(
         candidate,
         prompt: promptByPosition.get(candidate.position) ?? "",
         /*
-          ⚠ THE TRIM RENDERS LARGER THAN IT DELIVERS, and this is the whole of
-          where that decision enters the roll (`CASTING_FRAMING_TRIM_BUILD.md`
-          §2). Off the flag this is `compiled.size` exactly as it has always
-          been; on it, the frame is 1536×2304 and `dispatchCandidate` brings it
-          back to the delivered size before a byte is stored, so nothing
-          downstream sees a different frame.
+          EVERY FRAME RENDERS AT THE SIZE IT IS DELIVERED AT, and this line is
+          the whole of where that is decided.
 
-          ⚠ **THAT LAST CLAUSE WAS TRUE OF THE TRIMMED PATH AND FALSE OF THE
-          OTHER ONE, AND IT IS THE PATH IT WAS WRITTEN TO REASSURE ABOUT**
-          (found at the bytes on his first flagged sheet, ordered fable-1592
-          §1). `applyFramingTrim` used to hand a DECLINED frame back as
-          rendered, so roll 209 shipped six candidates at 1024×1536 and two at
-          1536×2304. It is true of both paths now — the untouched path
-          downscales to the same box — and `framingTrimStep.test.ts`'s sheet arm
-          is what keeps it true rather than this comment.
-
-          The larger render is not a preference: a crop can only ever crop IN,
-          so a trim on a frame rendered at the delivered size would have to
-          invent pixels. Arm R measured the cost — a tighter picture, 3.9 points
-          of `T_min` — and the clause is what pays it back.
+          ⚠ It was a ternary until 2026-09-03: the framing trim rendered larger
+          (1536×2304) so its crop was never an upscale, then cut and downscaled
+          to `compiled.size`. **The founder retired the trim on his own eye**
+          (#11, verbatim: *"11 heads look fine."*) under rule 15 of
+          `PROMPT_AUTHOR_RULING_2026-08-26.md` — a stated framing sentence holds
+          head size inside the trim's own bar, so the trim retires. The larger
+          render went with it: it existed only to give the crop room.
         */
-        size: trimEnabled ? `${FRAMING_TRIM_RENDER.width}x${FRAMING_TRIM_RENDER.height}` : compiled.size,
-        trimEnabled,
+        size: compiled.size,
         quality: compiled.quality,
         /* The followed face's frame (#177 Row A) — one fetch, attached to all eight. Null on everything but an authored follow. */
         anchor: anchorImage ? { bytes: anchorImage.bytes, contentType: anchorImage.contentType } : null,
@@ -1120,14 +1094,6 @@ export async function dispatchCandidate(input: {
   candidate: { id: number; publicId: string; position: number; pointsCost: number };
   prompt: string;
   size: `${number}x${number}`;
-  /**
-   * Whether this roll renders large and gets trimmed to the common frame
-   * (`CASTING_FRAMING_TRIM_SCOPE`). Captured ONCE per roll at the top and handed
-   * down, never re-read here: a flag read twice in one request is a request that
-   * can disagree with itself, which is the rule every scope in this program
-   * already follows.
-   */
-  trimEnabled: boolean;
   quality: "low" | "medium" | "high";
   /**
    * THE ANCHOR PHOTO (#177 Row A) — the followed face's delivered frame,
@@ -1241,86 +1207,45 @@ export async function dispatchCandidate(input: {
     }
 
     /*
-      ⚠ THE FRAMING TRIM — the delivered bytes cut to the common frame before
-      anything references them (`CASTING_FRAMING_TRIM_BUILD.md` §5, countersigned
-      fable-1576; ordered by the founder on his own eye at the strips).
+      ⚠ THE FRAMING TRIM STOOD HERE AND IS RETIRED (2026-09-03, card #11).
 
-      It sits HERE and nowhere else because this is the only point where the
-      bytes exist and nothing points at them yet — the same reason the smoke
-      alarm above throws before the store rather than after it.
+      The founder judged the framing on his own flagged sheets — verbatim,
+      *"11 heads look fine."* — which is rule 15 of
+      `PROMPT_AUTHOR_RULING_2026-08-26.md` answered in his favour: *if a stated
+      framing sentence holds head size inside the trim's own bar, the trim
+      retires.* The author's framing sentence does the work now, in words,
+      before the render, instead of a paid crop after it.
 
-      ⚠ **It cannot fail the candidate.** `applyFramingTrim` catches everything
-      and returns the bytes it was given with a reason attached: a roll is billed
-      and refunded per slice, so a segmenter hiccup that threw here would cost
-      her a face and buy a refund, which is a worse product than a frame that is
-      merely not in the common frame. The reason is LOGGED rather than dropped —
-      the rate of `share-above-target` is what moves the target, and it moves it
-      on the founder's eye at strips rather than on arithmetic.
+      **What left with it, because all of it was bolted to the trim alone:**
+      the larger render above, the two fal REGION READS per frame ($0.01 a
+      slice, $0.08 a roll, taken from the shared courtesy pool), and the kept
+      original below. The roll road buys ZERO region reads again — `sharp`'s
+      greyscale fault check is all that reads these bytes.
     */
-    let delivered = image.bytes;
-    /* Whether the trim actually cut this frame — not merely whether the flag is
-       on. An untrimmed frame IS its own original, so nothing is kept for it. */
-    let trimmedThisFrame = false;
-    const apiKey = process.env.FAL_KEY;
-    if (input.trimEnabled && apiKey) {
-      const trim = await applyFramingTrim(
-        {
-          reader: createFalRegionReader({ apiKey }),
-          extentOf: (mask) => extentOf(mask as never),
-        },
-        { bytes: image.bytes },
-      );
-      delivered = trim.bytes;
-      trimmedThisFrame = trim.trimmed;
-      log.info(
-        {
-          operationId, candidate: candidate.publicId,
-          trimmed: trim.trimmed, why: trim.why ?? null,
-          headroom: trim.headroom ?? null, ownHeadroom: trim.ownHeadroom ?? null,
-        },
-        trim.trimmed
-          ? "[rollService] framing trim applied"
-          : "[rollService] framing trim declined — the frame is delivered as rendered",
-      );
-    }
 
     // Bytes land in OUR storage before anything references them. A provider
     // URL is never persisted and never projected (§E, §J).
     const store = input.dependencies.storeImage ?? defaultStoreImage;
-    const stored = await store({ bytes: delivered, contentType: image.contentType });
+    const stored = await store({ bytes: image.bytes, contentType: image.contentType });
 
     /*
-      ⚠ THE KEPT ORIGINAL — the untrimmed frame the delivered one was cut from
-      (KEEP ruled fable-1576 §1; his *"run it"* on the ceremony 2026-08-24).
+      ⚠ AND THE KEPT ORIGINAL WENT WITH IT (2026-09-03, card #11).
 
-      A crop only ever crops IN, so the pixels outside the delivered frame are
-      gone the moment this is not written. That makes discarding it irreversible
-      in one direction: every later framing change becomes a RE-RENDER — paid,
-      slow, and back with a DIFFERENT face — instead of a re-trim that is
-      instant, free and the same person. Framing is on his candidate list as a
-      customer axis, and a slider needs a master to slide on.
+      `sourceKey` held the UNTRIMMED frame the delivered one was cut from
+      (migration 0053), and its whole reason was that a crop only ever crops IN:
+      without it a later framing change became a re-render rather than a
+      re-trim. **With no crop there is nothing outside the delivered frame** —
+      the rendered bytes and the delivered bytes are now the same object, and
+      writing a second copy of identical bytes would double the storage to
+      record that nothing was cut. The old code said exactly that and wrote
+      `null` for every untrimmed frame; every frame is untrimmed now, so the
+      row below is handed `null` outright.
 
-      **Only when the trim actually happened.** An untrimmed frame IS its own
-      original; storing a second copy of identical bytes would double the
-      storage to record that nothing was cut.
-
-      A COURTESY, exactly like the thumbnail below it: a face she paid for does
-      not fail because its source copy did not store, so the failure lands as
-      `null` and the row is what it would have been. What it costs then is a
-      re-render instead of a re-trim, one day, for one cast.
+      ⚠ **THE COLUMN AND ITS SWEEP STAY.** Rows written while the flag was live
+      still carry a real key, and `candidateRetention.ts` deletes those objects
+      with the cast. Dropping the column would orphan R2 objects it is the only
+      record of — so nothing here is a migration.
     */
-    const sourceKey = trimmedThisFrame
-      ? await store({ bytes: image.bytes, contentType: image.contentType })
-        .then((written) => written.key)
-        .catch((error) => {
-          log.warn(
-            { err: String(error).slice(0, 120), candidate: candidate.publicId },
-            "[rollService] the untrimmed original did not store — the face stands without one, "
-            + "and a later framing change on this cast is a re-render rather than a re-trim",
-          );
-          return null;
-        })
-      : null;
 
     /*
       AND A SMALL PICTURE BESIDE IT (fable-503).
@@ -1331,12 +1256,14 @@ export async function dispatchCandidate(input: {
       paid for does not fail because its small copy did not encode or store, so
       both failures land as `null` and the row is exactly what it was.
     */
-    /* ⚠ FROM THE DELIVERED BYTES, NOT THE RENDERED ONES. A thumbnail cut from
-       the untrimmed frame would be framed differently from the frame it opens —
-       and nothing would fail, no test would redden, and the defect would be
-       visible only to someone comparing a tile with its own picture. Named in
-       the build's §5 for exactly that reason. */
-    const thumb = await thumbnailOf({ bytes: delivered, prefix: CANDIDATE_KEY_PREFIX });
+    /* ⚠ FROM THE SAME BYTES THE ROW POINTS AT — `image.bytes` is what `stored`
+       above holds. This said "the DELIVERED bytes, not the rendered ones" while
+       the trim existed, because a thumbnail cut from the untrimmed frame would
+       have been framed differently from the frame it opens, and nothing would
+       have failed or reddened. The trim is retired (#11) and the two are one
+       object again; the rule survives its reason, so it is stated rather than
+       assumed. */
+    const thumb = await thumbnailOf({ bytes: image.bytes, prefix: CANDIDATE_KEY_PREFIX });
     const thumbKey = thumb === null ? null : await store({
       key: thumb.key,
       bytes: thumb.bytes,
@@ -1354,7 +1281,7 @@ export async function dispatchCandidate(input: {
       candidateId: candidate.id,
       imageKey: stored.key,
       thumbKey,
-      sourceKey,
+      sourceKey: null,
       provider: image.provenance.provider,
       providerModel: image.provenance.model,
       providerRef: image.provenance.providerRef ?? null,
