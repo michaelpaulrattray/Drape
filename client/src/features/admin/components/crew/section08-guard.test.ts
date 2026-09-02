@@ -361,10 +361,35 @@ describe("§7 — history is not a section on this page at all (#438)", () => {
   it("no component reads the folded history, and the derivations are gone", () => {
     const readers = surfaces().filter((f) => code(f.text).includes("recentHistory("));
     expect(readers.map((f) => f.name)).toEqual([]);
-    /* The helper module too — dead code kept alive by its own tests is how a
-       dead thing keeps a live reputation (the credit-velocity lesson). */
+    /*
+      The helper module too — dead code kept alive by its own tests is how a
+      dead thing keeps a live reputation (the credit-velocity lesson).
+
+      ⚠ SUBSTRING, NOT A REGEX, AND THE REASON IS A DEFECT THIS ARM ALREADY
+      HAD. The first shape was a regex ending in a word-boundary escape, and it
+      was written through a shell heredoc, which turned that escape into a
+      literal BACKSPACE byte (0x08) - a pattern nothing can ever match, so the
+      arm was green over a restored derivation. The sabotage driver found it;
+      reading the line could not, because a 0x08 is invisible in terminal
+      output. A substring cannot be corrupted that way.
+    */
     const types = read(path.join(HERE, "crewTypes.ts"));
-    expect(types).not.toMatch(/export function (recentHistory|foldHistory)/);
+    expect(types).not.toContain("export function recentHistory");
+    expect(types).not.toContain("export function foldHistory");
+  });
+
+  /*
+    ⚠ AND THE MOUNT, which the arms above do not cover: with the file deleted,
+    re-adding `<CrewRecentHistory />` to the page breaks `pnpm check` but left
+    this suite green. The gate catches it either way; the suite should say WHY
+    rather than leaving the reason to a type error in another tool.
+  */
+  it("no surface mounts the deleted component", () => {
+    for (const file of surfaces()) {
+      expect(code(file.text), `${file.name} mounts it again`).not.toContain(
+        "<CrewRecentHistory",
+      );
+    }
   });
 
   it("the component file itself is gone from the directory", () => {
