@@ -1,7 +1,7 @@
 {
-  "edition": 218,
-  "updatedAt": "2026-09-02T15:36:59.457Z",
-  "shift": "Foreman — night of 3 September (the pending-request count is on the bar now, and Crew refreshes like everything else)",
+  "edition": 219,
+  "updatedAt": "2026-09-02T16:59:24.853Z",
+  "shift": "Foreman — night of 3 September (the framing trim retires on your word: the frame you get is now the frame we rendered)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3185,6 +3185,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-458-framing-trim-retired",
+      "title": "The framing trim is retired — the frame you get is the frame we rendered",
+      "status": "merged",
+      "note": "#11, on your word: “11 heads look fine.” Until tonight every face on your sheets was rendered BIG (1536×2304), measured by an outside service to find the head, cropped to a common head size and shrunk back down to the 1024×1536 you actually see — with the uncut version kept in storage as well. You judged the framing good as it comes out of the engine, so all of that is gone. A roll of eight now buys ZERO head-measurements instead of sixteen, and writes eight pictures instead of up to sixteen. Nothing about the words we send changed — the framing sentence you passed is untouched. What you should notice: your sheets arrive the same size, a little faster, and framed exactly the way the engine framed them. Old sheets keep their kept-originals and still delete properly with the cast.",
+      "prNumber": 458
+    },
+    {
       "id": "pr-456-count-pill",
       "title": "The pending-request count reaches the staff bar, and Crew joins the one refresh",
       "status": "merged",
@@ -4670,17 +4677,12 @@
     104
   ],
   "nextUp": {
-    "readAt": "2026-09-02T15:37:57.002Z",
+    "readAt": "2026-09-02T16:58:38.044Z",
     "items": [
       {
         "issueNumber": 231,
         "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
         "urgent": true
-      },
-      {
-        "issueNumber": 11,
-        "title": "Retire the framing trim — his eye passed the framing sentence (2 Sep, rule 15); flag off, trim step deleted",
-        "urgent": false
       },
       {
         "issueNumber": 243,
