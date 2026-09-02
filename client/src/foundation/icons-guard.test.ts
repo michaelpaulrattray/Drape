@@ -620,3 +620,170 @@ describe("the product's glyphs are the founder's handoff, unmodified", () => {
     expect(pBlock(mine)).not.toBe(pBlock(his));
   });
 });
+
+/**
+ * ⚠ **THE ARM THAT WAS MISSING, AND IT IS WORTH MORE THAN THE SIX GLYPHS IT
+ * CHECKS.**
+ *
+ * The block above compares the product's `P` to the founder's handoff file, and
+ * it has been green from the day it was written. It was green while all six
+ * topbar chrome glyphs were the wrong drawings, because **the handoff held the
+ * same wrong drawings** — the chrome six were absent from the map he exported
+ * (the prototype draws them INLINE in its markup, which is his own diagnosis of
+ * why they were missing) and were drawn fresh to fill the hole, into both files
+ * at once.
+ *
+ * **A guard comparing two copies of one mistake cannot see the mistake.** His
+ * eye saw it instead: *"the icons are not the same as the prototypes on the top
+ * bar e.g the bug icon the theme icon notification icon etc."*
+ *
+ * So this reads the THIRD artifact — the prototype itself, which is in the
+ * repository, so this is a file read and not a screenshot. It is deliberately a
+ * different resolver from the block above: that one compares two TypeScript
+ * files to each other, this one parses HTML. Neither can inherit the other's
+ * blind spot.
+ *
+ * **Stated limits**, so the next shift knows what this does not cover:
+ *   - It covers the six chrome glyphs the prototype draws inline. The rail's
+ *     destinations and the tool modes come through his exported map and are the
+ *     block above's business.
+ *   - A source read cannot see a render. Whether these hold at 15px in both
+ *     themes was driven at the running app and recorded on the PR (law 6).
+ */
+describe("the topbar chrome is the PROTOTYPE's drawing, not a redraw of it", () => {
+  const REPO_ROOT2 = path.resolve(CLIENT_SRC, "..", "..");
+  const PROTOTYPE = path.resolve(
+    REPO_ROOT2,
+    "docs/specs/Casting-ui-ux-design/design_handoff_studio/Klieg Studio.dc.html",
+  );
+
+  const html = fs.existsSync(PROTOTYPE) ? fs.readFileSync(PROTOTYPE, "utf8") : "";
+
+  /**
+   * The prototype writes a chrome glyph as `svg("<path data>", 15)`. Pull the
+   * three in `barIcons` out by their own `title`, so a reordering of the array
+   * cannot silently re-point a key at the wrong drawing.
+   *
+   * ⚠ **THROWS rather than returning a short list** — a collector that can come
+   * up empty reports a complete list either way, which is the Atlas's own
+   * lesson and it cost four collectors there.
+   */
+  const barIcons = (source: string): Record<string, string> => {
+    const start = source.indexOf("barIcons: [");
+    if (start < 0) throw new Error("no barIcons array in the prototype");
+    const block = source.slice(start, source.indexOf("],", start));
+    const found: Record<string, string> = {};
+    for (const m of block.matchAll(/title:\s*"([^"]+)"[^\n]*?icon:\s*svg\("([^"]+)"/g)) {
+      found[m[1]] = m[2];
+    }
+    if (Object.keys(found).length !== 3) {
+      throw new Error(`expected three barIcons, read ${Object.keys(found).length}`);
+    }
+    return found;
+  };
+
+  /** The theme toggle: dark shows the SUN (its hint reads "switch to light"). */
+  const themeIcons = (source: string): { sun: string; moon: string } => {
+    const start = source.indexOf("themeIcon:");
+    if (start < 0) throw new Error("no themeIcon in the prototype");
+    const block = source.slice(start, start + 900);
+    const paths = [...block.matchAll(/svg\("([^"]+)"/g)].map((m) => m[1]);
+    if (paths.length < 2) throw new Error(`themeIcon holds ${paths.length} drawings, expected two`);
+    return { sun: paths[0], moon: paths[1] };
+  };
+
+  /**
+   * ⚠ **SEARCH IS THE ONE THE PROTOTYPE DOES NOT DRAW AS A PATH.** It is a
+   * `<circle>` ELEMENT plus a `<path>`, and `Icon` splits on M and renders
+   * `<path>` and nothing else — so this arm CONVERTS rather than comparing raw,
+   * and the conversion is written out here rather than trusted.
+   *
+   * Anchored on the search field's own placeholder text: the same glyph appears
+   * a dozen times in the prototype and a line number is not an anchor.
+   */
+  const searchGlyph = (source: string): string => {
+    const at = source.indexOf("Search frames, faces, prompts");
+    if (at < 0) throw new Error("the prototype's search field is not where this arm looks");
+    const svgStart = source.lastIndexOf("<svg", at);
+    const markup = source.slice(svgStart, source.indexOf("</svg>", svgStart));
+    const circle = /<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"/.exec(markup);
+    const handle = /<path d="([^"]+)"/.exec(markup);
+    if (!circle || !handle) throw new Error("the search glyph is no longer a circle plus a path");
+    const [cx, cy, r] = [+circle[1], +circle[2], +circle[3]];
+    /* A circle as this set's arc pair: two semicircles through the poles. */
+    const ring = `M${cx} ${cy - r}a${r} ${r} 0 1 0 0 ${r * 2} ${r} ${r} 0 0 0 0-${r * 2}`;
+    return ring + handle[1].replace(/L/g, " ");
+  };
+
+  it("the prototype is still in the tree to compare against", () => {
+    expect(fs.existsSync(PROTOTYPE), "the refreshed prototype was moved or deleted").toBe(true);
+    /* His own acceptance check for the refresh (the rail gained Cinema). A
+       stale prototype makes every arm below assert against the wrong artifact. */
+    expect((html.match(/cinema/gi) ?? []).length, "this is the pre-refresh prototype").toBeGreaterThan(0);
+  });
+
+  it("the three bar icons are his drawings, exactly", () => {
+    const proto = barIcons(html);
+    expect(P.bug).toBe(proto["Report a bug"]);
+    expect(P.help).toBe(proto["Help & docs"]);
+    expect(P.megaphone).toBe(proto["What's new"]);
+  });
+
+  it("the theme toggle is his drawing, exactly", () => {
+    const proto = themeIcons(html);
+    expect(P.sun).toBe(proto.sun);
+    expect(P.moon).toBe(proto.moon);
+  });
+
+  it("search is his circle written as this set's arc pair", () => {
+    expect(P.search).toBe(searchGlyph(html));
+  });
+
+  /**
+   * ⚠ **THE POSITIVE CONTROLS.** Four arms above assert equality against a
+   * parsed artifact; every one of them passes for free if the parser returns
+   * the string it is compared to, or silently reads a neighbour. These drive
+   * the same readers over synthetic markup with a known answer.
+   */
+  it("the readers would see one changed digit", () => {
+    const tampered = html.replace(
+      'svg("M6 9.5h4l5-3.5v12l-5-3.5H6zM17.5 9.5a4 4 0 0 1 0 5", 15)',
+      'svg("M6 9.6h4l5-3.5v12l-5-3.5H6zM17.5 9.5a4 4 0 0 1 0 5", 15)',
+    );
+    expect(tampered, "the megaphone literal moved — this control needs rewriting").not.toBe(html);
+    expect(barIcons(tampered)["What's new"]).not.toBe(P.megaphone);
+  });
+
+  it("the bar-icon reader keys on title, not on position", () => {
+    const fake = [
+      'barIcons: [',
+      '  { title: "Help & docs", dot: false, icon: svg("M2 2h2", 15) },',
+      '  { title: "Report a bug", dot: false, icon: svg("M1 1h2", 15) },',
+      '  { title: "Whats new", dot: true, icon: svg("M3 3h2", 15) },',
+      '],',
+    ].join("\n");
+    expect(barIcons(fake)).toEqual({
+      "Report a bug": "M1 1h2",
+      "Help & docs": "M2 2h2",
+      "Whats new": "M3 3h2",
+    });
+  });
+
+  it("a collector that comes up short throws rather than passing", () => {
+    const short = 'barIcons: [\n  { title: "Report a bug", icon: svg("M1 1h2", 15) },\n],';
+    expect(() => barIcons(short)).toThrow(/expected three barIcons/);
+    expect(() => barIcons("nothing here")).toThrow(/no barIcons/);
+    expect(() => themeIcons("themeIcon: nothing")).toThrow(/expected two/);
+    expect(() => searchGlyph("no search field here")).toThrow(/is not where this arm looks/);
+  });
+
+  it("the circle-to-arc conversion is written down, and it sees a moved centre", () => {
+    const at = (cx: number) =>
+      searchGlyph(
+        `<svg><circle cx="${cx}" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>` +
+          "Search frames, faces, prompts",
+      );
+    expect(at(11)).toBe("M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M16.5 16.5 21 21");
+    expect(at(10.9)).not.toBe(at(11));
+  });
+});

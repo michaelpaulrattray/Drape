@@ -145,17 +145,45 @@ export const P = {
   /*
    * Topbar chrome — on every page, so the most-seen glyphs after the rail.
    *
-   * Lucide's versions of these are the densest in its set: `Sun` is a circle
-   * plus eight full-length rays, `Bug` carries antennae, legs and body
-   * segments. At the 15px the topbar uses, both fill in. These are the same
-   * subjects drawn at this set's density — shorter rays, fewer legs.
+   * ⚠ **THESE SIX ARE THE PROTOTYPE'S OWN INLINE DRAWINGS, LIFTED VERBATIM
+   * (#423), AND THE PARAGRAPH THAT USED TO SIT HERE IS THE REASON THEY WERE
+   * NOT.** It read: *"Lucide's versions of these are the densest in its set …
+   * These are the same subjects drawn at this set's density — shorter rays,
+   * fewer legs."* Every word of that is true of Lucide and it answers the
+   * wrong question. **The subject was never Lucide; it was the prototype**,
+   * which draws its own chrome and had drawn all six.
+   *
+   * The road: #321 exported his icon MAP, and the prototype draws the topbar
+   * inline in the markup rather than through that map — his own diagnosis —
+   * so the chrome six were missing and were **drawn fresh to fill the hole**.
+   * They were then checked, repeatedly, against the copy under `docs/` — which
+   * held the same fresh drawings. **Two copies of one mistake agree.** His eye
+   * closed it, 2026-09-02: *"the icons are not the same as the prototypes on
+   * the top bar e.g the bug icon the theme icon notification icon etc."*
+   *
+   * They were not near-misses. `megaphone` was a MEGAPHONE where his is a
+   * SPEAKER; `bug` had four legs against his six and no separate antennae
+   * stroke. Different objects, not different roundings.
+   *
+   * ⚠ **`search` IS THE ONE THAT IS NOT A COPY, AND IT IS DECLARED RATHER THAN
+   * QUIET.** The prototype draws it as a `<circle cx=11 cy=11 r=7>` ELEMENT
+   * plus a path, and `Icon` splits on M and renders `<path>` and nothing else.
+   * The circle is written here as the arc pair every other ring in this set
+   * uses. **Measured rather than assumed** (#423's own instruction): rendered
+   * against the prototype's `<circle>` at 13, 15 and 120px, the two differ
+   * only in the renderer's antialiasing of the stroke edges — two hairlines,
+   * max delta 66/255 on edge pixels alone — while the same comparison scores a
+   * control moved one TENTH of a unit at 188. Same curve, same handle.
+   *
+   * Where his file and the prototype disagree, **the prototype is what he
+   * pointed at**, and both copies moved together on #382's precedent.
    */
-  search:   'M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14M15.5 15.5 20.5 20.5',
-  sun:      'M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2M12 3.6v1.7M12 18.7v1.7M20.4 12h-1.7M5.3 12H3.6M17.9 6.1l-1.2 1.2M7.3 16.7l-1.2 1.2M17.9 17.9l-1.2-1.2M7.3 7.3 6.1 6.1',
-  moon:     'M20 14.6A8.6 8.6 0 0 1 9.4 4a8.6 8.6 0 1 0 10.6 10.6',
-  bug:      'M12 7.4a4.6 4.6 0 0 1 4.6 4.6v2a4.6 4.6 0 0 1-9.2 0v-2A4.6 4.6 0 0 1 12 7.4M9.4 7 7.9 4.4M14.6 7l1.5-2.6M7.4 11.4H4.6M16.6 11.4h2.8M7.4 15.6H5.1M16.6 15.6h2.3',
-  help:     'M12 20.6a8.6 8.6 0 1 0 0-17.2 8.6 8.6 0 0 0 0 17.2M9.6 9.4a2.5 2.5 0 0 1 4.9.6c0 1.7-2.5 2.1-2.5 3.6M12 16.9v.1',
-  megaphone:'M4.5 10v4l12 4.4V5.6zM16.5 9h2a2.6 2.6 0 0 1 0 6h-2M7.2 14.6V19h2.6',
+  search:   'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M16.5 16.5 21 21',
+  sun:      'M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2M6.7 6.7l1.4 1.4M15.9 15.9l1.4 1.4M17.3 6.7l-1.4 1.4M8.1 15.9l-1.4 1.4M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0',
+  moon:     'M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z',
+  bug:      'M9 4.5l1.5 2.5h3L15 4.5M7 9.5h10v5a5 5 0 0 1-10 0zM3.5 11h3.5M17 11h3.5M4.5 16.5L7 15.5M19.5 16.5L17 15.5M5.5 6.5L7.5 8M18.5 6.5L16.5 8',
+  help:     'M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 16.5v.6',
+  megaphone:'M6 9.5h4l5-3.5v12l-5-3.5H6zM17.5 9.5a4 4 0 0 1 0 5',
 
   /*
    * Settings — the rail's foot, and anywhere else a gear is meant.
