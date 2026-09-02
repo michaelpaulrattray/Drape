@@ -1,7 +1,7 @@
 {
-  "edition": 208,
-  "updatedAt": "2026-09-02T05:34:22.874Z",
-  "shift": "Foreman — night of 2 September (the admin pill shipped; your line options are built, measured and waiting on one word)",
+  "edition": 209,
+  "updatedAt": "2026-09-02T07:21:27.019Z",
+  "shift": "Foreman — night of 2 September (your darker line is live, THE PROGRAM is at the top of this page, and eight stale rows below are cleared)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       "id": "hairline-pick-422",
       "issueNumber": 422,
       "title": "Your line options are built and measured — and option C does not actually do anything",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T05:34:22.874Z",
       "productImpact": "You asked to see both before picking. Both are built and photographed on the real page, in both themes — and measuring them turned up two things worth a minute before you point.\n\nFIRST: option C was \"keep the colour, make it thicker\". It does not work. Making a line wider does not change its colour, and the colour is the entire reason you could not see it — that line differs from the card behind it by 19 shades out of 255. At two pixels it is still 19 shades. It is a thicker invisible line. I would rather tell you that than ship it and let you find out.\n\nSECOND: you were told \"darker cannot be done inside the line colours\". That was wrong. Whoever wrote it stopped at the five border colours and did not look further down the same list, where there are six more, getting steadily darker. So there is a THIRD option nobody offered you, and it is the one I would choose: still a line, but three times the difference.\n\nOption B — the text grey — works too: five times the difference. It is unmistakable, and slightly heavier than the thing it is joining.",
       "workedExample": "The line is the short vertical connector between two alert rows on Admin → Overview — 1 pixel wide, 8 to 14 pixels tall, joining one alert's icon to the next. There are eleven on your page right now.\n\nHow far each option is from the card behind it, out of 255:\n\n  today            19\n  C  thicker       19   ← unchanged, that is the point\n  D  darker line   55\n  B  text grey     95\n\nIn dark mode: 16 today, 16 for C, 57 for D, 110 for B.\n\nOn the sheets in your gallery, top to bottom: today and C both read as nothing. B and D both read as a real connector.",
@@ -174,7 +174,7 @@
       "id": "alert-hairline-422",
       "issueNumber": 422,
       "title": "One of your two staff-frame rulings needs a second word — \"darker\" has nowhere to go",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-02T04:20:08.100Z",
       "productImpact": "You gave two rulings on the admin frames: the admin role pill gets colour, and the faint line between alert rows should be DARKER because you could not see it. The first is unambiguous and is queued.\n\nThe second has no obvious next step, and I would rather ask than guess. That line uses the lightest of five border colours, and all five sit inside about 2% of each other — in light mode the range is #ECECEE to #E4E4E7, which is eight steps out of 255. Moving it to the darkest one would be invisible. In DARK mode the first two are literally the same colour, so a change there would do nothing at all.\n\nSo \"darker\" cannot be satisfied inside the border palette. It needs either a properly darker grey from the text palette — a different kind of line, more visible than any border on the page — or the line stays its colour and gets thicker instead.\n\n⚠ ANSWERED — you said \"Show me both, then I'll pick\". Both are built and photographed. ⚠ And two corrections to what this card told you, because they change the choice: the claim that darker could not be done inside the line colours was WRONG (whoever wrote it stopped at the five border colours and did not look further down the same list), and one of the two options turns out not to work. The pick is now its own card below.",
       "workedExample": "The line in question is the short vertical connector between two alert rows on Admin → Overview: it is 1 pixel wide and between 8 and 14 pixels tall, joining one alert's icon to the next.\n\nAn earlier shift measured that the lines genuinely exist at that size and still could not see them in its own screenshots — which matches what you said.\n\nIf it goes to a text grey it will read as a deliberate timeline, closer to a thin rule than to a border. If it gets thicker instead it stays a hairline in character and just becomes findable.",
@@ -1391,10 +1391,40 @@
   ],
   "eyeItems": [
     {
+      "id": "line-and-order-437",
+      "title": "Your darker line is live, and this page has been reordered",
+      "question": "Two things you asked for, both shipped tonight, and one number I would rather you had than found.\n\nFIRST, the line. The two 'alert feed' frames are Admin → Overview. The short vertical ticks joining one alert to the next used to sit 19 shades of 255 away from the card behind them, which is exactly why you could not see them; they are now 55 away in light and 57 in dark. That is your option D. Worth two minutes on the real page rather than the frame — a screenshot flatters a faint line.\n\nSECOND, this page. THE PROGRAM is now first, then WORKING NOW, then NEXT UP, as you asked.\n\n⚠ THE NUMBER: the program block is tall, so WORKING NOW now begins about two screens down on a normal window. Before tonight THE PROGRAM was nearly FOUR screens down, so the trade went the way you chose — but two screens is more than 'below the fold' and you should hear it from me. I have deliberately not shrunk, collapsed or pinned the banner, because that is the split you already declined. If it reads badly, one word and it becomes a new instruction.",
+      "state": "open",
+      "filedAt": "2026-09-02T07:21:27.020Z",
+      "issueNumber": 437,
+      "frames": [
+        {
+          "key": "crew-eye/7b708433-cc91-4a3b-a780-4aec8e3f7c42.png",
+          "arm": "the alert feed · dark",
+          "caption": "Admin → Overview, the alerts column. Follow the left rail: the short ticks between the icons are the line you could not see. Compare it against your own memory of this page an hour ago."
+        },
+        {
+          "key": "crew-eye/2913e59f-1103-41dd-9cf1-f2d78d1e351c.png",
+          "arm": "the alert feed · light",
+          "caption": "The same feed in light. The line is 3× the contrast it had, and still quieter than the icons it joins — which is the balance I was aiming at, and the part your eye should judge."
+        },
+        {
+          "key": "crew-eye/0e1995d9-e6bc-4798-ab37-18019847a04f.png",
+          "arm": "the top of this page · dark",
+          "caption": "THE PROGRAM first, whole — chips, mission, focus, your quote, the milestone steps and the rung bar. This is the arrangement you picked over the split."
+        },
+        {
+          "key": "crew-eye/82de1f93-66fc-4b52-8a64-1157b21ca570.png",
+          "arm": "the top of this page · light",
+          "caption": "The same in light. What you cannot see in either frame is how far WORKING NOW has moved down — that is the number in the question above."
+        }
+      ]
+    },
+    {
       "id": "admin-pill-and-hairline-422",
       "title": "Your admin pill has colour — and your two line options, side by side",
       "question": "Two things, and the second is the one I need a word on.\n\nFIRST, the admin pill: open the two 'accounts' frames. Three of the seven accounts are admins and you can now find them in one scan. What I want your eye on is the bottom row — that account is both FROZEN and ADMIN, and the two pills are the EXACT same colour, because we only have one accent. I am telling you that rather than letting you find it. In the frames the column headings keep them apart; I think it reads fine, but your eye is the one that counts.\n\nSECOND, the line sheets: each is the same alerts feed four times over. Read them top to bottom. TODAY is what you complained about. C is 'thicker' — and I would ask you to look at how little it changes, because that is the honest finding here. B and D are the two that actually do something.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T05:04:28.563Z",
       "issueNumber": 422,
       "cardId": "hairline-pick-422",
@@ -2946,6 +2976,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-443-alert-connector",
+      "title": "The line between your alerts is one you can follow now",
+      "status": "merged",
+      "note": "#422 — your pick, D. One CSS property. The option you were offered as C was measured and does nothing, and you were told so before you chose.",
+      "prNumber": 443
+    },
+    {
+      "id": "pr-444-crew-order",
+      "title": "THE PROGRAM moves to the top of this page",
+      "status": "merged",
+      "note": "#437 — your order, whole rather than split. Two elements moved and nothing else; the reviewer found three docblocks still describing the old order and a fourth turned up in the sweep.",
+      "prNumber": 444
+    },
+    {
       "id": "pr-442-admin-pill",
       "title": "The admin badge gets colour, so you can spot who has the keys",
       "status": "merged",
@@ -4086,11 +4130,18 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-174",
-      "title": "The queue: 78 open, 19 carrying your word, 8 rotting — and the patrol clocks are still overdue",
-      "detail": "78 open tonight, 19 of them carrying your word, 1 urgent. Three new cards were filed while this shift worked (#438, #439, #441) and one closed.\n\nRotting — open a week and never re-read against the code — is 8. ⚠ That is not an improvement to celebrate: it was 27 for four nights running, and the drop came from a large clear-out earlier today rather than from anything a shift did tonight. The shape is genuinely better than it was; I would want another night's reading before calling it a trend.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) remain overdue, the Janitor worst. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
+      "id": "queue-shape-0902-late",
+      "title": "The queue: 78 open, 22 carrying your word, 1 urgent, 8 rotting",
+      "detail": "Measured tonight rather than carried: 78 open, 22 of them founder-ordered, 1 urgent (#231, the reader court, which needs the Fable seat), 6 parked.\n\nRotting — open a week and never re-read against the code — is 8, and it is worth knowing WHICH eight: every one is a Lost-and-Found or designed-but-unbuilt card filed on 25 August (#10, #14, #18, #22, #30, #55, #61, #65). None is a bug and none is waiting on a shift; they are ideas parked until something asks for them. So the rotting number is stable rather than growing, and it is not a backlog of broken things.\n\n⚠ The honest caveat, repeated from last night: the drop from 27 to 8 came from a large clear-out earlier today, not from anything a shift did. Two nights now at 8, which starts to look like the real floor.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are still overdue. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
       "severity": "info",
       "state": "open"
+    },
+    {
+      "id": "queue-shape-174",
+      "title": "The queue: 78 open, 19 carrying your word, 8 rotting — and the patrol clocks are still overdue",
+      "detail": "Replaced by tonight's reading, which is the row below this one.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\n78 open tonight, 19 of them carrying your word, 1 urgent. Three new cards were filed while this shift worked (#438, #439, #441) and one closed.\n\nRotting — open a week and never re-read against the code — is 8. ⚠ That is not an improvement to celebrate: it was 27 for four nights running, and the drop came from a large clear-out earlier today rather than from anything a shift did tonight. The shape is genuinely better than it was; I would want another night's reading before calling it a trend.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) remain overdue, the Janitor worst. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
+      "severity": "info",
+      "state": "resolved"
     },
     {
       "id": "billing-491-percent-387",
@@ -4109,9 +4160,9 @@
     {
       "id": "queue-shape-169",
       "title": "The queue tonight: 98 open, and TEN of them are your orders",
-      "detail": "98 cards open. TEN are yours, and five of those arrived in one burst late tonight: #395 through #399 are the staff-pages lane you sent, in order, with four of the five deliberately blocked behind the first. The rest are #390 (Change plan corrections), #391 (your plan-ladder ruling - a pricing decision, not something a shift should build), #392 (a suspended customer's appeal link still points at the old domain), #231 (the reader court, which needs the Fable seat and cannot run while it is capped), and #401, which is the piece of tonight's card I deliberately did not build.\n\nRotting - open a week, never re-read: 14. Same as last night.\n\nOne thing worth naming: all four patrol clocks are now overdue, and the Janitor worst of all. Your orders outrank patrols and there are ten of them, so on current form the Janitor will keep losing. If you would rather a shift spent one night on housekeeping instead of your queue, say so - otherwise it keeps waiting.",
+      "detail": "Superseded by the 2 September triage — an older copy of the same row, and two queue rows must never both be open.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\n98 cards open. TEN are yours, and five of those arrived in one burst late tonight: #395 through #399 are the staff-pages lane you sent, in order, with four of the five deliberately blocked behind the first. The rest are #390 (Change plan corrections), #391 (your plan-ladder ruling - a pricing decision, not something a shift should build), #392 (a suspended customer's appeal link still points at the old domain), #231 (the reader court, which needs the Fable seat and cannot run while it is capped), and #401, which is the piece of tonight's card I deliberately did not build.\n\nRotting - open a week, never re-read: 14. Same as last night.\n\nOne thing worth naming: all four patrol clocks are now overdue, and the Janitor worst of all. Your orders outrank patrols and there are ten of them, so on current form the Janitor will keep losing. If you would rather a shift spent one night on housekeeping instead of your queue, say so - otherwise it keeps waiting.",
       "severity": "info",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "quiet-detector-negation-360",
@@ -4123,9 +4174,9 @@
     {
       "id": "stale-desk-advice-344",
       "title": "Your desk asked you to run a command you had already run — corrected tonight, and it is the second time",
-      "detail": "The card about naming your queue's cards sat at the top of your desk telling you to run a database command. You ran it on Monday morning, 31 August. The work was merged, deployed and working the whole time the card was asking for it. Nothing was broken and nothing was at risk here — the cost is your attention, which is the scarce thing. What makes it worth a line rather than a quiet fix is that it is the same shape as the near miss on 31 August, where a card's recommendation told you to delete three Casts four hours after its own notes recorded that two of them were ones you wanted kept. Both cards were correct in their bodies and stale in the one sentence you actually read. The four automatic checks on your page all ask whether a card's STATE is out of date; none asks whether its ADVICE is. That gap is written up as #344 and the weekly review picks it up next.",
+      "detail": "Filed and closed as #344 on 2 September; nothing is outstanding on your page.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nThe card about naming your queue's cards sat at the top of your desk telling you to run a database command. You ran it on Monday morning, 31 August. The work was merged, deployed and working the whole time the card was asking for it. Nothing was broken and nothing was at risk here — the cost is your attention, which is the scarce thing. What makes it worth a line rather than a quiet fix is that it is the same shape as the near miss on 31 August, where a card's recommendation told you to delete three Casts four hours after its own notes recorded that two of them were ones you wanted kept. Both cards were correct in their bodies and stale in the one sentence you actually read. The four automatic checks on your page all ask whether a card's STATE is out of date; none asks whether its ADVICE is. That gap is written up as #344 and the weekly review picks it up next.",
       "severity": "warning",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "invite-label-350",
@@ -4144,23 +4195,23 @@
     {
       "id": "cast-will-not-delete-308",
       "title": "Your Cast still will not delete — and the reason we had written down was the wrong one",
-      "detail": "This is the thing you asked about, and it is not fixed. What IS fixed tonight is a different fault that we had blamed on the same line.\n\nYour Cast \"yejjjee\" has nine accepted-candidate pictures attached. Before the deletion will let go of a picture it checks the picture's filename against a pattern. Those nine are filed under a folder called \"candidates\"; the check insists they be under \"plates\". They are yours, they belong to that Cast, and the studio itself filed them that way. Twenty-seven other Casts deleted cleanly the same morning — yours is the first you have tried that has one of these pictures.\n\nI did not fix it because two different parts of the studio file the same kind of picture under two different folder names, so no single answer is right for both — and this is the code that deletes permanently. Getting it wrong means either deleting pictures that should have been kept or keeping ones that should have gone. That is a judgement on a destructive path, so it waits for the Fable seat and your allowance.\n\nOne consequence worth having in front of you: Library is the only door left for removing a legacy Cast, so it must NOT be stubbed out before this lands, or your three old Casts are stranded. Written up with the measurements as #308.",
+      "detail": "Fixed on 31 August (#308) — the Cast deleted, and the same fault was quietly blocking two others.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nThis is the thing you asked about, and it is not fixed. What IS fixed tonight is a different fault that we had blamed on the same line.\n\nYour Cast \"yejjjee\" has nine accepted-candidate pictures attached. Before the deletion will let go of a picture it checks the picture's filename against a pattern. Those nine are filed under a folder called \"candidates\"; the check insists they be under \"plates\". They are yours, they belong to that Cast, and the studio itself filed them that way. Twenty-seven other Casts deleted cleanly the same morning — yours is the first you have tried that has one of these pictures.\n\nI did not fix it because two different parts of the studio file the same kind of picture under two different folder names, so no single answer is right for both — and this is the code that deletes permanently. Getting it wrong means either deleting pictures that should have been kept or keeping ones that should have gone. That is a judgement on a destructive path, so it waits for the Fable seat and your allowance.\n\nOne consequence worth having in front of you: Library is the only door left for removing a legacy Cast, so it must NOT be stubbed out before this lands, or your three old Casts are stranded. Written up with the measurements as #308.",
       "severity": "warning",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "deletion-door-name-collision-274",
       "title": "A tidying-up check has been reading two different things as one for months, and nobody could have seen it",
-      "detail": "Not urgent and nothing is broken for a customer. It is worth two minutes because of what it means rather than what it costs.\n\nWe have a check that stops anyone deleting code without a written decision about it. Removing the word \"Klieg\" from the top bar tonight made that check go red — and the thing it named was not the thing I had changed. There are TWO pieces of code called BRAND_NAME: the one in the new interface, and an old one buried in the legacy casting engine that nothing has used for a very long time. The check looks them up by NAME ONLY, so for as long as the new one was in use it was vouching for the old one as well.\n\nSo the honest summary is: a check we rely on to tell us what is dead can report \"all clear\" for something nobody has touched in months, purely because something else shares its name. Nothing was deleted; both are written down with reasons. Fixing the check properly means re-taking every reading it has ever produced, which is a night of its own — filed as #274 rather than half-done tonight.",
+      "detail": "Carded as #274 and sitting under your Housekeeping switch. It is maintenance, not a problem.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nNot urgent and nothing is broken for a customer. It is worth two minutes because of what it means rather than what it costs.\n\nWe have a check that stops anyone deleting code without a written decision about it. Removing the word \"Klieg\" from the top bar tonight made that check go red — and the thing it named was not the thing I had changed. There are TWO pieces of code called BRAND_NAME: the one in the new interface, and an old one buried in the legacy casting engine that nothing has used for a very long time. The check looks them up by NAME ONLY, so for as long as the new one was in use it was vouching for the old one as well.\n\nSo the honest summary is: a check we rely on to tell us what is dead can report \"all clear\" for something nobody has touched in months, purely because something else shares its name. Nothing was deleted; both are written down with reasons. Fixing the check properly means re-taking every reading it has ever produced, which is a night of its own — filed as #274 rather than half-done tonight.",
       "severity": "info",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "gate-review-arm-broken-219",
       "title": "Your Fable allowance is still out - about five days now, and tonight's red tick was NOT one of them",
-      "detail": "Still down. Every pull request since has merged on the machine gate alone, which your standing rule allows for a change that touches no money and no login path.\n\nTONIGHT IS DIFFERENT AND WORTH ONE PARAGRAPH, because the page would otherwise show you another red tick and you would reasonably read it as another refusal. Tonight's change edits the reviewer's own settings file. The reviewer refuses to run on any change to its own settings - that is a deliberate safety rule on their side, not ours - so our gate deliberately turns the tick RED rather than letting it go green over a review that never happened. I read the action log rather than the tick, and it says in its own words: \"NO VERDICT - the reviewer cannot run on its own change\". The change was reviewed by hand instead and that review is written on the pull request, which is what that rule asks for.\n\nThe thing that is easy to get backwards, and it is why the log gets read every time: a RED review tick does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A real verdict rides a GREEN tick, as a comment.\n\nOpus is answering fine on the same machine and the same login - it ran tonight's whole shift. It is your Fable 5 allowance specifically, and N1 stays open until it can do the milestone read.",
+      "detail": "The reviewer is back and #219 closed on your word. Proven rather than assumed: it ran on both of tonight's changes and returned full written verdicts, one of which found a real miss of mine.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nStill down. Every pull request since has merged on the machine gate alone, which your standing rule allows for a change that touches no money and no login path.\n\nTONIGHT IS DIFFERENT AND WORTH ONE PARAGRAPH, because the page would otherwise show you another red tick and you would reasonably read it as another refusal. Tonight's change edits the reviewer's own settings file. The reviewer refuses to run on any change to its own settings - that is a deliberate safety rule on their side, not ours - so our gate deliberately turns the tick RED rather than letting it go green over a review that never happened. I read the action log rather than the tick, and it says in its own words: \"NO VERDICT - the reviewer cannot run on its own change\". The change was reviewed by hand instead and that review is written on the pull request, which is what that rule asks for.\n\nThe thing that is easy to get backwards, and it is why the log gets read every time: a RED review tick does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A real verdict rides a GREEN tick, as a comment.\n\nOpus is answering fine on the same machine and the same login - it ran tonight's whole shift. It is your Fable 5 allowance specifically, and N1 stays open until it can do the milestone read.",
       "severity": "warning",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "edition-93-never-served-221",
@@ -4193,9 +4244,9 @@
     {
       "id": "engine-refuses-lean-and-sternum",
       "title": "The engine's own content checker refuses short prompts most of the time, and one house word ('sternum') reliably",
-      "detail": "'goth woman mid 30s' sent raw was refused 17 of 18 times; your full cyber-goth brief 63 of 64 in every form. A single added sentence with 'the crop just below the sternum' turned a prompt that passes 8/8 into 8/8 refused; the same sentence with 'collarbones' passes. The author's re-wording duty (your rule 16, #93) is not a corner case — it is the road for rich briefs. (issue #93) UPDATE (refusal patrol #1, 2026-08-27): the filter is a coin per picture on identical text — roll 222 refused 5 and delivered 3 from ONE prompt; the numeric framing sentence went 2/8 last night and 0/8 tonight. No second trigger word is attributable yet; a plain same-words retry is the cheapest rescue (#122, #93).",
+      "detail": "Recorded on #129 as a standing patrol; #93 closed on 26 August, and the one measured word pair lives in the author's rewrite list.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\n'goth woman mid 30s' sent raw was refused 17 of 18 times; your full cyber-goth brief 63 of 64 in every form. A single added sentence with 'the crop just below the sternum' turned a prompt that passes 8/8 into 8/8 refused; the same sentence with 'collarbones' passes. The author's re-wording duty (your rule 16, #93) is not a corner case — it is the road for rich briefs. (issue #93) UPDATE (refusal patrol #1, 2026-08-27): the filter is a coin per picture on identical text — roll 222 refused 5 and delivered 3 from ONE prompt; the numeric framing sentence went 2/8 last night and 0/8 tonight. No second trigger word is attributable yet; a plain same-words retry is the cheapest rescue (#122, #93).",
       "severity": "warning",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "rich-brief-fallback-charge",
@@ -4228,9 +4279,9 @@
     {
       "id": "openrouter-balance-low",
       "title": "The OpenRouter account is nearly empty again — $7.70 left, about three days at the current rate, and at zero the studio visibly stops taking briefs",
-      "detail": "OpenRouter is the text engine behind every roll and refine: it reads each brief and each edit before anything renders. It is LOW: $7.70 remaining of $260 granted, $252.30 spent — re-read at the endpoint myself at 22:51Z on 29 Aug, not inherited.\n\nTwenty-five minutes after the previous reading it is the same figure, and that is what it should be: nothing was rolling. The account's own daily counter says $3.59 went out on 29 Aug, so it is spending normally. (Editions 118-120 said this number \"had not moved for a third night running\" and made the account look frozen; that was corrected in edition 121 and the correction holds — the shifts run back to back through one night and three readings inside two hours were each written up as a separate night.)\n\nThe original point stands and is unchanged: money goes out, and the GRANTED figure has not risen since 27 Aug, when a $10 top-up did land (250 to 260). Whatever tops this account up is topping up less than it burns. Runway at this rate is about two days.\n\nWhat happens at zero is DRIVEN rather than remembered (30 Aug, foreman-111): an EDIT is refused free — nobody charged, nobody can edit — and a ROLL is refused free too. Nobody loses credits; the studio visibly stops taking briefs.\n\nfal (the image engine) is separate and tops itself up.",
+      "detail": "OpenRouter tops itself up. A balance is a reading on the deploy receipt, never a problem — your words, 2 September: \"open router auto tops up i never want to see it as an issue appear again\". The alarm that produced this row was removed in #440, and the standing orders now say a provider balance is never written here again.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nOpenRouter is the text engine behind every roll and refine: it reads each brief and each edit before anything renders. It is LOW: $7.70 remaining of $260 granted, $252.30 spent — re-read at the endpoint myself at 22:51Z on 29 Aug, not inherited.\n\nTwenty-five minutes after the previous reading it is the same figure, and that is what it should be: nothing was rolling. The account's own daily counter says $3.59 went out on 29 Aug, so it is spending normally. (Editions 118-120 said this number \"had not moved for a third night running\" and made the account look frozen; that was corrected in edition 121 and the correction holds — the shifts run back to back through one night and three readings inside two hours were each written up as a separate night.)\n\nThe original point stands and is unchanged: money goes out, and the GRANTED figure has not risen since 27 Aug, when a $10 top-up did land (250 to 260). Whatever tops this account up is topping up less than it burns. Runway at this rate is about two days.\n\nWhat happens at zero is DRIVEN rather than remembered (30 Aug, foreman-111): an EDIT is refused free — nobody charged, nobody can edit — and a ROLL is refused free too. Nobody loses credits; the studio visibly stops taking briefs.\n\nfal (the image engine) is separate and tops itself up.",
       "severity": "urgent",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "desk-unreadable",
@@ -4352,10 +4403,12 @@
     95,
     96,
     97,
-    98
+    98,
+    99,
+    100
   ],
   "nextUp": {
-    "readAt": "2026-09-02T05:29:57.007Z",
+    "readAt": "2026-09-02T07:22:37.835Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4423,11 +4476,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 422,
-        "title": "His two staff-frame rulings: the admin pill gets colour, and the alert hairline goes darker",
-        "urgent": false
-      },
-      {
         "issueNumber": 425,
         "title": "His four Change plan corrections — including two he wants as declared STUBS, not as populated claims (reply #84)",
         "urgent": false
@@ -4448,23 +4496,18 @@
         "urgent": false
       },
       {
-        "issueNumber": 437,
-        "title": "The Crew tab reorders: THE PROGRAM to the top, then WORKING NOW, then NEXT UP",
-        "urgent": false
-      },
-      {
         "issueNumber": 438,
         "title": "Delete ALREADY DEALT WITH from the Crew tab; keep THE PIPELINE and give it an honest empty state",
         "urgent": false
       },
       {
-        "issueNumber": 439,
-        "title": "Eight stale PROBLEMS rows on the Crew page — seven resolve, the OpenRouter one is corrected and never written again (his word)",
+        "issueNumber": 441,
+        "title": "The open row needs a background — an expanded profile is the same colour as every other row",
         "urgent": false
       },
       {
-        "issueNumber": 441,
-        "title": "The open row needs a background — an expanded profile is the same colour as every other row",
+        "issueNumber": 445,
+        "title": "Text entry never wears the accent focus ring — the red box on every non-foundation text field, fixed at the root (his frame, 2 Sep)",
         "urgent": false
       }
     ]
