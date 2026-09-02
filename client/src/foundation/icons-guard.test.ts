@@ -49,6 +49,25 @@ const UTILITY_MENU = read("features/lobby/LobbyUtilityMenu.tsx");
 const code = (source: string) =>
   source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
+/**
+ * Every name a source imports from lucide-react — across EVERY import line,
+ * with an alias stripped back to the ORIGINAL name (`Sparkles as Sp` reads as
+ * `Sparkles`), comments removed first so a quoted import never counts.
+ *
+ * ⚠ Reviewer finding on #433 (law 7, the class): the earlier shape took the
+ * FIRST `import {…} from "lucide-react"` only and compared names by exact
+ * equality, so a second import line or an alias carried a retired glyph past
+ * the arm, and `"".split(",")` is a one-element array, so its precondition
+ * could never redden. Every lucide-import arm in this file reads through
+ * this one function now, and the positive controls below drive both shapes.
+ */
+const lucideImports = (source: string): string[] =>
+  [...code(source).matchAll(/import\s*\{([^}]*)\}\s*from\s*["']lucide-react["']/g)]
+    .flatMap((match) => match[1].split(","))
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => name.split(/\s+as\s+/)[0].trim());
+
 describe("the retired glyphs are gone from the rail, not merely unused", () => {
   /**
    * His words on Sparkles: *"the universal AI glyph, it says nothing about
@@ -61,21 +80,23 @@ describe("the retired glyphs are gone from the rail, not merely unused", () => {
    * `pnpm check` and the deletion door both see it.
    */
   it("Rail.tsx imports neither Sparkles nor Settings from Lucide", () => {
-    const lucideImport = /import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(RAIL);
-    expect(lucideImport, "the rail stopped importing from Lucide in a shape this arm reads").not
-      .toBeNull();
-    const named = (lucideImport?.[1] ?? "").split(",").map((s) => s.trim());
+    const named = lucideImports(RAIL);
+    expect(named.length, "the rail stopped importing from Lucide in a shape this arm reads").toBeGreaterThan(0);
     expect(named).not.toContain("Sparkles");
     expect(named).not.toContain("Settings");
   });
 
-  it("the matcher would see them", () => {
+  it("the matcher would see them — on one line, on a SECOND line, and behind an alias", () => {
     const before = 'import { Clapperboard, Plus, Settings, Sparkles } from "lucide-react";';
-    const named = (/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(before)?.[1] ?? "")
-      .split(",")
-      .map((s) => s.trim());
-    expect(named).toContain("Sparkles");
-    expect(named).toContain("Settings");
+    expect(lucideImports(before)).toContain("Sparkles");
+    expect(lucideImports(before)).toContain("Settings");
+    const secondLine = 'import { Plus } from "lucide-react";\nimport { Sparkles } from "lucide-react";';
+    expect(lucideImports(secondLine)).toContain("Sparkles");
+    const aliased = 'import { Plus, Sparkles as Sp } from "lucide-react";';
+    expect(lucideImports(aliased)).toContain("Sparkles");
+    const quotedOnly = '/* import { Sparkles } from "lucide-react"; */\nimport { Plus } from "lucide-react";';
+    expect(lucideImports(quotedOnly)).not.toContain("Sparkles");
+    expect(lucideImports("nothing here")).toEqual([]);
   });
 
   /**
@@ -85,10 +106,7 @@ describe("the retired glyphs are gone from the rail, not merely unused", () => {
    * a different instruction from the one he gave.
    */
   it("the Invite plus is still Lucide, which is what he asked for", () => {
-    const named = (/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(RAIL)?.[1] ?? "")
-      .split(",")
-      .map((s) => s.trim());
-    expect(named).toContain("Plus");
+    expect(lucideImports(RAIL)).toContain("Plus");
   });
 });
 
@@ -668,10 +686,8 @@ describe("the specimen sheet shows the whole set, derived from P", () => {
    * it is where a shift looks to learn what the house does. It carried the
    * sparkle in two sample rows until this section landed.
    */
-  it("the sheet imports no Sparkles from Lucide", () => {
-    const named = (/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(SHEET)?.[1] ?? "")
-      .split(",")
-      .map((s) => s.trim());
+  it("the sheet imports no Sparkles from Lucide, on any line, under any alias", () => {
+    const named = lucideImports(SHEET);
     expect(named.length, "the sheet stopped importing from Lucide in a shape this arm reads").toBeGreaterThan(0);
     expect(named).not.toContain("Sparkles");
   });

@@ -43,12 +43,9 @@
  *
  * WHAT STAYS LUCIDE — and should
  *
- *   chevrons, arrows, plus, close X, check, trash, ellipsis, download,
- *   external-link, lock, star, eye, copy, folder, upload, play/pause
- *
- *   (That list is DATA below — `LUCIDE_FURNITURE` — and the specimen sheet at
- *   `/admin/foundation` draws it under the gallery, so the boundary between
- *   house and furniture is visible on the page and not only in this comment.)
+ *   The list is `LUCIDE_FURNITURE` below — data, kept in one place so the
+ *   specimen sheet at `/admin/foundation` can draw it under the gallery and
+ *   this comment cannot drift from it (working law 4).
  *
  * Those are pure interface furniture: nobody reads them as brand, and Lucide
  * draws them well. Redrawing a good general set is effort spent where nobody
@@ -245,10 +242,12 @@ export type IconName = keyof typeof P;
  */
 
 /**
- * What stays Lucide — interface furniture nobody reads as brand. The words are
- * the docblock's own list above, as data, so the sheet can draw the boundary.
- * Adding a house glyph for one of these is a decision, not a tidy-up: it is
- * exactly the effort-where-nobody-looks the docblock warns against.
+ * What stays Lucide — interface furniture nobody reads as brand: the module
+ * docblock's "WHAT STAYS LUCIDE" list, as data, so the sheet can draw the
+ * boundary. Those are pure interface furniture: nobody reads them as brand,
+ * and Lucide draws them well. Adding a house glyph for one of these is a
+ * decision, not a tidy-up — it is exactly the effort-where-nobody-looks the
+ * docblock warns against.
  */
 export const LUCIDE_FURNITURE = [
   "chevrons",
