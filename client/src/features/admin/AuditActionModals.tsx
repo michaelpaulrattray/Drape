@@ -1,3 +1,17 @@
+/**
+ * The two audit-log dialogs — suspend a user, block an IP (#421).
+ *
+ * Same repair as `UserActionModals.tsx` and for the same reason: the shadcn
+ * primitives underneath already resolve to foundation tokens through
+ * `index.css`'s semantic remap, so the hard-coded `bg-white`, `#F8F8F8` and
+ * `#E5E5E5` were painting over a themed component in one theme's colours.
+ * **Taking the paint off is the fix; restating the value in `var()` form is
+ * not.** Read that file's header for the full reasoning.
+ *
+ * Both acts here are genuinely destructive and both already wore
+ * `variant="destructive"`, which is why the confirm buttons are the one part
+ * of these dialogs that does not move.
+ */
 import {
   Ban,
   Globe,
@@ -41,31 +55,30 @@ export function SuspendUserModal({
 }: SuspendModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A] max-w-md">
+      <DialogContent className="text-foreground max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-700">
+          <DialogTitle className="flex items-center gap-2 text-destructive">
             <Ban className="w-5 h-5" />
-            Suspend User
+            Suspend user
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <p className="text-sm text-[#666]">
+          <p className="text-sm text-muted-foreground">
             This will immediately block the user from accessing the platform. They will be logged out and unable to log back in until unsuspended.
           </p>
           <div>
-            <label className="text-xs text-[#999] uppercase mb-2 block">Suspension Reason</label>
+            {/* The uppercase field label is brief 07's one uppercase device. */}
+            <label className="text-xs text-muted-foreground uppercase mb-2 block">Suspension reason</label>
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Enter reason for suspension..."
-              className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]"
             />
           </div>
           <div className="flex gap-2 justify-end">
             <Button
               variant="outline"
               onClick={onCancel}
-              className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]"
             >
               Cancel
             </Button>
@@ -79,7 +92,7 @@ export function SuspendUserModal({
               ) : (
                 <Ban className="w-4 h-4 mr-2" />
               )}
-              Confirm Suspension
+              Confirm suspension
             </Button>
           </div>
         </div>
@@ -118,46 +131,52 @@ export function BlockIpModal({
 }: BlockIpModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A] max-w-md">
+      <DialogContent className="text-foreground max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-700">
+          <DialogTitle className="flex items-center gap-2 text-destructive">
             <Globe className="w-5 h-5" />
-            Block IP Address
+            Block IP address
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <p className="text-sm text-[#666]">
+          <p className="text-sm text-muted-foreground">
             This will block all requests from this IP address. Blocked IPs cannot access any part of the platform.
           </p>
           <div>
-            <label className="text-xs text-[#999] uppercase mb-2 block">IP Address</label>
+            <label className="text-xs text-muted-foreground uppercase mb-2 block">IP address</label>
             <Input
               value={ipAddress}
               onChange={(e) => setIpAddress(e.target.value)}
               placeholder="e.g. 192.168.1.1"
-              className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] font-mono"
+              className="font-mono"
             />
           </div>
           <div>
-            <label className="text-xs text-[#999] uppercase mb-2 block">Reason</label>
+            <label className="text-xs text-muted-foreground uppercase mb-2 block">Reason</label>
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Enter reason for blocking..."
-              className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]"
             />
           </div>
           <div>
-            <label className="text-xs text-[#999] uppercase mb-2 block">Duration</label>
+            <label className="text-xs text-muted-foreground uppercase mb-2 block">Duration</label>
             <Select value={duration} onValueChange={setDuration}>
-              <SelectTrigger className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white border-[#E5E5E5]">
-                <SelectItem value="1h">1 Hour</SelectItem>
-                <SelectItem value="24h">24 Hours</SelectItem>
-                <SelectItem value="7d">7 Days</SelectItem>
-                <SelectItem value="30d">30 Days</SelectItem>
+              {/*
+                ⚠ The className came OFF this one too, and it is the one place
+                where that matters beyond tidiness: `SelectContent` renders in
+                its own portal on `--color-popover`, so `bg-white` here was a
+                white menu that stayed white in dark mode even after the dialog
+                behind it was fixed.
+              */}
+              <SelectContent>
+                <SelectItem value="1h">1 hour</SelectItem>
+                <SelectItem value="24h">24 hours</SelectItem>
+                <SelectItem value="7d">7 days</SelectItem>
+                <SelectItem value="30d">30 days</SelectItem>
                 <SelectItem value="permanent">Permanent</SelectItem>
               </SelectContent>
             </Select>
@@ -166,7 +185,6 @@ export function BlockIpModal({
             <Button
               variant="outline"
               onClick={onCancel}
-              className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]"
             >
               Cancel
             </Button>

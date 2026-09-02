@@ -285,8 +285,15 @@ export default function ModeratorDashboard() {
              left it as page content and brief 06 is where page content is
              detoked. */
           right={
+            /*
+              ⚠ HIS WORD, Crew reply #91: *"the buttons copy 'new change
+              request' is so long just called it file a request or something."*
+              The empty state in `MyRequestsTab.tsx` quotes this button back at
+              the reader and moves with it — a rename that leaves the quote
+              behind points at a control that no longer exists.
+            */
             <Button variant="primary" size="small" onClick={() => openChangeRequest()}>
-              New change request
+              File a request
             </Button>
           }
         />

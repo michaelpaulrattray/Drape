@@ -1,3 +1,43 @@
+/**
+ * The three account dialogs — suspend, adjust credits, change role (#421).
+ *
+ * # ⚠ THE FIX IS DELETION, NOT SUBSTITUTION, AND THAT IS THE WHOLE FINDING
+ *
+ * These dialogs drew a white box in a dark app because every one of them
+ * over-wrote its own primitive: `bg-white border-[#E5E5E5] text-[#0A0A0A]` on
+ * the content, `bg-[#F8F8F8] … placeholder:text-[#999]` on every field,
+ * `border-[#E5E5E5] text-[#666]` on every Cancel.
+ *
+ * **The primitives underneath were already correct.** `client/src/index.css`
+ * remaps every shadcn slot onto a foundation token — `--color-background` is
+ * `--surface`, `--color-primary` is `--ink`, `--color-destructive` is
+ * `--error` — and `DialogContent` already carries `bg-background`, `Input`
+ * already carries `border-input` and `placeholder:text-muted-foreground`.
+ * So the hard-coded classes were not adding a look; they were **spending a
+ * themed component and painting over it in one theme's colours**.
+ *
+ * The repair is therefore to take the paint off, not to write
+ * `bg-[var(--surface)]` where `bg-white` was. That is working law 4 — a second
+ * statement of a value always drifts from the first — and it is why this file
+ * ends up SHORTER than the one that had the bug.
+ *
+ * ⚠ **`text-foreground` on the content is the one addition and it is not
+ * decoration.** `DialogContent` sets its background and not its text colour,
+ * and it portals to `document.body`, outside `.dp-root` — so the ink it
+ * inherits is the body's, not the app shell's.
+ *
+ * # Sentence case, because that is the house voice
+ *
+ * Brief 05 §"Labels": *"Labels are sentence case, not Title Case … House voice
+ * throughout the product."* His reply #91 asks for these dialogs *"in our same
+ * design language"*, and the design language says so in writing.
+ *
+ * # What is deliberately NOT here
+ *
+ * Not rebuilt onto `foundation/modals.css`'s promoted shell. #421 says so
+ * explicitly: brief 09 routes *irreversible* acts through `ConfirmDialog`, and
+ * these carry multi-field forms. Folding them in is its own decision.
+ */
 import {
   ShieldOff,
   Coins,
@@ -17,7 +57,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RoleBadge } from "./UserBadges";
+import { RolePill } from "@/features/staff";
+import { severityLook } from "@/foundation";
 
 /* ── Suspend Modal ─────────────────────────────────────────── */
 
@@ -33,31 +74,36 @@ interface SuspendModalProps {
 export function SuspendModal({ open, onOpenChange, reason, onReasonChange, onConfirm, isPending }: SuspendModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
+      <DialogContent className="text-foreground">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          {/*
+            The one red, and it is earned: suspension logs the account out and
+            keeps it out. `text-destructive` resolves to `--error`, the single
+            colour the foundation allows beside the accent.
+          */}
+          <DialogTitle className="flex items-center gap-2 text-destructive">
             <ShieldOff className="w-5 h-5" />
-            Suspend User
+            Suspend user
           </DialogTitle>
-          <DialogDescription className="text-[#666]">
+          <DialogDescription>
             This will immediately block the user from accessing their account.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-[#666] font-medium">Reason for suspension</label>
+            <label className="text-sm text-muted-foreground font-medium">Reason for suspension</label>
             <Textarea
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
               placeholder="Enter the reason for suspending this user..."
-              className="mt-1 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#999]"
+              className="mt-1"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button variant="destructive" onClick={onConfirm} disabled={!reason.trim() || isPending}>
-            {isPending ? "Suspending..." : "Suspend User"}
+            {isPending ? "Suspending..." : "Suspend user"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -82,42 +128,45 @@ interface CreditModalProps {
 export function CreditModal({ open, onOpenChange, action, amount, onAmountChange, reason, onReasonChange, onConfirm, isPending }: CreditModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
+      <DialogContent className="text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Coins className="text-[#666]" />
+            <Coins className="text-muted-foreground" />
             {action === "add" ? "Add credits" : "Deduct credits"}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-[#666] font-medium">Amount</label>
+            <label className="text-sm text-muted-foreground font-medium">Amount</label>
             <Input
               type="number"
               value={amount}
               onChange={(e) => onAmountChange(e.target.value)}
               placeholder="Enter amount..."
               min="1"
-              className="mt-1 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#999]"
+              className="mt-1"
             />
           </div>
           <div>
-            <label className="text-sm text-[#666] font-medium">Reason</label>
+            <label className="text-sm text-muted-foreground font-medium">Reason</label>
             <Textarea
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
               placeholder="Enter the reason for this adjustment..."
-              className="mt-1 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#999]"
+              className="mt-1"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
-          {/* R6 pile (b): money actions wear the house ink, not a color code */}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          {/*
+            R6 pile (b): money actions wear the house ink, not a colour code —
+            and the default variant IS the house ink now (`--color-primary` is
+            `--ink`), so the class that used to say it has nothing left to say.
+          */}
           <Button
             onClick={onConfirm}
             disabled={!amount || !reason.trim() || isPending}
-            className="bg-[#0A0A0A] hover:bg-[#0A0A0A]/90 text-white"
           >
             {isPending ? "Processing..." : action === "add" ? "Add credits" : "Deduct credits"}
           </Button>
@@ -150,16 +199,23 @@ interface RoleChangeModalProps {
 export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReasonChange, onConfirm, isPending, selectedUser }: RoleChangeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
+      <DialogContent className="text-foreground">
         <DialogHeader>
+          {/*
+            ⚠ The blue and the amber are gone and neither is replaced by another
+            colour. Brief 07 §3: accent means STATE in this product, and a role
+            change is neither urgent nor selected — the icon and the words carry
+            it. Promote and demote are both reversible, which is why neither
+            wears the one red.
+          */}
           <DialogTitle className="flex items-center gap-2">
             {targetRole === "moderator" ? (
-              <><Shield className="w-5 h-5 text-blue-600" />Promote to Moderator</>
+              <><Shield className="w-5 h-5 text-muted-foreground" />Promote to moderator</>
             ) : (
-              <><UserCog className="w-5 h-5 text-amber-600" />Demote to User</>
+              <><UserCog className="w-5 h-5 text-muted-foreground" />Demote to user</>
             )}
           </DialogTitle>
-          <DialogDescription className="text-[#666]">
+          <DialogDescription>
             {targetRole === "moderator"
               ? "This user will gain access to the moderator dashboard with read-only audit logs, user activity, and the ability to escalate issues to admins via Slack."
               : "This user will lose moderator access and return to standard user permissions."}
@@ -167,53 +223,75 @@ export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReas
         </DialogHeader>
         <div className="space-y-4">
           {selectedUser && (
-            <div className="bg-[#F8F8F8] rounded-xl p-3 border border-[#E5E5E5]">
+            <div className="bg-muted rounded-xl p-3 border border-border">
               <div className="flex items-center gap-3">
                 {selectedUser.user.avatarUrl ? (
-                  <img src={selectedUser.user.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover ring-1 ring-[#E5E5E5]" />
+                  <img src={selectedUser.user.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover ring-1 ring-border" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#F0F0F0] flex items-center justify-center">
-                    <User className="w-5 h-5 text-[#999]" />
+                  <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
+                    <User className="w-5 h-5 text-muted-foreground" />
                   </div>
                 )}
                 <div>
-                  <div className="font-medium text-[#0A0A0A]">{selectedUser.user.name || "Unnamed"}</div>
-                  <div className="text-sm text-[#999]">{selectedUser.user.email || "No email"}</div>
+                  <div className="font-medium text-foreground">{selectedUser.user.name || "Unnamed"}</div>
+                  <div className="text-sm text-muted-foreground">{selectedUser.user.email || "No email"}</div>
                 </div>
+                {/*
+                  ⚠ `RolePill`, NOT this feature's own `RoleBadge` — and the
+                  swap is a measured one, not a preference. `RoleBadge` drew a
+                  purple `admin` crown and a blue `moderator` shield inside a
+                  dialog this change just made monochrome. `features/staff`'s
+                  `RolePill` already exists, is already greyscale, and its own
+                  docblock rules on this exact thing: *"a role is what someone
+                  IS, never something needing attention."*
+
+                  Read before it was believed: `RoleBadge`'s ONLY consumer in
+                  the product is this dialog — `UserTable.tsx` imports
+                  `formatDate` and `getUserStatus` from that module and nothing
+                  else, because brief 06 already moved the table to `StatePill`.
+                  So no other surface moves.
+                */}
                 <div className="ml-auto flex items-center gap-2 text-sm">
-                  <RoleBadge role={selectedUser.user.role} />
-                  <span className="text-[#CCC]">→</span>
-                  <RoleBadge role={targetRole} />
+                  <RolePill role={selectedUser.user.role} />
+                  <span className="text-muted-foreground">&rarr;</span>
+                  <RolePill role={targetRole} />
                 </div>
               </div>
             </div>
           )}
           <div>
-            <label className="text-sm text-[#666] font-medium">Reason for role change</label>
+            <label className="text-sm text-muted-foreground font-medium">Reason for role change</label>
             <Textarea
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
               placeholder={targetRole === "moderator"
                 ? "e.g., Trusted community member, needs access to review reports..."
                 : "e.g., No longer needed, stepping down from moderation duties..."}
-              className="mt-1 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#999]"
+              className="mt-1"
             />
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-            <div className="flex items-center gap-2 text-amber-700 text-sm font-medium">
+          {/*
+            The amber slab becomes the foundation's own `warning` look, through
+            the foundation's own helper rather than an approximation of it —
+            `severityLook` is what brief 00 §4 built for this exact job, and
+            three tints collapsing to one bordered well is its whole point.
+            Reaching for `bg-muted border-border` here would have LOOKED the
+            same today and drifted the moment the helper moved.
+          */}
+          <div className="rounded-xl p-3" style={severityLook("warning")}>
+            <div className="flex items-center gap-2 text-sm font-medium">
               <AlertTriangle className="w-4 h-4" />
               This action will be logged and reported to Slack
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
             onClick={onConfirm}
             disabled={!reason.trim() || isPending}
-            className={targetRole === "moderator" ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white"}
           >
-            {isPending ? "Processing..." : targetRole === "moderator" ? "Promote to Moderator" : "Demote to User"}
+            {isPending ? "Processing..." : targetRole === "moderator" ? "Promote to moderator" : "Demote to user"}
           </Button>
         </DialogFooter>
       </DialogContent>

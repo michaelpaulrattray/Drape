@@ -211,6 +211,32 @@ const GUARDED_PATHS = [
   "features/moderator/UserInvestigationWidgets.tsx",
   "features/moderator/investigations.css",
   "pages/ModeratorDashboard.tsx",
+
+  /*
+    #421, his reply #91: *"id like the change request modal and any other staff
+    modals to be re-designed in our same design language."*
+
+    ⚠ **THE DIRECTORY THIS TIME, AND THE REASON IS THE HOLE ITSELF.** The block
+    above enrolled `features/moderator/` FILE BY FILE for one stated reason —
+    `ChangeRequestModal.tsx` was the one file no brief owned, and it held 89
+    literals, more than the other four staff dialogs combined. That narrowness
+    was correct on the day and it is also exactly what let the founder find the
+    offender before a guard did: five briefs each drew a scope boundary, every
+    one individually right, and the dialogs sat in the gap between all five.
+
+    With the remainder gone there is no longer anything in `features/moderator/`
+    to skip, so the enrolment stops being a list somebody has to remember to
+    extend. A new component under it is measured the moment it exists.
+
+    Measured before and after: **192 literals across the five dialog files → 0**,
+    plus seven Tailwind tints deleted with `UserBadges`'s two orphaned badges.
+  */
+  "features/moderator",
+  "features/admin/UserActionModals.tsx",
+  "features/admin/AuditActionModals.tsx",
+  "features/admin/ReviewModal.tsx",
+  "features/admin/UserBadges.tsx",
+  "pages/AdminUserManagement.tsx",
 ];
 
 /**
@@ -271,6 +297,23 @@ const HEX_CARVE_OUTS: Record<string, string> = {
   */
   "features/admin/components/crew/crewTypes.test.ts":
     "issue numbers in test titles, in the one file brief 08 §8 requires to pass untouched — a pure-derivation test that renders nothing",
+  /*
+    THE THIRD INSTANCE OF THE ROW TWO ABOVE, and it arrives the moment
+    `features/moderator/` is guarded by DIRECTORY rather than by file (#421).
+
+    `section09-guard.test.ts` runs the same no-hex check over the moderator
+    surfaces and proves its own matcher with `code("color: #BADA55;")` — a
+    planted violation, which working law 2 requires it to contain and which the
+    file-by-file enrolment above happened to route around. A guard whose
+    neighbour flags its positive control is a guard that cannot be proven.
+
+    ⚠ Narrow for the same stated reason as its two siblings: this is a TEST
+    file and it renders nothing. A carve-out for a COMPONENT under this
+    directory would be a different decision, and the honesty arm below reddens
+    the day this file stops containing a hex-shaped string.
+  */
+  "features/moderator/section09-guard.test.ts":
+    "its own positive control — `#BADA55`, the planted hex that proves its no-hex matcher fires",
 };
 
 const HEX_LITERAL = /#[0-9a-fA-F]{3,8}\b/g;
