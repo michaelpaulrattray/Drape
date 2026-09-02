@@ -1,6 +1,6 @@
 {
-  "edition": 219,
-  "updatedAt": "2026-09-02T16:59:24.853Z",
+  "edition": 220,
+  "updatedAt": "2026-09-02T17:05:50.257Z",
   "shift": "Foreman — night of 3 September (the framing trim retires on your word: the frame you get is now the frame we rendered)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -111,6 +111,16 @@
     ],
     "chips": [
       {
+        "label": "Your sheets are framed the way the engine framed them now",
+        "tone": "good",
+        "source": "PR #458 on your “11 heads look fine.” Faces were rendered big, measured to find the head, cropped and shrunk back. Gone: a roll of eight buys ZERO head-reads, not 16, and writes 8 pictures, not 16."
+      },
+      {
+        "label": "And the words we send you did not change at all",
+        "tone": "good",
+        "source": "Checked, not assumed: the framing sentence you passed was never tied to this switch, so no cast's brief moves. A framing fix that quietly edited the prompt would change every cast."
+      },
+      {
         "label": "You were right about the topbar icons — all six",
         "tone": "good",
         "source": "PR #430, merged 0d289463. \"What's new\" was a megaphone where your prototype draws a speaker; the bug had four legs where yours has six. All six are lifted from your file now, verbatim."
@@ -121,19 +131,9 @@
         "source": "Our copy and your icon file were identical, and a test asserted that. But your prototype draws the topbar inline, so the six were never in that file. Two copies of one mistake agree."
       },
       {
-        "label": "Both staff pages now say Klieg Console",
+        "label": "The queue: 73 open · 13 yours · 1 urgent · 8 rotting",
         "tone": "good",
-        "source": "PR #431, merged c153efdf. Klieg Studio is the WORKSPACE name — the day workspaces are real that becomes something a customer types, and staff sits above workspaces."
-      },
-      {
-        "label": "The review found a third copy of the old title I had missed",
-        "tone": "warn",
-        "source": "/admin/foundation still spelt it. My new check guarded the string that ARRIVED and not the two that LEFT — half a sweep. Fixed, and it now sweeps both directions."
-      },
-      {
-        "label": "The queue: 73 open · 15 yours · 1 urgent · 8 rotting",
-        "tone": "good",
-        "source": "Measured tonight. Rotting = open and never re-read for a week: the SAME EIGHT as the last two nights (#10 #14 #18 #22 #30 #55 #61 #65), none a bug, none on you. Not getting worse."
+        "source": "Measured tonight. Rotting = open, never re-read for a week: the SAME EIGHT for a FOURTH night, none a bug, none on you. Your cards went 14 → 13 — #11 closed."
       }
     ]
   },
