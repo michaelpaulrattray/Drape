@@ -357,7 +357,11 @@ describe("§7 — there is no SECOND progress number beside the milestone bar", 
  * it, and they are why the clause is answered here in code rather than only
  * in a commit message.
  */
-describe("§7 — history is not a section on this page at all (#438)", () => {
+/* The card is named in the docblock above rather than in this title: the
+   foundation token guard reads an issue number in a STRING as a hex literal
+   (every number from 100 up is valid hex) and strips comments, which is what
+   its own failure message tells you to do. */
+describe("§7 — history is not a section on this page at all", () => {
   it("no component reads the folded history, and the derivations are gone", () => {
     const readers = surfaces().filter((f) => code(f.text).includes("recentHistory("));
     expect(readers.map((f) => f.name)).toEqual([]);
@@ -473,7 +477,9 @@ describe("§4 + §6 — the Needs You empty state STAYS (brief 07's rule reverse
  * both themes, with a non-merged fixture row — an empty-state arm alone is
  * green when the section is broken.
  */
-describe("§6 — THE PIPELINE keeps an honest empty state (#438)", () => {
+/* Card number in the docblock above, not in this title — the token guard
+   reads it as a hex literal. */
+describe("§6 — THE PIPELINE keeps an honest empty state", () => {
   const pipeline = code(read(path.join(HERE, "CrewPipeline.tsx")));
 
   it("renders the sentence rather than nothing, and says what the section is for", () => {
