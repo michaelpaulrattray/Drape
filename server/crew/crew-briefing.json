@@ -1,6 +1,6 @@
 {
-  "edition": 203,
-  "updatedAt": "2026-09-02T01:18:51.217373Z",
+  "edition": 204,
+  "updatedAt": "2026-09-02T01:22:12.523012Z",
   "shift": "Foreman — night of 2 September (moderator investigations, brief 09 — the staff lane closes)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -189,7 +189,7 @@
         }
       ],
       "recommendation": "(c) - write it after #391 lands, for the seven rungs that survive. Nothing is waiting on this and the slot's absence cannot be seen, so it can sit as long as you like.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-02"
     },
     {
@@ -200,7 +200,7 @@
       "workedExample": "Why it is not already built: it means adding a column to the credit ledger and writing to it at the moment you are charged. That is your money path, the automatic code reviewer has been out for about five days, and the visible effect today is zero. I would rather it landed on its own with a second reader than rode along beside four display fixes. It is one small piece of work whenever you want it.\n\nNothing is being guessed at your history: your 622 existing rows have no honest answer - over half of them record no engine at all - so nothing gets backfilled. A made-up label in a chart is worse than no chart.",
       "options": [],
       "recommendation": null,
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-01"
     },
     {
@@ -4122,7 +4122,7 @@
     90
   ],
   "nextUp": {
-    "readAt": "2026-09-02T01:19:07.824Z",
+    "readAt": "2026-09-02T01:22:14.757Z",
     "items": [
       {
         "issueNumber": 231,
