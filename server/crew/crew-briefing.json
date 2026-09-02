@@ -1,7 +1,7 @@
 {
-  "edition": 217,
-  "updatedAt": "2026-09-02T13:34:00.000Z",
-  "shift": "Foreman — night of 2 September (you asked why the auto-refresh switch was per-page; it is one switch now)",
+  "edition": 218,
+  "updatedAt": "2026-09-02T15:36:59.457Z",
+  "shift": "Foreman — night of 3 September (the pending-request count is on the bar now, and Crew refreshes like everything else)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1440,6 +1440,46 @@
   ],
   "eyeItems": [
     {
+      "id": "count-pill-415",
+      "title": "The requests waiting on you are on the bar of every admin page now — and one frame shows why it nearly shipped wrong",
+      "state": "open",
+      "filedAt": "2026-09-02T15:36:59.457Z",
+      "issueNumber": 415,
+      "question": "You asked for two things on 1 September and both are live.\n\nTHE FIRST: \"if mods sent 5 requests to the admin panel it shold show 5 requests pending\". The number now sits on the Change requests tab, on every admin page — not just the dashboard. Five waiting draws a 5; none waiting draws nothing at all, rather than a (0).\n\nIt is a small number on the tab rather than a separate notification button, because the tab already takes you to the requests page and a button beside it doing the same thing is two doors to one room. If you would rather have the button, say so and it is a small change — but then the tab number goes, because showing it twice is how the two start disagreeing.\n\nTHE SECOND: \"even thought crew has its own refresh principles should we just fold it into the same as overview so everything is consistent\". This page now has the same clock, the same AUTO switch and the same refresh button as the rest of the panel. The line at the foot no longer says when it last checked — the bar says that — but it still tells you WHO wrote the briefing, which is the more useful half.\n\nONE THING WORTH KNOWING, because it is a real change to how this page behaves: Crew used to re-read itself every minute no matter what. It now follows the panel-wide AUTO switch, which is ON by default — so nothing changes for you unless you turn AUTO off, and then Crew stops re-reading itself like every other page, with the refresh button right there.\n\nTHE LAST FRAME IS THE ONE I WOULD LOOK AT. It is the bug the reviewer caught before this shipped: decline requests on the requests page and the list empties while the bar still says 5. Fixed, and the frame is kept because a picture of the bar contradicting the page in the same screenshot is the clearest statement of why one number must have one source.",
+      "frames": [
+        {
+          "key": "crew-eye/255801b9-48f4-442d-8b5d-8815581adb79.png",
+          "arm": "The bar, on Users — dark",
+          "caption": "Five requests waiting, shown on a page that is not the dashboard. That is the whole ask."
+        },
+        {
+          "key": "crew-eye/dd00b709-aa52-4ca1-99ae-da5e00dba2c3.png",
+          "arm": "The bar, on Users — light",
+          "caption": "The same thing in the light theme."
+        },
+        {
+          "key": "crew-eye/2c35cfc2-bf87-4bdc-8f42-5f7bdd38d3b9.png",
+          "arm": "Crew, folded in — dark",
+          "caption": "The clock, the AUTO switch and the refresh button, same as every other staff page."
+        },
+        {
+          "key": "crew-eye/b7225b51-a057-400a-a698-755c9a55bbc1.png",
+          "arm": "Crew's foot line",
+          "caption": "The timestamp moved up to the bar, so the page says its freshness once. The shift name stayed, because the bar cannot say that."
+        },
+        {
+          "key": "crew-eye/d5ca8772-4783-4abb-a7d2-55d276fcf300.png",
+          "arm": "Declining a request — fixed",
+          "caption": "Bar says 4, filter says Pending (4), four rows. Three places, one number."
+        },
+        {
+          "key": "crew-eye/3b4cb92a-4c89-47ed-8c3c-808ae32d0ff7.png",
+          "arm": "The bug caught before it shipped",
+          "caption": "The same moment without the fix: the bar says 5 while the filter beside it says Pending (4). This is what it would have done to you."
+        }
+      ]
+    },
+    {
       "id": "shared-autorefresh-453",
       "title": "One switch for the whole panel — and the page you cited as correct was never doing it either",
       "state": "open",
@@ -1473,7 +1513,7 @@
       "id": "refresh-cluster-413",
       "title": "The missing refresh controls — and your question found twice what the card did",
       "question": "You asked why only some admin pages carry \"the updated time the auto refresh toggle and a notification button\". They all do now. But the interesting part is what turned up on the way, and it is worth two minutes.\n\nTHE CARD SAID TWO PAGES WERE WRONG. FOUR WERE.\n\nWhoever wrote the card searched the pages for the setting that draws those controls and found two pages missing it — Invite codes and Bug reports. That search was answering a slightly different question than yours. Users and Change requests HAD the setting, and inside it they had only the refresh button — no time, no toggle. So they matched the search and still failed two of the three things you named. The first frame below is the Users page as it was: one lonely refresh icon and nothing else.\n\nTHE REASON THOSE TWO PAGES GAVE FOR IT WAS SIMPLY WRONG.\n\nEach had a note in the code saying the missing pieces were \"state no reader produces\" — meaning the page had nothing to show, so showing nothing was correct. That is false. Every one of these pages already knows the moment its data arrived, and the Overview page has been reading exactly that since these bars were built. Nobody had ever asked it. I corrected the design brief that note was citing, because the brief is what the next person reads.\n\nWHAT YOU WILL SEE\n\nOpen Invite codes, Bug reports, Users or Change requests. Same three things Overview has, same place, same behaviour. Bug reports is the one that matters most — it is an inbox, a row only appears when a customer somewhere hits Report a bug, and until now the only way to find out one had arrived was to leave the page and come back.\n\nONE THING I DELIBERATELY DID NOT DO\n\nThe card told me to write a note in the code explaining that the Crew page is permanently different. I did not, because you reversed that yourself the same day on another card — you asked whether Crew should just fold into the same refresh as everything else, and the answer there is yes. Writing a paragraph defending an exception on the day you have asked to remove it is a document that is stale before it is saved. Instead a test now goes red the moment Crew is folded in, so that night has to delete Crew's own \"checked 2 minutes ago\" line at the same time — otherwise the page would tell you how fresh it is twice.\n\nHOW HARD I LOOKED\n\nAll eight staff pages, both light and dark, driven in a real browser: 106 readings, none wrong. Then the same run against the old code as a control: 20 failures, in exactly the shape described above. The toggle is clicked rather than just looked at, because a switch that draws two states and changes neither is the sort of thing that ships looking finished.\n\nThe photographs below are dark; light was measured the same way with the same result.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-02T12:08:50.089Z",
       "issueNumber": 413,
       "frames": [
@@ -3145,6 +3185,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-456-count-pill",
+      "title": "The pending-request count reaches the staff bar, and Crew joins the one refresh",
+      "status": "merged",
+      "note": "#415 — your two asks from 1 September. The number of moderator requests waiting on you now sits on the Change requests tab of every admin page, and the Crew page refreshes the same way the rest of the panel does. The reviewer caught a real bug before it shipped: resolving requests emptied the list while the bar kept the old number. Fixed and proved with the page driven end to end.",
+      "prNumber": 456
+    },
+    {
       "id": "pr-454-shared-autorefresh",
       "title": "The AUTO switch is one switch for the whole staff panel",
       "status": "merged",
@@ -4334,9 +4381,9 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0902-night",
-      "title": "The queue: 75 open, 18 carrying your word, 1 urgent, 8 rotting — the same eight as last night",
-      "detail": "Measured tonight, not carried over. 75 open (was 78), 18 of them ordered by you, 6 parked. One urgent: #231, the reader court, which needs the Fable seat and cannot run on this one.\n\nRotting — open a week and never re-read against the code — is 8, and it is the SAME EIGHT as last night, by number: #10, #14, #18, #22, #30, #55, #61, #65. Every one is a Lost-and-Found or designed-but-unbuilt card from 25 August. None is a bug and none is waiting on a shift; they are ideas parked until something asks for them. So the number is stable rather than growing, which is the thing a bare count cannot tell you.\n\n⚠ Three fell off the open list tonight and only one of them was built: #438 (this shift), #445 (its fix had merged this morning while its card stayed open — a record fix, not a build), and one closed elsewhere. One new card was filed: #448, a type inconsistency this shift's own new check turned up in a different section, filed rather than fixed under a card about this one.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are still overdue. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
+      "id": "queue-shape-0903-night",
+      "title": "The queue: 74 open, 14 carrying your word, 1 urgent, 8 rotting — the same eight for a third night",
+      "detail": "Measured tonight. 74 open (was 75), 14 of them ordered by you, 6 parked. One urgent: #231, the reader court — it needs the Fable seat and cannot run on this one.\n\nRotting — open a week and never re-read against the code — is 8, and it is the SAME EIGHT as the last two nights: #10, #14, #18, #22, #30, #55, #61, #65. All Lost-and-Found or designed-but-unbuilt cards from 25 August. None is a bug and none is waiting on you. The number is stable rather than growing, which is what a bare count cannot tell you.\n\nTwo new cards were filed tonight and both came out of this shift's own work rather than from browsing: #455 (the AUTO 30s switch sits over a reader that refreshes every 60s on two pages) and #457 (a request ARRIVING while you sit still reaches the bar on your next click rather than immediately — a decision about cost, with a recommendation on the card).",
       "severity": "info",
       "state": "open"
     },
@@ -4623,7 +4670,7 @@
     104
   ],
   "nextUp": {
-    "readAt": "2026-09-02T12:08:58.576Z",
+    "readAt": "2026-09-02T15:37:57.002Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4668,11 +4715,6 @@
       {
         "issueNumber": 414,
         "title": "Crew takes his drawing's design devices — ticks, state pills, skeletons — without the mock data",
-        "urgent": false
-      },
-      {
-        "issueNumber": 415,
-        "title": "Pending moderator requests reach the staff bar as a count, and Crew folds into the one refresh",
         "urgent": false
       },
       {

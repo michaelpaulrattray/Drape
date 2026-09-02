@@ -78,7 +78,23 @@ Every step below is a discriminator by construction, and **all seven disagree**.
 
 **Law 6 / law 9: I looked at every frame myself.** The pair that is the whole argument is `/admin/crew` — branch, bar carrying stamp + `AUTO 30s` + refresh with a foot line that names the shift and no time; `main`, an empty bar right-hand side with the timestamp at the foot.
 
-Frames: `output/415-frames/` — `{branch,main}-users-bar-{dark,light}.png`, `{branch,main}-overview-agreement.png`, `{branch,main}-crew-{dark,light}.png`, `{branch,main}-crew-foot-{dark,light}.png`. Readings: `{branch,main}-readings.json`.
+### ⚠ WHICH FRAMES EXIST, AND WHY SOME DO NOT — I HIT A TRAP THIS REPOSITORY HAD ALREADY WRITTEN DOWN
+
+`git worktree remove --force` empties the directory it removes, and the shift's **first** worktree held twelve frames. The recorded rule is *copy receipts out before removing the worktree*; I did that for the second worktree and not the first.
+
+**What is in `output/415-frames/` now, and it is the set that matters:**
+
+| frame | what it shows |
+|---|---|
+| `merged-users-bar-{dark,light}.png` | the pill reading **5** on a page that is not Overview, both themes |
+| `merged-crew-{dark,light}.png` | Crew carrying the bar's stamp, `AUTO 30s` and the manual button |
+| `merged-crew-foot-{dark,light}.png` | the foot line naming the shift with **no second timestamp** |
+| `branch-deny-{before,after}.png` | the pill going **5 → 4** when a request is resolved |
+| `control-noinvalidate-deny-after.png` | ⚠ **the defect photographed** — the bar saying `5` over a filter saying `Pending (4)` |
+
+The `merged-*` frames were **re-driven against merged `main`**, which now IS that code, with every reading identical to the branch drive above.
+
+**The `main`-side control frames are gone and are not being recreated.** That tree state is a commit behind a merge, and photographing a state the product no longer has is an hour spent on a picture of the past. **Their readings survive quoted verbatim in the table above**, which is the substance — and the round-2 control frame demonstrates the same discipline on a live defect. What matters is that this document does not cite files that are not there.
 
 ### ⚠ TWO INSTRUMENT FAILURES, BOTH MINE, BOTH CAUGHT BEFORE THEY BECAME EVIDENCE
 
