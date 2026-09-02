@@ -3,7 +3,7 @@ export { AuditStatsCards, AbuseAlertsPanel, AuditFiltersBar } from "./AuditLogsF
 export { AuditLogTable } from "./AuditLogTable";
 export { SuspendUserModal, BlockIpModal } from "./AuditActionModals";
 export { BlockedIPsTab } from "./BlockedIPsTab";
-export { StatusBadge as UserStatusBadge, RoleBadge, getUserStatus } from "./UserBadges";
+export { getUserStatus } from "./UserBadges";
 export { UserStatsCards } from "./UserStatsCards";
 export { UserFilters } from "./UserFilters";
 export { UserTable } from "./UserTable";

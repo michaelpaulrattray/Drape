@@ -1,5 +1,38 @@
 /**
- * Change Request Modal — form for submitting structured change requests with file attachments.
+ * File a request — the moderator's structured change-request form (#421).
+ *
+ * # ⚠ THE ONE HE NAMED, AND THE ONE NO GUARD COULD SEE
+ *
+ * Crew reply #91, verbatim: *"id like the change request modal and any other
+ * staff modals to be re-designed in our same design language. also the buttons
+ * copy 'new change request' is so long just called it file a request or
+ * something."*
+ *
+ * This file held **89 hex literals** — more than the other four staff dialogs
+ * combined — and it was on none of the lists. Brief 09 §6 enrolled
+ * `features/moderator/` in `token-guard` **file by file** precisely so it could
+ * skip this one, and #421 was written from two admin-side reports so its table
+ * named three admin files. **The founder found it by opening it.**
+ *
+ * # The fix is deletion, not substitution
+ *
+ * `client/src/index.css` already remaps every shadcn slot onto a foundation
+ * token, so `DialogContent`, `Input`, `Textarea` and `SelectContent` were
+ * theme-correct before this change and were being painted over in one theme's
+ * colours. Most of this diff is classes coming OFF. See
+ * `features/admin/UserActionModals.tsx`'s header for the full reasoning; the
+ * short version is working law 4 — a second statement of a value drifts from
+ * the first.
+ *
+ * # Two things that are not colour
+ *
+ * - **The button copy is his.** `New Change Request` → `File a request`. The
+ *   empty state in `MyRequestsTab.tsx` quotes that button back at the reader
+ *   and moves in the same commit; a rename that leaves the quote behind names
+ *   a control that no longer exists.
+ * - **Sentence case**, because brief 05 §"Labels" makes it the house voice:
+ *   *"Labels are sentence case, not Title Case … House voice throughout the
+ *   product."* `Block IP` keeps its capitals — an initialism is not Title Case.
  */
 import { X, FileText, Loader2, Upload, Image, File, Trash2 } from "lucide-react";
 import { useState, useRef } from "react";
@@ -22,6 +55,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { severityLook } from "@/foundation";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { ChangeRequestType, ChangeRequestPriority } from "./moderatorConstants";
@@ -166,13 +200,13 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A] max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[#0A0A0A]">
-            <FileText className="w-5 h-5 text-amber-600" />
-            New Change Request
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-muted-foreground" />
+            File a request
           </DialogTitle>
-          <DialogDescription className="text-[#999]">
+          <DialogDescription>
             Submit a structured request for admin review. This will be tracked and you can follow its status.
           </DialogDescription>
         </DialogHeader>
@@ -181,26 +215,26 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
           {/* Type + Priority */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Request Type</label>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Request type</label>
               <Select value={crType} onValueChange={(v) => setCrType(v as ChangeRequestType)}>
-                <SelectTrigger className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]"><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="refund_credits">Refund Credits</SelectItem>
-                  <SelectItem value="add_credits">Add Credits</SelectItem>
-                  <SelectItem value="flag_account">Flag Account</SelectItem>
-                  <SelectItem value="note_incident">Note Incident</SelectItem>
-                  <SelectItem value="suspend_user">Suspend User</SelectItem>
-                  <SelectItem value="unsuspend_user">Unsuspend User</SelectItem>
+                  <SelectItem value="refund_credits">Refund credits</SelectItem>
+                  <SelectItem value="add_credits">Add credits</SelectItem>
+                  <SelectItem value="flag_account">Flag account</SelectItem>
+                  <SelectItem value="note_incident">Note incident</SelectItem>
+                  <SelectItem value="suspend_user">Suspend user</SelectItem>
+                  <SelectItem value="unsuspend_user">Unsuspend user</SelectItem>
                   <SelectItem value="block_ip">Block IP</SelectItem>
-                  <SelectItem value="stripe_refund">Stripe Refund</SelectItem>
+                  <SelectItem value="stripe_refund">Stripe refund</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Priority</label>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Priority</label>
               <Select value={crPriority} onValueChange={(v) => setCrPriority(v as ChangeRequestPriority)}>
-                <SelectTrigger className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]"><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
@@ -214,12 +248,12 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
           {/* Target User */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Target User ID *</label>
-              <Input value={crTargetUserId} onChange={(e) => setCrTargetUserId(e.target.value)} placeholder="e.g., 42" className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Target user ID *</label>
+              <Input value={crTargetUserId} onChange={(e) => setCrTargetUserId(e.target.value)} placeholder="e.g., 42" />
             </div>
             <div>
-              <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Target User Name</label>
-              <Input value={crTargetUserName} onChange={(e) => setCrTargetUserName(e.target.value)} placeholder="User name (optional)" className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Target user name</label>
+              <Input value={crTargetUserName} onChange={(e) => setCrTargetUserName(e.target.value)} placeholder="User name (optional)" />
             </div>
           </div>
 
@@ -227,12 +261,12 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
           {(crType === "refund_credits" || crType === "add_credits") && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Credit Amount *</label>
-                <Input type="number" value={crCreditAmount} onChange={(e) => setCrCreditAmount(e.target.value)} placeholder="e.g., 100" min="1" className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Credit amount *</label>
+                <Input type="number" value={crCreditAmount} onChange={(e) => setCrCreditAmount(e.target.value)} placeholder="e.g., 100" min="1" />
               </div>
               <div>
-                <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Credit Reason</label>
-                <Input value={crCreditReason} onChange={(e) => setCrCreditReason(e.target.value)} placeholder="e.g., Service disruption" className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Credit reason</label>
+                <Input value={crCreditReason} onChange={(e) => setCrCreditReason(e.target.value)} placeholder="e.g., Service disruption" />
               </div>
             </div>
           )}
@@ -240,40 +274,47 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
           {/* IP field */}
           {crType === "block_ip" && (
             <div>
-              <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">IP Address *</label>
-              <Input value={crIpAddress} onChange={(e) => setCrIpAddress(e.target.value)} placeholder="e.g., 192.168.1.1" className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">IP address *</label>
+              <Input value={crIpAddress} onChange={(e) => setCrIpAddress(e.target.value)} placeholder="e.g., 192.168.1.1" />
             </div>
           )}
 
           {/* Stripe refund fields */}
+          {/*
+            The amber slab was the one place in this form that said "money"
+            with a colour. It takes the foundation's own `warning` look
+            instead — through `severityLook`, the helper brief 00 §4 built for
+            collapsing seven tints to three, rather than an approximation of it
+            in Tailwind classes.
+          */}
           {crType === "stripe_refund" && (
-            <div className="space-y-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
-              <p className="text-xs text-amber-700 font-medium">Stripe Refund Details</p>
+            <div className="space-y-3 p-3 rounded-xl" style={severityLook("warning")}>
+              <p className="text-xs font-medium">Stripe refund details</p>
               <div>
-                <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Stripe Session ID *</label>
-                <Input value={crStripeSessionId} onChange={(e) => setCrStripeSessionId(e.target.value)} placeholder="cs_test_..." className="bg-white border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC] font-mono text-xs" />
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Stripe session ID *</label>
+                <Input value={crStripeSessionId} onChange={(e) => setCrStripeSessionId(e.target.value)} placeholder="cs_test_..." className="font-mono text-xs" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Original Amount (cents)</label>
-                  <Input type="number" value={crOriginalAmountCents || ""} onChange={(e) => setCrOriginalAmountCents(parseInt(e.target.value) || 0)} placeholder="e.g., 1500" className="bg-white border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
-                  {crOriginalAmountCents > 0 && <p className="text-xs text-[#999] mt-0.5">${(crOriginalAmountCents / 100).toFixed(2)}</p>}
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Original amount (cents)</label>
+                  <Input type="number" value={crOriginalAmountCents || ""} onChange={(e) => setCrOriginalAmountCents(parseInt(e.target.value) || 0)} placeholder="e.g., 1500" />
+                  {crOriginalAmountCents > 0 && <p className="text-xs text-muted-foreground mt-0.5">${(crOriginalAmountCents / 100).toFixed(2)}</p>}
                 </div>
                 <div>
-                  <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Original Credits</label>
-                  <Input type="number" value={crOriginalCredits || ""} onChange={(e) => setCrOriginalCredits(parseInt(e.target.value) || 0)} placeholder="e.g., 150" className="bg-white border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Original credits</label>
+                  <Input type="number" value={crOriginalCredits || ""} onChange={(e) => setCrOriginalCredits(parseInt(e.target.value) || 0)} placeholder="e.g., 150" />
                 </div>
               </div>
               <div>
-                <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Refund Type</label>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Refund type</label>
                 <Select value={crRefundType} onValueChange={(v) => setCrRefundType(v as "full" | "proportional")}>
-                  <SelectTrigger className="bg-white border-[#E5E5E5] text-[#0A0A0A]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="proportional">Proportional (unused credits only)</SelectItem>
-                    <SelectItem value="full">Full Refund (goodwill)</SelectItem>
+                    <SelectItem value="full">Full refund (goodwill)</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-[#999] mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {crRefundType === "proportional" ? "Refunds only the unused portion. Credits deducted, balance floors at 0." : "Refunds full amount regardless of usage. Credits deducted, balance floors at 0."}
                 </p>
               </div>
@@ -282,24 +323,24 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
 
           {/* Title + Description */}
           <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Title * (min 5 characters)</label>
-            <Input value={crTitle} onChange={(e) => setCrTitle(e.target.value)} placeholder="Brief summary of the request" className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]" />
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Title * (min 5 characters)</label>
+            <Input value={crTitle} onChange={(e) => setCrTitle(e.target.value)} placeholder="Brief summary of the request" />
           </div>
           <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Description * (min 10 characters)</label>
-            <Textarea value={crDescription} onChange={(e) => setCrDescription(e.target.value)} placeholder="Detailed description of the issue and why this action is needed..." className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC] min-h-[80px]" />
-            <p className="text-xs text-[#CCC] mt-1">{crDescription.length}/5000 characters</p>
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Description * (min 10 characters)</label>
+            <Textarea value={crDescription} onChange={(e) => setCrDescription(e.target.value)} placeholder="Detailed description of the issue and why this action is needed..." className="min-h-[80px]" />
+            <p className="text-xs text-muted-foreground mt-1">{crDescription.length}/5000 characters</p>
           </div>
 
           {/* Evidence Summary */}
           <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Evidence Summary (optional)</label>
-            <Textarea value={crEvidenceSummary} onChange={(e) => setCrEvidenceSummary(e.target.value)} placeholder="Links, screenshots, or other evidence supporting this request..." className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC] min-h-[60px]" />
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Evidence summary (optional)</label>
+            <Textarea value={crEvidenceSummary} onChange={(e) => setCrEvidenceSummary(e.target.value)} placeholder="Links, screenshots, or other evidence supporting this request..." className="min-h-[60px]" />
           </div>
 
           {/* File Attachments */}
           <div>
-            <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Attachments ({attachments.length}/{MAX_FILES})</label>
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Attachments ({attachments.length}/{MAX_FILES})</label>
             <input ref={fileInputRef} type="file" multiple accept={ALLOWED_TYPES.join(",")} onChange={handleFileSelect} className="hidden" />
 
             {/* Upload area */}
@@ -308,7 +349,7 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="w-full border border-dashed border-[#CCC] rounded-xl p-3 flex items-center justify-center gap-2 text-[#999] hover:text-[#666] hover:border-[#999] transition-colors disabled:opacity-50"
+                className="w-full border border-dashed border-border rounded-xl p-3 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
               >
                 {isUploading ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
@@ -317,25 +358,25 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                 )}
               </button>
             )}
-            <p className="text-xs text-[#CCC] mt-1">JPEG, PNG, GIF, WebP, PDF, CSV, TXT, XLSX — max 10MB each</p>
+            <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, GIF, WebP, PDF, CSV, TXT, XLSX — max 10MB each</p>
 
             {/* Attachment previews */}
             {attachments.length > 0 && (
               <div className="mt-2 space-y-2">
                 {attachments.map((att) => (
-                  <div key={att.id} className="flex items-center gap-2 p-2 rounded-lg bg-[#F8F8F8] border border-[#E5E5E5]">
+                  <div key={att.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted border border-border">
                     {isImageMime(att.mimeType) ? (
                       <img src={att.url} alt={att.filename} className="w-10 h-10 rounded object-cover flex-shrink-0" />
                     ) : (
-                      <div className="w-10 h-10 rounded bg-[#E5E5E5] flex items-center justify-center flex-shrink-0">
-                        <File className="w-5 h-5 text-[#999]" />
+                      <div className="w-10 h-10 rounded bg-accent flex items-center justify-center flex-shrink-0">
+                        <File className="w-5 h-5 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#0A0A0A] truncate">{att.filename}</p>
-                      <p className="text-xs text-[#CCC]">{formatFileSize(att.size)}</p>
+                      <p className="text-sm text-foreground truncate">{att.filename}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(att.size)}</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-[#CCC] hover:text-red-600" onClick={() => removeAttachment(att.id)}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => removeAttachment(att.id)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -347,10 +388,10 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
           {/* Related audit log */}
           {crRelatedAuditLogId && (
             <div>
-              <label className="text-[10px] text-[#999] uppercase tracking-wider mb-1 block">Related Audit Log</label>
-              <Badge className="bg-[#F0F0F0] text-[#666]">
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Related audit log</label>
+              <Badge className="bg-muted text-muted-foreground">
                 #{crRelatedAuditLogId}
-                <button className="ml-1 hover:text-[#0A0A0A]" onClick={() => setCrRelatedAuditLogId("")}>
+                <button className="ml-1 hover:text-foreground" onClick={() => setCrRelatedAuditLogId("")}>
                   <X className="w-3 h-3" />
                 </button>
               </Badge>
@@ -359,14 +400,13 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleClose(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
+          <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
           <Button
             onClick={handleSubmit}
             disabled={isPending || isUploading || crTitle.length < 5 || crDescription.length < 10 || !crTargetUserId}
-            className="bg-amber-600 hover:bg-amber-700 text-white"
           >
             {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-            Submit Request
+            Submit request
           </Button>
         </DialogFooter>
       </DialogContent>

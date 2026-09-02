@@ -149,7 +149,9 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
             statusFilter === "all"
               ? "You have not raised any change requests."
               : "None of your requests are in that state.",
-          body: 'Use "New change request" above to raise one.',
+          /* Quotes the button in the surface bar above — renamed together
+             on his reply #91, or this sentence names a control nobody sees. */
+          body: 'Use "File a request" above to raise one.',
         }}
         footer={{ meta: pageRange({ offset: 0, count: filtered.length, total: filtered.length }) }}
       />

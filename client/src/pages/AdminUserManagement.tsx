@@ -244,26 +244,48 @@ export default function AdminUserManagement() {
         selectedUser={userDetailsQuery.data ?? undefined}
       />
 
+      {/*
+        ⚠ THE TWO DIALOGS #421'S FIRST TABLE DID NOT LIST, and the reason they
+        were missed is worth a line: both reports behind that card were written
+        from inside `features/admin/`, and these two are drawn INLINE on the
+        page rather than extracted into a modals module. The card's own "same
+        for freeze" sentence described them while its file table could not see
+        them — a population inherited from a report is only as wide as the
+        report. Found by deriving the list from every staff file that mounts a
+        `Dialog`, which is how the change request modal turned up too.
+
+        They keep `<textarea>` rather than the `Textarea` primitive: swapping
+        the element is a behaviour change (IME guard, field sizing) and #421's
+        bar is that every field behaves exactly as before. So the colours come
+        off and the element does not move.
+      */}
+
       {/* Freeze Modal */}
       <Dialog open={freezeModalOpen} onOpenChange={setFreezeModalOpen}>
-        <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
+        <DialogContent className="text-foreground">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-cyan-700">
-              <Snowflake className="w-5 h-5" />
-              Freeze Account
+            {/*
+              The cyan and the emerald are both gone and neither is replaced.
+              Freezing is reversible — Unfreeze sits two rows below it — so it
+              does not earn the one red, and a colour that means nothing in this
+              palette is worse than no colour. The icon and the words carry it.
+            */}
+            <DialogTitle className="flex items-center gap-2">
+              <Snowflake className="w-5 h-5 text-muted-foreground" />
+              Freeze account
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#666]">Freezing restricts the user from generating content or spending credits. This is lighter than a full suspension.</p>
+          <p className="text-sm text-muted-foreground">Freezing restricts the user from generating content or spending credits. This is lighter than a full suspension.</p>
           <textarea
             value={freezeReason}
             onChange={(e) => setFreezeReason(e.target.value)}
             placeholder="Reason for freezing this account..."
-            className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg p-3 text-sm text-[#0A0A0A] placeholder-[#999] resize-none h-24 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            className="w-full bg-transparent border border-input rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none h-24 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setFreezeModalOpen(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
-            <Button onClick={handleFreeze} disabled={!freezeReason.trim() || freezeMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700 text-white">
-              {freezeMutation.isPending ? "Freezing..." : "Freeze Account"}
+            <Button variant="outline" onClick={() => setFreezeModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleFreeze} disabled={!freezeReason.trim() || freezeMutation.isPending}>
+              {freezeMutation.isPending ? "Freezing..." : "Freeze account"}
             </Button>
           </div>
         </DialogContent>
@@ -271,24 +293,24 @@ export default function AdminUserManagement() {
 
       {/* Unfreeze Modal */}
       <Dialog open={unfreezeModalOpen} onOpenChange={setUnfreezeModalOpen}>
-        <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
+        <DialogContent className="text-foreground">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-700">
-              <Snowflake className="w-5 h-5" />
-              Unfreeze Account
+            <DialogTitle className="flex items-center gap-2">
+              <Snowflake className="w-5 h-5 text-muted-foreground" />
+              Unfreeze account
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#666]">This will restore the user's ability to generate content and spend credits.</p>
+          <p className="text-sm text-muted-foreground">This will restore the user's ability to generate content and spend credits.</p>
           <textarea
             value={unfreezeNotes}
             onChange={(e) => setUnfreezeNotes(e.target.value)}
             placeholder="Notes for unfreezing (e.g., issue resolved, false positive)..."
-            className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg p-3 text-sm text-[#0A0A0A] placeholder-[#999] resize-none h-24 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full bg-transparent border border-input rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none h-24 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setUnfreezeModalOpen(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
-            <Button onClick={handleUnfreeze} disabled={!unfreezeNotes.trim() || unfreezeMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {unfreezeMutation.isPending ? "Unfreezing..." : "Unfreeze Account"}
+            <Button variant="outline" onClick={() => setUnfreezeModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleUnfreeze} disabled={!unfreezeNotes.trim() || unfreezeMutation.isPending}>
+              {unfreezeMutation.isPending ? "Unfreezing..." : "Unfreeze account"}
             </Button>
           </div>
         </DialogContent>

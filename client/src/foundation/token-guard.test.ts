@@ -114,6 +114,13 @@ const GUARDED_PATHS = [
     `docs/specs/PROMOTION_PASS_SECTION_06.md` §5 — and each enrols with the
     brief that rewrites it, which is how `features/staff` arrived here one
     brief ago.
+
+    ⚠ **THE SIX `features/moderator/` ROWS THIS BLOCK CARRIED ARE GONE (#421),
+    AND NOTHING STOPPED BEING GUARDED.** The `features/moderator` DIRECTORY row
+    at the bottom of this list collects every one of them. The reasoning above
+    is kept because it is the history — and because it is the reasoning that
+    left the change request modal outside every guard until the founder opened
+    it. The admin rows stay: that directory still holds a file no brief owns.
   */
   "features/admin/UserTable.tsx",
   "features/admin/UserFilters.tsx",
@@ -121,12 +128,6 @@ const GUARDED_PATHS = [
   "features/admin/AuditLogsFilters.tsx",
   "features/admin/BlockedIPsTab.tsx",
   "features/admin/ChangeRequestList.tsx",
-  "features/moderator/ActivitySubTab.tsx",
-  "features/moderator/AuditLogsTab.tsx",
-  "features/moderator/BlockedIPsTab.tsx",
-  "features/moderator/FlaggedReferralsTab.tsx",
-  "features/moderator/GenerationsSubTab.tsx",
-  "features/moderator/MyRequestsTab.tsx",
   "pages/AdminAuditLogs.tsx",
   "pages/AdminBugReports.tsx",
   "pages/AdminChangeRequests.tsx",
@@ -196,21 +197,46 @@ const GUARDED_PATHS = [
     feeling: **203 literals across these six files → 0**, with 89 left in the
     one file that has a card on it.
 
-    ⚠ `StatsCards.tsx` is on this list and is NOT one of the brief's four
+    ⚠ `StatsCards.tsx` was on this list and was NOT one of the brief's four
     surfaces. It is the count row at the top of the same page, it carried four
     Tailwind tints, and `.dp-countrow` already existed to draw it — leaving it
     would have made the page's top strip the only coloured thing on it. Its own
     docblock says so; a file enrolled without that sentence is a scope change
     hiding in a list.
+
+    ⚠ **SEVEN OF THIS BLOCK'S ROWS ARE GONE TOO (#421), FOR THE SAME REASON AND
+    WITH THE SAME EFFECT: NOTHING STOPPED BEING GUARDED.** The one file this
+    block was written to route around is the file #421 fixed, so the directory
+    row below collects all seven. `pages/ModeratorDashboard.tsx` is the survivor
+    because it is a PAGE and lives outside that directory.
   */
-  "features/moderator/CreditsSubTab.tsx",
-  "features/moderator/FlaggedDiscrepanciesCard.tsx",
-  "features/moderator/ReconciliationSubTab.tsx",
-  "features/moderator/StatsCards.tsx",
-  "features/moderator/UserInvestigationTab.tsx",
-  "features/moderator/UserInvestigationWidgets.tsx",
-  "features/moderator/investigations.css",
   "pages/ModeratorDashboard.tsx",
+
+  /*
+    #421, his reply #91: *"id like the change request modal and any other staff
+    modals to be re-designed in our same design language."*
+
+    ⚠ **THE DIRECTORY THIS TIME, AND THE REASON IS THE HOLE ITSELF.** The block
+    above enrolled `features/moderator/` FILE BY FILE for one stated reason —
+    `ChangeRequestModal.tsx` was the one file no brief owned, and it held 89
+    literals, more than the other four staff dialogs combined. That narrowness
+    was correct on the day and it is also exactly what let the founder find the
+    offender before a guard did: five briefs each drew a scope boundary, every
+    one individually right, and the dialogs sat in the gap between all five.
+
+    With the remainder gone there is no longer anything in `features/moderator/`
+    to skip, so the enrolment stops being a list somebody has to remember to
+    extend. A new component under it is measured the moment it exists.
+
+    Measured before and after: **192 literals across the five dialog files → 0**,
+    plus seven Tailwind tints deleted with `UserBadges`'s two orphaned badges.
+  */
+  "features/moderator",
+  "features/admin/UserActionModals.tsx",
+  "features/admin/AuditActionModals.tsx",
+  "features/admin/ReviewModal.tsx",
+  "features/admin/UserBadges.tsx",
+  "pages/AdminUserManagement.tsx",
 ];
 
 /**
@@ -271,6 +297,23 @@ const HEX_CARVE_OUTS: Record<string, string> = {
   */
   "features/admin/components/crew/crewTypes.test.ts":
     "issue numbers in test titles, in the one file brief 08 §8 requires to pass untouched — a pure-derivation test that renders nothing",
+  /*
+    THE THIRD INSTANCE OF THE ROW TWO ABOVE, and it arrives the moment
+    `features/moderator/` is guarded by DIRECTORY rather than by file (#421).
+
+    `section09-guard.test.ts` runs the same no-hex check over the moderator
+    surfaces and proves its own matcher with `code("color: #BADA55;")` — a
+    planted violation, which working law 2 requires it to contain and which the
+    file-by-file enrolment above happened to route around. A guard whose
+    neighbour flags its positive control is a guard that cannot be proven.
+
+    ⚠ Narrow for the same stated reason as its two siblings: this is a TEST
+    file and it renders nothing. A carve-out for a COMPONENT under this
+    directory would be a different decision, and the honesty arm below reddens
+    the day this file stops containing a hex-shaped string.
+  */
+  "features/moderator/section09-guard.test.ts":
+    "its own positive control — `#BADA55`, the planted hex that proves its no-hex matcher fires",
 };
 
 const HEX_LITERAL = /#[0-9a-fA-F]{3,8}\b/g;
