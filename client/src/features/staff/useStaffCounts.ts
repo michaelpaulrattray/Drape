@@ -89,7 +89,31 @@ export function useStaffCounts(): { pendingChangeRequests: number } {
       On Overview none of this arises: it is the same query the page already
       polls, so the pill moves with the page.
     */
-    retry: false,
+
+    /*
+      ⚠ **NO `retry` OPTION HERE, AND ITS ABSENCE IS THE DECISION** (gate review
+      of PR #456, finding 1). This hook had `retry: false`, copied from
+      `useCrewState` where it is right for a different reason — that query
+      answers NOT_FOUND outside a flag scope, so retrying is three round trips
+      to rediscover a permanent no.
+
+      **Here it reached a page it was never about.** `retry` is a FETCH-level
+      option: TanStack resolves it from the last observer to set options on the
+      query, not per observer the way `staleTime` works. On `/admin/overview`
+      this hook and the page observe the SAME key, and the bar renders as a
+      child of the page — so `retry: false` landed last and stripped the page's
+      three default retries. One transient blip on its 30s poll, which `main`
+      absorbs silently, would have drawn *"The dashboard could not load."* over
+      a dashboard still showing live data.
+
+      It bought nothing: the non-admin round trip is already prevented by
+      `enabled`, and a retried fetch only delays a number that omits itself
+      until it arrives.
+
+      **The general shape, worth more than the line: sharing a query key shares
+      more than the request.** The PR body's *"on Overview it costs nothing —
+      same query key, same request"* was true of COST and not of behaviour.
+    */
   });
 
   /*

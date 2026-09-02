@@ -210,6 +210,45 @@ describe("card 415 — ONE reader of the pending-request count", () => {
     expect(bar, "the bar composes hooks; it does not fetch").not.toMatch(/\btrpc\./);
   });
 
+  it("the hook sets no option that would reach Overview's OWN poll", () => {
+    /*
+      ⚠ THE DEFECT THIS CATCHES SHIPPED IN THIS BRANCH AND THE GATE REVIEW FOUND
+      IT. The hook carried `retry: false`. `retry` is a FETCH-level option —
+      TanStack resolves it from the LAST OBSERVER to set options on the query,
+      not per observer the way `staleTime` works. On `/admin/overview` this hook
+      and the page observe the SAME KEY, and the bar renders as a child of the
+      page, so `retry: false` landed last and stripped the page's three default
+      retries. One transient blip on its 30s poll would have drawn "The
+      dashboard could not load." over a dashboard still showing live data.
+
+      **Sharing a query key shares more than the request**, and that is the
+      class. So this arm does not ban `retry` by name — it holds the option
+      object to the two options that are OBSERVER-scoped and therefore cannot
+      reach another page. A third one reddens this on purpose: it may be
+      correct, and it must be checked against every consumer of the key first.
+    */
+    const hook = read("features/staff/useStaffCounts.ts");
+    const start = hook.indexOf("useQuery(undefined, {");
+    expect(start, "the hook still calls useQuery with an options object").toBeGreaterThan(-1);
+    const body = code(hook.slice(start + "useQuery(undefined, {".length));
+    const close = body.indexOf("});");
+    expect(close, "the options object is closed").toBeGreaterThan(-1);
+
+    /* Top-level keys only — nothing here nests, and a nested key would not be
+       an option on this query anyway. */
+    const keys = Array.from(body.slice(0, close).matchAll(/^\s{4}([A-Za-z]+):/gm)).map((m) => m[1]);
+    expect(
+      keys.sort(),
+      [
+        "This hook shares `admin.getOverview` with AdminOverview. Only",
+        "observer-scoped options are safe to set here; a fetch-level one",
+        "(retry, retryDelay, networkMode, gcTime, structuralSharing) is",
+        "resolved from the last observer and changes the PAGE's behaviour.",
+        `Options set: ${keys.join(", ")}`,
+      ].join(String.fromCharCode(10)),
+    ).toEqual(["enabled", "staleTime"]);
+  });
+
   it("the hook returns 0 rather than a placeholder while the query is unanswered", () => {
     /*
       ⚠ THE ALTERNATIVE IS A BAR THAT FLASHES A NUMBER IT DOES NOT KNOW. `0`

@@ -89,7 +89,7 @@ Frames: `output/415-frames/` — `{branch,main}-users-bar-{dark,light}.png`, `{b
 
 ## 5 · The arms, and the proof they can fail
 
-**21 new arms** in `client/src/features/staff/counts415-guard.test.ts`. `pnpm test` has no DOM by config, so the pill's positive control could not be a render — instead `adminSegments` was extracted as a **pure function** and driven with `5` and with `0`. That is the difference between an arm that can fail and an arm that is green because nothing is there.
+**22 new arms** in `client/src/features/staff/counts415-guard.test.ts`. `pnpm test` has no DOM by config, so the pill's positive control could not be a render — instead `adminSegments` was extracted as a **pure function** and driven with `5` and with `0`. That is the difference between an arm that can fail and an arm that is green because nothing is there.
 
 **Sabotage: 10 of 10 caught by the arm named for them**, tree restored green afterwards and proven so (`scripts/_415-sabotage-disposable.mts`, judged on the **exit code** and the JSON reporter — never on scraped output, which is how the previous shift's driver read 0/5 with every arm working).
 
@@ -158,6 +158,28 @@ The modal's confirm button carries **the same word** as the detail button that o
 
 The repair is that the driver now **counts the mutation request** and throws when it is zero — *"this run proves nothing either way"* — and scopes the confirm to `[role=dialog]`. **A driver that cannot tell "the fix failed" from "I never pressed the button" is not an instrument.** That is the third time tonight a fixed wait or an unverified action produced a confident wrong reading; each one is recorded above rather than tidied away.
 
+## 5c · THE SECOND REVIEW FOUND TWO MORE, AND THE FIRST IS THE ONE WORTH KEEPING
+
+**Verdict: pass with two findings.** Both taken.
+
+### ⚠ Finding 1 — `retry: false` reached a page it was never about
+
+The hook carried `retry: false`, copied from `useCrewState` where it is right for a different reason: that query answers `NOT_FOUND` outside a flag scope, so retrying spends three round trips rediscovering a permanent no.
+
+**`retry` is a FETCH-level option.** TanStack resolves it from the **last observer to set options on the query**, not per observer the way `staleTime` works. On `/admin/overview` this hook and the page observe the **same key**, and the bar renders as a child of the page — so `retry: false` landed last and **stripped the page's three default retries**. One transient blip on Overview's 30s poll, which `main` absorbs silently, would have drawn *"The dashboard could not load."* over a dashboard still showing live data.
+
+It bought nothing: the non-admin round trip is already prevented by `enabled`.
+
+⚠ **The general shape is worth more than the line, and it corrects a sentence in this document.** §2 says *"on Overview it costs nothing — same query key, same request."* That is true of COST and **not of behaviour**: **sharing a query key shares more than the request.**
+
+**The arm is aimed at the class, not the instance.** It does not ban `retry` by name — it holds the options object to exactly the two that are observer-scoped (`enabled`, `staleTime`), so any fetch-level option reddens it and has to be checked against every consumer of the key first. Sabotage 3 of 3: `retry: false` returning, a *different* fetch-level option (`networkMode`), and a key going missing — the arm is an equality, not a subset test.
+
+### Finding 2 — a comment this change made false, left standing
+
+The note above `<CrewWorkingNow>` still said `now` comes from *"the same ticker the 'checked' stamp uses"* — **the stamp this change deleted.** Corrected in place with the reason kept.
+
+⚠ **That is the THIRD comment in one change asserting something the tree no longer held** — after the `staleTime` sentence and the index-arm claim. All three were caught by an instrument or a reviewer rather than by re-reading, and the pattern is one thing: **a comment written from what the code was about to do, never re-read against what it does.**
+
 ## 6 · The law-7 class sweep
 
 **Two classes, swept mechanically over every staff page.**
@@ -187,7 +209,7 @@ These are **weaker instances than Crew's**: the label is true of each page's pri
 ## 8 · Checks
 
 - `pnpm check` — exit 0
-- `pnpm test` — **11,172 passed, 0 failed** (was 11,151 — **+21 arms**)
+- `pnpm test` — **11,173 passed, 0 failed** (was 11,151 — **+22 arms**)
 - `pnpm architecture:check` — OK · Atlas regenerated: **998 modules**, 280 procedures, 288 findings (0 error)
 - `pnpm capability:check` — OK, 59 doors, 0 error
 - script guards (`scriptExitDiscipline`, `scriptConnectionDiscipline`) — 18 passed

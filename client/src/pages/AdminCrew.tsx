@@ -353,9 +353,18 @@ export default function AdminCrew() {
                 so nobody restores the old order as a fix.
 
                 It still leads everything that describes what the team has
-                DONE. `now` comes from the same ticker the "checked" stamp
-                uses, so the strip's "14 min ago" and the page's freshness can
-                never disagree. */}
+                DONE.
+
+                ⚠ **This sentence used to say `now` comes from "the same ticker
+                the 'checked' stamp uses" — and card 415 DELETED that stamp**,
+                so the comment outlived the fact it asserted. Caught by the gate
+                review of PR #456, and it is the third instance in one change of
+                the class the change itself was correcting: a comment stating
+                something the tree no longer holds.
+
+                What the ticker is for now: `WORKING NOW` draws "started 14 min
+                ago" AND its stalled verdict off one instant, so two readings on
+                one strip can never disagree (#272). */}
             <CrewWorkingNow shiftRuns={stateQuery.data.shiftRuns} now={now} />
 
             {/* WHAT IS PLANNED (#290) — moved directly under WORKING NOW on
