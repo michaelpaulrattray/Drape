@@ -341,8 +341,65 @@ describe("brief 09 §5 — dashed while unresolved, and no dead state", () => {
     expect('const severity = absDisc >= 2000 ? "critical" : "warning";').toContain("severity");
   });
 
-  it("every flagged row still links through to that account", () => {
-    expect(code(FLAGGED)).toContain("onSelectUser(user.userId)");
+  it("every flagged row links through with the SEARCH STRING, not the id alone", () => {
+    /*
+      ⚠ **THE ARM THAT USED TO LIVE HERE ASSERTED `onSelectUser(user.userId)` IS
+      CALLED, AND THAT IS NOT THE QUESTION** (#412 review, finding 1).
+
+      This PR moved the investigation inside the account's ROW, so selecting an
+      id that is not on the visible page opens nothing — no error, no hint, on
+      the one path this card exists for. The old arm passed over that happily:
+      it could see the call and not the destination.
+
+      ⚠ And the obvious repair does not work either: `listUsers` matches `name`,
+      `email` and `openId` (`server/db/admin.ts`) and **never the numeric id**,
+      so searching `String(userId)` finds nothing. The identity has to be the
+      email, with the name as the fallback.
+    */
+    const source = code(FLAGGED);
+    expect(source).toContain("onSelectUser(user.userId, user.email ?? user.userName)");
+    expect(source).toContain("onSelectUser: (userId: number, identity: string | null) => void");
+
+    /* And the page must actually use it to widen the list before selecting. */
+    const page = read(PAGE);
+    expect(page).toContain("setUserSearchQuery(identity ?? \"\")");
+    expect(page).toContain("setUserPage(() => 0)");
+    const handler = page.slice(page.indexOf("<FlaggedDiscrepanciesCard"));
+    const select = handler.indexOf("setSelectedUserId(userId)");
+    const search = handler.indexOf("setUserSearchQuery");
+    expect(search, "the search is set AFTER the selection — the row is not in the list yet").toBeLessThan(select);
+
+    /* POSITIVE CONTROL — the id-only shape, which is what was there. */
+    expect("onClick={() => onSelectUser(user.userId)}").not.toContain("identity");
+  });
+
+  it("no surface claims a search by id — the server does not do one", () => {
+    /*
+      The placeholder read *"Search users by name, email, or ID…"* and typing an
+      id returned nothing: a control naming a capability we do not have, which
+      is `BRIEF-RECONCILIATION.md`'s question 4 and the founder's own ruling on
+      the centred search.
+    */
+    for (const { name, text } of rebuilt()) {
+      expect(code(text), `${name} still offers a search by id`).not.toMatch(/email,? or id/i);
+    }
+    expect('placeholder="Name, email or id"').toMatch(/email,? or id/i);
+  });
+
+  it("the flagged figures carry the pane's own sign and grouping rules", () => {
+    /*
+      Law 7's sweep, one file over (#412 review, finding 3). A discrepancy is
+      flagged in BOTH directions, so a negative one is reachable and was
+      rendering `-1240` — an ASCII hyphen and no thousands separator — on the
+      same page where the pane insists on U+2212 and `toLocaleString`.
+    */
+    const source = code(FLAGGED);
+    expect(source).toContain("{signed(user.discrepancy)}");
+    expect(source).toContain('if (n === 0) return "0";');
+    expect(source).toContain("grouped(user.grossDeductions)");
+    expect(source, "an unformatted figure is back").not.toMatch(/\{user\.(discrepancy|grossDeductions|expectedCost)\}/);
+    /* POSITIVE CONTROL — the raw shapes that were there. */
+    expect("{user.discrepancy}").toMatch(/\{user\.(discrepancy|grossDeductions|expectedCost)\}/);
   });
 });
 

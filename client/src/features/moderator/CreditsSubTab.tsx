@@ -30,8 +30,8 @@
  * Every query, the CSV export, both date filters, the page size and the refund
  * change-request payload are the ones that were here. ⚠ **Including the
  * `amountCents` derivation, which is a money path and is left alone
- * deliberately** — it is questionable and it is filed rather than edited
- * inside a surface PR.
+ * deliberately** — it is questionable and it is filed as **#418** rather
+ * than edited inside a surface PR.
  */
 import { toast } from "sonner";
 

@@ -41,9 +41,38 @@ import { trpc } from "@/lib/trpc";
 import "./investigations.css";
 
 interface FlaggedDiscrepanciesCardProps {
-  onSelectUser: (userId: number) => void;
+  /**
+   * ⚠ **`identity` is the SEARCH STRING the destination needs, not decoration.**
+   * The investigation opens inside the account's row, so the caller has to put
+   * that account into the list before selecting it — and `listUsers` matches
+   * `name`, `email` and `openId`, never the numeric id. Handing the caller the
+   * id alone is what made the link-through silently do nothing (#412 review).
+   */
+  onSelectUser: (userId: number, identity: string | null) => void;
   autoRefreshInterval?: number | false;
 }
+
+/**
+ * ⚠ **THE SIGN AND GROUPING RULES ARE THE RECONCILIATION PANE'S, APPLIED HERE
+ * TOO** (#412 review, finding 3 — law 7's sweep, which this PR named and then
+ * stopped one file short of).
+ *
+ * A discrepancy is flagged in BOTH directions — `getFlaggedUsers` compares
+ * `|discrepancy|` against the threshold, and the server's own summary wording
+ * includes *"charged less than the records show"* — so a negative one is
+ * reachable, and it was rendering as `-1240`: an ASCII hyphen and no thousands
+ * separator, in mono, on the same page where the pane insists on U+2212 and
+ * `toLocaleString`.
+ */
+const signed = (n: number): string => {
+  if (n === 0) return "0";
+  return n > 0
+    ? `+${n.toLocaleString()}`
+    : `−${Math.abs(n).toLocaleString()}`;
+};
+
+/** Unsigned, but grouped — a charged total is still a number a person reads. */
+const grouped = (n: number): string => n.toLocaleString();
 
 const DEFAULT_THRESHOLD = 500;
 const THRESHOLDS = [100, 250, 500, 1000, 2000, 5000];
@@ -114,21 +143,20 @@ export function FlaggedDiscrepanciesCard({
                 key={user.userId}
                 type="button"
                 className="dp-inv__flaggedrow"
-                onClick={() => onSelectUser(user.userId)}
+                onClick={() => onSelectUser(user.userId, user.email ?? user.userName)}
               >
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span className="dp-inv__flaggedname">
                     {user.userName || `User #${user.userId}`}
                   </span>
                   <span className="dp-inv__flaggedmeta" style={{ display: "block" }}>
-                    Charged {user.grossDeductions} · recorded {user.expectedCost}
+                    Charged {grouped(user.grossDeductions)} · recorded{" "}
+                    {grouped(user.expectedCost)}
                     {user.failedGenerations > 0 ? ` · ${user.failedGenerations} failed` : ""}
                     {user.refundAnomaly ? " · refunds exceed charges" : ""}
                   </span>
                 </span>
-                <span className="dp-inv__flaggedfigure">
-                  {user.discrepancy > 0 ? `+${user.discrepancy}` : user.discrepancy}
-                </span>
+                <span className="dp-inv__flaggedfigure">{signed(user.discrepancy)}</span>
               </button>
             ))}
           </div>

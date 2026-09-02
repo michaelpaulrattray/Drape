@@ -50,7 +50,7 @@ shipped.**
   ⚠ **So it is logged, and the honest cost is stated: the tree carries two leader
   rows for one cycle.** That is the thing this pass exists to prevent, and it is
   accepted here only because the alternative is repainting a signed-off surface
-  from an unrelated brief. **Filed as a card**, with both specs quoted, so the
+  from an unrelated brief. **Filed as #419**, with both specs quoted, so the
   next section that touches Overview converges rather than rediscovers.
 
 ### `ConfirmDialog`'s notes block — extended, two consumers on day one

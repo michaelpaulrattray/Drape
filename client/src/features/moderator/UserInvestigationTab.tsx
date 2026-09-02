@@ -228,7 +228,17 @@ export function UserInvestigationTab({
             setUserPage(() => 0);
           }}
           label="Search accounts"
-          placeholder="Name, email or id"
+          /*
+            ⚠ **"or id" IS NOT OFFERED, BECAUSE THE SERVER DOES NOT DO IT.**
+            `listUsers` matches `name`, `email` and `openId` and never the
+            numeric id (`server/db/admin.ts`) — the old placeholder read
+            *"Search users by name, email, or ID…"* and typing an id returned
+            nothing. A placeholder is a claim about a capability; this one was
+            false before this PR and is not carried forward. The gap itself is
+            filed as #420 rather than fixed here, because widening a query is a
+            server change and this is a surface brief.
+          */
+          placeholder="Name or email"
         />
       </TableHead>
 
