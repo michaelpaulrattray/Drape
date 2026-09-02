@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5bbe30148284097c"
+    "sourceFingerprint": "8d76dda02bd85eed"
   },
   "domains": [
     {
@@ -12748,6 +12748,10 @@
     {
       "id": "test:server/publicInputStrictness.test.ts",
       "path": "server/publicInputStrictness.test.ts"
+    },
+    {
+      "id": "test:server/pushPathsToMain.test.ts",
+      "path": "server/pushPathsToMain.test.ts"
     },
     {
       "id": "test:server/queueOrdinalDiscipline.test.ts",

@@ -47,9 +47,7 @@
  * This is a MODULE (imported by the rite and by its suite) and it never exits.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmdirSync, symlinkSync, unlinkSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
+import { inWorktreeOf } from "./riteWorktree.mts";
 
 /** The suite #152 was filed on; a derivation that loses it is not a derivation. */
 export const ORIGIN_SUITE = "server/scriptExitDiscipline.test.ts";
@@ -93,10 +91,11 @@ export type ScriptGuardVerdict = {
 };
 
 /**
- * Check out `commit` detached into a temporary worktree, junction the root's
- * `node_modules` into it, run the derived suites there, and tear it all down
- * again on every path. Throws if the worktree cannot be made — the guard is
- * then blind, and blind refuses.
+ * Run the derived suites against `commit` in a throwaway worktree, so that
+ * what they see is exactly what `origin/main` will hold. The worktree recipe
+ * and its teardown live in `riteWorktree.mts`, shared with the typecheck
+ * custody check (#263) — the junction teardown is the dangerous part and it is
+ * written once.
  */
 export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
   suites?: string[];
@@ -104,40 +103,14 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
 } = {}): ScriptGuardVerdict => {
   const suites = options.suites ?? listScriptGuardSuites(root);
   const vitest = options.vitest ?? defaultVitest;
-  const dir = mkdtempSync(path.join(os.tmpdir(), "drape-rite-guards-"));
-  const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
-  /* mkdtemp made the directory; `git worktree add` wants to create it, so it
-     is handed a child that does not exist yet. */
-  const tree = path.join(dir, "tree");
-  let junction: string | null = null;
-  try {
-    /* --quiet: the checkout otherwise streams sixty lines of progress into the
-       rite receipt, a durable record (seen on its first live firing). */
-    git("worktree", "add", "--quiet", "--detach", tree, commit);
-    junction = path.join(tree, "node_modules");
-    symlinkSync(path.join(root, "node_modules"), junction, "junction");
+  return inWorktreeOf(root, commit, (tree) => {
     const result = vitest(tree, suites);
     return {
       ok: result.status === 0,
       suites,
       printed: result.output.trim().split(/\r?\n/).filter((line) => line.trim() !== "").slice(-12).join("\n"),
     };
-  } finally {
-    /* The junction goes FIRST and as a LINK: removing the tree recursively
-       through a live junction walks into the real node_modules. On Windows a
-       junction is a directory reparse point and `rmdir` takes it; on POSIX the
-       "junction" type makes a plain symlink, which `rmdir` refuses (ENOTDIR)
-       and `unlink` takes — so both are tried, and only an absent link is
-       tolerated (review of #157, finding 1). */
-    if (junction) {
-      try { rmdirSync(junction); } catch {
-        try { unlinkSync(junction); } catch { /* never made */ }
-      }
-    }
-    try { git("worktree", "remove", "--force", tree); } catch { /* never added */ }
-    try { git("worktree", "prune"); } catch { /* best effort */ }
-    try { rmdirSync(dir); } catch { /* the remove already took it */ }
-  }
+  });
 };
 
 const defaultVitest = (cwd: string, suites: string[]) => {
