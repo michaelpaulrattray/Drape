@@ -179,6 +179,18 @@ with lenses, not two surfaces with a hand-off.
    the other two entries (develop from an idea; keep rewriting
    mid-production with downstream staleness flags). Ratify the seat when
    the full skeleton brief is reviewed.
+   **Design brief ISSUED 2026-09-02** (at the founder's ask, paste-ready in
+   chat): the Script view as the FOURTH toggle segment (Script - Wall -
+   Desk - Composer, pipeline order), shelf hidden there; the PAGE lives in
+   the Script tab and the CARDS stay on the Desk - one document, two lenses
+   across two tabs, nothing duplicated; margin advisory chips (worth-a-look,
+   centrepiece, pacing); the manifest rail as derived READING (rows not
+   tiles, click-to-highlight the summoning sentences, dismiss/track,
+   cast-this-role) - the shelf's upstream twin, one truth two readings; the
+   honest footer (shots implied - est. cr - writing is free); scenes with
+   drawn work show their build under the divider and edits raise the
+   SCENE CHANGED chip; "talk it out" lands text on the page only, never
+   creates scenes directly; no draw buttons, no prompt text, no gates.
 2. **Writing assistance USES CREDITS — SCOPED 2026-09-02 (founder:
    "agreed"): thinking free, rendering paid.** Script help, scene
    proposals, read-backs and dramaturgy are free (text calls, cents);
