@@ -117,6 +117,7 @@ import {
   readFalTraffic,
 } from "./lib/falSpend.mts";
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
+import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
 import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
@@ -514,6 +515,42 @@ if (dirty.length > 0) {
       + "\n  repair: fix the named script in the commit (the shape is scripts/SKELETON-disposable.mts), commit, re-run");
   }
   say(`  script guards: ok (${verdict.suites.length} suites on ${shortSha})`);
+}
+
+/*
+  AND `pnpm check`, OVER THE SAME TREE (#263 — the founder's own ruling).
+
+  > "The CI hole is the best find in the card. A gate that only runs on pull
+  > requests, plus a path that pushes straight to main, means the gate is
+  > optional in practice. Fixing the rite to run the check is right."
+
+  `gate-checks` runs on `pull_request` only. This rite is the other way to
+  `main`, and it is the way MOST things arrive: 343 of the 499 commits on main
+  since 25 August came without a pull request, and the last three carry zero
+  check runs between them. Until this block existed, nothing typechecked any of
+  them — which is how `pnpm check` sat RED on `main` for a day (#263's origin).
+
+  The docblock above says `pnpm test` and `pnpm check` are "minutes" and belong
+  in the report's custody block. THAT SENTENCE IS NOW HALF TRUE and the half
+  that moved is this one: measured on the night it landed, the check is **85
+  seconds** on a clean worktree, against a rite that already spends minutes
+  watching a deploy. `pnpm test` is still not here.
+
+  It runs on `--dry` too, deliberately: a dry run answers "would this push
+  fire", and a dry run that skips the slowest refusal answers a different
+  question.
+*/
+{
+  const verdict = runTypecheckOnCommit(path.resolve(import.meta.dirname, ".."), sha);
+  if (!verdict.ok) {
+    die(`\`pnpm check\` is RED on ${shortSha}, the tree being pushed — the push does not fire.\n`
+      + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")
+      + `\n  (${verdict.seconds}s) repair: fix the named file, commit, re-run.`
+      + "\n  NOTE: this ran on the COMMIT, not your working directory — untracked"
+      + "\n  litter is deliberately invisible to it, so `pnpm check` failing in your"
+      + "\n  tree while this passes is correct and expected.");
+  }
+  say(`  pnpm check: ok on ${shortSha} (${verdict.seconds}s)`);
 }
 
 /*

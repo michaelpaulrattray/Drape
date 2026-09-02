@@ -47,14 +47,48 @@
  * This is a MODULE (imported by the rite and by its suite) and it never exits.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmdirSync, symlinkSync, unlinkSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
+import { inWorktreeOf } from "./riteWorktree.mts";
 
 /** The suite #152 was filed on; a derivation that loses it is not a derivation. */
 export const ORIGIN_SUITE = "server/scriptExitDiscipline.test.ts";
 
-/** Every non-integration server suite whose source names the `scripts` directory. */
+/**
+ * SUITES THAT RUN ON THE PUSH PATH BY NAME, because the derivation above cannot
+ * reach them (#263, review finding 1).
+ *
+ * ⚠ **This is deliberately a hand-written list and it is the SECOND kind of
+ * entry, not a shadow of the first.** The grep answers one question — *"does
+ * this suite sweep the `scripts` directory?"* — and it answers it well. It
+ * cannot answer *"must this suite run before a direct push to main?"*, which is
+ * a judgement about what the rite is custodian of. A suite is added here by
+ * somebody deciding it, exactly like enumerating a public endpoint.
+ *
+ * The first entry is the sharpest possible argument for the list existing.
+ * `server/pushPathsToMain.test.ts` is the control that catches a NEW script
+ * that can push to `main` — and it was built, merged into the gate, and left
+ * running **only on pull requests**, which is precisely the hole its own card
+ * (#263) was filed to close. A shift rite-pushing a disposable that pushes
+ * would have landed an unenumerated door and reddened the NEXT pull request's
+ * gate, which is #152's origin incident happening again to #152's own successor.
+ * Caught by the reviewer on the PR, not by us.
+ */
+export const PUSH_PATH_SUITES = [
+  /* #263 — the push-path enumeration. Never matches the grep: it names
+     `"scripts/deploy-rite.mts"` and `"../scripts/lib/pushPaths.mts"`, always
+     with a path after the directory, so the bare token contract below excludes
+     it correctly and this list includes it deliberately. */
+  "server/pushPathsToMain.test.ts",
+  /* #263 — the typecheck's own verdict logic: that a red status is red, and
+     that a run which produced NOTHING is refused rather than read as a pass.
+     Here by the same argument as its sibling — it guards a control the rite
+     performs, so it must run where the rite runs. 7.3s, measured. */
+  "server/typecheckOnCommit.test.ts",
+];
+
+/**
+ * Every non-integration server suite whose source names the `scripts` directory,
+ * plus `PUSH_PATH_SUITES`.
+ */
 export const listScriptGuardSuites = (
   root: string,
   grep: (root: string) => string = defaultGrep,
@@ -69,7 +103,9 @@ export const listScriptGuardSuites = (
       `script-guard derivation lost its origin case (${ORIGIN_SUITE}); found ${suites.length}: ${suites.join(", ") || "(none)"}`,
     );
   }
-  return suites;
+  /* The floor above is checked on the DERIVED list alone, so a named suite can
+     never rescue a grep that has stopped working. */
+  return [...new Set([...suites, ...PUSH_PATH_SUITES])].sort();
 };
 
 const defaultGrep = (root: string): string => {
@@ -93,10 +129,11 @@ export type ScriptGuardVerdict = {
 };
 
 /**
- * Check out `commit` detached into a temporary worktree, junction the root's
- * `node_modules` into it, run the derived suites there, and tear it all down
- * again on every path. Throws if the worktree cannot be made — the guard is
- * then blind, and blind refuses.
+ * Run the derived suites against `commit` in a throwaway worktree, so that
+ * what they see is exactly what `origin/main` will hold. The worktree recipe
+ * and its teardown live in `riteWorktree.mts`, shared with the typecheck
+ * custody check (#263) — the junction teardown is the dangerous part and it is
+ * written once.
  */
 export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
   suites?: string[];
@@ -104,40 +141,14 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
 } = {}): ScriptGuardVerdict => {
   const suites = options.suites ?? listScriptGuardSuites(root);
   const vitest = options.vitest ?? defaultVitest;
-  const dir = mkdtempSync(path.join(os.tmpdir(), "drape-rite-guards-"));
-  const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
-  /* mkdtemp made the directory; `git worktree add` wants to create it, so it
-     is handed a child that does not exist yet. */
-  const tree = path.join(dir, "tree");
-  let junction: string | null = null;
-  try {
-    /* --quiet: the checkout otherwise streams sixty lines of progress into the
-       rite receipt, a durable record (seen on its first live firing). */
-    git("worktree", "add", "--quiet", "--detach", tree, commit);
-    junction = path.join(tree, "node_modules");
-    symlinkSync(path.join(root, "node_modules"), junction, "junction");
+  return inWorktreeOf(root, commit, (tree) => {
     const result = vitest(tree, suites);
     return {
       ok: result.status === 0,
       suites,
       printed: result.output.trim().split(/\r?\n/).filter((line) => line.trim() !== "").slice(-12).join("\n"),
     };
-  } finally {
-    /* The junction goes FIRST and as a LINK: removing the tree recursively
-       through a live junction walks into the real node_modules. On Windows a
-       junction is a directory reparse point and `rmdir` takes it; on POSIX the
-       "junction" type makes a plain symlink, which `rmdir` refuses (ENOTDIR)
-       and `unlink` takes — so both are tried, and only an absent link is
-       tolerated (review of #157, finding 1). */
-    if (junction) {
-      try { rmdirSync(junction); } catch {
-        try { unlinkSync(junction); } catch { /* never made */ }
-      }
-    }
-    try { git("worktree", "remove", "--force", tree); } catch { /* never added */ }
-    try { git("worktree", "prune"); } catch { /* best effort */ }
-    try { rmdirSync(dir); } catch { /* the remove already took it */ }
-  }
+  });
 };
 
 const defaultVitest = (cwd: string, suites: string[]) => {
