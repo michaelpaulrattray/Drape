@@ -390,3 +390,136 @@ describe("brief 05 §6 — routing and the guards", () => {
     expect(code(STAFF_SURFACE)).not.toMatch(/current=/);
   });
 });
+
+/**
+ * ⚠ **THE STAFF BAR'S TITLE (#417)** — his instruction, verbatim: *"in the top
+ * bar where it says klieg studio change this on both the admin and the mod
+ * pages to be somthing more relevant … whatever is industry standard."*
+ *
+ * Three things are pinned, and only the first is about the words:
+ *
+ *   1. Both bars say the same thing, and there is no tagline — the two pages
+ *      differ by EYEBROW and tabs, which is what makes them one surface.
+ *   2. ⚠ **It is COMPOSED from `BRAND_NAME`, never written out.** The card
+ *      asked for an arm rather than an inspection, and it is the arm that
+ *      matters most here: the rebrand is deferred and a literal would survive
+ *      it silently, which is the exact shape of the pre-rebrand address still
+ *      sitting on the login page.
+ *   3. The eyebrows did NOT move. He changed the title; an arm that only
+ *      checked the title would let the eyebrow drift on the next pass.
+ *
+ * ⚠ **AND THE POPULATION IS DERIVED, NOT LISTED.** Every `title=` prop in the
+ * file is collected and compared, so a THIRD staff bar added later — the shape
+ * that produced two headers before this component existed — cannot slip past by
+ * simply not being on a list.
+ */
+describe("the staff bar's title is composed, never spelt", () => {
+  const BAR = read("features/staff/StaffBar.tsx");
+
+  /**
+   * ⚠ **BUILT FROM TWO PIECES ON PURPOSE, AND THIS IS NOT CUTENESS.** The sweep
+   * below is total — it walks every `.ts`/`.tsx`/`.css` under `client/src` with
+   * no exclusion list — so if this file spelt the title out, the sweep would
+   * report itself and the obvious repair would be *"skip test files"*. That
+   * exclusion is the hole: the arm would then be blind to any surface a future
+   * shift happens to put in a file matching it. Keeping the population total
+   * and keeping the literal out of the source costs one concatenation.
+   */
+  const BRAND = "Klieg";
+  const TITLE = `${BRAND} Console`;
+
+  /**
+   * Every `title=` given to a `SurfaceBar`, in source order, normalised to its
+   * own delimiters so a template literal and a string literal are told apart.
+   *
+   * ⚠ **The first version of this read `\{[^}]*\}` and stopped at the FIRST
+   * closing brace — which inside the composed title is the interpolation's own.**
+   * It collected a truncated string and failed against a correct file. It was
+   * caught because the expected value is written out here by hand rather than
+   * derived from the same regex; had both sides shared the reader, the arm
+   * would have passed while measuring nothing.
+   */
+  const surfaceBarTitles = (source: string) => {
+    const found = [
+      ...code(source).matchAll(/<SurfaceBar[\s\S]*?title=(?:\{`([^`]*)`\}|"([^"]*)")/g),
+    ].map((m) => (m[1] !== undefined ? "`" + m[1] + "`" : JSON.stringify(m[2])));
+    if (found.length === 0) throw new Error("no SurfaceBar title found — this arm is looking at the wrong file");
+    return found;
+  };
+
+  it("both bars carry the same composed title, and there are exactly two", () => {
+    const titles = surfaceBarTitles(BAR);
+    expect(titles, "a third staff bar appeared, or one lost its title").toHaveLength(2);
+    expect(new Set(titles).size, "the two bars disagree — they are one surface").toBe(1);
+    expect(titles[0]).toBe("`${BRAND_NAME} Console`");
+  });
+
+  it("the collector tells a composed title from a spelt one", () => {
+    const spelt = '<SurfaceBar eyebrow="ADMIN" title="' + BRAND + ' Console" />';
+    expect(surfaceBarTitles(spelt)).toEqual([JSON.stringify(BRAND + " Console")]);
+    const composed = '<SurfaceBar eyebrow="ADMIN" title={`${BRAND_NAME} Console`} />';
+    expect(surfaceBarTitles(composed)).toEqual(["`${BRAND_NAME} Console`"]);
+    expect(() => surfaceBarTitles("nothing here")).toThrow(/wrong file/);
+  });
+
+  /**
+   * ⚠ The card's own bar: *"zero occurrences of the literal in the tree — an
+   * arm proving that, not an inspection."* Swept over the whole
+   * client rather than this one file, because the next place to hardcode it is
+   * a page title or a document `<title>`, not this component.
+   */
+  it("the literal is written nowhere in the client", () => {
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.(tsx?|css)$/.test(entry.name)) {
+          const text = fs.readFileSync(full, "utf8");
+          /* Comments are stripped: this very file names the literal on purpose,
+             and so does the component's docblock explaining the decision. */
+          if (code(text).includes(TITLE)) offenders.push(path.relative(CLIENT_SRC, full));
+        }
+      }
+    };
+    walk(CLIENT_SRC);
+    expect(offenders, `the brand is spelt out here: ${offenders.join(", ")}`).toEqual([]);
+  });
+
+  it("the sweep would see one — positive control", () => {
+    expect(code(`const t = "${TITLE}";`).includes(TITLE), "a spelt title must be caught").toBe(true);
+    expect(code(`/* the title is ${TITLE} */`).includes(TITLE), "a comment naming it must not").toBe(
+      false,
+    );
+  });
+
+  it("the eyebrows did not move", () => {
+    const eyebrows = [...code(BAR).matchAll(/eyebrow="([^"]+)"/g)].map((m) => m[1]);
+    expect(eyebrows).toEqual(["ADMIN", "MODERATION"]);
+  });
+
+  it("no tagline survives either bar", () => {
+    for (const title of surfaceBarTitles(BAR)) {
+      expect(title, "a tagline came back — the eyebrow and the tabs already say it").not.toMatch(/—|--/);
+    }
+  });
+
+  /**
+   * ⚠ **`WORKSPACE_NAME` IS THE THING STAFF MUST NOT READ**, and this arm is
+   * the one that outlives the wording. Staff sits above workspaces; the day a
+   * workspace row exists, that constant becomes a customer's chosen string.
+   */
+  it("no staff surface reads the workspace name", () => {
+    const staffDir = path.resolve(CLIENT_SRC, "features/staff");
+    const offenders: string[] = [];
+    for (const entry of fs.readdirSync(staffDir, { withFileTypes: true, recursive: true })) {
+      if (!entry.isFile() || !/\.tsx?$/.test(entry.name)) continue;
+      const full = path.join(entry.parentPath ?? staffDir, entry.name);
+      if (/\.test\.tsx?$/.test(entry.name)) continue;
+      if (code(fs.readFileSync(full, "utf8")).includes("WORKSPACE_NAME")) {
+        offenders.push(path.relative(CLIENT_SRC, full));
+      }
+    }
+    expect(offenders, `staff reads the workspace name in: ${offenders.join(", ")}`).toEqual([]);
+  });
+});
