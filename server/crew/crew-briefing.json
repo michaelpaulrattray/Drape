@@ -1,7 +1,7 @@
 {
-  "edition": 215,
-  "updatedAt": "2026-09-02T12:08:50.089Z",
-  "shift": "Foreman — night of 2 September (the refresh cluster is on every admin page now, and a suspended customer's appeal link reaches us)",
+  "edition": 216,
+  "updatedAt": "2026-09-02T13:35:00.000Z",
+  "shift": "Foreman — night of 2 September (you asked why the auto-refresh switch was per-page; it is one switch now)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -131,13 +131,35 @@
         "source": "/admin/foundation still spelt it. My new check guarded the string that ARRIVED and not the two that LEFT — half a sweep. Fixed, and it now sweeps both directions."
       },
       {
-        "label": "The queue: 75 open · 18 yours · 1 urgent · 8 rotting",
+        "label": "The queue: 73 open · 15 yours · 1 urgent · 8 rotting",
         "tone": "good",
-        "source": "Counted twice tonight by two independent readers, both 75. Rotting = open and untouched for a week. ⚠ 44 cards closed between 3am and now and only 2 were mine, so this is measured, not carried."
+        "source": "Measured tonight. Rotting = open and never re-read for a week: the SAME EIGHT as the last two nights (#10 #14 #18 #22 #30 #55 #61 #65), none a bug, none on you. Not getting worse."
       }
     ]
   },
   "needsYou": [
+    {
+      "id": "autorefresh-default-453",
+      "title": "Should the auto-refresh switch start ON or OFF? I chose ON and it is one line to reverse",
+      "productImpact": "The AUTO 30s switch is now one switch for the whole staff panel (your reply #104). One switch means one starting position, and the pages disagreed: Overview started ON, the other seven started OFF. I checked whether Overview's ON was a decision of yours and it was not — it came from the commit that first scaffolded that page. So somebody has to choose, and it should be you.",
+      "workedExample": "You open the admin panel tomorrow morning having never touched the switch. With ON (what is live now): Overview refreshes itself every 30 seconds exactly as it always has, and so do Users, Change requests, Invite codes, Bug reports and Audit logs — five pages that used to sit still. With OFF: nothing refreshes on its own anywhere, including the Overview page you land on, until you click the switch once. After that first click the two are identical forever, because it remembers you.",
+      "recommendation": "Leave it ON. Nothing loses a behaviour it had today, and the pages that newly poll are staff-only tables where a stale number is the thing you were complaining about. If you find the Users table shifting under you while you read it, say so and it becomes OFF in one line.",
+      "options": [
+        {
+          "key": "on",
+          "label": "Leave it ON (live now)",
+          "consequence": "Overview keeps refreshing on arrival exactly as it always has, and the other five admin pages start doing the same. Nothing loses a behaviour."
+        },
+        {
+          "key": "off",
+          "label": "Start it OFF",
+          "consequence": "Nothing polls on its own until you click the switch once — including the Overview page you land on, which has always refreshed itself."
+        }
+      ],
+      "state": "open",
+      "filedAt": "2026-09-02T13:35:00.000Z",
+      "issueNumber": 453
+    },
     {
       "id": "frozen-email-support-link-452",
       "title": "A frozen customer's email sends them to a page that does not exist",
@@ -1417,6 +1439,36 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "shared-autorefresh-453",
+      "title": "One switch for the whole panel — and the page you cited as correct was never doing it either",
+      "state": "open",
+      "filedAt": "2026-09-02T13:35:00.000Z",
+      "issueNumber": 453,
+      "question": "You asked why the refresh controls act as individual toggles per admin page, and said it should work the way the moderator pages work. It does now. But the reason it was broken is not the reason it looked broken, and that decided the fix.\n\nTHE MODERATOR PAGE WAS NEVER SHARING ANYTHING.\n\nIt looks like it holds the switch across everything you do because /moderator is ONE page — its tabs are inside it, so nothing ever unloads. The admin panel is EIGHT separate pages, and each one loaded a fresh switch set to off. Neither side had any shared setting at all; seven pages each kept their own private copy. So copying the moderator page would have been copying nothing. What has been built is the thing neither side had.\n\nWHAT YOU SHOULD SEE.\n\nTurn AUTO 30s on anywhere — Overview, Users, Change requests, Invite codes, Bug reports, Audit logs, or the moderator dashboard — and walk anywhere else. It is on. Turn it off and that travels too. Close the browser and come back tomorrow and it is still how you left it.\n\n⚠ ONE DECISION IS YOURS, AND I HAVE MADE A CALL YOU MAY WANT TO REVERSE.\n\nOne shared switch means one starting position, and the eight pages disagreed about it: Overview started ON, the other seven started OFF. I looked up why Overview was different, expecting a decision of yours — it was not. It came from the original scaffolding commit back when that page was first built, so nobody ever chose it.\n\nI have set the shared starting position to ON, because that way no page loses anything it did today and you get what you asked for without clicking. The cost is that five admin pages now re-read themselves every 30 seconds when they used not to. The alternative is OFF, where nothing starts polling that did not before, but your landing page stops refreshing on arrival the way it always has.\n\nEither way it remembers you the moment you touch it, and it is one line to flip. Say the word if you want OFF.\n\nTHE FRAMES BELOW ARE THE SAME PAGE, NOTHING CLICKED.\n\nBoth are /admin/users reached by clicking Users from Overview. On the left of each pair is how it is now, on the right how it was this morning.",
+      "frames": [
+        {
+          "key": "crew-eye/d514de63-2af4-417a-a2aa-0e78e8d7384e.png",
+          "arm": "NOW — Users, dark",
+          "caption": "Walked here from Overview without touching the switch. AUTO is on, because it is the same switch."
+        },
+        {
+          "key": "crew-eye/c827e1f0-6b73-418e-a81a-f46b82b95598.png",
+          "arm": "BEFORE — Users, dark",
+          "caption": "The same walk this morning. One navigation and the switch is off again — this is exactly what you were looking at when you wrote."
+        },
+        {
+          "key": "crew-eye/ed427a2f-63e1-4d6a-96ac-9540dee88fe2.png",
+          "arm": "NOW — Users, light",
+          "caption": "The same thing in the light theme."
+        },
+        {
+          "key": "crew-eye/08d78ffe-2118-45f6-9aa1-3b6f776eb554.png",
+          "arm": "BEFORE — Users, light",
+          "caption": "And how it was, in the light theme."
+        }
+      ]
+    },
     {
       "id": "refresh-cluster-413",
       "title": "The missing refresh controls — and your question found twice what the card did",
@@ -3093,6 +3145,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-454-shared-autorefresh",
+      "title": "The AUTO switch is one switch for the whole staff panel",
+      "status": "merged",
+      "note": "#453 — your reply #104. Turn AUTO on anywhere in the admin panel and it is on everywhere, and it is still on after a browser reload. Seven pages each held their own copy of that switch, which is why it kept resetting.",
+      "prNumber": 454
+    },
+    {
       "id": "pr-450-refresh-cluster",
       "title": "Every admin page shows when it was last read, and can refresh itself",
       "status": "merged",
@@ -4560,7 +4619,8 @@
     100,
     101,
     102,
-    103
+    103,
+    104
   ],
   "nextUp": {
     "readAt": "2026-09-02T12:08:58.576Z",
