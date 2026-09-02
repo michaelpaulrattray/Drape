@@ -4,9 +4,15 @@
  * Founder, 2026-08-30, verbatim: *"if my shifts are running and i have no idea
  * what they are working on or doing thats dangerous"*.
  *
- * It sits ABOVE the program banner, which is the only thing on this page that
- * outranks the briefing itself: everything below describes what the team has
- * DONE, and this says what it is doing to his product right now.
+ * ⚠ **REVERSED BY HIS ORDER (#437, 2026-09-02).** This said *"it sits ABOVE
+ * the program banner, which is the only thing on this page that outranks the
+ * briefing itself"* — honest reasoning that lost to his, kept here rather than
+ * deleted so nobody restores the old order as a fix. THE PROGRAM is now first
+ * on the page, whole, on his *"yes the easier fix"*.
+ *
+ * It still leads everything that describes what the team has DONE: this says
+ * what it is doing to his product right now, and it sits second only to the
+ * briefing itself.
  *
  * # THREE STATES, AND THE THIRD IS THE ONE THAT MATTERS
  *

@@ -165,6 +165,71 @@ describe("§1 — a paragraph's order does not move", () => {
     );
     expect(at).not.toEqual([...at].sort((a, b) => a - b));
   });
+
+  /**
+   * ⚠ **THE PAGE'S OWN DOCBLOCK MUST AGREE WITH ITS JSX, AND THIS ARM EXISTS
+   * BECAUSE IT DID NOT.** The first shape of the change above rewrote the three
+   * comments at the MOUNT SITES — the places the card named — and left the
+   * file's top docblock still listing the old reading order, plus near-verbatim
+   * copies of two of those sentences in the components' own headers. The
+   * reviewer found them. **The sweep chose its sites instead of deriving
+   * them**, which is the same mistake the previous shift made on the previous
+   * card, one week apart.
+   *
+   * ⚠ **Of the four stale sentences, this is the ONLY one a machine can hold**,
+   * and it is also the one a reader meets first — it is the first paragraph of
+   * the file the order lives in. The other three are prose in other files and
+   * stay a human sweep; pinning this one at least means the two statements of
+   * the order that live in THIS file can never silently disagree again.
+   *
+   * The phrase table is hand-written on purpose. Deriving the words from the
+   * docblock would make the arm compare the sentence to itself.
+   */
+  it("the reading order in the page's own docblock matches the order it mounts", () => {
+    /* The docblock's phrase for each section, in the same rows as the JSX tag. */
+    const SAYS: [string, string][] = [
+      ["the program", "<CrewProgramBanner"],
+      ["working now", "<CrewWorkingNow"],
+      ["next up", "<CrewNextUp"],
+      ["background work", "<CrewBackgroundWork"],
+      ["needs you", "<CrewNeedsYou"],
+      ["for your eyes", "<CrewEyeGallery"],
+      ["what is not done", "<CrewPipeline"],
+      ["already dealt with", "<CrewRecentHistory"],
+      ["problems", "<CrewProblems"],
+      ["general", "<CrewGeneral"],
+    ];
+
+    /* The arrow list in the FIRST docblock, which is the reading-order
+       sentence. Anchored to the arrows so a later paragraph mentioning a
+       section name in prose cannot be mistaken for the list. */
+    const head = PAGE_TEXT.slice(0, PAGE_TEXT.indexOf("*/"));
+    const sentence = head.slice(head.indexOf("His reading order:")).toLowerCase();
+    expect(sentence, "the reading-order sentence is gone from the docblock").toContain("→");
+
+    const prose = SAYS.map(([phrase]) => {
+      const index = sentence.indexOf(`${phrase} →`);
+      /* The LAST section has no trailing arrow. */
+      const tail = sentence.indexOf(phrase);
+      const at = index > -1 ? index : tail;
+      expect(at, `the docblock's reading order never names "${phrase}"`).toBeGreaterThan(-1);
+      return at;
+    });
+    expect(prose, "the docblock lists the sections in a different order than it mounts them")
+      .toEqual([...prose].sort((a, b) => a - b));
+
+    /* And the two statements must be the SAME order, not merely each sorted. */
+    const body = code(PAGE_TEXT);
+    const mounted = SAYS.map(([, tag]) => body.indexOf(tag));
+    expect(mounted).toEqual([...mounted].sort((a, b) => a - b));
+  });
+
+  it("POSITIVE CONTROL: the docblock arm fires on the sentence that was here", () => {
+    const was =
+      "his reading order: working now → background work → the program → needs you → next up → general.";
+    const order = ["the program", "working now", "next up"].map((p) => was.indexOf(p));
+    expect(order).not.toEqual([...order].sort((a, b) => a - b));
+  });
 });
 
 describe("§1 — a quote is rendered verbatim and never trimmed", () => {

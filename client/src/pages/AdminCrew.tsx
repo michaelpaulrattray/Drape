@@ -6,10 +6,19 @@
  * stops mattering: the briefing and the steering wheel live in the product he
  * already opens every day.
  *
- * His reading order: working now → background work → program → needs you →
- * NEXT UP → for your eyes → what is not done → already dealt with → problems
- * → general. Single column, restrained, no charts and no KPI tiles — this is
+ * His reading order: **the program → working now → next up → background work →
+ * needs you → for your eyes → what is not done → already dealt with → problems
+ * → general.** Single column, restrained, no charts and no KPI tiles — this is
  * a briefing, not a dashboard.
+ *
+ * ⚠ **THAT ORDER CHANGED ON HIS WORD (#437, 2026-09-02) AND THE OLD ONE IS
+ * KEPT HERE**, because a reader who knows only the new one cannot tell a
+ * deliberate ruling from a drift. It used to read *working now → background
+ * work → program → needs you → NEXT UP → …*; he moved THE PROGRAM to the top
+ * whole (*"yes the easier fix"*, over a split that would have lifted only the
+ * mission line) and NEXT UP up under WORKING NOW (*"moving the next up card in
+ * the crew tab under working now"*). The mount sites below carry the same
+ * reversal beside each element, and `section08-guard.test.ts` pins the list.
  *
  * ⚠ **THE LAST THREE BLOCKS ARE #290/#291/#292, WORKED AS THE ONE PASS HE
  * ORDERED.** The page could say what was running and what had shipped and had
