@@ -242,6 +242,22 @@ export async function sendReferralInviteEmail(params: {
 }
 
 /**
+ * The live appeal route for a frozen customer (#452, founder's word 2026-09-02:
+ * *"Point it at support@klieglabs.com"*).
+ *
+ * It replaces `https://drape.ai/support`, which was dead twice over: the old
+ * domain, and a `/support` path that has never existed in the client — so
+ * swapping only the domain would have produced a tidier 404. This is the same
+ * address `Login.tsx` gives the same person in the same situation (#392), which
+ * is why it is a `mailto:` and not an invented page.
+ *
+ * ⚠ It is NOT known whether the Klaviyo template renders `support_url` at all —
+ * the template lives in Klaviyo, not in this repository. Do not assert it in
+ * either direction; what is fixed here is that the value we send is reachable.
+ */
+export const FROZEN_ACCOUNT_SUPPORT_URL = "mailto:support@klieglabs.com";
+
+/**
  * Send account frozen notification email via Klaviyo event (triggers a Flow)
  * Set up a Klaviyo Flow triggered by "Account Frozen" metric.
  * Use the same email template styling as the referral invite flow for brand consistency.
@@ -273,7 +289,7 @@ export async function sendAccountFrozenEmail(params: {
       month: "long",
       day: "numeric",
     }),
-    support_url: params.supportUrl || "https://drape.ai/support",
+    support_url: params.supportUrl || FROZEN_ACCOUNT_SUPPORT_URL,
     app_name: "Drape",
   });
 }

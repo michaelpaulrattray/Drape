@@ -162,7 +162,8 @@ describe("Klaviyo Integration", () => {
       expect(eventBody.data.attributes.properties.freeze_reason).toContain("credit discrepancy");
       expect(eventBody.data.attributes.properties.frozen_by).toBe("system");
       expect(eventBody.data.attributes.properties.app_name).toBe("Drape");
-      expect(eventBody.data.attributes.properties.support_url).toBe("https://drape.ai/support");
+      // #452, his word: the appeal route a frozen customer is given on the wire.
+      expect(eventBody.data.attributes.properties.support_url).toBe("mailto:support@klieglabs.com");
     });
 
     it("should use custom support URL when provided", async () => {
@@ -182,11 +183,11 @@ describe("Klaviyo Integration", () => {
         userName: "Test User",
         freezeReason: "Manual freeze",
         frozenBy: "Moderator Jane",
-        supportUrl: "https://drape.ai/help",
+        supportUrl: "mailto:appeals@example.test",
       });
 
       const eventBody = JSON.parse(mockFetch.mock.calls[1][1].body);
-      expect(eventBody.data.attributes.properties.support_url).toBe("https://drape.ai/help");
+      expect(eventBody.data.attributes.properties.support_url).toBe("mailto:appeals@example.test");
       expect(eventBody.data.attributes.properties.frozen_by).toBe("Moderator Jane");
     });
 
