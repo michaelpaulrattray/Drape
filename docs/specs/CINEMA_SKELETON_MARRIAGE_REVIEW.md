@@ -200,6 +200,95 @@ the measured failure list of the studio we studied, each fixed structurally:
 
 ---
 
+## 6. The full skeleton brief, audited (2026-09-02 — `12-cinema.md`, delivered by the founder)
+
+The design agent's complete brief (14 sections, build order, definition of
+done) audited line by line. **Verdict: ~95% married — the tightest document
+in the chain.** It independently carries the notes routing table, the
+escalation ladder, the four-branch distribution wait, the read-back scene
+document, the identity/state shelf with reasoned nested gaps, no-upload-for-
+faces, dashed-vs-solid as law, two accent states, derived-everything, price-
+on-every-paid-button, and the always-visible prompt drawer with the
+diff-and-scene-wide-offer edit flow (Level 2 verbatim). The brief's §5 also
+*corrects* the screenshots: take tiles never say "browse files" (file-picking
+is a shelf concern) — the brief wins, per its own header.
+
+**Findings that went into the change brief for the design agent** (the
+paste-ready text lives with the founder; summarised here):
+
+1. **"Version" must leave Cinema's vocabulary.** The brief defines Version =
+   "a take re-rendered after a note or setup change" — but the founder's
+   vocabulary ruling reserves *version* for the casting surface (edit
+   states), and the takes law already has the right noun: a note or edit
+   starts a new SETUP, and its renders are takes. Cinema's generation nouns:
+   **take + setup**.
+2. **Lock is a decision, not a readout.** The brief derives lock from
+   coverage ("locked when every shot has a keeper"). Wrong direction: full
+   coverage *suggests* locking; the user locks; locked *prevents drawing*
+   until explicitly unlocked. (The researched rule is behavioural.)
+3. **The entry flow is absent.** The brief starts with a production already
+   existing. The founder's main road — upload the script on entry, the AI
+   splits it into scenes, land on the Desk — plus style/aspect/length
+   setting has no design. Requested as the scene-level twin of the brief's
+   own §4c proposal pattern.
+4. **Staleness chips missing:** editing a line/document after shots exist
+   must mark affected shots "SCENE CHANGED · review", never regenerate.
+5. **Mid-scene state changes missing** (Phase B-1): a state can flip at a
+   beat ("closed → open at the blast"); downstream shots inherit the after
+   state. One control on the context panel's state picker.
+6. **Anchor promotion missing:** a kept take's sound saved to the shelf as
+   an AUDIO anchor (the 716-reuse pattern) — one action in the take viewer.
+7. **The ETA numbers (34s/62s) are placeholders** — the four-branch
+   machinery is right; the numbers must derive from the live per-engine
+   distribution at build.
+8. **Scout-then-fan needs naming:** §4c draws one take per approved shot,
+   §5 draws fans of 4 — deliberate two-step economics; the copy should say
+   so rather than look inconsistent.
+9. **The Script tab** (founder leaning, four views) is deliberately NOT in
+   this brief — it arrives as its own brief once ratified; the view toggle
+   just stays extensible.
+
+**Adopted from the brief into the canon** (it decided things the specs left
+open, and decided them well): the Composer hides the shelf AND the cut strip
+(the timeline is the cut at full size); Map density's proportional meter
+(width = duration, "the only honest encoding"); the scene status derivation
+table; the take viewer staying separate from Create's; slate-style `1.1/2.1`
+cut badges; the promotion queue (§14).
+
+## 7. The integration contract (decided here — the design bot's blind spot, by design)
+
+The founder: the design agent knows UI, not the product's internals; how the
+skeleton marries the casting studio, takes and the future Assets tab is this
+record's job to fix.
+
+- **Shelf CAST group ↔ the casting studio.** Cast tiles are SIGNED casts
+  only, picked never uploaded — the brief's no-upload-for-faces rule is the
+  UI face of the "a customer's cast is their work" law and the identity
+  system; it stands. A cast tile's nested **looks** are the casting side's
+  outfit/state cards (D-62: Casting owns them, for now); a look gap's "mint
+  via wardrobe" is that road. Personality, `Voice:` line and drift locks
+  ride in invisibly with the cast; the padlock badge is their UI shadow.
+- **Takes machinery is built ONCE.** Cinema's contact sheet and the casting
+  profile's Takes stub (`client/src/pages/CastingRoom.tsx`) are two
+  consumers of one engine: fans, keepers, per-slice billing, recovery sweep,
+  retention (`CASTING_TAKES_DESIGN.md`). Vocabulary stays per-surface as
+  ruled.
+- **The Assets tab (future rail destination) is the workspace library; the
+  shelf is a production's call sheet.** Shelf "Pick" reads from the
+  library; "Mint"/"Upload" create into the library and attach; a production
+  holds references, never copies — the same location card rides into every
+  future campaign untouched, which is the research's core reuse economics.
+- **Depth maps stay engine-internal** — no UI (decided here): the engine
+  mints and attaches them for space-critical shots; blocking diagrams remain
+  the only spatial artifact a user sees.
+- **Per-line dialogue clips with the cast's voice arrive with the casting
+  Voice feature** (stub already on the casting profile page); until then the
+  AUDIO group's "write" covers cues. The voice open test still sets the
+  default for how often clips are needed.
+
+---
+
 *Companions: `FILM_ENGINE_DESIGN.md` (now recording the Composer as the
 Phase-D surface), `SCRIPT_ROOM_DESIGN.md` (gate 1 updated with the fold-in
-collision), `CASTING_TAKES_DESIGN.md`, `research/zephyr-teardown/README.md`.*
+collision), `CASTING_TAKES_DESIGN.md`, `research/zephyr-teardown/README.md`,
+and the design agent's `12-cinema.md` (delivered 2026-09-02, audited in §6).*
