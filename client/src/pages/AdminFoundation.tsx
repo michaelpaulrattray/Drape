@@ -17,6 +17,7 @@ import {
   RenameDialog,
   Button,
   Card,
+  BRAND_NAME,
   Chip,
   DataTable,
   DerivedChip,
@@ -360,9 +361,16 @@ export default function AdminFoundation() {
       <section className="dp-stack" style={{ gap: 16 }}>
         <SectionHead eyebrow="06 · Surface bar" aside="wraps, never scrolls sideways" />
         <div className="dp-card" style={{ padding: 0, overflow: "hidden" }}>
+          {/* ⚠ Composed from `BRAND_NAME`, exactly as the two REAL bars are
+              (#417). It said `Klieg Studio — everything` until the gate review
+              caught it — a third hardcoded copy of the string his ruling
+              removed, sitting on a live admin page, on this of all surfaces:
+              the specimen sheet is how a shape gets judged against the chrome
+              a customer sees, so a stale specimen misinforms the next brief as
+              well as reading to him as the bug coming back. */}
           <SurfaceBar
             eyebrow="ADMIN"
-            title="Klieg Studio — everything"
+            title={`${BRAND_NAME} Console`}
             segments={{
               value: bar,
               options: [

@@ -493,6 +493,44 @@ describe("the staff bar's title is composed, never spelt", () => {
     );
   });
 
+  /**
+   * ⚠ **THE ARM THAT CLOSES THE CLASS, AND IT IS HERE BECAUSE THE FIRST SWEEP
+   * DID NOT.** The sweep above guards the string that arrived; this one guards
+   * the two that LEFT. They are different failures and only the second is the
+   * one a person notices: a surface still spelling `Klieg Studio — everything`
+   * shows him the words his ruling removed.
+   *
+   * The gate review found exactly that — `pages/AdminFoundation.tsx` held a
+   * THIRD hardcoded copy, on a live admin page, and the new arms could not see
+   * it because the composed-title collector reads only `StaffBar.tsx` and the
+   * sweep was watching the wrong string. **A sweep aimed only at what a change
+   * ADDS is half a sweep** (working law 7: fix the class, not the instance).
+   */
+  it("the two retired titles are written nowhere in the client", () => {
+    const RETIRED = [`${BRAND} Studio — everything`, `${BRAND} Studio — watch and propose`];
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.(tsx?|css)$/.test(entry.name)) {
+          const text = code(fs.readFileSync(full, "utf8"));
+          for (const dead of RETIRED) {
+            if (text.includes(dead)) offenders.push(`${path.relative(CLIENT_SRC, full)} → "${dead}"`);
+          }
+        }
+      }
+    };
+    walk(CLIENT_SRC);
+    expect(offenders, `a retired staff-bar title survives: ${offenders.join(", ")}`).toEqual([]);
+  });
+
+  it("the retired-title sweep would see one — positive control", () => {
+    const dead = `${BRAND} Studio — everything`;
+    expect(code(`<SurfaceBar title="${dead}" />`).includes(dead)).toBe(true);
+    expect(code(`/* it used to say ${dead} */`).includes(dead)).toBe(false);
+  });
+
   it("the eyebrows did not move", () => {
     const eyebrows = [...code(BAR).matchAll(/eyebrow="([^"]+)"/g)].map((m) => m[1]);
     expect(eyebrows).toEqual(["ADMIN", "MODERATION"]);
