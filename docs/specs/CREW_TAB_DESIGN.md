@@ -248,6 +248,28 @@ editorial — this is a briefing, not a dashboard; no charts, no KPI tiles.
 
 Order on the page (his reading order, mirroring the Desk):
 
+⚠ **THE LIST BELOW IS THE ORIGINAL SIX AND IS NO LONGER THE PAGE. THE LIVING
+ORDER IS `client/src/pages/AdminCrew.tsx`'s OWN DOCBLOCK, which a guard arm
+pins against the JSX beside it** (`section08-guard.test.ts`). It is kept here
+because it is the order he first agreed to and the reasoning below it is still
+the reasoning; what follows is what has happened to it since.
+
+**As of #437 (2026-09-02) the page reads: the program → working now → next up →
+background work → needs you → for your eyes → what is not done → already dealt
+with → problems → general.** Five sections below did not exist when this list
+was written — WORKING NOW (#272), BACKGROUND WORK (#277), NEXT UP (#290),
+ALREADY DEALT WITH (#292) and GENERAL (#293, which replaced the journal named
+in item 1) — and the founder has since moved two of them: **THE PROGRAM to the
+top whole** (*"yes the easier fix"*, over a split that would have lifted only
+the mission line) and **NEXT UP up under WORKING NOW** (*"moving the next up
+card in the crew tab under working now"*).
+
+⚠ **This correction exists because `AdminCrew.tsx:2` names this document as the
+page's design spec**, so an agent planning against §6 was planning against an
+order missing half the sections. Found by the reviewer on PR #444, in a sweep
+whose own grep had already matched this line — see that PR for why it was
+missed, which is the more useful half.
+
 1. **Program banner** — the at-a-glance chips (#74, each citing its reading);
    mission line; focus with its state and his verbatim confirming quote; the
    current milestone's steps with their states under a progress bar DERIVED
