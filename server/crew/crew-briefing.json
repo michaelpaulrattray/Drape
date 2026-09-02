@@ -1,7 +1,7 @@
 {
-  "edition": 200,
-  "updatedAt": "2026-09-01T22:22:19.702Z",
-  "shift": "Foreman — night of 2 September (the Crew tab's own surface, brief 08)",
+  "edition": 201,
+  "updatedAt": "2026-09-02T01:08:56.819Z",
+  "shift": "Foreman — night of 2 September (moderator investigations, brief 09 — the staff lane closes)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,6 +138,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "staff-lane-closed-399",
+      "issueNumber": 399,
+      "title": "The staff lane is finished — five briefs, and three components deleted on your standing agreement",
+      "productImpact": "Brief 09 shipped tonight, so all five of the staff briefs you ordered (05 → 09) are in. The moderator's three investigation surfaces now lead with their answer instead of burying it, and the credits ledger — which turned out to be a plain filtered list — moved onto the same table as everything else, taking 284 lines of bespoke code with it.\n\nYour §9 asked for a closing note on section 00's nine shared components: which ended up with real consumers and which never did. Derived rather than guessed: DataTable has 15, ExpandableRow and SurfaceBar are in use, and CostedOption, MilestoneRail and Transcript reached the end of the lane at zero. All three say \"Crew\" in their own docblocks, Crew shipped without them, and none of the three fits it — so they are deleted, which is what your standing agreement said to do.\n\nThree more also read zero and I did NOT delete them: MediaCard, HoverActions and Marquee were written for the media and marketing surfaces — the customer work that starts next — so \"zero after five staff briefs\" says nothing about them. Their test is the first customer section.\n\nWhat I would most want you to know: two faults were found only by opening the page. Clicking an account did nothing at all for a while — it drew perfectly and was inert — and the \"Last active\" column has said \"Never\" for every account since it was built, because it reads a field the server has never returned. Neither could have been found by reading the code.",
+      "state": "open",
+      "filedAt": "2026-09-02T01:08:56.819Z",
+      "workedExample": "Open Admin > Moderation > User investigation and click any account.\n\nBefore, the reconciliation read like this - and the number you came for is the last line, in the smallest type on the page:\n\n    ALL CLEAR   (green banner)\n    Total Earned   +5,000   (green)      Total Generations   0\n    Total Spent    -0       (red)        Completed           0   (green)\n    ...\n    Discrepancy    0        (green, 12px, bottom row)\n\nNow it reads like this:\n\n    RECONCILIATION                              DISCREPANCY\n    The ledgers agree.                                    0\n    No discrepancy. 0 credits charged, 0 recorded.   (30px mono)\n\n    CREDIT TRANSACTIONS                GENERATION RECORDS\n    Total earned            +5,000     Total generations        0\n    Total spent                  0     Completed                0\n\nEvery figure is the one that was there. What moved is which of them you see first, and how much colour is competing with it - five colours became one, and the one that is left is reserved for the discrepancy when it is non-zero.",
+      "recommendation": "Start the customer surfaces. Nothing in the staff lane is waiting on you, the five briefs are in, and the one open ruling of yours (#422, the admin pill) is small and carded. If you want a second look at anything, the moderator investigation is the surface that changed most and is worth two minutes before the lane is behind us. The question underneath all of it: do the customer surfaces start next, or is there something on the staff side you want a second look at first?",
+      "options": [
+        {
+          "key": "a",
+          "label": "Start the customer surfaces",
+          "consequence": "The staff lane closes here. Anything left on it becomes an ordinary queue card rather than part of a running set."
+        },
+        {
+          "key": "b",
+          "label": "One more staff pass first",
+          "consequence": "There are three staff cards standing: the five form modals still white in dark mode (#421), the admin pill (#422), and the topbar glyphs (#423). All small; none of them is a brief."
+        },
+        {
+          "key": "c",
+          "label": "Look at the investigation first, then decide",
+          "consequence": "Two minutes on Admin > Moderation > User investigation. It is the surface this brief changed most, and the one place a colour rule was pushed hardest."
+        }
+      ]
+    },
     {
       "id": "plan-blurb-404",
       "issueNumber": 404,
@@ -1277,6 +1304,36 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "eye-399-moderator-investigations",
+      "title": "Reconciliation now leads with the answer — is the discrepancy where your eye goes first?",
+      "issueNumber": 399,
+      "filedAt": "2026-09-02T01:08:56.819Z",
+      "state": "open",
+      "question": "Your brief said the pane ran backwards: a banner, two dense columns, then a six-row table whose LAST line was the discrepancy — \"the answer to the entire view, in 12px, at the bottom.\" It is now a 30px figure directly under the account, and I measured that nothing else on the surface is bigger. What I want your eye on is whether the number you came for is genuinely the first thing you land on, and whether stripping five colours out has made the page harder to scan rather than easier — it is the sharpest version of the colour rule in the product, so it is the one most likely to have gone too far.",
+      "frames": [
+        {
+          "key": "crew-eye/d24fa6c2-9c97-401d-8c50-4ed9b6c113fe.png",
+          "arm": "before",
+          "caption": "Moderation last night, in dark mode. White cards inside a dark app, blue/green/amber tints on ordinary numbers, an Actions column whose only button did what clicking the row already did — and every row of LAST ACTIVE reading \"Never\", which it has done for every account since the column was built."
+        },
+        {
+          "key": "crew-eye/24d1ff60-2d8c-4aec-9ba7-be0f3a4d7dcf.png",
+          "arm": "after",
+          "caption": "The same page tonight. Click an account and its investigation opens underneath it at full width — that is what made room for the verdict. THE LEDGERS AGREE, with the discrepancy at 30px on the right."
+        },
+        {
+          "key": "crew-eye/9a83a7ca-b7e5-4592-8641-eda01d7945d3.png",
+          "arm": "after · light",
+          "caption": "The same thing in light. Worth a moment on \"Total spent 0\" — it read \"−0\" until I looked at a frame. Twenty-nine tests and ninety-four browser checks had passed over a negative zero printed in a ledger."
+        },
+        {
+          "key": "crew-eye/ffd954c9-ffbe-45c5-b313-b3376f3a000d.png",
+          "arm": "after · the workings",
+          "caption": "The evidence below the verdict: label, spacer, figure in mono, a hairline before each subtotal. The discrepancy row that used to sit at the bottom of this card is deleted — it is the verdict, and saying it twice is the double-count your Crew work removed."
+        }
+      ]
+    },
     {
       "id": "eye-398-crew-surface",
       "title": "Crew in dark mode — does the before/after read the way you expected?",
@@ -2692,6 +2749,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-412-moderator-investigations",
+      "title": "The moderator's investigations lead with the answer (brief 09)",
+      "status": "merged",
+      "note": "#399 · the LAST of your five staff briefs — the lane is closed",
+      "prNumber": 412
+    },
+    {
       "id": "pr-409-crew-surface",
       "title": "Crew takes the house type and tokens (brief 08)",
       "status": "merged",
@@ -4046,10 +4110,11 @@
     78,
     79,
     80,
-    81
+    81,
+    86
   ],
   "nextUp": {
-    "readAt": "2026-09-01T22:20:57.206Z",
+    "readAt": "2026-09-02T01:09:57.043Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4067,13 +4132,48 @@
         "urgent": false
       },
       {
-        "issueNumber": 399,
-        "title": "SHIFT 5 of 5 — Moderator investigations: verdict before workings, and the staff lane closes (brief 09) — BLOCKED on #395, #396",
+        "issueNumber": 401,
+        "title": "A credit charge does not record WHAT it made — his toolKind column (split from card 387 item 1)",
         "urgent": false
       },
       {
-        "issueNumber": 401,
-        "title": "A credit charge does not record WHAT it made — his toolKind column (split from card 387 item 1)",
+        "issueNumber": 413,
+        "title": "The staff bar drops its refresh cluster on Invite codes and Bug reports — and Bug reports is an inbox",
+        "urgent": false
+      },
+      {
+        "issueNumber": 414,
+        "title": "Crew takes his drawing's design devices — ticks, state pills, skeletons — without the mock data",
+        "urgent": false
+      },
+      {
+        "issueNumber": 415,
+        "title": "Pending moderator requests reach the staff bar as a count, and Crew folds into the one refresh",
+        "urgent": false
+      },
+      {
+        "issueNumber": 416,
+        "title": "The account menu's Admin and Moderation badges are built and wired to nothing — plus the moderator's flags",
+        "urgent": false
+      },
+      {
+        "issueNumber": 417,
+        "title": "The staff bar reads Klieg Console, and stops borrowing a name that will belong to a customer",
+        "urgent": false
+      },
+      {
+        "issueNumber": 421,
+        "title": "Five staff dialogs are white in dark mode — 46 hex literals in the gap between all five staff briefs",
+        "urgent": false
+      },
+      {
+        "issueNumber": 422,
+        "title": "His two staff-frame rulings: the admin pill gets colour, and the alert hairline goes darker",
+        "urgent": false
+      },
+      {
+        "issueNumber": 423,
+        "title": "The topbar icons are not the prototype's — six glyphs redrawn, and the guard compared two copies of the same mistake",
         "urgent": false
       }
     ]
