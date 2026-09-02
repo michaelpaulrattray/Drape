@@ -59,7 +59,12 @@
  */
 import type { Connection } from "mysql2/promise";
 
-/** Below this, a READ balance shouts. Days of ordinary use, not weeks. */
+/**
+ * Below this, `low` is true. Nothing prints it any more (founder, 2026-09-02:
+ * a balance is a reading, never a problem); the floor exists so the reader's
+ * arithmetic has a boundary the suite can prove, and so a future finding about
+ * a top-up that stopped landing has a number to reason against.
+ */
 export const FAL_LOW_BALANCE_USD = 20;
 
 /**
@@ -469,7 +474,8 @@ export async function readFalTraffic(
 /**
  * The one line a state block or a deploy receipt prints.
  *
- * A read balance shouts when low, exactly like the OpenRouter line. A derived
+ * A read balance is the figure, exactly like the OpenRouter line — the shout
+ * retired on the founder's word, 2026-09-02, see `falLine`. A derived
  * figure says **derived**, says the window it covers, and says that it is a
  * FLOOR whenever anything in it went unpriced or unseen — because a spend
  * figure that quietly omits the face scans looks identical to one that includes
@@ -481,13 +487,13 @@ export function falLine(
 ): string {
   if (balance.ok) {
     const figure = `$${balance.remaining.toFixed(2)} ${balance.currency} remaining`;
-    return balance.low
-      /* Same amendment as the OpenRouter line, same day and same reason
-         (founder: auto top-up is ON for BOTH providers; fable-692 §1). The
-         shout stays — it is a leak detector, not only a runway gauge. */
-      ? `fal *** LOW: ${figure} — below $${FAL_LOW_BALANCE_USD}. `
-        + `Auto top-up covers the outage; a low balance now means money is MOVING — look at the spend. ***`
-      : `fal ${figure}`;
+    /* The shout is gone here for the same reason it is gone from the
+       OpenRouter line, the same day (founder, 2026-09-02: "open router auto
+       tops up i never want to see it as an issue appear again" — and auto
+       top-up is ON for BOTH providers, his 2026-08-16 word). A balance is a
+       READING for the receipt's custody line; `low` stays computed so the
+       boundary arm proves the arithmetic, and nothing prints it. */
+    return `fal ${figure}`;
   }
   if (!derived) return `fal UNREAD — ${balance.why}`;
   const days = Math.max(
