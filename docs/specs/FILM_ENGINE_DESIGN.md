@@ -217,6 +217,13 @@ are the words you summon, including the ones sitting inside a 'no'."*
 
 ### Phase D — Post (the canvas cut)
 
+**Surface note (2026-09-02, from the skeleton mockups):** Phase D has its own
+view — the **COMPOSER** (player + story-order timeline with dashed
+not-yet-kept segments + audio rows + "intended vs kept" runtime). The
+skeleton promoted the cut strip to a full third tab beside Wall and Desk,
+and the research supports it (post was a named stage; "half the work is
+editing"). Adopted. See `CINEMA_SKELETON_MARRIAGE_REVIEW.md`.
+
 - Keepers assemble in the **cut strip** in scene order — the rough cut exists
   the moment picking does.
 - **Generation supervision** (their named QC stage): the engine flags weak
@@ -417,6 +424,11 @@ is exactly this door.
    outcomes set two engine defaults.
 5. Skills roster scope for v1 — Writer+DP+Stager is a plausible minimum;
    Acting Coach and Editor can start as parts of the DP.
+6. **(2026-09-02, from the marriage review)** Whether "propose/read-back"
+   text assistance is free while generation carries the credits — the Desk
+   skeleton's "Propose more shots · free" button vs the 2026-09-01 "writing
+   assistance uses credits" ruling. Recommendation on file: thinking free,
+   rendering paid. One of these must give; the button copy follows the call.
 
 ---
 

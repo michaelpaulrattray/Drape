@@ -164,6 +164,13 @@ with lenses, not two surfaces with a hand-off.
 
 1. **The fold-in: THIRD TAB.** Ruled by the founder: the Script Room is the
    third view beside Wall and Desk (option A). One Production, three lenses.
+   ⚠ **Seating collision found 2026-09-02 (marriage review): the skeleton's
+   third tab is already the COMPOSER**, and the Desk's left rail is already
+   headed SCRIPT. The ruling's intent (a peer lens) needs a seat.
+   Recommendation pending the founder's word: **four tabs in pipeline order
+   — SCRIPT · WALL · DESK · COMPOSER** (write / oversee / work / cut); the
+   Desk's script rail stays as navigator, the Script tab holds the Page, the
+   dramaturgy chips and the live manifest.
 2. **Writing assistance USES CREDITS.** Ruled by the founder — not free.
    Pricing itself is set at build time with the rest of the credit table.
 3. Feature-length productions (one per act vs one long): **still open** — the
