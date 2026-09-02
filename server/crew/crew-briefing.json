@@ -1,7 +1,7 @@
 {
-  "edition": 214,
-  "updatedAt": "2026-09-02T10:33:53.428283Z",
-  "shift": "Foreman — night of 2 September (an open row now sits on its own lighter block across all twelve staff tables; you called it perfect)",
+  "edition": 215,
+  "updatedAt": "2026-09-02T12:08:50.089Z",
+  "shift": "Foreman — night of 2 September (the refresh cluster is on every admin page now, and a suspended customer's appeal link reaches us)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,6 +138,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "frozen-email-support-link-452",
+      "title": "A frozen customer's email sends them to a page that does not exist",
+      "productImpact": "When you or a moderator freeze an account, the customer gets an email telling them where to get help. That link points at drape.ai/support. Two things are wrong with it and only one is the old name: THERE IS NO /support PAGE — not on the old domain and not on the new one. So changing drape.ai to klieglabs.com would only produce a tidier dead end. I have NOT changed it, because what that link should point at is your decision rather than my guess.",
+      "workedExample": "A moderator freezes an account this afternoon. The customer gets the email, clicks the only link in it, and lands on nothing. They have no other route, because a frozen account cannot get in to ask. One honest caveat: whether that email shows the link at all lives in Klaviyo, not in our code — our code sends it every time, and I cannot read the template from here, so I am not claiming it either way.",
+      "options": [
+        {
+          "key": "mailto",
+          "label": "Point it at support@klieglabs.com",
+          "consequence": "One line, no new page. The same address the login page now uses for exactly this person in exactly this situation."
+        },
+        {
+          "key": "build-page",
+          "label": "Build a real support page and point at that",
+          "consequence": "A page that does not exist yet, so it is a piece of work rather than a fix — and the email stays broken until it ships."
+        },
+        {
+          "key": "wait",
+          "label": "Leave it for the branding pass",
+          "consequence": "Nothing changes today. The link stays dead, and it stays dead for every account frozen between now and then."
+        }
+      ],
+      "recommendation": "Point it at support@klieglabs.com. It is one line, it needs nothing built, and it matches what a suspended customer already gets on the login page.",
+      "state": "open",
+      "filedAt": "2026-09-02T12:08:50.089Z",
+      "issueNumber": 452
+    },
     {
       "id": "hairline-pick-422",
       "issueNumber": 422,
@@ -1390,6 +1417,36 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "refresh-cluster-413",
+      "title": "The missing refresh controls — and your question found twice what the card did",
+      "question": "You asked why only some admin pages carry \"the updated time the auto refresh toggle and a notification button\". They all do now. But the interesting part is what turned up on the way, and it is worth two minutes.\n\nTHE CARD SAID TWO PAGES WERE WRONG. FOUR WERE.\n\nWhoever wrote the card searched the pages for the setting that draws those controls and found two pages missing it — Invite codes and Bug reports. That search was answering a slightly different question than yours. Users and Change requests HAD the setting, and inside it they had only the refresh button — no time, no toggle. So they matched the search and still failed two of the three things you named. The first frame below is the Users page as it was: one lonely refresh icon and nothing else.\n\nTHE REASON THOSE TWO PAGES GAVE FOR IT WAS SIMPLY WRONG.\n\nEach had a note in the code saying the missing pieces were \"state no reader produces\" — meaning the page had nothing to show, so showing nothing was correct. That is false. Every one of these pages already knows the moment its data arrived, and the Overview page has been reading exactly that since these bars were built. Nobody had ever asked it. I corrected the design brief that note was citing, because the brief is what the next person reads.\n\nWHAT YOU WILL SEE\n\nOpen Invite codes, Bug reports, Users or Change requests. Same three things Overview has, same place, same behaviour. Bug reports is the one that matters most — it is an inbox, a row only appears when a customer somewhere hits Report a bug, and until now the only way to find out one had arrived was to leave the page and come back.\n\nONE THING I DELIBERATELY DID NOT DO\n\nThe card told me to write a note in the code explaining that the Crew page is permanently different. I did not, because you reversed that yourself the same day on another card — you asked whether Crew should just fold into the same refresh as everything else, and the answer there is yes. Writing a paragraph defending an exception on the day you have asked to remove it is a document that is stale before it is saved. Instead a test now goes red the moment Crew is folded in, so that night has to delete Crew's own \"checked 2 minutes ago\" line at the same time — otherwise the page would tell you how fresh it is twice.\n\nHOW HARD I LOOKED\n\nAll eight staff pages, both light and dark, driven in a real browser: 106 readings, none wrong. Then the same run against the old code as a control: 20 failures, in exactly the shape described above. The toggle is clicked rather than just looked at, because a switch that draws two states and changes neither is the sort of thing that ships looking finished.\n\nThe photographs below are dark; light was measured the same way with the same result.",
+      "state": "open",
+      "filedAt": "2026-09-02T12:08:50.089Z",
+      "issueNumber": 413,
+      "frames": [
+        {
+          "key": "crew-eye/77810c0a-1acd-42aa-9a61-54349782da70.png",
+          "arm": "BEFORE — Users",
+          "caption": "The Users page as it was. One refresh icon, no time, no toggle — and the card's own search reported this page as correct, because the setting was there and two thirds of it was empty."
+        },
+        {
+          "key": "crew-eye/0cc90a74-05bb-4c17-9f1a-a907acb80f83.png",
+          "arm": "AFTER — Users",
+          "caption": "The same page now: the time it was last read, the AUTO 30s switch, and the refresh button. The same three things Overview has, in the same place."
+        },
+        {
+          "key": "crew-eye/3a600f9d-5f13-498d-a61b-cdc0af92bb6d.png",
+          "arm": "BEFORE — Bug reports",
+          "caption": "Bug reports had nothing at all. This is the inbox a customer's report lands in, and there was no way to see whether one had arrived without leaving the page."
+        },
+        {
+          "key": "crew-eye/f0f3dfbe-e3b6-49b3-8b88-285e83c1905c.png",
+          "arm": "AFTER — Bug reports",
+          "caption": "The same bar now. With AUTO on it re-reads every 30 seconds, so a report that arrives while you are looking at the page shows up without you doing anything."
+        }
+      ]
+    },
     {
       "id": "open-row-ground-441",
       "title": "You can see which account you are looking into — before and after, side by side",
@@ -3036,6 +3093,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-450-refresh-cluster",
+      "title": "Every admin page shows when it was last read, and can refresh itself",
+      "status": "merged",
+      "note": "#413 — your question about the missing time, toggle and refresh button. You were right about more pages than the card found: two of them had the button and neither of the other two.",
+      "prNumber": 450
+    },
+    {
+      "id": "pr-451-appeal-link",
+      "title": "A suspended customer's only appeal link now reaches an inbox we read",
+      "status": "merged",
+      "note": "#392 — one invisible attribute on the login page. Nothing on screen changed; the message just arrives now.",
+      "prNumber": 451
+    },
+    {
       "id": "pr-449-open-row-ground",
       "title": "An open row and everything under it sit on one lighter block",
       "status": "merged",
@@ -4492,7 +4563,7 @@
     103
   ],
   "nextUp": {
-    "readAt": "2026-09-02T10:33:45.129Z",
+    "readAt": "2026-09-02T12:08:58.576Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4525,11 +4596,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 392,
-        "title": "A suspended customer's only appeal link points at the pre-rebrand domain — one invisible attribute, not a branding change",
-        "urgent": false
-      },
-      {
         "issueNumber": 401,
         "title": "A credit charge does not record WHAT it made — his toolKind column (split from card 387 item 1)",
         "urgent": false
@@ -4537,11 +4603,6 @@
       {
         "issueNumber": 404,
         "title": "The plan card's blurb slot is empty on purpose — his one-line positioning statement, best written after the ladder folds",
-        "urgent": false
-      },
-      {
-        "issueNumber": 413,
-        "title": "The staff bar drops its refresh cluster on Invite codes and Bug reports — and Bug reports is an inbox",
         "urgent": false
       },
       {
