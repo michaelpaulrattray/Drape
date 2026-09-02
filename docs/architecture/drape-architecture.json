@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d9de4d9f3a496ca8"
+    "sourceFingerprint": "1e6aa6441bf9010b"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 55
+      "moduleCount": 54
     },
     {
       "id": "domain:alerting",
@@ -729,12 +729,6 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "path": "client/src/features/admin/components/crew/CrewProgramBanner.tsx",
-      "domain": "admin",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/admin/components/crew/CrewRecentHistory.tsx",
-      "path": "client/src/features/admin/components/crew/CrewRecentHistory.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -14354,21 +14348,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewRecentHistory.tsx",
-      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewRecentHistory.tsx",
-      "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewRecentHistory.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
@@ -18771,11 +18750,6 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminCrew.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewRecentHistory.tsx",
       "kind": "imports"
     },
     {

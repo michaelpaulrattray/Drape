@@ -7,9 +7,28 @@
  * already opens every day.
  *
  * His reading order: **the program → working now → next up → background work →
- * needs you → for your eyes → what is not done → already dealt with → problems
- * → general.** Single column, restrained, no charts and no KPI tiles — this is
- * a briefing, not a dashboard.
+ * needs you → for your eyes → what is not done → problems → general.** Single
+ * column, restrained, no charts and no KPI tiles — this is a briefing, not a
+ * dashboard.
+ *
+ * ⚠ **`ALREADY DEALT WITH` WAS THE TENTH AND HE DELETED IT (#438, 2026-09-02),
+ * verbatim: *"do you think already dealt with and not done yet are card we even
+ * need? i can see progress in working now it shows me whats shipped i can also
+ * see how my features are travelling under the program?"*** He was right about
+ * one and inverted on the other, and the measurement is why the two answers
+ * differ: at edition 209 that block rendered **281 rows** while `THE PIPELINE`
+ * rendered **none**. It was the fourth telling of *done* — `WORKING NOW` names
+ * the shifts and what each shipped, `THE PROGRAM` ticks the steps as they land,
+ * and this listed all 281 forever.
+ *
+ * ⚠ **THIS IS #292 CARRIED TO ITS END, NOT A REVERSAL OF IT.** #292 collapsed
+ * three history lists into one because he called them *"double ups"*; the
+ * merged pipeline rows were MOVED here rather than retired, and the changelog
+ * grew back. Brief 08 §7's *"do not split history back apart"* is answered
+ * rather than broken — one list did not become two, it became none, and the
+ * rows themselves are untouched in `crew-briefing.json`, in git, and in
+ * `WORKING NOW`'s closed runs. `section08-guard.test.ts` now asserts the
+ * section is GONE where it used to assert it was single.
  *
  * ⚠ **THAT ORDER CHANGED ON HIS WORD (#437, 2026-09-02) AND THE OLD ONE IS
  * KEPT HERE**, because a reader who knows only the new one cannot tell a
@@ -69,7 +88,6 @@ import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
 import { CrewNextUp } from "@/features/admin/components/crew/CrewNextUp";
 import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
-import { CrewRecentHistory } from "@/features/admin/components/crew/CrewRecentHistory";
 import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
@@ -356,16 +374,6 @@ export default function AdminCrew() {
             />
 
             <CrewPipeline items={stateQuery.data.briefing.pipeline} />
-
-            {/* ONE history block where there were three (#292): Needs You's
-                "Recently answered", the gallery's "Already judged" and the
-                pipeline's "Recently landed" were the same idea said three
-                times — his word for it was "double ups". */}
-            <CrewRecentHistory
-              cards={stateQuery.data.briefing.needsYou}
-              eyeItems={stateQuery.data.briefing.eyeItems}
-              pipeline={stateQuery.data.briefing.pipeline}
-            />
 
             <CrewProblems problems={stateQuery.data.briefing.problems} />
 

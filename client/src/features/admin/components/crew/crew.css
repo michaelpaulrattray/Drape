@@ -939,40 +939,12 @@
   margin-top: var(--s-3);
 }
 
-/* --------------------------------------------------------- history (§6) */
-
 /*
-  §6: dimmer throughout — `--metaStrong` bodies, mono dates, no card per
-  entry. It is memory, not work.
+  ⚠ THE FIVE `hist` RULES WENT WITH `ALREADY DEALT WITH` (#438, 2026-09-02) —
+  `__hist`, `__histrow`, `__kind`, `__kind--done`, `__histtitle`. Nothing else
+  drew them. `__more` below is KEPT: the General box uses it too, so it is a
+  disclosure rule rather than a history one.
 */
-.dp-crew__hist {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-}
-
-.dp-crew__histrow {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-5);
-}
-
-.dp-crew__kind {
-  flex: none;
-  width: 92px;
-  font: 400 11px var(--font-sans);
-  color: var(--metaStrong);
-}
-
-.dp-crew__kind--done {
-  color: var(--meta);
-}
-
-.dp-crew__histtitle {
-  flex: 1;
-  font: 400 13px/1.6 var(--font-sans);
-  color: var(--metaStrong);
-}
 
 /* A disclosure that is a word, not a button. */
 .dp-crew__more {

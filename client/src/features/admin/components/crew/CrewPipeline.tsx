@@ -27,6 +27,31 @@
  * `THE PIPELINE`. It says *Not done yet*, which is #291 — his own ruling above
  * — and §1 is explicit that where the mockup and the built Crew disagree on
  * content, the built one wins. The head changed FACE, not words.
+ *
+ * # ⚠ THE EMPTY LINE SAYS WHAT THE SECTION IS FOR (#438)
+ *
+ * He asked whether this section and `ALREADY DEALT WITH` were cards he even
+ * needed. **The measurement answered the two differently**: at edition 209 the
+ * history block held 281 rows and this one held NONE, because every pipeline
+ * row was merged. So the history block went and this one stayed — **and its
+ * emptiness is the argument FOR it.** This is the only place a card appears
+ * that is blocked, waiting on him, in review or building AND is not in his
+ * `founder-ordered` queue (that is NEXT UP) and not a step of the current
+ * milestone (that is THE PROGRAM). Delete it and that card is invisible until
+ * somebody happens to open GitHub — the exact failure of #321, which he found
+ * himself.
+ *
+ * ⚠ **The old line said *"Nothing is in flight. Everything the crew has started
+ * has landed."*, which described the rows and taught him nothing.** An empty
+ * box has to say what a FULL one would mean, or "nothing is stuck" and "this
+ * section is broken" look identical — the same ambiguity §6 protects
+ * `CrewNeedsYou`'s empty state from, in his own words: *"its absence would read
+ * as a loading failure."*
+ *
+ * ⚠ **AND THIS IS DELIBERATELY THE OPPOSITE OF BRIEF 07's RULE** for Overview's
+ * `NEEDS A HUMAN`, where a section with nothing to show disappears. The
+ * difference is the one brief 08 already drew: **Overview is SCANNED for
+ * exceptions; this page is READ.** Do not "harmonise" the two.
  */
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
@@ -67,9 +92,11 @@ export function CrewPipeline({ items }: { items: readonly CrewPipelineItem[] }) 
         {notDone.length > 0 && <span className="dp-crew__meta">{notDone.length} open</span>}
       </TableHead>
       {notDone.length === 0 ? (
-        <p className="dp-crew__body dp-crew__body--quiet dp-crew__gap">
-          Nothing is in flight. Everything the crew has started has landed.
-        </p>
+        /* A `--well` block, the same treatment as `CrewNeedsYou`'s empty state
+           (§6) — present, and visibly not a thing to act on. */
+        <div className="dp-crew__well dp-crew__gap">
+          Nothing is stuck. Blocked work and anything waiting on you appears here.
+        </div>
       ) : (
         <ul className="dp-crew__rows dp-crew__gap">
           {notDone.map((item) => (

@@ -95,17 +95,24 @@ export function milestoneCountLine(progress: MilestoneProgress): string {
   return parts.join(" · ");
 }
 
-/* ─── #290/#291/#292: the page reads the program → working now → next up →
-   what is not done → one recent-history block. Questions he actually asks,
-   instead of one 107-row scroll with three history sections in it. All three
-   derivations are pure and tested directly; none of them writes a state down
-   twice.
+/* ─── #290/#291: the page reads the program → working now → next up → what is
+   not done. Questions he actually asks, instead of one 107-row scroll with
+   three history sections in it. The derivations are pure and tested directly;
+   none of them writes a state down twice.
 
    ⚠ This sentence said *"working now → next up → …"* until #437 (2026-09-02),
    when he moved THE PROGRAM to the top of the page. The derivations below did
    not change and none of them depends on section order — only the sentence
    was wrong, which is exactly the kind of stale prose that survives because
-   nothing it describes can break. ─── */
+   nothing it describes can break.
+
+   ⚠ **AND #292's `recentHistory` / `foldHistory` LEFT THIS FILE WITH THEIR
+   SECTION (#438, 2026-09-02).** After `CrewRecentHistory.tsx` was deleted
+   nothing but their own tests read them, and a suite that cannot fail when its
+   subject is dead is how dead code keeps a live reputation — this repository's
+   own credit-velocity lesson. The DATA is untouched: `crew-briefing.json`
+   still carries every merged pipeline row and every answered card, and
+   `pipelineNotDone` below still filters `merged` out. ─── */
 
 /**
  * ⚠ **THE ORDER IS THE POINT.** His reading of the old section was *"a massive
@@ -129,118 +136,6 @@ export function pipelineNotDone(items: readonly CrewPipelineItem[]): CrewPipelin
        the shifts recorded. */
     .slice()
     .sort((a, b) => (NOT_DONE_RANK[a.status] ?? 9) - (NOT_DONE_RANK[b.status] ?? 9));
-}
-
-/** One row of the single recent-history block (#292). */
-export type CrewHistoryRow = {
-  key: string;
-  /** What kind of past thing this is — the tag that replaces three headings. */
-  kind: "answered" | "judged" | "landed";
-  title: string;
-  issueNumber: number | null;
-  /** `done` reads differently from `answered`; a landed row is always done. */
-  done: boolean;
-};
-
-/**
- * THE ONE HISTORY BLOCK — his verdict on the old page was *"the recently
- * answered and already judged sections are double ups"*, and it was three
- * sections, not two: `Recently answered` (needs-you), `Already judged` (the eye
- * gallery) and `Recently landed` (the pipeline). From where he sits that is
- * *things I have already dealt with*, said three times.
- *
- * ⚠ **THE TWO GROUPS ARE NOT INTERLEAVED, AND THAT IS DELIBERATE.** Cards and
- * eye items carry `filedAt`, so they merge on a real clock. A pipeline row
- * carries no date at all — so decided things sort by their own timestamps and
- * landed work follows in the order the shifts recorded it. Faking a common
- * clock would order the list by a number no record makes. One heading, one
- * list, tagged rows; the seam is invisible to him and honest in the code.
- */
-export function recentHistory(
-  cards: readonly CrewNeedsYouCard[],
-  eyeItems: readonly CrewEyeItem[],
-  pipeline: readonly CrewPipelineItem[],
-): CrewHistoryRow[] {
-  const decided: (CrewHistoryRow & { filedAt: string })[] = [
-    ...cards
-      .filter((card) => card.state !== "open")
-      .map((card) => ({
-        key: `card:${card.id}`,
-        kind: "answered" as const,
-        title: card.title,
-        issueNumber: card.issueNumber,
-        done: card.state === "done",
-        filedAt: card.filedAt,
-      })),
-    ...eyeItems
-      .filter((item) => item.state !== "open")
-      .map((item) => ({
-        key: `eye:${item.id}`,
-        kind: "judged" as const,
-        title: item.title,
-        issueNumber: item.issueNumber,
-        done: item.state === "done",
-        filedAt: item.filedAt,
-      })),
-  ].sort((a, b) => Date.parse(b.filedAt) - Date.parse(a.filedAt));
-
-  const landed: CrewHistoryRow[] = pipeline
-    .filter((item) => item.status === "merged")
-    .map((item) => ({
-      key: `pipeline:${item.id}`,
-      kind: "landed" as const,
-      title: item.title,
-      issueNumber: null,
-      done: true,
-    }));
-
-  return [
-    ...decided.map(({ filedAt: _filedAt, ...row }) => row),
-    ...landed,
-  ];
-}
-
-/**
- * ⚠ **THE FOLD IS PER KIND, AND THAT IS A DEFECT FOUND BY LOOKING AT IT.**
- *
- * The first build took the first ten rows of the concatenated list. There are
- * 65 decided cards and 93 landed rows, and decided ones sort first — so every
- * row above the fold read "You answered" or "You judged" and **not one piece
- * of shipped work was visible**. His brief asks for a block whose rows are
- * tagged *a question he answered · a frame he judged · work that landed*, and
- * a default view that can only ever show two of those three kinds is not that
- * block. Momentum was the one thing buried.
- *
- * So the cut is taken from each group instead of from the concatenation, which
- * keeps one heading, one list and the list's own order.
- *
- * ⚠ **And his brief said "last 7 days, or the last 8 merged rows, whichever is
- * shorter" — only the count half is buildable.** A pipeline row carries no
- * date and there is nothing on it to derive one from; inventing a timestamp so
- * the code could claim a 7-day window would be a number no record makes, which
- * is the specific thing his own count-pill ruling forbids. The disclosure says
- * how many are behind it rather than implying a window.
- */
-export const HISTORY_DECIDED_VISIBLE = 6;
-export const HISTORY_LANDED_VISIBLE = 4;
-
-/** The fold, taken fairly across the two groups. Pure, and tested directly. */
-export function foldHistory(rows: readonly CrewHistoryRow[]): {
-  recent: CrewHistoryRow[];
-  older: CrewHistoryRow[];
-} {
-  const recent: CrewHistoryRow[] = [];
-  let decided = 0;
-  let landed = 0;
-  for (const row of rows) {
-    if (row.kind === "landed") {
-      if (landed++ < HISTORY_LANDED_VISIBLE) recent.push(row);
-    } else if (decided++ < HISTORY_DECIDED_VISIBLE) {
-      recent.push(row);
-    }
-  }
-  const shown = new Set(recent);
-  return { recent, older: rows.filter((row) => !shown.has(row)) };
 }
 
 /** One row of NEXT UP (#290) — a founder-ordered card a shift will take. */
