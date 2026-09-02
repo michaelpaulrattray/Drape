@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d97e27ed01650125"
+    "sourceFingerprint": "69ff427023b793e0"
   },
   "domains": [
     {
@@ -10718,6 +10718,10 @@
     {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/focusRing.test.ts",
+      "path": "client/src/foundation/focusRing.test.ts"
     },
     {
       "id": "test:client/src/foundation/icons-guard.test.ts",

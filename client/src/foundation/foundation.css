@@ -851,6 +851,12 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   lands on the bare <input>, which is inset inside its own bordered box, so an
   accent rectangle draws *around the text* rather than around the control.
 
+  ⚠ Since 2026-09-02 `tokens.css` excludes every textarea and text-typed input
+  under `.dp-root` from that ring at the root (the founder met it a third
+  time, on the staff search box), so the rules below are the wrapper half of
+  the law rather than the only thing standing between a `.dp-input` and the
+  blanket. They stay: a wrapper border is the mark a text field shows.
+
   It is also a specificity trap, which is why `outline: none` above did not
   hold: `.dp-root :focus-visible` is (0,2,0) and `.dp-input` is (0,1,0), so the
   blanket rule won on focus. These selectors are deliberately specific enough
