@@ -201,6 +201,11 @@ describe("#392 — the client's contact addresses", () => {
  *   the template lives in Klaviyo, not in this repository. What is proven here
  *   is that the value we put on the wire is reachable, not that a customer's
  *   eye ever meets it.
+ * - The dead-path arm compares a **literal** path against the route table, so a
+ *   pointer into a parameterized route (`/casting/cast/123` against the declared
+ *   `/casting/cast/:castId`) would false-red. Fail-LOUD, and deliberately not
+ *   pre-solved: no server pointer has a path today, and a matcher written for a
+ *   case that does not exist is a matcher nothing has ever driven.
  * - `server/routes/referral.ts` falls back to `https://drape.ai` for a referral
  *   link's base when the `Origin` header is absent. It is a **bare host with no
  *   path**, so it is not a dead destination in this arm's sense, and it belongs
@@ -257,9 +262,19 @@ const clientRoutePaths = (): string[] =>
     (m) => m[1],
   );
 
-/** A destination on the retired domain, host or mailbox, subdomains included. */
+/**
+ * A destination on the retired domain, host or mailbox, subdomains included.
+ *
+ * ⚠ **The domain's own dots are ESCAPED** (gate review, PR #465). Interpolated
+ * raw, `drape.ai` reads as `drape<any>ai`, so a host like `drapeXai` would have
+ * reddened the suite. The error direction was fail-LOUD rather than silent, but
+ * a guard that can cry wolf teaches people to widen it.
+ */
 const onRetiredDestination = (url: string) =>
-  new RegExp(`(@|//)([\\w.-]*\\.)?${RETIRED_MAIL_DOMAIN}(/|$)`, "i").test(url);
+  new RegExp(
+    `(@|//)([\\w.-]*\\.)?${RETIRED_MAIL_DOMAIN.replace(/\./g, "\\.")}(/|$)`,
+    "i",
+  ).test(url);
 
 /**
  * The path of an app URL, or `null` when there is no path at all. A bare host
