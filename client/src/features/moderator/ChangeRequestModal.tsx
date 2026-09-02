@@ -334,7 +334,7 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
 
           {/* Evidence Summary */}
           <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Evidence Summary (optional)</label>
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Evidence summary (optional)</label>
             <Textarea value={crEvidenceSummary} onChange={(e) => setCrEvidenceSummary(e.target.value)} placeholder="Links, screenshots, or other evidence supporting this request..." className="min-h-[60px]" />
           </div>
 

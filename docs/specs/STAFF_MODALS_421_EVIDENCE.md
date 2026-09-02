@@ -182,8 +182,8 @@ reported RED and I would have believed them.**
   four admin files and the accounts page. One carve-out added, for
   `section09-guard.test.ts`'s own planted `#BADA55` positive control, on the
   same narrow reasoning as its two existing siblings.
-- **Six sabotages, `scripts/_421-sabotage-disposable.mts`**, each restoring in a
-  `finally` and each verified restored at the bytes: **all six RED, and each
+- **Eight sabotages, `scripts/_421-sabotage-disposable.mts`**, each restoring in
+  a `finally` and each verified restored at the bytes: **all eight RED, and each
   names its own file** — a count alone cannot tell a correct catch from an
   unrelated break. Baseline green before, green after.
 - `pnpm check` clean · **396 client guard arms pass** across 15 files, including
@@ -202,3 +202,47 @@ reported RED and I would have believed them.**
 - **`ChangeRequestAttachments.tsx`** holds 16 hex literals. It is a detail-row
   component on the change-requests page, not a modal, so it is outside both
   #421 and his reply.
+
+---
+
+## 9 · The reviewer's notes, and what they cost
+
+`review` returned **pass, no blocking findings**, and verified the deletion
+claims independently at the consumers. Three non-blocking notes; two were mine
+and are fixed on this branch.
+
+**1. My own sentence-case sweep stopped one label short.** `Evidence Summary
+(optional)` survived while its siblings became `Credit amount`, `Target user
+ID`, `Related audit log`. It renders identically — the label carries
+`uppercase`, so the source casing is invisible — which is exactly why nothing
+caught it and why it is worth recording: **a sweep whose misses are invisible on
+screen has no feedback loop.** Fixed.
+
+**2. Thirteen redundant rows, not eight.** The reviewer counted eight
+`features/moderator/*` rows made redundant by the directory row; read at the
+file there were **thirteen** (six from brief 06's block, seven from brief 09's).
+All thirteen removed, and both docblocks amended rather than left describing
+rows that no longer exist.
+
+⚠ **And the removal needed its own proof, which is the part I would most want
+read.** *"The directory row collects them"* is a claim about `collect()`. Two
+sabotage arms were added on files that had a named row before and have only the
+directory row now — `CreditsSubTab.tsx` and `UserInvestigationWidgets.tsx` —
+and both go **RED and name themselves**. Without them, a row removal that
+un-guarded seven files would have looked exactly like this one.
+
+⚠ **Adding those two arms produced a fourth mistake of the kind §6 collects.**
+The first attempt patched the driver with a Python string whose `
+` did not
+match the file's `
+`; the replace matched nothing, and **the patch script
+printed `two arms added` anyway.** The sabotage run then reported six arms, all
+green-and-named, and read as a complete success. The tell was the arm COUNT, not
+the verdict — **a script that reports its own success without asserting it is a
+report, not a fact** (working law 1, pointed at a five-line helper).
+
+**3. The freeze/unfreeze `<textarea>`s hand-mirror the `Textarea` primitive's
+focus classes.** Left as-is; the PR declares why the element was not swapped
+(IME guard and field-sizing behaviour parity, against #421's own no-behaviour-
+change bar), which is the declared-shortcut form the fidelity law permits.
+

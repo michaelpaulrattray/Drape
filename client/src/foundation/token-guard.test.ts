@@ -114,6 +114,13 @@ const GUARDED_PATHS = [
     `docs/specs/PROMOTION_PASS_SECTION_06.md` §5 — and each enrols with the
     brief that rewrites it, which is how `features/staff` arrived here one
     brief ago.
+
+    ⚠ **THE SIX `features/moderator/` ROWS THIS BLOCK CARRIED ARE GONE (#421),
+    AND NOTHING STOPPED BEING GUARDED.** The `features/moderator` DIRECTORY row
+    at the bottom of this list collects every one of them. The reasoning above
+    is kept because it is the history — and because it is the reasoning that
+    left the change request modal outside every guard until the founder opened
+    it. The admin rows stay: that directory still holds a file no brief owns.
   */
   "features/admin/UserTable.tsx",
   "features/admin/UserFilters.tsx",
@@ -121,12 +128,6 @@ const GUARDED_PATHS = [
   "features/admin/AuditLogsFilters.tsx",
   "features/admin/BlockedIPsTab.tsx",
   "features/admin/ChangeRequestList.tsx",
-  "features/moderator/ActivitySubTab.tsx",
-  "features/moderator/AuditLogsTab.tsx",
-  "features/moderator/BlockedIPsTab.tsx",
-  "features/moderator/FlaggedReferralsTab.tsx",
-  "features/moderator/GenerationsSubTab.tsx",
-  "features/moderator/MyRequestsTab.tsx",
   "pages/AdminAuditLogs.tsx",
   "pages/AdminBugReports.tsx",
   "pages/AdminChangeRequests.tsx",
@@ -196,20 +197,19 @@ const GUARDED_PATHS = [
     feeling: **203 literals across these six files → 0**, with 89 left in the
     one file that has a card on it.
 
-    ⚠ `StatsCards.tsx` is on this list and is NOT one of the brief's four
+    ⚠ `StatsCards.tsx` was on this list and was NOT one of the brief's four
     surfaces. It is the count row at the top of the same page, it carried four
     Tailwind tints, and `.dp-countrow` already existed to draw it — leaving it
     would have made the page's top strip the only coloured thing on it. Its own
     docblock says so; a file enrolled without that sentence is a scope change
     hiding in a list.
+
+    ⚠ **SEVEN OF THIS BLOCK'S ROWS ARE GONE TOO (#421), FOR THE SAME REASON AND
+    WITH THE SAME EFFECT: NOTHING STOPPED BEING GUARDED.** The one file this
+    block was written to route around is the file #421 fixed, so the directory
+    row below collects all seven. `pages/ModeratorDashboard.tsx` is the survivor
+    because it is a PAGE and lives outside that directory.
   */
-  "features/moderator/CreditsSubTab.tsx",
-  "features/moderator/FlaggedDiscrepanciesCard.tsx",
-  "features/moderator/ReconciliationSubTab.tsx",
-  "features/moderator/StatsCards.tsx",
-  "features/moderator/UserInvestigationTab.tsx",
-  "features/moderator/UserInvestigationWidgets.tsx",
-  "features/moderator/investigations.css",
   "pages/ModeratorDashboard.tsx",
 
   /*
