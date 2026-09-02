@@ -1,6 +1,6 @@
 {
-  "edition": 216,
-  "updatedAt": "2026-09-02T13:35:00.000Z",
+  "edition": 217,
+  "updatedAt": "2026-09-02T13:34:00.000Z",
   "shift": "Foreman — night of 2 September (you asked why the auto-refresh switch was per-page; it is one switch now)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -1473,7 +1473,7 @@
       "id": "refresh-cluster-413",
       "title": "The missing refresh controls — and your question found twice what the card did",
       "question": "You asked why only some admin pages carry \"the updated time the auto refresh toggle and a notification button\". They all do now. But the interesting part is what turned up on the way, and it is worth two minutes.\n\nTHE CARD SAID TWO PAGES WERE WRONG. FOUR WERE.\n\nWhoever wrote the card searched the pages for the setting that draws those controls and found two pages missing it — Invite codes and Bug reports. That search was answering a slightly different question than yours. Users and Change requests HAD the setting, and inside it they had only the refresh button — no time, no toggle. So they matched the search and still failed two of the three things you named. The first frame below is the Users page as it was: one lonely refresh icon and nothing else.\n\nTHE REASON THOSE TWO PAGES GAVE FOR IT WAS SIMPLY WRONG.\n\nEach had a note in the code saying the missing pieces were \"state no reader produces\" — meaning the page had nothing to show, so showing nothing was correct. That is false. Every one of these pages already knows the moment its data arrived, and the Overview page has been reading exactly that since these bars were built. Nobody had ever asked it. I corrected the design brief that note was citing, because the brief is what the next person reads.\n\nWHAT YOU WILL SEE\n\nOpen Invite codes, Bug reports, Users or Change requests. Same three things Overview has, same place, same behaviour. Bug reports is the one that matters most — it is an inbox, a row only appears when a customer somewhere hits Report a bug, and until now the only way to find out one had arrived was to leave the page and come back.\n\nONE THING I DELIBERATELY DID NOT DO\n\nThe card told me to write a note in the code explaining that the Crew page is permanently different. I did not, because you reversed that yourself the same day on another card — you asked whether Crew should just fold into the same refresh as everything else, and the answer there is yes. Writing a paragraph defending an exception on the day you have asked to remove it is a document that is stale before it is saved. Instead a test now goes red the moment Crew is folded in, so that night has to delete Crew's own \"checked 2 minutes ago\" line at the same time — otherwise the page would tell you how fresh it is twice.\n\nHOW HARD I LOOKED\n\nAll eight staff pages, both light and dark, driven in a real browser: 106 readings, none wrong. Then the same run against the old code as a control: 20 failures, in exactly the shape described above. The toggle is clicked rather than just looked at, because a switch that draws two states and changes neither is the sort of thing that ships looking finished.\n\nThe photographs below are dark; light was measured the same way with the same result.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-02T12:08:50.089Z",
       "issueNumber": 413,
       "frames": [
