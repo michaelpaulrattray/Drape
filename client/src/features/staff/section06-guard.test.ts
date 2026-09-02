@@ -643,11 +643,156 @@ describe("brief 06 §4 — the facts grid survives a 64-character value", () => 
       Not tidiness: these are ids, hashes, IPs, emails and user agents. One
       unbroken value otherwise blows the grid open and the table beside it.
     */
+    /* ⚠ Sliced on the RULES (`selector {`), not on bare class names. The first
+       shape used bare names, so the moment a docblock elsewhere in the sheet
+       MENTIONED `.dp-table__evidence` — #441's panel comment cross-references
+       it — `indexOf` found the comment, the end index fell BEFORE the start,
+       and the slice was the empty string. An arm reading nothing is exactly
+       what its own "the arm is reading nothing" message exists to catch, and it
+       caught it. */
     const block = FOUNDATION_CSS.slice(
-      FOUNDATION_CSS.indexOf(".dp-table__factvalue"),
-      FOUNDATION_CSS.indexOf(".dp-table__evidence"),
+      FOUNDATION_CSS.indexOf(".dp-table__factvalue {"),
+      FOUNDATION_CSS.indexOf(".dp-table__evidence {"),
     );
     expect(block, "the arm is reading nothing").toContain("font:");
     expect(block, "fact values must break-all").toContain("word-break: break-all");
+  });
+});
+
+/**
+ * #441 — THE OPEN ROW HAS A GROUND, and the three fills that would swallow
+ * something on it do not.
+ *
+ * ⚠ **These arms hold a REVERSAL, which is why they are worth more than the
+ * usual style pin.** He passed the flat row on #396 (*"The expansion reads
+ * fine — it is obviously open when you click it. No change."*) and then
+ * overturned himself at his own prototype (*"there is no background color to
+ * show this profile is highlighted"*). A future shift reading #396's reply in
+ * isolation would restore the flat row as a fix; these arms are what stops it
+ * being a green change.
+ *
+ * **What a source read cannot see, stated rather than implied:** whether the
+ * step is actually VISIBLE, whether hover and open are told apart by an eye,
+ * and whether either survives a theme. Those were DRIVEN — 289 readings across
+ * twelve staff surfaces in both themes, grounds sampled at real pixels, with
+ * the same driver run against `main` as its control.
+ */
+/* #441 */
+describe("the open row and its panel are one shaded block", () => {
+  const openRule = () => {
+    const at = FOUNDATION_CSS.indexOf(".dp-table__rowgroup--open {");
+    expect(at, "the open-row rule is GONE — the className in primitives.tsx now promises nothing").toBeGreaterThan(0);
+    return FOUNDATION_CSS.slice(at, FOUNDATION_CSS.indexOf("}", at) + 1);
+  };
+
+  it("the ground sits on the GROUP, so the row and the panel cannot drift apart", () => {
+    /* On the group rather than on the row and again on the panel: two
+       declarations are two things to keep in step, and a shaded panel under an
+       unshaded row is the same split appearance his card complained about,
+       in reverse. */
+    expect(openRule(), "the open group must carry a background").toContain("background:");
+
+    /* POSITIVE CONTROL — the matcher can tell a rule with a background from
+       one without. */
+    expect(".dp-x { color: red; }").not.toContain("background:");
+  });
+
+  it("⚠ the open ground is NOT the hover ground — three states, three values", () => {
+    /*
+      `--well` is hover. If open takes it too, the two states are one colour and
+      his complaint returns wearing a different hat. This is the arm that fails
+      if somebody "simplifies" the two rules into one, and it is also the one
+      that would fail if the PROTOTYPE were copied literally — the mockup paints
+      the open row, its hover and its evidence block all `var(--well)`.
+    */
+    expect(openRule(), "open must not reuse the hover well").not.toContain("var(--well)");
+    expect(openRule(), "the open ground is --fillStrong, one step past hover").toContain(
+      "var(--fillStrong)",
+    );
+
+    /* POSITIVE CONTROL — the same matcher, on a rule that DOES use the well. */
+    expect(".dp-table__row--button:hover { background: var(--well); }").toContain("var(--well)");
+  });
+
+  it("hover on a CLOSED row is untouched — his own out-of-scope line", () => {
+    expect(
+      FOUNDATION_CSS,
+      "the closed-row hover must still paint --well; this card changes open, not hover",
+    ).toContain(".dp-table__row--button:hover { background: var(--well); }");
+  });
+
+  it("the component still marks the open group, or the rule reaches nothing", () => {
+    const source = code(PRIMITIVES);
+    expect(
+      source,
+      "ExpandableRow must put --open on the rowgroup; a rule with no className is dead CSS",
+    ).toContain("dp-table__rowgroup--open");
+
+    /* POSITIVE CONTROL: the modifier is applied CONDITIONALLY on `open`, not
+       painted onto every row — a ground on every row is no ground at all. */
+    expect(source).toMatch(/open && expandable && "dp-table__rowgroup--open"/);
+  });
+});
+
+/* #441 half (b) */
+describe("nothing inside the open block separates itself with a fill", () => {
+  /*
+    ⚠ **THE HALF THAT MAKES THE SHADING SAFE, and it is the half a hurried fix
+    drops.** `foundation.css` recorded, correctly, that a well behind the panel
+    would swallow the evidence block that sits ON the well. Half (a) alone is
+    that failure. Both blocks below drew themselves with `--fillStrong` or
+    `--well`; on the new ground a fill separates nothing, so both take a
+    hairline instead.
+  */
+  const ruleFor = (selector: string) => {
+    const at = FOUNDATION_CSS.indexOf(selector);
+    expect(at, `${selector} is not in the stylesheet — this arm is reading nothing`).toBeGreaterThan(0);
+    return FOUNDATION_CSS.slice(at, FOUNDATION_CSS.indexOf("}", at) + 1);
+  };
+
+  it("the evidence block is bordered, not filled", () => {
+    const rule = ruleFor(".dp-table__evidence {");
+    expect(rule, "the evidence block must not paint a fill on the open ground").not.toContain(
+      "background: var(--well)",
+    );
+    expect(rule, "it separates with a hairline instead").toContain("border: 1px solid");
+
+    /* POSITIVE CONTROL — the matcher really does spot the fill it forbids. */
+    expect(".dp-x { background: var(--well); }").toContain("background: var(--well)");
+  });
+
+  it("⚠ the sub-tab track keeps an edge — it is --fillStrong, the open ground's own value", () => {
+    /*
+      The third collision, and the one his card predicted rather than named:
+      `ExpandableRow` draws `.dp-segmented` inside the panel for `row.subTabs`,
+      and its track is `--fillStrong`. The selected chip survives on
+      `--surface`; the boundary of the control does not.
+    */
+    expect(
+      FOUNDATION_CSS,
+      "the sub-tab track inside an open row must be given an edge",
+    ).toContain(".dp-table__rowgroup--open .dp-segmented");
+    expect(ruleFor(".dp-table__rowgroup--open .dp-segmented")).toContain("inset");
+  });
+
+  it("the fix is in the shared component — no surface file carries an open-row override", () => {
+    /*
+      His §7: *"if this change requires touching a surface file, the component
+      is being worked around rather than fixed"*. Derived from the population
+      above rather than from a list, so a twelfth surface is measured the moment
+      it exists.
+    */
+    let checked = 0;
+    for (const file of tableSurfaces()) {
+      checked += 1;
+      expect(
+        code(file.text),
+        `${file.name} must not carry its own open-row ground — a per-surface override reintroduces the eleven implementations the staff-tables brief deleted`,
+      ).not.toContain("dp-table__rowgroup--open");
+    }
+    expect(checked, "the arm read no surfaces at all").toBeGreaterThanOrEqual(10);
+
+    /* POSITIVE CONTROL. */
+    expect('<div className="dp-table__rowgroup--open">').toContain("dp-table__rowgroup--open");
   });
 });

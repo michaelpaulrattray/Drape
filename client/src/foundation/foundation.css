@@ -1918,6 +1918,55 @@ a.dp-segmented__seg {
 
 .dp-table__rowgroup + .dp-table__rowgroup { border-top: 1px solid var(--ruleSoft); }
 
+/*
+  THE OPEN BLOCK (#441) — his words: *"there is no background color to show
+  this profile is highlighted like the original prototype design, its all one
+  color … its background color is slightly different to the others. so i can
+  easily tell which profile im look into."*
+
+  **The ground sits on the GROUP, not on the row and again on the panel.**
+  That is what makes the open row and its expansion read as ONE block rather
+  than a shaded panel under an unshaded row — both children are already
+  transparent, so one declaration paints both and they cannot drift apart.
+
+  ⚠ **`--fillStrong`, deliberately NOT `--well`, because `--well` is hover.**
+  Three states share this component and each needs its own value: resting is
+  `--surface`, hover is `--well` (one step), open is `--fillStrong` (two).
+  Measured: light `#FFFFFF → #F6F6F8 → #F2F2F4`, dark `#1C1C1F → #202024 →
+  #26262A`. His bar is *"slightly different"* — findable at a glance, not a
+  block of colour — and 10–13 shades from the table clears that in both
+  themes while staying quiet.
+
+  ⚠ **Hover is SUPPRESSED inside an open group rather than layered over it.**
+  A `--well` tint on the open row would paint it LIGHTER than its own panel in
+  light theme, splitting the block back into two the moment the cursor lands
+  on it — the exact appearance he complained about, arriving on hover. The
+  open ground is the stronger state and already says where you are; the row
+  keeps `cursor: pointer` and `aria-expanded`, so nothing about closing it is
+  hidden. Hover on every CLOSED row is untouched, which is his own out-of-
+  scope line on #441.
+*/
+.dp-table__rowgroup--open { background: var(--fillStrong); }
+.dp-table__rowgroup--open .dp-table__row--button:hover { background: transparent; }
+
+/*
+  ⚠ **THE SUB-TAB TRACK IS THE THIRD THING THAT WAS SEPARATING ITSELF WITH A
+  FILL, and it is `--fillStrong` — the open ground's own value (#441 §8).**
+  `ExpandableRow` draws `.dp-segmented` inside the panel for `row.subTabs`
+  (Credits / Generations / Activity on a user, and the moderator's
+  investigation widgets), and its track is what tells a reader where the group
+  of options ENDS; the selected chip survives on `--surface`, the boundary does
+  not. His card predicted exactly this class — *"a ledger row drawn on its own
+  ground can collide with the new open-row ground the same way the evidence
+  block does"* — so it is fixed here, in the shared component, rather than
+  filed or patched on a surface.
+
+  `box-shadow` rather than `border`, and that is not a style preference: the
+  track's padding is 2px, so a real border eats the whole gap and the segments
+  touch the edge. An inset ring separates without taking layout.
+*/
+.dp-table__rowgroup--open .dp-segmented { box-shadow: inset 0 0 0 1px var(--borderCard); }
+
 .dp-table__cell {
   min-width: 0;
   display: flex;
@@ -1953,10 +2002,35 @@ a.dp-segmented__seg {
 .dp-table__skeleton { height: 15px; width: 100%; }
 
 /*
-  The expansion (§5). It opens with a full-width hairline and rises; the row
-  itself does NOT change background — the hairline and the content are the
-  signal, and a well behind the panel would swallow the evidence block that
-  sits ON the well.
+  The expansion (§5). It opens with a full-width hairline and rises.
+
+  ⚠ **THIS BLOCK ARGUED FOR A FLAT ROW UNTIL 2026-09-02 AND NOW ARGUES THE
+  OTHER WAY — HIS EYE REVERSED HIS OWN ANSWER, AND THE OLD FINDING IS KEPT
+  BECAUSE IT IS STILL TRUE (#441).** It read: *"the row itself does NOT change
+  background — the hairline and the content are the signal, and a well behind
+  the panel would swallow the evidence block that sits ON the well."* He had
+  passed the flat row on #396 (*"The expansion reads fine — it is obviously
+  open when you click it. No change."*); he then looked at it beside his own
+  prototype and ruled the other way: *"there is no background color to show
+  this profile is highlighted … so i can easily tell which profile im look
+  into."* Law 9 — the second look wins. **A future shift reading #396 must not
+  restore the flat row.**
+
+  **The swallowing was real, so the shading is only safe because the evidence
+  block stopped being a fill.** It is now a bordered block on the open ground
+  (see `.dp-table__evidence`), which is what makes `--fillStrong` behind the
+  open group possible. Half (a) alone is the failure this paragraph used to
+  predict.
+
+  ⚠ **AND THE PROTOTYPE DOES NOT SOLVE IT — measured at its bytes, not
+  inferred from a frame.** `Klieg Studio.dc.html` paints the open row
+  `var(--well)` (6434), its hover `var(--well)` (1442) and its evidence block
+  `var(--well)` (1488): **one colour doing three jobs.** His frame reads
+  correctly only because the account he opened is `active`, and the prototype
+  draws no evidence block for an active account (`hasEvidence: state !==
+  "active"`). So the mockup is authoritative on the LOOK — an open row has a
+  ground — and cannot be copied for the VALUE. Ours keeps the three apart:
+  hover `--well`, open `--fillStrong`, evidence a border on the open ground.
 */
 .dp-table__panel {
   display: flex;
@@ -1991,12 +2065,21 @@ a.dp-segmented__seg {
   word-break: break-all;
 }
 
-/* Plain English, on the well. What a reader needs — not a JSON dump. */
+/*
+  Plain English. What a reader needs — not a JSON dump.
+
+  ⚠ **BORDERED, NOT FILLED, AND THAT IS HALF (b) OF #441 RATHER THAN A
+  PREFERENCE.** Brief 06 §5.3 and the prototype both give this a `--well`
+  fill; the open group now carries `--fillStrong`, so a `--well` fill here is
+  four shades from its own ground in light and INVERTS in dark. A hairline
+  separates on any ground, which is why the shading above is safe at all.
+*/
 .dp-table__evidence {
   margin: 0;
   padding: 12px 13px;
+  border: 1px solid var(--borderCard);
   border-radius: var(--r-md);
-  background: var(--well);
+  background: transparent;
   font: 400 11.5px/1.65 var(--font-sans);
   color: var(--metaStrong);
   text-wrap: pretty;

@@ -816,11 +816,13 @@ export function ExpandableRow({
   );
 
   return (
-    /* No `--open` modifier: the panel's own hairline and rise are the signal,
-       and the rule that used to back that className was removed with the well
-       behind an open row (§5). A className with no rule is a promise nothing
-       keeps. */
-    <div className="dp-table__rowgroup">
+    /* ⚠ The `--open` modifier is BACK, and its rule came back with it (#441).
+       This read *"No `--open` modifier: the panel's own hairline and rise are
+       the signal"* — his eye overturned that beside his own prototype, and the
+       ground now lives on the GROUP so the row and its panel are one block.
+       The className-with-no-rule warning still stands: `foundation.css` carries
+       `.dp-table__rowgroup--open`, and deleting that rule means deleting this. */
+    <div className={cn("dp-table__rowgroup", open && expandable && "dp-table__rowgroup--open")}>
       {expandable ? (
         <button
           type="button"
