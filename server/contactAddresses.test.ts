@@ -44,14 +44,44 @@ const sourceFiles = (dir: string): string[] =>
     return /\.(tsx?|css|html)$/.test(entry.name) ? [full] : [];
   });
 
+/**
+ * ⚠ **ONE REGEX, USED BY BOTH THE READING AND ITS CONTROL.** The first shape of
+ * this file re-stated the pattern as a second literal inside the positive
+ * control — so editing the extractor would have left the control validating a
+ * frozen copy, unable to fail alongside the thing it exists to prove. Working
+ * law 4: a second copy of a source of truth always drifts from it.
+ */
+const MAILTO = /mailto:([^"'`\s>)]+)/g;
+
+/**
+ * ⚠ **THE QUERY STRING IS STRIPPED, AND THAT IS NOT TIDINESS.**
+ * `mailto:support@drape.ai?subject=Appeal` is a real, working link and a real
+ * regression, and the address it yields does not END WITH the old domain — so
+ * the arm below would have stayed green on it. A prefilled subject is exactly
+ * what a helpful person would add to an appeal link.
+ */
+const addressOf = (raw: string) => raw.split("?")[0].toLowerCase();
+
 /** Every `mailto:` target the client ships, with the file it lives in. */
+const mailtoTargetsIn = (text: string, file: string): { file: string; address: string }[] =>
+  [...text.matchAll(new RegExp(MAILTO.source, "g"))].map((m) => ({
+    file,
+    address: addressOf(m[1]),
+  }));
+
 const clientMailtoTargets = (): { file: string; address: string }[] =>
   sourceFiles(CLIENT_SRC).flatMap((full) =>
-    [...fs.readFileSync(full, "utf8").matchAll(/mailto:([^"'`\s>)]+)/g)].map((m) => ({
-      file: path.relative(CLIENT_SRC, full),
-      address: m[1],
-    })),
+    mailtoTargetsIn(fs.readFileSync(full, "utf8"), path.relative(CLIENT_SRC, full)),
   );
+
+/**
+ * ⚠ **A SUBDOMAIN IS THE SAME DOMAIN FOR THIS PURPOSE.** The product's own
+ * sender is `verify@mail.klieglabs.com`, so `support@mail.drape.ai` is the
+ * shape a restored address would most plausibly take — and `@drape.ai` does not
+ * match it.
+ */
+const onRetiredDomain = (address: string) =>
+  address.endsWith(`@${RETIRED_MAIL_DOMAIN}`) || address.endsWith(`.${RETIRED_MAIL_DOMAIN}`);
 
 describe("#392 — the client's contact addresses", () => {
   it("the population is real — the client ships at least one mailto", () => {
@@ -66,7 +96,7 @@ describe("#392 — the client's contact addresses", () => {
 
   it("no client mailto points at the retired mail domain", () => {
     const offenders = clientMailtoTargets()
-      .filter(({ address }) => address.toLowerCase().endsWith(`@${RETIRED_MAIL_DOMAIN}`))
+      .filter(({ address }) => onRetiredDomain(address))
       .map(({ file, address }) => `${file} → ${address}`);
 
     expect(
@@ -87,20 +117,57 @@ describe("#392 — the client's contact addresses", () => {
     expect(login).toMatch(/Contact Support/);
   });
 
-  it("POSITIVE CONTROL — the matcher sees a retired address when there is one", () => {
-    const sabotage = `<a href="mailto:support@${RETIRED_MAIL_DOMAIN}">Contact Support</a>`;
-    const found = [...sabotage.matchAll(/mailto:([^"'`\s>)]+)/g)].map((m) => m[1]);
-    expect(found).toEqual([`support@${RETIRED_MAIL_DOMAIN}`]);
-    expect(found[0].toLowerCase().endsWith(`@${RETIRED_MAIL_DOMAIN}`)).toBe(true);
+  it("POSITIVE CONTROL — three evasion shapes, all driven through the real extractor", () => {
+    /*
+      ⚠ **DRIVEN THROUGH `mailtoTargetsIn`, NEVER THROUGH A COPY OF ITS REGEX.**
+      A control that re-states the pattern validates a frozen copy and stops
+      being able to fail with the instrument it guards.
+
+      Two of these three were added by review and neither was hypothetical: the
+      plain form was the only one the first shape caught, and both others are
+      working links that a real regression would plausibly take.
+    */
+    const shapes = [
+      `<a href="mailto:support@${RETIRED_MAIL_DOMAIN}">Contact Support</a>`,
+      `<a href="mailto:support@${RETIRED_MAIL_DOMAIN}?subject=Appeal">Contact Support</a>`,
+      `<a href="mailto:support@mail.${RETIRED_MAIL_DOMAIN}">Contact Support</a>`,
+    ];
+
+    for (const shape of shapes) {
+      const found = mailtoTargetsIn(shape, "sabotage.tsx");
+      expect(found.length, `the extractor found nothing in: ${shape}`).toBe(1);
+      expect(
+        onRetiredDomain(found[0].address),
+        `this evades the arm and would ship: ${shape} → ${found[0].address}`,
+      ).toBe(true);
+    }
+
+    /* And the live address is NOT caught — an arm that flags everything is not an arm. */
+    const live = mailtoTargetsIn(`href="mailto:support@klieglabs.com"`, "live.tsx");
+    expect(onRetiredDomain(live[0].address)).toBe(false);
   });
 
   it("⚠ the server's fixture address is deliberately NOT in this population", () => {
     /*
       `server/referral.test.ts` uses `mike@drape.ai` as a DISPOSABLE-EMAIL
       fixture — the address is that test's INPUT, and changing it changes what
-      the test proves. The card says so by name. This arm reads `client/src`
-      only, and this line is why.
+      the test proves. The card says so by name.
+
+      ⚠ **THIS ARM IS DOCUMENTATION AND SAYS SO**, because review pointed out
+      that its first shape could not fail: the walker only ever visits
+      `client/src`, so no path it returns can contain `referral.test`. What is
+      asserted instead is the thing that COULD change — that the fixture is
+      still there, still on the old domain, and still outside the walked tree —
+      so deleting or moving it reddens here rather than silently widening the
+      population this file measures.
     */
-    expect(clientMailtoTargets().every(({ file }) => !file.includes("referral.test"))).toBe(true);
+    const fixture = fs.readFileSync(path.resolve(__dirname, "referral.test.ts"), "utf8");
+    expect(fixture, "the disposable-email fixture moved or changed").toContain(
+      `mike@${RETIRED_MAIL_DOMAIN}`,
+    );
+    expect(
+      path.relative(CLIENT_SRC, path.resolve(__dirname, "referral.test.ts")).startsWith(".."),
+      "the fixture is inside the walked tree — the exclusion is no longer structural",
+    ).toBe(true);
   });
 });
