@@ -22,7 +22,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
-const SUITE = "server/pushPathsToMain.test.ts";
+const SUITE = ["server/pushPathsToMain.test.ts", "server/typecheckOnCommit.test.ts"];
 
 /**
  * Run the suite and say whether it went red.
@@ -33,7 +33,7 @@ const SUITE = "server/pushPathsToMain.test.ts";
  * that produced no report THROWS rather than counting as anything.
  */
 const runSuite = (): { red: boolean; summary: string } => {
-  const result = spawnSync("npx", ["vitest", "run", SUITE], {
+  const result = spawnSync("npx", ["vitest", "run", ...SUITE], {
     cwd: ROOT, encoding: "utf8", shell: true, maxBuffer: 32 * 1024 * 1024,
   });
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
@@ -91,12 +91,27 @@ const SABOTAGES: Sabotage[] = [
   {
     name: "the enumeration falls off the rite's push path",
     file: "scripts/lib/scriptGuards.mts",
-    apply: (t) => t.replace('"server/pushPathsToMain.test.ts",\n]', "]"),
+    /* Anchored on the entry alone, not on the closing bracket after it — the
+       bracket anchor broke the moment a second suite was added to the list, and
+       the driver's own "changed nothing" refusal is what caught that rather
+       than a silent MISS. */
+    apply: (t) => t.replace('  "server/pushPathsToMain.test.ts",\n', ""),
   },
   {
     name: "a .cmd wrapper pushes — the native shape on the machine the rite runs on",
     create: "scripts/_263-unlisted-door-disposable.cmd",
     body: "@echo off\r\ngit push origin main\r\n",
+  },
+  /* The two below arm the typecheck's own verdict (second review round). */
+  {
+    name: "a run that produced NOTHING is read as a pass",
+    file: "scripts/lib/typecheckOnCommit.mts",
+    apply: (t) => t.replace('if (result.status === null || output.trim() === "") {', "if (false) {"),
+  },
+  {
+    name: "a RED typecheck is reported as ok",
+    file: "scripts/lib/typecheckOnCommit.mts",
+    apply: (t) => t.replace("ok: result.status === 0,", "ok: true,"),
   },
 ];
 

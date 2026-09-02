@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8728caf49f5f23ca"
+    "sourceFingerprint": "8b7381974af7ecea"
   },
   "domains": [
     {
@@ -13296,6 +13296,10 @@
     {
       "id": "test:server/testing/migrationColumns.test.ts",
       "path": "server/testing/migrationColumns.test.ts"
+    },
+    {
+      "id": "test:server/typecheckOnCommit.test.ts",
+      "path": "server/typecheckOnCommit.test.ts"
     },
     {
       "id": "test:server/unwiringDiffer.test.ts",

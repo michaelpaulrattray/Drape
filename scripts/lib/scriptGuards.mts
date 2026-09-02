@@ -78,6 +78,11 @@ export const PUSH_PATH_SUITES = [
      with a path after the directory, so the bare token contract below excludes
      it correctly and this list includes it deliberately. */
   "server/pushPathsToMain.test.ts",
+  /* #263 — the typecheck's own verdict logic: that a red status is red, and
+     that a run which produced NOTHING is refused rather than read as a pass.
+     Here by the same argument as its sibling — it guards a control the rite
+     performs, so it must run where the rite runs. 7.3s, measured. */
+  "server/typecheckOnCommit.test.ts",
 ];
 
 /**

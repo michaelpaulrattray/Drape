@@ -67,8 +67,8 @@ const FLAGGED: Record<string, { door: boolean; why: string }> = {
   "server/pushPathsToMain.test.ts": {
     door: false,
     why: "This suite. Its NEGATIVE CONTROL feeds the reader a fake markdown file "
-      + "containing `git push origin main`, so the literal is in its own source. It "
-      + "spawns no processes at all.",
+      + "containing `git push origin main`, so the literal is in its own source. Its "
+      + "only child process is `git ls-files`, through gitTreeReader.",
   },
 };
 

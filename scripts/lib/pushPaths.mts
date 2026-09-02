@@ -29,9 +29,20 @@
  *
  * # THE CONTRACT, STATED EXACTLY
  *
- * A tracked file is a PUSHER when it is executable source (`.ts .mts .mjs .js
- * .cjs .ps1 .sh .yml .yaml`, or any file under `.githooks/`) and its text
- * contains a git push invocation in one of two shapes:
+ * A tracked file is a PUSHER when it can execute and its text contains a git
+ * push invocation.
+ *
+ * It can execute when its extension is one of `.ts .mts .mjs .js .cjs .ps1 .sh
+ * .cmd .bat .yml .yaml`, or it is `package.json` (whose `scripts` run through
+ * `pnpm run`), or it sits under `.githooks/` (those files carry no extension).
+ * ⚠ **This sentence and the code below it drifted apart inside the pull request
+ * that wrote them** — `.cmd`, `.bat` and `package.json` arrived in the code and
+ * not here, while `PUSH_PATHS_TO_MAIN.md` was pointing readers at this
+ * paragraph as *the* exact contract. Working law 4, caught by the reviewer.
+ * **`EXECUTABLE` and `ALSO_EXECUTES` are the source; this restates them and
+ * must be re-read whenever they move.**
+ *
+ * A git push invocation is one of two shapes:
  *
  *   - the shell form, `git push` — `\bgit\s+push\b`, so the prose "git pushes
  *     the index" in `check-architecture.mts` is NOT a hit;

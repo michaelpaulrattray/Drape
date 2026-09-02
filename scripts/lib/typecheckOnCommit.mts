@@ -76,18 +76,22 @@ export const runTypecheckOnCommit = (root: string, commit: string, options: {
 };
 
 /**
- * `pnpm check` by name. `shell: true` is required for a `.cmd` on Windows —
- * without it `spawnSync` returns EINVAL with both streams EMPTY, which reads
- * exactly like a passing run (foreman-186's 0/7, #11).
+ * THE GUARD AGAINST A RUN THAT NEVER HAPPENED — exported so a suite can drive
+ * it, because it is the one piece of this module that a fake `check` would hide
+ * (second review round on #263).
+ *
+ * A run that produced NOTHING AT ALL did not happen, and passing that off as a
+ * green check is the failure this whole module exists to remove. `spawnSync`
+ * refuses a `.cmd` on Windows with EINVAL and returns status `null` with both
+ * streams empty — byte-identical to a quiet pass. That shape reported 0/7 on a
+ * driver the night before this landed (#11), and it fails toward alarm only
+ * because something looks for it.
  */
-const defaultCheck = (cwd: string) => {
-  const result = spawnSync("pnpm", ["check"], {
-    cwd, encoding: "utf8", shell: true, maxBuffer: 32 * 1024 * 1024,
-  });
+export const readCheckRun = (
+  result: { status: number | null; stdout?: string | null; stderr?: string | null; error?: unknown },
+  cwd: string,
+): { status: number; output: string } => {
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
-  /* A run that produced nothing at all did not happen. Passing that off as a
-     green check is the failure mode this whole module exists to remove, so it
-     throws toward the refusal rather than returning ok. */
   if (result.status === null || output.trim() === "") {
     throw new Error(
       `pnpm check produced no output in ${cwd} (status ${result.status}, ${result.error ?? "no error"})`
@@ -96,3 +100,11 @@ const defaultCheck = (cwd: string) => {
   }
   return { status: result.status, output };
 };
+
+/**
+ * `pnpm check` by name, so this and `package.json` can never disagree about
+ * what "the check" is. `shell: true` is required for a `.cmd` on Windows.
+ */
+const defaultCheck = (cwd: string) => readCheckRun(spawnSync("pnpm", ["check"], {
+  cwd, encoding: "utf8", shell: true, maxBuffer: 32 * 1024 * 1024,
+}), cwd);

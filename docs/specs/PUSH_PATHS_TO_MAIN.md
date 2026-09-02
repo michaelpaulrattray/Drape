@@ -169,7 +169,7 @@ runs our hooks.
 
 ## How this list stays true
 
-- **`server/pushPathsToMain.test.ts`** — eighteen arms. The population of
+- **`server/pushPathsToMain.test.ts`** — eighteen arms, with a sibling suite (`server/typecheckOnCommit.test.ts`, 8 arms) on the typecheck's own verdict. The population of
   pushers, workflow writers and protected refs is derived; each absence arm has
   a positive control beside it, because a suite whose whole output is empty sets
   is green when its reader is broken too (working law 2).
@@ -196,15 +196,25 @@ runs our hooks.
   This repository has three recorded controls that were written, documented and
   then reached by nothing; the enumeration above *claims* the rite typechecks,
   and a claim about a control is worth nothing without an arm on the call site.
-- **Driven — 9/9.** `scripts/_263-sabotage-disposable.mts` edits the real files
+- ⚠ **AND A CALL-SITE ARM IS NOT A VERDICT ARM** — the second thing the reviewer
+  caught. It proves the typecheck is *reached*, never that it can say **no**.
+  `server/typecheckOnCommit.test.ts` drives the verdict itself: a red status is
+  red, the compiler's own error line survives into what the rite prints, and a
+  run that produced **nothing at all** is refused rather than read as a pass.
+  That last arm is the one that matters — `spawnSync` refuses a `.cmd` on
+  Windows with EINVAL and returns both streams empty, byte-identical to a quiet
+  pass, and it is why `readCheckRun` is exported rather than buried: a fake
+  `check` would have hidden the very guard under test.
+- **Driven — 11/11.** `scripts/_263-sabotage-disposable.mts` edits the real files
   and runs the real suite, one cause at a time: the rite losing the typecheck
   call, the rite losing the script-guard call, the hook losing
   `local-migration`, the detector losing the argv shape, a new unlisted pushing
   script, a workflow gaining `contents: write`, a workflow losing its
   `permissions:` block, **the enumeration falling off the rite's push path**,
-  and **a `.cmd` wrapper pushing** — the native shape on the Windows machine the
-  rite runs on, and one the first cut of the detector could not see. All nine
-  caught; the tree verified green again afterwards. Some sabotages redden **two**
+  a **`.cmd` wrapper pushing** — the native shape on the Windows machine the rite
+  runs on, and one the first cut of the detector could not see — and the two on
+  the typecheck's own verdict: a run that produced NOTHING read as a pass, and a
+  RED check reported as ok. All eleven caught; the tree verified green again afterwards. Some sabotages redden **two**
   arms rather than one — in each case the second is the in-suite positive control
   noticing that its own sabotage no longer lands, which is the control working,
   not a coupling defect.
