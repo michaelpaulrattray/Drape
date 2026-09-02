@@ -226,6 +226,48 @@
   outline-offset: 2px;
 }
 
+/*
+  TEXT ENTRY NEVER WEARS THAT RING — the class, fixed at the root (founder,
+  2026-09-02, at the staff Users search box: "whenever i click into a text box
+  for some reason by default it wants to add a red border? ... its really
+  annoying and wrong").
+
+  The blanket above is right for buttons, links and rows: nothing focusable may
+  be focus-invisible. On a text field it is wrong twice over — the ring lands
+  on the bare <input> inset inside its own bordered box, so the accent draws
+  around the TEXT and not the control, and the accent is the brand red, so a
+  focused field reads as a failing one. The foundation wrote that law
+  (`foundation.css`, "TEXT FIELDS FOCUS ON THE WRAPPER") and applied it to its
+  own `.dp-input`; every text box that is NOT a `.dp-input` fell through: the
+  casting room's rename (a whole milestone), the word-picker (#304), and now
+  the staff table's search, the modal rename box, the crew reply box. Three
+  appearances is a class. So the exclusion lives HERE, beside the rule it
+  excludes from, and reaches every text-entry element under `.dp-root` whether
+  or not its author knew the law.
+
+  What a focused text field shows instead: the caret, and its box — the
+  wrapper's `:focus-within` border where there is a wrapper (`.dp-field`,
+  `.dp-tablesearch`, `.dpc-modal__field`), or its own border shifting to
+  `--ink` where the element carries the border itself. Either way the mark
+  sits on the control, in the ink, never around the text in red.
+
+  Specificity, because that is what defeated the earlier fixes: the blanket
+  is (0,2,0). `.dp-root textarea:focus-visible` is (0,2,1) and wins outright;
+  the input selector uses `:where()` for its type carve-out so it stays at
+  (0,2,1) too. The carve-out is CHAINED `:not()`s rather than one `:not(a, b)`
+  on purpose: the guards that read these stylesheets split selector lists on
+  commas, and a comma inside a selector reads as two weak selectors. Checkboxes, radios, ranges, files and button-typed inputs keep
+  the ring — they are controls, not text.
+
+  `anchoredPanel.test.ts` derives every outline reset in these stylesheets and
+  holds each to that weight; `focusRing.test.ts` holds this rule's coverage.
+*/
+.dp-root textarea:focus-visible,
+.dp-root input:where(:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="color"]):not([type="image"])):focus-visible {
+  outline: none;
+  border-color: var(--ink);
+}
+
 /* ---- MOTION ---- */
 @keyframes dp-rise   { from { opacity:0; transform:translateY(7px) } to { opacity:1; transform:none } }
 @keyframes dp-fade   { from { opacity:0 } to { opacity:1 } }
