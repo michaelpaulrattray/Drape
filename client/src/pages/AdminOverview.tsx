@@ -16,7 +16,12 @@ import {
 } from "@/features/admin/overview";
 import "@/features/admin/overview/overview.css";
 import { Button, Skeleton, TableHead } from "@/foundation";
-import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
+import {
+  StaffBarAdmin,
+  StaffLoading,
+  StaffSurface,
+  useStaffAutoRefresh,
+} from "@/features/staff";
 
 /**
  * The admin dashboard (brief 07).
@@ -50,7 +55,10 @@ const REFRESH_INTERVAL_MS = 30_000;
 
 export default function AdminOverview() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  /* #453 — ONE switch for the whole panel, not one per page. His reply #104:
+     "if i toggle it on its on for all pages not just 1". Shaped like the
+     `useState` it replaces, so nothing below this line changed. */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const isAdmin = isAuthenticated && user?.role === "admin";

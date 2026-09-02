@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button as FoundationButton } from "@/foundation";
 
 import { toast } from "sonner";
@@ -9,7 +9,12 @@ import {
   PAGE_SIZE,
   type AuditLog,
 } from "@/features/admin/adminConstants";
-import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
+import {
+  StaffBarAdmin,
+  StaffLoading,
+  StaffSurface,
+  useStaffAutoRefresh,
+} from "@/features/staff";
 import { AuditStatsCards, AbuseAlertsPanel, AuditFiltersBar } from "@/features/admin/AuditLogsFilters";
 import { AuditLogTable } from "@/features/admin/AuditLogTable";
 import { SuspendUserModal, BlockIpModal } from "@/features/admin/AuditActionModals";
@@ -21,7 +26,10 @@ export default function AdminAuditLogs() {
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [userIdSearch, setUserIdSearch] = useState<string>("");
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  /* #453 — ONE switch for the whole panel, not one per page. His reply #104:
+     "if i toggle it on its on for all pages not just 1". Shaped like the
+     `useState` it replaces, so nothing below this line changed. */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [suspendModalOpen, setSuspendModalOpen] = useState(false);
@@ -73,9 +81,25 @@ export default function AdminAuditLogs() {
   const blockIpMutation = trpc.admin.blockIP.useMutation();
   const unblockIpMutation = trpc.admin.unblockIP.useMutation();
 
-  useEffect(() => {
-    if (autoRefresh) toast.success("Auto-refresh enabled (30s interval)");
-  }, [autoRefresh]);
+  /*
+    ⚠ #453 — THE TOAST MOVED FROM AN EFFECT TO THE TOGGLE, AND IT HAD TO.
+
+    It used to sit in `useEffect(… , [autoRefresh])`, which is a report about a
+    VALUE rather than about an ACT. That was harmless only while the page owned
+    the value and started it at `false`. Now the value is shared and arrives
+    already true, so the effect would announce "Auto-refresh enabled" every time
+    he opened this page — a toast about something he did minutes ago on another
+    surface.
+
+    The copy and the asymmetry are carried across exactly: the same sentence,
+    and still nothing at all when he turns it off. Changing either is the
+    promotion pass's business, with his eye on the words.
+  */
+  const onToggleAutoRefresh = useCallback(() => {
+    const next = !autoRefresh;
+    setAutoRefresh(next);
+    if (next) toast.success("Auto-refresh enabled (30s interval)");
+  }, [autoRefresh, setAutoRefresh]);
 
   // Auth guards
   if (loading) {
@@ -197,7 +221,7 @@ export default function AdminAuditLogs() {
         <StaffBarAdmin
           refreshControls={{
             autoRefresh,
-            onToggleAutoRefresh: () => setAutoRefresh(!autoRefresh),
+            onToggleAutoRefresh,
             onRefresh: handleRefresh,
             isRefetching: logsQuery.isRefetching,
             lastRefresh,

@@ -10,6 +10,7 @@ import {
   StaffLoading,
   StaffSurface,
   pageRange,
+  useStaffAutoRefresh,
   useStaffRefresh,
   STAFF_REFRESH_INTERVAL_MS,
 } from "@/features/staff";
@@ -79,7 +80,10 @@ export default function AdminInviteCodes() {
     can be wrong the instant it is drawn, and there was no stamp saying when it
     was read and no way to ask again.
   */
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  /* #453 — ONE switch for the whole panel, not one per page. His reply #104:
+     "if i toggle it on its on for all pages not just 1". Shaped like the
+     `useState` it replaces, so nothing below this line changed. */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
   const codesQuery = trpc.admin.listInviteCodes.useQuery(undefined, {
     enabled: isAdmin,

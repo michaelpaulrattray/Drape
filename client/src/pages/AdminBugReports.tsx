@@ -45,6 +45,7 @@ import {
   StaffLoading,
   StaffSurface,
   pageRange,
+  useStaffAutoRefresh,
   useStaffRefresh,
   STAFF_REFRESH_INTERVAL_MS,
 } from "@/features/staff";
@@ -111,7 +112,10 @@ export default function AdminBugReports() {
     layer up — a queue whose whole job is to receive things from outside, with
     no way to see whether it has.
   */
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  /* #453 — ONE switch for the whole panel, not one per page. His reply #104:
+     "if i toggle it on its on for all pages not just 1". Shaped like the
+     `useState` it replaces, so nothing below this line changed. */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
   const listQuery = trpc.admin.getBugReports.useQuery(
     {

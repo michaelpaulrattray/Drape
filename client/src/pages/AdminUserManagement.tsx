@@ -15,6 +15,7 @@ import {
   StaffBarAdmin,
   StaffLoading,
   StaffSurface,
+  useStaffAutoRefresh,
   useStaffRefresh,
   STAFF_REFRESH_INTERVAL_MS,
 } from "@/features/staff";
@@ -64,7 +65,10 @@ export default function AdminUserManagement() {
     of the three things he named while satisfying the grep. A property is
     proven at the values, not at the prop name.
   */
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  /* #453 — ONE switch for the whole panel, not one per page. His reply #104:
+     "if i toggle it on its on for all pages not just 1". Shaped like the
+     `useState` it replaces, so nothing below this line changed. */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
   // Queries
   const statsQuery = trpc.admin.getUserStats.useQuery(undefined, {
