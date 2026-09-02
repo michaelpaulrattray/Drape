@@ -171,3 +171,219 @@ describe("#392 — the client's contact addresses", () => {
     ).toBe(true);
   });
 });
+
+/**
+ * ⚠ **#452 — THE SAME PERSON, THE OTHER HALF: WHAT THE *SERVER* SENDS THEM.**
+ *
+ * The arms above walk `client/src` and match `mailto:`. The freeze notification
+ * is a **server** file sending an **`https:`** URL, so it was structurally
+ * invisible to them — not missed, unreachable. `server/klaviyo.ts` sent every
+ * frozen customer `https://drape.ai/support`, and **both live call sites omit
+ * `supportUrl`** (`routes/admin/users.ts`, `routes/moderatorReconciliation.ts`),
+ * so the default WAS the message.
+ *
+ * # ⚠ THE DOMAIN WAS THE SMALLER HALF — THE PATH DID NOT EXIST EITHER
+ *
+ * There has never been a `/support` route in `App.tsx`. **Swapping the domain
+ * would have produced a tidier 404**, and a guard that only checked the host
+ * would have gone green on it. That is why the second arm below resolves the
+ * PATH against the client's own route table rather than reading the domain.
+ *
+ * His ruling, 2026-09-02, verbatim and entire: ***"Point it at
+ * support@klieglabs.com"*** — the address #392 established for the same person
+ * in the same situation, rather than inventing a page to make a URL true.
+ *
+ * # ⚠ STATED LIMITS, because a clean run here is a floor and not coverage
+ *
+ * - It reads **string literals in server source**. A pointer assembled at
+ *   runtime, or read from an env var, is invisible to it.
+ * - **Whether Klaviyo's template renders `support_url` at all is UNVERIFIED** —
+ *   the template lives in Klaviyo, not in this repository. What is proven here
+ *   is that the value we put on the wire is reachable, not that a customer's
+ *   eye ever meets it.
+ * - `server/routes/referral.ts` falls back to `https://drape.ai` for a referral
+ *   link's base when the `Origin` header is absent. It is a **bare host with no
+ *   path**, so it is not a dead destination in this arm's sense, and it belongs
+ *   to the founder's parked branding pass — named in its own arm below so it is
+ *   not mistaken for something this file missed.
+ */
+
+const SERVER_SRC = path.resolve(__dirname);
+const APP_TSX = path.resolve(__dirname, "..", "client", "src", "App.tsx");
+
+/**
+ * ⚠ **ONE EXTRACTOR, SHARED BY THE READING AND ITS CONTROL** — the same
+ * discipline as `MAILTO` above, for the same reason.
+ *
+ * It matches a declaration or property whose NAME says support/help/appeal and
+ * whose value is a string literal, so it catches both shapes the product has
+ * used: the inline `support_url: … || "https://drape.ai/support"` these arms
+ * were written against, and the named constant that replaced it.
+ *
+ * ⚠ **ITS FIRST SHAPE REQUIRED A CHARACTER BEFORE THE KEYWORD**
+ * (`[A-Za-z_$][\w$]*(?:support|…)`), so it matched `FROZEN_ACCOUNT_SUPPORT_URL`
+ * and **could not see `support_url` — the very line this card is about.** Every
+ * arm below was green on a tree that still shipped the bug. The positive
+ * control caught it, which is the whole reason a control is written from the
+ * real pre-fix bytes rather than from a plausible-looking imitation.
+ */
+const SUPPORT_POINTER =
+  /\b([\w$]*(?:support|help|appeal)[\w$]*)\s*[:=]\s*(?:[^,;\n]*?\|\|\s*)?["'`]([^"'`\s]+)["'`]/gi;
+
+const supportPointersIn = (
+  text: string,
+  file: string,
+): { file: string; name: string; url: string }[] =>
+  [...text.matchAll(new RegExp(SUPPORT_POINTER.source, "gi"))]
+    .map((m) => ({ file, name: m[1], url: m[2] }))
+    /* Only destinations. A `supportEmail: "…"` with no scheme is not a link. */
+    .filter(({ url }) => /^(https?:|mailto:)/i.test(url));
+
+const serverSourceFiles = (dir: string): string[] =>
+  fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return serverSourceFiles(full);
+    return /\.ts$/.test(entry.name) && !/\.test\.ts$/.test(entry.name) ? [full] : [];
+  });
+
+const serverSupportPointers = (): { file: string; name: string; url: string }[] =>
+  serverSourceFiles(SERVER_SRC).flatMap((full) =>
+    supportPointersIn(fs.readFileSync(full, "utf8"), path.relative(SERVER_SRC, full)),
+  );
+
+/** Every path the client actually routes, read from `App.tsx`'s own declarations. */
+const clientRoutePaths = (): string[] =>
+  [...fs.readFileSync(APP_TSX, "utf8").matchAll(/<Route\s+path=["'`]([^"'`]+)["'`]/g)].map(
+    (m) => m[1],
+  );
+
+/** A destination on the retired domain, host or mailbox, subdomains included. */
+const onRetiredDestination = (url: string) =>
+  new RegExp(`(@|//)([\\w.-]*\\.)?${RETIRED_MAIL_DOMAIN}(/|$)`, "i").test(url);
+
+/**
+ * The path of an app URL, or `null` when there is no path at all. A bare host
+ * (`https://drape.ai`) is a branding question, not a dead link.
+ */
+const appPathOf = (url: string): string | null => {
+  const m = /^https?:\/\/[^/]+(\/[^?#]*)?/i.exec(url);
+  if (!m) return null;
+  const routePath = (m[1] ?? "").replace(/\/+$/, "");
+  return routePath === "" ? null : routePath;
+};
+
+describe("#452 — the support pointers the SERVER sends a customer", () => {
+  it("the population is real — the server ships at least one support pointer", () => {
+    /*
+      Same reason as #392's population arm: an absence assertion over an empty
+      list is green when the extractor breaks, and this extractor is a regex
+      over a folder walk.
+    */
+    const found = serverSupportPointers();
+    expect(found.length, "no support pointer found in server/ — the extractor is broken").toBeGreaterThan(0);
+  });
+
+  it("the frozen customer's appeal route is present and reaches the live domain", () => {
+    /*
+      ⚠ THE POSITIVE HALF, and it is the arm that matters most: every arm below
+      is green if the pointer is DELETED, and sending a frozen customer nothing
+      at all is worse than sending them the wrong place.
+    */
+    const klaviyo = fs.readFileSync(path.join(SERVER_SRC, "klaviyo.ts"), "utf8");
+    expect(klaviyo).toMatch(/FROZEN_ACCOUNT_SUPPORT_URL\s*=\s*"mailto:support@klieglabs\.com"/);
+    expect(klaviyo).toMatch(/support_url:\s*params\.supportUrl\s*\|\|\s*FROZEN_ACCOUNT_SUPPORT_URL/);
+  });
+
+  it("no server support pointer names the retired domain", () => {
+    const offenders = serverSupportPointers()
+      .filter(({ url }) => onRetiredDestination(url))
+      .map(({ file, name, url }) => `${file} → ${name} = ${url}`);
+
+    expect(
+      offenders,
+      `The server sends a customer a destination on the retired domain:\n${offenders.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("⚠ no server support pointer names an app path the client does not route", () => {
+    /*
+      THE ARM THE DOMAIN CHECK CANNOT REPLACE. `https://klieglabs.com/support`
+      passes every host test there is and is still a 404, because `/support` has
+      never existed. Derived from `App.tsx` rather than from a list, so a route
+      being renamed reddens here instead of drifting.
+    */
+    const routes = clientRoutePaths();
+    expect(routes.length, "no <Route> found in App.tsx — the route reader is broken").toBeGreaterThan(0);
+
+    const dead = serverSupportPointers()
+      .map((pointer) => ({ ...pointer, appPath: appPathOf(pointer.url) }))
+      .filter(({ appPath }) => appPath !== null && !routes.includes(appPath))
+      .map(({ file, name, url }) => `${file} → ${name} = ${url}`);
+
+    expect(
+      dead,
+      `The server sends a customer to a path the client has no route for:\n${dead.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("POSITIVE CONTROL — the real pre-fix bytes, driven through the real extractor", () => {
+    /*
+      ⚠ **THE SHIPPED BUG, NOT A CARICATURE.** This is the exact line
+      `server/klaviyo.ts` carried until 2026-09-02, and it must fail BOTH arms:
+      the domain one and the dead-path one. A control that only trips the domain
+      arm would have let a `klieglabs.com/support` "fix" straight through.
+    */
+    const before = `    support_url: params.supportUrl || "https://${RETIRED_MAIL_DOMAIN}/support",`;
+    const found = supportPointersIn(before, "klaviyo.ts");
+    expect(found.length, "the extractor no longer sees the shipped bug").toBe(1);
+    expect(found[0].url).toBe(`https://${RETIRED_MAIL_DOMAIN}/support`);
+    expect(
+      onRetiredDestination(found[0].url),
+      "the retired-domain arm would not have caught the shipped bug",
+    ).toBe(true);
+    expect(
+      clientRoutePaths().includes(appPathOf(found[0].url) ?? ""),
+      "the dead-path arm would not have caught the shipped bug",
+    ).toBe(false);
+
+    /* The tidier 404 — the "fix" a domain-only guard would have accepted. */
+    const tidier = supportPointersIn(`  support_url: "https://klieglabs.com/support",`, "x.ts");
+    expect(onRetiredDestination(tidier[0].url), "the rebranded dead path is not a domain finding").toBe(
+      false,
+    );
+    expect(
+      clientRoutePaths().includes(appPathOf(tidier[0].url) ?? ""),
+      "a rebranded dead path evades the dead-path arm",
+    ).toBe(false);
+
+    /* And the live answer is caught by NEITHER — an arm that flags everything is not an arm. */
+    const live = supportPointersIn(
+      `const FROZEN_ACCOUNT_SUPPORT_URL = "mailto:support@klieglabs.com";`,
+      "live.ts",
+    );
+    expect(live.length).toBe(1);
+    expect(appPathOf(live[0].url)).toBeNull();
+    expect(onRetiredDestination(live[0].url)).toBe(false);
+  });
+
+  it("⚠ the referral base-URL fallback is NAMED, not swept", () => {
+    /*
+      `routes/referral.ts` falls back to `https://drape.ai` when the `Origin`
+      header is absent. It is on the retired domain and it is deliberately left
+      alone: the founder parked branding (*"we will change the old drape emails
+      and branding at a later date"*), and unlike the freeze link it is a bare
+      host rather than a path that cannot exist.
+
+      ⚠ This arm is DOCUMENTATION and says so. What it asserts is the thing that
+      COULD change — that the fallback is still there and still a bare host — so
+      if somebody gives it a path it stops being a branding question and this
+      reddens.
+    */
+    const referral = fs.readFileSync(path.join(SERVER_SRC, "routes", "referral.ts"), "utf8");
+    const fallbacks = [...referral.matchAll(/headers\.origin\s*\|\|\s*"([^"]+)"/g)].map((m) => m[1]);
+    expect(fallbacks.length, "the referral origin fallback moved or was renamed").toBeGreaterThan(0);
+    for (const url of fallbacks) {
+      expect(appPathOf(url), `the referral fallback grew a path: ${url}`).toBeNull();
+    }
+  });
+});
