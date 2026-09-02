@@ -66,6 +66,31 @@ export default function AdminChangeRequests() {
     { enabled: !!selectedRequestId }
   );
 
+  /*
+    ⚠ THE BAR'S PILL IS DOWNSTREAM OF THIS PAGE'S MUTATIONS (card 415, found by
+    the gate review of PR #456).
+
+    `useStaffCounts` reads the pending count off `admin.getOverview` with a
+    `staleTime` and no interval. **`staleTime` makes a refetch PERMISSIBLE at
+    the next trigger; it does not schedule one** — and the QueryClient is stock
+    (`main.tsx`), so the triggers are remount and window refocus. Neither fires
+    while he stays on this page.
+
+    So without this: five requests pending, he approves all five here, the list
+    below empties and **the bar keeps reading `Change requests 5`** — the exact
+    state the pill exists to prevent, produced by the one action it exists to
+    drive. It shipped in the first commit of this branch and the reviewer caught
+    it.
+
+    ⚠ **A third mutation moves this count and is deliberately NOT here**:
+    `moderator.createChangeRequest` (`ModeratorDashboard.tsx`) raises it. It is
+    excluded because it runs in the MODERATOR's session, on a page drawing
+    `StaffBarModeration`, which carries no admin pill — invalidating an admin's
+    cache from a moderator's browser is not a thing that can happen. The
+    arrival direction is a real gap and it is #457, not a missing invalidate.
+  */
+  const utils = trpc.useUtils();
+
   const reviewMutation = trpc.admin.reviewChangeRequest.useMutation({
     onSuccess: (result: any) => {
       if (result.pendingExecution) {
@@ -85,6 +110,8 @@ export default function AdminChangeRequests() {
       if (!result.pendingExecution) setSelectedRequestId(null);
       listQuery.refetch();
       detailQuery.refetch();
+      /* The bar's pill — see the note above `utils`. */
+      void utils.admin.getOverview.invalidate();
     },
     onError: (error: { message: string }) => {
       toast.error(`Review failed: ${error.message}`);
@@ -106,6 +133,8 @@ export default function AdminChangeRequests() {
       toast.success(result.message);
       setSelectedRequestId(null);
       listQuery.refetch();
+      /* The bar's pill — see the note above `utils`. */
+      void utils.admin.getOverview.invalidate();
     },
     onError: (error: { message: string }) => {
       toast.error(`Execution failed: ${error.message}`);

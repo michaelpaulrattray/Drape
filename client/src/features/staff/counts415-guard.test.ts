@@ -225,6 +225,108 @@ describe("card 415 — ONE reader of the pending-request count", () => {
   });
 });
 
+describe("card 415 — the pill is INVALIDATED by the acts that move it", () => {
+  /*
+    ⚠ THE DEFECT THIS DESCRIBE EXISTS FOR SHIPPED IN THIS BRANCH'S FIRST COMMIT
+    AND WAS CAUGHT BY THE GATE REVIEW OF PR #456.
+
+    `useStaffCounts` holds `staleTime` and no interval. **`staleTime` makes a
+    refetch PERMISSIBLE at the next trigger; it does not schedule one** — and
+    the QueryClient is stock, so the triggers are remount and window refocus.
+    Neither fires while he stays on one page.
+
+    So: five requests pending, he approves all five on `/admin/change-requests`,
+    the list empties and the bar still reads `Change requests 5`. **The one
+    action the pill exists to drive was the one action that left it lying.**
+
+    The arms below are derived from the CLIENT TREE, not from a list of two
+    file names, so a third resolving mutation cannot arrive without one.
+  */
+
+  /** Every client mutation on a procedure that RESOLVES a change request. */
+  const RESOLVING = /trpc\.admin\.(reviewChangeRequest|executeChangeRequestAfterSlack)\.useMutation/;
+
+  const resolvingFiles = () =>
+    sources(CLIENT_SRC).filter(({ text }) => RESOLVING.test(code(text)));
+
+  it("the population is real — some client file resolves change requests", () => {
+    /* An absence arm over an empty set is the cheapest false pass there is. */
+    const names = resolvingFiles().map((f) => f.name);
+    expect(names.length, `files resolving change requests: ${names.join(", ")}`).toBeGreaterThan(0);
+    expect(names).toContain("pages/AdminChangeRequests.tsx");
+  });
+
+  it("every file that resolves a request invalidates the query the pill reads", () => {
+    /*
+      ⚠ THE INVALIDATE MUST NAME `getOverview`, not merely exist. A page
+      refetching its own list is what the broken version already did — the
+      whole defect is that the LIST refreshed and the BAR did not.
+    */
+    const offenders = resolvingFiles()
+      .filter(({ text }) => !/utils\.admin\.getOverview\.invalidate\(\)/.test(code(text)))
+      .map(({ name }) => name);
+    expect(
+      offenders,
+      [
+        "This file resolves a change request and never invalidates the query the",
+        "staff bar's pill reads, so the bar keeps the old number on the very page",
+        "where he changed it:",
+        ...offenders,
+      ].join("\n"),
+    ).toEqual([]);
+  });
+
+  it("BOTH handlers invalidate — one of two is a bar that lies half the time", () => {
+    /*
+      A file-level arm passes when one of a file's two resolving mutations is
+      wired. Counting them is what makes it a reading rather than a shape match:
+      `reviewChangeRequest` and `executeChangeRequestAfterSlack` are two
+      different roads out of `pending`, and the Slack road is the rarer one that
+      nobody would notice going stale.
+    */
+    const page = code(read("pages/AdminChangeRequests.tsx"));
+    const mutations = page.match(/\.useMutation\(/g) ?? [];
+    const invalidations = page.match(/utils\.admin\.getOverview\.invalidate\(\)/g) ?? [];
+    expect(mutations.length, "the two resolving mutations on this page").toBe(2);
+    expect(invalidations.length, "one per handler").toBe(2);
+  });
+
+  it("the MODERATOR's create is deliberately outside, and the reason is structural", () => {
+    /*
+      ⚠ AN ENUMERATED EXCLUSION, NOT AN OVERSIGHT. `moderator.createChangeRequest`
+      RAISES the same count, so a naive sweep would demand an invalidate here
+      too. It runs in the MODERATOR's session, on a page drawing
+      `StaffBarModeration`, which carries no admin pill — a moderator's browser
+      cannot invalidate an admin's cache, and adding the call would be a control
+      that looks like one and does nothing (invariant 7 in miniature).
+
+      The arrival direction is a real gap and it is #457, with a recommendation.
+    */
+    const moderator = code(read("pages/ModeratorDashboard.tsx"));
+    expect(moderator).toMatch(/trpc\.moderator\.createChangeRequest\.useMutation/);
+    expect(moderator, "the moderator bar carries no count today").not.toMatch(
+      /useStaffCounts/,
+    );
+    const bar = code(read("features/staff/StaffBar.tsx"));
+    const moderationBar = bar.slice(bar.indexOf("export function StaffBarModeration"));
+    expect(moderationBar, "the moderation bar takes its segments from its caller").not.toMatch(
+      /adminSegments|useStaffCounts/,
+    );
+  });
+
+  it("the hook still schedules NO poll — the fix is invalidation, not a timer", () => {
+    /*
+      The tempting repair is `refetchInterval`, which would put seven
+      aggregations on a 30s timer across eight admin pages. That is a decision
+      about cost and it is #457's, not this card's. If a later shift takes it,
+      this arm goes red and that shift updates it on purpose.
+    */
+    const hook = code(read("features/staff/useStaffCounts.ts"));
+    expect(hook, "no interval — see card 457").not.toMatch(/refetchInterval/);
+    expect(hook).toMatch(/staleTime:\s*STALE_MS/);
+  });
+});
+
 describe("card 415 §3 — Crew states its freshness exactly once, and still names the shift", () => {
   const CREW = () => read("pages/AdminCrew.tsx");
 

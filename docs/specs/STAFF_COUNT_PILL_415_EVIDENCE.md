@@ -89,7 +89,7 @@ Frames: `output/415-frames/` — `{branch,main}-users-bar-{dark,light}.png`, `{b
 
 ## 5 · The arms, and the proof they can fail
 
-**16 new arms** in `client/src/features/staff/counts415-guard.test.ts`. `pnpm test` has no DOM by config, so the pill's positive control could not be a render — instead `adminSegments` was extracted as a **pure function** and driven with `5` and with `0`. That is the difference between an arm that can fail and an arm that is green because nothing is there.
+**21 new arms** in `client/src/features/staff/counts415-guard.test.ts`. `pnpm test` has no DOM by config, so the pill's positive control could not be a render — instead `adminSegments` was extracted as a **pure function** and driven with `5` and with `0`. That is the difference between an arm that can fail and an arm that is green because nothing is there.
 
 **Sabotage: 10 of 10 caught by the arm named for them**, tree restored green afterwards and proven so (`scripts/_415-sabotage-disposable.mts`, judged on the **exit code** and the JSON reporter — never on scraped output, which is how the previous shift's driver read 0/5 with every arm working).
 
@@ -114,6 +114,49 @@ Frames: `output/415-frames/` — `{branch,main}-users-bar-{dark,light}.png`, `{b
 - **A find-string that never applied.** It assumed `written by` began its line; it is the tail of the `Briefing edition {…},` line. The driver reported FIND STRING ABSENT rather than a pass — **a driver that treats an unapplied sabotage as a caught one certifies whatever it failed to break.**
 
 ---
+
+## 5b · ⚠ THE GATE REVIEW FOUND A REAL BUG I HAD SHIPPED, AND IT WAS THE WORST-PLACED ONE POSSIBLE
+
+The `review` job on PR #456 passed the gate and then found this, correctly:
+
+> *"the pill goes stale on the exact page where requests are resolved."*
+
+**Five requests pending; he opens `/admin/change-requests` and declines all five. The list empties. The bar keeps reading `Change requests 5`.** With the window focused and no navigation, nothing ever refetches it.
+
+⚠ **This is the exact state the pill exists to prevent, produced by the one action the pill exists to drive** — and my own docblock had named that state as the failure to avoid, three files away.
+
+### Why it happened, and the sentence of mine that was false
+
+`useStaffCounts` holds `staleTime: 30_000` and no `refetchInterval`. **`staleTime` makes a refetch PERMISSIBLE at the next trigger; it does not schedule one.** The QueryClient is stock (`client/src/main.tsx`), so the only triggers are remount and window refocus.
+
+My docblock said *"a number that appears within thirty seconds of a request landing is soon enough"* — **describing a poll the hook does not have.** That is law 7b inside a comment: a claim about behaviour, written from an assumption about `staleTime` rather than driven. It is corrected in place, and it now states exactly what refreshes the pill and what does not.
+
+### The fix, and the half that was NOT a fix
+
+**Repaired:** `AdminChangeRequests` invalidates `admin.getOverview` in both mutation handlers, so the number he just changed is right immediately, on the page where he changed it.
+
+**Filed as #457, not taken:** a request *arriving* while he sits still reaches the pill on his next navigation or refocus. The reviewer called this a decision rather than a repair and was right — the alternative is wiring `refetchInterval` to the shared `AUTO` switch, which puts seven aggregations on a 30s timer across eight pages. That is a different tradeoff from the one declared in §2 and it should be chosen, not slipped in. The card carries both options and a recommendation.
+
+**Population derived, not listed:** three client mutations move this count. Two resolve requests and both now invalidate. The third — `moderator.createChangeRequest` — is **deliberately excluded and the reason is structural**: it runs in the moderator's session on a page drawing `StaffBarModeration`, which carries no admin pill. A moderator's browser cannot invalidate an admin's cache; adding the call would be a control that looks like one and does nothing.
+
+### It is DRIVEN, and the control is the same tree one edit apart
+
+| arm | mutation fired | `getOverview` refetched | pill |
+|---|---|---|---|
+| **branch** (with the invalidate) | 1 | **YES** (1 → 2) | **5 → 4** |
+| **control** (invalidate removed, nothing else) | 1 | **NO** (1 → 1) | **5 → 5** |
+
+The control patches the same working tree so the two arms differ in exactly one edit, and restores in a `finally` — verified byte-identical afterwards. ⚠ **`git checkout` is not the restore here:** the fix under test was uncommitted, so a checkout would have wiped it along with the sabotage.
+
+**`control-noinvalidate-deny-after.png` is the defect photographed:** the bar reads `Change requests 5` while the filter beside it says `Pending (4)` and four rows are listed. One frame, three numbers, one of them wrong.
+
+**5 more arms, sabotage 5 of 5 caught by the arm named for each**, derived from the client tree so a third resolving mutation cannot arrive without an invalidate.
+
+### ⚠ AND THE DRIVER'S FIRST RUN READ `5 -> 5` ON THE FIXED BRANCH
+
+The modal's confirm button carries **the same word** as the detail button that opens it (`Decline`), so an unscoped deepest-match clicked the detail button again, reopened the modal, and reported two happy clicks **with no mutation fired**. The reading was indistinguishable from the defect under test.
+
+The repair is that the driver now **counts the mutation request** and throws when it is zero — *"this run proves nothing either way"* — and scopes the confirm to `[role=dialog]`. **A driver that cannot tell "the fix failed" from "I never pressed the button" is not an instrument.** That is the third time tonight a fixed wait or an unverified action produced a confident wrong reading; each one is recorded above rather than tidied away.
 
 ## 6 · The law-7 class sweep
 
@@ -144,7 +187,7 @@ These are **weaker instances than Crew's**: the label is true of each page's pri
 ## 8 · Checks
 
 - `pnpm check` — exit 0
-- `pnpm test` — **11,167 passed, 0 failed**, 337 skipped (was 11,151 — **+16 arms**)
+- `pnpm test` — **11,172 passed, 0 failed** (was 11,151 — **+21 arms**)
 - `pnpm architecture:check` — OK · Atlas regenerated: **998 modules**, 280 procedures, 288 findings (0 error)
 - `pnpm capability:check` — OK, 59 doors, 0 error
 - script guards (`scriptExitDiscipline`, `scriptConnectionDiscipline`) — 18 passed

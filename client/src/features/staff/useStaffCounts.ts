@@ -61,10 +61,33 @@ export function useStaffCounts(): { pendingChangeRequests: number } {
     enabled: isAuthenticated && user?.role === "admin",
     staleTime: STALE_MS,
     /*
-      No `refetchInterval`. The bar is not a live surface — the pill is a
-      reason to look, and a number that appears within thirty seconds of a
-      request landing is soon enough. On Overview it updates with the page
-      anyway, because it is the same query.
+      ⚠ **NO `refetchInterval`, AND THE SENTENCE THAT USED TO SIT HERE WAS
+      FALSE** — it said *"a number that appears within thirty seconds of a
+      request landing is soon enough"*, which describes a poll this hook does
+      not have. **`staleTime` makes a refetch PERMISSIBLE at the next trigger;
+      it schedules nothing.** The QueryClient is stock (`main.tsx`), so the
+      triggers are remount and window refocus. Corrected on the gate review of
+      PR #456 rather than left as a claim nobody had driven (law 7b).
+
+      What actually refreshes the pill, stated exactly:
+
+      - **Navigating between admin pages** — the bar remounts, and a stale
+        query refetches on mount. This is the common case by a distance.
+      - **Refocusing the window** — TanStack's default, and the case that
+        covers coming back to a tab left open.
+      - **Resolving a request** — `AdminChangeRequests` invalidates this query
+        in both mutation handlers, so the number he just changed is right
+        immediately, on the page where he changed it.
+
+      **What does NOT refresh it: a request ARRIVING while he sits on one page
+      without touching anything.** That reaches the pill on his next navigation
+      or refocus, and it is filed as #457 with a recommendation rather than
+      fixed quietly — wiring this to the shared `AUTO` switch would put seven
+      aggregations on a 30s timer across eight pages, which is a decision about
+      cost, not a repair.
+
+      On Overview none of this arises: it is the same query the page already
+      polls, so the pill moves with the page.
     */
     retry: false,
   });
