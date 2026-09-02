@@ -1,7 +1,7 @@
 {
-  "edition": 223,
-  "updatedAt": "2026-09-02T20:57:16.642Z",
-  "shift": "Fable — escalated shift, night of 3 September (the Grok rerun you ordered: Grok reads everything, and takes six times longer)",
+  "edition": 224,
+  "updatedAt": "2026-09-02T22:08:09.426Z",
+  "shift": "Foreman — night of 3 September (your three replies, worked together in one shift)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -129,6 +129,17 @@
   },
   "needsYou": [
     {
+      "id": "author-bench-466",
+      "title": "The author half of the Grok test is carded and goes to a Fable shift — no decision needed",
+      "state": "answered",
+      "productImpact": "You said \"Also run the AUTHOR half you suspected — Grok vs the author, text-only, about a dollar.\" It is filed as card #466 with your sentence at the top, and the next shift takes it. This card is here so you can see it moving rather than wonder where it went.",
+      "workedExample": "The reader test you just judged was about a picture going in and a description coming out. The author is a different job: your typed brief goes in, and the written prompt the image engine actually receives comes out. It runs on EVERY roll, so if Grok writes better prompts it changes more than the reader ever could. And the slowness that decided the reader may not matter here at all — 41 seconds is a long stare at an upload, and a small part of a roll that already takes minutes.",
+      "options": [],
+      "recommendation": "Nothing to answer. Same seven fixtures, same sitting, pairs to your eye, about a dollar of house money — under the threshold, so it just runs. Nothing swaps on the bench's own reading; you pick, as you did for the reader.",
+      "filedAt": "2026-09-02T22:08:09.426Z",
+      "issueNumber": 466
+    },
+    {
       "id": "grok-long-bench-231",
       "title": "The Grok rerun is done — Grok reads every picture, and its fastest read is slower than Sonnet's slowest",
       "productImpact": "You asked for the bench and it ran tonight, exactly to your spec: same seven pictures, same reader instruction, same 300-character cap, and a 180-second window so nothing died on the clock. The headline is in two halves, and your own reply already wrote the rule for reading them together.\n\nQuality: Grok read 12 of 12 beings with zero timeouts and zero refusals — including your goth reference, twice, cleanly. So the first court's 4-of-12 was the deadline, exactly as you said: timeouts, not refusals. On your five rules Grok is at worst Sonnet's equal and arguably ahead: it named the hairless skin, the tail and the whiskers on your feline deity on the FIRST pass both times, used no kit words anywhere, and never once ran over the character cap — Sonnet needed a second ask on 6 of 14 reads and lost one read on your own fixture to the cap.\n\nSpeed: Sonnet finishes in about 7 seconds typically, worst 13. Grok's typical is 41 seconds, best 24, worst 71. Not one Grok read came in under 20 seconds — your bar was 'around ten, then we talk', and every single call misses it. Its typical sits right on the old 45-second deadline, which is why the first court saw it die half the time.\n\nBy your own sentence — 'if Grok is better and slow, that's infra' — this is the infra branch. A customer uploading a concept watches a spinner; swapping her 7-second wait for a 41-second one is not a reader upgrade, whatever the prose gains.\n\nThe full pairs, one per picture with times beside them, are on card #231 and in the court record for your eye.",
@@ -206,9 +217,9 @@
     },
     {
       "id": "autorefresh-default-453",
-      "title": "Should the auto-refresh switch start ON or OFF? I chose ON and it is one line to reverse",
-      "productImpact": "The AUTO 30s switch is now one switch for the whole staff panel (your reply #104). One switch means one starting position, and the pages disagreed: Overview started ON, the other seven started OFF. I checked whether Overview's ON was a decision of yours and it was not — it came from the commit that first scaffolded that page. So somebody has to choose, and it should be you.",
-      "workedExample": "You open the admin panel tomorrow morning having never touched the switch. With ON (what is live now): Overview refreshes itself every 30 seconds exactly as it always has, and so do Users, Change requests, Invite codes, Bug reports and Audit logs — five pages that used to sit still. With OFF: nothing refreshes on its own anywhere, including the Overview page you land on, until you click the switch once. After that first click the two are identical forever, because it remembers you.",
+      "title": "The auto-refresh switch stays ON — your answer, and nothing had to change",
+      "productImpact": "You said \"Leave it ON\", and that is what was already live. I checked the code rather than the card before telling you so: the shared switch defaults to ON, so every staff page keeps refreshing itself every 30 seconds until you turn it off, and it remembers that choice afterwards. No change was shipped, because none was needed.",
+      "workedExample": "You open the admin panel tomorrow having never touched the switch: Overview refreshes every 30 seconds, and so now do the other seven pages that used to sit still. Turn it off once, anywhere, and it stays off everywhere until you say otherwise.",
       "recommendation": "Leave it ON. Nothing loses a behaviour it had today, and the pages that newly poll are staff-only tables where a stale number is the thing you were complaining about. If you find the Users table shifting under you while you read it, say so and it becomes OFF in one line.",
       "options": [
         {
@@ -222,34 +233,18 @@
           "consequence": "Nothing polls on its own until you click the switch once — including the Overview page you land on, which has always refreshed itself."
         }
       ],
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T13:35:00.000Z",
       "issueNumber": 453
     },
     {
       "id": "frozen-email-support-link-452",
-      "title": "A frozen customer's email sends them to a page that does not exist",
-      "productImpact": "When you or a moderator freeze an account, the customer gets an email telling them where to get help. That link points at drape.ai/support. Two things are wrong with it and only one is the old name: THERE IS NO /support PAGE — not on the old domain and not on the new one. So changing drape.ai to klieglabs.com would only produce a tidier dead end. I have NOT changed it, because what that link should point at is your decision rather than my guess.",
-      "workedExample": "A moderator freezes an account this afternoon. The customer gets the email, clicks the only link in it, and lands on nothing. They have no other route, because a frozen account cannot get in to ask. One honest caveat: whether that email shows the link at all lives in Klaviyo, not in our code — our code sends it every time, and I cannot read the template from here, so I am not claiming it either way.",
-      "options": [
-        {
-          "key": "mailto",
-          "label": "Point it at support@klieglabs.com",
-          "consequence": "One line, no new page. The same address the login page now uses for exactly this person in exactly this situation."
-        },
-        {
-          "key": "build-page",
-          "label": "Build a real support page and point at that",
-          "consequence": "A page that does not exist yet, so it is a piece of work rather than a fix — and the email stays broken until it ships."
-        },
-        {
-          "key": "wait",
-          "label": "Leave it for the branding pass",
-          "consequence": "Nothing changes today. The link stays dead, and it stays dead for every account frozen between now and then."
-        }
-      ],
-      "recommendation": "Point it at support@klieglabs.com. It is one line, it needs nothing built, and it matches what a suspended customer already gets on the login page.",
-      "state": "open",
+      "title": "The frozen customer's support link is fixed — and the dead half was the one nobody had noticed",
+      "productImpact": "You said \"Point it at support@klieglabs.com\" and it is live. Worth one sentence about what was actually broken, because it was not only the old name: the link went to drape.ai/support, and there has never been a /support page on ANY of our domains. So swapping drape.ai for klieglabs.com would have given the same person a tidier 404. It now opens an email to support@klieglabs.com — the same address the login page already gives somebody whose account is suspended.",
+      "workedExample": "Somebody's account gets frozen. They get the email, and the one way out of it is that link. Until tonight it opened a page that does not exist, and they had no other way to reach us — a frozen account cannot get in to use anything else. Now it opens a message to us.",
+      "options": [],
+      "recommendation": "Nothing needed from you. One thing is still genuinely unknown and I am not guessing it: whether the email template even shows that link. The template lives inside Klaviyo, not in our code, so it cannot be read from here — worth a glance next time you are in there.",
+      "state": "done",
       "filedAt": "2026-09-02T12:08:50.089Z",
       "issueNumber": 452
     },
@@ -982,7 +977,7 @@
       "workedExample": null,
       "options": [],
       "recommendation": null,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T04:40:00+10:00",
       "issueNumber": 231
     },
@@ -3271,6 +3266,13 @@
   ],
   "pipeline": [
     {
+      "id": "frozen-support-link-452",
+      "title": "A frozen customer's only way to reach us used to be a 404 — it is an email address now (#452)",
+      "status": "merged",
+      "prNumber": 465,
+      "note": "Your reply #107. Merged 275b2263. The review passed; both its notes were handled and one became card #467 below."
+    },
+    {
       "id": "grok-long-bench-231",
       "title": "#231 — the Grok rerun you ordered: 12/12 read at 180s, zero timeouts — and a typical read of 41s against Sonnet's 7s",
       "status": "waiting-founder",
@@ -4496,39 +4498,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0903-fable",
-      "title": "The queue: 75 open, 11 carrying your word, 0 urgent — the urgent one was worked tonight",
-      "severity": "info",
+      "id": "billing-return-domain-467",
+      "title": "A paying customer is sent to a web address we do not run, the second their payment goes through",
+      "severity": "warning",
       "state": "open",
-      "detail": "Measured at close of the escalated shift. 75 open; 11 carry your word; 6 parked. The one urgent card — #231, the reader court that five shifts had stepped over — was exactly this shift's brief: the bench is delivered and the card now waits on your eye, so its urgent label came off (its urgency was the unrun bench). Rotting is the same eight as the last six nights — #10 #14 #18 #22 #30 #55 #61 #65, none a bug, none waiting on you. Stable, not growing."
-    },
-    {
-      "id": "queue-shape-0903-late",
-      "title": "The queue: 75 open, 11 carrying your word, 1 urgent, 8 rotting — the same eight for a sixth night",
-      "severity": "info",
-      "state": "open",
-      "detail": "Measured at close. 75 open (was 74 — I closed one and filed two). 11 of them are cards you ordered; 6 parked.\n\nOne urgent, and it has now been stepped over by five shifts in a row: #231, the reader court. That is not neglect — a court is judgement work and these night shifts run on the cheaper model, which is not the seat for it. Four shifts declined it quietly and none of them left the marker that switches the next shift to the reviewing model. I have written that marker tonight, so the next shift takes #231 and nothing else.\n\nRotting — open a week, never re-read against the code — is 8, and it is the SAME EIGHT as the last five nights: #10, #14, #18, #22, #30, #55, #61, #65. All Lost-and-Found or designed-but-unbuilt from 25 August. None is a bug and none waits on you. Stable, not growing."
-    },
-    {
-      "id": "queue-shape-0903-night",
-      "title": "The queue: 74 open, 14 carrying your word, 1 urgent, 8 rotting — the same eight for a third night",
-      "detail": "Measured tonight. 74 open (was 75), 14 of them ordered by you, 6 parked. One urgent: #231, the reader court — it needs the Fable seat and cannot run on this one.\n\nRotting — open a week and never re-read against the code — is 8, and it is the SAME EIGHT as the last two nights: #10, #14, #18, #22, #30, #55, #61, #65. All Lost-and-Found or designed-but-unbuilt cards from 25 August. None is a bug and none is waiting on you. The number is stable rather than growing, which is what a bare count cannot tell you.\n\nTwo new cards were filed tonight and both came out of this shift's own work rather than from browsing: #455 (the AUTO 30s switch sits over a reader that refreshes every 60s on two pages) and #457 (a request ARRIVING while you sit still reaches the bar on your next click rather than immediately — a decision about cost, with a recommendation on the card).",
-      "severity": "info",
-      "state": "open"
-    },
-    {
-      "id": "queue-shape-0902-late",
-      "title": "The queue: 78 open, 22 carrying your word, 1 urgent, 8 rotting",
-      "detail": "Replaced by tonight's reading, the row below this one.\n\n— resolved 2 September (#438).\n\nMeasured tonight rather than carried: 78 open, 22 of them founder-ordered, 1 urgent (#231, the reader court, which needs the Fable seat), 6 parked.\n\nRotting — open a week and never re-read against the code — is 8, and it is worth knowing WHICH eight: every one is a Lost-and-Found or designed-but-unbuilt card filed on 25 August (#10, #14, #18, #22, #30, #55, #61, #65). None is a bug and none is waiting on a shift; they are ideas parked until something asks for them. So the rotting number is stable rather than growing, and it is not a backlog of broken things.\n\n⚠ The honest caveat, repeated from last night: the drop from 27 to 8 came from a large clear-out earlier today, not from anything a shift did. Two nights now at 8, which starts to look like the real floor.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) are still overdue. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "queue-shape-174",
-      "title": "The queue: 78 open, 19 carrying your word, 8 rotting — and the patrol clocks are still overdue",
-      "detail": "Replaced by tonight's reading, which is the row below this one.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\n78 open tonight, 19 of them carrying your word, 1 urgent. Three new cards were filed while this shift worked (#438, #439, #441) and one closed.\n\nRotting — open a week and never re-read against the code — is 8. ⚠ That is not an improvement to celebrate: it was 27 for four nights running, and the drop came from a large clear-out earlier today rather than from anything a shift did tonight. The shape is genuinely better than it was; I would want another night's reading before calling it a trend.\n\nAll four patrol clocks (Retro, Janitor, Warden, Machinist) remain overdue, the Janitor worst. Your ordered cards keep outranking them, which is correct — but if you would rather one night went to the Janitor's backlog than to the next brief, that is a one-word answer.",
-      "severity": "info",
-      "state": "resolved"
+      "detail": "Found by the automatic code review on tonight's change, then checked against the live service. When somebody finishes paying, Stripe sends them back to https://drape.app — and our production site is not drape.app. It is a THIRD name: not drape.ai (the old one you are retiring) and not klieglabs.com (the live one). It appears nowhere else in the product as a real address. The same name is used for the 'manage my subscription' return. NOT FIXED tonight, deliberately: this is the money path, and two things need settling first — whether drape.app resolves to anything at all, and whether any real checkout has ever hit it. Card #467 has both, and says plainly not to fix it from reasoning alone."
     },
     {
       "id": "billing-491-percent-387",
@@ -4541,13 +4515,6 @@
       "id": "credits-used-zero-387",
       "title": "The Usage zero you reported is fixed - and the number was never wrong, the window was",
       "detail": "Your words: \"its also showing that i've used no credits\".\n\nRead against your real spend rows before anything was changed: your last paid roll was 30 August, the month rolled over on 1 September, and the pane was summing \"this month\". The zero was arithmetically correct and completely useless.\n\nTwo real faults sat underneath it. Your account has no billing period, so the pane invented a calendar month to measure against; and the \"5,000 this month\" it compared you to does not renew at all - a free account is given its credits once and nothing ever tops them up. The pane now uses your real billing period where there is one, and \"the last 30 days\" where there is not, with what you have left instead of a fictional allowance.\n\nFixed and deployed with this edition. Frames are on your desk below.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "queue-shape-169",
-      "title": "The queue tonight: 98 open, and TEN of them are your orders",
-      "detail": "Superseded by the 2 September triage — an older copy of the same row, and two queue rows must never both be open.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\n98 cards open. TEN are yours, and five of those arrived in one burst late tonight: #395 through #399 are the staff-pages lane you sent, in order, with four of the five deliberately blocked behind the first. The rest are #390 (Change plan corrections), #391 (your plan-ladder ruling - a pricing decision, not something a shift should build), #392 (a suspended customer's appeal link still points at the old domain), #231 (the reader court, which needs the Fable seat and cannot run while it is capped), and #401, which is the piece of tonight's card I deliberately did not build.\n\nRotting - open a week, never re-read: 14. Same as last night.\n\nOne thing worth naming: all four patrol clocks are now overdue, and the Janitor worst of all. Your orders outrank patrols and there are ten of them, so on current form the Janitor will keep losing. If you would rather a shift spent one night on housekeeping instead of your queue, say so - otherwise it keeps waiting.",
       "severity": "info",
       "state": "resolved"
     },
@@ -4690,6 +4657,13 @@
       "detail": "This row asked you to run one database command so your taps had somewhere to record. It is gone, and you did not run it. You approved the auto-migration work with \"Merge it\" at 20:46, it merged, and tonight's deploy created the table on its own way past. Tap \"Not relevant\" on a card and a shift picks it up: it either closes the card and says what it checked, or keeps it and tells you why on the row. It cannot record a decision about a tap you have taken back.",
       "severity": "warning",
       "state": "resolved"
+    },
+    {
+      "id": "queue-shape-0903-foreman",
+      "title": "The queue: 75 open, 11 carrying your word, 0 urgent",
+      "severity": "info",
+      "state": "open",
+      "detail": "Measured at close. 75 open (two closed tonight, two filed — #466 the author bench you ordered, #467 above). 11 carry your word and every one is takeable; none is waiting on you. No urgent card at all for the first time in a while — #231's was the unrun bench and it ran. Rotting is the same eight as the last seven nights (#10 #14 #18 #22 #30 #55 #61 #65) — none is a bug, none is yours, and the shape is flat rather than getting worse."
     }
   ],
   "acknowledgedReplyIds": [
@@ -4796,16 +4770,14 @@
     101,
     102,
     103,
-    104
+    104,
+    105,
+    106,
+    107
   ],
   "nextUp": {
-    "readAt": "2026-09-02T20:55:50.302Z",
+    "readAt": "2026-09-02T22:06:43.927Z",
     "items": [
-      {
-        "issueNumber": 231,
-        "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
-        "urgent": false
-      },
       {
         "issueNumber": 243,
         "title": "#232's RENDER half is unproven: the creature mouth line needs a fixture whose seed does NOT name the anatomy",
@@ -4854,6 +4826,11 @@
       {
         "issueNumber": 436,
         "title": "Staff dialogs take the house grammar (brief 11) — and Submit request scrolls out of reach on the request form",
+        "urgent": false
+      },
+      {
+        "issueNumber": 466,
+        "title": "AUTHOR BENCH: Grok vs the author on his own fixtures — the half he suspected from the start (reply #105)",
         "urgent": false
       }
     ]
