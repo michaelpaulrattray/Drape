@@ -39,6 +39,7 @@ import { readFlagCounts } from "./useModeratorFlagCounts";
 
 const HERE = __dirname;
 const CLIENT_SRC = path.resolve(HERE, "..", "..");
+const SERVER = path.resolve(HERE, "..", "..", "..", "..", "server");
 const read = (relative: string) => fs.readFileSync(path.resolve(CLIENT_SRC, relative), "utf8");
 
 /** Strip comments, so a docblock explaining a rule cannot trip the rule. */
@@ -199,6 +200,49 @@ describe("card 416 — one threshold, not two", () => {
 
     const hook = code(read("features/staff/useModeratorFlagCounts.ts"));
     expect(hook).toMatch(/threshold:\s*DEFAULT_DISCREPANCY_THRESHOLD/);
+  });
+
+  it("the SERVER declares no default of its own for the threshold", () => {
+    /*
+      ⚠ THE ARM THAT WAS MISSING, AND THE GATE REVIEW OF PR #463 FOUND ITS
+      ABSENCE. The two arms above walk `client/src` only — so
+      `moderatorReconciliation.getFlaggedUsers` could declare its own
+      `.default(50)` one layer down, disagreeing with the product's 500, and
+      every single-source arm here stayed green. It did exactly that.
+
+      That is working law 4 on the exact number this card consolidated, and the
+      guard could not see it. **A single-source guard that walks one tree is a
+      guard on one tree.**
+
+      It asserts NO default rather than a matching one on purpose: the shared
+      constant lives under `client/`, which server code must not import, so an
+      "aligned" server default would be a FOURTH copy — the same defect wearing
+      the right number. Required is the only state with no second source in it.
+
+      ⚠ Safe to require because it was read at the bytes first, not assumed:
+      `git log -S` over `client/src` returns four commits touching this call and
+      every one of them sends the field, from the commit that created the
+      procedure onward. The default has never once been reached.
+    */
+    const router = fs.readFileSync(
+      path.join(SERVER, "routes", "moderatorReconciliation.ts"),
+      "utf8",
+    );
+    const start = router.indexOf("getFlaggedUsers:");
+    expect(start, "the procedure still exists under this name").toBeGreaterThan(-1);
+    const procedure = code(router.slice(start, router.indexOf(".query(", start)));
+
+    expect(procedure, "the threshold input is still declared").toMatch(/threshold:\s*z\.number\(\)/);
+    expect(
+      procedure,
+      [
+        "The server declares its own default for the threshold. The product",
+        "declares it once, in features/moderator/flagThresholds.ts, and a second",
+        "one here is invisible to every arm that walks client/src.",
+        "Make the field REQUIRED rather than aligning the number — the constant",
+        "is client-side, so an aligned copy here would be a fourth source.",
+      ].join("\n"),
+    ).not.toMatch(/threshold:[^,\n]*\.default\(/);
   });
 
   it("the default is one of the lenses the card offers", () => {

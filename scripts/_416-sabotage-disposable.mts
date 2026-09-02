@@ -29,6 +29,7 @@ const HOOK = "client/src/features/staff/useModeratorFlagCounts.ts";
 const COMPOSER = "client/src/features/staff/useAccountMenuCounts.ts";
 const CARD = "client/src/features/moderator/FlaggedDiscrepanciesCard.tsx";
 const THRESHOLDS = "client/src/features/moderator/flagThresholds.ts";
+const RECONCILIATION = "server/routes/moderatorReconciliation.ts";
 
 interface Sabotage {
   what: string;
@@ -116,6 +117,19 @@ const SABOTAGES: Sabotage[] = [
     from: 'const isStaff = user?.role === "moderator" || user?.role === "admin";',
     to: 'const isStaff = user?.role === "admin";',
     arm: "gated to the roles",
+  },
+  {
+    /*
+      ⚠ NOT A HYPOTHETICAL — THIS RESTORES THE EXACT BYTES THAT WERE ON `main`,
+      and the arm it must redden did not exist until the gate review of PR #463
+      pointed at them. It is the positive control for that arm: the guard must
+      catch the real defect, not a caricature of it.
+    */
+    what: "the server takes back its own default (the REAL pre-fix bytes, 50 against a product default of 500)",
+    file: RECONCILIATION,
+    from: "threshold: z.number().min(1),",
+    to: "threshold: z.number().min(1).default(50),",
+    arm: "SERVER declares no default",
   },
 ];
 
