@@ -1,7 +1,7 @@
 {
-  "edition": 210,
-  "updatedAt": "2026-09-02T08:46:37.510Z",
-  "shift": "Foreman — night of 2 September (the fourth list of finished work is gone from this page, and the one section that was empty now tells you what it is for)",
+  "edition": 211,
+  "updatedAt": "2026-09-02T10:23:04.519Z",
+  "shift": "Foreman — night of 2 September (an open row on the staff tables now sits on its own lighter block, so you can see which account you are looking into)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1390,6 +1390,41 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "open-row-ground-441",
+      "title": "You can see which account you are looking into — before and after, side by side",
+      "question": "You said the open profile was \"all one color\" and you could not tell which row you were in. It is fixed, and the before/after pair below is the whole story: same table, same account, same moment in both.\n\nIt landed in ONE place. Every admin and moderator table draws the same shared component, so one change reached all twelve — the Users table you were looking at, audit logs, invite codes, bug reports, change requests, blocked IPs, flagged referrals, the moderator's own lists. No individual page was touched, which is exactly what that shared component was built for.\n\nTWO THINGS I OWE YOU, and the second is the more useful one.\n\nFIRST — the shading was not safe on its own. There was a note in the code from the last time this came up saying a shaded row would swallow the evidence block, the box that holds a customer's own words on a bug report or a moderator's reasoning on a request. That note was RIGHT. So the evidence box stopped being a shaded box and became an outlined one, and it is legible on the new ground. Have a look at the third frame below — that is a real bug report on the new ground.\n\nSECOND — the prototype does not actually solve this, and I only found that by opening it rather than trusting the screenshot. It paints the open row, the hover, and the evidence box all the SAME single colour. Your frame looked right because the account you had open was active, and the prototype draws no evidence box for an active account, so the collision never showed. The look it is telling us is right; the value is not. Ours keeps the three apart: resting, hover one step lighter, open two.\n\nThis also reverses the answer you gave me on #396 (\"The expansion reads fine — no change\"). That is written into the code beside the change, with the arms to stop a future night quietly putting the flat row back because it read your older reply first.\n\nYou asked me to check every relevant admin and moderator page. I opened all twelve with a row expanded, in both light and dark — 289 readings, none of them wrong. Five of them had no rows at all in the test database, so I put test rows in rather than tell you a page was fine without looking at it.",
+      "state": "open",
+      "filedAt": "2026-09-02T10:23:04.520Z",
+      "issueNumber": 441,
+      "frames": [
+        {
+          "key": "crew-eye/d6c465f4-acac-44de-aa2f-2ea063813b3e.png",
+          "arm": "BEFORE — Users, dark",
+          "caption": "What you were looking at. The open account (Verify Bot) and everything under it are the same colour as the rows above and below — your \"its all one color\"."
+        },
+        {
+          "key": "crew-eye/c677cc83-f7f4-462c-a78d-b2c39f7dc3c0.png",
+          "arm": "AFTER — Users, dark",
+          "caption": "The same row, the same account. The open row and its whole expansion are one lighter block; the closed rows around it are not. Slightly different, as you asked — findable at a glance rather than a slab of colour."
+        },
+        {
+          "key": "crew-eye/3994453b-dbec-4634-82c6-7bd9a4e0428e.png",
+          "arm": "the evidence box, on the new ground",
+          "caption": "A real bug report opened on the new ground. The customer's own words sit in an outlined box rather than a shaded one — this is the half that makes the shading safe, and without it that box would have disappeared into the row behind it."
+        },
+        {
+          "key": "crew-eye/f3bdc90f-771b-4d0b-8344-95740bb241be.png",
+          "arm": "BEFORE — Users, light",
+          "caption": "The same page in light. Your frames were dark, and a step that reads in dark can vanish in light, so both were measured separately rather than assumed."
+        },
+        {
+          "key": "crew-eye/70bc527e-5e9a-4f80-b7aa-1e0f2d9aef87.png",
+          "arm": "AFTER — Users, light",
+          "caption": "Light after. The step is 37 shades from the table in light and 31 in dark — visible in both without either becoming the loudest thing on the page."
+        }
+      ]
+    },
     {
       "id": "history-deleted-438",
       "title": "The long list of finished work is gone, and the empty section now says what it is for",
@@ -3001,6 +3036,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-449-open-row-ground",
+      "title": "An open row and everything under it sit on one lighter block",
+      "status": "merged",
+      "note": "#441 — the thing you asked for on the Users table, in the one shared component, so all twelve staff tables got it at once.",
+      "prNumber": 449
+    },
+    {
       "id": "pr-447-history-deleted",
       "title": "The fourth list of finished work is deleted; the one empty section explains itself",
       "status": "merged",
@@ -4445,7 +4487,8 @@
     98,
     99,
     100,
-    101
+    101,
+    102
   ],
   "nextUp": {
     "readAt": "2026-09-02T08:44:39.186Z",
