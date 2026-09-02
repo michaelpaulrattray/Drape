@@ -315,16 +315,22 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
     /*
       ⚠ AND THE FRAMING TRIM'S KEPT ORIGINAL, `sourceKey` (migration 0053).
 
-      The third member of this list, and it is here UNCONDITIONALLY — never gated
-      on `CASTING_FRAMING_TRIM_SCOPE` — for the reason every block below this one
-      gives in its own words: **the flag governs whether it is WRITTEN, and
-      nothing governs whether it is PURGED.** A flag turned back off after
-      objects exist must not strand them.
+      The third member of this list, and it is here UNCONDITIONALLY, for the
+      reason every block below this one gives in its own words: **a flag governed
+      whether it was WRITTEN, and nothing governs whether it is PURGED.**
 
       What it holds is the untrimmed 1536x2304 frame a delivered face was cut
       from — **a photograph of a person at a permanently public URL.** An
       original that outlived its cast is precisely the artifact the segment and
       library blocks below were written to destroy, arrived at by a third door.
+
+      ⚠ **NOTHING WRITES ONE ANY MORE AND THAT MAKES THIS LINE MATTER MORE, NOT
+      LESS** (2026-09-03 AEST, card #11 — the founder retired the trim on his own eye).
+      The keys that exist were written while the flag was live and they are now
+      the whole population, closed and unable to grow. A sweep that quietly
+      stopped covering them would strand every one, with no new row ever arriving
+      to make the gap visible — which is the retired-control class exactly.
+      `candidateRetention.test.ts` drives it.
     */
     const storageItems = candidates.flatMap((candidate) =>
       [candidate.imageKey, candidate.thumbKey, candidate.sourceKey]

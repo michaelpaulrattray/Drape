@@ -65,8 +65,11 @@ export type TminReading = {
    * `tMin` is the LOWER bound: the smallest `T` every frame can reach, from
    * `share <= T`. There is a second bound in the opposite direction. The crop
    * is `faceH / T` tall and a crop shorter than the delivered height would have
-   * to be UPSCALED, which the product refuses (`framingTrim.ts`,
-   * `would-upscale`). So each frame also requires `T <= renderRatio × share`,
+   * to be UPSCALED, which the product refused (`framingTrim.ts`'s
+   * `would-upscale` — that module was DELETED 2026-09-03 AEST with the trim itself,
+   * card #11, on the founder's *"11 heads look fine."*; this library outlives it
+   * because it measures COURT frames and never ran on the roll road). So each
+   * frame also requires `T <= renderRatio × share`,
    * where `renderRatio` is render height ÷ delivered height.
    *
    * **A bound is not a value.** `tMax` is the largest `T` every frame can

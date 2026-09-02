@@ -879,7 +879,15 @@ describe("abandoning a sheet releases it, rather than waiting for a sweep", () =
  * **a photograph of a person at a permanently public URL.** An original that
  * outlived its cast is precisely the artifact the segment and library purges
  * above exist to destroy, arrived at by a third door — so it is on the same
- * manifest, in the same transaction, and NOT gated on the trim flag.
+ * manifest, in the same transaction, and never gated on anything.
+ *
+ * ⚠ **THE TRIM THAT WROTE THESE IS RETIRED (2026-09-03 AEST, card #11) AND THAT
+ * RAISES THE STAKES OF THIS FILE RATHER THAN LOWERING THEM.** No new `sourceKey`
+ * is ever written again, so the population is CLOSED: every key that exists was
+ * written in the window the flag was live on the founder's account. A sweep that
+ * quietly stopped covering them would strand each one at a public URL after its
+ * cast was destroyed, and no new row would ever arrive to make the gap visible.
+ * That is the retired-control class — the one this repository loses controls to.
  */
 describe("a candidate's kept original purges with it", () => {
   beforeEach(() => {
@@ -913,36 +921,37 @@ describe("a candidate's kept original purges with it", () => {
     expect(result.objectsQueued).toBe(3);
   });
 
-  it("purges it whatever the trim flag says — the flag governs writing, never purging", async () => {
+  it("⚠ purges a kept original although NOTHING WRITES ONE ANY MORE (#11)", async () => {
     /*
-      The scope is explicitly OFF here, which is the state that would strand
-      objects if the manifest entry were gated: a flag turned back off after
-      originals exist must not leave them behind. Every purge block in this file
-      says so in its own voice; this arm is that sentence driven.
+      This arm read "purges it whatever the trim flag says" and set
+      `CASTING_FRAMING_TRIM_SCOPE=off` around itself. The founder retired the
+      framing trim on his own eye (2026-09-03 AEST, card #11, verbatim: "11 heads look
+      fine."), so the flag is gone and there is no state left to set.
+
+      ⚠ **The arm is kept and its stakes went UP.** The writer is gone, so the
+      `sourceKey` population is closed: every key that exists was written while
+      the flag was live, and no new row will ever arrive to make a gap visible.
+      If this sweep stopped covering them, each one would be a photograph of a
+      person left at a permanently public URL after its cast was destroyed, and
+      nothing anywhere would go red. That is the retired-control class — a
+      control that stops being reachable leaves a green suite behind it.
     */
-    const previous = process.env.CASTING_FRAMING_TRIM_SCOPE;
-    process.env.CASTING_FRAMING_TRIM_SCOPE = "off";
-    try {
-      calls.listPurgeableCandidates.mockResolvedValue([
-        {
-          id: 1, userId: 7,
-          imageKey: "casting-v2/candidates/a.png",
-          thumbKey: null,
-          sourceKey: "casting-v2/candidates/a-source.png",
-        },
-      ]);
+    calls.listPurgeableCandidates.mockResolvedValue([
+      {
+        id: 1, userId: 7,
+        imageKey: "casting-v2/candidates/a.png",
+        thumbKey: null,
+        sourceKey: "casting-v2/candidates/a-source.png",
+      },
+    ]);
 
-      await runCandidateRetentionSweep();
+    await runCandidateRetentionSweep();
 
-      const [manifest] = calls.queueStorageCleanup.mock.calls.at(-1) as [
-        { storageItems: Array<{ storageKey: string }> },
-      ];
-      expect(manifest.storageItems.map((item) => item.storageKey))
-        .toContain("casting-v2/candidates/a-source.png");
-    } finally {
-      if (previous === undefined) delete process.env.CASTING_FRAMING_TRIM_SCOPE;
-      else process.env.CASTING_FRAMING_TRIM_SCOPE = previous;
-    }
+    const [manifest] = calls.queueStorageCleanup.mock.calls.at(-1) as [
+      { storageItems: Array<{ storageKey: string }> },
+    ];
+    expect(manifest.storageItems.map((item) => item.storageKey))
+      .toContain("casting-v2/candidates/a-source.png");
   });
 
   it("a candidate with no kept original queues no phantom key", async () => {

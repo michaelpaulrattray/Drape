@@ -409,7 +409,7 @@ Most of these followed the same path: helper or rule written, docs written, todo
 - `ENABLE_STORAGE_CLEANUP_WORKER=true` — required before evidence ingest can be enabled
 - `R2_EVIDENCE_BUCKET`, `R2_EVIDENCE_ACCESS_KEY_ID`, `R2_EVIDENCE_SECRET_ACCESS_KEY` — dedicated private evidence bucket and least-privilege credential; uses `R2_ENDPOINT` but never `R2_PUBLIC_URL`
 
-⚠ **THE THIRTY-FOUR SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
+⚠ **THE THIRTY-THREE SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
 [`docs/architecture/FEATURE_FLAGS.md`](docs/architecture/FEATURE_FLAGS.md).**
 Their entries — 122,893 bytes, two thirds of this file as it stood — moved
 there on 2026-08-31 under the founder's own card (#330: *"why are simple code changes
@@ -450,7 +450,6 @@ the live service on every push.
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
-| `CASTING_FRAMING_TRIM_SCOPE` | whether a roll renders larger than it delivers and trims to a common head size |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — a road the founder has ruled RETIRED |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |

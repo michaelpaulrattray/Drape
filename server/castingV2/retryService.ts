@@ -51,8 +51,7 @@ import {
   restoreCandidateFailure,
   setRollStatus,
 } from "../db/castingV2";
-import { captureCastingFramingTrimEnabled, captureCastingRetryEnabled } from "./castingV2Scope";
-import { FRAMING_TRIM_RENDER } from "./framingTrimStep";
+import { captureCastingRetryEnabled } from "./castingV2Scope";
 import { castingCreativeEngine } from "./rollEngine";
 import { dispatchCandidate, type RollServiceDependencies, type Settlement } from "./rollService";
 import { assertNotFrozen } from "./spendGuards";
@@ -72,7 +71,6 @@ export type RetryServiceDependencies = {
   storeImage?: RollServiceDependencies["storeImage"];
   /** The flag, as a seam — so both sides can be driven with the flag as the only variable. */
   retryEnabled?: (userId: number) => boolean;
-  trimEnabled?: (userId: number) => boolean;
 };
 
 export type RetryInput = {
@@ -336,7 +334,6 @@ export async function retryCandidate(
   /* ---- dispatch: the roll road's own unit, once ---- */
 
   const engine = (dependencies.engine ?? castingCreativeEngine)();
-  const trimEnabled = (dependencies.trimEnabled ?? captureCastingFramingTrimEnabled)(input.userId);
   const { value, error, census } = await censusOfAttempt(() => dispatchCandidate({
     dependencies: { storeImage: dependencies.storeImage },
     engine,
@@ -345,8 +342,7 @@ export async function retryCandidate(
     candidate: { id: candidate.id, publicId: candidate.publicId, position: candidate.position, pointsCost: price },
     prompt,
     anchor,
-    size: trimEnabled ? `${FRAMING_TRIM_RENDER.width}x${FRAMING_TRIM_RENDER.height}` : CANDIDATE_RENDER.size,
-    trimEnabled,
+    size: CANDIDATE_RENDER.size,
     quality: CANDIDATE_RENDER.quality,
     accountDown: { tripped: false },
     statedInk: statedInkOfCompiledBrief(roll.compiledBrief),
