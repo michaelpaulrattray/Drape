@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { P } from "./icons";
+import { BORROWED, P } from "./icons";
 import { RAIL_DESTINATIONS } from "./Rail";
 
 /**
@@ -618,5 +618,80 @@ describe("the product's glyphs are the founder's handoff, unmodified", () => {
     const mine = "export const P = {\n  studio: 'M4 10.5L12 4',\n} as const;";
     const his = "export const P = {\n  studio: 'M4 10.6L12 4',\n} as const;";
     expect(pBlock(mine)).not.toBe(pBlock(his));
+  });
+});
+
+/**
+ * THE SET IS SHOWN ON THE SPECIMEN SHEET, DERIVED FROM `P` (founder,
+ * 2026-09-02: *"should the standardized icon family/glyphs we use be stored
+ * somewhere to keep it consistent … like on the featured components page"*,
+ * and *"29 glyphs isnt the cap its just what we have so far"*).
+ *
+ * Working law 4 is the whole arm: a gallery that LISTS keys is a second copy
+ * of the set that drifts the first time a glyph is added, and it would still
+ * render, so nothing else would notice. The sheet must iterate the map and
+ * count from it. Source reads, in the shape of the arms above, each paired
+ * with a positive control on a synthetic string.
+ */
+describe("the specimen sheet shows the whole set, derived from P", () => {
+  const SHEET = read("pages/AdminFoundation.tsx");
+  const galleryOf = (source: string) => {
+    const start = source.indexOf("13 · The house icons");
+    expect(start, "the gallery section is gone from the sheet").toBeGreaterThan(-1);
+    const end = source.indexOf("</section>", start);
+    expect(end, "the gallery section has no end").toBeGreaterThan(start);
+    return source.slice(start, end);
+  };
+
+  it("draws the gallery by iterating P", () => {
+    expect(code(galleryOf(SHEET))).toMatch(/Object\.entries\(P\)/);
+  });
+
+  it("counts the set from P rather than stating a number", () => {
+    expect(code(galleryOf(SHEET))).toMatch(/Object\.keys\(P\)\.length/);
+    expect(code(galleryOf(SHEET))).not.toMatch(/\b(2[0-9]|[3-9][0-9]) so far\b/);
+  });
+
+  it("names no key by hand inside the gallery", () => {
+    expect(code(galleryOf(SHEET))).not.toMatch(/\bP\.[a-z]+\b/);
+  });
+
+  it("the matcher would catch a hand-typed key, and a typed count", () => {
+    const listed = '13 · The house icons" /><Icon d={P.studio} /><Icon d={P.image} /></section>';
+    expect(code(galleryOf(listed))).toMatch(/\bP\.[a-z]+\b/);
+    const counted = '13 · The house icons" aside="29 so far" /></section>';
+    expect(code(galleryOf(counted))).toMatch(/\b(2[0-9]|[3-9][0-9]) so far\b/);
+  });
+
+  /**
+   * The reference sheet is the one page that must not wear the retired glyph:
+   * it is where a shift looks to learn what the house does. It carried the
+   * sparkle in two sample rows until this section landed.
+   */
+  it("the sheet imports no Sparkles from Lucide", () => {
+    const named = (/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(SHEET)?.[1] ?? "")
+      .split(",")
+      .map((s) => s.trim());
+    expect(named.length, "the sheet stopped importing from Lucide in a shape this arm reads").toBeGreaterThan(0);
+    expect(named).not.toContain("Sparkles");
+  });
+
+  /**
+   * A borrowed glyph declares itself in two places that must agree: the
+   * `BORROWED` map the sheet reads, and the entry's own docblock in `P`. A key
+   * in one and not the other is either a borrowed path presented as his, or
+   * one of his listed as borrowed — both are the drift this map exists to stop.
+   */
+  it("every BORROWED key is in P and its own docblock names lucide", () => {
+    const keys = Object.keys(BORROWED);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      expect(P, `${key} is not in P`).toHaveProperty(key);
+      const entry = ICONS.indexOf(`\n  ${key}:`);
+      expect(entry, `no ${key} entry`).toBeGreaterThan(-1);
+      const preamble = ICONS.slice(0, entry);
+      const declaration = preamble.slice(preamble.lastIndexOf("/*"));
+      expect(declaration.toLowerCase(), `${key}'s docblock does not name lucide`).toContain("lucide");
+    }
   });
 });
