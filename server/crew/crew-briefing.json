@@ -1,6 +1,6 @@
 {
-  "edition": 202,
-  "updatedAt": "2026-09-02T01:08:56.819Z",
+  "edition": 203,
+  "updatedAt": "2026-09-02T01:18:51.217373Z",
   "shift": "Foreman — night of 2 September (moderator investigations, brief 09 — the staff lane closes)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -1400,7 +1400,7 @@
           "arm": "after"
         }
       ],
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02",
       "issueNumber": 397
     },
@@ -1435,7 +1435,7 @@
           "arm": "after"
         }
       ],
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02",
       "issueNumber": 396
     },
@@ -1470,7 +1470,7 @@
           "arm": "after"
         }
       ],
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-02",
       "issueNumber": 395
     },
@@ -1505,7 +1505,7 @@
           "arm": "after"
         }
       ],
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02",
       "issueNumber": 390
     },
@@ -1540,7 +1540,7 @@
           "caption": "Profile — Remove is a real control beside Upload, and the Bio row is gone. Driven end to end: the picture returns to the account default and the file leaves storage."
         }
       ],
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-01",
       "issueNumber": 387
     },
@@ -4111,10 +4111,18 @@
     79,
     80,
     81,
-    86
+    86,
+    82,
+    83,
+    84,
+    85,
+    87,
+    88,
+    89,
+    90
   ],
   "nextUp": {
-    "readAt": "2026-09-02T01:09:57.043Z",
+    "readAt": "2026-09-02T01:19:07.824Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4174,6 +4182,16 @@
       {
         "issueNumber": 423,
         "title": "The topbar icons are not the prototype's — six glyphs redrawn, and the guard compared two copies of the same mistake",
+        "urgent": false
+      },
+      {
+        "issueNumber": 425,
+        "title": "His four Change plan corrections — including two he wants as declared STUBS, not as populated claims (reply #84)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 426,
+        "title": "His rename: Usage says 'frames' and should say 'generations' — the parent of the per-tool breakdown (reply #85)",
         "urgent": false
       }
     ]
