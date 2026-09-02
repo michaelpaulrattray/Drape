@@ -561,3 +561,195 @@ describe("the staff bar's title is composed, never spelt", () => {
     expect(offenders, `staff reads the workspace name in: ${offenders.join(", ")}`).toEqual([]);
   });
 });
+
+/**
+ * ⚠ **#413 — THE REFRESH CLUSTER, MEASURED AT ITS VALUES AND NEVER AT ITS
+ * PROP NAME.**
+ *
+ * **His question, 2026-09-01, verbatim:** *"why when scrolling through the
+ * admin pages only some pages contain the updated time the auto refresh toggle
+ * and a notification button? overview contains it but not all the other pages"*
+ *
+ * # The card that answered it was measured with the wrong instrument
+ *
+ * #413 grepped every staff page for `refreshControls` and reported five of
+ * eight as having the cluster, naming Invite codes and Bug reports as the only
+ * gaps. **Read at what those five actually PASS, three had it.**
+ * `AdminUserManagement` and `AdminChangeRequests` provided `onRefresh` and
+ * `isRefetching` alone — a lone manual button, no stamp, no toggle — so they
+ * failed two of the three things he named while satisfying the grep for the
+ * prop. Twice the problem the card described.
+ *
+ * That is a shape-match standing where a declaration exists, which is a named
+ * class in this repository. **So these arms read the FIELDS**, and the arm that
+ * matters is not *"everybody uses the hook"* — an implementation can always be
+ * written a second way — but ***"nobody ships a PARTIAL cluster"***.
+ *
+ * ⚠ **THE POPULATION IS DERIVED**, like every arm above: it is every staff page
+ * that passes `refreshControls` at all, found in the pages folder. A ninth page
+ * is measured the moment it exists.
+ */
+describe("brief 05 §4 / #413 — the refresh cluster is all three parts or none", () => {
+  /** Every staff page that hands the bar a `refreshControls` object. */
+  const clusterPages = () =>
+    staffPages().filter(({ text }) => /refreshControls=\{/.test(code(text)));
+
+  it("the population is real — more than half the staff pages provide the cluster", () => {
+    /*
+      An absence arm over an empty list is the cheapest false pass there is, and
+      this one would go green if the prop were renamed. Seven of the nine pages
+      provide it; Crew and the specimen sheet are the two that do not, and the
+      arm below names each and its reason.
+    */
+    const names = clusterPages().map((p) => p.name);
+    expect(names.length, `pages providing refreshControls: ${names.join(", ")}`).toBe(7);
+  });
+
+  /**
+   * The expression a page actually hands the bar, with its braces balanced —
+   * `refreshControls={refreshControls}` or `refreshControls={{ … }}`.
+   *
+   * ⚠ **THE SABOTAGE WROTE THIS FUNCTION.** The arm's first shape asked only
+   * whether the page MENTIONED `useStaffRefresh` anywhere, and the negative
+   * control walked straight through it: a page that calls the hook and then
+   * hands the bar a hand-rolled `{{ onRefresh }}` stayed green — which is the
+   * exact defect this card exists to fix, surviving in the file that fixes it.
+   * **What is passed is the fact; what the file mentions is a report.**
+   */
+  const controlsExpression = (body: string): string | null => {
+    const at = body.indexOf("refreshControls={");
+    if (at < 0) return null;
+    let depth = 0;
+    for (let i = at + "refreshControls=".length; i < body.length; i += 1) {
+      if (body[i] === "{") depth += 1;
+      else if (body[i] === "}") {
+        depth -= 1;
+        if (depth === 0) return body.slice(at, i + 1);
+      }
+    }
+    return null;
+  };
+
+  it("no staff page ships a partial cluster — his three parts travel together", () => {
+    /*
+      The three he named, as the fields that draw them (`StaffBar.tsx`):
+        the updated time  → lastRefresh
+        the auto toggle   → autoRefresh + onToggleAutoRefresh
+        the manual button → onRefresh
+      `StaffBarRight` renders each independently, so a surface passing one gets
+      one — which is exactly what he was looking at.
+
+      Two roads satisfy this. A page may hand over the object the hook returned,
+      which cannot be partial (its own arm below); or it may build one inline,
+      and then all three must be inside THAT object.
+    */
+    const partial = clusterPages()
+      .map(({ name, text }) => {
+        const body = code(text);
+        const passed = controlsExpression(body);
+        if (!passed) return `${name}: refreshControls={…} could not be parsed`;
+
+        /* Handed the hook's own object — whole by construction. */
+        if (/^refreshControls=\{\s*refreshControls\s*\}$/.test(passed)) {
+          return /useStaffRefresh\(/.test(body)
+            ? null
+            : `${name}: passes a \`refreshControls\` it never got from the hook`;
+        }
+
+        const missing = [
+          /lastRefresh/.test(passed) ? null : "the updated time (lastRefresh)",
+          /autoRefresh/.test(passed) ? null : "the auto-refresh toggle (autoRefresh)",
+          /onRefresh/.test(passed) ? null : "the manual button (onRefresh)",
+        ].filter(Boolean);
+        return missing.length ? `${name}: missing ${missing.join(", ")}` : null;
+      })
+      .filter(Boolean);
+
+    expect(
+      partial,
+      "A staff page shows some of the refresh cluster and not the rest.\n" +
+        "That is the #413 defect and it is what he opened a card about:\n" +
+        partial.join("\n"),
+    ).toEqual([]);
+  });
+
+  it("the three pages still doing it inline are named, and all three are whole", () => {
+    /*
+      ⚠ ENUMERATED, NOT COUNTED. `AdminOverview`, `AdminAuditLogs` and
+      `ModeratorDashboard` had the whole cluster before this card and were left
+      exactly as they are — their defaults and toast copy differ in ways that
+      are decisions, so folding them into the hook is a promotion pass with his
+      eye on the words, not a side effect of a bug fix. This arm holds them to
+      the same bar and goes red when one is converted, so that shift updates the
+      list on purpose.
+    */
+    const inline = clusterPages()
+      .filter(({ text }) => !/useStaffRefresh\(/.test(code(text)))
+      .map(({ name }) => name)
+      .sort();
+    expect(inline).toEqual([
+      "AdminAuditLogs.tsx",
+      "AdminOverview.tsx",
+      "ModeratorDashboard.tsx",
+    ]);
+  });
+
+  it("POSITIVE CONTROL — the arm sees a partial cluster when there is one", () => {
+    /*
+      ⚠ THIS IS THE ARM THAT EARNS THE OTHER ONE. The pre-#413 shape of
+      `AdminChangeRequests` is reproduced verbatim below; a matcher that reads
+      the prop name rather than the fields passes it, which is how five pages
+      came to be reported as four-fifths correct.
+    */
+    const before = `bar={<StaffBarAdmin refreshControls={{
+        onRefresh: () => listQuery.refetch(),
+        isRefetching: listQuery.isFetching,
+      }} />}`;
+    expect(/refreshControls=\{/.test(before), "the card's own instrument").toBe(true);
+    expect(/lastRefresh/.test(before)).toBe(false);
+    expect(/autoRefresh/.test(before)).toBe(false);
+  });
+
+  it("the two pages outside the cluster are exactly Crew and the specimen sheet", () => {
+    /*
+      ⚠ AN ENUMERATED EXCEPTION, NOT A SILENCE — and it is deliberately brittle.
+
+      `AdminFoundation` mounts no staff bar at all (his ruling: the specimen
+      sheet gets no tab), so it has nothing to hang a cluster on.
+
+      `AdminCrew` states its own freshness inline — *"{shift} · checked 2
+      minutes ago"* — which is why it was left out of #413 rather than
+      overlooked. ⚠ **#415 §3 REVERSES THAT on his word** (*"even thought crew
+      has its own refresh principles should we just fold it into the same as
+      overview so everything is consistent"*), and #413's instruction to record
+      Crew's exception in a docblock is superseded by it. **So this arm goes RED
+      the day #415 lands**, which is the point: that shift must delete Crew's
+      inline line in the same commit, or the page states its freshness twice.
+    */
+    const outside = staffPages()
+      .filter(({ text }) => !/refreshControls=\{/.test(code(text)))
+      .map(({ name }) => name)
+      .sort();
+    expect(outside).toEqual(["AdminCrew.tsx", "AdminFoundation.tsx"]);
+  });
+
+  it("the shared hook returns all five fields, and none of them is optional to ask for", () => {
+    /*
+      The hook is the reason a fifth page cannot repeat this by accident: there
+      is no argument that yields a manual button alone.
+    */
+    const hook = code(read("features/staff/useStaffRefresh.ts"));
+    expect(hook).toMatch(/return\s*\{\s*lastRefresh,\s*autoRefresh,\s*onToggleAutoRefresh,\s*onRefresh,\s*isRefetching\s*\}/);
+
+    /*
+      ⚠ THE STAMP IS DERIVED FROM THE QUERY, NOT SET BESIDE THE REFETCH CALL.
+      Stamping at the call reports the moment the request LEFT, so a slow or
+      failed reader shows fresh data that never arrived — a lie about staleness
+      on the surfaces whose whole job is to say how stale they are.
+    */
+    expect(hook).toMatch(/setLastRefresh\(new Date\(dataUpdatedAt\)\)/);
+    expect(hook, "the hook must not stamp a time it did not read").not.toMatch(
+      /setLastRefresh\(new Date\(\)\)(?!\s*\))/,
+    );
+  });
+});

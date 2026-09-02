@@ -11,7 +11,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
+import {
+  StaffBarAdmin,
+  StaffLoading,
+  StaffSurface,
+  useStaffRefresh,
+  STAFF_REFRESH_INTERVAL_MS,
+} from "@/features/staff";
 import { UserStatsCards } from "@/features/admin/UserStatsCards";
 import { UserFilters } from "@/features/admin/UserFilters";
 import { UserTable } from "@/features/admin/UserTable";
@@ -50,9 +56,20 @@ export default function AdminUserManagement() {
   const [unfreezeModalOpen, setUnfreezeModalOpen] = useState(false);
   const [unfreezeNotes, setUnfreezeNotes] = useState("");
 
+  /*
+    ⚠ #413's LAW-7 SWEEP FOUND THIS PAGE, AND THE CARD'S OWN TABLE DID NOT.
+    That table was built by grepping staff pages for `refreshControls` and
+    listed Users as having the cluster. It had the PROP and two of its five
+    fields — a manual button alone, no stamp and no toggle — so it failed two
+    of the three things he named while satisfying the grep. A property is
+    proven at the values, not at the prop name.
+  */
+  const [autoRefresh, setAutoRefresh] = useState(false);
+
   // Queries
   const statsQuery = trpc.admin.getUserStats.useQuery(undefined, {
     enabled: isAuthenticated && user?.role === "admin",
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
   });
 
   const usersQuery = trpc.admin.listUsers.useQuery({
@@ -65,6 +82,7 @@ export default function AdminUserManagement() {
     sortOrder,
   }, {
     enabled: isAuthenticated && user?.role === "admin",
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
   });
 
   const userDetailsQuery = trpc.admin.getUserFullDetails.useQuery(
@@ -138,6 +156,19 @@ export default function AdminUserManagement() {
     unfreezeMutation.mutate({ userId: selectedUserId, notes: unfreezeNotes });
   };
 
+  const refreshControls = useStaffRefresh({
+    autoRefresh,
+    setAutoRefresh,
+    dataUpdatedAt: usersQuery.dataUpdatedAt,
+    isRefetching: usersQuery.isFetching || statsQuery.isFetching,
+    onRefresh: () => {
+      usersQuery.refetch();
+      statsQuery.refetch();
+      toast.success("Users refreshed");
+    },
+  });
+
+  /* ⚠ Every hook above this line — the guards below return early. */
   // Auth guards
   if (loading) return <StaffLoading />;
   if (!isAuthenticated) return <Redirect to="/" />;
@@ -151,16 +182,16 @@ export default function AdminUserManagement() {
   return (
     <StaffSurface
       breadcrumb="Admin / Users"
-      /* Manual refresh only — this page keeps no stamp and no auto-refresh
-         preference, and the frame does not invent either (brief 05 §4). */
-      bar={
-        <StaffBarAdmin
-          refreshControls={{
-            onRefresh: () => { usersQuery.refetch(); statsQuery.refetch(); },
-            isRefetching: usersQuery.isFetching,
-          }}
-        />
-      }
+      /*
+        ⚠ THE COMMENT THAT STOOD HERE WAS FALSE AT THE CODE, AND IT IS WHY THIS
+        PAGE SAT WRONG FOR A MONTH. It said the page *"keeps no stamp and no
+        auto-refresh preference, and the frame does not invent either"* —
+        reading as a decision when it was an omission. `dataUpdatedAt` is
+        produced by every TanStack query and `AdminOverview` has read its stamp
+        from exactly that field since brief 05 shipped. The state was never
+        missing; it was never wired.
+      */
+      bar={<StaffBarAdmin refreshControls={refreshControls} />}
     >
       <main className="space-y-6">
         <UserStatsCards stats={statsQuery.data} />

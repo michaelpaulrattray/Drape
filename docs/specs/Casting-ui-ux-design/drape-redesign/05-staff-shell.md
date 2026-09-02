@@ -112,6 +112,30 @@ A segment may carry a count pill — `padding: 1px 5px; border-radius: var(--r-p
 
 **Render the cluster only when the surface provides refresh controls.** It is already optional in `AdminHeader` and several surfaces do not poll.
 
+> ⚠ **CORRECTED 2026-09-02 (#413) — THIS SENTENCE WAS TRUE OF ONE SURFACE, NOT
+> SEVERAL, AND IT WAS READ AS PERMISSION.** The founder's own question is what
+> found it, verbatim: *"why when scrolling through the admin pages only some
+> pages contain the updated time the auto refresh toggle and a notification
+> button? overview contains it but not all the other pages"*
+>
+> Measured at the code the day the card was worked: **four of the eight staff
+> pages failed it.** Invite codes and Bug reports had no cluster at all; Users
+> and Change requests provided `onRefresh` alone — a lone manual button, no
+> stamp, no toggle — each under a docblock stating that the page *"keeps no
+> `lastRefresh` … inventing the other two would be state no reader produces
+> (brief 05 §4)"*, **citing this sentence.** ⚠ **That premise is false at the
+> code**: `dataUpdatedAt` is produced by every TanStack query, and Overview has
+> read its stamp from exactly that field since this brief shipped. Nothing
+> needed inventing.
+>
+> **The rule going forward: a staff surface that holds a query provides the
+> whole cluster. All three parts travel together or none of them do**, which
+> `useStaffRefresh` now makes structural. The ONE real exception is `AdminCrew`,
+> which states its own freshness inline — and #415 §3 folds even that in on his
+> word. `section05-guard.test.ts` holds the rule, reading the object each page
+> actually PASSES rather than the prop name, because a grep for the prop is the
+> instrument that reported five of eight as correct when three were.
+
 **The toggle replaces the `Live` / `Paused` buttons.** Those were two `Button`s with a hard-coded `bg-[#0A0A0A]`, and a filled black button is the app's primary-action treatment — spending it on a polling preference makes the loudest thing on a staff page a setting nobody changes.
 
 ### What the bar drops
@@ -184,7 +208,7 @@ Tabs are **routes, not local state.** Clicking Users navigates to `/admin/users`
 **The bar**
 - [ ] Eyebrow + title per role; no per-page titles.
 - [ ] Tabs are a segmented control, sentence case, counts omitted at zero.
-- [ ] Refresh cluster: stamp, divider, `AUTO 30s` toggle, manual refresh icon — and absent entirely on surfaces without refresh controls.
+- [ ] Refresh cluster: stamp, divider, `AUTO 30s` toggle, manual refresh icon — **all three or none** (#413), and absent entirely on surfaces that hold no query.
 - [ ] No `Live` / `Paused` buttons.
 - [ ] Zero hex literals in the file; `token-guard` covers it.
 - [ ] Bar wraps cleanly at 1024px with nothing behind a horizontal scroll.

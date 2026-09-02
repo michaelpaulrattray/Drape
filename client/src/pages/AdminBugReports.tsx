@@ -45,6 +45,8 @@ import {
   StaffLoading,
   StaffSurface,
   pageRange,
+  useStaffRefresh,
+  STAFF_REFRESH_INTERVAL_MS,
 } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow, RowAction } from "@/foundation";
@@ -100,18 +102,52 @@ export default function AdminBugReports() {
 
   const utils = trpc.useUtils();
 
+  /*
+    ⚠ #413 — THIS IS AN INBOX, AND IT IS THE STRONGEST CASE OF THE FOUR.
+    Nothing on this page fills it: a row appears when a customer, elsewhere,
+    hits *Report a bug*. Until now the page had no stamp, no auto-refresh and
+    no way to ask again, so the only way to learn a report had arrived was to
+    navigate away and come back. That is the same shape as #255 itself, one
+    layer up — a queue whose whole job is to receive things from outside, with
+    no way to see whether it has.
+  */
+  const [autoRefresh, setAutoRefresh] = useState(false);
+
   const listQuery = trpc.admin.getBugReports.useQuery(
     {
       ...(statusFilter === "all" ? {} : { status: statusFilter }),
       limit: PAGE_SIZE,
       offset,
     },
-    { enabled: isAdmin, staleTime: 10_000 }
+    {
+      enabled: isAdmin,
+      staleTime: 10_000,
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    }
   );
 
   const countsQuery = trpc.admin.getBugReportCounts.useQuery(undefined, {
     enabled: isAdmin,
     staleTime: 10_000,
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+  });
+
+  /*
+    ⚠ THE STAMP READS THE LIST, AND THE SPINNER READS BOTH. The counts drive
+    the filter labels, so a refresh that returned rows but not counts would
+    leave `New (3)` beside four rows — the button must keep spinning until both
+    have landed.
+  */
+  const refreshControls = useStaffRefresh({
+    autoRefresh,
+    setAutoRefresh,
+    dataUpdatedAt: listQuery.dataUpdatedAt,
+    isRefetching: listQuery.isFetching || countsQuery.isFetching,
+    onRefresh: () => {
+      listQuery.refetch();
+      countsQuery.refetch();
+      toast.success("Bug reports refreshed");
+    },
   });
 
   const updateStatus = trpc.admin.updateBugReportStatus.useMutation({
@@ -198,7 +234,10 @@ export default function AdminBugReports() {
   });
 
   return (
-    <StaffSurface breadcrumb="Admin / Bug reports" bar={<StaffBarAdmin />}>
+    <StaffSurface
+      breadcrumb="Admin / Bug reports"
+      bar={<StaffBarAdmin refreshControls={refreshControls} />}
+    >
       <main className="dp-stack" style={{ gap: 16 }}>
         <TableHead eyebrow="Bug reports">
           <TableFilter

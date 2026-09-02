@@ -14,7 +14,13 @@ import {
 import { TableFilter, TableHead } from "@/foundation";
 import { ChangeRequestList } from "@/features/admin/ChangeRequestList";
 import { ReviewModal } from "@/features/admin/ReviewModal";
-import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
+import {
+  StaffBarAdmin,
+  StaffLoading,
+  StaffSurface,
+  useStaffRefresh,
+  STAFF_REFRESH_INTERVAL_MS,
+} from "@/features/staff";
 
 export default function AdminChangeRequests() {
   const { user, loading: authLoading } = useAuth();
@@ -37,7 +43,20 @@ export default function AdminChangeRequests() {
     offset: page * pageSize,
   }), [statusFilter, typeFilter, priorityFilter, page]);
 
-  const listQuery = trpc.admin.listChangeRequests.useQuery(queryInput);
+  /*
+    ⚠ #413's LAW-7 SWEEP FOUND THIS PAGE TOO. Its own comment below records
+    what it looked like from inside: a deliberate omission. It was not — see
+    the bar.
+
+    ⚠ AND THIS IS THE QUEUE THE FOUNDER ASKED ABOUT IN #415: a moderator files
+    a request from another surface, and nothing on this page moves until it is
+    re-read. It is the second inbox in this fix.
+  */
+  const [autoRefresh, setAutoRefresh] = useState(false);
+
+  const listQuery = trpc.admin.listChangeRequests.useQuery(queryInput, {
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+  });
   const detailQuery = trpc.admin.getChangeRequest.useQuery(
     { id: selectedRequestId! },
     { enabled: !!selectedRequestId }
@@ -99,6 +118,17 @@ export default function AdminChangeRequests() {
     }
   }, [slackStatusQuery.data?.slackStatus, selectedRequestId]);
 
+  const refreshControls = useStaffRefresh({
+    autoRefresh,
+    setAutoRefresh,
+    dataUpdatedAt: listQuery.dataUpdatedAt,
+    isRefetching: listQuery.isFetching,
+    onRefresh: () => {
+      listQuery.refetch();
+      toast.success("Change requests refreshed");
+    },
+  });
+
   // ─── Guards ──────────────────────────────────────────────────────────────
 
   if (authLoading) {
@@ -135,17 +165,15 @@ export default function AdminChangeRequests() {
   return (
     <StaffSurface
       breadcrumb="Admin / Change requests"
-      /* The page keeps no `lastRefresh` and no auto-refresh preference, so it
-         gets the manual button alone. Inventing the other two would be state
-         no reader produces (brief 05 §4). */
-      bar={
-        <StaffBarAdmin
-          refreshControls={{
-            onRefresh: () => listQuery.refetch(),
-            isRefetching: listQuery.isFetching,
-          }}
-        />
-      }
+      /*
+        ⚠ THE COMMENT THAT STOOD HERE ARGUED FROM A PREMISE THAT IS FALSE AT
+        THE CODE. It said *"inventing the other two would be state no reader
+        produces (brief 05 §4)"* — but `listQuery.dataUpdatedAt` is produced by
+        every TanStack query, and `AdminOverview` has read its stamp from
+        exactly that field since brief 05 shipped. Nothing needed inventing;
+        the reader was already there and nobody had asked it.
+      */
+      bar={<StaffBarAdmin refreshControls={refreshControls} />}
     >
       <main className="space-y-6">
         {/*
