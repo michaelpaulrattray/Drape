@@ -1,7 +1,7 @@
 {
-  "edition": 220,
-  "updatedAt": "2026-09-02T17:05:50.257Z",
-  "shift": "Foreman — night of 3 September (the framing trim retires on your word: the frame you get is now the frame we rendered)",
+  "edition": 221,
+  "updatedAt": "2026-09-02T18:57:43.569Z",
+  "shift": "Foreman — night of 3 September (two thirds of what we ship was never checked; now it is, and every door into the live site is written down)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,33 +111,72 @@
     ],
     "chips": [
       {
-        "label": "Your sheets are framed the way the engine framed them now",
-        "tone": "good",
-        "source": "PR #458 on your “11 heads look fine.” Faces were rendered big, measured to find the head, cropped and shrunk back. Gone: a roll of eight buys ZERO head-reads, not 16, and writes 8 pictures, not 16."
-      },
-      {
-        "label": "And the words we send you did not change at all",
-        "tone": "good",
-        "source": "Checked, not assumed: the framing sentence you passed was never tied to this switch, so no cast's brief moves. A framing fix that quietly edited the prompt would change every cast."
-      },
-      {
-        "label": "You were right about the topbar icons — all six",
-        "tone": "good",
-        "source": "PR #430, merged 0d289463. \"What's new\" was a megaphone where your prototype draws a speaker; the bug had four legs where yours has six. All six are lifted from your file now, verbatim."
-      },
-      {
-        "label": "And every check passed the whole time they were wrong",
+        "label": "Most of what reaches the live site was never checked by anything",
         "tone": "warn",
-        "source": "Our copy and your icon file were identical, and a test asserted that. But your prototype draws the topbar inline, so the six were never in that file. Two copies of one mistake agree."
+        "source": "Measured: since 25 August, 343 of 499 changes reached the live branch without a pull request. Our checks only ran on pull requests — so on two thirds of what shipped, nothing looked."
       },
       {
-        "label": "The queue: 73 open · 13 yours · 1 urgent · 8 rotting",
+        "label": "They run on every push now, and we know every door into the live site",
         "tone": "good",
-        "source": "Measured tonight. Rotting = open, never re-read for a week: the SAME EIGHT for a FOURTH night, none a bug, none on you. Your cards went 14 → 13 — #11 closed."
+        "source": "PR #459 on your #263. The deploy ceremony now type-checks the code it is about to publish, and refuses if it is broken. The sweep found one way in, and wrote the list down."
+      },
+      {
+        "label": "The queue: 74 open, 12 waiting on you, 8 going stale",
+        "tone": "good",
+        "source": "One closed tonight (#263), two opened for your word (#460, #461). The 8 stale are the same eight as the last four nights — none a bug, none waiting on you. Stable, not growing."
       }
     ]
   },
   "needsYou": [
+    {
+      "id": "settings-460-admin-bypass",
+      "title": "Your own pushes skip the checks — and turning that off has a real cost",
+      "productImpact": "We do require automatic checks before code reaches the live site. But the \"don't let admins skip this\" box is unticked, and you are the only account — so the checks have never applied to you. That is why 343 of the 499 changes since 25 August landed with nothing looking at them.",
+      "workedExample": "Your briefing page is the worked example. Every night the deploy ceremony publishes a new edition straight to the live branch — no pull request, so no checks. Tick the box and GitHub starts REFUSING those pushes: you would wake up to yesterday's page. The ceremony now type-checks everything it publishes, so the gap is already closed where it actually bites.",
+      "options": [
+        {
+          "key": "leave",
+          "label": "Leave it unticked",
+          "consequence": "Your page keeps updating overnight. The ceremony's own checks are the guard — and since #263 it runs more of them than the pull-request gate does."
+        },
+        {
+          "key": "tick",
+          "label": "Tick it, and make the ceremony open a pull request instead",
+          "consequence": "Honest and slow: every briefing edition waits about eight minutes for the gate before you can read it. You would feel this every night."
+        }
+      ],
+      "recommendation": "Leave it. The ceremony now checks more than the pull-request gate does, so ticking the box buys a guarantee you would mostly be giving yourself — and costs you your morning page.",
+      "state": "open",
+      "filedAt": "2026-09-02T18:59:27.114Z",
+      "issueNumber": 460
+    },
+    {
+      "id": "settings-461-local-migration",
+      "title": "A second branch publishes to the live site with no protection at all",
+      "productImpact": "The branch called local-migration deploys production exactly like the main one, and it has no protection whatsoever — no checks, nothing stopping a force-push or a deletion. Nothing has gone wrong; this is the sweep you ordered reporting an open door.",
+      "workedExample": "The only thing standing in front of it is a guard file that has to be switched on by hand in each copy of the project. A fresh copy on a new machine would have the file and not the guard — and editing straight through the GitHub website touches no guard at all.",
+      "options": [
+        {
+          "key": "protect",
+          "label": "Give it the same protection the main branch has",
+          "consequence": "Costs nothing today and closes the widest of the doors. Decide it together with the card above — they interact."
+        },
+        {
+          "key": "delete",
+          "label": "Stop deploying from it, and delete it",
+          "consequence": "Better than protecting it IF it is genuinely unused. I could not establish that from the code — it is a question about how you deploy."
+        },
+        {
+          "key": "leave",
+          "label": "Leave it",
+          "consequence": "Defensible while this machine is the only one that pushes, and it is the state that has held all along."
+        }
+      ],
+      "recommendation": "Protect it, as the cheapest thing that removes a door. But if you can tell me local-migration is no longer used for anything, deleting it is better and I will card that instead.",
+      "state": "open",
+      "filedAt": "2026-09-02T18:59:27.114Z",
+      "issueNumber": 461
+    },
     {
       "id": "autorefresh-default-453",
       "title": "Should the auto-refresh switch start ON or OFF? I chose ON and it is one line to reverse",
@@ -3185,6 +3224,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-459-push-paths",
+      "title": "Nothing reaches the live site unchecked — and every way in is written down",
+      "status": "merged",
+      "note": "#263, on your ruling that “a gate that only runs on pull requests, plus a path that pushes straight to main, means the gate is optional in practice.” You were right, and the size of it is worth seeing: since 25 August, 343 of 499 changes reached the live branch without a pull request — including every one of your nightly briefing updates — and our checks only ever ran on pull requests. So on roughly two thirds of everything that shipped, nothing looked. Two things changed. First, the deploy ceremony now type-checks the exact code it is about to publish, and refuses to publish if it is broken — 85 seconds, and it checks the committed code rather than whatever is lying around on the machine, which matters because the machine is almost never clean. Second, the sweep you ordered: we searched for every way code can reach the live site, and the answer is ONE — the deploy ceremony itself. No automated job can push. That answer is now derived from the code rather than remembered, so a new way in turns the tests red until somebody writes down why it exists. What you should notice: nothing. Deploys take about a minute and a half longer and are harder to get wrong.",
+      "prNumber": 459
+    },
+    {
       "id": "pr-458-framing-trim-retired",
       "title": "The framing trim is retired — the frame you get is the frame we rendered",
       "status": "merged",
@@ -4677,7 +4723,7 @@
     104
   ],
   "nextUp": {
-    "readAt": "2026-09-02T16:58:38.044Z",
+    "readAt": "2026-09-02T18:56:36.503Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4692,11 +4738,6 @@
       {
         "issueNumber": 252,
         "title": "The MAX author is refused by our own guards 54% of the time and loses its author entirely 21% — and the sheet still says 'Max'",
-        "urgent": false
-      },
-      {
-        "issueNumber": 263,
-        "title": "Every path that can reach main without a PR — enumerate them",
         "urgent": false
       },
       {
