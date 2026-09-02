@@ -1,7 +1,7 @@
 {
-  "edition": 205,
-  "updatedAt": "2026-09-02T02:51:26.744Z",
-  "shift": "Foreman — night of 2 September (the staff modals join the design language, #421 / your reply #91)",
+  "edition": 206,
+  "updatedAt": "2026-09-02T04:20:08.100Z",
+  "shift": "Foreman — night of 2 September (the topbar icons are your drawings now, #423 / #417)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,39 +111,66 @@
     ],
     "chips": [
       {
-        "label": "Crew now works in dark mode, and nothing it says has moved",
+        "label": "You were right about the topbar icons — all six",
         "tone": "good",
-        "source": "PR #409, merged 56d2ba5b. 208 hard-coded colours to zero across thirteen components; driven both themes at 1440 and 1024."
+        "source": "PR #430, merged 0d289463. \"What's new\" was a megaphone where your prototype draws a speaker; the bug had four legs where yours has six. All six are lifted from your file now, verbatim."
       },
       {
-        "label": "Admin and Moderation are inside the studio now, not pages that replace it",
-        "tone": "good",
-        "source": "Brief 05, PR #406 merged 46c24e02. Opening Admin used to take the rail, topbar and account menu away. Every page's content is untouched on purpose — your own acceptance test."
-      },
-      {
-        "label": "Your brief named one header to replace. There were two.",
+        "label": "And every check passed the whole time they were wrong",
         "tone": "warn",
-        "source": "Moderation had its own copy — its own Studio button, its own Live/Paused pair. Renaming only the one you named would have left it wearing two headers stacked, with nothing to flag it."
+        "source": "Our copy and your icon file were identical, and a test asserted that. But your prototype draws the topbar inline, so the six were never in that file. Two copies of one mistake agree."
       },
       {
-        "label": "The four staff briefs behind this one are unblocked",
+        "label": "Both staff pages now say Klieg Console",
         "tone": "good",
-        "source": "#396, #397 and #398 are open; #399 stays held on #396, which is your own order — 05 first to 09 last, one shift each. Each was told what changed underneath it before it starts."
+        "source": "PR #431, merged c153efdf. Klieg Studio is the WORKSPACE name — the day workspaces are real that becomes something a customer types, and staff sits above workspaces."
       },
       {
-        "label": "The measuring caught itself being wrong twice before it caught the code",
+        "label": "The review found a third copy of the old title I had missed",
         "tone": "warn",
-        "source": "One check counted the studio's own topbar as a leftover and failed on a correct build; five more passed over nothing at all. Both found by running it against the old build first."
+        "source": "/admin/foundation still spelt it. My new check guarded the string that ARRIVED and not the two that LEFT — half a sweep. Fixed, and it now sweeps both directions."
+      },
+      {
+        "label": "The queue: 75 open · 18 yours · 1 urgent · 8 rotting",
+        "tone": "good",
+        "source": "Counted twice tonight by two independent readers, both 75. Rotting = open and untouched for a week. ⚠ 44 cards closed between 3am and now and only 2 were mine, so this is measured, not carried."
       }
     ]
   },
   "needsYou": [
     {
+      "id": "alert-hairline-422",
+      "issueNumber": 422,
+      "title": "One of your two staff-frame rulings needs a second word — \"darker\" has nowhere to go",
+      "state": "open",
+      "filedAt": "2026-09-02T04:20:08.100Z",
+      "productImpact": "You gave two rulings on the admin frames: the admin role pill gets colour, and the faint line between alert rows should be DARKER because you could not see it. The first is unambiguous and is queued.\n\nThe second has no obvious next step, and I would rather ask than guess. That line uses the lightest of five border colours, and all five sit inside about 2% of each other — in light mode the range is #ECECEE to #E4E4E7, which is eight steps out of 255. Moving it to the darkest one would be invisible. In DARK mode the first two are literally the same colour, so a change there would do nothing at all.\n\nSo \"darker\" cannot be satisfied inside the border palette. It needs either a properly darker grey from the text palette — a different kind of line, more visible than any border on the page — or the line stays its colour and gets thicker instead.",
+      "workedExample": "The line in question is the short vertical connector between two alert rows on Admin → Overview: it is 1 pixel wide and between 8 and 14 pixels tall, joining one alert's icon to the next.\n\nAn earlier shift measured that the lines genuinely exist at that size and still could not see them in its own screenshots — which matches what you said.\n\nIf it goes to a text grey it will read as a deliberate timeline, closer to a thin rule than to a border. If it gets thicker instead it stays a hairline in character and just becomes findable.",
+      "recommendation": "My recommendation is to see it rather than decide it in words: next shift builds both versions and puts one frame in front of you with the two side by side, and you point. It is ten minutes and it removes the guessing.\n\nNothing is blocked meanwhile — the admin pill half of that card can ship on its own.",
+      "options": [
+        {
+          "key": "a",
+          "label": "Show me both, then I'll pick",
+          "consequence": "One frame, two candidates side by side on the real page. The admin pill ships in the same shift without waiting for your answer."
+        },
+        {
+          "key": "b",
+          "label": "Make it a real line — use a text grey",
+          "consequence": "Clearly visible, and it becomes a timeline rather than a border. The strongest reading of \"darker\"."
+        },
+        {
+          "key": "c",
+          "label": "Keep the colour, make it thicker",
+          "consequence": "Stays a hairline in character; findable without introducing a new kind of line."
+        }
+      ]
+    },
+    {
       "id": "staff-modals-421",
       "issueNumber": 421,
       "title": "The staff modals are in the house palette — and the one you opened was the worst of them",
       "productImpact": "You asked for the change request modal and \"any other staff modals\" in our design language, and for the button copy to be shorter. Both are in.\n\nThe number is worth a line, because it is not the one the card had. That card said three files and 46 colour literals — written from two reports, both of which happened to be looking at the admin side. Reading it off the code instead, by taking every staff file that opens a dialog: FIVE files and 192 literals. **The modal you opened held 89 of them — more than the other four put together — and it was on no list at all.** The accounts page also turned out to hold two more dialogs (freeze and unfreeze) written straight into the page rather than in a modals file, so nothing that scanned file names could see them.\n\nWhat you will notice besides the colour: approve and deny used to be a green button and a red button, telling you which was which by hue. Now only the four actions that genuinely end something — suspend, block an IP, deny a request — wear red, and everything reversible wears the ordinary house black. Freeze is reversible; Unfreeze sits two rows below it.\n\nAnd \"New change request\" is now \"File a request\", along with the empty-state sentence that quotes it back at you.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T02:51:26.744Z",
       "workedExample": "Open Admin in DARK MODE and suspend someone.\n\nBefore: a white box appears over a dark app. The reason field is grey-on-grey. Your eye has to re-adjust for the dialog and again when it closes.\n\nAfter: the same dialog on the same dark surface as the page behind it.\n\nThe measurement behind that, because it is the one thing a single screenshot cannot show you. A dialog written with the colour WHITE baked in draws the same white whichever theme you are in — so it passes any check that looks at one theme at a time. Both themes were read and subtracted:\n\n    dialog            before (dark -> light)      after (dark -> light)\n    suspend           255,255,255 -> 255,255,255  28,28,31 -> 255,255,255\n    add credits       255,255,255 -> 255,255,255  28,28,31 -> 255,255,255\n    change role       255,255,255 -> 255,255,255  28,28,31 -> 255,255,255\n    freeze            255,255,255 -> 255,255,255  28,28,31 -> 255,255,255\n    change request    255,255,255 -> 255,255,255  28,28,31 -> 255,255,255\n\nEvery row on the left is a dialog that could not tell the two themes apart. Every row on the right changes.",
       "recommendation": "Two minutes on Admin in dark mode — open Users, click an account, and try Suspend and Add credits; then Moderation and File a request. If they look right, the answer to the question you were already holding is unchanged: do the customer surfaces start next?\n\nYour \"everything else is good for now though\" closed the staff lane apart from this, and this is now shipped. Three small cards of yours are still standing on the staff side (#422 the admin pill, #423 the topbar glyphs, #417 the console name) — none of them is a brief, all three are minutes of work, and they do not need to hold anything up.",
@@ -707,7 +734,7 @@
     {
       "id": "prototype-refresh-228",
       "title": "You dropped the prototype in yourself — step one is done, and your own check passes",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T14:35:00+10:00",
       "issueNumber": 228,
       "productImpact": "YOU DID IT, twelve minutes after the desk asked. The four files landed in the tree at 11:50 and they are committed.\n\nYOUR OWN ACCEPTANCE CHECK, run at the refreshed copy rather than taken on trust: the word *Cinema* appears 15 times where it appeared ZERO times before, and *STAFF* appears 12 times where it appeared ZERO. The rail shows eight items including Cinema, and the account menu has a STAFF group. `image-slot.js` turned out to be identical to the copy already committed, so only three of the four actually moved.\n\nIT ARRIVED EXACTLY WHERE IT MATTERED. The old card said this mattered more for 00b than it did for 00, because 00b builds the account menu and the stale copy had no STAFF group in it at all. It does now — line 189, a mono label at 8.5px beside a hairline, with a small count pill on each staff row. That is what 00b was built against tonight instead of against a guess.\n\nNothing is being asked of you on this card. It is here so the record shows the answer rather than the question.",
@@ -906,7 +933,7 @@
       "workedExample": "Concretely, on the staff audit log once the staff section lands: today a `critical` row is a red-tinted badge, a `warning` is amber, an `info` is blue, and the category beside it is one of four more tints — seven colours across two screens. After: all three severities are plain greyscale outlines except `critical`, which wears the studio's one red, and what the entry is ABOUT is carried by the action text itself (`stripe.refund.manual`), which tells you more than a colour can. The component that does this shipped tonight; the screens change when that section does.",
       "options": [],
       "recommendation": null,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T18:05:00+10:00",
       "issueNumber": 228
     },
@@ -944,7 +971,7 @@
       "workedExample": null,
       "options": [],
       "recommendation": null,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T09:40:00+10:00",
       "issueNumber": 219
     },
@@ -971,7 +998,7 @@
         }
       ],
       "recommendation": "rebase",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T15:40:00+10:00",
       "issueNumber": 190
     },
@@ -1332,11 +1359,56 @@
   ],
   "eyeItems": [
     {
+      "id": "topbar-glyphs-423-frames",
+      "title": "The six topbar icons — what shipped, what you drew, what ships now",
+      "issueNumber": 423,
+      "filedAt": "2026-09-02T04:20:08.100Z",
+      "state": "open",
+      "question": "The first sheet is the one to look at, and read it left to right: BEFORE is what was on your screen, HIS is your prototype, AFTER is tonight. Two rows are worth your attention for opposite reasons. \"What's new\" was a MEGAPHONE and yours is a SPEAKER — a different object, not a rounder corner. And the moon and the question mark are, honestly, almost identical; I am telling you that rather than letting a table of six imply six visible changes. What I would like your eye on is whether the new bug and the new speaker read clearly at the real size — the small icons in the left column of each pair are the actual 15px.",
+      "frames": [
+        {
+          "key": "crew-eye/4456f892-533e-4931-a17c-10427578cdc5.png",
+          "arm": "the six · dark",
+          "caption": "Each row is one icon three times: what shipped, your prototype's own drawing, and what ships now. The AFTER column and the HIS column are identical — that is the point. Rendered at 15px (the size the topbar actually uses) and again at 56px so you can see the difference at all."
+        },
+        {
+          "key": "crew-eye/c1ece9f8-6e98-461b-9adf-08066378ea05.png",
+          "arm": "the six · light",
+          "caption": "The same sheet in light. Nothing here is theme-dependent — this is only so the change is judged in the theme you actually work in."
+        },
+        {
+          "key": "crew-eye/8b0a0435-62bd-4ddf-807f-72778202cc1b.png",
+          "arm": "the real topbar · dark",
+          "caption": "And the bar itself in the running app: the search glyph in the field, then bug, help, what's new and the theme toggle on the right. The folder and the chevron are still Lucide because they are on your keep list — deliberately untouched, not missed."
+        }
+      ]
+    },
+    {
+      "id": "klieg-console-417-frames",
+      "title": "Both staff pages now say Klieg Console",
+      "issueNumber": 417,
+      "filedAt": "2026-09-02T04:20:08.100Z",
+      "state": "open",
+      "question": "You said to pick something more relevant and left the word to me, so this is a decision taken rather than a question handed back — one line reverses it. The taglines are gone as well: the small ADMIN above the title already says which panel you are in, and the tabs already say what is in it, so \"— everything\" was saying it a third time. Does the pair read as one tool to you, or does losing the tagline make the moderation page feel unlabelled?",
+      "frames": [
+        {
+          "key": "crew-eye/0cdd9492-f663-4735-bcb5-ac2f37498688.png",
+          "arm": "admin",
+          "caption": "Was: Klieg Studio — everything."
+        },
+        {
+          "key": "crew-eye/87012b1b-7cb7-444e-ba17-2d84a662a15b.png",
+          "arm": "moderation",
+          "caption": "Was: Klieg Studio — watch and propose. The two pages now differ by the eyebrow and the tabs alone, which is what makes them read as two views of one panel."
+        }
+      ]
+    },
+    {
       "id": "staff-modals-421-frames",
       "title": "The staff dialogs in dark mode — was a white box, is now the app's own surface",
       "issueNumber": 421,
       "filedAt": "2026-09-02T02:51:26.744Z",
-      "state": "open",
+      "state": "done",
       "question": "Two pairs, both in DARK MODE, both the same dialog before and after. What I want your eye on is the second pair rather than the first: making a white box dark is obviously right, but taking the GREEN and the AMBER out of the action buttons is a judgement, and it is the one most likely to have gone too far. Suspend now wears the one red because it locks somebody out; add-credits, promote, demote, freeze and submit all wear ordinary black. Ask yourself whether you can still tell, at a glance, which button in each dialog is the one that does the thing.",
       "frames": [
         {
@@ -1972,7 +2044,7 @@
     {
       "id": "chrome-section-00b-frames",
       "title": "The two menus, redesigned — and the six places the product is going, drawn for the first time",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T15:05:00+10:00",
       "issueNumber": 228,
       "cardId": null,
@@ -2008,7 +2080,7 @@
     {
       "id": "foundation-section-00-frames",
       "title": "The nine new parts, in both themes — and one frame that is wrong on purpose",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T14:05:00+10:00",
       "issueNumber": 228,
       "cardId": null,
@@ -2202,7 +2274,7 @@
       "id": "lobby-before-228",
       "title": "Your lobby as it stands tonight — the before pictures, so the segment you pick has something to be measured against",
       "question": "NOTHING HAS BEEN BUILT. The card above still asks you to name segment 1, and it still will after you look at these.\n\nWHY THESE EXIST. Every lobby segment ships with a before-and-after pack: the same screen, shipped against the mockup, in both light and dark. The AFTER half gets taken when a segment is built. The BEFORE half is the same photographs every time, so I took them once tonight rather than five times later — and they are also the fairest way to show you what you are choosing between.\n\nWHAT YOU ARE LOOKING AT. Home, Canvas and Library as they are right now, plus the rail. Photographed in the running app on a test account, not drawn.\n\nTHE ONE THING WORTH YOUR ATTENTION. Look at Home. That is the landing page of the studio: a title, a row of recent work, and three lines of text under the word TOOLS. It is the smallest surface in the product and it is the first thing anyone sees. Everything the design handoff draws for that page — the big composer with its six modes — is five capabilities we do not have and one (image) that is the casting entrance, which this lane is frozen out of. So a Home segment would give you the greeting, what is running right now, what just landed and who you can cast — and it would NOT give you the composer. That is the honest trade, and it is why Home is my recommendation rather than my certainty.\n\nTWO THINGS I DO NOT WANT YOU TO MISREAD.\n1. On the Canvas picture, one card shows a broken-picture symbol. That is not a bug in the product. That object was written by an old test script without saying it was an image, so the browser refuses to paint it; every real place the product saves a picture says so properly (I read all 24). It is rubbish in the test database and it will keep appearing in these shots.\n2. Two of the three Library lists are empty here because the test account has no garments and no looks — not because those pages are broken.\n\nNOTHING IS ASKED OF YOU HERE. Judge the card, not these. If they change your mind about which segment goes first, that is exactly what they are for.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-29T19:05:00+10:00",
       "issueNumber": 228,
       "frames": [
@@ -2311,7 +2383,7 @@
       "id": "trigger-cluster-court-190-strip",
       "title": "56 sends, 53 refusals, 3 pictures — the wall your edgy briefs are hitting (#190)",
       "question": "This is the whole test in one image: seven rows, one per wording, eight sends each, left to right in the order they were sent. Every grey tile is a refusal from the engine's content checker. Row B1 and row B2 are THE SAME TEXT sent twice — they came back 7 refused and 8 refused, which is the measurement of how much this varies for no reason at all, and it is the number every other row has to beat. None of them beats it. THE QUESTION is on the card, not here: whether to try once more on a brief that isn't already at the ceiling, or to call it and lean on Retry. But look at the second frame first — that is one of the three that got through, and it is your brief almost sentence for sentence: the shaved side with the scalp crosses, the spiked eye harness with her hand raised to it, the lace glove, the septum and lip piercings, the cross under the eye, the buckled choker and the strap down the front, the calligraphy on both arms. The engine can absolutely cast this. The checker is the whole problem.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-28T15:40:00+10:00",
       "issueNumber": 190,
       "frames": [
@@ -2810,6 +2882,20 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-431-klieg-console",
+      "title": "The staff pages stop borrowing the workspace name",
+      "status": "merged",
+      "note": "#417 — both bars now read Klieg Console, built from the brand name rather than typed out",
+      "prNumber": 431
+    },
+    {
+      "id": "pr-430-topbar-glyphs",
+      "title": "The topbar icons are the prototype's drawings, not a redraw of them",
+      "status": "merged",
+      "note": "#423 — you said they had not changed; you were right about all six",
+      "prNumber": 430
+    },
     {
       "id": "pr-427-staff-modals",
       "title": "The staff modals join the design language, and your button gets shorter",
@@ -4180,26 +4266,48 @@
     79,
     80,
     81,
-    86,
     82,
     83,
     84,
     85,
+    86,
     87,
     88,
     89,
     90,
     91,
     92,
-    93
+    93,
+    94,
+    95
   ],
   "nextUp": {
-    "readAt": "2026-09-02T02:51:36.664Z",
+    "readAt": "2026-09-02T04:20:31.999Z",
     "items": [
       {
         "issueNumber": 231,
         "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
         "urgent": true
+      },
+      {
+        "issueNumber": 11,
+        "title": "The framing trim needs ROLLS, not a build — his eye on strips from his own flagged sheets",
+        "urgent": false
+      },
+      {
+        "issueNumber": 243,
+        "title": "#232's RENDER half is unproven: the creature mouth line needs a fixture whose seed does NOT name the anatomy",
+        "urgent": false
+      },
+      {
+        "issueNumber": 252,
+        "title": "The MAX author is refused by our own guards 54% of the time and loses its author entirely 21% — and the sheet still says 'Max'",
+        "urgent": false
+      },
+      {
+        "issueNumber": 263,
+        "title": "Every path that can reach main without a PR — enumerate them",
+        "urgent": false
       },
       {
         "issueNumber": 391,
@@ -4214,6 +4322,11 @@
       {
         "issueNumber": 401,
         "title": "A credit charge does not record WHAT it made — his toolKind column (split from card 387 item 1)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 404,
+        "title": "The plan card's blurb slot is empty on purpose — his one-line positioning statement, best written after the ladder folds",
         "urgent": false
       },
       {
@@ -4237,18 +4350,8 @@
         "urgent": false
       },
       {
-        "issueNumber": 417,
-        "title": "The staff bar reads Klieg Console, and stops borrowing a name that will belong to a customer",
-        "urgent": false
-      },
-      {
         "issueNumber": 422,
         "title": "His two staff-frame rulings: the admin pill gets colour, and the alert hairline goes darker",
-        "urgent": false
-      },
-      {
-        "issueNumber": 423,
-        "title": "The topbar icons are not the prototype's — six glyphs redrawn, and the guard compared two copies of the same mistake",
         "urgent": false
       },
       {
@@ -4257,8 +4360,18 @@
         "urgent": false
       },
       {
-        "issueNumber": 426,
-        "title": "His rename: Usage says 'frames' and should say 'generations' — the parent of the per-tool breakdown (reply #85)",
+        "issueNumber": 429,
+        "title": "Two new background-work switches: Small fixes and Casting upkeep, derived from labels already on the cards",
+        "urgent": false
+      },
+      {
+        "issueNumber": 432,
+        "title": "The house icon set is shown on the specimen sheet, derived from the map — his 'fix it', and 28 is not a cap",
+        "urgent": false
+      },
+      {
+        "issueNumber": 435,
+        "title": "Casting hero column + Cast settings modal (brief 10) — the left column is centred, so it floats beside a full deck",
         "urgent": false
       }
     ]
