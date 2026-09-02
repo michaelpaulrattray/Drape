@@ -1227,8 +1227,8 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
 /**
  * ⚠ THE FRAMING TRIM IS RETIRED, AND THESE ARE THE ARMS THAT OUTLIVE IT.
  *
- * The founder judged the framing on his own flagged sheets (2026-09-03, card
- * #11, verbatim: *"11 heads look fine."*) and rule 15 of
+ * The founder judged the framing on his own flagged sheets (2026-09-03 AEST,
+ * card #11, verbatim: *"11 heads look fine."*) and rule 15 of
  * `PROMPT_AUTHOR_RULING_2026-08-26.md` retires the trim on that word. Deleting
  * it took `framingTrimStep.test.ts`'s sheet arm with it — **the one arm that
  * asserted every frame on a sheet leaves at ONE size** — so the contract it held

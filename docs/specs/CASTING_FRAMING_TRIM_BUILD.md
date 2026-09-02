@@ -1,8 +1,8 @@
 # THE FRAMING TRIM — build design
 
-⚠ **RETIRED 2026-09-03 (card #11). THIS DOCUMENT IS HISTORY, NOT LAW.**
+⚠ **RETIRED 2026-09-03 AEST (card #11). THIS DOCUMENT IS HISTORY, NOT LAW.**
 
-The founder judged the framing on his own flagged sheets, 2026-09-02, and his
+The founder judged the framing on his own flagged sheets, 2026-09-02 AEST, and his
 whole word was: **"11 heads look fine."** Read with rule 15 of
 `PROMPT_AUTHOR_RULING_2026-08-26.md` — *if a stated framing sentence holds head
 size inside the trim's own bar, the trim retires* — that closes the road this
@@ -17,7 +17,9 @@ the service in the same act). **What SURVIVES and is deliberate:** the
 `sourceKey` column and `candidateRetention.ts`'s sweep of it — rows written
 while the flag was live still point at real R2 objects, and dropping the column
 would orphan them. `server/castingV2/framingTrimRetirement.test.ts` holds the
-retirement; its arms are driven by `scripts/_11-sabotage-disposable.mts`.
+retirement; its arms are driven by `scripts/_11-sabotage-disposable.mts`,
+which is COMMITTED rather than discarded so the seven sabotages can be re-run
+by the next seat rather than re-derived from this sentence.
 
 **Nothing below this line was changed.** It is kept because a road that leaves
 no trace is how the next seat re-derives it.

@@ -325,7 +325,7 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
       library blocks below were written to destroy, arrived at by a third door.
 
       ⚠ **NOTHING WRITES ONE ANY MORE AND THAT MAKES THIS LINE MATTER MORE, NOT
-      LESS** (2026-09-03, card #11 — the founder retired the trim on his own eye).
+      LESS** (2026-09-03 AEST, card #11 — the founder retired the trim on his own eye).
       The keys that exist were written while the flag was live and they are now
       the whole population, closed and unable to grow. A sweep that quietly
       stopped covering them would strand every one, with no new row ever arriving

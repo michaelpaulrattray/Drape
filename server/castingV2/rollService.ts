@@ -878,7 +878,7 @@ export async function createRoll(
           EVERY FRAME RENDERS AT THE SIZE IT IS DELIVERED AT, and this line is
           the whole of where that is decided.
 
-          ⚠ It was a ternary until 2026-09-03: the framing trim rendered larger
+          ⚠ It was a ternary until 2026-09-03 (AEST): the framing trim rendered larger
           (1536×2304) so its crop was never an upscale, then cut and downscaled
           to `compiled.size`. **The founder retired the trim on his own eye**
           (#11, verbatim: *"11 heads look fine."*) under rule 15 of
@@ -1207,7 +1207,7 @@ export async function dispatchCandidate(input: {
     }
 
     /*
-      ⚠ THE FRAMING TRIM STOOD HERE AND IS RETIRED (2026-09-03, card #11).
+      ⚠ THE FRAMING TRIM STOOD HERE AND IS RETIRED (2026-09-03 AEST, card #11).
 
       The founder judged the framing on his own flagged sheets — verbatim,
       *"11 heads look fine."* — which is rule 15 of
@@ -1229,7 +1229,7 @@ export async function dispatchCandidate(input: {
     const stored = await store({ bytes: image.bytes, contentType: image.contentType });
 
     /*
-      ⚠ AND THE KEPT ORIGINAL WENT WITH IT (2026-09-03, card #11).
+      ⚠ AND THE KEPT ORIGINAL WENT WITH IT (2026-09-03 AEST, card #11).
 
       `sourceKey` held the UNTRIMMED frame the delivered one was cut from
       (migration 0053), and its whole reason was that a crop only ever crops IN:

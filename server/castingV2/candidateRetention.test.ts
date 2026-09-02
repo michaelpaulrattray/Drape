@@ -881,7 +881,7 @@ describe("abandoning a sheet releases it, rather than waiting for a sweep", () =
  * above exist to destroy, arrived at by a third door — so it is on the same
  * manifest, in the same transaction, and never gated on anything.
  *
- * ⚠ **THE TRIM THAT WROTE THESE IS RETIRED (2026-09-03, card #11) AND THAT
+ * ⚠ **THE TRIM THAT WROTE THESE IS RETIRED (2026-09-03 AEST, card #11) AND THAT
  * RAISES THE STAKES OF THIS FILE RATHER THAN LOWERING THEM.** No new `sourceKey`
  * is ever written again, so the population is CLOSED: every key that exists was
  * written in the window the flag was live on the founder's account. A sweep that
@@ -925,7 +925,7 @@ describe("a candidate's kept original purges with it", () => {
     /*
       This arm read "purges it whatever the trim flag says" and set
       `CASTING_FRAMING_TRIM_SCOPE=off` around itself. The founder retired the
-      framing trim on his own eye (2026-09-03, card #11, verbatim: "11 heads look
+      framing trim on his own eye (2026-09-03 AEST, card #11, verbatim: "11 heads look
       fine."), so the flag is gone and there is no state left to set.
 
       ⚠ **The arm is kept and its stakes went UP.** The writer is gone, so the

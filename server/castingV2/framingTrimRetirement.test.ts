@@ -9,7 +9,7 @@
  * delivers — keeping the uncut original at `sourceKey` so a later framing change
  * could be a re-trim rather than a re-render.
  *
- * The founder judged the framing on his own flagged sheets, 2026-09-02, and his
+ * The founder judged the framing on his own flagged sheets, 2026-09-02 AEST, and his
  * word was the whole of it: **"11 heads look fine."** Rule 15 of
  * `PROMPT_AUTHOR_RULING_2026-08-26.md` had been written against exactly that
  * question — *if a stated framing sentence holds head size inside the trim's own
