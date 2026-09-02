@@ -540,6 +540,77 @@ describe("§8 — the feed is full width and does not trap the wheel", () => {
   });
 });
 
+/* ------------------------- §8b — the connector he could not see (#422) */
+
+/**
+ * His ruling, 2026-09-02, verbatim: **"D — the darker line"** — the alert
+ * connector moves off the border scale and onto the line scale.
+ *
+ * ⚠ **The arm exists because nothing about this line LOOKS exceptional.**
+ * `.dp-ov__alertline` sits in a sheet whose every other rule is a divider at
+ * a border token, so a later shift tidying for consistency would return it to
+ * `--border` and no test would notice — the founder would simply stop being
+ * able to see it again, which is the exact complaint that produced the
+ * ruling.
+ *
+ * ⚠ **The second arm is the more important one and it guards the OTHER
+ * direction**: the dividers must NOT follow the connector onto the darker
+ * token. A divider separates and is right to be quiet; a connector is meant to
+ * be followed. If this exception ever spreads, the distinction it rests on is
+ * gone and his ruling has been misread as "our lines were too faint".
+ *
+ * ⚠ **The expected token is hand-written on both sides, deliberately.** If the
+ * assertion and its expected value shared one reader, the arm would pass while
+ * measuring nothing — the failure the icon guard shipped for months.
+ */
+describe("§8b — the alert connector is a line, and the dividers are not", () => {
+  /* Read a whole rule block by selector, so a matcher cannot drift into the
+     neighbouring rule the way an indexOf-to-indexOf slice can. */
+  const rule = (sheet: string, selector: string) => {
+    const at = sheet.indexOf(`\n${selector} {`);
+    if (at === -1) throw new Error(`section07 guard: no rule for ${selector}`);
+    const close = sheet.indexOf("\n}", at);
+    if (close === -1) throw new Error(`section07 guard: unterminated ${selector}`);
+    return sheet.slice(at, close);
+  };
+
+  const FOUNDATION = read(
+    path.join(HERE, "..", "..", "..", "foundation", "foundation.css"),
+  );
+
+  it("the connector is painted from the line scale, on his pick", () => {
+    expect(rule(CSS, ".dp-ov__alertline")).toContain("background: var(--lineStrong)");
+  });
+
+  it("POSITIVE CONTROL: the matcher fires on the token that was here", () => {
+    const was = "\n.dp-ov__alertline {\n  flex: 1;\n  background: var(--border);\n}";
+    expect(rule(was, ".dp-ov__alertline")).not.toContain(
+      "background: var(--lineStrong)",
+    );
+  });
+
+  it("the exception did NOT spread — every divider stays on the soft token", () => {
+    for (const divider of [
+      ".dp-topbar__divider",
+      ".dp-staffbar__rule",
+      ".dp-staffbar__divide",
+    ]) {
+      expect(rule(FOUNDATION, divider)).toContain("background: var(--borderSoft)");
+    }
+  });
+
+  it("POSITIVE CONTROL: that sweep fires when a divider takes the connector's token", () => {
+    const spread = "\n.dp-topbar__divider {\n  width: 1px;\n  background: var(--lineStrong);\n}";
+    expect(rule(spread, ".dp-topbar__divider")).not.toContain(
+      "background: var(--borderSoft)",
+    );
+  });
+
+  it("POSITIVE CONTROL: the reader throws rather than passing on a missing rule", () => {
+    expect(() => rule(CSS, ".dp-ov__nosuchline")).toThrow(/no rule for/);
+  });
+});
+
 /* -------------------------------------- §9 / tokens — the contrast trap */
 
 describe("the --error family is used by role, not by name", () => {

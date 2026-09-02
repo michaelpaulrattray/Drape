@@ -646,12 +646,35 @@
   height: 12px;
 }
 
+/*
+  The connector between stacked alert tiles.
+
+  ⚠ **It is painted from the LINE scale, not the border scale, on the founder's
+  own pick** (#422, 2026-09-02, verbatim: *"D — the darker line"*), after he
+  reported he could not see it at all. `--border` gives 19/255 of gap against
+  the card behind it in light and 16/255 in dark — a contrast ratio of 1.18 and
+  1.22, which is why it read as nothing. `--lineStrong` is 55/255 and 57/255,
+  ratios 1.67 and 2.31.
+
+  ⚠ **Do not "tidy" this back to `--border` for consistency with the dividers
+  around it.** A divider SEPARATES and is right to be quiet; this line is meant
+  to be FOLLOWED from one alert to the next, which is a different job. That
+  distinction is the whole reason the exception exists — it is the only
+  connector in the tree, and every other 1px rule in the product (the topbar
+  and staff-bar dividers, at `--borderSoft`) is a separator and stays where it
+  is.
+
+  ⚠ **And widening it is not a substitute** — measured before he chose:
+  doubling the width leaves the contrast ratio at 1.18/1.22, identical to
+  today, because ink and colour gap are different axes. That option was put to
+  him and he declined it.
+*/
 .dp-ov__alertline {
   flex: 1;
   width: 1px;
   min-height: 8px;
   margin: 3px 0;
-  background: var(--border);
+  background: var(--lineStrong);
 }
 
 .dp-ov__alertbody {
