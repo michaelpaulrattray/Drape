@@ -96,7 +96,14 @@ keeps its capitals; an initialism is not Title Case.
 **c. `RoleBadge` → `RolePill`.** The role dialog drew a purple `admin` crown and
 a blue `moderator` shield inside a dialog this change just made monochrome.
 `features/staff`'s `RolePill` already existed, is already greyscale, and its own
-docblock rules on this case. Measured before it was believed: **`RoleBadge`'s
+docblock rules on this case. ⚠ **Both halves of that clause expired on
+2026-09-02 (#422): `RolePill` carries accent for `admin` now, and its docblock
+rules the other way.** The swap itself is unaffected and still correct — it was
+about seven tints collapsing to one rule in one function, and `admin` wearing a
+single accent by his ruling is not a return to the purple crown. In this dialog
+only the LEFT pill can ever show it: `targetRole` is typed `"user" | "moderator"`,
+so it never draws two accents facing each other. Measured before it was believed:
+**`RoleBadge`'s
 only consumer in the product is that dialog** — `UserTable.tsx` imports
 `formatDate` and `getUserStatus` from `UserBadges` and nothing else, because
 brief 06 already moved the table to `StatePill`. `StatusBadge` had **zero**

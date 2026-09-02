@@ -448,21 +448,83 @@ describe("brief 06 §6 — loading and empty are states, not gaps", () => {
   });
 });
 
-describe("brief 06 §4 — status may carry accent, a role may never", () => {
+/**
+ * ⚠ **THIS BLOCK WAS INVERTED, NOT DELETED** (#422, 2026-09-02).
+ *
+ * It used to assert *no role pill ever carries accent*, and all three of its
+ * assertions banned what the founder then asked for: **`admin` carries
+ * colour**, because who has the keys is worth spotting fast. An arm removed to
+ * let a change through stops guarding the thing it was written for — so the
+ * rule it holds is now *exactly `admin`, and no other role*, which is a
+ * NARROWER statement than the one it replaced and still refuses the thing the
+ * original was afraid of: a second tinted role arriving in good faith.
+ *
+ * ⚠ **What a source read cannot see**, said rather than implied: whether the
+ * accent is legible against the neighbouring `suspended` pill, which wears the
+ * SAME tone one line away. That was DRIVEN and put in front of his eye.
+ */
+describe("brief 06 §4 — status may carry accent, and exactly ONE role does", () => {
+  /** `RolePill`'s body, comments stripped — the subject of the three arms below. */
+  const rolePillBody = () => {
+    const staffTable = code(read("features/staff/staffTable.tsx"));
+    const start = staffTable.indexOf("export function RolePill");
+    expect(start, "the arm is reading nothing — RolePill is not in this file").toBeGreaterThan(-1);
+    const body = staffTable.slice(start, start + 400);
+    expect(body, "the arm read a truncated body").toContain("StatusPill");
+    return body;
+  };
+
   it("the colour rule lives in ONE function, so eleven surfaces cannot each decide it", () => {
     const staffTable = code(read("features/staff/staffTable.tsx"));
     expect(staffTable, "the arm is reading nothing").toContain("export function StatePill");
-    expect(
-      staffTable,
-      "RolePill must be greyscale by construction — not by a caller passing attention={false}",
-    ).toMatch(/export function RolePill[\s\S]{0,300}tone="neutral"/);
-    expect(
-      staffTable.slice(staffTable.indexOf("export function RolePill")),
-      "RolePill must not take an attention argument at all",
-    ).not.toContain("attention");
+
+    const body = rolePillBody();
+    expect(body, "RolePill must still be able to render the greyscale tone").toContain(
+      '"neutral"',
+    );
+    expect(body, "RolePill must be able to render the accent his ruling asked for").toContain(
+      '"accent"',
+    );
   });
 
-  it("no surface tints a role pill itself", () => {
+  it("the exception is decided by VALUE and is exactly `admin` — no other role", () => {
+    const body = rolePillBody();
+
+    expect(body, "the accent must be chosen from the role's value, not handed in").toMatch(
+      /role\s*===\s*"admin"/,
+    );
+
+    /*
+      The set of role literals RolePill names. `admin` is his one carve-out; a
+      second name appearing here is a second tinted role, which is precisely
+      what brief 06 §4 exists to refuse.
+    */
+    const named = [...body.matchAll(/role\s*===\s*"([a-z]+)"/g)].map((m) => m[1]);
+    expect(named, "RolePill names no role at all — the exception is gone").toContain("admin");
+    expect(
+      [...new Set(named)],
+      "a role other than `admin` is being singled out — §4 allows exactly one",
+    ).toEqual(["admin"]);
+
+    /* POSITIVE CONTROLS, BOTH DIRECTIONS. */
+    expect(
+      [...'return <StatusPill tone={role === "admin" || role === "moderator" ? "accent" : "neutral"}>'.matchAll(
+        /role\s*===\s*"([a-z]+)"/g,
+      )].map((m) => m[1]),
+      "a second tinted role must be visible to this matcher",
+    ).toEqual(["admin", "moderator"]);
+    expect(
+      'return <StatusPill tone="neutral">{role}</StatusPill>;',
+      "re-greying the pill must be visible to this matcher",
+    ).not.toMatch(/role\s*===\s*"admin"/);
+  });
+
+  it("a caller still cannot tint a role pill — the exception is not a prop", () => {
+    expect(
+      rolePillBody(),
+      "RolePill must not take an attention argument: his carve-out is by value, decided here",
+    ).not.toContain("attention");
+
     for (const { name, text } of tableSurfaces()) {
       const source = code(text);
       expect(source, `${name} passes attention to a role pill`).not.toMatch(

@@ -39,14 +39,29 @@ export function StatePill({
 }
 
 /**
- * A role is what someone IS, never something needing attention — so every role
- * pill is greyscale, including `admin`. This is a separate function from
- * `StatePill` on purpose: the two are one line apart in every row that has
- * both, and a shared component with an `attention` prop is how the purple
- * `admin` crown comes back.
+ * A role is what someone IS, never something needing attention — so a role pill
+ * is greyscale. ⚠ **`admin` IS THE ONE NAMED EXCEPTION, AND IT IS THE FOUNDER'S,
+ * NOT AN OVERSIGHT** (#422, 2026-09-02, his ruling on the staff frames).
+ *
+ * His reason, and it is the whole boundary: **who has the keys is worth
+ * spotting fast.** That is a security-legibility argument, not an attention
+ * one, which is exactly why it does not reopen brief 06 §4 for anything else —
+ * `user` and `moderator` stay grey, and every resting STATE stays grey.
+ *
+ * ⚠ **`admin` is the first thing in the product to wear the accent that is not
+ * a state someone must act on.** `StatusPill` has three tones — there is no
+ * greyscale-with-emphasis — so this pill wears the SAME accent as `suspended`,
+ * `frozen` and `locked`, which sit one line away in every row that has both.
+ * That collision is known and was put in front of him at the frames rather
+ * than discovered later; it is the cost of the carve-out, not a bug in it.
+ *
+ * The rule still lives in ONE function on purpose. This stays separate from
+ * `StatePill` for the original reason: a shared component with an `attention`
+ * prop is how a caller re-tints `moderator` in good faith. The exception is
+ * decided HERE, by value, and a caller cannot pass it.
  */
 export function RolePill({ role }: { role: string }) {
-  return <StatusPill tone="neutral">{role}</StatusPill>;
+  return <StatusPill tone={role === "admin" ? "accent" : "neutral"}>{role}</StatusPill>;
 }
 
 /** `#4417` — a mono id at `--faint`, never `#CCC` grey sans (§4). */

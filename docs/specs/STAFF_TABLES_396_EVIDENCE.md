@@ -102,6 +102,19 @@ when non-zero** — a red `0 SUSPENDED` is the loudest thing on the page saying
 nothing is wrong — and `admins` stays greyscale because a role is what someone
 IS.
 
+⚠ **THE TILE'S BEHAVIOUR STILL HOLDS AND THE REASON IN THAT LAST CLAUSE DOES
+NOT — superseded by his #422 ruling, 2026-09-02.** The role PILL now carries
+accent for `admin` (*"who has the keys is worth spotting fast"*), so *"a role is
+what someone IS"* no longer argues for anything: read literally today it argues
+**for** tinting this tile. The tile stays greyscale on his SEPARATE ruling in the
+same breath — **a count colours only when it is non-zero** — which is the
+`0 SUSPENDED` sentence directly above and is untouched. This paragraph is left
+standing as the record of what was measured on the day; the live sources are
+`RolePill` (`client/src/features/staff/staffTable.tsx`) and `UserStatsCards.tsx`'s
+own docblock. Stamped here because a shift grepping *why is the admins tile grey*
+lands on this file, and a superseded justification is most dangerous exactly
+where the behaviour did **not** change.
+
 ## 5 · The frames
 
 Twelve on the branch at 1440 and twelve at 1024, both themes:

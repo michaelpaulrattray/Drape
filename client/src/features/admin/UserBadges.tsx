@@ -11,10 +11,17 @@
  *   as `UserStatusBadge` and no file in the product imports that name. Brief 06
  *   moved the accounts table to `StatePill` and left this behind.
  * - `RoleBadge` had **ONE** — the role-change dialog — which now renders
- *   `features/staff`'s `RolePill`, a component that already existed, is already
- *   greyscale, and whose own docblock rules on this exact case: *"a role is
- *   what someone IS, never something needing attention … a shared component
- *   with an `attention` prop is how the purple `admin` crown comes back."*
+ *   `features/staff`'s `RolePill`, a component that already existed and holds
+ *   the colour rule for every staff surface in one place.
+ *
+ * ⚠ **This docblock used to quote `RolePill` saying every role is greyscale
+ *   INCLUDING `admin`. That sentence has a founder-named exception since #422
+ *   (2026-09-02) and the quote is removed rather than left to rot** — a
+ *   superseded rule quoted in a second file is how the rule gets re-argued by
+ *   someone reading the copy instead of the source. **`RolePill` is the source;
+ *   read it there.** What survives untouched is the reason these two badges
+ *   went: seven tints on a monochrome surface, and `admin` wearing one accent
+ *   by his ruling is not a return to that.
  *
  * `UserTable.tsx` imports `formatDate` and `getUserStatus` from this module and
  * nothing else, so the table is untouched by the deletion.

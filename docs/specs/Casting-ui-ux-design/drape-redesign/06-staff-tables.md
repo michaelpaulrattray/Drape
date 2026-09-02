@@ -135,6 +135,8 @@ Where a column is genuinely two facts stacked (Users' name-over-email), keep the
 - `suspended`, `frozen`, `locked`: `--accentWash` / `--accentLine` / `--accentInk`. These are what a moderator is scanning for.
 - Every role pill — user, moderator, admin — greyscale. A role is what someone *is*, not something needing attention. `RoleBadge`'s current tints go.
 
+⚠ **SUPERSEDED FOR ONE VALUE — `admin` CARRIES ACCENT** (founder ruling, #422, 2026-09-02). The line above is kept as the origin because it is still the rule for every other role; what changed is one carve-out and its reason: **who has the keys is worth spotting fast.** That is a security-legibility argument, not an attention one, which is why it does not reopen this section for anything else — `user` and `moderator` stay greyscale, every resting STATE stays greyscale, and the zero rule below is untouched. ⚠ `admin` is the first thing in the product to wear the accent that is **not a state someone must act on**, and it wears the same accent as `suspended`/`frozen`/`locked` one line away, because `StatusPill` has no greyscale-with-emphasis tone. The rule lives in `RolePill` (`client/src/features/staff/staffTable.tsx`) and is pinned by `section06-guard.test.ts` as *exactly `admin`, and no other role*.
+
 Ids stay mono at `--faint`: `#4417`, not `#CCC` grey sans.
 
 ---
@@ -212,7 +214,7 @@ Opens with a full-width `--rule` hairline, then, in order:
 
 **Behaviour and tokens**
 - [ ] Every existing filter, sort, page and action behaves exactly as before.
-- [ ] Status pills accent only for attention states; roles greyscale.
+- [ ] Status pills accent only for attention states; roles greyscale **except `admin`, which carries accent by his #422 ruling** (see §4).
 - [ ] Zero hex literals across all eleven surfaces; `token-guard` extended to cover them.
 - [ ] Both themes — these surfaces have never been dark-tested.
 

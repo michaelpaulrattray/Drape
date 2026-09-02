@@ -241,15 +241,26 @@ export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReas
                   swap is a measured one, not a preference. `RoleBadge` drew a
                   purple `admin` crown and a blue `moderator` shield inside a
                   dialog this change just made monochrome. `features/staff`'s
-                  `RolePill` already exists, is already greyscale, and its own
-                  docblock rules on this exact thing: *"a role is what someone
-                  IS, never something needing attention."*
+                  `RolePill` already exists and holds the colour rule for every
+                  staff surface in ONE function, which is the point of the swap.
 
                   Read before it was believed: `RoleBadge`'s ONLY consumer in
                   the product is this dialog — `UserTable.tsx` imports
                   `formatDate` and `getUserStatus` from that module and nothing
                   else, because brief 06 already moved the table to `StatePill`.
                   So no other surface moves.
+
+                  ⚠ **SINCE #422 (2026-09-02) `admin` CARRIES ACCENT** — his
+                  ruling, because who has the keys is worth spotting fast. This
+                  comment used to quote the old "every role is greyscale" rule
+                  as its justification; that quote is gone rather than left to
+                  rot beside the behaviour it contradicts.
+
+                  ⚠ **Only the LEFT pill can ever show it.** `targetRole` is
+                  typed `"user" | "moderator"`, so this dialog cannot promote
+                  anyone TO admin — the before/after pair reads *accent → grey*
+                  when demoting an admin, and grey → grey otherwise. It never
+                  shows two accents facing each other.
                 */}
                 <div className="ml-auto flex items-center gap-2 text-sm">
                   <RolePill role={selectedUser.user.role} />
