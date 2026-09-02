@@ -13,11 +13,13 @@
  * honesty rule. The section renders NOTHING when no items exist — an empty
  * gallery frame would be furniture.
  *
- * ⚠ **THE `Already judged` LIST LEFT THIS SECTION (#292).** It was the second
- * of three history lists on one page, which he read as *"double ups"*. Judged
- * items are still on the page — tagged *You judged* in the one
- * `CrewRecentHistory` block — so nothing he decided has been dropped; there is
- * simply one place for the past instead of three.
+ * ⚠ **THE `Already judged` LIST LEFT THIS SECTION (#292) AND THEN LEFT THE PAGE
+ * (#438).** It was the second of three history lists, which he read as *"double
+ * ups"*; the three became one, and on 2026-09-02 he deleted the one — by then
+ * it held 281 rows and was the fourth telling of *done*. **Nothing he decided
+ * is lost**: judged eye items keep their `state` in `crew-briefing.json`, which
+ * is in git, and what SHIPPED is in `WORKING NOW` and in `THE PROGRAM`'s steps.
+ * What went is a fourth display of it, not the record.
  *
  * # ⚠ THIS IS THE ONE SECTION THAT BREAKS THE READING COLUMN (brief 08 §2)
  *

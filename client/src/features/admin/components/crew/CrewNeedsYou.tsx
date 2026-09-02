@@ -12,12 +12,13 @@
  * "yes" without reading the alternatives, and read the alternatives when "yes"
  * is not obviously right.
  *
- * ⚠ **THE ANSWERED LIST LEFT THIS SECTION (#292).** It used to collapse into a
- * short list at the bottom headed *Recently answered* — one of THREE history
- * lists stacked down the page, which he read as *"double ups"*. Answered and
- * done cards are still on the page and still his memory of what he decided;
- * they are in the one `CrewRecentHistory` block with everything else already
- * dealt with. Nothing is deleted, and this section is now only what is open.
+ * ⚠ **THE ANSWERED LIST LEFT THIS SECTION (#292) AND THEN LEFT THE PAGE
+ * (#438).** It used to collapse into a short list at the bottom headed *Recently
+ * answered* — one of THREE history lists stacked down the page, which he read as
+ * *"double ups"*. The three became one; on 2026-09-02 he deleted the one, which
+ * by then held 281 rows. **An answered card is still recorded** — its `state`
+ * lives in `crew-briefing.json` and the desk sweep still promotes it to `done`
+ * from the issue's own state. This section is, as before, only what is open.
  *
  * ⚠ **BRIEF 08 KEEPS THE EMPTY STATE, AND SAYS SO IN AS MANY WORDS (#398 §4).**
  * Brief 07's rule is that a section with nothing to show disappears. That rule

@@ -254,15 +254,26 @@ pins against the JSX beside it** (`section08-guard.test.ts`). It is kept here
 because it is the order he first agreed to and the reasoning below it is still
 the reasoning; what follows is what has happened to it since.
 
-**As of #437 (2026-09-02) the page reads: the program → working now → next up →
-background work → needs you → for your eyes → what is not done → already dealt
-with → problems → general.** Five sections below did not exist when this list
-was written — WORKING NOW (#272), BACKGROUND WORK (#277), NEXT UP (#290),
-ALREADY DEALT WITH (#292) and GENERAL (#293, which replaced the journal named
-in item 1) — and the founder has since moved two of them: **THE PROGRAM to the
-top whole** (*"yes the easier fix"*, over a split that would have lifted only
-the mission line) and **NEXT UP up under WORKING NOW** (*"moving the next up
-card in the crew tab under working now"*).
+**As of #438 (2026-09-02) the page reads: the program → working now → next up →
+background work → needs you → for your eyes → what is not done → problems →
+general.** Four sections below did not exist when this list was written —
+WORKING NOW (#272), BACKGROUND WORK (#277), NEXT UP (#290) and GENERAL (#293,
+which replaced the journal named in item 1) — and the founder has since moved
+two of them: **THE PROGRAM to the top whole** (*"yes the easier fix"*, over a
+split that would have lifted only the mission line) and **NEXT UP up under
+WORKING NOW** (*"moving the next up card in the crew tab under working now"*).
+
+⚠ **A FIFTH EXISTED FOR SIX DAYS AND HE DELETED IT: `ALREADY DEALT WITH` (#292,
+gone at #438).** His question, verbatim: *"do you think already dealt with and
+not done yet are card we even need? i can see progress in working now it shows
+me whats shipped i can also see how my features are travelling under the
+program?"* Measured before answering, and the two sections were in opposite
+states: **ALREADY DEALT WITH rendered 281 rows** — the fourth telling of *done*,
+after WORKING NOW's closed shifts and THE PROGRAM's ticked steps — while **THE
+PIPELINE rendered none**, because nothing was stuck. So the first went and the
+second stayed, with an empty line that now says what the section is FOR rather
+than that it is empty. **No record was lost**: `crew-briefing.json` still
+carries every merged pipeline row and every answered card, and it is in git.
 
 ⚠ **This correction exists because `AdminCrew.tsx:2` names this document as the
 page's design spec**, so an agent planning against §6 was planning against an

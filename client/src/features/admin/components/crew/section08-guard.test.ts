@@ -147,7 +147,9 @@ describe("§1 — a paragraph's order does not move", () => {
     ["needs you", "<CrewNeedsYou"],
     ["for your eyes", "<CrewEyeGallery"],
     ["what is not done", "<CrewPipeline"],
-    ["already dealt with", "<CrewRecentHistory"],
+    /* ⚠ `["already dealt with", "<CrewRecentHistory"]` was here and is GONE by
+       his own word (#438). The section is not re-ordered — it is deleted, and
+       §7 below asserts its absence rather than this list asserting its place. */
     ["problems", "<CrewProblems"],
     ["general", "<CrewGeneral"],
   ];
@@ -340,29 +342,65 @@ describe("§7 — there is no SECOND progress number beside the milestone bar", 
   });
 });
 
-describe("§7 — history is ONE block and is not split back apart", () => {
-  it("exactly one component reads the folded history", () => {
+/**
+ * ⚠ **REWRITTEN, NOT DELETED (#438, 2026-09-02).** This block asserted that
+ * history was ONE list and that exactly one component read it — #292's
+ * consolidation. **He then deleted the one**, so the arm's subject no longer
+ * exists and an arm that is removed to let a change through stops guarding
+ * what it was written for. It now asserts the stronger thing: the section is
+ * GONE, and none of the FOUR headings can come back.
+ *
+ * ⚠ **Brief 08 §7 says *"If the diff … splits history back apart, it has gone
+ * wrong"*, and this is not that.** One list did not become two — it became
+ * none, which is #292's own argument carried to its end. A future shift
+ * reading §7 or #292 alone would restore the block; these arms are what stop
+ * it, and they are why the clause is answered here in code rather than only
+ * in a commit message.
+ */
+describe("§7 — history is not a section on this page at all (#438)", () => {
+  it("no component reads the folded history, and the derivations are gone", () => {
     const readers = surfaces().filter((f) => code(f.text).includes("recentHistory("));
-    expect(readers.map((f) => f.name)).toEqual(["CrewRecentHistory.tsx"]);
+    expect(readers.map((f) => f.name)).toEqual([]);
+    /* The helper module too — dead code kept alive by its own tests is how a
+       dead thing keeps a live reputation (the credit-velocity lesson). */
+    const types = read(path.join(HERE, "crewTypes.ts"));
+    expect(types).not.toMatch(/export function (recentHistory|foldHistory)/);
+  });
+
+  it("the component file itself is gone from the directory", () => {
+    expect(section().map((f) => f.name)).not.toContain("CrewRecentHistory.tsx");
   });
 
   /*
-    POSITIVE CONTROL: the three headings #292 deleted. If a later brief brings
-    one back, this arm names it — and the control proves the matcher works by
-    finding the words in a string that does contain them.
+    POSITIVE CONTROL: the three headings #292 deleted, plus the one #438 did.
+    If a later brief brings any back, this arm names it — and the control
+    proves the matcher works by finding the words in a string that has them.
   */
-  const DEAD_HEADINGS = ["Recently answered", "Already judged", "Recently landed"];
+  const DEAD_HEADINGS = [
+    "Recently answered",
+    "Already judged",
+    "Recently landed",
+    "Already dealt with",
+  ];
   it("the dead-heading matcher fires on a planted heading", () => {
-    const planted = 'const h = "Recently answered";';
+    const planted = 'const h = "Already dealt with";';
     expect(DEAD_HEADINGS.some((h) => planted.includes(h))).toBe(true);
   });
 
-  it("none of the three deleted history headings has come back", () => {
+  it("none of the four deleted history headings has come back", () => {
     for (const file of surfaces()) {
       for (const heading of DEAD_HEADINGS) {
         expect(code(file.text), `${file.name} brought back "${heading}"`).not.toContain(heading);
       }
     }
+  });
+
+  /*
+    ⚠ AND THE FLOOR: an absence sweep over an empty population is green. Both
+    arms above read `surfaces()`, so this proves the population is real.
+  */
+  it("the surface population is not empty", () => {
+    expect(surfaces().length).toBeGreaterThan(8);
   });
 });
 
@@ -391,6 +429,52 @@ describe("§4 + §6 — the Needs You empty state STAYS (brief 07's rule reverse
   it("the eye gallery still returns null when nothing is open", () => {
     const gallery = code(read(path.join(HERE, "CrewEyeGallery.tsx")));
     expect(gallery).toMatch(/if\s*\(open\.length === 0\)\s*return null/);
+  });
+});
+
+/**
+ * ⚠ **THE PIPELINE'S EMPTY LINE SAYS WHAT THE SECTION IS FOR (#438).**
+ *
+ * He asked whether this section was one he needed. It was rendering NOTHING
+ * because every pipeline row was merged — and *"nothing is stuck"* and *"this
+ * section is broken"* looked identical, which is the ambiguity §6 protects
+ * `CrewNeedsYou` from. The old line described the rows (*"Nothing is in flight.
+ * Everything the crew has started has landed."*); the new one names what a FULL
+ * section would mean, so an empty box teaches him to read a populated one.
+ *
+ * ⚠ **What these arms CANNOT see**, said rather than implied: whether the well
+ * reads correctly nested inside the pipeline's own card, and whether a
+ * populated section still draws its rows. Both were DRIVEN in the running app,
+ * both themes, with a non-merged fixture row — an empty-state arm alone is
+ * green when the section is broken.
+ */
+describe("§6 — THE PIPELINE keeps an honest empty state (#438)", () => {
+  const pipeline = code(read(path.join(HERE, "CrewPipeline.tsx")));
+
+  it("renders the sentence rather than nothing, and says what the section is for", () => {
+    expect(pipeline).toContain("Nothing is stuck.");
+    expect(pipeline).toContain("Blocked work and anything waiting on you appears here.");
+  });
+
+  it("the old line, which described the rows instead, is gone", () => {
+    expect(pipeline).not.toContain("Everything the crew has started has landed");
+  });
+
+  it("draws it as a well block, the same treatment as the Needs You empty state", () => {
+    expect(pipeline).toMatch(/notDone\.length === 0 \?[\s\S]{0,400}dp-crew__well/);
+  });
+
+  /* ⚠ THE ROWS ARE THE OTHER HALF: an empty-state change must not become an
+     empty SECTION. The populated branch still maps `notDone`. */
+  it("a populated pipeline still draws its rows", () => {
+    expect(pipeline).toMatch(/notDone\.map\(\(item\) => \(/);
+    expect(pipeline).toContain("<PipelineRow");
+  });
+
+  it("POSITIVE CONTROL: the empty-state matcher fires on the line that was here", () => {
+    const was = "Nothing is in flight. Everything the crew has started has landed.";
+    expect(was).toContain("Everything the crew has started has landed");
+    expect(was).not.toContain("Nothing is stuck.");
   });
 });
 
@@ -484,12 +568,49 @@ describe("§4 — two faces, and every measured value is mono", () => {
     }
   });
 
+  /*
+    ⚠ THE ISSUE-NUMBER HALF WAS PINNED TO ONE FILE AND THAT FILE IS GONE (#438).
+    It read `CrewRecentHistory.tsx`, so deleting the section would have taken
+    the assertion with it silently. The population is DERIVED now: every place
+    on this page that prints a bare `#<number>` must draw it in a mono class.
+
+    ⚠ **`CrewWorkingNow.tsx` prints `PR #{run.prNumber}` in `dp-crew__body--quiet`
+    and is EXEMPT here by name, not by accident** — a bare `#` before a PR
+    number inside a running sentence, which is a different shape from a
+    standalone id chip. It is a real §4 inconsistency (`CrewPipeline` calls a PR
+    number a measured value and monos it) and it is filed rather than fixed
+    under a card about a different section. Removing the exemption without
+    fixing that file is what this comment is here to make impossible to do
+    quietly.
+  */
+  const ISSUE_NUMBER_EXEMPT = new Set(["CrewWorkingNow.tsx"]);
   it("issue numbers, step numbers and rung keys are drawn in a mono class", () => {
     const banner = code(read(path.join(HERE, "CrewProgramBanner.tsx")));
     expect(banner).toMatch(/dp-crew__num dp-crew__stepnum/);
     expect(banner).toMatch(/dp-crew__num dp-crew__rungid/);
-    const history = code(read(path.join(HERE, "CrewRecentHistory.tsx")));
-    expect(history).toMatch(/dp-crew__mono[^"]*">#\{row\.issueNumber\}/);
+
+    let seen = 0;
+    for (const file of surfaces()) {
+      if (ISSUE_NUMBER_EXEMPT.has(file.name)) continue;
+      const body = code(file.text);
+      for (let at = body.indexOf("#{"); at > -1; at = body.indexOf("#{", at + 2)) {
+        seen += 1;
+        /* The nearest className BEFORE the number is the one drawing it. */
+        const before = body.slice(0, at);
+        const cls = before.slice(before.lastIndexOf('className="'));
+        expect(cls, `${file.name} prints an id outside a mono class`).toMatch(
+          /dp-crew__(mono|ref)/,
+        );
+      }
+    }
+    /* FLOOR: a sweep that found nothing is green for the wrong reason. */
+    expect(seen, "the id sweep read no rendered ids at all").toBeGreaterThan(2);
+  });
+
+  it("POSITIVE CONTROL: the id sweep rejects a number drawn outside a mono class", () => {
+    const planted = '<span className="dp-crew__body">#{row.issueNumber}</span>';
+    const before = planted.slice(0, planted.indexOf("#{"));
+    expect(before.slice(before.lastIndexOf('className="'))).not.toMatch(/dp-crew__(mono|ref)/);
   });
 });
 
