@@ -6,6 +6,7 @@ import { Button, ConfirmDialog, EmptyState, LeaderRow, Skeleton, TableHead } fro
 import { trpc } from "@/lib/trpc";
 import { UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
 
+import { negated, signed } from "./figures";
 import { downloadReconciliationCsv } from "./reconciliation-csv";
 import "./investigations.css";
 
@@ -59,28 +60,6 @@ interface ReconciliationSubTabProps {
 }
 
 const formatNumber = (n: number): string => n.toLocaleString();
-
-/**
- * `+2,400` / `−1,860` / `0`. The sign is the information colour used to carry
- * (his §3: *"Signs carry the direction, not colour"*).
- *
- * ⚠ **ZERO TAKES NO SIGN, AND THAT WAS A REAL DEFECT CAUGHT BY LOOKING.** The
- * first shape wrote the minus unconditionally for a spend, so an account that
- * has never spent anything read **`−0`** — a number that does not exist,
- * printed in a ledger, in the one pane whose whole job is arithmetic. Every arm
- * passed over it; the frame did not.
- *
- * The minus is U+2212, not the hyphen `toLocaleString` returns: at mono weight
- * 400 a hyphen is visibly shorter than the plus it sits under, and a column of
- * signed figures is where that shows.
- */
-const signed = (n: number): string => {
-  if (n === 0) return "0";
-  return n > 0 ? `+${formatNumber(n)}` : `−${formatNumber(Math.abs(n))}`;
-};
-
-/** A figure that is a deduction by nature — spent, refunded out. Zero stays 0. */
-const negated = (n: number): string => (n === 0 ? "0" : `−${formatNumber(Math.abs(n))}`);
 
 /** Sentence case for a machine label — `admin_add` and `castingRoll` both. */
 function sentenceCase(raw: string): string {

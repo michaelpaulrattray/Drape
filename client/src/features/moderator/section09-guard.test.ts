@@ -230,6 +230,50 @@ describe("brief 09 §2, §4b, §4d — verdict before workings, and once", () =>
     expect(large, `more than one large figure: ${large.join(", ")}`).toHaveLength(1);
   });
 
+  it("the sign rule has ONE definition and every surface that shows a figure uses it", () => {
+    /*
+      ⚠ **THE SWEEP STOPPED ONE FILE SHORT, TWICE** (#412 re-review, findings 1
+      and 3 — which are the same finding seen from two sides).
+
+      The rule started in the reconciliation pane, was swept into the flagged
+      card on the first review, and still missed `CreditsSubTab`'s Amount cell.
+      A THIRD copy was the wrong answer, so the rule left both files for
+      `figures.ts` — working law 4.
+
+      This arm is derived rather than typed: every `.tsx` in the section that
+      renders a signed or grouped figure must IMPORT the helper, and no file may
+      declare its own. A fourth surface is measured the moment it exists.
+    */
+    const FIGURES = read(path.join(HERE, "figures.ts"));
+    expect(FIGURES).toContain("export function signed(");
+    expect(FIGURES).toContain('if (n === 0) return "0";');
+    expect(FIGURES).toContain("−");
+
+    const definers: string[] = [];
+    const importers: string[] = [];
+    for (const { name, text } of rebuilt()) {
+      const source = code(text);
+      if (/const (signed|negated|grouped) = |function (signed|negated|grouped)\(/.test(source)) {
+        definers.push(name);
+      }
+      if (/from "\.\/figures"/.test(source)) importers.push(name);
+    }
+    expect(definers, `these declare their own sign rule instead of importing it: ${definers.join(", ")}`).toEqual([]);
+    expect(importers.length, "no surface imports the shared figure helpers").toBeGreaterThanOrEqual(3);
+
+    /* And no surface interpolates a raw figure where the helper belongs. */
+    for (const { name, text } of rebuilt()) {
+      expect(code(text), `${name} prints a raw signed figure`).not.toMatch(
+        /\$\{[a-z]+\.amount > 0 \? "\+" : ""\}/,
+      );
+    }
+    /* POSITIVE CONTROLS — both matchers fire on the shapes that were there. */
+    expect(/const (signed|negated|grouped) = /.test('const signed = (n: number) => "";')).toBe(true);
+    expect('`${tx.amount > 0 ? "+" : ""}${tx.amount} credits`').toMatch(
+      /\$\{[a-z]+\.amount > 0 \? "\+" : ""\}/,
+    );
+  });
+
   it("a zero figure carries no sign, and the minus is the real one", () => {
     /*
       ⚠ **CAUGHT BY LOOKING AT A FRAME, NOT BY AN ARM.** The first shape wrote
@@ -241,9 +285,11 @@ describe("brief 09 §2, §4b, §4d — verdict before workings, and once", () =>
       And the sign is U+2212, not the hyphen `toLocaleString` returns: under a
       column of `+` signs at mono 400 a hyphen is visibly the wrong length.
     */
-    const source = code(RECONCILIATION);
+    /* ⚠ The rules moved to `figures.ts`; the arm follows them rather than
+       going green on a file that no longer holds them. */
+    const source = read(path.join(HERE, "figures.ts"));
     expect(source).toContain('if (n === 0) return "0";');
-    expect(source).toContain('const negated = (n: number): string => (n === 0 ? "0"');
+    expect(source).toContain('export function negated(');
 
     /* The real minus, and no ASCII hyphen doing its job in a template. */
     expect(source).toContain("−");
@@ -395,7 +441,7 @@ describe("brief 09 §5 — dashed while unresolved, and no dead state", () => {
     */
     const source = code(FLAGGED);
     expect(source).toContain("{signed(user.discrepancy)}");
-    expect(source).toContain('if (n === 0) return "0";');
+    expect(source).toContain('from "./figures"');
     expect(source).toContain("grouped(user.grossDeductions)");
     expect(source, "an unformatted figure is back").not.toMatch(/\{user\.(discrepancy|grossDeductions|expectedCost)\}/);
     /* POSITIVE CONTROL — the raw shapes that were there. */

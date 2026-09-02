@@ -40,6 +40,7 @@ import { Button, DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import { trpc } from "@/lib/trpc";
 
+import { grouped, signed } from "./figures";
 import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
@@ -119,20 +120,29 @@ export function CreditsSubTab({
   const rows: DataRow[] = transactions.map((tx) => ({
     id: String(tx.id),
     cells: [
-      /* The sign carries the direction — his §3. No red on a spend. */
-      <span key="amount">{tx.amount > 0 ? `+${tx.amount}` : String(tx.amount)}</span>,
+      /*
+        The sign carries the direction — his §3. No red on a spend.
+
+        ⚠ **THROUGH `signed()`, like the two surfaces either side of it.** This
+        cell rendered `String(tx.amount)` — an ASCII hyphen for a negative and
+        no thousands grouping — while the reconciliation pane two tabs away
+        insisted on `−1,240`. It is the third consumer of that rule, which is
+        what moved the rule out of both files and into `figures.ts` rather than
+        being copied a third time (#412 re-review, findings 1 and 3).
+      */
+      <span key="amount">{signed(tx.amount)}</span>,
       <StatePill key="type" label={sentenceCase(tx.type)} />,
       <span key="what" className="dp-table__pair">
         <span className="dp-table__pairmain">{tx.description || "—"}</span>
       </span>,
-      <RowId key="balance">{tx.balanceAfter}</RowId>,
+      <RowId key="balance">{grouped(tx.balanceAfter)}</RowId>,
       <span key="when">{formatDate(new Date(tx.createdAt))}</span>,
     ],
     facts: [
       { label: "TRANSACTION", value: `#${tx.id}` },
       { label: "KIND", value: sentenceCase(tx.type) },
-      { label: "AMOUNT", value: `${tx.amount > 0 ? "+" : ""}${tx.amount} credits` },
-      { label: "BALANCE AFTER", value: String(tx.balanceAfter) },
+      { label: "AMOUNT", value: `${signed(tx.amount)} credits` },
+      { label: "BALANCE AFTER", value: grouped(tx.balanceAfter) },
       { label: "WHEN", value: formatDate(new Date(tx.createdAt)) },
       ...(tx.referenceId ? [{ label: "REFERENCE", value: String(tx.referenceId) }] : []),
     ],

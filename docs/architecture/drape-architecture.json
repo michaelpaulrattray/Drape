@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c44ee6ec20ac0431"
+    "sourceFingerprint": "abc35553dd2a258c"
   },
   "domains": [
     {
@@ -83,7 +83,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 18
+      "moduleCount": 19
     },
     {
       "id": "domain:operations",
@@ -1977,6 +1977,12 @@
     {
       "id": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
       "path": "client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/figures.ts",
+      "path": "client/src/features/moderator/figures.ts",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -16910,6 +16916,11 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
@@ -16926,6 +16937,11 @@
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
+      "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
     },
     {
@@ -17031,6 +17047,11 @@
     {
       "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
+      "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
     },
     {

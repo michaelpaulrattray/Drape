@@ -708,8 +708,8 @@ export type DataFact = { label: string; value: ReactNode };
  * specific."* A note that a call site is asked to *remember* is a note that
  * goes missing on the fourth surface, so the type asks for it instead:
  * `destructive: true` cannot be written without `consequence`, and TypeScript
- * refuses the build otherwise. Same mechanism as `CostedOption` — you cannot
- * render one without saying what it costs.
+ * refuses the build otherwise. The same mechanism `CostedOption` used before
+ * it was deleted (#399): you cannot render one without saying what it costs.
  *
  * ⚠ **The consequence says what happens to WHOM, not what the button is
  * called.** *"Retiring a code never affects anyone who already used it"* is

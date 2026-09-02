@@ -38,6 +38,8 @@ import { useMemo, useState } from "react";
 import { Button, Chip, EmptyState, Skeleton, TableHead } from "@/foundation";
 import { trpc } from "@/lib/trpc";
 
+import { grouped, signed } from "./figures";
+
 import "./investigations.css";
 
 interface FlaggedDiscrepanciesCardProps {
@@ -51,28 +53,6 @@ interface FlaggedDiscrepanciesCardProps {
   onSelectUser: (userId: number, identity: string | null) => void;
   autoRefreshInterval?: number | false;
 }
-
-/**
- * ⚠ **THE SIGN AND GROUPING RULES ARE THE RECONCILIATION PANE'S, APPLIED HERE
- * TOO** (#412 review, finding 3 — law 7's sweep, which this PR named and then
- * stopped one file short of).
- *
- * A discrepancy is flagged in BOTH directions — `getFlaggedUsers` compares
- * `|discrepancy|` against the threshold, and the server's own summary wording
- * includes *"charged less than the records show"* — so a negative one is
- * reachable, and it was rendering as `-1240`: an ASCII hyphen and no thousands
- * separator, in mono, on the same page where the pane insists on U+2212 and
- * `toLocaleString`.
- */
-const signed = (n: number): string => {
-  if (n === 0) return "0";
-  return n > 0
-    ? `+${n.toLocaleString()}`
-    : `−${Math.abs(n).toLocaleString()}`;
-};
-
-/** Unsigned, but grouped — a charged total is still a number a person reads. */
-const grouped = (n: number): string => n.toLocaleString();
 
 const DEFAULT_THRESHOLD = 500;
 const THRESHOLDS = [100, 250, 500, 1000, 2000, 5000];
