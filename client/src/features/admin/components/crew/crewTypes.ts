@@ -95,10 +95,17 @@ export function milestoneCountLine(progress: MilestoneProgress): string {
   return parts.join(" · ");
 }
 
-/* ─── #290/#291/#292: the page reads working now → next up → what is not done
-   → one recent-history block. Four questions he actually asks, instead of one
-   107-row scroll with three history sections in it. All three derivations are
-   pure and tested directly; none of them writes a state down twice. ─── */
+/* ─── #290/#291/#292: the page reads the program → working now → next up →
+   what is not done → one recent-history block. Questions he actually asks,
+   instead of one 107-row scroll with three history sections in it. All three
+   derivations are pure and tested directly; none of them writes a state down
+   twice.
+
+   ⚠ This sentence said *"working now → next up → …"* until #437 (2026-09-02),
+   when he moved THE PROGRAM to the top of the page. The derivations below did
+   not change and none of them depends on section order — only the sentence
+   was wrong, which is exactly the kind of stale prose that survives because
+   nothing it describes can break. ─── */
 
 /**
  * ⚠ **THE ORDER IS THE POINT.** His reading of the old section was *"a massive

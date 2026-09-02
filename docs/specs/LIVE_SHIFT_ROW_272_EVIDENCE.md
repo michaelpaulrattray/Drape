@@ -1,5 +1,19 @@
 # #272 — the live shift row: what was built, and what was driven
 
+> ⚠ **DATED ARTIFACT — 2026-08-30. Its readings were true when taken and two of
+> them are no longer true of the page.** This file records a measurement, so it
+> is NOT rewritten: an evidence document that gets edited to match today stops
+> being evidence. What has changed since, so nobody reads a stale adjacency as
+> current law:
+>
+> **The section order below (§"The neighbour was measured too", and the *"very
+> top, above the program banner"* in §1) was reversed by the founder on
+> 2026-09-02 (#437).** THE PROGRAM is now first on the page and WORKING NOW sits
+> under it. **The living order is `client/src/pages/AdminCrew.tsx`'s own
+> docblock**, pinned against the JSX by an arm in `section08-guard.test.ts`.
+> Everything else here — the three states, the heartbeat, the measurements —
+> stands.
+
 **Card:** #272, founder-written, `urgent`, and named SECOND in `PROGRAM.md`'s
 founder-ordered run order after section 02 (#271 discharged by foreman-117).
 

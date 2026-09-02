@@ -112,9 +112,125 @@ describe("§1 — a paragraph's order does not move", () => {
     expect(body.indexOf("item.question")).toBeLessThan(body.indexOf("item.frames.map"));
   });
 
-  it("working now is mounted above the program banner", () => {
+  /**
+   * ⚠ **INVERTED, NOT DELETED (#437, 2026-09-02).** This arm read *"working now
+   * is mounted above the program banner"* and pinned #272's reasoning. **The
+   * founder reversed it** — *"yes the easier fix"*, taking THE PROGRAM whole to
+   * the top of the page — so the arm now pins HIS order instead. An arm removed
+   * to let a change through stops guarding the thing it was written for.
+   *
+   * ⚠ **And it pins the WHOLE order rather than the one pair it used to.** Two
+   * of the three comments this move overturned were arguing for adjacencies no
+   * test had ever held, so a later shift could have restored either of them and
+   * nothing would have gone red. The section order of this page is the founder's
+   * repeatedly, and it is the thing he actually looks at; it is worth deriving
+   * from one list.
+   *
+   * A deliberate future reorder edits this list and quotes him, exactly as this
+   * one did.
+   */
+  /**
+   * HIS TABLE, top to bottom: the phrase the page's docblock uses for each
+   * section, beside the tag it mounts.
+   *
+   * ⚠ **ONE LIST, READ BY BOTH ARMS.** It was two — a tag array here and a
+   * phrase/tag table in the docblock arm — which is working law 4 inverted
+   * even though it happened to fail closed. A second list shadowing a source
+   * of truth always drifts from it, and this one is the founder's order,
+   * which is the last thing that should be written down twice.
+   */
+  const HIS_ORDER: [string, string][] = [
+    ["the program", "<CrewProgramBanner"],
+    ["working now", "<CrewWorkingNow"],
+    ["next up", "<CrewNextUp"],
+    ["background work", "<CrewBackgroundWork"],
+    ["needs you", "<CrewNeedsYou"],
+    ["for your eyes", "<CrewEyeGallery"],
+    ["what is not done", "<CrewPipeline"],
+    ["already dealt with", "<CrewRecentHistory"],
+    ["problems", "<CrewProblems"],
+    ["general", "<CrewGeneral"],
+  ];
+
+  /* The card is named in the docblock above rather than in this title: the
+     foundation token guard reads `#437` in a STRING as a hex literal (every
+     issue number from #100 up is valid hex) and strips comments, which is what
+     its own failure message tells you to do. */
+  it("the page is mounted in the order he ruled", () => {
     const body = code(PAGE_TEXT);
-    expect(body.indexOf("<CrewWorkingNow")).toBeLessThan(body.indexOf("<CrewProgramBanner"));
+    const at = HIS_ORDER.map(([, tag]) => {
+      const index = body.indexOf(tag);
+      /* A section that stops being mounted must REDDEN, never quietly sort to
+         the front — `indexOf` returns -1, which is less than everything. */
+      expect(index, `${tag} is not mounted`).toBeGreaterThan(-1);
+      return index;
+    });
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+  });
+
+  it("POSITIVE CONTROL: the order matcher fires on the arrangement that was here", () => {
+    const was = "<CrewWorkingNow /><CrewBackgroundWork /><CrewProgramBanner /><CrewNextUp />";
+    const at = ["<CrewProgramBanner", "<CrewWorkingNow", "<CrewNextUp"].map((t) =>
+      was.indexOf(t),
+    );
+    expect(at).not.toEqual([...at].sort((a, b) => a - b));
+  });
+
+  /**
+   * ⚠ **THE PAGE'S OWN DOCBLOCK MUST AGREE WITH ITS JSX, AND THIS ARM EXISTS
+   * BECAUSE IT DID NOT.** The first shape of the change above rewrote the three
+   * comments at the MOUNT SITES — the places the card named — and left the
+   * file's top docblock still listing the old reading order, plus near-verbatim
+   * copies of two of those sentences in the components' own headers. The
+   * reviewer found them. **The sweep chose its sites instead of deriving
+   * them**, which is the same mistake the previous shift made on the previous
+   * card, one week apart.
+   *
+   * ⚠ **Of the four stale sentences, this is the ONLY one a machine can hold**,
+   * and it is also the one a reader meets first — it is the first paragraph of
+   * the file the order lives in. The other three are prose in other files and
+   * stay a human sweep; pinning this one at least means the two statements of
+   * the order that live in THIS file can never silently disagree again.
+   *
+   * The phrase table is hand-written on purpose. Deriving the words from the
+   * docblock would make the arm compare the sentence to itself.
+   */
+  it("the reading order in the page's own docblock matches the order it mounts", () => {
+    /*
+      ⚠ THE SENTENCE IS CUT AT ITS FULL STOP, NOT AT THE END OF THE DOCBLOCK.
+      The first shape sliced to the end of the block and fell back to a bare
+      `indexOf(phrase)` for the two phrases the line wrap leaves without a
+      trailing arrow — so a later paragraph in the same docblock could have
+      supplied the match instead of the list. It cannot mis-resolve today (the
+      reviewer traced every landing point), but the arm claimed to be anchored
+      and for two of ten rows it was not. Bounded here so the claim is true.
+    */
+    const head = PAGE_TEXT.slice(0, PAGE_TEXT.indexOf("*/"));
+    const from = head.indexOf("His reading order:");
+    expect(from, "the reading-order sentence is gone from the docblock").toBeGreaterThan(-1);
+    const stop = head.indexOf("**", head.indexOf("→ general"));
+    const sentence = head.slice(from, stop > from ? stop : undefined).toLowerCase();
+    expect(sentence, "the reading-order sentence has lost its arrows").toContain("→");
+
+    const prose = HIS_ORDER.map(([phrase]) => {
+      const at = sentence.indexOf(phrase);
+      expect(at, `the docblock's reading order never names "${phrase}"`).toBeGreaterThan(-1);
+      return at;
+    });
+    expect(prose, "the docblock lists the sections in a different order than it mounts them")
+      .toEqual([...prose].sort((a, b) => a - b));
+
+    /* And the two statements must be the SAME order, not merely each sorted. */
+    const body = code(PAGE_TEXT);
+    const mounted = HIS_ORDER.map(([, tag]) => body.indexOf(tag));
+    expect(mounted).toEqual([...mounted].sort((a, b) => a - b));
+  });
+
+  it("POSITIVE CONTROL: the docblock arm fires on the sentence that was here", () => {
+    const was =
+      "his reading order: working now → background work → the program → needs you → next up → general.";
+    const order = ["the program", "working now", "next up"].map((p) => was.indexOf(p));
+    expect(order).not.toEqual([...order].sort((a, b) => a - b));
   });
 });
 

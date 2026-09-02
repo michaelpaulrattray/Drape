@@ -8,8 +8,12 @@
  *    if i go to sleep i can toggle it on and the shifts will go ahead with bug
  *    fixes an stuff when waiting on me to make decision on the main stuff"*
  *
- * It sits directly under **Working now** (#272) because the two answer one
- * question: *what is happening while I am not looking.*
+ * ⚠ **ITS ADJACENCY WAS BROKEN BY HIS ORDER (#437, 2026-09-02), and the reason
+ * is kept rather than deleted.** It sat directly under **Working now** (#272)
+ * because the two answer one question: *what is happening while I am not
+ * looking.* **NEXT UP** now sits between them, on his instruction — *"moving
+ * the next up card in the crew tab under working now"*. The reasoning was
+ * sound; it lost to his.
  *
  * # IT INVERTS TODAY'S DEFAULT, WHICH IS THE POINT
  *
