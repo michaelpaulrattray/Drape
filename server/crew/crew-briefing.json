@@ -1,7 +1,7 @@
 {
-  "edition": 222,
-  "updatedAt": "2026-09-02T20:18:58.201Z",
-  "shift": "Foreman — night of 3 September (the two counters in your account menu had never once shown a number)",
+  "edition": 223,
+  "updatedAt": "2026-09-02T20:57:16.642Z",
+  "shift": "Fable — escalated shift, night of 3 September (the Grok rerun you ordered: Grok reads everything, and takes six times longer)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,6 +128,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "grok-long-bench-231",
+      "title": "The Grok rerun is done — Grok reads every picture, and its fastest read is slower than Sonnet's slowest",
+      "productImpact": "You asked for the bench and it ran tonight, exactly to your spec: same seven pictures, same reader instruction, same 300-character cap, and a 180-second window so nothing died on the clock. The headline is in two halves, and your own reply already wrote the rule for reading them together.\n\nQuality: Grok read 12 of 12 beings with zero timeouts and zero refusals — including your goth reference, twice, cleanly. So the first court's 4-of-12 was the deadline, exactly as you said: timeouts, not refusals. On your five rules Grok is at worst Sonnet's equal and arguably ahead: it named the hairless skin, the tail and the whiskers on your feline deity on the FIRST pass both times, used no kit words anywhere, and never once ran over the character cap — Sonnet needed a second ask on 6 of 14 reads and lost one read on your own fixture to the cap.\n\nSpeed: Sonnet finishes in about 7 seconds typically, worst 13. Grok's typical is 41 seconds, best 24, worst 71. Not one Grok read came in under 20 seconds — your bar was 'around ten, then we talk', and every single call misses it. Its typical sits right on the old 45-second deadline, which is why the first court saw it die half the time.\n\nBy your own sentence — 'if Grok is better and slow, that's infra' — this is the infra branch. A customer uploading a concept watches a spinner; swapping her 7-second wait for a 41-second one is not a reader upgrade, whatever the prose gains.\n\nThe full pairs, one per picture with times beside them, are on card #231 and in the court record for your eye.",
+      "workedExample": "Your feline deity, same sitting, both readers. Sonnet (13s, needed a re-ask): \"Feline humanoid creature with a muscular build, purple-blue hairless skin, large pointed ears with pink inner coloring, whiskers, sharp yellow eyes and a long tail…\" Grok (71s, one pass): \"A male in his thirties, hairless feline humanoid with large pointed ears, whiskers and tail, bare violet skin. Ornamented metal fashion. Stoic warrior type.\" Both name what you ruled must be named. One of them you would wait a minute for.",
+      "options": [
+        {
+          "key": "close",
+          "label": "Accept the bench: Sonnet stays, close the reader court",
+          "consequence": "Card #231 closes. Grok is on record as better-and-slow — the candidate if we ever build a surface where nobody is watching a spinner. Nothing changes in the product."
+        },
+        {
+          "key": "author-bench",
+          "label": "Also run the AUTHOR half you suspected — Grok vs the author, text-only, about a dollar",
+          "consequence": "Your original hunch was 'it might perform better at authoring aswell'. Same method: fixtures, pairs, your eye. It can run whether or not you close the reader half."
+        },
+        {
+          "key": "look-again",
+          "label": "Something in the pairs bothers you — say which pair and I re-drive it",
+          "consequence": "Any fixture re-reads for cents. n=2 per cell tonight, so a third read on any picture is cheap."
+        }
+      ],
+      "recommendation": "Close the reader court (option 1) — your ruling already keeps Sonnet, and the bench confirms the branch you pre-decided: better-and-slow is infra, not a swap. I'd run the author bench too (option 2); it is the half of your hunch nothing has measured yet, and it is about a dollar.",
+      "state": "open",
+      "filedAt": "2026-09-02T20:57:16.643Z",
+      "issueNumber": 231
+    },
     {
       "id": "settings-460-admin-bypass",
       "title": "Your own pushes skip the checks — and turning that off has a real cost",
@@ -3244,6 +3271,14 @@
   ],
   "pipeline": [
     {
+      "id": "grok-long-bench-231",
+      "title": "#231 — the Grok rerun you ordered: 12/12 read at 180s, zero timeouts — and a typical read of 41s against Sonnet's 7s",
+      "status": "waiting-founder",
+      "prNumber": null,
+      "note": "Bench only, per your word. Sonnet stays in production. 34 text calls, ~$0.45 house money (estimate posted first was ≤$0.60).",
+      "cardId": "grok-long-bench-231"
+    },
+    {
       "id": "pr-463-menu-badges",
       "title": "The Admin and Moderation counters in your account menu work now — they never had",
       "status": "merged",
@@ -4461,6 +4496,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0903-fable",
+      "title": "The queue: 75 open, 11 carrying your word, 0 urgent — the urgent one was worked tonight",
+      "severity": "info",
+      "state": "open",
+      "detail": "Measured at close of the escalated shift. 75 open; 11 carry your word; 6 parked. The one urgent card — #231, the reader court that five shifts had stepped over — was exactly this shift's brief: the bench is delivered and the card now waits on your eye, so its urgent label came off (its urgency was the unrun bench). Rotting is the same eight as the last six nights — #10 #14 #18 #22 #30 #55 #61 #65, none a bug, none waiting on you. Stable, not growing."
+    },
+    {
       "id": "queue-shape-0903-late",
       "title": "The queue: 75 open, 11 carrying your word, 1 urgent, 8 rotting — the same eight for a sixth night",
       "severity": "info",
@@ -4757,12 +4799,12 @@
     104
   ],
   "nextUp": {
-    "readAt": "2026-09-02T20:18:36.443Z",
+    "readAt": "2026-09-02T20:55:50.302Z",
     "items": [
       {
         "issueNumber": 231,
         "title": "READER COURT: Grok vision vs Sonnet 5 on his four fixtures — plus four reader rules he ruled tonight (hairless is a FACT, name the tail, materials not named pieces, LOW keeps species facts)",
-        "urgent": true
+        "urgent": false
       },
       {
         "issueNumber": 243,

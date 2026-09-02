@@ -248,3 +248,131 @@ on the wire.
 5. **The author half of #231** — *"i also think it might perform better at
    authoring aswell"* — is carded separately by his own method: after the
    reader verdict, same fixtures, proof not theory.
+
+---
+
+# THE GROK-LONG BENCH — his rerun, run 2026-09-03 (fable-189, #231)
+
+**His ruling is the spec (Crew reply #39, verbatim):** *"Rerun Grok at a longer
+deadline as a bench only. Same pictures, same spec, same 300-character cap.
+Timeouts don't count as 'Grok refused the creature.' Show completed pairs plus
+time-to-finish."* — and: *"If Grok is better and slow, that's infra. If Grok is
+better and ~10s, then we talk about swapping."*
+
+**BENCH ONLY. Sonnet stays in production, per his own ruling, whatever follows.**
+
+**Held constant:** the same seven fixtures byte-for-byte, the shipped
+`describeConcept` at HEAD — unchanged since this court's own commit `99664b55`,
+so "same spec" holds by construction — the 300-character cap untouched. Both
+arms re-read in the SAME SITTING so the pairs are same-sitting, not four days
+apart. The one variable: the Grok arm's deadline, **180 s** — a measurement
+window, not a product proposal, chosen so no call is censored and the clock
+reads actual time-to-finish.
+
+**Driver:** `scripts/_231-grokbench-disposable.mts` (the court driver plus the
+clock it lacked — the original recorded no timing and could not have answered
+him). **Record:** `output/_231-grok-long/run1/court.json`.
+**Spend:** 34 text calls (20 Sonnet incl. re-asks, 14 Grok), ~$0.45 of house
+money by the court's per-call rate; attribution, as before, since the meter is
+account-wide. Estimate posted on the card before the first call was ≤$0.60.
+
+## 1. COMPLETED PAIRS — the number his ruling asked for first
+
+| | beings read | timeouts | re-asks needed | object control |
+|---|---|---|---|---|
+| **Sonnet** (shipped) | 11/12 | 0 | 6 of 14 reads | refused 2/2 ✓ |
+| **Grok-long** (`x-ai/grok-4.6`, 180 s) | **12/12** | **0** | **0 of 14 reads** | refused 2/2 ✓ |
+
+**At a deadline it can finish inside, Grok reads everything.** Zero timeouts,
+zero content refusals, and the goth photograph — his edgy-fashion population,
+the regression he feared — read cleanly 2/2. The court's 4/12 was the deadline,
+not the model, exactly as he said: *"timeouts, not refusals."*
+
+Sonnet's one lost read is on HIS OWN FIXTURE: the feline deity, read #1 — the
+first attempt dropped the JSON envelope (correct prose, unparseable), the
+re-ask came back at 302 characters against the 300 ceiling, and the 2-attempt
+cap ended it as `not_a_casting_note`. The wire shows both attempts had read the
+being correctly (both name the hairless hide). That is new evidence for open
+question 3 (the 300/250 gap), not a new question.
+
+## 2. TIME-TO-FINISH — the number his ruling asked for second, and it decides
+
+Wall-clock per read, re-asks included, measured serially (no queue contention):
+
+| | min | median | max |
+|---|---|---|---|
+| **Sonnet** | 5.3 s | **6.8 s** | 12.9 s (with a re-ask) |
+| **Grok-long** | 23.6 s | **41.4 s** | 71.1 s (single attempt) |
+
+- **Not one Grok read finished inside 20 s.** His bar was *"~10s, then we talk"* —
+  every single Grok call misses it, by 2–7×.
+- **Grok's median sits ON the old 45 s deadline** (5 of 12 reads ran past 45 s
+  this sitting). That is the whole mechanism of the court's "intermittent"
+  timeouts: the deadline was mid-distribution, so roughly half the calls died —
+  8/12 that night, 5/12 would have died tonight.
+- Sonnet is faster WITH its re-asks than Grok is without them: Sonnet's worst
+  read (two round trips, 12.9 s) beats Grok's best (one, 23.6 s).
+
+## 3. HIS FIVE RULES, scored on the completed pairs
+
+| rule | Sonnet | Grok-long |
+|---|---|---|
+| hairless, not invented fur | 1/1 completed (the lost read had read it too); 0 fur words | **2/2, first pass**; 0 fur words |
+| materials, not collar/bracer kits | 2 pointer hits, both *"fitted/integrated mechanical eye piece"* on the goth — under his own fitted-into-the-body law that is a FEATURE, not a kit; no plating/bracer/harness anywhere | **0 hits in 12 reads** |
+| species facts beat styling | kept, but via the re-ask: both feline reads needed 2 attempts and one died | **kept at first pass**: hairless + tail + whiskers 2/2, inside 156–186 chars |
+| anatomy in, props out | 0 prop words | 0 prop words |
+| no camera, no inventory | sweeps fired on 0 reads | sweeps fired on 0 reads |
+
+Both arms write *"tail"* on the deity. His new rule says the ambiguous band
+behind the shoulder is written as NEITHER; whether "tail" is a fact or an
+invention there is still his eye's call (open question 2, unchanged).
+
+One pointer the other way: Grok wrote *"male in his thirties"* on the deity —
+an age band asserted on a deity is confidence, not necessarily a fact.
+
+## 4. THE PAIRS (one per fixture, same sitting — for his eye, not for a score)
+
+**FELINE DEITY** —
+S: *"Feline humanoid creature with a muscular build, purple-blue hairless skin, large pointed ears with pink inner coloring, whiskers, sharp yellow eyes and a long tail. Ornamented metal collar and armbands in bronze and jeweled tones over draped dark fabric. Regal, imposing warrior-deity presence."* (294 ch, 2 attempts, 12.9 s)
+G: *"A male in his thirties, hairless feline humanoid with large pointed ears, whiskers and tail, bare violet skin. Ornamented metal fashion. Stoic warrior type."* (156 ch, 1 attempt, 71.1 s)
+
+**MAN 1 (European)** —
+S: *"A man in his mid-to-late forties, European heritage, athletic muscular build, close-cropped dark hair with light stubble. Sun-weathered skin, fitted dark crew-neck top. Rugged, no-nonsense fitness or tactical presence."* (6.4 s)
+G: *"A man in his mid-to-late forties, European heritage, athletic muscular build, short dark hair going grey, fitted dark crew-neck. Rugged, no-nonsense fitness presence."* (26.0 s)
+
+**MAN 2 (South Asian)** —
+S: *"A man in his late forties to fifties, South Asian heritage, solid athletic build, short dark hair with light greying. Warm brown skin tone with a composed, direct expression. Fitted heathered dark crew-neck top; grounded, professional everyday presence."* (6.8 s)
+G: *"A man in his mid-to-late forties, South Asian heritage, athletic build, short dark hair going grey, fitted dark crew-neck. Serious, grounded presence."* (42.1 s)
+
+**GOTH (the refusal axis)** —
+S: *"Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted platinum hair shaved on one side, facial piercings, small cross and script tattoos on face and arms. Integrated mechanical eyepiece fitted over one eye. Dark structured fashion in lace and leather with metal accents."* (5.6 s)
+G: *"Woman in her twenties, dark-fashion / cyber-goth model type. Pale skin, sculpted platinum hair, facial piercings and fine-line facial markings, script tattoos on both arms. Dark structured fashion in lace, leather and metal."* (41.4 s)
+
+**UNSEEN (damaged android)** —
+S: *"Female android type, young adult, with pale synthetic skin torn away on one side to reveal a metal endoskull, glowing red mechanical eye, and exposed neck wiring. Dark hair, damaged human-like face with facial scarring. Fitted dark leather-look wardrobe; damaged sci-fi humanoid presence."* (9.7 s, 2 attempts)
+G: *"Woman in her twenties, pale skin, dark hair. Integrated metal facial plating with fitted mechanical eye and neck hardware, dark leather. Battle-damaged sci-fi cyborg type."* (52.3 s)
+
+**CREATURE** —
+S: *"Reptilian humanoid creature type with dark pebbled hide and bony ridged plating running down the face and jaw. Small bone-like spines and ornamental ridges accent the brow, nose, and chin. Amber-toned eye set in a weathered, scaled face; solemn, imposing alien presence."* (5.3 s)
+G: *"A hairless adult reptilian being with dark grey-black scaled hide and a snouted muzzle. Fitted metallic facial ornamentation along the ridge. Draconic creature type."* (48.2 s)
+
+## 5. WHAT THIS SETTLES AND WHAT IT DOES NOT
+
+**Settled by the bench, on his own pre-stated rule:** Grok is *better-and-slow*,
+not *better-and-~10s*. On quality it is at worst Sonnet's equal on these
+fixtures — cleaner one-pass discipline, never met the ceiling, all five rules
+clean, 12/12 read — but its FASTEST read is ~4× Sonnet's median, on a
+synchronous route where she watches a spinner. By his own words that makes it
+an infra question (an async road, a background re-read, a second-opinion pass),
+not a swap. **Recommendation: keep Sonnet (already his ruling); treat Grok as
+the candidate for any future NON-synchronous describe surface, and close the
+reader court.**
+
+**Not settled, unchanged from above:** the tail-or-staff glance (question 2),
+the 300/250 gap (question 3 — tonight added one more lost read to its
+evidence), and the author half (his *"authoring aswell"*), which his method
+cards after this verdict.
+
+**Declared limits:** n=2 per cell, one sitting, one evening's network; the
+timing is this machine's wall clock against provider latency that may vary by
+hour and load; the dollars are attribution on an account-wide meter.
