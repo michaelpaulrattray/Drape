@@ -230,7 +230,17 @@ paste-ready text lives with the founder; summarised here):
    existing. The founder's main road — upload the script on entry, the AI
    splits it into scenes, land on the Desk — plus style/aspect/length
    setting has no design. Requested as the scene-level twin of the brief's
-   own §4c proposal pattern.
+   own §4c proposal pattern. **Sharpened 2026-09-02 (the flow walkthrough):
+   the style step asks the eye, not for words** — a grid of style cards,
+   each an ACTUAL RENDERED FRAME (not a name), plus two escape hatches:
+   "describe it" (derive the profile from their sentence) and "match this"
+   (upload any still; the engine reads the look off it). Length is DERIVED
+   from a pasted script and stated back correctable ("six scenes, two
+   people — reads as a ~2-minute short"); only the from-an-idea road asks,
+   and as one chip row (30s / 1-2 min / 5 min+), never a number field.
+   Camera is never chosen at entry — coverage is proposed per scene in
+   director language, and taste develops through notes ("tighter", "low
+   angle"), not configuration.
 4. **Staleness chips missing:** editing a line/document after shots exist
    must mark affected shots "SCENE CHANGED · review", never regenerate.
 5. **Mid-scene state changes missing** (Phase B-1): a state can flip at a
