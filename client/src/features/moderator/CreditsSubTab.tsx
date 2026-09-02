@@ -1,32 +1,55 @@
 /**
- * Credits sub-tab within User Investigation — shows credit history, summary, and refund actions.
+ * Moderation → User investigation → Credits, on the one staff table pattern.
+ *
+ * ## ⚠ It is here because his §1 test said so, not because it was convenient
+ *
+ * Brief 09 opens with an instruction to run before designing anything: *"check
+ * whether `CreditsSubTab` is really a plain filtered list. If it turns out to
+ * be, it belongs in brief 06's pattern instead … do not build a bespoke ledger
+ * for something the table already handles."*
+ *
+ * Read at the file, it was: a type filter, two date inputs, a paged list of
+ * transactions with its own prev/next, a CSV export, and one row action. That
+ * is `TableFilter` + `DataTable` + `RowAction`, exactly — so **284 lines of
+ * bespoke ledger became a column spec and a row map**, and moving it here is
+ * the right outcome rather than a shortfall.
+ *
+ * ## Three coloured tiles became one line
+ *
+ * `Added` in emerald, `Used` in red, `Balance` in blue — and the red is the one
+ * his §3 argues about: *"Spending credits is what the product is FOR. Colouring
+ * it red says a normal, healthy, revenue-generating action is a problem."* They
+ * are a sentence in the head now, on `GenerationsSubTab`'s established shape
+ * one file over.
+ *
+ * The per-transaction badge — six tints keyed on `tx.type` — is a `StatePill`
+ * with no accent: a transaction's kind is not a state anyone must act on.
+ *
+ * ## What did not change (§7)
+ *
+ * Every query, the CSV export, both date filters, the page size and the refund
+ * change-request payload are the ones that were here. ⚠ **Including the
+ * `amountCents` derivation, which is a money path and is left alone
+ * deliberately** — it is questionable and it is filed as **#418** rather
+ * than edited inside a surface PR.
  */
-import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import {
-  Coins,
-  CreditCard,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUp,
-  ArrowDown,
-  Calendar,
-  Download,
-  Loader2,
-  X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+
+import { RowId, StatePill, pageRange } from "@/features/staff";
+import { Button, DataTable, TableFilter, TableHead } from "@/foundation";
+import type { DataRow } from "@/foundation";
+import { trpc } from "@/lib/trpc";
+
+import { grouped, signed } from "./figures";
 import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
+
+const PAGE_SIZE = 20;
+
+/** Sentence case for a machine label — `admin_add` becomes `Admin add`. */
+function sentenceCase(raw: string): string {
+  const spaced = raw.replace(/_/g, " ").trim().toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 interface CreditsSubTabProps {
   creditHistoryQuery: any;
@@ -88,197 +111,167 @@ export function CreditsSubTab({
     }
   };
 
+  const transactions: any[] = creditHistoryQuery.data?.transactions ?? [];
+  const total: number = creditHistoryQuery.data?.total ?? 0;
+  const summary = creditHistoryQuery.data?.summary;
+  const balance =
+    userDetailsQuery.data?.credits?.balance?.toLocaleString() ?? summary?.netChange;
+
+  const rows: DataRow[] = transactions.map((tx) => ({
+    id: String(tx.id),
+    cells: [
+      /*
+        The sign carries the direction — his §3. No red on a spend.
+
+        ⚠ **THROUGH `signed()`, like the two surfaces either side of it.** This
+        cell rendered `String(tx.amount)` — an ASCII hyphen for a negative and
+        no thousands grouping — while the reconciliation pane two tabs away
+        insisted on `−1,240`. It is the third consumer of that rule, which is
+        what moved the rule out of both files and into `figures.ts` rather than
+        being copied a third time (#412 re-review, findings 1 and 3).
+      */
+      <span key="amount">{signed(tx.amount)}</span>,
+      <StatePill key="type" label={sentenceCase(tx.type)} />,
+      <span key="what" className="dp-table__pair">
+        <span className="dp-table__pairmain">{tx.description || "—"}</span>
+      </span>,
+      <RowId key="balance">{grouped(tx.balanceAfter)}</RowId>,
+      <span key="when">{formatDate(new Date(tx.createdAt))}</span>,
+    ],
+    facts: [
+      { label: "TRANSACTION", value: `#${tx.id}` },
+      { label: "KIND", value: sentenceCase(tx.type) },
+      { label: "AMOUNT", value: `${signed(tx.amount)} credits` },
+      { label: "BALANCE AFTER", value: grouped(tx.balanceAfter) },
+      { label: "WHEN", value: formatDate(new Date(tx.createdAt)) },
+      ...(tx.referenceId ? [{ label: "REFERENCE", value: String(tx.referenceId) }] : []),
+    ],
+    evidence: tx.description || undefined,
+    /*
+      The refund action, unchanged in what it sends. It opens the change-request
+      form; it does not itself move money, which is why it is not `destructive`
+      — a consequence note on a button that opens a form would be describing the
+      wrong step.
+    */
+    actions:
+      tx.type === "topup" && tx.referenceId
+        ? [
+            {
+              key: "refund",
+              label: "Request refund",
+              onClick: () => {
+                const amountCents = Math.round(tx.amount * 0.00072);
+                onOpenChangeRequest({
+                  type: "stripe_refund",
+                  targetUserId: String(selectedUserId),
+                  targetUserName: userDetailsQuery.data?.user?.name || "",
+                  stripeSessionId: tx.referenceId!,
+                  originalAmountCents: amountCents,
+                  originalCredits: tx.amount,
+                });
+              },
+            },
+          ]
+        : undefined,
+  }));
+
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Coins className="w-4 h-4 text-emerald-600" />
-          <h4 className="text-sm font-semibold text-[#0A0A0A]">Credit History</h4>
-        </div>
+    <div className="dp-stack" style={{ gap: 16 }}>
+      <TableHead eyebrow="Credits">
+        {summary ? (
+          <span className="dp-small">
+            {summary.totalCreditsEarned} added, {summary.totalCreditsSpent} used, {balance} now
+          </span>
+        ) : null}
+        <TableFilter
+          label="Kind"
+          value={creditTypeFilter}
+          onChange={(value) => {
+            setCreditTypeFilter(value);
+            setCreditPage(() => 0);
+          }}
+          options={[
+            { value: "all", label: "All kinds" },
+            { value: "generation", label: "Generations" },
+            { value: "purchase", label: "Purchases" },
+            { value: "topup", label: "Top-ups" },
+            { value: "subscription", label: "Subscription" },
+            { value: "signup", label: "Signup" },
+            { value: "refund", label: "Refunds" },
+            { value: "bonus", label: "Bonuses" },
+            { value: "admin_add", label: "Admin add" },
+            { value: "admin_deduct", label: "Admin deduct" },
+          ]}
+        />
+        <input
+          type="date"
+          className="dp-tableselect"
+          aria-label="From date"
+          value={startDate}
+          onChange={(event) => {
+            setStartDate(event.target.value);
+            setCreditPage(() => 0);
+          }}
+        />
+        <input
+          type="date"
+          className="dp-tableselect"
+          aria-label="To date"
+          value={endDate}
+          onChange={(event) => {
+            setEndDate(event.target.value);
+            setCreditPage(() => 0);
+          }}
+        />
+        {startDate || endDate ? (
+          <Button
+            variant="quiet"
+            size="small"
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+              setCreditPage(() => 0);
+            }}
+          >
+            Clear dates
+          </Button>
+        ) : null}
         <Button
-          variant="outline"
-          size="sm"
+          variant="quiet"
+          size="small"
           onClick={handleExport}
           disabled={exportQuery.isFetching || creditHistoryQuery.isLoading}
-          className="border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5] h-7 text-xs"
         >
-          {exportQuery.isFetching ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-          CSV
+          {exportQuery.isFetching ? "Exporting…" : "Export CSV"}
         </Button>
-      </div>
+      </TableHead>
 
-      {/* Credit Summary */}
-      {creditHistoryQuery.data?.summary && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-center">
-            <p className="text-[10px] text-emerald-600">Added</p>
-            <p className="text-sm font-bold text-emerald-700">+{creditHistoryQuery.data.summary.totalCreditsEarned}</p>
-          </div>
-          <div className="p-2 rounded-lg bg-red-50 border border-red-200 text-center">
-            <p className="text-[10px] text-red-600">Used</p>
-            <p className="text-sm font-bold text-red-700">-{creditHistoryQuery.data.summary.totalCreditsSpent}</p>
-          </div>
-          <div className="p-2 rounded-lg bg-blue-50 border border-blue-200 text-center">
-            <p className="text-[10px] text-blue-600">Balance</p>
-            <p className="text-sm font-bold text-blue-700">{userDetailsQuery.data?.credits?.balance?.toLocaleString() ?? creditHistoryQuery.data.summary.netChange}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Credit Type Filter */}
-      <Select value={creditTypeFilter} onValueChange={(v) => { setCreditTypeFilter(v); setCreditPage(() => 0); }}>
-        <SelectTrigger className="w-full bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] text-xs h-8">
-          <SelectValue placeholder="Filter by type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="generation">Generations</SelectItem>
-          <SelectItem value="purchase">Purchases</SelectItem>
-          <SelectItem value="topup">Top-ups</SelectItem>
-          <SelectItem value="subscription">Subscription</SelectItem>
-          <SelectItem value="signup">Signup</SelectItem>
-          <SelectItem value="refund">Refunds</SelectItem>
-          <SelectItem value="bonus">Bonuses</SelectItem>
-          <SelectItem value="admin_add">Admin Add</SelectItem>
-          <SelectItem value="admin_deduct">Admin Deduct</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {/* Date Range Filter */}
-      <div className="flex gap-2 items-center">
-        <div className="relative flex-1">
-          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#999] pointer-events-none" />
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); setCreditPage(() => 0); }}
-            className="w-full h-8 pl-7 pr-2 rounded-lg bg-[#F8F8F8] border border-[#E5E5E5] text-[#0A0A0A] text-xs"
-            placeholder="From"
-          />
-        </div>
-        <span className="text-[#CCC] text-xs">–</span>
-        <div className="relative flex-1">
-          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#999] pointer-events-none" />
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); setCreditPage(() => 0); }}
-            className="w-full h-8 pl-7 pr-2 rounded-lg bg-[#F8F8F8] border border-[#E5E5E5] text-[#0A0A0A] text-xs"
-            placeholder="To"
-          />
-        </div>
-        {(startDate || endDate) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setStartDate(""); setEndDate(""); setCreditPage(() => 0); }}
-            className="h-8 w-8 p-0 text-[#999] hover:text-[#0A0A0A]"
-            title="Clear dates"
-          >
-            <X className="w-3.5 h-3.5" />
-          </Button>
-        )}
-      </div>
-
-      {/* Credit Transaction List */}
-      {creditHistoryQuery.isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full bg-[#E5E5E5]" />
-          ))}
-        </div>
-      ) : creditHistoryQuery.data?.transactions.length === 0 ? (
-        <p className="text-[#999] text-sm text-center py-4">No credit transactions found</p>
-      ) : (
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {creditHistoryQuery.data?.transactions.map((tx: any) => (
-            <div key={tx.id} className="p-2.5 rounded-lg bg-[#F8F8F8] border border-[#E5E5E5]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {tx.amount > 0 ? (
-                    <ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
-                  ) : (
-                    <ArrowDown className="w-3.5 h-3.5 text-red-600" />
-                  )}
-                  <span className={`text-sm font-medium ${tx.amount > 0 ? "text-emerald-700" : "text-red-700"}`}>
-                    {tx.amount > 0 ? "+" : ""}{tx.amount}
-                  </span>
-                </div>
-                <Badge className={
-                  tx.type === "purchase" ? "bg-blue-50 text-blue-700" :
-                  tx.type === "usage" ? "bg-orange-50 text-orange-700" :
-                  tx.type === "admin_adjustment" ? "bg-purple-50 text-purple-700" :
-                  tx.type === "refund" ? "bg-emerald-50 text-emerald-700" :
-                  tx.type === "bonus" ? "bg-yellow-50 text-yellow-700" :
-                  "bg-gray-100 text-gray-600"
-                }>
-                  {tx.type.replace("_", " ")}
-                </Badge>
-              </div>
-              {tx.description && (
-                <p className="text-xs text-[#999] mt-1 truncate">{tx.description}</p>
-              )}
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[10px] text-[#CCC]">{formatDate(new Date(tx.createdAt))}</span>
-                <div className="flex items-center gap-2">
-                  {tx.type === "topup" && tx.referenceId && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 px-1.5 text-[10px] text-amber-700 hover:text-amber-800 hover:bg-amber-50"
-                      onClick={() => {
-                        const amountCents = Math.round(tx.amount * 0.00072);
-                        onOpenChangeRequest({
-                          type: "stripe_refund",
-                          targetUserId: String(selectedUserId),
-                          targetUserName: userDetailsQuery.data?.user?.name || "",
-                          stripeSessionId: tx.referenceId!,
-                          originalAmountCents: amountCents,
-                          originalCredits: tx.amount,
-                        });
-                      }}
-                    >
-                      <CreditCard className="w-3 h-3 mr-0.5" />
-                      Refund
-                    </Button>
-                  )}
-                  <span className="text-[10px] text-[#CCC]">Balance: {tx.balanceAfter}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Credit Pagination */}
-      {(creditHistoryQuery.data?.total || 0) > 20 && (
-        <div className="flex items-center justify-between pt-3 border-t border-[#E5E5E5]">
-          <span className="text-xs text-[#999]">
-            Page {creditPage + 1} of {Math.ceil((creditHistoryQuery.data?.total || 0) / 20)}
-          </span>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCreditPage(p => Math.max(0, p - 1))}
-              disabled={creditPage === 0}
-              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCreditPage(p => p + 1)}
-              disabled={(creditPage + 1) * 20 >= (creditHistoryQuery.data?.total || 0)}
-              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
-            >
-              <ChevronRight className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <DataTable
+        columns={[
+          { label: "Amount", width: "0 0 96px" },
+          { label: "Kind", width: "0 0 124px" },
+          { label: "What", width: "1 1 0" },
+          { label: "Balance", width: "0 0 96px", align: "end" },
+          { label: "When", width: "0 0 148px" },
+        ]}
+        rows={rows}
+        loading={creditHistoryQuery.isLoading}
+        empty={{
+          title: "No credit transactions match those filters.",
+          body: "Widen the kind, or clear the dates.",
+        }}
+        footer={{
+          meta: pageRange({
+            offset: creditPage * PAGE_SIZE,
+            count: transactions.length,
+            total,
+          }),
+          onBack: () => setCreditPage((p) => Math.max(0, p - 1)),
+          onNext: () => setCreditPage((p) => p + 1),
+          backDisabled: creditPage === 0,
+          nextDisabled: (creditPage + 1) * PAGE_SIZE >= total,
+        }}
+      />
     </div>
   );
 }

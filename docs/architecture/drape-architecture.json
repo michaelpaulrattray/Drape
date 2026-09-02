@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c76d09bc70a86f62"
+    "sourceFingerprint": "abc35553dd2a258c"
   },
   "domains": [
     {
@@ -83,7 +83,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 17
+      "moduleCount": 19
     },
     {
       "id": "domain:operations",
@@ -1981,8 +1981,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/moderator/figures.ts",
+      "path": "client/src/features/moderator/figures.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/moderator/index.ts",
       "path": "client/src/features/moderator/index.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/investigations.css",
+      "path": "client/src/features/moderator/investigations.css",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -10664,6 +10676,10 @@
       "path": "client/src/features/lobby/lobbyStub.test.ts"
     },
     {
+      "id": "test:client/src/features/moderator/section09-guard.test.ts",
+      "path": "client/src/features/moderator/section09-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/operations/bridgeOwnership.test.ts",
       "path": "client/src/features/operations/bridgeOwnership.test.ts"
     },
@@ -16900,22 +16916,7 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
-      "to": "module:client/src/components/ui/select.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
     },
     {
@@ -16925,22 +16926,27 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
+      "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -17045,22 +17051,17 @@
     },
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -17075,7 +17076,7 @@
     },
     {
       "from": "module:client/src/features/moderator/StatsCards.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -17109,28 +17110,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
-      "to": "module:client/src/components/ui/badge.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
-      "to": "module:client/src/components/ui/dialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
+      "from": "module:client/src/features/moderator/UserInvestigationTab.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {

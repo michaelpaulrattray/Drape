@@ -207,6 +207,61 @@
   color: var(--metaStrong);
 }
 
+/*
+  The optional required note (brief 09 §4a). It sits between the body and the
+  actions so the reader meets the question, the field, then the answer — the
+  same subject → evidence → action order the investigation surfaces use.
+*/
+.dpc-confirm__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.dpc-confirm__noteslabel {
+  font: 500 11.5px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dpc-confirm__notesfield {
+  width: 100%;
+  padding: 8px 10px;
+  font: 400 12.5px/1.5 var(--font-sans);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-sm);
+  resize: none;
+}
+
+.dpc-confirm__notesfield::placeholder { color: var(--faint); }
+
+/*
+  ⚠ **THE SAME EXPLICIT MARK ITS SIBLING BUTTONS WEAR, NOT AN `outline: none`
+  RESET** — caught by `anchoredPanel.test.ts`, which is worth recording because
+  the reasoning that produced the reset was right and still gave the wrong CSS.
+
+  This dialog is `createPortal`'d to `document.body`, so the blanket
+  `.dp-root :focus-visible` cannot reach it and a reset here would have looked
+  harmless. But `.dpc-confirm__notesfield:focus-visible` is (0,2,0) — it TIES
+  with the blanket, and a tie is decided by stylesheet order, which is not
+  something anybody can see while writing the rule. The right answer is not a
+  second carve-out: it is to stop resetting and wear what
+  `.dpc-confirm__keep` and `.dpc-confirm__go` already wear, two rules below.
+*/
+.dpc-confirm__notesfield:focus-visible {
+  outline: 2px solid var(--accentSolid);
+  outline-offset: 2px;
+}
+
+.dpc-confirm__notescount {
+  margin: 0;
+  text-align: right;
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
 .dpc-confirm__actions {
   display: flex;
   justify-content: flex-end;

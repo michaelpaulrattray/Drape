@@ -18,7 +18,6 @@ import {
   Button,
   Card,
   Chip,
-  CostedOption,
   DataTable,
   DerivedChip,
   Dock,
@@ -33,7 +32,6 @@ import {
   Marquee,
   MediaCard,
   MediaFrame,
-  MilestoneRail,
   Progress,
   RequiredMarker,
   ScopePill,
@@ -46,7 +44,6 @@ import {
   TableHead,
   TableSearch,
   TableSort,
-  Transcript,
 } from "@/foundation";
 import { Redirect } from "wouter";
 
@@ -511,71 +508,6 @@ export default function AdminFoundation() {
           Seven tints across the two staff surfaces collapse to three looks: greyscale, plus the
           one red for genuinely urgent state. What an entry is about is carried by its mono action
           string, which says more than a colour can.
-        </p>
-      </section>
-
-      <section className="dp-stack" style={{ gap: 16 }}>
-        <SectionHead eyebrow="08 · Decisions & progress" aside="a choice states its cost" />
-        <div className="dp-split">
-          <div className="dp-stack dp-split__main" style={{ gap: 10 }}>
-            <CostedOption
-              optionKey="TAKE"
-              label="Ship looks only"
-              costs={[
-                { sign: "−", text: "3 items out of M4" },
-                { sign: "!", text: "per-garment moves to M5" },
-              ]}
-            />
-            <CostedOption
-              optionKey="HOLD"
-              label="Keep the whole milestone together"
-              costs={[
-                { sign: "+", text: "one surface, one review" },
-                { sign: "=", text: "no change to the ladder" },
-              ]}
-            />
-          </div>
-          <Card className="dp-split__side">
-            <span className="dp-label">Milestone rail</span>
-            <MilestoneRail
-              milestones={[
-                { id: "M1", name: "Foundation", weight: 3, done: 3, total: 3 },
-                { id: "M2", name: "Chrome", weight: 2, done: 2, total: 2 },
-                { id: "M3", name: "Shelf + composer", weight: 5, done: 6, total: 9 },
-                { id: "M4", name: "Takes", weight: 4, done: 0, total: 7 },
-              ]}
-            />
-            <span className="dp-secondary">
-              Segment width is proportional to the size of the milestone. Equal segments would say
-              a nine-item milestone and a two-item one are the same amount of work.
-            </span>
-          </Card>
-        </div>
-      </section>
-
-      <section className="dp-stack" style={{ gap: 16 }}>
-        <SectionHead eyebrow="09 · Transcript" aside="speaker column is 80px" />
-        <Card>
-          <Transcript
-            entries={[
-              {
-                who: "night shift",
-                when: "07:14",
-                body: "Section 00 is in: nine shared components, four keyframes and the popover hook. No surface moved.",
-              },
-              {
-                who: "you",
-                when: "07:21",
-                body: "Good. Bring the menus onto the same grammar next.",
-                own: true,
-                ref: { kind: "RULING", text: "00b is the next PR, then stop" },
-              },
-            ]}
-          />
-        </Card>
-        <p className="dp-secondary">
-          "night shift" needs 69.3px at the 10.5px mono floor and clips at 64px, so the column is
-          80px and does not shrink. The answer to a long label is never a smaller font.
         </p>
       </section>
 

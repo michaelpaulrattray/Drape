@@ -295,8 +295,28 @@ export default function ModeratorDashboard() {
       <main className="space-y-6">
         <StatsCards statsQuery={statsQuery} alertsQuery={alertsQuery} />
 
+        {/*
+          ⚠ **THE LINK-THROUGH HAS TO PUT THE ACCOUNT IN THE LIST, NOT JUST
+          SELECT IT** (#412 review, finding 1 — a regression this PR introduced).
+
+          On `main` the investigation was a sidebar that rendered whenever
+          `selectedUserId` was set, independent of the table. Here it lives
+          inside the matching ROW, so an account that is not on the visible page
+          — the list is 20 per page sorted newest-first, and a search may be
+          left in the box — had nowhere to open. The moderator clicked a flagged
+          account, landed on this tab, and NOTHING happened: no error, no hint.
+          That is the one path this card exists for.
+
+          ⚠ **The search is by EMAIL, not by id, and that is not a preference.**
+          `listUsers` matches `name`, `email` and `openId` (`server/db/admin.ts`)
+          and **never the numeric id** — so setting the search to `String(userId)`
+          would have looked like a fix and found nothing. Email is unique; the
+          name is the fallback for the rows that have no email.
+        */}
         <FlaggedDiscrepanciesCard
-          onSelectUser={(userId) => {
+          onSelectUser={(userId, identity) => {
+            setUserSearchQuery(identity ?? "");
+            setUserPage(() => 0);
             setSelectedUserId(userId);
             setActiveTab("users");
           }}

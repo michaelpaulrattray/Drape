@@ -73,6 +73,47 @@ const tableSurfaces = () => {
   return files;
 };
 
+/**
+ * ⚠ **EVERY STAFF COMPONENT, AND IT EXISTS BECAUSE THE POPULATION ABOVE HAD A
+ * HOLE THE SHAPE OF THE OFFENDER** (#399, one brief later).
+ *
+ * `tableSurfaces()` asks *"of the things that MOUNT the shared table, do they
+ * all obey the pattern"*, and the docblock above claims the gap is covered:
+ * *"a file that draws rows without mounting `DataTable` is caught by the
+ * hand-rolling arm."* **It was not.** That arm iterates `tableSurfaces()` and
+ * `staffPages()` — so a component that hand-rolls a table and mounts neither
+ * primitive is in NO population at all, and the arm is green for the same
+ * reason an empty one is.
+ *
+ * `UserInvestigationWidgets.tsx` was exactly that: a `<table>`, an
+ * `overflow-x-auto` and an **Actions column** — the three things brief 06 §8
+ * bans by name — sitting unmeasured through the brief that banned them and the
+ * two that followed.
+ *
+ * So the hand-rolling arm reads THIS population instead: **every `.tsx` under
+ * `features/admin` and `features/moderator`, recursively, plus the staff
+ * pages.** The question that arm asks is not *"does this mount the table"* but
+ * *"does anything on a staff surface draw rows itself"*, and only a population
+ * derived from the directory can answer it.
+ */
+const staffComponents = () => {
+  const files: { name: string; text: string }[] = [];
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const child = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(child);
+        continue;
+      }
+      if (!entry.name.endsWith(".tsx")) continue;
+      files.push({ name: path.relative(CLIENT_SRC, child), text: fs.readFileSync(child, "utf8") });
+    }
+  };
+  walk(ADMIN);
+  walk(MODERATOR);
+  return files;
+};
+
 /** The staff pages, on section 05's own derivation. */
 const staffPages = () =>
   fs
@@ -109,7 +150,19 @@ describe("brief 06 — the population is real", () => {
 
 describe("brief 06 §8 — one pattern, and no surface hand-rolls rows", () => {
   it("no staff surface builds its own <table> or a row list of its own", () => {
-    for (const { name, text } of [...tableSurfaces(), ...staffPages()]) {
+    /*
+      ⚠ The population is `staffComponents()` — the DIRECTORY — not
+      `tableSurfaces()`. See that helper's docblock: the mount-derived set
+      cannot contain a file that hand-rolls instead of mounting, which is
+      exactly the file this arm exists to catch, and did not for three briefs.
+    */
+    const population = [...staffComponents(), ...staffPages()];
+    expect(
+      population.length,
+      "the hand-rolling arm has no population — an absence assertion over an empty list passes on anything",
+    ).toBeGreaterThanOrEqual(20);
+
+    for (const { name, text } of population) {
       const source = code(text);
       expect(source, `${name} draws its own <table>`).not.toMatch(/<table[\s>]/);
       expect(

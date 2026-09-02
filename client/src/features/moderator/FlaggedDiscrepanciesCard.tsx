@@ -1,23 +1,56 @@
 /**
- * FlaggedDiscrepanciesCard — surfaces users with credit discrepancies
- * above a configurable threshold on the moderator dashboard overview.
+ * FLAGGED DISCREPANCIES — *"Which accounts need looking at?"*
+ *
+ * Brief 09 §5: *"the moderator's equivalent of Overview's 'needs a human':
+ * dashed cards while unresolved, solid once handled, each linking to that
+ * account's reconciliation."*
+ *
+ * ## ⚠ His own check, run — Overview's attention card does NOT serve this
+ *
+ * §5 asks first: *"Check whether Overview's attention card serves it before
+ * writing a second one."* It does not, and `NeedsHuman.tsx`'s own docblock says
+ * why in its own words: flagged discrepancies are one of the two sources that
+ * card deliberately omits, because `getUsersWithDiscrepancies(threshold)` is a
+ * separate procedure and *"it would need this card to invent a threshold."*
+ * That threshold is a control on THIS card. So this stays where it is.
+ *
+ * ## ⚠ DASHED IS THE ONLY STATE, AND THAT IS MEASURED RATHER THAN LAZY
+ *
+ * *"Solid once handled"* has no population here. An account leaves this list
+ * the moment its discrepancy falls below the threshold — nothing is ever
+ * handled *in place*, exactly as `NeedsHuman` records for the admin side. A
+ * solid variant would be a branch no data can reach, which reads as tested and
+ * is not; #398 caught the same shape on the eye gallery's judged tiles.
+ *
+ * The one state variation that IS reachable: when nothing is flagged the border
+ * stops being dashed, because a dashed frame around *"nothing needs you"* is an
+ * empty card asking for attention.
+ *
+ * ## Colour
+ *
+ * The severity ladder is gone — red at 2000, amber at 1000, blue below. His §3:
+ * *"when everything is coloured, the discrepancy is not."* Every row's figure
+ * is `--errorInk` because every row on this card IS the fault; the ladder is
+ * carried by the sort order and by the number itself.
  */
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo, useState } from "react";
+
+import { Button, Chip, EmptyState, Skeleton, TableHead } from "@/foundation";
 import { trpc } from "@/lib/trpc";
-import {
-  AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  Users,
-  Settings2,
-} from "lucide-react";
-import { useState, useMemo } from "react";
+
+import { grouped, signed } from "./figures";
+
+import "./investigations.css";
 
 interface FlaggedDiscrepanciesCardProps {
-  onSelectUser: (userId: number) => void;
+  /**
+   * ⚠ **`identity` is the SEARCH STRING the destination needs, not decoration.**
+   * The investigation opens inside the account's row, so the caller has to put
+   * that account into the list before selecting it — and `listUsers` matches
+   * `name`, `email` and `openId`, never the numeric id. Handing the caller the
+   * id alone is what made the link-through silently do nothing (#412 review).
+   */
+  onSelectUser: (userId: number, identity: string | null) => void;
   autoRefreshInterval?: number | false;
 }
 
@@ -30,7 +63,6 @@ export function FlaggedDiscrepanciesCard({
 }: FlaggedDiscrepanciesCardProps) {
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
   const [expanded, setExpanded] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   const flaggedQuery = trpc.moderatorReconciliation.getFlaggedUsers.useQuery(
     { threshold },
@@ -46,190 +78,77 @@ export function FlaggedDiscrepanciesCard({
     [expanded, flaggedUsers]
   );
 
-  const hasCritical = flaggedUsers.some((u) => Math.abs(u.discrepancy) >= 2000);
-  const hasWarning = flaggedCount > 0;
-
   return (
     <div
-      className={`rounded-xl border overflow-hidden ${
-        hasCritical
-          ? "bg-red-50 border-red-200"
-          : hasWarning
-          ? "bg-amber-50 border-amber-200"
-          : "bg-white border-[#E5E5E5]"
-      }`}
+      className={`dp-inv__flagged${flaggedCount === 0 ? " dp-inv__flagged--clear" : ""}`}
     >
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertTriangle
-            className={`w-4 h-4 ${
-              hasCritical ? "text-red-600" : hasWarning ? "text-amber-600" : "text-[#999]"
-            }`}
-          />
-          <h3 className="text-sm font-semibold text-[#0A0A0A]">Credit Discrepancies</h3>
-          {flaggedQuery.isLoading ? (
-            <Skeleton className="h-5 w-8 bg-[#E5E5E5]" />
-          ) : (
-            <Badge
-              variant="outline"
-              className={`text-xs ${
-                hasCritical
-                  ? "border-red-300 text-red-700"
-                  : hasWarning
-                  ? "border-amber-300 text-amber-700"
-                  : "border-[#D5D5D5] text-[#999]"
-              }`}
-            >
-              {flaggedCount}
-            </Badge>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 text-[#999] hover:text-[#0A0A0A]"
-          onClick={() => setShowSettings(!showSettings)}
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
-
-      {/* Threshold selector */}
-      {showSettings && (
-        <div className="flex items-center gap-2 px-4 pb-3 border-t border-[#E5E5E5] pt-2">
-          <span className="text-xs text-[#999]">Threshold:</span>
+      <TableHead eyebrow="Credit discrepancies">
+        {/*
+          The threshold was behind a gear that opened a hidden row. It is the
+          question this card answers — "above what?" — so it is the card's
+          filter, in the head, where every other staff filter lives.
+        */}
+        <span className="dp-inv__thresholds">
           {THRESHOLDS.map((t) => (
-            <button
+            <Chip
               key={t}
+              aria-pressed={threshold === t}
+              className={threshold === t ? "dp-chip--static" : undefined}
               onClick={() => setThreshold(t)}
-              className={`text-xs px-2 py-0.5 rounded ${
-                threshold === t
-                  ? "bg-[#0A0A0A] text-white"
-                  : "bg-[#F0F0F0] text-[#999] hover:bg-[#E5E5E5] hover:text-[#666]"
-              }`}
             >
               {t}+
-            </button>
+            </Chip>
           ))}
+        </span>
+      </TableHead>
+
+      {flaggedQuery.isLoading ? (
+        <div className="dp-inv__flaggedrows">
+          <Skeleton style={{ height: 38 }} />
+          <Skeleton style={{ height: 38 }} />
         </div>
-      )}
-
-      {/* Content */}
-      <div className="px-4 pb-4">
-        {flaggedQuery.isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full bg-[#E5E5E5]" />
-            <Skeleton className="h-10 w-full bg-[#E5E5E5]" />
-          </div>
-        ) : flaggedCount === 0 ? (
-          <div className="flex items-center gap-2 py-3 text-[#999]">
-            <Users className="w-4 h-4" />
-            <span className="text-xs">
-              No discrepancies above {threshold} credits across {scannedCount} users
-            </span>
-          </div>
-        ) : (
-          <>
-            <p className="text-xs text-[#999] mb-2">
-              {flaggedCount} user{flaggedCount !== 1 ? "s" : ""} with discrepancy
-              {" \u2265 "}{threshold} credits ({scannedCount} scanned)
-            </p>
-
-            <div className="space-y-1">
-              {visibleUsers.map((user) => (
-                <FlaggedUserRow
-                  key={user.userId}
-                  user={user}
-                  onSelect={() => onSelectUser(user.userId)}
-                />
-              ))}
-            </div>
-
-            {flaggedCount > 5 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full h-7 text-xs text-[#999] hover:text-[#0A0A0A] mt-1"
-                onClick={() => setExpanded(!expanded)}
+      ) : flaggedCount === 0 ? (
+        <EmptyState
+          title="No accounts need looking at."
+          body={`Nothing above ${threshold} credits across ${scannedCount} accounts.`}
+        />
+      ) : (
+        <>
+          <p className="dp-inv__flaggedmeta">
+            {flaggedCount} of {scannedCount} accounts scanned are above {threshold} credits
+          </p>
+          <div className="dp-inv__flaggedrows">
+            {visibleUsers.map((user) => (
+              <button
+                key={user.userId}
+                type="button"
+                className="dp-inv__flaggedrow"
+                onClick={() => onSelectUser(user.userId, user.email ?? user.userName)}
               >
-                {expanded ? (
-                  <><ChevronUp className="w-3 h-3 mr-1" /> Show less</>
-                ) : (
-                  <><ChevronDown className="w-3 h-3 mr-1" /> Show all {flaggedCount} users</>
-                )}
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span className="dp-inv__flaggedname">
+                    {user.userName || `User #${user.userId}`}
+                  </span>
+                  <span className="dp-inv__flaggedmeta" style={{ display: "block" }}>
+                    Charged {grouped(user.grossDeductions)} · recorded{" "}
+                    {grouped(user.expectedCost)}
+                    {user.failedGenerations > 0 ? ` · ${user.failedGenerations} failed` : ""}
+                    {user.refundAnomaly ? " · refunds exceed charges" : ""}
+                  </span>
+                </span>
+                <span className="dp-inv__flaggedfigure">{signed(user.discrepancy)}</span>
+              </button>
+            ))}
+          </div>
+          {flaggedCount > 5 && (
+            <div className="dp-inv__subjectaction">
+              <Button variant="quiet" size="small" onClick={() => setExpanded(!expanded)}>
+                {expanded ? "Show fewer" : `Show all ${flaggedCount}`}
               </Button>
-            )}
-          </>
-        )}
-      </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
-  );
-}
-
-// ── Row sub-component ──
-
-interface FlaggedUserRowProps {
-  user: {
-    userId: number;
-    userName: string | null;
-    email: string | null;
-    discrepancy: number;
-    grossDeductions: number;
-    expectedCost: number;
-    refundAnomaly: boolean;
-    failedGenerations: number;
-    totalGenerations: number;
-  };
-  onSelect: () => void;
-}
-
-function FlaggedUserRow({ user, onSelect }: FlaggedUserRowProps) {
-  const absDisc = Math.abs(user.discrepancy);
-  const severity =
-    absDisc >= 2000 ? "critical" : absDisc >= 1000 ? "warning" : "info";
-
-  return (
-    <button
-      onClick={onSelect}
-      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-white hover:bg-[#FAFAFA] transition-colors text-left group border border-[#E5E5E5]"
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-[#0A0A0A] truncate">
-            {user.userName || `User #${user.userId}`}
-          </span>
-          <Badge
-            variant="outline"
-            className={`text-[10px] px-1.5 py-0 ${
-              severity === "critical"
-                ? "border-red-300 text-red-700"
-                : severity === "warning"
-                ? "border-amber-300 text-amber-700"
-                : "border-blue-300 text-blue-700"
-            }`}
-          >
-            {user.discrepancy > 0 ? "+" : ""}
-            {user.discrepancy}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-3 mt-0.5">
-          <span className="text-[10px] text-[#999]">
-            Charged: {user.grossDeductions} | Recorded: {user.expectedCost}
-          </span>
-          {user.failedGenerations > 0 && (
-            <span className="text-[10px] text-amber-600">
-              {user.failedGenerations} failed
-            </span>
-          )}
-          {user.refundAnomaly && (
-            <span className="text-[10px] text-red-600">
-              refunds exceed charges
-            </span>
-          )}
-        </div>
-      </div>
-      <ChevronRight className="w-3.5 h-3.5 text-[#CCC] group-hover:text-[#999] transition-colors shrink-0" />
-    </button>
   );
 }

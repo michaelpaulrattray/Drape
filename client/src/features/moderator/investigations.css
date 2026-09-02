@@ -1,0 +1,337 @@
+/*
+  SECTION 09 — the moderator investigation surfaces
+  (`docs/specs/Casting-ui-ux-design/drape-redesign/09-moderator-investigations.md`).
+
+  The fifth and last staff sheet, on the pattern briefs 07 and 08 set: one
+  stylesheet per section, prefix `dp-inv__`, every colour a token.
+
+  ## The shape this sheet exists to draw
+
+  His §2, and naming it once is most of the work:
+  **subject → verdict → evidence → action.**
+
+  Reconciliation ran the other way round — a banner, two dense columns, then a
+  six-row table whose LAST line was the discrepancy, which is *"the answer to
+  the entire view, in 12px, at the bottom."* So the verdict block below is the
+  only thing on the page allowed to be large, and the workings that used to
+  repeat it now end one row early.
+
+  ## ⚠ Why there is almost no colour in this file
+
+  His §3, and it is the sharpest version of the product's colour rule because
+  here the numbers ARE the page:
+
+  > *"Green for earned and red for spent is the accounting convention, not this
+  > product's. Spending credits is what the product is FOR."*
+  > *"When everything is coloured, the discrepancy is not."*
+
+  Reconciliation carried five colours — emerald, red, amber, blue, purple. What
+  is left is `--ink` for every measured value, `--accentInk` for a frozen
+  account and a failure rate, and `--errorInk` on exactly one number: the
+  discrepancy, when it is non-zero. **Signs carry direction** (`+2,400`,
+  `−1,860`), which is the information colour was standing in for.
+
+  ⚠ **`--error` sets borders and fills; `--errorInk` sets text** (brief 07's
+  finding — plain `--error` measures 3.40:1 on the dark surface).
+*/
+
+/* ---- the subject band (§4a) ---------------------------------------- */
+
+/*
+  Shown ONLY when there is something to say. His §4a is explicit that a
+  not-frozen account gets no band at all: *"Do not add an 'account in good
+  standing' card."*
+*/
+.dp-inv__subject {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 15px;
+  border: 1px solid var(--accentLine);
+  border-radius: var(--r-xl);
+  background: var(--accentWash);
+}
+
+.dp-inv__subjectbody { flex: 1; min-width: 0; }
+
+.dp-inv__subjecttitle {
+  margin: 0;
+  font: 500 12.5px var(--font-sans);
+  color: var(--accentInk);
+}
+
+.dp-inv__subjectreason {
+  margin: 3px 0 0;
+  font: 400 11.5px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-inv__subjectstamp { font-family: var(--font-mono); }
+
+.dp-inv__subjectaction { margin-top: 9px; }
+
+/* ---- the verdict (§4b) --------------------------------------------- */
+
+/*
+  Directly below the subject, above everything else. The whole restructure is
+  this block existing at all.
+*/
+.dp-inv__verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 17px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+/* Failures were refunded — a state worth noticing, not a fault. */
+.dp-inv__verdict--refunded {
+  border-color: var(--accentLine);
+  background: var(--accentWash);
+}
+
+/*
+  The one fault state on the surface.
+
+  ⚠ **Border only, no wash — because there is no error wash token and inventing
+  one is a design decision, not a build step.** His §4b says *"Discrepancy: the
+  `--error` family"*, and that family is two roles: `--error` for border/fill
+  and `--errorInk` for text. A red FILL here would need `--onError` white text
+  across a whole block and would shout louder than the figure it frames. One
+  red hairline on `--surface`, with the number in `--errorInk`, is the family
+  applied — and it is the only red on the page.
+*/
+.dp-inv__verdict--fault { border-color: var(--error); }
+
+.dp-inv__verdictmain { flex: 1; min-width: 220px; }
+
+.dp-inv__eyebrow {
+  margin: 0;
+  font: 500 9px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.dp-inv__verdictline {
+  margin: 6px 0 0;
+  font: 400 15px/1.4 var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-inv__verdictsummary {
+  margin: 5px 0 0;
+  font: 400 12px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-inv__verdictfigure {
+  flex: none;
+  text-align: right;
+}
+
+/*
+  30px, and the only figure on the surface at this size. His §8: *"the
+  discrepancy is the largest figure in the pane and appears once."*
+*/
+.dp-inv__verdictvalue {
+  margin: 4px 0 0;
+  font: 500 30px var(--font-mono);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dp-inv__verdictvalue--fault { color: var(--errorInk); }
+
+/* ---- evidence (§4c, §4d) ------------------------------------------- */
+
+/*
+  ⚠ `auto-fit` with a `minmax`, NEVER `grid-cols-2` — his §4c and §7 both.
+  Two columns of dense figures at 500px each is unreadable, and this pane can
+  be narrow when the rail is open on a laptop.
+*/
+.dp-inv__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(292px, 1fr));
+  gap: 12px;
+}
+
+.dp-inv__card {
+  padding: 14px 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+.dp-inv__cardbody { margin-top: 10px; }
+
+/*
+  ⚠ **THE LEADER ROW IS NOT DEFINED HERE.** It went to the foundation as
+  `LeaderRow` / `.dp-leader` in this same PR, on his §9's instruction. Its CSS
+  block there carries the specification and the reasoning; repeating either
+  here is how two implementations start.
+*/
+
+/* `By type` sub-blocks — a hairline and an eyebrow above the smaller rows. */
+.dp-inv__subblock {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--rule);
+}
+
+/* ---- filters and export (§4e) -------------------------------------- */
+
+/*
+  One row, wrapping, with a `flex: 1` SPACER — never `ml-auto`, which his §7
+  bans by name.
+*/
+.dp-inv__filters {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.dp-inv__filterspacer { flex: 1; }
+
+.dp-inv__datefield { position: relative; display: inline-flex; align-items: center; }
+
+.dp-inv__date {
+  padding: 6px 10px;
+  font: 400 11.5px var(--font-mono);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-sm);
+}
+
+.dp-inv__date:focus-visible { outline: none; border-color: var(--lineStrong); }
+
+.dp-inv__dateclear {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  color: var(--meta);
+  cursor: pointer;
+}
+
+.dp-inv__dateclear:hover { color: var(--ink); }
+
+.dp-inv__dash { font: 400 11.5px var(--font-mono); color: var(--faint); }
+
+/* ---- the flagged-accounts card (§5) --------------------------------- */
+
+/*
+  ⚠ **DASHED IS THE ONLY STATE, AND THAT IS MEASURED RATHER THAN LAZY.** His
+  §5 asks for *"dashed cards while unresolved, solid once handled"* — and
+  nothing here can be handled in place: an account leaves this list the moment
+  its discrepancy resolves, exactly as `NeedsHuman`'s own docblock records for
+  the admin side. A solid variant would be a branch no data can reach, which
+  reads as tested and is not.
+*/
+.dp-inv__flagged {
+  padding: 14px 15px;
+  border: 1px dashed var(--dashed);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+}
+
+/* Nothing flagged: the border stops asking for attention. */
+.dp-inv__flagged--clear { border-style: solid; border-color: var(--border); }
+
+.dp-inv__flaggedrows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 10px;
+}
+
+.dp-inv__flaggedrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.dp-inv__flaggedrow:hover { background: var(--well); }
+.dp-inv__flaggedrow:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
+
+.dp-inv__flaggedname {
+  font: 400 12px var(--font-sans);
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp-inv__flaggedmeta {
+  margin: 2px 0 0;
+  font: 400 10.5px var(--font-mono);
+  color: var(--meta);
+}
+
+.dp-inv__flaggedfigure {
+  flex: none;
+  font: 500 13px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--errorInk);
+}
+
+.dp-inv__thresholds { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* ---- the investigation frame (§5) ----------------------------------- */
+
+/*
+  ⚠ **THE ONE PLACE HIS PICTURE AND THE TREE DISAGREED.** §4 describes
+  Reconciliation as a working pane at 1240px; it was in fact the fourth sub-tab
+  of a `lg:col-span-1` sidebar, roughly 380px wide — which is WHY the
+  discrepancy ended up at 12px at the bottom. There was never room for it to be
+  anything else.
+
+  So the selected account's investigation opens full width beneath the list
+  rather than in a third of the page. Every query, filter, export and mutation
+  is untouched by that move.
+*/
+.dp-inv__frame {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dp-inv__subjecthead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.dp-inv__subjectfacts {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.dp-inv__fact { display: flex; flex-direction: column; gap: 2px; }
+
+.dp-inv__factvalue {
+  font: 400 13px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dp-inv__stack { display: flex; flex-direction: column; gap: 12px; }
+
+.dp-inv__actions { display: flex; gap: 8px; flex-wrap: wrap; }

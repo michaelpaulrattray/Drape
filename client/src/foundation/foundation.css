@@ -2181,133 +2181,6 @@ a.dp-segmented__seg {
   color: var(--faint);
 }
 
-/* ---------------------------------------------------------- costed option */
-
-.dp-costed {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  padding: 13px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--t-fast) var(--ease);
-}
-
-.dp-costed:hover { border-color: var(--lineStrong); }
-
-.dp-costed__head {
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
-  min-width: 0;
-}
-
-.dp-costed__costs {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.dp-costed__cost {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.dp-costed__sign {
-  flex: none;
-  width: 9px;
-  font: 500 11px var(--font-mono);
-}
-
-/* --------------------------------------------------------- milestone rail */
-
-.dp-milestones {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Segment width is `flex: weight` — equal segments lie about where the work is. */
-.dp-milestones__rail {
-  display: flex;
-  gap: 3px;
-  height: 6px;
-}
-
-.dp-milestones__seg { border-radius: var(--r-pill); }
-.dp-milestones__seg--closed  { background: var(--lineStrong); }
-.dp-milestones__seg--current { background: var(--ink); }
-.dp-milestones__seg--held    { background: var(--muted); }
-.dp-milestones__seg--todo    { background: transparent; box-shadow: inset 0 0 0 1px var(--dashed); }
-
-.dp-milestones__legend {
-  display: flex;
-  gap: 3px;
-}
-
-/* ------------------------------------------------------------- transcript */
-
-.dp-transcript {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.dp-transcript__entry {
-  display: flex;
-  gap: 10px;
-  min-width: 0;
-}
-
-/*
-  ⚠ 80px, AND IT DOES NOT SHRINK. "night shift" needs 69.3px at 10.5px mono and
-  clips at 64px. The answer is not a smaller font — 10.5px is the mono floor.
-*/
-.dp-transcript__who {
-  flex: none;
-  width: 80px;
-  padding-top: 1px;
-  font: 400 10.5px var(--font-mono);
-  color: var(--faint);
-}
-
-.dp-transcript__spine {
-  flex: none;
-  width: 1px;
-  background: var(--rule);
-}
-
-.dp-transcript__body {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-  padding-bottom: 2px;
-}
-
-.dp-transcript__text {
-  font: 400 12px/1.65 var(--font-sans);
-  color: var(--secondary);
-}
-
-.dp-transcript__entry--own .dp-transcript__spine { background: var(--ink); }
-.dp-transcript__entry--own .dp-transcript__who   { color: var(--metaStrong); }
-.dp-transcript__entry--own .dp-transcript__text  { font-weight: 500; color: var(--ink); }
-
-.dp-transcript__ref {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: var(--r-sm);
-  background: var(--well);
-}
-
 /* ---------------------------------------------------------------- marquee */
 
 .dp-marquee {
@@ -2747,6 +2620,73 @@ a.dp-segmented__seg {
 .dp-counttile__value--alert { color: var(--accentInk); }
 
 .dp-counttile__skeleton { height: 22px; width: 64px; }
+
+/* ----------------------------------------- the leader row
+ *
+ * Label · spacer · measured value in mono. Brief 09 §9 calls it *"the most-used
+ * row in the product"* and asks for it as a component, and its specification is
+ * that brief's §4c: `align-items: baseline`, `gap: 10px`, `padding: 6px 0`, the
+ * value in 12px mono, and — the only variant — **a hairline above a subtotal
+ * with `500` on the LABEL, never on the value.**
+ *
+ * ⚠ **THERE IS A SECOND IMPLEMENTATION IN THE TREE AND THIS PR DELIBERATELY
+ * DOES NOT ABSORB IT.** `.dp-ov__leader` (brief 07, three consumers:
+ * `GovernanceCard`, `SystemStatusCard`, `UserGrowthCard`) is the same idea with
+ * a different divider grammar — a `border-bottom` between EVERY row rather than
+ * a hairline before a subtotal — and it differs in four measured properties
+ * (`align-items` center vs baseline, gap 8 vs 10, padding 7 vs 6, value 11.5px
+ * vs 12px). Converging it would change the pixels of a section that shipped
+ * yesterday behind 66 guard arms, inside a PR about a different section.
+ *
+ * `PROMOTION-PASS.md` settles that directly — *"NOT a refactor … NOT a chance
+ * to tidy the original"*, and *"if a promotion needs a rewrite to be general it
+ * is not ready — leave it and log it."* **So it is logged, with both specs
+ * quoted, rather than absorbed quietly or left unmentioned.**
+ *
+ * ⚠ **His §9 also names Settings as a third consumer, and it is not one.**
+ * `.dp-set__row` takes an interactive CONTROL on the right — a toggle, a field,
+ * a button — not a measured value. Same silhouette, different job.
+ */
+.dp-leaders { display: flex; flex-direction: column; }
+
+.dp-leader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.dp-leader__label {
+  font: 400 11.5px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-leader__spacer { flex: 1; }
+
+.dp-leader__value {
+  font: 400 12px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* The one value allowed to carry attention on an investigation surface. */
+.dp-leader__value--attention { color: var(--accentInk); }
+
+/* A hairline above the subtotal, and `500` on the LABEL — his §6 bans
+   `font-medium` from doing a subtotal's work on the figure itself. */
+.dp-leader--subtotal {
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 1px solid var(--rule);
+}
+
+.dp-leader--subtotal .dp-leader__label { font-weight: 500; }
+
+/* `By type` sub-blocks — the same row, one step smaller (§4c). */
+.dp-leader--small .dp-leader__label,
+.dp-leader--small .dp-leader__value { font-size: 11px; }
+.dp-leader--small { padding: 4px 0; }
+.dp-leader--small .dp-leader__value { color: var(--metaStrong); }
 
 /* ----------------------------------------- a plain panel above a table
  *
