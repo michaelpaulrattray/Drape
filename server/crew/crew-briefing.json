@@ -1,6 +1,6 @@
 {
-  "edition": 213,
-  "updatedAt": "2026-09-02T10:30:42.354442Z",
+  "edition": 214,
+  "updatedAt": "2026-09-02T10:33:53.428283Z",
   "shift": "Foreman — night of 2 September (an open row now sits on its own lighter block across all twelve staff tables; you called it perfect)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -1394,7 +1394,7 @@
       "id": "open-row-ground-441",
       "title": "You can see which account you are looking into — before and after, side by side",
       "question": "You said the open profile was \"all one color\" and you could not tell which row you were in. It is fixed, and the before/after pair below is the whole story: same table, same account, same moment in both.\n\nIt landed in ONE place. Every admin and moderator table draws the same shared component, so one change reached all twelve — the Users table you were looking at, audit logs, invite codes, bug reports, change requests, blocked IPs, flagged referrals, the moderator's own lists. No individual page was touched, which is exactly what that shared component was built for.\n\nTWO THINGS I OWE YOU, and the second is the more useful one.\n\nFIRST — the shading was not safe on its own. There was a note in the code from the last time this came up saying a shaded row would swallow the evidence block, the box that holds a customer's own words on a bug report or a moderator's reasoning on a request. That note was RIGHT. So the evidence box stopped being a shaded box and became an outlined one, and it is legible on the new ground. Have a look at the third frame below — that is a real bug report on the new ground.\n\nSECOND — the prototype does not actually solve this, and I only found that by opening it rather than trusting the screenshot. It paints the open row, the hover, and the evidence box all the SAME single colour. Your frame looked right because the account you had open was active, and the prototype draws no evidence box for an active account, so the collision never showed. The look it is telling us is right; the value is not. Ours keeps the three apart: resting, hover one step lighter, open two.\n\nThis also reverses the answer you gave me on #396 (\"The expansion reads fine — no change\"). That is written into the code beside the change, with the arms to stop a future night quietly putting the flat row back because it read your older reply first.\n\nYou asked me to check every relevant admin and moderator page. I opened all twelve with a row expanded, in both light and dark — 289 readings, none of them wrong. Five of them had no rows at all in the test database, so I put test rows in rather than tell you a page was fine without looking at it.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-02T10:23:04.520Z",
       "issueNumber": 441,
       "frames": [
@@ -1429,7 +1429,7 @@
       "id": "history-deleted-438",
       "title": "The long list of finished work is gone, and the empty section now says what it is for",
       "question": "You asked whether ALREADY DEALT WITH and NOT DONE YET were sections you even needed. I measured both before answering, and they turned out to be in opposite states — so the answer is different for each, and the numbers are the reason.\n\nALREADY DEALT WITH was drawing 281 rows. It was the FOURTH place this page told you something was finished: WORKING NOW names the last shifts and what each shipped, THE PROGRAM ticks a milestone's steps as they land, and that block listed everything, forever. It is gone.\n\nNOT DONE YET was drawing NOTHING, because every one of its 163 rows had already merged — and that is the argument for KEEPING it. It is the only place on this page a piece of work shows up that is blocked, or waiting on you, or in review, and is not in NEXT UP and not a milestone step. Delete it and that work is invisible until someone happens to open GitHub, which is exactly what happened to you before.\n\nSo what it needed was not deleting, it was an honest empty line. It used to say \"Nothing is in flight. Everything the crew has started has landed.\" — which describes the rows and teaches you nothing. It now says \"Nothing is stuck. Blocked work and anything waiting on you appears here.\" The second sentence is the point: an empty box should tell you what a FULL one would mean, otherwise \"nothing is stuck\" and \"this section is broken\" look identical.\n\nNothing was thrown away. Every merged row and every answered card is still in the file behind this page, and that file is in version control.\n\nWorth two minutes: scroll to the bottom of this page. It is shorter, and the third frame shows you what NOT DONE YET will look like the next time something actually is stuck.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-02T08:46:37.510Z",
       "issueNumber": 438,
       "frames": [
@@ -4492,7 +4492,7 @@
     103
   ],
   "nextUp": {
-    "readAt": "2026-09-02T08:44:39.186Z",
+    "readAt": "2026-09-02T10:33:45.129Z",
     "items": [
       {
         "issueNumber": 231,
@@ -4577,11 +4577,6 @@
       {
         "issueNumber": 436,
         "title": "Staff dialogs take the house grammar (brief 11) — and Submit request scrolls out of reach on the request form",
-        "urgent": false
-      },
-      {
-        "issueNumber": 441,
-        "title": "The open row needs a background — an expanded profile is the same colour as every other row",
         "urgent": false
       }
     ]
