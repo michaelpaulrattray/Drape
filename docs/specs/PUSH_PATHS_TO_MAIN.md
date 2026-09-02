@@ -76,9 +76,19 @@ it spends.
 ### 2 · CI — nothing
 
 All four workflows (`gate.yml`, `review.yml`, `knip.yml`, `secrets.yml`)
-declare `permissions: contents: read`. **No workflow can commit or push.** The
-suite asserts the set of `contents: write` workflows is empty, with a positive
-control proving a write grant would be reported.
+declare `permissions: contents: read`. **No workflow can commit or push.**
+
+**Two arms, not one, and the second is the one that matters going forward.** The
+suite asserts the set of `contents: write` workflows is empty — *and* that every
+workflow declares an explicit top-level `permissions:` block at all. ⚠ A
+workflow with **no block** inherits the repository's default workflow token
+permissions, which is server-side state (door A), so it could gain write without
+its own file ever saying the word. An absent block is the silent direction.
+
+⚠ **What neither arm can see** is a workflow that pushes through a marketplace
+action or a PAT secret rather than `git push` — it would contain neither
+pattern. The `contents: write` grant is what such an action needs from the
+default token, which is why the permissions arm is the load-bearing one.
 
 ### 3 · The pre-push hook covers both deploying branches
 
@@ -105,7 +115,15 @@ main:            required checks [gate-checks, founder-gate] · strict false
                  no required_pull_request_reviews
 local-migration: NOT PROTECTED AT ALL
 collaborators:   michaelpaulrattray (admin) — one
+rulesets:        none
+default workflow token permissions: READ · can_approve_pull_request_reviews false
 ```
+
+⚠ **The last line is recorded because a workflow that declares no `permissions:`
+block inherits it.** It is `read` today, so an undeclared workflow is harmless
+today; it is one settings change away from being a write-capable job in a
+repository whose `local-migration` branch has no protection. The suite's second
+CI arm is what makes that setting stop mattering.
 
 ⚠ **`enforce_admins: false` means the required checks do not apply to an
 administrator, and the only collaborator is an administrator.** This is not a
@@ -151,10 +169,25 @@ runs our hooks.
 
 ## How this list stays true
 
-- **`server/pushPathsToMain.test.ts`** — twelve arms. The population of pushers,
-  workflow writers and protected refs is derived; each absence arm has a
-  positive control beside it, because a suite whose whole output is empty sets
+- **`server/pushPathsToMain.test.ts`** — eighteen arms. The population of
+  pushers, workflow writers and protected refs is derived; each absence arm has
+  a positive control beside it, because a suite whose whole output is empty sets
   is green when its reader is broken too (working law 2).
+- ⚠ **AND IT RUNS ON THE PUSH PATH, WHICH IT DID NOT WHEN IT WAS WRITTEN.** The
+  first cut of this suite ran only on `gate-checks`, i.e. **only on pull
+  requests** — the exact hole its own card was filed to close, and on the 69% of
+  commits measured above it would never have run at all. A shift rite-pushing a
+  disposable that pushes would have landed an unenumerated door and reddened the
+  NEXT pull request's gate, which is #152's origin incident happening again to
+  #152's own successor. It is now in `PUSH_PATH_SUITES`
+  (`scripts/lib/scriptGuards.mts`), which the rite runs in a worktree of the
+  commit. **Caught by the reviewer on PR #459, not by us**, and it is the
+  strongest single argument in this document for the review step existing.
+  ⚠ The named list is deliberately hand-written and is NOT a shadow of the grep
+  beside it: the grep answers *"does this suite sweep `scripts/`?"*, the list
+  answers *"must this run before a direct push?"*, and only a person can answer
+  the second. The origin floor is checked on the **derived** list alone, so a
+  named suite can never keep a dead derivation looking alive.
 - **It refuses rather than reporting an empty list** when the derivation loses
   its origin case (`scripts/deploy-rite.mts`) — a blind reader answering "no
   doors" is the most dangerous output this instrument could produce.
@@ -163,17 +196,34 @@ runs our hooks.
   This repository has three recorded controls that were written, documented and
   then reached by nothing; the enumeration above *claims* the rite typechecks,
   and a claim about a control is worth nothing without an arm on the call site.
-- **Driven — 6/6.** `scripts/_263-sabotage-disposable.mts` edits the real files
+- **Driven — 9/9.** `scripts/_263-sabotage-disposable.mts` edits the real files
   and runs the real suite, one cause at a time: the rite losing the typecheck
   call, the rite losing the script-guard call, the hook losing
   `local-migration`, the detector losing the argv shape, a new unlisted pushing
-  script, and a workflow gaining `contents: write`. All six caught; the tree
-  verified green again afterwards. Two of the six redden **two** arms rather
-  than one — in both cases the second is the in-suite positive control noticing
-  that its own sabotage no longer lands, which is the control working, not a
-  coupling defect.
+  script, a workflow gaining `contents: write`, a workflow losing its
+  `permissions:` block, **the enumeration falling off the rite's push path**,
+  and **a `.cmd` wrapper pushing** — the native shape on the Windows machine the
+  rite runs on, and one the first cut of the detector could not see. All nine
+  caught; the tree verified green again afterwards. Some sabotages redden **two**
+  arms rather than one — in each case the second is the in-suite positive control
+  noticing that its own sabotage no longer lands, which is the control working,
+  not a coupling defect.
 
 ---
+
+## Declined, with the reason
+
+The PR review's fourth finding: the rite now makes **two** worktrees of the same
+commit — one for the script guards, one for the typecheck — where one shared
+worktree running both bodies would halve the setup and teardown.
+
+**Not taken, deliberately.** The two are independent custody checks and sharing
+a worktree entangles them: whichever ran first would decide whether the second
+ran at all, and a failure in one would arrive wearing the other's error message.
+The rite already spends minutes watching a deploy; a second `git worktree add`
+is seconds against that. The reviewer called it a nit and did not block on it,
+and this paragraph is here so the next person to notice it finds a decision
+rather than an oversight.
 
 ## What is on his desk out of this
 

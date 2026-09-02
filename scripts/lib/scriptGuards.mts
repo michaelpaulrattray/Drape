@@ -52,7 +52,38 @@ import { inWorktreeOf } from "./riteWorktree.mts";
 /** The suite #152 was filed on; a derivation that loses it is not a derivation. */
 export const ORIGIN_SUITE = "server/scriptExitDiscipline.test.ts";
 
-/** Every non-integration server suite whose source names the `scripts` directory. */
+/**
+ * SUITES THAT RUN ON THE PUSH PATH BY NAME, because the derivation above cannot
+ * reach them (#263, review finding 1).
+ *
+ * ⚠ **This is deliberately a hand-written list and it is the SECOND kind of
+ * entry, not a shadow of the first.** The grep answers one question — *"does
+ * this suite sweep the `scripts` directory?"* — and it answers it well. It
+ * cannot answer *"must this suite run before a direct push to main?"*, which is
+ * a judgement about what the rite is custodian of. A suite is added here by
+ * somebody deciding it, exactly like enumerating a public endpoint.
+ *
+ * The first entry is the sharpest possible argument for the list existing.
+ * `server/pushPathsToMain.test.ts` is the control that catches a NEW script
+ * that can push to `main` — and it was built, merged into the gate, and left
+ * running **only on pull requests**, which is precisely the hole its own card
+ * (#263) was filed to close. A shift rite-pushing a disposable that pushes
+ * would have landed an unenumerated door and reddened the NEXT pull request's
+ * gate, which is #152's origin incident happening again to #152's own successor.
+ * Caught by the reviewer on the PR, not by us.
+ */
+export const PUSH_PATH_SUITES = [
+  /* #263 — the push-path enumeration. Never matches the grep: it names
+     `"scripts/deploy-rite.mts"` and `"../scripts/lib/pushPaths.mts"`, always
+     with a path after the directory, so the bare token contract below excludes
+     it correctly and this list includes it deliberately. */
+  "server/pushPathsToMain.test.ts",
+];
+
+/**
+ * Every non-integration server suite whose source names the `scripts` directory,
+ * plus `PUSH_PATH_SUITES`.
+ */
 export const listScriptGuardSuites = (
   root: string,
   grep: (root: string) => string = defaultGrep,
@@ -67,7 +98,9 @@ export const listScriptGuardSuites = (
       `script-guard derivation lost its origin case (${ORIGIN_SUITE}); found ${suites.length}: ${suites.join(", ") || "(none)"}`,
     );
   }
-  return suites;
+  /* The floor above is checked on the DERIVED list alone, so a named suite can
+     never rescue a grep that has stopped working. */
+  return [...new Set([...suites, ...PUSH_PATH_SUITES])].sort();
 };
 
 const defaultGrep = (root: string): string => {

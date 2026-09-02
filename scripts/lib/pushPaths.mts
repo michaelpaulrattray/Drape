@@ -71,8 +71,17 @@ import path from "node:path";
 /** The one pusher #263 was filed on; a derivation that loses it is not a derivation. */
 export const ORIGIN_PUSHER = "scripts/deploy-rite.mts";
 
-/** Extensions that can execute. `.githooks/` files carry no extension at all. */
-const EXECUTABLE = /\.(ts|mts|mjs|js|cjs|ps1|sh|ya?ml)$/;
+/**
+ * Extensions that can execute. `.githooks/` files carry no extension at all,
+ * and `package.json` executes through `pnpm run` like any script.
+ *
+ * ⚠ `.cmd` and `.bat` are here because the machine the rite runs on is Windows,
+ * where a `.cmd` wrapper is the NATIVE shape for a pusher — they were missing
+ * from the first cut of this list, which is the blind spot least likely to be
+ * noticed and most likely to be used (review of #263, finding 3).
+ */
+const EXECUTABLE = /\.(ts|mts|mjs|js|cjs|ps1|sh|cmd|bat|ya?ml)$/;
+const ALSO_EXECUTES = (file: string) => file === "package.json" || file.startsWith(".githooks/");
 
 const SHELL_PUSH = /\bgit\s+push\b/;
 const ARGV_PUSH = /["']git["']\s*,\s*\[\s*["']push["']/;
@@ -82,6 +91,8 @@ export type PushPathReading = {
   pushers: string[];
   /** Workflows granting `contents: write` — any of which could push from CI. */
   workflowWriters: string[];
+  /** Workflows with no top-level `permissions:` block, which inherit the repository default. */
+  workflowsWithoutPermissions: string[];
   /** The refs `.githooks/pre-push` refuses without the rite's marker. */
   protectedRefs: string[];
 };
@@ -128,7 +139,7 @@ export const readPushPaths = (reader: TreeReader): PushPathReading => {
   if (files.length === 0) throw new Error("push-path derivation saw no tracked files — the reader is blind");
 
   const pushers = files
-    .filter((file) => EXECUTABLE.test(file) || file.startsWith(".githooks/"))
+    .filter((file) => EXECUTABLE.test(file) || ALSO_EXECUTES(file))
     .filter((file) => {
       const text = reader.read(file);
       return SHELL_PUSH.test(text) || ARGV_PUSH.test(text);
@@ -141,12 +152,31 @@ export const readPushPaths = (reader: TreeReader): PushPathReading => {
     );
   }
 
-  const workflowWriters = files
-    .filter((file) => /^\.github\/workflows\/.+\.ya?ml$/.test(file))
-    .filter((file) => /contents:\s*write/.test(reader.read(file)))
-    .sort();
+  const workflows = files.filter((file) => /^\.github\/workflows\/.+\.ya?ml$/.test(file)).sort();
+  if (workflows.length === 0) throw new Error("push-path derivation found no workflows — the reader is blind");
 
-  return { pushers, workflowWriters, protectedRefs: readProtectedRefs(reader) };
+  const workflowWriters = workflows.filter((file) => /contents:\s*write/.test(reader.read(file)));
+
+  /*
+    ⚠ A WORKFLOW WITH NO `permissions:` BLOCK IS NOT A SAFE WORKFLOW (review of
+    #263, finding 2). It inherits the repository's DEFAULT workflow token
+    permissions — server-side state this module cannot read, recorded by hand in
+    the doc's door A (`read`, on 2026-09-03). If that default is ever flipped to
+    write, a workflow that never says the word `write` gains it silently, and
+    `local-migration` has no branch protection at all.
+
+    So the arm is not "no workflow says write"; it is "every workflow SAYS what
+    it gets". An absent block is the silent direction.
+  */
+  const workflowsWithoutPermissions = workflows
+    .filter((file) => !/^permissions:/m.test(reader.read(file)));
+
+  return {
+    pushers,
+    workflowWriters,
+    workflowsWithoutPermissions,
+    protectedRefs: readProtectedRefs(reader),
+  };
 };
 
 /**

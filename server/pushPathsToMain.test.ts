@@ -29,6 +29,7 @@ import {
   readPushPaths,
   type TreeReader,
 } from "../scripts/lib/pushPaths.mts";
+import { listScriptGuardSuites, ORIGIN_SUITE, PUSH_PATH_SUITES } from "../scripts/lib/scriptGuards.mts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 
@@ -84,9 +85,16 @@ const fakeTree = (files: Record<string, string>): TreeReader => ({
 const realHook = gitTreeReader(ROOT).read(".githooks/pre-push");
 const realRite = 'run("git", ["push", ...args], false, { ...process.env, DRAPE_DEPLOY_RITE: "1" })';
 
+/**
+ * The minimum a synthetic tree needs to get past the reader's own refusals: the
+ * hook it parses, the origin pusher its floor requires, and one well-formed
+ * workflow (it refuses a tree with no workflows at all, since that reading is
+ * indistinguishable from a blind reader).
+ */
 const baseline = {
   ".githooks/pre-push": realHook,
   [ORIGIN_PUSHER]: realRite,
+  ".github/workflows/gate.yml": "permissions:\n  contents: read\n",
 };
 
 describe("the doors to main are enumerated (#263)", () => {
@@ -162,6 +170,74 @@ describe("nothing in CI can reach main (#263)", () => {
       ".github/workflows/release.yml": "permissions:\n  contents: write\n",
     }));
     expect(reading.workflowWriters).toEqual([".github/workflows/release.yml"]);
+  });
+
+  it("every workflow SAYS what it gets — an absent permissions block inherits the default", () => {
+    /* The arm above only sees the word `write`. A workflow with no block at all
+       inherits the repository's default workflow token permissions — server-side
+       state, `read` when door A was read on 2026-09-03, and one settings change
+       away from write. `local-migration` has no branch protection, so that would
+       be a live push path to a production-deploying branch. (review finding 2) */
+    const { workflowsWithoutPermissions } = readPushPaths(gitTreeReader(ROOT));
+    expect(
+      workflowsWithoutPermissions,
+      "a workflow declares no top-level `permissions:` block, so what it can do is "
+      + "decided by a GitHub setting rather than by this repository. Declare it "
+      + "explicitly — `permissions:\\n  contents: read` — whatever the default is today. (#263)",
+    ).toEqual([]);
+  });
+
+  it("POSITIVE CONTROL — a workflow with no permissions block IS reported", () => {
+    const reading = readPushPaths(fakeTree({
+      ...baseline,
+      ".github/workflows/silent.yml": "on: push\njobs:\n  a:\n    runs-on: ubuntu-latest\n",
+    }));
+    expect(reading.workflowsWithoutPermissions).toEqual([".github/workflows/silent.yml"]);
+    /* And it is NOT caught by the writers arm — which is the whole finding. */
+    expect(reading.workflowWriters).toEqual([]);
+  });
+
+  it("REFUSES when it can see no workflows at all", () => {
+    /* Not `baseline` — that carries a workflow on purpose. A tree with none is
+       a reader that has lost sight of `.github/`, and "no workflow can push" is
+       then a sentence about the reader, not about the repository. */
+    expect(() => readPushPaths(fakeTree({
+      ".githooks/pre-push": realHook,
+      [ORIGIN_PUSHER]: realRite,
+    }))).toThrow(/no workflows/);
+  });
+});
+
+describe("the enumeration runs on the path it guards (#263, review finding 1)", () => {
+  /* ⚠ THE SHARPEST ARM IN THIS FILE. This suite was built to catch a new script
+     that can push to `main`, and it shipped running ONLY on pull requests — the
+     exact hole its own card was filed to close. A shift rite-pushing a
+     disposable that pushes would have landed an unenumerated door and reddened
+     the NEXT pull request's gate, which is #152's origin incident happening
+     again to #152's own successor. */
+  it("is in the population the rite runs before it pushes", () => {
+    const suites = listScriptGuardSuites(ROOT);
+    expect(
+      suites,
+      "the push-path enumeration must run on the push path, or it only ever sees "
+      + "changes that arrive by pull request — which is 31% of what reaches main. (#263)",
+    ).toContain("server/pushPathsToMain.test.ts");
+  });
+
+  it("POSITIVE CONTROL — the grep alone does NOT reach it, which is why the named list exists", () => {
+    /* Driven, not asserted from the docblock: the derivation's own contract is
+       the bare quoted token `"scripts"`, and this file never contains it. */
+    const grepOnly = listScriptGuardSuites(ROOT, () => [ORIGIN_SUITE, "server/scriptConnectionDiscipline.test.ts"].join("\n"));
+    expect(grepOnly).toContain("server/pushPathsToMain.test.ts"); // added by the named list
+    expect(PUSH_PATH_SUITES).toContain("server/pushPathsToMain.test.ts");
+  });
+
+  it("a named suite cannot rescue a grep that has stopped working", () => {
+    /* The origin floor is checked on the DERIVED list alone. Without that, the
+       named list would keep the population non-empty while the derivation was
+       silently returning nothing. */
+    expect(() => listScriptGuardSuites(ROOT, () => "server/somethingElse.test.ts"))
+      .toThrow(/lost its origin case/);
   });
 });
 

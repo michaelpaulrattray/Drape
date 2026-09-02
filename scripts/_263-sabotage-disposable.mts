@@ -82,6 +82,22 @@ const SABOTAGES: Sabotage[] = [
     file: ".github/workflows/knip.yml",
     apply: (t) => t.replace("permissions:\n  contents: read", "permissions:\n  contents: write"),
   },
+  /* The three below are the PR review's findings, armed (2026-09-03). */
+  {
+    name: "a workflow stops declaring permissions at all (inherits the repo default)",
+    file: ".github/workflows/knip.yml",
+    apply: (t) => t.replace("permissions:\n  contents: read", "# permissions removed\n"),
+  },
+  {
+    name: "the enumeration falls off the rite's push path",
+    file: "scripts/lib/scriptGuards.mts",
+    apply: (t) => t.replace('"server/pushPathsToMain.test.ts",\n]', "]"),
+  },
+  {
+    name: "a .cmd wrapper pushes — the native shape on the machine the rite runs on",
+    create: "scripts/_263-unlisted-door-disposable.cmd",
+    body: "@echo off\r\ngit push origin main\r\n",
+  },
 ];
 
 console.log(`baseline (no sabotage):`);

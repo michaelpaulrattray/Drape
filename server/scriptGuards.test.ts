@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { listScriptGuardSuites, ORIGIN_SUITE, runScriptGuardsOnCommit } from "../scripts/lib/scriptGuards.mts";
+import { listScriptGuardSuites, ORIGIN_SUITE, PUSH_PATH_SUITES, runScriptGuardsOnCommit } from "../scripts/lib/scriptGuards.mts";
 
 /**
  * The rite's script-guard step (#152) — the derivation and the verdict, driven
@@ -36,7 +36,26 @@ describe("the script-guard suite list is derived from the suites", () => {
       "server/scriptWorldGuard.test.ts",
       "",
     ].join("\n"));
-    expect(suites).toEqual(["server/scriptExitDiscipline.test.ts", "server/scriptWorldGuard.test.ts"]);
+    /* ⚠ THIS ARM MOVED, and it moved because the function's contract changed —
+       said out loud rather than edited quietly. `PUSH_PATH_SUITES` (#263) is
+       merged in after the derivation, so the list is now "what the grep found,
+       plus what somebody named". The arm still pins the derivation's own work:
+       the integration suite is dropped and the backslash normalised. */
+    expect(suites).toEqual([
+      ...PUSH_PATH_SUITES,
+      "server/scriptExitDiscipline.test.ts",
+      "server/scriptWorldGuard.test.ts",
+    ].sort());
+  });
+
+  it("the named push-path suites are added, deduplicated, and cannot rescue a broken grep", () => {
+    expect(PUSH_PATH_SUITES.length).toBeGreaterThan(0);
+    /* Named AND found by the grep: it appears once, not twice. */
+    const both = listScriptGuardSuites(ROOT, () => [ORIGIN_SUITE, ...PUSH_PATH_SUITES].join("\n"));
+    expect(both.filter((s) => s === PUSH_PATH_SUITES[0])).toHaveLength(1);
+    /* The origin floor is checked on the DERIVED list alone, so the named list
+       cannot keep a dead derivation looking alive. */
+    expect(() => listScriptGuardSuites(ROOT, () => PUSH_PATH_SUITES.join("\n"))).toThrow(/lost its origin case/);
   });
 });
 
