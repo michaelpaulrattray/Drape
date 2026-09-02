@@ -72,6 +72,20 @@ crescent at nearly three times the delta.
 **Verdict: the circle becomes an arc path. `Icon` gains nothing.** The
 conversion is written out inside the guard rather than trusted.
 
+⚠ **AND THERE IS ONE RESIDUAL DIFFERENCE ON THIS GLYPH, NAMED HERE RATHER THAN
+LEFT SILENT** (the fidelity law asks for exactly that, and the gate reviewer
+was right to ask): **the prototype draws its topbar search inline at
+`stroke-width="2"`; the product renders it through `Icon` at 1.7.** The curve is
+proven identical above; the stroke weight is not.
+
+**1.7 is deliberate and is the right answer.** The prototype's own `svg()`
+helper — the one that draws the *other five* chrome glyphs — is itself
+**strokeWidth 1.7** (`Klieg Studio.dc.html:4406`), so the inline `2` is the
+prototype disagreeing with itself on one element rather than a decision about
+search. Matching it would give this product one glyph a fifth heavier than
+every neighbour in the same bar, against the set's own standing rule that icons
+get bigger and never heavier. The frames went to his eye at 1.7.
+
 ## 4 · The guard that was missing
 
 A new block reads the **prototype itself** as a third artifact — it is in the
