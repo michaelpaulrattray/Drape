@@ -78,7 +78,13 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
-import { StaffBarAdmin, StaffLoading, StaffSurface } from "@/features/staff";
+import {
+  StaffBarAdmin,
+  StaffLoading,
+  StaffSurface,
+  useStaffAutoRefresh,
+  useStaffRefresh,
+} from "@/features/staff";
 import "@/features/admin/components/crew/crew.css";
 import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery";
 import { CrewGeneral } from "@/features/admin/components/crew/CrewGeneral";
@@ -94,14 +100,24 @@ import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 /**
  * The page's clock — ONE ticker, every ten seconds.
  *
- * ⚠ It is shared rather than per-component on purpose (#272): the "checked 12s
- * ago" stamp and the live shift row's "started 14 min ago" and its stalled
- * verdict are all elapsed-time readings, and two tickers would let them land on
- * two different instants and draw two different nows as one page. Working law 4
+ * ⚠ It is shared rather than per-component on purpose (#272): every elapsed-
+ * time reading on the page comes off it, so two of them can never land on two
+ * different instants and draw two different nows as one page. Working law 4
  * pointed at a clock.
  *
- * Ten seconds is enough for a stamp whose job is to say the page is alive, and
- * far too slow to read as a clock.
+ * ⚠ **It used to have TWO consumers and now has one.** The other was the
+ * *"checked 12s ago"* stamp, which #415 moved into the staff bar on his word
+ * (*"even thought crew has its own refresh principles should we just fold it
+ * into the same as overview so everything is consistent"*). What is left is
+ * `WORKING NOW`'s *"started 14 min ago"* and its stalled verdict — still two
+ * readings that must agree, so the ticker keeps its reason to exist.
+ *
+ * It still re-bases on `dataUpdatedAt` because that is when the shift rows it
+ * ages are replaced: a fresh read must not leave a run reading "14 min ago"
+ * from the previous instant.
+ *
+ * Ten seconds is enough for an elapsed reading whose job is to say the page is
+ * alive, and far too slow to read as a clock.
  */
 function useNow(dataUpdatedAt: number): number {
   const [now, setNow] = useState(() => Date.now());
@@ -117,26 +133,40 @@ function useNow(dataUpdatedAt: number): number {
   return now;
 }
 
-/** "checked 12s ago" — coarse on purpose. */
-function checkedAgoOf(dataUpdatedAt: number, now: number): string {
-  if (!dataUpdatedAt) return "just now";
-  const seconds = Math.max(0, Math.round((now - dataUpdatedAt) / 1000));
-  if (seconds < 10) return "just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  return `${Math.round(seconds / 60)} min ago`;
-}
-
 export default function AdminCrew() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const isAdmin = isAuthenticated && user?.role === "admin";
 
-  /* Live (#133): re-read every minute while visible and on focus. A new
-     edition re-renders from the new state — never a reload — and every reply
-     box keeps its draft, because the boxes are keyed by card id and only
-     re-render. The stamp at the foot says when the page last checked. */
-  const stateQuery = useCrewState(isAdmin, { live: true });
+  /*
+    ⚠ CREW IS IN THE SHARED REFRESH CLUSTER NOW (#415), ON HIS WORD: *"even
+    thought crew has its own refresh principles should we just fold it into the
+    same as overview so everything is consistent"*.
+
+    What that changes, said plainly because it is a real trade and not a
+    tidy-up: the page's live re-read (#133) used to be unconditional at 60s
+    while the tab was visible. It is now the panel-wide `AUTO 30s` switch —
+    **on by default (#453), so the live behaviour he asked for in #133 is
+    unchanged out of the box**, but a founder who turns the switch off gets a
+    Crew page that stops polling like every other staff page, with the manual
+    button beside the stamp. Thirty seconds rather than sixty because the bar's
+    label SAYS thirty, and a switch that reads `AUTO 30s` over a page polling
+    at 60s is a control lying about itself.
+
+    A new edition still re-renders from the new state — never a reload — and
+    every reply box keeps its draft, because the boxes are keyed by card id.
+  */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
+  const stateQuery = useCrewState(isAdmin, { live: autoRefresh });
   const now = useNow(stateQuery.dataUpdatedAt);
-  const checkedAgo = checkedAgoOf(stateQuery.dataUpdatedAt, now);
+  const refreshControls = useStaffRefresh({
+    autoRefresh,
+    setAutoRefresh,
+    dataUpdatedAt: stateQuery.dataUpdatedAt,
+    isRefetching: stateQuery.isFetching,
+    onRefresh: () => {
+      void stateQuery.refetch();
+    },
+  });
   const utils = trpc.useUtils();
 
   const replyMutation = trpc.crew.reply.useMutation({
@@ -252,7 +282,11 @@ export default function AdminCrew() {
   if (user?.role !== "admin") return <Redirect to="/app" />;
 
   return (
-    <StaffSurface breadcrumb="Admin / Crew" measure="read" bar={<StaffBarAdmin />}>
+    <StaffSurface
+      breadcrumb="Admin / Crew"
+      measure="read"
+      bar={<StaffBarAdmin refreshControls={refreshControls} />}
+    >
       <main className="dp-crew">
         {stateQuery.isLoading && (
           <div className="dp-crew__card dp-crew__body dp-crew__body--quiet">
@@ -319,9 +353,18 @@ export default function AdminCrew() {
                 so nobody restores the old order as a fix.
 
                 It still leads everything that describes what the team has
-                DONE. `now` comes from the same ticker the "checked" stamp
-                uses, so the strip's "14 min ago" and the page's freshness can
-                never disagree. */}
+                DONE.
+
+                ⚠ **This sentence used to say `now` comes from "the same ticker
+                the 'checked' stamp uses" — and card 415 DELETED that stamp**,
+                so the comment outlived the fact it asserted. Caught by the gate
+                review of PR #456, and it is the third instance in one change of
+                the class the change itself was correcting: a comment stating
+                something the tree no longer holds.
+
+                What the ticker is for now: `WORKING NOW` draws "started 14 min
+                ago" AND its stalled verdict off one instant, so two readings on
+                one strip can never disagree (#272). */}
             <CrewWorkingNow shiftRuns={stateQuery.data.shiftRuns} now={now} />
 
             {/* WHAT IS PLANNED (#290) — moved directly under WORKING NOW on
@@ -393,12 +436,28 @@ export default function AdminCrew() {
               onSend={send}
             />
 
-            {/* The edition number, said plainly — there is no history UI and git
-                holds the old ones (design §10) — and when the page last checked
-                for a new one (#133): an honest liveness signal, not a spinner. */}
+            {/*
+                The edition number, said plainly — there is no history UI and
+                git holds the old ones (design §10).
+
+                ⚠ **THE TIMESTAMP LEFT THIS LINE AND TWO THINGS DELIBERATELY
+                STAYED (#415).** The bar now carries *when the page last
+                checked*, so repeating it here would state the page's freshness
+                twice — which is the double-count this lane has been removing
+                all week. But the bar cannot say either of these:
+
+                - **WHO wrote the briefing.** That is not freshness, it is
+                  authorship, and it is the more useful half of the old
+                  sentence. Losing it while "making things consistent" is
+                  exactly the quiet cost working law 7 exists to catch.
+                - **That the last check FAILED.** A bar stamp reading 14:02
+                  merely looks old; it cannot say *"and I know it is stale"*.
+                  The stamp reports when data last LANDED, this reports the
+                  last ATTEMPT, and they are different facts.
+            */}
             <p className="dp-crew__stamp" data-testid="crew-edition-stamp">
               Briefing edition {stateQuery.data.briefing.edition}, written by{" "}
-              {stateQuery.data.briefing.shift} · checked {checkedAgo}
+              {stateQuery.data.briefing.shift}
               {stateQuery.isError && " · the last check failed — trying again"}
             </p>
           </>

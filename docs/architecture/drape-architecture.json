@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c4f955f8b346699f"
+    "sourceFingerprint": "892cd0556dc0805d"
   },
   "domains": [
     {
@@ -133,7 +133,7 @@
     {
       "id": "domain:staff",
       "name": "staff",
-      "moduleCount": 7
+      "moduleCount": 8
     },
     {
       "id": "domain:studio",
@@ -2193,6 +2193,12 @@
     {
       "id": "module:client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
       "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/useStaffCounts.ts",
+      "path": "client/src/features/staff/useStaffCounts.ts",
       "domain": "staff",
       "lifecycle": "active"
     },
@@ -10714,6 +10720,10 @@
       "path": "client/src/features/settings/settings387-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/staff/counts415-guard.test.ts",
+      "path": "client/src/features/staff/counts415-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/staff/section05-guard.test.ts",
       "path": "client/src/features/staff/section05-guard.test.ts"
     },
@@ -14419,6 +14429,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "to": "module:client/src/features/staff/useStaffRefresh.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/useCrewState.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -17499,12 +17514,22 @@
     },
     {
       "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/useStaffCounts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
       "to": "module:client/src/features/staff/useStaffRefresh.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/staff/StaffBar.tsx",
       "to": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/StaffBar.tsx",
+      "to": "module:client/src/features/staff/useStaffCounts.ts",
       "kind": "imports"
     },
     {
@@ -17520,6 +17545,16 @@
     {
       "from": "module:client/src/features/staff/staffTable.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useStaffCounts.ts",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useStaffCounts.ts",
+      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
