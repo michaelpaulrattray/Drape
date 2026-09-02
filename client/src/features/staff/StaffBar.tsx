@@ -31,15 +31,35 @@ import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState
  * staff's: the two tab sets and the refresh cluster. Anything visual belongs
  * one layer down in the foundation, where the other consumers get it too.
  *
- * ## The refresh cluster is three optional parts, not one block
+ * ## ⚠ THE REFRESH CLUSTER IS ALL THREE PARTS OR NONE — CORRECTED, #413
  *
- * The brief draws stamp + toggle + button as a unit. The pages do not have
- * one: `AdminOverview` and `AdminAuditLogs` keep a `lastRefresh` and an
- * auto-refresh preference; `AdminUserManagement` and `AdminChangeRequests`
- * have only a refetch; four surfaces have nothing at all. **Inventing a
- * timestamp or a polling toggle for the pages that keep neither would be a
- * number no state produces**, so each part appears only when its surface
- * supplies it.
+ * **This paragraph used to argue the opposite, and it was the most-read copy of
+ * a premise that is false at the code.** It said `AdminUserManagement` and
+ * `AdminChangeRequests` *"have only a refetch"* and that inventing a stamp or a
+ * toggle for them *"would be a number no state produces"* — so a page shipping
+ * one third of the cluster read as the design. The founder found it from the
+ * other side, 2026-09-01: *"why when scrolling through the admin pages only
+ * some pages contain the updated time the auto refresh toggle and a
+ * notification button?"*
+ *
+ * **`dataUpdatedAt` is produced by EVERY TanStack query**, and `AdminOverview`
+ * has read its stamp from exactly that field since brief 05 shipped. The state
+ * was never missing; it was never wired. Four of eight staff pages failed his
+ * question, not the two the card measured — a grep for the `refreshControls`
+ * prop cannot see a page that passes the prop and two of its five fields.
+ *
+ * **The rule now: a staff surface that holds a query provides the whole
+ * cluster.** `useStaffRefresh` returns all five fields together so there is no
+ * way to ask for one, and `section05-guard.test.ts` reads the object each page
+ * actually PASSES rather than the prop name.
+ *
+ * ⚠ **The renderer below still draws each part independently, and that is NOT
+ * a licence to pass one.** It stays optional only because `AdminOverview`,
+ * `AdminAuditLogs` and `ModeratorDashboard` predate the hook and still build
+ * their controls inline; the guard names those three, so folding one in is a
+ * deliberate act. The one surface legitimately outside the cluster is
+ * `AdminCrew`, which states its freshness inline — and #415 folds even that in
+ * on his word.
  *
  * ## Both bars are titled `Klieg Console`, and the tagline is gone (#417)
  *
