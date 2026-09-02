@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "15de4bbb4507130e"
+    "sourceFingerprint": "5d730596e574bd6b"
   },
   "domains": [
     {
@@ -133,7 +133,7 @@
     {
       "id": "domain:staff",
       "name": "staff",
-      "moduleCount": 6
+      "moduleCount": 7
     },
     {
       "id": "domain:studio",
@@ -2187,6 +2187,12 @@
     {
       "id": "module:client/src/features/staff/staffTable.tsx",
       "path": "client/src/features/staff/staffTable.tsx",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
+      "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
       "domain": "staff",
       "lifecycle": "active"
     },
@@ -10716,6 +10722,10 @@
       "path": "client/src/features/staff/section06-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts",
+      "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },
@@ -17480,6 +17490,11 @@
     {
       "from": "module:client/src/features/staff/index.ts",
       "to": "module:client/src/features/staff/staffTable.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
       "kind": "imports"
     },
     {

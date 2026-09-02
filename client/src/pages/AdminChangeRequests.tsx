@@ -18,6 +18,7 @@ import {
   StaffBarAdmin,
   StaffLoading,
   StaffSurface,
+  useStaffAutoRefresh,
   useStaffRefresh,
   STAFF_REFRESH_INTERVAL_MS,
 } from "@/features/staff";
@@ -52,7 +53,10 @@ export default function AdminChangeRequests() {
     a request from another surface, and nothing on this page moves until it is
     re-read. It is the second inbox in this fix.
   */
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  /* #453 — ONE switch for the whole panel, not one per page. His reply #104:
+     "if i toggle it on its on for all pages not just 1". Shaped like the
+     `useState` it replaces, so nothing below this line changed. */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
   const listQuery = trpc.admin.listChangeRequests.useQuery(queryInput, {
     refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,

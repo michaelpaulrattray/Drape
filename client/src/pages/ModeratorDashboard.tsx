@@ -1,7 +1,12 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
-import { StaffBarModeration, StaffLoading, StaffSurface } from "@/features/staff";
+import {
+  StaffBarModeration,
+  StaffLoading,
+  StaffSurface,
+  useStaffAutoRefresh,
+} from "@/features/staff";
 import { Button } from "@/foundation";
 import type { SurfaceBarSegment } from "@/foundation";
 import { useState, useEffect } from "react";
@@ -31,7 +36,10 @@ export default function ModeratorDashboard() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [userIdSearch, setUserIdSearch] = useState("");
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  /* #453 — ONE switch for the whole panel, not one per page. His reply #104:
+     "if i toggle it on its on for all pages not just 1". Shaped like the
+     `useState` it replaces, so nothing below this line changed. */
+  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [lastRefresh, setLastRefresh] = useState(() => new Date());
 
@@ -162,7 +170,12 @@ export default function ModeratorDashboard() {
   // ── Effects ──
 
   useEffect(() => { if (logsQuery.data) setLastRefresh(new Date()); }, [logsQuery.data]);
-  useEffect(() => { if (autoRefresh) toast.success("Auto-refresh enabled (30s interval)"); }, [autoRefresh]);
+  /*
+    ⚠ #453 — the toast moved off the VALUE and onto the ACT. Shared state
+    arrives already true, so an effect keyed on it would announce
+    "Auto-refresh enabled" on every mount of this page. Same sentence, and
+    still silent when he turns it off. (`AdminAuditLogs` carries the long note.)
+  */
 
   const isUnauthorized = !loading && isAuthenticated && user?.role !== "moderator" && user?.role !== "admin";
   useEffect(() => { if (isUnauthorized) toast.error("Access denied. Moderator or admin privileges required."); }, [isUnauthorized]);
@@ -173,6 +186,12 @@ export default function ModeratorDashboard() {
     logsQuery.refetch(); alertsQuery.refetch(); statsQuery.refetch();
     setLastRefresh(new Date());
     toast.success("Data refreshed");
+  };
+
+  const handleToggleAutoRefresh = () => {
+    const next = !autoRefresh;
+    setAutoRefresh(next);
+    if (next) toast.success("Auto-refresh enabled (30s interval)");
   };
 
   const handleResetFilters = () => {
@@ -276,7 +295,7 @@ export default function ModeratorDashboard() {
           refreshControls={{
             lastRefresh,
             autoRefresh,
-            onToggleAutoRefresh: () => setAutoRefresh(!autoRefresh),
+            onToggleAutoRefresh: handleToggleAutoRefresh,
             onRefresh: handleRefresh,
             isRefetching: logsQuery.isRefetching,
           }}

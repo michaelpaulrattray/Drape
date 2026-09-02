@@ -753,3 +753,117 @@ describe("brief 05 §4 / #413 — the refresh cluster is all three parts or none
     );
   });
 });
+
+/**
+ * #453 — ONE SWITCH FOR THE WHOLE PANEL.
+ *
+ * **His reply #104, 2026-09-02, verbatim:** *"Why are the refresh controls
+ * acting as individual toggles per admin page? it should work the same way it
+ * works for moderator pages if i toggle it on its on for all pages not just 1."*
+ *
+ * ⚠ **THE DEFECT WAS A PRIVATE COPY, SO THAT IS WHAT THIS COUNTS** — not
+ * whether a page mentions the store. A page can import the store, ignore it,
+ * and keep its own `useState`; that page is exactly the bug he reported, and a
+ * grep for the store's name calls it fixed. Same shape as #413's own instrument
+ * failure one card earlier, which is why it is worth writing twice.
+ *
+ * The behaviour half — the default, the round trip, the hostile browser — is
+ * DRIVEN against the real store in `stores/useStaffAutoRefreshStore.test.ts`.
+ * A source read cannot see whether a preference is actually remembered.
+ */
+describe("#453 — the auto-refresh toggle is one switch, not one per page", () => {
+  /** Every staff page that hands the bar a `refreshControls` object. */
+  const clusterPages = () =>
+    staffPages().filter(({ text }) => /refreshControls=\{/.test(code(text)));
+
+  /**
+   * A page keeping its own copy of the switch. Matches the `useState` binding
+   * whatever its initial value, because both values were wrong for the same
+   * reason — the state was local.
+   */
+  const PRIVATE_COPY = /const\s*\[\s*autoRefresh\s*,\s*setAutoRefresh\s*\]\s*=\s*useState\s*\(/;
+
+  it("the population is real — seven staff surfaces carry the switch", () => {
+    /*
+      An absence arm over an empty list is the cheapest false pass there is.
+      Crew (#415 §3) and the specimen sheet carry no cluster at all; the arm
+      above this one names each and its reason.
+    */
+    const names = clusterPages().map((p) => p.name);
+    expect(names.length, `surfaces carrying the toggle: ${names.join(", ")}`).toBe(7);
+  });
+
+  it("NO staff surface keeps a private copy of the switch", () => {
+    const offenders = clusterPages()
+      .filter(({ text }) => PRIVATE_COPY.test(code(text)))
+      .map(({ name }) => name);
+
+    expect(
+      offenders,
+      "A staff surface holds its own `autoRefresh` state.\n" +
+        "Wouter unmounts a page on navigation, so that toggle dies at the next\n" +
+        "click — which is the whole of what he reported in reply #104:\n" +
+        offenders.join("\n"),
+    ).toEqual([]);
+  });
+
+  it("every one of them reads the SHARED switch", () => {
+    /*
+      The pair: the arm above proves nothing private survives, this one proves
+      something shared arrived. Neither alone is the claim — a page that deleted
+      its `useState` and hard-coded `false` passes the first and fails this.
+    */
+    const missing = clusterPages()
+      .filter(({ text }) => !/useStaffAutoRefresh\(\)/.test(code(text)))
+      .map(({ name }) => name);
+
+    expect(missing, `surfaces not reading the shared switch: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("POSITIVE CONTROL — the matcher sees a private copy when there is one", () => {
+    /*
+      ⚠ THIS IS THE ARM THAT EARNS THE TWO ABOVE. Both pre-#453 shapes are
+      reproduced verbatim: the five that started OFF and the landing page that
+      started ON. A matcher pinned to either literal would have called the other
+      one clean.
+    */
+    const beforeOff = "  const [autoRefresh, setAutoRefresh] = useState(false);";
+    const beforeOn = "  const [autoRefresh, setAutoRefresh] = useState(true);";
+    expect(PRIVATE_COPY.test(beforeOff), "the five that defaulted off").toBe(true);
+    expect(PRIVATE_COPY.test(beforeOn), "the landing page, which defaulted on").toBe(true);
+
+    /* And it must not fire on the shared read that replaced them. */
+    const after = "  const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();";
+    expect(PRIVATE_COPY.test(after), "the shape that replaced them").toBe(false);
+  });
+
+  it("no surface announces auto-refresh from an EFFECT keyed on the value", () => {
+    /*
+      ⚠ A TOAST IN A `useEffect(…, [autoRefresh])` IS A REPORT ABOUT A VALUE,
+      NOT ABOUT AN ACT — harmless only while each page owned the value and
+      started it `false`. Shared, the value arrives already true, so that effect
+      fires on every mount and tells him "Auto-refresh enabled" about something
+      he did minutes ago on another page. Two surfaces had this shape
+      (`AdminAuditLogs`, `ModeratorDashboard`) and both moved to the toggle.
+
+      This is the arm that would have caught the regression the shared switch
+      introduces, and it is derived rather than aimed at those two by name.
+    */
+    const shape = /useEffect\(\s*\(\s*\)\s*=>\s*\{?[^}]*\btoast\.[a-z]+\([^)]*[Aa]uto-refresh[^)]*\)[^}]*\}?\s*,\s*\[\s*autoRefresh\s*\]/;
+
+    const offenders = clusterPages()
+      .filter(({ text }) => shape.test(code(text)))
+      .map(({ name }) => name);
+    expect(
+      offenders,
+      "This surface toasts about auto-refresh from an effect keyed on the\n" +
+        "shared value, so it fires on mount rather than on his click:\n" +
+        offenders.join("\n"),
+    ).toEqual([]);
+
+    /* POSITIVE CONTROL — the pre-#453 line from `ModeratorDashboard`, verbatim. */
+    const before =
+      '  useEffect(() => { if (autoRefresh) toast.success("Auto-refresh enabled (30s interval)"); }, [autoRefresh]);';
+    expect(shape.test(before), "the shape both pages actually had").toBe(true);
+  });
+});
