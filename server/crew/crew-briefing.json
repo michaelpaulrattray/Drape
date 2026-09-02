@@ -1,6 +1,6 @@
 {
-  "edition": 211,
-  "updatedAt": "2026-09-02T10:23:04.519Z",
+  "edition": 212,
+  "updatedAt": "2026-09-02T10:27:52.027704Z",
   "shift": "Foreman — night of 2 September (an open row on the staff tables now sits on its own lighter block, so you can see which account you are looking into)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -1429,7 +1429,7 @@
       "id": "history-deleted-438",
       "title": "The long list of finished work is gone, and the empty section now says what it is for",
       "question": "You asked whether ALREADY DEALT WITH and NOT DONE YET were sections you even needed. I measured both before answering, and they turned out to be in opposite states — so the answer is different for each, and the numbers are the reason.\n\nALREADY DEALT WITH was drawing 281 rows. It was the FOURTH place this page told you something was finished: WORKING NOW names the last shifts and what each shipped, THE PROGRAM ticks a milestone's steps as they land, and that block listed everything, forever. It is gone.\n\nNOT DONE YET was drawing NOTHING, because every one of its 163 rows had already merged — and that is the argument for KEEPING it. It is the only place on this page a piece of work shows up that is blocked, or waiting on you, or in review, and is not in NEXT UP and not a milestone step. Delete it and that work is invisible until someone happens to open GitHub, which is exactly what happened to you before.\n\nSo what it needed was not deleting, it was an honest empty line. It used to say \"Nothing is in flight. Everything the crew has started has landed.\" — which describes the rows and teaches you nothing. It now says \"Nothing is stuck. Blocked work and anything waiting on you appears here.\" The second sentence is the point: an empty box should tell you what a FULL one would mean, otherwise \"nothing is stuck\" and \"this section is broken\" look identical.\n\nNothing was thrown away. Every merged row and every answered card is still in the file behind this page, and that file is in version control.\n\nWorth two minutes: scroll to the bottom of this page. It is shorter, and the third frame shows you what NOT DONE YET will look like the next time something actually is stuck.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-02T08:46:37.510Z",
       "issueNumber": 438,
       "frames": [
