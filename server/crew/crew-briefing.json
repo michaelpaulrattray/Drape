@@ -1,7 +1,7 @@
 {
-  "edition": 212,
-  "updatedAt": "2026-09-02T10:27:52.027704Z",
-  "shift": "Foreman — night of 2 September (an open row on the staff tables now sits on its own lighter block, so you can see which account you are looking into)",
+  "edition": 213,
+  "updatedAt": "2026-09-02T10:30:42.354442Z",
+  "shift": "Foreman — night of 2 September (an open row now sits on its own lighter block across all twelve staff tables; you called it perfect)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1394,7 +1394,7 @@
       "id": "open-row-ground-441",
       "title": "You can see which account you are looking into — before and after, side by side",
       "question": "You said the open profile was \"all one color\" and you could not tell which row you were in. It is fixed, and the before/after pair below is the whole story: same table, same account, same moment in both.\n\nIt landed in ONE place. Every admin and moderator table draws the same shared component, so one change reached all twelve — the Users table you were looking at, audit logs, invite codes, bug reports, change requests, blocked IPs, flagged referrals, the moderator's own lists. No individual page was touched, which is exactly what that shared component was built for.\n\nTWO THINGS I OWE YOU, and the second is the more useful one.\n\nFIRST — the shading was not safe on its own. There was a note in the code from the last time this came up saying a shaded row would swallow the evidence block, the box that holds a customer's own words on a bug report or a moderator's reasoning on a request. That note was RIGHT. So the evidence box stopped being a shaded box and became an outlined one, and it is legible on the new ground. Have a look at the third frame below — that is a real bug report on the new ground.\n\nSECOND — the prototype does not actually solve this, and I only found that by opening it rather than trusting the screenshot. It paints the open row, the hover, and the evidence box all the SAME single colour. Your frame looked right because the account you had open was active, and the prototype draws no evidence box for an active account, so the collision never showed. The look it is telling us is right; the value is not. Ours keeps the three apart: resting, hover one step lighter, open two.\n\nThis also reverses the answer you gave me on #396 (\"The expansion reads fine — no change\"). That is written into the code beside the change, with the arms to stop a future night quietly putting the flat row back because it read your older reply first.\n\nYou asked me to check every relevant admin and moderator page. I opened all twelve with a row expanded, in both light and dark — 289 readings, none of them wrong. Five of them had no rows at all in the test database, so I put test rows in rather than tell you a page was fine without looking at it.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-02T10:23:04.520Z",
       "issueNumber": 441,
       "frames": [
@@ -4488,7 +4488,8 @@
     99,
     100,
     101,
-    102
+    102,
+    103
   ],
   "nextUp": {
     "readAt": "2026-09-02T08:44:39.186Z",
