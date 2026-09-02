@@ -39,6 +39,7 @@ import { Button, Chip, EmptyState, Skeleton, TableHead } from "@/foundation";
 import { trpc } from "@/lib/trpc";
 
 import { grouped, signed } from "./figures";
+import { DEFAULT_DISCREPANCY_THRESHOLD, DISCREPANCY_THRESHOLDS } from "./flagThresholds";
 
 import "./investigations.css";
 
@@ -54,14 +55,19 @@ interface FlaggedDiscrepanciesCardProps {
   autoRefreshInterval?: number | false;
 }
 
-const DEFAULT_THRESHOLD = 500;
-const THRESHOLDS = [100, 250, 500, 1000, 2000, 5000];
+/*
+  ⚠ THE TWO CONSTANTS THAT USED TO SIT HERE MOVED TO `flagThresholds.ts` (#416).
+  The account menu's `Moderation` badge counts flagged accounts at the default,
+  so the default is now shared rather than declared twice — a badge and a card
+  each owning their own `500` is exactly the second list working law 4 is about.
+  Nothing about this card's behaviour changed with the move.
+*/
 
 export function FlaggedDiscrepanciesCard({
   onSelectUser,
   autoRefreshInterval = false,
 }: FlaggedDiscrepanciesCardProps) {
-  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
+  const [threshold, setThreshold] = useState<number>(DEFAULT_DISCREPANCY_THRESHOLD);
   const [expanded, setExpanded] = useState(false);
 
   const flaggedQuery = trpc.moderatorReconciliation.getFlaggedUsers.useQuery(
@@ -89,7 +95,7 @@ export function FlaggedDiscrepanciesCard({
           filter, in the head, where every other staff filter lives.
         */}
         <span className="dp-inv__thresholds">
-          {THRESHOLDS.map((t) => (
+          {DISCREPANCY_THRESHOLDS.map((t) => (
             <Chip
               key={t}
               aria-pressed={threshold === t}
