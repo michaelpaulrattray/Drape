@@ -2,7 +2,7 @@ import { RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 
-import { SurfaceBar, type SurfaceBarSegment } from "@/foundation";
+import { BRAND_NAME, SurfaceBar, type SurfaceBarSegment } from "@/foundation";
 import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState";
 
 /**
@@ -40,6 +40,35 @@ import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState
  * timestamp or a polling toggle for the pages that keep neither would be a
  * number no state produces**, so each part appears only when its surface
  * supplies it.
+ *
+ * ## Both bars are titled `Klieg Console`, and the tagline is gone (#417)
+ *
+ * His instruction, verbatim: *"in the top bar where it says klieg studio change
+ * this on both the admin and the mod pages to be somthing more relevant e.g
+ * just Klieg or Klieg Studio is fine or Klieg Control or somthing i dont know
+ * whatever is industry standard."* He delegated the choice, so `Console` is a
+ * decision taken rather than a question returned — one line reverses it.
+ *
+ * `Console` is the industry term for exactly this surface (AWS, Google Cloud,
+ * Twilio): an operator panel sitting behind a product. And the taglines went
+ * because they were the third statement of one fact — the eyebrow already says
+ * `ADMIN`, the tabs already say what is in it, and *"— everything"* said it a
+ * third time. A tagline on a tool used daily is read once.
+ *
+ * ⚠ **THE REASON THAT IS NOT ABOUT TASTE, AND IT IS SHARPER THAN THE CARD'S.**
+ * `Klieg Studio` is the WORKSPACE name (`brand.ts`), and that constant's own
+ * docblock says what happens to it: when a workspace row exists, it becomes
+ * that row's default and the Profile field edits it. **Staff sits ABOVE
+ * workspaces** — an admin oversees every account, not one — so the day a
+ * customer renames their workspace, an admin panel titled from it is a bug
+ * that will be filed as a data leak.
+ *
+ * ⚠ **The card said this bar READ `WORKSPACE_NAME`. Read at the code, it did
+ * not** — these were two hardcoded literals that merely SPELT the workspace
+ * name, which is the same fault one layer over and a quieter one: a coupling
+ * shows up in a rename, a hand-copied duplicate does not. Either way the
+ * repair is the same and the title is composed from `BRAND_NAME`, never from a
+ * literal, so the deferred rebrand moves it.
  */
 
 /** ADMIN — one tab per live route, in the founder's §5 order. */
@@ -104,7 +133,7 @@ export function StaffBarAdmin({
   return (
     <SurfaceBar
       eyebrow="ADMIN"
-      title="Klieg Studio — everything"
+      title={`${BRAND_NAME} Console`}
       segments={{ value: location, options, label: "Section" }}
       right={<StaffBarRight refreshControls={refreshControls} extra={right} />}
     />
@@ -138,7 +167,7 @@ export function StaffBarModeration({
   return (
     <SurfaceBar
       eyebrow="MODERATION"
-      title="Klieg Studio — watch and propose"
+      title={`${BRAND_NAME} Console`}
       segments={{ value, options: tabs, onChange, label: "Section" }}
       right={<StaffBarRight refreshControls={refreshControls} extra={right} />}
     />
