@@ -123,7 +123,7 @@ function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinute
           </p>
           {errorType === "suspended" && (
             <a
-              href="mailto:support@drape.ai"
+              href="mailto:support@klieglabs.com"
               className="inline-flex items-center gap-1 text-sm font-medium text-[#0A0A0A] hover:text-[#0A0A0A]/70 mt-2 transition-colors duration-300"
             >
               Contact Support <ArrowRight className="w-3 h-3" />
