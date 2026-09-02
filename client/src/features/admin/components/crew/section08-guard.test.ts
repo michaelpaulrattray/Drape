@@ -613,6 +613,20 @@ describe("§4 — two faces, and every measured value is mono", () => {
     under a card about a different section. Removing the exemption without
     fixing that file is what this comment is here to make impossible to do
     quietly.
+
+    ⚠ **THE CARD IS ISSUE 448**, named here on the reviewer's finding: a defect
+    recorded only in a test comment is not filed, because the queue is the sole
+    system of record and a fact that lives only in a message does not exist.
+    When 448 closes, this exemption set goes empty in the same PR.
+
+    ⚠ **WHAT THIS SWEEP CANNOT SEE, so its clean run is a floor and not
+    coverage.** It attributes an id to the NEAREST PRECEDING `className="`,
+    which false-greens two shapes: an id rendered as trailing text after a
+    CLOSED mono element (it inherits that element's class), and any site using
+    `className={cn(…)}`, where there is no `className="` to find and the id is
+    attributed to some earlier attribute instead. All four current non-exempt
+    sites were read by hand and each genuinely sits inside its mono element —
+    but a fifth written in either shape would pass without being checked.
   */
   const ISSUE_NUMBER_EXEMPT = new Set(["CrewWorkingNow.tsx"]);
   it("issue numbers, step numbers and rung keys are drawn in a mono class", () => {
