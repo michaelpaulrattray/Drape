@@ -21,11 +21,17 @@ import { Icon, P } from "./icons";
  * claim that there is something to read, and there is not. That is the line
  * between a stub and a lie, and it is the reason this file has a comment.
  *
- * ⚠ **THE GLYPHS ARE THE HOUSE SET'S NOW** (#321, his 27-glyph drop). Search
- * and What's new are on every page, which he points out makes them *"the
- * most-seen icons in the product after the rail — and Lucide's versions are the
- * densest things in its set … at 15px both fill in."* `P.search` and
- * `P.megaphone` are the same subjects at this set's density. `FolderClosed` and
+ * ⚠ **THE GLYPHS ARE THE PROTOTYPE'S OWN DRAWINGS** (#423). This paragraph used
+ * to close *"`P.search` and `P.megaphone` are the same subjects at this set's
+ * density"* — meaning house redraws of Lucide's, deliberately lighter. **That
+ * account is overturned and is the exact story that let these two ship wrong.**
+ * They were drawn fresh because the prototype draws its topbar INLINE rather
+ * than through its icon map, so exporting the map missed the chrome; his eye
+ * caught it — *"the icons are not the same as the prototypes on the top bar"* —
+ * and `What's new` turned out to be a MEGAPHONE where his is a SPEAKER. Both
+ * are now lifted verbatim from `Klieg Studio.dc.html`; the full reasoning is in
+ * `icons.tsx`'s topbar-chrome block. **Do not "improve" either back toward a
+ * house density: that is the mistake, not the rule.** `FolderClosed` and
  * `ChevronDown` stay Lucide on purpose: they are on his kept list (*"chevrons,
  * arrows, plus, close, check…"*), and the project switcher's folder is
  * interface furniture rather than a destination.
