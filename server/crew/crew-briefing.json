@@ -1,5 +1,5 @@
 {
-  "edition": 201,
+  "edition": 202,
   "updatedAt": "2026-09-02T01:08:56.819Z",
   "shift": "Foreman — night of 2 September (moderator investigations, brief 09 — the staff lane closes)",
   "program": {
@@ -1470,7 +1470,7 @@
           "arm": "after"
         }
       ],
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-02",
       "issueNumber": 395
     },
