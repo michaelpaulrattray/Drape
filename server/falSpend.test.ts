@@ -63,13 +63,18 @@ describe("the balance is asked for, and its refusal is a reading", () => {
     expect(falLine(balance)).toBe("fal $24.50 USD remaining");
   });
 
-  it("SHOUTS below the floor and names the consequence", () => {
+  it("does NOT shout below the floor — a balance is a reading, never a problem (founder, 2026-09-02)", () => {
     const line = falLine({ ok: true, remaining: 4, currency: "USD", low: true });
-    expect(line).toContain("LOW");
-    /* Same amendment, same day, both providers (fable-692 §1). */
-    expect(line, "a number without its consequence is a number nobody acts on")
-      .toContain("money is MOVING");
-    expect(line).not.toContain("dies at dispatch");
+    /* The same retirement as the OpenRouter line, same day, both providers:
+       the figures are present and none of the alarm vocabulary is. Each
+       banned word was actually printed on a receipt, so the list is a record
+       and not a guess. */
+    expect(line).toBe("fal $4.00 USD remaining");
+    for (const banned of ["LOW", "***", "MOVING", "look at the spend", "covers the outage", "dies at dispatch"]) {
+      expect(line, `the retired shout is back: "${banned}"`).not.toContain(banned);
+    }
+    /* The floor is still a number the reader computes against — the boundary
+       arm below needs it — and it is still $20. */
     expect(FAL_LOW_BALANCE_USD).toBe(20);
   });
 

@@ -481,13 +481,13 @@ export function falLine(
 ): string {
   if (balance.ok) {
     const figure = `$${balance.remaining.toFixed(2)} ${balance.currency} remaining`;
-    return balance.low
-      /* Same amendment as the OpenRouter line, same day and same reason
-         (founder: auto top-up is ON for BOTH providers; fable-692 §1). The
-         shout stays — it is a leak detector, not only a runway gauge. */
-      ? `fal *** LOW: ${figure} — below $${FAL_LOW_BALANCE_USD}. `
-        + `Auto top-up covers the outage; a low balance now means money is MOVING — look at the spend. ***`
-      : `fal ${figure}`;
+    /* The shout is gone here for the same reason it is gone from the
+       OpenRouter line, the same day (founder, 2026-09-02: "open router auto
+       tops up i never want to see it as an issue appear again" — and auto
+       top-up is ON for BOTH providers, his 2026-08-16 word). A balance is a
+       READING for the receipt's custody line; `low` stays computed so the
+       boundary arm proves the arithmetic, and nothing prints it. */
+    return `fal ${figure}`;
   }
   if (!derived) return `fal UNREAD — ${balance.why}`;
   const days = Math.max(

@@ -7,10 +7,13 @@
  * at **$9.76 of $210.00** when it was finally read — and at that time zero meant
  * an outage: the interpreter and treatment stage fail, so every paid roll and
  * refine dies at dispatch. **That consequence was retired on 2026-08-16**, when
- * the founder turned auto top-up on for both providers; the line's shout now
- * names what a low balance means today, which is money MOVING. The line itself
- * stays exactly as loud, because runway was never its only job — it is the leak
- * detector, and it earned that on its first night.
+ * the founder turned auto top-up on for both providers. **And the shout itself
+ * was retired on 2026-09-02**, on his word — *"open router auto tops up i
+ * never want to see it as an issue appear again"* — after thirteen days of a
+ * `*** LOW ***` line that could never clear (floor $20, top-up $10) and was
+ * transcribed by shifts into a problems row on his page. The line is a reading
+ * now: the figures, nothing else. The `low` field is still computed so the
+ * boundary arm proves the arithmetic, and the arm below proves nobody prints it.
  *
  * The fix is a line in the park block and the deploy receipt that is READ
  * every time, and the thing that must never happen is the one this suite
@@ -83,34 +86,28 @@ describe("the OpenRouter balance is read, never remembered", () => {
     expect(balanceLine(balance)).toContain("$9.76 remaining of $210.00");
   });
 
-  it("SHOUTS below the floor, and names the consequence", () => {
+  it("does NOT shout below the floor — a balance is a reading, never a problem (founder, 2026-09-02)", () => {
     const line = balanceLine({ ok: true, remaining: 9.76, total: 210, used: 200.24, low: true });
-    expect(line).toContain("LOW");
-    /* The consequence has MOVED TWICE and the arm is written so it never pins
-       the current wording: 2026-08-16 auto top-up went on, so "every roll dies
-       at dispatch" stopped being true; 2026-08-19 the top-up was seen NOT to
-       fire here, so "auto top-up covers the outage" stopped being true in its
-       turn. What is asserted is that the line still carries A consequence and
-       still points at the reading that explains it. */
-    expect(line, "a number without its consequence is a number nobody acts on")
-      .toContain("spend line");
-    /*
-      AND THE ONE THING THE LINE MAY NOT DO AGAIN: promise what the account
-      will do next. This reader can see `total` and nothing else, so a claim
-      about a top-up firing is a claim about a thing it has not read — which is
-      exactly how the superseded sentence survived three days of being false.
-    */
-    expect(line.toLowerCase(), "the line may not promise a top-up it cannot see")
-      .not.toContain("covers the outage");
-    expect(line, "it must instead say how a top-up WOULD be visible from here")
-      .toContain("granted");
-    expect(line, "and it must point at where the answer is")
-      .toContain("spend line");
-    expect(line, "the outage sentence is superseded, not merely reworded")
-      .not.toContain("dies at dispatch");
+    /* The consequence clause MOVED TWICE (2026-08-16, 2026-08-19) and then the
+       whole shout was retired on his word. What is asserted now is the
+       opposite of what this arm used to assert: the figures are present, and
+       none of the alarm vocabulary is — not the marker, not the accusation,
+       not the instruction to go and look. Each banned word is one the line
+       carried on a real receipt, so the arm is a list of things that were
+       actually printed, not a guess at what somebody might print. */
+    expect(line).toContain("$9.76 remaining of $210.00");
+    for (const banned of ["LOW", "***", "not firing", "spend line", "covers the outage", "dies at dispatch"]) {
+      expect(line, `the retired shout is back: "${banned}"`).not.toContain(banned);
+    }
   });
 
-  it("is quiet above the floor", async () => {
+  it("the banned-word arm can fail — the retired shout, driven through it, reddens", () => {
+    const retired = "openrouter *** LOW: $9.76 remaining of $210.00 — below $20. Look at the spend line. ***";
+    const hits = ["LOW", "***", "spend line"].filter((banned) => retired.includes(banned));
+    expect(hits).toEqual(["LOW", "***", "spend line"]);
+  });
+
+  it("is quiet above the floor, and identical in shape to below it", async () => {
     const balance = await readOpenRouterBalance(
       KEY,
       respond({ data: { total_credits: 210, total_usage: 100 } }),
@@ -118,6 +115,11 @@ describe("the OpenRouter balance is read, never remembered", () => {
     expect(balance.ok && balance.low).toBe(false);
     expect(balanceLine(balance)).not.toContain("LOW");
     expect(balanceLine(balance)).toContain("$110.00 remaining");
+    /* Above and below the floor the line has ONE shape — the figures. If a
+       future edit makes the two differ, the difference is a shout coming back
+       by another name. */
+    const below = balanceLine({ ok: true, remaining: 9.76, total: 210, used: 200.24, low: true });
+    expect(below.replace(/\$[\d.]+/g, "$N")).toBe(balanceLine(balance).replace(/\$[\d.]+/g, "$N"));
   });
 
   it("puts the boundary on the right side", async () => {

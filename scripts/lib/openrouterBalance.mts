@@ -407,10 +407,23 @@ export function balanceLine(balance: OpenRouterBalance): string {
     line reports the reading and names the doubt, which is the whole difference
     between a leak detector and a reassurance. Working law 1: this reader may
     state what it read, never what somebody said was configured elsewhere.
+
+    ⚠ AND THE SHOUT IS GONE — 2026-09-02, the founder's word, verbatim:
+    "open router auto tops up i never want to see it as an issue appear again."
+
+    The `*** LOW ... if that number is not moving, the top-up is not firing ***`
+    sentence was a shout on every rite receipt for thirteen straight days, and
+    shifts transcribed it into a `problems` row on his page and an `urgent`
+    card (#202, #319, the `openrouter-balance-low` row). It could never clear:
+    the floor was $20 and the top-up is $10 (#319's receipt reading — six of
+    them in ten days, so the account IS refilling). A leak detector that fires
+    every day on a healthy account is not a detector; it is noise with a
+    threshold. The `low` FIELD stays computed, because the boundary arm below
+    still proves the reader's arithmetic, but nothing prints it and nothing
+    may: the balance is a READING for the receipt's custody line, and the only
+    balance fact that is ever a finding is a top-up that has demonstrably
+    stopped landing — the granted figure flat across a week of spend — which
+    goes on a card with receipts, never on this line and never on his page.
   */
-  return balance.low
-    ? `openrouter *** LOW: ${figures} — below $${LOW_BALANCE_USD}. `
-      + `A top-up would RAISE the $${balance.total.toFixed(2)} granted figure beside it; `
-      + `if that number is not moving, the top-up is not firing. Look at the spend line. ***`
-    : `openrouter ${figures}`;
+  return `openrouter ${figures}`;
 }
