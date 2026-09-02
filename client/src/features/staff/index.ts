@@ -6,6 +6,11 @@ export { useStaffRefresh, STAFF_REFRESH_INTERVAL_MS } from "./useStaffRefresh";
    (next, #416) the account menu's badge. Its docblock carries why it reads
    `admin.getOverview` rather than counting anything itself. */
 export { useStaffCounts } from "./useStaffCounts";
+/* #416 — the account menu's two badges, which were declared and rendered and
+   handed nothing by their one call site. `useAccountMenuCounts` composes and
+   issues no query of its own; that is deliberate and its docblock says why. */
+export { useAccountMenuCounts, type AccountMenuCounts } from "./useAccountMenuCounts";
+export { useModeratorFlagCounts, type ModeratorFlagCounts } from "./useModeratorFlagCounts";
 /* #453 — ONE switch for the whole panel, on his reply #104. Seven surfaces held
    seven `useState`s, so the toggle died on every navigation. Its docblock
    carries why the moderator page only looked like it worked. */

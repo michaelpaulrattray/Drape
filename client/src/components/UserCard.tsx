@@ -87,9 +87,29 @@ interface UserCardProps {
   userName: string;
   creditsBalance: number;
   role?: string | null;
-  /** Pending change requests + unanswered Crew cards. Omitted at zero. See §01. */
+  /*
+    #416 — ⚠ BOTH OF THESE DESCRIBED THE RETIRED `01-staff-shell.md` PROPOSAL
+    AND NEITHER DESCRIBED THE PRODUCT, because for as long as they existed the
+    props were passed by nobody and there was nothing for them to describe.
+    They are wired now, and these two lines say what actually arrives.
+  */
+  /**
+   * Pending change requests — the SAME value as the `Change requests` tab pill
+   * and Overview's attention card, all descending from one statement (#415).
+   * Omitted at zero, never `(0)`.
+   *
+   * ⚠ Not "+ unanswered Crew cards": that was §01's proposal, and adding it
+   * would make this the one surface of the three that disagrees.
+   */
   adminCount?: number;
-  /** Audit entries above `info` in the last 24h. Omitted at zero. See §01. */
+  /**
+   * Flagged referrals + flagged credit discrepancies — what a moderator must
+   * ACT on. Omitted at zero, never `(0)`.
+   *
+   * ⚠ Not "audit entries above `info` in 24h", which was §01's proposal from
+   * before either flagged surface existed. An audit log fills every day whether
+   * or not anything is wrong; `useModeratorFlagCounts` carries the reasoning.
+   */
   moderationCount?: number;
   onOpenSettings: () => void;
   /** #267 — Settings at its Members section. Never a modal of its own. */

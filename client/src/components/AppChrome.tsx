@@ -53,6 +53,7 @@ import { UserCard } from "@/components/UserCard";
 import { LobbyUtilityMenu } from "@/features/lobby/LobbyUtilityMenu";
 import { ReportBugButton } from "@/features/lobby/ReportBugButton";
 import { AccountSurfaces, useAccountSurfaces } from "@/features/settings";
+import { useAccountMenuCounts } from "@/features/staff";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 
 /**
@@ -92,6 +93,22 @@ export function AppChrome({
   const { data: profileData } = trpc.profile.get.useQuery(undefined, {
     enabled: !!user,
   });
+
+  /*
+    #416 — THE TWO NUMBERS THE MENU HAS ALWAYS BEEN ABLE TO DRAW AND NEVER HAD.
+
+    `UserCard` declared `adminCount` and `moderationCount`, rendered a pill for
+    each and omitted at zero — and this call site, its ONE call site, passed
+    neither. They arrived `undefined`, the pills omitted, and the badges never
+    once showed a number. It shipped looking finished.
+
+    The counts are composed in a hook rather than fetched here on purpose: this
+    component calls `trpc.` for credits and profile, and `counts415-guard`
+    derives from the tree that exactly one module both names the pending count
+    and calls tRPC. Reading it here would have moved a guard arm to admit a new
+    consumer, which is how a derived guard turns back into a list.
+  */
+  const { adminCount, moderationCount } = useAccountMenuCounts();
   useEffect(() => {
     if (profileData?.avatarUrl) setProfileImage(profileData.avatarUrl);
     /*
@@ -215,6 +232,8 @@ export function AppChrome({
                   userName={user.name ?? "Account"}
                   creditsBalance={creditsData?.balance ?? 0}
                   role={user.role}
+                  adminCount={adminCount}
+                  moderationCount={moderationCount}
                   onOpenSettings={() => account.openSettings("profile")}
                   onOpenMembers={() => account.openSettings("members")}
                   onOpenBilling={() => account.openSettings("billing")}

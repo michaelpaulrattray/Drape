@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8b7381974af7ecea"
+    "sourceFingerprint": "f503bab7c4114939"
   },
   "domains": [
     {
@@ -83,7 +83,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 19
+      "moduleCount": 20
     },
     {
       "id": "domain:operations",
@@ -133,7 +133,7 @@
     {
       "id": "domain:staff",
       "name": "staff",
-      "moduleCount": 8
+      "moduleCount": 10
     },
     {
       "id": "domain:studio",
@@ -1981,6 +1981,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/moderator/flagThresholds.ts",
+      "path": "client/src/features/moderator/flagThresholds.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/moderator/index.ts",
       "path": "client/src/features/moderator/index.ts",
       "domain": "moderator",
@@ -2193,6 +2199,18 @@
     {
       "id": "module:client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
       "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/useAccountMenuCounts.ts",
+      "path": "client/src/features/staff/useAccountMenuCounts.ts",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "path": "client/src/features/staff/useModeratorFlagCounts.ts",
       "domain": "staff",
       "lifecycle": "active"
     },
@@ -10702,6 +10720,10 @@
       "path": "client/src/features/staff/counts415-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/staff/counts416-guard.test.ts",
+      "path": "client/src/features/staff/counts416-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/staff/section05-guard.test.ts",
       "path": "client/src/features/staff/section05-guard.test.ts"
     },
@@ -13552,6 +13574,11 @@
     {
       "from": "module:client/src/components/AppChrome.tsx",
       "to": "module:client/src/features/settings/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
@@ -16956,6 +16983,11 @@
     },
     {
       "from": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
+      "to": "module:client/src/features/moderator/flagThresholds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -17496,6 +17528,16 @@
     },
     {
       "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/useAccountMenuCounts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
       "to": "module:client/src/features/staff/useStaffCounts.ts",
       "kind": "imports"
     },
@@ -17527,6 +17569,31 @@
     {
       "from": "module:client/src/features/staff/staffTable.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useAccountMenuCounts.ts",
+      "to": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useAccountMenuCounts.ts",
+      "to": "module:client/src/features/staff/useStaffCounts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "to": "module:client/src/features/moderator/flagThresholds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {

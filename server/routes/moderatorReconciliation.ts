@@ -69,10 +69,31 @@ export const moderatorReconciliationRouter = router({
    * customer should have a person's name on it." Freezing is `freezeAccount`
    * below, with the moderator's id in the audit row.
    */
+  /*
+    ⚠ **`threshold` IS REQUIRED, AND THE `.default(50)` THAT USED TO SIT HERE WAS
+    A THIRD DECLARATION OF A NUMBER THE PRODUCT DECLARES ONCE** (#416, found by
+    the gate review of PR #463 — the finding this card's own subject predicts).
+
+    The product's attention threshold is `DEFAULT_DISCREPANCY_THRESHOLD` (500),
+    shared by the account menu's `Moderation` badge and the moderator card's
+    chip row so neither can own its own copy. This default said **50**, one
+    layer down, where the client-side single-source guard walks and cannot see.
+
+    It is removed rather than aligned, and that is the stronger repair: aligning
+    would create a *fourth* copy — the constant lives in `client/`, which server
+    code must not import — and would leave a caller able to omit the field and
+    silently get a different question answered than the one every surface asks.
+
+    ⚠ **Read at the bytes before tightening, because a required field can reject
+    an in-flight bundle mid-deploy**: `git log -S` over `client/src` returns four
+    commits touching this call, and **every one of them sends `{ threshold }`**,
+    from `58f52930` (the commit that created the procedure) onward. So this
+    default has never once been reached, by any bundle that has ever existed.
+  */
   getFlaggedUsers: moderatorProcedure
     .input(
       z.object({
-        threshold: z.number().min(1).default(50),
+        threshold: z.number().min(1),
       })
     )
     .query(async ({ input }) => {
