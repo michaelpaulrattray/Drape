@@ -770,6 +770,21 @@ describe("brief 05 §4 / #413 — the refresh cluster is all three parts or none
  * The behaviour half — the default, the round trip, the hostile browser — is
  * DRIVEN against the real store in `stores/useStaffAutoRefreshStore.test.ts`.
  * A source read cannot see whether a preference is actually remembered.
+ *
+ * # ⚠ THE STATED LIMIT: BOTH MATCHERS ARE ANCHORED ON THE NAME `autoRefresh`
+ *
+ * So a page could call `useStaffAutoRefresh()` — satisfying the "reads the
+ * SHARED switch" arm — and then wire the bar to a RENAMED private copy
+ * (`const [refresh, setRefresh] = useState(false)`), and both arms below would
+ * stay green. **A clean run here is a floor, not coverage**, and the thing that
+ * actually proved the behaviour is the drive across a real navigation recorded
+ * in `docs/specs/STAFF_SHARED_AUTOREFRESH_453_EVIDENCE.md` §3.
+ *
+ * It is written down rather than closed because closing it means parsing which
+ * identifier reaches the bar, and a baroque parser standing in for a drive is
+ * the same trade this repository has lost four times (the Atlas collectors).
+ * **The next shift to touch these pages is #415's promotion pass** — this
+ * paragraph is aimed at it, and the reviewer of PR #454 raised it.
  */
 describe("#453 — the auto-refresh toggle is one switch, not one per page", () => {
   /** Every staff page that hands the bar a `refreshControls` object. */
