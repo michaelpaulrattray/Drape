@@ -103,6 +103,19 @@ describe("text entry never wears the blanket accent ring", () => {
     }
   });
 
+  it("an invalid text field keeps its error border while focused — focus never hides an error", () => {
+    /* Reviewer on #446: the ink border beat a shadcn input's aria-invalid
+       border for as long as it held focus. The override sits one attribute
+       heavier than the exclusion, so it wins on weight. */
+    const rule = [...tokens.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((m) =>
+      m[1].split(",").some((sel) => sel.trim() === '.dp-root input[aria-invalid="true"]:focus-visible'),
+    );
+    expect(rule, "the invalid-while-focused override is gone").toBeDefined();
+    expect(rule![1].split(",").map((s) => s.trim())).toContain('.dp-root textarea[aria-invalid="true"]:focus-visible');
+    expect(rule![2]).toMatch(/border-color:\s*var\(--error\)/);
+    expect(rule![2], "it must not reintroduce a ring").not.toMatch(/outline/);
+  });
+
   it("the matcher can fail — the blanket alone, driven through it, has no exclusion", () => {
     expect(textEntryExclusion(BEFORE)).toBeNull();
     expect(BEFORE).toMatch(/\.dp-root :focus-visible\s*\{[^}]*outline:\s*2px solid var\(--accentSolid\)/);

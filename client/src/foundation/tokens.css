@@ -268,6 +268,18 @@
   border-color: var(--ink);
 }
 
+/*
+  An INVALID text field keeps its error border while focused — focus never
+  hides an error (the same sentence `foundation.css` writes for
+  `.dp-field--invalid:focus-within`). Reviewer on #446: the rule above beat
+  the shadcn input's `aria-invalid` border for as long as the field held
+  focus. (0,3,1) against the exclusion's (0,2,1).
+*/
+.dp-root textarea[aria-invalid="true"]:focus-visible,
+.dp-root input[aria-invalid="true"]:focus-visible {
+  border-color: var(--error);
+}
+
 /* ---- MOTION ---- */
 @keyframes dp-rise   { from { opacity:0; transform:translateY(7px) } to { opacity:1; transform:none } }
 @keyframes dp-fade   { from { opacity:0 } to { opacity:1 } }
