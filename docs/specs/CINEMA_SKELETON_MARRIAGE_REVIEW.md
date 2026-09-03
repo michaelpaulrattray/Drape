@@ -658,3 +658,17 @@ upload flows).** Amendment V issued, superseding T/U's enforcement halves
 while keeping their machinery as tools; job tags become hints the engine
 reads. The two rules that stay hard are product law, not craft: faces are
 never uploaded; masters are immutable. The 9-series is closed.
+
+
+## 9h. The bucket opens onto everything — ranked, never restricted (founder confirmation, 2026-09-04)
+
+His worked case, confirming 9g: Maria has ~100 takes under her casting
+profile; opening her bucket in Cinema, any of them is attachable, "even if
+its wrong" — Cinema provides tips and best practices only; the product's
+job is fluidity and clarity, not control. Amendment W issued: the attach
+picker shows everything a cast has — master and plates first, states next,
+then all takes, browsable and searchable — with ordering as the only
+lever; an underperforming choice gets one dismissible tip with the Plate
+Maker beside it. Ranked, never restricted. The reference arc ends here, on
+his sentence: "we cant control everything we can only make the experience
+fluid and easy to understand."
