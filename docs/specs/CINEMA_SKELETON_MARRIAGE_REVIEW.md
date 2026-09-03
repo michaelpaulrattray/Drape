@@ -718,3 +718,27 @@ documents (no Element edit/delete path). One dialect (@name, @name/state)
 on every surface; per-engine addressing is the wire's problem. The picker
 ranks by context (production first, recommended forms first) — ranked,
 never restricted, per 9h.
+
+
+## 11. Where the amendments actually live (founder process ruling, 2026-09-04)
+
+Nothing discussed after the consolidated brief was handed to the design
+agent — the founder's handoff artifact for the CODE agents is
+`12-cinema-full.md` (his Downloads copy), so every post-consolidation
+decision was written INTO that file as **§16 "Amendments agreed after
+consolidation"** (§16 wins over §§0-15 where they disagree): 16.1 the
+staleness diff (P); 16.2 supply roads with watching gaps, casting never
+embedded (Q); 16.3 states derived from the master, depth scales with use,
+the angle tip (R/R6); 16.4 immutable masters, one-level-down promotion,
+provenance, relation cards (S); 16.5 defaults/tips/tools with the Plate
+Maker and job hints (V); 16.6 the ranked picker (W); 16.7 new-take-
+anywhere with @-mentions; 16.8 the INTENTIONAL tag index — Y revised on
+the founder's pushback: auto-naming everything drowns the index, so
+naming happens only at Sign, at the script reading, and at the moment of
+keeping (with a PROPOSED name pre-filled — Higgsfield's ceremony reduced
+to one keystroke inside an act already underway); raw takes and bulk
+uploads stay unnamed, reached through parents and search; states
+namespace under identities; renames propagate; 16.9 wiring notes (the
+wire attachment rule, lock deferred into Export, first-frame softening,
+real prices, per-engine wait numbers). This review doc remains the
+reasoning record; the handoff file is the build truth.
