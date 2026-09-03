@@ -368,6 +368,17 @@ Prototype bounce-backs, both already filed: the frames strip still stands
 open beside takes (§M self-collapse; "Done" is the manual link again), and
 direction fields render expanded by default against the notes-first rule.
 
+## 6g. Camera control's four altitudes (founder Q, 2026-09-03: "where do I control the camera?")
+
+Pinned: camera is controlled at the altitude matching the scope of the
+change — the style profile (whole film's camera character), scene
+overrides (one scene: the handheld chip), the shot proposal and the CAMERA
+direction field with the move gallery (one shot's design), and notes
+between takes (this shot, tighter). Never a control in the Script view —
+but camera cues WRITTEN in a script (CLOSE ON, WE PUSH IN) are parsed into
+the proposed shot list, badged read-from-your-script (pack amendment O):
+written camera is honored, never re-asked.
+
 ## 7. The integration contract (decided here — the design bot's blind spot, by design)
 
 The founder: the design agent knows UI, not the product's internals; how the
