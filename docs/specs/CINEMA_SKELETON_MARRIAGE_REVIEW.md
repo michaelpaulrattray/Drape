@@ -566,3 +566,30 @@ the one image + the master. Amendment R6 issued: the engine detects an
 angle mismatch between a shot's camera and its state card's coverage and
 offers the missing view as a dashed line on the shot card — detected,
 never enforced.
+
+
+## 9d. Outfits never fight — the attachment rule at the wire (founder catch, 2026-09-04)
+
+The founder caught an imprecision in 9c: attaching the full birth-outfit
+master sheet BESIDE a new-outfit card would make the outfits fight ("if it
+sees a detail, it will try to show it" — his application of their own law).
+Corrected against the measured practice. The pros used two lanes and never
+co-attached two outfits:
+
+1. **The per-state sheet**: outfit B ships as ONE complete sheet with the
+   sacred face close-up physically assembled into it ("the assembly happens
+   in editing tools around it") — identity and outfit in a single
+   reference; the birth-outfit body views never attach when she wears
+   something else.
+2. **Dual reference with per-reference scoping**: the face CLOSE-UP (a head
+   crop, no outfit visible) + the body/state reference, each scoped in the
+   prompt ("face from image 1 only; wardrobe and body from image 2"),
+   negatives included.
+
+**The engine assembly rule, pinned**: what "the master rides into every
+shot" means at the wire is the FACE PANEL (head crop, outfit-free), never
+the birth-outfit views. Per shot: face panel + the one applying state card
++ a scope line per reference — or a fully-built derived state sheet alone
+(face already inside it). The outfit conflict is structurally impossible in
+both lanes. This is a DP-skill/prompt-assembly rule, not UI; the buckets
+and cards above are unchanged.
