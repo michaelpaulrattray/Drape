@@ -699,3 +699,22 @@ takes engine, one home. Auto-mentionability matched (nothing needs making
 taggable). Not copied: dialect fragmentation, flat elements, unscoped
 tags. Future note: their @motion (camera behaviour read from a video
 clip) filed beside Act-Two as a possible direction input.
+
+
+## 10b. Everything is born tagged — the app-wide tag law (founder, 2026-09-04)
+
+The founder widened 10's scope: prompts run through the whole app (editor,
+takes, cinema, assets, future surfaces), so tags are app-wide
+infrastructure — and Higgsfield's save-as-Element naming ceremony is the
+friction to beat. Beaten structurally, amendment Y issued (absorbing X):
+**naming is a side effect of creation, so the @ index is DERIVED, never
+curated.** Casts are named at Sign; states at mint from the user's own ask
+(shown inline, editable); script-derived items by the reading; uploads
+auto-named on arrival by a look at the image; outputs never named at all —
+provenance is their index entry, so @maria reaches her hundred takes
+ranked behind her plates without anyone filing anything. Renames propagate
+everywhere (derive-never-mirror), repairing the hole their system
+documents (no Element edit/delete path). One dialect (@name, @name/state)
+on every surface; per-engine addressing is the wire's problem. The picker
+ranks by context (production first, recommended forms first) — ranked,
+never restricted, per 9h.
