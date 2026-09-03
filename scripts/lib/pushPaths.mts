@@ -173,8 +173,16 @@ export const readPushPaths = (reader: TreeReader): PushPathReading => {
     #263, finding 2). It inherits the repository's DEFAULT workflow token
     permissions — server-side state this module cannot read, recorded by hand in
     the doc's door A (`read`, on 2026-09-03). If that default is ever flipped to
-    write, a workflow that never says the word `write` gains it silently, and
-    `local-migration` has no branch protection at all.
+    write, a workflow that never says the word `write` gains it silently.
+
+    ⚠ The second half of that sentence used to read "and `local-migration` has
+    no branch protection at all", which stopped being true on 2026-09-03 when the
+    founder ruled *"protect it"* (#461). It is worth stating what changed and what
+    did not: branch protection carries `enforce_admins: false`, so it does not bind
+    HIM — but a workflow token is not an administrator, so the required checks DO
+    bind a silently-write-capable job on both `main` and `local-migration`. The
+    door narrowed; it did not close, because this module still cannot read the
+    setting, and a job may still write anywhere else it can reach.
 
     So the arm is not "no workflow says write"; it is "every workflow SAYS what
     it gets". An absent block is the silent direction.

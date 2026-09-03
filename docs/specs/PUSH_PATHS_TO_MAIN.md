@@ -107,23 +107,44 @@ that is the only place they can be.
 
 ### A · GitHub branch protection — and it does not bind an admin
 
-Read from the API on **2026-09-03**:
+Read from the API on **2026-09-03**, and re-read the same day after the founder
+ruled *"protect it"* (#461):
 
 ```
 main:            required checks [gate-checks, founder-gate] · strict false
                  enforce_admins FALSE · allow_force_pushes false · allow_deletions false
                  no required_pull_request_reviews
-local-migration: NOT PROTECTED AT ALL
+local-migration: required checks [gate-checks, founder-gate] · strict false
+                 enforce_admins FALSE · allow_force_pushes false · allow_deletions false
+                 no required_pull_request_reviews
+                 (was NOT PROTECTED AT ALL until 2026-09-03)
 collaborators:   michaelpaulrattray (admin) — one
 rulesets:        none
 default workflow token permissions: READ · can_approve_pull_request_reviews false
 ```
 
+⚠ **The two protections are identical in every field but one, and the
+difference is GitHub's, not a choice.** `main`'s two required checks carry
+`app_id: null` (satisfiable by any app); `local-migration`'s resolved to
+`app_id: 15368` (GitHub Actions) because those contexts had already reported on
+this repository by the time it was protected. **The API refuses `null` there** —
+driven twice, once with the legacy `contexts` array and once with an explicit
+`checks: [{app_id: null}]`, and both came back `15368`. It is the stricter of
+the two directions, and it is recorded because a later reader diffing the two
+protections will find it and should not have to re-derive why.
+
 ⚠ **The last line is recorded because a workflow that declares no `permissions:`
 block inherits it.** It is `read` today, so an undeclared workflow is harmless
 today; it is one settings change away from being a write-capable job in a
-repository whose `local-migration` branch has no protection. The suite's second
-CI arm is what makes that setting stop mattering.
+repository that deploys production from two branches. The suite's second CI arm
+is what makes that setting stop mattering.
+
+⚠ **Protecting `local-migration` narrowed this door and did not close it.**
+`enforce_admins: false` means protection does not bind the founder — but a
+workflow token is **not** an administrator, so the required checks now bind a
+silently-write-capable job on both deploying refs. What remains is everything
+protection does not reach, and the fact that this setting is still invisible to
+every check in the tree.
 
 ⚠ **`enforce_admins: false` means the required checks do not apply to an
 administrator, and the only collaborator is an administrator.** This is not a
@@ -131,13 +152,22 @@ deduction from the setting — it is visible in the artifact: the last three
 commits on `main` carry **zero check runs** while `gate-checks` is required on
 that branch. GitHub accepted them because the pusher was an admin.
 
-⚠ **`local-migration` has no protection at all**, and it deploys production. The
-`.githooks/pre-push` hook is the *only* thing standing in front of it, and a
-hook is per-clone (see B).
+✅ **`local-migration` is protected as of 2026-09-03** — ~~has no protection at
+all~~ — on the founder's word, Crew reply #108, verbatim and entire: *"protect
+it"* (#461). It carries `main`'s settings exactly: the same two required checks,
+no force pushes, no deletions, and the same `enforce_admins: false`. So the
+change binds every actor that is not an administrator, and the sentence above
+about admins applies to it identically.
 
-**Neither is a shift's to change** — repository settings are the founder's, like
-Railway variables. Both are carded rather than acted on; see the foot of this
-file.
+⚠ **`.githooks/pre-push` is still the only thing in front of an ADMIN push to
+either branch**, and a hook is per-clone (see B). That is unchanged by #461 and
+it is the honest limit of what was bought: the door that closed is the one a
+fresh clone, the GitHub web editor, or a write-capable workflow would have used.
+
+**Neither was a shift's to change on its own judgement** — repository settings
+are the founder's, like Railway variables. Both were carded rather than acted
+on; he ruled on both the same morning (`main` stays as it is, #460; this one is
+protected, #461). See the foot of this file.
 
 ### B · `core.hooksPath` — the hook file is committed, its installation is not
 
@@ -235,9 +265,10 @@ is seconds against that. The reviewer called it a nit and did not block on it,
 and this paragraph is here so the next person to notice it finds a decision
 rather than an oversight.
 
-## What is on his desk out of this
+## What was on his desk out of this — ✅ BOTH ANSWERED 2026-09-03
 
-Two settings changes, neither of them a shift's to make:
+Two settings changes, neither of them a shift's to make. He ruled on both the
+same morning and both rulings are recorded here rather than only in a comment.
 
 1. **Turn on "Do not allow bypassing the above settings" for `main`**
    (`enforce_admins`). Today the required checks do not bind the only account
@@ -245,5 +276,16 @@ Two settings changes, neither of them a shift's to make:
    rite push has no check runs on it — so it is a real decision with a real
    cost, not a tick-box, and it is carded with that tradeoff spelled out rather
    than recommended blind.
+   → ✅ **HE SAID NO, and gave the reason** (#460, Crew reply #110, verbatim):
+   *"Leave it unticked. I want the page in the morning and eight minutes a night
+   is not worth it."* He also corrected this document's own class of claim — the
+   rite's checks are a **different set** from the gate's, not a superset — and
+   ordered the one gap that is expensive closed instead: the secret scan now runs
+   in the ceremony (#469, PR #473). **`main` stays exactly as the block above
+   shows it.**
 2. **Protect `local-migration`, or stop deploying from it.** It deploys
    production and has no server-side protection whatsoever.
+   → ✅ **DONE** (#461, Crew reply #108, verbatim and entire: *"protect it"*).
+   Applied 2026-09-03 as an exact mirror of `main`, verified by diffing the two
+   protection payloads field by field. The remaining door is the admin one in B,
+   which is deliberate and is item 1's answer.
