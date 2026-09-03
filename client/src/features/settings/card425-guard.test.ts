@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { PLAN_TIERS } from "../../../../drizzle/schema";
+import { PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
 import { readBurn, readCycle } from "./planMath";
 import { recommendPlan, type LadderPlan } from "./planLadder";
 
@@ -77,15 +78,24 @@ const DAY = 24 * 60 * 60 * 1000;
  * rungs come from `PLAN_TIERS` and the spend below is derived from Starter's
  * real allowance, which makes a future price edit surface here rather than in a
  * shift's frames.
+ *
+ * ⚠ **AND THE ORDER COMES FROM `PLAN_ORDER`, NOT FROM OBJECT KEYS** (PR #488
+ * review, finding 1). `recommendPlan` walks the ladder by INDEX — *the first
+ * rung above the current one that covers the burn* — so its answer is a
+ * function of the order, and the surface gets its order from `plans.planOrder`
+ * (`ChangePlanModal.tsx`), which is `PLAN_ORDER`. Building the fixture from
+ * `Object.entries` insertion order agreed with it today and was tied to it by
+ * nothing: a rung added out of insertion order would leave this file driving a
+ * ladder no customer ever sees, while still reporting that items 3 and 4 are
+ * built and correct. Working law 4, one layer under the one this file already
+ * documents.
  */
-const LADDER = (
-  Object.entries(PLAN_TIERS) as [string, (typeof PLAN_TIERS)[keyof typeof PLAN_TIERS]][]
-).map(([id, tier]) => ({
+const LADDER = PLAN_ORDER.map((id) => ({
   id,
-  name: tier.name,
-  priceInCents: tier.price,
-  credits: tier.monthlyCredits,
-  rolloverPercent: tier.rolloverPercent,
+  name: PLAN_TIERS[id].name,
+  priceInCents: PLAN_TIERS[id].price,
+  credits: PLAN_TIERS[id].monthlyCredits,
+  rolloverPercent: PLAN_TIERS[id].rolloverPercent,
 })) as unknown as LadderPlan[];
 
 const STARTER = PLAN_TIERS.starter.monthlyCredits;
@@ -204,7 +214,7 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
   /*
     The fixture, derived from Starter's REAL allowance rather than a typed one:
     a paying account 20 days into a 30-day cycle that has spent 90% of it, with
-    the rest left. The daily rate over 30 days therefore projects to 1.35× the
+    9% of the allowance left. The daily rate over 30 days projects to 1.35× the
     plan, so Starter cannot cover it and a higher rung must be recommended; and
     two-thirds of a day's spend against ten days to renewal, so the band has a
     real shortfall to name. Both facts must exist.
@@ -230,7 +240,7 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
     expect(cycle, "readCycle refused a complete cycle").not.toBeNull();
     const burn = readBurn(cycle!, now);
     expect(burn.emptyOn, "no empty date — the band cannot render").not.toBeNull();
-    expect(burn.perDay, "a burn of zero from 4,500 spent credits").toBeGreaterThan(0);
+    expect(burn.perDay, `a burn of zero from ${SUBSCRIBED.creditsUsed} spent credits`).toBeGreaterThan(0);
     /* The band's sharper half: it only dramatises when the balance runs out
        BEFORE renewal, which is the whole reason to act. */
     expect(burn.dryDays, "the band would claim a shortfall that is not there").toBeGreaterThan(0);
