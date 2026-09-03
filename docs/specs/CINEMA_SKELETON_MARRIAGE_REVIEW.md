@@ -638,3 +638,23 @@ Amendment U replaces T's only-plates invariant: promotion offers two doors
 groups by job, the engine scopes by job at the wire (plates broad, context
 narrow). Faces remain mint-only — identity is never saved as-is. 9e's mint
 machinery is unchanged; only its claim to exclusivity is withdrawn.
+
+
+## 9g. The final posture — defaults, tips, and tools, never gates (founder ruling, 2026-09-04)
+
+The founder's closing ruling on the reference system, verbatim intent:
+"theres only so much a system can control... we shouldnt gate or control
+anything we should just give tips on what works best for what and perhaps
+templates where you can upload your image into that and it will spit out a
+plate." Adopted as the reference system's final posture, and it is the
+research-faithful one (the studied crew's own maturity arc: "less strict
+prompting... dictating only key anchor points"; the ladder's "often it's
+luck"). **The system's knowledge appears as DEFAULTS (the engine scopes
+and attaches well silently when writing prompts), TIPS (one quiet
+dismissible line where the research says something underperforms — never
+a refusal), and TOOLS (the Plate Maker: drop any image, get a clean
+reference plate anchored on the master, priced, offered in tray/viewer/
+upload flows).** Amendment V issued, superseding T/U's enforcement halves
+while keeping their machinery as tools; job tags become hints the engine
+reads. The two rules that stay hard are product law, not craft: faces are
+never uploaded; masters are immutable. The 9-series is closed.
