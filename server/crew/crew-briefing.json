@@ -1,7 +1,7 @@
 {
-  "edition": 228,
-  "updatedAt": "2026-09-03T06:57:26.973Z",
-  "shift": "Foreman — night of 3 September (your two ordered cards; one shipped, one handed to the reviewer seat)",
+  "edition": 229,
+  "updatedAt": "2026-09-03T08:13:39.685Z",
+  "shift": "Fable — escalated seat, 3 September evening (#401: the toolKind column, built and merged)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,23 +116,23 @@
         "source": "Your \"protect it\" (#461), applied and checked against the other branch field by field. What is still open is deliberately open — your own pushes, by your own ruling last night."
       },
       {
-        "label": "The queue: 75 open, 11 carrying your word, 8 going stale",
+        "label": "The queue: 76 open, 12 carrying your word, 8 going stale",
         "tone": "good",
-        "source": "#461 closed tonight, nothing marked urgent. The same eight have been stale seven nights (#10 #14 #18 #22 #30 #55 #61 #65) — old design cards nobody has re-read against the code."
+        "source": "#401 closed tonight; #477 filed from your own reply and #475 from the relay. Nothing urgent. The same eight are stale an eighth night (#10 #14 #18 #22 #30 #55 #61 #65)."
       },
       {
-        "label": "One of your eleven ordered cards moved to the reviewing seat",
-        "tone": "neutral",
-        "source": "#401 (credits by tool) touches the code that charges an account, which this seat does not change alone. Read, documented, handed on — the next shift takes it first. Nothing needed from you."
+        "label": "The escalated card is done: charges say what they made",
+        "tone": "good",
+        "source": "#401 built on the Fable seat as ordered, merged as PR #476 with a clean money-path review, and closed. The migration is additive, so the publish ceremony applies it itself — nothing for you to run."
       }
     ]
   },
   "needsYou": [
     {
       "id": "author-bench-466",
-      "title": "The author test you ordered has run — the pairs are ready for your eye, and the two models do different jobs",
-      "state": "open",
-      "productImpact": "Your order — \"Grok vs the author, text-only, about a dollar\" — ran this shift: 38 cents, both models on the same five briefs in the same sitting (your cyborg brief, your goth reference, the two men, the feline deity). The result is not a winner, it is a fork: the two models understand the author's job differently. Grok keeps your sentences almost word for word and adds one short line of taste — 10 out of 10 briefs authored, nothing invented, but a typical call takes 53 seconds against Sonnet's 10. Sonnet writes rich art direction around your facts — but it is the one that stacked a third pile of skin words onto your cyborg (the exact thing you corrected in the over-authoring ruling), twice brushed studio language, and on one brief refused its own draft twice and silently gave that customer a plain roll instead of the MAX they paid for.",
+      "title": "Answered — Sonnet stays as the author; Grok's discipline becomes the case for tightening MAX (#477)",
+      "state": "done",
+      "productImpact": "Your verdict, verbatim and entire: “A — keep Sonnet, and read Grok's verbatim discipline as evidence for tightening MAX's instruction rather than swapping the engine”. The engine line does not move. The second half of your sentence is work, so it is filed as its own card (#477) with the over-authoring bar attached: any MAX instruction change shows you your cyborg brief BEFORE and AFTER on the same fixture, because tightening can thin a sheet as easily as truing it. Your order — \"Grok vs the author, text-only, about a dollar\" — ran this shift: 38 cents, both models on the same five briefs in the same sitting (your cyborg brief, your goth reference, the two men, the feline deity). The result is not a winner, it is a fork: the two models understand the author's job differently. Grok keeps your sentences almost word for word and adds one short line of taste — 10 out of 10 briefs authored, nothing invented, but a typical call takes 53 seconds against Sonnet's 10. Sonnet writes rich art direction around your facts — but it is the one that stacked a third pile of skin words onto your cyborg (the exact thing you corrected in the over-authoring ruling), twice brushed studio language, and on one brief refused its own draft twice and silently gave that customer a plain roll instead of the MAX they paid for.",
       "workedExample": "Your cyborg brief, side by side. Grok adds 15 words: \"…Severe, clinical, unyielding; metal matte and integrated, the face held still without softening.\" Sonnet adds 137: a full paragraph about storm-worn surfaces, oxidized seams and \"one long history written on the same face\" — richer, and also where the extra skin words crept in. Every stated fact survived on both models on every brief. The full pairs are on card #466 and in the bench section of the court document.",
       "options": [
         {
@@ -407,7 +407,7 @@
       "workedExample": "Why it is not already built: it means adding a column to the credit ledger and writing to it at the moment you are charged. That is your money path, the automatic code reviewer has been out for about five days, and the visible effect today is zero. I would rather it landed on its own with a second reader than rode along beside four display fixes. It is one small piece of work whenever you want it.\n\nNothing is being guessed at your history: your 622 existing rows have no honest answer - over half of them record no engine at all - so nothing gets backfilled. A made-up label in a chart is worse than no chart.",
       "options": [],
       "recommendation": null,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-01"
     },
     {
@@ -3242,6 +3242,13 @@
   ],
   "pipeline": [
     {
+      "id": "tool-column-401",
+      "title": "Every credit charge now records WHAT it made — the column behind your credits-by-tool chart",
+      "status": "merged",
+      "prNumber": 476,
+      "note": "Your taxonomy, in your words: “was an image generated? its filed as image or video? its video or LLM its LLM or Text … but it can grow.” From today every charge writes image/video/text at the moment it spends, and the code physically cannot add a new kind of charge without saying what it made — that requirement is what stops this column rotting the way the old engine field did (blank on 53% of your real spend, which is why the Usage tile came out in #387). Worth knowing plainly: until a second kind of tool exists, the by-tool chart would be ONE bar saying Image — true, but just one bar — so the Usage block returns when a second kind has rows, as the Generations total with the per-tool split under it (#85). Your 622 historical rows stay unlabelled on purpose: a backfilled guess would be a lie in a chart. One more thing the build itself caught: making the field mandatory flushed out two charge sites in the tattoo studio that every hand-made list had missed — the guard paid for itself before the change even shipped. The money-path review came back a clean pass with no findings."
+    },
+    {
       "id": "branch-protection-461",
       "title": "The second door into the live site is shut — your \"protect it\", done",
       "status": "merged",
@@ -4782,10 +4789,11 @@
     110,
     111,
     112,
-    113
+    113,
+    114
   ],
   "nextUp": {
-    "readAt": "2026-09-03T06:56:05.783Z",
+    "readAt": "2026-09-03T08:12:22.359Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4800,11 +4808,6 @@
       {
         "issueNumber": 391,
         "title": "His ladder ruling: twelve rungs fold to SEVEN, with the top one hidden and offered by email on request",
-        "urgent": false
-      },
-      {
-        "issueNumber": 401,
-        "title": "A credit charge does not record WHAT it made — his toolKind column (split from card 387 item 1)",
         "urgent": false
       },
       {
@@ -4840,6 +4843,16 @@
       {
         "issueNumber": 470,
         "title": "Crew folds into the staff bar's one overview (reply #111 — his yes on #415's suggestion)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 475,
+        "title": "N3 measurement: SAM 3 ships a presence score, we request it and discard it",
+        "urgent": false
+      },
+      {
+        "issueNumber": 477,
+        "title": "Tighten MAX's instruction on Grok's verbatim-discipline evidence — keep Sonnet (his reply #114)",
         "urgent": false
       }
     ]
