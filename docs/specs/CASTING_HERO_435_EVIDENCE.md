@@ -160,8 +160,123 @@ Both themes, and the short window he singled out.
 
 ## 6 · The instrument was verified before its verdicts counted
 
-`client/src/features/castingV2/section10-guard.test.ts` — 22 arms, every absence arm carrying a positive control, every source proven readable before it is judged.
+`client/src/features/castingV2/section10-guard.test.ts` — 22 arms at the first review, **28 after §7's fix**, every absence arm carrying a positive control, every source proven readable before it is judged.
 
-**9 sabotages → 9 RED, each naming its own rule, tree restored in `finally`, guard green again afterwards** (`scripts/_435-sabotage-disposable.mts`): centre the column · make the spacer an auto margin · drop the description's `min-height` · give the stage a fixed height · hand-write the duration · default the duration instead of omitting it · draw the imagination cards during a follow · leave the scroll widget on at rest · put `Done` inside the scroller.
+**9 sabotages → 9 RED** (**15 → 15 after §7**), each naming its own rule, tree restored in `finally`, guard green again afterwards** (`scripts/_435-sabotage-disposable.mts`): centre the column · make the spacer an auto margin · drop the description's `min-height` · give the stage a fixed height · hand-write the duration · default the duration instead of omitting it · draw the imagination cards during a follow · leave the scroll widget on at rest · put `Done` inside the scroller.
 
 ⚠ **The driver's first run scored every sabotage `UNRUN` and REFUSED to grade** — vitest colours its summary, so the ANSI escapes sat between `Tests` and the count and the regex never matched. That refusal is the behaviour it was written for: the staff-dialog driver one section ago reported five clean greens having never executed a test.
+
+---
+
+## 7 · ⚠ THE SECOND ONE THE REVIEWER CAUGHT — AND IT WAS A REGRESSION, NOT A GAP
+
+**Found by the PR review after every suite in this file was green, and after
+§3a's three defects had already been found by looking.** Filed as review finding
+1; fixed on this branch by the shift that inherited the PR.
+
+**What a customer got.** Type a brief at a wide window, then narrow the window —
+resize it, rotate a tablet, or zoom the browser. The same sentence now needs more
+lines, but the box stayed the height it was, and the scroll widget this component
+had just switched OFF stayed off. So **the tail of the brief was unreachable: no
+scrollbar, no wheel-scroll, nothing to drag** — on the one control whose entire
+purpose is *a brief you can read before you pay for it*, beside a button that
+spends 160 credits. It came back only on the next keystroke.
+
+**Driven at :3021, 223-character brief, 1440px → 900px:**
+
+| | box width | inline height | scrollHeight | scroll widget | verdict |
+|---|---|---|---|---|---|
+| wide | 459px | 66px | 66 | hidden | fits — nothing hidden |
+| **narrowed, no keystroke** | 251px | **66px (stale)** | **124** | **hidden** | **58px of 124 unreachable** |
+| one keystroke later | 251px | 124px | 124 | hidden | recovers |
+
+A 418-character brief is worse, because the cap bites: **202px of content in a
+124px box.**
+
+⚠ **It is a REGRESSION and that is the load-bearing part.** The stylesheet still
+carries `overflow-y: auto` on this box (`castingV2.css`), and before §2c switched
+the widget in JS that resting value surfaced a scrollbar in exactly this state —
+the height was equally stale, but **the brief stayed readable.** §2c is his
+instruction and is right; making the inline value authoritative is what removed
+the safety net that had been covering for the stale measurement.
+
+**The fix, and why it is not the tempting one.** Handing the resting `auto` back
+to the stylesheet would fix the clipping and undo his instruction. Instead the
+measurement is **extracted into one function** (`fitToContent`) and **re-run on a
+resize as well as on a keystroke** — one place still decides, it now just hears
+about both of its inputs.
+
+⚠ **The width is compared before re-measuring, and that is what makes it safe
+rather than a loop.** `fitToContent` writes the field's own height, so an
+observer that re-ran on *any* size change would retrigger itself without end —
+and `main.tsx` suppresses `ResizeObserver loop` warnings globally, so it would
+have run hot in production with nothing in the console to show it. Border-box
+inline size is the one dimension this component never writes, and — unlike
+`clientWidth` — it does not move when a scrollbar appears, so a change in it is
+always someone else's news.
+
+**Both halves were driven, because they are two separate writes.** A fix that
+re-ran only the height would pass the table above:
+
+| arm | pre-fix | post-fix |
+|---|---|---|
+| B · narrowed, brief still under the cap | **CLIPPED** (66 of 124) | 124px, nothing hidden |
+| E · narrowed, 418 chars, past the cap | **CLIPPED** (124 of 202) | 144px clamped, **widget `auto`** |
+
+**Frames** — the pair is worth more than the numbers:
+
+- `evidence/435/brief-resize-before-900.png` — the sentence stops dead at *"on a
+  harbour wall at first"*, and there is no scrollbar anywhere in the box
+- `evidence/435/brief-resize-fixed-900.png` — the whole brief, *"…at first light
+  in an oilskin jacket, the kind of face that has been reading weather for forty
+  years."*
+
+**The driver was proven both ways** (`scripts/_435b-resize-disposable.mjs`): run
+against the pre-fix file it reports REPRODUCED on arms B and E; against the fixed
+file it reports FIXED on all five. It also carries arm C as a positive control —
+one keystroke recovers the box — so a clipped reading cannot be an artifact of
+how the box is measured. The pre-fix file was restored from a backup, not a
+`git checkout`.
+
+### The guard gained four arms, and the sabotage set four more
+
+`section10-guard.test.ts` is now **28 arms**, and **15 sabotages → 15 RED, each
+naming its own rule, tree restored in `finally`.** The four new ones: measure on
+a keystroke only again (the finding itself) · re-measure on ANY size change (the
+observer feeds itself) · fall back to `clientWidth`, which a scrollbar moves ·
+rename the shared measure so the two paths inline it separately.
+
+⚠ **These are SOURCE arms and they say so in the file.** There is no render
+harness in this client — no jsdom, no testing-library — and jsdom has no layout
+to measure even if there were, so **no unit arm here can execute this behaviour;
+the driver above is the behavioural proof.** What the arms pin are the three
+structural facts the fix rests on, each of which a later "simplification" could
+remove without any surface looking wrong.
+
+### The law-7 class sweep
+
+**Class: a layout measurement cached in an inline style, re-run only on a data
+change and never on a geometry change.**
+
+Swept every inline write of a measured dimension in `client/src`. There are
+exactly two owners: this one, and **`features/casting/components/ImageViewer/RefinePanel.tsx:91`**
+— the legacy studio's refine box, same shape, `[refineInput]` dep, inline height
+from `scrollHeight`.
+
+**It is the same shape with a lesser consequence, read at the code rather than
+assumed:** that textarea's `className` sets no overflow and the component never
+writes one, so the element keeps a textarea's default `overflow: auto` — a stale
+height there shows a scrollbar and **nothing becomes unreachable.** The box is
+merely the wrong size until the next keystroke.
+
+**Filed, not fixed** — it is the legacy studio (retiring at N8), outside brief
+10, and changing it is a visible change nobody asked for. Card linked from this
+PR.
+
+### One more thing an existing guard caught
+
+`token-guard.test.ts` went red on the new `describe` title: it reads `#483` in a
+**string** as a hex colour literal, which it is. Its failure message names its
+own remedy — *"move the reference into a comment, which this guard strips"* — so
+the card number now sits in a comment above the block. **A guard that explains
+the fix in the message it fails with is worth copying.**

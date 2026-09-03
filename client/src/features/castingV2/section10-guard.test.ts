@@ -190,6 +190,114 @@ describe("the brief box shows no scroll widget at rest (§2c)", () => {
   });
 });
 
+/*
+  ⚠ **THE REGRESSION THESE ARMS EXIST FOR WAS CAUGHT BY THE PR #483 REVIEWER,
+  AFTER EVERY SUITE IN THIS FILE WAS GREEN.**
+
+  Switching the widget where the height is switched (the arm above) is his
+  instruction and is right — but it made the inline `hidden` authoritative over
+  the stylesheet's resting `overflow-y: auto`, and the measure only re-ran on a
+  VALUE change. So narrowing the window rewrapped the same sentence taller inside
+  a box still fixed at its old height, with the widget this component had just
+  turned off. Measured on :3021 before the fix: at 251px the box painted **66px
+  of a 124px brief** — about half the sentence unreachable, no scrollbar, no
+  wheel-scroll — on the control whose whole purpose is *a brief you can read
+  before you pay for it*. A 418-character brief narrowed past the cap was worse:
+  202px of content in a 124px box.
+
+  # What these arms can and cannot prove
+
+  There is no render harness in this client (no jsdom, no testing-library), and
+  jsdom has no layout to measure even if there were — so these are SOURCE arms
+  and they cannot execute the behaviour. **The behaviour was proven by driving
+  the real app**, with the pre-fix file put back to confirm the driver goes red
+  (both arms clipped) and the fixed file to confirm it goes green — recorded in
+  `docs/specs/CASTING_HERO_435_EVIDENCE.md`. These arms pin the three structural
+  facts that fix depends on, each of which could be "simplified" away by someone
+  who never sees the defect.
+*/
+/* The card is PR #483's review finding 1 — named here, in a comment, because
+   the token guard reads a `#` followed by three hex digits in a STRING as a
+   colour literal and is right to (`#483` is a valid hex). It strips comments. */
+describe("the brief box survives a resize, not only a keystroke", () => {
+  it("one function does the measuring, and both paths call it", async () => {
+    const field = code(await read(FIELD));
+    /*
+      DERIVE, NEVER MIRROR. Two copies of this measurement — one on the value
+      path, one on the resize path — is working law 4, and they would drift at
+      the first change to either.
+    */
+    expect(field).toMatch(/function fitToContent\(/);
+    const calls = field.match(/fitToContent\(field\)/g) ?? [];
+    expect(
+      calls.length,
+      "both the value path and the resize path must call the one measure",
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it("the measurement is re-run when the box is resized, not only re-typed", async () => {
+    const field = code(await read(FIELD));
+    expect(field).toContain("new ResizeObserver");
+    expect(field).toContain("observer.observe(field)");
+    /*
+      Set up and torn down: an observer left connected after unmount holds the
+      node and calls into a dead component.
+    */
+    expect(field).toContain("observer.disconnect()");
+  });
+
+  it("it re-measures on a WIDTH change only — the guard that stops it looping", async () => {
+    const field = code(await read(FIELD));
+    /*
+      ⚠ **THIS IS THE ARM WORTH HAVING.** `fitToContent` writes the field's own
+      height, so an observer that re-measured on ANY size change would retrigger
+      itself without end — and `main.tsx` silences `ResizeObserver loop` warnings
+      globally, so it would run hot in production with nothing in the console to
+      show it. Border-box width is the one dimension this component never writes,
+      and (unlike `clientWidth`) it does not move when a scrollbar appears, so a
+      change in it is always someone else's news.
+    */
+    expect(field).toMatch(/borderBoxSize/);
+    expect(field).toMatch(/inlineSize/);
+    expect(
+      field,
+      "the observer must compare the width before re-measuring, or it feeds itself",
+    ).toMatch(/if\s*\(\s*width === lastWidth\s*\)\s*return/);
+    expect(
+      field,
+      "clientWidth shrinks when a scrollbar appears, which is a width change this component caused",
+    ).not.toMatch(/inlineSize\s*\?\?\s*field\.clientWidth/);
+  });
+
+  it("the matchers would see each of those three removed", () => {
+    /*
+      POSITIVE CONTROLS. Every arm above is an assertion about text that is
+      present; these prove the same matchers fire on the shapes that should
+      trip them, so a green arm above is a reading and not an absence.
+    */
+    const noObserver = `
+      useLayoutEffect(() => { const field = ref.current; if (field) fitToContent(field); }, [value]);
+    `;
+    expect(noObserver).not.toContain("new ResizeObserver");
+
+    const unguarded = `
+      const observer = new ResizeObserver(() => { fitToContent(field); });
+    `;
+    expect(unguarded).not.toMatch(/if\s*\(\s*width === lastWidth\s*\)\s*return/);
+
+    const clientWidthFallback = `
+      const width = entries[0]?.borderBoxSize?.[0]?.inlineSize ?? field.clientWidth;
+    `;
+    expect(clientWidthFallback).toMatch(/inlineSize\s*\?\?\s*field\.clientWidth/);
+
+    const inlinedTwice = `
+      useLayoutEffect(() => { field.style.height = "auto"; }, [value]);
+      const observer = new ResizeObserver(() => { field.style.height = "auto"; });
+    `;
+    expect(inlinedTwice).not.toMatch(/function fitToContent\(/);
+  });
+});
+
 describe("the brief box's cap agrees with its own units", () => {
   /*
     ⚠ THE DEFECT THIS ARM EXISTS FOR SHIPPED IN THIS SECTION'S FIRST COMMIT AND
