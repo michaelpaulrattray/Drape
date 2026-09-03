@@ -25,6 +25,7 @@ The instruments and their own record pages:
 |---|---|---|---|
 | gitleaks (this PR's commits) | `scripts/secret-scan.sh origin/main` | `gate.yml`, first step after checkout | `.gitleaks.toml` header |
 | gitleaks (full history, weekly) | `scripts/secret-scan.sh` | `secrets.yml`, Mondays 16:00 UTC | `secrets.yml` header |
+| gitleaks (the commits a rite push adds) | `scripts/secret-scan.sh <remote tip>` | `deploy-rite.mts`, before the push (#469) | the step's own docblock |
 | actionlint + zizmor | `scripts/workflow-lint.sh` | `gate.yml`, second step | `scripts/workflow-lint.sh` header |
 | semgrep (OSS rulesets) | `pnpm warden:semgrep` | `gate.yml`, before install (run 1) | `docs/WARDEN_SEMGREP.md` |
 | access-control suites | `npx vitest run server/approvalGate.test.ts server/staffImageBoundary.test.ts server/publicInputStrictness.test.ts server/sessionIssuanceSites.test.ts` | inside `pnpm test` | CLAUDE.md, "Access control" |
@@ -45,6 +46,7 @@ Inherited: #97's list. Item 1 (merge PR #89) was already done by foreman-13
 
 | reading | at | verdict | done with it |
 |---|---|---|---|
+| gitleaks, the rite's arm | driven by hand 2026-09-03 (PR #473), both refusal shapes | **passes clean, refuses on a plant** | A fake AWS-shaped key planted in a commit stopped the push and named the file, value redacted. ⚠ The FIRST fixture passed when it should have failed — it contained `EXAMPLE`, which gitleaks' default config allowlists, so it proved nothing; a positive control for this scanner must avoid every placeholder word. A missing (127) or non-executable (126) binary is reported as *could not run*, never as a finding. |
 | gitleaks, full history | run 32888582030, hand-dispatched 2026-08-25 19:15Z, 2668 commits | **0 findings** under `.gitleaks.toml` | This is the baseline until `secrets.yml`'s first Monday run fires (next: 2026-08-31 16:00 UTC — the workflow was created 08-26, so no scheduled run has happened yet; the next Warden reads that run's verdict first). |
 | semgrep, tree | `fcfee27e`, 08:20 local, semgrep 1.174.0, 76 rules, 1607 targets | **0 findings**, exit 0 | Row appended to `docs/WARDEN_SEMGREP.md`. The first entry on this baseline is the reading BEFORE it: the `heroProxy.ts` bare-index fix (#33's first reading, `833175a3` — `/api/hero/constructor` passed the unknown-asset door; fixed with `Object.hasOwn`, pinned by `server/heroProxy.test.ts`, the two sibling request-keyed lookups swept). New ceiling recorded: `react-unsanitized-method` timed out on `server/castingV2/refineService.test.ts`, so that rule did not read that file. |
 | access-control suites | `fcfee27e`, 08:22 local | **4 files / 26 tests green** — `approvalGate` 11, `staffImageBoundary` 5, `publicInputStrictness` 6, `sessionIssuanceSites` 4 | Recorded; nothing to file. |

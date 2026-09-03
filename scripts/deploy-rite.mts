@@ -81,7 +81,7 @@
 */
 import "dotenv/config";
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { openDatabase } from "./lib/dbConnection.mts";
@@ -336,6 +336,135 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
     process.exit(1);
   }
   console.log(`  ${label}: ok`);
+}
+
+/*  THE SECRET SCAN (#469) — his order, Crew reply #110, 2026-09-03, verbatim:
+    *"Add the secret scan to the ceremony. That's the one hole where a mistake
+    is actually expensive, and it's seconds rather than minutes. File it and
+    get on with it — I don't need to see it again."*
+
+    The hole it closes: his own pushes bypass main's required checks (#460 —
+    343 of 499 commits went unchecked), and the rite is the ONLY path product
+    and record commits take to main outside a PR. So until now a key committed
+    by hand reached the public repository with nothing in its way, while the
+    identical scanner ran on every PR.
+
+    ONE COPY OF THE SCAN, and this is a caller. `scripts/secret-scan.sh` owns
+    the gitleaks pin, the config, the redaction and `--diff-merges=first-parent`;
+    the gate calls the same bytes. Re-stating the arguments here would be a
+    second definition that drifts (working law 4), which is the same reason the
+    pin was pulled out of the two workflows in the first place.
+
+    ⚠ IT REFUSES, IT NEVER WARNS — including when it cannot RUN. A scanner that
+    skips itself when its shell or binary is missing is invariant 7's failure
+    exactly, and it would skip on precisely the machine this rite runs on.
+
+    WHY IT NEEDS A SHELL RESOLVED BY HAND: measured on his machine the day this
+    landed — no `gitleaks` on PATH, no `sh` on the WINDOWS PATH, and no
+    `curl.exe`. `bash.exe` in system32 is WSL and sees a different filesystem,
+    so it is deliberately not a candidate. Git Bash's own sh has curl, unzip
+    and sha256sum, and is what the scan script is written against.
+
+    RANGE: exactly the commits this push would add. If the remote tip cannot be
+    read, it scans the FULL HISTORY instead of skipping — 7.0s measured over
+    3,205 commits, so failing toward MORE scanning costs nothing worth having.
+
+    NOT ADDED: `pnpm test`. He kept the eight minutes deliberately; this card
+    narrows the ceremony/gate gap by exactly the one check he named.
+*/
+{
+  const shCandidates = [
+    "C:\\Program Files\\Git\\bin\\sh.exe",
+    "C:\\Program Files (x86)\\Git\\bin\\sh.exe",
+  ];
+  const sh = shCandidates.find((candidate) => existsSync(candidate));
+  if (!sh) {
+    console.log("REFUSED: the secret scan needs Git Bash's sh and none of its known paths exist — the push does not fire.");
+    console.log(`  looked at: ${shCandidates.join(", ")}`);
+    console.log("  repair: install Git for Windows, or add this machine's sh.exe to the list in scripts/deploy-rite.mts");
+    process.exit(1);
+  }
+
+  const fetched = spawnSync(sh, ["scripts/secret-scan.sh", "fetch"], { encoding: "utf8" });
+  if (fetched.status !== 0) {
+    console.log("REFUSED: the pinned gitleaks binary could not be fetched or failed its sha256 — the push does not fire.");
+    console.log(`  ${`${fetched.stdout ?? ""}${fetched.stderr ?? ""}`.trim().split(/\r?\n/).slice(-3).join(" · ")}`);
+    console.log("  repair: check the network, then re-run — the binary is cached after one success, so this is a one-time cost");
+    process.exit(1);
+  }
+  const gitleaks = (fetched.stdout ?? "").trim().split(/\r?\n/).pop() ?? "";
+
+  /* `run()` swallows a git error and RETURNS its text, so a failed fetch is
+     silent here (review finding on PR #473). The tip is therefore re-proved
+     after the fetch rather than assumed: an unresolvable range would make
+     gitleaks error, and an errored scan used to be reported as a leak. */
+  const remoteTip = git("ls-remote", "origin", "refs/heads/main").split(/\s+/)[0] ?? "";
+  let ranged = /^[0-9a-f]{40}$/.test(remoteTip);
+  if (ranged && !git("cat-file", "-t", remoteTip).startsWith("commit")) {
+    git("fetch", "--quiet", "origin", "main");
+    ranged = git("cat-file", "-t", remoteTip).startsWith("commit");
+  }
+  const args = ranged
+    ? ["scripts/secret-scan.sh", remoteTip]
+    : ["scripts/secret-scan.sh"];
+
+  const scan = spawnSync(sh, args, { encoding: "utf8", env: { ...process.env, GITLEAKS: gitleaks } });
+  const printed = `${scan.stdout ?? ""}${scan.stderr ?? ""}`;
+  if (scan.status !== 0) {
+    /* ⚠ NON-ZERO IS NOT THE SAME AS "A SECRET IS IN YOUR HISTORY" (review
+       finding on PR #473). A scan that could not RUN — a broken binary exiting
+       126/127, a range gitleaks cannot resolve — also exits non-zero, and the
+       repair below is the most expensive wrong advice this script can give:
+       rotate a production credential and rewrite main. Both states refuse, so
+       nothing escapes either way; only the sentence changes. gitleaks prints
+       `leaks found: N` when and only when it has a verdict. */
+    const found = /leaks found:/i.test(printed);
+    console.log(found
+      ? "REFUSED: the secret scan found something in the commits this push would add — the push does not fire."
+      : "REFUSED: the secret scan could not RUN, so nothing about this push has been checked — the push does not fire.");
+    /* The finding's VALUE is never printed: --redact=100 hides it inside
+       gitleaks, and this prints gitleaks' own lines, which name the rule,
+       the file and the commit and nothing else. */
+    console.log(`${printed.trim().split(/\r?\n/).map((line) => `  ${line}`).join("\n")}`);
+    if (found) {
+      console.log("  repair: the secret is IN THE HISTORY, so removing it from the working tree is not enough —");
+      console.log("  rotate the credential first, then rewrite or drop the commit that carries it, then re-run");
+    } else {
+      console.log(`  repair: this is a broken scanner, NOT a leak — do not rotate anything. Delete the cached`);
+      /* The glob must sit OUTSIDE the quotes or it never expands, and TMPDIR is
+         usually unset under Git Bash - printed advice that silently does nothing
+         is the failure the -v change exists to prevent (review, PR #473). */
+      console.log('  binary and re-run: rm -rf "${TMPDIR:-/tmp}"/gitleaks-* (it is re-downloaded and re-verified)');
+    }
+    process.exit(1);
+  }
+  /* ⚠ A CLEAN VERDICT MUST HAVE READ SOMETHING (found by driving this, not by
+     reading it). gitleaks handed a range git cannot resolve does NOT error: it
+     prints `0 commits scanned`, `no leaks found`, and exits 0. So the most
+     dangerous shape here was never a false alarm — it was a green
+     `secret scan: ok` over nothing at all, which is invariant 7 in its
+     quietest form. The commits this push adds are counted independently, and a
+     scan that read none of them is refused as a broken instrument. */
+  const scanned = Number(/(\d+) commits scanned/.exec(printed)?.[1] ?? "-1");
+  const toPush = ranged ? Number(git("rev-list", "--count", `${remoteTip}..HEAD`).trim() || "0") : -1;
+  /* `<= 0`, not `=== 0`: an unreadable count is -1, and a guard that passes on
+     -1 disarms itself the day the pinned binary changes its summary wording.
+     At exit 0 gitleaks HAS run, so its summary must be parseable; refusing an
+     unreadable count is the same philosophy as refusing an unread range.
+     (Second-look review finding on PR #473 - the sibling of the very hole this
+     block was added to close. Law 7: the sweep is part of the fix.) */
+  if (ranged && toPush > 0 && scanned <= 0) {
+    console.log(scanned === 0
+      ? "REFUSED: the secret scan reported a clean verdict having read ZERO of the "
+        + `${toPush} commit(s) this push adds — the push does not fire.`
+      : "REFUSED: the secret scan reported a clean verdict and its own summary could not be read, "
+        + `so nothing proves it looked at the ${toPush} commit(s) this push adds — the push does not fire.`);
+    console.log("  This is the scanner failing quietly, not the tree being clean. Nothing has been checked.");
+    console.log(`  repair: check that ${remoteTip.slice(0, 8)} is a commit this clone actually has, then re-run`);
+    process.exit(1);
+  }
+  console.log(`  secret scan: ok — ${scanned < 0 ? "count unreadable" : `${scanned} commit(s)`} read `
+    + `(${ranged ? `${remoteTip.slice(0, 8)}..HEAD` : "full history — remote tip unreadable"})`);
 }
 
 const railway = (...args: string[]) => run("railway.cmd", args, true);
