@@ -370,9 +370,152 @@ reader court.**
 
 **Not settled, unchanged from above:** the tail-or-staff glance (question 2),
 the 300/250 gap (question 3 — tonight added one more lost read to its
-evidence), and the author half (his *"authoring aswell"*), which his method
-cards after this verdict.
+evidence). The author half (his *"authoring aswell"*) was carded as #466 and
+is DELIVERED below — the next section.
 
 **Declared limits:** n=2 per cell, one sitting, one evening's network; the
 timing is this machine's wall clock against provider latency that may vary by
 hour and load; the dollars are attribution on an account-wide meter.
+
+# THE AUTHOR BENCH — his order, run 2026-09-03 (fable-466, #466)
+
+**His order is the spec (Crew reply #105, 2026-09-02, verbatim and entire):**
+*"Also run the AUTHOR half you suspected — Grok vs the author, text-only,
+about a dollar"* — the half he named at the very start of #231: *"i also think
+it might perform better at authoring aswell."*
+
+**BENCH ONLY. Sonnet stays the author whatever follows — the pairs go to his
+eye, and nothing swaps on a bench's own reading (law 9).**
+
+**Held constant:** both arms drive the REAL `authorPrompt` at MAX — the same
+instruction, the same guard chain (stacked / allowance / never-written /
+house-sentence / skin-contradiction / piece-noun / age-drift / dropped-fact,
+one re-ask then the static fallback), the same allowance. The one variable is
+the MODEL. Fixtures, byte-for-byte as the card requires: his own 553-character
+cyborg brief (pinned at 553 — #327's fixture), and the goth, the two men and
+the feline deity as the SHIPPED reader's own same-sitting descriptions, read
+out of `output/_231-grok-long/run1/court.json` — which is what a customer who
+uploaded those pictures would actually roll with, since the concept road hands
+the reader's description back as the brief. Both arms in the SAME SITTING.
+The Grok slug read off the live list, never guessed: **`x-ai/grok-4.6`**. The
+Grok arm's per-request deadline was raised to 180 s as a measurement window
+(the request's own deadline outranks the engine's — `openrouterText.ts`), so
+no call was censored; the Sonnet arm ran at the shipped 120 s exactly as
+production does.
+
+**Driver:** `scripts/_466-authorbench-disposable.mts` (the grok-long bench's
+clock discipline pointed at the author road); cue reader
+`scripts/_466-authorread-disposable.mts` — pointers, never verdicts, and the
+cue lists live only in the reader (working law 4). **Record:**
+`output/_466-author-bench/run1/court.json`. **Spend:** 20 author calls (26
+wire calls with re-asks), **$0.38** attribution on the account-wide meter;
+the estimate posted on the card before the first call was ≤$0.80.
+
+## 1. WHAT EACH ARM DID WITH THE JOB
+
+| | authored | static fallback (customer loses MAX) | re-asks needed | growth over the seed |
+|---|---|---|---|---|
+| **Sonnet** (shipped author) | 9/10 | **1** (MAN 2 read #2 — both drafts refused for moving the stated age) | 4 of 10 | **+124..+222 words** |
+| **Grok** (`x-ai/grok-4.6`) | **10/10** | 0 | 2 of 10 | **+14..+44 words** |
+
+The growth numbers are the finding a reader of the pairs sees instantly:
+**Grok keeps the customer's sentences essentially verbatim and adds one short
+heat clause; Sonnet re-describes the same facts in its own expansive prose.**
+Both keep every stated fact (below) — the difference is register, and it maps
+exactly onto his #125 ruling (*"build the author verbatim-first"*): Grok's
+rewrites ARE the verbatim-first shape; Sonnet's are authored art direction.
+Whether +14..+44 words is the job done with discipline or MAX collapsing
+toward LOW-with-a-sentence is a taste judgment — HIS, at the pairs, not this
+bench's.
+
+## 2. TIME-TO-FINISH — stated, and deliberately NOT scored
+
+Wall-clock per authored call, re-asks included, serial (no queue contention):
+
+| | min | median | max |
+|---|---|---|---|
+| **Sonnet** | 7.0 s | **10.0 s** | 16.8 s |
+| **Grok** | 42.5 s | **53.4 s** | 130.0 s |
+
+The reader's ~10s bar does NOT transfer and no pass/fail is asserted here: a
+41-second READ is 41 seconds of a customer staring at an upload, but the
+author call sits INSIDE a roll that already takes minutes. What the number
+means for the product: swapping the author to Grok adds roughly **40–120 s to
+every MAX roll's total wait** on this evening's network. Whether that is
+acceptable inside the roll's existing minutes is a bar only he can set.
+
+## 3. THE WRITTEN JOB, on the cue reader's pointers
+
+Scored against the author's written rules, never prose taste. Every stated
+fact landed on **all 19 authored drafts, both arms** — heritage, hairless,
+tail, whiskers, the fitted eyepiece, the eight cyborg facts (the guard itself
+only covers sex and age; these cues are the unguarded remainder). Zero
+backstory cues and zero new-garment cues on both arms. The arms separate on
+the #327 classes — the ones his own corrections named and no guard yet covers:
+
+| pointer (#327's classes) | Sonnet | Grok |
+|---|---|---|
+| skin-stack on the cyborg (resolve, don't stack) | **2 hits** ("creases", "discoloration" added to a skin already described twice) | 0 |
+| block-adjacent language | **2 brushes** ("palette" on the feline, "lens" on the goth) | 0 |
+| piece-adjacent nouns past the guard's list | goth #2 names *"corseted lace… buckles, rings and fine chain accents"* | stays at materials level |
+
+One pointer the other way, for his eye: Grok's surviving feline and goth
+drafts both close on the instruction's own worked-example phrase (*"no soft
+youthful rounding"* appears nearly verbatim) — taste borrowed from the example
+rather than written for the fixture.
+
+**The age guard fired on BOTH arms and cost Sonnet one MAX.** 6 of 20 calls
+were re-asked for an age word ("youthful"/"younger" — 4 Sonnet, 2 Grok), and
+Sonnet's MAN 2 read #2 was refused twice and fell back to static: on the real
+road that customer would silently lose MAX on a brief that plainly states its
+age. Whether those words sat inside denials (the worked example's own *"no
+soft youthful rounding"* would trip `ageContradictionIn` as written) is NOT
+recoverable from this record — the wire keeps 300 characters and the refused
+words sat deeper. Declared as an open observation, not a diagnosis.
+
+## 4. THE PAIRS (one per fixture, same sitting — for his eye, not for a score)
+
+**CYBORG (his 553-char brief)** —
+S (+137w, 7.3 s): *"Bald male in his mid-40s, pale porcelain skin read as heavily weathered — a dry, lined, storm-worn surface rather than a soft one. … Skin and metal read as one continuous surface — flesh scarred and settled around the hardware the way it would around old injury … Render the metal cold and matte, faintly oxidized at the seams, the amber-red glow low and steady rather than theatrical…"*
+G (+15w, 130.0 s): *"Bald male, mid-40s, pale porcelain skin that is heavily weathered. Severe bone structure: pronounced brow ridge, deep-set eyes, hard jawline, gaunt cheeks. … The augmentations are surgically integrated into his skin, not worn. Severe, clinical, unyielding; metal matte and integrated, the face held still without softening."*
+
+**FELINE DEITY** —
+S (+158w, 7.6 s): *"…The bronze is hand-worked and time-darkened in its recesses… skin has the taut, faintly weathered texture of something built for endurance… every ornament reads as earned rank, aged and formidable rather than pristine or new."*
+G (+17w, 76.6 s): *"Feline humanoid creature with a muscular build, purple-blue hairless skin, large pointed ears with pink inner coloring, whiskers, sharp yellow eyes and a long tail. … Regal, imposing warrior-deity presence, severe and formidable, the metal heavy with dense ornament, the dark fabric falling in a heavy drape."*
+
+**MAN 1 (European)** —
+S (+124w, 7.0 s): *"…the weathering in his skin carrying real texture, sun-worked creases and warmth rather than any smoothed-over gloss… a man built for endurance rather than display, with nothing decorative added to the wardrobe or the face."*
+G (+44w, 49.1 s): *"A man in his mid-to-late forties, European heritage, athletic muscular build, close-cropped dark hair with light stubble, sun-weathered skin, fitted dark crew-neck top. Rugged, no-nonsense fitness or tactical presence…"*
+
+**MAN 2 (South Asian)** — the fixture where Sonnet lost a read:
+S #1 (+151w, 12.0 s, after a re-ask): *"…Skin carries the genuine texture of midlife — fine lines at the eyes and mouth… vitality sitting alongside seniority rather than either erasing the other…"*  S #2: **static fallback** — both drafts refused for "younger".
+G (+23w, 48.6 s): *"A man in his late forties to fifties, South Asian heritage, solid athletic build, short dark hair with light greying, warm brown skin tone, composed, direct expression, fitted heathered dark crew-neck top. Grounded, professional everyday presence, severe in its calm…"*
+
+**GOTH (his own reference)** —
+S (+211w, 12.4 s): *"…The fitted eyepiece reads as integrated hardware rather than an accessory — a cold mechanical fixture set into the socket, its metal worn and hand-finished rather than showroom-clean… leather creases where it moves, lace frays faintly at an edge…"*
+G (+44w, 42.5 s): *"…Severe editorial heat on that look: platinum hair hard-sculpted and unsentimental, lace and leather dense and structured, metal accents cold and hardware-finished, not costume-clean. The integrated mechanical eyepiece stays fitted over one eye as clinical facial hardware, couture-severe. Presence still, sovereign, cyber-goth without prettiness."*
+
+Full drafts, all 20 reads: `output/_466-author-bench/run1/pairs.txt`.
+
+## 5. WHAT THIS SETTLES AND WHAT IT DOES NOT
+
+**What the bench can say:** the two models do DIFFERENT JOBS with the same
+instruction. Grok is verbatim-first by temperament — near-zero invention, zero
+skin-stacking, zero block language, 10/10 authored — and 5× slower, inside a
+wait the customer already pays in minutes. Sonnet is a fluent art director —
+richer taste, faster by 5× — and it is the arm that stacked skin words on the
+cyborg (his own #327 complaint, still visible after the four rules), brushed
+block-adjacent language twice, and lost one customer's MAX to its own age
+drift. **Neither dominates: the choice is a product judgment about what MAX
+should BE, which is exactly why nothing swaps on this record.**
+
+**What lands with it:** `AUTHOR_MODEL` is now the author's own constant
+(`promptAuthor.ts`, same slug today deliberately) with `authorTextEngine()` on
+the interpreter's ONE queue, and the compile site reaches for it — so his
+verdict either way is one line and reversible, the reader half's own shape.
+
+**Declared limits:** n=2 per cell, one sitting, one evening's network; the
+concept-fixture briefs are the reader's descriptions rather than hand-typed
+customer prose, so brief STYLE co-varies with fixture; the dollars are
+attribution on an account-wide meter; the refused first drafts survive only as
+300-character wire prefixes.
