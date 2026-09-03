@@ -297,6 +297,18 @@ never regenerated — paid), UPLOAD.
 is a demand — everything visible fights to appear. A pose state attaches
 ONLY to the shots that need it, never scene-wide.
 
+## 6c. The overload correction (founder, 2026-09-03, on the four-tab prototype)
+
+The founder read the revised Desk as "information overload a bit" — correct,
+and diagnosed as ALTITUDE, not volume: the stills strip built as a permanent
+section instead of a self-collapsing stage (two contact sheets and two paid
+draw buttons standing at once), the production's NEEDED gap chips shouting
+over a single shot's screen, "or browse files" regressing onto tiles against
+the base brief's own §5, and the note input standing open. Amendment M added
+to the pack brief: one stage on stage at a time; information at the altitude
+where it is actionable; a shot view's standing furniture is header + one
+contact sheet + one action row + chips + collapsed prompt drawer.
+
 ## 7. The integration contract (decided here — the design bot's blind spot, by design)
 
 The founder: the design agent knows UI, not the product's internals; how the
