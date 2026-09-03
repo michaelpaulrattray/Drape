@@ -265,6 +265,38 @@ open, and decided them well): the Composer hides the shelf AND the cut strip
 table; the take viewer staying separate from Create's; slate-style `1.1/2.1`
 cut badges; the promotion queue (§14).
 
+## 6b. Pose states — when a shot needs a reference that does not exist yet (founder Q, 2026-09-03)
+
+The founder's case: a shot opens with the character upside down in her mecha
+seat — the video model needs a reference of her inverted, maybe an inverted
+head reference too, and "it's never really clean cut" who decides that. The
+research's founding lesson answers it (the studied crew's own inverted-
+cockpit shot: precise prompting fell short; they flipped the reference and
+the shot rendered casually — "change the input").
+
+**A pose is a state, exactly as an outfit is** — nested under the identity's
+tile (`Zero · inverted — cockpit seat`), same grammar, no new machinery.
+Decided by three roads, detect-then-ratify:
+1. **Proposal time**: a shot whose first frame/beats describe an
+   orientation or interaction no current reference shows carries a dashed
+   gap in the proposal ("needs a pose reference — Mint / Upload"),
+   reasoning shown.
+2. **Failure time** (how the pros actually found it): when notes repeatedly
+   name orientation/physics, the escalation ladder's Edit setup step
+   suggests the fix by name — "this looks like a reference problem, not a
+   wording problem — mint 'Zero, inverted' from her card?" The measured
+   lesson: rewording rarely fixes a failing setup; the input does.
+3. **User-declared**: any tile takes "add a state" at any time.
+
+**Minting, cheapest first**: TRANSFORM (rotate/flip an existing state — the
+makers' inverted sheet was literally the flipped image; free, deterministic,
+bakes the physics), GENERATE (new pose plate anchored on her card, the face
+never regenerated — paid), UPLOAD.
+
+**Scoping rule that ships with it** (their costliest failure): a reference
+is a demand — everything visible fights to appear. A pose state attaches
+ONLY to the shots that need it, never scene-wide.
+
 ## 7. The integration contract (decided here — the design bot's blind spot, by design)
 
 The founder: the design agent knows UI, not the product's internals; how the
