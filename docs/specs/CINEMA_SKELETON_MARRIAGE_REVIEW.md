@@ -344,6 +344,30 @@ gaps with reasoning, same mint options (transform where deterministic /
 generate anchored on the existing card / upload), same per-shot attach
 scoping. E2's minting rule is the rule for all state kinds, not poses only.
 
+## 6f. First-frame anchoring — provenance stated honestly (founder Q, 2026-09-03: "it's not in our research?")
+
+Correct, and recorded so the record never overclaims: the anchored
+first-frame mechanic is a SYNTHESIS, not a measured ZEPHYR practice. From
+the research: the FIRST FRAME AND BLOCKING block in every studied prompt
+(controlling the opening frame in words was load-bearing) and the
+storyboard-judgment stage ("it becomes clear how good a scene really is").
+From the competitor analysis (2026-09-03, adopted as a take in 12b §H):
+image-conditioning before video — Runway's core documented flow and
+Higgsfield's Popcorn storyboards. Ours alone: anchoring ALL takes of a shot
+to one chosen frame (identity discipline applied to composition). The
+corpus showed reference attachments, not measured first-frame conditioning
+— no ZEPHYR job was measured using i2v start frames.
+
+**Engineering conditional, for the build:** the mechanic rides on the video
+engine accepting a start frame (Seedance-class engines do). Where an engine
+cannot, the anchor degrades to the strongest reference attachment — same
+UX, softer guarantee — and the strip's copy must not promise "drawn from
+it" on such an engine.
+
+Prototype bounce-backs, both already filed: the frames strip still stands
+open beside takes (§M self-collapse; "Done" is the manual link again), and
+direction fields render expanded by default against the notes-first rule.
+
 ## 7. The integration contract (decided here — the design bot's blind spot, by design)
 
 The founder: the design agent knows UI, not the product's internals; how the
