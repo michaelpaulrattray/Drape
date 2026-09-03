@@ -495,3 +495,36 @@ mint-from-the-brief road covers the mechanics, pricing that first journey
 is a founder decision). Script-change adaptability confirmed end to end —
 edits become flags with a visible diff, never regeneration, everywhere
 including a production-level look change.
+
+
+## 9. Reference management — the state-explosion answer (founder Q, 2026-09-04)
+
+The founder's cases: a new outfit discovered in takes (one view only — full
+new sheet needed?), the mecha's multiple state sheets, and the fear of "a
+giant mess of assets all over the place." Answered from the research and
+pinned, with amendment R issued:
+
+- **A new state is a DERIVATION, never a second casting**: the Adiliada
+  assembly law ("masks, without touching the base — the base image stays
+  the same pixels") means an outfit state repaints the existing views
+  around the untouched face. **Depth scales with use** (their sheets ran
+  2-3 views; their pose plates were SINGLE images): one-shot state = one
+  view; recurring state = a derived 2-3-view sheet, offered when IN n
+  reaches ~3, never required. Per-shot attachment was always face ref +
+  the ONE applying state card — never the wardrobe.
+- **The mecha rule is their scar tissue verbatim**: master sheet in default
+  state; per-state sheets attached only where the state exists in the
+  scene (the open-hatch failure).
+- **THREE HOMES, NO FOURTH — the anti-mess law**: every image is a MASTER
+  (one per identity, born in casting), a STATE CARD (inside its bucket,
+  anchored on the master, IN n counted), or an OUTPUT (frame/take under
+  its shot). Outputs PROMOTE into buckets ("Save this look/pose to Zero's
+  bucket" — sibling of save-this-take's-sound), which is how an outfit
+  discovered in takes becomes a state card without hand-filing.
+- **The boundary refined (founder ruling, superseding nothing — sharpening
+  the 3-roads model): identity is born in the studio; states are born
+  wherever they are needed.** "+ Generate from master" works from the
+  bucket's tray on any surface (Cinema shelf, drawer, casting studio);
+  one bucket, many doors — no studio trip to change a coat. His words:
+  "if i have one reference already e.g the cast i dont wanna have to jump
+  into the casting studio to do more takes."
