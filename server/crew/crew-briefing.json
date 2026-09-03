@@ -1,7 +1,7 @@
 {
-  "edition": 231,
-  "updatedAt": "2026-09-03T11:26:24.758Z",
-  "shift": "Foreman — 3 September night (#436: the Submit button that scrolled out of reach)",
+  "edition": 232,
+  "updatedAt": "2026-09-03T22:31:15.129Z",
+  "shift": "Foreman — 4 September morning (#414: the Crew steps read as ticks and rings)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,19 +111,19 @@
     ],
     "chips": [
       {
+        "label": "The page you are reading changed shape this morning",
+        "tone": "good",
+        "source": "Your #414 — the steps below read as ticks and rings now, and this page no longer collapses to one line while it loads. Two defects were caught by looking rather than by any test."
+      },
+      {
+        "label": "The queue: 77 open, 8 carrying your word, 0 urgent, 9 going stale",
+        "tone": "good",
+        "source": "#414 closed this morning; nothing urgent. Nine cards have gone a week untouched (#10 #14 #18 #22 #23 #30 #55 #61 #65) — one more than last night, and that one is #23 crossing the line."
+      },
+      {
         "label": "Both doors into the live site are shut to everything but you",
         "tone": "good",
-        "source": "Your \"protect it\" (#461), applied and checked against the other branch field by field. What is still open is deliberately open — your own pushes, by your own ruling last night."
-      },
-      {
-        "label": "The queue: 76 open, 12 carrying your word, 8 going stale",
-        "tone": "good",
-        "source": "#401 closed tonight; #477 filed from your own reply and #475 from the relay. Nothing urgent. The same eight are stale an eighth night (#10 #14 #18 #22 #30 #55 #61 #65)."
-      },
-      {
-        "label": "The escalated card is done: charges say what they made",
-        "tone": "good",
-        "source": "#401 built on the Fable seat as ordered, merged as PR #476 with a clean money-path review, and closed. The migration is additive, so the publish ceremony applies it itself — nothing for you to run."
+        "source": "Your \"protect it\" (#461), applied and checked against the other branch field by field. What is still open is deliberately open — your own pushes, by your own ruling."
       }
     ]
   },
@@ -1511,6 +1511,31 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "crew-devices-414-frames",
+      "state": "open",
+      "title": "The steps on this page — can you tell the four markers apart WITHOUT reading the words?",
+      "filedAt": "2026-09-03T22:31:15.129Z",
+      "issueNumber": 414,
+      "question": "Your #414 replaced the 1. 2. 3. on the build-order list with a marker: a filled circle and a tick for done, a dark ring for in progress, a soft ring for waiting, a coral ring for blocked. The first two frames show all four in one place (the live briefing only has two of the four states, so a temporary copy was used to photograph them; nothing on your page was changed to make the picture). The question is whether the four read at a GLANCE. If you have to read the pill beside a marker to know which state it is, the marker is decoration and should come out — that is a real answer and it costs one line to act on. The waiting ring especially: it was invisible in the first build, and it is now deliberately the quietest of the four. If it is still too quiet, say so and it goes up a step. The third frame is what the page looks like while it loads, which you asked for by name.",
+      "frames": [
+        {
+          "key": "crew-eye/ad4d3788-abb7-4f6e-916d-f823a3f41c28.png",
+          "arm": "All four markers — light",
+          "caption": "Top to bottom: done, in progress, waiting, blocked. The blocked row is the only coloured thing on the card, and its pill goes coral with it."
+        },
+        {
+          "key": "crew-eye/d09f056b-8139-4d54-990e-788565bb9191.png",
+          "arm": "All four markers — dark",
+          "caption": "The same four in the dark theme, which these devices had never been looked at in. Every one re-colours; none is a fixed grey carried over from light."
+        },
+        {
+          "key": "crew-eye/cb85e09a-9c39-4c6d-b14e-184dd90b32f4.png",
+          "arm": "What the page looks like while it loads",
+          "caption": "It used to be the words \"Loading the briefing…\" on one line. The first card's top edge is now in exactly the place the real first card lands, so nothing jumps when the words arrive."
+        }
+      ]
+    },
     {
       "id": "menu-badges-416",
       "title": "Two counters that had never shown a number — and what the Moderation one is about to tell you about your own account",
@@ -3242,6 +3267,13 @@
   ],
   "pipeline": [
     {
+      "id": "crew-devices-414",
+      "prNumber": 485,
+      "status": "merged",
+      "title": "The steps on this page read as ticks and rings, and it stops collapsing while it loads",
+      "note": "Your instruction was one line: \"no i dont want the mock data i want the say UI/UX design principles the cards the loading spinners the layout etc.\" So nothing on this page says anything new — only the way it says it changed.\n\nThe build-order list under THE PROGRAM was numbered 1. 2. 3. with the state written as a word at the end of each row. The numbers are gone, because the list is already in order and the number was telling you nothing. In their place: a filled circle with a tick for a step that is done, a dark ring for one in progress, a soft ring for one waiting, and a CORAL ring for one that is blocked. The state word is still there, still in your words, now inside the small outlined pill this page already used elsewhere — coral when it says Blocked. Thin lines between the rows, the way the staff tables read.\n\nAnd the loading state, which you named yourself. This page used to say \"Loading the briefing…\" on one line while it fetched — one line, on the longest page in the product. So the whole column sat empty and then jumped several thousand pixels when the words arrived. It now draws the shape of the page while it waits: cards at the real heights, in the real rhythm. Measured: the first card's top edge does not move at all when the briefing lands.\n\nFOUR of the eight things on your card were NOT built, and each has a reason rather than an excuse. Three already existed in another form — the inset notice block, the counts on the section heads, the ladder bar with its keys underneath. The fourth, a status pill on a card header, would have needed a fact this page does not have: there is no running-or-held state at the section level, and inventing one is the mock data you ruled out in the same sentence.\n\nTwo defects were caught by LOOKING, with every automated test green. The \"waiting\" ring was drawn in the same grey as the ladder's queued bar — and measured against the white card it was 1.25 to 1, which is to say invisible. There was simply no marker on that row, and nothing in the test suite could see that. The reason the same grey works on the ladder and not here is that the ladder's bar is a solid block eight pixels tall and this is a hairline circle: the same colour reads as a shape and does not read as a stroke. The second was found by the reviewer, in a screenshot this shift had already taken and passed: the loading cards were drawing flush against each other, fused into one slab, because the element holding them swallowed the 26px the real sections sit apart by. Both fixed and re-photographed. The honest lesson is the second one: a frame taken is not a frame read."
+    },
+    {
       "id": "staff-dialogs-436",
       "prNumber": 480,
       "status": "merged",
@@ -4523,10 +4555,10 @@
   "problems": [
     {
       "id": "shared-tree-block-479",
-      "title": "Your page is three editions behind now, and still not because nothing happened",
+      "title": "Your page was three editions behind — it is not any more",
       "severity": "warning",
-      "state": "open",
-      "detail": "Editions 229, 230 and this one are written, checked and waiting. The publish step refuses to run while there are unsaved edits sitting in the shared folder — and the unsaved edits are YOURS: the philosophy you wrote today, and last night's note on the casting plan. That refusal is correct and no shift will touch your files to get around it. Saving or discarding those two releases all three at once. #479 has four ways to stop this recurring, cheapest first, with a recommendation — it is a decision for you, not a bug in your work."
+      "state": "resolved",
+      "detail": "Editions 229, 230 and 231 all reached this page: it was reading 231 when this shift started. Two uncommitted files in the shared folder had been holding the nightly publish, and your own session committed them at 21:38 last night, after which the publish went through. Nothing was lost — the editions were written and waiting, not missing. The card stays open (#479) because the underlying shape can happen again: this computer's project folder is shared between your sessions and the team's, and the publish ceremony correctly refuses to run while anything in it is half-finished. That refusal is right; what needs a better answer is how a shift notices sooner."
     },
     {
       "id": "billing-return-domain-467",
@@ -4684,10 +4716,10 @@
     },
     {
       "id": "queue-shape-0903-foreman",
-      "title": "The queue: 77 open, 10 carrying your word, 0 urgent",
+      "title": "The queue: 77 open, 8 carrying your word, 0 urgent",
       "severity": "info",
       "state": "open",
-      "detail": "One closed tonight (#436, yours) and two opened from the work. Eight cards have now sat untouched since 25 August — the same eight as the last nine nights, so it is flat rather than getting worse. Nothing in the queue is marked urgent."
+      "detail": "Nine of the 77 have gone a week untouched (#10 #14 #18 #22 #23 #30 #55 #61 #65) — one more than last night, and that one is #23 crossing the seven-day line rather than a new problem. Eight cards carry your word and every one of them is takeable: none is waiting on an answer from you. The two that need the reviewer seat rather than this one are #477 and #429."
     }
   ],
   "acknowledgedReplyIds": [
@@ -4807,7 +4839,7 @@
     114
   ],
   "nextUp": {
-    "readAt": "2026-09-03T11:26:17.731Z",
+    "readAt": "2026-09-03T22:29:06.627Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4830,11 +4862,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 414,
-        "title": "Crew takes his drawing's design devices — ticks, state pills, skeletons — without the mock data",
-        "urgent": false
-      },
-      {
         "issueNumber": 425,
         "title": "His four Change plan corrections — including two he wants as declared STUBS, not as populated claims (reply #84)",
         "urgent": false
@@ -4842,11 +4869,6 @@
       {
         "issueNumber": 429,
         "title": "Two new background-work switches: Small fixes and Casting upkeep, derived from labels already on the cards",
-        "urgent": false
-      },
-      {
-        "issueNumber": 435,
-        "title": "Casting hero column + Cast settings modal (brief 10) — the left column is centred, so it floats beside a full deck",
         "urgent": false
       },
       {
