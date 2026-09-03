@@ -593,3 +593,26 @@ the birth-outfit views. Per shot: face panel + the one applying state card
 (face already inside it). The outfit conflict is structurally impossible in
 both lanes. This is a DP-skill/prompt-assembly rule, not UI; the buckets
 and cards above are unchanged.
+
+
+## 9e. Takes are pictures; references are plates — promotion is a MINT (founder's conflict, finally landed, 2026-09-04)
+
+The conflict the founder had been driving at across 9a-9d, stated: casting
+takes are general-purpose CONTENT (any composition, background, mood, used
+anywhere in the SaaS); Cinema's reference system needs PLATES (the research
+form — headless body view, clean ground, outfit/pose clearly shown). An
+arbitrary take fed as a reference drags its whole scene along (a reference
+is a demand). 9b/9c's "save to bucket" as a filing gesture was therefore
+wrong as described.
+
+**The fix, from the studied crew's own asset factory** (generators produce
+images in every form; references are MANUFACTURED from them — "polished
+using Nano Banana and Seedream to compile them into final assets"):
+**promotion is a mint, not a move.** Saving a look/pose to a bucket LIFTS
+it from the take and REDRAWS it as a reference-grade state plate anchored
+on the master, shown for approval before it files; the source take is
+untouched and remains content. Uploads into buckets pass the same door
+(plate-minted on the way in — the ink studio's cut-on-entry pattern, which
+the product already runs today). **Invariant: the bucket accepts only
+plates; the plate is the only form Cinema ever attaches.** Amendment T
+issued to the design agent.
