@@ -528,3 +528,25 @@ pinned, with amendment R issued:
   one bucket, many doors — no studio trip to change a coat. His words:
   "if i have one reference already e.g the cast i dont wanna have to jump
   into the casting studio to do more takes."
+
+
+## 9b. Masters are immutable; promotion lands one level down (founder Q, 2026-09-04)
+
+The founder's worry: takes (in casting or called from Cinema — one engine,
+the recorded contract) generate her in outfits freely; how does that never
+corrupt the master "without changing that"? Pinned as three system
+properties, amendment S issued:
+
+1. **The master is IMMUTABLE** — written once at Sign; no generated output
+   can ever become or overwrite a master. Sacred pixels as a hard system
+   property, not a discipline. Generating never risks the hierarchy.
+2. **Promotion is explicit and lands ONE LEVEL DOWN** — a take enters the
+   reference system only via "save to bucket," always as a STATE CARD
+   under a master; no gesture outside casting's Sign creates a master.
+3. **Provenance is automatic** — every generated image records its parents
+   (the masters/states referenced). A two-parent take (her + the mecha,
+   gpt-image-2 with both masters attached) promotes as a **RELATION CARD**:
+   filed in one chosen bucket (default the cast in frame), parents shown,
+   attachable to shots where both appear in that relation — the studied
+   crew's character-with-prop scale/relation plates, reinvented by the
+   founder unprompted.
