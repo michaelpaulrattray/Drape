@@ -379,6 +379,8 @@ but camera cues WRITTEN in a script (CLOSE ON, WE PUSH IN) are parsed into
 the proposed shot list, badged read-from-your-script (pack amendment O):
 written camera is honored, never re-asked.
 
+## 8-pre note: see §8 below for the consolidated-brief audit that supersedes §6's findings where they overlap.
+
 ## 7. The integration contract (decided here — the design bot's blind spot, by design)
 
 The founder: the design agent knows UI, not the product's internals; how the
@@ -416,3 +418,48 @@ record's job to fix.
 Phase-D surface), `SCRIPT_ROOM_DESIGN.md` (gate 1 updated with the fold-in
 collision), `CASTING_TAKES_DESIGN.md`, `research/zephyr-teardown/README.md`,
 and the design agent's `12-cinema.md` (delivered 2026-09-02, audited in §6).*
+
+
+## 8. The consolidated brief audited — CONFIRMED FOR BUILD (2026-09-04, `12-cinema-full.md`)
+
+The design agent's consolidated brief (replacing 12-cinema.md + 12b) audited
+line by line at the founder's order: confirm workflow, UX/UI, use-case vs
+research and competitors. **Verdict: confirmed — every amendment landed
+(A–O), and the agent improved on the spec in five places, each checked
+against the research and adopted**: the Wall's derived NEXT line (priority-
+ordered next action — no competitor equivalent), margin director's notes on
+the page (intent-never-camera, read at proposal time), the manifest drawer
+(resolve-in-place with summoning lines quoted; "Mint a new cast" opens
+casting with the brief written from the page), the two-button action row
+(Keep lives on the tile's star), and the cut "Start blank" door.
+
+**The one substantive disagreement, adjudicated:** the brief removes picture
+lock entirely ("judged unnecessary for now"), deleting the researched
+after-lock-no-generations rule. ACCEPTED AS A DEFERRAL, NOT A DELETION:
+every draw already sits behind an explicit priced click, and what lock
+uniquely protects (a finished cut changing under a shared export) does not
+exist until Export does — §9.1 stubs Export as undesigned. **When Export is
+designed, it IS the lock: exporting freezes a named version of the cut.**
+This sentence exists so the rule survives the gap.
+
+**Final amendment issued (P):** the staleness banner offers "See what
+changed" — a before/after of only the changed document fields, prompt-
+drawer diff treatment — so the takes-still-good decision is never blind.
+
+**Build-time flags:** the drawer's "Mint a new cast · 4 cr" must carry
+casting's REAL price at build (a roll is 160 cr — the placeholder must not
+ship); wait numbers derive per engine (already marked); the first-frame
+"drawn from it" promise softens on engines without start-frame support;
+hover-plays-in-place needs a performance budget.
+
+**Competitive verdict, recorded honestly:** for making a film the workflow
+beats both competitors structurally and it is not close (script container,
+approval gates, stills-first, structural identity, staleness, NEXT,
+holes-included Composer — none exists in either). ~9 interactions from a
+pasted line to first image. The two risks OUTSIDE the document's power:
+output-quality parity (an engine fight, not UX) and the cold start (a new
+user's first production runs through the casting studio; the drawer's
+mint-from-the-brief road covers the mechanics, pricing that first journey
+is a founder decision). Script-change adaptability confirmed end to end —
+edits become flags with a visible diff, never regeneration, everywhere
+including a production-level look change.
