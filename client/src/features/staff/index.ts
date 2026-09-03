@@ -31,3 +31,13 @@ export {
   StatePill,
   SUSPEND_CONSEQUENCE,
 } from "./staffTable";
+/* Brief 11 (#436) - the staff dialogs' shared grammar. Its docblock carries
+   why it composes `.dpc-modal__eyebrow`/`__label` rather than declaring a
+   fourth field-label treatment, and why it sits here rather than in
+   `foundation/` until the promotion pass runs. */
+export {
+  StaffDialogHeader,
+  StaffField,
+  STAFF_DIALOG_BODY,
+  STAFF_DIALOG_CONTENT,
+} from "./staffDialog";
