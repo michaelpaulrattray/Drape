@@ -795,6 +795,7 @@ async function executeCandidate(
       description: "Tattoo preview",
       referenceId: `op:${gate.operationId}:charge`,
       engineUsed: INK_ADD_IMAGE_ENGINE,
+      toolKind: "image",
       onCharged: (amount) => {
         chargedCredits = amount;
       },
@@ -1083,6 +1084,7 @@ async function executeProjectionCandidate(
       description: `Tattoo projection preview: ${input.targetViewAngle}`,
       referenceId: `op:${gate.operationId}:charge`,
       engineUsed: INK_ADD_IMAGE_ENGINE,
+      toolKind: "image",
       onCharged: (amount) => {
         chargedCredits = amount;
       },

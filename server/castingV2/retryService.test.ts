@@ -380,7 +380,7 @@ describe("the sequence", () => {
       "generation",
       "Casting retry (pending)",
       `op:${RETRY_OPERATION_ID}:charge`,
-      "castingV2",
+      { toolKind: "image", engineUsed: "castingV2" },
     );
     // The row is the refund authority: its cost is set in the reset statement.
     expect(dbCalls.reset).toHaveBeenCalledWith(5, CASTING_V2_RETRY_PRICE_CREDITS);

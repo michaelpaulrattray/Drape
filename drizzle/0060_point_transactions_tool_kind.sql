@@ -1,0 +1,35 @@
+-- THE toolKind COLUMN — a credit charge records WHAT it made (#401, founder-
+-- ordered; his approval verbatim and entire: "ok"). His taxonomy, verbatim:
+-- *"i think for now tools should just refer to was an image generated? its
+-- filed as image or video? its video or LLM its LLM or Text. not sure what
+-- else at the moment but it can grow"*.
+--
+-- ============================================================================
+-- WHAT IT HOLDS, AND WHY A varchar AND NOT AN ENUM
+-- ============================================================================
+--
+-- The documented set lives in `server/db/credits.ts` (`CreditToolKind`):
+-- `image` today, `video` and `text` reserved. "It can grow" is his own
+-- requirement, so growth is an edit to the type — never another ceremony on a
+-- money table. varchar(16) fits every named kind with room.
+--
+-- ============================================================================
+-- NULL MEANS "NOT A TOOL CHARGE", NEVER "UNLABELLED TOOL CHARGE"
+-- ============================================================================
+--
+-- The distinction is the entire lesson of `engineUsed`, one column to the
+-- left: null on 53% of his real spend made it useless and got the Usage tile
+-- removed (#387). Here null is confined by construction to rows that are not
+-- tool charges at all — grants, refunds, admin adjustments, the chargeback
+-- revoke, and every row predating this column. On the charge path the value
+-- is REQUIRED at compile time (`CreditDeductionAttribution`), so a new charge
+-- site cannot ship without stating what it made.
+--
+-- NO BACKFILL, BY RULING: his 622 historical rows have no honest answer, and
+-- a backfilled guess is a lie in a chart. `ADD COLUMN` with no default leaves
+-- every existing row NULL, which is exactly the honest state.
+--
+-- PURELY ADDITIVE. No column is removed, no column changes type, no index
+-- moves, no row is rewritten. Every existing reader of `point_transactions`
+-- sees exactly what it saw before. The deploy rite applies this itself (#322).
+ALTER TABLE `point_transactions` ADD COLUMN `toolKind` varchar(16) NULL;

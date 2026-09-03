@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const ledger = vi.hoisted(() => {
   const state = {
     balance: 1000,
-    transactions: [] as Array<{ userId: number; referenceId?: string; amount: number }>,
+    transactions: [] as Array<{ userId: number; referenceId?: string; amount: number; toolKind?: string | null }>,
     failNextAdd: false,
     reset() {
       state.balance = 1000;
@@ -31,10 +31,10 @@ vi.mock("../db", async (importOriginal) => {
     ...actual,
     // Mirrors deductCredits: atomic conditional decrement + a transaction row
     // under the given referenceId (NO duplicate check on the deduct side).
-    deductCredits: vi.fn(async (userId: number, amount: number, _t: string, _d: string, referenceId?: string) => {
+    deductCredits: vi.fn(async (userId: number, amount: number, _t: string, _d: string, referenceId?: string, attribution?: { toolKind: string | null; engineUsed?: string }) => {
       if (ledger.balance < amount) return { success: false, error: "Insufficient credits" };
       ledger.balance -= amount;
-      ledger.transactions.push({ userId, referenceId, amount: -amount });
+      ledger.transactions.push({ userId, referenceId, amount: -amount, toolKind: attribution?.toolKind });
       return { success: true, newBalance: ledger.balance };
     }),
     // Mirrors addCredits: ANY existing (userId, referenceId) row is treated
@@ -70,7 +70,7 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
   it("operation failure refunds under a DIFFERENT deterministic id and restores the balance once", async () => {
     await expect(
       withAtomicCredits(
-        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-11" },
+        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-11", toolKind: "image" as const },
         async () => {
           throw new Error("engine down");
         },
@@ -91,7 +91,7 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
   it("retrying the same refund is idempotent — credits are never added twice", async () => {
     const run = () =>
       withAtomicCredits(
-        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-11" },
+        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-11", toolKind: "image" as const },
         async () => {
           throw new Error("engine down");
         },
@@ -110,7 +110,7 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
     ledger.failNextAdd = true;
     await expect(
       withAtomicCredits(
-        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-12" },
+        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-12", toolKind: "image" as const },
         async () => {
           throw new Error("engine down");
         },
@@ -127,7 +127,7 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
     const { TRPCError } = await import("@trpc/server");
     await expect(
       withAtomicCredits(
-        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-14" },
+        { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-14", toolKind: "image" as const },
         async () => {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
         },
@@ -138,17 +138,19 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
 
   it("success keeps the deduction and never calls addCredits", async () => {
     const result = await withAtomicCredits(
-      { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-13" },
+      { userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-13", toolKind: "image" as const },
       async () => "ok",
     );
     expect(result).toBe("ok");
     expect(ledger.balance).toBe(650);
     expect(addCredits).not.toHaveBeenCalled();
+    // #401 wire arm: the helper forwards toolKind into the ledger write.
+    expect(ledger.transactions[0].toolKind).toBe("image");
   });
 
   it("without a caller referenceId, charge and refund ids are still distinct and paired", async () => {
     await withAtomicCredits(
-      { userId: 1, amount: 100, description: "Upscale" },
+      { userId: 1, amount: 100, description: "Upscale", toolKind: "image" as const },
       async () => {
         throw new Error("boom");
       },
@@ -172,7 +174,7 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
     try {
       await Promise.allSettled(
         Array.from({ length: 4 }, () =>
-          withAtomicCredits({ userId: 1, amount: 10, description: "Parallel op" }, async () => {
+          withAtomicCredits({ userId: 1, amount: 10, description: "Parallel op", toolKind: "image" as const }, async () => {
             throw new Error("boom");
           }),
         ),
@@ -191,14 +193,14 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
 
   it("the truthful sentence propagates: failed refund reaches the thrown error, success states the amount", async () => {
     await expect(
-      withAtomicCredits({ userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-77" }, async () => {
+      withAtomicCredits({ userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-77", toolKind: "image" as const }, async () => {
         throw new Error("engine down");
       }),
     ).rejects.toMatchObject({ message: expect.stringContaining("350 credits were refunded") });
 
     ledger.failNextAdd = true;
     await expect(
-      withAtomicCredits({ userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-78" }, async () => {
+      withAtomicCredits({ userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-78", toolKind: "image" as const }, async () => {
         throw new Error("engine down");
       }),
     ).rejects.toMatchObject({

@@ -447,7 +447,10 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
         currentBalance,
         "refund",
         `Credits frozen: chargeback ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`,
-        disputeRef
+        disputeRef,
+        // Not a tool spend: this revoke freezes a disputed balance and makes
+        // nothing. The one deliberate null toolKind in the product (#401).
+        { toolKind: null }
       );
       if (revokeResult.success) {
         log.info(`[Webhook] Revoked ${currentBalance} credits from user ${userId} (dispute ${dispute.id}). New balance: ${revokeResult.newBalance}`);

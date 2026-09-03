@@ -402,6 +402,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   const cost = CREDIT_COSTS.castingImage;
   const deduct = await deductPoints(
     input.userId, cost, "generation", "Canvas cast generation (pending)", input.chargeReferenceId,
+    { toolKind: "image" },
   );
   if (!deduct.success) {
     throw new TRPCError({
@@ -1095,6 +1096,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     const deduct = await deductPoints(
       input.userId, cost, "generation",
       `Model recast (pending)`, input.chargeReferenceId,
+      { toolKind: "image" },
     );
     if (!deduct.success) {
       throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
@@ -1414,6 +1416,7 @@ export async function executeRunVariations(input: {
   const deduct = await deductPoints(
     input.userId, totalCost, "generation",
     `${count} cast variation${count === 1 ? "" : "s"} (pending)`, input.chargeReferenceId,
+    { toolKind: "image" },
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });

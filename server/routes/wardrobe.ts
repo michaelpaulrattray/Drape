@@ -158,6 +158,7 @@ const garmentRouter = router({
             userId: ctx.user.id,
             amount: WARDROBE_CREDIT_COSTS.garmentUpload,
             description: "Wardrobe garment upload pipeline",
+            toolKind: "image",
           },
           async () => {
             // Detect garment type + quality check in parallel
@@ -297,6 +298,7 @@ const vtoRouter = router({
           amount: WARDROBE_CREDIT_COSTS.vtoGeneration,
           description: "Wardrobe VTO generation",
           referenceId: `gen-${genResult.generationId}`,
+          toolKind: "image",
         },
         async () => {
           const aspectRatio = await getImageAspectBucket(modelImageUrl);
@@ -393,6 +395,7 @@ const vtoRouter = router({
           amount: WARDROBE_CREDIT_COSTS.vtoIncremental,
           description: "Wardrobe incremental VTO",
           referenceId: `gen-${genResult.generationId}`,
+          toolKind: "image",
         },
         async () => {
           const aspectRatio = await getImageAspectBucket(modelImageUrl);
@@ -488,6 +491,7 @@ const vtoRouter = router({
           amount: WARDROBE_CREDIT_COSTS.garmentRefinement,
           description: "Wardrobe garment refinement",
           referenceId: `gen-${genResult.generationId}`,
+          toolKind: "image",
         },
         async () => {
           const aspectRatio = await getImageAspectBucket(modelImageUrl);
@@ -586,6 +590,9 @@ const decomposeRouter = router({
           userId: ctx.user.id,
           amount: WARDROBE_CREDIT_COSTS.outfitDecomposition,
           description: "Outfit decomposition analysis",
+          // The deliverable is the garment crop images cut from the outfit
+          // photo and stored per garment — image output, not a bare reading.
+          toolKind: "image",
         },
         async () => {
           return decomposeOutfit(url, String(ctx.user.id));
@@ -620,6 +627,7 @@ const decomposeRouter = router({
             userId: ctx.user.id,
             amount: WARDROBE_CREDIT_COSTS.garmentDigitize + WARDROBE_CREDIT_COSTS.garmentAnalyze,
             description: "Import garment from decomposition",
+            toolKind: "image",
           },
           async () => {
             // Digitize from the CROP, not the full outfit

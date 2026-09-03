@@ -41,6 +41,37 @@ export type CreditTransactionType =
   | "topup"
   | "subscription";
 
+/**
+ * What a tool charge MADE — the founder's output-kind taxonomy (#401, his
+ * words: "i think for now tools should just refer to was an image generated?
+ * its filed as image or video? its video or LLM its LLM or Text … but it can
+ * grow"). A documented set over a varchar column, not a DB enum, so growing
+ * it is an edit here rather than a migration. As of 2026-09-03 every tool
+ * charge in the product generates images; "video" and "text" are reserved.
+ */
+export type CreditToolKind = "image" | "video" | "text";
+
+/**
+ * Required on every deduction — the ruling that keeps toolKind honest where
+ * engineUsed rotted (null on 53% of real spend, #387):
+ *
+ * - `toolKind: CreditToolKind` states what the charge made.
+ * - `toolKind: null` states, deliberately, that the row is NOT a tool charge
+ *   at all. The one live case is the chargeback revoke in stripe/webhooks.ts.
+ *   Null never means "unlabelled tool charge": the field is required, so a
+ *   new charge site cannot compile without its author deciding.
+ * - A charged operation with genuinely no output kind has no live instance
+ *   today (measured at every call site, 2026-09-03: mint package, refresh
+ *   views and the evidence package sync all charge only to generate view
+ *   images). If one ever appears, its author grows the set here rather than
+ *   writing null.
+ */
+export interface CreditDeductionAttribution {
+  toolKind: CreditToolKind | null;
+  /** Engine identifier (Flash fallback pricing / castingV2 transport). */
+  engineUsed?: string;
+}
+
 export interface CreditWriteResult {
   success: boolean;
   newBalance?: number;
@@ -284,8 +315,8 @@ export async function deductCredits(
   amount: number,
   type: CreditTransactionType,
   description: string,
-  referenceId?: string,
-  engineUsed?: string
+  referenceId: string | undefined,
+  attribution: CreditDeductionAttribution
 ): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
@@ -368,7 +399,8 @@ export async function deductCredits(
         description,
         referenceId: ledgerReferenceId,
         balanceAfter: newBalance,
-        engineUsed: engineUsed || null,
+        engineUsed: attribution.engineUsed || null,
+        toolKind: attribution.toolKind,
       });
 
       return { success: true, newBalance };

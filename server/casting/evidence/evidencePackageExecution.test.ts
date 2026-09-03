@@ -222,7 +222,7 @@ describe("R7-7E2 evidence package executor", () => {
       "generation",
       expect.any(String),
       INPUT.chargeReferenceId,
-      expect.any(String),
+      { toolKind: "image", engineUsed: expect.any(String) },
     );
     expect(deps.generate).toHaveBeenCalledTimes(1);
     expect(deps.probe).toHaveBeenCalledTimes(1);

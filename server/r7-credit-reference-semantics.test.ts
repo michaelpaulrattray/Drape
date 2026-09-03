@@ -88,7 +88,7 @@ describe("R7-1B credit-reference semantics", () => {
 
   it("never lets a duplicate deduction authorize paid work again", async () => {
     connection.getDb.mockResolvedValue(duplicateLookupDb({ id: 13, type: "generation", amount: -300 }));
-    await expect(deductCredits(7, 300, "generation", "retry", "op-2:charge")).resolves.toEqual({
+    await expect(deductCredits(7, 300, "generation", "retry", "op-2:charge", { toolKind: "image" })).resolves.toEqual({
       success: false,
       error: "Credit charge already recorded",
       duplicate: true,
@@ -97,7 +97,7 @@ describe("R7-1B credit-reference semantics", () => {
 
   it("marks a mismatched duplicate deduction as a critical collision", async () => {
     connection.getDb.mockResolvedValue(duplicateLookupDb({ id: 14, type: "refund", amount: 300 }));
-    await expect(deductCredits(7, 300, "generation", "collision", "shared-ref")).resolves.toEqual({
+    await expect(deductCredits(7, 300, "generation", "collision", "shared-ref", { toolKind: "image" })).resolves.toEqual({
       success: false,
       error: "Credit reference collision",
       duplicate: true,

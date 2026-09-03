@@ -452,6 +452,7 @@ export const castingRefinementRouter = router({
             amount: POINT_COSTS.iterate,
             description: "Model iteration",
             referenceId: chargeReferenceId,
+            toolKind: "image",
             onCharged: (amount) => { chargedCredits = amount; },
             onRefunded: (outcome) => {
               if (outcome.recorded) refundedCredits = outcome.amount;

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f6ef0beb88dad0ae"
+    "sourceFingerprint": "a98b8e6f2a3f2e28"
   },
   "domains": [
     {
@@ -12464,6 +12464,10 @@
       "path": "server/court.test.ts"
     },
     {
+      "id": "test:server/creditToolKind.test.ts",
+      "path": "server/creditToolKind.test.ts"
+    },
+    {
       "id": "test:server/credits.test.ts",
       "path": "server/credits.test.ts"
     },
@@ -20033,6 +20037,11 @@
     {
       "from": "module:server/casting/atomicCredits.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:server/db/credits.ts",
       "kind": "imports"
     },
     {

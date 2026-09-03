@@ -77,7 +77,7 @@ describeWithDatabase("R7-1B unique credit ledger (disposable DB)", () => {
 
   it("records twenty concurrent deductions once and refuses every replay", async () => {
     const results = await Promise.all(
-      Array.from({ length: 20 }, () => deductCredits(userId, 300, "generation", "concurrent charge", "r7:deduct:one")),
+      Array.from({ length: 20 }, () => deductCredits(userId, 300, "generation", "concurrent charge", "r7:deduct:one", { toolKind: "image" })),
     );
     expect(results.filter((result) => result.success)).toHaveLength(1);
     expect(results.filter((result) => !result.success && result.duplicate)).toHaveLength(19);
@@ -99,10 +99,10 @@ describeWithDatabase("R7-1B unique credit ledger (disposable DB)", () => {
     await connection.execute("UPDATE points SET balance = 300 WHERE userId = ?", [userId]);
 
     await expect(
-      deductCredits(userId, 300, "generation", "exhausting charge", "r7:deduct:exhaust"),
+      deductCredits(userId, 300, "generation", "exhausting charge", "r7:deduct:exhaust", { toolKind: "image" }),
     ).resolves.toMatchObject({ success: true });
     await expect(
-      deductCredits(userId, 300, "generation", "exhausting charge replay", "r7:deduct:exhaust"),
+      deductCredits(userId, 300, "generation", "exhausting charge replay", "r7:deduct:exhaust", { toolKind: "image" }),
     ).resolves.toMatchObject({
       success: false,
       error: "Credit charge already recorded",
@@ -114,6 +114,29 @@ describeWithDatabase("R7-1B unique credit ledger (disposable DB)", () => {
       [userId],
     );
     expect(Number(balance.balance)).toBe(0);
+  }, 30_000);
+
+  it("persists toolKind on a tool charge and NULL on a non-tool deduction (#401)", async () => {
+    // Positive control: the charge writes what it made.
+    await expect(
+      deductCredits(userId, 200, "generation", "toolKind charge", "r7:deduct:toolkind", { toolKind: "image" }),
+    ).resolves.toMatchObject({ success: true });
+    const [[charged]] = await connection.query<RowDataPacket[]>(
+      "SELECT toolKind FROM point_transactions WHERE userId = ? AND referenceId = 'r7:deduct:toolkind'",
+      [userId],
+    );
+    expect(charged.toolKind).toBe("image");
+
+    // The revoke shape: a deduction that is deliberately NOT a tool charge
+    // records null — "not a tool charge", never "unlabelled tool charge".
+    await expect(
+      deductCredits(userId, 100, "refund", "toolKind revoke shape", "r7:deduct:revoke", { toolKind: null }),
+    ).resolves.toMatchObject({ success: true });
+    const [[revoked]] = await connection.query<RowDataPacket[]>(
+      "SELECT toolKind FROM point_transactions WHERE userId = ? AND referenceId = 'r7:deduct:revoke'",
+      [userId],
+    );
+    expect(revoked.toolKind).toBeNull();
   }, 30_000);
 
   it("keeps multiple legacy null references legal", async () => {

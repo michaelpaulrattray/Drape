@@ -5944,7 +5944,7 @@ async function refineCandidateCounted(
     "generation",
     "Refine a face (pending)",
     operationChargeReference(operationId),
-    "castingV2",
+    { toolKind: "image", engineUsed: "castingV2" },
   );
   if (!charge.success) {
     await failVariant({ userId: input.userId, variantId: variant.id, failureClass: "unpaid" });
