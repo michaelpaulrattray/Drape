@@ -140,6 +140,7 @@ import {
 import { filedSubjectsOf } from "../castingV2/refineDelta";
 import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { CASTING_V2_ROLL_TYPICAL_SECONDS } from "../castingV2/rollDuration";
 import { projectSignedCast } from "../castingV2/castProjection";
 import {
   getCastLineage,
@@ -972,6 +973,13 @@ export const castingV2Router = router({
     enabled: captureCastingV2Enabled(ctx.user.id),
     rollPriceCredits: CASTING_V2_ROLL_PRICE_CREDITS,
     candidatesPerRoll: CASTING_V2_COSTS.rollCandidateCount,
+    /*
+      THE HERO'S RECEIPT LINE (#435 §2d) — how long a sheet takes, so the
+      client derives the third value the same way it already derives the count
+      and the price. A measurement with a date, not a literal: see
+      `server/castingV2/rollDuration.ts`.
+    */
+    rollTypicalSeconds: CASTING_V2_ROLL_TYPICAL_SECONDS,
     // H.1: the price is on the paid affordance before it fires, and it is
     // server-derived — the Sign confirm never carries a literal.
     signPriceCredits: CASTING_V2_SIGN_PRICE_CREDITS,

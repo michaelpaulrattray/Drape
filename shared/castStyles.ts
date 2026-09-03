@@ -28,12 +28,25 @@ export const CAST_STYLE_NAMES: Readonly<Record<CastStyle, string>> = {
 /**
  * The line under the selected style — what its bundle does TODAY, in the
  * customer's words. Honest about the block as it stands (chest-up, studio
- * light, grey seamless, photoreal finish) and about the override rule; it
- * promises no control the modal does not have.
+ * light, grey seamless, photoreal finish); it promises no control the modal
+ * does not have.
+ *
+ * ⚠ **IT USED TO END WITH THE OVERRIDE RULE AND NO LONGER DOES (#435).** It
+ * read *"Anything your brief says about the look, light or setting overrides
+ * it."* — and brief 10 §3b gives the modal a FOOTER stating that same rule in
+ * almost the same words (*"These are defaults — anything your brief says about
+ * the look, light or setting overrides them."*). The two then sat one glance
+ * apart on the same card, which is how the duplication was seen: by looking at
+ * it, not by any test.
+ *
+ * The footer owns the rule now, because it is true of BOTH settings rather than
+ * of the style alone — one fact, one owner (working law 4). The reason this
+ * line carried it was that nothing else on the surface did, and that reason is
+ * spent. ⚠ **If the footer is ever removed, the rule comes back here**; it must
+ * not end up stated nowhere.
  */
 export const CAST_STYLE_LINES: Readonly<Record<CastStyle, string>> = {
-  photoreal:
-    "A photographic casting portrait: chest-up, studio light, grey seamless. Anything your brief says about the look, light or setting overrides it.",
+  photoreal: "A photographic casting portrait: chest-up, studio light, grey seamless.",
 };
 
 /**

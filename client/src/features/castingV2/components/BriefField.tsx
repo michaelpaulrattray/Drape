@@ -96,14 +96,38 @@ export function BriefField({
   useLayoutEffect(() => {
     const field = ref.current;
     if (!field) return;
+    /*
+      ⚠ **`hidden` BEFORE THE MEASUREMENT, AND IT IS NOT ONLY TIDINESS** (#435
+      §2c). A scrollbar that is already showing takes width out of the content
+      box, so the wrap points move and `scrollHeight` measures a NARROWER box
+      than the one about to be painted. Reset it and the measurement is of the
+      box as it will actually be.
+    */
+    field.style.overflowY = "hidden";
     field.style.height = "auto";
     /*
       The cap lives in CSS (`max-height`), so the measurement only has to
-      decide the natural height — the browser clamps and turns on the
-      scrollbar. Two places deciding the same maximum is how they come to
-      disagree at some font size nobody tested.
+      decide the natural height — the browser clamps. Two places deciding the
+      same maximum is how they come to disagree at some font size nobody
+      tested.
     */
-    field.style.height = `${field.scrollHeight}px`;
+    const natural = field.scrollHeight;
+    field.style.height = `${natural}px`;
+    /*
+      ⚠ **AND THE SCROLL WIDGET IS SWITCHED WHERE THE HEIGHT IS SWITCHED**
+      (#435 §2c, his instruction: *"Set it in the same place you set the
+      height"*).
+
+      The stylesheet had `overflow-y: auto` on this box for as long as it has
+      been a textarea. A `rows="1"` box whose content exceeds one line therefore
+      exposed a scroll widget the `<input>` it replaced never had — and because
+      `auto` is the resting value rather than a measured one, a box that had
+      never been typed into could show one too. `clientHeight` after the clamp
+      is the box as painted; if the content is taller, the cap has bitten and a
+      scrollbar is honest. If it has not, there is nothing to scroll and the
+      widget is noise on the product's primary control.
+    */
+    field.style.overflowY = natural > field.clientHeight ? "auto" : "hidden";
   }, [value]);
 
   return (

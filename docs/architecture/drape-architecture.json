@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "23dd0d19c73d1c1c"
+    "sourceFingerprint": "4ab5dda27a0f8b9b"
   },
   "domains": [
     {
@@ -38,12 +38,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 184
+      "moduleCount": 185
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 44
+      "moduleCount": 43
     },
     {
       "id": "domain:client-shared",
@@ -1581,12 +1581,6 @@
     {
       "id": "module:client/src/features/castingV2/components/HeroDeck.tsx",
       "path": "client/src/features/castingV2/components/HeroDeck.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
-      "path": "client/src/features/castingV2/components/ImaginationToggle.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -4569,6 +4563,12 @@
     {
       "id": "module:server/castingV2/retryService.ts",
       "path": "server/castingV2/retryService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/rollDuration.ts",
+      "path": "server/castingV2/rollDuration.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10642,6 +10642,10 @@
       "path": "client/src/features/castingV2/roomAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/section10-guard.test.ts",
+      "path": "client/src/features/castingV2/section10-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/sheetNotice.test.ts",
       "path": "client/src/features/castingV2/sheetNotice.test.ts"
     },
@@ -16371,16 +16375,6 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
-      "to": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
-      "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
       "to": "module:shared/castStyles.ts",
       "kind": "imports"
     },
@@ -16452,16 +16446,6 @@
     {
       "from": "module:client/src/features/castingV2/components/HeroDeck.tsx",
       "to": "module:client/src/features/castingV2/heroDeck.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
-      "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/ImaginationToggle.tsx",
-      "to": "module:shared/imagination.ts",
       "kind": "imports"
     },
     {
@@ -30752,6 +30736,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/retryService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/rollDuration.ts",
       "kind": "imports"
     },
     {

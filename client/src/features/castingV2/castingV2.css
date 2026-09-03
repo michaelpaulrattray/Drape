@@ -35,26 +35,145 @@
   no media query at all. `min()` guards the stacked case — below the basis the
   column takes the width it has rather than overflowing the card.
 */
+/*
+  ⚠ **NO `justify-content: center` — THAT WAS THE DEFECT** (#435, brief 10 §2a).
+
+  A centred stack of ~277px inside a 452px card put every pixel of slack above
+  and below the content at once, so the copy floated in the middle of its own
+  column while the deck beside it read full height. That is the "not balanced
+  and just feels poorly designed" he filed the card about.
+
+  Three children instead — pitch, air, ask — and the air is the only one that
+  grows. The headline then starts where the deck starts and the brief row ends
+  where the deck's brief block ends, with the surplus pooled in the middle.
+*/
 .dpc-hero__copy {
   flex: 1 1 420px;
   min-width: min(344px, 100%);
-  padding: 28px 28px 24px;
+  padding: 30px 28px 26px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  justify-content: center;
 }
 
+.dpc-hero__pitch,
+.dpc-hero__ask {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-width: 0;
+}
+
+.dpc-hero__pitch { gap: 13px; }
+.dpc-hero__ask { gap: 11px; }
+
+/*
+  THE AIR — an element, never `margin-top: auto`.
+
+  His brief gives the reason and briefs 05, 06, 07 and 09 give the same one: a
+  computed-style read resolves an auto margin to hard pixels, and those pixels
+  then overflow a wrapping row and get clipped by `.dpc-hero`'s `overflow:
+  hidden`. The live layout looks right and every screenshot and export is
+  broken — the worst shape a defect can take, because the surface it breaks is
+  the one nobody looks at while building.
+
+  `min-height` so the two groups never touch on a short card, which is the one
+  thing a pure `flex: 1` spacer cannot promise.
+*/
+.dpc-hero__air {
+  flex: 1;
+  min-height: 24px;
+}
+
+/*
+  37px, up from 31px (§2b). 31 is the size of an ordinary section `h1`
+  elsewhere in the app, so the one statement the page makes was reading as a
+  section head.
+*/
 .dpc-hero__title {
   margin: 0;
-  font: 500 31px/1.08 var(--font-sans);
-  letter-spacing: -0.038em;
+  font: 500 37px/1.05 var(--font-sans);
+  letter-spacing: -0.042em;
   color: var(--ink);
 }
 
-.dpc-hero__field {
-  margin-top: 4px;
+/*
+  `text-wrap: pretty` and a measure, so the explainer never leaves one word
+  alone on its last line beside a 37px headline.
+*/
+.dpc-hero__explainer {
+  max-width: 430px;
+  text-wrap: pretty;
 }
+
+.dpc-hero__field {
+  margin-top: 0;
+}
+
+/*
+  THE RECEIPT LINE (§2d) — mono values, then a hairline that takes the rest of
+  the row. The rule is what stops a short line of small grey mono reading as a
+  fragment: it finishes the row, the way a section head's rule does.
+*/
+.dpc-hero__receipt {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dpc-hero__receiptvals {
+  font: 400 10.5px/1.4 var(--font-mono);
+  letter-spacing: 0.03em;
+  color: var(--faint);
+  white-space: nowrap;
+  flex: none;
+}
+
+.dpc-hero__receiptrule {
+  flex: 1;
+  height: 1px;
+  min-width: 0;
+  background: var(--rule);
+}
+
+/*
+  THE ACTIONS ROW (§2e) — settings chip left, `Start from photos` right, an
+  element between them. `flex-wrap` so a narrow column stacks the two rather
+  than crushing either, and the spacer collapses when it does.
+*/
+.dpc-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.dpc-hero__actionsair {
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+  `Start from photos` — a link, not a chip. It only ever acts, where the
+  settings control also displays state, and the weights say which is which.
+*/
+.dpc-hero__photos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 11.5px/1.4 var(--font-sans);
+  color: var(--metaStrong);
+  cursor: pointer;
+  flex: none;
+  transition: color 0.15s ease;
+}
+
+.dpc-hero__photos:hover { color: var(--ink); }
 
 /*
   THE DECK COLUMN (#234, spec §2 and §4) — what replaced the split-face pair.
@@ -67,7 +186,13 @@
 .dpc-deck {
   flex: 1 1 330px;
   min-width: min(302px, 100%);
-  min-height: 452px;
+  /*
+    452 → 424 (#435 §2a). The copy column is no longer a centred stack that
+    could be any height it liked: its two groups now anchor to the deck's top
+    and to its brief block, so the deck stops asking for height the copy has to
+    pad out to reach.
+  */
+  min-height: 424px;
   display: flex;
   flex-direction: column;
   background: var(--page);
@@ -2255,8 +2380,13 @@
   setting it in the sentence face would make it read as a sentence and demand to
   be read. This is meant to be glanceable and otherwise ignorable.
 */
-.dpc-dock__cost,
-.dpc-hero__cost {
+/*
+  ⚠ **`.dpc-hero__cost` AND `.dpc-hero__costrow` ARE GONE (#435 §2d)** — the
+  hero's `~ 160 credits` line was replaced by the receipt line, which says the
+  same price plus what you get for it and how long it takes. The dock keeps
+  this rule; it is the only consumer now.
+*/
+.dpc-dock__cost {
   font: 400 10.5px/1.4 var(--font-mono);
   letter-spacing: 0.02em;
   color: var(--meta);
@@ -2264,26 +2394,6 @@
 }
 
 .dpc-dock__cost { margin-left: 14px; }
-
-/*
-  ⚠ **THE COST LINE OUTLIVED THE ROW IT WAS FOLDED INTO (#375).**
-
-  It read *"In the TRY row, pushed to its end — no row of its own to leave a
-  gap"*, and `margin-left: auto` was what pushed it past four seed chips. The
-  chips are gone on his order, so there is nothing left to push past: the auto
-  margin now shoves a lone price to the far right edge of a 576px column,
-  which is not where a price belongs relative to the button that spends it
-  (D-15).
-
-  Its own row, left-aligned under the field — which is where it lived BEFORE
-  it was folded in, and the reason it was folded in (*"pushed the seeds down
-  and left a gap between the box and them"*) cannot apply to a row with no
-  seeds under it.
-*/
-.dpc-hero__costrow {
-  gap: 7px;
-  margin-top: 2px;
-}
 
 /*
   The roster card's menu. The card is a button that fills its cell, so the
@@ -2402,9 +2512,51 @@
   nobody asked about — the tempting one-line version of this fix, and the
   wrong one.
 */
+/*
+  ⚠ **TWO FOUNDER INSTRUCTIONS MEET HERE AND THEY DISAGREE — READ BEFORE
+  TOUCHING EITHER NUMBER.**
+
+  **The resting height is brief 10's** (#435 §2c: `rows="1"`, one line at rest).
+  It is the newer word — brief 10 was written on 2026-09-02, a day after #375
+  closed, with the current hero in front of him — and §2a's structure needs it:
+  the ask group bottom-aligns with the deck's brief block, so a group that rests
+  three lines tall starts by eating the air the restructure exists to create.
+
+  **The CAP is still #375's, and it stays because it was MEASURED.** His order
+  there was *"to balance the space we could maybe make the prompt box slightly
+  bigger"*, and the table above this rule is what came back: briefs of his own
+  stated length (250–350 characters) scrolled at a four-line cap at every width
+  tested, and at 1024px even the 250-character one did. Brief 10 asks for
+  `max-height: 84px` — about 4.3 lines — which is that measured defect again.
+
+  ⚠ **So this rule deliberately takes each instruction where it is strongest and
+  regresses neither**, and the choice is his to overturn: it is on #435 and on
+  his page. What it must NOT become is a silent pick of one over the other.
+*/
 .dpc-hero__field .dpc-brieffield {
-  min-height: calc(3 * 1.45em);
+  min-height: 0;
   max-height: calc(7 * 1.45em);
+}
+
+/*
+  ⚠ **`flex-end`, SCOPED TO THE HERO** (§2c) — so `Cast it` stays on the
+  baseline of the box as it grows, instead of riding up its left edge.
+
+  The shared `.dpc-briefrow` rule above is `flex-start` for the sheet's own
+  documented reason (a vertically centred sparkle beside a four-line brief
+  floats in the middle of the paragraph). The sheet is excluded from this brief,
+  so the shared rule is left exactly as it was and this one overrides for one
+  surface — the same discipline the cap rule above was written under.
+*/
+.dp-field.dpc-hero__field.dpc-briefrow {
+  align-items: flex-end;
+  gap: 10px;
+  padding: 11px 13px 11px 14px;
+}
+
+.dpc-hero__field .dpc-brieffield {
+  font: 400 13px/1.5 var(--font-sans);
+  padding: 4px 0 3px;
 }
 
 .dp-field.dpc-briefrow > svg {
@@ -3962,69 +4114,119 @@
 /* THE MINIMAL SETTINGS MODAL (#142) — the gear on the surface and the  */
 /* 440px single-column panel it opens. Shares `.dpc-modal`'s scrim.     */
 /* ------------------------------------------------------------------ */
+/*
+  THE SETTINGS CONTROL (#435 §2e) — a rounded RECT at `--r-sm`, not a pill.
+
+  Pills in this system are read-only state: kind badges, count pills, `IN USE`.
+  A rounded rect is what every clickable control wears, so the shape itself
+  says press rather than read — and this one opens a modal, so it needed to.
+
+  It carries no chevron for the same kind of reason: the topbar already teaches
+  that a chevron means a list drops from here (the account chip has one, the
+  credits chip does not and opens a modal). This control wore dropdown grammar
+  over modal behaviour.
+*/
 .dpc-setbtn {
   display: inline-flex;
-  align-self: flex-start;
   align-items: center;
   gap: 7px;
-  padding: 6px 12px 6px 10px;
-  border: 1px solid var(--borderInput);
-  border-radius: var(--r-chip);
-  background: transparent;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
   color: var(--secondary);
   font: 400 11.5px var(--font-sans);
   cursor: pointer;
+  flex: none;
   transition:
     border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
     color var(--t-fast) var(--ease);
 }
-.dpc-setbtn:hover { border-color: var(--ink); color: var(--ink); }
-.dpc-setbtn__value { color: var(--ink); }
+.dpc-setbtn:hover {
+  border-color: var(--lineStrong);
+  background: var(--fill);
+}
+/*
+  Mono, because these are set VALUES — and it ties the chip to the receipt line
+  directly above it, so the two rows read as one thought: what this costs, how
+  it is set.
+*/
+.dpc-setbtn__value {
+  font: 400 10.5px var(--font-mono);
+  letter-spacing: 0.02em;
+  color: var(--secondary);
+}
+.dpc-setbtn__glyph { color: var(--meta); flex: none; }
 
+/*
+  ============================================================
+  THE CAST SETTINGS MODAL (#435, his brief 10 §3)
+  ============================================================
+
+  It was a 440px single column with a pill row, a text list of two coming
+  styles, and the imagination meter under it. His brief keeps the two settings
+  and rebuilds the surface: one card, two columns, no nav.
+
+  ⚠ **NO NAV, and the reason is a measurement** — *"the nav cost 182px of a
+  724px modal to switch between two things that both fit on screen, and the two
+  settings are read as one sentence — `Photoreal · Low` — so hiding half of it
+  behind a click is pure cost."*
+*/
+
+/*
+  ⚠ **`height: 100%` WITH A `max-height`, NEVER CONTENT-SIZED** (his §4). A card
+  that sizes to its content stops short and leaves height unused while the
+  carousel inside it shrinks — the stage is the thing that should absorb
+  surplus, and it can only do that if the card has claimed the height first.
+*/
 .dpc-setm__card {
   width: 100%;
-  max-width: 440px;
-  padding: 22px;
+  max-width: 788px;
+  height: 100%;
+  max-height: 524px;
   border: 1px solid var(--borderCard);
-  border-radius: 16px;
+  border-radius: var(--r-2xl);
   background: var(--surface);
   box-shadow: var(--shadowCard);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  overflow: hidden;
   animation: dpc-modal-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
+
+/*
+  Header and footer are `flex: none` and the BODY is the only scrolling region,
+  which is what keeps `Done` out of it — an action inside a scrolling region is
+  an action that can be below the fold (brief 11's whole subject, one section
+  ago).
+*/
 .dpc-setm__head {
+  flex: none;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 15px 20px;
+  border-bottom: 1px solid var(--rule);
 }
 .dpc-setm__title {
-  margin: 4px 0 0;
+  margin: 0;
   font: 500 15px var(--font-sans);
   letter-spacing: -0.01em;
   color: var(--ink);
 }
-.dpc-setm__headactions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-}
+.dpc-setm__headair { flex: 1; min-width: 0; }
 .dpc-setm__reset {
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font: 400 11.5px var(--font-sans);
   padding: 4px 10px;
-  border: 1px solid var(--borderInput);
-  border-radius: var(--r-chip);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--secondary);
   cursor: pointer;
+  flex: none;
 }
-.dpc-setm__reset:hover { border-color: var(--ink); color: var(--ink); }
+.dpc-setm__reset:hover { border-color: var(--lineStrong); color: var(--ink); }
 .dpc-setm__close {
   display: inline-flex;
   align-items: center;
@@ -4032,43 +4234,313 @@
   width: 28px;
   height: 28px;
   border: 1px solid transparent;
-  border-radius: var(--r-chip);
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--secondary);
   cursor: pointer;
+  flex: none;
 }
-.dpc-setm__close:hover { color: var(--ink); border-color: var(--borderInput); }
+.dpc-setm__close:hover { color: var(--ink); border-color: var(--border); }
 
-.dpc-setm__coming {
-  list-style: none;
-  margin: 4px 0 0;
-  padding: 0;
+/*
+  `min-height: 0` is what lets a flex child actually shrink — without it the
+  body refuses to go below its content height and the card overflows instead of
+  scrolling, which is the single most common way this shell has broken.
+*/
+.dpc-setm__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.dpc-setm__col {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-.dpc-setm__coming-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: baseline;
   gap: 8px;
-  font-size: 12px;
-  opacity: 0.55;
+  padding: 18px 20px;
+  min-width: 0;
 }
-.dpc-setm__coming-name { color: var(--ink); white-space: nowrap; }
-.dpc-setm__coming-line { min-width: 0; }
-.dpc-setm__coming-tag {
-  font: 500 9.5px var(--font-mono);
-  letter-spacing: 0.08em;
+/* Style takes the room; `min-height: 0` again so the stage inside it can shrink. */
+.dpc-setm__col--style {
+  flex: 1 1 372px;
+  min-width: 320px;
+  min-height: 0;
+}
+/* Imagination sits on `--raised` with a hairline, so the two read as two things. */
+.dpc-setm__col--mind {
+  flex: 1 1 296px;
+  min-width: 280px;
+  background: var(--raised);
+  border-left: 1px solid var(--rule);
+}
+
+.dpc-setm__colhead {
+  font: 500 10.5px var(--font-mono);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--meta);
+}
+.dpc-setm__colline {
+  margin: 0 0 4px;
+  font: 400 11.5px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+/*
+  ⚠ **THE STAGE FLEXES AND IS NEVER GIVEN A FIXED HEIGHT** (his §4). It must
+  absorb surplus rather than demand height the card may not have — and a `24vh`
+  version of this was also wrong, because it asks for a second independent
+  viewport fraction that only pays out above ~1130px of window.
+
+  `container-type: size` is the whole trick: it makes `100cqh` mean THIS box's
+  height, so the cards are sized by the room the stage got rather than by the
+  window.
+*/
+.dpc-setm__stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 118px;
+  max-height: 268px;
+  overflow: hidden;
+  container-type: size;
+  padding: 10px 20px;
+  background: var(--page);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin: 4px -20px 0;
+}
+
+/*
+  THE THREE CARDS. Absolutely positioned and centred by transform, so stepping
+  the carousel moves them without reflowing anything around them.
+*/
+.dpc-setm__card3 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  aspect-ratio: 4 / 5;
+  height: auto;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  transition:
+    width 0.2s var(--ease),
+    opacity 0.2s var(--ease),
+    transform 0.2s var(--ease);
+}
+.dpc-setm__card3--centre {
+  width: min(46%, calc((100cqh - 6px) * 0.82));
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  border: 1px solid var(--borderCard);
+  box-shadow: var(--shadowCard);
+  z-index: 2;
+}
+/* Live is solid, coming is dashed — the system's rule: solid is a fact. */
+.dpc-setm__card3--centre.dpc-setm__card3--coming {
+  border: 1px dashed var(--dashed);
+  box-shadow: none;
+}
+.dpc-setm__card3--peek {
+  width: min(34%, calc((100cqh - 6px) * 0.62));
+  opacity: 0.44;
+  border: 1px solid var(--border);
+  z-index: 1;
+}
+.dpc-setm__card3--left { transform: translate(-50%, -50%) translateX(-80%) rotate(-6deg) scale(0.88); }
+.dpc-setm__card3--right { transform: translate(-50%, -50%) translateX(80%) rotate(6deg) scale(0.88); }
+
+/* The name and its coming-soon fact sit together, on the card they describe. */
+.dpc-setm__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 16px 8px 9px;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  /* `--scrim` is this system's own bottom-gradient end — no raw colour here. */
+  background: linear-gradient(to top, var(--scrim), transparent);
+  text-align: center;
+}
+.dpc-setm__captionname {
+  font: 500 12px var(--font-sans);
+  color: var(--onScrim);
+}
+.dpc-setm__captionsoon {
+  font: 500 8px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--onScrim);
+  opacity: 0.8;
+}
+
+/* Arrows ON the stage — that is where a carousel's arrows live. */
+.dpc-setm__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--barGlass);
+  backdrop-filter: blur(6px);
+  color: var(--secondary);
+  cursor: pointer;
+  z-index: 3;
+}
+.dpc-setm__arrow:hover { color: var(--ink); border-color: var(--lineStrong); }
+.dpc-setm__arrow--prev { left: 12px; }
+.dpc-setm__arrow--next { right: 12px; }
+
+.dpc-setm__under {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+/*
+  ⚠ **THESE TWO `min-height`s ARE THE POINT, NOT PADDING** (§3c; his §4 forbids
+  dropping them). The description is two lines for Photoreal and one for the
+  coming styles, and the action swaps between a 26px pill and a 17px line —
+  without a floor under each, the flex stage above absorbs the difference and
+  the preview card resized 18% every time you stepped the carousel. *"A
+  comparison surface whose subjects change size as you step through them has no
+  comparison left."*
+*/
+.dpc-setm__desc {
+  margin: 0;
+  min-height: 38px;
+  font: 400 11.5px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+.dpc-setm__act {
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dpc-setm__inuse {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: var(--r-chip);
+  border: 1px solid var(--accentLine);
+  background: var(--accentWash);
+  color: var(--accentInk);
+  font: 500 9.5px var(--font-mono);
+  letter-spacing: 0.1em;
   white-space: nowrap;
 }
-.dpc-setm__foot {
-  margin: 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--borderCard);
-  font-size: 12px;
-  line-height: 1.45;
-  opacity: 0.6;
+.dpc-setm__use {
+  padding: 5px 13px;
+  border: 1px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--ink);
+  color: var(--page);
+  font: 400 11.5px var(--font-sans);
+  cursor: pointer;
 }
+.dpc-setm__use:hover { opacity: 0.88; }
+.dpc-setm__soon {
+  font: 400 11.5px var(--font-sans);
+  color: var(--faint);
+  text-align: center;
+}
+
+/* IMAGINATION — two cards, both lines always on screen (§3d). */
+.dpc-setm__minds {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 2px;
+}
+.dpc-setm__mind {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+.dpc-setm__mind:hover { border-color: var(--lineStrong); }
+.dpc-setm__mind--on {
+  border-color: var(--accentLine);
+  background: var(--accentWash);
+}
+.dpc-setm__mindtop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dpc-setm__mindname {
+  font: 500 12.5px var(--font-sans);
+  color: var(--ink);
+}
+.dpc-setm__mind--on .dpc-setm__mindname { color: var(--accentInk); }
+.dpc-setm__minddefault {
+  font: 400 9.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+/*
+  A SPACER ELEMENT, and the guard is what insisted (§4 bans `margin: auto` on
+  this whole surface). It was `margin-left: auto` on the pill for one commit;
+  `section10-guard.test.ts` caught it, which is the arm doing exactly the job it
+  was written for — on its author, within a minute of being written.
+*/
+.dpc-setm__mindair { flex: 1; min-width: 0; }
+.dpc-setm__mindline {
+  font: 400 11.5px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+.dpc-setm__held {
+  margin: 2px 0 0;
+  font: 400 11.5px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dpc-setm__foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px 13px 20px;
+  border-top: 1px solid var(--rule);
+}
+.dpc-setm__footline {
+  flex: 1;
+  min-width: 0;
+  font: 400 11.5px/1.5 var(--font-sans);
+  color: var(--faint);
+}
+.dpc-setm__done {
+  flex: none;
+  padding: 6px 16px;
+  border: 1px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--ink);
+  color: var(--page);
+  font: 400 12px var(--font-sans);
+  cursor: pointer;
+}
+.dpc-setm__done:hover { opacity: 0.88; }
+
