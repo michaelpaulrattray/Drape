@@ -1,7 +1,7 @@
 {
-  "edition": 227,
-  "updatedAt": "2026-09-03T05:30:00.000Z",
-  "shift": "Foreman — night of 3 September (the shifts now start when your queue has work in it)",
+  "edition": 228,
+  "updatedAt": "2026-09-03T06:57:26.973Z",
+  "shift": "Foreman — night of 3 September (your two ordered cards; one shipped, one handed to the reviewer seat)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,19 +111,19 @@
     ],
     "chips": [
       {
-        "label": "The one expensive hole in that path is closed tonight",
+        "label": "Both doors into the live site are shut to everything but you",
         "tone": "good",
-        "source": "You ruled it: leave the branch setting alone, add the secret scan. PR #473 does that. Most of what ships still skips the pull-request checks by design — but a leaked key can no longer ride along."
+        "source": "Your \"protect it\" (#461), applied and checked against the other branch field by field. What is still open is deliberately open — your own pushes, by your own ruling last night."
       },
       {
-        "label": "They run on every push now, and we know every door into the live site",
+        "label": "The queue: 75 open, 11 carrying your word, 8 going stale",
         "tone": "good",
-        "source": "PR #459 on your #263. The deploy ceremony now type-checks the code it is about to publish, and refuses if it is broken. The sweep found one way in, and wrote the list down."
+        "source": "#461 closed tonight, nothing marked urgent. The same eight have been stale seven nights (#10 #14 #18 #22 #30 #55 #61 #65) — old design cards nobody has re-read against the code."
       },
       {
-        "label": "The queue: 76 open, 12 carrying your word, 8 going stale",
-        "tone": "good",
-        "source": "#471 and #469 closed tonight, #472 filed. Nothing is marked urgent for the first time in a while, which is exactly the state that exposed the wake-gate bug. The 8 stale are the same eight."
+        "label": "One of your eleven ordered cards moved to the reviewing seat",
+        "tone": "neutral",
+        "source": "#401 (credits by tool) touches the code that charges an account, which this seat does not change alone. Read, documented, handed on — the next shift takes it first. Nothing needed from you."
       }
     ]
   },
@@ -222,7 +222,7 @@
         }
       ],
       "recommendation": "Protect it, as the cheapest thing that removes a door. But if you can tell me local-migration is no longer used for anything, deleting it is better and I will card that instead.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-02T18:59:27.114Z",
       "issueNumber": 461
     },
@@ -3242,6 +3242,13 @@
   ],
   "pipeline": [
     {
+      "id": "branch-protection-461",
+      "title": "The second door into the live site is shut — your \"protect it\", done",
+      "status": "merged",
+      "prNumber": 474,
+      "note": "Your word on this was one line: \"protect it.\" Here is what it bought. The site publishes from TWO branches, not one — and only the first of them had any protection on it. The second could be force-pushed, deleted, or written to by anything with access, and nothing on GitHub's side would have objected. The only guard was a file that lives on THIS computer, which a fresh copy of the project would not have. That second branch now carries exactly the same protection as the first: no force-pushing, no deleting, and the same checks required. What it does NOT change, said plainly because it would be easy to read this as more than it is: you are an administrator, and by your own ruling last night administrators are not blocked by these settings — so your own pushes work exactly as they did, and the ceremony still publishes your page every night. What closed is the door a fresh copy of the project, the GitHub website's own editor, or an automated job would have used. Four places in our own notes said that branch was unprotected and used it as a reason for something else; all four are corrected in the same change, and one sentence in them is now marked as reasoned-not-tested, because testing it would have meant pushing to the live site to find out."
+    },
+    {
       "id": "wake-gate-471",
       "title": "Your queue now WAKES the team — thirteen cards you had ordered were reading as \"nothing to do\"",
       "status": "merged",
@@ -4778,7 +4785,7 @@
     113
   ],
   "nextUp": {
-    "readAt": "2026-09-03T05:43:29.556Z",
+    "readAt": "2026-09-03T06:56:05.783Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4828,11 +4835,6 @@
       {
         "issueNumber": 436,
         "title": "Staff dialogs take the house grammar (brief 11) — and Submit request scrolls out of reach on the request form",
-        "urgent": false
-      },
-      {
-        "issueNumber": 461,
-        "title": "local-migration deploys production and has no branch protection at all",
         "urgent": false
       },
       {
