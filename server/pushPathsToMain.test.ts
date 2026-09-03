@@ -176,8 +176,12 @@ describe("nothing in CI can reach main (#263)", () => {
     /* The arm above only sees the word `write`. A workflow with no block at all
        inherits the repository's default workflow token permissions — server-side
        state, `read` when door A was read on 2026-09-03, and one settings change
-       away from write. `local-migration` has no branch protection, so that would
-       be a live push path to a production-deploying branch. (review finding 2) */
+       away from write. Both production-deploying branches are protected as of
+       2026-09-03 (#461), and a workflow token is not an admin, so the required
+       checks SHOULD bind such a job on those two refs (reasoned, not driven —
+       door A says so in the same words) — which narrows this door
+       rather than closing it: the setting is still unreadable from here, and a
+       job can still write wherever protection does not reach. (review finding 2) */
     const { workflowsWithoutPermissions } = readPushPaths(gitTreeReader(ROOT));
     expect(
       workflowsWithoutPermissions,
