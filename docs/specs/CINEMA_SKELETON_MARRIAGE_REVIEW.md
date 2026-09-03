@@ -550,3 +550,19 @@ properties, amendment S issued:
    attachable to shots where both appear in that relation — the studied
    crew's character-with-prop scale/relation plates, reinvented by the
    founder unprompted.
+
+
+## 9c. Why one view of a new outfit is enough (founder Q, 2026-09-04, plain-English ruling recorded)
+
+The single outfit image never travels alone: every shot attaches the
+MASTER (face — who she is) plus the STATE CARD (what she wears). Identity
+never rides on the outfit picture, so one clear view of the clothes
+suffices — the measured pro standard (dual reference: face close-up + one
+body image; pose plates were single images; 2-3-view sheets only for
+lived-in outfits). The failure case is ANGLE, not identity: a shot filming
+a side the card does not show makes the model invent it differently per
+take. The repair is derived, not re-shot: generate the missing views FROM
+the one image + the master. Amendment R6 issued: the engine detects an
+angle mismatch between a shot's camera and its state card's coverage and
+offers the missing view as a dashed line on the shot card — detected,
+never enforced.
