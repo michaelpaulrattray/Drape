@@ -303,19 +303,101 @@
 .dp-crew__steps {
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
   margin-top: var(--s-5);
 }
 
+/*
+  ⚠ **HAIRLINES BETWEEN STEP ROWS (#414 item 3), which is why the `gap` left
+  this list.** A gap plus a border draws the rule floating in the middle of
+  the space; `--ruleSoft` is the token the sheet already calls *"divider
+  between list rows"*, and the staff table reads that way. Padding replaces
+  the gap so the rule sits at the row's own edge.
+
+  The LAST row has no rule under it — a trailing hairline reads as a section
+  boundary that is not there.
+*/
 .dp-crew__step {
   display: flex;
   align-items: baseline;
   gap: var(--s-5);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--ruleSoft);
 }
 
-.dp-crew__stepnum {
+.dp-crew__step:first-child {
+  padding-top: 0;
+}
+
+.dp-crew__step:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/*
+  ⚠ **THE STEP MARKER (#414 item 1) — A TICK AND THREE RINGS, AND ITS FOUR
+  STATES ARE THE RUNG BAR'S FOUR, DELIBERATELY.**
+
+  His own instruction: *"A done step is ✓; an open one is a hollow ring; a
+  blocked one is a coral ring"*, and — the argument the ordinal loses on —
+  *"the ordinal carries no information here, the list is already in order."*
+  That is the same argument that removed the Actions column in brief 06.
+
+  ⚠ **The vocabulary is NOT new.** One block below, the rung bar is already
+  *filled done · ringed current · light queued · dashed parked*, and the
+  milestone steps carry the same four states under different names. Drawing
+  them with a second visual language would mean two grammars for one idea on
+  one card, which is the duplication this lane has spent the week removing.
+  So: filled disc for `done`, ink ring for `in-progress`, soft ring for
+  `waiting`, `--errorInk` ring for `blocked`.
+
+  `align-self: center` rather than the row's `baseline`: a circle has no
+  baseline, and aligning one to text's puts it visibly low.
+*/
+/*
+  ⚠ **THE RING IS `--faint` AND NOT `--border`, AND THIS WAS A DEFECT FOUND BY
+  LOOKING (working law 6).** The first build used `--border`, the token the
+  rung bar's `queued` segment uses, on the reasoning that a waiting step and a
+  queued rung mean the same thing. Driven and measured: `#ECECEE` on the card's
+  white is **~1.25:1**, and in the frame the waiting step had NO VISIBLE MARKER
+  at all — a state marker nobody can see is not a marker. Dark was the same
+  ghost at `#2C2C30` on `#1C1C1F`.
+
+  **The reason the rung bar gets away with it and this cannot**: `queued` there
+  is an 8px FILLED BLOCK, which reads as a shape at any contrast; this is a
+  1.5px stroke, where the same value disappears. Two devices meaning the same
+  thing may need different tokens to SAY it, which is the opposite of the
+  tidy-looking answer.
+
+  `--faint` is the sheet's own mono-metadata colour — present, and still
+  plainly quieter than the ink ring `in-progress` wears, so the four-way
+  distinction survives.
+*/
+.dp-crew__stepmark {
   flex: none;
-  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--faint);
+  background: transparent;
+  color: var(--surface);
+}
+
+.dp-crew__stepmark--done {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.dp-crew__stepmark--current {
+  border-color: var(--ink);
+}
+
+/* The one colour a step may carry, and it is the page's own house red. */
+.dp-crew__stepmark--blocked {
+  border-color: var(--errorInk);
 }
 
 .dp-crew__steptext {
@@ -328,8 +410,78 @@
   color: var(--meta);
 }
 
+/*
+  The state word, in the banner's OWN outlined pill (`.dp-crew__chip`) rather
+  than a second pill class — #414 item 2 asks for *"a small outlined pill at
+  the row's right edge, greyscale for IN HAND, coral outline for BLOCKED"*,
+  and that chip already has exactly those two tones. The words are unchanged
+  (`STEP_LABEL`); only the treatment moves.
+*/
 .dp-crew__stepstate {
   flex: none;
+  align-self: center;
+}
+
+/* ------------------------------------------- the loading state (#414 item 8)
+
+  Skeletons at the sections' real heights. The shapes here are the page's own
+  card grammar so that the skeleton column and the real column occupy the same
+  space: `.dp-crew__card` is the same class the real sections use, and the
+  gaps between them come from `.dp-crew` itself — which is true only because
+  of the `display: contents` rule immediately below, and was FALSE in the first
+  build.
+*/
+
+/*
+  ⚠ **`display: contents`, AND THE WRAPPER IS WHY THIS RULE EXISTS.**
+  `CrewSkeleton` needs ONE element to hang its testid on, but the real sections
+  are direct children of `.dp-crew` and take that container's `gap: 26px`.
+  A plain wrapper swallows it: the five skeleton cards drew FLUSH, fused into
+  one slab, and the column came out 104px (4 × 26px) shorter than the same five
+  sections render for real — a smaller sibling of the very jump this card
+  exists to remove.
+
+  ⚠ **It was visible in this shift's own evidence frame and was not read off
+  it** — the gate reviewer of PR #485 found it. Working law 6 says render before
+  shipping; the frame was TAKEN and the gap was not LOOKED AT, which is the
+  half of that law worth restating.
+
+  `display: contents` promotes the cards to flex children of `.dp-crew` while
+  keeping the element (and so the testid) in the tree.
+*/
+.dp-crew__skel {
+  display: contents;
+}
+
+.dp-crew__skelhead {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+/* The width of an eyebrow like `THE PROGRAM`, at the eyebrow's own height. */
+.dp-crew__skeleyebrow {
+  width: 86px;
+  height: 9px;
+}
+
+/* The rule `TableHead` draws to the right of its eyebrow. */
+.dp-crew__skelrule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.dp-crew__skelbody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin-top: var(--s-6);
+}
+
+/* 13px/1.65 body text occupies ~21px a line; the bar is the glyph height. */
+.dp-crew__skelline {
+  height: 13px;
 }
 
 /* ---- the rung bar (§6): filled done, ringed current, light queued, dashed parked */
