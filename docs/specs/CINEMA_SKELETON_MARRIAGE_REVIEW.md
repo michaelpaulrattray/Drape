@@ -672,3 +672,30 @@ lever; an underperforming choice gets one dismissible tip with the Plate
 Maker beside it. Ranked, never restricted. The reference arc ends here, on
 his sentence: "we cant control everything we can only make the experience
 fluid and easy to understand."
+
+
+## 10. The Higgsfield tag system, researched — @-mentions adopted for free text (founder order, 2026-09-04)
+
+A research agent read their official Elements/tagging docs. Their system:
+one My-Elements library; auto-promotion (generations via Create Element,
+Soul IDs and uploads automatically); @ opens a picker doubling as an asset
+browser; several Elements per prompt; typed roles (@style from a still,
+@motion from a clip); # camera tags stack and run in order. Their three
+documented weaknesses: THREE ADDRESSING DIALECTS for one library
+(@element-name for Kling, image-numbers for Popcorn, prose roles for
+Seedance — the user speaks a different reference language per model); an
+Element is FLAT (one image, no states, no versioning, no documented edit
+or delete); and tags are attach-only (no scoping, no conflict rules).
+
+Adopted (amendment X): @-mentions in every free-text input (ad-hoc take
+ask, notes, scene line, Editor), autocompleting over buckets and their
+states (@Maria/grey-coat), mentions rendering as removable attachment
+chips — ONE dialect everywhere, the engine translating per-model at the
+wire, which their fragmentation makes the obvious win of engine-written
+prompts. Plus "+ New take" anywhere a bucket is open: a one-line
+@-mention ask, fan of four, outputs filing under the primary cast's takes
+tagged with the production — the founder's in-place generation case, one
+takes engine, one home. Auto-mentionability matched (nothing needs making
+taggable). Not copied: dialect fragmentation, flat elements, unscoped
+tags. Future note: their @motion (camera behaviour read from a video
+clip) filed beside Act-Two as a possible direction input.
