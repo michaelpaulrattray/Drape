@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3c9a6fbcf394decd"
+    "sourceFingerprint": "c0105cbb7af2aa30"
   },
   "domains": [
     {
@@ -11386,6 +11386,10 @@
     {
       "id": "test:server/castingV2/askedAndAbsent.test.ts",
       "path": "server/castingV2/askedAndAbsent.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/authorModel.test.ts",
+      "path": "server/castingV2/authorModel.test.ts"
     },
     {
       "id": "test:server/castingV2/axisRegistry.test.ts",
@@ -25259,6 +25263,11 @@
     {
       "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/promptAuthor.ts",
+      "to": "module:server/providers/openrouterText.ts",
       "kind": "imports"
     },
     {

@@ -76,8 +76,8 @@ import {
 import { scrubBrands } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
-import { interpretBrief, interpreterEngine } from "./interpreter";
-import { authorPrompt, type Imagination } from "./promptAuthor";
+import { interpretBrief } from "./interpreter";
+import { authorPrompt, authorTextEngine, type Imagination } from "./promptAuthor";
 import { houseLaneFor } from "./houseBlock";
 import { followClause } from "./familyClause";
 import { rewriteBrief } from "./briefRewrite";
@@ -1333,7 +1333,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     holds on every portrait, an override as the sentence the customer said
     with a control, an unlock on a follow as an axis the clause stops naming.
   */
-  const authorEngine = authorRoad ? (input.engine ?? interpreterEngine()) : null;
+  /*
+    THE AUTHOR'S OWN ENGINE (#466), not the interpreter's — same slug today,
+    deliberately, but the pin means a swap is one line in `promptAuthor.ts`
+    rather than a move of the slug every brief is interpreted by. A reversion
+    to `interpreterEngine()` here is what `authorModel.test.ts`'s compile-site
+    arm exists to catch: the interpreter's factory passes no model at all.
+  */
+  const authorEngine = authorRoad ? (input.engine ?? authorTextEngine()) : null;
   /*
     Brand names never reach the image engine (founder gate 21) — on this road
     the brief itself travels to the provider as the customer's own words, so it
