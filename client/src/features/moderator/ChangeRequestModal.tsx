@@ -1,5 +1,6 @@
 /**
- * File a request — the moderator's structured change-request form (#421).
+ * File a request — the moderator's structured change-request form (#421, then
+ * #436).
  *
  * # ⚠ THE ONE HE NAMED, AND THE ONE NO GUARD COULD SEE
  *
@@ -33,8 +34,44 @@
  * - **Sentence case**, because brief 05 §"Labels" makes it the house voice:
  *   *"Labels are sentence case, not Title Case … House voice throughout the
  *   product."* `Block IP` keeps its capitals — an initialism is not Title Case.
+ *
+ * # ⚠ BRIEF 11 (#436): THE DEFECT THIS FORM IS THE TYPE SPECIMEN FOR
+ *
+ * The content was `max-h-[90vh] overflow-y-auto` — **`overflow` on the CARD,
+ * so the whole card scrolled, footer included.** With `stripe_refund` selected
+ * this form is fifteen fields, and `Submit request` sat below the fold: the
+ * most reachable control on the longest form in the product was then whatever
+ * happened to be in view.
+ *
+ * Brief 03 §3's rule, which this is the third surface to break: **a modal's
+ * primary action never lives inside its scrolling region.** Header and footer
+ * are `flex: none`; only the body scrolls. It is `STAFF_DIALOG_CONTENT` /
+ * `STAFF_DIALOG_BODY` now, one string for all seven staff dialogs.
+ *
+ * ⚠ **`max-w-lg` → `max-w-2xl` is part of the same defect, not a taste
+ * change.** At 512px the `grid-cols-2` columns are ~240px and *"Original
+ * amount (cents)"* does not fit its own label; fifteen fields in two 240px
+ * columns was the narrowest form in the product.
+ *
+ * ⚠ **AND IT IS `sm:max-w-2xl`, NOT `max-w-2xl`, WHICH IS THE WHOLE REASON
+ * THIS SENTENCE IS HERE.** `DialogContent`'s own base carries `sm:max-w-lg`.
+ * `cn()` is tailwind-merge, and a RESPONSIVE variant and a base variant are
+ * different class groups to it — so a bare `max-w-2xl` does not replace
+ * `sm:max-w-lg`, it loses to it at every width from 640px up. Measured in the
+ * running app rather than reasoned about: the first build of this change
+ * rendered the card at **512px**, exactly the width it was meant to leave.
+ * A source read would have called it done.
+ *
+ * ⚠ **The same shadow is on `AuditActionModals`' two `max-w-md` dialogs** —
+ * they have never been 448px above 640px, since before this brief. Left alone
+ * and filed rather than fixed here: narrowing them is a visible change to two
+ * dialogs whose width brief 11 does not mention.
+ *
+ * ⚠ **`space-y-*` is gone in favour of `gap`, and that is a real bug too**:
+ * this form hides fields by TYPE, and margin-based spacing leaves collapsed
+ * margins where the hidden siblings were.
  */
-import { X, FileText, Loader2, Upload, Image, File, Trash2 } from "lucide-react";
+import { X, Upload, File, Trash2 } from "lucide-react";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,13 +86,16 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { severityLook } from "@/foundation";
+import {
+  StaffDialogHeader,
+  StaffField,
+  STAFF_DIALOG_BODY,
+  STAFF_DIALOG_CONTENT,
+} from "@/features/staff";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { ChangeRequestType, ChangeRequestPriority } from "./moderatorConstants";
@@ -111,6 +151,22 @@ const ALLOWED_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",
   "application/pdf", "text/csv", "text/plain",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
+/**
+ * Four short mutually-exclusive options, which is what the segmented control
+ * is for (brief 11 §6): *"A select hides three of four options behind a click
+ * and gives no sense of scale; a segmented control shows the whole ladder,
+ * which is what someone setting a priority is judging."*
+ *
+ * ⚠ **Request type (nine) and Duration (five, with a `Permanent` outlier) stay
+ * selects.** His line: *"Nine is a list."*
+ */
+const PRIORITIES: { value: ChangeRequestPriority; label: string }[] = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
 ];
 
 function formatFileSize(bytes: number): string {
@@ -200,22 +256,20 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-muted-foreground" />
-            File a request
-          </DialogTitle>
-          <DialogDescription>
-            Submit a structured request for admin review. This will be tracked and you can follow its status.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className={`${STAFF_DIALOG_CONTENT} sm:max-w-2xl`}>
+        {/* `FileText` came out of the title and out of the submit button
+            (brief 11 §3). `Upload` and `Trash2` stay: one labels an
+            affordance, the other IS the control. */}
+        <StaffDialogHeader
+          eyebrow="CHANGE REQUEST"
+          title="File a request"
+          description="Submit a structured request for admin review. This will be tracked and you can follow its status."
+        />
 
-        <div className="space-y-4">
+        <div className={STAFF_DIALOG_BODY}>
           {/* Type + Priority */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Request type</label>
+            <StaffField label="Request type">
               <Select value={crType} onValueChange={(v) => setCrType(v as ChangeRequestType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -230,53 +284,53 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Priority</label>
-              <Select value={crPriority} onValueChange={(v) => setCrPriority(v as ChangeRequestPriority)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            </StaffField>
+            <StaffField label="Priority">
+              <div className="dp-segmented" role="group" aria-label="Priority">
+                {PRIORITIES.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={option.value === crPriority}
+                    className={`dp-segmented__seg${option.value === crPriority ? " dp-segmented__seg--on" : ""}`}
+                    onClick={() => setCrPriority(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </StaffField>
           </div>
 
           {/* Target User */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Target user ID *</label>
-              <Input value={crTargetUserId} onChange={(e) => setCrTargetUserId(e.target.value)} placeholder="e.g., 42" />
-            </div>
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Target user name</label>
-              <Input value={crTargetUserName} onChange={(e) => setCrTargetUserName(e.target.value)} placeholder="User name (optional)" />
-            </div>
+            {/* ⚠ `Target user ID *` was two jobs in one string. The marker is
+                the attribute on the control now (brief 11 §5). */}
+            <StaffField label="Target user ID" htmlFor="cr-target-id">
+              <Input id="cr-target-id" value={crTargetUserId} onChange={(e) => setCrTargetUserId(e.target.value)} placeholder="e.g., 42" required />
+            </StaffField>
+            <StaffField label="Target user name" htmlFor="cr-target-name">
+              <Input id="cr-target-name" value={crTargetUserName} onChange={(e) => setCrTargetUserName(e.target.value)} placeholder="User name (optional)" />
+            </StaffField>
           </div>
 
           {/* Credit fields */}
           {(crType === "refund_credits" || crType === "add_credits") && (
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Credit amount *</label>
-                <Input type="number" value={crCreditAmount} onChange={(e) => setCrCreditAmount(e.target.value)} placeholder="e.g., 100" min="1" />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Credit reason</label>
-                <Input value={crCreditReason} onChange={(e) => setCrCreditReason(e.target.value)} placeholder="e.g., Service disruption" />
-              </div>
+              <StaffField label="Credit amount" htmlFor="cr-credit-amount">
+                <Input id="cr-credit-amount" type="number" value={crCreditAmount} onChange={(e) => setCrCreditAmount(e.target.value)} placeholder="e.g., 100" min="1" required />
+              </StaffField>
+              <StaffField label="Credit reason" htmlFor="cr-credit-reason">
+                <Input id="cr-credit-reason" value={crCreditReason} onChange={(e) => setCrCreditReason(e.target.value)} placeholder="e.g., Service disruption" />
+              </StaffField>
             </div>
           )}
 
           {/* IP field */}
           {crType === "block_ip" && (
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">IP address *</label>
-              <Input value={crIpAddress} onChange={(e) => setCrIpAddress(e.target.value)} placeholder="e.g., 192.168.1.1" />
-            </div>
+            <StaffField label="IP address" htmlFor="cr-ip">
+              <Input id="cr-ip" value={crIpAddress} onChange={(e) => setCrIpAddress(e.target.value)} placeholder="e.g., 192.168.1.1" required />
+            </StaffField>
           )}
 
           {/* Stripe refund fields */}
@@ -286,27 +340,38 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
             instead — through `severityLook`, the helper brief 00 §4 built for
             collapsing seven tints to three, rather than an approximation of it
             in Tailwind classes.
+
+            ⚠ **THIS SLAB SURVIVES BRIEF 11 §7 AND THE ONE IN
+            `UserActionModals` DOES NOT, WHICH IS THE WHOLE POINT OF THAT
+            SECTION.** His words: warning weight on a routine fact *"devalues
+            the treatment where it is earned (the Stripe refund block, which
+            genuinely is)"*. Taking money back out of a customer's card is not
+            the same kind of fact as "this will be logged".
           */}
           {crType === "stripe_refund" && (
-            <div className="space-y-3 p-3 rounded-xl" style={severityLook("warning")}>
+            <div className="flex flex-col gap-3 p-3 rounded-xl" style={severityLook("warning")}>
               <p className="text-xs font-medium">Stripe refund details</p>
-              <div>
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Stripe session ID *</label>
-                <Input value={crStripeSessionId} onChange={(e) => setCrStripeSessionId(e.target.value)} placeholder="cs_test_..." className="font-mono text-xs" />
-              </div>
+              <StaffField label="Stripe session ID" htmlFor="cr-stripe-session">
+                <Input id="cr-stripe-session" value={crStripeSessionId} onChange={(e) => setCrStripeSessionId(e.target.value)} placeholder="cs_test_..." className="font-mono text-xs" required />
+              </StaffField>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Original amount (cents)</label>
-                  <Input type="number" value={crOriginalAmountCents || ""} onChange={(e) => setCrOriginalAmountCents(parseInt(e.target.value) || 0)} placeholder="e.g., 1500" />
-                  {crOriginalAmountCents > 0 && <p className="text-xs text-muted-foreground mt-0.5">${(crOriginalAmountCents / 100).toFixed(2)}</p>}
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Original credits</label>
-                  <Input type="number" value={crOriginalCredits || ""} onChange={(e) => setCrOriginalCredits(parseInt(e.target.value) || 0)} placeholder="e.g., 150" />
-                </div>
+                <StaffField
+                  label="Original amount (cents)"
+                  htmlFor="cr-original-amount"
+                  helper={crOriginalAmountCents > 0 ? `$${(crOriginalAmountCents / 100).toFixed(2)}` : undefined}
+                >
+                  <Input id="cr-original-amount" type="number" value={crOriginalAmountCents || ""} onChange={(e) => setCrOriginalAmountCents(parseInt(e.target.value) || 0)} placeholder="e.g., 1500" />
+                </StaffField>
+                <StaffField label="Original credits" htmlFor="cr-original-credits">
+                  <Input id="cr-original-credits" type="number" value={crOriginalCredits || ""} onChange={(e) => setCrOriginalCredits(parseInt(e.target.value) || 0)} placeholder="e.g., 150" />
+                </StaffField>
               </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Refund type</label>
+              <StaffField
+                label="Refund type"
+                helper={crRefundType === "proportional"
+                  ? "Refunds only the unused portion. Credits deducted, balance floors at 0."
+                  : "Refunds full amount regardless of usage. Credits deducted, balance floors at 0."}
+              >
                 <Select value={crRefundType} onValueChange={(v) => setCrRefundType(v as "full" | "proportional")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -314,33 +379,34 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                     <SelectItem value="full">Full refund (goodwill)</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {crRefundType === "proportional" ? "Refunds only the unused portion. Credits deducted, balance floors at 0." : "Refunds full amount regardless of usage. Credits deducted, balance floors at 0."}
-                </p>
-              </div>
+              </StaffField>
             </div>
           )}
 
           {/* Title + Description */}
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Title * (min 5 characters)</label>
-            <Input value={crTitle} onChange={(e) => setCrTitle(e.target.value)} placeholder="Brief summary of the request" />
-          </div>
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Description * (min 10 characters)</label>
-            <Textarea value={crDescription} onChange={(e) => setCrDescription(e.target.value)} placeholder="Detailed description of the issue and why this action is needed..." className="min-h-[80px]" />
-            <p className="text-xs text-muted-foreground mt-1">{crDescription.length}/5000 characters</p>
-          </div>
+          {/* ⚠ `Title * (min 5 characters)` — the rule moves under the field,
+              where it is read at the moment the button stays dead. */}
+          <StaffField label="Title" htmlFor="cr-title" helper="At least 5 characters.">
+            <Input id="cr-title" value={crTitle} onChange={(e) => setCrTitle(e.target.value)} placeholder="Brief summary of the request" required />
+          </StaffField>
+          <StaffField
+            label="Description"
+            htmlFor="cr-description"
+            helper={`At least 10 characters — ${crDescription.length}/5000 used.`}
+          >
+            <Textarea id="cr-description" value={crDescription} onChange={(e) => setCrDescription(e.target.value)} placeholder="Detailed description of the issue and why this action is needed..." className="min-h-[80px]" required />
+          </StaffField>
 
           {/* Evidence Summary */}
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Evidence summary (optional)</label>
-            <Textarea value={crEvidenceSummary} onChange={(e) => setCrEvidenceSummary(e.target.value)} placeholder="Links, screenshots, or other evidence supporting this request..." className="min-h-[60px]" />
-          </div>
+          <StaffField label="Evidence summary" htmlFor="cr-evidence" helper="Optional.">
+            <Textarea id="cr-evidence" value={crEvidenceSummary} onChange={(e) => setCrEvidenceSummary(e.target.value)} placeholder="Links, screenshots, or other evidence supporting this request..." className="min-h-[60px]" />
+          </StaffField>
 
           {/* File Attachments */}
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Attachments ({attachments.length}/{MAX_FILES})</label>
+          <StaffField
+            label={`Attachments (${attachments.length}/${MAX_FILES})`}
+            helper="JPEG, PNG, GIF, WebP, PDF, CSV, TXT, XLSX — max 10MB each."
+          >
             <input ref={fileInputRef} type="file" multiple accept={ALLOWED_TYPES.join(",")} onChange={handleFileSelect} className="hidden" />
 
             {/* Upload area */}
@@ -351,18 +417,20 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                 disabled={isUploading}
                 className="w-full border border-dashed border-border rounded-xl p-3 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
               >
+                {/* The label swap, here too: one pending pattern across the
+                    five dialogs (brief 11 §7). `Upload` stays because it
+                    labels the affordance rather than a heading. */}
                 {isUploading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                  "Uploading…"
                 ) : (
                   <><Upload className="w-4 h-4" /> Drop files or click to upload</>
                 )}
               </button>
             )}
-            <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, GIF, WebP, PDF, CSV, TXT, XLSX — max 10MB each</p>
 
             {/* Attachment previews */}
             {attachments.length > 0 && (
-              <div className="mt-2 space-y-2">
+              <div className="mt-2 flex flex-col gap-2">
                 {attachments.map((att) => (
                   <div key={att.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted border border-border">
                     {isImageMime(att.mimeType) ? (
@@ -383,30 +451,30 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                 ))}
               </div>
             )}
-          </div>
+          </StaffField>
 
           {/* Related audit log */}
           {crRelatedAuditLogId && (
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Related audit log</label>
-              <Badge className="bg-muted text-muted-foreground">
-                #{crRelatedAuditLogId}
-                <button className="ml-1 hover:text-foreground" onClick={() => setCrRelatedAuditLogId("")}>
-                  <X className="w-3 h-3" />
-                </button>
-              </Badge>
-            </div>
+            <StaffField label="Related audit log">
+              <div>
+                <Badge className="bg-muted text-muted-foreground">
+                  #{crRelatedAuditLogId}
+                  <button className="ml-1 hover:text-foreground" onClick={() => setCrRelatedAuditLogId("")}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              </div>
+            </StaffField>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => handleClose(false)}>Cancel</Button>
           <Button
             onClick={handleSubmit}
             disabled={isPending || isUploading || crTitle.length < 5 || crDescription.length < 10 || !crTargetUserId}
           >
-            {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-            Submit request
+            {isPending ? "Submitting…" : "Submit request"}
           </Button>
         </DialogFooter>
       </DialogContent>

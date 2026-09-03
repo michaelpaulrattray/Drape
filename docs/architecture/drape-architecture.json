@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a98b8e6f2a3f2e28"
+    "sourceFingerprint": "23dd0d19c73d1c1c"
   },
   "domains": [
     {
@@ -133,7 +133,7 @@
     {
       "id": "domain:staff",
       "name": "staff",
-      "moduleCount": 10
+      "moduleCount": 11
     },
     {
       "id": "domain:studio",
@@ -2187,6 +2187,12 @@
     {
       "id": "module:client/src/features/staff/index.ts",
       "path": "client/src/features/staff/index.ts",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/staffDialog.tsx",
+      "path": "client/src/features/staff/staffDialog.tsx",
       "domain": "staff",
       "lifecycle": "active"
     },
@@ -10732,6 +10738,10 @@
       "path": "client/src/features/staff/section06-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/staff/section11-guard.test.ts",
+      "path": "client/src/features/staff/section11-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts",
       "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts"
     },
@@ -14125,6 +14135,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/AuditActionModals.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
       "to": "module:client/src/features/admin/adminConstants.ts",
       "kind": "imports"
@@ -14660,6 +14675,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/ReviewModal.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -14682,11 +14702,6 @@
     {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:client/src/features/staff/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/UserActionModals.tsx",
-      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -16951,6 +16966,11 @@
     },
     {
       "from": "module:client/src/features/moderator/ChangeRequestModal.tsx",
+      "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/ChangeRequestModal.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -17516,6 +17536,11 @@
     },
     {
       "from": "module:client/src/features/staff/index.ts",
+      "to": "module:client/src/features/staff/staffDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/index.ts",
       "to": "module:client/src/features/staff/StaffLoading.tsx",
       "kind": "imports"
     },
@@ -17567,6 +17592,16 @@
     {
       "from": "module:client/src/features/staff/StaffBar.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/staffDialog.tsx",
+      "to": "module:client/src/components/ui/dialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/staffDialog.tsx",
+      "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {

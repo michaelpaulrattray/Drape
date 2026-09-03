@@ -522,6 +522,45 @@
   text-transform: uppercase;
 }
 
+/*
+  THE STAFF FORM FIELD ROW (brief 11, section 5).
+
+  Three treatments of one element across five staff dialogs -
+  `text-sm text-muted-foreground font-medium`, `text-xs uppercase mb-2`, and
+  `text-[10px] uppercase tracking-wider` - for the same thing: the name of a
+  slot. His brief specifies one, and it is `.dpc-modal__label` above, already
+  exactly to spec.
+
+  So this adds NO second label. It adds the ROW the label sits in, and one
+  layout correction: `.dpc-modal__label` carries `margin-top: 16px` for the
+  confirm shell's stacking, and as the first child of a `gap`-spaced field
+  that margin ADDS to the gap - which is the very spacing bug section 5 asks to
+  remove. Zeroing it here is one line; declaring a second label would have
+  been a fourth treatment, in a lane whose standing rule is not to leave two
+  of anything alive (#262).
+*/
+.dp-sfield {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dp-sfield > .dpc-modal__label {
+  margin-top: 0;
+  margin-bottom: 5px;
+}
+
+/*
+  The rule that used to live inside the label - `Title * (min 5 characters)`.
+  A parenthesised rule in a label is read once; helper text under the field is
+  read when it fails.
+*/
+.dp-sfield__help {
+  margin: 5px 0 0;
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--faint);
+}
+
 .dpc-modal__field {
   margin-top: 6px;
   padding: 10px 12px;
