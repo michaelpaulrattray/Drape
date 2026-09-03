@@ -323,6 +323,27 @@ brief: the source block follows the road (FROM YOUR SCRIPT quoting the
 excerpt on the script road; YOUR LINE only on the line road; empty question
 fields never appear when a script exists).
 
+## 6e. Condition states — one grammar for every kind of state (founder Q, 2026-09-03: "Bench lamp · wrecked")
+
+How a damaged/altered prop state is decided, pinned from the research (the
+Tank / Tank (injured) pair; the mecha open-hatch failure — "if it sees a
+detail, it will try to show it"): **a changed condition is a NEW STATE CARD,
+never an edit to the base.** Decided by the same three roads as pose states:
+a state-changing EVENT read from WHAT HAPPENS (the B-1 flip, gap shown with
+the summoning line); a DESCRIPTION MISMATCH across scenes (two documents
+describing one object incompatibly = a proposed state change, both lines
+quoted); or user-declared. Timeline inheritance applies (shots after the
+event cannot inherit the intact state — nothing un-wrecks); mid-scene is
+pack amendment E. **The after-card is minted FROM the before-card** — damage
+painted onto the same object so it reads as this lamp wrecked, not another
+lamp (the makers' untouched-base rule applied to props).
+
+**Generalisation, recorded for the build: pose, condition and wardrobe are
+ONE state grammar** — same three decision roads, same detect-then-ratify
+gaps with reasoning, same mint options (transform where deterministic /
+generate anchored on the existing card / upload), same per-shot attach
+scoping. E2's minting rule is the rule for all state kinds, not poses only.
+
 ## 7. The integration contract (decided here — the design bot's blind spot, by design)
 
 The founder: the design agent knows UI, not the product's internals; how the
