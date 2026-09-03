@@ -1,7 +1,7 @@
 {
-  "edition": 225,
-  "updatedAt": "2026-09-02T22:14:56.672Z",
-  "shift": "Foreman — night of 3 September (your three replies, worked together in one shift)",
+  "edition": 226,
+  "updatedAt": "2026-09-03T04:04:22.710Z",
+  "shift": "Fable — night of 3 September (the author bench you ordered, run and merged)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -121,22 +121,33 @@
         "source": "PR #459 on your #263. The deploy ceremony now type-checks the code it is about to publish, and refuses if it is broken. The sweep found one way in, and wrote the list down."
       },
       {
-        "label": "The queue: 74 open, 12 waiting on you, 8 going stale",
+        "label": "The queue: 76 open, 13 carrying your word, 8 going stale",
         "tone": "good",
-        "source": "One closed tonight (#263), two opened for your word (#460, #461). The 8 stale are the same eight as the last four nights — none a bug, none waiting on you. Stable, not growing."
+        "source": "At close: #466 closed (bench delivered); #469 and #470 opened from your morning replies. The 8 stale are the same eight as five nights running — none a bug, none waiting on you."
       }
     ]
   },
   "needsYou": [
     {
       "id": "author-bench-466",
-      "title": "The author half of the Grok test is carded and goes to a Fable shift — no decision needed",
-      "state": "answered",
-      "productImpact": "You said \"Also run the AUTHOR half you suspected — Grok vs the author, text-only, about a dollar.\" It is filed as card #466 with your sentence at the top, and the next shift takes it. This card is here so you can see it moving rather than wonder where it went.",
-      "workedExample": "The reader test you just judged was about a picture going in and a description coming out. The author is a different job: your typed brief goes in, and the written prompt the image engine actually receives comes out. It runs on EVERY roll, so if Grok writes better prompts it changes more than the reader ever could. And the slowness that decided the reader may not matter here at all — 41 seconds is a long stare at an upload, and a small part of a roll that already takes minutes.",
-      "options": [],
-      "recommendation": "Nothing to answer. Same seven fixtures, same sitting, pairs to your eye, about a dollar of house money — under the threshold, so it just runs. Nothing swaps on the bench's own reading; you pick, as you did for the reader.",
-      "filedAt": "2026-09-02T22:08:09.426Z",
+      "title": "The author test you ordered has run — the pairs are ready for your eye, and the two models do different jobs",
+      "state": "open",
+      "productImpact": "Your order — \"Grok vs the author, text-only, about a dollar\" — ran this shift: 38 cents, both models on the same five briefs in the same sitting (your cyborg brief, your goth reference, the two men, the feline deity). The result is not a winner, it is a fork: the two models understand the author's job differently. Grok keeps your sentences almost word for word and adds one short line of taste — 10 out of 10 briefs authored, nothing invented, but a typical call takes 53 seconds against Sonnet's 10. Sonnet writes rich art direction around your facts — but it is the one that stacked a third pile of skin words onto your cyborg (the exact thing you corrected in the over-authoring ruling), twice brushed studio language, and on one brief refused its own draft twice and silently gave that customer a plain roll instead of the MAX they paid for.",
+      "workedExample": "Your cyborg brief, side by side. Grok adds 15 words: \"…Severe, clinical, unyielding; metal matte and integrated, the face held still without softening.\" Sonnet adds 137: a full paragraph about storm-worn surfaces, oxidized seams and \"one long history written on the same face\" — richer, and also where the extra skin words crept in. Every stated fact survived on both models on every brief. The full pairs are on card #466 and in the bench section of the court document.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Keep Sonnet as the author",
+          "consequence": "Today's state — nothing changes while you decide, and nothing changed tonight. MAX keeps the rich art-direction style at ~10 seconds a call; the over-authoring tendencies you named stay until the instruction work (#252) lands."
+        },
+        {
+          "key": "B",
+          "label": "Swap the author to Grok",
+          "consequence": "One line, reversible. Every MAX roll gets the verbatim-first style — your words kept almost exactly, one short taste line added, nothing invented — and roughly 40 to 120 seconds more inside a wait that already runs minutes."
+        }
+      ],
+      "recommendation": "A — keep Sonnet, and read Grok's verbatim discipline as evidence for tightening MAX's instruction rather than swapping the engine. The over-authoring card (#252/#327 line) is already open, and Sonnet with a tighter leash keeps the taste without the invention. But the pairs genuinely support either answer, which is why they are on your desk and nothing moved on its own.",
+      "filedAt": "2026-09-03T04:04:22.712Z",
       "issueNumber": 466
     },
     {
@@ -169,7 +180,7 @@
     {
       "id": "settings-460-admin-bypass",
       "title": "Your own pushes skip the checks — and turning that off has a real cost",
-      "productImpact": "We do require automatic checks before code reaches the live site. But the \"don't let admins skip this\" box is unticked, and you are the only account — so the checks have never applied to you. That is why 343 of the 499 changes since 25 August landed with nothing looking at them.",
+      "productImpact": "ANSWERED — your reply #110: leave it unticked; the page in the morning is worth more than eight minutes a night. You corrected this card's own claim (the ceremony's checks are a DIFFERENT set from the gate's — typecheck and both map checks, not the test suite, not the secret scan) and ordered the secret scan added to the ceremony. That is filed as #469 and you don't need to see it again. We do require automatic checks before code reaches the live site. But the \"don't let admins skip this\" box is unticked, and you are the only account — so the checks have never applied to you. That is why 343 of the 499 changes since 25 August landed with nothing looking at them.",
       "workedExample": "Your briefing page is the worked example. Every night the deploy ceremony publishes a new edition straight to the live branch — no pull request, so no checks. Tick the box and GitHub starts REFUSING those pushes: you would wake up to yesterday's page. The ceremony now type-checks everything it publishes, so the gap is already closed where it actually bites.",
       "options": [
         {
@@ -184,14 +195,14 @@
         }
       ],
       "recommendation": "Leave it. The ceremony now checks more than the pull-request gate does, so ticking the box buys a guarantee you would mostly be giving yourself — and costs you your morning page.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-02T18:59:27.114Z",
       "issueNumber": 460
     },
     {
       "id": "settings-461-local-migration",
       "title": "A second branch publishes to the live site with no protection at all",
-      "productImpact": "The branch called local-migration deploys production exactly like the main one, and it has no protection whatsoever — no checks, nothing stopping a force-push or a deletion. Nothing has gone wrong; this is the sweep you ordered reporting an open door.",
+      "productImpact": "ANSWERED — your reply #108, verbatim and entire: \"protect it\". The card carries your word now and a shift takes it. The branch called local-migration deploys production exactly like the main one, and it has no protection whatsoever — no checks, nothing stopping a force-push or a deletion. Nothing has gone wrong; this is the sweep you ordered reporting an open door.",
       "workedExample": "The only thing standing in front of it is a guard file that has to be switched on by hand in each copy of the project. A fresh copy on a new machine would have the file and not the guard — and editing straight through the GitHub website touches no guard at all.",
       "options": [
         {
@@ -211,7 +222,7 @@
         }
       ],
       "recommendation": "Protect it, as the cheapest thing that removes a door. But if you can tell me local-migration is no longer used for anything, deleting it is better and I will card that instead.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-02T18:59:27.114Z",
       "issueNumber": 461
     },
@@ -1852,41 +1863,6 @@
       ]
     },
     {
-      "id": "eye-398-crew-surface",
-      "title": "Crew in dark mode — does the before/after read the way you expected?",
-      "issueNumber": 398,
-      "filedAt": "2026-09-01T22:22:19.702Z",
-      "state": "open",
-      "question": "Your brief 08 said the surface only: type, tokens, section grammar, width — and that if the diff moved a paragraph, dropped a quote, added a second progress number or split history apart, it had gone wrong. None of those moved, and there are tests holding each one. What I want your eye on is whether the page still reads like a briefing rather than a dashboard, and whether the eye gallery breaking out to the wider measure is the right call at your screen size.",
-      "frames": [
-        {
-          "key": "crew-eye/cda394e2-72d0-418b-a567-2591bd5d4875.png",
-          "arm": "before",
-          "caption": "Crew last night, in dark mode. The page is a white sheet inside a dark app — Crew had never been dark-tested, and this is what that looked like."
-        },
-        {
-          "key": "crew-eye/7f7e7a88-a106-4ebb-929b-c5193ab9c74e.png",
-          "arm": "after",
-          "caption": "The same region tonight. Same words, same order, same counts — the surface follows the theme now."
-        },
-        {
-          "key": "crew-eye/d2476a18-3add-4ee8-aca4-6faddd24dd47.png",
-          "arm": "after · your quote",
-          "caption": "Your confirming quote lost its italic (it already had a rule and an attribution) and its clock is 24-hour now — it read 07:17 pm directly above a shift row reading 20:17. Found by looking at the page, not by a test."
-        },
-        {
-          "key": "crew-eye/f6e9fff1-8487-4319-800a-4754ddb6ebc6.png",
-          "arm": "after · the one exception",
-          "caption": "The eye gallery is the only section that breaks out past the 790px reading column, to 1240px — your §2. This is the width you would judge frames at."
-        },
-        {
-          "key": "crew-eye/0245ec04-bb86-4094-926a-5baabbe7cbff.png",
-          "arm": "after · light",
-          "caption": "The same page in light mode, so the change is a theme rather than a repaint."
-        }
-      ]
-    },
-    {
       "id": "admin-overview-397-frames",
       "title": "The dashboard leads with what needs you, and almost nothing is coloured (brief 07)",
       "question": "WHAT YOU ARE LOOKING AT. Five frames from tonight, both themes, plus the banner form.\n\nTHE ONE THING TO TRY. Open Admin. The first thing on the page is NEEDS A HUMAN with the three things actually waiting. Then imagine the day nothing is waiting — that whole section is simply not there, and the page starts at LAST 24 HOURS. That was your instruction and it is the strongest thing this page now does, but it is the one thing a screenshot cannot show you, because today there are three items to show.\n\nWHAT I AM ASKING. Three judgements, none of them a bug:\n\n1. THE CREDIT CHART HAS TWO GREY LINES. Purchased is black, consumed is mid-grey. Your rule is that the accent colour means something needs attention — and credits being bought and spent is the business working, not a fault, so neither line earned it. The cost is that the two lines are told apart by darkness rather than by hue. If that reads as too subtle, say so; it is a rule I applied rather than a look I chose.\n\n2. THE PLAN BAR IS A GREY LADDER. Free, Starter, Pro, Enterprise used to be grey, blue, purple and black. They are four steps of one grey now, darkest first, with the legend naming each. Same argument: a plan is not an emergency.\n\n3. THE ALERT ROWS ARE JOINED BY A HAIRLINE you can barely see. That is the colour your brief specified, and I measured that the lines are really there — 8 to 14 pixels each. But I could not see them in my own screenshots, which usually means a reader will not either.\n\nWHAT IS DELIBERATELY STILL UGLY, AND IT IS THE SECOND NIGHT I HAVE SAID IT. The five staff dialogs — suspend, freeze, adjust credits, change role, review — are still light-only, so opening one in dark mode gives you a white box. No brief owns them. It has now been reported twice, which is the point at which it should probably become a card of its own rather than a paragraph in mine.",
@@ -3265,6 +3241,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "author-model-466",
+      "title": "The author's engine is one reversible line now, and the bench you ordered rode the same change",
+      "status": "merged",
+      "prNumber": 468,
+      "note": "Your reply #105. Merged a940c330 — nothing a customer sees changes: same model, same speed, same prompts. What changed is that swapping the author (if you choose to, on the pairs) is now a one-line edit instead of moving the model every brief is interpreted by. Gate green twice; the automatic review passed it and its one test note was taken as a second commit."
+    },
     {
       "id": "frozen-support-link-452",
       "title": "A frozen customer's only way to reach us used to be a 404 — it is an email address now (#452)",
@@ -4772,10 +4755,16 @@
     104,
     105,
     106,
-    107
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113
   ],
   "nextUp": {
-    "readAt": "2026-09-02T22:06:43.927Z",
+    "readAt": "2026-09-03T04:04:49.981Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4828,8 +4817,18 @@
         "urgent": false
       },
       {
-        "issueNumber": 466,
-        "title": "AUTHOR BENCH: Grok vs the author on his own fixtures — the half he suspected from the start (reply #105)",
+        "issueNumber": 461,
+        "title": "local-migration deploys production and has no branch protection at all",
+        "urgent": false
+      },
+      {
+        "issueNumber": 469,
+        "title": "The deploy rite runs the secret scan before it pushes (reply #110 — 'file it and get on with it')",
+        "urgent": false
+      },
+      {
+        "issueNumber": 470,
+        "title": "Crew folds into the staff bar's one overview (reply #111 — his yes on #415's suggestion)",
         "urgent": false
       }
     ]
