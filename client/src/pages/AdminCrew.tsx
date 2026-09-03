@@ -93,6 +93,7 @@ import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
 import { CrewNextUp } from "@/features/admin/components/crew/CrewNextUp";
+import { CrewSkeleton } from "@/features/admin/components/crew/CrewSkeleton";
 import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
 import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
@@ -288,11 +289,14 @@ export default function AdminCrew() {
       bar={<StaffBarAdmin refreshControls={refreshControls} />}
     >
       <main className="dp-crew">
-        {stateQuery.isLoading && (
-          <div className="dp-crew__card dp-crew__body dp-crew__body--quiet">
-            Loading the briefing…
-          </div>
-        )}
+        {/* ⚠ **SKELETONS AT THE REAL HEIGHT, NOT A SENTENCE (#414 item 8).**
+            This was one quiet line reading `Loading the briefing…` — the
+            shortest possible stand-in for the longest page in the product, so
+            the whole column jumped when the briefing landed. His own card
+            names the loading state explicitly and calls it the one item that
+            is not cosmetic. `CrewSkeleton`'s docblock carries the argument,
+            including why the spinner that was one import away is declined. */}
+        {stateQuery.isLoading && <CrewSkeleton />}
 
         {/* NOT_FOUND is the flag saying no — the deliberate dark state. Any
             OTHER failure is a fault this diff deliberately surfaces (a missing

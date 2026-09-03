@@ -14,6 +14,8 @@
  * whose argument is that a quote already carries two markers (its rule and its
  * attribution) and a third marker for one fact says nothing new.
  */
+import { Check } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
 import { milestoneCountLine, milestoneProgress } from "./crewTypes";
@@ -30,6 +32,29 @@ const STEP_LABEL: Record<string, string> = {
   "in-progress": "In progress",
   waiting: "Waiting",
   blocked: "Blocked",
+};
+
+/*
+  ⚠ **THE STEP MARKER'S FOUR STATES ARE THE RUNG BAR'S FOUR (#414 item 1).**
+
+  His instruction was three: *"A done step is ✓; an open one is a hollow ring;
+  a blocked one is a coral ring."* The data carries four states, so `waiting`
+  and `in-progress` are both "open" and are told apart the way the ladder
+  already tells `queued` from `current` — a soft ring against an ink one. That
+  is a reading of his rule against the data, not an addition to it: the ladder
+  block below has drawn exactly this distinction since #74, and inventing a
+  second visual language for the same idea one card apart is the duplication
+  this lane exists to remove.
+
+  ⚠ **AND THE ORDINAL IS GONE, WHICH IS THE POINT.** His argument: *"the
+  ordinal carries no information here — the list is already in order."* It is
+  the same argument that removed the Actions column in brief 06.
+*/
+const STEP_MARK: Record<string, string> = {
+  done: "dp-crew__stepmark--done",
+  "in-progress": "dp-crew__stepmark--current",
+  waiting: "",
+  blocked: "dp-crew__stepmark--blocked",
 };
 
 const RUNG_LABEL: Record<string, string> = {
@@ -130,7 +155,15 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
           <ol className="dp-crew__steps">
             {program.milestone.steps.map((step, index) => (
               <li key={`${index}-${step.title}`} className="dp-crew__step">
-                <span className="dp-crew__num dp-crew__stepnum">{index + 1}</span>
+                {/* aria-hidden: the state is said in words in the pill at the
+                    row's end, so a screen reader hearing the marker too would
+                    hear every step's state twice. */}
+                <span
+                  aria-hidden="true"
+                  className={cn("dp-crew__stepmark", STEP_MARK[step.state])}
+                >
+                  {step.state === "done" && <Check size={10} strokeWidth={3} />}
+                </span>
                 <span
                   className={cn(
                     "dp-crew__steptext",
@@ -139,7 +172,15 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
                 >
                   {step.title}
                 </span>
-                <span className="dp-crew__mono dp-crew__stepstate">
+                {/* The banner's OWN outlined chip, not a second pill class —
+                    it already carries the two tones #414 asks for, and the
+                    words are `STEP_LABEL`'s, unchanged. */}
+                <span
+                  className={cn(
+                    "dp-crew__chip dp-crew__stepstate",
+                    step.state === "blocked" && "dp-crew__chip--warn",
+                  )}
+                >
                   {STEP_LABEL[step.state] ?? step.state}
                 </span>
               </li>

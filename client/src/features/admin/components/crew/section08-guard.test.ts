@@ -629,9 +629,23 @@ describe("§4 — two faces, and every measured value is mono", () => {
     but a fifth written in either shape would pass without being checked.
   */
   const ISSUE_NUMBER_EXEMPT = new Set(["CrewWorkingNow.tsx"]);
-  it("issue numbers, step numbers and rung keys are drawn in a mono class", () => {
+  /*
+    ⚠ **THIS ARM LOST ITS STEP-NUMBER HALF TO #414, DELIBERATELY AND OUT
+    LOUD.** It read `expect(banner).toMatch(/dp-crew__num dp-crew__stepnum/)`
+    — brief 08 §4's *"every measured value is mono"* pointed at the step
+    ORDINAL. #414 DELETES that ordinal on his argument that *"the ordinal
+    carries no information here — the list is already in order."*
+
+    So the arm's subject stopped existing; it was not weakened to let a change
+    through. His card names this exact hazard — *"if a guard arm has to move to
+    allow a device here, that arm was pinning the treatment when it meant to
+    pin the content; say so explicitly rather than editing it quietly."* The
+    rung-key half is untouched, and the replacement arms in the #414 block
+    below assert the STRONGER thing: that the ordinal is gone, and that what
+    replaced it is a marker rather than a number.
+  */
+  it("issue numbers and rung keys are drawn in a mono class", () => {
     const banner = code(read(path.join(HERE, "CrewProgramBanner.tsx")));
-    expect(banner).toMatch(/dp-crew__num dp-crew__stepnum/);
     expect(banner).toMatch(/dp-crew__num dp-crew__rungid/);
 
     let seen = 0;
@@ -778,12 +792,27 @@ describe("§7 — nothing is coloured by state except the three sanctioned sites
     a component §6 never saw. Those are the PROBLEM class §6 admits — brief
     07's rule one surface over is that fine is colourless and red means urgent.
   */
+  /*
+    ⚠ **AND A SECOND DEPARTURE, STATED THE SAME WAY (#414).** His card asks
+    for the blocked step marker in coral by name — *"a blocked one is a coral
+    ring"* — and a blocked step is the PROBLEM class this block already admits
+    rather than a new use of colour: it is the one step state that means
+    something has stopped. Every other state on that row is colourless, which
+    is §6's actual rule.
+
+    ⚠ **THIS ARM WAS THE THING THAT CAUGHT IT.** The marker was built, the
+    suite went red on the sixth selector, and the choice was made here in the
+    open instead of the token being quietly swapped for a grey. That is the
+    arm working, and it is why it is widened by ONE named selector rather than
+    loosened.
+  */
   const SANCTIONED = [
     "dp-crew__chip--warn",
     "dp-crew__sev--urgent",
     "dp-crew__card--alert",
     "dp-crew__alert",
     "dp-crew__outcome--failed",
+    "dp-crew__stepmark--blocked",
   ];
 
   it("every rule using --errorInk is one of the five sanctioned selectors", () => {
@@ -869,5 +898,148 @@ describe("§7 — the query, the flag and the mutations are untouched", () => {
     const box = code(read(path.join(HERE, "CrewReplyBox.tsx")));
     expect(box).toContain("CREW_REPLY_MAX = 4000");
     expect(box).toMatch(/await onSend\(\{ cardId, body: trimmed \}\);\s*\n\s*setBody\(""\);/);
+  });
+});
+
+/**
+ * #414 — HIS DESIGN DEVICES, WITHOUT THE MOCK DATA.
+ *
+ * His whole scope, verbatim: *"no i dont want the mock data i want the say
+ * UI/UX design principles the cards the loading spinners the layout etc."*
+ * So every arm here is about TREATMENT, and the two that matter most are the
+ * ones asserting that no state and no number were invented in order to draw it.
+ */
+describe("card 414 — the step devices draw only states the data already carries", () => {
+  const banner = code(read(path.join(HERE, "CrewProgramBanner.tsx")));
+
+  it("the step ordinal is gone — the marker replaced it, it did not join it", () => {
+    /* Both halves. Deleting the class and leaving the expression that produced
+       the number is how a half-done change reads green. */
+    expect(banner).not.toMatch(/dp-crew__stepnum/);
+    expect(banner).toMatch(/dp-crew__stepmark/);
+  });
+
+  it("POSITIVE CONTROL: that arm rejects a step ordinal restored", () => {
+    const planted = '<span className="dp-crew__num dp-crew__stepnum">{index + 1}</span>';
+    expect(planted).toMatch(/dp-crew__stepnum/);
+  });
+
+  it("the marker's states are exactly the four the briefing schema carries", () => {
+    /* ⚠ THIS ARM IS THE INVERSE OF WHAT IT LOOKS LIKE. A fifth key would be a
+       state the data cannot produce — invented state, the one thing his card
+       rules out by name. The two maps are read out of the component and
+       compared, so they cannot drift apart silently either. */
+    const keysOf = (name: string) => {
+      const at = banner.indexOf(`const ${name}: Record<string, string> = {`);
+      expect(at, `${name} not found in the banner`).toBeGreaterThan(-1);
+      const body = banner.slice(at, banner.indexOf("};", at));
+      return [...body.matchAll(/^\s*"?([a-z-]+)"?:/gm)].map((m) => m[1]).sort();
+    };
+    expect(keysOf("STEP_MARK")).toEqual(keysOf("STEP_LABEL"));
+    expect(keysOf("STEP_MARK")).toEqual(["blocked", "done", "in-progress", "waiting"]);
+  });
+
+  it("the state words are unchanged — only the treatment moved", () => {
+    expect(banner).toMatch(/STEP_LABEL\[step\.state\]/);
+    expect(banner).toMatch(/"In progress"/);
+    expect(banner).toMatch(/"Blocked"/);
+  });
+
+  it("the state pill is the banner's existing chip, not a second pill class", () => {
+    /* His card's own hazard: a second copy is the failure this lane has been
+       correcting all week. `.dp-crew__chip` already had both tones. */
+    expect(banner).toMatch(/dp-crew__chip dp-crew__stepstate/);
+    expect(banner).toMatch(/dp-crew__chip--warn/);
+    expect(CSS).not.toMatch(/\.dp-crew__steppill/);
+  });
+
+  it("only BLOCKED carries colour, and it is the page's house red", () => {
+    const from = CSS.indexOf(".dp-crew__stepmark {");
+    expect(from, "the marker block is missing").toBeGreaterThan(-1);
+    const marker = CSS.slice(from, CSS.indexOf(".dp-crew__steptext", from));
+    /* Plain `--error` measures 3.40:1 on the dark surface; CrewProblems
+       records that ruling. A marker reaching for it would be instance three. */
+    expect(marker).toMatch(/--errorInk/);
+    expect(marker).not.toMatch(/var\(--error\)/);
+    expect(marker.match(/--errorInk/g)).toHaveLength(1);
+  });
+
+  it("step rows are separated by the row-divider token, not by a gap", () => {
+    const steps = CSS.slice(
+      CSS.indexOf(".dp-crew__steps {"),
+      CSS.indexOf(".dp-crew__stepmark {"),
+    );
+    expect(steps).toMatch(/border-bottom: 1px solid var\(--ruleSoft\)/);
+    /* A trailing hairline reads as a section boundary that is not there. */
+    expect(steps).toMatch(/\.dp-crew__step:last-child \{[^}]*border-bottom: 0/);
+  });
+
+  it("POSITIVE CONTROL: the divider arm rejects the token being swapped", () => {
+    expect("border-bottom: 1px solid var(--ink);").not.toMatch(
+      /border-bottom: 1px solid var\(--ruleSoft\)/,
+    );
+  });
+});
+
+describe("card 414 — the loading state is skeletons at height, not a sentence", () => {
+  const page = code(read(PAGE));
+  const skeleton = code(read(path.join(HERE, "CrewSkeleton.tsx")));
+
+  it("the page renders skeletons while loading and no longer says a line", () => {
+    expect(page).toMatch(/isLoading && <CrewSkeleton \/>/);
+    expect(page).not.toMatch(/Loading the briefing/);
+  });
+
+  it("POSITIVE CONTROL: that absence arm rejects the sentence restored", () => {
+    expect('<div className="dp-crew__card">Loading the briefing</div>').toMatch(
+      /Loading the briefing/,
+    );
+  });
+
+  it("it uses the foundation Skeleton and NOT the staff spinner", () => {
+    /* The fidelity law by name: `StaffLoading` was one import away, and it
+       collapses the column to a line, which is the defect being fixed. */
+    expect(skeleton).toMatch(/import \{ Skeleton \} from "@\/foundation"/);
+    expect(skeleton).not.toMatch(/StaffLoading|dp-staff__spinner/);
+  });
+
+  it("the skeleton asserts nothing — no section name, no number, no state", () => {
+    /* ⚠ THE ARM HIS CARD IS ACTUALLY ABOUT. `CrewProblems` returns null when
+       there are none, so a skeleton printing "Problems" would promise a
+       section that then never arrives; and any figure here is mock data by
+       definition, because nothing has loaded yet. */
+    /* ⚠ Its first shape read `(` out of `=> (` in an arrow body and failed on
+       punctuation — a false RED, but the same matcher would have false-GREENED
+       a word split across a line. It requires a letter or a digit now, which
+       is what "text he could read" actually means. */
+    const rendered = [...skeleton.matchAll(/>([^<>{}]+)</g)]
+      .map((m) => m[1].trim())
+      .filter((text) => /[A-Za-z0-9]/.test(text));
+    expect(rendered, `the skeleton renders literal text: ${rendered.join(" | ")}`).toEqual([]);
+    for (const word of ["Problems", "Next up", "Needs you", "Working now", "The program"]) {
+      expect(skeleton, `the skeleton names a section: ${word}`).not.toContain(`>${word}<`);
+    }
+  });
+
+  it("POSITIVE CONTROL: the no-text arm rejects a labelled skeleton", () => {
+    const planted = '<span className="dp-crew__skeleyebrow">Problems</span>';
+    const rendered = [...planted.matchAll(/>([^<>{}]+)</g)]
+      .map((m) => m[1].trim())
+      .filter((text) => /[A-Za-z0-9]/.test(text));
+    expect(rendered).toEqual(["Problems"]);
+
+    /* NEGATIVE half of the same control: the matcher must still ignore the
+       arrow-body punctuation that produced the false red, or this arm would
+       be green for the wrong reason on any component containing a map. */
+    const innocent = "{rows.map((row) => (\n  <Skeleton />\n))}";
+    expect(
+      [...innocent.matchAll(/>([^<>{}]+)</g)]
+        .map((m) => m[1].trim())
+        .filter((text) => /[A-Za-z0-9]/.test(text)),
+    ).toEqual([]);
+  });
+
+  it("it is hidden from assistive tech — a skeleton is not content", () => {
+    expect(skeleton).toMatch(/aria-hidden="true"/);
   });
 });

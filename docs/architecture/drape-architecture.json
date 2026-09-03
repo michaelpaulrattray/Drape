@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d32edb7b8de8bca4"
+    "sourceFingerprint": "9f87417a3ac78c44"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 54
+      "moduleCount": 55
     },
     {
       "id": "domain:alerting",
@@ -741,6 +741,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
       "path": "client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
+      "path": "client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -14429,6 +14435,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "to": "module:server/routers.ts",
       "kind": "imports"
@@ -18896,6 +18907,11 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "kind": "imports"
     },
     {
