@@ -4515,6 +4515,13 @@
   ],
   "problems": [
     {
+      "id": "shared-tree-block-479",
+      "title": "Your page was two editions behind, and it was not because nothing happened",
+      "severity": "warning",
+      "state": "open",
+      "detail": "If this page jumped from edition 228 straight to 230, this is why. Two finished updates sat unable to reach you: edition 229 (which is what marks your reply about the author test as read) and edition 230 (tonight's).\n\nThe cause is not a failure. Your own editing session had two files open and unsaved to the record — the new philosophy law you wrote today, and the plan amendment — and the deploy step refuses to publish while ANY file is left half-finished, because a deploy is supposed to carry finished work rather than somebody's desk. That rule is right and I did not go around it, and I did not touch your files.\n\nWhat it cost: two nights of work waited about an hour and a half each. What makes it worth telling you rather than fixing quietly — your night team and your own editing session share one folder, so a shift can be held up by your editor simply being parked mid-thought, and there is no signal either way. #479 lays out four ways to fix that, cheapest first, with a recommendation. It touches the deploy path, so it is your call rather than mine."
+    },
+    {
       "id": "billing-return-domain-467",
       "title": "A paying customer is sent to a web address we do not run, the second their payment goes through",
       "severity": "warning",
