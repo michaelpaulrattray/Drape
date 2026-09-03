@@ -427,8 +427,31 @@
   Skeletons at the sections' real heights. The shapes here are the page's own
   card grammar so that the skeleton column and the real column occupy the same
   space: `.dp-crew__card` is the same class the real sections use, and the
-  gaps between them come from `.dp-crew` itself.
+  gaps between them come from `.dp-crew` itself — which is true only because
+  of the `display: contents` rule immediately below, and was FALSE in the first
+  build.
 */
+
+/*
+  ⚠ **`display: contents`, AND THE WRAPPER IS WHY THIS RULE EXISTS.**
+  `CrewSkeleton` needs ONE element to hang its testid on, but the real sections
+  are direct children of `.dp-crew` and take that container's `gap: 26px`.
+  A plain wrapper swallows it: the five skeleton cards drew FLUSH, fused into
+  one slab, and the column came out 104px (4 × 26px) shorter than the same five
+  sections render for real — a smaller sibling of the very jump this card
+  exists to remove.
+
+  ⚠ **It was visible in this shift's own evidence frame and was not read off
+  it** — the gate reviewer of PR #485 found it. Working law 6 says render before
+  shipping; the frame was TAKEN and the gap was not LOOKED AT, which is the
+  half of that law worth restating.
+
+  `display: contents` promotes the cards to flex children of `.dp-crew` while
+  keeping the element (and so the testid) in the tree.
+*/
+.dp-crew__skel {
+  display: contents;
+}
 
 .dp-crew__skelhead {
   display: flex;

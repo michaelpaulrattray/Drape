@@ -253,3 +253,60 @@ worktree reaches the main tree's `node_modules` through a junction, so Vite logs
 `outside of Vite serving allow list` for the webfonts. **The fonts loaded
 anyway** — Archivo and JetBrains Mono are both visible in every frame — so the
 readings stand; it is noise in the dev log, not a condition on the evidence.
+
+---
+
+## 10 · ⚠ THE GATE REVIEWER'S FINDING, AND IT WAS IN THIS SHIFT'S OWN FRAME
+
+**PR #485, finding 1 — the skeleton cards drew FLUSH.** The real sections are
+direct children of `.dp-crew` and take its `gap: 26px`; `CrewSkeleton` needs one
+element for its testid, and a plain wrapper made the five cards children of an
+unstyled div. They fused into one slab, and the column came out **104px (4 × 26)
+shorter** than the same five sections render for real — *a smaller sibling of the
+exact jump this card exists to remove.*
+
+⚠ **It is visible in `branch-loading-dark-1280.png`, which is in this pack, and
+which I looked at and passed.** Working law 6 says render before shipping; the
+half this shift missed is that **a frame TAKEN is not a frame READ.** The
+reviewer read the gap off the frame the shift had already produced.
+
+**Fix:** `.dp-crew__skel { display: contents }` — the cards become flex children
+of `.dp-crew` while the element (and the testid) stays in the tree. It also makes
+the CSS block's existing sentence — *"the gaps between them come from `.dp-crew`
+itself"* — TRUE, where the reviewer correctly called it false through the
+wrapper; that sentence now says so out loud.
+
+**Re-driven** (`scripts/_414-gapdrive-disposable.mts`), **8 readings, 8 ok**,
+both themes — and the comparison target is **measured in the same page**, never a
+constant somebody typed:
+
+```
+ok  the testid wrapper is out of the layout tree
+      wrapper display: contents; .dp-crew display: flex
+ok  the skeleton's gaps EQUAL the real sections' gaps
+      real sections 26,26,26,26,26,26,26,26px · skeleton 26,26,26,26px
+ok  the first card's top edge does not move   top 143px loading -> 143px loaded
+ok  the visible pane is occupied              pane 781px · skeleton column 980px
+```
+
+⚠ **The first shape of that driver's own first arm was WRONG and failed on a
+working fix**: it asserted `card.parentElement === main`, and `display: contents`
+removes the wrapper from the LAYOUT tree, not from the DOM. Corrected to read the
+computed display and the measured spacing — the observable facts — with the DOM
+parent kept as a recorded reading that decides nothing.
+
+**Guarded so it cannot come back:** a new arm reads `.dp-crew__skel`'s rule out
+of the CSS (not its class name — the class could exist and be styled any other
+way) and requires `display: contents`, with a positive control.
+
+**Finding 2 — a stale count in an arm title.** *"one of the **five** sanctioned
+selectors"* against a list of six. ⚠ **Swept per law 7, and the DESCRIBE one line
+up had the same defect and was OLDER** — it said *"three"* against a list of
+five, so the arm the reviewer read had been wrong twice over. The count is
+derived from `SANCTIONED.length` now, or absent. **The class is *a count restated
+in prose beside the list it counts*** — working law 4 in miniature.
+
+**Frames after the fix:** `evidence/414/fixed-loading-dark-1280.png`,
+`fixed-loading-light-1280.png` — the slab is gone and the cards carry the page's
+own 26px rhythm. `branch-loading-dark-1280.png` is KEPT in this pack as the
+before, because it is the frame the defect was visible in.

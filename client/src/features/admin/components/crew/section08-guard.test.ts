@@ -784,7 +784,16 @@ describe("§5 — the card shell is one declaration, in tokens", () => {
    §6 + §7 — COLOUR IS EARNED, AND ONLY IN THREE PLACES
    ================================================================ */
 
-describe("§7 — nothing is coloured by state except the three sanctioned sites", () => {
+/*
+  ⚠ **NO COUNT IN A TITLE BESIDE A LIST THAT GROWS.** The gate reviewer of
+  PR #485 caught the `it` below still saying "five" after the list went to six.
+  ⚠ **Swept, and the DESCRIBE had the same defect one line up and older** — it
+  said "three" against a list of five, so the arm the reviewer read had been
+  wrong twice over. Both are derived from `SANCTIONED.length` now, or say no
+  number at all; the class is *a count restated in prose beside the list it
+  counts*, which is working law 4 in miniature.
+*/
+describe("§7 — nothing is coloured by state except the sanctioned sites", () => {
   /*
     §6: "CrewProblems — this is the one place `--error` is legitimate on this
     page." §5: the warn chip. And one departure this shift states rather than
@@ -815,7 +824,7 @@ describe("§7 — nothing is coloured by state except the three sanctioned sites
     "dp-crew__stepmark--blocked",
   ];
 
-  it("every rule using --errorInk is one of the five sanctioned selectors", () => {
+  it("every rule using --errorInk is one of the sanctioned selectors", () => {
     const rules = CSS.match(/\.[a-zA-Z0-9_-]+[^{]*\{[^}]*\}/g) ?? [];
     const reds = rules
       .filter((r) => r.includes("--errorInk") || r.includes("--error)"))
@@ -824,7 +833,7 @@ describe("§7 — nothing is coloured by state except the three sanctioned sites
     for (const selector of reds) {
       expect(
         SANCTIONED.some((s) => selector.includes(s)),
-        `${selector} uses the error token and is not one of the sanctioned five`,
+        `${selector} uses the error token and is not one of the ${SANCTIONED.length} sanctioned selectors`,
       ).toBe(true);
     }
   });
@@ -1041,5 +1050,29 @@ describe("card 414 — the loading state is skeletons at height, not a sentence"
 
   it("it is hidden from assistive tech — a skeleton is not content", () => {
     expect(skeleton).toMatch(/aria-hidden="true"/);
+  });
+
+  it("the wrapper does not swallow the page's 26px gap between sections", () => {
+    /*
+      ⚠ **THE GATE REVIEWER'S FINDING ON PR #485, AND IT WAS VISIBLE IN THIS
+      SHIFT'S OWN EVIDENCE FRAME.** The real sections are direct children of
+      `.dp-crew` and take its `gap: 26px`; the skeleton needs one element for
+      its testid, and a plain wrapper made the five cards flex children of
+      NOTHING — they drew flush, fused into a slab, and the column came out
+      104px short. `display: contents` promotes them back.
+
+      The arm reads the CSS rather than the class name, because the class could
+      exist and be styled any other way.
+    */
+    expect(skeleton).toMatch(/className="dp-crew__skel"/);
+    const rule = CSS.match(/\.dp-crew__skel\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule, ".dp-crew__skel has no rule at all").not.toBe("");
+    expect(rule).toMatch(/display:\s*contents/);
+  });
+
+  it("POSITIVE CONTROL: the gap arm rejects a wrapper with no rule", () => {
+    const planted = '<div data-testid="crew-skeleton">';
+    expect(planted).not.toMatch(/className="dp-crew__skel"/);
+    expect("".match(/\.dp-crew__skel\s*\{[^}]*\}/)?.[0] ?? "").toBe("");
   });
 });

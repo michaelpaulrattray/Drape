@@ -24,6 +24,12 @@
  * sections, not from eyeballing the mockup — a skeleton at an invented height
  * is a jump with extra steps.
  *
+ * ⚠ **THE WRAPPER IS `display: contents`, NOT A CONTAINER.** The real sections
+ * are direct children of `.dp-crew` and take its `gap: 26px`; a wrapper that
+ * held them would swallow it, and the first build's did — the cards drew flush
+ * and the column was 104px short. Caught by the gate reviewer at this shift's
+ * own frame.
+ *
  * ⚠ **IT NAMES NO SECTION AND SHOWS NO NUMBER.** A skeleton that printed
  * `Problems` would be asserting there are problems, and `CrewProblems` returns
  * `null` when there are none — so on a good night the page would promise a
@@ -70,8 +76,10 @@ function Block({ lines, wide = false }: { lines: number; wide?: boolean }) {
  * is precisely why the jump was worst at the top.
  */
 export function CrewSkeleton() {
+  /* ⚠ `dp-crew__skel` is `display: contents` — see its rule for why a plain
+     wrapper is a defect here rather than a neutral container. */
   return (
-    <div data-testid="crew-skeleton">
+    <div className="dp-crew__skel" data-testid="crew-skeleton">
       {/* The program */}
       <Block lines={9} wide />
       {/* Working now */}
