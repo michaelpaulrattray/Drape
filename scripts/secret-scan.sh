@@ -44,11 +44,20 @@ GITLEAKS_WINDOWS_SHA256="54fe94f644b832dd08e8c3a5915efb3bfa862386d59fb27ca0792cb
 # rite resolves Git Bash's own sh and everything below runs inside it, where
 # curl, unzip and sha256sum all exist.
 #
-# CACHED, and the cache is verified rather than trusted: a hit still has to
-# match the pin, so a truncated or swapped binary is re-fetched instead of
-# being run. That is also what makes the rite work offline after its first run
+# CACHED, and the cache is verified rather than trusted. ⚠ The first shape of
+# this said exactly that and DID NOT DO IT (review finding on PR #473): the
+# sha256 check sat inside the download branch, so on a cache HIT nothing was
+# hashed at all - anything able to write to a world-writable TMPDIR could swap
+# the binary and every later run would print `secret scan: ok` on its say-so.
+# A comment is a report; the bytes are the fact.
+#
+# What happens now, EVERY invocation: the pinned ARCHIVE is sha256-checked and
+# the binary re-extracted from it. The archive is downloaded only when it is
+# missing or fails its hash, so the offline-after-first-success property holds
 # - which matters, because a control the ceremony REFUSES on must not turn a
-# flaky network into "no deploys tonight".
+# flaky network into "no deploys tonight" - and a swapped or half-extracted
+# binary is REBUILT from pinned bytes instead of run. The re-extract costs
+# milliseconds and removes a whole class of "the cache is fine, surely".
 if [ "${1:-}" = "fetch" ]; then
   case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) GL_OS=windows ;;
@@ -62,18 +71,26 @@ if [ "${1:-}" = "fetch" ]; then
     BIN="$CACHE/gitleaks";     SHA="$GITLEAKS_LINUX_SHA256"
     ASSET="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
   fi
-  if [ ! -x "$BIN" ]; then
-    mkdir -p "$CACHE"
+  mkdir -p "$CACHE"
+  # The pin decides whether the cached archive may be used, on every run.
+  # `-c` is quiet-checked here only to choose the branch; the re-verify below
+  # is the one whose failure is allowed to kill the script.
+  if ! echo "${SHA}  $CACHE/$ASSET" | sha256sum -c --status - 2>/dev/null; then
     curl -fsSL -o "$CACHE/$ASSET" \
       "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${ASSET}"
+    # Unguarded: a fresh download that does not match the pin is fatal, and
+    # `set -e` is what makes it so. Nothing extracts from unpinned bytes.
     echo "${SHA}  $CACHE/$ASSET" | sha256sum -c - >&2
-    if [ "$GL_OS" = "windows" ]; then
-      unzip -o -q "$CACHE/$ASSET" gitleaks.exe -d "$CACHE"
-    else
-      tar -xzf "$CACHE/$ASSET" -C "$CACHE" gitleaks
-    fi
-    chmod +x "$BIN"
   fi
+  # Re-extracted every time, from bytes that have just been hashed. This is
+  # what a swapped or truncated $BIN is repaired by, and it is why the claim in
+  # the docblock is now true of the code.
+  if [ "$GL_OS" = "windows" ]; then
+    unzip -o -q "$CACHE/$ASSET" gitleaks.exe -d "$CACHE"
+  else
+    tar -xzf "$CACHE/$ASSET" -C "$CACHE" gitleaks
+  fi
+  chmod +x "$BIN"
   echo "$BIN"
   exit 0
 fi
