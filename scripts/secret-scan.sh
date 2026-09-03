@@ -14,6 +14,12 @@
 # hides the value, and the exit code is the verdict — 1 on any finding, 0
 # on none.
 #
+# `-v` (added with #469): without it this prints only `leaks found: 1`, and a
+# refusal that will not say WHICH file or WHICH rule sends its reader hunting.
+# Driven before it was added — under `-v` the Finding and Secret lines both
+# still read `REDACTED`, so what the extra output names is the rule id, the
+# file, the line and the fingerprint, and never the value.
+#
 # --diff-merges=first-parent on both ranges: git's default log emits no
 # patch for a merge commit, so a secret introduced only in a conflict
 # resolution was invisible (driven 2026-08-26 — default 0, first-parent 1).
@@ -77,8 +83,8 @@ CONFIG=".gitleaks.toml"
 if [ "${1:-}" != "" ]; then
   RANGE="$1..HEAD"
   echo "secret-scan: commits $RANGE"
-  exec "$GL" git . --config "$CONFIG" --log-opts="--diff-merges=first-parent $RANGE" --redact=100 --no-banner --exit-code 1
+  exec "$GL" git . --config "$CONFIG" --log-opts="--diff-merges=first-parent $RANGE" --redact=100 --no-banner -v --exit-code 1
 else
   echo "secret-scan: full history"
-  exec "$GL" git . --config "$CONFIG" --log-opts="--diff-merges=first-parent" --redact=100 --no-banner --exit-code 1
+  exec "$GL" git . --config "$CONFIG" --log-opts="--diff-merges=first-parent" --redact=100 --no-banner -v --exit-code 1
 fi
