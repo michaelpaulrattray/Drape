@@ -246,19 +246,47 @@ describe("card 390 items 1, 3, 5 and 6 — the form of a card", () => {
     expect(block, "the action fell back below the credits block").toBeGreaterThan(action);
   });
 
-  it("⚠ THE PERK THAT DOES NOT DIFFER IS NOT ON THE CARDS, AND ITS SENTENCE IS SAID ONCE", () => {
+  it("⚠ ITEM 3'S HALF THAT SURVIVES — THE SENTENCE IS DECLARED ONCE AND EACH VIEW SAYS IT ONCE", () => {
     /*
-      Item 3: *"The only perk shown is the one that does not differ."* §6d's own
-      test — a row where every plan agrees belongs in the footnote — applied to
-      a card. The fact is kept, in one place per view, from one constant.
+      ⚠ **THIS ARM WAS `THE PERK THAT DOES NOT DIFFER IS NOT ON THE CARDS`, AND
+      THE FOUNDER REVERSED THAT IN HIS OWN WORDS — IT IS SAID HERE RATHER THAN
+      EDITED QUIETLY.** Card 425 item 1, verbatim: *"The tick reading 'Every
+      model and every tool' bring it back because eventually i need to make
+      benefits between each plan which will be a reminder for me."*
+
+      Item 3 was two claims wearing one title. The first — *the identical perk
+      does not belong on a card* — was a styling judgement of ours (§6d's test
+      applied to a card), and his product reason outranks it: he is buying the
+      SLOT for the day a benefit differs. **That half is dead and its
+      replacement is `card425-guard.test.ts`, which pins the row's presence.**
+
+      The second half is untouched and is what item 3 was actually protecting:
+      **one declaration, and each view states the fact exactly once.** That is
+      working law 4, it survives the reversal intact, and it is now stronger —
+      the footnote is INTERPOLATED from the tick's constant, so the two cannot
+      drift when he edits one.
+
+      An arm whose subject a founder ruling removes is not weakened, it is
+      re-aimed at what still holds; an arm quietly deleted is how a reversal
+      loses the part of itself that was right.
     */
     const surface = code(read(MODAL));
-    const css = code(read(join(HERE, "settings.css")));
-    expect(surface, "the identical perk list is back on the cards").not.toContain("dp-plan__perk");
-    expect(css, "the perk styling outlived its only consumer").not.toContain("dp-plan__perk");
-    /* One declaration, two readers — never two copies of one sentence. */
-    expect(surface.match(/ONE_FOR_EVERY_PLAN/g)?.length, "the footnote is not shared").toBe(3);
-    expect(surface).toContain("Every plan carries every model and every tool");
+    /* One declaration, two readers — the card's tick and compare mode's
+       footnote, which is built FROM it rather than repeating it. Three
+       mentions: the `const`, the interpolation, the JSX. A fourth means
+       somebody typed the sentence somewhere instead of reading it. */
+    expect(surface.match(/EVERY_PLAN_PERK/g)?.length, "the perk label is not shared").toBe(3);
+    expect(
+      surface,
+      "the footnote hand-types the fact again instead of deriving it",
+    ).toMatch(/const ONE_FOR_EVERY_PLAN = `\$\{EVERY_PLAN_PERK\}/);
+    /* And the sentence is not stated twice in ONE view: exactly one footnote
+       element survives, under the compare table. */
+    expect(
+      surface.match(/dp-plan__footnote/g)?.length,
+      "a view is stating the every-plan sentence twice again",
+    ).toBe(1);
+    expect(surface).toContain("the only differences are the ones shown above");
   });
 
   it("⚠ §6c'S BLURB SLOT IS EMPTY AND THE FRAMES LINE IS IN THE CREDITS BLOCK", () => {
