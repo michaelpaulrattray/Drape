@@ -1,7 +1,7 @@
 {
-  "edition": 226,
-  "updatedAt": "2026-09-03T04:04:22.710Z",
-  "shift": "Fable — night of 3 September (the author bench you ordered, run and merged)",
+  "edition": 227,
+  "updatedAt": "2026-09-03T05:30:00.000Z",
+  "shift": "Foreman — night of 3 September (the shifts now start when your queue has work in it)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,9 +111,9 @@
     ],
     "chips": [
       {
-        "label": "Most of what reaches the live site was never checked by anything",
-        "tone": "warn",
-        "source": "Measured: since 25 August, 343 of 499 changes reached the live branch without a pull request. Our checks only ran on pull requests — so on two thirds of what shipped, nothing looked."
+        "label": "The one expensive hole in that path is closed tonight",
+        "tone": "good",
+        "source": "You ruled it: leave the branch setting alone, add the secret scan. PR #473 does that. Most of what ships still skips the pull-request checks by design — but a leaked key can no longer ride along."
       },
       {
         "label": "They run on every push now, and we know every door into the live site",
@@ -121,9 +121,9 @@
         "source": "PR #459 on your #263. The deploy ceremony now type-checks the code it is about to publish, and refuses if it is broken. The sweep found one way in, and wrote the list down."
       },
       {
-        "label": "The queue: 76 open, 13 carrying your word, 8 going stale",
+        "label": "The queue: 76 open, 12 carrying your word, 8 going stale",
         "tone": "good",
-        "source": "At close: #466 closed (bench delivered); #469 and #470 opened from your morning replies. The 8 stale are the same eight as five nights running — none a bug, none waiting on you."
+        "source": "#471 and #469 closed tonight, #472 filed. Nothing is marked urgent for the first time in a while, which is exactly the state that exposed the wake-gate bug. The 8 stale are the same eight."
       }
     ]
   },
@@ -1514,7 +1514,7 @@
     {
       "id": "menu-badges-416",
       "title": "Two counters that had never shown a number — and what the Moderation one is about to tell you about your own account",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T20:18:58.201Z",
       "issueNumber": 416,
       "question": "You asked for a count beside Admin and beside Moderation in the account menu. Both are live.\n\nWhat is worth ten seconds of your eye is not that they work — it is WHAT THEY SAY. Admin 5 is five change requests waiting on you, the same five the Change requests tab shows. Moderation 1 is one account whose credits and records disagree.\n\nIn the frames that account is our test bot. ON YOUR OWN SITE IT WILL BE YOU, at −11,600 — and I would rather you saw that here than discovered it by clicking. Nothing is frozen and nothing is at risk. But that number was recorded as +1,050 a week ago, so it has moved a long way with nobody watching, and it is filed (#462) for a proper look at the rows.\n\nThe question for you, if you have a view: MODERATION counts things to ACT on — flagged referrals plus credit mismatches. The older written plan said it should count audit-log entries instead. I went against that on purpose, because the audit log fills every day whether anything is wrong or not, so it would never read zero and would stop meaning anything. Say the word and it changes.",
@@ -1534,7 +1534,7 @@
     {
       "id": "count-pill-415",
       "title": "The requests waiting on you are on the bar of every admin page now — and one frame shows why it nearly shipped wrong",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T15:36:59.457Z",
       "issueNumber": 415,
       "question": "You asked for two things on 1 September and both are live.\n\nTHE FIRST: \"if mods sent 5 requests to the admin panel it shold show 5 requests pending\". The number now sits on the Change requests tab, on every admin page — not just the dashboard. Five waiting draws a 5; none waiting draws nothing at all, rather than a (0).\n\nIt is a small number on the tab rather than a separate notification button, because the tab already takes you to the requests page and a button beside it doing the same thing is two doors to one room. If you would rather have the button, say so and it is a small change — but then the tab number goes, because showing it twice is how the two start disagreeing.\n\nTHE SECOND: \"even thought crew has its own refresh principles should we just fold it into the same as overview so everything is consistent\". This page now has the same clock, the same AUTO switch and the same refresh button as the rest of the panel. The line at the foot no longer says when it last checked — the bar says that — but it still tells you WHO wrote the briefing, which is the more useful half.\n\nONE THING WORTH KNOWING, because it is a real change to how this page behaves: Crew used to re-read itself every minute no matter what. It now follows the panel-wide AUTO switch, which is ON by default — so nothing changes for you unless you turn AUTO off, and then Crew stops re-reading itself like every other page, with the refresh button right there.\n\nTHE LAST FRAME IS THE ONE I WOULD LOOK AT. It is the bug the reviewer caught before this shipped: decline requests on the requests page and the list empties while the bar still says 5. Fixed, and the frame is kept because a picture of the bar contradicting the page in the same screenshot is the clearest statement of why one number must have one source.",
@@ -1574,7 +1574,7 @@
     {
       "id": "shared-autorefresh-453",
       "title": "One switch for the whole panel — and the page you cited as correct was never doing it either",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-02T13:35:00.000Z",
       "issueNumber": 453,
       "question": "You asked why the refresh controls act as individual toggles per admin page, and said it should work the way the moderator pages work. It does now. But the reason it was broken is not the reason it looked broken, and that decided the fix.\n\nTHE MODERATOR PAGE WAS NEVER SHARING ANYTHING.\n\nIt looks like it holds the switch across everything you do because /moderator is ONE page — its tabs are inside it, so nothing ever unloads. The admin panel is EIGHT separate pages, and each one loaded a fresh switch set to off. Neither side had any shared setting at all; seven pages each kept their own private copy. So copying the moderator page would have been copying nothing. What has been built is the thing neither side had.\n\nWHAT YOU SHOULD SEE.\n\nTurn AUTO 30s on anywhere — Overview, Users, Change requests, Invite codes, Bug reports, Audit logs, or the moderator dashboard — and walk anywhere else. It is on. Turn it off and that travels too. Close the browser and come back tomorrow and it is still how you left it.\n\n⚠ ONE DECISION IS YOURS, AND I HAVE MADE A CALL YOU MAY WANT TO REVERSE.\n\nOne shared switch means one starting position, and the eight pages disagreed about it: Overview started ON, the other seven started OFF. I looked up why Overview was different, expecting a decision of yours — it was not. It came from the original scaffolding commit back when that page was first built, so nobody ever chose it.\n\nI have set the shared starting position to ON, because that way no page loses anything it did today and you get what you asked for without clicking. The cost is that five admin pages now re-read themselves every 30 seconds when they used not to. The alternative is OFF, where nothing starts polling that did not before, but your landing page stops refreshing on arrival the way it always has.\n\nEither way it remembers you the moment you touch it, and it is one line to flip. Say the word if you want OFF.\n\nTHE FRAMES BELOW ARE THE SAME PAGE, NOTHING CLICKED.\n\nBoth are /admin/users reached by clicking Users from Overview. On the left of each pair is how it is now, on the right how it was this morning.",
@@ -3242,6 +3242,20 @@
   ],
   "pipeline": [
     {
+      "id": "wake-gate-471",
+      "title": "Your queue now WAKES the team — thirteen cards you had ordered were reading as \"nothing to do\"",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Your own observation: \"23 minutes between shifts is a long time when i have a lot sitting in the next up que?\" You were right, and the cause was exact. Before a shift starts, a small script asks whether there is anything worth starting for. It knew about three things — an URGENT card, a new pull request, a new comment on the queue — and it did NOT know about your NEXT UP list. So at 2:36 this morning, with nothing marked urgent and THIRTEEN cards you had personally ordered, it answered \"nothing to do\" and went back to sleep for ten minutes. It counts your ordered cards now. In plain terms: while you have work waiting in NEXT UP, a shift starts within a few minutes of finishing the last one, and at worst every ninety minutes. The ninety-minute pause is deliberate and not laziness — several of those thirteen are waiting on YOUR answer, and without it the team would start a new session every ten minutes to rediscover that it is still waiting on you."
+    },
+    {
+      "id": "rite-secret-scan-469",
+      "title": "The publish ceremony now checks for leaked passwords and keys before it publishes",
+      "status": "merged",
+      "prNumber": 473,
+      "note": "Your reply #110 — \"add the secret scan to the ceremony ... file it and get on with it\". Done, and you do not need to look at it. What it means: every night the team publishes your page and any code changes straight to the live branch. That path had every check EXCEPT the one that looks for a password or an API key accidentally written into a file — which is the one mistake that is genuinely expensive, because the repository is public and a key that lands there is compromised the moment it arrives. It now runs, it takes about a fifth of a second, and if it finds something the publish simply does not happen. Proven both ways before it shipped: a clean night still publishes, and a deliberately planted fake key stopped the publish and named the file. Worth one line of your time: MY FIRST TEST PASSED WHEN IT SHOULD HAVE FAILED — the fake key I planted contained the word EXAMPLE, which the scanner is built to ignore, so I had proved nothing. Caught before it shipped, but it is exactly the kind of green light that means nothing."
+    },
+    {
       "id": "author-model-466",
       "title": "The author's engine is one reversible line now, and the bench you ordered rode the same change",
       "status": "merged",
@@ -4764,7 +4778,7 @@
     113
   ],
   "nextUp": {
-    "readAt": "2026-09-03T04:04:49.981Z",
+    "readAt": "2026-09-03T05:43:29.556Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4819,11 +4833,6 @@
       {
         "issueNumber": 461,
         "title": "local-migration deploys production and has no branch protection at all",
-        "urgent": false
-      },
-      {
-        "issueNumber": 469,
-        "title": "The deploy rite runs the secret scan before it pushes (reply #110 — 'file it and get on with it')",
         "urgent": false
       },
       {
