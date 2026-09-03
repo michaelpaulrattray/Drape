@@ -190,6 +190,51 @@ describe("the brief box shows no scroll widget at rest (§2c)", () => {
   });
 });
 
+describe("the brief box's cap agrees with its own units", () => {
+  /*
+    ⚠ THE DEFECT THIS ARM EXISTS FOR SHIPPED IN THIS SECTION'S FIRST COMMIT AND
+    WAS CAUGHT IN REVIEW. The cap read `calc(7 * 1.45em)` — inherited from the
+    shared box — while a SECOND rule set this box to `13px/1.5` with 7px of
+    vertical padding. `em` resolves against font-size, so the cap computed to
+    131.95px where seven lines need 143.5px: it held 6.4 lines and clipped the
+    seventh mid-glyph, which is the exact defect #375 measured and fixed.
+
+    It survived a drive, too. The probe read `scrollHeight` 144 against
+    `clientHeight` 132 at the cap and that WAS the scroll widget's positive
+    control firing — the same measurement was also the defect, and nothing in
+    the reading said which of the two it was.
+
+    So the arm is not "the cap is 7 lines"; it is that the three numbers which
+    have to agree are declared TOGETHER. Split them and they drift again.
+  */
+  it("the cap, the font and the padding are declared in one rule", async () => {
+    const css = await read(CSS);
+    const hero = rule(css, ".dpc-hero__field .dpc-brieffield");
+    expect(hero).toContain("max-height");
+    expect(hero, "a cap in em is meaningless without the line-height beside it").toContain("font:");
+    expect(hero).toContain("padding:");
+    const lineHeight = hero.match(/font:[^;]*\/([\d.]+)/)?.[1];
+    const capMultiplier = hero.match(/max-height:\s*calc\(7\s*\*\s*([\d.]+)em/)?.[1];
+    expect(lineHeight, "the hero box must declare its line-height").toBeTruthy();
+    expect(capMultiplier, "the cap must be seven lines of something").toBeTruthy();
+    // The cap's multiplier IS the line-height, or the cap is not seven lines.
+    expect(capMultiplier).toBe(lineHeight);
+    // …and the padding it adds back is the padding it declares.
+    // `0` is unitless in this rule, so the middle value must not demand `px`.
+    const pad = hero.match(/padding:\s*(\d+)px\s+[\d.]+(?:px)?\s+(\d+)px/);
+    expect(pad, "the padding must be readable to be added back").toBeTruthy();
+    const declared = Number(pad![1]) + Number(pad![2]);
+    expect(hero).toContain(`+ ${declared}px`);
+  });
+
+  it("only ONE rule sets this box's cap", async () => {
+    const css = await read(CSS);
+    // Two rules for one box is how the units came apart in the first place.
+    const hits = css.split(".dpc-hero__field .dpc-brieffield").length - 1;
+    expect(hits, "a second rule for this box is the drift, not a tidy-up").toBe(1);
+  });
+});
+
 describe("the settings modal (§3)", () => {
   it("the card claims its height and does not content-size", async () => {
     const css = await read(CSS);

@@ -21,7 +21,7 @@ Two of them are his own unusual arms and are marked.
 | the column no longer floats | ✅ copy column and deck are both **424px** — the air holds **91.5px** in the middle rather than ~46px at each end |
 | headline 37px, both sentences | ✅ computed `500 37px/1.05`, `-0.042em`; *"Say who you need. / Meet eight of them."* |
 | one row at rest, no scroll widget | ✅ **`scrollHeight` 27 === `clientHeight` 27, `overflowY: "hidden"`, `rows=1`** — his exact probe |
-| grows, then scrolls at the cap | ✅ 27 → 46 → 105 → **131.9px (the cap)**, and only there does `overflowY` become `auto` with `scrollHeight` 144 > `clientHeight` 132 |
+| grows, then scrolls at the cap | ✅ re-driven after the review fix (§3a): 27 → 46 → 105 → **144px = exactly 7.0 lines**, and only PAST it does `overflowY` become `auto` (`scrollHeight` 183 > `clientHeight` 144) |
 | returns to rest when cleared | ✅ back to 27px and `hidden` |
 | placeholder is one line | ✅ `a fitness creator in their 30s, close-cropped hair` — one line at the 576px column |
 | `Cast it` stays baseline-aligned | ✅ button bottom sits **12px** above the field bottom at rest AND at the cap (415.3/427.3, 421.6/433.6) |
@@ -74,6 +74,48 @@ The two rulings may well reconcile — his #373 objection is to a filter mark st
 Brief 10 is the newer word (2026-09-02, a day after #375 closed, written looking at the current hero) and §2a's structure needs a compact resting state. So: **the resting height is brief 10's, the CAP is still #375's measured seven lines.** Each instruction taken where it is strongest, neither regressed, and the choice is on the card for him to overturn.
 
 ---
+
+## 3a · ⚠ THE ONE THE REVIEWER CAUGHT, AND MY EVIDENCE HAD ALREADY PRINTED IT
+
+**The cap held 6.4 lines, not seven, and this section's own diff broke it.**
+
+`§2c` above says the cap stays #375's measured seven lines. It did not. The cap
+rule kept `max-height: calc(7 * 1.45em)` — the shared box's line-height — while
+a SECOND rule added here set the hero box to `13px/1.5` with 7px of vertical
+padding. `em` resolves against font-size, so the cap computed to **131.95px**
+where seven lines of 19.5px text plus that padding need **143.5px**. A
+founder-length brief wrapping to seven lines got a scrollbar and a seventh line
+cut mid-glyph — **the exact defect #375 measured, reintroduced by the commit
+whose message claimed to be preserving the fix from it.**
+
+⚠ **AND THE FIRST DRIVE PRINTED THE PROOF AND I READ IT THE OTHER WAY.** The
+probe recorded `scrollHeight` **144** against `clientHeight` **132** at the cap,
+and §1 filed that as the scroll widget's positive control firing. It WAS that.
+It was also 144 = seven lines against a box that could only show 6.4, and
+nothing in the reading said which of the two it was. **A measurement that
+confirms the thing you were testing can be a different thing entirely.**
+
+**The repair is structural, not arithmetic.** The cap, the font and the padding
+are now declared in ONE rule, because `BriefField`'s own comment had already
+named this class — *"Two places deciding the same maximum is how they come to
+disagree at some font size nobody tested"* — and here it was two places deciding
+the same LINE, one commit apart.
+
+**Re-driven at the computed style:** `max-height: 143.5px`, line-height 19.5,
+padding 7 → **exactly 7.00 lines**. A 500-character brief now sits at 144px with
+**no scrollbar** (`scrollHeight` === `clientHeight`, `overflowY: hidden`); a
+620-character one scrolls with `overflowY: auto` and `scrollHeight` 183. Both
+directions, at the corrected cap.
+
+Two further findings from the same review, both fixed: Reset's `findIndex` had
+lost the `Math.max(0, …)` its sibling one call site up carries (unreachable
+today, and law 7's half-swept class); and `candidatesPerRoll ?? 8` was a typed
+fallback feeding the one line whose rule forbids typed values — the count is
+omitted now when the server does not send it, like the other two segments.
+
+**The guard gained two arms and the driver two sabotages**, and the arms are not
+*"the cap is seven lines"* — they are that the three numbers which must agree
+are declared together, and that only one rule sets this box.
 
 ## 3 · Three things found by looking, that no test asked about
 

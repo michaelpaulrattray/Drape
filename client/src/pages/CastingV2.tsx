@@ -363,7 +363,16 @@ export default function CastingV2() {
   }
 
   const price = config.data.rollPriceCredits ?? ROLL_PRICE_FALLBACK;
-  const candidatesPerRoll = config.data.candidatesPerRoll ?? 8;
+  /*
+    ⚠ **NO `?? 8` HERE ANY MORE, AND THE INCONSISTENCY IS THE POINT.** The
+    receipt line's other two segments already hide themselves when the server
+    does not send them; the count alone carried a typed fallback, which is the
+    one thing that line may not do — a hand-written number arriving through the
+    door marked "default". It matched the server constant today and would only
+    have differed against an older server, which is exactly when a customer
+    would have been told a count nobody was charging for.
+  */
+  const candidatesPerRoll = config.data.candidatesPerRoll;
   /*
     THE HERO'S RECEIPT LINE, DERIVED (#435 §2d). Every segment comes from the
     server's own roll constants — the count and the price from the numbers that
@@ -685,10 +694,10 @@ export default function CastingV2() {
             */}
             <p className="dpc-hero__receipt">
               <span className="dpc-hero__receiptvals">
-                {candidatesPerRoll} CANDIDATES
+                {candidatesPerRoll ? `${candidatesPerRoll} CANDIDATES` : null}
                 {price ? (
                   <>
-                    {" · "}
+                    {candidatesPerRoll ? " · " : null}
                     {/*
                       ⚠ **THE TILDE STAYS ON THE PRICE, AND HIS BRIEF'S EXAMPLE
                       PUTS IT ONLY ON THE DURATION.** D-109 is why: every cost

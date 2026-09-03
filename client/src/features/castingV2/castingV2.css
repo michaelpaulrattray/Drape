@@ -2533,9 +2533,32 @@
   regresses neither**, and the choice is his to overturn: it is on #435 and on
   his page. What it must NOT become is a silent pick of one over the other.
 */
+/*
+  ⚠ **THE CAP, THE FONT AND THE PADDING ARE ONE RULE ON PURPOSE — DO NOT SPLIT
+  THEM.** They were two rules for one commit and the cap immediately went wrong:
+  it read `calc(7 * 1.45em)`, inherited from the shared box's line-height, while
+  a second rule below it set this box to `13px/1.5` with 7px of vertical
+  padding. `em` resolves against font-size, so the cap computed to 131.95px
+  while seven lines of 19.5px text plus its padding need 143.5px — **the cap
+  held 6.4 lines and clipped the seventh mid-glyph.**
+
+  It survived the drive, too: the probe recorded `scrollHeight` 144 against
+  `clientHeight` 132 at the cap and that was read as the scroll widget's
+  positive control firing, which it was — the same measurement was also the
+  defect, and nothing in the reading said which. `BriefField`'s own comment
+  had already named the class: *"Two places deciding the same maximum is how
+  they come to disagree at some font size nobody tested."* Here it was two
+  places deciding the same LINE, one commit apart.
+
+  So the three numbers that have to agree now sit in one block where changing
+  one makes the other two visible.
+*/
 .dpc-hero__field .dpc-brieffield {
   min-height: 0;
-  max-height: calc(7 * 1.45em);
+  font: 400 13px/1.5 var(--font-sans);
+  padding: 4px 0 3px;
+  /* 7 lines at THIS rule's line-height, plus THIS rule's vertical padding. */
+  max-height: calc(7 * 1.5em + 7px);
 }
 
 /*
@@ -2554,10 +2577,6 @@
   padding: 11px 13px 11px 14px;
 }
 
-.dpc-hero__field .dpc-brieffield {
-  font: 400 13px/1.5 var(--font-sans);
-  padding: 4px 0 3px;
-}
 
 .dp-field.dpc-briefrow > svg {
   margin-top: 2px;

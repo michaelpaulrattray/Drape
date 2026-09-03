@@ -172,7 +172,16 @@ export function CastSettingsModal({
               onClick={() => {
                 onStyle(DEFAULT_CAST_STYLE);
                 if (!followHeld) onImagination(DEFAULT_IMAGINATION);
-                setAt(deck.findIndex((entry) => entry.value === DEFAULT_CAST_STYLE));
+                /*
+                  `Math.max(0, …)` for the reason its sibling at `currentIndex`
+                  has it: `findIndex` answers -1, and `index` clamps the TOP of
+                  the range but not the bottom, so a miss would read `deck[-1]`
+                  and the modal would throw on `shown.line`. Unreachable today —
+                  the default style is in `CAST_STYLES` by type — and it is the
+                  same shape already guarded one call site up, which is the half
+                  of law 7 that gets skipped.
+                */
+                setAt(Math.max(0, deck.findIndex((entry) => entry.value === DEFAULT_CAST_STYLE)));
               }}
             >
               Reset all
