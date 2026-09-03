@@ -4,7 +4,7 @@
 #
 #   scripts/secret-scan.sh <base-ref>   scan the commits base-ref..HEAD (the gate: a PR's own commits)
 #   scripts/secret-scan.sh              scan the FULL history (the weekly run; the one-time 2026-08-26 reading)
-#   scripts/secret-scan.sh fetch        download the PINNED linux binary to /tmp/gitleaks (sha256-verified) and print its path
+#   scripts/secret-scan.sh fetch        download the PINNED binary for THIS os (sha256-verified), cache it, print its path
 #
 # THE PIN LIVES HERE AND NOWHERE ELSE: both workflows call `fetch`, so the
 # gate and the weekly run cannot drift onto different gitleaks versions
@@ -24,13 +24,51 @@ set -eu
 cd "$(dirname "$0")/.."
 
 GITLEAKS_VERSION="8.30.0"
+# Both sha256 values are copied from the release's own published
+# gitleaks_8.30.0_checksums.txt, not from whatever a download happened to
+# produce - a pin taken from the artifact in hand pins the tampering too.
 GITLEAKS_LINUX_SHA256="79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e"
+GITLEAKS_WINDOWS_SHA256="54fe94f644b832dd08e8c3a5915efb3bfa862386d59fb27ca0792cb687a83573"
 
+# WHY THIS MODE GREW AN OS (#469, 2026-09-03, his order: "Add the secret scan
+# to the ceremony ... file it and get on with it"). The deploy rite runs on the
+# founder's WINDOWS machine and it now calls this script, so `fetch` could no
+# longer mean "the linux binary". Measured that day on that machine: no
+# `gitleaks` on PATH, no `sh` on the Windows PATH, and no `curl.exe` - so the
+# rite resolves Git Bash's own sh and everything below runs inside it, where
+# curl, unzip and sha256sum all exist.
+#
+# CACHED, and the cache is verified rather than trusted: a hit still has to
+# match the pin, so a truncated or swapped binary is re-fetched instead of
+# being run. That is also what makes the rite work offline after its first run
+# - which matters, because a control the ceremony REFUSES on must not turn a
+# flaky network into "no deploys tonight".
 if [ "${1:-}" = "fetch" ]; then
-  curl -fsSL -o /tmp/gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-  echo "${GITLEAKS_LINUX_SHA256}  /tmp/gitleaks.tgz" | sha256sum -c - >&2
-  tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
-  echo /tmp/gitleaks
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) GL_OS=windows ;;
+    *)                    GL_OS=linux ;;
+  esac
+  CACHE="${TMPDIR:-/tmp}/gitleaks-${GITLEAKS_VERSION}-${GL_OS}"
+  if [ "$GL_OS" = "windows" ]; then
+    BIN="$CACHE/gitleaks.exe"; SHA="$GITLEAKS_WINDOWS_SHA256"
+    ASSET="gitleaks_${GITLEAKS_VERSION}_windows_x64.zip"
+  else
+    BIN="$CACHE/gitleaks";     SHA="$GITLEAKS_LINUX_SHA256"
+    ASSET="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+  fi
+  if [ ! -x "$BIN" ]; then
+    mkdir -p "$CACHE"
+    curl -fsSL -o "$CACHE/$ASSET" \
+      "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${ASSET}"
+    echo "${SHA}  $CACHE/$ASSET" | sha256sum -c - >&2
+    if [ "$GL_OS" = "windows" ]; then
+      unzip -o -q "$CACHE/$ASSET" gitleaks.exe -d "$CACHE"
+    else
+      tar -xzf "$CACHE/$ASSET" -C "$CACHE" gitleaks
+    fi
+    chmod +x "$BIN"
+  fi
+  echo "$BIN"
   exit 0
 fi
 
