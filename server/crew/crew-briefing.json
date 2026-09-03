@@ -1,7 +1,7 @@
 {
-  "edition": 230,
-  "updatedAt": "2026-09-03T09:15:24.080Z",
-  "shift": "Foreman — 3 September evening (#475: the presence score we were paying for and throwing away)",
+  "edition": 231,
+  "updatedAt": "2026-09-03T11:26:24.758Z",
+  "shift": "Foreman — 3 September night (#436: the Submit button that scrolled out of reach)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3242,6 +3242,13 @@
   ],
   "pipeline": [
     {
+      "id": "staff-dialogs-436",
+      "prNumber": 480,
+      "status": "merged",
+      "title": "A moderator filling in your refund form could not find the Submit button",
+      "note": "Your brief 11, built and merged (PR #480). Filing a Stripe refund request means fifteen fields, and the whole card scrolled — so the button at the bottom scrolled away with it, and the easiest thing to click became whatever happened to be on screen. The form's middle scrolls now and the button never moves. Six other staff windows were quietly worse: suspend, credits, role change, review and both audit dialogs had no height limit at all, so on a short screen the confirm button was not below a fold — it was off the screen entirely, with nothing to scroll. Also yours: the mono ACCOUNT / AUDIT / CHANGE REQUEST line above each title, eight icons out of the titles, one field-label style where there were three, the rule moved out of \"Title * (min 5 characters)\" and under the field where it is read when it fails, Priority showing all four options instead of hiding three, and \"Processing…\" replaced by \"Adding credits…\", \"Promoting…\", \"Blocking…\". Driven in the running app at the short screen height you named, in both themes — and three defects passed every automated test and were caught only by looking."
+    },
+    {
       "id": "presence-score-475",
       "title": "You asked if we were using the best models. The model was right — we were throwing away half of what it tells us",
       "status": "merged",
@@ -4516,10 +4523,10 @@
   "problems": [
     {
       "id": "shared-tree-block-479",
-      "title": "Your page was two editions behind, and it was not because nothing happened",
+      "title": "Your page is three editions behind now, and still not because nothing happened",
       "severity": "warning",
       "state": "open",
-      "detail": "If this page jumped from edition 228 straight to 230, this is why. Two finished updates sat unable to reach you: edition 229 (which is what marks your reply about the author test as read) and edition 230 (tonight's).\n\nThe cause is not a failure. Your own editing session had two files open and unsaved to the record — the new philosophy law you wrote today, and the plan amendment — and the deploy step refuses to publish while ANY file is left half-finished, because a deploy is supposed to carry finished work rather than somebody's desk. That rule is right and I did not go around it, and I did not touch your files.\n\nWhat it cost: two nights of work waited about an hour and a half each. What makes it worth telling you rather than fixing quietly — your night team and your own editing session share one folder, so a shift can be held up by your editor simply being parked mid-thought, and there is no signal either way. #479 lays out four ways to fix that, cheapest first, with a recommendation. It touches the deploy path, so it is your call rather than mine."
+      "detail": "Editions 229, 230 and this one are written, checked and waiting. The publish step refuses to run while there are unsaved edits sitting in the shared folder — and the unsaved edits are YOURS: the philosophy you wrote today, and last night's note on the casting plan. That refusal is correct and no shift will touch your files to get around it. Saving or discarding those two releases all three at once. #479 has four ways to stop this recurring, cheapest first, with a recommendation — it is a decision for you, not a bug in your work."
     },
     {
       "id": "billing-return-domain-467",
@@ -4655,13 +4662,6 @@
       "state": "resolved"
     },
     {
-      "id": "openrouter-balance-low",
-      "title": "The OpenRouter account is nearly empty again — $7.70 left, about three days at the current rate, and at zero the studio visibly stops taking briefs",
-      "detail": "OpenRouter tops itself up. A balance is a reading on the deploy receipt, never a problem — your words, 2 September: \"open router auto tops up i never want to see it as an issue appear again\". The alarm that produced this row was removed in #440, and the standing orders now say a provider balance is never written here again.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nOpenRouter is the text engine behind every roll and refine: it reads each brief and each edit before anything renders. It is LOW: $7.70 remaining of $260 granted, $252.30 spent — re-read at the endpoint myself at 22:51Z on 29 Aug, not inherited.\n\nTwenty-five minutes after the previous reading it is the same figure, and that is what it should be: nothing was rolling. The account's own daily counter says $3.59 went out on 29 Aug, so it is spending normally. (Editions 118-120 said this number \"had not moved for a third night running\" and made the account look frozen; that was corrected in edition 121 and the correction holds — the shifts run back to back through one night and three readings inside two hours were each written up as a separate night.)\n\nThe original point stands and is unchanged: money goes out, and the GRANTED figure has not risen since 27 Aug, when a $10 top-up did land (250 to 260). Whatever tops this account up is topping up less than it burns. Runway at this rate is about two days.\n\nWhat happens at zero is DRIVEN rather than remembered (30 Aug, foreman-111): an EDIT is refused free — nobody charged, nobody can edit — and a ROLL is refused free too. Nobody loses credits; the studio visibly stops taking briefs.\n\nfal (the image engine) is separate and tops itself up.",
-      "severity": "urgent",
-      "state": "resolved"
-    },
-    {
       "id": "desk-unreadable",
       "title": "Night shifts cannot read the Desk artifact (#42)",
       "detail": "Resolved by your own switch-over word before bed (26 Aug): this page IS the Desk now — shifts write it and read your replies here directly, no relay. The claude.ai artifact is a read-only mirror nobody updates. Issue #42 closed on that word.",
@@ -4684,10 +4684,10 @@
     },
     {
       "id": "queue-shape-0903-foreman",
-      "title": "The queue: 76 open, 11 carrying your word, 0 urgent",
+      "title": "The queue: 77 open, 10 carrying your word, 0 urgent",
       "severity": "info",
       "state": "open",
-      "detail": "Measured at close. 76 open — #475 closed tonight and #478 filed out of it, so the count is flat. 11 carry your word and every one is takeable; none is waiting on you. Still no urgent card. Rotting is the same eight as the last eight nights (#10 #14 #18 #22 #30 #55 #61 #65) — none is a bug, none is yours, and the shape is flat rather than getting worse."
+      "detail": "One closed tonight (#436, yours) and two opened from the work. Eight cards have now sat untouched since 25 August — the same eight as the last nine nights, so it is flat rather than getting worse. Nothing in the queue is marked urgent."
     }
   ],
   "acknowledgedReplyIds": [
@@ -4807,7 +4807,7 @@
     114
   ],
   "nextUp": {
-    "readAt": "2026-09-03T09:15:32.028Z",
+    "readAt": "2026-09-03T11:26:17.731Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4847,11 +4847,6 @@
       {
         "issueNumber": 435,
         "title": "Casting hero column + Cast settings modal (brief 10) — the left column is centred, so it floats beside a full deck",
-        "urgent": false
-      },
-      {
-        "issueNumber": 436,
-        "title": "Staff dialogs take the house grammar (brief 11) — and Submit request scrolls out of reach on the request form",
         "urgent": false
       },
       {
