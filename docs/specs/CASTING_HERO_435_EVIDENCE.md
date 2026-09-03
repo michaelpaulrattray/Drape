@@ -1,0 +1,282 @@
+# Section 10 — casting hero column + Cast settings modal: what was measured
+
+**Card:** #435. **Brief:** `docs/specs/Casting-ui-ux-design/drape-redesign/10-casting-hero-and-settings.md`.
+**Driven:** 2026-09-03, worktree dev server on :3021, dev database, verify-bot session.
+**Money:** $0 — no roll fired, no credit moved, no paid call.
+
+His words filing it: *"the issue with our current one is its not balanced and just feels poorly designed."*
+
+---
+
+## 1 · His definition of done, arm by arm
+
+Every one of these was READ IN THE RUNNING APP, not inferred from the source.
+Two of them are his own unusual arms and are marked.
+
+### Hero column
+
+| his arm | measured |
+|---|---|
+| structure is pitch / spacer / ask | ✅ `.dpc-hero__pitch` + `.dpc-hero__air` + `.dpc-hero__ask`; `justify-content` on the column is `normal`, not `center` |
+| the column no longer floats | ✅ copy column and deck are both **424px** — the air holds **91.5px** in the middle rather than ~46px at each end |
+| headline 37px, both sentences | ✅ computed `500 37px/1.05`, `-0.042em`; *"Say who you need. / Meet eight of them."* |
+| one row at rest, no scroll widget | ✅ **`scrollHeight` 27 === `clientHeight` 27, `overflowY: "hidden"`, `rows=1`** — his exact probe |
+| grows, then scrolls at the cap | ✅ re-driven after the review fix (§3a): 27 → 46 → 105 → **144px = exactly 7.0 lines**, and only PAST it does `overflowY` become `auto` (`scrollHeight` 183 > `clientHeight` 144) |
+| returns to rest when cleared | ✅ back to 27px and `hidden` |
+| placeholder is one line | ✅ `a fitness creator in their 30s, close-cropped hair` — one line at the 576px column |
+| `Cast it` stays baseline-aligned | ✅ button bottom sits **12px** above the field bottom at rest AND at the cap (415.3/427.3, 421.6/433.6) |
+| receipt line, all three derived | ✅ `8 CANDIDATES · ~160 CR · ~50 SECONDS`, every value from the config payload |
+| settings control: no chevron, radius 8, mono value | ✅ `--r-sm`, no chevron in the button, `Photoreal · Low` from `castSettingsSummary` |
+| `Start from photos` opens the concept flow | ✅ opens the dialog on its drop zone: *"UPLOAD A CONCEPT / Start from a picture / Drop a picture in…"* |
+| no TRY chips, no count selector | ✅ absent |
+
+### Modal
+
+| his arm | measured |
+|---|---|
+| two columns, no nav | ✅ Style `flex: 1 1 372px`, Imagination `flex: 1 1 296px` on `--raised` with a `--rule` left border |
+| card `height: 100%` / `max-height: 524px` | ✅ 476px tall in a 540px window; content-sizing never happens |
+| the action is never inside a scrolling region | ✅ `Done` is **not** a descendant of `.dpc-setm__body`; head and foot are `flex: none` |
+| carousel: three cards, arrows on the stage, caption on the centre card, coming styles dashed with COMING SOON | ✅ all four |
+| ⚠ **step all three styles — the centre card must not change size** | ✅ **158.75px on every one of six readings across two full laps.** `descH` 38, `actH` 26, `stageH` 221.61 — all constant |
+| action resolves to exactly one of three | ✅ `IN USE` / `Use {name}` / `Not available yet — we'll say when it lands.` |
+| imagination: two cards, both lines, DEFAULT on Low | ✅ |
+| `Reset all` only when off defaults | ✅ absent at defaults → **present after picking Max** → returns to `photoreal` + `low` → **absent again** |
+| scrim rect equals the viewport | ✅ `{0, 0, 1434, 900}` = `documentElement.clientWidth/Height`. ⚠ `innerWidth` reads 1440 because it counts the scrollbar — the arm passes against the right comparand and fails against the wrong one |
+| ⚠ **check at 540px viewport height specifically** | ✅ card 476px inside 540, `Done` visible, no overflow in either axis, the stage absorbed the loss (221.6 → **173.6px**, centre card 158.75 → 119.4) |
+| Escape and scrim-click dismiss | ✅ both |
+| both themes, `token-guard` passing | ✅ frames below; `token-guard` green |
+
+---
+
+## 2 · ⚠ Where his brief and the codebase disagreed — five, and each was decided rather than followed
+
+§2b's whole point: a brief is authoritative on LOOK and cannot know the code.
+
+**1 · `4 CR` is not what a roll costs.** The brief writes `8 CANDIDATES · 4 CR · ~40 SECONDS` and supports it with *"The sheet's own `Cast eight` says `4 cr`"*. There is no `Cast eight` string in this repository, and the sheet renders `~ {price} credits` from `CASTING_V2_ROLL_PRICE_CREDITS` — **160**. His own rule for the line settles it: *"A hand-written price that disagrees with the charge does the opposite of what this line is for."* **The line derives and reads 160.**
+
+**2 · The duration had no constant at all, so it was MEASURED.** Read on production, `generation_operations` where `kind = 'castingV2.roll'`, **n = 234 completed rolls**:
+
+```
+min 35s · p25 42s · MEDIAN 47s · p75 53s · p90 64s · max 359s · mean 57.6s
+```
+
+His `~40` is optimistic — the fastest roll on record is 35s and better than three quarters of them overrun 40. **50 ships**: the nearest five-step at or above the median, so the median and everything under it beat the number a customer was given. The constant carries that reading and its date (`server/castingV2/rollDuration.ts`), because a figure like this goes stale silently.
+
+**3 · ⚠ The modal already existed, and it carries a behaviour the brief does not know about.** `CastSettingsModal.tsx` has been live since #142. Its `followHeld` branch (#177 Row A) replaces the imagination half with a sentence during a standing follow, because an anchored roll never calls the author. **§3d writes "two cards" unconditionally — following it literally would have put a dead control back on the exact surface a founder ruling removed one from.** Preserved, and pinned by an arm.
+
+**4 · ⚠ The glyph his brief names is banned by a guard standing on his own ruling.** §2e asks for *"the sliders mark (`P.filters`)"*. There is no `filters` key; the glyph he means is `P.settings`, and `foundation/icons-guard.test.ts` forbids it in every client `.tsx` on the strength of **#373** (*"i want to change the setting icon at the bottom of the rail to a cog — this looks more like a filter icon"*). That guard's own docblock records the near-miss that widened it: **brief 04 §2b instructed this same key**.
+
+The two rulings may well reconcile — his #373 objection is to a filter mark standing for the APP's settings, and this chip tunes THIS ROLL — **but that is his call, so nothing here reinterprets it.** The chip keeps lucide's `Settings2`, which is the same two-slider drawing, already on this control. **One word from him flips it.**
+
+**5 · ⚠ Two founder instructions meet on the brief box and they disagree.** §2c asks for `rows="1"` and `max-height: 84px` (~4.3 lines). **#375 set this box on his order** — *"to balance the space we could maybe make the prompt box slightly bigger"* — and the measurement filed with it shows briefs of his own stated length (250–350 characters) scrolling at a four-line cap **at every width tested**, and at 1024px even the 250-character one.
+
+Brief 10 is the newer word (2026-09-02, a day after #375 closed, written looking at the current hero) and §2a's structure needs a compact resting state. So: **the resting height is brief 10's, the CAP is still #375's measured seven lines.** Each instruction taken where it is strongest, neither regressed, and the choice is on the card for him to overturn.
+
+---
+
+## 3a · ⚠ THE ONE THE REVIEWER CAUGHT, AND MY EVIDENCE HAD ALREADY PRINTED IT
+
+**The cap held 6.4 lines, not seven, and this section's own diff broke it.**
+
+`§2c` above says the cap stays #375's measured seven lines. It did not. The cap
+rule kept `max-height: calc(7 * 1.45em)` — the shared box's line-height — while
+a SECOND rule added here set the hero box to `13px/1.5` with 7px of vertical
+padding. `em` resolves against font-size, so the cap computed to **131.95px**
+where seven lines of 19.5px text plus that padding need **143.5px**. A
+founder-length brief wrapping to seven lines got a scrollbar and a seventh line
+cut mid-glyph — **the exact defect #375 measured, reintroduced by the commit
+whose message claimed to be preserving the fix from it.**
+
+⚠ **AND THE FIRST DRIVE PRINTED THE PROOF AND I READ IT THE OTHER WAY.** The
+probe recorded `scrollHeight` **144** against `clientHeight` **132** at the cap,
+and §1 filed that as the scroll widget's positive control firing. It WAS that.
+It was also 144 = seven lines against a box that could only show 6.4, and
+nothing in the reading said which of the two it was. **A measurement that
+confirms the thing you were testing can be a different thing entirely.**
+
+**The repair is structural, not arithmetic.** The cap, the font and the padding
+are now declared in ONE rule, because `BriefField`'s own comment had already
+named this class — *"Two places deciding the same maximum is how they come to
+disagree at some font size nobody tested"* — and here it was two places deciding
+the same LINE, one commit apart.
+
+**Re-driven at the computed style:** `max-height: 143.5px`, line-height 19.5,
+padding 7 → **exactly 7.00 lines**. A 500-character brief now sits at 144px with
+**no scrollbar** (`scrollHeight` === `clientHeight`, `overflowY: hidden`); a
+620-character one scrolls with `overflowY: auto` and `scrollHeight` 183. Both
+directions, at the corrected cap.
+
+Two further findings from the same review, both fixed: Reset's `findIndex` had
+lost the `Math.max(0, …)` its sibling one call site up carries (unreachable
+today, and law 7's half-swept class); and `candidatesPerRoll ?? 8` was a typed
+fallback feeding the one line whose rule forbids typed values — the count is
+omitted now when the server does not send it, like the other two segments.
+
+**The guard gained two arms and the driver two sabotages**, and the arms are not
+*"the cap is seven lines"* — they are that the three numbers which must agree
+are declared together, and that only one rule sets this box.
+
+## 3 · Three things found by looking, that no test asked about
+
+**1 · The override rule was printed twice, one glance apart.** `CAST_STYLE_LINES.photoreal` ended *"Anything your brief says about the look, light or setting overrides it."* and brief 10's new footer says *"These are defaults — anything your brief says about the look, light or setting overrides them."* **The duplication did not exist before this PR — the footer created it.** The footer owns the rule now, because it is true of both settings rather than of the style alone; the style line keeps its descriptive half. Recorded in `shared/castStyles.ts` so it is restored if the footer ever goes.
+
+**2 · My own guard caught my own auto margin.** `.dpc-setm__mindtop .dpc-setm__inuse { margin-left: auto; }` pushed the IN USE pill right inside an imagination card. His §4 bans `margin: auto` on this whole surface; the arm fired on its author within a minute of being written, and it is a spacer element now.
+
+**3 · The token guard caught a raw colour and two issue numbers.** The caption's scrim gradient was `rgb(0 0 0 / 62%)` — `--scrim` is this system's own bottom-gradient end and is what ships. And `#435`/`#177` in two test titles are valid three-digit hex, which is why that guard says what it says.
+
+⚠ **And one thing I first measured wrong, kept because the correction is the lesson.** The first carousel reading had the centre card at **157.16px then 158.75px** and looked like his size-stability arm failing. It was the modal's 0.22s open animation: I measured the first card before the card had finished arriving. At rest it is 158.75px on all six readings. **A reading taken during a transition is not a reading of the thing.**
+
+---
+
+## 4 · The promotion pass (§6, `PROMOTION-PASS.md`)
+
+Counted as his rule requires — **real consumers in the code, never surfaces in a design** (his own correction, #262: *"From here: two real consumers in the codebase, or it waits."*).
+
+| device | real consumers | verdict |
+|---|---|---|
+| the fanned card deck (stage + 3-card fan + `container-type: size` + tilt) | **2** — `.dpc-deck` (HeroDeck) and `.dpc-setm__*` (this carousel) | **meets the bar → carded, not done here** |
+| mono label + `flex: 1` hairline | **2** — `.dpc-deck__head/__rule` and `.dpc-hero__receipt/__receiptrule` | **meets the bar → carded, not done here** |
+| `.dpc-hero__*` column parts, `.dpc-setm__*` shell | 1 each | stays |
+| `ConceptUploadHandle`, `CASTING_V2_ROLL_TYPICAL_SECONDS` | 1 each | stays |
+
+⚠ **His brief says the fan has THREE consumers — "the casting hero, the templates run modal, and this style carousel". The templates run modal does not exist in this codebase.** That is the error his #262 ruling names by name, appearing again: counting surfaces in the design rather than consumers in the code. **Two is still his bar, so the promotion is warranted on the corrected count** — and it is a separate PR by `PROMOTION-PASS.md`'s own rule (written card first, one PR, no behaviour change), because making one component serve both fans needs a rewrite, and *"if a promotion needs a rewrite to be general it is not ready."*
+
+---
+
+## 5 · Frames
+
+Both themes, and the short window he singled out.
+
+- `evidence/435/hero-dark-1440.png` — the restructured column beside the deck
+- `evidence/435/hero-light-1440.png`
+- `evidence/435/modal-dark-1440.png` — two columns, carousel, both imagination lines
+- `evidence/435/modal-light-1440.png` — and the duplicated sentence gone
+- `evidence/435/modal-dark-540.png` — ⚠ **his 540px case**: `Done` visible, nothing clipped
+
+⚠ **One thing his eye should judge that no arm can:** the style cards are blank swatches, because **there is no per-style artwork in this product** and inventing some would be a picture of a look we cannot photograph. Honest, and it reads thin — a browsable deck of three empty rectangles. If the carousel is worth artwork, that is a decision and a cost, not a fix.
+
+---
+
+## 6 · The instrument was verified before its verdicts counted
+
+`client/src/features/castingV2/section10-guard.test.ts` — 22 arms at the first review, **28 after §7's fix**, every absence arm carrying a positive control, every source proven readable before it is judged.
+
+**9 sabotages → 9 RED** (**15 → 15 after §7**), each naming its own rule, tree restored in `finally`, guard green again afterwards** (`scripts/_435-sabotage-disposable.mts`): centre the column · make the spacer an auto margin · drop the description's `min-height` · give the stage a fixed height · hand-write the duration · default the duration instead of omitting it · draw the imagination cards during a follow · leave the scroll widget on at rest · put `Done` inside the scroller.
+
+⚠ **The driver's first run scored every sabotage `UNRUN` and REFUSED to grade** — vitest colours its summary, so the ANSI escapes sat between `Tests` and the count and the regex never matched. That refusal is the behaviour it was written for: the staff-dialog driver one section ago reported five clean greens having never executed a test.
+
+---
+
+## 7 · ⚠ THE SECOND ONE THE REVIEWER CAUGHT — AND IT WAS A REGRESSION, NOT A GAP
+
+**Found by the PR review after every suite in this file was green, and after
+§3a's three defects had already been found by looking.** Filed as review finding
+1; fixed on this branch by the shift that inherited the PR.
+
+**What a customer got.** Type a brief at a wide window, then narrow the window —
+resize it, rotate a tablet, or zoom the browser. The same sentence now needs more
+lines, but the box stayed the height it was, and the scroll widget this component
+had just switched OFF stayed off. So **the tail of the brief was unreachable: no
+scrollbar, no wheel-scroll, nothing to drag** — on the one control whose entire
+purpose is *a brief you can read before you pay for it*, beside a button that
+spends 160 credits. It came back only on the next keystroke.
+
+**Driven at :3021, 223-character brief, 1440px → 900px:**
+
+| | box width | inline height | scrollHeight | scroll widget | verdict |
+|---|---|---|---|---|---|
+| wide | 459px | 66px | 66 | hidden | fits — nothing hidden |
+| **narrowed, no keystroke** | 251px | **66px (stale)** | **124** | **hidden** | **58px of 124 unreachable** |
+| one keystroke later | 251px | 124px | 124 | hidden | recovers |
+
+A 418-character brief is worse, because the cap bites: **202px of content in a
+124px box.**
+
+⚠ **It is a REGRESSION and that is the load-bearing part.** The stylesheet still
+carries `overflow-y: auto` on this box (`castingV2.css`), and before §2c switched
+the widget in JS that resting value surfaced a scrollbar in exactly this state —
+the height was equally stale, but **the brief stayed readable.** §2c is his
+instruction and is right; making the inline value authoritative is what removed
+the safety net that had been covering for the stale measurement.
+
+**The fix, and why it is not the tempting one.** Handing the resting `auto` back
+to the stylesheet would fix the clipping and undo his instruction. Instead the
+measurement is **extracted into one function** (`fitToContent`) and **re-run on a
+resize as well as on a keystroke** — one place still decides, it now just hears
+about both of its inputs.
+
+⚠ **The width is compared before re-measuring, and that is what makes it safe
+rather than a loop.** `fitToContent` writes the field's own height, so an
+observer that re-ran on *any* size change would retrigger itself without end —
+and `main.tsx` suppresses `ResizeObserver loop` warnings globally, so it would
+have run hot in production with nothing in the console to show it. Border-box
+inline size is the one dimension this component never writes, and — unlike
+`clientWidth` — it does not move when a scrollbar appears, so a change in it is
+always someone else's news.
+
+**Both halves were driven, because they are two separate writes.** A fix that
+re-ran only the height would pass the table above:
+
+| arm | pre-fix | post-fix |
+|---|---|---|
+| B · narrowed, brief still under the cap | **CLIPPED** (66 of 124) | 124px, nothing hidden |
+| E · narrowed, 418 chars, past the cap | **CLIPPED** (124 of 202) | 144px clamped, **widget `auto`** |
+
+**Frames** — the pair is worth more than the numbers:
+
+- `evidence/435/brief-resize-before-900.png` — the sentence stops dead at *"on a
+  harbour wall at first"*, and there is no scrollbar anywhere in the box
+- `evidence/435/brief-resize-fixed-900.png` — the whole brief, *"…at first light
+  in an oilskin jacket, the kind of face that has been reading weather for forty
+  years."*
+
+**The driver was proven both ways** (`scripts/_435b-resize-disposable.mjs`): run
+against the pre-fix file it reports REPRODUCED on arms B and E; against the fixed
+file it reports FIXED on all five. It also carries arm C as a positive control —
+one keystroke recovers the box — so a clipped reading cannot be an artifact of
+how the box is measured. The pre-fix file was restored from a backup, not a
+`git checkout`.
+
+### The guard gained four arms, and the sabotage set four more
+
+`section10-guard.test.ts` is now **28 arms**, and **15 sabotages → 15 RED, each
+naming its own rule, tree restored in `finally`.** The four new ones: measure on
+a keystroke only again (the finding itself) · re-measure on ANY size change (the
+observer feeds itself) · fall back to `clientWidth`, which a scrollbar moves ·
+rename the shared measure so the two paths inline it separately.
+
+⚠ **These are SOURCE arms and they say so in the file.** There is no render
+harness in this client — no jsdom, no testing-library — and jsdom has no layout
+to measure even if there were, so **no unit arm here can execute this behaviour;
+the driver above is the behavioural proof.** What the arms pin are the three
+structural facts the fix rests on, each of which a later "simplification" could
+remove without any surface looking wrong.
+
+### The law-7 class sweep
+
+**Class: a layout measurement cached in an inline style, re-run only on a data
+change and never on a geometry change.**
+
+Swept every inline write of a measured dimension in `client/src`. There are
+exactly two owners: this one, and **`features/casting/components/ImageViewer/RefinePanel.tsx:91`**
+— the legacy studio's refine box, same shape, `[refineInput]` dep, inline height
+from `scrollHeight`.
+
+**It is the same shape with a lesser consequence, read at the code rather than
+assumed:** that textarea's `className` sets no overflow and the component never
+writes one, so the element keeps a textarea's default `overflow: auto` — a stale
+height there shows a scrollbar and **nothing becomes unreachable.** The box is
+merely the wrong size until the next keystroke.
+
+**Filed, not fixed** — it is the legacy studio (retiring at N8), outside brief
+10, and changing it is a visible change nobody asked for. Card linked from this
+PR.
+
+### One more thing an existing guard caught
+
+`token-guard.test.ts` went red on the new `describe` title: it reads `#483` in a
+**string** as a hex colour literal, which it is. Its failure message names its
+own remedy — *"move the reference into a comment, which this guard strips"* — so
+the card number now sits in a comment above the block. **A guard that explains
+the fix in the message it fails with is worth copying.**

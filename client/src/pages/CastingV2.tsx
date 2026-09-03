@@ -22,12 +22,16 @@ import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
 import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import { BriefField } from "@/features/castingV2/components/BriefField";
-import { ConceptUploadCard } from "@/features/castingV2/components/ConceptUploadCard";
+import {
+  ConceptUploadCard,
+  type ConceptUploadHandle,
+} from "@/features/castingV2/components/ConceptUploadCard";
 import { briefWithDescription } from "@/features/castingV2/conceptUpload";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/foundation";
+import { Icon, P } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
 import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
@@ -173,6 +177,12 @@ export default function CastingV2() {
     here and neither should have to know what element it is.
   */
   const briefField = useRef<HTMLTextAreaElement>(null);
+  /*
+    THE CONCEPT CARD'S SECOND DOOR (#435 §2e) — the hero's `Start from photos`
+    opens the card's own dialog, empty on its drop zone, exactly as tapping the
+    card does. A handle rather than lifted state: see `ConceptUploadHandle`.
+  */
+  const conceptCard = useRef<ConceptUploadHandle>(null);
   const focusBrief = () => {
     const field = briefField.current;
     if (!field) return;
@@ -353,7 +363,36 @@ export default function CastingV2() {
   }
 
   const price = config.data.rollPriceCredits ?? ROLL_PRICE_FALLBACK;
-  const candidatesPerRoll = config.data.candidatesPerRoll ?? 8;
+  /*
+    ⚠ **NO `?? 8` HERE ANY MORE, AND THE INCONSISTENCY IS THE POINT.** The
+    receipt line's other two segments already hide themselves when the server
+    does not send them; the count alone carried a typed fallback, which is the
+    one thing that line may not do — a hand-written number arriving through the
+    door marked "default". It matched the server constant today and would only
+    have differed against an older server, which is exactly when a customer
+    would have been told a count nobody was charging for.
+  */
+  const candidatesPerRoll = config.data.candidatesPerRoll;
+  /*
+    THE HERO'S RECEIPT LINE, DERIVED (#435 §2d). Every segment comes from the
+    server's own roll constants — the count and the price from the numbers that
+    charge, the duration from a dated measurement of real rolls.
+
+    ⚠ **A SEGMENT THE SERVER DID NOT SEND IS ABSENT, NEVER GUESSED.** An older
+    bundle against a server without `rollTypicalSeconds`, or a config still
+    settling, would otherwise print a fallback literal — which is precisely the
+    hand-written number his rule for this line forbids, arriving through the
+    back door marked "default". Two true facts read better than three with one
+    invented among them, and nothing on the line can ever disagree with the
+    charge.
+  */
+  const rollSeconds = config.data.rollTypicalSeconds;
+  /*
+    WHETHER THE CONCEPT DOOR IS OPEN — the same server answer the card itself
+    reads, so the hero's `Start from photos` link and the card can never
+    disagree about whether the flow exists (D-180: absent, not disabled).
+  */
+  const conceptUploadEnabled = config.data.conceptUploadEnabled === true;
   /*
     WHETHER THIS ACCOUNT CHOOSES ITS PATH — server-owned, asked not decided.
 
@@ -519,7 +558,28 @@ export default function CastingV2() {
       <div className="dp-stack" style={{ gap: 12 }}>
         {/* ---- hero card: copy left, the pair right, one seam between ---- */}
         <div className="dpc-hero">
+          {/*
+            THREE PARTS, NOT A CENTRED STACK (#435, his brief 10 §2a — and it is
+            the reason he filed the card: *"the issue with our current one is
+            its not balanced and just feels poorly designed."*)
+
+            The column was one `justify-content: center` stack of ~277px inside
+            a 452px card, so ALL its slack collected above and below the
+            content at once — the copy floated in the middle while the deck
+            beside it read full height. Pitch group, a spacer, ask group: the
+            headline now top-aligns with the deck and the brief row bottom-
+            aligns with the deck's own brief block, and the surplus sits in the
+            middle where slack reads as air rather than as a mistake.
+
+            ⚠ **THE SPACER IS AN ELEMENT, NEVER `margin-top: auto`** — his brief
+            gives the reason and it is the same one briefs 05, 06, 07 and 09
+            give: any computed-style read resolves an auto margin to hard
+            pixels, which overflows a wrapping row and is then clipped by this
+            card's `overflow: hidden`. Live layout fine, every screenshot and
+            export broken.
+          */}
           <div className="dpc-hero__copy">
+            <div className="dpc-hero__pitch">
             <span className="dp-eyebrow">Casting</span>
             {/*
               "Meet eight of them." — the copy law's own exemplar. A numeral
@@ -541,9 +601,15 @@ export default function CastingV2() {
 
               Restore the full line when Voice ships.
             */}
-            <span className="dp-body">
+            <span className="dp-body dpc-hero__explainer">
               A cast member is a face and a presence — signed once, reusable in every campaign.
             </span>
+            </div>
+
+            {/* The air. An element, for the reason at the top of this card. */}
+            <span className="dpc-hero__air" aria-hidden="true" />
+
+            <div className="dpc-hero__ask">
 
             {/*
               THE BOX YOU CAN READ WHAT YOU ARE ABOUT TO BUY IN.
@@ -606,6 +672,53 @@ export default function CastingV2() {
               </Button>
             </Field>
             {/*
+              THE RECEIPT LINE (#435, his brief 10 §2d) — what you get, what it
+              costs, how long it takes, directly under the box that buys it.
+
+              His reason: *"Every paid button in the product is priced except
+              this one."* The sheet prices its roll, the composer prices its
+              run, the templates modal prices its run — the hero's primary was
+              the only unpriced spend in the product, and this also answers
+              *what do I get* before the money rather than after it.
+
+              ⚠ **ALL THREE VALUES ARE DERIVED, AND THAT IS THE WHOLE POINT** —
+              his rule, verbatim: *"A hand-written price that disagrees with the
+              charge does the opposite of what this line is for."* The count and
+              the price are the server's own roll constants; the duration is a
+              measurement with a date (`server/castingV2/rollDuration.ts`).
+
+              ⚠ **HIS BRIEF'S OWN EXAMPLE READ `4 CR` AND THE CHARGE IS 160** —
+              the rule above is what settles it, and the rule is his. Numerals
+              rather than words, because mono is this system's machine-value
+              face and these are machine values.
+            */}
+            <p className="dpc-hero__receipt">
+              <span className="dpc-hero__receiptvals">
+                {candidatesPerRoll ? `${candidatesPerRoll} CANDIDATES` : null}
+                {price ? (
+                  <>
+                    {candidatesPerRoll ? " · " : null}
+                    {/*
+                      ⚠ **THE TILDE STAYS ON THE PRICE, AND HIS BRIEF'S EXAMPLE
+                      PUTS IT ONLY ON THE DURATION.** D-109 is why: every cost
+                      line in this product hedges the same way, because *"a
+                      number presented as exact that then differs is worse than
+                      one that never claimed to be"* — a roll is eight
+                      independently refundable slices, so what is finally paid
+                      can be less than what is quoted. It is one character on a
+                      money surface against a written rule, so the rule keeps
+                      it; the Sign confirm and the dock's cost line wear the
+                      same one.
+                    */}
+                    <span className="dpc-modal__tilde">~</span>
+                    {price} CR
+                  </>
+                ) : null}
+                {rollSeconds ? ` · ~${rollSeconds} SECONDS` : null}
+              </span>
+              <span className="dpc-hero__receiptrule" aria-hidden="true" />
+            </p>
+            {/*
               THE PATH, CHOSEN BEFORE THE MONEY (design §6; founder ruling
               2026-08-21, *"this is the way foward 100%"*).
 
@@ -640,52 +753,62 @@ export default function CastingV2() {
               />
             ) : null}
             {/*
-              THE GEAR (#142) — the settings modal's one control on the surface,
-              where the meter's pills stood: it names what will apply
-              ("Photoreal · Low") and opens the modal that changes it.
+              THE ACTIONS ROW (#435, his brief 10 §2e) — the two ways in, in the
+              row where you decide, with the slack between them.
+
+              LEFT is the settings control (#142's gear, restyled). Three of his
+              choices here each correct a specific misread, and none is
+              cosmetic:
+
+                · **NO CHEVRON.** The topbar already teaches the distinction —
+                  the account chip has a chevron and drops a list, the credits
+                  chip has none and opens a modal. This control opened a modal
+                  while wearing dropdown grammar.
+                · **RADIUS 8, NOT A PILL.** Pills in this system are read-only
+                  state (kind badges, count pills, IN USE). A rounded rect is
+                  what clickable controls wear, so the shape says press.
+                · **THE VALUE IN MONO**, which ties it to the receipt line
+                  directly above so the pair reads as one thought: what this
+                  costs, how it is set.
+
+              RIGHT is `Start from photos`. The explainer already promises photos and
+              the flow already existed — but the only door was a card further
+              down the page, so the promise and the way in were nowhere near
+              each other.
+
+              The two carry different weights on purpose: the settings control
+              DISPLAYS state as well as acting, so it is a chip; this is purely
+              an action, so it is a link.
+
+              ⚠ **EACH IS ABSENT RATHER THAN DISABLED WHERE ITS DOOR IS SHUT**
+              (D-180) — the settings chip off the author road, the photos link
+              where the server did not open concept upload. An account with
+              neither sees no row at all.
             */}
-            {authorRoad ? (
-              <CastSettingsButton
-                idPrefix="dpc-hero"
-                style={style}
-                imagination={imagination}
-                onStyle={setStyle}
-                onImagination={setImagination}
-              />
+            {authorRoad || conceptUploadEnabled ? (
+              <div className="dpc-hero__actions">
+                {authorRoad ? (
+                  <CastSettingsButton
+                    idPrefix="dpc-hero"
+                    style={style}
+                    imagination={imagination}
+                    onStyle={setStyle}
+                    onImagination={setImagination}
+                  />
+                ) : null}
+                <span className="dpc-hero__actionsair" aria-hidden="true" />
+                {conceptUploadEnabled ? (
+                  <button
+                    type="button"
+                    className="dpc-hero__photos"
+                    onClick={() => conceptCard.current?.openEmpty()}
+                  >
+                    <Icon d={P.image} size={13} />
+                    Start from photos
+                  </button>
+                ) : null}
+              </div>
             ) : null}
-            {/*
-              THE COST LINE — all that is left of the TRY row (#375).
-
-              ⚠ **THE SEED CHIPS ARE GONE ON HIS ORDER**, verbatim: *"we said we
-              would remove the 'try' quick prompts because the casting hero now
-              serves as that now and try to balance that right box somehow"*.
-
-              His reasoning is the duplication working law 4 exists to prevent.
-              **The deck IS the try row now, and it does the job better**: a chip
-              filled the box with a sentence somebody wrote, and a deck card
-              fills it with the REAL brief that cast a REAL face you are looking
-              at — `casting-hero.md` §4 pins the two behaviours as identical
-              (*"clicking any card puts that card's brief into the prompt field,
-              and does not submit"*), so this was two mechanisms for one job.
-
-              ⚠ **THE COST SURVIVES THE ROW IT LIVED IN, AND THAT IS THE PART
-              WORTH CHECKING.** It was folded INTO the TRY row rather than given
-              a line, on the reasoning that *"a price is metadata and metadata
-              should not cost a row"* — and the row it was folded into has just
-              been deleted. That reason is spent: there are no seeds left to
-              push down, so the gap it was avoiding cannot open. It gets its own
-              line back, at the same optical distance from the priced button
-              (D-15: the price sits with the thing that spends).
-
-              NO BALANCE HERE (founder ruling, 2026-08-03), unchanged. Casting
-              from the lobby happens once; "how much is left" answers a question
-              nobody is asking yet, and it earns its place on the sheet where
-              the number actually moves.
-            */}
-            <div className="dp-row dpc-hero__costrow">
-              <span className="dpc-hero__cost">
-                <span className="dpc-modal__tilde">~</span> {price} credits
-              </span>
             </div>
           </div>
 
@@ -741,6 +864,7 @@ export default function CastingV2() {
             this page — the client asks rather than assumes.
           */}
           <ConceptUploadCard
+            ref={conceptCard}
             describe={
               config.data.conceptUploadEnabled
                 ? async (imageBase64) =>

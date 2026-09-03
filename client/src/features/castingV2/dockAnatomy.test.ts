@@ -94,7 +94,18 @@ describe("the sheet dock commits to one candidate", () => {
     expect(sheet).not.toMatch(/Roll again[^"`]*\d+\s*(cr|credits)/);
 
     const css = await readFile(CSS, "utf8");
-    const cost = css.slice(css.indexOf(".dpc-dock__cost,"), css.indexOf(".dpc-dock__cost {"));
+    /*
+      ⚠ **THIS SLICE USED TO START AT `.dpc-dock__cost,` — THE SELECTOR LIST.**
+      `.dpc-hero__cost` shared the rule until #435 replaced the hero's cost line
+      with the receipt line, and a two-selector list became one selector. The
+      old `indexOf` then returned -1 and sliced an EMPTY string, which every
+      `toContain` below would have failed on — loudly, which is the good case.
+      Read the rule BODY instead, so this arm is about what the rule says rather
+      than about how many selectors happen to share it.
+    */
+    const costAt = css.indexOf(".dpc-dock__cost {");
+    expect(costAt, "the dock's cost rule must exist to be read").toBeGreaterThan(-1);
+    const cost = css.slice(costAt, css.indexOf("}", costAt));
     expect(cost).toContain("var(--font-mono)");
     expect(cost).toContain("var(--meta)");
   });

@@ -3,6 +3,47 @@ import { useLayoutEffect, useRef, type ComponentPropsWithRef } from "react";
 import { useComposition } from "@/hooks/useComposition";
 import { cn } from "@/lib/utils";
 
+/*
+  THE MEASUREMENT, IN ONE PLACE, BECAUSE TWO THINGS NOW ASK FOR IT.
+
+  A keystroke is not the only thing that changes how tall this brief needs to
+  be — so is the box getting NARROWER, which rewraps the same sentence onto more
+  lines without the value changing at all. Both callers below run exactly this,
+  so the two paths cannot drift into disagreeing about the same box.
+*/
+function fitToContent(field: HTMLTextAreaElement) {
+  /*
+    ⚠ **`hidden` BEFORE THE MEASUREMENT, AND IT IS NOT ONLY TIDINESS** (#435
+    §2c). A scrollbar that is already showing takes width out of the content
+    box, so the wrap points move and `scrollHeight` measures a NARROWER box
+    than the one about to be painted. Reset it and the measurement is of the
+    box as it will actually be.
+  */
+  field.style.overflowY = "hidden";
+  field.style.height = "auto";
+  /*
+    The cap lives in CSS (`max-height`), so the measurement only has to decide
+    the natural height — the browser clamps. Two places deciding the same
+    maximum is how they come to disagree at some font size nobody tested.
+  */
+  const natural = field.scrollHeight;
+  field.style.height = `${natural}px`;
+  /*
+    ⚠ **AND THE SCROLL WIDGET IS SWITCHED WHERE THE HEIGHT IS SWITCHED** (#435
+    §2c, his instruction: *"Set it in the same place you set the height"*).
+
+    The stylesheet had `overflow-y: auto` on this box for as long as it has been
+    a textarea. A `rows="1"` box whose content exceeds one line therefore exposed
+    a scroll widget the `<input>` it replaced never had — and because `auto` is
+    the resting value rather than a measured one, a box that had never been typed
+    into could show one too. `clientHeight` after the clamp is the box as
+    painted; if the content is taller, the cap has bitten and a scrollbar is
+    honest. If it has not, there is nothing to scroll and the widget is noise on
+    the product's primary control.
+  */
+  field.style.overflowY = natural > field.clientHeight ? "auto" : "hidden";
+}
+
 /**
  * The brief box, which can now be read.
  *
@@ -96,15 +137,51 @@ export function BriefField({
   useLayoutEffect(() => {
     const field = ref.current;
     if (!field) return;
-    field.style.height = "auto";
-    /*
-      The cap lives in CSS (`max-height`), so the measurement only has to
-      decide the natural height — the browser clamps and turns on the
-      scrollbar. Two places deciding the same maximum is how they come to
-      disagree at some font size nobody tested.
-    */
-    field.style.height = `${field.scrollHeight}px`;
+    fitToContent(field);
   }, [value]);
+
+  /*
+    ⚠ **AND AGAIN WHEN THE BOX GETS NARROWER, BECAUSE THE MEASUREMENT ABOVE IS
+    A CACHED PIXEL HEIGHT AND A RESIZE STALES IT** (PR #483 review finding 1).
+
+    Both things this component writes — the pixel height and the scroll widget —
+    are answers to a question that includes the box's WIDTH, while the effect
+    above only re-asks when the VALUE changes. So: type a 220-character brief at
+    1440px where it fits in four lines, then narrow the window. The same
+    sentence now wants six lines inside a box still fixed at four, and the
+    inline `hidden` — which is this component's own doing — means the tail is
+    unreachable with no scrollbar and no wheel-scroll. Measured at :3021 before
+    this fix: at 251px the box painted 66px of a 124px brief, about half the
+    sentence gone, recovered only by the next keystroke.
+
+    ⚠ **It is a REGRESSION and not merely a gap**: the stylesheet still says
+    `overflow-y: auto` (`castingV2.css`), and before the widget was switched
+    here that resting value surfaced a scrollbar in exactly this state. The box
+    stayed readable. So the honest repair is to re-measure, not to hand the
+    resting value back — one place decides, and it now hears about both inputs.
+
+    **The width is compared before re-measuring, and that is what makes this
+    safe rather than a loop.** `fitToContent` changes the field's own height, so
+    an observer that re-ran on any size change would re-trigger itself forever
+    (`main.tsx` suppresses that warning globally, which would have hidden it).
+    Border-box width is the one dimension this component never writes — and,
+    unlike `clientWidth`, it does not move when a scrollbar appears — so a
+    change in it is always someone else's news and always worth a re-measure.
+  */
+  useLayoutEffect(() => {
+    const field = ref.current;
+    if (!field) return;
+    if (typeof ResizeObserver === "undefined") return;
+    let lastWidth = field.offsetWidth;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.borderBoxSize?.[0]?.inlineSize ?? field.offsetWidth;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      fitToContent(field);
+    });
+    observer.observe(field);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <textarea

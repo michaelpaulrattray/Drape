@@ -2,7 +2,14 @@
    module also handles React's synthetic one — same name, different objects, and
    the shadowing is exactly what made the first form of the Files filter fail to
    compile in a way that reads like a type quibble rather than a real difference. */
-import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+} from "react";
 import { Upload } from "lucide-react";
 
 import { asBase64, firstPictureFrom } from "../pictureBytes";
@@ -77,12 +84,28 @@ import { ConceptReviewModal } from "./ConceptReviewModal";
  * rendered inside this component's live branch, the absent-or-live gate above
  * holds by construction: an account outside the scope cannot reach it at all.
  */
-export function ConceptUploadCard({
-  describe,
-  priceCredits,
-  onDescribed,
-  onCast,
-}: {
+/**
+ * THE SECOND DOOR TO THIS FLOW (#435 §2e) — his brief puts `Start from photos`
+ * in the hero's actions row, beside the settings control, because *"the
+ * explainer already promises photos, and the flow already exists — but the only
+ * way in was a card further down the page"*.
+ *
+ * A handle rather than a lifted `open` flag: the dialog's state is four pieces
+ * (the flag, the picture, the words, the refusal) and they belong together
+ * here, where every entrance already drives them. Lifting one of the four to
+ * the page would put the page in charge of a machine it does not otherwise
+ * touch, and entrance 2's whole point is that a tap opens the modal EMPTY —
+ * which is exactly what this exposes and nothing more.
+ *
+ * ⚠ **The hero draws its link only where the server opened this door** — the
+ * same `conceptUploadEnabled` answer that decides whether this card is live.
+ * Off the scope the card renders inert, this handle does nothing, and a link
+ * that opened nothing would be D-180's dead control on the busiest surface in
+ * the product.
+ */
+export type ConceptUploadHandle = { openEmpty: () => void };
+
+export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
   /** The door, or nothing. See the header — this is the whole gate. */
   describe?: ((imageBase64: string) => Promise<string>) | null;
   /** Server-derived, straight through to the modal's cost line (D-15). */
@@ -91,9 +114,15 @@ export function ConceptUploadCard({
   onDescribed: (description: string) => void;
   /** Called with the words to CAST. The page owns the one roll flow. */
   onCast: (description: string) => void;
-}) {
+}>(function ConceptUploadCard({ describe, priceCredits, onDescribed, onCast }, ref) {
   /** Whether the dialog is up. Its own flag, because a tap opens it with no file. */
   const [open, setOpen] = useState(false);
+  /*
+    Entrance 2, reached from the hero instead of from this card. Identical to
+    the card's own tap — the modal opens on its drop zone with no file — so the
+    two doors cannot drift into two behaviours.
+  */
+  useImperativeHandle(ref, () => ({ openEmpty: () => setOpen(true) }), []);
   /** The picture under review, and the words for it — `null` while they are in flight. */
   const [picture, setPicture] = useState<File | null>(null);
   const [description, setDescription] = useState<string | null>(null);
@@ -358,4 +387,4 @@ export function ConceptUploadCard({
       ) : null}
     </>
   );
-}
+});
