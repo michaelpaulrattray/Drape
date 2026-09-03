@@ -55,6 +55,18 @@ const read = async (url: URL) => {
 const code = (text: string) =>
   text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
+/**
+ * The selector list of a split-out CSS block — everything before its first `{`.
+ *
+ * A block with no `{` is not a rule and gets an EMPTY head rather than its whole
+ * body: searching a body for a class name matches the class named in a comment,
+ * which is how a sweep quietly grows a population it was never meant to judge.
+ */
+const selectorHead = (block: string) => {
+  const brace = block.indexOf("{");
+  return brace === -1 ? "" : block.slice(0, brace);
+};
+
 /** The declared block for one CSS rule, so an arm reads a rule and not a file. */
 const rule = (css: string, selector: string) => {
   const at = css.indexOf(`${selector} {`);
@@ -105,11 +117,23 @@ describe("the hero column is three parts, not a centred stack (§2a)", () => {
 
       Scoped to the two surfaces this brief owns; the rest of the file is other
       sections' business.
+
+      ⚠ **THE PREFIX IS MATCHED ANYWHERE IN THE SELECTOR LIST, NOT ONLY AT THE
+      START, AND THAT WAS A REAL BLIND SPOT** (caught by the second PR review).
+      The first shape of this walk asked `startsWith`, so a COMPOUND selector
+      slipped past it — including `.dp-field.dpc-hero__field.dpc-briefrow`,
+      **a rule this very brief added, on the surface this ban governs.** An auto
+      margin added there would have shipped green through the one arm written to
+      stop it, with the live layout fine and every export clipped: the exact
+      defect, invisible in the exact way, past the exact guard.
+
+      So the selector list is cut at the first `{` and searched — a prefix in
+      `a.b.dpc-hero__c`, in `.x, .dpc-hero__y`, or at the start all count.
     */
     for (const prefix of [".dpc-hero__", ".dpc-setm__"]) {
       const blocks = css
         .split(/(?=\n\.)/)
-        .filter((block) => block.trimStart().startsWith(prefix));
+        .filter((block) => selectorHead(block).includes(prefix));
       expect(blocks.length, `no ${prefix} rules found — the walk proves nothing`).toBeGreaterThan(5);
       for (const block of blocks) {
         const body = block.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -123,6 +147,45 @@ describe("the hero column is three parts, not a centred stack (§2a)", () => {
   it("the matcher would see an auto margin", () => {
     expect("  margin-top: auto;").toMatch(/margin[^:]*:\s*[^;]*\bauto\b/);
     expect("  margin-left: auto;").toMatch(/margin[^:]*:\s*[^;]*\bauto\b/);
+  });
+
+  it("the walk REACHES the compound selectors, which it used to skip", async () => {
+    const css = await read(CSS);
+    /*
+      ⚠ **THIS ARM IS THE FIX, NOT A RESTATEMENT OF IT.** Widening the filter
+      above is invisible in a passing suite — the arm was green before the
+      widening and is green after. So the population itself is asserted: the
+      compound rule this brief added must be IN the swept set, by name.
+    */
+    const swept = css
+      .split(/(?=\n\.)/)
+      .filter((block) => selectorHead(block).includes(".dpc-hero__"));
+    const compound = swept.filter((block) =>
+      selectorHead(block).includes(".dp-field.dpc-hero__field.dpc-briefrow"),
+    );
+    expect(
+      compound.length,
+      "the hero's own compound brief-row rule must be inside the auto-margin walk",
+    ).toBe(1);
+  });
+
+  it("a `startsWith` walk would MISS that rule — the review's finding, driven", async () => {
+    const css = await read(CSS);
+    /*
+      THE NEGATIVE CONTROL FOR THE ARM ABOVE. It re-runs the OLD filter and
+      proves it comes up empty on the same rule, so "the widening changed
+      something" is a measurement rather than a claim about a diff.
+    */
+    const oldWalk = css
+      .split(/(?=\n\.)/)
+      .filter((block) => block.trimStart().startsWith(".dpc-hero__"));
+    const missed = oldWalk.filter((block) =>
+      selectorHead(block).includes(".dp-field.dpc-hero__field.dpc-briefrow"),
+    );
+    expect(
+      missed.length,
+      "if the old walk already saw this rule, the widening fixed nothing and this arm is theatre",
+    ).toBe(0);
   });
 });
 
