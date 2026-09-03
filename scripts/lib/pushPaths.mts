@@ -179,8 +179,10 @@ export const readPushPaths = (reader: TreeReader): PushPathReading => {
     no branch protection at all", which stopped being true on 2026-09-03 when the
     founder ruled *"protect it"* (#461). It is worth stating what changed and what
     did not: branch protection carries `enforce_admins: false`, so it does not bind
-    HIM — but a workflow token is not an administrator, so the required checks DO
-    bind a silently-write-capable job on both `main` and `local-migration`. The
+    HIM — but a workflow token is not an administrator, so the required checks
+    SHOULD bind a silently-write-capable job on both `main` and `local-migration`
+    (reasoned from `enforce_admins` semantics, NOT driven: driving it means
+    pushing to a branch that deploys production — see the doc's door A). The
     door narrowed; it did not close, because this module still cannot read the
     setting, and a job may still write anywhere else it can reach.
 

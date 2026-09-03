@@ -141,10 +141,17 @@ is what makes that setting stop mattering.
 
 ⚠ **Protecting `local-migration` narrowed this door and did not close it.**
 `enforce_admins: false` means protection does not bind the founder — but a
-workflow token is **not** an administrator, so the required checks now bind a
-silently-write-capable job on both deploying refs. What remains is everything
-protection does not reach, and the fact that this setting is still invisible to
-every check in the tree.
+workflow token is **not** an administrator, so the required checks should now
+bind a silently-write-capable job on both deploying refs.
+
+⚠ **That last sentence is REASONED, not driven, and it is marked so on purpose.**
+`enforce_admins` exempts administrators; the Actions token acts as
+`github-actions[bot]`, which is not one. **It was not tested here, because
+testing it means pushing to a branch that deploys production.** It is the one
+claim in door A that is not read off an API response, and if it ever matters
+enough to rely on, it is provable on a throwaway branch protected the same way —
+not on this one. What remains regardless is everything protection does not reach,
+and the fact that this setting is still invisible to every check in the tree.
 
 ⚠ **`enforce_admins: false` means the required checks do not apply to an
 administrator, and the only collaborator is an administrator.** This is not a

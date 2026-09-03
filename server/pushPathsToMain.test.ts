@@ -178,7 +178,8 @@ describe("nothing in CI can reach main (#263)", () => {
        state, `read` when door A was read on 2026-09-03, and one settings change
        away from write. Both production-deploying branches are protected as of
        2026-09-03 (#461), and a workflow token is not an admin, so the required
-       checks would bind such a job on those two refs — which narrows this door
+       checks SHOULD bind such a job on those two refs (reasoned, not driven —
+       door A says so in the same words) — which narrows this door
        rather than closing it: the setting is still unreadable from here, and a
        job can still write wherever protection does not reach. (review finding 2) */
     const { workflowsWithoutPermissions } = readPushPaths(gitTreeReader(ROOT));
