@@ -742,3 +742,20 @@ namespace under identities; renames propagate; 16.9 wiring notes (the
 wire attachment rule, lock deferred into Export, first-frame softening,
 real prices, per-engine wait numbers). This review doc remains the
 reasoning record; the handoff file is the build truth.
+
+
+## 11b. Tags, final form — nobody names anything (founder corrections, 2026-09-04)
+
+Two founder objections killed 16.8's naming-at-keep design and produced
+the final one, rewritten in the handoff file: (1) **a tag must point at
+real media** — a script name with no generated reference is a gap wearing
+a name, shown greyed in the picker with "no reference yet — make one?";
+(2) even one-keystroke naming is a ceremony at endless-generation scale,
+so **naming is deleted entirely**: keeping anything makes it instantly
+@-findable via a silently derived handle, and the @ picker is a THUMBNAIL
+browser (context-ranked, filtering against the handle, the prompt that
+made it, and the identities in it) — finding is visual recognition, the
+same eye-picks gesture as the contact sheets, never a memory test. Casts
+alone keep first-class names (from Sign); renaming is optional curation
+that propagates. Keeping IS the filing — the competitor's Create-Element
+ceremony has no equivalent here at all.
