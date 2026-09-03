@@ -1,7 +1,7 @@
 {
-  "edition": 229,
-  "updatedAt": "2026-09-03T08:13:39.685Z",
-  "shift": "Fable — escalated seat, 3 September evening (#401: the toolKind column, built and merged)",
+  "edition": 230,
+  "updatedAt": "2026-09-03T09:15:24.080Z",
+  "shift": "Foreman — 3 September evening (#475: the presence score we were paying for and throwing away)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3242,6 +3242,13 @@
   ],
   "pipeline": [
     {
+      "id": "presence-score-475",
+      "title": "You asked if we were using the best models. The model was right — we were throwing away half of what it tells us",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Your question on the N3 rung was “are we using the best possible models for this?”. The answer, checked at the code rather than reasoned about: the model is the right one, and we have been ignoring the part of its answer that matters most.\n\nEvery time the studio reads a face it asks a segmentation model twenty questions — where are her eyebrows, where is her hair. It has always also asked that model “and how sure are you?”, and it has always thrown the answer away and kept only the outline. That is why a creature with no eyebrows still gets two tappable eyebrow boxes drawn on the bare ridge where brows would be — and tapping one starts a paid edit of something that is not there.\n\nSo we read the number we were already buying. On a real pair of eyebrows the model says 0.83–0.89 sure. On the two brows it invents on bare skin it says 0.50–0.53. It is not close — and that is the exact case where counting pixels got it BACKWARDS, because the invented brows were bigger than the real ones. Hair separates too (0.95 real against 0.86 invented). One word, “tusks”, does not separate — and that is the one word of the three the product never asks anybody; it was only in the test because an old creature court used it.\n\nWhat it costs to start using: nothing. No new model, no extra call, no extra waiting — the number is already in the reply we pay for. What it buys: the panel can stop promising an edit on a feature that is not in the picture, and the refund gate can stop calling a correct picture a failure.\n\nNo change is shipped yet, deliberately. Choosing where to draw the line is a promise about your customers’ pictures — too strict and a real feature reads as missing and a legitimate edit is refused. That decision is #478 and it is yours; this was the measurement it needed. 26 reads, about $0.13 of house money, no credits."
+    },
+    {
       "id": "tool-column-401",
       "title": "Every credit charge now records WHAT it made — the column behind your credits-by-tool chart",
       "status": "merged",
@@ -4670,10 +4677,10 @@
     },
     {
       "id": "queue-shape-0903-foreman",
-      "title": "The queue: 75 open, 11 carrying your word, 0 urgent",
+      "title": "The queue: 76 open, 11 carrying your word, 0 urgent",
       "severity": "info",
       "state": "open",
-      "detail": "Measured at close. 75 open (two closed tonight, two filed — #466 the author bench you ordered, #467 above). 11 carry your word and every one is takeable; none is waiting on you. No urgent card at all for the first time in a while — #231's was the unrun bench and it ran. Rotting is the same eight as the last seven nights (#10 #14 #18 #22 #30 #55 #61 #65) — none is a bug, none is yours, and the shape is flat rather than getting worse."
+      "detail": "Measured at close. 76 open — #475 closed tonight and #478 filed out of it, so the count is flat. 11 carry your word and every one is takeable; none is waiting on you. Still no urgent card. Rotting is the same eight as the last eight nights (#10 #14 #18 #22 #30 #55 #61 #65) — none is a bug, none is yours, and the shape is flat rather than getting worse."
     }
   ],
   "acknowledgedReplyIds": [
@@ -4793,7 +4800,7 @@
     114
   ],
   "nextUp": {
-    "readAt": "2026-09-03T08:12:22.359Z",
+    "readAt": "2026-09-03T09:15:32.028Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4843,11 +4850,6 @@
       {
         "issueNumber": 470,
         "title": "Crew folds into the staff bar's one overview (reply #111 — his yes on #415's suggestion)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 475,
-        "title": "N3 measurement: SAM 3 ships a presence score, we request it and discard it",
         "urgent": false
       },
       {
