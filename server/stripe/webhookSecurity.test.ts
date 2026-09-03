@@ -130,13 +130,16 @@ describe("Webhook Security", () => {
         0 // system action
       );
 
-      // Verify credits were revoked (entire balance of 75)
+      // Verify credits were revoked (entire balance of 75). The revoke is the
+      // product's one deliberate `toolKind: null` — it makes nothing (#401) —
+      // and this wire assertion is what keeps that stated rather than drifted.
       expect(deductCredits).toHaveBeenCalledWith(
         42,
         75,
         "refund",
         expect.stringContaining("Credits frozen: chargeback dp_test_suspend"),
-        "dispute_dp_test_suspend"
+        "dispute_dp_test_suspend",
+        { toolKind: null }
       );
 
       // Verify Slack alert was sent

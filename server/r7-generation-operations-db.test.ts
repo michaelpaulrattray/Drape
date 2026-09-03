@@ -463,7 +463,7 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       requiredLockKey: "model:44", phase: "generating",
     });
     const charged = await creditDb.deductCredits(
-      userId, 300, "generation", "Recovery test charge", started.chargeReferenceId,
+      userId, 300, "generation", "Recovery test charge", started.chargeReferenceId, { toolKind: "image" },
     );
     expect(charged.success).toBe(true);
     await generationDb.createGeneration({
@@ -521,7 +521,7 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       plannedCredits: 300, requiredLockKey: lockKey, phase: "generating",
     });
     const charged = await creditDb.deductCredits(
-      userId, 300, "generation", "Durable recovery test charge", started.chargeReferenceId,
+      userId, 300, "generation", "Durable recovery test charge", started.chargeReferenceId, { toolKind: "image" },
     );
     expect(charged.success).toBe(true);
     const resultUrl = `https://example.com/recovered-${randomUUID()}.png`;

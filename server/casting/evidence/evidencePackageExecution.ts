@@ -1089,7 +1089,7 @@ export async function executeEvidencePackageSync(
     "generation",
     "Evidence package synchronization (pending)",
     input.chargeReferenceId,
-    INK_ADD_IMAGE_ENGINE,
+    { toolKind: "image", engineUsed: INK_ADD_IMAGE_ENGINE },
   );
   if (!charged.success) {
     throw new TRPCError({

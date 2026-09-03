@@ -455,7 +455,7 @@ export async function signCandidate(
     "generation",
     "Sign a Cast (pending)",
     operationChargeReference(operationId),
-    "castingV2",
+    { toolKind: "image", engineUsed: "castingV2" },
   );
   if (!chargeResult.success) {
     return completeDirectOperationFailure({

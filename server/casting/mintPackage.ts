@@ -608,6 +608,7 @@ export async function executeMintPackage(input: MintPackageInput) {
     const deduct = await deductPoints(
       input.userId, totalCost, "generation",
       `Mint package (${input.tier}, pending)`, input.chargeReferenceId ?? `legacy-mint-${input.modelId}`,
+      { toolKind: "image" }, // the charge pays for generating the missing view images
     );
     if (!deduct.success) {
       throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });

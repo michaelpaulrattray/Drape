@@ -309,7 +309,7 @@ export async function retryCandidate(
     "generation",
     "Casting retry (pending)",
     operationChargeReference(operationId),
-    "castingV2",
+    { toolKind: "image", engineUsed: "castingV2" },
   );
   if (!charge.success) {
     /*

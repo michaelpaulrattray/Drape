@@ -154,6 +154,14 @@ export const creditTransactions = mysqlTable("point_transactions", {
   balanceAfter: int("balanceAfter").notNull(),
   // Track which engine was used (for Flash fallback pricing)
   engineUsed: varchar("engineUsed", { length: 32 }),
+  // What a tool charge MADE (#401, the founder's output-kind taxonomy):
+  // "image" today, "video" and "text" reserved — see CreditToolKind in
+  // server/db/credits.ts for the documented set. Deliberately a varchar, not
+  // an enum, so the set can grow without a migration. NULL means "not a tool
+  // charge" (grants, refunds, admin adjustments, the chargeback revoke) and
+  // on rows predating the column; it never means "unlabelled tool charge" —
+  // deductCredits requires the value at compile time.
+  toolKind: varchar("toolKind", { length: 16 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ([
   uniqueIndex("uq_point_txn_user_ref").on(table.userId, table.referenceId),

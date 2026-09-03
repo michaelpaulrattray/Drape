@@ -24,6 +24,7 @@
 
 import { randomUUID } from "node:crypto";
 import { deductCredits, addCredits, normalizeCreditReferenceId } from "../db";
+import type { CreditToolKind } from "../db/credits";
 import { TRPCError } from "@trpc/server";
 import { publicErrorMessage } from "../lib/publicError";
 import { getDb } from "../db/connection";
@@ -43,6 +44,11 @@ interface AtomicCreditOptions {
   referenceId?: string;
   /** Engine used for the operation (for analytics) */
   engineUsed?: string;
+  /** What the charged operation makes (#401). Required and non-null: every
+   *  operation routed through this helper is a tool charge, so "not a tool
+   *  charge" (null) is not offered here — only deductCredits' one revoke
+   *  path may say that. */
+  toolKind: CreditToolKind;
   /** Receipt accounting hooks. These observe committed ledger truth only. */
   onCharged?: (amount: number, chargeReferenceId: string) => void;
   onRefunded?: (outcome: RefundOutcome) => void;
@@ -132,7 +138,7 @@ export async function withAtomicCredits<T>(
   options: AtomicCreditOptions,
   operation: () => Promise<T>
 ): Promise<T> {
-  const { userId, amount, description, referenceId, engineUsed, onCharged, onRefunded } = options;
+  const { userId, amount, description, referenceId, engineUsed, toolKind, onCharged, onRefunded } = options;
 
   // Step 0: Check if account is frozen (blocks all generation)
   const db = await getDb();
@@ -163,7 +169,7 @@ export async function withAtomicCredits<T>(
     "generation",
     `${description} (pending)`,
     chargeReferenceId,
-    engineUsed
+    { toolKind, engineUsed }
   );
 
   if (!deductResult.success) {

@@ -238,6 +238,7 @@ export async function executeRefreshSlots(input: {
     "generation",
     `Refresh views (pending)`,
     input.chargeReferenceId ?? `legacy-refresh-${input.modelId}`,
+    { toolKind: "image" },
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });

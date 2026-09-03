@@ -799,7 +799,7 @@ export async function createRoll(
     "generation",
     "Casting roll (pending)",
     operationChargeReference(gate.operationId),
-    "castingV2",
+    { toolKind: "image", engineUsed: "castingV2" },
   );
   if (!chargeResult.success) {
     // Nothing was dispatched, so nothing is owed back. The rows are driven

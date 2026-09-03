@@ -216,7 +216,8 @@ export const castingImagingRouter = router({
         POINT_COSTS.castingImage,
         "generation",
         "Casting image generation (pending)",
-        chargeReferenceId
+        chargeReferenceId,
+        { toolKind: "image" }
       );
 
       if (!deductResult.success) {
