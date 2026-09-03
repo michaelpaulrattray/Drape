@@ -387,7 +387,25 @@ The founder: the design agent knows UI, not the product's internals; how the
 skeleton marries the casting studio, takes and the future Assets tab is this
 record's job to fix.
 
-- **THE PLACE/SERVICE LAW (founder, 2026-09-04, superseding this
+- ⚠ **SUPERSEDED (founder, 2026-09-04, same day): casting does NOT happen
+  inside Cinema.** His correction, verbatim intent: you visit the casting
+  studio, make each cast, and IMPORT it; the manifest row is a WATCHING gap
+  that resolves itself when the cast is signed. What keeps the flow fluid
+  is the THREE SUPPLY ROADS in a fidelity ladder — casting studio (signed
+  identity, recommended for mains/sides/groups), the Assets page (uploads,
+  when designed), and the Editor generating look references inline (no
+  identity guarantee — background people, crowds, one-offs; never blocked,
+  never gated: "not a big deal"). Faces still never uploaded. Plus THE
+  BUCKET LAW, his own words made canon: "within every main bucket of a
+  reference you should be able to generate additional things that use that
+  reference as the master" — every tile carries a MASTER reference and all
+  derived cards (outfits, states, poses, close-ups, multi-view prop sheets
+  for complex props like mechas) generate anchored on it — the
+  sacred-pixels rule generalized to every identity kind. Groups are
+  identities too (group cards in CAST). Amendment Q reissued accordingly;
+  the earlier inline-casting Q is withdrawn. The paragraph below is kept
+  as the history of the wrong turn:
+- **THE PLACE/SERVICE LAW (WITHDRAWN — see above) (founder, 2026-09-04, superseding this
   contract's "handoff" framing and §8's cold-start note): the casting
   STUDIO is a place; casting is a SERVICE; Cinema consumes the service
   inline and the user never leaves.** His words: "someone should just be
