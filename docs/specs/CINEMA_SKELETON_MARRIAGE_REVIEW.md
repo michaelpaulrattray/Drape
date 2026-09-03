@@ -387,6 +387,20 @@ The founder: the design agent knows UI, not the product's internals; how the
 skeleton marries the casting studio, takes and the future Assets tab is this
 record's job to fix.
 
+- **THE PLACE/SERVICE LAW (founder, 2026-09-04, superseding this
+  contract's "handoff" framing and §8's cold-start note): the casting
+  STUDIO is a place; casting is a SERVICE; Cinema consumes the service
+  inline and the user never leaves.** His words: "someone should just be
+  allowed to upload a script or write one with the ai editor and then
+  fluidly be able to cast the required characters and takes generate the
+  props and scenes required." Casting a role from the manifest drawer is
+  an inline contact-sheet flow (brief read from the page -> 8 candidates ->
+  pick -> sign -> the row resolves), same grammar as frames/takes/looks;
+  the created cast is a REAL cast (same engine, same identity guarantees)
+  that appears in the casting studio for deep care later — one identity,
+  many surfaces, the studio never a required stop. Amendment Q issued to
+  the design agent: "nothing in the drawer navigates away." The whole
+  first-film journey happens inside Cinema.
 - **Shelf CAST group ↔ the casting studio.** Cast tiles are SIGNED casts
   only, picked never uploaded — the brief's no-upload-for-faces rule is the
   UI face of the "a customer's cast is their work" law and the identity
