@@ -129,6 +129,24 @@ describe("the prompt author's model", () => {
   });
 
   /*
+    The reader suite's own reset arm, mirrored (the review's note): a suite
+    that resets the interpreter alone would leave a memoized author engine
+    holding the DEAD queue while a fresh interpreter builds a new one — two
+    allowances inside one process, the exact state this file exists to
+    prevent. The paired reset must yield ONE new queue shared by both.
+  */
+  it("survives a reset as a NEW single allowance rather than two", () => {
+    interpreterEngine();
+    resetInterpreterForTests();
+    resetAuthorEngineForTests();
+    interpreterEngine();
+    authorTextEngine();
+    expect(built).toHaveLength(3);
+    expect(built[2]!.queue).toBe(built[1]!.queue);
+    expect(built[1]!.queue).not.toBe(built[0]!.queue);
+  });
+
+  /*
     THE COMPILE-SITE ARM — the only one that can see the reversion today. The
     interpreter's factory call carries NO model; the author's must carry its
     constant. If `briefCompiler.ts:` goes back to `interpreterEngine()`, the
@@ -150,5 +168,14 @@ describe("the prompt author's model", () => {
     const models = built.map((b) => b.model);
     expect(models, "expected the interpreter's unpinned engine AND the author's pinned one").toContain(undefined);
     expect(models).toContain(AUTHOR_MODEL);
+  });
+});
+
+describe("no transport", () => {
+  it("answers null rather than building an engine with no key", () => {
+    delete process.env.OPENROUTER_API_KEY;
+    resetAuthorEngineForTests();
+    expect(authorTextEngine()).toBeNull();
+    expect(built).toHaveLength(0);
   });
 });
