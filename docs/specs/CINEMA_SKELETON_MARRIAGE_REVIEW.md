@@ -309,6 +309,20 @@ to the pack brief: one stage on stage at a time; information at the altitude
 where it is actionable; a shot view's standing furniture is header + one
 contact sheet + one action row + chips + collapsed prompt drawer.
 
+## 6d. "Does the document defy the script?" (founder, 2026-09-03)
+
+Answered and pinned: the scene document is NOT a questionnaire — with a
+script, all six fields DERIVE and the user only corrects misreadings. It
+exists because a script under-specifies what shooting needs (tone, what the
+viewer should read, what is withheld live between the lines); the engine
+must infer those to write shots either way, and the document is the choice
+to infer VISIBLY at word-cost instead of silently at video-cost. Hierarchy:
+script = source; document = the engine's correctable reading; shot list =
+proposed from the reading; takes = paid. Amendment N added to the pack
+brief: the source block follows the road (FROM YOUR SCRIPT quoting the
+excerpt on the script road; YOUR LINE only on the line road; empty question
+fields never appear when a script exists).
+
 ## 7. The integration contract (decided here — the design bot's blind spot, by design)
 
 The founder: the design agent knows UI, not the product's internals; how the
