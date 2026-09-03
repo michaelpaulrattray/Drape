@@ -616,3 +616,25 @@ untouched and remains content. Uploads into buckets pass the same door
 the product already runs today). **Invariant: the bucket accepts only
 plates; the plate is the only form Cinema ever attaches.** Amendment T
 issued to the design agent.
+
+
+## 9f. "Only plates" corrected — cards have JOBS; scoping, not scrubbing (founder counterexample, 2026-09-04)
+
+The founder's counterexample killed 9e's absolute: the upside-down-in-the-
+cockpit reference was NOT a clean plate — it was a contextual image whose
+scene-relation WAS the information, and the research is full of these (the
+dual-reference wide cockpit shot, layout images, scale pairings). Cleaning
+them would delete their point. The actual measured system: **every
+reference has a JOB, its form matches its job, and bleed is controlled by
+PER-REFERENCE SCOPING in the prompt** ("face from image 1 only; pose and
+cockpit relation from image 2, nothing else") — one of the corpus's oldest
+findings, now made the invariant.
+
+Three jobs: IDENTITY (clean plates, mint door, unchanged), LOOK/STATE
+(clean-ish plates minted from takes/uploads — 9e's mint stands for this
+job), POSE/RELATION/LAYOUT (**saved as-is; the take IS the correct form**).
+Amendment U replaces T's only-plates invariant: promotion offers two doors
+(lift the look = mint · keep as-is = context reference), the bucket tray
+groups by job, the engine scopes by job at the wire (plates broad, context
+narrow). Faces remain mint-only — identity is never saved as-is. 9e's mint
+machinery is unchanged; only its claim to exclusivity is withdrawn.
