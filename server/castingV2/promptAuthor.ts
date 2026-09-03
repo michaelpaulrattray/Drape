@@ -169,7 +169,8 @@
  * it rather than anyone assuming it.
  */
 import type { TextEngine } from "../providers/types";
-import { INTERPRET_TIMEOUT_MS } from "./interpreter";
+import { INTERPRET_TIMEOUT_MS, interpreterTextQueue } from "./interpreter";
+import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../providers/openrouterText";
 import { createModuleLogger } from "../logging/logger";
 import { containsHouseSentence, DEFAULT_HOUSE_LANE, houseBlockForStyle, type HouseLane } from "./houseBlock";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
@@ -201,6 +202,58 @@ const log = createModuleLogger("promptAuthor");
 */
 export { DEFAULT_IMAGINATION, type Imagination } from "../../shared/imagination";
 import { DEFAULT_IMAGINATION, type Imagination } from "../../shared/imagination";
+
+/**
+ * THE AUTHOR'S OWN MODEL — one line, and swapping it swaps nothing else (#466).
+ *
+ * His order (Crew reply #105) asked for the author half of the Grok bench, and
+ * the card carries the same condition the reader half did under #231: the model
+ * becomes its own constant in the same PR as the bench, so a verdict either way
+ * is one line and reversible. Until now the author had no model of its own — the
+ * compile site (`briefCompiler.ts`) reached for `interpreterEngine()` whole, so
+ * the only way to try a different author was to move the slug every brief in
+ * the product is interpreted by.
+ *
+ * ⚠ **TODAY IT IS THE SAME SLUG, DELIBERATELY, so nothing about the shipped
+ * author moves in the commit that makes it swappable.** The bench record
+ * (`docs/specs/CONCEPT_READER_COURT_2026-08-30.md`, the author bench) is what
+ * may move it, and only through his eye on the pairs — law 9.
+ *
+ * A CONSTANT rather than an env var, for `CONCEPT_READER_MODEL`'s own reason: a
+ * per-deployment override would be an undocumented flag, and the bench does not
+ * need one — `BriefCompilerInput.engine` already takes an engine, so an arm
+ * drives whatever model it likes without configuring the service.
+ */
+export const AUTHOR_MODEL = DEFAULT_INTERPRETER_MODEL;
+
+let authorEngineMemo: TextEngine | null = null;
+
+/**
+ * The author's engine: its own model, the interpreter's ONE allowance.
+ *
+ * The queue is shared rather than built here, and that is the load-bearing half
+ * of this function — see {@link interpreterTextQueue}: `createOpenRouterTextEngine`
+ * builds its OWN `ProviderQueue` when handed none, so a second engine with a
+ * second queue would quietly double what the product is willing to have in
+ * flight at OpenRouter (the fal-allowance class, on the side of the house that
+ * has no `assertFalBudget`).
+ */
+export function authorTextEngine(): TextEngine | null {
+  if (authorEngineMemo) return authorEngineMemo;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return null;
+  authorEngineMemo = createOpenRouterTextEngine({
+    apiKey,
+    model: AUTHOR_MODEL,
+    queue: interpreterTextQueue(),
+  });
+  return authorEngineMemo;
+}
+
+/** Test seam: drops the memoized author engine so config changes take effect. */
+export function resetAuthorEngineForTests(): void {
+  authorEngineMemo = null;
+}
 
 /** Rule 14 — a tested constant, the court's own. */
 export const WORD_BUDGET = 400;

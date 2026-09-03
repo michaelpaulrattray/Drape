@@ -406,6 +406,13 @@
     allowance arm cannot run twice without dropping it; NAME says test-only
   argued: 6c/13a
 
+- symbol: resetAuthorEngineForTests
+  file: server/castingV2/promptAuthor.ts
+  verdict: KEEP
+  why: the same seam for the AUTHOR's own engine (#466) - it memoizes exactly as the reader's
+    does, and the model-pin arms cannot run twice without dropping it; NAME says test-only
+  argued: 6c/13a
+
 - symbol: neighbourTableNames
   file: server/castingV2/maskedRefine.ts
   verdict: KEEP
