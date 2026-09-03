@@ -431,7 +431,10 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
       console.log("  rotate the credential first, then rewrite or drop the commit that carries it, then re-run");
     } else {
       console.log(`  repair: this is a broken scanner, NOT a leak — do not rotate anything. Delete the cached`);
-      console.log(`  binary and re-run: rm -rf "$TMPDIR/gitleaks-*" (it is re-downloaded and re-verified)`);
+      /* The glob must sit OUTSIDE the quotes or it never expands, and TMPDIR is
+         usually unset under Git Bash - printed advice that silently does nothing
+         is the failure the -v change exists to prevent (review, PR #473). */
+      console.log('  binary and re-run: rm -rf "${TMPDIR:-/tmp}"/gitleaks-* (it is re-downloaded and re-verified)');
     }
     process.exit(1);
   }
@@ -444,14 +447,23 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
      scan that read none of them is refused as a broken instrument. */
   const scanned = Number(/(\d+) commits scanned/.exec(printed)?.[1] ?? "-1");
   const toPush = ranged ? Number(git("rev-list", "--count", `${remoteTip}..HEAD`).trim() || "0") : -1;
-  if (ranged && toPush > 0 && scanned === 0) {
-    console.log("REFUSED: the secret scan reported a clean verdict having read ZERO of the "
-      + `${toPush} commit(s) this push adds — the push does not fire.`);
+  /* `<= 0`, not `=== 0`: an unreadable count is -1, and a guard that passes on
+     -1 disarms itself the day the pinned binary changes its summary wording.
+     At exit 0 gitleaks HAS run, so its summary must be parseable; refusing an
+     unreadable count is the same philosophy as refusing an unread range.
+     (Second-look review finding on PR #473 - the sibling of the very hole this
+     block was added to close. Law 7: the sweep is part of the fix.) */
+  if (ranged && toPush > 0 && scanned <= 0) {
+    console.log(scanned === 0
+      ? "REFUSED: the secret scan reported a clean verdict having read ZERO of the "
+        + `${toPush} commit(s) this push adds — the push does not fire.`
+      : "REFUSED: the secret scan reported a clean verdict and its own summary could not be read, "
+        + `so nothing proves it looked at the ${toPush} commit(s) this push adds — the push does not fire.`);
     console.log("  This is the scanner failing quietly, not the tree being clean. Nothing has been checked.");
     console.log(`  repair: check that ${remoteTip.slice(0, 8)} is a commit this clone actually has, then re-run`);
     process.exit(1);
   }
-  console.log(`  secret scan: ok — ${scanned} commit(s) read `
+  console.log(`  secret scan: ok — ${scanned < 0 ? "count unreadable" : `${scanned} commit(s)`} read `
     + `(${ranged ? `${remoteTip.slice(0, 8)}..HEAD` : "full history — remote tip unreadable"})`);
 }
 
