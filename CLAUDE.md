@@ -8,6 +8,144 @@ Drape is a commercial product heading for public launch. Billing, credits, and a
 
 Design taste: restrained, editorial, monochrome. Prefer simple, human-feeling solutions over clever or busy ones; avoid generic templated UI patterns. When in doubt on design decisions, less is more.
 
+## THE DISAPPEARING-TECHNOLOGY LAW (founder ruling, 2026-09-03)
+
+⚠ **THIS IS THE WHOLE PRODUCT'S LAW, NOT A CASTING ONE.** His clarification the
+day he set it down: *"the philosophy i gave you isnt just for casting studio v2
+its for the entire app any new features we add in the future the ai will need to
+ask itself how this measures against the philosophy."* **Casting, wardrobe,
+boards, canvas, billing, admin, whatever ships next — every one of them, and
+every feature added to any of them from now on.**
+
+**The founder's own sentence, and the one this whole product is built on:**
+
+> **Users don't care how it was built. They care that it just works — without
+> them having to learn the technology.**
+
+He set it down with the four it descends from, and each carries a different
+half of the rule:
+
+> *"You've got to start with the customer experience and work backwards to the
+> technology. You can't start with the technology and try to figure out where
+> you're going to try to sell it."* — **Steve Jobs**
+>
+> *"Don't make me think."* — **Steve Krug**, *Don't Make Me Think*
+>
+> *"The most profound technologies are those that disappear."* — **Mark Weiser**
+>
+> *"When something exceeds your ability to understand how it works, it sort of
+> becomes magical."* — **Jony Ive**
+
+**This is the customer-facing half of the fidelity law below, and the two are
+one rule read from two ends.** The fidelity law says *always reach for the tool
+that is genuinely best at the job.* This says *the customer must never need to
+know which tool that was, or that it changed.* **A product that names its
+engines has moved its own homework onto the person paying for it.**
+
+### What it obliges, and none of it is a preference
+
+**1 · THE BEST MODEL FOR EACH JOB, AND "BEST" HAS AN EXPIRY.** His words filing
+this: *"the ai landscape is changing fast so this is something we always will
+need to be on top of."* A model chosen well eighteen months ago is not thereby
+chosen well now. **Model choices carry a date and a reason, and a rung that
+touches a road re-asks whether its engine is still the right one** — the
+capability atlas is where that answer lives, not memory.
+
+**2 · IT IS RE-ASKED WITH A MEASUREMENT, NEVER A LEADERBOARD.** ⚠ **A benchmark
+rank does not predict this product's job.** Measured twice already: the reader
+court (#231) put a top-tier model against the shipped one on his own fixtures
+and it **invented an age on a creature that had none** and dropped his goth's
+eyepiece; the author bench (#466) had both arms keep every stated fact and
+separate entirely on register. **His own standing method decides it — proof on
+his fixtures, not theory** (#190-era rule), and **his eye closes it** (law 9).
+
+**3 · COST IS PART OF THE JUDGEMENT, STATED OUT LOUD.** His words: *"but then
+that costs us money."* **A better engine that costs more, or takes longer, is a
+trade and not a free win** — the author bench's verdict turned on 40–120 seconds
+per roll, not on quality. ⚠ **Name the price and the latency beside the quality
+finding, or the finding is not decision-grade.**
+
+**4 · READ WHAT THE ENGINE ALREADY GIVES YOU BEFORE REACHING FOR A BETTER ONE.**
+⚠ **The first instance is recorded the day this law landed**: SAM 3 ships a
+presence head built for exactly the absent-feature defect #246 measured, the
+request already sends `include_scores: true`, and **the reader discards every
+score.** *"Are we using the best models?"* was answered by finding the right
+model's own answer thrown away. **A signal bought and unread is the cheapest
+finding available, and it is checked before any swap is proposed.**
+
+**5 · THE DEFAULT IS NEVER A QUESTION. THE PICKER IS A FEATURE.** ⚠ **He
+corrected this clause TWICE on the day it was written, both times because it was
+drafted too rigidly, and the second correction is the one that matters:**
+
+> *"people who use ai will use our software and probably want to experiment with
+> different models etc so we cant just hide the model details from them all the
+> time this cant be a hard rigid . pickers will exist in the future purely
+> because that in itself is something we are offering the user"*
+
+**So the reframe, and it is his:** ⚠ **for an AI studio the model is not
+plumbing, it is MATERIAL.** A different engine gives a different look the way a
+different lens or a different film stock does. **Choosing it is a creative
+decision, not an implementation detail leaking out** — and offering that choice
+is a feature this product intends to sell, judged like any other feature rather
+than tolerated as an exception.
+
+**What this law actually forbids is narrow, and it is not model names:**
+
+- ⚠ **NOBODY IS EVER FORCED TO CHOOSE.** A correct default exists for every job,
+  it is the best engine for that job under clauses 1–4, and a customer who never
+  opens the picker gets the product's best work. **That is the whole durable
+  rule. Everything else is design.**
+- ⚠ **NO ENGINE NAME ON A PATH SOMEONE MUST WALK** to reach their picture — not
+  the primary button, not a loader, not an error, not a required step. **The
+  honest loader's stage names** (#55) show the line: they name what is HAPPENING
+  to their picture, never what is doing it. **A refusal says what was refused and
+  what to do.**
+
+**And when a picker IS the offering, build it as a first-class feature:** ✅ **name
+the models plainly** — an experimenting customer wants the real name, and hiding
+it is the disrespect, not the leak; ✅ **say what each one is good at in their
+terms**, because that is what makes it usable rather than a guess; ✅ **let them
+compare**, since comparison is the point of experimenting at all.
+
+⚠ **The failure this clause guards is a picker with no default and no guidance
+— a list of slugs that makes the customer solve our problem.** **A picker with a
+right default and a real basis is a feature.** That is the difference, and it is
+the only line here.
+
+**6 · WHEN THE MACHINERY IS VISIBLE, THAT IS THE DEFECT.** A control the
+customer must understand to use, a number they must interpret, a choice they
+have no basis to make — each is this law failing, and each is fixed by removing
+the decision rather than explaining it better. ⚠ **His own rulings already run
+this way and are the precedent**: the candidate-count selector refused because
+*"every decision placed before the button is a reason not to press it"*; the
+wardrobe/basics path retired; *"tools should just refer to was an image
+generated?"* — the customer's vocabulary, not the pipeline's.
+
+**7 · EVERY NEW FEATURE IS MEASURED AGAINST IT, BEFORE IT IS BUILT.** His
+instruction, verbatim: *"any new features we add in the future the ai will need
+to ask itself how this measures against the philosophy."* ⚠ **So this is a GATE
+on new work, not a review note after it.** A brief, a design, or a card that
+adds something a customer will touch answers three questions in its own body,
+and a shift that cannot answer them says so rather than proceeding:
+
+  1. **What must the customer learn to use this?** The honest answer, not the
+     hoped-for one. **If it is anything, that is the thing to remove.**
+  2. **What decision does it put in front of them, and do they have any basis
+     for making it?** A choice offered without a basis is the machinery showing
+     through — his own candidate-count ruling is the worked example.
+  3. **Where does the technology show?** A model name, a percentage nobody can
+     act on, a term of art from the pipeline, a control that mirrors an
+     implementation rather than an intention.
+
+⚠ **"It works and it's fast" does not pass this gate** — a feature can be both
+and still make someone learn the machine. **And a feature that fails it is not
+blocked; it is REDESIGNED**, because the failure is almost always a decision
+that should never have reached the customer.
+
+⚠ **This law is not a style note and it outranks convenience.** Where it and a
+simpler implementation disagree, it wins, and the simpler one is named in the
+report as the thing that was declined.
+
 ## The fidelity law (founder ruling, 2026-08-06)
 
 Never take the path of least resistance on quality. When a capability

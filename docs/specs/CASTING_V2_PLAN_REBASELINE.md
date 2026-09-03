@@ -51,7 +51,7 @@ goal was met by a different build, or the founder's direction moved).
 | **M7b — Home vision skeleton** | Rebuild Home to `02-home.md`: greeting, unified composer, Quick Start, On the Wire | **unbuilt** | `client/src/pages/Home.tsx` contains none of the skeleton's anatomy (grep for composer/greeting/Quick Start/wire: zero hits); PROGRAM.md's closed list is "M0–M7 (plus M2b, M4a)" — M7b is not in it. The design north star (`docs/specs/Casting-ui-ux-design/`) now owns this surface. |
 | **S0 — Security hygiene** (gates old M13 with M5b) | Approval gate on the API + staff image boundary | **done** | `protectedProcedure` = `requireUser` + `requireApproved` since 2026-07-30 (CLAUDE.md, access-control section); guarded by `server/approvalGate.test.ts` and `server/staffImageBoundary.test.ts` — both present and in the suite. |
 | **M8 — Takes** (migration 0019) | takeService + identity gate + room Takes grid | **unbuilt** | No `server/castingV2/takeService.ts`; `casting_takes` absent from `drizzle/schema.ts` (grep: 0 hits); no `castingV2.take` operation kind. The design direction exists and is founder-endorsed but is not a build order: `CASTING_TAKES_DESIGN.md`, issue **#18**. |
-| **M8b — Voice** (migration 0019b) | VoiceEngine (ElevenLabs), voice design, audition card | **unbuilt** | The `VoiceEngine` interface exists as a stub (`server/providers/types.ts:535` — `designVoice`/`synthesizeAudition`) with **zero implementations and zero callers**; `cast_voices` absent from schema; no ELEVENLABS reference outside that types file. The M3 voice-transport verification the milestone depends on was never run. |
+| **M8b — Voice** (migration 0019b) | VoiceEngine (TWO engines, split by voice kind — see the 2026-09-03 amendment in §6), voice design, audition card | **unbuilt** | The `VoiceEngine` interface exists as a stub (`server/providers/types.ts:535` — `designVoice`/`synthesizeAudition`) with **zero implementations and zero callers**; `cast_voices` absent from schema; no ELEVENLABS reference outside that types file. The M3 voice-transport verification the milestone depends on was never run. |
 | **M9 — Cohorts beyond photoreal** | Anime + humanlike-fantasy cohort adapters in a `server/castingV2/cohorts/` registry | **unbuilt as specified; direction superseded** | No `cohorts/` directory exists. Non-human briefs meet the `unsupported_cohort` wall (`server/castingV2/briefCompiler.ts:244,950`); the founder's own cyborg brief refuses ~1 in 7 (**#25**), the cohort-wall double check awaits countersign (**#20**), fantastical anatomy goes through `CASTING_OPEN_LANE_SCOPE` instead of a cohort adapter. The successor architecture is named in `CREATIVE_REGISTER_DESIGN.md` §5: *"the creative register is, deliberately, the first seam of the cohort-module architecture the creative-casts program needs anyway."* M9's goal survives; its shape belongs to the register era (**#16**, **#22**). |
 | **M10 — Canvas + Wardrobe entries** | CastPicker "Cast new" → V2 session with board origin; wardrobe picker reads signed Casts | **partial** | Server half scaffolded: `CASTING_SESSION_ORIGINS = ["roster","canvas","wardrobe"]` (`drizzle/schema.ts:1952`) and the projection carries `originType` (`server/castingV2/rollProjection.ts:161`). Client half not re-pointed: the boards surface still imports the **legacy** casting feature (`BoardPage.tsx:51` → `@/features/casting/pendingCastRegistry`; `CastNode.tsx:46` → `@/features/casting/components/SlotVersionHistory`), and wardrobe's navigation has no V2 route (grep of `overlayNavigation.ts`: 0 hits). |
 | **M11 — Cutover plumbing** | `/studio?tool=casting*` deep-link redirects, mixed-deploy verification, disposal list | **unbuilt** | No `tool=casting` redirect exists anywhere in `server/` or `client/src/App.tsx` (grep: 0 hits). Legacy `/studio` is still a first-class route (`App.tsx:55`, "Classic Drape Studio (fallback)"). |
@@ -193,6 +193,61 @@ are still unmeasured.
 
 **Not repaired now, by his word.** #246 stays open and carries the census.
 
+⚠ **AMENDMENT 2026-09-03 — THE READER ALREADY ANSWERS "IS IT THERE"; WE ASK FOR
+THE ANSWER AND THROW IT AWAY.** Filed on the founder's question at this rung —
+*"are we using the best possible models for this?"* — and the answer measured at
+the code rather than reasoned about: **the model is right and its use is not.**
+
+**SAM 3 (`fal-ai/sam-3/image`) ships a separate PRESENCE HEAD**, built to
+decouple *recognition* from *localisation* precisely so a named concept that is
+absent can be reported absent rather than located anyway. It is the published
+reason SAM 3 beats OWLv2 on open-vocabulary concepts, and the documented
+weakness of its main rival, Grounding DINO, is exactly the failure the #246
+amendment above measured on our own frames. **So the segmenter is not the
+defect. Swapping it would carry the defect across.**
+
+**What the code does** (`server/castingV2/falRegionReader.ts:540`): the request
+sends `include_scores: true` — **we ask for the scores** — and the handler then
+reads `json.masks`, maps them to URLs, and returns the mask. ⚠ **No score is
+read anywhere in the module.** A grep for `.score` / `confidence` over
+`falRegionReader.ts` returns only prose in docblocks.
+
+**And the floor beneath it is zero for exactly the words that fail.**
+`detectionFloorFor` returns 0 for any anatomical question, on its own stated
+premise: *"Anatomy — eyes, ears, hair — has no accessory court and needs none …
+any pixels at all are the region answering."* That premise is what the three
+sittings disproved.
+
+**So the chain is:** the model reports low presence → the reader discards it →
+a zero floor declares any pixels an answer → **a tap target lands on the wrong
+face.** Each link is individually reasonable and the chain is the bug
+(*chain proven link by link*).
+
+⚠ **THIS IS A MEASUREMENT THIS RUNG OWES ITSELF BEFORE IT DESIGNS THE PANEL, not
+a fix to schedule after it.** The absent case is already a first-class panel
+state by the amendment above; whether it is *detectable* changes what that state
+can promise. **Read the scores on the three measured words (`tusks`, `hair`,
+`eyebrows`) against frames that do and do not hold them, and quote the numbers.**
+Two outcomes and both are worth having:
+
+- **The scores separate cleanly** → absence becomes a solved input, the panel's
+  absent state is honest rather than defensive, and the departure gate's
+  `zero for everything else` gains a real floor to use.
+- **They do not separate** → that is a finding of the same weight, known BEFORE
+  the panel is drawn rather than after, and the design proceeds on the
+  assumption it must today.
+
+⚠ **It costs nothing to take.** No new model, no new call, no added latency —
+the numbers are already inside a response this product pays for on every one of
+a scan's twenty calls. **A signal bought and discarded is the cheapest finding
+available to this rung.**
+
+**Bounded, so it cannot become a model-swap project:** read what SAM 3 already
+returns. **Do not add a second segmenter, a verifier pass, or a VLM confirmation
+step** — each is a real option and each is a separate decision with its own
+latency and money, and none of them may be chosen before the free signal has
+been read. Card: **#475**.
+
 **N4 — Takes** *(scheduled by the founder's word on the same review: "takes
 actually has a solid use case that i designed with another agent" —
 `CASTING_TAKES_DESIGN.md`, #18)*: built per its design, dark behind its
@@ -264,6 +319,51 @@ and waits for his word (THE MILESTONE GATE, PROGRAM.md).
    — now rung N4.** Voice remains the open half: transport never verified,
    nothing depends on it; recommendation unchanged (**after** — the shelf,
    entered by his word). His call.
+
+   ⚠ **AMENDMENT 2026-09-03 — THE ENGINE SPLIT, on his ruling.** Asked whether
+   a cheaper or better model had overtaken the spec's vendor, he answered with a
+   split rather than a swap, verbatim: *"for now we are sticking with elevenlabs
+   voice design for any creative style voices like monsters or sci-fi types and
+   inworld for human voices these are the best model mixes at the moment for
+   voice design i think."*
+
+   **So the design intent is TWO engines, chosen by what is being voiced:**
+
+   | voice kind | engine |
+   |---|---|
+   | creature, monster, sci-fi, anything non-human | **ElevenLabs Voice Design** |
+   | human | **Inworld Voice Design** |
+
+   ⚠ **THIS IS A DESIGN INTENT, NOT A COMMITMENT, AND HIS OWN "i think" IS PART
+   OF THE RULING.** Nothing is built — the interface has zero implementations and
+   zero callers, `cast_voices` is absent from the schema, and the transport was
+   never verified — **so there is nothing to migrate and no decision to reverse.**
+   The row above named one vendor for a year and that was read back as a choice;
+   this amendment exists so the SPLIT is not read the same way.
+
+   ⚠ **THE DISAPPEARING-TECHNOLOGY LAW BINDS THIS ROW** (`CLAUDE.md`, 2026-09-03),
+   and three of its clauses apply directly:
+
+   - **Clause 1 — "best" has an expiry.** Voice is not scheduled; any vendor
+     reading taken today expires before it is built. **Re-ask at build time.**
+   - **Clause 2 — re-asked with a MEASUREMENT, never a leaderboard.** The TTS
+     leaderboard that prompted this question ranks *reading text in an existing
+     voice*, which is **not the job** — voice design invents a voice from a
+     description. ⚠ **The court is his own standing method: design the same three
+     voices for three real casts on each candidate and listen.** An Elo cannot
+     say which one sounds like HIS cast.
+   - **Clause 5 — the customer never picks the vendor.** ⚠ **The split is routed
+     from the CAST, not asked as a question**: a creature cast reaches one engine
+     and a human cast the other, and neither name appears on the path. **If a
+     control exists it chooses a VOICE ("creature" / "human", or the audition
+     previews themselves), never a supplier.** A customer designing a monster's
+     voice has no basis for choosing between two vendors and should never be
+     handed that decision.
+
+   **Kept as the open question it is:** whether the split survives a real court
+   at build time, and whether one engine by then does both well enough that two
+   integrations are not worth their cost. **His “for now” is doing real work in
+   that sentence.**
 2. **Is a post-Sign revision product still wanted** (the real M12), now that
    the refine arc serves identity edits pre-Sign? The sign-mint (7b-ii) is
    the first concrete piece if yes. Recommendation: fold into the shelf until
