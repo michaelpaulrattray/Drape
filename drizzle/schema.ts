@@ -4052,6 +4052,33 @@ export const crewQueueCounts = mysqlTable("crew_queue_counts", {
    * `scripts/ceremony-crew-queue-count-exclusions.mts`.
    */
   excluded: text("excluded"),
+  /**
+   * The cards inside that count whose FIX MAY ALREADY HAVE LANDED (#494).
+   *
+   * His question at the live panel — *"does the agent know when a bug or any
+   * other category item has already been fixed etc?"* — and it was real: the
+   * 2 September triage found five cards (#57, #59, #69, #80, #111) whose work
+   * was done, whose card stayed open, and which the count offered as a night's
+   * work.
+   *
+   * ⚠ **UNLIKE `excluded` ABOVE, THIS SUBTRACTS NOTHING.** A flagged card is
+   * still offered and still inside `openCount`; the panel reads
+   * `Bugs (14, 2 already queued, 2 possibly fixed)`, where the queued two are
+   * OUT of the fourteen and the flagged two are two OF them. His card's own
+   * rule: *"No card closes from this instrument."* It says which cards a shift
+   * re-reads first, and the re-read is the control.
+   *
+   * A `{ "n": 2, "cards": [486, 462] }` object. `shared/crewQueuePossiblyDone.ts`
+   * owns the shape, the cap, the rule that produces it and a parse whose only
+   * failure mode is "nothing flagged". The count rides beside the cards because
+   * the list is capped and a capped array read as its own total would quietly
+   * under-report.
+   *
+   * NULLABLE, and null reads exactly like "no shift has counted since this
+   * shipped": the count alone. Migration 0061; the deploy rite applies it
+   * itself (#322) — there is no ceremony to wait for.
+   */
+  possiblyDone: text("possiblyDone"),
   countedAt: timestamp("countedAt").notNull().defaultNow(),
 }, (table) => ([
   uniqueIndex("uq_crew_queue_counts_key").on(table.categoryKey),

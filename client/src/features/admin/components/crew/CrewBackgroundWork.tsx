@@ -92,6 +92,7 @@ import {
   type CrewCardIntentView,
 } from "@shared/crewCardIntents";
 import { queueExclusionSentence } from "@shared/crewQueueExclusions";
+import { NO_POSSIBLY_DONE, possiblyDoneSentence } from "@shared/crewQueuePossiblyDone";
 import { queueTitlesView } from "@shared/crewQueueTitles";
 import { CardTitles } from "./CrewCardTitles";
 import {
@@ -241,6 +242,12 @@ export function CrewBackgroundWork({
           /* WHAT THE NUMBER LEFT OUT (#324) — `null` for the ordinary row, so
              `Process (12)` looks exactly as it does today. */
           const excluded = queueExclusionSentence(count?.excluded ?? {});
+          /* WHAT THE NUMBER MAY ALREADY HAVE DONE (#494) — `null` for the
+             ordinary row, so a category with nothing stale looks exactly as it
+             does today. */
+          const stale = count?.possiblyDone ?? NO_POSSIBLY_DONE;
+          const possiblyFixed = possiblyDoneSentence(stale);
+          const flagged = new Set(stale.cards);
           return (
             <li key={category.key} className="dp-crew__switchrow">
               <div className="dp-crew__min">
@@ -257,7 +264,15 @@ export function CrewBackgroundWork({
                       the confident-wrong-number failure this panel exists to
                       prevent. `Bugs (11, 2 already queued)`. */}
                   <span className="dp-crew__count">
-                    {" "}({count ? count.openCount : "—"}{excluded ? `, ${excluded}` : ""})
+                    {" "}({count ? count.openCount : "—"}{excluded ? `, ${excluded}` : ""}
+                    {/* ⚠ AFTER THE EXCLUSIONS, AND THE ORDER CARRIES THE
+                        MEANING (#494). What was SUBTRACTED is said first; what
+                        is still inside the number and worth a second look is
+                        said last. His card asked for it *"in the same shape as
+                        2 already queued"*, and the shape is the parenthesis —
+                        a count and the sentence that makes it honest are one
+                        fact, never two lines. */}
+                    {possiblyFixed ? `, ${possiblyFixed}` : ""})
                   </span>
                 </p>
                 <p className="dp-crew__blurb">
@@ -283,6 +298,13 @@ export function CrewBackgroundWork({
                       intents={intentsByCard}
                       onIntent={intentsLive ? onIntent : null}
                       pendingCard={intentPendingCard}
+                      /* ⚠ THE COUNT ALONE GIVES HIM NO BASIS. *"2 possibly
+                         fixed"* over five named cards leaves him unable to tell
+                         WHICH two, and this panel's whole reason (#285) is that
+                         titles turn *trust the number* into *see what you are
+                         authorising*. The mark is #493's own extension point,
+                         so it costs no new surface. */
+                      mark={(card) => (flagged.has(card.number) ? "possibly fixed" : null)}
                     />
                     {/* The tail, never a scroll — and never drawn without a head
                         above it to be the tail OF (`queueTitlesView`). */}

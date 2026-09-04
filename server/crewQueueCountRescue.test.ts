@@ -35,9 +35,15 @@ import { readCountRows } from "./db/crewWorkSwitches";
 const COUNTED_AT = new Date("2026-08-30T17:08:18Z");
 const TITLES = '[{"number":312,"title":"a real card"}]';
 const EXCLUDED = '{"ordered":2}';
+const POSSIBLY_DONE = '{"n":1,"cards":[486]}';
 
-/** The columns that arrive by ceremony, and may therefore be absent. */
-const OPTIONAL = ["titles", "excluded"] as const;
+/**
+ * The columns that arrive by their own migration, and may therefore be absent.
+ *
+ * THREE since #494 (`possiblyDone`, migration 0061). The count is what must
+ * never be lost — it worked before any of them existed.
+ */
+const OPTIONAL = ["titles", "excluded", "possiblyDone"] as const;
 
 /** The error shape mysql2 raises, wrapped one hop deep as drizzle delivers it. */
 function driverError(code: string): Error {
@@ -75,6 +81,7 @@ function fakeDb(options: { has: readonly string[]; failWith?: string }) {
             };
             if (names.includes("titles")) row.titles = TITLES;
             if (names.includes("excluded")) row.excluded = EXCLUDED;
+            if (names.includes("possiblyDone")) row.possiblyDone = POSSIBLY_DONE;
             return Promise.resolve([row]);
           },
         };
@@ -89,8 +96,8 @@ describe("the count read survives a database missing a ceremony's column", () =>
     rescue arm below is evidence of nothing — a reader that never returns the
     optional columns would satisfy them for the wrong reason.
   */
-  it("CONTROL — with both columns there, the titles and the exclusions come through", async () => {
-    const { db, calls } = fakeDb({ has: ["titles", "excluded"] });
+  it("CONTROL — with all three columns there, every optional value comes through", async () => {
+    const { db, calls } = fakeDb({ has: ["titles", "excluded", "possiblyDone"] });
     const rows = await readCountRows(db as never);
 
     expect(rows).toEqual([
@@ -99,23 +106,24 @@ describe("the count read survives a database missing a ceremony's column", () =>
         openCount: 10,
         titles: TITLES,
         excluded: EXCLUDED,
+        possiblyDone: POSSIBLY_DONE,
         countedAt: COUNTED_AT,
       },
     ]);
     /* ONE round trip in the ordinary case. The fallback is not a cost the
        founder pays on every page load once his ceremonies have run. */
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual(expect.arrayContaining(["titles", "excluded"]));
+    expect(calls[0]).toEqual(expect.arrayContaining(["titles", "excluded", "possiblyDone"]));
   });
 
-  it("with BOTH columns absent, the counts still arrive and both read as null", async () => {
+  it("with ALL THREE columns absent, the counts still arrive and each reads as null", async () => {
     const { db, calls } = fakeDb({ has: [] });
     const rows = await readCountRows(db as never);
 
     /* The count is the thing that must not be lost: it is what his switch panel
        is FOR, and it worked before either feature existed. */
     expect(rows).toEqual([
-      { categoryKey: "bugs", openCount: 10, titles: null, excluded: null, countedAt: COUNTED_AT },
+      { categoryKey: "bugs", openCount: 10, titles: null, excluded: null, possiblyDone: null, countedAt: COUNTED_AT },
     ]);
     expect(calls).toHaveLength(2);
     /* The retry drops the optional columns and NOTHING else — a fallback that
@@ -133,12 +141,31 @@ describe("the count read survives a database missing a ceremony's column", () =>
     fails, and it is the state this repository is actually IN between the two
     ceremonies: `titles` ran on production 2026-08-30, `excluded` has not.
   */
-  it("⚠ with ONLY the newer column absent, it still rescues — the retry drops both", async () => {
+  it("⚠ with ONLY the newer column absent, it still rescues — the retry drops them all", async () => {
     const { db, calls } = fakeDb({ has: ["titles"] });
     const rows = await readCountRows(db as never);
 
     expect(rows).toEqual([
-      { categoryKey: "bugs", openCount: 10, titles: null, excluded: null, countedAt: COUNTED_AT },
+      { categoryKey: "bugs", openCount: 10, titles: null, excluded: null, possiblyDone: null, countedAt: COUNTED_AT },
+    ]);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toEqual(["categoryKey", "openCount", "countedAt"]);
+  });
+
+  /*
+    ⚠ THE THIRD COLUMN'S OWN ARM (#494). With `titles` and `excluded` present
+    and `possiblyDone` absent, the rescue must still fire and must still drop
+    ALL THREE — this is the exact tree the day migration 0061 shipped, and it is
+    the state a name-parsing rescue would get wrong while passing both arms
+    above. It is also why the rescue does not try to be clever about WHICH
+    column the driver could not find: the driver does not say.
+  */
+  it("⚠ with only the NEWEST column absent, it still rescues — the retry drops all three", async () => {
+    const { db, calls } = fakeDb({ has: ["titles", "excluded"] });
+    const rows = await readCountRows(db as never);
+
+    expect(rows).toEqual([
+      { categoryKey: "bugs", openCount: 10, titles: null, excluded: null, possiblyDone: null, countedAt: COUNTED_AT },
     ]);
     expect(calls).toHaveLength(2);
     expect(calls[1]).toEqual(["categoryKey", "openCount", "countedAt"]);
