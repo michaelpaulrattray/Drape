@@ -677,17 +677,42 @@
 .dp-plan__rollover { font: 400 11px/1.5 var(--font-sans); color: var(--metaStrong); }
 .dp-plan__rollover--loss { color: var(--accentInk); }
 
+/* §6c's perk slot, back on his word (card 425 item 1): *"bring it back because
+   eventually i need to make benefits between each plan."* Same treatment it had
+   before card 390 removed it — one row today, a list the day a benefit
+   actually moves per rung. */
+.dp-plan__perks { display: flex; flex-direction: column; gap: 7px; }
+.dp-plan__perk {
+  display: flex;
+  gap: 7px;
+  font: 400 11.5px/1.45 var(--font-sans);
+  color: var(--secondary);
+}
+.dp-plan__perk svg { flex: none; margin-top: 2px; color: var(--meta); }
+
+/* THE CURRENT-PLAN MARKER — a word, not a button (card 425 item 2).
+   ⚠ It kept `padding: var(--s-4) 0` and the centring ON PURPOSE: it stands in
+   the action slot in both modes, so dropping its height would lift the current
+   card's credits block out of line with its two neighbours. What went is
+   everything that made a label look pressable — the border, the accent fill and
+   the button radius — plus the mono/letter-spacing stamp, so it now reads as
+   the state it is rather than as a control. */
 .dp-plan__here {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--s-4) 0;
-  border: 1px solid var(--accentLine);
-  border-radius: var(--r-btn);
-  background: var(--accentWash);
+  /* ⚠ **THE ACTION SLOT'S OWN METRICS, COPIED FROM `.dp-btn--primary`, RATHER
+     THAN A HAND-PICKED PADDING.** It stands where a button stands in both
+     modes, so its height is not a free choice: the current card's credits block
+     lines up with its neighbours only while this box is a button's height.
+     Measured — the first draft of this fix used `var(--s-4)` and 11.5px, came
+     out 34px against a 36px primary, and widened the row's misalignment from
+     3px to 5px. Same padding, same font size, same line box, same height. */
+  padding: 9px var(--s-6);
   color: var(--accentInk);
-  font: 500 11px/1.2 var(--font-mono);
-  letter-spacing: .08em;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
 }
 

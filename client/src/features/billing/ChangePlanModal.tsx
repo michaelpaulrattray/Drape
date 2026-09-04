@@ -61,7 +61,7 @@
  * 6. **`.dp-plan__tab--inline`** replaces an inline style override.
  */
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
@@ -91,16 +91,34 @@ import {
 type Interval = "monthly" | "annual";
 
 /**
- * The one thing that is true of every rung, said ONCE for both modes.
+ * The one thing that is true of every rung, said ONCE and read by both modes.
  *
  * §6d: *"a row where all plans agree carries no decision value; it belongs in
- * the footnote."* Card mode used to say it twelve times as a check-mark list on
- * every card and compare mode said it once, correctly, underneath. Two copies
- * of one sentence in one file is working law 4 in miniature — so there is one,
- * and the two modes read it.
+ * the footnote."* Card 390 applied that to the cards and moved the tick into
+ * the footnote, leaving one sentence in each view.
+ *
+ * ⚠ **CARD 425 ITEM 1 REVERSES THAT, ON HIS WORD, AND HIS REASON IS NOT THAT
+ * IT DIFFERENTIATES TODAY — IT IS THAT THE ROW IS WHERE DIFFERENTIATION WILL
+ * GO.** Verbatim: *"The tick reading 'Every model and every tool' bring it back
+ * because eventually i need to make benefits between each plan which will be a
+ * reminder for me."* §6d's test asks whether a row carries decision value
+ * TODAY; he is buying the slot for the day it does, which is a product decision
+ * and outranks the styling rule that removed it.
+ *
+ * **What did NOT come back is the duplication.** The cards state it, so card
+ * mode's footnote — which existed only because the tick had left — is gone;
+ * compare mode keeps its footnote, having no per-column perk row to carry it.
+ * Each view says it exactly once, which was card 390's actual point.
  */
-const ONE_FOR_EVERY_PLAN =
-  "Every plan carries every model and every tool — the only differences are the ones shown above.";
+const EVERY_PLAN_PERK = "Every model and every tool";
+/*
+  ⚠ **AND THE FOOTNOTE IS DERIVED FROM THE TICK RATHER THAN REPEATING IT**
+  (card 425 item 1). Two modes state one fact, so the fact is declared once: the
+  day a perk actually differs per rung, the tick above is what he edits and this
+  sentence follows it. A second hand-typed copy is the shape working law 4 is
+  about, and it would drift the first time either is touched.
+*/
+const ONE_FOR_EVERY_PLAN = `${EVERY_PLAN_PERK}, on every plan — the only differences are the ones shown above.`;
 
 export function ChangePlanModal({
   onClose,
@@ -425,7 +443,29 @@ export function ChangePlanModal({
                     could be discarded copy. **The slot is his to fill: carded.**
                   */}
                   {isCurrent ? (
-                    <span className="dp-plan__here">ON THIS ONE</span>
+                    /*
+                      ⚠ **`Current`, NOT `ON THIS ONE`, AND IT IS NO LONGER A
+                      BOX** (card 425 item 2). His words: *"the button in the
+                      compare table that says ON THIS ONE looks way to oversized
+                      or something. could we also called it like current or
+                      something better than on this one."*
+
+                      He named compare mode; the class is shared, so the sweep
+                      took both (working law 7). The card's instance was the
+                      worse of the two and he could not have seen it: `.dp-plan
+                      __tier` is a stretch flex column, so an `inline-flex`
+                      chip with a border and a wash filled the card's full
+                      width and was the largest control on it — a
+                      NON-INTERACTIVE marker outweighing the one real button in
+                      the view, which is §6c's exact complaint about the modal
+                      this replaced.
+
+                      **It keeps the action row's height** so the credits blocks
+                      still line up across the three cards. What it loses is the
+                      border, the fill and the radius — everything that made a
+                      label look pressable.
+                    */
+                    <span className="dp-plan__here">Current</span>
                   ) : (
                     <Button
                       variant={plan.id === primaryId ? "primary" : "secondary"}
@@ -466,22 +506,40 @@ export function ChangePlanModal({
                       {rollover.text}
                     </span>
                   </span>
+                  {/*
+                    §6c'S PERK ROW, BACK ON HIS WORD (card 425 item 1) — and
+                    it comes back LAST rather than where it used to sit.
+                    Card 390 item 1 moved the action into the middle because
+                    §6c's order is name + unit → price → blurb → action →
+                    credits block → **perks**; the pre-390 list ran ABOVE the
+                    action, which is the position §6c does not ask for. So this
+                    is his row at the brief's own place, not a straight revert.
+
+                    ⚠ **One row today, and that is the honest state.** It is a
+                    slot, and he said so: the day a benefit actually moves per
+                    rung, it joins this list and the footnote below follows the
+                    same constant.
+                  */}
+                  <span className="dp-plan__perks">
+                    <span className="dp-plan__perk">
+                      <Check size={12} strokeWidth={1.8} aria-hidden="true" />
+                      {EVERY_PLAN_PERK}
+                    </span>
+                  </span>
                 </article>
               );
             })}
           </div>
           {/*
-            ⚠ **THE ONE PERK ON THE CARDS WAS THE ONE THAT DOES NOT DIFFER**
-            (card 390 item 3). Every card carried the same `✓ Every model and
-            every tool`, which is §6d's own test of a worthless row —
-            *"a row where all plans agree carries no decision value; it belongs
-            in the footnote"* — applied to a card instead of a table. It is a
-            true sentence and it is not lost: it moves to the footnote, which
-            is the same place compare mode already, correctly, put it.
-            **The check-mark list returns the day a perk actually moves per
-            rung, which today none does.**
+            ⚠ **CARD MODE'S FOOTNOTE IS GONE, AND ITS REMOVAL IS THE SAME EDIT
+            AS THE TICK RETURNING** (card 425 item 1). It existed only because
+            card 390 took the tick off the cards — its own comment said so:
+            *"it is not lost: it moves to the footnote."* With the row back on
+            every card, keeping it here would state one fact THIRTEEN times in
+            one pane, which is the duplication card 390 was actually removing.
+            Compare mode keeps its footnote: a table has no per-column perk row,
+            so under the table is the only place the sentence can go.
           */}
-          <p className="dp-plan__footnote">{ONE_FOR_EVERY_PLAN}</p>
           </>
         )}
 
@@ -667,7 +725,12 @@ function CompareGrid({
         {plans.map((plan) => (
           <span key={plan.id} className={cellClass(plan)}>
             {plan.id === currentId ? (
-              <span className="dp-plan__here">ON THIS ONE</span>
+              /* The instance he named (card 425 item 2). This column already
+                 says so twice — `.dp-plan__cell--current` tints every cell in
+                 it and the head carries `YOU ARE HERE` — so a third statement
+                 needs to be the quietest of the three, not a chip with a border
+                 sitting in a row of buttons. */
+              <span className="dp-plan__here">Current</span>
             ) : (
               <Button
                 variant="secondary"
