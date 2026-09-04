@@ -1,7 +1,7 @@
 {
-  "edition": 235,
-  "updatedAt": "2026-09-04T02:26:58.011Z",
-  "shift": "Foreman — 4 September morning (your five replies, all acted on: #429 shipped, #487 shipped)",
+  "edition": 236,
+  "updatedAt": "2026-09-04T03:11:49.753Z",
+  "shift": "Foreman — 4 September afternoon (a busy server can no longer end the night)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,14 +111,14 @@
     ],
     "chips": [
       {
-        "label": "The page you are reading changed shape this morning",
+        "label": "A busy server can no longer end your night",
         "tone": "good",
-        "source": "Your #414 — the steps below read as ticks and rings now, and this page no longer collapses to one line while it loads. Two defects were caught by looking rather than by any test."
+        "source": "Your #490. Last night the team stopped 6.9 hours because Anthropic was busy. It now waits 5, 15, 40 then 60 minutes before giving up. Your cap still stops it at once; nothing switches models."
       },
       {
-        "label": "The queue: 77 open, 8 carrying your word, 0 urgent, 9 going stale",
+        "label": "The queue: 79 open, 8 carrying your word, none urgent, 4 going stale",
         "tone": "good",
-        "source": "#414 closed this morning; nothing urgent. Nine cards have gone a week untouched (#10 #14 #18 #22 #23 #30 #55 #61 #65) — one more than last night, and that one is #23 crossing the line."
+        "source": "#490 closed and #495 filed, so the total is unchanged. Nothing urgent for the first time in two days. The same four cards have sat a week untouched (#18 #22 #23 #30) — no worse than last night."
       },
       {
         "label": "Both doors into the live site are shut to everything but you",
@@ -128,6 +128,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "false-cap-495",
+      "title": "Found while fixing that: the runner can tell you that you hit a usage cap when you have not",
+      "productImpact": "Nothing needs doing from you — this is filed as #495 and a shift will take it. But it is worth knowing, because it is the kind of thing you would have had no way to catch. When a shift fails, the runner scans that shift's own written report looking for words like \"usage limit\" or \"out of credits\". One of the things it looks for is the bare number 429. A shift's report is full of numbers: card numbers, commit references, quotes from your own site's logs. So a shift that failed for a completely unrelated reason can stop the team with a note saying you have run out of credits — and you would delete the file, restart, and never learn what actually failed.",
+      "workedExample": "Measured across all 3,041 shift reports on this machine: eight of them contain something that reads as a usage cap, and three of those eight contain no cap wording at all. One is the shift that ran last night — it worked on card #429 and wrote that number in its own report twice. One is a shift that quoted a commit reference, 6429a436. One is a shift investigating rate limits on your live site and quoting them. If any of those three had failed for any reason, the team would have stopped announcing a cap you never hit. It gets more likely as the queue passes card #429, not less. The fix is the same one just applied to the new rule: look for \"API Error: 429\" rather than a bare number.",
+      "options": [],
+      "recommendation": null,
+      "state": "done",
+      "filedAt": "2026-09-04T03:11:49.754Z",
+      "issueNumber": 495
+    },
+    {
+      "id": "runner-transient-490",
+      "title": "Your nights survive a busy server now — and your two stop rules are untouched",
+      "productImpact": "Last night the team stopped at 00:40 and did nothing until 07:30. Nothing was broken: Anthropic's servers were busy for a few minutes, two shifts in a row hit it, and the runner had only two ways of reading a failure — \"you are out of credits\" (stop at once) or \"something is broken\" (two strikes, then stop). A busy server fell into the second one and spent both strikes in about twenty minutes. From now there is a third reading for \"the servers are busy\": wait 5 minutes and try again, then 15, then 40, then 60. Four tries across two hours, and only then does it stop — at which point something upstream really is wrong and stopping is the right answer.",
+      "workedExample": "Driven end to end against the real runner, so this is a measurement rather than a description. Give it the exact error from last night and the old rule launched twice and parked; the new one launches five times across two hours and only then writes the stop note, which now says which of the three things happened and how many tries it made. Give it a real usage-cap message and it still stops on the FIRST failure — your standing order, unchanged. Give it a genuinely broken shift and it still stops on the second. That last pair matters more than the first: a change that made everything patient would have quietly removed the brake that protects you.",
+      "options": [],
+      "recommendation": null,
+      "state": "done",
+      "filedAt": "2026-09-04T03:11:49.754Z",
+      "issueNumber": 490
+    },
     {
       "id": "work-switches-429-ask",
       "title": "Your background-work panel has seven switches now — do you want either of them on tonight?",
@@ -3386,6 +3408,14 @@
   ],
   "pipeline": [
     {
+      "id": "runner-transient-490",
+      "title": "The night runner now waits out a busy server instead of stopping",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Your words: \"a temp outage shouldnt cost be 8 hours no.\" Built and proven. There is no pull request for this one because it lives in the team's own night-runner folder rather than in the product, so it is not committed anywhere — the two test scripts named on #490 are the only coverage it can ever have, and both are green.\n\nOne honest caveat: the running loop still holds the old instructions in memory (they are read once when it starts), so it picks this up the next time it restarts. Worst case, the old two-strike rule gets one more chance to end a night early.",
+      "cardId": null
+    },
+    {
       "id": "compare-tag-487",
       "prNumber": 491,
       "status": "merged",
@@ -4991,13 +5021,8 @@
     119
   ],
   "nextUp": {
-    "readAt": "2026-09-04T02:24:54.756Z",
+    "readAt": "2026-09-04T03:11:42.532Z",
     "items": [
-      {
-        "issueNumber": 490,
-        "title": "A 529 from Anthropic cost a whole night — the runner needs a transient class, not a model fallback",
-        "urgent": true
-      },
       {
         "issueNumber": 243,
         "title": "#232's RENDER half is unproven: the creature mouth line needs a fixture whose seed does NOT name the anatomy",
