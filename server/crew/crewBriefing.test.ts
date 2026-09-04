@@ -396,3 +396,99 @@ describe("acknowledgement — the only definition of seen (§9 arm 6)", () => {
     ).toThrow();
   });
 });
+
+/*
+  #492 — THE LABEL CAP IS AT THE SCHEMA, AND THIS IS THE ARM THAT SAYS SO.
+
+  His words at a frame of the top of THE PROGRAM card: *"the top of the programs
+  card with the little status card readings needs a better design honest it
+  looks terribly designed"*. The design fault was structural rather than
+  decorative — shifts wrote HEADLINES into a field built for a few words, so a
+  stroked pill wrapped to two lines of 11px text and the grey sentence beneath
+  carried the actual reading. The three labels on the edition he was looking at
+  ran 42, 67 and 59 characters against an 80 cap that never bound.
+
+  ⚠ **A CAP THAT LIVES IN A SHIFT'S MEMORY IS NOT A CAP.** This page has now
+  had four mechanisms shipped with nothing calling them (#286, #295, the
+  promotion pass, #325's half). The one thing that has reliably held on this
+  feature is a schema the rite refuses to deploy past, so that is where the
+  number went.
+
+  ⚠ **THE POSITIVE ARM IS THE ONE THAT MATTERS.** A cap on the wrong field, or
+  a cap so tight the real briefing cannot be written, passes a refusal arm by
+  refusing everything. So 40 is proven ACCEPTED at the boundary and 41 REFUSED
+  one character later, and the source sentence — the field the headline is
+  supposed to move into — is proven to take a real citation at its own cap.
+
+  ⚠ **AND `source` CAME DOWN TO 100 IN THE SAME COMMIT, ON A BROWSER READING
+  AND NOT ON TASTE.** The first drive of the finished strip failed its own
+  line-count arm on all three cells: 171, 133 and 165 characters came out at
+  five, four and five lines. A 213px column at 1440 fits 33 characters, so
+  three lines is 99. The cap is what stops the next shift writing for a
+  full-width paragraph that no longer exists.
+*/
+describe("#492 — the at-a-glance label is capped where it cannot be forgotten", () => {
+  const valid = () => JSON.parse(readFileSync(briefingPath, "utf8"));
+  const withLabel = (label: string) => {
+    const base = valid();
+    return {
+      ...base,
+      program: {
+        ...base.program,
+        chips: [{ label, tone: "neutral", source: "A reading, cited." }],
+      },
+    };
+  };
+
+  it("40 characters is accepted — the boundary, from the inside", () => {
+    const label = "x".repeat(40);
+    expect(label).toHaveLength(40);
+    const parsed = crewBriefingSchema.parse(withLabel(label));
+    expect(parsed.program.chips[0].label).toBe(label);
+  });
+
+  it("41 is refused, one character later", () => {
+    expect(() => crewBriefingSchema.parse(withLabel("x".repeat(41)))).toThrow();
+  });
+
+  it("the headline he was shown would be refused today", () => {
+    /* Verbatim from edition 236, the edition his frame was taken from. */
+    const his = "The queue: 79 open, 8 carrying your word, none urgent, 4 going stale";
+    expect(his.length).toBeGreaterThan(40);
+    expect(() => crewBriefingSchema.parse(withLabel(his))).toThrow();
+  });
+
+  it("an empty label is still refused, so the cap did not replace the floor", () => {
+    expect(() => crewBriefingSchema.parse(withLabel(""))).toThrow();
+  });
+
+  it("the sentence has somewhere to go — source takes a full three lines", () => {
+    const base = valid();
+    const source = "y".repeat(100);
+    const parsed = crewBriefingSchema.parse({
+      ...base,
+      program: {
+        ...base.program,
+        chips: [{ label: "The queue", tone: "neutral", source }],
+      },
+    });
+    expect(parsed.program.chips[0].source).toBe(source);
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...base,
+        program: {
+          ...base.program,
+          chips: [{ label: "The queue", tone: "neutral", source: "y".repeat(101) }],
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("the REAL briefing's labels all fit, so the cap is live rather than aspirational", () => {
+    const parsed = crewBriefingSchema.parse(valid());
+    expect(parsed.program.chips.length).toBeGreaterThan(0);
+    for (const chip of parsed.program.chips) {
+      expect(chip.label.length, `"${chip.label}" is over the cap`).toBeLessThanOrEqual(40);
+    }
+  });
+});

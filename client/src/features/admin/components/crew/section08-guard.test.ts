@@ -751,10 +751,22 @@ describe("§5 — the card shell is one declaration, in tokens", () => {
     at 1440 or 1024 could have caught it and why it is pinned rather than
     remembered. The reviewer found this one; the arm is what stops the next.
   */
+  /*
+    ⚠ **THE CHIP CELL'S CAP LEFT THIS LIST BY BEING REPLACED WITH A STRONGER
+    ONE, WHICH IS THE ONLY WAY A ROW MAY EVER LEAVE IT (#492).**
+
+    `.dp-crew__chipcell { max-width: 16rem }` existed because a flex item with
+    no cap runs the card's full width. The readings are a GRID now, and a
+    `minmax(0, 1fr)` column can never exceed its share of the row whatever the
+    sentence inside it does — so the cap is structural rather than a number,
+    and it is asserted in the arm below rather than deleted from this one and
+    forgotten. **A row removed from here with nothing put in its place is the
+    exact defect PR #409's reviewer caught**, and that is why this note is
+    longer than the change.
+  */
   it("every width cap that moved out of Tailwind still exists in the sheet", () => {
     const caps: [string, string][] = [
       [".dp-crew__viewercap p", "the viewer caption — was max-w-3xl"],
-      [".dp-crew__chipcell", "a program chip — was max-w-[16rem]"],
       [".dp-crew__viewerimg", "the viewer image — was max-w-[92vw]"],
     ];
     for (const [selector, why] of caps) {
@@ -815,8 +827,21 @@ describe("§7 — nothing is coloured by state except the sanctioned sites", () 
     arm working, and it is why it is widened by ONE named selector rather than
     loosened.
   */
+  /*
+    ⚠ **AND A THIRD ENTRY THAT IS A MOVE, NOT A WIDENING (#492).** The warn
+    tone on an at-a-glance reading used to be `.dp-crew__chip--warn`, which is
+    the first line below. That reading is a 6px dot now, so the SAME use of the
+    SAME token wears a new selector — `.dp-crew__statedot--warn`. Both lines
+    stand because both sites are live: the pill still carries a BLOCKED
+    milestone step, which is a different sanctioned use in the same class.
+
+    ⚠ **This arm went red on the rename and that is the arm working**, exactly
+    as it did on the sixth selector. The rule it enforces is that a red on this
+    page is NAMED here in the open, never quietly swapped in.
+  */
   const SANCTIONED = [
     "dp-crew__chip--warn",
+    "dp-crew__statedot--warn",
     "dp-crew__sev--urgent",
     "dp-crew__card--alert",
     "dp-crew__alert",
@@ -1074,5 +1099,162 @@ describe("card 414 — the loading state is skeletons at height, not a sentence"
     const planted = '<div data-testid="crew-skeleton">';
     expect(planted).not.toMatch(/className="dp-crew__skel"/);
     expect("".match(/\.dp-crew__skel\s*\{[^}]*\}/)?.[0] ?? "").toBe("");
+  });
+});
+
+/* ================================================================
+   #492 — THE AT-A-GLANCE READINGS ARE A STRIP, NOT PILLS
+   ================================================================ */
+
+/*
+  His words at a frame of the top of THE PROGRAM card, verbatim: *"the top of
+  the programs card with the little status card readings needs a better design
+  honest it looks terribly designed . if you agree with that file it onto the
+  next up list so my agent can pick it up when its ready."*
+
+  ⚠ **EVERY ABSENCE ARM BELOW IS PAIRED WITH A POSITIVE CONTROL ON THE OLD
+  SHAPE**, which is this file's standing rule and matters more than usual here:
+  the old classes are the thing being removed, so an arm that cannot see them
+  is green on a tree where nothing was done at all.
+
+  ⚠ **AND THE ARM THAT ACTUALLY HOLDS THE FIX IS NOT IN THIS FILE.** A source
+  read cannot prove a schema refuses anything; `server/crew/crewBriefing.test.ts`
+  drives the real parser in both directions. This file's job is the drawing.
+*/
+describe("card 492 — the readings are a state strip in the house grammar", () => {
+  const banner = read(path.join(HERE, "CrewProgramBanner.tsx"));
+  const bannerCode = code(banner);
+
+  it("the pill treatment is gone from the readings, in the markup and the sheet", () => {
+    for (const gone of ["dp-crew__chips", "dp-crew__chipcell", "dp-crew__chipsrc"]) {
+      expect(bannerCode, `${gone} is still drawn`).not.toContain(gone);
+      expect(CSS, `${gone} is still styled`).not.toContain(`.${gone}`);
+    }
+  });
+
+  it("POSITIVE CONTROL: that arm sees the old shape when it is there", () => {
+    const planted = code(`
+      <div className="dp-crew__chips dp-crew__gap">
+        <div className="dp-crew__chipcell"><span className="dp-crew__chip" /></div>
+      </div>
+    `);
+    expect(planted).toContain("dp-crew__chipcell");
+    expect(".dp-crew__chipsrc { color: var(--faint); }").toContain(".dp-crew__chipsrc");
+  });
+
+  it("the readings draw a cell, a tone dot and the source — and the source survived", () => {
+    expect(bannerCode).toMatch(/program\.chips\.map/);
+    expect(bannerCode).toMatch(/dp-crew__statecell/);
+    expect(bannerCode).toMatch(/dp-crew__statelabel/);
+    /*
+      ⚠ **THE DOT IS ASSERTED AT ITS RENDER CALL, NOT BY ITS NAME, AND THE
+      SABOTAGE DRIVER IS WHY.** A bare `/dp-crew__statedot/` over the file was
+      GREEN with the dot deleted from the markup: `STATE_DOT`'s own values are
+      `"dp-crew__statedot--good"` and `"dp-crew__statedot--warn"`, so the
+      substring survives its only consumer. That is the same class this
+      team caught three times in one shift on the runner guards — an unscoped
+      read of a whole file standing in for a claim about one branch of it.
+    */
+    expect(bannerCode).toMatch(/cn\("dp-crew__statedot", STATE_DOT\[chip\.tone\]/);
+    /* His card's line: the source is the reading and it stays on the page,
+       "never hidden in a tooltip he has to discover". */
+    expect(bannerCode).toMatch(/chip\.source && <p className="dp-crew__statesrc">/);
+  });
+
+  it("the three tones survived the pill, and no fourth was invented", () => {
+    const keysOf = (name: string) => {
+      const at = bannerCode.indexOf(`const ${name}: Record<string`);
+      expect(at, `${name} not found in the banner`).toBeGreaterThan(-1);
+      const body = bannerCode.slice(at, bannerCode.indexOf("};", at));
+      return [...body.matchAll(/^\s*"?([a-z]+)"?:/gm)].map((m) => m[1]).sort();
+    };
+    expect(keysOf("STATE_DOT")).toEqual(["good", "neutral", "warn"]);
+    expect(keysOf("STATE_SPOKEN")).toEqual(keysOf("STATE_DOT"));
+  });
+
+  it("warn says its word, because a dot is the one encoding a reader cannot hear", () => {
+    expect(bannerCode).toMatch(/STATE_SPOKEN\[chip\.tone\]/);
+    expect(bannerCode).toMatch(/className="sr-only"/);
+    /* Only warn. Announcing "good" on every reading is noise, and the resting
+       state of this block is that nothing is wrong. */
+    const at = bannerCode.indexOf("const STATE_SPOKEN");
+    const body = bannerCode.slice(at, bannerCode.indexOf("};", at));
+    expect(body).toMatch(/warn:\s*"Needs attention: "/);
+    expect(body).toMatch(/good:\s*null/);
+    expect(body).toMatch(/neutral:\s*null/);
+  });
+
+  it("the cells are an equal grid, which is what makes the row align", () => {
+    const rule = CSS.match(/\.dp-crew__state\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule, ".dp-crew__state has no rule at all").not.toBe("");
+    expect(rule).toMatch(/display:\s*grid/);
+    /*
+      ⚠ **`minmax(0, 1fr)` IS THE WIDTH CAP `.dp-crew__chipcell` USED TO BE**,
+      and the reason that row could leave the cap list above. A bare `1fr`
+      track floors at the content's min-content width, so one long unbroken
+      reading would push its column wider than its neighbours and the equal
+      cells would stop being equal — the ragged edge his frame shows, rebuilt
+      in a grid.
+    */
+    expect(rule).toMatch(/grid-template-columns:\s*repeat\(var\(--dp-statecols/);
+    expect(rule).toContain("minmax(0, 1fr)");
+    /* The column count comes from the data, capped so six readings are two
+       rows of three rather than six slivers. */
+    expect(bannerCode).toMatch(/"--dp-statecols":\s*Math\.min\(program\.chips\.length,\s*3\)/);
+  });
+
+  it("no border, no radius — the pill is not redrawn under a new name", () => {
+    for (const selector of [".dp-crew__state", ".dp-crew__statecell", ".dp-crew__statelabel"]) {
+      const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const rule = CSS.match(new RegExp(`${escaped}\\s*\\{[^}]*\\}`))?.[0] ?? "";
+      expect(rule, `${selector} is missing`).not.toBe("");
+      expect(rule, `${selector} drew a border`).not.toMatch(/border(-(width|style|color))?:/);
+    }
+    /* The dot is the ONE radius in this block, and it is a circle. */
+    const dot = CSS.match(/\.dp-crew__statedot\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(dot).toMatch(/border-radius/);
+  });
+
+  it("POSITIVE CONTROL: the no-border arm rejects a pill wearing the new name", () => {
+    const planted = ".dp-crew__statecell { border: 1px solid var(--borderSoft); }";
+    const rule = planted.match(/\.dp-crew__statecell\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule).toMatch(/border(-(width|style|color))?:/);
+  });
+
+  it("the hierarchy is the right way up — the reading outweighs its label", () => {
+    /*
+      His fault 3, and the only one a source read can actually measure: the
+      10px `--faint` sentence was carrying the content while an 11px bordered
+      pill carried the heading. The label is the page's own 8.5px eyebrow now
+      and the source is 12.5px `--secondary`.
+    */
+    const label = CSS.match(/\.dp-crew__statelabel\s*\{[^}]*\}/)?.[0] ?? "";
+    const src = CSS.match(/\.dp-crew__statesrc\s*\{[^}]*\}/)?.[0] ?? "";
+    const sizeOf = (rule: string) => Number(rule.match(/font:[^;]*?([\d.]+)px/)?.[1] ?? "0");
+    expect(sizeOf(label), "the label has no font size").toBeGreaterThan(0);
+    expect(sizeOf(src), "the source has no font size").toBeGreaterThan(0);
+    expect(sizeOf(src)).toBeGreaterThan(sizeOf(label));
+    expect(src).toContain("var(--secondary)");
+    expect(src, "the source is still the faintest thing on the block").not.toContain("var(--faint)");
+  });
+
+  it("the label reuses the page's eyebrow rather than inventing a second one", () => {
+    /* Working law 4 in a stylesheet. `.dp-crew__subhead` is the grammar for
+       *The ladder* and *The rest of the pipeline*; a near-copy under a new
+       name is two sources of truth for one face. */
+    const subhead = CSS.match(/\.dp-crew__subhead\s*\{[^}]*\}/)?.[0] ?? "";
+    const label = CSS.match(/\.dp-crew__statelabel\s*\{[^}]*\}/)?.[0] ?? "";
+    const faceOf = (rule: string) => rule.match(/font:\s*([^;]+);/)?.[1]?.trim() ?? "";
+    expect(faceOf(subhead), "the page's eyebrow is missing").not.toBe("");
+    expect(faceOf(label)).toBe(faceOf(subhead));
+    expect(label).toContain("text-transform: uppercase");
+  });
+
+  it("the strip falls to one column before three sentences can be slivers", () => {
+    /* A cap the drive at 1440 cannot see, pinned for the same reason the
+       Tailwind width caps above are. */
+    const media = CSS.match(/@media \(max-width: 900px\) \{\s*\.dp-crew__state\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(media, "the state strip has no narrow fallback").not.toBe("");
+    expect(media).toMatch(/grid-template-columns:\s*1fr/);
   });
 });

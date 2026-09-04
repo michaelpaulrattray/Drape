@@ -99,16 +99,53 @@ const ladderRungSchema = z.object({
 }).strict();
 
 /**
- * An at-a-glance chip at the top of the banner (#74 — his own gap list:
- * "production healthy, what just went live, team running"). A chip is a CLAIM,
- * so `source` names the reading it was taken from — a receipt, a commit, a
- * row — or is null only for claims the page itself embodies (working law 7b:
- * a health sentence with no reading behind it is not said).
+ * An at-a-glance state reading at the top of the banner (#74 — his own gap
+ * list: "production healthy, what just went live, team running"). It is a
+ * CLAIM, so `source` names the reading it was taken from — a receipt, a
+ * commit, a row — or is null only for claims the page itself embodies
+ * (working law 7b: a health sentence with no reading behind it is not said).
+ *
+ * ⚠ **THE LABEL IS CAPPED AT 40 AND THAT CAP IS THE FIX, NOT A TIDY (#492).**
+ * The founder, at a frame of this block: *"the top of the programs card with
+ * the little status card readings needs a better design honest it looks
+ * terribly designed"*. The design fault was one thing and it was structural —
+ * shifts wrote HEADLINES into a field built for a few words, so a stroked pill
+ * wrapped to two lines of 12px text and the grey sentence beneath it carried
+ * the actual reading. The three labels on the edition he was looking at ran
+ * **42, 67 and 59** characters against an 80 cap that never bound.
+ *
+ * **So the cap moved to the schema rather than into a shift's memory.** A
+ * label past 40 is REFUSED by the rite's conformance judge before it deploys,
+ * which is the only kind of rule this page has ever kept: `.agents/` prose has
+ * failed four times on this feature alone. 40 is measured, not chosen — it is
+ * the longest the eyebrow face fits on one line in the narrowest cell of a
+ * three-column grid at 1440, with the two-column and one-column fallbacks
+ * wider still.
+ *
+ * ⚠ **AND THE SENTENCE HAS SOMEWHERE TO GO, WHICH IS WHY THIS IS NOT A LOSS.**
+ * `source` is the reading and it is now drawn in the page's normal reading
+ * face rather than in 10px grey — the hierarchy his frame showed inverted, put
+ * back the right way up. A shift with a headline writes it there.
+ *
+ * ⚠ **`source` CAME DOWN FROM 200 TO 100 IN THE SAME COMMIT, AND THAT NUMBER
+ * WAS MEASURED IN THE BROWSER RATHER THAN CHOSEN.** The card asks for the
+ * reading to sit in *"one or two lines"*, and the first drive of the finished
+ * strip failed its own arm on all three cells — 171, 133 and 165 characters
+ * came out at **five, four and five lines**. The sentences were not too long
+ * for the old shape; they were written FOR the old shape, a full-width 10px
+ * paragraph under a pill, and a 213px column at 1440 fits **33 characters a
+ * line**. So three lines is 99, and the cap is 100.
+ *
+ * ⚠ **NOT 70, WHICH IS WHAT "one or two lines" LITERALLY BUYS.** `source` is
+ * the EVIDENCE half of the claim — working law 7b's *a health sentence with no
+ * reading behind it is not said* — and a cap tight enough to make citing
+ * awkward is a cap that produces `source: null`. Three lines of real citation
+ * beats two lines of none.
  */
 const chipSchema = z.object({
-  label: z.string().min(1).max(80),
+  label: z.string().min(1).max(40),
   tone: z.enum(["good", "warn", "neutral"]),
-  source: z.string().max(200).nullable(),
+  source: z.string().max(100).nullable(),
 }).strict();
 
 const needsYouSchema = z.object({

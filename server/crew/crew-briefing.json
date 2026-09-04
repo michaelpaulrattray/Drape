@@ -111,19 +111,19 @@
     ],
     "chips": [
       {
-        "label": "A busy server can no longer end your night",
+        "label": "Your nights",
         "tone": "good",
-        "source": "Your #490. Last night the team stopped 6.9 hours because Anthropic was busy. It now waits 5, 15, 40 then 60 minutes before giving up. Your cap still stops it at once; nothing switches models."
+        "source": "Your #490: 6.9 hours of dead night on 3-4 Sep, parked 00:40. It now waits instead of quitting."
       },
       {
-        "label": "The queue: 79 open, 8 carrying your word, none urgent, 4 going stale",
+        "label": "The queue",
         "tone": "good",
-        "source": "#490 closed and #495 filed, so the total is unchanged. Nothing urgent for the first time in two days. The same four cards have sat a week untouched (#18 #22 #23 #30) — no worse than last night."
+        "source": "79 open, 8 carrying your word, none urgent. Four have sat a week (#18 #22 #23 #30)."
       },
       {
-        "label": "Both doors into the live site are shut to everything but you",
+        "label": "The live site",
         "tone": "good",
-        "source": "Your \"protect it\" (#461), applied and checked against the other branch field by field. What is still open is deliberately open — your own pushes, by your own ruling."
+        "source": "Shut to everything but you — your \"protect it\" (#461), checked branch by branch."
       }
     ]
   },
