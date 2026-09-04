@@ -1,7 +1,7 @@
 {
-  "edition": 232,
-  "updatedAt": "2026-09-03T22:31:15.129Z",
-  "shift": "Foreman — 4 September morning (#414: the Crew steps read as ticks and rings)",
+  "edition": 233,
+  "updatedAt": "2026-09-04T00:05:53.942Z",
+  "shift": "Foreman — 4 September morning (#425: the Change plan corrections, and two features you already had)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,6 +128,28 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "change-plan-425",
+      "title": "Two of your four Change plan asks were already built — and nothing was owed",
+      "state": "open",
+      "filedAt": "2026-09-04T00:05:53.942Z",
+      "issueNumber": 425,
+      "recommendation": "Silence on a free account. A promise with no number behind it, on the page where somebody is choosing what to pay, is worse than saying nothing.",
+      "options": [
+        {
+          "key": "silent",
+          "label": "Leave a free account showing neither (recommended)",
+          "consequence": "What happens today. The band and the badge appear the moment there is a month of spending to read, and nothing on the page claims anything it cannot work out."
+        },
+        {
+          "key": "named",
+          "label": "Say the slot exists — \"this appears once you are on a plan\"",
+          "consequence": "An honest empty state rather than an absence, so you would see the reminder you originally asked for. The cost is one more line of grey text on a page whose whole job is to make one decision easy."
+        }
+      ],
+      "workedExample": "On the test account: 68,000 of 75,000 credits gone with 10 days of the month left. The page reads \"At this rate you run out on 6 Sept … which leaves you 8 days short of 14 Sept\", and puts FITS YOUR USE on Pro — the first plan that covers that rate. On your own free account there is no month and no rate, so both stay away.",
+      "productImpact": "You asked for the \"Fits your use\" badge and the \"at this rate you run out on 27 Jul\" card as STUBS — reminders to build them later. Both are already built, and have been since 1 September. They are real: the date is worked out from how fast you are actually spending, and the badge names the plan that covers it.\n\nThe reason you cannot see them is that both need a billing cycle, and a free account has no billing cycle. Your own sentence had it: \"its not relevant on a free account.\"\n\nSo nothing was built for those two, on purpose. A stub of a real feature would put \"not built yet\" over something that works, and it would be a second, fake version of a thing we already have. What you get instead is proof — the modal driven on a test account with a subscription, both themes, in your gallery.\n\nYour other two corrections shipped for real: the \"Every model and every tool\" tick is back on every card as the slot for future per-plan benefits, and \"ON THIS ONE\" is now \"Current\" with no box, in the compare table AND on the cards, where it had been filling almost the whole card width."
+    },
     {
       "id": "author-bench-466",
       "title": "Answered — Sonnet stays as the author; Grok's discipline becomes the case for tightening MAX (#477)",
@@ -1511,6 +1533,36 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "change-plan-425-frames",
+      "state": "open",
+      "title": "The two you asked for as reminders — here they are, working. Is this what you pictured?",
+      "filedAt": "2026-09-04T00:05:53.942Z",
+      "issueNumber": 425,
+      "question": "You asked for the \"Fits your use\" badge and the \"at this rate you run out on 27 Jul\" card as stubs to remind us to build them. They are built, and these frames are them running. To take the picture, a test account was given a subscription 20 days into a month having spent 68,000 of its 75,000 credits — every number you see was then worked out by the product from those four facts, not typed in.\n\nTwo questions, both one line to answer. First: is that what you had in mind, or did you picture something else? Second: on a free account both are simply absent, because there is no spending pattern to read yet — would you rather the page said so, or is silence right? Silence is the recommendation, because a promise with no number behind it on the page where someone chooses what to pay is worse than nothing.",
+      "frames": [
+        {
+          "key": "crew-eye/9580674f-a35e-46d0-a789-bd21e271d1d0.png",
+          "arm": "Both of them, dark",
+          "caption": "The band across the top is the one you asked about: \"At this rate you run out on 6 Sept.\" with the shortfall spelled out. FITS YOUR USE is the tag on Pro. Both were already there."
+        },
+        {
+          "key": "crew-eye/d8b5f939-ba71-4169-9d53-ee7f4198a02e.png",
+          "arm": "Both of them, light",
+          "caption": "The same two in the light theme. Also visible: the tick you asked for is now on all three cards, and Starter says Current instead of ON THIS ONE."
+        },
+        {
+          "key": "crew-eye/1efe9669-f935-4e2c-80ec-6976d2fe6e88.png",
+          "arm": "A free account — your own view",
+          "caption": "No band, no tag, and correctly so: there is no billing cycle to read a rate from. This is why they looked missing. The tick and Current are both here."
+        },
+        {
+          "key": "crew-eye/f55e0750-167d-40d5-a6bc-f3a0e37bfb15.png",
+          "arm": "The compare table you flagged",
+          "caption": "Current now sits in the row of buttons as a word rather than a bordered chip. Worth a look at the FITS YOUR USE tag in the header: it is sitting on top of the word Pro. That is not new and not yours to fix — it is written down as its own job (#487)."
+        }
+      ]
+    },
     {
       "id": "crew-devices-414-frames",
       "state": "open",
@@ -3267,6 +3319,20 @@
   ],
   "pipeline": [
     {
+      "id": "change-plan-425",
+      "prNumber": 488,
+      "status": "merged",
+      "title": "Change plan: the tick is back, and ON THIS ONE stops looking like a button",
+      "note": "You sent four corrections. Two are built. TWO OF THEM TURNED OUT TO BE BUILT ALREADY — and that is the more useful half of this shift.\n\nWhat changed: the \"Every model and every tool\" tick is back on every plan card, for the reason you gave — \"eventually i need to make benefits between each plan which will be a reminder for me.\" The line that had replaced it underneath the cards is gone, because with the tick back the page would have said the same sentence thirteen times.\n\nAnd \"ON THIS ONE\" now reads \"Current\", with no box around it. You spotted it in the compare table; the same marker is on the plan cards too, and there it was WORSE than the one you saw — it filled 233 pixels of a 269-pixel card, so a label you cannot click was the biggest thing on the card, bigger than the one real button. Both are fixed.\n\nThe two you asked for as reminders — the \"Fits your use\" badge and the \"at this rate you run out on 27 Jul\" card — ARE BUILT, and have been since 1 September. Nothing was skipped. They only appear once there is a billing cycle to work from, and a free account has none, so on your own account they are correctly invisible. You half-guessed this yourself: \"its not relevant on a free account.\"\n\nSo no stub was built, because a stub of a real feature is a fake standing next to the real thing, and it would have put \"not built yet\" over something that works. Instead there are frames of both, taken on a test account with a subscription, in your gallery. What the band actually says: \"At this rate you run out on 6 Sept. 68,000 of 75,000 spent with 10 days still to go, which leaves you 8 days short of 14 Sept. Pro covers the way you are actually working.\"\n\nTwo other things were found while looking and neither is yours to decide tonight — both are written down as their own jobs. Every outlined button in the whole product stands 2 pixels taller than a filled one, which is why rows of cards never quite line up; and in the compare table the \"FITS YOUR USE\" tag sits on top of the plan name it is meant to be labelling."
+    },
+    {
+      "id": "crew-fold-470",
+      "prNumber": null,
+      "status": "merged",
+      "title": "The Crew page already folds into the same refresh as everything else — closed, no work needed",
+      "note": "You asked for this on 3 September: \"fold crew into the same overview like you suggested.\" It had already shipped ELEVEN HOURS EARLIER, in the same change that put the pending-request count on the bar.\n\nThe Crew page carries the same time stamp, the same AUTO 30s switch and the same refresh button as the other five staff pages, its own separate \"checked 2 minutes ago\" line is gone, and it still tells you which shift wrote the briefing — which the bar cannot say. Every part of it is held by a test, so it cannot quietly come undone.\n\nNothing was owed and nothing was missed: you were answering the question, and by the time you answered it the answer had been built. The card is closed with all of that written on it.\n\nOne thing worth saying plainly, in case it was not what you meant: this read your words as being about the REFRESH, which is what the suggestion was about. If you meant something bigger — the Crew page folding INTO the overview page as one surface — that is a different and much larger job, and one sentence from you starts it."
+    },
+    {
       "id": "crew-devices-414",
       "prNumber": 485,
       "status": "merged",
@@ -4839,7 +4905,7 @@
     114
   ],
   "nextUp": {
-    "readAt": "2026-09-03T22:29:06.627Z",
+    "readAt": "2026-09-04T00:06:23.343Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4862,18 +4928,8 @@
         "urgent": false
       },
       {
-        "issueNumber": 425,
-        "title": "His four Change plan corrections — including two he wants as declared STUBS, not as populated claims (reply #84)",
-        "urgent": false
-      },
-      {
         "issueNumber": 429,
         "title": "Two new background-work switches: Small fixes and Casting upkeep, derived from labels already on the cards",
-        "urgent": false
-      },
-      {
-        "issueNumber": 470,
-        "title": "Crew folds into the staff bar's one overview (reply #111 — his yes on #415's suggestion)",
         "urgent": false
       },
       {
