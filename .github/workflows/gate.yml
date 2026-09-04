@@ -59,10 +59,34 @@
 
 name: Gate
 
+# ⚠ NO `ready_for_review` HERE, AND ITS ABSENCE IS THE FIX FOR #503. The gate
+# runs on DRAFT pull requests — no job filters on `github.event.pull_request.draft`
+# — so by the time a shift runs `gh pr ready` the head commit has already been
+# gated and its required checks are attached to it. The extra run tested
+# identical bytes and, through `gate-<pr>` below, CANCELLED the draft's still
+# running one.
+#
+# Measured over the last 100 gate runs (2026-09-02 → 2026-09-04): 19 cancelled,
+# and ELEVEN of them were this — a later run on the same branch with the SAME
+# head sha. Confirmed at three PR timelines, each `ready_for_review` landing
+# within two seconds of its duplicate run's creation: PR #496 (04:04:23 →
+# 04:04:25), PR #488 (23:27:51 → 23:27:53), PR #451 (11:29:42 → 11:29:44). The
+# team's own documented habit — open as a draft, iterate, `gh pr ready` once —
+# was what fired it, so it hit almost every PR.
+#
+# The other eight cancellations WERE second pushes, and those are left alone
+# deliberately: the shift already holds the fix, so the in-flight run is testing
+# superseded bytes and `cancel-in-progress` is doing its job. #503 proposed
+# blocking that push; the measurement argues the other way and the card carries
+# the reasoning.
+#
+# ⚠ `review.yml` KEEPS ITS `ready_for_review` — that is precisely how the Fable
+# review fires once, on purpose, and it is a different question from this one.
+# server/gateTriggers.test.ts holds both halves apart.
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       pr_number:
