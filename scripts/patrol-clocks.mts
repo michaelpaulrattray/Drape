@@ -78,7 +78,7 @@ const CLOCK_LINE = /^\*\*Clock:\*\*\s+every\s+(\d+)\s+days?\b/m;
 /* The heading is `## Run 2 — 2026-08-29 06:56–08:0x AEST (...)`. The dash after
    the run number is an em dash in every log; a hyphen is accepted too so a
    hand-typed heading still reads. */
-const RUN_HEADING = /^##\s+Run\s+\d+\s*[—–-]\s*(\d{4}-\d{2}-\d{2})/gm;
+const RUN_HEADING = /^##\s+Run\s+\d+\s*[—–-]\s*(\d{4}-\d{2}-\d{2})/;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -126,11 +126,29 @@ function readSeat(
     );
   }
 
-  /* The NEWEST date, not the last heading in the file: a run appended out of
-     order (or a log that keeps its runs newest-first) must still read right. */
-  RUN_HEADING.lastIndex = 0;
+  /*
+    EVERY `## Run` HEADING IS COLLECTED, AND ONE THAT CARRIES NO PARSEABLE DATE
+    IS REFUSED RATHER THAN DROPPED. Matching only well-formed headings would
+    silently skip `## Run 3 — 2026-9-5`, and if that were the NEWEST run the
+    seat would read its clock off the previous one — a patrol re-run because a
+    date was typed a character short. Refusing is this reader's own doctrine and
+    the error direction is not the point: a reader that can come up short says
+    so.
+
+    The NEWEST date is taken, not the last heading in the file, so a run
+    appended out of order (or a log kept newest-first) still reads right.
+  */
   const dates: string[] = [];
-  for (const match of text.matchAll(RUN_HEADING)) dates.push(match[1]);
+  for (const line of text.split(/\r?\n/)) {
+    if (!/^##\s+Run\b/.test(line)) continue;
+    const dated = RUN_HEADING.exec(line);
+    if (!dated) {
+      throw new Refusal(
+        `${entry.seat}: ${path} has a run heading with no readable date — "${line.trim()}"`,
+      );
+    }
+    dates.push(dated[1]);
+  }
   if (dates.length === 0) {
     throw new Refusal(
       `${entry.seat}: ${path} records no run — expected a heading "## Run N — YYYY-MM-DD"`,
@@ -175,9 +193,31 @@ function readSeat(
   };
 }
 
+/**
+ * TODAY IS A CALENDAR DATE, NOT AN INSTANT, AND THAT IS THE WHOLE POINT.
+ *
+ * The run headings carry a LOCAL calendar date (AEST in every log so far). If
+ * the default compared them against `Date.now()`, a shift starting at 07:00
+ * AEST — which is 21:00 UTC the day before — would measure elapsed days from
+ * UTC midnight and come up one day short: a Janitor run stamped 2026-08-29 read
+ * "OVERDUE by 2" where the calendar says 3, and a seat exactly due read "due in
+ * 1 day". Every clock fired one day late, on the no-flag path a shift actually
+ * uses, while the fixtures (which all pass `--today`) could never see it.
+ *
+ * So both paths mean the same thing: midnight UTC of a CALENDAR DATE. `--today`
+ * names one; with no flag it is the machine's LOCAL date. Comparing a date to a
+ * date is the only arithmetic here that is well defined.
+ */
+function localCalendarDateMs(now: Date = new Date()): number {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return Date.parse(`${year}-${month}-${day}T00:00:00Z`);
+}
+
 function parseArgs(argv: string[]): { dir: string; today: number } {
   let dir = "docs";
-  let today = Date.now();
+  let today = localCalendarDateMs();
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (flag === "--dir") {

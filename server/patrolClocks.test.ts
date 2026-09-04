@@ -205,6 +205,51 @@ describe("patrol-clocks reader", () => {
     expect(result.stdout).not.toContain("OVERDUE");
   });
 
+  it("REFUSES a run heading whose date is malformed, rather than silently skipping it", () => {
+    /*
+      Collecting only well-formed headings would DROP `## Run 3 — 2026-9-5`, and
+      if that were the newest run the seat would read its clock off the previous
+      one — a patrol re-run because a date was typed a character short. The
+      reader's doctrine is that coming up short is a refusal.
+    */
+    writeAll(logFile(7, ["2026-09-01"]));
+    writeFileSync(
+      join(dir, "WARDEN_LOG.md"),
+      "# Warden log\n\n**Clock:** every 7 days.\n\n## Run 1 — 2026-08-20 (patrol)\n\n## Run 2 — 2026-9-5 (patrol)\n",
+      "utf8",
+    );
+    const result = run("--dir", dir, "--today", "2026-09-04");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("no readable date");
+    expect(result.stderr).toContain("2026-9-5");
+    // and it did NOT quietly fall back to Run 1
+    expect(result.stdout).not.toContain("last run 2026-08-20");
+  });
+
+  it("with no --today it reads the LOCAL calendar date, not the UTC instant", () => {
+    /*
+      The logs stamp LOCAL (AEST) dates. Measuring elapsed days from `Date.now()`
+      made every clock fire one calendar day late on the no-flag path a shift
+      actually uses — a Janitor run stamped 2026-08-29, read at 07:00 AEST
+      (21:00 UTC the day before), came out "OVERDUE by 2" where the calendar says
+      3. Every fixture arm above passes `--today`, so none of them could see it.
+
+      ⚠ WHAT THIS ARM CAN AND CANNOT PROVE, stated rather than implied: it
+      discriminates only while the machine's local date differs from UTC's,
+      which on a UTC+10 machine is ten hours in twenty-four — and CI runs in UTC,
+      where it can never discriminate at all. `TZ` does not take effect for Node
+      on this Windows machine (driven: Pacific/Kiritimati still reported the
+      local date), so there is no way to pin the zone from a test here. It is a
+      FLOOR, not coverage, and the expectation below is derived independently of
+      the script's own arithmetic (Intl, not getFullYear/getMonth/getDate).
+    */
+    writeAll(logFile(7, ["2026-08-01"]));
+    const result = run("--dir", dir);
+    expect(result.status).toBe(0);
+    const localDate = new Date().toLocaleDateString("en-CA");
+    expect(result.stdout).toContain(`as of ${localDate}`);
+  });
+
   it("REFUSES a --today that passes the shape but is not a real date", () => {
     writeAll(logFile(7, ["2026-09-01"]));
     const result = run("--dir", dir, "--today", "2026-13-45");
