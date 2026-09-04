@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "87a275b7385d6cfb"
+    "sourceFingerprint": "3c74a19afd0e7ebf"
   },
   "domains": [
     {
@@ -12666,6 +12666,10 @@
     {
       "id": "test:server/gateStallAlarm.test.ts",
       "path": "server/gateStallAlarm.test.ts"
+    },
+    {
+      "id": "test:server/gateTriggers.test.ts",
+      "path": "server/gateTriggers.test.ts"
     },
     {
       "id": "test:server/health.test.ts",
