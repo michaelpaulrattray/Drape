@@ -46,7 +46,7 @@ describe("the switch fails toward nothing running", () => {
 
   /*
     THE MASTER IS AN AND, NOT A DEFAULT — this is what makes one tap from bed
-    actually stop the team rather than requiring him to clear five switches.
+    actually stop the team rather than requiring him to clear every switch.
   */
   it("the master off stops everything, however many categories are on", () => {
     const categoriesOn = { ...ALL_ON, [CREW_WORK_MASTER_KEY]: false };
@@ -90,11 +90,11 @@ describe("the switch fails toward nothing running", () => {
 });
 
 describe("the vocabulary is closed and derived from labels that already exist", () => {
-  it("has the master plus five categories", () => {
-    expect(CREW_WORK_SWITCH_KEYS).toHaveLength(6);
+  it("has the master plus seven categories", () => {
+    expect(CREW_WORK_SWITCH_KEYS).toHaveLength(8);
     expect(CREW_WORK_SWITCH_KEYS[0]).toBe(CREW_WORK_MASTER_KEY);
     expect(CREW_WORK_CATEGORIES.map((c) => c.key))
-      .toEqual(["bugs", "security", "performance", "housekeeping", "process"]);
+      .toEqual(["bugs", "security", "performance", "housekeeping", "process", "smallFixes", "castingUpkeep"]);
   });
 
   /*
@@ -105,7 +105,15 @@ describe("the vocabulary is closed and derived from labels that already exist", 
   */
   it("every category names a label the seats already use", () => {
     expect(CREW_WORK_CATEGORIES.map((c) => c.queueLabel))
-      .toEqual(["bug", "seat:warden", "seat:machinist", "seat:janitor", "seat:retro"]);
+      .toEqual([
+        "bug",
+        "seat:warden",
+        "seat:machinist",
+        "seat:janitor",
+        "seat:retro",
+        "small-fix",
+        "casting-upkeep",
+      ]);
   });
 
   it("no category collides with the master key", () => {
@@ -120,5 +128,71 @@ describe("the vocabulary is closed and derived from labels that already exist", 
     for (const category of CREW_WORK_CATEGORIES) {
       expect(category.blurb.length).toBeGreaterThan(20);
     }
+  });
+
+  it("no two categories share a queue label — one card, one row", () => {
+    /* Two categories on one label would draw the same cards under two switches
+       and give him two answers to one question. The uniqueness arm above covers
+       the KEY; this covers the label, which is the half the count reads. */
+    const labels = CREW_WORK_CATEGORIES.map((category) => category.queueLabel);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+});
+
+/*
+  ⚠ THE TWO NEW SWITCHES ARE THE POINT OF EACH OTHER (#429).
+
+  His card's own reason for two rather than one: *"Casting is frozen in the
+  lobby lane and N1 is gated on his eye; a single 'small fixes' switch would let
+  a quiet shift touch the casting road the night he wants it still. Two switches
+  let him leave Casting upkeep OFF and Small fixes ON."*
+
+  So the property that matters is not that both exist — it is that they are
+  SEPARABLE, in both directions, and that a casting card is reached by exactly
+  one of them. `crew-count-queue.mts` derives each row by asking the queue for
+  one `queueLabel`, so the categories a card is offered under are exactly the
+  categories whose label it carries; that derivation is driven here rather than
+  restated, over the real label shapes the eighteen cards carry today.
+*/
+describe("Small fixes and Casting upkeep are separable, and a casting card reaches only one", () => {
+  /** The count's own derivation: which switch rows would offer this card. */
+  const offeredUnder = (labels: readonly string[]): string[] =>
+    CREW_WORK_CATEGORIES.filter((category) => labels.includes(category.queueLabel)).map((c) => c.key);
+
+  it("⚠ a `casting-upkeep` card is offered under Casting upkeep and NOT under Small fixes", () => {
+    /* #242's real shape, and #60's — `debt` and `lost-and-found` ride along and
+       neither reaches a switch. */
+    expect(offeredUnder(["debt", "casting-upkeep"])).toEqual(["castingUpkeep"]);
+    expect(offeredUnder(["lost-and-found", "casting-upkeep"])).toEqual(["castingUpkeep"]);
+    /* POSITIVE CONTROL — `smallFixes` is a key this helper CAN return, so the
+       absence above is a reading rather than a helper that answers nothing. */
+    expect(offeredUnder(["debt", "small-fix"])).toEqual(["smallFixes"]);
+  });
+
+  it("either switch runs without the other — his freeze, and its opposite", () => {
+    const smallOnly = { [CREW_WORK_MASTER_KEY]: true, smallFixes: true };
+    expect(backgroundWorkAllowed(smallOnly, "smallFixes")).toBe(true);
+    expect(backgroundWorkAllowed(smallOnly, "castingUpkeep")).toBe(false);
+
+    const castingOnly = { [CREW_WORK_MASTER_KEY]: true, castingUpkeep: true };
+    expect(backgroundWorkAllowed(castingOnly, "castingUpkeep")).toBe(true);
+    expect(backgroundWorkAllowed(castingOnly, "smallFixes")).toBe(false);
+  });
+
+  it("neither is on until he turns it on, whatever else is", () => {
+    /* The five that existed before #429 all on, the master on, and the two new
+       rows still off — which is what he sees the morning after the deploy. */
+    const beforeToday = {
+      [CREW_WORK_MASTER_KEY]: true,
+      bugs: true,
+      security: true,
+      performance: true,
+      housekeeping: true,
+      process: true,
+    };
+    expect(backgroundWorkAllowed(beforeToday, "smallFixes")).toBe(false);
+    expect(backgroundWorkAllowed(beforeToday, "castingUpkeep")).toBe(false);
+    /* POSITIVE CONTROL — that store does turn something on. */
+    expect(backgroundWorkAllowed(beforeToday, "bugs")).toBe(true);
   });
 });

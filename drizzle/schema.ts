@@ -3926,7 +3926,8 @@ export type InsertCrewShiftRunRow = typeof crewShiftRuns.$inferInsert;
  * HIS BACKGROUND-WORK SWITCHES — the steering half of #277 (migration 0056).
  *
  * One row is: **one switch the founder has set from `/admin/crew`**. The keys
- * are `master` plus the five categories (`shared/crewWorkSwitches.ts`).
+ * are `master` plus every category in `shared/crewWorkSwitches.ts` — seven as
+ * of #429, and a new one is a row here rather than a migration.
  *
  * # IT IS HIS HALF, WITH THE SAME SPLIT `crewReplies` ESTABLISHED
  *
