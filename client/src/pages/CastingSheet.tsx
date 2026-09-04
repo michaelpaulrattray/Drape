@@ -2392,13 +2392,14 @@ export default function CastingSheet() {
           </p>
         ) : null}
         {/*
-          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO — for rows
-          written before #154. Until then a follow or a chip-edited roll under
-          the flag composed house (the row recorded why since PR #132), and
-          until this line the sheet showed the customer nothing about it. The
-          author carries both now (the family clause), so no new row records a
-          reason; the line stays for the rows that do, in the past tense. Off
-          the row like the two lines above it.
+          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO. Two kinds of
+          row reach this line: the past-tense pair (`anchored`/`edited`, rows
+          written before #154, when a follow or chip edit composed house) and
+          the LIVE one — `static` (#252, his ruling: the customer isn't lied
+          to), a MAX roll whose author was refused twice or failed, projected
+          from the register's own `mode`. This line is the whole of that fix:
+          without it a static sheet reads "Max imagination" over a prompt
+          nobody authored. Off the row like the two lines above it.
         */}
         {roll.data?.authorSatOut ? (
           <p className="dpc-wardrobeline">
