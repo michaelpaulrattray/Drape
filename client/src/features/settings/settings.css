@@ -630,7 +630,6 @@
    pinned to a card's edge. This was an inline style on the element until card
    390 item 6 — *"inline styles beating a class is how the CSS drifts"* — which
    left `.dp-plan__tab` above correct in only one of its two contexts. */
-.dp-plan__tab--inline { position: static; display: inline-block; }
 
 .dp-plan__tierhead { display: flex; align-items: baseline; gap: var(--s-3); }
 .dp-plan__tiername { font: 500 15px/1.2 var(--font-sans); letter-spacing: -.02em; color: var(--ink); }
