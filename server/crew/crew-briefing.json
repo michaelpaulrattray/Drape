@@ -1,7 +1,7 @@
 {
-  "edition": 242,
-  "updatedAt": "2026-09-04T19:35:00+10:00",
-  "shift": "Opus — 4 September (the reviewer stops cancelling itself, #434)",
+  "edition": 243,
+  "updatedAt": "2026-09-04T11:51:18.947Z",
+  "shift": "Opus · 4 September (the branch fixes its own map, #501 #503 #506)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,23 +116,23 @@
     ],
     "chips": [
       {
-        "label": "The code reviewer",
+        "label": "Waiting on the robots",
         "tone": "good",
-        "source": "Your #434, fixed: a label could shove the review out of the queue, leaving a red mark."
+        "source": "Three of your ordered jobs done. A branch now fixes its own map before you push it."
       },
       {
-        "label": "How often it fired",
+        "label": "Wasted re-runs",
         "tone": "good",
-        "source": "Once in its last 100 runs — not the 27-in-60 the card said. Read at the record."
+        "source": "Marking a job ready no longer restarts a 13-minute check that had already passed."
       },
       {
-        "label": "The ladder",
-        "tone": "good",
-        "source": "Voice is a rung now — N4b, straight after Takes — on your word today."
+        "label": "The queue",
+        "tone": "neutral",
+        "source": "85 open · 10 carrying your word · none urgent. Three closed tonight, one new."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T09:10:55.333Z",
+      "readAt": "2026-09-04T11:50:10.435Z",
       "items": [
         {
           "issueNumber": 16,
@@ -3658,6 +3658,27 @@
   ],
   "pipeline": [
     {
+      "id": "pr-517-atlas-on-commit",
+      "title": "#501 — the map of the code fixes itself when a change is saved",
+      "status": "merged",
+      "prNumber": 517,
+      "note": "Your ordered one. Every fifth failed check was the same complaint about a stale map — costing about ten minutes each time, for a change that was otherwise fine. It now repairs itself as the work is saved, in nine seconds. Reviewed twice; two of the card's own instructions were wrong and are corrected on it."
+    },
+    {
+      "id": "pr-518-ready-duplicate",
+      "title": "#503 — marking work ready stops restarting a check that already passed",
+      "status": "merged",
+      "prNumber": 518,
+      "note": "Your ordered one, and the card's reason turned out to be wrong: it blamed shifts pushing twice, but 11 of the 19 wasted runs had no second push at all. They were the act of marking a job ready, which started the same 13-minute check over again. Proved on the two jobs tonight — one restarted, the fixed one did not."
+    },
+    {
+      "id": "card-506-already-true",
+      "title": "#506 — closed without a change, because it was already true",
+      "status": "merged",
+      "prNumber": null,
+      "note": "The card said slow checks kept running after a quick one had already failed. Read at two real runs, they do not: everything stops at the first failure, at about three and a half minutes. Closed with the evidence rather than 'fixed'."
+    },
+    {
       "id": "pr-515-review-race",
       "title": "#434 — the code reviewer could cancel itself and leave a red mark with nothing behind it",
       "status": "merged",
@@ -5315,7 +5336,7 @@
     126
   ],
   "nextUp": {
-    "readAt": "2026-09-04T09:10:54.497Z",
+    "readAt": "2026-09-04T11:50:09.420Z",
     "items": [
       {
         "issueNumber": 243,
@@ -5343,16 +5364,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 501,
-        "title": "The Atlas regenerates on EVERY commit, not only on merges — 5 of the last 60 gate failures were freshness, all avoidable locally",
-        "urgent": false
-      },
-      {
-        "issueNumber": 503,
-        "title": "A shift never pushes while its own gate is running — 7 of the last 60 gate runs were cancelled by a second push",
-        "urgent": false
-      },
-      {
         "issueNumber": 504,
         "title": "The nights park after ONE quiet shift when the emptiness is knowable — 19 quiet shifts in seven days each cost a model session",
         "urgent": false
@@ -5360,11 +5371,6 @@
       {
         "issueNumber": 505,
         "title": "The patrol clocks are DERIVED and enforced at shift start — the weekly Retro has run once, on 26 August",
-        "urgent": false
-      },
-      {
-        "issueNumber": 506,
-        "title": "The gate runs its fail-fast checks first — a stale Atlas costs 3 minutes, not 10",
         "urgent": false
       },
       {
