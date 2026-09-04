@@ -1,7 +1,7 @@
 {
-  "edition": 234,
-  "updatedAt": "2026-09-04T01:23:40.111Z",
-  "shift": "Foreman — 4 September morning (#429: two more switches on your background-work panel)",
+  "edition": 235,
+  "updatedAt": "2026-09-04T02:26:58.011Z",
+  "shift": "Foreman — 4 September morning (your five replies, all acted on: #429 shipped, #487 shipped)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -131,7 +131,7 @@
     {
       "id": "work-switches-429-ask",
       "title": "Your background-work panel has seven switches now — do you want either of them on tonight?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-04T01:23:40.111Z",
       "issueNumber": 429,
       "productImpact": "Two rows were added to the switch panel you read from bed: Small fixes (11 cards) and Casting upkeep (7). Both are off. They are the difference between a quiet shift stopping with nothing to do and a quiet shift working through eleven small self-contained items — and, separately, they let you keep the casting road shut while the rest of the product ticks along.",
@@ -158,7 +158,7 @@
     {
       "id": "change-plan-425",
       "title": "Two of your four Change plan asks were already built — and nothing was owed",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-04T00:05:53.942Z",
       "issueNumber": 425,
       "recommendation": "Silence on a free account. A promise with no number behind it, on the page where somebody is choosing what to pay, is worse than saying nothing.",
@@ -1561,8 +1561,28 @@
   ],
   "eyeItems": [
     {
-      "id": "work-switches-429-frames",
+      "id": "compare-tag-487-frames",
       "state": "open",
+      "title": "The tag is off the table and still on the cards — one look to confirm that is what you meant",
+      "filedAt": "2026-09-04T02:25:45.066Z",
+      "issueNumber": 487,
+      "question": "Both frames are the same account in the same session, a minute apart.\n\nThe first is the compare table you flagged: Pro now has nothing sitting on it. The second is the card view, where FITS YOUR USE is still on Pro exactly as before.\n\nThat second frame is there for a reason beyond showing you the tag. A test account with no spending pattern would show no tag anywhere, and a picture of that would look identical to a picture of this fix working — so the account was put on a real plan with a real month of spending behind it. The tag appearing on the card is the proof that the table's empty head is a decision rather than an account with nothing to recommend.\n\nNothing to answer unless the table is not what you pictured.",
+      "frames": [
+        {
+          "key": "crew-eye/e1f92188-aa8e-40db-82f7-5a174d492bb6.png",
+          "arm": "The compare table, after",
+          "caption": "Pro reads as Pro. The current column keeps YOU ARE HERE at the top and Current in the button row — both unchanged, and that repetition is noted rather than altered."
+        },
+        {
+          "key": "crew-eye/cf1c0397-0b0e-4d41-8b64-96ffad76ccbe.png",
+          "arm": "The plan cards, unchanged",
+          "caption": "Same account, same minute: FITS YOUR USE still sits on Pro here. This is also the control — if the account had nothing to recommend, this frame would be empty too and the fix would be unprovable."
+        }
+      ]
+    },
+    {
+      "id": "work-switches-429-frames",
+      "state": "done",
       "title": "Seven switches instead of five — and the Debt number below them drops from 22 to 9",
       "filedAt": "2026-09-04T01:23:40.111Z",
       "issueNumber": 429,
@@ -1582,7 +1602,7 @@
     },
     {
       "id": "change-plan-425-frames",
-      "state": "open",
+      "state": "done",
       "title": "The two you asked for as reminders — here they are, working. Is this what you pictured?",
       "filedAt": "2026-09-04T00:05:53.942Z",
       "issueNumber": 425,
@@ -1612,7 +1632,7 @@
     },
     {
       "id": "crew-devices-414-frames",
-      "state": "open",
+      "state": "done",
       "title": "The steps on this page — can you tell the four markers apart WITHOUT reading the words?",
       "filedAt": "2026-09-03T22:31:15.129Z",
       "issueNumber": 414,
@@ -3366,6 +3386,13 @@
   ],
   "pipeline": [
     {
+      "id": "compare-tag-487",
+      "prNumber": 491,
+      "status": "merged",
+      "title": "The FITS YOUR USE tag is off the compare table",
+      "note": "Your words this morning: \"dont show the fits your use tag on the compare table it doesnt look right. everything else looks good.\"\n\nDone, and done the way you said rather than the way the note on it suggested. There was a written recommendation to move the tag onto its own line under the plan name so it stopped sitting on top of the word \"Pro\". You did not ask for it laid out better, you asked for it gone, so nothing was rearranged — the tag simply is not drawn in that table any more.\n\n**It is untouched on the plan cards.** That is where you normally see it and you did not object to it there, so it stays. The frames show both, side by side, so you can check that in one look.\n\nThe compare table's current column still reads YOU ARE HERE at the top and Current in the button row, which is unchanged and was not part of what you said. It does mean that column states itself twice. That is a look-and-feel call rather than a fault, so it is written down and left alone rather than quietly changed on your behalf."
+    },
+    {
       "id": "work-switches-429",
       "prNumber": 489,
       "status": "merged",
@@ -4956,11 +4983,21 @@
     111,
     112,
     113,
-    114
+    114,
+    115,
+    116,
+    117,
+    118,
+    119
   ],
   "nextUp": {
-    "readAt": "2026-09-04T01:21:52.584Z",
+    "readAt": "2026-09-04T02:24:54.756Z",
     "items": [
+      {
+        "issueNumber": 490,
+        "title": "A 529 from Anthropic cost a whole night — the runner needs a transient class, not a model fallback",
+        "urgent": true
+      },
       {
         "issueNumber": 243,
         "title": "#232's RENDER half is unproven: the creature mouth line needs a fixture whose seed does NOT name the anatomy",
@@ -4984,6 +5021,21 @@
       {
         "issueNumber": 477,
         "title": "Tighten MAX's instruction on Grok's verbatim-discipline evidence — keep Sonnet (his reply #114)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 492,
+        "title": "The Program card's at-a-glance chips are sentences in pill borders — a state strip in the house grammar, with the label capped at the schema (his frame, 4 Sep)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 493,
+        "title": "The pipeline block lists nothing twice — orphans only, the ladder cards live under their rung, one-place rule as a guard (his order, 4 Sep)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 494,
+        "title": "The switch count cannot see a card whose fix already landed — a 'possibly fixed' reading beside 'already queued', and the re-read-before-take rule (his question, 4 Sep)",
         "urgent": false
       }
     ]
