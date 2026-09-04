@@ -1,0 +1,927 @@
+/**
+ * THE SHIFT DIGEST — what a shift reads instead of the book (#510).
+ *
+ * Founder-ordered 2026-09-04 (terminal), verbatim: *"id like to file everything
+ * as its all important."* His context in the same sitting: *"we are in the
+ * process of still designing iterating and building our SaaS we have many more
+ * features planned before launch and design work to go through."*
+ *
+ * # The measurement that filed it
+ *
+ * A shift reads ~294 KB before it may change a line — `CLAUDE.md` 84 KB,
+ * `PROGRAM.md` 53 KB, `prompt.md` 48 KB, `FEATURE_FLAGS.md` 116 KB — at 12–26
+ * shifts a day, paid before the card is even chosen. The law-file split (#330)
+ * cut it by a third; this is the next step, and it changes what is READ, never
+ * what is written.
+ *
+ * # ⚠ WHAT IS HONESTLY SAVEABLE, WHICH IS NOT THE 294 KB THE CARD COUNTS
+ *
+ * `CLAUDE.md` is loaded by the harness as project instructions before a shift
+ * takes its first breath. No generator can stop that, and pretending otherwise
+ * would put a false number on his page. **The saveable population is
+ * `PROGRAM.md` + `FEATURE_FLAGS.md` — 169 KB** — and the digest's own footer
+ * quotes both numbers so the claim is checkable rather than asserted.
+ * `CLAUDE.md` is still INDEXED here, because the on-demand half (below) answers
+ * *"which law section covers the file I am about to touch"*, which is a
+ * different question from *"was it in context"*.
+ *
+ * # The two halves
+ *
+ * **1 · The state.** The standing orders' step list (headings only), the
+ * PROGRAM's law sections, the queue's NEXT UP band, the patrol clocks, and what
+ * changed since the previous shift. Derived every time, never hand-typed.
+ *
+ * **2 · Law on demand, by section.** A card names the paths and flags it
+ * touches; the digest carries only the law sections that name those paths or
+ * flags. The index is MECHANICAL — headings and flag bullets read out of the
+ * law surfaces themselves (`LAW_SURFACES`, declared once in `lawText.mts`), not
+ * a table anybody maintains. Working law 4: derive, never mirror.
+ *
+ * # What the PROGRAM keeps in full, and why the rule is a heading match
+ *
+ * A section whose heading names a LAW, a GATE, a RULE, a MODE, the focus, the
+ * exceptions or the parked list is carried VERBATIM however long it is. Every
+ * other section — the mission, the governing-plan pointers, the design north
+ * star, the lane narratives — is NAMED with its line range instead.
+ *
+ * The failure direction is deliberate and is the whole reason it is a heading
+ * match rather than a curated list: **a new section nobody classified is
+ * NAMED, never dropped**, so the worst case is a shift opening the file, and
+ * the best case is it never has to. A truncated law would be the unacceptable
+ * shape, so nothing here truncates a section: it is in full or it is a pointer.
+ *
+ * # It refuses rather than coming up short
+ *
+ * Every collector here throws on an empty answer (CLAUDE.md's collector class):
+ * a law surface with no sections, a `--paths` money/auth request that cannot
+ * find the access-control section, a PROGRAM with no `Current focus`. A digest
+ * that quietly omits a law reads exactly like a law that does not exist — and
+ * the reader is on the path every shift takes, so a silent omission would
+ * propagate to every card worked afterwards.
+ *
+ * ⚠ **An UNREADABLE input is never rendered as an EMPTY one.** A `gh` that is
+ * not authenticated prints nothing, and nothing looks exactly like an empty
+ * queue — the same trap #504 names on the park gate. Every read that can fail
+ * carries its failure into the digest as a named line the shift can act on.
+ */
+
+/** A heading- or bullet-delimited chunk of a law surface. */
+export type Section = {
+  /** The surface it came from, repo-relative: `CLAUDE.md`. */
+  readonly surface: string;
+  /** The heading text without its `#` marks, or the flag name for a flag entry. */
+  readonly heading: string;
+  /** 2 for `##`, 3 for `###`; 0 for a flag bullet entry. */
+  readonly level: number;
+  /** 1-indexed first line of the section, the heading line itself. */
+  readonly startLine: number;
+  /** 1-indexed last line. */
+  readonly endLine: number;
+  /** The section verbatim, heading line included. */
+  readonly text: string;
+};
+
+/**
+ * A flag entry in the catalogue is a BULLET, not a heading — measured at the
+ * file: `docs/architecture/FEATURE_FLAGS.md` has exactly one `##` and one
+ * `###`, and its 30-odd flag entries all live under them as
+ * `- `FLAG_NAME` — …`. Splitting on headings alone would hand a lobby card the
+ * entire casting catalogue as one section, which is the bar this card sets.
+ */
+const FLAG_BULLET = /^- {1,3}`([A-Z][A-Z0-9_]{3,})`/;
+
+const HEADING = /^(#{1,6}) +(.*\S)\s*$/;
+
+/**
+ * A PROGRAM section carried VERBATIM rather than named — a vocabulary of the
+ * words a heading uses when it is stating a RULE.
+ *
+ * ⚠ **PROVENANCE WORDS ARE DELIBERATELY ABSENT, and that is the correction the
+ * first run bought.** `founder-ordered` and `founder-authorised` appear in the
+ * headings of the two longest NARRATIVE sections in the file — the lobby lane
+ * (72 lines) and the run order after section 02 (189 lines), both of them
+ * history rather than law — so matching on them carried 261 lines of finished
+ * work and left the digest at 48 KB against a 165 KB source. Who said a thing
+ * does not make the section a law; what the heading NAMES does.
+ *
+ * The two that would otherwise fall out of the vocabulary are in it by their own
+ * nouns: `clause` (the founder-ordered-work clause, which is a standing rule)
+ * and `review` (the milestone-close review, which is a procedure a closing shift
+ * must run).
+ */
+const LAW_HEADING =
+  /\b(law|laws|gate|rule|rules|clause|mode|focus|exception|exceptions|parked|threshold|invariant|invariants|contract|discipline|protocol|review|access control)\b/i;
+
+/**
+ * A path whose law is never optional — matched on the path's own WORDS, never
+ * as a substring.
+ *
+ * ⚠ **The substring version called `server/casting/promptAuthor.ts` a money
+ * path**, because `auth` lives inside `Author`. That is the noisy direction of
+ * the same mistake the quiet direction makes: a rule that fires on everything
+ * teaches a shift to skim §5, and a §5 that gets skimmed is where the
+ * access-control section it exists to deliver goes unread. The path is split on
+ * `/ . - _` and at camel-case humps, and a WORD must match.
+ */
+const MONEY_AUTH_WORDS = new Set([
+  "billing",
+  "bill",
+  "credit",
+  "credits",
+  "stripe",
+  "payment",
+  "payments",
+  "invoice",
+  "invoices",
+  "subscription",
+  "subscriptions",
+  "checkout",
+  "refund",
+  "refunds",
+  "auth",
+  "session",
+  "sessions",
+  "password",
+  "oauth",
+  "token",
+  "tokens",
+  "cookie",
+  "cookies",
+  "webhook",
+  "webhooks",
+  "admin",
+  "moderator",
+  "security",
+  "ledger",
+]);
+
+export function pathWords(requested: string): string[] {
+  return requested
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^A-Za-z0-9]+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.toLowerCase());
+}
+
+/**
+ * The money/auth surfaces, DERIVED from the triage's own map in
+ * `docs/REVIEWER_CHARTER.md` rather than typed a second time here.
+ *
+ * ⚠ **The word set above is not enough on its own, and the review that caught
+ * it named the worst case exactly**: `server/routes/emailVerification.ts` is a
+ * SESSION MINT SITE — invariant 9's own counterexample — and none of its words
+ * (`email`, `verification`) is a money word, so the unconditional arm stayed
+ * dark on the one class of file it exists for. Two files on the same line of
+ * the charter's list were getting opposite treatment.
+ *
+ * The two nets are a UNION and that is deliberate: the charter enumerates the
+ * paths the reviewer must see, the words catch a new file nobody has added to
+ * it yet (`server/routes/refunds.ts` on its first day). Failing toward MORE law
+ * is the only safe direction here.
+ *
+ * The map's first bullet is written in an alternation shorthand —
+ * `server/routes/billing|credits|auth|emailAuth|googleAuth|emailVerification` —
+ * which is expanded here against its own prefix.
+ */
+export function parseMoneyAuthMap(charterText: string): string[] {
+  const heading = /^##.*money\/auth path map.*$/im.exec(charterText);
+  if (!heading) {
+    throw new DigestRefusal(
+      "docs/REVIEWER_CHARTER.md has no money/auth path map section — refusing rather than falling back to a word list, which is how the mirror this reads instead of would come back",
+    );
+  }
+  const rest = charterText.slice(heading.index + heading[0].length);
+  const section = rest.split(/^## /m)[0] ?? "";
+  const paths: string[] = [];
+  for (const bullet of section.split(/\r?\n/).filter((row) => /^\s*-\s/.test(row))) {
+    /* ⚠ THE MAP'S OWN SHORTHAND PUTS THE DIRECTORY ON THE FIRST TOKEN ONLY:
+       "`server/_core/sdk.ts`, `cookies.ts`, `trpc.ts`, `env.ts`". Skipping the
+       bare names dropped THREE auth surfaces including `env.ts` and the session
+       cookie module — measured against the real charter, which is why this is
+       read at the file rather than assumed to be one path per token. */
+    let directory = "";
+    for (const quoted of bullet.matchAll(/`([^`]+)`/g)) {
+      const token = quoted[1].trim();
+      if (!token.includes("/")) {
+        if (directory && /\.[a-z]+$/.test(token)) paths.push(`${directory}${token}`);
+        continue;
+      }
+      directory = token.slice(0, token.lastIndexOf("/") + 1);
+      if (!token.includes("|")) {
+        paths.push(token.replace(/\/+$/, ""));
+        continue;
+      }
+      /* `a/b/x|y|z` -> a/b/x, a/b/y, a/b/z. A bare `x|y` with no prefix is not
+         a path and is skipped by the slash test above. */
+      const cut = token.lastIndexOf("/");
+      const prefix = token.slice(0, cut + 1);
+      for (const leaf of token.slice(cut + 1).split("|")) {
+        if (leaf.trim().length > 0) paths.push(`${prefix}${leaf.trim()}`);
+      }
+    }
+  }
+  if (paths.length === 0) {
+    throw new DigestRefusal(
+      "the money/auth path map yielded no paths — a collector that can come up empty must throw (CLAUDE.md's collector class)",
+    );
+  }
+  return [...new Set(paths)];
+}
+
+/**
+ * Is a requested path one the charter's map names?
+ *
+ * The map writes some members WITHOUT an extension (`server/routes/billing`),
+ * so a bare stem matches the file that stem names as well as the directory.
+ */
+export function isOnMoneyAuthMap(requested: string, mapPaths: readonly string[]): boolean {
+  const target = normalise(requested);
+  return mapPaths.some((entry) => {
+    const mapped = normalise(entry);
+    if (target === mapped) return true;
+    if (target.startsWith(`${mapped}/`)) return true;
+    return /\.(ts|tsx|mts|js|sql)$/.test(target) && target.replace(/\.[a-z]+$/, "") === mapped;
+  });
+}
+
+/** The CLAUDE.md section a money/auth path always receives, matched by heading. */
+const ACCESS_CONTROL_HEADING = /access control/i;
+
+/** A read that failed, carried into the digest instead of being rendered as empty. */
+export type Unreadable = { readonly unreadable: string };
+
+export function isUnreadable(value: unknown): value is Unreadable {
+  return typeof value === "object" && value !== null && "unreadable" in value;
+}
+
+export class DigestRefusal extends Error {}
+
+/**
+ * Split a markdown surface into sections: every heading starts one, and inside
+ * the flag catalogue every flag bullet starts one too.
+ *
+ * A flag entry is nested INSIDE its heading section, so both are emitted — the
+ * heading section keeps its own text (which holds the catalogue's own reading
+ * rules) and each flag entry is separately addressable. A caller selecting by
+ * flag gets the entry; a caller selecting by path gets whichever names the path.
+ */
+export function splitSections(surface: string, text: string): Section[] {
+  const lines = text.split(/\r?\n/);
+  const sections: Section[] = [];
+
+  type Open = { heading: string; level: number; startLine: number };
+  const openHeadings: Open[] = [];
+  let openFlag: Open | null = null;
+
+  const close = (open: Open, endLine: number) => {
+    sections.push({
+      surface,
+      heading: open.heading,
+      level: open.level,
+      startLine: open.startLine,
+      endLine,
+      text: lines.slice(open.startLine - 1, endLine).join("\n"),
+    });
+  };
+
+  /*
+    ⚠ A `#` INSIDE A FENCED BLOCK IS A SHELL COMMENT, NOT A HEADING, and reading
+    it as one is a SILENT-LOSS road rather than a cosmetic one: a phantom level-1
+    section truncates the `##` law section it sits in (breaking this module's
+    "nothing is truncated" promise) and everything after it until the next `##`
+    lands in a level-1 section that `splitProgram`'s level-2 filter discards — so
+    it is carried nowhere and named nowhere, which is the one failure the
+    partition check declares impossible. That check guards the FILTERED list, so
+    it would have stayed green. `PROGRAM.md` carries fenced command examples
+    today; that they hold no `#` line today is luck, not a property.
+  */
+  let inFence = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const lineNumber = index + 1;
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const headingMatch = HEADING.exec(line);
+    const flagMatch = FLAG_BULLET.exec(line);
+
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      if (openFlag) {
+        close(openFlag, lineNumber - 1);
+        openFlag = null;
+      }
+      while (openHeadings.length > 0 && openHeadings[openHeadings.length - 1].level >= level) {
+        close(openHeadings.pop() as Open, lineNumber - 1);
+      }
+      openHeadings.push({ heading: headingMatch[2], level, startLine: lineNumber });
+      continue;
+    }
+
+    if (flagMatch) {
+      if (openFlag) close(openFlag, lineNumber - 1);
+      openFlag = { heading: flagMatch[1], level: 0, startLine: lineNumber };
+    }
+  }
+
+  if (openFlag) close(openFlag, lines.length);
+  while (openHeadings.length > 0) close(openHeadings.pop() as Open, lines.length);
+
+  sections.sort((a, b) => a.startLine - b.startLine || a.level - b.level);
+  if (sections.length === 0) {
+    throw new DigestRefusal(`${surface} yielded no sections — a law surface that reads as empty is a refusal, not a short list`);
+  }
+  return sections;
+}
+
+/**
+ * Every repo-relative path a section names.
+ *
+ * `roots` is the repository's own top-level directory list, passed in by the
+ * caller from the file system rather than hard-coded — a constant list of roots
+ * is the mirror that stops matching the day a directory is added.
+ */
+export function mentionedPaths(sectionText: string, roots: readonly string[]): string[] {
+  const found = new Set<string>();
+  /* ⚠ THE BACKTICK MUST BE AN ACCEPTABLE PRECEDING CHARACTER, and leaving it out
+     of this class was a real defect caught by driving the reader rather than
+     reading it: almost every path in these documents is written as
+     `server/routes/billing.ts`, so a boundary that refused a leading backtick
+     found nothing at all. The money/auth arm still fired, which is exactly how
+     it would have shipped — the bar the card names passed while the general
+     path index was inert. */
+  const candidate = /(?:^|[^A-Za-z0-9_./-])((?:\.?[A-Za-z0-9_@-]+\/)+[A-Za-z0-9_.*-]*)/g;
+  let match: RegExpExecArray | null;
+  while ((match = candidate.exec(sectionText)) !== null) {
+    const raw = match[1];
+    const root = raw.split("/")[0];
+    if (!roots.includes(root)) continue;
+    found.add(raw.replace(/[.,;:)]+$/, ""));
+  }
+  return [...found];
+}
+
+/**
+ * Names that carry no information about WHICH file is meant, so a section
+ * mentioning one is not citing your file. Kept short and stated rather than
+ * grown: every addition is a citation the index stops seeing.
+ */
+const GENERIC_FILE_NAMES = new Set([
+  "index.ts",
+  "index.tsx",
+  "types.ts",
+  "utils.ts",
+  "constants.ts",
+  "schema.ts",
+  "env.ts",
+]);
+
+export const baseName = (value: string): string =>
+  normalise(value).split("/").pop() ?? normalise(value);
+
+/**
+ * Bare file names a section cites in backticks — `emailVerification.ts`.
+ *
+ * The generic ones are excluded: `index.ts` names nothing in particular, and
+ * matching on it would attach the same sections to every card in the product.
+ */
+export function mentionedFileNames(sectionText: string): string[] {
+  const found = new Set<string>();
+  for (const quoted of sectionText.matchAll(/`([A-Za-z0-9_.-]+\.(?:ts|tsx|mts|js|mjs|sql|css|yml|yaml|json|md))`/g)) {
+    const name = quoted[1];
+    if (!GENERIC_FILE_NAMES.has(name)) found.add(name);
+  }
+  return [...found];
+}
+
+/** Every flag-shaped name a section states. */
+export function mentionedFlags(sectionText: string): string[] {
+  const found = new Set<string>();
+  const candidate = /\b([A-Z][A-Z0-9]*(?:_[A-Z0-9]+){1,6})\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = candidate.exec(sectionText)) !== null) found.add(match[1]);
+  return [...found];
+}
+
+const normalise = (value: string) => value.replace(/\\/g, "/").replace(/\/+$/, "");
+
+/**
+ * Does a mentioned path cover a requested one?
+ *
+ * Three ways, and each is a real reading: the same file; the mention is a
+ * DIRECTORY the request lives under (`server/routes/` covers
+ * `server/routes/billing.ts`); the mention is a file INSIDE a requested
+ * directory (`server/casting/x.ts` answers a request for `server/casting`).
+ */
+export function pathCovers(mention: string, requested: string): boolean {
+  const a = normalise(mention);
+  const b = normalise(requested);
+  if (a === b) return true;
+  /* ⚠ A WHOLE TOP-LEVEL DIRECTORY IS NOT A CITATION OF YOUR FILE. Measured:
+     `CLAUDE.md`'s Atlas section says `client/`, so before this rule every card
+     touching anything under `client/` inherited it — and a §5 that answers every
+     question the same way is a §5 nobody reads, which is how an on-demand law
+     stops being read at all. Either side must name at least two segments to
+     cover the other by prefix; an exact match always counts. */
+  const segments = (value: string) => value.split("/").filter(Boolean).length;
+  if (b.startsWith(`${a}/`)) return segments(a) >= 2;
+  if (a.startsWith(`${b}/`)) return segments(b) >= 2;
+  return false;
+}
+
+export function isMoneyAuthPath(requested: string): boolean {
+  return pathWords(requested).some((word) => MONEY_AUTH_WORDS.has(word));
+}
+
+export type LawRequest = {
+  readonly paths: readonly string[];
+  readonly flags: readonly string[];
+};
+
+export type LawSelection = {
+  readonly section: Section;
+  /** Why it is here, printed beside the heading so a shift can judge the match. */
+  readonly because: string;
+};
+
+/**
+ * The law sections a card's paths and flags call for.
+ *
+ * ⚠ **The money/auth arm is unconditional and REFUSES if it cannot be served.**
+ * The access-control section is selected by heading; if no law surface has one,
+ * that is a refusal rather than a short list — an absent section and an
+ * unmatched one are indistinguishable to a shift reading the output, and this
+ * is the arm protecting the surfaces the standing orders will not let a shift
+ * guess about.
+ */
+export function selectLawSections(
+  surfaces: readonly { readonly path: string; readonly text: string }[],
+  request: LawRequest,
+  roots: readonly string[],
+  moneyAuthMap: readonly string[] = [],
+): LawSelection[] {
+  const all = surfaces.flatMap((surface) => splitSections(surface.path, surface.text));
+  const chosen = new Map<string, LawSelection>();
+  const key = (section: Section) => `${section.surface}:${section.startLine}`;
+
+  const add = (section: Section, because: string) => {
+    const existing = chosen.get(key(section));
+    if (existing) {
+      if (!existing.because.includes(because)) {
+        chosen.set(key(section), { section, because: `${existing.because}; ${because}` });
+      }
+      return;
+    }
+    chosen.set(key(section), { section, because });
+  };
+
+  for (const section of all) {
+    /* ⚠ A LEVEL-1 HEADING IS THE DOCUMENT'S TITLE, and its "section" is the
+       whole file — handing that back is exactly what §5 exists not to do. It
+       never surfaced on the real law surfaces only because both of them happen
+       to hold bullet entries and were skipped by the rule below; a surface
+       without them would have shipped the entire document as one answer. */
+    if (section.level === 1) continue;
+
+    /* A heading section that CONTAINS flag entries is not itself selected by a
+       path its entries mention — that is how a lobby card would inherit the
+       whole casting catalogue. Its entries are separately addressable. */
+    const holdsEntries = all.some(
+      (other) =>
+        other.level === 0 &&
+        other.surface === section.surface &&
+        other.startLine > section.startLine &&
+        other.endLine <= section.endLine,
+    );
+    if (holdsEntries) continue;
+
+    const paths = mentionedPaths(section.text, roots);
+    const fileNames = mentionedFileNames(section.text);
+    for (const requested of request.paths) {
+      if (paths.some((mention) => pathCovers(mention, requested))) {
+        add(section, `names ${requested}`);
+      } else if (fileNames.includes(baseName(requested))) {
+        /* The law often cites a file by its NAME alone — `emailVerification.ts`
+           at CLAUDE.md's invariant 9 — and a path index that insists on a slash
+           reads those citations as silence. Same class as the backtick defect
+           this file already carries: a real citation the index could not see. */
+        add(section, `names ${baseName(requested)} by file name`);
+      }
+    }
+    if (section.level === 0) {
+      if (request.flags.includes(section.heading)) add(section, `is ${section.heading}`);
+    } else {
+      const flags = mentionedFlags(section.text);
+      for (const flag of request.flags) {
+        if (flags.includes(flag)) add(section, `names ${flag}`);
+      }
+    }
+  }
+
+  const moneyAuth = request.paths.filter(
+    (requested) => isMoneyAuthPath(requested) || isOnMoneyAuthMap(requested, moneyAuthMap),
+  );
+  if (moneyAuth.length > 0) {
+    const accessControl = all.filter(
+      (section) => section.level === 2 && ACCESS_CONTROL_HEADING.test(section.heading),
+    );
+    if (accessControl.length === 0) {
+      throw new DigestRefusal(
+        `a money/auth path was named (${moneyAuth.join(", ")}) and no law surface has an "access control" section — refusing rather than handing back a digest that silently drops it`,
+      );
+    }
+    for (const section of accessControl) {
+      add(section, `money/auth path ${moneyAuth[0]} — carried in full, unconditionally`);
+    }
+  }
+
+  /* ⚠ A `###` CHILD AND ITS `##` PARENT ARE NOT TWO ANSWERS. A path cited
+     inside a child matches the child and the parent whose text contains it, and
+     carrying both prints the child twice — wrong in bytes only, in a tool whose
+     entire justification is bytes. The parent wins: it is the fuller answer. */
+  const selections = [...chosen.values()];
+  const kept = selections.filter(
+    (choice) =>
+      !selections.some(
+        (other) =>
+          other !== choice &&
+          other.section.surface === choice.section.surface &&
+          other.section.startLine <= choice.section.startLine &&
+          other.section.endLine >= choice.section.endLine &&
+          (other.section.startLine !== choice.section.startLine ||
+            other.section.endLine !== choice.section.endLine),
+      ),
+  );
+
+  return kept.sort(
+    (a, b) =>
+      a.section.surface.localeCompare(b.section.surface) || a.section.startLine - b.section.startLine,
+  );
+}
+
+/**
+ * Sections that MATCH a request but are deliberately not carried — the level-1
+ * document body, and a heading section whose flag entries are the real answer.
+ *
+ * ⚠ **WITHOUT THIS, §5 TELLS A LIE WITH A STRAIGHT FACE.** A card touching
+ * `docs/architecture/FEATURE_FLAGS.md` — which every flag change does, since the
+ * catalogue entry rides the same commit — is cited in `CLAUDE.md` exactly once,
+ * inside an entry-holding section, and the catalogue's own reading rules sit in
+ * its level-1 preamble. Both skip rules fire, nothing is selected, and §5 prints
+ * *"the surfaces were read and no section covers it"* about a file the law
+ * plainly covers. This module's own doctrine is fail toward a POINTER, never a
+ * silence; the skip rules were the one place that doctrine was not applied.
+ *
+ * The NARROWEST match wins here, the opposite of the parent-wins rule for
+ * carried sections: a pointer is a place to look, and the whole document is not
+ * a place.
+ */
+export function pointerSections(
+  surfaces: readonly { readonly path: string; readonly text: string }[],
+  request: LawRequest,
+  roots: readonly string[],
+): Section[] {
+  const all = surfaces.flatMap((surface) => splitSections(surface.path, surface.text));
+  const matched = all.filter((section) => {
+    const skipped =
+      section.level === 1 ||
+      all.some(
+        (other) =>
+          other.level === 0 &&
+          other.surface === section.surface &&
+          other.startLine > section.startLine &&
+          other.endLine <= section.endLine,
+      );
+    if (!skipped) return false;
+    const paths = mentionedPaths(section.text, roots);
+    const fileNames = mentionedFileNames(section.text);
+    return request.paths.some(
+      (requested) =>
+        paths.some((mention) => pathCovers(mention, requested)) ||
+        fileNames.includes(baseName(requested)),
+    );
+  });
+
+  return matched
+    .filter(
+      (section) =>
+        !matched.some(
+          (other) =>
+            other !== section &&
+            other.surface === section.surface &&
+            other.startLine >= section.startLine &&
+            other.endLine <= section.endLine &&
+            (other.startLine !== section.startLine || other.endLine !== section.endLine),
+        ),
+    )
+    .sort((a, b) => a.surface.localeCompare(b.surface) || a.startLine - b.startLine);
+}
+
+/** How the PROGRAM's sections are treated: carried verbatim, or named. */
+export type ProgramSplit = {
+  readonly carried: Section[];
+  readonly named: Section[];
+};
+
+/** Where the PROGRAM lives, named once so the digest's pointers cannot drift. */
+export const PROGRAM_PATH = ".agents/foreman/PROGRAM.md";
+
+export function splitProgram(programMd: string): ProgramSplit {
+  const all = splitSections(PROGRAM_PATH, programMd);
+  const sections = all.filter((section) => section.level === 2);
+  if (sections.length === 0) {
+    throw new DigestRefusal("PROGRAM.md yielded no `##` sections — refusing rather than printing a digest with no program in it");
+  }
+  const carried = sections.filter((section) => LAW_HEADING.test(section.heading));
+  if (!carried.some((section) => /current focus/i.test(section.heading))) {
+    throw new DigestRefusal(
+      "PROGRAM.md has no `Current focus` section — that block decides what a shift may cut, and a digest without it is worse than no digest",
+    );
+  }
+  const named = sections.filter((section) => !carried.includes(section));
+  /* THE INVARIANT THAT MAKES THE HEADING VOCABULARY SAFE, asserted rather than
+     promised: every section is carried or named, so the worst a word the
+     vocabulary has never heard of can do is cost a shift one file-open. A
+     section that fell out of BOTH lists would be a law that silently ceased to
+     exist for every shift after it — which is the one failure this generator
+     must not be able to have. */
+  if (carried.length + named.length !== sections.length) {
+    throw new DigestRefusal(
+      `the PROGRAM split lost a section: ${sections.length} read, ${carried.length} carried, ${named.length} named`,
+    );
+  }
+  /* THE PARTITION CHECK ABOVE ONLY GUARDS THE FILTERED LIST, and the reviewer
+     was right that this is where its blind spot lives: a level-1 heading
+     appearing AFTER the file's first `##` takes text out of every list at once.
+     Fence handling stops the known cause; this refuses the symptom whatever
+     caused it, so the guard does not depend on the fix being complete. */
+  const firstSection = sections[0].startLine;
+  const stray = all.find((section) => section.level === 1 && section.startLine > firstSection);
+  if (stray) {
+    throw new DigestRefusal(
+      `PROGRAM.md has a level-1 heading at line ${stray.startLine} ("${stray.heading}") after its first section — text under it would be carried nowhere and named nowhere`,
+    );
+  }
+  return { carried, named };
+}
+
+export type NextUpRow = {
+  readonly number: number;
+  readonly title: string;
+  readonly labels: readonly string[];
+  readonly createdAt: string;
+};
+
+export type DigestInputs = {
+  readonly now: Date;
+  /** The standing orders, for their step headings only. */
+  readonly promptMd: string | Unreadable;
+  readonly programMd: string;
+  readonly lawSurfaces: readonly { readonly path: string; readonly text: string }[];
+  readonly roots: readonly string[];
+  readonly nextUp: NextUpRow[] | Unreadable;
+  /** `patrol-clocks.mts`'s own output, embedded rather than reimplemented. */
+  readonly patrolClocks: string | Unreadable;
+  readonly since: { readonly label: string; readonly iso: string } | Unreadable;
+  readonly commits: string[] | Unreadable;
+  readonly closedCards: string[] | Unreadable;
+  readonly request: LawRequest;
+  /**
+   * The money/auth path map, parsed out of `docs/REVIEWER_CHARTER.md`. Empty is
+   * legal (the word set still fires) but the CLI always passes it, and its
+   * parser refuses an empty read.
+   */
+  readonly moneyAuthMap?: readonly string[];
+  /**
+   * A `gh --limit` that came back FULL. The collector doctrine here refuses an
+   * empty answer; a TRUNCATED one is the other half of the same question, and
+   * silently dropping the 61st card is how a queue stops being the queue.
+   */
+  readonly truncated?: { readonly nextUp?: boolean; readonly closedCards?: boolean };
+  /** Byte sizes of the sources this digest stands in for, for the footer. */
+  readonly sourceBytes: readonly { readonly path: string; readonly bytes: number }[];
+};
+
+const line = (label: string, value: string | Unreadable): string =>
+  isUnreadable(value) ? `${label}: UNREADABLE — ${value.unreadable}` : `${label}: ${value}`;
+
+/** The step list: the standing orders' own headings, nothing else. */
+function stepList(promptMd: string | Unreadable): string {
+  if (isUnreadable(promptMd)) return `UNREADABLE — ${promptMd.unreadable}`;
+  const steps = promptMd
+    .split(/\r?\n/)
+    .filter((row) => /^## /.test(row))
+    .map((row) => `  ${row.replace(/^## /, "")}`);
+  if (steps.length === 0) {
+    throw new DigestRefusal("the standing orders yielded no `##` steps — refusing rather than printing a digest with no step list");
+  }
+  return `\n${steps.join("\n")}`;
+}
+
+export function buildDigest(inputs: DigestInputs): string {
+  const out: string[] = [];
+  const stamp = inputs.now.toISOString().replace("T", " ").slice(0, 16);
+  const program = splitProgram(inputs.programMd);
+
+  out.push("# THE SHIFT DIGEST — read this instead of the book (#510)");
+  out.push("");
+  out.push(
+    `Generated ${stamp} UTC, every line derived. It replaces READING \`PROGRAM.md\` and`,
+  );
+  out.push(
+    "`FEATURE_FLAGS.md` end to end; both are still on disk and named beside every section that",
+  );
+  out.push("is summarised rather than carried. Nothing here is hand-typed, and nothing is truncated:");
+  out.push("a section is present in full or it is a pointer with its line range.");
+  out.push("");
+
+  out.push("## 1 · YOUR STEPS — the standing orders' own headings");
+  out.push(stepList(inputs.promptMd));
+  out.push("");
+  out.push(
+    "The orders themselves are on stdin above/below this digest; this list is here so you can see the",
+  );
+  out.push("shape of the shift without re-reading them.");
+  out.push("");
+
+  out.push("## 2 · THE QUEUE AND THE CLOCKS");
+  out.push("");
+  if (isUnreadable(inputs.nextUp)) {
+    out.push(`NEXT UP: UNREADABLE — ${inputs.nextUp.unreadable}`);
+    out.push(
+      "⚠ Read it yourself before you decide anything: `gh issue list --label founder-ordered --state open`.",
+    );
+    out.push("An unreadable queue is NOT an empty one, and it does not open the one-quiet-shift road (#504).");
+  } else if (inputs.nextUp.length === 0) {
+    out.push("NEXT UP: EMPTY — no open `founder-ordered` card.");
+  } else {
+    out.push(`NEXT UP: ${inputs.nextUp.length} open \`founder-ordered\` card(s), oldest first:`);
+    for (const row of [...inputs.nextUp].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
+      const labels = row.labels.filter((label) => label !== "founder-ordered");
+      out.push(
+        `  #${row.number}  ${row.createdAt.slice(0, 10)}  ${row.title}${labels.length > 0 ? `  [${labels.join(", ")}]` : ""}`,
+      );
+    }
+    if (inputs.truncated?.nextUp) {
+      out.push("  ⚠ TRUNCATED — the read came back at its limit, so there may be more. Run the query yourself.");
+    }
+  }
+  out.push("");
+  out.push("PATROL CLOCKS:");
+  out.push(
+    isUnreadable(inputs.patrolClocks)
+      ? `  UNREADABLE — ${inputs.patrolClocks.unreadable} · run \`npx tsx scripts/patrol-clocks.mts\``
+      : inputs.patrolClocks
+          .split(/\r?\n/)
+          .map((row) => `  ${row}`)
+          .join("\n"),
+  );
+  out.push("");
+  out.push(
+    "⚠ HIS SWITCHES ARE NOT IN HERE AND CANNOT BE: they are a production database row, and this",
+  );
+  out.push(
+    "generator touches no database and no network beyond `gh`. The shift-start sequence still runs",
+  );
+  out.push(
+    "`crew-work-switches.mts` (read), `crew-count-queue.mts` (write) and the card-intents reader itself.",
+  );
+  out.push("");
+
+  out.push("## 3 · WHAT CHANGED SINCE THE LAST SHIFT");
+  out.push("");
+  out.push(line("Previous entry", isUnreadable(inputs.since) ? inputs.since : `${inputs.since.label} (${inputs.since.iso})`));
+  out.push("");
+  out.push("Commits on main since then:");
+  if (isUnreadable(inputs.commits)) {
+    out.push(`  UNREADABLE — ${inputs.commits.unreadable}`);
+  } else if (inputs.commits.length === 0) {
+    out.push("  none");
+  } else {
+    for (const commit of inputs.commits) out.push(`  ${commit}`);
+  }
+  out.push("");
+  out.push("Cards closed since then:");
+  if (isUnreadable(inputs.closedCards)) {
+    out.push(`  UNREADABLE — ${inputs.closedCards.unreadable}`);
+  } else if (inputs.closedCards.length === 0 && inputs.truncated?.closedCards) {
+    /* An EMPTY list that came off a read which hit its limit is the worst of the
+       two: every returned row was filtered out, so "none" is the one thing it is
+       certainly not. */
+    out.push("  none survived the filter — ⚠ but the read came back AT ITS LIMIT, so there may be more.");
+  } else if (inputs.closedCards.length === 0) {
+    out.push("  none");
+  } else {
+    for (const card of inputs.closedCards) out.push(`  ${card}`);
+    if (inputs.truncated?.closedCards) {
+      out.push("  ⚠ TRUNCATED — the read came back at its limit, so there may be more.");
+    }
+  }
+  out.push("");
+  out.push(
+    "His replies are NOT in here — they are a production table and they are INPUT, so you read them",
+  );
+  out.push("yourself with `crew-read-replies.mts` at start and again before you ship.");
+  out.push("");
+
+  out.push("## 4 · THE PROGRAM — its law sections, carried verbatim");
+  out.push("");
+  for (const section of program.carried) {
+    out.push(`--- ${PROGRAM_PATH} L${section.startLine}–${section.endLine}`);
+    out.push(section.text.trimEnd());
+    out.push("");
+  }
+
+  out.push("### The PROGRAM sections NOT carried above");
+  out.push("");
+  out.push(
+    "Narrative and pointers rather than binding law — open `.agents/foreman/PROGRAM.md` at the line if",
+  );
+  out.push("your brief touches one. A casting UI brief in particular reads the design north star.");
+  out.push("");
+  for (const section of program.named) {
+    out.push(`  L${section.startLine}–${section.endLine}  ${section.heading}`);
+  }
+  out.push("");
+
+  out.push("## 5 · LAW ON DEMAND — the sections for what you are about to touch");
+  out.push("");
+  if (inputs.request.paths.length === 0 && inputs.request.flags.length === 0) {
+    out.push("No paths or flags were named, so no law sections are carried.");
+    out.push(
+      "Once your card is chosen, run it again with what it touches and read only what comes back:",
+    );
+    out.push("");
+    out.push(
+      "  npx tsx scripts/shift-digest.mts --paths server/routes/billing.ts --flags CASTING_V2_SCOPE",
+    );
+    out.push("");
+    out.push(
+      "The full surfaces stay where they are: " +
+        inputs.lawSurfaces.map((surface) => `\`${surface.path}\``).join(" and ") +
+        ".",
+    );
+  } else {
+    const selected = selectLawSections(
+      inputs.lawSurfaces,
+      inputs.request,
+      inputs.roots,
+      inputs.moneyAuthMap ?? [],
+    );
+    const asked = [...inputs.request.paths, ...inputs.request.flags].join(", ");
+    const pointers = pointerSections(inputs.lawSurfaces, inputs.request, inputs.roots);
+    if (selected.length === 0 && pointers.length === 0) {
+      out.push(
+        `Nothing in the law names ${asked}. That is an ANSWER, not an omission — the surfaces were read and`,
+      );
+      out.push(
+        "no section covers it. If that surprises you, the law may be silent about the thing you are changing,",
+      );
+      out.push("which is worth a line in your report.");
+    } else if (selected.length === 0) {
+      out.push(
+        `${asked} is cited only inside sections this reader does not carry whole — a document preamble, or a`,
+      );
+      out.push("section whose bullet entries are the real answer. OPEN THESE, they are not silence:");
+      out.push("");
+      for (const section of pointers) {
+        out.push(`  ${section.surface} L${section.startLine}–${section.endLine}  ${section.heading}`);
+      }
+    } else {
+      out.push(`${selected.length} section(s) name ${asked}:`);
+      out.push("");
+      for (const choice of selected) {
+        out.push(
+          `--- ${choice.section.surface} L${choice.section.startLine}–${choice.section.endLine} · ${choice.because}`,
+        );
+        out.push(choice.section.text.trimEnd());
+        out.push("");
+      }
+    }
+  }
+  out.push("");
+
+  const digestBytes = Buffer.byteLength(out.join("\n"), "utf8");
+  const sourceTotal = inputs.sourceBytes.reduce((sum, source) => sum + source.bytes, 0);
+  out.push("## 6 · WHAT THIS COST AND WHAT IT SAVED");
+  out.push("");
+  out.push(
+    `  this digest        ~${Math.round(digestBytes / 1024)} KB (${digestBytes} bytes, measured before this line)`,
+  );
+  for (const source of inputs.sourceBytes) {
+    out.push(`  ${source.path.padEnd(34)} ${Math.round(source.bytes / 1024)} KB`);
+  }
+  out.push(`  ${"stands in for".padEnd(34)} ${Math.round(sourceTotal / 1024)} KB`);
+  out.push("");
+  out.push(
+    "⚠ `CLAUDE.md` is deliberately NOT in that arithmetic: the harness loads it as project instructions",
+  );
+  out.push(
+    "before a shift starts, so no generator can save it. It is INDEXED here (§5) rather than replaced.",
+  );
+
+  return out.join("\n");
+}
