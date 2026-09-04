@@ -1,7 +1,7 @@
 {
-  "edition": 245,
-  "updatedAt": "2026-09-04T15:18:14.594Z",
-  "shift": "Opus · 5 September (a shift reads a digest, not the book — #510)",
+  "edition": 246,
+  "updatedAt": "2026-09-04T19:00:03.749Z",
+  "shift": "Opus · 5 September (the design rules get checked where you are designing — #512)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T15:18:17.663Z",
+      "readAt": "2026-09-04T18:58:20.110Z",
       "items": [
         {
           "issueNumber": 16,
@@ -252,6 +252,50 @@
     }
   },
   "needsYou": [
+    {
+      "id": "design-law-523-price-on-the-button",
+      "title": "Should the Cast it button carry its price in the label, or is beside it enough?",
+      "productImpact": "The rule says a button that spends credits must show what it costs. On the casting tab the button just says 'Cast it' — but the line directly under the box already reads '8 CANDIDATES · ~160 CR · ~50 SECONDS'. So the price IS on screen before you press anything; it just is not printed inside the button. The check only reads the button's own words, so it calls this a fault.",
+      "workedExample": "Card #523 has the screenshot. Nothing is changed either way until you say.",
+      "options": [
+        {
+          "key": "widen-the-check",
+          "label": "Leave the page alone; teach the check to look beside the button",
+          "consequence": "Nothing you see changes. The line under the box stays as it is, and the check stops calling it a fault."
+        },
+        {
+          "key": "price-in-the-label",
+          "label": "Put the price in the button: 'Cast it · ~160 cr'",
+          "consequence": "The button gets longer and repeats a number already on screen, but the cost is unmissable at the moment of pressing."
+        }
+      ],
+      "recommendation": "Widen the check. That line tells you more than a label could — how many, how much, how long — and it sits where your eye already is. But it is a look-and-feel call, so it is yours.",
+      "state": "open",
+      "filedAt": "2026-09-04T19:00:03.750Z",
+      "issueNumber": 523
+    },
+    {
+      "id": "design-law-524-typewriter-type",
+      "title": "Typewriter type on the staff screens: ten places, and most of them look right to me",
+      "productImpact": "The rule is that typewriter-style type is for machine facts — counts, times, ids — and never for sentences, because a sentence set that way reads like output instead of writing. Pointed at the staff screens for the first time, it flagged ten pieces of text. Most are genuinely machine facts that simply run a bit long: 'DAILY SIGNUPS — 14 DAYS', 'queue read 5 Sept, 01:18', '12 done · 1 waiting'. One is not.",
+      "workedExample": "On the moderator screen: '1 of 8 accounts scanned are above 500 credits'. That is a sentence, and it is set in the machine face. I deliberately did NOT silence the other nine, because the obvious way to do it would have hidden that one too — and a filter that swallows a real finding is how a check stops finding things. Card #524 lists all ten.",
+      "options": [
+        {
+          "key": "dress-the-staff-pages",
+          "label": "The staff screens use the two labels the rule already knows, where typewriter type is intended",
+          "consequence": "A small, invisible tidy across three screens. The rule stays strict, and anything new that reaches for that face has to say it means to."
+        },
+        {
+          "key": "teach-the-rule",
+          "label": "Add the staff screens' own class names to the rule's exemption list",
+          "consequence": "No page changes. But the rule goes back to chasing a list, and the next screen that invents its own name is invisible to it again."
+        }
+      ],
+      "recommendation": "The first, with that one moderator sentence looked at on its own terms. The value of exempting by a named class is that the name states the intent; letting each screen invent its own and then teaching the rule about each one gives that up.",
+      "state": "open",
+      "filedAt": "2026-09-04T19:00:03.750Z",
+      "issueNumber": 524
+    },
     {
       "id": "possibly-fixed-494",
       "title": "Your switch rows now say which of their cards may already be done — is the wording right?",
@@ -3658,6 +3702,27 @@
   ],
   "pipeline": [
     {
+      "id": "pr-522-design-law-surfaces",
+      "title": "#512 — the design rules are now checked on every page, not on three of them",
+      "status": "merged",
+      "prNumber": 522,
+      "note": "Your ordered one. We keep a short list of design rules a machine can check for you — no red border inside a text box, the dock stays put, no typewriter type on sentences, every button that costs credits says what it costs. Until tonight that check only ever opened THREE pages: the casting tab, a sheet, and the component gallery. The app has twenty-four. So the lobby, all nine staff pages, the moderator screen, the old studio, the home page, sign-in and the 404 were watched by nothing but a text search of the code — which is exactly how the red border you complained about came back three times, and how a pill-shaped status strip got all the way to your eye. It now opens NINETEEN pages in both light and dark, signed in as staff for the staff ones. And the list is not typed out anywhere: it is read off the app's own routing table, so the day someone adds a page, the check stops and says that page is not covered yet. Nobody has to remember."
+    },
+    {
+      "id": "finding-512-search-box-invisible",
+      "title": "And the check for your red-border complaint could not see the box you complained about",
+      "status": "merged",
+      "prNumber": 522,
+      "note": "This is the one worth knowing. The rule about text boxes decided what counted as a text box by listing the kinds it knew. Every search box in the staff screens is a different kind — a 'search' box rather than a plain one — and it was not on the list. So when the check was pointed at the staff Users page, it reported 'no text boxes on this page' and passed. The very control you raised the complaint about was invisible to the thing meant to guard it. It now takes its definition from the stylesheet that actually decides the behaviour, and a test goes red if the two ever drift apart. Two more of the same shape were found by running it rather than reading it: the check was measuring pages before they had finished drawing (every staff page is completely blank a second after it opens, so all eight rules found nothing and it came back clean), and it was counting pages it had planned to open as pages it had opened."
+    },
+    {
+      "id": "finding-512-instrument-proof",
+      "title": "Every one of these rules is now proved able to fail — on every change, automatically",
+      "status": "merged",
+      "prNumber": 522,
+      "note": "A clean report from a broken check is worse than no check. So each rule now faces two made-up pages: one built to break it, which it must catch, and one built correctly, which it must let through. Eighteen of those, and they run on every change from now on — they need no database and no sign-in, so they cost about twenty-five seconds. They earned it immediately. A deliberate-damage sweep, which breaks one rule at a time and checks that exactly the right alarm goes off, found two alarms that were being propped up by a neighbouring one and would have died silently. And while fixing a review comment I broke the check for 'unsigned sheets are kept for 7 days' — it quietly stopped being asked on the casting tab. Nothing went red; I only caught it by comparing two runs side by side."
+    },
+    {
       "id": "pr-521-shift-digest",
       "title": "#510 — a shift now reads a 34 KB summary instead of 165 KB of internal documents",
       "status": "merged",
@@ -5371,7 +5436,7 @@
     126
   ],
   "nextUp": {
-    "readAt": "2026-09-04T15:18:16.812Z",
+    "readAt": "2026-09-04T18:58:19.281Z",
     "items": [
       {
         "issueNumber": 243,
@@ -5401,11 +5466,6 @@
       {
         "issueNumber": 508,
         "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
-        "urgent": false
-      },
-      {
-        "issueNumber": 512,
-        "title": "The design-law browser drive covers the lobby and staff pages, not only casting — the rules the founder is designing against get checked where he is designing",
         "urgent": false
       }
     ]
