@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6b01c9b2f36f987c"
+    "sourceFingerprint": "0c6f040224a59379"
   },
   "domains": [
     {
@@ -13302,6 +13302,10 @@
     {
       "id": "test:server/sessionPersistence.test.ts",
       "path": "server/sessionPersistence.test.ts"
+    },
+    {
+      "id": "test:server/shiftDigest.test.ts",
+      "path": "server/shiftDigest.test.ts"
     },
     {
       "id": "test:server/slack/slackApproval.test.ts",
