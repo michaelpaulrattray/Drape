@@ -99,8 +99,15 @@ describe("which events start the gate (#503)", () => {
        holds the fix, so the in-flight run is testing superseded bytes. This is
        the half of #503 that was NOT built, pinned so it is not "fixed" later
        from the card's title. */
-    expect(gateYml).toMatch(/concurrency:\n\s+group: gate-\$\{\{[^\n]*pull_request\.number/);
-    expect(gateYml).toMatch(/\n\s+cancel-in-progress: true/);
+    /* ⚠ ONE ANCHORED REGEX SPANNING THE BLOCK, NOT TWO INDEPENDENT ONES
+       (review of PR #518). As two, a future edit could set THIS block to
+       `cancel-in-progress: false` while any other concurrency block in the file
+       carried `true`, and both assertions would stay green over the pinned
+       behaviour being gone — the same shape-match class this file's docblock
+       names for the trigger half, applied to the concurrency half. */
+    expect(gateYml).toMatch(
+      /concurrency:\n\s+group: gate-\$\{\{[^\n]*pull_request\.number[^\n]*\n\s+cancel-in-progress: true/,
+    );
   });
 
   describe("the negative control — the fix must not spread to the reviewer", () => {
