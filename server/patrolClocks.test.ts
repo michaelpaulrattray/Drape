@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { readListedSource } from "./testing/listedSource";
+
 /**
  * THE PATROL-CLOCK READER, DRIVEN (card #505).
  *
@@ -254,11 +256,13 @@ describe("patrol-clocks reader", () => {
     */
     const declared = readdirSync(resolve("docs"))
       .filter((name) => name.endsWith(".md"))
-      .filter((name) =>
-        /^\*\*Clock:\*\*\s+every\s+\d+\s+days?\b/m.test(
-          readFileSync(resolve("docs", name), "utf8"),
-        ),
-      )
+      .filter((name) => {
+        /* #223: a file a listing named can be gone by the time you read it —
+           this tree is shared and carries hundreds of untracked files, so a
+           listed entry is read through the helper and a null is skipped. */
+        const source = readListedSource(resolve("docs", name));
+        return source !== null && /^\*\*Clock:\*\*\s+every\s+\d+\s+days?\b/m.test(source);
+      })
       .sort();
     expect(
       declared,

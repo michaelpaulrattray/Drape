@@ -176,6 +176,9 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     "OWNER — the module that must stay a leaf",
     "each LITERAL_ALLOWED carve-out, a two-name list guarded by existsSync",
   ],
+  "server/patrolClocks.test.ts": [
+    "REAL_LOGS — the four patrol logs by fixed name; one going missing is the defect and must throw",
+  ],
 };
 
 const bareReadCount = (source: string): number =>
