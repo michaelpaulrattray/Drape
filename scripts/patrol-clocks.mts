@@ -143,13 +143,26 @@ function readSeat(
   if (Number.isNaN(lastRunMs)) {
     throw new Refusal(`${entry.seat}: ${path} newest run date "${lastRun}" is not a date`);
   }
-  if (lastRunMs > today) {
+  /*
+    A FULL DAY OF TOLERANCE, AND IT IS THE NORMAL CASE THAT NEEDS IT. The run
+    headings are stamped in AEST (UTC+10) and every recorded run so far happened
+    between 06:56 and 08:55 AEST — which is 20:56–22:55 UTC of the PREVIOUS day.
+    So a patrol that runs this morning writes tomorrow's date as far as UTC is
+    concerned, for up to ten hours. Refusing on `lastRunMs > today` would have
+    reddened the gate on the patrol's own commit, every AEST morning: the
+    refusal that exists to catch a typo would have fired on the thing it is
+    meant to serve. One day covers every zone up to UTC+14; a date genuinely
+    further ahead than that is a typo and is still refused.
+  */
+  if (lastRunMs > today + DAY_MS) {
     throw new Refusal(
-      `${entry.seat}: ${path} newest run is ${lastRun}, which is in the future — the clock cannot be read`,
+      `${entry.seat}: ${path} newest run is ${lastRun}, which is more than a day in the future — the clock cannot be read`,
     );
   }
 
-  const elapsedDays = Math.floor((today - lastRunMs) / DAY_MS);
+  /* Clamped at 0 for the same reason: a run stamped in local time can read as
+     -1 days elapsed, and "due in 8 days" on a 7-day clock is not a state. */
+  const elapsedDays = Math.max(0, Math.floor((today - lastRunMs) / DAY_MS));
   return {
     seat: entry.seat,
     category: entry.category,
@@ -178,6 +191,13 @@ function parseArgs(argv: string[]): { dir: string; today: number } {
         throw new Refusal("--today needs a YYYY-MM-DD date");
       }
       today = Date.parse(`${value}T00:00:00Z`);
+      /* The shape regex accepts month 13 and day 45, and a NaN sails past every
+         comparison below (`NaN > x` is false) until `toISOString()` throws a raw
+         RangeError. This script's own doctrine is that a bad input is a named
+         REFUSES line, never a stack trace. */
+      if (Number.isNaN(today)) {
+        throw new Refusal(`--today "${value}" is not a real date`);
+      }
       i += 1;
     } else {
       throw new Refusal(`unknown flag "${flag}" — this reader takes --dir and --today only`);

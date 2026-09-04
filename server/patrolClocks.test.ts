@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -179,12 +179,37 @@ describe("patrol-clocks reader", () => {
     expect(result.stderr).toContain("cannot read");
   });
 
-  it("REFUSES a run date in the future — a clock cannot be read backwards", () => {
+  it("REFUSES a run date more than a day in the future — a clock cannot be read backwards", () => {
     writeAll(logFile(7, ["2026-09-01"]));
     writeFileSync(join(dir, "RETRO_LOG.md"), logFile(7, ["2026-12-25"]), "utf8");
     const result = run("--dir", dir, "--today", "2026-09-04");
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("in the future");
+  });
+
+  it("does NOT refuse a run stamped one day ahead — the AEST morning, which is the normal case", () => {
+    /*
+      Every recorded patrol so far ran between 06:56 and 08:55 AEST, which is
+      20:56-22:55 UTC of the previous day. So a patrol running this morning
+      writes what UTC still calls tomorrow, for up to ten hours. A zero-
+      tolerance future check would have reddened the gate on the patrol's own
+      commit — the refusal firing on the thing it exists to serve.
+    */
+    writeAll(logFile(7, ["2026-09-05"]));
+    const result = run("--dir", dir, "--today", "2026-09-04");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("last run 2026-09-05 (0d ago)");
+    expect(result.stdout).toContain("due in 7 days");
+    expect(result.stdout).not.toContain("OVERDUE");
+  });
+
+  it("REFUSES a --today that passes the shape but is not a real date", () => {
+    writeAll(logFile(7, ["2026-09-01"]));
+    const result = run("--dir", dir, "--today", "2026-13-45");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("is not a real date");
+    // a named refusal, not a raw stack
+    expect(result.stderr).not.toContain("RangeError");
   });
 
   it("REFUSES a flag it does not know instead of ignoring it (#288's class)", () => {
@@ -216,5 +241,28 @@ describe("patrol-clocks reader", () => {
     for (const seat of ["Retro", "Janitor", "Warden", "Machinist"]) {
       expect(result.stdout).toContain(seat);
     }
+  });
+
+  it("no log in docs/ declares a clock without being one of the reader's seats", () => {
+    /*
+      `SEATS` is a hand-kept enumeration, and a fifth seat added to docs/ later
+      would be silently absent from the table — which is precisely the failure
+      the reader names for itself ("a seat missing from a table looks exactly
+      like a seat that is up to date"), and the list-stops-being-the-list class.
+      So the population is DERIVED here from the artifact — every file under
+      docs/ that declares a clock must be a file the reader reads.
+    */
+    const declared = readdirSync(resolve("docs"))
+      .filter((name) => name.endsWith(".md"))
+      .filter((name) =>
+        /^\*\*Clock:\*\*\s+every\s+\d+\s+days?\b/m.test(
+          readFileSync(resolve("docs", name), "utf8"),
+        ),
+      )
+      .sort();
+    expect(
+      declared,
+      "a docs/ log declares a **Clock:** line that scripts/patrol-clocks.mts does not read — add it to SEATS or drop the line",
+    ).toEqual([...REAL_LOGS].sort());
   });
 });
