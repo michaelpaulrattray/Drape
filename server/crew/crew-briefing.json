@@ -1,7 +1,7 @@
 {
-  "edition": 238,
-  "updatedAt": "2026-09-04T06:23:52.078Z",
-  "shift": "Fable — 4 September (the pipeline stops listing cards twice, #493)",
+  "edition": 239,
+  "updatedAt": "2026-09-04T08:03:08.448Z",
+  "shift": "Opus — 4 September (the switch count says what may already be done, #494)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -127,13 +127,25 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T06:23:15.748Z",
+      "readAt": "2026-09-04T08:03:01.163Z",
       "items": [
         {
           "issueNumber": 16,
-          "title": "THE CREATIVE REGISTER — the live arc, designed and unbuilt, and it had no issue",
+          "title": "N1 — The creative register: built and live on his account; the milestone gate waits on his eye once the pipeline is cleared (his word, 4 Sep)",
           "kind": "design-unbuilt",
           "rung": "N1"
+        },
+        {
+          "issueNumber": 22,
+          "title": "Creative Casts, phase A: which downstream doors are honest for a creature, now that the register can roll one",
+          "kind": "design-unbuilt",
+          "rung": "N1"
+        },
+        {
+          "issueNumber": 10,
+          "title": "3a.2(b) — the preview that shows her the cut, and it is what widens CASTING_INK_CUT_SCOPE",
+          "kind": "roadmap",
+          "rung": "N2"
         },
         {
           "issueNumber": 180,
@@ -148,6 +160,12 @@
           "rung": "N2"
         },
         {
+          "issueNumber": 362,
+          "title": "N2+: fold the original brief behind one line on a MAX sheet, and drive-check the next-roll chips against the author road",
+          "kind": "roadmap",
+          "rung": "N2"
+        },
+        {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
           "kind": "roadmap",
@@ -155,13 +173,13 @@
         },
         {
           "issueNumber": 15,
-          "title": "The settings modal — designed with six founder rulings, unbuilt, absent from the register for the same reason as the selector",
+          "title": "Cast settings modal, second pass: the two 'coming' styles become real, and lighting/background/energy settings if still wanted (polish, after brief 10)",
           "kind": "roadmap",
           "rung": "N3"
         },
         {
-          "issueNumber": 23,
-          "title": "Four older designs, all 'nothing is built', none with a flag or an owner",
+          "issueNumber": 30,
+          "title": "The auto-discovery scan: the panel finds a cast's uncatalogued features on its own (his demand, 17 Aug), quality-gated — N3's detector",
           "kind": "design-unbuilt",
           "rung": "N3"
         },
@@ -179,7 +197,7 @@
         },
         {
           "issueNumber": 65,
-          "title": "L&F: Three founder questions ready to ask, with no delivery vehicle — words-only sale copy, in-app zoom, skin-carrier re-decision",
+          "title": "N3: the honest sentence at a words-only tattoo sale (his ruling) — the one deliverable left here",
           "kind": "roadmap",
           "rung": "N3"
         },
@@ -202,45 +220,27 @@
           "rung": "N4"
         },
         {
+          "issueNumber": 509,
+          "title": "Errors and product analytics before real users — one error tracker, one event stream, and one honest strip on the admin Overview",
+          "kind": "roadmap",
+          "rung": "N6"
+        },
+        {
           "issueNumber": 29,
           "title": "Retirement + cleanup — roadmap item 7, and its missing tool now exists",
           "kind": "roadmap",
           "rung": "N8"
         },
         {
-          "issueNumber": 10,
-          "title": "3a.2(b) — the preview that shows her the cut, and it is what widens CASTING_INK_CUT_SCOPE",
-          "kind": "roadmap",
-          "rung": null
-        },
-        {
-          "issueNumber": 22,
-          "title": "Creative Casts — the research programme, gated on his own sentence",
-          "kind": "design-unbuilt",
-          "rung": null
-        },
-        {
-          "issueNumber": 30,
-          "title": "Any-feature discovery — roadmap item 9, gated per §5c",
-          "kind": "design-unbuilt",
-          "rung": null
-        },
-        {
-          "issueNumber": 238,
-          "title": "The hero's spec toggle + locked-traits pill — his casting-hero spec §3/§6, deferred because the panel it opens does not exist",
-          "kind": "roadmap",
-          "rung": null
-        },
-        {
-          "issueNumber": 362,
-          "title": "N2+: fold the original brief behind one line on a MAX sheet, and drive-check the next-roll chips against the author road",
-          "kind": "roadmap",
-          "rung": null
-        },
-        {
           "issueNumber": 484,
           "title": "Law-7 sibling: the legacy refine box does not re-measure on a resize (cosmetic, legacy studio)",
           "kind": "roadmap",
+          "rung": "N8"
+        },
+        {
+          "issueNumber": 499,
+          "title": "N4b — Voice: the cast's voice package gets its own rung, two engines by voice kind (his word, 4 Sep)",
+          "kind": "design-unbuilt",
           "rung": null
         }
       ]
@@ -248,13 +248,24 @@
   },
   "needsYou": [
     {
+      "id": "possibly-fixed-494",
+      "title": "Your switch rows now say which of their cards may already be done — is the wording right?",
+      "productImpact": "You asked this morning whether a shift knows when a bug has already been fixed. It did not. Tonight your BACKGROUND WORK rows read \"Bugs (14, 1 already queued, 5 possibly fixed)\", and the cards it means are marked in the list underneath. The difference between those two numbers matters: the one already queued is taken OUT of the fourteen, and the five possibly fixed are five OF them — still on offer, but a shift re-reads them at the code before touching one.",
+      "workedExample": "Tonight it flagged #486 (\"outlined buttons stand 2px taller than filled ones\") because a merged pull request names it and nobody has been back to the card since. Re-reading took thirty seconds: that pull request says in its own words \"not fixed here\", so #486 is genuinely still open. That is the instrument working as ordered — it points, a shift looks, and the looking is cheap. It is deliberately not clever enough to read \"not fixed\" out of the prose: we have a card open right now, at its THIRD occurrence, for a different reader that tried to and could not see a negation containing its own keyword.",
+      "options": [],
+      "recommendation": "Look at the Bugs and Small fixes rows on this page and tell me if \"possibly fixed\" is the phrase you want. The one thing worth knowing before you judge it: it finds what it can, never everything. Of the five cards we caught in September that were already fixed and still open, this reading would have found three and missed two — the two nobody's pull request ever mentioned. So an empty flag is \"nothing found\", never \"nothing stale\".",
+      "state": "open",
+      "filedAt": "2026-09-04T08:03:08.451Z",
+      "issueNumber": 494
+    },
+    {
       "id": "state-strip-492",
       "title": "The top of the Program card is rebuilt — your \"it looks terribly designed\"",
       "productImpact": "The three status readings at the top of THE PROGRAM card no longer sit in outlined tags. You were looking at a tag holding a 67-character sentence, wrapped onto two lines, with the actual information in small grey type underneath it — and two tags on one row with the third orphaned below. It is now three equal columns: a small heading, a dot for good or bad, and the reading itself in normal readable type. Nothing else on the card moved — the mission, your quote, the progress bar, the steps and the ladder are exactly where they were.",
       "workedExample": "Before, the middle reading's heading was the whole sentence: \"The queue: 79 open, 8 carrying your word, none urgent, 4 going stale\" — 67 characters inside a rounded outline, over two lines. Now the heading is \"THE QUEUE\" and the sentence sits under it at a readable size. The reason it cannot go back is that a heading longer than 40 characters is now REFUSED before the page can deploy, so no future shift can type a headline into that slot again.",
       "options": [],
       "recommendation": null,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-04T04:45:47.401Z",
       "issueNumber": 492
     },
@@ -396,7 +407,7 @@
         }
       ],
       "recommendation": "Leave it. The ceremony now checks more than the pull-request gate does, so ticking the box buys a guarantee you would mostly be giving yourself — and costs you your morning page.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-02T18:59:27.114Z",
       "issueNumber": 460
     },
@@ -1717,15 +1728,46 @@
       "workedExample": "13 of the 19 ladder cards sit under a rung tonight because the record already names it — #246 under N3 because you placed it there yourself ('add a note to N3 in the plan'), #29 under N8 because it IS the retirement. The other 6 (#10 #22 #30 #238 #362 #484) read 'Rung not yet named — a word from you places one': nobody guessed a rung you have not named. Two small calls to strike if you disagree: Toolbelt and Patrols stay in the orphan block (your card's list omitted them, but dropping them would put a future card on NO section), and placing the 6 unplaced cards is yours — one word each, whenever you like.",
       "options": [],
       "recommendation": "Look at the ladder and the 'Not on any road' block on this page — if the shape reads right, say so and a shift closes #493; if a rung placement or the orphan list looks wrong, name it and the label moves.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-04T06:23:52.079Z",
       "issueNumber": 493
     }
   ],
   "eyeItems": [
     {
-      "id": "state-strip-492-frames",
+      "id": "possibly-fixed-494-frames",
       "state": "open",
+      "cardId": "possibly-fixed-494",
+      "title": "The switch rows with the new line — does \"possibly fixed\" read right beside \"already queued\"?",
+      "filedAt": "2026-09-04T08:03:08.451Z",
+      "issueNumber": 494,
+      "question": "Four frames: the Bugs row on its own in both themes, and the whole panel in both themes.\n\nThe thing to look at is the parenthesis. It now holds up to three parts — the number, what was taken OUT of it, and what is still IN it but worth a second look — and the order is meant to carry that: subtracted first, still-counted last.\n\nThe second thing is the quiet \"possibly fixed\" beside a card title. It uses the same faint treatment as \"parked\" on the ladder rows. In the light theme it is deliberately low-contrast, because it is an annotation and not something to press. Tell me if it is too quiet there.",
+      "frames": [
+        {
+          "key": "crew-eye/41a655c5-a4da-4750-8097-2de8466c7262.png",
+          "caption": "The Bugs row, dark — the count, what was queued, and what may already be done",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/238ab30f-3e00-4265-8ae4-fdbb762609f8.png",
+          "caption": "The same row in light — is the faint mark too faint here?",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/9f14c33d-e4e9-4952-94fc-50995de97cda.png",
+          "caption": "The whole panel, dark — rows with nothing flagged look exactly as they did",
+          "arm": null
+        },
+        {
+          "key": "crew-eye/c6d4f6e2-9911-41e1-be83-6b8af9085bfc.png",
+          "caption": "The whole panel, light",
+          "arm": null
+        }
+      ]
+    },
+    {
+      "id": "state-strip-492-frames",
+      "state": "done",
       "cardId": "state-strip-492",
       "title": "The top of the Program card, rebuilt — does this read better than the tags did?",
       "filedAt": "2026-09-04T04:45:47.401Z",
@@ -3576,7 +3618,7 @@
       "id": "one-place-493-frames",
       "title": "The ladder with its cards, and the pipeline block with only its orphans",
       "question": "Does the page read as one home per card? The ladder should tell you what each rung is waiting on at a glance; 'Not on any road' should hold only the cards that need your word; nothing should appear twice.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-04T06:23:52.079Z",
       "issueNumber": 493,
       "cardId": "one-place-493",
@@ -3610,6 +3652,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-498-possibly-fixed",
+      "title": "#494 — the switch count says which of its cards may already be done",
+      "status": "merged",
+      "prNumber": 498,
+      "note": "Fable review passed with three low findings; two fixed before merge, one filed as #507. 11/11 sabotages caught. The rule was measured against three alternatives before it was picked."
+    },
     {
       "id": "pr-497-one-place",
       "title": "#493 — the pipeline block lists nothing twice; the ladder holds its cards (one-place rule as a guard)",
@@ -4949,6 +4998,13 @@
   ],
   "problems": [
     {
+      "id": "ladder-rung-n4b-499",
+      "title": "Your new Voice rung has no place on the ladder yet, so its card shows as unplaced",
+      "severity": "warning",
+      "state": "open",
+      "detail": "You asked for Voice to get its own rung today (#499, \"N4b\"), and the card carries that label. The ladder on this page still holds the seven rungs it held yesterday, so the page cannot draw a card under a rung that is not there. It does the safe thing rather than the tidy one: the card shows under \"Rung not yet named\" and the sweep says out loud why, instead of quietly dropping it or inventing a rung nobody agreed to. Adding a rung to the ladder is a change to the plan itself, so a shift does not do it on its own judgement — it is the first act of whoever takes #499."
+    },
+    {
       "id": "shared-tree-block-479",
       "title": "Your page was three editions behind — it is not any more",
       "severity": "warning",
@@ -5237,11 +5293,20 @@
     117,
     118,
     119,
-    120
+    120,
+    121,
+    122,
+    123,
+    124
   ],
   "nextUp": {
-    "readAt": "2026-09-04T06:23:14.923Z",
+    "readAt": "2026-09-04T08:02:59.951Z",
     "items": [
+      {
+        "issueNumber": 434,
+        "title": "A label applied at PR creation cancels the Fable review and then skips itself — red review, no verdict (measured on #433)",
+        "urgent": true
+      },
       {
         "issueNumber": 243,
         "title": "#232's RENDER half is unproven: the creature mouth line needs a fixture whose seed does NOT name the anatomy",
@@ -5268,13 +5333,48 @@
         "urgent": false
       },
       {
-        "issueNumber": 493,
-        "title": "The pipeline block lists nothing twice — orphans only, the ladder cards live under their rung, one-place rule as a guard (his order, 4 Sep)",
+        "issueNumber": 501,
+        "title": "The Atlas regenerates on EVERY commit, not only on merges — 5 of the last 60 gate failures were freshness, all avoidable locally",
         "urgent": false
       },
       {
-        "issueNumber": 494,
-        "title": "The switch count cannot see a card whose fix already landed — a 'possibly fixed' reading beside 'already queued', and the re-read-before-take rule (his question, 4 Sep)",
+        "issueNumber": 502,
+        "title": "The reviewer's cancel-on-label bug is URGENT — 27 of the last 60 review runs were skipped and produced no verdict (#434)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 503,
+        "title": "A shift never pushes while its own gate is running — 7 of the last 60 gate runs were cancelled by a second push",
+        "urgent": false
+      },
+      {
+        "issueNumber": 504,
+        "title": "The nights park after ONE quiet shift when the emptiness is knowable — 19 quiet shifts in seven days each cost a model session",
+        "urgent": false
+      },
+      {
+        "issueNumber": 505,
+        "title": "The patrol clocks are DERIVED and enforced at shift start — the weekly Retro has run once, on 26 August",
+        "urgent": false
+      },
+      {
+        "issueNumber": 506,
+        "title": "The gate runs its fail-fast checks first — a stale Atlas costs 3 minutes, not 10",
+        "urgent": false
+      },
+      {
+        "issueNumber": 508,
+        "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
+        "urgent": false
+      },
+      {
+        "issueNumber": 510,
+        "title": "A shift reads a digest, not the book — what changed since your last shift plus the sections you are about to touch",
+        "urgent": false
+      },
+      {
+        "issueNumber": 512,
+        "title": "The design-law browser drive covers the lobby and staff pages, not only casting — the rules the founder is designing against get checked where he is designing",
         "urgent": false
       }
     ]
