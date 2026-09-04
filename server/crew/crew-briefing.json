@@ -1,7 +1,7 @@
 {
-  "edition": 237,
-  "updatedAt": "2026-09-04T04:45:47.401Z",
-  "shift": "Foreman — 4 September evening (the Program card's readings)",
+  "edition": 238,
+  "updatedAt": "2026-09-04T06:23:52.078Z",
+  "shift": "Fable — 4 September (the pipeline stops listing cards twice, #493)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,9 +116,9 @@
         "source": "Your #492: the status readings at the top are redesigned. Your eye is on it below."
       },
       {
-        "label": "The queue",
+        "label": "The pipeline",
         "tone": "good",
-        "source": "78 open, 7 carrying your word, none urgent. Four have sat a week (#18 #22 #23 #30)."
+        "source": "Your #493: nothing listed twice — the ladder holds its cards. Your eye is on it below."
       },
       {
         "label": "Your nights",
@@ -127,7 +127,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T05:22:16.928Z",
+      "readAt": "2026-09-04T06:23:15.748Z",
       "items": [
         {
           "issueNumber": 16,
@@ -1709,6 +1709,17 @@
       "state": "done",
       "issueNumber": 368,
       "filedAt": "2026-09-01T15:45:00+10:00"
+    },
+    {
+      "id": "one-place-493",
+      "title": "The pipeline lists nothing twice now — is the new shape right?",
+      "productImpact": "Your order is built and live: every open card appears in exactly ONE section — the one that says what it is waiting on. 'Queued by you' and the roadmap/parked/design rows are gone from the pipeline block; the ladder in THE PROGRAM now shows each rung's waiting cards (a count always, the cards on a tap, your Not-relevant tap on every row), and the block below the switches is 'Not on any road' — only the cards nobody will act on without your word, plus one quiet line saying where everything else lives. When nothing is orphaned it says 'Every open card is on a road'. NEXT UP's 'Waiting on you' chip now jumps to the card that holds it.",
+      "workedExample": "13 of the 19 ladder cards sit under a rung tonight because the record already names it — #246 under N3 because you placed it there yourself ('add a note to N3 in the plan'), #29 under N8 because it IS the retirement. The other 6 (#10 #22 #30 #238 #362 #484) read 'Rung not yet named — a word from you places one': nobody guessed a rung you have not named. Two small calls to strike if you disagree: Toolbelt and Patrols stay in the orphan block (your card's list omitted them, but dropping them would put a future card on NO section), and placing the 6 unplaced cards is yours — one word each, whenever you like.",
+      "options": [],
+      "recommendation": "Look at the ladder and the 'Not on any road' block on this page — if the shape reads right, say so and a shift closes #493; if a rung placement or the orphan list looks wrong, name it and the label moves.",
+      "state": "open",
+      "filedAt": "2026-09-04T06:23:52.079Z",
+      "issueNumber": 493
     }
   ],
   "eyeItems": [
@@ -3560,9 +3571,52 @@
           "arm": "Home / Canvas / Library"
         }
       ]
+    },
+    {
+      "id": "one-place-493-frames",
+      "title": "The ladder with its cards, and the pipeline block with only its orphans",
+      "question": "Does the page read as one home per card? The ladder should tell you what each rung is waiting on at a glance; 'Not on any road' should hold only the cards that need your word; nothing should appear twice.",
+      "state": "open",
+      "filedAt": "2026-09-04T06:23:52.079Z",
+      "issueNumber": 493,
+      "cardId": "one-place-493",
+      "frames": [
+        {
+          "key": "crew-eye/3f19eea4-cafc-464e-b63f-7431b5bc6591.png",
+          "caption": "Dark, 1440 — the ladder with N3 and the remainder expanded: counts on every rung that has work, the cards indented beneath, 'parked' / 'unbuilt design' said on the rows that are not ordinary roadmap work, and the honest remainder at the foot.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/d3fa53fd-c2b7-4d6e-b243-0e3bcd3dcbba.png",
+          "caption": "Dark, 1440 — 'Not on any road': only the orphan groups, each with its reason, your Not-relevant tap on the one debt card, and the quiet line saying where the other 77 live.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/57322c6b-5978-43cd-b864-924404327b34.png",
+          "caption": "Light, 1440 — the same ladder, same expansions.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/3a7a3dd7-ecd9-42c4-8eea-0b446253b853.png",
+          "caption": "Dark, 1440 — the empty state, driven on the dev database: with no orphans the block says 'Every open card is on a road' with the count's age, and nothing else — your card's own sentence.",
+          "arm": "empty"
+        },
+        {
+          "key": "crew-eye/d4f09241-8276-4142-9b3d-d27369fb5cda.png",
+          "caption": "Dark, 720 — the ladder at a narrow window: titles ellipsize, taps stay a column.",
+          "arm": "narrow"
+        }
+      ]
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-497-one-place",
+      "title": "#493 — the pipeline block lists nothing twice; the ladder holds its cards (one-place rule as a guard)",
+      "status": "merged",
+      "prNumber": 497,
+      "note": "Fable review passed; its two findings fixed before merge. 9/9 sabotages caught on the new guards."
+    },
     {
       "id": "state-strip-492",
       "title": "The Program card's status readings are a strip, not tags",
@@ -5186,7 +5240,7 @@
     120
   ],
   "nextUp": {
-    "readAt": "2026-09-04T05:22:15.953Z",
+    "readAt": "2026-09-04T06:23:14.923Z",
     "items": [
       {
         "issueNumber": 243,
