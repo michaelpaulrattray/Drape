@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ef582731620203cc"
+    "sourceFingerprint": "2894faa507319cd8"
   },
   "domains": [
     {
@@ -10902,6 +10902,10 @@
     {
       "id": "test:server/architectureShapeCopies.test.ts",
       "path": "server/architectureShapeCopies.test.ts"
+    },
+    {
+      "id": "test:server/atlasCommitHook.test.ts",
+      "path": "server/atlasCommitHook.test.ts"
     },
     {
       "id": "test:server/atlasMergeDriver.test.ts",

@@ -1,0 +1,79 @@
+#!/bin/sh
+#
+# ARM 3 OF THE PRE-COMMIT GATE — THE GENERATED MAPS ARE REGENERATED ON EVERY
+# COMMIT THAT COULD MOVE THEM, NOT ONLY ON MERGES (card #501).
+#
+# `.githooks/atlas-regenerate` (Retro guard R1, #100) covers exactly one case:
+# a MERGE whose two sides both changed a generated map. An ordinary commit that
+# edits a module changed nothing there, so the map went stale silently and the
+# first gate run on the branch was a coin flip on whether the shift remembered
+# `pnpm architecture:generate`. Measured on the queue's own record (#501): of
+# the last 60 `gate.yml` runs, FIVE failed, and all five failed on the one step
+# `Architecture Atlas freshness` — ~10 minutes each of red, regenerate, re-push
+# and a second gate.
+#
+# So: when a staged path is one the maps are built from, regenerate both, stage
+# whatever changed, and let the commit carry the map of its own tree. Costs
+# ~9 s (measured 2026-09-04: architecture 7.6 s + capability 1.6 s), and only
+# on commits that touch those roots — a docs-only or workflow-only commit pays
+# nothing.
+#
+# ⚠ THE PATH FILTER IS A MIRROR OF `SCANNED_ROOTS`, AND MIRRORS DRIFT (working
+# law 4). It is not left to hold: `server/atlasCommitHook.test.ts` reads
+# `SCANNED_ROOTS` out of `scripts/generate-architecture.mts` and reddens if any
+# root the generator scans is not covered here. A root added to the generator
+# without a line here is a failing test, not a silently stale map. The filter is
+# deliberately WIDER than that list (`scripts/`, all of `client/`, every
+# extension) because widening only costs 9 s and narrowing costs correctness.
+#
+# ⚠ `docs/architecture/annotations.yaml` IS ON THE LIST and #501's own body
+# would have missed it — the card said "skip when only `docs/` is staged", and
+# that file is under `docs/` and is hashed into the architecture fingerprint
+# (`fingerprint()` in the generator reads it beside every source file). Editing
+# it alone is exactly the commit that goes stale.
+#
+# A generator that FAILS refuses the commit, the same rule and for the same
+# reason as the merge path: a map that could not be built must never be
+# committed as though it were fresh (enforcement invariant 7 — a control that
+# passes when its dependency is missing is not a control).
+#
+# `drape.atlasGenerate` overrides the generation command; its only intended use
+# is the guard's own test, which drives real temporary repositories that have no
+# generator to run.
+
+# Nothing staged that the maps are built from → do nothing at all.
+staged=$(git diff --cached --name-only 2>/dev/null | grep -E '^(server/|client/|shared/|scripts/|drizzle/|docs/architecture/annotations\.yaml$)' | head -n 1)
+[ -n "$staged" ] || exit 0
+
+generate=$(git config drape.atlasGenerate 2>/dev/null)
+[ -n "$generate" ] || generate="pnpm architecture:generate && pnpm capability:generate"
+
+echo "" >&2
+echo "atlas: this commit touches the sources the maps are built from — regenerating." >&2
+if ! sh -c "$generate" >&2; then
+  echo "" >&2
+  echo "REFUSED — the generated maps could not be rebuilt, so whatever is on disk is" >&2
+  echo "not the map of this tree. Fix the generator's complaint, then run:" >&2
+  echo "" >&2
+  echo "  pnpm architecture:generate && pnpm capability:generate" >&2
+  echo "" >&2
+  echo "and commit again. (card #501 — never --no-verify.)" >&2
+  echo "" >&2
+  exit 1
+fi
+
+# The files this applies to are the ones .gitattributes says it applies to —
+# the same derivation `atlas-regenerate` uses, so the two hooks cannot disagree
+# about which files are generated.
+generated=$(git ls-files -z | git check-attr --stdin -z merge | tr '\0' '\n' | awk 'NR%3==1{p=$0} NR%3==0 && $0=="atlas"{print p}')
+if [ -z "$generated" ]; then
+  echo "REFUSED — no tracked file carries merge=atlas, yet the maps were rebuilt; .gitattributes and this hook disagree." >&2
+  exit 1
+fi
+printf '%s\n' "$generated" | while IFS= read -r file; do
+  git add -- "$file" || exit 1
+done || exit 1
+
+echo "atlas: regenerated and staged — this commit carries the map of its own tree." >&2
+echo "" >&2
+exit 0

@@ -29,12 +29,25 @@
 #   construction — git's `--numstat` prints `-` for those, and that is the
 #   reading used here rather than a second list of extensions.
 #
+# ARM 3 — #501, the stale map. ARM 0 covers a MERGE that touched a generated
+#   map on both sides; an ordinary commit editing a module moved the source
+#   fingerprint and regenerated nothing, so five of the last sixty gate runs
+#   died on `Architecture Atlas freshness` alone. So a commit staging a path
+#   the maps are built from regenerates them and carries them — see
+#   .githooks/atlas-stage. It runs LAST: a commit arms 1 or 2 will refuse
+#   should not pay nine seconds first.
+#
 # THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify. Driven by
 # server/preCommitGate.test.ts against real temporary repositories.
 #
 # Installed by:  git config core.hooksPath .githooks
 
 # ---------------------------------------------------------------- ARM 0 (R1)
+# Read the marker BEFORE the hook clears it: when the merge path regenerates,
+# ARM 3 below has nothing left to do and must not pay for it twice.
+atlas_gitdir=$(git rev-parse --git-dir 2>/dev/null)
+atlas_merge_regenerated=0
+[ -n "$atlas_gitdir" ] && [ -f "$atlas_gitdir/DRAPE_ATLAS_REGENERATE" ] && atlas_merge_regenerated=1
 "$(dirname "$0")/atlas-regenerate" || exit 1
 
 # ---------------------------------------------------------------- ARM 1 (R3)
@@ -102,5 +115,10 @@ git diff --cached --numstat --no-renames --diff-filter=ACMR 2>/dev/null | while 
     exit 1
   fi
 done || exit 1
+
+# ---------------------------------------------------------------- ARM 3 (#501)
+if [ "$atlas_merge_regenerated" = "0" ]; then
+  "$(dirname "$0")/atlas-stage" || exit 1
+fi
 
 exit 0
