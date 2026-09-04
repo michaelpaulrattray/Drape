@@ -125,7 +125,126 @@
         "tone": "good",
         "source": "Your #490: 6.9 hours of dead night on 3-4 Sep, parked 00:40. It now waits, not quits."
       }
-    ]
+    ],
+    "ladderCards": {
+      "readAt": "2026-09-04T05:22:16.928Z",
+      "items": [
+        {
+          "issueNumber": 16,
+          "title": "THE CREATIVE REGISTER — the live arc, designed and unbuilt, and it had no issue",
+          "kind": "design-unbuilt",
+          "rung": "N1"
+        },
+        {
+          "issueNumber": 180,
+          "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
+          "kind": "parked",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 203,
+          "title": "N2: RETIRE the wardrobe/basics two-paths machinery — founder ruling in advance ('yeah we will retire the wardrobe/basics path obviously', 2026-08-28)",
+          "kind": "parked",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 14,
+          "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 15,
+          "title": "The settings modal — designed with six founder rulings, unbuilt, absent from the register for the same reason as the selector",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 23,
+          "title": "Four older designs, all 'nothing is built', none with a flag or an owner",
+          "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 55,
+          "title": "L&F: The honest loader — real stage names, no invented percentages, the D-169 mock still owed",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 61,
+          "title": "L&F: Outfit-card thumbnails via the point-cutter — the ordered roadmap promise never written",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 65,
+          "title": "L&F: Three founder questions ready to ask, with no delivery vehicle — words-only sale copy, in-app zoom, skin-carrier re-decision",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 246,
+          "title": "The region reader asked for an ABSENT feature answers with a lookalike (horns for tusks, 7455 px) — it fails upward, and absentIsAnswer is what it defeats",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 478,
+          "title": "The presence score separates — N3's decision on whether the panel and the departure gate use it, and at what floor",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 18,
+          "title": "Takes — founder-endorsed design direction, not yet a build order",
+          "kind": "design-unbuilt",
+          "rung": "N4"
+        },
+        {
+          "issueNumber": 29,
+          "title": "Retirement + cleanup — roadmap item 7, and its missing tool now exists",
+          "kind": "roadmap",
+          "rung": "N8"
+        },
+        {
+          "issueNumber": 10,
+          "title": "3a.2(b) — the preview that shows her the cut, and it is what widens CASTING_INK_CUT_SCOPE",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 22,
+          "title": "Creative Casts — the research programme, gated on his own sentence",
+          "kind": "design-unbuilt",
+          "rung": null
+        },
+        {
+          "issueNumber": 30,
+          "title": "Any-feature discovery — roadmap item 9, gated per §5c",
+          "kind": "design-unbuilt",
+          "rung": null
+        },
+        {
+          "issueNumber": 238,
+          "title": "The hero's spec toggle + locked-traits pill — his casting-hero spec §3/§6, deferred because the panel it opens does not exist",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 362,
+          "title": "N2+: fold the original brief behind one line on a MAX sheet, and drive-check the next-roll chips against the author road",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 484,
+          "title": "Law-7 sibling: the legacy refine box does not re-measure on a resize (cosmetic, legacy studio)",
+          "kind": "roadmap",
+          "rung": null
+        }
+      ]
+    }
   },
   "needsYou": [
     {
@@ -5067,7 +5186,7 @@
     120
   ],
   "nextUp": {
-    "readAt": "2026-09-04T04:45:40.282Z",
+    "readAt": "2026-09-04T05:22:15.953Z",
     "items": [
       {
         "issueNumber": 243,

@@ -24,14 +24,17 @@
  * whose argument is that a quote already carries two markers (its rule and its
  * attribution) and a third marker for one fact says nothing new.
  */
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { Check } from "lucide-react";
 
+import { indexIntentsByCard } from "@shared/crewCardIntents";
+import type { CrewQueueTitle } from "@shared/crewQueueTitles";
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
+import { CardTitles } from "./CrewCardTitles";
 import { milestoneCountLine, milestoneProgress } from "./crewTypes";
-import type { CrewBriefingView } from "./crewTypes";
+import type { CrewBriefingView, CrewCardIntentsView } from "./crewTypes";
 
 const FOCUS_LABEL: Record<string, string> = {
   confirmed: "Confirmed",
@@ -104,7 +107,71 @@ const STATE_SPOKEN: Record<string, string | null> = {
   neutral: null,
 };
 
-export function CrewProgramBanner({ program }: { program: CrewBriefingView["program"] }) {
+/**
+ * The word beside a ladder card that is not ordinary roadmap work (#493) — a
+ * DISPLAY word for a kind the vocabulary already owns, so `roadmap` (the
+ * default meaning: waits on its rung) stays unmarked and the two exceptions
+ * say their name.
+ */
+const LADDER_KIND_WORD: Record<string, string | null> = {
+  roadmap: null,
+  parked: "parked",
+  "design-unbuilt": "unbuilt design",
+};
+
+/**
+ * The pseudo-rung the honest remainder expands under (#493). Real rungs enter
+ * the open-set through `rungSetKey`, which prefixes them — so this key cannot
+ * collide with a briefing rung whatever the ladder is keyed (PR #497 review,
+ * finding 2): a real key `K` becomes `rung:K`, and no `rung:`-prefixed string
+ * equals this bare word.
+ */
+const UNPLACED_KEY = "unplaced";
+const rungSetKey = (key: string) => `rung:${key}`;
+
+export function CrewProgramBanner({
+  program, cardIntents, onIntent, intentPendingCard,
+}: {
+  program: CrewBriefingView["program"];
+  cardIntents: CrewCardIntentsView;
+  onIntent: (issueNumber: number, intent: "close" | null) => void;
+  intentPendingCard: number | null;
+}) {
+  /*
+    WHICH RUNGS ARE OPEN (#493 — his card: the count always shows, and
+    "tapped, the cards"). Collapsed by default: this is already the tallest
+    block on the page, by his own accepted trade, and nineteen extra rows
+    always-open would be the split he declined arriving as clutter.
+  */
+  const [openRungs, setOpenRungs] = useState<ReadonlySet<string>>(new Set());
+  const toggleRung = (key: string) =>
+    setOpenRungs((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  /*
+    The ladder's cards by rung, plus the honest remainder. `mark` says
+    *parked* / *unbuilt design* on the rows that are not ordinary roadmap
+    work, from one kind map the titles component draws.
+  */
+  const ladderItems = program.ladderCards.items;
+  const kindByNumber = new Map(ladderItems.map((item) => [item.issueNumber, item.kind]));
+  const markOf = (card: CrewQueueTitle) => LADDER_KIND_WORD[kindByNumber.get(card.number) ?? ""] ?? null;
+  const cardsOn = (rungKey: string | null): CrewQueueTitle[] =>
+    ladderItems
+      .filter((item) => item.rung === rungKey)
+      .map((item) => ({ number: item.issueNumber, title: item.title }));
+  const unplaced = cardsOn(null);
+
+  /* The tap is withheld while the intents table is absent, exactly as the
+     background panel withholds it — a control that silently forgets is worse
+     than one that is not there (#325). */
+  const intentsByCard = indexIntentsByCard(cardIntents.intents);
+  const liveIntent = cardIntents.available ? onIntent : null;
+
   return (
     <section className="dp-crew__card">
       <TableHead eyebrow="The program" />
@@ -246,7 +313,15 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
 
       {program.ladder.length > 0 && (
         <div className="dp-crew__rule">
-          <h3 className="dp-crew__subhead">The ladder</h3>
+          {/* The queue-read stamp rides the head (#493): the cards below are a
+              derived snapshot, exactly NEXT UP's shape, and the block says when
+              it looked rather than implying an instant it does not have. */}
+          <div className="dp-crew__ladderhead">
+            <h3 className="dp-crew__subhead">The ladder</h3>
+            {ladderItems.length > 0 && (
+              <span className="dp-crew__mono">queue read {shortDate(program.ladderCards.readAt)}</span>
+            )}
+          </div>
 
           {/* The rung bar (#74 item 2) — the whole climb in one glance: filled
               is done, ringed is where we stand, light is queued, dashed is
@@ -268,20 +343,88 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
           </div>
 
           <ul className="dp-crew__rungs">
-            {program.ladder.map((rung) => (
-              <li key={rung.key} className="dp-crew__rung">
-                <span className="dp-crew__num dp-crew__rungid">{rung.key}</span>
-                <span
-                  className={cn(
-                    "dp-crew__rungtitle",
-                    rung.state === "current" && "dp-crew__rungtitle--current",
+            {program.ladder.map((rung) => {
+              const cards = cardsOn(rung.key);
+              const open = openRungs.has(rungSetKey(rung.key));
+              return (
+                <li key={rung.key}>
+                  <div className="dp-crew__rung">
+                    <span className="dp-crew__num dp-crew__rungid">{rung.key}</span>
+                    <span
+                      className={cn(
+                        "dp-crew__rungtitle",
+                        rung.state === "current" && "dp-crew__rungtitle--current",
+                      )}
+                    >
+                      {rung.title}
+                    </span>
+                    {/* THE COUNT ALWAYS SHOWS; THE CARDS SHOW ON A TAP (#493
+                        move 2, his card's own words). A rung with nothing
+                        waiting draws no control — a button promising a list
+                        with nothing in it is a dead control. */}
+                    {cards.length > 0 && (
+                      <button
+                        type="button"
+                        className="dp-crew__rungcount"
+                        aria-expanded={open}
+                        onClick={() => toggleRung(rungSetKey(rung.key))}
+                        data-testid={`crew-rung-cards-${rung.key}`}
+                      >
+                        {cards.length} waiting
+                      </button>
+                    )}
+                    <span className="dp-crew__mono">{RUNG_LABEL[rung.state] ?? rung.state}</span>
+                  </div>
+                  {open && cards.length > 0 && (
+                    <ul className="dp-crew__titles dp-crew__rungdrop">
+                      <CardTitles
+                        titles={cards}
+                        intents={intentsByCard}
+                        onIntent={liveIntent}
+                        pendingCard={intentPendingCard}
+                        mark={markOf}
+                      />
+                    </ul>
                   )}
-                >
-                  {rung.title}
-                </span>
-                <span className="dp-crew__mono">{RUNG_LABEL[rung.state] ?? rung.state}</span>
+                </li>
+              );
+            })}
+
+            {/* THE HONEST REMAINDER (#493): on the ladder, rung not yet named.
+                A rung label is transcription — applied only where the record
+                names the rung — so a card nobody has placed says so here
+                rather than being guessed onto a rung. One word from him
+                places one; the relay applies the label. */}
+            {unplaced.length > 0 && (
+              <li>
+                <div className="dp-crew__rung">
+                  <span className="dp-crew__num dp-crew__rungid" aria-hidden="true">—</span>
+                  <span className="dp-crew__rungtitle">
+                    Rung not yet named — a word from you places one
+                  </span>
+                  <button
+                    type="button"
+                    className="dp-crew__rungcount"
+                    aria-expanded={openRungs.has(UNPLACED_KEY)}
+                    onClick={() => toggleRung(UNPLACED_KEY)}
+                    data-testid="crew-rung-cards-unplaced"
+                  >
+                    {unplaced.length} waiting
+                  </button>
+                </div>
+                {openRungs.has(UNPLACED_KEY) && (
+                  <ul className="dp-crew__titles dp-crew__rungdrop">
+                    <CardTitles
+                      titles={unplaced}
+                      intents={intentsByCard}
+                      onIntent={liveIntent}
+                      pendingCard={intentPendingCard}
+                      mark={markOf}
+                    />
+                  </ul>
+                )}
               </li>
-            ))}
+            )}
           </ul>
         </div>
       )}

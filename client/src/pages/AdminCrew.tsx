@@ -349,7 +349,16 @@ export default function AdminCrew() {
                 — every one of those is the split he declined wearing a
                 different name. If it reads badly he will say so, and that will
                 be a new instruction. */}
-            <CrewProgramBanner program={stateQuery.data.briefing.program} />
+            <CrewProgramBanner
+              program={stateQuery.data.briefing.program}
+              /* The ladder draws its waiting cards now (#493 move 2), and his
+                 "Not relevant" tap must reach every card the page names — so
+                 the intents ride here exactly as they ride the background
+                 panel below. */
+              cardIntents={stateQuery.data.cardIntents}
+              onIntent={markCard}
+              intentPendingCard={cardIntentMutation.isPending ? flyingCard : null}
+            />
 
             {/* ⚠ REVERSED BY HIS ORDER (#437). This said "ABOVE the program
                 (#272) … the only thing on the page that outranks the briefing"

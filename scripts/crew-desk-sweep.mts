@@ -69,6 +69,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { heldStateFromLabels, holdReasonFromBody } from "../shared/crewNextUpHold.js";
+import {
+  CREW_LADDER_GROUP_KEYS,
+  RUNG_LABEL_PREFIX,
+  pipelineGroupFor,
+  rungFromLabels,
+} from "../shared/crewPipelineGroups.js";
 
 const BRIEFING = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -206,6 +212,65 @@ if (ordered === null) {
   changes.push(holds.length === 0
     ? `NEXT UP: no card is held — every row is takeable`
     : `NEXT UP: ${holds.length} held — ${holds.map((i) => `#${i.issueNumber} ${(i as { held: { state: string } }).held.state}`).join(", ")}`);
+}
+
+/* ─── 1b. THE LADDER CARDS — roadmap / parked / design-unbuilt, homed under
+   THE PROGRAM (#493 move 2). Derived through `pipelineGroupFor`, the ONE
+   partition, so a card the switches offer or NEXT UP holds can never also
+   land here. The rung comes from a `rung:` label — TRANSCRIPTION of a rung
+   the record already names, never a shift's sequencing — and an unknown rung
+   is reported out loud rather than dropped or invented. ─── */
+
+const allOpen = gh([
+  "issue", "list",
+  "--state", "open",
+  "--limit", "200",
+  "--json", "number,title,labels",
+]) as Json[] | null;
+
+if (allOpen === null) {
+  skipped.push("LADDER: the open queue could not be read — the ladder cards are left as they were.");
+} else if (allOpen.length >= 200) {
+  skipped.push("LADDER: 200 rows came back, which is the limit — that is a floor, not a list.");
+} else {
+  const rungKeys: string[] = ((briefing.program?.ladder ?? []) as Json[]).map((rung) => String(rung.key));
+  const ladderItems = allOpen
+    .map((row) => {
+      const labels = Array.isArray(row.labels)
+        ? row.labels.map((label: Json) => String(label?.name ?? ""))
+        : [];
+      const group = pipelineGroupFor(labels);
+      if (!CREW_LADDER_GROUP_KEYS.includes(group)) return null;
+      /* A `rung:` label naming a rung the ladder does not hold reads as
+         UNPLACED and is said out loud — silence would launder a typo into a
+         card quietly vanishing from every rung. */
+      const named = labels.filter((label) => label.startsWith(RUNG_LABEL_PREFIX));
+      const rung = rungFromLabels(labels, rungKeys);
+      if (named.length > 0 && rung === null) {
+        skipped.push(`LADDER: #${row.number} carries ${named.join(", ")} but the ladder holds no such rung — treated as unplaced.`);
+      }
+      return {
+        issueNumber: Number(row.number),
+        title: String(row.title).slice(0, 300),
+        kind: group,
+        rung,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    /* Ladder order first (unplaced last), oldest first within a rung — the
+       order he reads the rungs in, never the order gh returns. */
+    .sort((a, b) => {
+      const at = a.rung === null ? rungKeys.length : rungKeys.indexOf(a.rung);
+      const bt = b.rung === null ? rungKeys.length : rungKeys.indexOf(b.rung);
+      return at - bt || a.issueNumber - b.issueNumber;
+    });
+  const beforeLadder = JSON.stringify(briefing.program?.ladderCards?.items ?? null);
+  briefing.program = briefing.program ?? {};
+  briefing.program.ladderCards = { readAt: new Date().toISOString(), items: ladderItems };
+  const placed = ladderItems.filter((item) => item.rung !== null).length;
+  changes.push(JSON.stringify(ladderItems) !== beforeLadder
+    ? `LADDER: ${ladderItems.length} card(s) on the ladder — ${placed} placed under a rung, ${ladderItems.length - placed} rung not yet named`
+    : `LADDER: unchanged (${ladderItems.length}), stamp refreshed`);
 }
 
 /* ─── 2. answered → done, from the issue's own state ─── */

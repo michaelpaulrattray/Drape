@@ -30,12 +30,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CREW_LADDER_GROUP_KEYS,
   CREW_PIPELINE_GROUPS,
-  CREW_PIPELINE_VISIBLE_GROUPS,
+  CREW_PIPELINE_ORPHAN_GROUPS,
   PIPELINE_GROUP_KEY_PREFIX,
   PIPELINE_SWITCHED_KEY,
+  onePlaceViolations,
   pipelineGroupFor,
   pipelineGroupRowKey,
+  rungFromLabels,
 } from "../shared/crewPipelineGroups";
 import { exclusionFor } from "../shared/crewQueueExclusions";
 import { CREW_WORK_CATEGORIES, CREW_WORK_SWITCH_KEYS } from "../shared/crewWorkSwitches";
@@ -144,12 +147,55 @@ describe("the pipeline vocabulary", () => {
     }
   });
 
-  it("the drawn groups are the vocabulary minus the arithmetic — derived, never a second list", () => {
-    expect(CREW_PIPELINE_VISIBLE_GROUPS.map((group) => group.key))
-      .toEqual(CREW_PIPELINE_GROUPS.filter((group) => group.key !== PIPELINE_SWITCHED_KEY).map((group) => group.key));
-    /* POSITIVE CONTROL — the filter actually removed something. */
-    expect(CREW_PIPELINE_VISIBLE_GROUPS.length).toBe(CREW_PIPELINE_GROUPS.length - 1);
-    expect(CREW_PIPELINE_VISIBLE_GROUPS.map((group) => group.key)).not.toContain(PIPELINE_SWITCHED_KEY);
+  it("every group is homed, and `elsewhere` exists exactly when the home is not here (#493)", () => {
+    for (const group of CREW_PIPELINE_GROUPS) {
+      /* The phrase and the home are one fact: a group homed elsewhere with no
+         phrase would silently vanish from the quiet counts line, and a phrase
+         on a group drawn here would count its cards twice. */
+      expect(group.elsewhere === null).toBe(group.home === "here");
+    }
+  });
+
+  it("the pipeline block draws the orphans and only the orphans — derived, never a second list (#493)", () => {
+    expect(CREW_PIPELINE_ORPHAN_GROUPS.map((group) => group.key))
+      .toEqual(CREW_PIPELINE_GROUPS.filter((group) => group.home === "here").map((group) => group.key));
+    /* The one-place rule at the vocabulary: the sections that draw cards are
+       the switches, NEXT UP, the ladder and this block — and no group is in
+       two of them, because `home` is one field. */
+    expect(CREW_PIPELINE_ORPHAN_GROUPS.map((group) => group.key)).toEqual([
+      "blocked", "debt", "lost-and-found", "scope-change", "toolbelt", "patrol", "other", "unfiled",
+    ]);
+    /* POSITIVE CONTROLS — the filter actually removed something, and the
+       doubling his order names cannot come back through this list. */
+    expect(CREW_PIPELINE_ORPHAN_GROUPS.length).toBe(CREW_PIPELINE_GROUPS.length - 5);
+    for (const gone of [PIPELINE_SWITCHED_KEY, "ordered", "roadmap", "parked", "design-unbuilt"]) {
+      expect(CREW_PIPELINE_ORPHAN_GROUPS.map((group) => group.key)).not.toContain(gone);
+    }
+    /* The ladder's population is the other side of the same field. */
+    expect(CREW_LADDER_GROUP_KEYS).toEqual(["parked", "design-unbuilt", "roadmap"]);
+  });
+
+  it("a rung label reads against the ladder's own keys, and a typo is unplaced rather than invented (#493)", () => {
+    const rungs = ["N1", "N2", "N3"];
+    expect(rungFromLabels(["roadmap", "rung:N2"], rungs)).toBe("N2");
+    expect(rungFromLabels(["roadmap"], rungs)).toBeNull();
+    /* A rung the ladder does not hold is UNPLACED — the sweep says so out
+       loud; silently inventing N9 on his page would be worse than either. */
+    expect(rungFromLabels(["rung:N9"], rungs)).toBeNull();
+    /* Two rung labels resolve deterministically to ladder order. */
+    expect(rungFromLabels(["rung:N3", "rung:N1"], rungs)).toBe("N1");
+  });
+
+  it("the one-place checker names a doubled card, and only a doubled card (#493's bar)", () => {
+    /* Negative arm: four disjoint sections are clean. */
+    expect(onePlaceViolations([[493, 494], [16, 203], [484], []])).toEqual([]);
+    /* POSITIVE CONTROL — the checker can fail: one card in two sections is
+       named. A checker that cannot name a duplicate proves nothing (law 2). */
+    expect(onePlaceViolations([[493, 494], [16, 493]])).toEqual([493]);
+    /* A duplicate WITHIN one section is that section's own schema's problem,
+       not a cross-section double — asserted so the checker's question stays
+       the question. */
+    expect(onePlaceViolations([[493, 493], [16]])).toEqual([]);
   });
 });
 

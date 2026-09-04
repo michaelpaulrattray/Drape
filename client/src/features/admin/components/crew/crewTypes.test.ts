@@ -293,3 +293,108 @@ describe("NEXT UP — a skipped row says why, and the reason cannot outlive it (
     expect(heldCount(rowsFor([{ issueNumber: 281, title: "b", urgent: false }]))).toBe(0);
   });
 });
+
+/* ================================================================
+   #493 — THE ONE-PLACE RULE AS A GUARD, NOT A SENTENCE
+   ================================================================ */
+
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import {
+  CREW_LADDER_GROUP_KEYS,
+  CREW_PIPELINE_ORPHAN_GROUPS,
+  PIPELINE_SWITCHED_KEY,
+  onePlaceViolations,
+  pipelineGroupFor,
+} from "@shared/crewPipelineGroups";
+import { exclusionFor } from "@shared/crewQueueExclusions";
+
+describe("#493 — every open card is drawn in exactly one section", () => {
+  /**
+   * The four sections that draw cards, derived from ONE partition over a
+   * fixture of real label shapes — including this card's own awkward ones: a
+   * roadmap card also offered as a small fix, a founder-ordered design card,
+   * a rung-labelled card that is also debt.
+   */
+  const FIXTURE: ReadonlyArray<{ readonly number: number; readonly labels: readonly string[] }> = [
+    { number: 493, labels: ["founder-ordered"] },
+    { number: 404, labels: ["founder-ordered", "design-unbuilt"] },
+    { number: 26, labels: ["debt", "roadmap", "small-fix"] },
+    { number: 108, labels: ["debt", "parked", "seat:janitor"] },
+    { number: 246, labels: ["debt", "roadmap", "rung:N3"] },
+    { number: 203, labels: ["parked", "rung:N2"] },
+    { number: 22, labels: ["design-unbuilt"] },
+    { number: 45, labels: ["debt", "parked", "seat:warden"] },
+    { number: 219, labels: ["urgent"] },
+    { number: 7777, labels: [] },
+    { number: 484, labels: ["debt", "roadmap"] },
+  ];
+
+  const drawnSections = (cards: typeof FIXTURE) => {
+    const orphanKeys = CREW_PIPELINE_ORPHAN_GROUPS.map((group) => group.key);
+    const nextUp = cards.filter((card) => card.labels.includes("founder-ordered"));
+    const rest = cards.filter((card) => !card.labels.includes("founder-ordered"));
+    return [
+      /* NEXT UP — the sweep's own rule (#290). */
+      nextUp.map((card) => card.number),
+      /* The switches' titles — the OFFERED population (#324's exclusions). */
+      rest
+        .filter((card) => pipelineGroupFor(card.labels) === PIPELINE_SWITCHED_KEY)
+        .filter((card) => exclusionFor(card.labels) === null)
+        .map((card) => card.number),
+      /* The ladder (#493 move 2) — the partition's ladder homes. */
+      rest
+        .filter((card) => CREW_LADDER_GROUP_KEYS.includes(pipelineGroupFor(card.labels)))
+        .map((card) => card.number),
+      /* The pipeline block — the orphans. */
+      rest
+        .filter((card) => orphanKeys.includes(pipelineGroupFor(card.labels)))
+        .map((card) => card.number),
+    ];
+  };
+
+  it("the four drawn populations are pairwise disjoint over the real label shapes", () => {
+    const sections = drawnSections(FIXTURE);
+    expect(onePlaceViolations(sections)).toEqual([]);
+    /* THE FLOOR, and it is exact rather than approximate: a card not drawn as
+       a title anywhere must be a switch-reached card the panel EXCLUDED for a
+       reason it says out loud in the count's own parenthesis (#324) — here
+       the two parked seat cards. Anything else undrawn is the no-place
+       failure this guard exists to catch. */
+    const drawn = new Set(sections.flat());
+    const undrawn = FIXTURE.filter((card) => !drawn.has(card.number));
+    expect(undrawn.map((card) => card.number).sort((a, b) => a - b)).toEqual([45, 108]);
+    for (const card of undrawn) {
+      expect(pipelineGroupFor(card.labels)).toBe(PIPELINE_SWITCHED_KEY);
+      expect(exclusionFor(card.labels)).not.toBeNull();
+    }
+  });
+
+  it("⚠ POSITIVE CONTROL — a card duplicated into two sections reddens, by name", () => {
+    const sections = drawnSections(FIXTURE).map((section) => [...section]);
+    /* The exact doubling his order names: a NEXT UP card re-listed by the
+       pipeline block. */
+    sections[3].push(493);
+    expect(onePlaceViolations(sections)).toEqual([493]);
+  });
+
+  it("the deployed briefing itself lists no card in both NEXT UP and the ladder", () => {
+    /* The schema refuses this at the parse on the server; this arm reads the
+       REAL file so the rule is also proven where the components consume it. */
+    const briefing = JSON.parse(
+      readFileSync(
+        path.resolve(__dirname, "../../../../../../server/crew/crew-briefing.json"),
+        "utf8",
+      ),
+    ) as {
+      nextUp: { items: { issueNumber: number }[] };
+      program: { ladderCards: { items: { issueNumber: number }[] } };
+    };
+    const nextUpNumbers = briefing.nextUp.items.map((item) => item.issueNumber);
+    const ladderNumbers = briefing.program.ladderCards.items.map((item) => item.issueNumber);
+    expect(onePlaceViolations([nextUpNumbers, ladderNumbers])).toEqual([]);
+    /* The floor: both populations are real, or this arm is reading air. */
+    expect(nextUpNumbers.length + ladderNumbers.length).toBeGreaterThan(0);
+  });
+});

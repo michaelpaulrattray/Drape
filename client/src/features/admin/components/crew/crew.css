@@ -670,6 +670,61 @@
   color: var(--ink);
 }
 
+/*
+  The ladder's head row (#493): the subhead and the queue-read stamp share a
+  baseline, exactly as NEXT UP's head carries its stamp — the cards below are
+  a derived snapshot and the block says when it looked.
+*/
+.dp-crew__ladderhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+/*
+  The per-rung count (#493 move 2): always visible when cards wait, and it is
+  the TAP that reveals them — a real button, quiet like the "Not relevant" tap
+  beside the titles it opens, because on this page a count is information and
+  a control must not out-shout the reading it serves.
+*/
+.dp-crew__rungcount {
+  flex: none;
+  padding: 1px var(--s-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-btn);
+  background: transparent;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.dp-crew__rungcount:hover {
+  color: var(--ink);
+  border-color: var(--borderSoft);
+}
+
+.dp-crew__rungcount[aria-expanded="true"] {
+  color: var(--ink);
+  border-color: var(--borderSoft);
+}
+
+/* The expanded cards sit inside the rung's own indent, under the title. */
+.dp-crew__rungdrop {
+  margin-left: calc(56px + var(--s-5) + 2px);
+  margin-bottom: var(--s-2);
+}
+
+/* The quiet kind word on a ladder row — *parked*, *unbuilt design* (#493). */
+.dp-crew__cardkind {
+  flex: none;
+  font: 400 10px var(--font-sans);
+  color: var(--faint);
+}
+
 /* --------------------------------------------------------- needs you (§6) */
 
 /*
@@ -823,6 +878,22 @@
 .dp-crew__hold--you {
   font-weight: 500;
   color: var(--ink);
+}
+
+/*
+  The chip as a CROSS-REFERENCE (#493 move 3): when a queued row is waiting on
+  him, the words jump to the Needs-you card asking the question. An underline
+  on hover only — the chip's words are already the promise, and a standing
+  underline would make the one linked chip louder than the urgent word beside
+  it.
+*/
+a.dp-crew__hold {
+  text-decoration: none;
+}
+
+a.dp-crew__hold:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .dp-crew__urgent {

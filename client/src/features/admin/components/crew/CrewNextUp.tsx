@@ -98,14 +98,27 @@ export function CrewNextUp({
                     end of the line is what makes a row wrap to three lines. */}
                 {row.hold?.because && <span className="dp-crew__rowwhy">{row.hold.because}</span>}
               </span>
-              {row.hold && (
+              {row.hold && (row.hold.kind === "you" && row.holdingCardId !== null ? (
+                /* THE CHIP IS THE CROSS-REFERENCE (#493 move 3): "Waiting on
+                   you" and the Needs-you card asking the question are one fact
+                   in two sections, so the chip goes to the card instead of
+                   both describing it. A plain fragment anchor — no router, no
+                   state, and the card's own id is the address. */
+                <a
+                  href={`#crew-card-${row.holdingCardId}`}
+                  data-testid={`crew-next-up-hold-${row.issueNumber}`}
+                  className="dp-crew__hold dp-crew__hold--you"
+                >
+                  {row.hold.word}
+                </a>
+              ) : (
                 <span
                   data-testid={`crew-next-up-hold-${row.issueNumber}`}
                   className={cn("dp-crew__hold", row.hold.kind === "you" && "dp-crew__hold--you")}
                 >
                   {row.hold.word}
                 </span>
-              )}
+              ))}
               {row.urgent && <span className="dp-crew__urgent">urgent</span>}
               <span className="dp-crew__mono">#{row.issueNumber}</span>
             </li>

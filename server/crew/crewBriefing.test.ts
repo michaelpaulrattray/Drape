@@ -492,3 +492,70 @@ describe("#492 — the at-a-glance label is capped where it cannot be forgotten"
     }
   });
 });
+
+/*
+  #493 — THE ONE-PLACE RULE AND THE RUNG'S EXISTENCE, HELD AT THE PARSE.
+
+  The ladder cards and NEXT UP are written by one sweep from one partition, so
+  these refinements can only fire on a hand edit — and when one does, the rite
+  refuses the edition instead of deploying a page that lists a card twice
+  (the exact doubling his order names) or draws a rung the bar above does not
+  hold. Both arms drive the refusal, not just the acceptance (working law 2).
+*/
+describe("#493 — the briefing cannot list one card in two homes", () => {
+  const valid = () => JSON.parse(readFileSync(briefingPath, "utf8"));
+
+  it("the real file parses, and both populations are real", () => {
+    const parsed = crewBriefingSchema.parse(valid());
+    expect(parsed.program.ladderCards.items.length).toBeGreaterThan(0);
+    expect(parsed.nextUp.items.length).toBeGreaterThan(0);
+  });
+
+  it("⚠ POSITIVE CONTROL — a NEXT UP card copied onto the ladder is REFUSED", () => {
+    const base = valid();
+    const doubled = base.nextUp.items[0].issueNumber;
+    base.program.ladderCards.items.push({
+      issueNumber: doubled,
+      title: "the same card, listed twice",
+      kind: "roadmap",
+      rung: null,
+    });
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/exactly one home/);
+  });
+
+  it("⚠ POSITIVE CONTROL — a rung the ladder does not hold is REFUSED", () => {
+    const base = valid();
+    base.program.ladderCards.items.push({
+      issueNumber: 999999,
+      title: "a card on a rung that does not exist",
+      kind: "roadmap",
+      rung: "N99",
+    });
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/program\.ladder\[\]\.key/);
+  });
+
+  it("⚠ POSITIVE CONTROL — ladder cards with an EMPTY ladder are REFUSED (PR #497 finding 1)", () => {
+    /* The page draws the ladder-cards UI inside the ladder block, so this
+       shape would show the cards nowhere while the quiet line still counts
+       them — the no-place failure, invisible to every disjointness arm. */
+    const base = valid();
+    base.program.ladder = [];
+    /* Placed rungs would fail the rung-names-a-key refinement first; the
+       no-ladder hole is exactly the all-unplaced shape, so drive that. */
+    base.program.ladderCards.items = base.program.ladderCards.items.map(
+      (item: { rung: string | null }) => ({ ...item, rung: null }),
+    );
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/non-empty program\.ladder/);
+    /* And the empty-empty shape stays legal — the degraded state is built
+       from it, and refusing it would crash the page this file may never
+       take down. */
+    base.program.ladderCards.items = [];
+    expect(() => crewBriefingSchema.parse(base)).not.toThrow();
+  });
+
+  it("a duplicated ladder card is refused within its own list too", () => {
+    const base = valid();
+    base.program.ladderCards.items.push({ ...base.program.ladderCards.items[0] });
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/unique/);
+  });
+});

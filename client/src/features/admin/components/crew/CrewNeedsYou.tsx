@@ -68,7 +68,9 @@ export function CrewNeedsYou({
 
       <div className="dp-crew__stack">
         {open.map((card) => (
-          <article key={card.id} className="dp-crew__card">
+          /* The DOM anchor NEXT UP's "Waiting on you" chip jumps to (#493
+             move 3) — the card's stable slug, the same id replies point at. */
+          <article key={card.id} id={`crew-card-${card.id}`} className="dp-crew__card">
             <div className="dp-crew__cardhead">
               <h3 className="dp-crew__title">{card.title}</h3>
               <span className="dp-crew__ref">
