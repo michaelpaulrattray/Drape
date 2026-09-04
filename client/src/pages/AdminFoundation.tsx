@@ -61,7 +61,7 @@ import { AppChrome } from "@/components/AppChrome";
  * shape can be checked against real app chrome before anything is built on it.
  * It is the fixture the light/dark screenshot drive compares
  * (`scripts/drive-foundation-theme-parity.mts`), the surface the design-law
- * drive audits (`scripts/drive-casting-design-laws.mts`), and the page the
+ * drive audits (`scripts/drive-design-laws.mts`), and the page the
  * promotion pass points at
  * (`docs/specs/Casting-ui-ux-design/drape-redesign/PROMOTION-PASS.md`).
  *

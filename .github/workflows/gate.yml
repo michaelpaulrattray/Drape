@@ -274,6 +274,24 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # The design laws' own controls (#512): each law against a synthetic page
+      # built to break it, and a compliant page it must not redden. It proves
+      # the INSTRUMENT, which is working law 2 — a green design-law run over
+      # nineteen surfaces means nothing if the laws cannot fail, and this suite
+      # has been caught passing vacuously twice.
+      #
+      # It runs here because it needs none of what the walk over the real app
+      # needs — no server, no session, no database, no credits — only a
+      # browser, and the runner image ships Chrome. Measured at 15s on the
+      # founder's machine, so it is not path-filtered: a filter is a second
+      # list that drifts (#501), and 15s does not buy one.
+      #
+      # It REFUSES rather than skipping when no browser is found. A control
+      # that quietly does not run does not exist (invariant 7), and a green
+      # check would be the exact failure this whole card is about.
+      - name: Design-law controls (each law must still be able to fail)
+        run: npx tsx scripts/drive-design-laws.mts --controls
+
   founder-gate:
     name: founder-gate
     needs: resolve

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a83f00f6f5837ce0"
+    "sourceFingerprint": "c2b7262ae25861c8"
   },
   "domains": [
     {
@@ -12614,6 +12614,14 @@
     {
       "id": "test:server/deployWatchDecision.test.ts",
       "path": "server/deployWatchDecision.test.ts"
+    },
+    {
+      "id": "test:server/designLawSurfaces.test.ts",
+      "path": "server/designLawSurfaces.test.ts"
+    },
+    {
+      "id": "test:server/designLawTextEntry.test.ts",
+      "path": "server/designLawTextEntry.test.ts"
     },
     {
       "id": "test:server/devServerTrees.test.ts",

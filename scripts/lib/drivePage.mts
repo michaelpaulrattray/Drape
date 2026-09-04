@@ -2,7 +2,7 @@
  * The browser harness these drivers share — one launch, one session, one
  * collector.
  *
- * `drive-casting-design-laws.mts` grew this shape first (puppeteer-core against
+ * `drive-design-laws.mts` grew this shape first (puppeteer-core against
  * the system Edge, an `app_session_id` cookie minted for the run, a check
  * collector that exits non-zero). The self-drive walk needs exactly the same
  * three things, and a second copy of them is the mirror law #4 forbids — two
