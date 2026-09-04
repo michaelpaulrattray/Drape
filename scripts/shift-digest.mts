@@ -35,12 +35,19 @@ import { LAW_SURFACES } from "./lib/lawText.mts";
 import {
   buildDigest,
   DigestRefusal,
+  parseMoneyAuthMap,
   type NextUpRow,
   type Unreadable,
 } from "./lib/shiftDigest.mts";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROGRAM = ".agents/foreman/PROGRAM.md";
+/* The reviewer's charter carries the triage's own money/auth path map. It is
+   READ rather than copied: a second list of money surfaces in this file is the
+   mirror working law 4 is about, and the one it would drift from is the list
+   that decides whether a shift on a session-mint site is handed the
+   access-control section. */
+const CHARTER = "docs/REVIEWER_CHARTER.md";
 const PROMPT = ".agents/foreman/prompt.md";
 const MAILBOX = ".agents/mailbox";
 
@@ -169,6 +176,12 @@ function ghJson(root: string, args: string[]): unknown | Unreadable {
   }
 }
 
+/* Named, because the truncation marker below compares against them: a read that
+   comes back exactly at its limit may have lost rows, and dropping the 61st
+   founder-ordered card silently is how a queue stops being the queue. */
+const NEXT_UP_LIMIT = 60;
+const CLOSED_LIMIT = 40;
+
 function nextUp(root: string, network: boolean): NextUpRow[] | Unreadable {
   if (!network) return { unreadable: "--no-network was passed; NOT an empty queue" };
   const raw = ghJson(root, [
@@ -179,7 +192,7 @@ function nextUp(root: string, network: boolean): NextUpRow[] | Unreadable {
     "--state",
     "open",
     "--limit",
-    "60",
+    String(NEXT_UP_LIMIT),
     "--json",
     "number,title,labels,createdAt",
   ]);
@@ -206,7 +219,7 @@ function closedSince(root: string, utc: string | null, network: boolean): string
     "--search",
     `closed:>=${utc.slice(0, 10)}`,
     "--limit",
-    "40",
+    String(CLOSED_LIMIT),
     "--json",
     "number,title,closedAt",
   ]);
@@ -261,10 +274,14 @@ function main(argv: string[]): number {
       path: surface,
       text: readRequired(root, surface),
     }));
+    const moneyAuthMap = parseMoneyAuthMap(readRequired(root, CHARTER));
 
     const since = previousShift(root);
     const sinceIso = "iso" in since ? since.iso : null;
     const sinceUtc = "utc" in since ? since.utc : null;
+
+    const queue = nextUp(root, options.network);
+    const closed = closedSince(root, sinceUtc, options.network);
 
     digest = buildDigest({
       now: new Date(),
@@ -272,11 +289,16 @@ function main(argv: string[]): number {
       programMd,
       lawSurfaces,
       roots: topLevelDirectories(root),
-      nextUp: nextUp(root, options.network),
+      nextUp: queue,
       patrolClocks: patrolClocks(root),
       since,
       commits: commitsSince(root, sinceIso),
-      closedCards: closedSince(root, sinceUtc, options.network),
+      closedCards: closed,
+      moneyAuthMap,
+      truncated: {
+        nextUp: Array.isArray(queue) && queue.length >= NEXT_UP_LIMIT,
+        closedCards: Array.isArray(closed) && closed.length >= CLOSED_LIMIT,
+      },
       request: { paths: options.paths, flags: options.flags },
       sourceBytes: [PROGRAM, ...LAW_SURFACES.filter((surface) => surface !== "CLAUDE.md")].map(
         (relative) => ({

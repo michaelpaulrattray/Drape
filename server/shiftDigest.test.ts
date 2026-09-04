@@ -38,9 +38,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { LAW_SURFACES } from "../scripts/lib/lawText.mts";
 import {
+  baseName,
   buildDigest,
   DigestRefusal,
   isMoneyAuthPath,
+  isOnMoneyAuthMap,
+  mentionedFileNames,
+  parseMoneyAuthMap,
   mentionedFlags,
   mentionedPaths,
   pathCovers,
@@ -399,5 +403,210 @@ describe("buildDigest", () => {
     expect(digest).toContain("this digest");
     expect(digest).toContain("stands in for");
     expect(digest).toContain("`CLAUDE.md` is deliberately NOT in that arithmetic");
+  });
+});
+
+describe("the money/auth map, read out of the reviewer's charter", () => {
+  const charter = () => readFileSync(path.join(REPO_ROOT, "docs/REVIEWER_CHARTER.md"), "utf8");
+
+  it("parses the REAL charter and expands its alternation shorthand", () => {
+    const map = parseMoneyAuthMap(charter());
+    expect(map).toContain("server/routes/billing");
+    expect(map).toContain("server/routes/emailVerification");
+    expect(map).toContain("server/_core/sdk.ts");
+    /* the charter puts the directory on the first token only; the bare names
+       after it inherit it, and dropping them lost three auth surfaces */
+    expect(map).toContain("server/_core/cookies.ts");
+    expect(map).toContain("server/_core/env.ts");
+    expect(map).toContain("drizzle");
+  });
+
+  it("REFUSES a charter with no map rather than falling back to the word set", () => {
+    expect(() => parseMoneyAuthMap(["# charter", "", "## Something else", "", "nothing"].join("\n"))).toThrow(
+      DigestRefusal,
+    );
+  });
+
+  it("REFUSES a map section that yields no paths", () => {
+    expect(() =>
+      parseMoneyAuthMap(["## The money/auth path map", "", "- nothing quoted here"].join("\n")),
+    ).toThrow(DigestRefusal);
+  });
+
+  it("⚠ THE SESSION-MINT SITE THE WORD SET MISSED is on the map", () => {
+    /* server/routes/emailVerification.ts is invariant 9's own counterexample and
+       neither `email` nor `verification` is a money word - so before the map was
+       read, the unconditional arm stayed dark on the one class of file it exists
+       for, and §5 then said the law was silent about it. */
+    const map = parseMoneyAuthMap(charter());
+    expect(isMoneyAuthPath("server/routes/emailVerification.ts")).toBe(false);
+    expect(isOnMoneyAuthMap("server/routes/emailVerification.ts", map)).toBe(true);
+    for (const surface of ["server/_core/sdk.ts", "server/_core/env.ts", "shared/const.ts", "drizzle/schema.ts"]) {
+      expect(isOnMoneyAuthMap(surface, map), surface).toBe(true);
+    }
+  });
+
+  it("does NOT put an ordinary casting file on the map", () => {
+    const map = parseMoneyAuthMap(charter());
+    expect(isOnMoneyAuthMap("server/casting/promptAuthor.ts", map)).toBe(false);
+    expect(isOnMoneyAuthMap("client/src/features/lobby/Home.tsx", map)).toBe(false);
+  });
+
+  it("⚠ the map's own road is what carries it — asserted on a path NO other road reaches", () => {
+    /* `emailVerification.ts` is also cited by NAME in the law, so an arm on it
+       passes even with the map ignored — a sabotage proved exactly that. This
+       one uses `server/_core/env.ts`, which the law never cites and only the
+       charter's map covers, and it asserts the REASON rather than the arrival. */
+    const map = parseMoneyAuthMap(charter());
+    const withMap = selectLawSections(
+      realSurfaces(),
+      { paths: ["server/_core/env.ts"], flags: [] },
+      realRoots(),
+      map,
+    );
+    const access = withMap.find((choice) => /access control/i.test(choice.section.heading));
+    expect(access, "the charter's map must carry it").toBeDefined();
+    expect(access?.because).toContain("money/auth");
+
+    const withoutMap = selectLawSections(
+      realSurfaces(),
+      { paths: ["server/_core/env.ts"], flags: [] },
+      realRoots(),
+    );
+    expect(
+      withoutMap.some((choice) => /access control/i.test(choice.section.heading)),
+      "and without the map nothing else reaches it — otherwise this arm proves nothing",
+    ).toBe(false);
+  });
+
+  it("carries the access-control section for a mint site once the map is passed", () => {
+    const map = parseMoneyAuthMap(charter());
+    const selected = selectLawSections(
+      realSurfaces(),
+      { paths: ["server/routes/emailVerification.ts"], flags: [] },
+      realRoots(),
+      map,
+    );
+    const access = selected.find((choice) => /access control/i.test(choice.section.heading));
+    expect(access).toBeDefined();
+    expect(access?.section.text).toContain("Enforcement invariants");
+  });
+});
+
+describe("citations the index used to be blind to", () => {
+  it("reads a bare file name cited in backticks", () => {
+    expect(mentionedFileNames("`/api/auth/verify-email` is minted by `emailVerification.ts`")).toContain(
+      "emailVerification.ts",
+    );
+  });
+
+  it("ignores a generic name that names nothing in particular", () => {
+    expect(mentionedFileNames("see `index.ts` and `types.ts`")).toEqual([]);
+  });
+
+  it("baseName takes the last segment", () => {
+    expect(baseName("server/routes/emailVerification.ts")).toBe("emailVerification.ts");
+  });
+
+  it("⚠ SELECTS a section that cites the file by NAME ALONE", () => {
+    /* The unit arms above prove the reader; this proves the SELECTION uses it.
+       A sabotage that disabled the by-name road left every unit arm green —
+       measured, and it is why this arm exists rather than being assumed. */
+    const surface = [
+      {
+        path: "CLAUDE.md",
+        text: [
+          "# Law",
+          "",
+          "## Session issuance",
+          "",
+          "`/api/auth/verify-email` is minted by `emailVerification.ts` and nothing else.",
+          "",
+          "## Something else",
+          "",
+          "no citation here",
+          "",
+        ].join("\n"),
+      },
+    ];
+    const selected = selectLawSections(
+      surface,
+      { paths: ["server/routes/emailVerification.ts"], flags: [] },
+      ROOTS,
+    );
+    expect(selected.map((choice) => choice.section.heading)).toEqual(["Session issuance"]);
+    expect(selected[0].because).toContain("by file name");
+  });
+});
+
+describe("a fenced block is not a heading", () => {
+  const FENCED = [
+    "# THE PROGRAM",
+    "",
+    "## Current focus (ONE thing at a time)",
+    "",
+    "Run the reader:",
+    "",
+    "```",
+    "# this is a shell comment, not a heading",
+    "npx tsx scripts/patrol-clocks.mts",
+    "```",
+    "",
+    "The focus continues after the fence and must survive.",
+    "",
+    "## MAINTENANCE MODE",
+    "",
+    "The team NEVER selects the next feature.",
+    "",
+  ].join("\n");
+
+  it("does not open a phantom section inside a fence", () => {
+    const headings = splitSections("PROGRAM.md", FENCED).map((section) => section.heading);
+    expect(headings).not.toContain("this is a shell comment, not a heading");
+  });
+
+  it("⚠ the law section survives the fence WHOLE — the truncation the fence caused", () => {
+    const split = splitProgram(FENCED);
+    const focus = split.carried.find((section) => /current focus/i.test(section.heading));
+    expect(focus?.text).toContain("The focus continues after the fence and must survive.");
+  });
+
+  it("REFUSES a stray level-1 heading after the first section, whatever caused it", () => {
+    const stray = ["# THE PROGRAM", "", "## Current focus", "", "x", "", "# A STRAY TOP HEADING", "", "lost text"].join("\n");
+    expect(() => splitProgram(stray)).toThrow(/level-1 heading/i);
+  });
+});
+
+describe("bytes the digest must not waste", () => {
+  it("does not carry a ### child beside the ## parent that contains it", () => {
+    const surface = [
+      { path: "CLAUDE.md", text: FIXTURE_CLAUDE },
+    ];
+    const selected = selectLawSections(surface, { paths: ["server/db/boards.ts"], flags: [] }, ROOTS);
+    /* `server/db/boards.ts` is cited inside `### Enforcement invariants`, whose
+       parent `## Access control` contains it. One answer, not two. */
+    expect(selected).toHaveLength(1);
+    expect(selected[0].section.heading).toMatch(/^Access control/);
+  });
+
+  it("marks a queue read that came back at its limit rather than dropping the rest silently", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1, title: "a", labels: [], createdAt: "2026-09-01T00:00:00Z" },
+        ],
+        truncated: { nextUp: true },
+      }),
+    );
+    expect(digest).toContain("TRUNCATED");
+  });
+
+  it("says nothing about truncation when the read was complete", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [{ number: 1, title: "a", labels: [], createdAt: "2026-09-01T00:00:00Z" }],
+      }),
+    );
+    expect(digest).not.toContain("TRUNCATED");
   });
 });

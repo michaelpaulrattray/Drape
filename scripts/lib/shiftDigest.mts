@@ -163,6 +163,87 @@ export function pathWords(requested: string): string[] {
     .map((word) => word.toLowerCase());
 }
 
+/**
+ * The money/auth surfaces, DERIVED from the triage's own map in
+ * `docs/REVIEWER_CHARTER.md` rather than typed a second time here.
+ *
+ * ⚠ **The word set above is not enough on its own, and the review that caught
+ * it named the worst case exactly**: `server/routes/emailVerification.ts` is a
+ * SESSION MINT SITE — invariant 9's own counterexample — and none of its words
+ * (`email`, `verification`) is a money word, so the unconditional arm stayed
+ * dark on the one class of file it exists for. Two files on the same line of
+ * the charter's list were getting opposite treatment.
+ *
+ * The two nets are a UNION and that is deliberate: the charter enumerates the
+ * paths the reviewer must see, the words catch a new file nobody has added to
+ * it yet (`server/routes/refunds.ts` on its first day). Failing toward MORE law
+ * is the only safe direction here.
+ *
+ * The map's first bullet is written in an alternation shorthand —
+ * `server/routes/billing|credits|auth|emailAuth|googleAuth|emailVerification` —
+ * which is expanded here against its own prefix.
+ */
+export function parseMoneyAuthMap(charterText: string): string[] {
+  const heading = /^##.*money\/auth path map.*$/im.exec(charterText);
+  if (!heading) {
+    throw new DigestRefusal(
+      "docs/REVIEWER_CHARTER.md has no money/auth path map section — refusing rather than falling back to a word list, which is how the mirror this reads instead of would come back",
+    );
+  }
+  const rest = charterText.slice(heading.index + heading[0].length);
+  const section = rest.split(/^## /m)[0] ?? "";
+  const paths: string[] = [];
+  for (const bullet of section.split(/\r?\n/).filter((row) => /^\s*-\s/.test(row))) {
+    /* ⚠ THE MAP'S OWN SHORTHAND PUTS THE DIRECTORY ON THE FIRST TOKEN ONLY:
+       "`server/_core/sdk.ts`, `cookies.ts`, `trpc.ts`, `env.ts`". Skipping the
+       bare names dropped THREE auth surfaces including `env.ts` and the session
+       cookie module — measured against the real charter, which is why this is
+       read at the file rather than assumed to be one path per token. */
+    let directory = "";
+    for (const quoted of bullet.matchAll(/`([^`]+)`/g)) {
+      const token = quoted[1].trim();
+      if (!token.includes("/")) {
+        if (directory && /\.[a-z]+$/.test(token)) paths.push(`${directory}${token}`);
+        continue;
+      }
+      directory = token.slice(0, token.lastIndexOf("/") + 1);
+      if (!token.includes("|")) {
+        paths.push(token.replace(/\/+$/, ""));
+        continue;
+      }
+      /* `a/b/x|y|z` -> a/b/x, a/b/y, a/b/z. A bare `x|y` with no prefix is not
+         a path and is skipped by the slash test above. */
+      const cut = token.lastIndexOf("/");
+      const prefix = token.slice(0, cut + 1);
+      for (const leaf of token.slice(cut + 1).split("|")) {
+        if (leaf.trim().length > 0) paths.push(`${prefix}${leaf.trim()}`);
+      }
+    }
+  }
+  if (paths.length === 0) {
+    throw new DigestRefusal(
+      "the money/auth path map yielded no paths — a collector that can come up empty must throw (CLAUDE.md's collector class)",
+    );
+  }
+  return [...new Set(paths)];
+}
+
+/**
+ * Is a requested path one the charter's map names?
+ *
+ * The map writes some members WITHOUT an extension (`server/routes/billing`),
+ * so a bare stem matches the file that stem names as well as the directory.
+ */
+export function isOnMoneyAuthMap(requested: string, mapPaths: readonly string[]): boolean {
+  const target = normalise(requested);
+  return mapPaths.some((entry) => {
+    const mapped = normalise(entry);
+    if (target === mapped) return true;
+    if (target.startsWith(`${mapped}/`)) return true;
+    return /\.(ts|tsx|mts|js|sql)$/.test(target) && target.replace(/\.[a-z]+$/, "") === mapped;
+  });
+}
+
 /** The CLAUDE.md section a money/auth path always receives, matched by heading. */
 const ACCESS_CONTROL_HEADING = /access control/i;
 
@@ -203,9 +284,27 @@ export function splitSections(surface: string, text: string): Section[] {
     });
   };
 
+  /*
+    ⚠ A `#` INSIDE A FENCED BLOCK IS A SHELL COMMENT, NOT A HEADING, and reading
+    it as one is a SILENT-LOSS road rather than a cosmetic one: a phantom level-1
+    section truncates the `##` law section it sits in (breaking this module's
+    "nothing is truncated" promise) and everything after it until the next `##`
+    lands in a level-1 section that `splitProgram`'s level-2 filter discards — so
+    it is carried nowhere and named nowhere, which is the one failure the
+    partition check declares impossible. That check guards the FILTERED list, so
+    it would have stayed green. `PROGRAM.md` carries fenced command examples
+    today; that they hold no `#` line today is luck, not a property.
+  */
+  let inFence = false;
+
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const lineNumber = index + 1;
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
     const headingMatch = HEADING.exec(line);
     const flagMatch = FLAG_BULLET.exec(line);
 
@@ -261,6 +360,39 @@ export function mentionedPaths(sectionText: string, roots: readonly string[]): s
     const root = raw.split("/")[0];
     if (!roots.includes(root)) continue;
     found.add(raw.replace(/[.,;:)]+$/, ""));
+  }
+  return [...found];
+}
+
+/**
+ * Names that carry no information about WHICH file is meant, so a section
+ * mentioning one is not citing your file. Kept short and stated rather than
+ * grown: every addition is a citation the index stops seeing.
+ */
+const GENERIC_FILE_NAMES = new Set([
+  "index.ts",
+  "index.tsx",
+  "types.ts",
+  "utils.ts",
+  "constants.ts",
+  "schema.ts",
+  "env.ts",
+]);
+
+export const baseName = (value: string): string =>
+  normalise(value).split("/").pop() ?? normalise(value);
+
+/**
+ * Bare file names a section cites in backticks — `emailVerification.ts`.
+ *
+ * The generic ones are excluded: `index.ts` names nothing in particular, and
+ * matching on it would attach the same sections to every card in the product.
+ */
+export function mentionedFileNames(sectionText: string): string[] {
+  const found = new Set<string>();
+  for (const quoted of sectionText.matchAll(/`([A-Za-z0-9_.-]+\.(?:ts|tsx|mts|js|mjs|sql|css|yml|yaml|json|md))`/g)) {
+    const name = quoted[1];
+    if (!GENERIC_FILE_NAMES.has(name)) found.add(name);
   }
   return [...found];
 }
@@ -329,6 +461,7 @@ export function selectLawSections(
   surfaces: readonly { readonly path: string; readonly text: string }[],
   request: LawRequest,
   roots: readonly string[],
+  moneyAuthMap: readonly string[] = [],
 ): LawSelection[] {
   const all = surfaces.flatMap((surface) => splitSections(surface.path, surface.text));
   const chosen = new Map<string, LawSelection>();
@@ -346,6 +479,13 @@ export function selectLawSections(
   };
 
   for (const section of all) {
+    /* ⚠ A LEVEL-1 HEADING IS THE DOCUMENT'S TITLE, and its "section" is the
+       whole file — handing that back is exactly what §5 exists not to do. It
+       never surfaced on the real law surfaces only because both of them happen
+       to hold bullet entries and were skipped by the rule below; a surface
+       without them would have shipped the entire document as one answer. */
+    if (section.level === 1) continue;
+
     /* A heading section that CONTAINS flag entries is not itself selected by a
        path its entries mention — that is how a lobby card would inherit the
        whole casting catalogue. Its entries are separately addressable. */
@@ -359,9 +499,16 @@ export function selectLawSections(
     if (holdsEntries) continue;
 
     const paths = mentionedPaths(section.text, roots);
+    const fileNames = mentionedFileNames(section.text);
     for (const requested of request.paths) {
       if (paths.some((mention) => pathCovers(mention, requested))) {
         add(section, `names ${requested}`);
+      } else if (fileNames.includes(baseName(requested))) {
+        /* The law often cites a file by its NAME alone — `emailVerification.ts`
+           at CLAUDE.md's invariant 9 — and a path index that insists on a slash
+           reads those citations as silence. Same class as the backtick defect
+           this file already carries: a real citation the index could not see. */
+        add(section, `names ${baseName(requested)} by file name`);
       }
     }
     if (section.level === 0) {
@@ -374,7 +521,9 @@ export function selectLawSections(
     }
   }
 
-  const moneyAuth = request.paths.filter(isMoneyAuthPath);
+  const moneyAuth = request.paths.filter(
+    (requested) => isMoneyAuthPath(requested) || isOnMoneyAuthMap(requested, moneyAuthMap),
+  );
   if (moneyAuth.length > 0) {
     const accessControl = all.filter(
       (section) => section.level === 2 && ACCESS_CONTROL_HEADING.test(section.heading),
@@ -389,7 +538,25 @@ export function selectLawSections(
     }
   }
 
-  return [...chosen.values()].sort(
+  /* ⚠ A `###` CHILD AND ITS `##` PARENT ARE NOT TWO ANSWERS. A path cited
+     inside a child matches the child and the parent whose text contains it, and
+     carrying both prints the child twice — wrong in bytes only, in a tool whose
+     entire justification is bytes. The parent wins: it is the fuller answer. */
+  const selections = [...chosen.values()];
+  const kept = selections.filter(
+    (choice) =>
+      !selections.some(
+        (other) =>
+          other !== choice &&
+          other.section.surface === choice.section.surface &&
+          other.section.startLine <= choice.section.startLine &&
+          other.section.endLine >= choice.section.endLine &&
+          (other.section.startLine !== choice.section.startLine ||
+            other.section.endLine !== choice.section.endLine),
+      ),
+  );
+
+  return kept.sort(
     (a, b) =>
       a.section.surface.localeCompare(b.section.surface) || a.section.startLine - b.section.startLine,
   );
@@ -405,9 +572,8 @@ export type ProgramSplit = {
 export const PROGRAM_PATH = ".agents/foreman/PROGRAM.md";
 
 export function splitProgram(programMd: string): ProgramSplit {
-  const sections = splitSections(PROGRAM_PATH, programMd).filter(
-    (section) => section.level === 2,
-  );
+  const all = splitSections(PROGRAM_PATH, programMd);
+  const sections = all.filter((section) => section.level === 2);
   if (sections.length === 0) {
     throw new DigestRefusal("PROGRAM.md yielded no `##` sections — refusing rather than printing a digest with no program in it");
   }
@@ -427,6 +593,18 @@ export function splitProgram(programMd: string): ProgramSplit {
   if (carried.length + named.length !== sections.length) {
     throw new DigestRefusal(
       `the PROGRAM split lost a section: ${sections.length} read, ${carried.length} carried, ${named.length} named`,
+    );
+  }
+  /* THE PARTITION CHECK ABOVE ONLY GUARDS THE FILTERED LIST, and the reviewer
+     was right that this is where its blind spot lives: a level-1 heading
+     appearing AFTER the file's first `##` takes text out of every list at once.
+     Fence handling stops the known cause; this refuses the symptom whatever
+     caused it, so the guard does not depend on the fix being complete. */
+  const firstSection = sections[0].startLine;
+  const stray = all.find((section) => section.level === 1 && section.startLine > firstSection);
+  if (stray) {
+    throw new DigestRefusal(
+      `PROGRAM.md has a level-1 heading at line ${stray.startLine} ("${stray.heading}") after its first section — text under it would be carried nowhere and named nowhere`,
     );
   }
   return { carried, named };
@@ -453,6 +631,18 @@ export type DigestInputs = {
   readonly commits: string[] | Unreadable;
   readonly closedCards: string[] | Unreadable;
   readonly request: LawRequest;
+  /**
+   * The money/auth path map, parsed out of `docs/REVIEWER_CHARTER.md`. Empty is
+   * legal (the word set still fires) but the CLI always passes it, and its
+   * parser refuses an empty read.
+   */
+  readonly moneyAuthMap?: readonly string[];
+  /**
+   * A `gh --limit` that came back FULL. The collector doctrine here refuses an
+   * empty answer; a TRUNCATED one is the other half of the same question, and
+   * silently dropping the 61st card is how a queue stops being the queue.
+   */
+  readonly truncated?: { readonly nextUp?: boolean; readonly closedCards?: boolean };
   /** Byte sizes of the sources this digest stands in for, for the footer. */
   readonly sourceBytes: readonly { readonly path: string; readonly bytes: number }[];
 };
@@ -517,6 +707,9 @@ export function buildDigest(inputs: DigestInputs): string {
         `  #${row.number}  ${row.createdAt.slice(0, 10)}  ${row.title}${labels.length > 0 ? `  [${labels.join(", ")}]` : ""}`,
       );
     }
+    if (inputs.truncated?.nextUp) {
+      out.push("  ⚠ TRUNCATED — the read came back at its limit, so there may be more. Run the query yourself.");
+    }
   }
   out.push("");
   out.push("PATROL CLOCKS:");
@@ -560,6 +753,9 @@ export function buildDigest(inputs: DigestInputs): string {
     out.push("  none");
   } else {
     for (const card of inputs.closedCards) out.push(`  ${card}`);
+    if (inputs.truncated?.closedCards) {
+      out.push("  ⚠ TRUNCATED — the read came back at its limit, so there may be more.");
+    }
   }
   out.push("");
   out.push(
@@ -606,7 +802,12 @@ export function buildDigest(inputs: DigestInputs): string {
         ".",
     );
   } else {
-    const selected = selectLawSections(inputs.lawSurfaces, inputs.request, inputs.roots);
+    const selected = selectLawSections(
+      inputs.lawSurfaces,
+      inputs.request,
+      inputs.roots,
+      inputs.moneyAuthMap ?? [],
+    );
     const asked = [...inputs.request.paths, ...inputs.request.flags].join(", ");
     if (selected.length === 0) {
       out.push(
