@@ -274,12 +274,25 @@ produced** (PR #533, both gate review rounds). The check first said a
 disagreement meant one reader was wrong. It does not. Three benign populations
 separate the two counts on a perfectly healthy window: a slice with
 `pointsCost <= 0` or an **unrecorded** refund is a real loss with no ledger row;
-a roll or retry **in flight at read time** has `processing` slices nothing has
-yet had a chance to refund — so slices younger than the ~6-minute recovery window
-are now reported separately and kept OUT of the "did not arrive" figure; and the
-two tables are windowed on their own `createdAt`, so a slice near the boundary
-can fall inside while its refund falls outside. **Only the first is a finding,
-and only once the other two are ruled out by hand.**
+a roll or retry **in flight at read time** has unfinished slices nothing has yet
+had a chance to refund — so slices whose **operation is still live** are now
+reported separately and kept OUT of the "did not arrive" figure; and the two
+tables are windowed on their own `createdAt`, so a slice near the boundary can
+fall inside while its refund falls outside. **Only the first is a finding, and
+only once the other two are ruled out by hand.**
+
+⚠ **That second cause was measured by the WRONG SIGNAL in its first two shapes,
+and the third review round caught it.** It asked whether the slice ROW was
+younger than a six-minute constant — the lease plus one sweep, which is the
+window before a **dead** operation's slices become refundable. A **live**
+operation renews its lease every 30 seconds indefinitely and never becomes
+eligible however long it runs. §A of this very run measures roll p95 at **343 s**
+and a 60-day max of **1,495 s**, so a reading taken beside a live long roll would
+have folded up to eight of its slices into "did not arrive" **and** printed a
+false disagreement beside them. It reads `generation_operations.status` now —
+`claimed`/`running`, the answer the engine already writes down, on the row the
+query was already joining. **Clause 4 of the disappearing-technology law,
+pointed at this one instrument three times in one sitting.**
 
 ⚠ **AND THE SUBJECT OF THE READING WAS WRONG, NOT JUST ITS CAVEAT — the second
 round found the RETRY ROAD.** A retry is a separately paid picture and it settles
@@ -417,8 +430,8 @@ and verified disarmed at the bytes:
 | arm | armed | disarmed |
 |---|---|---|
 | stranded slices dropped from the slice query | `20 … DIFFERS BY +8` | 28, AGREES |
-| recovery window widened so every `processing` row reads as young | 8 slices leave "did not arrive" → `20 (8.1%)`, `DIFFERS BY +8` | 28 (11.3%), AGREES |
-| `castingV2.roll` dropped from the kind list | population empties → `DIFFERS BY +28` | 248 slices, AGREES |
+| in-flight test widened to swallow every unfinished slice | 8 slices leave "did not arrive" → `20 (8.1%)`, `DIFFERS BY +8` | 28 (11.3%), AGREES |
+| `castingV2.roll` dropped from the kind list | population empties → `DIFFERS BY +28` **through the empty branch** | 248 slices, AGREES |
 
 Every figure quoted above is reproducible by running the reader — no number in
 this run came from a hand-written query that is not in the tree (doctrine
@@ -471,8 +484,16 @@ the *"laggy in general"* half of #58. Run 1 said so; run 2 says so again with
 nothing new to add, because saying it twice is the honest alternative to letting
 silence read as health.
 
-**Carded this run:** one — the delete road's erased failure reason (§D), filed
-and not worked, per the anti-boredom rule.
+**Carded this run:** two, both filed and not worked, per the anti-boredom rule —
+**#532**, the delete road's erased failure reason (§D), and **#536**, the
+cross-check's four refund sentences being a hand-copied MIRROR of four inline
+literals in the writer modules (working law 4). The second is the reviewer's
+last finding and it is correct: the comment's own *"a new sentence belongs in
+this list in the same commit"* is a remembered rule, not a derived one, and the
+whole run is a record of remembered rules failing silently over populations that
+have not occurred. It is carded rather than fixed here because the fix touches
+four server modules on the refund path, which is a different diff from a patrol's
+own reader.
 
 ### I. Close
 

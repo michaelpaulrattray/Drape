@@ -265,9 +265,9 @@ console.log(`   denominator: ${refundedFailures} of ${failedRefines} failed refi
 
     1. a slice with `pointsCost <= 0`, or one whose refund failed to record
        (`refundUnrecorded`), is a real loss with no refund row at all;
-    2. a roll or retry IN FLIGHT at read time has `processing` slices that
-       nothing has had a chance to refund yet — so slices younger than the
-       recovery window are reported as still in flight and kept OUT of the "did
+    2. a roll or retry IN FLIGHT at read time has unfinished slices that nothing
+       has had a chance to refund yet — so slices whose OPERATION is still live
+       (`claimed`/`running`) are reported as in flight and kept OUT of the "did
        not arrive" figure;
     3. the two tables are windowed on their own `createdAt`, so a slice near the
        boundary can fall inside while its refund falls outside.
@@ -285,24 +285,41 @@ console.log(`   denominator: ${refundedFailures} of ${failedRefines} failed refi
   sentence below is quoted from its writer, and a new refund sentence on that
   path belongs in this list in the same commit.**
 */
-/* Lease (5 min) + one sweep pass (60s) — CLAUDE.md, "Deploying while a paid roll
-   is in flight": the window before a dead operation's slices become eligible for
-   refund at all. A slice younger than this has not failed to be refunded; it has
-   not been looked at yet. */
-const RECOVERY_WINDOW_MS = 6 * 60 * 1000;
+/*
+  ⚠ IN FLIGHT IS THE OPERATION'S OWN STATE, NOT THE SLICE ROW'S AGE.
+
+  The first shape of this asked whether the slice row was younger than a
+  six-minute constant — lease (5 min) plus one sweep pass (60s), the window
+  before a DEAD operation's slices become eligible for refund at all. That
+  constant answers the wrong question. A LIVE operation renews its lease every 30
+  seconds indefinitely and so never becomes eligible however long it runs:
+  CLAUDE.md's own sentence is that the lease "only ever governed how long a DEAD
+  one kept its rows non-terminal". §A of this run measures roll p95 at 343s and a
+  60-day max of 1,495s — so a reading taken beside a live long roll would have
+  folded up to eight of its slices into "did NOT arrive" and printed a false
+  disagreement beside them.
+
+  `generation_operations.status` records the answer directly, and this query
+  already joins that row. `claimed`/`running` is a settlement that has not
+  happened yet. (`recovery_required` is deliberately NOT in flight: it is a
+  parked failure waiting on support, which is a loss the customer is still
+  carrying.) Clause 4 of the disappearing-technology law pointed at this
+  instrument a third time in one sitting — a constant standing in for a signal
+  the engine already writes down.
+*/
 console.log(`   PAID SLICES (roll + retry) — one generations row per slice, bound to its operation:`);
 const slices = await q(
   `SELECT o.kind AS kind, g.status AS status, g.errorMessage AS errorMessage,
           COUNT(*) AS n,
-          SUM(g.createdAt >= ?) AS young
+          SUM(o.status IN ('claimed', 'running')) AS live
      FROM generations g
      JOIN generation_operations o ON o.id = g.operationId
     WHERE g.createdAt >= ? AND o.kind IN ('castingV2.roll', 'castingV2.retry')
     GROUP BY o.kind, g.status, g.errorMessage ORDER BY n DESC`,
-  [new Date(Date.now() - RECOVERY_WINDOW_MS), since],
+  [since],
 );
 const sliceTotal = slices.reduce((total, row) => total + Number(row.n), 0);
-const sum = (rows: any[], field: "n" | "young" = "n") =>
+const sum = (rows: any[], field: "n" | "live" = "n") =>
   rows.reduce((total, row) => total + Number(row[field] ?? 0), 0);
 /*
   ⚠ THE EMPTY CASE STILL RUNS THE CROSS-CHECK, and that is the whole point of
@@ -318,9 +335,9 @@ const refused = sum(slices.filter((row) => row.status === "failed"));
 /* Neither `completed` nor `failed` — a slice still `pending`/`processing`.
    `failed` is terminal and is never "in flight" however fresh the row is. */
 const unfinished = slices.filter((row) => row.status !== "completed" && row.status !== "failed");
-/* (2) above: a slice younger than the recovery window has not failed to be
-   refunded, it has not been looked at yet. It is reported, never counted. */
-const inFlight = sum(unfinished, "young");
+/* (2) above: a slice whose OPERATION is still live has not failed to be
+   refunded, it has not settled yet. It is reported, never counted. */
+const inFlight = sum(unfinished, "live");
 const stranded = sum(unfinished) - inFlight;
 if (sliceTotal === 0) {
   console.log("   (no paid slices in window — the cross-check below still runs)");
@@ -329,19 +346,19 @@ if (sliceTotal === 0) {
   console.log(
     `   ${sliceTotal} slices paid for · ${arrived} arrived · ${refused} failed (${pct(refused)}) · ` +
       `${stranded} stranded mid-flight (${pct(stranded)}) — did NOT arrive: ${refused + stranded} (${pct(refused + stranded)})` +
-      (inFlight > 0 ? ` · ${inFlight} still in flight (younger than the 6-minute recovery window, not counted)` : ""),
+      (inFlight > 0 ? ` · ${inFlight} still in flight (their operation is live, not counted)` : ""),
   );
   for (const row of slices.filter((r) => r.status !== "completed")) {
     /* The in-flight annotation belongs only to UNFINISHED rows. A `failed` slice
-       is terminal however recently it was written, and labelling a fresh one
-       "still in flight" would be the reader lying about a settled outcome — a
-       defect this row shape actually produced under its own control run before
-       the filter was added. */
-    const young = row.status === "failed" ? 0 : Number(row.young ?? 0);
+       is terminal even while its operation is still finishing the other seven,
+       and labelling it "still in flight" would be the reader lying about a
+       settled outcome — a defect this row shape actually produced under its own
+       control run before the filter was added. */
+    const live = row.status === "failed" ? 0 : Number(row.live ?? 0);
     console.log(
       `     ${String(row.n).padStart(4)}  ${row.kind.replace("castingV2.", "")}  ${row.status}  ` +
         `class ${row.errorMessage ?? "(none recorded)"}` +
-        (young > 0 ? `  (${young} of them still in flight)` : ""),
+        (live > 0 ? `  (${live} of them still in flight)` : ""),
     );
   }
 }
