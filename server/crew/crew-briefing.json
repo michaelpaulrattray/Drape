@@ -1,7 +1,7 @@
 {
-  "edition": 246,
-  "updatedAt": "2026-09-04T19:00:03.749Z",
-  "shift": "Opus · 5 September (the design rules get checked where you are designing — #512)",
+  "edition": 247,
+  "updatedAt": "2026-09-04T19:51:21.122Z",
+  "shift": "Opus (Janitor) — 5 September (the tidy-up seat, and the clock it found broken)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,23 +116,23 @@
     ],
     "chips": [
       {
-        "label": "Waiting on the robots",
+        "label": "Tidying is done",
         "tone": "good",
-        "source": "One more ordered job done — shifts now read a short summary, not the whole rulebook."
+        "source": "The tidy-up seat ran. Our own check is green again for the first time since 31 August."
       },
       {
-        "label": "Four check-ups are late",
+        "label": "Three check-ups still late",
         "tone": "warn",
-        "source": "Still all four. The weekly look-back has run once, on 26 August — next shift takes it."
+        "source": "Tidying is caught up. The look-back, security and speed passes are still waiting."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "82 open · 7 carrying your word · none urgent. One closed tonight (#510); nothing new."
+        "source": "83 open · 6 carrying your word · none urgent. Three closed tonight, two filed by the tidy-up."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T18:58:20.110Z",
+      "readAt": "2026-09-04T19:50:16.859Z",
       "items": [
         {
           "issueNumber": 16,
@@ -3702,6 +3702,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-525-janitor-run3",
+      "title": "The team's own clean-up seat ran, and found the clock it cleans by was broken",
+      "status": "merged",
+      "prNumber": 525,
+      "note": "Nothing here changes the app — this is the team keeping its own workshop in order, which you asked it to do on a schedule. Three things. FIRST, the check that tells a shift whether it has broken anything had been failing for five days straight, on nineteen errors in leftover scratch files nobody owns. A shift that starts against a red check learns to ignore it, which is how the count crept from fifteen to nineteen while every shift honestly reported itself green — none of them caused it, and none of them could see it, because these files never leave this machine and so never reach the robots that check our work. It is green again, and the shift close now runs that check on its own leftovers, so the twentieth one gets caught by the person who wrote it. SECOND, the rule for deleting old scratch is 'older than a week'. It reads the file's last-modified date — and something on 30 August rewrote that date on 270 of 307 files, all to the same hour. So every one of them now looks brand new and nothing can ever be swept. It fails in the quiet direction: rubbish piles up and nothing complains. Tonight's deletions were dated instead against the pages they actually produced, which are saved in the record and cannot be rewritten. THIRD, the ordinary tidying: two abandoned work folders and six megabytes of old logs removed, and a long-running clean-up job finished — 760 leftover folders, the last two of which had been stuck since August."
+    },
+    {
       "id": "pr-522-design-law-surfaces",
       "title": "#512 — the design rules are now checked on every page, not on three of them",
       "status": "merged",
@@ -5125,11 +5132,18 @@
   ],
   "problems": [
     {
-      "id": "patrols-overdue-505",
-      "title": "All four of the team's regular check-ups are overdue",
+      "id": "sweep-clock-broken-526",
+      "title": "The rule for deleting old scratch files can no longer tell what is old",
       "severity": "warning",
       "state": "open",
-      "detail": "Nothing needs doing from you — this is the team reporting on itself, which is what you ordered. Tidying is 3 days late, and the security pass, the speed pass and the weekly look-back are 2 days late each; the look-back has run once in nine days. That last one matters most, because it is the seat that spots the same mistake happening twice, and several of this week's process problems were found by hand instead. Your Process, Housekeeping, Security and Performance switches are all on, so the next shifts will work through them — most overdue first."
+      "detail": "Found by tonight's tidy-up, and it is a workshop problem rather than an app one — no customer is affected and nothing is at risk. The team deletes its own leftover scratch once it is more than a week old, judged by the file's last-modified date. On 30 August, in a single hour, something rewrote that date on 270 of 307 files. They all now look brand new, so the sweep can never fire and the pile only grows. It was found because the previous tidy-up run had deliberately written the real dates down beforehand — otherwise there would have been nothing to compare against. Deliberately NOT patched over tonight: what should replace the date is a real decision, and a lone tidy-up shift changing a deletion rule on its own is exactly what your 'nothing gets deleted quietly' rule is there to stop. The recommendation on the card is to date a file by the piece of work it was written for, since that is saved in the record and cannot be rewritten."
+    },
+    {
+      "id": "patrols-overdue-505",
+      "title": "Three of the team's four regular check-ups are still overdue",
+      "severity": "warning",
+      "state": "open",
+      "detail": "Nothing needs doing from you — this is the team reporting on itself, which is what you ordered. Tidying was 4 days late and RAN TONIGHT, so it is now caught up and next due on 8 September. Still waiting: the weekly look-back, the security pass and the speed pass, each about 3 days late. The look-back matters most, because it is the seat that spots the same mistake happening twice — and tonight produced two more items for it. Your switches are all on, so the next shifts work through them, most overdue first."
     },
     {
       "id": "ladder-rung-n4b-499",
@@ -5436,7 +5450,7 @@
     126
   ],
   "nextUp": {
-    "readAt": "2026-09-04T18:58:19.281Z",
+    "readAt": "2026-09-04T19:50:16.075Z",
     "items": [
       {
         "issueNumber": 243,
