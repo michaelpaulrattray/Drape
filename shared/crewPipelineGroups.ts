@@ -65,7 +65,7 @@
  */
 
 /**
- * The five labels the switch panel reaches (`shared/crewWorkSwitches.ts`'s
+ * The labels the switch panel reaches (`shared/crewWorkSwitches.ts`'s
  * `queueLabel`s), named here so the `switched` group is DERIVED from that
  * vocabulary rather than retyped beside it (working law 4).
  *
@@ -106,7 +106,8 @@ export type CrewPipelineGroup = {
   readonly label: string;
   /**
    * The queue label that puts a card here, or `null` for the three groups that
-   * are defined by something other than one label: `switched` (any of five),
+   * are defined by something other than one label: `switched` (any of the
+   * switch vocabulary's `queueLabel`s),
    * `other` (a label we do not name) and `unfiled` (no label at all).
    */
   readonly queueLabel: string | null;

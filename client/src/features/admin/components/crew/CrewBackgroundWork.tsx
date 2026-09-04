@@ -426,8 +426,9 @@ function CardTitles({
  * `design-unbuilt` and `roadmap` are feature work, and `PROGRAM.md`'s founder
  * law is *"the team NEVER selects the next feature. Ever."* A switch on either
  * is that law with a toggle attached. His card argues the second half too:
- * **eleven switches is worse to operate than five**, on a panel whose stated
- * purpose is one he reads from bed.
+ * **eleven switches is worse to operate than the five there then were**, on a
+ * panel whose stated purpose is one he reads from bed. (Seven since #429, and
+ * his argument is unchanged by the two — the point was never the exact number.)
  *
  * So what each group buys him is not a control — it is the SENTENCE under the
  * count saying why it is not on offer. That is the honest answer to *"how do I

@@ -164,8 +164,10 @@ describe("the partition", () => {
 
   it("⚠ AND LANDS IN EXACTLY ONE — the counts sum to the population they came from", () => {
     /* His bar: *"the counts sum to the real total."* This is that bar as an arm,
-       over a population where five of the seventeen shapes carry two or more
-       labels this vocabulary names. */
+       over a population where a third of the shapes carry two or more labels
+       this vocabulary names — the count is derived from `REAL_SHAPES` itself
+       rather than stated, because a number written here goes stale the next
+       time a shape is added (it did, in the commit that added #429's four). */
     const tally = new Map<string, number>();
     for (const shape of REAL_SHAPES) {
       const key = pipelineGroupFor(shape.labels);

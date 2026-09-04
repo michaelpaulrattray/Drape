@@ -3953,7 +3953,12 @@ export type InsertCrewShiftRunRow = typeof crewShiftRuns.$inferInsert;
  */
 export const crewWorkSwitches = mysqlTable("crew_work_switches", {
   id: int("id").autoincrement().primaryKey(),
-  /** `master` | `bugs` | `security` | `performance` | `housekeeping` | `process`. */
+  /**
+   * `master`, plus one key per entry in `shared/crewWorkSwitches.ts`'s
+   * `CREW_WORK_CATEGORIES`. ⚠ NOT enumerated here on purpose: this comment sits
+   * in the file that decides whether a new category needs a migration, and a
+   * list here that is wrong by two is how someone concludes it does.
+   */
   switchKey: varchar("switchKey", { length: 32 }).notNull(),
   enabled: boolean("enabled").notNull().default(false),
   /** `ctx.user.id`, never from input (invariant 3). */
@@ -3974,9 +3979,10 @@ export type InsertCrewWorkSwitchRow = typeof crewWorkSwitches.$inferInsert;
  *
  * # IT IS THE SHIFTS' HALF, AND IT IS A DERIVED CACHE RATHER THAN A LIST
  *
- * The categories map onto labels that already exist (`bug`, `seat:warden`,
- * `seat:machinist`, `seat:janitor`, `seat:retro`), so a card relabelled in
- * GitHub moves category with nobody touching anything. What this table holds is
+ * The categories map onto labels that already exist — every `queueLabel` in
+ * `shared/crewWorkSwitches.ts` was in use by a seat or the relay before its
+ * switch was, so a card relabelled in GitHub moves category with nobody
+ * touching anything. What this table holds is
  * the COUNT, derived mechanically and never typed by hand — working law 4's
  * "derive, never mirror" with a timestamp attached rather than a second list.
  *
@@ -3991,7 +3997,13 @@ export type InsertCrewWorkSwitchRow = typeof crewWorkSwitches.$inferInsert;
  */
 export const crewQueueCounts = mysqlTable("crew_queue_counts", {
   id: int("id").autoincrement().primaryKey(),
-  /** `bugs` | `security` | `performance` | `housekeeping` | `process`. */
+  /**
+   * TWO populations share this column, which is what makes a new category a row
+   * rather than a migration: a switch category's `key`
+   * (`shared/crewWorkSwitches.ts`), or a pipeline group's key under the
+   * `group:` prefix (`shared/crewPipelineGroups.ts`, #325). The projection
+   * filters each side to its own vocabulary, so neither reads the other's rows.
+   */
   categoryKey: varchar("categoryKey", { length: 32 }).notNull(),
   openCount: int("openCount").notNull(),
   /**
