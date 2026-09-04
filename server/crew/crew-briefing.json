@@ -1,7 +1,7 @@
 {
-  "edition": 244,
-  "updatedAt": "2026-09-04T13:29:12.025Z",
-  "shift": "Opus · 4 September (the patrol clocks, and a park that could never fire — #505 #504)",
+  "edition": 245,
+  "updatedAt": "2026-09-04T15:18:14.594Z",
+  "shift": "Opus · 5 September (a shift reads a digest, not the book — #510)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,21 +118,21 @@
       {
         "label": "Waiting on the robots",
         "tone": "good",
-        "source": "Two more of your ordered jobs done — the team's own check-ups and its stopping rule."
+        "source": "One more ordered job done — shifts now read a short summary, not the whole rulebook."
       },
       {
         "label": "Four check-ups are late",
         "tone": "warn",
-        "source": "All four overdue. The weekly look-back has run ONCE, on 26 August — nine days ago."
+        "source": "Still all four. The weekly look-back has run once, on 26 August — next shift takes it."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "83 open · 8 carrying your word · none urgent. Two closed tonight, none new."
+        "source": "82 open · 7 carrying your word · none urgent. One closed tonight (#510); nothing new."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T13:29:05.285Z",
+      "readAt": "2026-09-04T15:18:17.663Z",
       "items": [
         {
           "issueNumber": 16,
@@ -3658,6 +3658,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-521-shift-digest",
+      "title": "#510 — a shift now reads a 34 KB summary instead of 165 KB of internal documents",
+      "status": "merged",
+      "prNumber": 521,
+      "note": "Your ordered one. Before tonight, every shift read the whole campaign document and the whole feature-flag catalogue — about 165 KB — before it was even allowed to choose what to work on, and it paid that again on the next shift, twelve to twenty-six times a day. It now gets a 34 KB summary written fresh at the moment it launches: the rules that actually bind it, carried word for word and never shortened, plus what changed since the last shift, what is on your NEXT UP list, and which of the team's check-ups are overdue. The long documents are untouched and still on disk — this changes what gets READ, not what is written. When a shift picks a card it asks a second question: 'which rules cover the files I am about to change?' and gets back only those, with one exception that is deliberate — anything touching money or sign-in always gets the whole access-control section whether it mentions the file or not."
+    },
+    {
       "id": "pr-520-patrol-clocks",
       "title": "#505 — the team's regular check-ups now keep their own calendar",
       "status": "merged",
@@ -5364,7 +5371,7 @@
     126
   ],
   "nextUp": {
-    "readAt": "2026-09-04T13:29:04.423Z",
+    "readAt": "2026-09-04T15:18:16.812Z",
     "items": [
       {
         "issueNumber": 243,
@@ -5394,11 +5401,6 @@
       {
         "issueNumber": 508,
         "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
-        "urgent": false
-      },
-      {
-        "issueNumber": 510,
-        "title": "A shift reads a digest, not the book — what changed since your last shift plus the sections you are about to touch",
         "urgent": false
       },
       {
