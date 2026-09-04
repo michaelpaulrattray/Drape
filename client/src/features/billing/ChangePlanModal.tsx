@@ -21,9 +21,14 @@
  * 3. **Compare mode carries a footer primary.** The table is ~595px of content
  *    in a ~367px pane, so every column button sits below the fold; without one,
  *    the most reachable control in a comparison view is a cancellation.
- * 4. **`FITS YOUR USE` outranks `YOU ARE HERE`.** In the prototype the
- *    recommendation fell into a faint fallback branch, making the plan being
- *    sold the dimmest thing in the view built for comparing.
+ * 4. ~~**`FITS YOUR USE` outranks `YOU ARE HERE`.**~~ ⚠ **SUPERSEDED BY HIS
+ *    RULING, #487 (reply #115): *"dont show the fits your use tag on the
+ *    compare table it doesnt look right."*** The rule existed because the
+ *    prototype let the recommendation fall into a faint fallback branch,
+ *    making the plan being sold the dimmest thing in the comparison view. His
+ *    answer is not a different ordering — the tag is off that table, so there
+ *    is nothing left to order. **It is unchanged on the plan cards**, which is
+ *    where he sees it and where he did not object.
  *
  * ## What the reconciliation changed (BRIEF-RECONCILIATION Q3)
  *
@@ -58,7 +63,10 @@
  *    (`formatCreditsPerDollar`), whole numbers that ASCEND up the ladder.
  * 5. **§6c's blurb slot ships EMPTY and says so** — the frames line that was
  *    filling it is what the credits make and now sits in the credits block.
- * 6. **`.dp-plan__tab--inline`** replaces an inline style override.
+ * 6. ~~**`.dp-plan__tab--inline`** replaces an inline style override.~~ The
+ *    inline style is still forbidden and still guarded; the MODIFIER is gone
+ *    with the tag it existed for (#487). `.dp-plan__tab` has one context
+ *    again, which is what item 6 was trying to buy.
  */
 import { useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
@@ -378,7 +386,6 @@ export function ChangePlanModal({
           <CompareGrid
             plans={window5}
             currentId={currentId}
-            recommendedId={recommended?.id ?? null}
             interval={interval}
             costPerFrame={costPerFrame}
             currentIndex={currentIndex}
@@ -622,7 +629,6 @@ export function ChangePlanModal({
 function CompareGrid({
   plans,
   currentId,
-  recommendedId,
   interval,
   costPerFrame,
   currentIndex,
@@ -632,7 +638,6 @@ function CompareGrid({
 }: {
   plans: LadderPlan[];
   currentId: string;
-  recommendedId: string | null;
   interval: Interval;
   costPerFrame: number;
   currentIndex: number;
@@ -696,18 +701,24 @@ function CompareGrid({
         {plans.map((plan) => (
           <span key={plan.id} className={cellClass(plan, "dp-plan__cell--head")}>
             {plan.name}
-            {/* FITS YOUR USE outranks YOU ARE HERE — §6d. */}
-            {plan.id === recommendedId ? (
-              /*
-                ⚠ **A MODIFIER, NOT AN INLINE STYLE** (card 390 item 6). This
-                read `style={{ position: "static", display: "inline-block" }}`,
-                which made `.dp-plan__tab` correct in only one of its two
-                contexts — the card's absolute tab — and left the other one
-                overridden at the element. *"Inline styles beating a class is
-                how the CSS drifts."*
-              */
-              <span className="dp-plan__tab dp-plan__tab--inline">FITS YOUR USE</span>
-            ) : plan.id === currentId ? (
+            {/*
+              ⚠ **`FITS YOUR USE` IS NOT DRAWN HERE — HIS RULING, #487, reply
+              #115, verbatim and entire:** *"dont show the fits your use tag on
+              the compare table it doesnt look right. everything else looks
+              good"*.
+
+              §6d used to say the tag OUTRANKS `YOU ARE HERE` in this cell, and
+              the card proposed relaying the two markers onto separate lines to
+              cure an overlap. He took the shorter answer: the tag comes off the
+              table entirely. It is unchanged on the plan CARDS (`:409`), which
+              is where he has always seen it and where he did not object — this
+              cell was the only place it sat beside a plan name in a five-column
+              grid with nothing between them.
+
+              So there is no ordering question left in this cell: the current
+              column says `YOU ARE HERE` and every other column says nothing.
+            */}
+            {plan.id === currentId ? (
               <span className="dp-plan__youarehere">YOU ARE HERE</span>
             ) : null}
           </span>

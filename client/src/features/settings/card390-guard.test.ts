@@ -313,11 +313,51 @@ describe("card 390 items 1, 3, 5 and 6 — the form of a card", () => {
       Item 6: `style={{ position: "static", display: "inline-block" }}` meant
       `.dp-plan__tab` was only correct in one of its two contexts. *"Inline
       styles beating a class is how the CSS drifts."*
+
+      ⚠ **THE SECOND CONTEXT IS GONE (#487) AND SO IS THE MODIFIER.** This arm
+      used to require `.dp-plan__tab--inline` in both the surface and the CSS,
+      which was correct while the tag sat in the compare head. He ruled the tag
+      off that table, so the modifier had no consumer — and a class kept alive
+      by a test that demands it is worse than the inline style this item was
+      about. The half that survives his ruling is the half that was really the
+      rule: no inline style overriding a class.
     */
     const surface = code(read(MODAL));
     const css = code(read(join(HERE, "settings.css")));
     expect(surface, "an inline style is overriding a class again").not.toMatch(/style=\{\{/);
-    expect(surface).toContain("dp-plan__tab--inline");
-    expect(css).toContain(".dp-plan__tab--inline");
+    /* POSITIVE CONTROL — the reader can see this file's classes at all, so the
+       absence arms below are readings rather than an empty string passing. */
+    expect(surface).toContain("dp-plan__tab");
+    expect(css).toContain(".dp-plan__tab");
+  });
+
+  /*
+    ⚠ HIS RULING ON #487, and it supersedes §6d's ordering rule for this cell.
+    Reply #115, verbatim and entire: *"dont show the fits your use tag on the
+    compare table it doesnt look right. everything else looks good"*.
+
+    Written as an arm rather than trusted to the comment beside it, because the
+    thing that would quietly undo it is somebody re-reading §6d — which still
+    says the tag outranks `YOU ARE HERE` — and putting it back.
+  */
+  /* The card number lives in the comment above, not the title: `#487` is a
+     valid hex literal and `token-guard.test.ts` reads titles as code. */
+  it("⚠ FITS YOUR USE IS NOT IN THE COMPARE TABLE — his ruling", () => {
+    const surface = code(read(MODAL));
+    const compareHead = surface.slice(surface.indexOf("dp-plan__comparegrid"));
+    expect(compareHead.length, "the compare grid was not found — this arm is reading nothing")
+      .toBeGreaterThan(200);
+    expect(compareHead, "the tag is back in the compare table").not.toContain("FITS YOUR USE");
+    /* The dead modifier goes with it — a class whose only consumer was that tag. */
+    expect(surface).not.toContain("dp-plan__tab--inline");
+    expect(code(read(join(HERE, "settings.css")))).not.toContain(".dp-plan__tab--inline");
+    /* ⚠ POSITIVE CONTROLS, and they carry the whole arm. `not.toContain` is
+       green over an empty string, and it is green if the tag simply moved.
+       Both markers it lives beside are asserted PRESENT: the tag on the plan
+       CARDS, which he did not object to and which must not be swept with it,
+       and `YOU ARE HERE`, which is what the compare head still says. */
+    expect(surface, "the tag was removed from the plan cards too — he ruled on the table only")
+      .toContain("FITS YOUR USE");
+    expect(compareHead, "`YOU ARE HERE` went with it").toContain("YOU ARE HERE");
   });
 });
