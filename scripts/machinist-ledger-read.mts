@@ -236,47 +236,115 @@ console.log(`   denominator: ${refundedFailures} of ${failedRefines} failed refi
     it is refunded by a different road (the recovery sweep, not `failCandidate`),
     and collapsing them would hide whichever one grew.
 
+  ⚠ AND THE ROW COUNT SURVIVES A CAST DELETION ONLY BY AN ACCIDENT WORTH
+  NAMING. `finalCastDeletion.ts` scrubs `generations` too — it NULLs
+  `errorMessage` AND `operationId` on every row carrying the deleted `modelId`,
+  which would erase the class and break the very JOIN below. Roll slices escape
+  because `createGeneration` writes them with NO `modelId` (`rollService.ts`, the
+  `variation:` step), so the `where(eq(generations.modelId, …))` never matches
+  them. That is a property of the writer, not a guarantee of the reader: a slice
+  that ever starts carrying a `modelId` disappears from this reading silently and
+  the totals below simply get smaller. Section C's fence line names the same
+  scrub on the OPERATION side; this is its other half.
+
   The money ledger is printed beside it as a SECOND READER that shares no
-  resolver with the first: "Casting candidate did not arrive" is written by
-  `recordRefund`, counted on `point_transactions`, and if the two disagree one of
-  them is wrong. They agreed exactly on both windows when this was written.
+  resolver with the first. ⚠ BUT A DIFFERENCE IS NOT AUTOMATICALLY A DEFECT, and
+  saying so was this block's own first mistake — the same over-claim shape the
+  run above was written to catch. FOUR benign populations make the two counts
+  differ on a perfectly healthy window:
+
+    1. a `render_fault` slice refunds under a DIFFERENT sentence ("This tile came
+       back as a contact sheet rather than a portrait"), so it is counted below —
+       both sentences are summed for exactly this reason;
+    2. a slice with `pointsCost <= 0`, or one whose refund failed to record
+       (`refundUnrecorded`), is a real loss with no refund row at all;
+    3. a roll IN FLIGHT at read time has `processing` slices that nothing has had
+       a chance to refund yet — so slices younger than the recovery window are
+       reported as still in flight and kept OUT of the "did not arrive" figure;
+    4. the two tables are windowed on their own `createdAt`, so a slice near the
+       boundary can fall inside while its refund falls outside.
+
+  So the line says AGREES or reports the difference and names what can cause it.
+  Only (2) is a finding, and only after (1), (3) and (4) are ruled out by hand.
 */
+/* Lease (5 min) + one sweep pass (60s) — CLAUDE.md, "Deploying while a paid roll
+   is in flight": the window before a dead operation's slices become eligible for
+   refund at all. A slice younger than this has not failed to be refunded; it has
+   not been looked at yet. */
+const RECOVERY_WINDOW_MS = 6 * 60 * 1000;
 console.log(`   the roll's SLICES — one generations row per slice, bound to its operation:`);
 const slices = await q(
-  `SELECT g.status AS status, g.errorMessage AS errorMessage, COUNT(*) AS n
+  `SELECT g.status AS status, g.errorMessage AS errorMessage,
+          COUNT(*) AS n,
+          SUM(g.createdAt >= ?) AS young
      FROM generations g
      JOIN generation_operations o ON o.id = g.operationId
     WHERE g.createdAt >= ? AND o.kind = 'castingV2.roll'
     GROUP BY g.status, g.errorMessage ORDER BY n DESC`,
-  [since],
+  [new Date(Date.now() - RECOVERY_WINDOW_MS), since],
 );
 const sliceTotal = slices.reduce((total, row) => total + Number(row.n), 0);
 if (sliceTotal === 0) {
   console.log("   (no roll slices in window)");
 } else {
-  const arrived = slices.filter((row) => row.status === "completed").reduce((t, r) => t + Number(r.n), 0);
-  const refused = slices.filter((row) => row.status === "failed").reduce((t, r) => t + Number(r.n), 0);
-  const stranded = sliceTotal - arrived - refused;
+  const sum = (rows: any[], field: "n" | "young" = "n") =>
+    rows.reduce((total, row) => total + Number(row[field] ?? 0), 0);
+  const arrived = sum(slices.filter((row) => row.status === "completed"));
+  const refused = sum(slices.filter((row) => row.status === "failed"));
+  /* Neither `completed` nor `failed` — a slice still `pending`/`processing`.
+     `failed` is terminal and is never "in flight" however fresh the row is. */
+  const unfinished = slices.filter((row) => row.status !== "completed" && row.status !== "failed");
+  /* (3) above: a slice younger than the recovery window has not failed to be
+     refunded, it has not been looked at yet. It is reported, never counted. */
+  const inFlight = sum(unfinished, "young");
+  const stranded = sum(unfinished) - inFlight;
   const pct = (n: number) => `${((n / sliceTotal) * 100).toFixed(1)}%`;
   console.log(
     `   ${sliceTotal} slices paid for · ${arrived} arrived · ${refused} failed (${pct(refused)}) · ` +
-      `${stranded} stranded mid-flight (${pct(stranded)}) — did NOT arrive: ${refused + stranded} (${pct(refused + stranded)})`,
+      `${stranded} stranded mid-flight (${pct(stranded)}) — did NOT arrive: ${refused + stranded} (${pct(refused + stranded)})` +
+      (inFlight > 0 ? ` · ${inFlight} still in flight (younger than the 6-minute recovery window, not counted)` : ""),
   );
   for (const row of slices.filter((r) => r.status !== "completed")) {
-    console.log(`     ${String(row.n).padStart(4)}  ${row.status}  class ${row.errorMessage ?? "(none recorded)"}`);
+    /* The in-flight annotation belongs only to UNFINISHED rows. A `failed` slice
+       is terminal however recently it was written, and labelling a fresh one
+       "still in flight" would be the reader lying about a settled outcome — a
+       defect this row shape actually produced under its own control run before
+       the filter was added. */
+    const young = row.status === "failed" ? 0 : Number(row.young ?? 0);
+    console.log(
+      `     ${String(row.n).padStart(4)}  ${row.status}  class ${row.errorMessage ?? "(none recorded)"}` +
+        (young > 0 ? `  (${young} of them still in flight)` : ""),
+    );
   }
-  /* The second reader. Same event, different table, no shared resolver. */
+  /*
+    The second reader. Same event, different table, no shared resolver — and BOTH
+    slice-refund sentences, because a render fault refunds under its own line and
+    counting one of the two would manufacture a disagreement out of a healthy
+    window (finding 1 on PR #533).
+  */
   const arrivalRefunds = await q(
-    `SELECT COUNT(*) AS n, SUM(amount) AS credits FROM point_transactions
-      WHERE createdAt >= ? AND type = 'refund' AND description = 'Casting candidate did not arrive'`,
+    `SELECT description, COUNT(*) AS n, SUM(amount) AS credits FROM point_transactions
+      WHERE createdAt >= ? AND type = 'refund'
+        AND description IN ('Casting candidate did not arrive',
+                            'This tile came back as a contact sheet rather than a portrait')
+      GROUP BY description ORDER BY n DESC`,
     [since],
   );
-  const ledgerSays = Number(arrivalRefunds[0]?.n ?? 0);
-  const agree = ledgerSays === refused + stranded;
+  const ledgerSays = sum(arrivalRefunds);
+  const ledgerCredits = arrivalRefunds.reduce((total, row) => total + Number(row.credits ?? 0), 0);
+  const difference = ledgerSays - (refused + stranded);
   console.log(
-    `     cross-check on the money ledger ("Casting candidate did not arrive"): ${ledgerSays} refunds ` +
-      `for ${arrivalRefunds[0]?.credits ?? 0} credits — ${agree ? "AGREES" : "⚠ DISAGREES with the slice count above"}`,
+    `     cross-check on the money ledger (both slice-refund sentences): ${ledgerSays} refunds ` +
+      `for ${ledgerCredits} credits — ` +
+      (difference === 0
+        ? "AGREES"
+        : `DIFFERS BY ${difference > 0 ? "+" : ""}${difference}. Benign causes first: a zero-cost or ` +
+          "unrecorded refund, or a slice whose refund fell the other side of the window boundary. " +
+          "A difference is a finding only once those are ruled out by hand."),
   );
+  for (const row of arrivalRefunds) {
+    console.log(`       ${String(row.n).padStart(4)}  ${row.credits} cr  "${row.description}"`);
+  }
 }
 
 /*

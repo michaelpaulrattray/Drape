@@ -264,10 +264,27 @@ that could drift. **The 46 days BEFORE this window ran at 44 of 1,648 = 2.7%,**
 so the recent rate is **four times** the rate that preceded it.
 
 **Both figures are confirmed by a second reader that shares no resolver with the
-first**: the refund sentence *"Casting candidate did not arrive"* on
-`point_transactions` stands at **28 refunds / 560 credits** (14d) and **72 /
-1,440** (60d) — agreeing exactly with the slice counts on both windows. The
-reader prints that comparison every run and says AGREES or DISAGREES.
+first**: the slice-refund sentences on `point_transactions` stand at **28 refunds
+/ 560 credits** (14d) and **72 / 1,440** (60d) — agreeing exactly with the slice
+counts on both windows. The reader prints that comparison every run.
+
+⚠ **What that comparison does NOT prove was over-claimed in the first draft of
+this run's own instrument, and the correction is worth more than the agreement**
+(PR #533, gate review finding 1). The check said a disagreement meant one reader
+was wrong. It does not. Four benign populations separate the two counts on a
+perfectly healthy window: a **`render_fault`** slice refunds under its own
+sentence (*"This tile came back as a contact sheet rather than a portrait"* —
+both sentences are summed now, and the second has not fired in 60 days, which is
+exactly why the first draft read AGREES and looked fine); a slice with
+`pointsCost <= 0` or an **unrecorded** refund is a real loss with no ledger row;
+a roll **in flight at read time** has `processing` slices nothing has yet had a
+chance to refund — so slices younger than the ~6-minute recovery window are now
+reported separately and kept OUT of the "did not arrive" figure; and the two
+tables are windowed on their own `createdAt`, so a slice near the boundary can
+fall inside while its refund falls outside. **Only the second is a finding, and
+only once the other three are ruled out by hand.** This is the same over-claim
+shape §C below was written to catch, committed in the very run that catches it —
+which is the honest reason it is written down here rather than quietly fixed.
 
 ### C. AND THE CLASS WAS ALREADY WRITTEN DOWN — the ledger was not reading it
 
@@ -283,6 +300,16 @@ rows, all time. Both are true. **The conclusion drawn from them was wrong.**
 `rollService.ts` writes the computed `failureClass` into the slice's own
 `generations` row (`errorMessage`), and `generations` is purged only by account
 or Cast deletion — so the class has been sitting there, in full, the whole time.
+
+⚠ **And it survives a Cast deletion by an accident, not by a guarantee — stated
+here because §D's own closing rule demands it.** `finalCastDeletion.ts` scrubs
+`generations` as well: it NULLs `errorMessage` **and `operationId`** on every row
+carrying the deleted `modelId`, which would erase the class *and* break the JOIN
+this whole reading stands on. Roll slices escape only because `createGeneration`
+writes them with **no `modelId`** (the `variation:` step). That is a property of
+the writer. A slice that ever starts carrying one vanishes from this reading
+silently, and the totals above simply get smaller — so the reader's comment block
+names it beside the query rather than leaving it to be rediscovered.
 
 **The ledger was buying that signal and throwing it away.** That is the
 disappearing-technology law's clause 4 — *read what the engine already gives you
@@ -352,17 +379,26 @@ unexplained; the durable fix is carded, not built (see §H).
    into `failed` (a slice stranded when its operation died is refunded by the
    recovery sweep, not by `failCandidate`, and collapsing them would hide
    whichever one grew);
-2. **the money-ledger cross-check** printed beside it, which says AGREES or
-   DISAGREES rather than leaving a reader to compare two numbers by eye;
+2. **the money-ledger cross-check** printed beside it — **both** slice-refund
+   sentences, saying AGREES or reporting the difference **and naming what can
+   benignly cause one**, rather than leaving a reader to compare two numbers by
+   eye or to read a difference as a defect;
 3. **the fence line** — failures whose `errorCode` a later Cast deletion erased,
    named as erased rather than printed as unexplained.
 
 **The cross-check was proven able to fail before its verdict was believed**
 (working law 2): with the stranded slices dropped from the slice query it read
-*"20 … ⚠ DISAGREES"* against the ledger's 28; restored, both windows read
+*"20 … DIFFERS BY +8"* against the ledger's 28; restored, both windows read
 AGREES. Every figure quoted above is reproducible by running the reader — no
 number in this run came from a hand-written query that is not in the tree
 (doctrine entry 5).
+
+⚠ **That control passed and the instrument was still wrong, which is the lesson
+of this run and not a footnote.** A negative control proves a checker *can* fire;
+it says nothing about whether the checker fires for the RIGHT reasons, and the
+gate review found four ways this one fires on a healthy window. **A driven
+control is a floor, never coverage** — the arms above are kept, and the reading
+that actually improved the instrument was a reviewer enumerating the writers.
 
 ### G. Attempted and reverted
 
