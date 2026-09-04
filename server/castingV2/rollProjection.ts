@@ -178,9 +178,9 @@ export type RollProjection = {
    */
   style: CastStyle | null;
   /**
-   * WHY THE AUTHOR SAT THIS SHEET OUT — rows written before #154.
+   * WHY THE AUTHOR SAT THIS SHEET OUT — two vocabularies, one line on the sheet.
    *
-   * Until the family clause landed, a roll the author road could not carry
+   * Rows written before #154: a roll the author road could not carry
    * under `CASTING_CREATIVE_REGISTER_SCOPE` — a FOLLOW (`anchored`) or a roll
    * carrying a chip unlock or override (`edited`) — composed HOUSE, and
    * `briefCompiler` recorded the reason on the row (`register: { kind:
@@ -188,10 +188,21 @@ export type RollProjection = {
    * still project here. Until this field the reason
    * reached the ROW and never the SHEET: the customer saw an authored sheet,
    * tapped Follow or removed a chip, and got a sheet with no prompt record, no
-   * settings line and no word about why — the author simply vanished. Null on
-   * every author register and on every unflagged roll (which has no register
-   * at all), so an unflagged sheet is byte-identical to today's. Read through a
-   * validator like `imagination`: an unknown reason is null, never forwarded.
+   * settings line and no word about why — the author simply vanished.
+   *
+   * `static` (#252, his ruling on the card, 2026-08-30: *"(a) so the customer
+   * isn't lied to"*): a MAX roll whose author was refused twice by the road's
+   * own guards, or whose author call failed — the customer's words + the block
+   * stood, `mode: "static"` on the row. The row was careful to stay
+   * distinguishable and the SHEET was not: it said "Max imagination" and drew
+   * the prompt record with nothing marking that nobody authored it. One MAX
+   * call in five lost its author at the measured entrance (card #252), so this
+   * is a line a paying customer will actually meet.
+   *
+   * Null on every other register and on every unflagged roll (which has no
+   * register at all), so an unflagged sheet is byte-identical to today's. Read
+   * through a validator like `imagination`: an unknown reason is null, never
+   * forwarded.
    */
   authorSatOut: AuthorSatOutReason | null;
   /**
@@ -695,15 +706,31 @@ export function readCastStyle(compiledBrief: unknown): CastStyle | null {
  * reason this list does not know projects null, and the arm in
  * `rollProjection.test.ts` that reads a made-up reason is what keeps that
  * honest rather than silent).
+ *
+ * ⚠ `static` is NOT in this list on purpose: it is not a `houseBecause` value
+ * and no house row has ever carried it — it is derived below from an author
+ * register's own `mode`, the field the compiler has always written when the
+ * author was refused twice or failed (#252). A house row saying
+ * `because: "static"` stays null, exactly like any other word this vocabulary
+ * does not know.
  */
 export const AUTHOR_SAT_OUT_REASONS = ["anchored", "edited"] as const;
-export type AuthorSatOutReason = (typeof AUTHOR_SAT_OUT_REASONS)[number];
+export type AuthorSatOutReason = (typeof AUTHOR_SAT_OUT_REASONS)[number] | "static";
 
 export function readAuthorSatOut(compiledBrief: unknown): AuthorSatOutReason | null {
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;
   if (!register || typeof register !== "object") return null;
-  const { kind, because } = register as { kind?: unknown; because?: unknown };
+  const { kind, because, mode } = register as { kind?: unknown; because?: unknown; mode?: unknown };
+  /*
+    #252 (a), his ruling: a MAX roll that lost its author says so. `mode` is the
+    row's own record ("static" = refused twice or the call failed; seed + block
+    stood) — no other field is consulted, so a row written before `mode`
+    existed projects null here rather than a guess. Production held no such row
+    at the card's reading (0 of 4 MAX rolls), so nothing already rendered
+    changes meaning.
+  */
+  if (kind === "author") return mode === "static" ? "static" : null;
   if (kind !== "house") return null;
   return (AUTHOR_SAT_OUT_REASONS as readonly unknown[]).includes(because) ? (because as AuthorSatOutReason) : null;
 }
