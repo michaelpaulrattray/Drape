@@ -1,7 +1,7 @@
 {
-  "edition": 247,
-  "updatedAt": "2026-09-04T19:51:21.122Z",
-  "shift": "Opus (Janitor) — 5 September (the tidy-up seat, and the clock it found broken)",
+  "edition": 248,
+  "updatedAt": "2026-09-04T21:35:23.766Z",
+  "shift": "Fable — 5 September (#243: the anatomy rule is species now — your sentence, your four checks)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T19:50:16.859Z",
+      "readAt": "2026-09-04T21:34:04.408Z",
       "items": [
         {
           "issueNumber": 16,
@@ -1238,7 +1238,7 @@
       "workedExample": null,
       "options": [],
       "recommendation": null,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T02:20:00+10:00",
       "issueNumber": 243
     },
@@ -1783,6 +1783,37 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "species-court-243-strips",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 243,
+      "filedAt": "2026-09-04T21:35:23.766Z",
+      "title": "Your species sentence is in — the four checks you ordered, at the frames",
+      "question": "Your order, run exactly as written: the sentence 'Show anatomy the species implies, even when the brief doesn't name the part' is in the creature lane now, and your four checks ran before it shipped. Do the strips read right to your eye? Goth: four closed mouths, no fangs — your rollback condition did not fire. Lamia: coils in frame on all four, same as last week's row — the sentence is not wrong by your own test. Anglerfish: the jaw stays. Sphinx: wings on BOTH rows — the lane was already doing the right thing, exactly as you said; the sentence is the paper catching up. People lane is untouched, proven at the bytes. If any strip fails your eye, say the word and the sentence comes back out.",
+      "frames": [
+        {
+          "key": "crew-eye/46117985-3ce1-4e14-84b0-67cf9c6fc33a.jpg",
+          "caption": "Goth woman — the guard rail. Four frames, human lane, byte-identical to today: closed mouths, no fangs.",
+          "arm": "goth"
+        },
+        {
+          "key": "crew-eye/44ea16c0-4653-475a-b93b-9d40248f6620.jpg",
+          "caption": "Lamia — top row last week's frames, bottom row with your sentence: coils kept, 4/4 both rows.",
+          "arm": "lamia"
+        },
+        {
+          "key": "crew-eye/ebb5695a-ae34-4dfd-a655-eba6f9d8be3a.jpg",
+          "caption": "Anglerfish — top row last week, bottom row with your sentence: the angler jaw stays.",
+          "arm": "anglerfish"
+        },
+        {
+          "key": "crew-eye/b85953e2-05e1-46e0-94d4-ac31dd26fdde.jpg",
+          "caption": "Sphinx — top row today's lane WITHOUT the sentence, bottom row with it: wings on all eight. The lane already implied the species; now the written rule says so too.",
+          "arm": "sphinx"
+        }
+      ]
+    },
     {
       "id": "possibly-fixed-494-frames",
       "state": "done",
@@ -2953,7 +2984,7 @@
       "id": "creature-widening-243-strips",
       "title": "Three creatures, each one with and without the creature lane",
       "question": "WHAT YOU ARE JUDGING. Three strips. In each one the TOP row is today's studio and the BOTTOM row is the creature lane, four pictures each, same brief, nothing else changed. None of the three briefs says anything at all about a mouth.\n\nSTRIP ONE — THE ANGLERFISH. This is the finding. Top: a person with grey skin and a closed human mouth, four times. Bottom: the anglerfish's own jaw and teeth, at rest. Does the bottom row read as a creature you would cast, and does the top row read as the failure you described?\n\nSTRIP TWO — THE ONI, with the tusks NOT typed. This is your oni brief from two nights ago with the words \"prominent lower tusks\" deleted. Top: four bearded men whose mouths are basically human. Bottom: four heavier jaws with the tusks seated outside the upper lip. My eye says the bottom row is right; the pixel-counter said the opposite, which is the tool defect on the card.\n\nSTRIP THREE — THE LAMIA, and this one is a QUESTION not a result. Both rows have a closed mouth and no tongue, so it tells us nothing about your tongue case. But look at the bottom row's serpent coils: they are in all four, and in none of the top four — and her brief never says \"tail\".",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T02:20:00+10:00",
       "issueNumber": 243,
       "cardId": "creature-widening-243",
@@ -3701,6 +3732,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-528-species-sentence",
+      "title": "A lamia stays a lamia even when nobody typed 'tail' — your species rule is the written law now",
+      "status": "merged",
+      "prNumber": 528,
+      "note": "Your 30 August order, built and measured: the creature lane's rule said 'anatomy the description names' and you ruled that too narrow — tightening it would turn a lamia into a woman in a dress. Your sentence is in the block now, one word adapted and declared ('brief' is 'description' inside the block, which is what the block calls the customer's text). Your four checks ran before the merge, $1.11 of house money, judged at the frames and never by the pixel counter: the goth grew no fangs, the lamia kept her coils, the anglerfish kept its jaw, the sphinx had wings with and without the sentence — so nothing a customer sees changes today; what changes is that the written rule can no longer be read the narrow way you forbade. A human brief still composes exactly today's bytes, proven before a cent was spent. Strips are in your gallery."
+    },
     {
       "id": "pr-525-janitor-run3",
       "title": "The team's own clean-up seat ran, and found the clock it cleans by was broken",
@@ -5450,13 +5488,8 @@
     126
   ],
   "nextUp": {
-    "readAt": "2026-09-04T19:50:16.075Z",
+    "readAt": "2026-09-04T21:34:03.587Z",
     "items": [
-      {
-        "issueNumber": 243,
-        "title": "#232's RENDER half is unproven: the creature mouth line needs a fixture whose seed does NOT name the anatomy",
-        "urgent": false
-      },
       {
         "issueNumber": 252,
         "title": "The MAX author is refused by our own guards 54% of the time and loses its author entirely 21% — and the sheet still says 'Max'",
