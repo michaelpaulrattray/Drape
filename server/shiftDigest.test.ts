@@ -385,6 +385,45 @@ describe("buildDigest", () => {
     expect(digest).toContain("No paths or flags were named");
   });
 
+  it("⚠ POINTS at a citation that lives inside a section it does not carry, instead of denying it", () => {
+    /*
+      The failure this closes: a path cited only inside a level-1 preamble or an
+      entry-holding section was selected by nothing, and §5 then printed "the
+      surfaces were read and no section covers it" — a confident denial where the
+      module's own doctrine is fail toward a POINTER. The fixture below is the
+      shape the reviewer traced on the real catalogue: the only citation of the
+      requested file sits in a section whose flag bullets are the real answer.
+    */
+    const surface = [
+      {
+        path: "CLAUDE.md",
+        text: [
+          "# Law",
+          "",
+          "## Optional .env vars (feature-gated)",
+          "",
+          "The catalogue is `docs/architecture/FEATURE_FLAGS.md`.",
+          "",
+          "- `R7_EVIDENCE_INGEST_SCOPE` — off/absent, all, or users:<ids>.",
+          "- `CREW_TAB_SCOPE` — the Crew tab.",
+          "",
+        ].join("\n"),
+      },
+    ];
+    const digest = buildDigest(
+      digestInputs({
+        lawSurfaces: surface,
+        request: { paths: ["docs/architecture/FEATURE_FLAGS.md"], flags: [] },
+      }),
+    );
+    expect(digest).not.toContain("That is an ANSWER, not an omission");
+    expect(digest).toContain("OPEN THESE, they are not silence");
+    expect(digest).toContain("Optional .env vars");
+    /* THE NARROWEST place to look, not the widest: the level-1 document body
+       matches too, and pointing a shift at a whole file is not pointing. */
+    expect(digest).not.toMatch(/^ {2}CLAUDE\.md L1–/m);
+  });
+
   it("distinguishes 'the law says nothing about this' from 'nothing was asked'", () => {
     const digest = buildDigest(
       digestInputs({ request: { paths: ["docs/specs/NOT_A_REAL_FILE.md"], flags: [] } }),
@@ -599,6 +638,21 @@ describe("bytes the digest must not waste", () => {
       }),
     );
     expect(digest).toContain("TRUNCATED");
+  });
+
+  it("marks a truncated CLOSED-CARDS read too, including when the filter emptied it", () => {
+    /* The marker is measured on the RAW gh rows, before the instant filter: 43
+       closed, gh returns its 40, four are filtered out, and a post-filter count
+       of 36 would have read as a complete list. The empty branch is the sharper
+       half — "none" is the one thing it is certainly not. */
+    const withRows = buildDigest(
+      digestInputs({ closedCards: ["#1  a card"], truncated: { closedCards: true } }),
+    );
+    expect(withRows).toContain("TRUNCATED");
+
+    const emptied = buildDigest(digestInputs({ closedCards: [], truncated: { closedCards: true } }));
+    expect(emptied).toContain("AT ITS LIMIT");
+    expect(buildDigest(digestInputs({ closedCards: [] }))).not.toContain("AT ITS LIMIT");
   });
 
   it("says nothing about truncation when the read was complete", () => {

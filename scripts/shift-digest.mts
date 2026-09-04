@@ -208,9 +208,23 @@ function nextUp(root: string, network: boolean): NextUpRow[] | Unreadable {
   }));
 }
 
-function closedSince(root: string, utc: string | null, network: boolean): string[] | Unreadable {
-  if (!network) return { unreadable: "--no-network was passed; NOT an empty list" };
-  if (!utc) return { unreadable: "no previous entry to measure from" };
+/**
+ * ⚠ TRUNCATION IS MEASURED ON THE RAW ROWS, NEVER ON THE FILTERED LIST. The
+ * search takes a DATE, so `gh` over-returns same-day rows that the instant
+ * filter then drops: 43 cards closed, `gh` hands back its 40, four are filtered
+ * out, and a post-filter count of 36 reads as a complete list while everything
+ * past the 40th was silently lost — the exact drop the named limit exists to
+ * catch. The count that answers "did this read hit its ceiling" is the count
+ * `gh` returned.
+ */
+function closedSince(
+  root: string,
+  utc: string | null,
+  network: boolean,
+): { cards: string[] | Unreadable; truncated: boolean } {
+  const answer = (cards: string[] | Unreadable, truncated = false) => ({ cards, truncated });
+  if (!network) return answer({ unreadable: "--no-network was passed; NOT an empty list" });
+  if (!utc) return answer({ unreadable: "no previous entry to measure from" });
   const raw = ghJson(root, [
     "issue",
     "list",
@@ -223,13 +237,15 @@ function closedSince(root: string, utc: string | null, network: boolean): string
     "--json",
     "number,title,closedAt",
   ]);
-  if (raw && typeof raw === "object" && "unreadable" in raw) return raw as Unreadable;
-  if (!Array.isArray(raw)) return { unreadable: "gh returned something that is not a list" };
+  if (raw && typeof raw === "object" && "unreadable" in raw) return answer(raw as Unreadable);
+  if (!Array.isArray(raw)) return answer({ unreadable: "gh returned something that is not a list" });
+  const truncated = raw.length >= CLOSED_LIMIT;
   /* The search takes a DATE, so it over-returns by up to a day; the instant is
      what the shift asked about, and the filter is on the instant. */
-  return raw
+  const cards = raw
     .filter((row: Record<string, unknown>) => String(row.closedAt ?? "") >= utc)
     .map((row: Record<string, unknown>) => `#${row.number}  ${row.title}`);
+  return answer(cards, truncated);
 }
 
 /**
@@ -293,11 +309,11 @@ function main(argv: string[]): number {
       patrolClocks: patrolClocks(root),
       since,
       commits: commitsSince(root, sinceIso),
-      closedCards: closed,
+      closedCards: closed.cards,
       moneyAuthMap,
       truncated: {
         nextUp: Array.isArray(queue) && queue.length >= NEXT_UP_LIMIT,
-        closedCards: Array.isArray(closed) && closed.length >= CLOSED_LIMIT,
+        closedCards: closed.truncated,
       },
       request: { paths: options.paths, flags: options.flags },
       sourceBytes: [PROGRAM, ...LAW_SURFACES.filter((surface) => surface !== "CLAUDE.md")].map(

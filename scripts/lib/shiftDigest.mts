@@ -562,6 +562,64 @@ export function selectLawSections(
   );
 }
 
+/**
+ * Sections that MATCH a request but are deliberately not carried — the level-1
+ * document body, and a heading section whose flag entries are the real answer.
+ *
+ * ⚠ **WITHOUT THIS, §5 TELLS A LIE WITH A STRAIGHT FACE.** A card touching
+ * `docs/architecture/FEATURE_FLAGS.md` — which every flag change does, since the
+ * catalogue entry rides the same commit — is cited in `CLAUDE.md` exactly once,
+ * inside an entry-holding section, and the catalogue's own reading rules sit in
+ * its level-1 preamble. Both skip rules fire, nothing is selected, and §5 prints
+ * *"the surfaces were read and no section covers it"* about a file the law
+ * plainly covers. This module's own doctrine is fail toward a POINTER, never a
+ * silence; the skip rules were the one place that doctrine was not applied.
+ *
+ * The NARROWEST match wins here, the opposite of the parent-wins rule for
+ * carried sections: a pointer is a place to look, and the whole document is not
+ * a place.
+ */
+export function pointerSections(
+  surfaces: readonly { readonly path: string; readonly text: string }[],
+  request: LawRequest,
+  roots: readonly string[],
+): Section[] {
+  const all = surfaces.flatMap((surface) => splitSections(surface.path, surface.text));
+  const matched = all.filter((section) => {
+    const skipped =
+      section.level === 1 ||
+      all.some(
+        (other) =>
+          other.level === 0 &&
+          other.surface === section.surface &&
+          other.startLine > section.startLine &&
+          other.endLine <= section.endLine,
+      );
+    if (!skipped) return false;
+    const paths = mentionedPaths(section.text, roots);
+    const fileNames = mentionedFileNames(section.text);
+    return request.paths.some(
+      (requested) =>
+        paths.some((mention) => pathCovers(mention, requested)) ||
+        fileNames.includes(baseName(requested)),
+    );
+  });
+
+  return matched
+    .filter(
+      (section) =>
+        !matched.some(
+          (other) =>
+            other !== section &&
+            other.surface === section.surface &&
+            other.startLine >= section.startLine &&
+            other.endLine <= section.endLine &&
+            (other.startLine !== section.startLine || other.endLine !== section.endLine),
+        ),
+    )
+    .sort((a, b) => a.surface.localeCompare(b.surface) || a.startLine - b.startLine);
+}
+
 /** How the PROGRAM's sections are treated: carried verbatim, or named. */
 export type ProgramSplit = {
   readonly carried: Section[];
@@ -749,6 +807,11 @@ export function buildDigest(inputs: DigestInputs): string {
   out.push("Cards closed since then:");
   if (isUnreadable(inputs.closedCards)) {
     out.push(`  UNREADABLE — ${inputs.closedCards.unreadable}`);
+  } else if (inputs.closedCards.length === 0 && inputs.truncated?.closedCards) {
+    /* An EMPTY list that came off a read which hit its limit is the worst of the
+       two: every returned row was filtered out, so "none" is the one thing it is
+       certainly not. */
+    out.push("  none survived the filter — ⚠ but the read came back AT ITS LIMIT, so there may be more.");
   } else if (inputs.closedCards.length === 0) {
     out.push("  none");
   } else {
@@ -809,7 +872,8 @@ export function buildDigest(inputs: DigestInputs): string {
       inputs.moneyAuthMap ?? [],
     );
     const asked = [...inputs.request.paths, ...inputs.request.flags].join(", ");
-    if (selected.length === 0) {
+    const pointers = pointerSections(inputs.lawSurfaces, inputs.request, inputs.roots);
+    if (selected.length === 0 && pointers.length === 0) {
       out.push(
         `Nothing in the law names ${asked}. That is an ANSWER, not an omission — the surfaces were read and`,
       );
@@ -817,6 +881,15 @@ export function buildDigest(inputs: DigestInputs): string {
         "no section covers it. If that surprises you, the law may be silent about the thing you are changing,",
       );
       out.push("which is worth a line in your report.");
+    } else if (selected.length === 0) {
+      out.push(
+        `${asked} is cited only inside sections this reader does not carry whole — a document preamble, or a`,
+      );
+      out.push("section whose bullet entries are the real answer. OPEN THESE, they are not silence:");
+      out.push("");
+      for (const section of pointers) {
+        out.push(`  ${section.surface} L${section.startLine}–${section.endLine}  ${section.heading}`);
+      }
     } else {
       out.push(`${selected.length} section(s) name ${asked}:`);
       out.push("");

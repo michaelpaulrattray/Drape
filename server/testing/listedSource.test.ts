@@ -124,11 +124,12 @@ const NOT_THE_CLASS: Record<string, string> = {
     "the file that owns the rule — it names the population it scans for",
   "server/shiftDigest.test.ts":
     "lists the REPOSITORY ROOT for its top-level directory names — the derived"
-    + " `roots` the path index needs — and never reads a listed entry. Its three"
-    + " reads are fixed names (the two law surfaces and `PROGRAM.md` behind an"
-    + " existsSync), and each SHOULD throw if it is missing: a law surface that is"
-    + " gone is the defect. The litter this rule is about is files in `scripts/`;"
-    + " a top-level directory has never vanished mid-run",
+    + " `roots` the path index needs — and never reads a listed entry. Its reads"
+    + " are all fixed names (the two law surfaces, the reviewer's charter, and"
+    + " `PROGRAM.md` behind an existsSync), and each SHOULD throw if it is"
+    + " missing: a law surface that is gone is the defect. The litter this rule is"
+    + " about is files in `scripts/`; a top-level directory has never vanished"
+    + " mid-run",
 };
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
@@ -323,6 +324,15 @@ describe("the statSync matcher itself", () => {
     writes the nested shape today, so the fix above would sit unexercised and
     the `[^)]*` version would read as equally green - a guard whose repair
     nothing drives is a guard that quietly un-repairs itself.
+  */
+  /*
+    ⚠ A STATED LIMIT: the bracket count is naive about STRING AND REGEX
+    LITERALS, so `statSync(x.match(/\(/))` over-extends past the real close. It
+    fails toward GREEN — a swallowed neighbour could carry the `throwIfNoEntry`
+    that clears an offender — and no file in the class writes that shape. It is
+    named here rather than guarded, because a literal-aware scanner is a
+    tokenizer, and inventing one for a population of zero is what this repository
+    does not do.
   */
   it("reads a nested call to its MATCHING parenthesis, so a correct call is not an offender", () => {
     const source = "const s = statSync(path.join(root, entry), { throwIfNoEntry: false });";
