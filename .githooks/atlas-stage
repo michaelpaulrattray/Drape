@@ -52,14 +52,34 @@
 # WARNS, because the alternative is a hook that says "this commit carries the
 # map of its own tree" while handing you the map of a different one.
 
+# ⚠ TWO FILTERS, AND THEIR WIDTHS ARE DELIBERATELY DIFFERENT.
+#
+# MATCHES decides whether to REGENERATE, and over-firing costs nine seconds, so
+# it is wide (all of `client/`, `scripts/`, every extension).
+#
+# WARN_MATCHES decides whether to tell the author their map may not match the
+# commit, and over-firing costs the warning's credibility — which is worth more
+# than nine seconds. So it is exactly the population `fingerprint()` hashes:
+# the generator's own `SCANNED_ROOTS` plus `annotations.yaml`. **Measured the
+# hour it was written**: the first version warned on MATCHES, and the first
+# commit it ran on warned about an untracked `scripts/_*-disposable.mts` while
+# `pnpm architecture:check` said the map was fresh — `scripts/` is not a scanned
+# root. Every shift carries untracked disposables there, so that warning would
+# have fired on nearly every commit the team makes, which is the cry-wolf
+# failure this hook's own test arm is named after.
+#
+# Both are held to the generator by `server/atlasCommitHook.test.ts`: WARN_MATCHES
+# must fire on every `SCANNED_ROOTS` entry and every extra input of
+# `fingerprint()`, and MATCHES must be a superset of WARN_MATCHES.
 MATCHES='^(server/|client/|shared/|scripts/|drizzle/|docs/architecture/annotations\.yaml$)'
+WARN_MATCHES='^(server/|client/src/|shared/|drizzle/|docs/architecture/annotations\.yaml$)'
 
 # Nothing staged that the maps are built from → do nothing at all.
 staged=$(git diff --cached --name-only 2>/dev/null | grep -E "$MATCHES" | head -n 1)
 [ -n "$staged" ] || exit 0
 
 # Modified-but-unstaged and untracked sources both move the fingerprint.
-dirty=$( { git diff --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | grep -E "$MATCHES" | sort -u)
+dirty=$( { git diff --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | grep -E "$WARN_MATCHES" | sort -u)
 
 generate=$(git config drape.atlasGenerate 2>/dev/null)
 [ -n "$generate" ] || generate="pnpm architecture:generate && pnpm capability:generate"

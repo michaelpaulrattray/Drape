@@ -256,6 +256,26 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
       expect(result.status, result.stderr).toBe(0);
       expect(result.stderr).not.toContain("WORKING TREE");
     });
+
+    it("stays silent on an untracked scripts/ disposable — measured, not imagined", () => {
+      /* ⚠ THE FIRST VERSION OF THIS WARNING FIRED ON `MATCHES`, THE WIDE
+         REGENERATION FILTER, AND ITS FIRST REAL COMMIT PROVED WHY THAT IS
+         WRONG: it warned about an untracked `scripts/_501-sabotage-disposable.mts`
+         while `pnpm architecture:check` said the map was fresh — `scripts/` is
+         not one of the generator's scanned roots. Every shift carries untracked
+         disposables there, so it would have fired on nearly every commit the
+         team makes. A warning that always fires is one nobody reads. */
+      const dir = repoWithMap();
+      mkdirSync(join(dir, "scripts"), { recursive: true });
+      writeFileSync(join(dir, "scripts", "_throwaway-disposable.mts"), "process.exit(0);\n");
+      writeFileSync(join(dir, "server", "staged.ts"), "export const a = 1;\n");
+      armed(dir, "add", "server/staged.ts");
+      const result = armed(dir, "commit", "-q", "-m", "with a disposable lying about");
+      expect(result.status, result.stderr).toBe(0);
+      /* It still REGENERATED — the wide trigger is unchanged and correct. */
+      expect(result.stderr).toContain("regenerating");
+      expect(result.stderr).not.toContain("WORKING TREE");
+    });
   });
 
   describe("it refuses rather than shipping a map it could not build", () => {
@@ -302,9 +322,16 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
       expect(roots).toContain("server");
 
       const hook = readFileSync(resolve(".githooks/atlas-stage"), "utf8");
-      const pattern = /\nMATCHES='([^']+)'/.exec(hook);
-      expect(pattern, "atlas-stage no longer declares its filter as MATCHES='…'").not.toBeNull();
-      const filter = new RegExp(pattern![1]!);
+      const declared = (name: string): RegExp => {
+        const found = new RegExp(`\\n${name}='([^']+)'`).exec(hook);
+        expect(found, `atlas-stage no longer declares ${name}='…'`).not.toBeNull();
+        return new RegExp(found![1]!);
+      };
+      /* WARN_MATCHES is the one held to the generator: it is the population
+         `fingerprint()` actually hashes, so it is what decides whether the
+         author is told their map may not match the commit. */
+      const filter = declared("WARN_MATCHES");
+      const trigger = declared("MATCHES");
 
       /* ⚠ AND THE ROOTS ARE NOT THE WHOLE INPUT. `fingerprint()` hashes every
          scanned file PLUS whatever else it reads by name — today that is
@@ -319,19 +346,33 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
       const extras = [...body![1]!.matchAll(/path\.join\(repoRoot,\s*([^)]+)\)/g)].map((m) =>
         [...m[1]!.matchAll(/"([^"]+)"/g)].map((s) => s[1]!).join("/"),
       );
+      expect(extras.length).toBeGreaterThanOrEqual(1);
       for (const extra of extras) {
         expect(
           filter.test(extra),
-          `fingerprint() hashes "${extra}" and .githooks/atlas-stage does not fire on it`,
+          `fingerprint() hashes "${extra}" and WARN_MATCHES does not fire on it`,
+        ).toBe(true);
+        expect(
+          trigger.test(extra),
+          `fingerprint() hashes "${extra}" and MATCHES does not regenerate on it`,
         ).toBe(true);
       }
 
       for (const root of roots) {
         /* A root only matters through the files inside it, and the filter is on
            paths, so the reading is a representative file. */
+        const sample = `${root}/somewhere/module.ts`;
         expect(
-          filter.test(`${root}/somewhere/module.ts`),
-          `SCANNED_ROOTS has "${root}" and .githooks/atlas-stage does not fire on it`,
+          filter.test(sample),
+          `SCANNED_ROOTS has "${root}" and WARN_MATCHES does not fire on it`,
+        ).toBe(true);
+        /* ⚠ AND REGENERATION MUST COVER EVERYTHING THE WARNING COVERS. The two
+           widths are allowed to differ in one direction only: a path that can
+           move the map but does not regenerate it is the original defect back
+           again, wearing a narrower filter. */
+        expect(
+          trigger.test(sample),
+          `WARN_MATCHES fires on "${sample}" but MATCHES does not — the map would go stale unregenerated`,
         ).toBe(true);
       }
       /* And the filter is not simply "everything", which would pass the loop
