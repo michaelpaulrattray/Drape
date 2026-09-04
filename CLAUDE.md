@@ -347,15 +347,30 @@ work is either one of its shifts or must behave like one. The binding pieces:
   ⚠ **A `review` CHECK REPORTS WHETHER A VERDICT EXISTS, NEVER WHETHER THE
   DIFF PASSED** (#219, 2026-08-29). The action exits 0 whatever it finds, so
   **findings ride a GREEN check's sticky comment — read it before merging —
-  and a RED `review` means NO REVIEW WAS PRODUCED**: either the reviewer
-  cannot run on its own change (#165) or it failed to complete. Read the
+  and a RED `review` means NO REVIEW WAS PRODUCED**: the reviewer cannot run
+  on its own change (#165), it failed to complete, or **the run was CANCELLED
+  by a newer one on the same trigger (#434)**. Read the
   wrong way round on PR #218, where the founder's Fable allowance was
   exhausted, the job died in ~1s on `is_error: true`, and a red check looked
   like a reviewer verdict for two shifts until the result JSON was dug out of
   the action log. The review job's last step now names which of the three
   states it is, on the PR's own checks page and in the run summary; it runs
   on `always()` with `continue-on-error`, so it can neither rescue a failure
-  nor break a pass.
+  nor break a pass. ⚠ **A CANCELLED run is the one it cannot always narrate,
+  and that is stated rather than discovered**: `always()` covers a
+  cancellation mid-review, but a run cancelled while still QUEUED never
+  reaches a runner, so no step of it executes and the PR carries a red check
+  with no annotation at all. **The concurrency key is what stops the common
+  cause** — until 2026-09-04 every event on a PR shared the slot
+  `review-<pr>`, so a `labeled` event that was going to skip (triage reviews a
+  label only for `needs-fable`) could cancel the real review and then skip
+  itself, which is what PR #433 showed. The group is keyed on the event and
+  the label now, so an `opened` run and a `labeled` run cannot see each other
+  while two runs of the same kind still supersede. ⚠ **And the card's
+  headline number was wrong in the direction that matters — read at the
+  artifact, the last 100 review runs are 46 success, 45 skipped, 8 failure and
+  ONE cancelled. The 45 skipped are the design working**; #502's "27 of the
+  last 60 were skipped" counts the reviewer doing its job, not the bug.
 - **The founder steers from the Desk** (a claude.ai artifact page): his
   replies and journal entries there are rulings — quoted verbatim when acted
   on. Desk cards lead with product impact and a worked example, flags second.

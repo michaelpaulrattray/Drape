@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d8a9de7162ab5176"
+    "sourceFingerprint": "ef582731620203cc"
   },
   "domains": [
     {
@@ -13154,6 +13154,10 @@
     {
       "id": "test:server/reviewerCharter.test.ts",
       "path": "server/reviewerCharter.test.ts"
+    },
+    {
+      "id": "test:server/reviewerConcurrency.test.ts",
+      "path": "server/reviewerConcurrency.test.ts"
     },
     {
       "id": "test:server/reviewerManualRoad.test.ts",
