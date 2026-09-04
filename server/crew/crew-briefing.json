@@ -1,7 +1,7 @@
 {
-  "edition": 248,
-  "updatedAt": "2026-09-04T21:35:23.766Z",
-  "shift": "Fable — 5 September (#243: the anatomy rule is species now — your sentence, your four checks)",
+  "edition": 249,
+  "updatedAt": "2026-09-04T22:32:13.357Z",
+  "shift": "Fable — 5 September (#252: a Max sheet that lost its author says so now)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T21:34:04.408Z",
+      "readAt": "2026-09-04T22:31:28.376Z",
       "items": [
         {
           "issueNumber": 16,
@@ -1216,7 +1216,7 @@
         }
       ],
       "recommendation": "Take (a) now and hold the rest. The one thing that is clearly wrong today is the silence: a customer choosing MAX and receiving LOW should be told, and we already have that sentence written for a neighbouring case. Everything else is a real trade between two rules that are both doing their job, and this campaign's own history says a prompt change without a proper test is how you break the thing you were not looking at. If you want the 21% down, (c) is the cheap first measurement - about 30 cents - and it touches no rule.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-30T07:20:00+10:00",
       "issueNumber": 252
     },
@@ -1783,6 +1783,22 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "satout-line-252",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 252,
+      "filedAt": "2026-09-04T22:32:13.357Z",
+      "title": "The sentence a customer reads when Max sat one out — your eye on the wording",
+      "question": "Your ruling was '(a) so the customer isn't lied to' — this is the sentence that now does it, on the sheet's record line, only on a roll where the author was refused twice or failed: 'Sat this one out — the studio couldn't write a stronger brief than your words this time, so they were cast exactly as you wrote them.' It is honest (the studio tried and could not do better within its own rules), it blames nobody, and it names no machinery. If you want different words, they are one line to change.",
+      "frames": [
+        {
+          "key": "crew-eye/1c88089f-3cbb-4ffd-be8f-6eeafff87211.png",
+          "caption": "The staged sheet in dev: SETTINGS still records her choice (Photoreal · Max imagination), and the AUTHOR line beneath it now tells the truth about what happened.",
+          "arm": "dark"
+        }
+      ]
+    },
     {
       "id": "species-court-243-strips",
       "state": "open",
@@ -3733,6 +3749,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-529-author-sat-out",
+      "title": "A customer who chose Max and got no author is told the truth now — and the studio keeps a note of why",
+      "status": "merged",
+      "prNumber": 529,
+      "note": "Your 30 August ruling on #252, built: one Max roll in five was quietly getting no author at all — the studio's own drafts broke the studio's own rules twice, the customer's exact words went to the engine, and the sheet still read 'Max imagination' over a prompt nobody wrote. Now that sheet says, in plain words on the record line: 'Sat this one out — the studio couldn't write a stronger brief than your words this time, so they were cast exactly as you wrote them.' Nothing new to learn, no decision added, no machinery named. And from now on every such roll records WHY its drafts were refused, which is exactly the measurement your own bar for loosening any rule asks for — until now those reasons were recoverable nowhere. The other half of your ruling (fewer drafts dying in the first place) is folded into #477 so the Max instruction is redesigned once, not twice: the strongest lead, verified at the code, is that the instruction's own worked example teaches a phrase its own age rule then refuses. Rendered and checked in both themes before merging; live on your account only, like the rest of the author road."
+    },
+    {
       "id": "pr-528-species-sentence",
       "title": "A lamia stays a lamia even when nobody typed 'tail' — your species rule is the written law now",
       "status": "merged",
@@ -5485,16 +5508,15 @@
     123,
     124,
     125,
-    126
+    126,
+    127,
+    128,
+    129,
+    130
   ],
   "nextUp": {
-    "readAt": "2026-09-04T21:34:03.587Z",
+    "readAt": "2026-09-04T22:31:27.551Z",
     "items": [
-      {
-        "issueNumber": 252,
-        "title": "The MAX author is refused by our own guards 54% of the time and loses its author entirely 21% — and the sheet still says 'Max'",
-        "urgent": false
-      },
       {
         "issueNumber": 391,
         "title": "His ladder ruling: twelve rungs fold to SEVEN, with the top one hidden and offered by email on request",
@@ -5513,6 +5535,16 @@
       {
         "issueNumber": 508,
         "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
+        "urgent": false
+      },
+      {
+        "issueNumber": 530,
+        "title": "The sphinx-cat tail court — his one remaining check on the species sentence (reply #129)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 531,
+        "title": "Stripe returns point at the wrong domain — one production base URL (klieglabs.com), read from one place, with a no-drape-domains test (reply #130)",
         "urgent": false
       }
     ]
