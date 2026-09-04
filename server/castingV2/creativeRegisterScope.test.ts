@@ -545,6 +545,10 @@ describe("#230 — the author REWRITES, and the four ways his first rewrite fail
     expect(out).toMatchObject({ mode: "static", authored: false, content: null, attempts: 2 });
     expect(out.prompt).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
     expect(out.prompt).toContain("woman");
+    /* #252 — BOTH refusal sentences are on the record, in order, so a static row can say why. */
+    expect(out.refusals).toHaveLength(2);
+    expect(out.refusals[0]).toContain("dropped the subject's sex (female)");
+    expect(out.refusals[1]).toContain("dropped the subject's sex (female)");
   });
 
   it("the fact checks are anchored on HER sentence: a reader-inferred fact is never demanded of the rewrite", async () => {
@@ -567,6 +571,7 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
     expect(out).toMatchObject({ mode: "seed", authored: false, content: null, imagination: "low", attempts: 0, addedWords: 0, model: null, latencyMs: null });
     expect(out.prompt).toBe(`${THIN}\n\n${HOUSE_BLOCK}`);
     expect(out.houseBlockWords).toBe(countWords(HOUSE_BLOCK));
+    expect(out.refusals).toEqual([]);
   });
 
   it("MAX: one call at 0.8 with the MAX instruction, the interpreter's deadline, no transport retries, the brief as the user turn; the paragraph REPLACES the brief (#230)", async () => {
@@ -603,6 +608,9 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
     expect(calls[1]?.system).toContain("PREVIOUS DRAFT:");
     expect(out).toMatchObject({ mode: "authored", attempts: 2, content: AUTHORED });
     expect(neverWrittenIn(out.content ?? "")).toBeNull();
+    /* #252 — a re-asked row that recovered still records WHY the first draft died. */
+    expect(out.refusals).toHaveLength(1);
+    expect(out.refusals[0]).toContain('used the word "sternum"');
   });
 
   it("a draft that narrates the SET or writes a pipeline note is refused by name (dev roll 95 — 7 of 8 tiles were contact-sheet grids)", async () => {
@@ -636,6 +644,8 @@ describe("authorPrompt, driven by a throwing and a misbehaving double (law 3)", 
     expect(out).toMatchObject({ mode: "static", authored: false, attempts: 1, model: null, latencyMs: null });
     expect(out.prompt).toBe(staticPrompt(RICH));
     expect(out.prompt.startsWith(RICH)).toBe(true);
+    /* No guard spoke — a transport death records no refusal, so the two static causes stay tellable apart. */
+    expect(out.refusals).toEqual([]);
   });
 
   it("code fences are stripped and an empty reply is re-asked", async () => {
@@ -756,6 +766,9 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     expect(calls).toHaveLength(2);
     expect(calls[1]?.system).toContain("moves the stated age");
     expect(on.compiledBrief.register).toMatchObject({ mode: "authored", attempts: 2, content: AUTHORED });
+    /* #252 — the reason reaches the ROW at the real compile site, not just the log. */
+    expect((on.compiledBrief.register as { refusals?: string[] }).refusals).toHaveLength(1);
+    expect((on.compiledBrief.register as { refusals?: string[] }).refusals?.[0]).toContain("moves the stated age");
   });
 
   it("the author down at MAX, the sheet still rolls on seed + block and the row says nobody authored it", async () => {
@@ -1017,6 +1030,9 @@ describe("authorPrompt keeps the latency it already spent when the re-ask throws
     const out = await authorPrompt({ engine, briefText: THIN, imagination: "max" });
     expect(out).toMatchObject({ mode: "static", authored: false, attempts: 2, model: null, latencyMs: 7 });
     expect(out.prompt).toBe(staticPrompt(THIN));
+    /* #252 — the one refusal that DID happen is kept; the throw itself is the log's. */
+    expect(out.refusals).toHaveLength(1);
+    expect(out.refusals[0]).toContain('used the word "sternum"');
   });
 });
 

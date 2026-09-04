@@ -859,6 +859,23 @@ export type AuthoredPrompt = {
   latencyMs: number | null;
   /** How many text calls were made, so a census can price the road. */
   attempts: number;
+  /**
+   * THE REFUSAL SENTENCES, in the order the guards said them — the first
+   * draft's, then the second's when it too was refused. Empty at LOW, on a
+   * clean authored row, and on a row whose only failure was the call itself
+   * throwing (the log carries that one).
+   *
+   * Recorded because the RATE was always on the row (`attempts`, `mode`) and
+   * the REASON was recoverable nowhere (#252): the measuring drive kept
+   * `attempts` and not the reason (the card's own correction — 2 of 18 refusal
+   * events unreadable), the #466 bench kept 300-character wire prefixes the
+   * trigger words sit past, and this row kept nothing. His bar for loosening
+   * any guard is *"a measured test shows a specific phrase is blocking good
+   * MAX"* — that test needs the reasons, and a production row that carries
+   * them makes the reading free. Never projected to any sheet: the sheet
+   * readers in `rollProjection.ts` each name their fields (invariant 8).
+   */
+  refusals: string[];
 };
 
 /** The author's output budget — the interpreter's figure, for its reason (reasoning tokens count). */
@@ -993,12 +1010,14 @@ export async function authorPrompt(input: {
     return {
       prompt: staticPrompt(briefText, style, clause, lane), imagination, style, lane, compose: "rewrite", seedWords,
       mode: "seed", authored: false, content: null,
-      addedWords: 0, houseBlockWords, allowance, model: null, latencyMs: null, attempts: 0,
+      addedWords: 0, houseBlockWords, allowance, model: null, latencyMs: null, attempts: 0, refusals: [],
     };
   }
 
   const system = maxSystemPrompt(allowance);
   let attempts = 0;
+  /** Every refusal the guards issued, in order — the row's record (#252). */
+  const refusals: string[] = [];
   /** Latency the road has already spent, kept if a later call throws. */
   let spentMs: number | null = null;
   const ask = (systemText: string, temperature: number) => {
@@ -1023,7 +1042,7 @@ ${clause}` : briefText,
   const fallback = (latencyMs: number | null): AuthoredPrompt => ({
     prompt: staticPrompt(briefText, style, clause, lane), imagination, style, lane, compose: "rewrite", seedWords,
     mode: "static", authored: false, content: null,
-    addedWords: 0, houseBlockWords, allowance, model: null, latencyMs, attempts,
+    addedWords: 0, houseBlockWords, allowance, model: null, latencyMs, attempts, refusals,
   });
 
   try {
@@ -1034,6 +1053,7 @@ ${clause}` : briefText,
     spentMs = latencyMs;
     const why = draftRefusal(content, allowance, input.statedAge, seed);
     if (why) {
+      refusals.push(why);
       log.warn({ imagination, allowance, why }, "[promptAuthor] re-asking once");
       const second = await ask(`${system}\n\n${why}\n\nPREVIOUS DRAFT:\n${content}`, 0.3);
       content = cleanReply(second.text);
@@ -1041,6 +1061,7 @@ ${clause}` : briefText,
       latencyMs += second.latencyMs;
       const stillWhy = draftRefusal(content, allowance, input.statedAge, seed);
       if (stillWhy) {
+        refusals.push(stillWhy);
         log.warn({ imagination, allowance, why: stillWhy }, "[promptAuthor] second draft refused too — the customer's own words stand");
         return fallback(latencyMs);
       }
@@ -1048,7 +1069,7 @@ ${clause}` : briefText,
     return {
       prompt: composeFinalPrompt(briefText, content, style, clause, lane), imagination, style, lane, compose: "rewrite", seedWords,
       mode: "authored", authored: true, content,
-      addedWords: countWords(content) - seedWords, houseBlockWords, allowance, model, latencyMs, attempts,
+      addedWords: countWords(content) - seedWords, houseBlockWords, allowance, model, latencyMs, attempts, refusals,
     };
   } catch (error) {
     log.warn({ error: String(error), imagination, attempts }, "[promptAuthor] the author call failed — the static prompt stands");

@@ -23,22 +23,35 @@ export function castSettingsRecord(style: CastStyle | null, imagination: Imagina
 }
 
 /**
- * WHY THE AUTHOR SAT A SHEET OUT — rows written before the family clause.
+ * WHY THE AUTHOR SAT A SHEET OUT.
  *
- * Until 2026-08-27 a follow or a chip-edited roll under the flag composed
+ * `anchored` / `edited` — rows written before the family clause. Until
+ * 2026-08-27 a follow or a chip-edited roll under the flag composed
  * house because the author road could not carry an anchor or a chip edit;
  * since #154 (`CASTING_V2_AUTHOR_ROAD_FAMILY_CLAUSE_DESIGN.md`) it carries
  * both as words and no new row records a reason. The rows already written do,
  * and the sheet still says so for them, in the past tense — the row is the
- * artifact. The vocabulary is the projection's (`AUTHOR_SAT_OUT_REASONS`), so
- * a reason this map does not know is a type error here rather than a blank
- * line on his sheet.
+ * artifact.
+ *
+ * `static` — a live reason, not a past-tense one (#252, his ruling: *"(a) so
+ * the customer isn't lied to"*): a MAX roll whose author was refused twice by
+ * the studio's own rules, or whose author call failed, rolled on the
+ * customer's words + the locked block. One MAX call in five did this at the
+ * measured entrance and the sheet said nothing — it read "Max imagination"
+ * over a prompt nobody authored. The copy says what actually happened in her
+ * terms: no guard, no engine, no mode named — the studio tried and her words
+ * stood.
+ *
+ * The vocabulary is the projection's (`AUTHOR_SAT_OUT_REASONS` + its derived
+ * `static`), so a reason this map does not know is a type error here rather
+ * than a blank line on the sheet.
  */
-export type AuthorSatOutReason = "anchored" | "edited";
+export type AuthorSatOutReason = "anchored" | "edited" | "static";
 
 const AUTHOR_SAT_OUT_RECORD: Record<AuthorSatOutReason, string> = {
   anchored: "Sat this one out — this follow was cast the studio's own way, before the author could carry a family, so there is no authored prompt to show.",
   edited: "Sat this one out — these chip edits were cast the studio's own way, before the author could carry them, so there is no authored prompt to show.",
+  static: "Sat this one out — the studio couldn't write a stronger brief than your words this time, so they were cast exactly as you wrote them.",
 };
 
 export function authorSatOutRecord(reason: AuthorSatOutReason): string {

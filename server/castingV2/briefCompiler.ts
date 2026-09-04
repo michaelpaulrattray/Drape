@@ -1484,6 +1484,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
               houseBlockWords: authored.houseBlockWords,
               allowance: authored.allowance,
               attempts: authored.attempts,
+              /*
+                WHY a draft was refused, in the guards' own sentences (#252):
+                `attempts` and `mode` carried the rate for weeks while the
+                reason was recoverable nowhere — the founder's bar for
+                loosening any guard is a measured test, and the test needs
+                the reasons. Internal only: no sheet reader projects it.
+              */
+              refusals: authored.refusals,
               model: authored.model,
               latencyMs: authored.latencyMs,
               prompt: authored.prompt,

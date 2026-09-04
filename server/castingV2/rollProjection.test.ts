@@ -6,9 +6,10 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readAuthoredFrom, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
+const { AUTHOR_SAT_OUT_REASONS, AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readAuthoredFrom, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
   "./rollProjection"
 );
+const { authorSatOutRecord } = await import("../../client/src/features/castingV2/castSettingsCopy");
 
 /**
  * Projection boundary (plan §J, access-control invariant 8).
@@ -241,7 +242,13 @@ describe("nothing internal crosses the boundary", () => {
       expect(readAuthorSatOut({ register: { kind: "house", because: "edited" } })).toBe("edited");
       /* A reason this projection does not know is null, never forwarded as copy the sheet cannot say. */
       expect(readAuthorSatOut({ register: { kind: "house", because: "moon" } })).toBeNull();
-      /* An author register has no reason to give; an unflagged roll has no register at all. */
+      /*
+        #252 — "static" is the AUTHOR register's derived reason and never the
+        house vocabulary's: a house row saying it stays null (none was ever
+        written), and an author row says it only through its own `mode`.
+      */
+      expect(readAuthorSatOut({ register: { kind: "house", because: "static" } })).toBeNull();
+      /* An author register's `because` is never consulted; an unflagged roll has no register at all. */
       expect(readAuthorSatOut({ register: { kind: "author", because: "anchored", imagination: "low", prompt: "x" } })).toBeNull();
       expect(readAuthorSatOut({ compiler: "pathA-v1" })).toBeNull();
       expect(readAuthorSatOut(null)).toBeNull();
@@ -255,6 +262,45 @@ describe("nothing internal crosses the boundary", () => {
       expect(followed.authorSatOut).toBe("anchored");
       expect(followed.authoredPrompt).toBeNull();
       expect(followed.imagination).toBeNull();
+    });
+
+    it("a MAX roll that lost its author says so on the sheet — mode 'static' projects the sat-out reason (#252, his ruling: the customer isn't lied to)", () => {
+      /* The row a refused-twice or failed MAX author writes: mode static, no content. */
+      const staticRegister = {
+        compiler: "pathA-v1",
+        register: { kind: "author", imagination: "max", mode: "static", compose: "rewrite", authored: false, content: null, prompt: "goth woman mid 30s, then the bundle" },
+      };
+      expect(readAuthorSatOut(staticRegister)).toBe("static");
+      /* The other two modes stay silent — an authored or LOW sheet gained no line. */
+      expect(readAuthorSatOut({ register: { kind: "author", imagination: "max", mode: "authored", prompt: "x" } })).toBeNull();
+      expect(readAuthorSatOut({ register: { kind: "author", imagination: "low", mode: "seed", prompt: "x" } })).toBeNull();
+      /* A row from before `mode` existed projects null, never a guess — production held no static row at the card's reading. */
+      expect(readAuthorSatOut({ register: { kind: "author", imagination: "max", authored: false, prompt: "x" } })).toBeNull();
+      /* Through the projection itself: the sheet gets the reason, the settings record, and her words as the prompt. */
+      const lost = projectRoll({
+        roll: rollRow({ briefText: "goth woman mid 30s", compiledBrief: staticRegister }),
+        candidates: [candidateRow()],
+      });
+      expect(lost.authorSatOut).toBe("static");
+      expect(lost.imagination).toBe("max");
+      /* Her words are the record — no authored pairing is drawn (`authoredFrom` needs content). */
+      expect(lost.authoredPrompt).toBe("goth woman mid 30s");
+      expect(lost.authoredFrom).toBeNull();
+    });
+
+    it("every reason the projection can say has copy on the sheet — the client map is a second declaration and cannot be allowed to silently miss one (working law 4)", () => {
+      /*
+        The population is DERIVED: the house vocabulary from its constant, and
+        "static" from the projection function itself — so deleting the static
+        branch reddens this arm before the sheet draws a blank line.
+      */
+      const derivedStatic = readAuthorSatOut({ register: { kind: "author", mode: "static" } });
+      expect(derivedStatic).toBe("static");
+      for (const reason of [...AUTHOR_SAT_OUT_REASONS, derivedStatic!]) {
+        const copy = authorSatOutRecord(reason);
+        expect(copy).toContain("Sat this one out");
+        expect(copy.length).toBeGreaterThan(40);
+      }
     });
 
     it("anything that is not a bounded author register is null, never forwarded", () => {
