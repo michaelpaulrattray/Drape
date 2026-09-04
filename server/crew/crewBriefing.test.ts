@@ -534,6 +534,25 @@ describe("#493 — the briefing cannot list one card in two homes", () => {
     expect(() => crewBriefingSchema.parse(base)).toThrow(/program\.ladder\[\]\.key/);
   });
 
+  it("⚠ POSITIVE CONTROL — ladder cards with an EMPTY ladder are REFUSED (PR #497 finding 1)", () => {
+    /* The page draws the ladder-cards UI inside the ladder block, so this
+       shape would show the cards nowhere while the quiet line still counts
+       them — the no-place failure, invisible to every disjointness arm. */
+    const base = valid();
+    base.program.ladder = [];
+    /* Placed rungs would fail the rung-names-a-key refinement first; the
+       no-ladder hole is exactly the all-unplaced shape, so drive that. */
+    base.program.ladderCards.items = base.program.ladderCards.items.map(
+      (item: { rung: string | null }) => ({ ...item, rung: null }),
+    );
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/non-empty program\.ladder/);
+    /* And the empty-empty shape stays legal — the degraded state is built
+       from it, and refusing it would crash the page this file may never
+       take down. */
+    base.program.ladderCards.items = [];
+    expect(() => crewBriefingSchema.parse(base)).not.toThrow();
+  });
+
   it("a duplicated ladder card is refused within its own list too", () => {
     const base = valid();
     base.program.ladderCards.items.push({ ...base.program.ladderCards.items[0] });

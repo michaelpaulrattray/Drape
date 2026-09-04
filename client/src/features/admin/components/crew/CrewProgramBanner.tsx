@@ -119,8 +119,15 @@ const LADDER_KIND_WORD: Record<string, string | null> = {
   "design-unbuilt": "unbuilt design",
 };
 
-/** The pseudo-rung the honest remainder expands under (#493). */
+/**
+ * The pseudo-rung the honest remainder expands under (#493). Real rungs enter
+ * the open-set through `rungSetKey`, which prefixes them — so this key cannot
+ * collide with a briefing rung whatever the ladder is keyed (PR #497 review,
+ * finding 2): a real key `K` becomes `rung:K`, and no `rung:`-prefixed string
+ * equals this bare word.
+ */
 const UNPLACED_KEY = "unplaced";
+const rungSetKey = (key: string) => `rung:${key}`;
 
 export function CrewProgramBanner({
   program, cardIntents, onIntent, intentPendingCard,
@@ -338,7 +345,7 @@ export function CrewProgramBanner({
           <ul className="dp-crew__rungs">
             {program.ladder.map((rung) => {
               const cards = cardsOn(rung.key);
-              const open = openRungs.has(rung.key);
+              const open = openRungs.has(rungSetKey(rung.key));
               return (
                 <li key={rung.key}>
                   <div className="dp-crew__rung">
@@ -360,7 +367,7 @@ export function CrewProgramBanner({
                         type="button"
                         className="dp-crew__rungcount"
                         aria-expanded={open}
-                        onClick={() => toggleRung(rung.key)}
+                        onClick={() => toggleRung(rungSetKey(rung.key))}
                         data-testid={`crew-rung-cards-${rung.key}`}
                       >
                         {cards.length} waiting

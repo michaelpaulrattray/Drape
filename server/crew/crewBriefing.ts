@@ -450,6 +450,18 @@ export const crewBriefingSchema = z.object({
   "a ladder card's rung must name a program.ladder[].key (#493)",
 ).refine(
   /*
+    LADDER CARDS NEED A LADDER TO HANG FROM (PR #497 review, finding 1). The
+    page draws the whole ladder-cards UI — including the unplaced remainder —
+    inside the ladder block, so an edition with items and an EMPTY ladder
+    would show those cards nowhere while the orphan block's quiet line still
+    counts them "on the ladder": the exact no-place failure #493 guards
+    against, and invisible to every other arm because nothing is doubled.
+  */
+  (briefing) =>
+    briefing.program.ladderCards.items.length === 0 || briefing.program.ladder.length > 0,
+  "ladder cards need a non-empty program.ladder to render under (#493, PR #497 finding 1)",
+).refine(
+  /*
     THE ONE-PLACE RULE, HELD AT THE PARSE (#493, the #291 precedent): a card in
     NEXT UP may not also sit on the ladder. The two lists are written by the
     same sweep from one partition, so this can only fire on a hand edit — and
