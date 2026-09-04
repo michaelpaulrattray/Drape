@@ -228,10 +228,44 @@ export const CREATURE_EXPRESSION_LINE =
  *     establishes "the description" as the thing that states facts.
  *
  * His three placements and both prohibitions are verbatim.
+ *
+ * # THE RULE IS SPECIES NOW, NOT ONLY WHAT WAS TYPED (#243) — founder order,
+ * 2026-08-30 00:18Z, Crew reply #38, verbatim: *"Creature lane stays on. Don't
+ * tighten. Rewrite the rule to species — measured, not guessed. … Lamia didn't
+ * test tongues. It did test implied anatomy: brief never said 'tail,' coils
+ * still landed in all four. That's correct. Tightening to 'only anatomy the
+ * user typed' would turn a lamia into a woman in a dress. Don't ship that. …
+ * The next sentence in the house block should be: Show anatomy the species
+ * implies, even when the brief doesn't name the part. People lane unchanged:
+ * mouth closed, no teeth, no tongue. … Paper should match the lane. The lane
+ * is already doing the right thing."*
+ *
+ * The widening court behind it: `docs/specs/CREATURE_LANE_WIDENING_COURT_2026-08-30.md`
+ * §7 — the lamia's seed said *"serpent-blooded woman"*, never *"tail"*, and the
+ * serpent body landed 4/4 on this lane against 0/4 on the human block, so the
+ * clause was already reaching past its own *"names"* and he ruled the reach
+ * correct. His sentence lands as the paragraph's second sentence, between the
+ * named-anatomy rule and his two prohibitions, which govern both.
+ *
+ * ⚠ ONE WORD ADAPTED, DECLARED HERE like the two above: *"the brief"* → *"the
+ * description"*. "Brief" has no referent inside the block; `AUTHORITY_LINE`
+ * establishes "the description" as the customer's text. Asserted in the suite.
+ *
+ * ⚠ His *"People lane unchanged: mouth closed, no teeth, no tongue"* is the
+ * order's OTHER HALF and it is executed structurally, not as prompt text: the
+ * sentence joins the creature lane's paragraph only, the human block does not
+ * carry it, and the suite's byte-identity arm is what proves every human roll
+ * still receives exactly what it received before — sending that clause to the
+ * ENGINE would tell a creature roll "mouth closed, no teeth", the exact
+ * opposite of the lane it rides in. The four checks he ordered with the
+ * sentence (anglerfish, lamia, sphinx, goth woman — judged at the frames,
+ * never by the pixel counter) are the court record beside the widening one.
  */
 export const ANATOMY_VISIBILITY_LINE =
   "ANATOMY: If the being has a tail, wings, or other anatomy the description names, it must be visible in this frame "
-  + "— over a shoulder, beside the ribcage, or rising into the picture. Do not hide it behind the back. Do not switch to a full-body shot.";
+  + "— over a shoulder, beside the ribcage, or rising into the picture. "
+  + "Show anatomy the species implies, even when the description doesn't name the part. "
+  + "Do not hide it behind the back. Do not switch to a full-body shot.";
 
 /**
  * WHICH LANE THE BLOCK IS COMPOSED IN (#232, #237) — the founder's own split:

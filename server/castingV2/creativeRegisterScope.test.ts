@@ -1371,6 +1371,42 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
     expect(CREATURE_HOUSE_BLOCK.indexOf(ANATOMY_VISIBILITY_LINE)).toBeLessThan(CREATURE_HOUSE_BLOCK.indexOf(POSTURE_LINE));
   });
 
+  it("#243 — the rule is SPECIES now: his sentence in the creature lane, the people lane structurally without it", () => {
+    /*
+      Founder order, Crew reply #38 (2026-08-30): "Rewrite the rule to species —
+      measured, not guessed. … The next sentence in the house block should be:
+      Show anatomy the species implies, even when the brief doesn't name the
+      part. People lane unchanged: mouth closed, no teeth, no tongue."
+      Court: docs/specs/SPECIES_ANATOMY_COURT_2026-09-05.md (his four checks).
+    */
+    expect(ANATOMY_VISIBILITY_LINE).toContain(
+      "Show anatomy the species implies, even when the description doesn't name the part.",
+    );
+    /* THE ADAPTATION, ASSERTED like the chest-up one: his "the brief" is "the
+       description" here, because "brief" has no referent inside the block and
+       AUTHORITY_LINE already names the customer's text "the description". */
+    expect(ANATOMY_VISIBILITY_LINE.toLowerCase()).not.toContain("brief");
+    /* His sentence sits BETWEEN the named-anatomy rule and his two prohibitions,
+       so the placements and prohibitions govern named and implied anatomy alike.
+       The anchors are asserted PRESENT first, or a deleted named-anatomy clause —
+       the exact tightening he forbade — would make the indexOf pair pass vacuously
+       (review of #528, finding 1). */
+    expect(ANATOMY_VISIBILITY_LINE).toContain("anatomy the description names");
+    expect(ANATOMY_VISIBILITY_LINE).toContain("Do not hide it behind the back.");
+    expect(ANATOMY_VISIBILITY_LINE.indexOf("Show anatomy the species implies")).toBeGreaterThan(
+      ANATOMY_VISIBILITY_LINE.indexOf("anatomy the description names"),
+    );
+    expect(ANATOMY_VISIBILITY_LINE.indexOf("Show anatomy the species implies")).toBeLessThan(
+      ANATOMY_VISIBILITY_LINE.indexOf("Do not hide it behind the back."),
+    );
+    /* "People lane unchanged" is structural: the human block never carries the
+       species sentence — mouth closed, no teeth, no tongue is EXPRESSION_LINE's,
+       and the byte-identity arm above holds the rest of that promise. */
+    expect(HOUSE_BLOCK).not.toContain("species implies");
+    expect(CREATURE_HOUSE_BLOCK).toContain("species implies");
+    expect(EXPRESSION_LINE).toContain("mouth closed");
+  });
+
   it("the forbidden-token guard and the never-written list read BOTH lanes, not just the human bytes", () => {
     for (const lane of HOUSE_LANES) {
       const block = houseBlockForStyle("photoreal", lane).toLowerCase();
