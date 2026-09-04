@@ -136,12 +136,28 @@ export const SURFACES: SurfacePlan[] = [
     kind: "drive",
     fixture: "session",
     url: (f) => (f.session ? `/casting/s/${f.session}` : null),
-    /* `<Dock>` is rendered here (`CastingSheet.tsx:2785`) and on the gallery,
-       and NOWHERE else — read at the code, not assumed. The casting TAB has no
-       dock, which is why it does not claim one: a required subject that the
-       page never had would fail this drive forever and teach a reader to
-       ignore it. */
-    requires: ["dock"],
+    /*
+      `<Dock>` is rendered here (`CastingSheet.tsx:2785`) and on the gallery,
+      and NOWHERE else — read at the code, not assumed. The casting TAB has no
+      dock, which is why it does not claim one: a required subject the page
+      never had would fail this drive forever and teach a reader to ignore it.
+
+      The echo is here too and only here (`CastingSheet.tsx:2536` renders
+      `<BriefEcho>` whenever the roll has loaded, and `BriefEcho.tsx:158` is the
+      only `.dpc-echo` in the product). It binds only when `--session` supplies
+      a real sheet, which is the point: with the fixture, six checks that
+      otherwise print "not applicable" become assertions.
+
+      ⚠ `retentionCopy` is declared by NO surface, and that is deliberate rather
+      than an oversight. The unsigned-sheets section is conditional on DATA —
+      `CastingV2.tsx:945` renders it only for `openSessions.data.length > 0` —
+      so no address holds it unconditionally, and an account with no open
+      sessions (the drive's own bot, every time) would fail forever. Law 5
+      therefore reports "not applicable" on /casting truthfully. The subject
+      stays in the type because the machinery is proven by its own control arm,
+      and because a sheet-listing surface that IS unconditional would claim it.
+    */
+    requires: ["dock", "briefEcho"],
   },
   {
     path: "/casting/cast/:castId",
@@ -206,15 +222,55 @@ export function readRouterRoutes(file = ROUTER_FILE): RouterRoute[] {
   /* Blank the comments rather than delete them, so line numbers survive. */
   const blanked = source.replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, " "));
   const routes: RouterRoute[] = [];
-  blanked.split(/\r?\n/).forEach((text, index) => {
-    if (!/<Route[\s/>]/.test(text)) return;
-    const withPath = /<Route[^>]*?\spath="([^"]+)"/.exec(text);
-    routes.push({ path: withPath ? withPath[1] : null, line: index + 1 });
-  });
+
+  /*
+    THE WHOLE TAG, NOT THE LINE IT STARTS ON.
+
+    A line-based scan reads a `<Route` whose `path` attribute wrapped onto the
+    next line as the PATHLESS catch-all. For a route already in the table that
+    throws the orphan error, which is loud and fine — but for a NEW route it is
+    silent in the one direction that matters: the path never enters
+    `declaredSet`, the coverage check never demands a table row, and the page
+    escapes the drive entirely. That is precisely the failure this module
+    exists to refuse, reappearing inside the refusal.
+  */
+  for (const match of blanked.matchAll(/<Route\b[^>]*>/g)) {
+    const tag = match[0];
+    const line = blanked.slice(0, match.index).split("\n").length;
+    const withPath = /\spath="([^"]+)"/.exec(tag);
+    if (withPath) {
+      routes.push({ path: withPath[1], line });
+      continue;
+    }
+    /*
+      A pathless <Route> is legitimate exactly once — the catch-all, which is
+      `<Route component={NotFound} />`. Anything else with no path is a tag this
+      reader could not parse (a wrapped attribute, a `>` inside an expression),
+      and classifying it as the catch-all is how a page goes unwatched. Refuse.
+    */
+    if (!/\scomponent=/.test(tag)) {
+      throw new Error(
+        `designLawSurfaces: ${file}:${line} has a <Route> with neither a path= nor a ` +
+          `component=, which this reader cannot parse: ${tag.replace(/\s+/g, " ").slice(0, 120)}. ` +
+          `A tag read as the catch-all is a page the drive never visits and never demands ` +
+          `a table row for — refusing instead.`,
+      );
+    }
+    routes.push({ path: null, line });
+  }
+
   if (routes.length === 0) {
     throw new Error(
       `designLawSurfaces: no <Route> found in ${file}. A collector that can come up empty ` +
         `reports a complete list either way, so this refuses rather than returning nothing.`,
+    );
+  }
+  const catchAlls = routes.filter((r) => r.path === null);
+  if (catchAlls.length > 1) {
+    throw new Error(
+      `designLawSurfaces: ${catchAlls.length} pathless <Route> tags in ${file} (lines ` +
+        `${catchAlls.map((r) => r.line).join(", ")}). There is one catch-all; a second means a ` +
+        `path was not read, and an unread path is a page nothing checks.`,
     );
   }
   return routes;

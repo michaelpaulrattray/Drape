@@ -326,7 +326,25 @@ export async function assertNoMonoSentences(page: Page, where: string, log: LawL
  */
 export async function assertPricedButtons(page: Page, where: string, log: LawLog) {
   const result = await page.evaluate(() => {
-    const PAID = [/^cast it/i, /^roll again/i, /^sign\b/i];
+    /*
+      `sign` MEANS SIGNING A CAST TO THE ROSTER, NEVER SIGNING IN OR OUT.
+
+      This read `/^sign\b/i` and was written when the drive only ever visited
+      three casting addresses. It now walks `/login`, the lobby, the studio and
+      nine staff pages, every one of which can render a "Sign out" — and
+      "Sign in", "Sign in with Email" and "Sign out" all match `sign\b`. Each
+      would be reported as a paid button with no price, on pages that sell
+      nothing. A law that reddens on correct pages is one people learn to
+      ignore, which is the same failure as no law at all.
+
+      ⚠ AND THE WORD BOUNDARY STAYS. The first repair here dropped it in favour
+      of the lookahead alone, and immediately caught "Signed" — the roster
+      filter pill on /casting and on the specimen gallery — which the original
+      `\b` had always excluded. Driven in both themes and caught before it
+      shipped. So: a boundary after the verb, AND the three labels that are not
+      a purchase.
+    */
+    const PAID = [/^cast it/i, /^roll again/i, /^sign\b(?!\s*(in|out|up)\b)/i];
     const PENDING = [/^casting/i, /^rolling/i, /^signing/i];
     const bad: string[] = [];
     let seen = 0;

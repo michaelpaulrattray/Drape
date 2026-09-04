@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -93,6 +97,58 @@ describe("against the real tree", () => {
     expect(routes.some((r) => r.path === "/casting/foundation")).toBe(false);
   });
 
+  it("reads a <Route> whose path attribute WRAPPED onto the next line", () => {
+    /*
+      Reviewer finding on PR #522, and its blind spot failed silently in the one
+      direction that matters: a line-based scan read a wrapped tag as the
+      PATHLESS catch-all, so a NEW page never entered the declared set, the
+      coverage arm never demanded a table row, and it escaped the drive
+      entirely — the exact failure this module exists to refuse.
+    */
+    const file = path.join(os.tmpdir(), `designlaw-wrapped-${process.pid}.tsx`);
+    fs.writeFileSync(
+      file,
+      `<Switch>\n  <Route\n    path="/app/newthing"\n    component={New}\n  />\n  <Route component={NotFound} />\n</Switch>\n`,
+      "utf8",
+    );
+    try {
+      const routes = readRouterRoutes(file);
+      expect(routes.map((r) => r.path)).toEqual(["/app/newthing", null]);
+    } finally {
+      fs.unlinkSync(file);
+    }
+  });
+
+  it("REFUSES a <Route> it cannot parse rather than calling it the catch-all", () => {
+    const file = path.join(os.tmpdir(), `designlaw-unparseable-${process.pid}.tsx`);
+    fs.writeFileSync(file, `<Route somethingElse={x} />\n<Route component={NotFound} />\n`, "utf8");
+    try {
+      expect(() => readRouterRoutes(file)).toThrow(/neither a path= nor a component=/);
+    } finally {
+      fs.unlinkSync(file);
+    }
+  });
+
+  it("REFUSES a second pathless <Route> — one catch-all, or a path went unread", () => {
+    const file = path.join(os.tmpdir(), `designlaw-two-catchalls-${process.pid}.tsx`);
+    fs.writeFileSync(file, `<Route component={A} />\n<Route component={NotFound} />\n`, "utf8");
+    try {
+      expect(() => readRouterRoutes(file)).toThrow(/2 pathless/);
+    } finally {
+      fs.unlinkSync(file);
+    }
+  });
+
+  it("POSITIVE CONTROL: one catch-all beside real routes is accepted", () => {
+    const file = path.join(os.tmpdir(), `designlaw-ok-${process.pid}.tsx`);
+    fs.writeFileSync(file, `<Route path="/a" component={A} />\n<Route component={NotFound} />\n`, "utf8");
+    try {
+      expect(readRouterRoutes(file).map((r) => r.path)).toEqual(["/a", null]);
+    } finally {
+      fs.unlinkSync(file);
+    }
+  });
+
   it("THE COVERAGE ARM — every declared address is driven or declared undriveable", () => {
     /* This is the whole point. It throws with the offending path when a page is
        added to the router and not to the drive. */
@@ -132,6 +188,25 @@ describe("against the real tree", () => {
     const plan = planSurfaces("http://localhost:3000", { session: "s1", cast: "c1", board: "b1" });
     expect(plan.awaitingFixture).toEqual([]);
     expect(plan.visit.some((v) => v.url.endsWith("/casting/s/s1"))).toBe(true);
+  });
+
+  it("the sheet claims the brief echo, and NOTHING claims retention copy", () => {
+    /*
+      Reviewer finding on PR #522: two existential subjects shipped with no
+      surface declaring them. The echo was an oversight and is declared now —
+      `CastingSheet.tsx:2536` renders `<BriefEcho>` once the roll has loaded and
+      `BriefEcho.tsx:158` is the only `.dpc-echo` in the product.
+
+      `retentionCopy` is deliberately claimed by nobody, and this arm pins that
+      so a later shift does not "fix" it: the unsigned-sheets section is
+      conditional on DATA (`CastingV2.tsx:945`, `openSessions.data.length > 0`),
+      so no address holds it unconditionally and any account with no open
+      sessions — the drive's own bot, every run — would fail forever.
+    */
+    const claims = (subject: string) =>
+      SURFACES.filter((s) => s.kind === "drive" && s.requires?.includes(subject as never)).map((s) => s.path);
+    expect(claims("briefEcho")).toEqual(["/casting/s/:sessionId"]);
+    expect(claims("retentionCopy")).toEqual([]);
   });
 
   it("only the sheet and the specimen gallery claim to hold a dock", () => {

@@ -223,6 +223,15 @@ async function settle(where: string): Promise<boolean> {
   return true;
 }
 
+/*
+  A misspelled theme used to be cast straight through: the app fell back to its
+  default and the report printed `theme: banana` over it, so one operator typo
+  mislabelled a whole pass and nothing said so.
+*/
+if (THEME && THEME !== "dark" && THEME !== "light") {
+  console.error(`--theme must be "dark" or "light" (got "${THEME}").`);
+  process.exit(1);
+}
 const themes = THEME ? [THEME as "dark" | "light"] : (["dark", "light"] as const);
 
 /*
@@ -247,7 +256,6 @@ for (const theme of themes) {
   for (const surface of plan.visit) {
     if (ONLY && surface.plan.path !== ONLY) continue;
     const where = `${theme} · ${surface.plan.label}`;
-    visited.add(surface.plan.path);
     console.log(`\n── ${where}  (${surface.url})`);
     try {
       await page.goto(surface.url, { waitUntil: "networkidle2", timeout: 45000 });
@@ -255,6 +263,9 @@ for (const theme of themes) {
       log.check(where, "the surface loads", false, `goto failed: ${(error as Error).message}`);
       continue;
     }
+    /* Counted once it has actually answered — a surface that never loaded is
+       not one this run looked at, whatever the headline would rather say. */
+    visited.add(surface.plan.path);
 
     /*
       A staff page that bounced to /login renders a perfectly lawful login form,

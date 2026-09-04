@@ -236,6 +236,39 @@ export const CONTROLS: Control[] = [
     compliant: { html: page(``, `<button>Cast it &middot; 160 cr</button>`) },
   },
   {
+    /*
+      THE BOUNDARY THE PAID VERBS SIT ON, and it had no arm until the reviewer
+      of #522 walked it. "Sign" is a paid action — signing a cast to the roster
+      — and "Sign in" / "Sign out" are not, but `/^sign\b/i` matched all three.
+      The drive now visits /login, the lobby, the studio and nine staff pages,
+      every one of which can render a Sign out; each would have been reported
+      as an unpriced paid button on a page that sells nothing.
+
+      The offender is the real paid verb with no price (must be caught); the
+      compliant page carries every label that merely STARTS with those letters
+      and is not a purchase, none of them priced, and must stay clean. Only the
+      pair pins the line between them.
+
+      ⚠ "SIGNED" IS IN THE COMPLIANT ARM BECAUSE THE FIRST FIX BROKE IT. The
+      roster filter pills on /casting read All / Signed / Unsigned, and a repair
+      that dropped the word boundary for the lookahead flagged "Signed" as an
+      unpriced paid button on two surfaces. The drive caught it; this arm is so
+      that the next reader of this regex does not have to.
+    */
+    law: "priced-buttons",
+    breaks: "the Sign boundary — a paid Sign with no price, beside Signed/sign-in/sign-out, which are not paid",
+    run: assertPricedButtons,
+    offender: { html: page(``, `<button>Sign them</button>`) },
+    compliant: {
+      html: page(
+        ``,
+        `<button>Sign in</button><button>Sign in with Email</button><button>Sign out</button>` +
+          `<button>Sign up</button><button>Signed</button><button>Unsigned</button>` +
+          `<button>Signature</button>`,
+      ),
+    },
+  },
+  {
     law: "retention",
     breaks: "an unsigned-sheets section that never says when the sheets expire",
     run: assertRetentionStated,
