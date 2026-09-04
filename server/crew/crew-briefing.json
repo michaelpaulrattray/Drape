@@ -1,6 +1,6 @@
 {
-  "edition": 241,
-  "updatedAt": "2026-09-04T19:15:00+10:00",
+  "edition": 242,
+  "updatedAt": "2026-09-04T19:35:00+10:00",
   "shift": "Opus — 4 September (the reviewer stops cancelling itself, #434)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -116,19 +116,19 @@
     ],
     "chips": [
       {
-        "label": "The Program card",
+        "label": "The code reviewer",
         "tone": "good",
-        "source": "Your #492: the status readings at the top are redesigned. Your eye is on it below."
+        "source": "Your #434, fixed: a label could shove the review out of the queue, leaving a red mark."
       },
       {
-        "label": "The pipeline",
+        "label": "How often it fired",
         "tone": "good",
-        "source": "Your #493: nothing listed twice — the ladder holds its cards. Your eye is on it below."
+        "source": "Once in its last 100 runs — not the 27-in-60 the card said. Read at the record."
       },
       {
-        "label": "Your nights",
+        "label": "The ladder",
         "tone": "good",
-        "source": "Your #490: 6.9 hours of dead night on 3-4 Sep, parked 00:40. It now waits, not quits."
+        "source": "Voice is a rung now — N4b, straight after Takes — on your word today."
       }
     ],
     "ladderCards": {
@@ -5180,10 +5180,10 @@
     },
     {
       "id": "queue-shape-0903-foreman",
-      "title": "The queue: 77 open, 8 carrying your word, 0 urgent",
+      "title": "The queue: 86 open, 13 carrying your word, 0 urgent",
       "severity": "info",
       "state": "open",
-      "detail": "Nine of the 77 have gone a week untouched (#10 #14 #18 #22 #23 #30 #55 #61 #65) — one more than last night, and that one is #23 crossing the seven-day line rather than a new problem. Eight cards carry your word and every one of them is takeable: none is waiting on an answer from you. The two that need the reviewer seat rather than this one are #477 and #429."
+      "detail": "The urgent one cleared tonight — #434 was the only card carrying it, and it is closed.\n\n⚠ The \"gone a week untouched\" figure reads ZERO tonight and it read NINE last night, and nobody re-read one of those nine. It counts from the last time anything was written to a card, and last night's ladder work put a rung label on the whole roadmap set — which reset the clock on all of them without anybody looking at what the cards say. The number is true and it is not the answer to your question. Filed as #516 with the fix; until it lands, read tonight's zero as \"the label pass touched everything\", not as \"the backlog is fresh\".\n\n13 cards carry your word and every one is takeable — none is waiting on an answer from you. Two of them still want the reviewer seat rather than this one: #477 and #429."
     }
   ],
   "acknowledgedReplyIds": [
