@@ -200,6 +200,50 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
     });
   });
 
+  describe("the other two commit roads, which build the commit through a TEMPORARY index", () => {
+    /* `git commit -a` and `git commit -- <path>` do not commit the real index:
+       git's prepare_index() builds a temporary one, and a pre-commit hook that
+       runs `git add` on those roads is the classic place where the staged file
+       misses the commit — the hook would print "this commit carries the map of
+       its own tree" over a commit that does not carry it, which is precisely the
+       false claim the positive arms exist to rule out. Raised as PLAUSIBLE and
+       explicitly undriven by the second review of PR #517; driven here, because
+       an unverified claim about a road nobody exercises is what law 7b is for. */
+
+    it("`git commit -a` carries the regenerated map", () => {
+      const dir = repoWithMap();
+      writeFileSync(join(dir, "server", "added.ts"), "export const added = 1;\n");
+      armed(dir, "add", "server/added.ts");
+      /* A tracked file modified but not staged, so -a has real work to sweep. */
+      writeFileSync(join(dir, MAP), "deliberately wrong\n");
+      const result = armed(dir, "commit", "-q", "-a", "-m", "commit -a");
+      expect(result.status, result.stderr).toBe(0);
+      expect(headMap(dir)).toBe("added.ts\nseed.ts\n");
+      expect(armed(dir, "status", "--porcelain").stdout.trim()).toBe("");
+    });
+
+    it("`git commit -- <path>` carries the regenerated map and leaves the index sane", () => {
+      /* The pathspec form is the historically notorious one: git commits the
+         named paths through a temporary index and then has to reconcile the real
+         one afterwards. */
+      const dir = repoWithMap();
+      writeFileSync(join(dir, "server", "added.ts"), "export const added = 1;\n");
+      writeFileSync(join(dir, "server", "other.ts"), "export const other = 1;\n");
+      /* `git commit -- <path>` only accepts paths git already knows, so both are
+         staged and only one is named — which is the partial-commit road proper:
+         the named path goes in, `other.ts` stays behind in the real index. */
+      armed(dir, "add", "server/added.ts", "server/other.ts");
+      const result = armed(dir, "commit", "-q", "-m", "pathspec", "--", "server/added.ts");
+      expect(result.status, result.stderr).toBe(0);
+      /* The map is generated from the WORKING TREE, so it lists both — the
+         question this arm settles is whether the hook's `git add` survived the
+         temporary index at all, and an absent map row would say it did not. */
+      expect(headMap(dir)).toBe("added.ts\nother.ts\nseed.ts\n");
+      /* And the real index is intact afterwards: `other.ts` is still staged. */
+      expect(armed(dir, "status", "--porcelain").stdout).toContain("server/other.ts");
+    });
+  });
+
   describe("⚠ the partial stage — the map is built from the WORKING TREE", () => {
     /* The generators hash bytes on disk, not the index, so a commit that stages
        some sources and leaves others dirty carries a map of a tree that is not
@@ -358,7 +402,42 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
         ).toBe(true);
       }
 
+      /* The extensions are declared beside the roots and narrow them: warning on
+         ANY file under a scanned root fires on unstaged `drizzle/*.sql` that
+         `fingerprint()` never hashes (second review of PR #517). */
+      const extDecl = /const SOURCE_EXTENSIONS = \[([^\]]+)\]/.exec(generator);
+      expect(extDecl, "SOURCE_EXTENSIONS is no longer declared the way this arm reads it").not.toBeNull();
+      const extensions = [...extDecl![1]!.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
+      expect(extensions.length).toBeGreaterThanOrEqual(2);
+      expect(filter.test("drizzle/0001_init.sql"), "an extension the generator never hashes must not warn").toBe(false);
+
+      /* ⚠ THE CAPABILITY MAP IS STAGED BY THIS HOOK TOO, AND ITS INPUTS ARE NOT
+         UNDER THE ARCHITECTURE ROOTS. A dirty corpus with a clean "map of its
+         own tree" message is a `capability:check` red with false assurance
+         attached — the exact pairing this card exists to end. Derived from the
+         capability generator's own relative imports, ONE HOP: an input reached
+         only through `lib/capabilityAtlas.mts` is not seen here, which is a
+         stated limit rather than a silent one. */
+      const capability = readFileSync(resolve("scripts/generate-capability-atlas.mts"), "utf8");
+      const capabilityInputs = [...capability.matchAll(/from "\.\/([^"]+)"/g)].map(
+        (m) => `scripts/${m[1]!}`,
+      );
+      expect(capabilityInputs.length).toBeGreaterThanOrEqual(2);
+      for (const input of capabilityInputs) {
+        expect(
+          filter.test(input),
+          `generate-capability-atlas.mts reads "${input}" and WARN_MATCHES does not fire on it`,
+        ).toBe(true);
+        expect(trigger.test(input), `MATCHES does not regenerate on "${input}"`).toBe(true);
+      }
+
       for (const root of roots) {
+        for (const ext of extensions) {
+          expect(
+            filter.test(`${root}/somewhere/module${ext}`),
+            `the generator hashes "${ext}" under "${root}" and WARN_MATCHES does not fire on it`,
+          ).toBe(true);
+        }
         /* A root only matters through the files inside it, and the filter is on
            paths, so the reading is a representative file. */
         const sample = `${root}/somewhere/module.ts`;

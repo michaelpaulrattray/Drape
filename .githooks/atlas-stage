@@ -59,20 +59,36 @@
 #
 # WARN_MATCHES decides whether to tell the author their map may not match the
 # commit, and over-firing costs the warning's credibility — which is worth more
-# than nine seconds. So it is exactly the population `fingerprint()` hashes:
-# the generator's own `SCANNED_ROOTS` plus `annotations.yaml`. **Measured the
-# hour it was written**: the first version warned on MATCHES, and the first
-# commit it ran on warned about an untracked `scripts/_*-disposable.mts` while
-# `pnpm architecture:check` said the map was fresh — `scripts/` is not a scanned
-# root. Every shift carries untracked disposables there, so that warning would
-# have fired on nearly every commit the team makes, which is the cry-wolf
-# failure this hook's own test arm is named after.
+# than nine seconds. So it is the population the generators actually READ, in
+# three parts: the architecture generator's own `SCANNED_ROOTS` **narrowed to
+# its `SOURCE_EXTENSIONS`**, the extra inputs of `fingerprint()`
+# (`annotations.yaml`), and the CAPABILITY generator's two module inputs, which
+# live under `scripts/`.
 #
-# Both are held to the generator by `server/atlasCommitHook.test.ts`: WARN_MATCHES
-# must fire on every `SCANNED_ROOTS` entry and every extra input of
-# `fingerprint()`, and MATCHES must be a superset of WARN_MATCHES.
+# **Both narrowings were measured rather than reasoned.** The first version
+# warned on MATCHES, and the very first commit it ran on warned about an
+# untracked `scripts/_*-disposable.mts` while `pnpm architecture:check` said the
+# map was fresh — every shift carries untracked disposables there, so it would
+# have fired on nearly every commit the team makes. The second review of PR #517
+# then found the mirror defect: warning on ANY file under a scanned root fires
+# on unstaged `drizzle/*.sql` that `fingerprint()` never hashes, and warning on
+# no file under `scripts/` is SILENT when the capability corpus is dirty — which
+# is a clean "map of its own tree" message over a `capability:check` that reds.
+#
+# ⚠ ONE KNOWN GAP, STATED RATHER THAN IMPLIED: `git ls-files --others
+# --exclude-standard` hides gitignored files, while the generator's `walk()`
+# reads the disk regardless of gitignore. A gitignored `.ts` under a scanned
+# root therefore moves the map without warning. Rare, and not worth listing
+# ignored files on every commit.
+#
+# Held to the generators by `server/atlasCommitHook.test.ts`: WARN_MATCHES must
+# fire on every `SCANNED_ROOTS` entry at every `SOURCE_EXTENSIONS` extension, on
+# every extra input of `fingerprint()`, and on every relative import of
+# `generate-capability-atlas.mts`; and MATCHES must be a superset of it. The
+# capability arm resolves ONE hop, so a new input reached only through
+# `lib/capabilityAtlas.mts` is not seen — which is why that arm says so.
 MATCHES='^(server/|client/|shared/|scripts/|drizzle/|docs/architecture/annotations\.yaml$)'
-WARN_MATCHES='^(server/|client/src/|shared/|drizzle/|docs/architecture/annotations\.yaml$)'
+WARN_MATCHES='^((server|client/src|shared|drizzle)/.*\.(ts|tsx|css|mts)|docs/architecture/annotations\.yaml|scripts/(capability-atlas-corpus|lib/capabilityAtlas)\.mts)$'
 
 # Nothing staged that the maps are built from → do nothing at all.
 staged=$(git diff --cached --name-only 2>/dev/null | grep -E "$MATCHES" | head -n 1)

@@ -47,6 +47,13 @@
 #   a second marker to make the automatic road skip would be state that
 #   can go stale, to save nine seconds on the rarer of two roads.
 #
+#   ⚠ AND THE MAPS ARM 3 STAGES ARE NOT SEEN BY ARM 2's CONTROL-BYTE SCAN,
+#   because ARM 3 runs after it. Deliberate — the ordering is what keeps a
+#   refusal cheap — and near-zero risk, since the bytes are generator output
+#   rather than anything a heredoc wrote. The MERGE road's maps ARE scanned:
+#   ARM 0 stages them before ARM 2 runs. Said here rather than left as a
+#   difference between the two roads that nobody wrote down.
+#
 # THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify. Driven by
 # server/preCommitGate.test.ts against real temporary repositories.
 #
