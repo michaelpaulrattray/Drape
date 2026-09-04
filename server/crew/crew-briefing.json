@@ -1,7 +1,7 @@
 {
-  "edition": 236,
-  "updatedAt": "2026-09-04T03:11:49.753Z",
-  "shift": "Foreman — 4 September afternoon (a busy server can no longer end the night)",
+  "edition": 237,
+  "updatedAt": "2026-09-04T04:45:47.401Z",
+  "shift": "Foreman — 4 September evening (the Program card's readings)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -111,23 +111,34 @@
     ],
     "chips": [
       {
-        "label": "Your nights",
+        "label": "The Program card",
         "tone": "good",
-        "source": "Your #490: 6.9 hours of dead night on 3-4 Sep, parked 00:40. It now waits instead of quitting."
+        "source": "Your #492: the status readings at the top are redesigned. Your eye is on it below."
       },
       {
         "label": "The queue",
         "tone": "good",
-        "source": "79 open, 8 carrying your word, none urgent. Four have sat a week (#18 #22 #23 #30)."
+        "source": "78 open, 7 carrying your word, none urgent. Four have sat a week (#18 #22 #23 #30)."
       },
       {
-        "label": "The live site",
+        "label": "Your nights",
         "tone": "good",
-        "source": "Shut to everything but you — your \"protect it\" (#461), checked branch by branch."
+        "source": "Your #490: 6.9 hours of dead night on 3-4 Sep, parked 00:40. It now waits, not quits."
       }
     ]
   },
   "needsYou": [
+    {
+      "id": "state-strip-492",
+      "title": "The top of the Program card is rebuilt — your \"it looks terribly designed\"",
+      "productImpact": "The three status readings at the top of THE PROGRAM card no longer sit in outlined tags. You were looking at a tag holding a 67-character sentence, wrapped onto two lines, with the actual information in small grey type underneath it — and two tags on one row with the third orphaned below. It is now three equal columns: a small heading, a dot for good or bad, and the reading itself in normal readable type. Nothing else on the card moved — the mission, your quote, the progress bar, the steps and the ladder are exactly where they were.",
+      "workedExample": "Before, the middle reading's heading was the whole sentence: \"The queue: 79 open, 8 carrying your word, none urgent, 4 going stale\" — 67 characters inside a rounded outline, over two lines. Now the heading is \"THE QUEUE\" and the sentence sits under it at a readable size. The reason it cannot go back is that a heading longer than 40 characters is now REFUSED before the page can deploy, so no future shift can type a headline into that slot again.",
+      "options": [],
+      "recommendation": null,
+      "state": "open",
+      "filedAt": "2026-09-04T04:45:47.401Z",
+      "issueNumber": 492
+    },
     {
       "id": "false-cap-495",
       "title": "Found while fixing that: the runner can tell you that you hit a usage cap when you have not",
@@ -1583,8 +1594,34 @@
   ],
   "eyeItems": [
     {
-      "id": "compare-tag-487-frames",
+      "id": "state-strip-492-frames",
       "state": "open",
+      "cardId": "state-strip-492",
+      "title": "The top of the Program card, rebuilt — does this read better than the tags did?",
+      "filedAt": "2026-09-04T04:45:47.401Z",
+      "issueNumber": 492,
+      "question": "Three frames of the block you photographed this morning: the same card in both themes, plus what it does on a narrow window.\n\nThe thing to look at is the top four lines of each frame. Your own words were that it looked terribly designed, so the question is simply whether this reads better — and in particular whether the small grey headings are readable enough at that size, because they are the one thing that got quieter rather than louder.\n\nIf the headings are too faint for you, that is a one-line change and worth saying now. Nothing else needs an answer.",
+      "frames": [
+        {
+          "key": "crew-eye/1f0a4e09-6472-4daf-a503-d2cb6081ee4f.png",
+          "arm": "Dark, full width",
+          "caption": "Three equal columns, no outlines. Measured in the browser: all three columns exactly 213px and all three headings on the same line — the uneven row you saw is now impossible rather than merely tidied."
+        },
+        {
+          "key": "crew-eye/95c3ab24-5ade-45b6-a018-b380c3266e22.png",
+          "arm": "Light, full width",
+          "caption": "The same block in light. This is the theme where the old outlines read heaviest, so it is the one worth comparing against your morning frame."
+        },
+        {
+          "key": "crew-eye/d4e30471-84ca-4d72-823d-e7742a3ec58c.png",
+          "arm": "Narrow window",
+          "caption": "Below 900px the three columns become one, each reading on a single line. You would see this on a phone or a half-width window — no frame at full width could have shown it, so it was driven separately."
+        }
+      ]
+    },
+    {
+      "id": "compare-tag-487-frames",
+      "state": "done",
       "title": "The tag is off the table and still on the cards — one look to confirm that is what you meant",
       "filedAt": "2026-09-04T02:25:45.066Z",
       "issueNumber": 487,
@@ -3408,6 +3445,14 @@
   ],
   "pipeline": [
     {
+      "id": "state-strip-492",
+      "title": "The Program card's status readings are a strip, not tags",
+      "status": "merged",
+      "prNumber": 496,
+      "note": "Your #492, merged. The reviewer caught one thing worth repeating: while shortening a sentence to fit the new layout, the shift changed a fact — it said the lost night was Tuesday when it was the night of the 3rd. Corrected before merge, and the reading now names the date rather than a weekday, because a weekday stops being true the moment you read the page a week later.",
+      "cardId": null
+    },
+    {
       "id": "runner-transient-490",
       "title": "The night runner now waits out a busy server instead of stopping",
       "status": "merged",
@@ -5018,10 +5063,11 @@
     116,
     117,
     118,
-    119
+    119,
+    120
   ],
   "nextUp": {
-    "readAt": "2026-09-04T03:11:42.532Z",
+    "readAt": "2026-09-04T04:45:40.282Z",
     "items": [
       {
         "issueNumber": 243,
@@ -5046,11 +5092,6 @@
       {
         "issueNumber": 477,
         "title": "Tighten MAX's instruction on Grok's verbatim-discipline evidence — keep Sonnet (his reply #114)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 492,
-        "title": "The Program card's at-a-glance chips are sentences in pill borders — a state strip in the house grammar, with the label capped at the schema (his frame, 4 Sep)",
         "urgent": false
       },
       {
