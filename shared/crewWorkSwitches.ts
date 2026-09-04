@@ -3,7 +3,7 @@
  *
  * `shared/` because four things key on this list: the mutation that validates
  * what he sets, the panel that draws it, the shift tool that reads it, and the
- * counter that fills the numbers. Four copies of six strings drift, and the
+ * counter that fills the numbers. Four copies of one string list drift, and the
  * first anyone would know is a category he can switch that no shift consults.
  *
  * # WHAT THE SWITCH IS FOR
@@ -19,15 +19,27 @@
  */
 
 /**
- * The five categories, each DERIVED FROM A LABEL THAT ALREADY EXISTS.
+ * The seven categories, each DERIVED FROM A LABEL THAT ALREADY EXISTS.
  *
  * ⚠ **`queueLabel` is the whole anti-drift design** (working law 4, and his
  * card says it in capitals): the panel's categories and counts come from the
  * queue's own labels, so **a card relabelled in GitHub moves category on his
  * page without anyone touching the panel.** Not one of these labels was
- * invented for this feature — all five were already in use by the seats.
+ * invented for this feature — the first five were already in use by the seats,
+ * and the two added by #429 were applied to eighteen existing cards by the
+ * relay before the switches existed, so neither row was ever born at zero.
  *
- * A sixth category is a row and a line here, never a migration.
+ * A sixth category is a row and a line here, never a migration. ⚠ **THE SIXTH
+ * AND SEVENTH ARRIVED 2026-09-04 (#429) AND PROVED THAT SENTENCE AT THE BYTES**
+ * — two entries below, no DDL, no ceremony, no founder command. `off` still
+ * holds by construction, because off is the ABSENCE of a row in
+ * `crew_work_switches` and neither key has one.
+ *
+ * ⚠ **AND THEY ARE TWO ROWS RATHER THAN ONE, WHICH IS THE POINT OF THEM** (his
+ * card): casting is frozen while a milestone is gated on his eye, so a single
+ * "small fixes" switch would let a quiet shift touch the casting road on the
+ * night he wants it left alone. Two switches let him run Small fixes with
+ * Casting upkeep off.
  */
 export const CREW_WORK_CATEGORIES = [
   {
@@ -60,6 +72,18 @@ export const CREW_WORK_CATEGORIES = [
     queueLabel: "seat:retro",
     blurb: "The team's fixes to its own failures.",
   },
+  {
+    key: "smallFixes",
+    label: "Small fixes",
+    queueLabel: "small-fix",
+    blurb: "Self-contained product and tooling fixes that are neither bugs nor litter.",
+  },
+  {
+    key: "castingUpkeep",
+    label: "Casting upkeep",
+    queueLabel: "casting-upkeep",
+    blurb: "Small casting-road items inside existing behaviour — off while a milestone waits on your eye.",
+  },
 ] as const;
 
 export type CrewWorkCategoryKey = (typeof CREW_WORK_CATEGORIES)[number]["key"];
@@ -67,7 +91,7 @@ export type CrewWorkCategoryKey = (typeof CREW_WORK_CATEGORIES)[number]["key"];
 /** The master switch's key. Off here means nothing runs, whatever the rest say. */
 export const CREW_WORK_MASTER_KEY = "master";
 
-/** Every key the store accepts — the master plus the five. */
+/** Every key the store accepts — the master plus every category above. */
 export const CREW_WORK_SWITCH_KEYS = [
   CREW_WORK_MASTER_KEY,
   ...CREW_WORK_CATEGORIES.map((category) => category.key),
@@ -92,8 +116,8 @@ export type CrewWorkSwitchState = Readonly<Record<string, boolean>>;
  *
  * ⚠ **THE MASTER IS AN AND, NOT A DEFAULT.** Master off means nothing runs
  * however many categories are on — which is what makes one tap from bed
- * actually stop the team, rather than requiring him to find and clear five
- * switches.
+ * actually stop the team, rather than requiring him to find and clear every
+ * switch one at a time.
  *
  * ⚠ **AND A MISSING KEY IS FALSE, WHICH IS HIS BAR** — *"a fresh install, a
  * lost row, an unreadable value: OFF."* `?? false` rather than `?? true` is the

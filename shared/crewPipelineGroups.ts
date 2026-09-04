@@ -50,7 +50,7 @@
  * The first group is the cards the switches above already reach. It is not
  * drawn as a group in zone 2 — it is what makes the arithmetic on his page
  * DERIVED rather than asserted: the panel prints the sum of every row here and
- * that sum is the real total open. The alternative was adding the five switch
+ * that sum is the real total open. The alternative was adding the switch
  * counts, and those carry #324's exclusions, so they do not sum to the union
  * (today 30 against 29 — one card carries two seat labels). Two numbers that
  * disagree by one, on the panel built because he could not tell a broken
@@ -65,7 +65,7 @@
  */
 
 /**
- * The five labels the switch panel reaches (`shared/crewWorkSwitches.ts`'s
+ * The labels the switch panel reaches (`shared/crewWorkSwitches.ts`'s
  * `queueLabel`s), named here so the `switched` group is DERIVED from that
  * vocabulary rather than retyped beside it (working law 4).
  *
@@ -106,7 +106,8 @@ export type CrewPipelineGroup = {
   readonly label: string;
   /**
    * The queue label that puts a card here, or `null` for the three groups that
-   * are defined by something other than one label: `switched` (any of five),
+   * are defined by something other than one label: `switched` (any of the
+   * switch vocabulary's `queueLabel`s),
    * `other` (a label we do not name) and `unfiled` (no label at all).
    */
   readonly queueLabel: string | null;

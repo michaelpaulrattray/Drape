@@ -37,6 +37,7 @@ import {
   pipelineGroupFor,
   pipelineGroupRowKey,
 } from "../shared/crewPipelineGroups";
+import { exclusionFor } from "../shared/crewQueueExclusions";
 import { CREW_WORK_CATEGORIES, CREW_WORK_SWITCH_KEYS } from "../shared/crewWorkSwitches";
 
 /**
@@ -65,6 +66,14 @@ const REAL_SHAPES: ReadonlyArray<{ readonly why: string; readonly labels: readon
   { why: "a patrol", labels: ["patrol"] },
   { why: "urgent and nothing else — #219's real shape", labels: ["urgent"] },
   { why: "no label at all — #270's real shape", labels: [] },
+  /* #429's two new switch labels, measured off the queue 2026-09-04. Both ride
+     on top of a group label, which is exactly why they are here: the shape that
+     matters is the one where a card was already in a group and a switch now
+     reaches it. */
+  { why: "debt that is now a small fix — #457's real shape", labels: ["debt", "small-fix"] },
+  { why: "a small fix and nothing else — #394's real shape", labels: ["small-fix"] },
+  { why: "casting upkeep on a debt card — #242's real shape", labels: ["debt", "casting-upkeep"] },
+  { why: "a patrol that is casting upkeep — #129's real shape", labels: ["patrol", "casting-upkeep"] },
 ];
 
 describe("the pipeline vocabulary", () => {
@@ -76,7 +85,7 @@ describe("the pipeline vocabulary", () => {
        the groups defined by something other than one label, and they are named
        so a fourth cannot appear silently. */
     expect(CREW_PIPELINE_GROUPS.map((group) => group.queueLabel)).toEqual([
-      null, // switched — any of the five switch labels
+      null, // switched — any of the switch labels
       "founder-ordered",
       "blocked",
       "parked",
@@ -155,8 +164,10 @@ describe("the partition", () => {
 
   it("⚠ AND LANDS IN EXACTLY ONE — the counts sum to the population they came from", () => {
     /* His bar: *"the counts sum to the real total."* This is that bar as an arm,
-       over a population where five of the seventeen shapes carry two or more
-       labels this vocabulary names. */
+       over a population where a third of the shapes carry two or more labels
+       this vocabulary names — the count is derived from `REAL_SHAPES` itself
+       rather than stated, because a number written here goes stale the next
+       time a shape is added (it did, in the commit that added #429's four). */
     const tally = new Map<string, number>();
     for (const shape of REAL_SHAPES) {
       const key = pipelineGroupFor(shape.labels);
@@ -175,6 +186,45 @@ describe("the partition", () => {
     expect(pipelineGroupFor(["bug", "founder-ordered"])).toBe(PIPELINE_SWITCHED_KEY);
     expect(pipelineGroupFor(["seat:retro", "debt"])).toBe(PIPELINE_SWITCHED_KEY);
     expect(pipelineGroupFor(["seat:warden"])).toBe(PIPELINE_SWITCHED_KEY);
+  });
+
+  it("⚠ #429's two labels move eighteen cards OUT of the groups below — this is what changed on his page", () => {
+    /* `SWITCH_LABELS` is imported from `shared/crewWorkSwitches.ts`, so adding a
+       category there silently re-files every card carrying its label. That is
+       the design and it is correct — a card a switch can reach must not also be
+       offered as un-switchable work below — but it is a VISIBLE change to his
+       zone-2 numbers (measured 2026-09-04: Debt 22 → 9, Toolbelt 1 → 0, Patrols
+       1 → 0, Lost and found 3 → 2, Roadmap 2 → 1, Other 1 → 0, On offer 33 →
+       51, total 77 either way). Driven here so it is a stated consequence
+       rather than a surprise. */
+    expect(pipelineGroupFor(["debt", "small-fix"])).toBe(PIPELINE_SWITCHED_KEY);
+    expect(pipelineGroupFor(["small-fix"])).toBe(PIPELINE_SWITCHED_KEY);
+    expect(pipelineGroupFor(["toolbelt", "small-fix"])).toBe(PIPELINE_SWITCHED_KEY);
+    expect(pipelineGroupFor(["debt", "casting-upkeep"])).toBe(PIPELINE_SWITCHED_KEY);
+    expect(pipelineGroupFor(["patrol", "casting-upkeep"])).toBe(PIPELINE_SWITCHED_KEY);
+    /* POSITIVE CONTROLS — the same labels WITHOUT the new one still land where
+       they always did, so the arms above measure the new label rather than a
+       `pipelineGroupFor` that has started answering `switched` to everything. */
+    expect(pipelineGroupFor(["debt"])).toBe("debt");
+    expect(pipelineGroupFor(["toolbelt"])).toBe("toolbelt");
+    expect(pipelineGroupFor(["patrol"])).toBe("patrol");
+  });
+
+  it("⚠ AND HIS OWN CARDS STILL OUTRANK THEM — `founder-ordered` is read FIRST", () => {
+    /* The one shape that would have been a regression: a switch label lands a
+       card in `switched` BEFORE the group loop runs, so a `founder-ordered`
+       card that also carried `small-fix` would leave "Queued by you" and appear
+       as ordinary background work. No open card has that pair today (checked at
+       the queue, 2026-09-04) — this arm is what makes that a property rather
+       than today's luck. */
+    expect(pipelineGroupFor(["founder-ordered", "small-fix"])).toBe(PIPELINE_SWITCHED_KEY);
+    /* ⚠ Which is the DECLARED behaviour, not the desired one: it matches
+       `#316`'s existing `bug` + `founder-ordered` shape exactly, and #324's
+       exclusion is what keeps such a card off the offered count — the row reads
+       `Small fixes (n, 1 already queued)` rather than offering it twice. The
+       arm below is that promise, driven. */
+    expect(exclusionFor(["founder-ordered", "small-fix"])).toBe("ordered");
+    expect(exclusionFor(["debt", "small-fix"])).toBe(null);
   });
 
   it("⚠ FIRST MATCH WINS, and his own cards outrank everything they also carry", () => {

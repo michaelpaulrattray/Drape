@@ -244,7 +244,7 @@ try {
           different. The first version of this message always said "no category
           is on" — which was FALSE whenever the master was off and a category
           was on, and that is the commonest way he will leave it (one tap on the
-          master stops everything without clearing five switches). A refusal
+          master stops everything without clearing them one by one). A refusal
           that misstates why it refused sends the next shift to the wrong
           switch. Caught by driving it, not by reading it.
         */
