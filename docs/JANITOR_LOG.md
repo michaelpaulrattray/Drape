@@ -1,5 +1,8 @@
 # Janitor log — the litter ledger
 
+**Clock:** every 3 days. (Machine-readable — `scripts/patrol-clocks.mts` reads
+this line and the newest `## Run` date to tell a shift whether the seat is due.)
+
 The Janitor seat's record (PROGRAM.md, "THE CLOCKS"; first run ordered by the
 founder 2026-08-26, *"do it"*). What lives here and nowhere else:
 
