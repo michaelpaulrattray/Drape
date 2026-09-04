@@ -32,6 +32,13 @@
  *                               ledger nothing purges. Seven classes share one
  *                               sentence, so that row reads as a named FAMILY
  *                               rather than as a guess between them.
+ *                               Since patrol #2 it also reads the ROLL at SLICE
+ *                               grain — one `generations` row per slice, its
+ *                               class off `errorMessage`, cross-checked against
+ *                               the refund ledger — and it NAMES the failures
+ *                               whose errorCode a later Cast deletion erased,
+ *                               so an erased reason is never read as an absent
+ *                               one.
  *   D. candidates               casting_candidates by status + failureClass.
  *   E. face scans               casting_face_scans, split by geometry.scanned —
  *                               true is a PAID look (20 segmenter calls, $0.10);
@@ -199,6 +206,107 @@ if (classified.length === 0) console.log("   (none)");
 const refundedFailures = refunds.reduce((total, row) => total + Number(row.n), 0);
 const failedRefines = refineFailures.reduce((total, row) => total + Number(row.n), 0);
 console.log(`   denominator: ${refundedFailures} of ${failedRefines} failed refines carry a refund row`);
+
+/*
+  THE ROLL'S LOST SLICES — and the class was already written down (patrol #2).
+
+  Patrol #1 read the roll only at the OPERATION, where a roll that lost one
+  slice of eight and a roll that lost seven both read as the single word
+  `partial`. That is the wrong grain for the only question worth asking about a
+  roll: how many of the pictures the customer paid for actually arrived.
+
+  It is also why the roll's failures looked unclassifiable. They are not. Every
+  slice writes a `generations` row bound to its operation, `rollService.ts`
+  writes the computed `failureClass` into that row's `errorMessage` on the
+  failure path — and `generations` is purged only by account or Cast deletion,
+  so unlike `casting_candidates` (swept) and `casting_candidate_variants`
+  (failureClass non-null on zero rows, all time) it is still there weeks later.
+  The ledger had been buying that signal and throwing it away, which is the
+  disappearing-technology law's clause 4 pointed at our own instrument.
+
+  Two things this deliberately does NOT do:
+
+  - It does not divide `chargedCredits` by a per-slice price to get a
+    denominator. The row count IS the denominator, and it needs no constant that
+    could drift. (Measured the day it was written: 248 rows against 31 rolls in
+    the window, and 1,896 against 237 over 60 days — exactly eight per roll,
+    with nothing assumed.)
+  - It does not fold `processing` into `failed`. A slice stranded mid-flight on
+    an operation that died is a different event from a slice the engine refused,
+    it is refunded by a different road (the recovery sweep, not `failCandidate`),
+    and collapsing them would hide whichever one grew.
+
+  The money ledger is printed beside it as a SECOND READER that shares no
+  resolver with the first: "Casting candidate did not arrive" is written by
+  `recordRefund`, counted on `point_transactions`, and if the two disagree one of
+  them is wrong. They agreed exactly on both windows when this was written.
+*/
+console.log(`   the roll's SLICES — one generations row per slice, bound to its operation:`);
+const slices = await q(
+  `SELECT g.status AS status, g.errorMessage AS errorMessage, COUNT(*) AS n
+     FROM generations g
+     JOIN generation_operations o ON o.id = g.operationId
+    WHERE g.createdAt >= ? AND o.kind = 'castingV2.roll'
+    GROUP BY g.status, g.errorMessage ORDER BY n DESC`,
+  [since],
+);
+const sliceTotal = slices.reduce((total, row) => total + Number(row.n), 0);
+if (sliceTotal === 0) {
+  console.log("   (no roll slices in window)");
+} else {
+  const arrived = slices.filter((row) => row.status === "completed").reduce((t, r) => t + Number(r.n), 0);
+  const refused = slices.filter((row) => row.status === "failed").reduce((t, r) => t + Number(r.n), 0);
+  const stranded = sliceTotal - arrived - refused;
+  const pct = (n: number) => `${((n / sliceTotal) * 100).toFixed(1)}%`;
+  console.log(
+    `   ${sliceTotal} slices paid for · ${arrived} arrived · ${refused} failed (${pct(refused)}) · ` +
+      `${stranded} stranded mid-flight (${pct(stranded)}) — did NOT arrive: ${refused + stranded} (${pct(refused + stranded)})`,
+  );
+  for (const row of slices.filter((r) => r.status !== "completed")) {
+    console.log(`     ${String(row.n).padStart(4)}  ${row.status}  class ${row.errorMessage ?? "(none recorded)"}`);
+  }
+  /* The second reader. Same event, different table, no shared resolver. */
+  const arrivalRefunds = await q(
+    `SELECT COUNT(*) AS n, SUM(amount) AS credits FROM point_transactions
+      WHERE createdAt >= ? AND type = 'refund' AND description = 'Casting candidate did not arrive'`,
+    [since],
+  );
+  const ledgerSays = Number(arrivalRefunds[0]?.n ?? 0);
+  const agree = ledgerSays === refused + stranded;
+  console.log(
+    `     cross-check on the money ledger ("Casting candidate did not arrive"): ${ledgerSays} refunds ` +
+      `for ${arrivalRefunds[0]?.credits ?? 0} credits — ${agree ? "AGREES" : "⚠ DISAGREES with the slice count above"}`,
+  );
+}
+
+/*
+  THE FENCE, NAMED SO IT IS NEVER READ AS AN UNEXPLAINED FAILURE (patrol #2).
+
+  A permanent Cast deletion scrubs every PRIOR operation on that Cast — modelId,
+  result, errorCode, publicMessage all to NULL, `subjectDeletedAt` stamped
+  (`finalCastDeletion.ts`, the R7-5 replay fence). It does not touch `status`.
+  So a delete that failed and was then retried successfully leaves a `failed`
+  row with no code and no message, and section C above prints it as a failure
+  nobody can explain — which is exactly how 14 of 60 `model.delete` rows read on
+  production, every one of them fenced, none of the 46 successes fenced.
+
+  The reason is not lost knowledge, it is erased knowledge, and the difference
+  matters: nothing here can be recovered by reading harder.
+*/
+const fenced = await q(
+  `SELECT kind, COUNT(*) AS n FROM generation_operations
+    WHERE createdAt >= ? AND status IN ('failed','partial') AND subjectDeletedAt IS NOT NULL
+    GROUP BY kind ORDER BY n DESC`,
+  [since],
+);
+if (fenced.length > 0) {
+  const fencedTotal = fenced.reduce((total, row) => total + Number(row.n), 0);
+  console.log(
+    `   of the failures above, ${fencedTotal} carry the deletion replay fence (subjectDeletedAt) — ` +
+      `their errorCode was ERASED by a later successful deletion of the same Cast, not never written:`,
+  );
+  for (const row of fenced) console.log(`     ${String(row.n).padStart(4)}  ${row.kind}`);
+}
 
 // ── D. candidates ─────────────────────────────────────────────────────
 const candidates = await q(
