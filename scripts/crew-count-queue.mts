@@ -57,6 +57,27 @@
  * falls back to the count-only INSERT — a shift must never leave his panel
  * uncounted because a feature it cannot see is not installed yet.
  *
+ * # THE CARDS THAT MAY ALREADY BE DONE (#494)
+ *
+ * His question at the live panel: *"does the agent know when a bug or any other
+ * category item has already been fixed etc? i dont want want it trying to fix an
+ * irrelevant bug"* — and the 2 September triage had already found five cards
+ * whose fix landed and whose card nobody closed. So beside each count this now
+ * reads **which offered cards a merged pull request named and nobody answered**,
+ * writes them into the same row, and — the part that matters at 3am — NAMES
+ * every one of them in the log with the pull request to open first.
+ *
+ * ⚠ **IT FLAGS AND NEVER SUBTRACTS.** A flagged card is still inside
+ * `openCount`; the panel reads `Bugs (14, 2 already queued, 2 possibly fixed)`,
+ * where the queued two are OUT of the fourteen and the flagged two are two OF
+ * them. His card: *"No card closes from this instrument."*
+ *
+ * ⚠ **AND IT IS A FLOOR, NOT COVERAGE** — `shared/crewQueuePossiblyDone.ts`
+ * states the limits it was measured against: two of those five cards are named
+ * by no merged pull request at all. A category with no flags means this reading
+ * found nothing, never that nothing is stale. The re-read-before-take standing
+ * order is the control; this says which to re-read FIRST.
+ *
  * # ⚠ THIS IS A WRITER, AND IT IS THE ONLY TABLE IT MAY NAME
  *
  * `crew_queue_counts` and nothing else; no DDL, no DELETE. In particular it may
@@ -80,6 +101,14 @@ import {
   type CrewQueueExclusions,
 } from "../shared/crewQueueExclusions.js";
 import {
+  cardNumbersIn,
+  isPossiblyDone,
+  parsePossiblyDone,
+  possiblyDoneSentence,
+  serializePossiblyDone,
+  type CardNaming,
+} from "../shared/crewQueuePossiblyDone.js";
+import {
   QUEUE_TITLES_PER_CATEGORY,
   parseQueueTitles,
   serializeQueueTitles,
@@ -91,6 +120,18 @@ import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mt
 const TABLE = "crew_queue_counts";
 const TITLES_COLUMN = "titles";
 const EXCLUDED_COLUMN = "excluded";
+const POSSIBLY_DONE_COLUMN = "possiblyDone";
+
+/**
+ * How many merged pull requests are read for the possibly-fixed flag (#494).
+ *
+ * The whole history is 182 at the time of writing, so this is far above the
+ * population and the cap is CHECKED below rather than assumed — `countOpen`'s
+ * rule, for its reason: a `--limit` shorter than the real set turns the reading
+ * into a silent floor, and this reading is already a floor for reasons it
+ * cannot help (a fix pushed straight to main by the rite has no PR at all).
+ */
+const MERGED_PR_WINDOW = 500;
 
 /** WHICH WORLD, named plainly — see `crew-shift-start.mts`'s note. */
 function whichWorld(): "PRODUCTION" | "DEV" {
@@ -117,7 +158,72 @@ type CategoryReading = {
   readonly offered: number;
   readonly offeredTitles: readonly CrewQueueTitle[];
   readonly exclusions: CrewQueueExclusions;
+  /**
+   * The OFFERED cards a merged pull request named and nobody answered (#494) —
+   * card numbers, newest card first, and the pull requests that named them for
+   * the log. Never a subtraction: these are cards inside `offered`.
+   */
+  readonly possiblyDone: ReadonlyArray<{ card: number; title: string; prs: readonly number[] }>;
 };
+
+/**
+ * WHICH MERGED PULL REQUESTS NAME WHICH CARDS — read once, for every category
+ * (#494).
+ *
+ * ⚠ **ONE `gh` CALL FOR THE WHOLE HISTORY, AND IT IS NOT AN OPTIMISATION.**
+ * Per-category calls would re-download the same pull-request bodies seven times
+ * and — worse — could return different sets a second apart, so two categories
+ * could disagree about whether one card was named. One read, one index, one
+ * `countedAt`, which is this table's standing property.
+ *
+ * `null` on any doubt, exactly as `countOpen` does: a broken `gh` here must
+ * leave every category UNFLAGGED rather than write "nothing is stale", which is
+ * the most reassuring wrong answer this panel could print.
+ */
+function readCardNamings(): Map<number, CardNaming[]> | null {
+  try {
+    const out = execFileSync(
+      "gh",
+      ["pr", "list", "--state", "merged", "--limit", String(MERGED_PR_WINDOW), "--json", "number,title,body,mergedAt"],
+      /* Bodies are large and the default 1MB pipe buffer truncates them into a
+         JSON parse error — which would read here as "no pull request names any
+         card", the silent-zero failure. Raised, and the parse below throws
+         rather than degrading if it is ever exceeded again. */
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024 },
+    );
+    const rows = JSON.parse(out);
+    if (!Array.isArray(rows)) return null;
+    if (rows.length >= MERGED_PR_WINDOW) {
+      console.error(
+        `REFUSING the possibly-fixed reading: ${MERGED_PR_WINDOW} merged pull requests came back, which is the limit —`
+        + " older cards could not be judged and the flag would be a floor without saying so.",
+      );
+      return null;
+    }
+    const index = new Map<number, CardNaming[]>();
+    for (const row of rows as Array<{ number?: unknown; title?: unknown; body?: unknown; mergedAt?: unknown }>) {
+      const pr = typeof row.number === "number" ? row.number : 0;
+      const mergedAt = typeof row.mergedAt === "string" ? Date.parse(row.mergedAt) : Number.NaN;
+      if (pr <= 0 || !Number.isFinite(mergedAt)) continue;
+      /* TITLE AND BODY TOGETHER, deliberately. `#494:` in a title and `#494` in
+         a body are the same fact to this reader — his card's bar is that the
+         reader flags and does not judge, and reading WHERE the number sits is
+         the first step toward judging it. Measured either way before choosing:
+         the title alone flags 8 of 78 and, combined with the untouched rule, 0.
+
+         A pull request's own number is dropped: a body legitimately names it. */
+      const title = typeof row.title === "string" ? row.title : "";
+      const body = typeof row.body === "string" ? row.body : "";
+      for (const card of cardNumbersIn(`${title}\n${body}`, pr)) {
+        index.set(card, [...(index.get(card) ?? []), { pr, mergedAt }]);
+      }
+    }
+    return index;
+  } catch (cause) {
+    console.error(`[warn] could not read the merged pull requests: ${(cause as Error).message}`);
+    return null;
+  }
+}
 
 /**
  * How many OPEN issues carry this label, the five most recent of them, and
@@ -140,11 +246,17 @@ type CategoryReading = {
  * makes "the count, the titles and the exclusions share one `countedAt`" a
  * property of the statement rather than of three reads agreeing.
  */
-function countOpen(label: string): CategoryReading | null {
+function countOpen(label: string, namings: ReadonlyMap<number, CardNaming[]> | null): CategoryReading | null {
   try {
     const out = execFileSync(
       "gh",
-      ["issue", "list", "--state", "open", "--label", label, "--limit", "500", "--json", "number,title,createdAt,labels"],
+      ["issue", "list", "--state", "open", "--label", label, "--limit", "500",
+        /* `updatedAt` rides the SAME response the count, the titles and the
+           exclusions already come out of (#494) — the possibly-fixed rule needs
+           "has anybody touched this card since", and asking for it here is one
+           more field on one call rather than a second round trip that could
+           describe a different moment. */
+        "--json", "number,title,createdAt,updatedAt,labels"],
       /* NO `shell: true`. `crew-read-replies.mts` needs one because `railway.cmd`
          is a batch file that cannot be resolved from PATH without it; `gh` is an
          .exe and does not. Driven both ways before choosing (3 rows either way),
@@ -168,11 +280,14 @@ function countOpen(label: string): CategoryReading | null {
       it is still a real open card, and the count above already includes it.
     */
     const stamped = rows.map((row: {
-      number?: unknown; title?: unknown; createdAt?: unknown; labels?: unknown;
+      number?: unknown; title?: unknown; createdAt?: unknown; updatedAt?: unknown; labels?: unknown;
     }) => ({
       number: typeof row.number === "number" ? row.number : 0,
       title: typeof row.title === "string" ? row.title : "",
       at: typeof row.createdAt === "string" ? Date.parse(row.createdAt) : Number.NaN,
+      /* NaN when unreadable, and `isPossiblyDone` treats that as "do not flag" —
+         the quiet direction, stated in its own docblock. */
+      touched: typeof row.updatedAt === "string" ? Date.parse(row.updatedAt) : Number.NaN,
       /* `gh` returns labels as `[{ id, name, description, color }]`. A row whose
          labels are unreadable yields an EMPTY list, which makes the card
          OFFERED — the safe direction here is the one that shows him a card,
@@ -205,12 +320,36 @@ function countOpen(label: string): CategoryReading | null {
       if (reason === null) offeredRows.push(row);
       else exclusions[reason] = (exclusions[reason] ?? 0) + 1;
     }
+    /* ⚠ THE FLAG IS TAKEN OVER THE **OFFERED** ROWS ONLY (#494). A card he has
+       already queued, or one parked on his ruling, is not on offer at all — and
+       telling him a card he cannot be given might already be done is noise
+       about a number it is not in. The flag annotates the offer; the exclusions
+       describe what left it. */
+    const possiblyDone: Array<{ card: number; title: string; prs: number[] }> = [];
+    if (namings !== null) {
+      for (const row of offeredRows) {
+        const named = namings.get(row.number) ?? [];
+        if (!isPossiblyDone(row.at, row.touched, named)) continue;
+        possiblyDone.push({
+          card: row.number,
+          title: row.title,
+          /* Only the pull requests that actually satisfied the rule are named,
+             so the log's receipt is the reason rather than every mention the
+             card has ever had — #8 is named by ten and answered by none of
+             them. */
+          prs: named
+            .filter((entry) => entry.mergedAt > row.at && (!Number.isFinite(row.touched) || entry.mergedAt >= row.touched))
+            .map((entry) => entry.pr),
+        });
+      }
+    }
     return {
       total: rows.length,
       allTitles: titlesOf(stamped),
       offered: offeredRows.length,
       offeredTitles: titlesOf(offeredRows),
       exclusions: exclusions as CrewQueueExclusions,
+      possiblyDone,
     };
   } catch (cause) {
     console.error(`[warn] could not count \`${label}\`: ${(cause as Error).message}`);
@@ -359,10 +498,45 @@ try {
     );
   }
 
+  /*
+    ⚠ AND IS THE POSSIBLY-FIXED COLUMN HERE? Migration 0061 (#494). Unlike 0057
+    and 0058 there is no founder ceremony behind it — since #322 the deploy rite
+    applies an additive migration itself — but a shift may still be running
+    against a DEV database the rite has never touched, so the same question is
+    asked rather than assumed.
+
+    ⚠ **AND ITS ABSENCE CHANGES NOTHING ELSE, WHICH IS WHY IT IS NOT
+    ALL-OR-NOTHING THE WAY `excluded` IS.** The exclusions column decides what
+    `openCount` MEANS, so writing the offered count without it would make a
+    number shrink for a reason the page cannot show. This column subtracts
+    nothing: without it the count and the titles are byte-identical to today's
+    and the flag is simply not stored. The reading is still taken and still
+    printed in the log below, because a shift reading this at 3am wants the
+    list whatever the schema can hold.
+  */
+  const [possiblyDoneColumn] = await conn.query<any[]>(`SHOW COLUMNS FROM \`${TABLE}\` LIKE '${POSSIBLY_DONE_COLUMN}'`);
+  const keepsPossiblyDone = possiblyDoneColumn.length === 1;
+  if (!keepsPossiblyDone) {
+    console.log(
+      `  (no \`${POSSIBLY_DONE_COLUMN}\` column here — the possibly-fixed flag is read and printed but not stored.`
+      + " It is migration 0061 and the deploy rite applies it itself (#322).)",
+    );
+  }
+
+  /*
+    THE MERGED PULL REQUESTS, READ ONCE FOR EVERY CATEGORY (#494) — see
+    `readCardNamings`. A `null` here means every category is written UNFLAGGED,
+    which is the honest degradation: this reading is a floor even when it works.
+  */
+  const namings = readCardNamings();
+  if (namings === null) {
+    console.log("  ⚠ the possibly-fixed reading could not be taken this run — every category is written unflagged.");
+  }
+
   let written = 0;
   let skipped = 0;
   for (const category of CREW_WORK_CATEGORIES) {
-    const reading = countOpen(category.queueLabel);
+    const reading = countOpen(category.queueLabel, namings);
     if (reading === null) {
       skipped += 1;
       console.log(`  ${category.label.padEnd(14)} SKIPPED — the old row stands, with its older timestamp`);
@@ -381,46 +555,46 @@ try {
        ⚠ The titles and the exclusions ride the SAME statement as the count,
        which is what makes "they share one `countedAt`" a property of the schema
        rather than of three writes all happening to succeed. */
-    if (keepsTitles && keepsExclusions) {
-      await conn.query(
-        `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${TITLES_COLUMN}, ${EXCLUDED_COLUMN}, countedAt)
-         VALUES (?, ?, ?, ?, UTC_TIMESTAMP())
-         ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), ${TITLES_COLUMN} = VALUES(${TITLES_COLUMN}),
-           ${EXCLUDED_COLUMN} = VALUES(${EXCLUDED_COLUMN}), countedAt = VALUES(countedAt)`,
-        [category.key, storedCount, serializeQueueTitles(storedTitles), serializeQueueExclusions(reading.exclusions)],
-      );
-    } else if (keepsTitles) {
-      await conn.query(
-        `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${TITLES_COLUMN}, countedAt)
-         VALUES (?, ?, ?, UTC_TIMESTAMP())
-         ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), ${TITLES_COLUMN} = VALUES(${TITLES_COLUMN}), countedAt = VALUES(countedAt)`,
-        [category.key, storedCount, serializeQueueTitles(storedTitles)],
-      );
-    } else if (keepsExclusions) {
-      await conn.query(
-        `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${EXCLUDED_COLUMN}, countedAt)
-         VALUES (?, ?, ?, UTC_TIMESTAMP())
-         ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), ${EXCLUDED_COLUMN} = VALUES(${EXCLUDED_COLUMN}), countedAt = VALUES(countedAt)`,
-        [category.key, storedCount, serializeQueueExclusions(reading.exclusions)],
-      );
-    } else {
-      await conn.query(
-        `INSERT INTO \`${TABLE}\` (categoryKey, openCount, countedAt)
-         VALUES (?, ?, UTC_TIMESTAMP())
-         ON DUPLICATE KEY UPDATE openCount = VALUES(openCount), countedAt = VALUES(countedAt)`,
-        [category.key, storedCount],
-      );
+    /* ⚠ THE STATEMENT IS BUILT FROM THE COLUMNS THAT EXIST, not chosen from a
+       list of hand-written variants. Three optional columns are eight variants,
+       and a fourth would be sixteen — a combinatorial second list of exactly
+       the kind working law 4 is about, where the ONE that goes wrong is the
+       rare combination nobody drives. Column names here are module constants
+       and never input; every value is still a placeholder. */
+    const optional: Array<{ column: string; value: string }> = [];
+    if (keepsTitles) optional.push({ column: TITLES_COLUMN, value: serializeQueueTitles(storedTitles) });
+    if (keepsExclusions) optional.push({ column: EXCLUDED_COLUMN, value: serializeQueueExclusions(reading.exclusions) });
+    if (keepsPossiblyDone) {
+      optional.push({ column: POSSIBLY_DONE_COLUMN, value: serializePossiblyDone(reading.possiblyDone.map((row) => row.card)) });
     }
+    const columns = ["categoryKey", "openCount", ...optional.map((entry) => entry.column)];
+    await conn.query(
+      `INSERT INTO \`${TABLE}\` (${columns.map((name) => `\`${name}\``).join(", ")}, countedAt)
+       VALUES (${columns.map(() => "?").join(", ")}, UTC_TIMESTAMP())
+       ON DUPLICATE KEY UPDATE `
+      + [...columns.slice(1), "countedAt"].map((name) => `\`${name}\` = VALUES(\`${name}\`)`).join(", "),
+      [category.key, storedCount, ...optional.map((entry) => entry.value)],
+    );
     written += 1;
     /* The excluded cards are named in the LOG whether or not the column can
        hold them: a shift reading this at 3am should see what it did not offer
        him even in the window before the ceremony runs. */
     const sentence = queueExclusionSentence(reading.exclusions);
+    const flagged = reading.possiblyDone.length;
     console.log(
       `  ${category.label.padEnd(14)} ${String(storedCount).padStart(3)} open  (label \`${category.queueLabel}\`)`
-      + (sentence ? ` · ${sentence}${keepsExclusions ? "" : ", NOT stored — no column yet"}` : ""),
+      + (sentence ? ` · ${sentence}${keepsExclusions ? "" : ", NOT stored — no column yet"}` : "")
+      + (flagged > 0 ? ` · ${flagged} possibly fixed${keepsPossiblyDone ? "" : ", NOT stored — no column yet"}` : ""),
     );
     for (const card of storedTitles) console.log(`      #${card.number} ${card.title}`);
+    /* ⚠ EVERY FLAGGED CARD IS NAMED IN THE LOG, uncapped and with its receipt —
+       this is where the SHIFT reads, and the standing order is that a
+       background card is re-read at the code before it is taken. The column
+       stores a capped sample for his panel; the shift gets the whole list and
+       the pull request to open first. */
+    for (const row of reading.possiblyDone) {
+      console.log(`      ⚠ #${row.card} may already be done — named by merged PR ${row.prs.map((pr) => `#${pr}`).join(", ")} · ${row.title}`);
+    }
   }
 
   /*
@@ -459,11 +633,13 @@ try {
          separation, and the projection filters each side to its own vocabulary
          so neither can read the other's rows as its own.
 
-         `excluded` is deliberately NOT named here even where the column exists:
-         #324's exclusions are a fact about a SWITCH count (what was taken out of
-         something on offer), and a group is not on offer at all. Leaving it null
-         is the honest value; writing `{}` would be a claim that nothing was
-         excluded from a number nothing could be excluded from. */
+         `excluded` and `possiblyDone` are deliberately NOT named here even where
+         the columns exist. The exclusions are a fact about a SWITCH count (what
+         was taken out of something on offer) and the possibly-fixed flag is a
+         fact about the cards inside one; a group is not on offer at all, so
+         both are meaningless of it. Leaving them null is the honest value —
+         writing an empty flag list would be a claim that nothing in the group
+         is stale, over a population this reading was never taken on. */
       if (keepsTitles) {
         await conn.query(
           `INSERT INTO \`${TABLE}\` (categoryKey, openCount, ${TITLES_COLUMN}, countedAt)
@@ -505,7 +681,8 @@ try {
   /* Read back rather than trusted (working law 1 — the changed rows are the fact). */
   const [rows] = await conn.query<any[]>(
     `SELECT categoryKey, openCount, ${keepsTitles ? `${TITLES_COLUMN}, ` : ""}`
-    + `${keepsExclusions ? `${EXCLUDED_COLUMN}, ` : ""}countedAt FROM \`${TABLE}\` ORDER BY categoryKey`,
+    + `${keepsExclusions ? `${EXCLUDED_COLUMN}, ` : ""}${keepsPossiblyDone ? `${POSSIBLY_DONE_COLUMN}, ` : ""}`
+    + `countedAt FROM \`${TABLE}\` ORDER BY categoryKey`,
   );
   console.log(`\nstored ${rows.length} row(s) · ${written} written, ${skipped} skipped this run`);
   for (const row of rows) {
@@ -514,9 +691,11 @@ try {
        yields nothing on the panel is exactly the failure being avoided. */
     const named = keepsTitles ? parseQueueTitles(row[TITLES_COLUMN]).length : 0;
     const back = keepsExclusions ? queueExclusionSentence(parseQueueExclusions(row[EXCLUDED_COLUMN])) : null;
+    const stale = keepsPossiblyDone ? possiblyDoneSentence(parsePossiblyDone(row[POSSIBLY_DONE_COLUMN])) : null;
     console.log(
       `  ${String(row.categoryKey).padEnd(14)} ${String(row.openCount).padStart(3)}`
-      + `${keepsTitles ? ` · ${named} named` : ""}${back ? ` · ${back}` : ""} · ${iso(row.countedAt)}`,
+      + `${keepsTitles ? ` · ${named} named` : ""}${back ? ` · ${back}` : ""}${stale ? ` · ${stale}` : ""}`
+      + ` · ${iso(row.countedAt)}`,
     );
   }
   if (skipped > 0) {

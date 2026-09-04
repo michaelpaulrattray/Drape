@@ -1294,3 +1294,35 @@ describe("issue 493 — no card is listed twice", () => {
     expect(needsYou).toContain("id={`crew-card-");
   });
 });
+
+/*
+  ⚠ ISSUE 494 — THE PANEL'S HALF OF THE POSSIBLY-FIXED READING, WHICH THE
+  SERVER SUITE CANNOT SEE.
+
+  `server/crewQueuePossiblyDone.test.ts` drives the rule and the shape directly
+  and 9/9 sabotages of it are caught. What no server arm can reach is the
+  WIRING: delete the `mark` prop or the sentence from this component and every
+  one of those arms stays green while his page silently stops telling him.
+
+  Both arms are source reads, so both are weak on their own — each is written to
+  name a string that exists in exactly ONE deliberate place, which is this file's
+  standing rule for its presence arms. The behaviour itself was DRIVEN in the
+  running app, both themes, at 1440: `Bugs (14, 5 possibly fixed)` with the mark
+  on the flagged rows, and `Security (0, 1 parked)` unchanged beside it.
+*/
+describe("issue 494 — the count says which of its cards may already be done", () => {
+  it("the sentence is drawn INSIDE the count's parenthesis, after the exclusions", () => {
+    const body = code(read(path.join(HERE, "CrewBackgroundWork.tsx")));
+    expect(body).toContain("possiblyDoneSentence");
+    /* Order carries meaning: what was SUBTRACTED first, then what is still in
+       the number and worth a second look. Reversed, the row would read as though
+       the flagged cards had been taken out. */
+    expect(body.indexOf("excluded ? `, ${excluded}`")).toBeLessThan(body.indexOf("possiblyFixed ? `, ${possiblyFixed}`"));
+  });
+
+  it("the flagged cards are MARKED, so the number is not one he has no basis to read", () => {
+    const body = code(read(path.join(HERE, "CrewBackgroundWork.tsx")));
+    expect(body).toContain("possibly fixed");
+    expect(body).toContain("flagged.has(card.number)");
+  });
+});

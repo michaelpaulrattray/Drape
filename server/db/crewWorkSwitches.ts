@@ -41,6 +41,7 @@ import {
   pipelineGroupRowKey,
 } from "../../shared/crewPipelineGroups";
 import { parseQueueExclusions, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
+import { parsePossiblyDone, type CrewQueuePossiblyDone } from "../../shared/crewQueuePossiblyDone";
 import { parseQueueTitles, type CrewQueueTitle } from "../../shared/crewQueueTitles";
 import {
   CREW_WORK_CATEGORIES,
@@ -136,6 +137,19 @@ export type CrewQueueCountView = {
    * draws no clause for either, which is the row he has today.
    */
   readonly excluded: CrewQueueExclusions;
+  /**
+   * The cards INSIDE `openCount` whose fix may already have landed (#494).
+   *
+   * ⚠ **THIS ONE CHANGES NOTHING ABOUT WHAT `openCount` MEANS**, which is the
+   * whole difference from `excluded` above it. A flagged card is still offered
+   * and still counted; the panel says `(14, 2 already queued, 2 possibly
+   * fixed)`, where the queued two are out of the fourteen and the flagged two
+   * are two of them. His card: *"No card closes from this instrument."*
+   *
+   * Empty and "nothing was flagged" are deliberately the same value, and so is
+   * "the column is not here yet" — all three draw the row he has today.
+   */
+  readonly possiblyDone: CrewQueuePossiblyDone;
   readonly countedAt: Date;
 };
 
@@ -207,6 +221,16 @@ async function requireDb(): Promise<DbInstance> {
  * whole Crew tab makes. The retry drops the column and nothing else, so the
  * degraded answer is the panel he has today rather than an error page.
  *
+ * ⚠ **THE RESCUE DROPS ALL THREE OPTIONAL COLUMNS TOGETHER, and that is
+ * deliberate rather than lazy.** `titles` (0057), `excluded` (0058) and
+ * `possiblyDone` (0061) are each nullable and each added on its own migration,
+ * so a database could legitimately hold two of the three — but the driver does
+ * not say WHICH column it could not find, and a rescue that guessed would be a
+ * reader inventing a schema. Falling all the way back to the count is the one
+ * answer that is correct whichever of them is absent, and it is a state the
+ * founder has already seen. Since #322 the window is a deploy long: the rite
+ * applies an additive migration itself, before the deploy that needs it.
+ *
  * Caught rather than probed: a probe would cost `information_schema` on every
  * page load forever to guard a window that closes the day he runs one command.
  * Only `ER_BAD_FIELD_ERROR` is rescued; anything else still throws.
@@ -222,6 +246,7 @@ export async function readCountRows(db: DbInstance): Promise<
     openCount: number;
     titles: string | null;
     excluded: string | null;
+    possiblyDone: string | null;
     countedAt: Date;
   }>
 > {
@@ -232,6 +257,7 @@ export async function readCountRows(db: DbInstance): Promise<
         openCount: crewQueueCounts.openCount,
         titles: crewQueueCounts.titles,
         excluded: crewQueueCounts.excluded,
+        possiblyDone: crewQueueCounts.possiblyDone,
         countedAt: crewQueueCounts.countedAt,
       })
       .from(crewQueueCounts);
@@ -244,7 +270,7 @@ export async function readCountRows(db: DbInstance): Promise<
         countedAt: crewQueueCounts.countedAt,
       })
       .from(crewQueueCounts);
-    return legacy.map((row) => ({ ...row, titles: null, excluded: null }));
+    return legacy.map((row) => ({ ...row, titles: null, excluded: null, possiblyDone: null }));
   }
 }
 
@@ -283,6 +309,7 @@ export function splitCountRows(
     openCount: number;
     titles: string | null;
     excluded: string | null;
+    possiblyDone: string | null;
     countedAt: Date;
   }>,
 ): { counts: CrewQueueCountView[]; groups: CrewPipelineGroupView[] } {
@@ -297,6 +324,7 @@ export function splitCountRows(
          consumer responsible for the same defensive parse. */
       titles: parseQueueTitles(row.titles),
       excluded: parseQueueExclusions(row.excluded),
+      possiblyDone: parsePossiblyDone(row.possiblyDone),
       countedAt: row.countedAt,
     }));
 

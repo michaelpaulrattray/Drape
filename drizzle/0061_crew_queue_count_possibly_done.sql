@@ -1,0 +1,83 @@
+-- THE CARDS THAT MAY ALREADY BE DONE — one column beside the count (#494).
+--
+-- Founder, 2026-09-04, at the BACKGROUND WORK panel: "are they all still
+-- relelvant like does the agent know when a bug or any other category item has
+-- already been fixed etc? i dont want want it trying to fix an irrelevant bug
+-- or somthing already ordered in the next up que or feature plan roadmap or
+-- whatever."
+--
+-- Migration 0058 answered the "already ordered" half — `excluded` names the
+-- cards he has queued and the ones parked on his own ruling, and takes them out
+-- of the offer. This is the other half: a card whose FIX ALREADY LANDED and
+-- which nobody closed. The 2 September triage found five in one sitting (#57,
+-- #59, #69, #80, #111) — the work was done, the card stayed open, and the
+-- switch count offered it as a night's work.
+--
+-- ============================================================================
+-- ⚠ IT DOES NOT CHANGE WHAT `openCount` MEANS — AND THAT IS THE WHOLE
+-- DIFFERENCE FROM `excluded` BESIDE IT
+-- ============================================================================
+--
+-- `excluded` SUBTRACTS: where that column exists, `openCount` is the offered
+-- count and `excluded` says what was taken out. This column subtracts NOTHING.
+-- A flagged card is still offered and still inside `openCount`, and the panel
+-- reads `Bugs (14, 2 already queued, 2 possibly fixed)` — the 2 already queued
+-- are OUT of the 14, and the 2 possibly fixed are two OF the 14.
+--
+-- His card is explicit about why: "No card closes from this instrument; closing
+-- stays a shift's act with a receipt, by hand." The instrument points a shift
+-- at what to re-read first. The re-read is the control.
+--
+-- ============================================================================
+-- WHY ONE JSON COLUMN AND NOT A COLUMN PER FIELD — 0057/0058's rule, unchanged
+-- ============================================================================
+--
+-- The value is a count and a capped list of card numbers, and both are read
+-- through `shared/crewQueuePossiblyDone.ts`, which owns the shape, the cap and
+-- a parse whose only failure mode is "nothing flagged". A column per field puts
+-- the shape in the DDL, in the writer, in the reader and in the panel — working
+-- law 4's second list wearing a schema.
+--
+-- The count rides BESIDE the cards rather than being derived from them because
+-- the list is capped: a category with thirty flagged cards must still say
+-- "30 possibly fixed" rather than quietly saying twelve. `titles` needs no such
+-- field only because its total is `openCount`; this reading has no column to
+-- lean on, so it carries its own.
+--
+-- ============================================================================
+-- WHY A COLUMN AND NOT A TABLE — 0054's split-by-writer law, unchanged
+-- ============================================================================
+--
+-- `crew_queue_counts` has exactly one writer — a shift, mechanically, at shift
+-- start. This reading has the SAME writer, the SAME moment and the SAME `gh`
+-- response family as the count it annotates. In one column, "the count and its
+-- flags describe one moment" is a property of there being one statement; in a
+-- child table it would hold only because two statements both happened to
+-- succeed, and a count refreshed beside a flag list from an older reading is
+-- exactly the confident-wrong-number failure this panel exists to prevent.
+--
+-- ============================================================================
+-- ⚠ NULLABLE, AND THE CODE RUNS BEFORE THIS DOES
+-- ============================================================================
+--
+-- `migration-before-code` says a new column on a WRITTEN table is in every
+-- INSERT. Answered the three ways 0057 and 0058 answered it:
+--
+--   * the WRITER (`scripts/crew-count-queue.mts`) asks `SHOW COLUMNS` before it
+--     writes and falls back to the INSERT it writes today, so a shift running
+--     against a database without this column still fills his panel;
+--   * the READER (`server/db/crewWorkSwitches.ts`) catches ER_BAD_FIELD_ERROR
+--     and re-reads without the column, so his Crew tab — which is ONE
+--     `crew.getState` call — cannot fall to a blank page in the window between
+--     the deploy and this migration being applied;
+--   * unlike 0057 and 0058 there is no founder ceremony to wait for: since #322
+--     the DEPLOY RITE applies an additive migration itself, before the deploy,
+--     and `ALTER TABLE … ADD COLUMN` is one of the three shapes
+--     `scripts/lib/ceremonyAutoApply.mts` positively recognises.
+--
+-- NULL and "no shift has counted since this shipped" are the same fact and read
+-- the same way: no flag clause, the count alone.
+--
+-- PURELY ADDITIVE. One nullable column. No row is rewritten, no index moves, no
+-- existing column changes.
+ALTER TABLE `crew_queue_counts` ADD COLUMN `possiblyDone` text;
