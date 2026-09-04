@@ -122,6 +122,13 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " is about",
   "server/testing/listedSource.test.ts":
     "the file that owns the rule — it names the population it scans for",
+  "server/shiftDigest.test.ts":
+    "lists the REPOSITORY ROOT for its top-level directory names — the derived"
+    + " `roots` the path index needs — and never reads a listed entry. Its three"
+    + " reads are fixed names (the two law surfaces and `PROGRAM.md` behind an"
+    + " existsSync), and each SHOULD throw if it is missing: a law surface that is"
+    + " gone is the defect. The litter this rule is about is files in `scripts/`;"
+    + " a top-level directory has never vanished mid-run",
 };
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
@@ -180,6 +187,35 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     "REAL_LOGS — the four patrol logs by fixed name; one going missing is the defect and must throw",
   ],
 };
+
+/*
+  ⚠ THE ARGUMENT TEXT IS READ TO ITS MATCHING PARENTHESIS, not to the first
+  one. `[^)]*` stopped at the `)` inside `statSync(path.join(root, entry), {
+  throwIfNoEntry: false })` and reported a CORRECT call as an offender —
+  measured on the gate, on a suite that was already doing the right thing.
+  The nested call is the ordinary way to write this, so the false alarm
+  would have met every future suite in the class; it fires in the safe
+  direction, which is exactly why it would have been worked around at each
+  site rather than fixed here.
+*/
+const statCalls = (source: string): string[] => {
+  const found: string[] = [];
+  const opener = /statSync\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = opener.exec(source)) !== null) {
+    let depth = 1;
+    let index = match.index + match[0].length;
+    const start = index;
+    while (index < source.length && depth > 0) {
+      if (source[index] === "(") depth += 1;
+      else if (source[index] === ")") depth -= 1;
+      index += 1;
+    }
+    found.push(source.slice(start, index - 1));
+  }
+  return found;
+};
+
 
 const bareReadCount = (source: string): number =>
   [...source.matchAll(/\breadFileSync\s*\(/g)].length;
@@ -250,8 +286,8 @@ describe("the class cannot come back through an eighth suite", () => {
     for (const file of candidates()) {
       if (file in NOT_THE_CLASS) continue;
       const source = readFileSync(path.join(repoRoot, file), "utf8");
-      for (const call of source.matchAll(/statSync\s*\(([^)]*)\)/g)) {
-        if (!call[1]!.includes("throwIfNoEntry")) offenders.push(`${file}: statSync(${call[1]!.trim()})`);
+      for (const args of statCalls(source)) {
+        if (!args.includes("throwIfNoEntry")) offenders.push(`${file}: statSync(${args.trim()})`);
       }
     }
 
@@ -278,5 +314,30 @@ describe("the class cannot come back through an eighth suite", () => {
         `${file} no longer matches the scan — delete the row (${reason})`,
       ).toBe(true);
     }
+  });
+});
+
+describe("the statSync matcher itself", () => {
+  /*
+    THE ARM THAT KEEPS THE FALSE ALARM FROM COMING BACK. No file in the class
+    writes the nested shape today, so the fix above would sit unexercised and
+    the `[^)]*` version would read as equally green - a guard whose repair
+    nothing drives is a guard that quietly un-repairs itself.
+  */
+  it("reads a nested call to its MATCHING parenthesis, so a correct call is not an offender", () => {
+    const source = "const s = statSync(path.join(root, entry), { throwIfNoEntry: false });";
+    expect(statCalls(source)).toHaveLength(1);
+    expect(statCalls(source)[0]).toContain("throwIfNoEntry");
+  });
+
+  it("POSITIVE CONTROL - a nested call with no throwIfNoEntry is still caught", () => {
+    const source = "const s = statSync(path.join(root, entry));";
+    expect(statCalls(source)).toHaveLength(1);
+    expect(statCalls(source)[0]).not.toContain("throwIfNoEntry");
+  });
+
+  it("finds every call in a file, not only the first", () => {
+    const source = "statSync(a, { throwIfNoEntry: false }); statSync(path.join(b, c));";
+    expect(statCalls(source)).toHaveLength(2);
   });
 });
