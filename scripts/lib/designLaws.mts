@@ -156,16 +156,34 @@ export async function assertNoInnerFocusRing(page: Page, where: string, log: Law
     decides: `tokens.css` excludes nine CONTROL types from its text-entry
     carve-out, and everything else is text. A guard holds the two together.
   */
-  const fields = await page
-    .$$eval(TEXT_ENTRY_SELECTOR, (els) =>
+  /*
+    AN INSTRUMENT ERROR IS NOT AN EMPTY PAGE.
+
+    This read `.catch(() => 0)`, so an evaluate that threw — a context destroyed
+    by a late client-side navigation, a detached page — became "no text fields
+    on this surface" and the surface passed law 1. That is the silent-skip
+    direction this whole module refuses everywhere else, hidden in an error
+    handler. A failure to MEASURE is now a failure.
+  */
+  let fields: number;
+  try {
+    fields = await page.$$eval(TEXT_ENTRY_SELECTOR, (els) =>
       els.filter((el) => {
         /* A field with no box cannot be looked at, and focusing it measures
            nothing — a hidden input would otherwise report a clean pass. */
         const r = el.getBoundingClientRect();
         return r.width > 0 && r.height > 0;
       }).length,
-    )
-    .catch(() => 0);
+    );
+  } catch (error) {
+    log.check(
+      where,
+      "no inner focus ring",
+      false,
+      `could not read the text fields at all: ${(error as Error).message}`,
+    );
+    return;
+  }
   if (fields === 0) {
     /* Universal, so this is genuinely satisfied rather than unmeasured — but it
        is still recorded as unmeasured, because "no fields" and "every field
@@ -383,15 +401,30 @@ export async function assertRetentionStated(
   where: string,
   log: LawLog,
   requires?: ExistentialSubject[],
+  mayHold?: ExistentialSubject[],
 ) {
   /*
     Wait for the section rather than sampling once. `openSessions` is a query;
     checking before it resolves reports "no section here" and passes without
     having tested anything — the vacuous pass this suite exists to prevent.
+
+    But only where it could arrive. This ran on EVERY surface, and since no
+    address declares `retentionCopy` (the section is conditional on data —
+    `CastingV2.tsx:945`) all ~38 surface-and-theme visits paid the full six
+    seconds waiting for copy that was never coming: about 3.8 minutes a walk.
+    So: one immediate sample first, and the wait only for a surface that says
+    it holds the section. The drive's `settle()` has already held the page
+    until its loading placeholders cleared, so an immediate sample on a page
+    that is not claiming the subject is reading a resolved page, not a racing
+    one.
   */
-  await page
-    .waitForFunction(() => /unsigned sheets/i.test(document.body.innerText), { timeout: 6000 })
-    .catch(() => undefined);
+  const alreadyThere = await page.evaluate(() => /unsigned sheets/i.test(document.body.innerText));
+  const canRender = requires?.includes("retentionCopy") || mayHold?.includes("retentionCopy");
+  if (!alreadyThere && canRender) {
+    await page
+      .waitForFunction(() => /unsigned sheets/i.test(document.body.innerText), { timeout: 6000 })
+      .catch(() => undefined);
+  }
 
   const result = await page.evaluate(() => {
     const text = document.body.innerText;
@@ -405,7 +438,7 @@ export async function assertRetentionStated(
       "retention stated where sheets surface",
       "retentionCopy",
       requires,
-      "no unsigned-sheets section rendered within 6s",
+      alreadyThere ? "unsigned-sheets text vanished between samples" : "no unsigned-sheets section on this surface",
     );
     return;
   }
@@ -705,7 +738,26 @@ export async function assertOptimisticChrome(page: Page, where: string, log: Law
  * Keyed so the controls can address one law by name, and so that a law added
  * here without a control is visible as a gap rather than silently uncovered.
  */
-export const LAWS = [
+type LawRunner = (
+  page: Page,
+  where: string,
+  log: LawLog,
+  requires?: ExistentialSubject[],
+  mayHold?: ExistentialSubject[],
+) => Promise<void>;
+
+/** Every law key, so a control cannot name one that does not exist. */
+export type LawKey =
+  | "focus-ring"
+  | "dock"
+  | "mono-sentences"
+  | "priced-buttons"
+  | "retention"
+  | "orphan-skeletons"
+  | "over-media-chips"
+  | "brief-echo";
+
+export const LAWS: { key: LawKey; run: LawRunner }[] = [
   { key: "focus-ring", run: assertNoInnerFocusRing },
   { key: "dock", run: assertDockVisible },
   { key: "mono-sentences", run: assertNoMonoSentences },
@@ -714,9 +766,7 @@ export const LAWS = [
   { key: "orphan-skeletons", run: assertNoOrphanSkeletons },
   { key: "over-media-chips", run: assertOverMediaChips },
   { key: "brief-echo", run: assertBriefEcho },
-] as const;
-
-export type LawKey = (typeof LAWS)[number]["key"];
+];
 
 /** Run every non-destructive law against the page now loaded. */
 export async function runLaws(
@@ -724,8 +774,9 @@ export async function runLaws(
   where: string,
   log: LawLog,
   requires?: ExistentialSubject[],
+  mayHold?: ExistentialSubject[],
 ) {
   for (const law of LAWS) {
-    await law.run(page, where, log, requires);
+    await law.run(page, where, log, requires, mayHold);
   }
 }

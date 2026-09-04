@@ -302,7 +302,7 @@ for (const theme of themes) {
 
     if (!(await settle(where))) continue;
 
-    await runLaws(page, where, log, surface.plan.requires);
+    await runLaws(page, where, log, surface.plan.requires, surface.plan.mayHold);
 
     // Spends credits, so it is opt-in: --optimistic, on the sheet only.
     if (OPTIMISTIC && surface.plan.path === "/casting/s/:sessionId") {

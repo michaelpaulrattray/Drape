@@ -77,6 +77,22 @@ export type SurfacePlan = {
       waitFor?: string;
       /** Subjects that MUST be present here; absent is a failure. */
       requires?: ExistentialSubject[];
+      /**
+       * Subjects this surface CAN render, depending on the account's data.
+       *
+       * The third state, and it exists because the other two are both wrong for
+       * the unsigned-sheets section: it is real on `/casting` and it appears
+       * only when the account has open sessions (`CastingV2.tsx:945`). Calling
+       * it `requires` fails forever for an account with none; leaving it
+       * undeclared means the law samples once, beats the query, and reports
+       * "not applicable" on a page that was about to render the thing — which
+       * is the vacuous pass, and it happened: a run measured 7-quiet-days copy
+       * on /casting, a "faster" version reported nothing there, and only a diff
+       * of the two runs showed the assertion had quietly stopped being made.
+       *
+       * So: WAIT for it here, and do not fail if it never comes.
+       */
+      mayHold?: ExistentialSubject[];
     }
   | { kind: "declared"; reason: string }
 );
@@ -129,6 +145,10 @@ export const SURFACES: SurfacePlan[] = [
     kind: "drive",
     url: () => "/casting",
     waitFor: "Meet eight of them",
+    /* The unsigned-sheets section lives here (`CastingV2.tsx:945`) and renders
+       only for an account with open sessions — so the law waits for it here and
+       nowhere else, and does not fail when the account has none. */
+    mayHold: ["retentionCopy"],
   },
   {
     path: "/casting/s/:sessionId",

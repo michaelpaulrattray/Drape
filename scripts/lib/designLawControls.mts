@@ -47,13 +47,21 @@ type Arm = {
   html: string;
   /** Surfaces this control pretends to be, for the existential laws. */
   requires?: ExistentialSubject[];
+  /** ...and the data-conditional third state (see SurfacePlan.mayHold). */
+  mayHold?: ExistentialSubject[];
 };
 
 export type Control = {
   law: LawKey;
   /** What the offender does wrong, in one line — printed on a miss. */
   breaks: string;
-  run: (page: Page, where: string, log: LawLog, requires?: ExistentialSubject[]) => Promise<void>;
+  run: (
+    page: Page,
+    where: string,
+    log: LawLog,
+    requires?: ExistentialSubject[],
+    mayHold?: ExistentialSubject[],
+  ) => Promise<void>;
   offender: Arm;
   compliant: Arm;
 };
@@ -278,6 +286,40 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      THE LATE SECTION, and this arm exists because its absence cost a real
+      assertion. Law 5 waited six seconds on every surface for copy that only
+      /casting can show, which was ~3.8 minutes a walk; the "fast" repair
+      sampled once and reported *not applicable* on /casting — a page that had
+      been PASSING this law a run earlier, and whose section arrives with a
+      query. Only a diff of two runs caught it.
+
+      So the surface declares `mayHold` and the law waits there. The offender
+      renders the section late WITHOUT its expiry copy and must be caught; the
+      compliant one renders it late WITH the copy and must hold. Both fail
+      instantly if the wait is ever dropped again.
+    */
+    law: "retention",
+    breaks: "an unsigned-sheets section that arrives with a query and never says when the sheets expire",
+    run: assertRetentionStated,
+    offender: {
+      html: page(
+        ``,
+        `<div id="late"></div><script>setTimeout(function(){document.getElementById("late").innerHTML=` +
+          `"<section><h2>Unsigned sheets</h2><p>Three waiting.</p></section>";},1500)<\/script>`,
+      ),
+      mayHold: ["retentionCopy"],
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<div id="late"></div><script>setTimeout(function(){document.getElementById("late").innerHTML=` +
+          `"<section><h2>Unsigned sheets</h2><p>Kept for 7 quiet days.</p></section>";},1500)<\/script>`,
+      ),
+      mayHold: ["retentionCopy"],
+    },
+  },
+  {
     /* The existential twin of law 5: a surface promising retention copy that
        renders no section at all must fail rather than report nothing here. */
     law: "retention",
@@ -399,7 +441,7 @@ async function armFailures(
     await tab.setViewport({ width: 1440, height: 900 });
     await tab.setContent(arm.html, { waitUntil: "load" });
     const log = new LawLog();
-    await control.run(tab, where, log, arm.requires);
+    await control.run(tab, where, log, arm.requires, arm.mayHold);
     return {
       failures: log.failures.length,
       saw:
