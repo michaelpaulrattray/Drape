@@ -1,5 +1,8 @@
 # Machinist ledger — how long paid work takes, and what it costs the house
 
+**Clock:** every 7 days. (Machine-readable — `scripts/patrol-clocks.mts` reads
+this line and the newest `## Run` date to tell a shift whether the seat is due.)
+
 The Machinist seat's record (PROGRAM.md, "THE CLOCKS"; charter #58,
 founder-ruled 2026-08-25; first run ordered by the founder 2026-08-26, *"do
 it"*, card #98). What lives here and nowhere else:

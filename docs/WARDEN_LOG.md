@@ -1,5 +1,8 @@
 # Warden log — the findings baseline
 
+**Clock:** every 7 days. (Machine-readable — `scripts/patrol-clocks.mts` reads
+this line and the newest `## Run` date to tell a shift whether the seat is due.)
+
 The Warden seat's record (PROGRAM.md, "THE CLOCKS"; first run ordered by the
 founder 2026-08-26, *"do it"*). What lives here and nowhere else:
 

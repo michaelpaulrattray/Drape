@@ -25,12 +25,19 @@
  *   2. process/gate findings that block every merge
  *   3. patrol duties when their clock fires
  *
- * Only (1) is mechanically derivable, and it is the one that rotted: it IS the
- * `urgent` label. Bands 2 and 3 stay prose in the Program because a clock and a
- * blocking-ness judgement are not labels. So this prints the urgent band —
- * ordered oldest-first, because an urgent card that has waited longest is the
- * one #236 was filed about ("an urgent founder card sat a whole shift
+ * Only (1) is a label, and it is the one that rotted, so this prints the urgent
+ * band — ordered oldest-first, because an urgent card that has waited longest
+ * is the one #236 was filed about ("an urgent founder card sat a whole shift
  * unworked").
+ *
+ * ⚠ This docblock claimed BOTH remaining bands "stay prose in the Program
+ * because a clock and a blocking-ness judgement are not labels" — half of that
+ * is no longer true, and it was the half that rotted next. BAND 3 IS DERIVED
+ * TOO as of #505: `scripts/patrol-clocks.mts` reads each patrol log's own
+ * `**Clock:**` line and newest run heading and says which seats are overdue.
+ * The Retro sat nine days past a weekly clock while this sentence explained why
+ * nothing could compute it. Band 2 (blocks every merge) really is a judgement
+ * and stays prose.
  *
  * # It reports rather than decides
  *
@@ -96,7 +103,10 @@ function main(): number {
   console.log(`read ${new Date().toISOString()} · ${rows.length} open\n`);
 
   if (rows.length === 0) {
-    console.log("  (empty — no card carries `urgent`. Bands 2 and 3 apply.)");
+    console.log(
+      "  (empty — no card carries `urgent`. Bands 2 and 3 apply; for band 3 run",
+    );
+    console.log("   `npx tsx scripts/patrol-clocks.mts`.)");
     return 0;
   }
 
@@ -114,9 +124,11 @@ function main(): number {
   }
 
   console.log(
-    "\nOldest first. Bands 2 (blocks every merge) and 3 (a patrol whose clock",
+    "\nOldest first. Band 2 (blocks every merge) is a judgement and stays prose.",
   );
-  console.log("has fired) are judgements and stay prose in PROGRAM.md.");
+  console.log(
+    "Band 3 (a patrol whose clock has fired) is DERIVED — `npx tsx scripts/patrol-clocks.mts`.",
+  );
   return 0;
 }
 
