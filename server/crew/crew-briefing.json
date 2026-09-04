@@ -1,6 +1,6 @@
 {
-  "edition": 239,
-  "updatedAt": "2026-09-04T08:03:08.448Z",
+  "edition": 240,
+  "updatedAt": "2026-09-04T08:10:31.457Z",
   "shift": "Opus — 4 September (the switch count says what may already be done, #494)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -127,7 +127,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T08:03:01.163Z",
+      "readAt": "2026-09-04T08:10:24.607Z",
       "items": [
         {
           "issueNumber": 16,
@@ -250,10 +250,10 @@
     {
       "id": "possibly-fixed-494",
       "title": "Your switch rows now say which of their cards may already be done — is the wording right?",
-      "productImpact": "You asked this morning whether a shift knows when a bug has already been fixed. It did not. Tonight your BACKGROUND WORK rows read \"Bugs (14, 1 already queued, 5 possibly fixed)\", and the cards it means are marked in the list underneath. The difference between those two numbers matters: the one already queued is taken OUT of the fourteen, and the five possibly fixed are five OF them — still on offer, but a shift re-reads them at the code before touching one.",
-      "workedExample": "Tonight it flagged #486 (\"outlined buttons stand 2px taller than filled ones\") because a merged pull request names it and nobody has been back to the card since. Re-reading took thirty seconds: that pull request says in its own words \"not fixed here\", so #486 is genuinely still open. That is the instrument working as ordered — it points, a shift looks, and the looking is cheap. It is deliberately not clever enough to read \"not fixed\" out of the prose: we have a card open right now, at its THIRD occurrence, for a different reader that tried to and could not see a negation containing its own keyword.",
+      "productImpact": "You asked this morning whether a shift knows when a bug has already been fixed. It did not. Tonight your BACKGROUND WORK rows carry a second phrase — \"Bugs (14, 1 already queued, 6 possibly fixed)\" — and the cards it means are marked in the list underneath. The difference between those two numbers matters: the one already queued is taken OUT of the fourteen, and the possibly-fixed ones are some OF them — still on offer, but a shift re-reads them at the code before touching one.",
+      "workedExample": "It flagged #486 (\"outlined buttons stand 2px taller than filled ones\") because a merged pull request names it and nobody has been back to the card since. Re-reading took thirty seconds: that pull request says in its own words \"not fixed here\", so #486 is genuinely still open. That is the instrument working as ordered — it points, a shift looks, and the looking is cheap. It is deliberately not clever enough to read \"not fixed\" out of the prose, because we have a card open right now, at its third occurrence, for a different reader that tried to and could not see a negation containing its own keyword.",
       "options": [],
-      "recommendation": "Look at the Bugs and Small fixes rows on this page and tell me if \"possibly fixed\" is the phrase you want. The one thing worth knowing before you judge it: it finds what it can, never everything. Of the five cards we caught in September that were already fixed and still open, this reading would have found three and missed two — the two nobody's pull request ever mentioned. So an empty flag is \"nothing found\", never \"nothing stale\".",
+      "recommendation": "Look at the Bugs and Small fixes rows and tell me whether \"possibly fixed\" is the phrase you want. Two things to know before you judge it.\n\nFirst, it finds what it can, never everything. Of the five cards we caught in September that were already fixed and still open, this reading would have found three and missed two — the two that no pull request ever mentioned. So an empty flag means \"nothing found\", never \"nothing stale\".\n\nSecond, and I would rather you heard it from me than spotted it: tonight's very first reading is inflated by this feature's OWN pull request. It flags a card when a merged pull request mentions it — and the pull request that built this thing mentions sixteen cards, because its write-up argues about examples. Three of the six on the Bugs row are there only for that reason. Measured across all 183 merged pull requests, one that FIXES a card mentions three; one that merely CITES examples mentions eight to sixteen, and only nine of the 183 are in that second group. So the separation is clean and mechanical, and it is filed as #514. It is the same mistake we already fixed once on the quiet-night detector, which read a shift WRITING about quiet nights as having had one.",
       "state": "open",
       "filedAt": "2026-09-04T08:03:08.451Z",
       "issueNumber": 494
@@ -5300,7 +5300,7 @@
     124
   ],
   "nextUp": {
-    "readAt": "2026-09-04T08:02:59.951Z",
+    "readAt": "2026-09-04T08:10:23.620Z",
     "items": [
       {
         "issueNumber": 434,
