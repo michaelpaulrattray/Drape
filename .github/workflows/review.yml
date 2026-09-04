@@ -65,11 +65,24 @@
 # a GREEN check's sticky comment and a RED check means NO REVIEW WAS PRODUCED:
 #
 #   green   the reviewer ran — read the sticky comment; it may hold findings
-#   red     no verdict — the self-skip refusal above (#165), or the action
-#           failing to complete (#219: the founder's Fable allowance ran out,
-#           the job died in ~1s on `is_error: true`, and two shifts read that
-#           red check as a reviewer verdict before the log was dug out)
+#   red     no verdict — the self-skip refusal above (#165), the action failing
+#           to complete (#219: the founder's Fable allowance ran out, the job
+#           died in ~1s on `is_error: true`, and two shifts read that red check
+#           as a reviewer verdict before the log was dug out), or the run being
+#           CANCELLED (#434 — superseded by a newer run on the same trigger)
 #   absent  triage decided this diff earns no review; gate.yml still ran
+#
+# ⚠ A CANCELLED RUN IS THE ONE STATE THE CHECK CANNOT ALWAYS NARRATE, and that
+# limit is stated here rather than discovered. The "What this check means" step
+# runs on `always()`, which covers a cancellation mid-review; but a run
+# cancelled while still QUEUED never reaches a runner, so no step of it ever
+# executes and the only thing on the PR is a cancelled check with no
+# annotation. That is exactly what #433 showed. The repair for the common
+# cause is the concurrency key above, not a louder message — this paragraph
+# and the step's cancelled branch are for the cases the key legitimately
+# leaves: two `ready_for_review` events, or a `needs-fable` removed and
+# re-added while its first run is still going. In every one of them the
+# reading is the same: **cancelled is red, and red is no verdict.**
 #
 # The last step of the review job says which of those it is, as an annotation
 # on the PR's checks page and a table in the run summary. It cannot change the
@@ -86,8 +99,41 @@ on:
     branches: [main]
     types: [opened, ready_for_review, labeled]
 
+# A RUN THAT WILL DO NOTHING MUST NEVER CANCEL A RUN THAT WOULD REVIEW (#434).
+#
+# The group used to be `review-<pr>` alone, so every event on a pull request
+# shared one slot and `cancel-in-progress` killed whatever was already in it.
+# That is right between two runs of the SAME kind — a second `ready_for_review`
+# supersedes the first — and wrong across kinds, because most `labeled` runs
+# are going to skip: triage below reviews a `labeled` event only when the label
+# is `needs-fable`. So a label applied in the same second as the PR was created
+# took the slot, cancelled the real review, and then skipped itself.
+#
+# Measured at the artifacts 2026-09-04, and the frequency is smaller than the
+# card that ordered this said. Over the last 100 `review.yml` runs: 46 success,
+# 45 skipped, 8 failure, **1 cancelled** — run 33588638499 on PR #433, whose
+# `triage` job was cancelled one second after it started, before it could
+# evaluate anything. The 45 skipped runs are NOT this bug; they are the design
+# above working (a `labeled` event for `urgent` or `parked` must not buy a full
+# review), and #502's "27 of the last 60 were skipped" counts the reviewer
+# doing its job. The gate's own `founder-review` label was raised as a likely
+# second road and does NOT hold: on PRs #337 and #349 the label run was created
+# and skipped ~8 seconds BEFORE the reviewing run existed, so there was nothing
+# to cancel. The race needs the skipping run to still be in flight, which is
+# why the shifts' draft-then-ready habit mostly hides it.
+#
+# Keying the group on the event AND the label name gives each kind its own
+# slot: an `opened` run and a `labeled` run can no longer see each other, and
+# two labels applied at once (`--label a,b`) cannot cancel each other either —
+# which matters, because one of them may be the `needs-fable` that was the
+# whole point. `github.event.label.name` is empty for non-label events, so
+# those groups are unchanged in meaning. Within one kind, cancel-in-progress
+# still supersedes, which is the behaviour that was always wanted.
+#
+# Pinned by server/reviewerConcurrency.test.ts, which resolves this template
+# against real event payloads instead of matching its text.
 concurrency:
-  group: review-${{ github.event.pull_request.number }}
+  group: review-${{ github.event.pull_request.number }}-${{ github.event.action }}-${{ github.event.label.name }}
   cancel-in-progress: true
 
 # Least privilege at the workflow level (zizmor excessive-permissions, #35);
@@ -278,6 +324,14 @@ jobs:
           elif [ "$OUTCOME" = "success" ]; then
             STATE="RAN — findings, if any, are in the sticky review comment"
             echo "::notice::The Fable reviewer RAN. Green is not a pass: read the sticky review comment on this PR for its findings before merging."
+          elif [ "$OUTCOME" = "cancelled" ]; then
+            # Reachable only when the cancellation lands mid-review; a run
+            # cancelled while still QUEUED never runs this step at all (#434,
+            # and the header says so). Named separately because the generic
+            # message below sends the reader to the Fable allowance, which has
+            # nothing to do with a superseded run.
+            STATE="NO VERDICT — the run was CANCELLED before it finished (#434)"
+            echo "::error::NO VERDICT: this review run was CANCELLED, so nothing in this diff was judged. A newer run on the same trigger supersedes it — read that run's result instead. If there is no newer run, re-trigger by hand: remove then re-add the needs-fable label (it is a one-shot button, issue #368)."
           else
             STATE="NO VERDICT — the reviewer did not complete (outcome: $OUTCOME)"
             echo "::error::NO VERDICT: the Fable reviewer did not complete (step outcome: $OUTCOME). This is an OUTAGE, not a rejection — nothing in this diff was judged. Check the founder's Fable allowance and the action log before reading anything into it (issue #219)."
@@ -290,6 +344,6 @@ jobs:
             echo "| check | what it means |"
             echo "|---|---|"
             echo "| green | the reviewer ran — its findings, if any, are in the sticky review comment. **Read it before merging.** |"
-            echo "| red | **no verdict exists.** Either the reviewer cannot run on its own change (#165) or it failed to complete (#219). Nothing was judged. |"
+            echo "| red | **no verdict exists.** The reviewer cannot run on its own change (#165), it failed to complete (#219), or the run was cancelled by a newer one on the same trigger (#434). Nothing was judged. |"
             echo "| absent | triage decided this diff does not earn a review; the four mechanical checks in \`gate.yml\` still ran. |"
           } >> "$GITHUB_STEP_SUMMARY"
