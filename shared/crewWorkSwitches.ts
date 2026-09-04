@@ -82,7 +82,7 @@ export const CREW_WORK_CATEGORIES = [
     key: "castingUpkeep",
     label: "Casting upkeep",
     queueLabel: "casting-upkeep",
-    blurb: "Small casting-road items inside existing behaviour; off while a casting milestone waits on your eye.",
+    blurb: "Small casting-road items inside existing behaviour — off while a milestone waits on your eye.",
   },
 ] as const;
 
