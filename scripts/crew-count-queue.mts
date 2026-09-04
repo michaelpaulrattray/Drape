@@ -433,7 +433,7 @@ try {
     why.
 
     ⚠ **ONE `gh` CALL FOR ALL OF THEM, AND THAT IS NOT AN OPTIMISATION — IT IS
-    THE ONLY WAY THE PARTITION CAN EXIST.** The five categories above are
+    THE ONLY WAY THE PARTITION CAN EXIST.** The switch categories above are
     counted with one call each, per label, and they may legitimately overlap (a
     card carrying `bug` and `seat:retro` is in both). The groups must NOT
     overlap: his bar is *"the counts sum to the real total"*, and thirteen

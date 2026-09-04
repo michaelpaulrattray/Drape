@@ -437,7 +437,7 @@ function CardTitles({
  *
  * His bar: *"the counts sum to the real total."* The sum below is over EVERY
  * group including `switched` — the cards the panel above already reaches — which
- * is why that group exists at all. Adding the five switch counts instead would
+ * is why that group exists at all. Adding the switch counts instead would
  * be wrong by however many cards carry two of their labels (today 30 against
  * 29), and two numbers disagreeing by one, on the panel built because he could
  * not tell a broken counter from a real zero, is not a rounding matter.
