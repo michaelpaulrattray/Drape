@@ -26,6 +26,7 @@ import {
   isPossiblyDone,
   parsePossiblyDone,
   possiblyDoneSentence,
+  qualifyingNamings,
   serializePossiblyDone,
 } from "../shared/crewQueuePossiblyDone";
 
@@ -132,6 +133,40 @@ describe("the rule — a merged PR named it, and nobody answered", () => {
        afterwards. All that is unknown is whether anybody looked since. Failing
        quiet would drop a real finding to save a shift a thirty-second re-read. */
     expect(isPossiblyDone(FILED, Number.NaN, [{ pr: 500, mergedAt: at("2026-09-02T00:00:00Z") }])).toBe(true);
+  });
+});
+
+describe("the flag and its receipt come from ONE predicate (PR #498, finding 1)", () => {
+  /*
+    ⚠ THE LOG LINE A SHIFT ACTS ON IS THE ONE THIS PROTECTS. The writer built
+    its *"named by merged PR #488"* receipt with its own inline copy of the
+    rule's two comparisons — working law 4's second list, one line from its
+    source. Drift it and a card still flags while the receipt empties, so the
+    3am log reads "#486 may already be done — named by merged PR " and the
+    shift has nothing to open.
+  */
+  const NAMINGS = [
+    { pr: 400, mergedAt: at("2026-08-30T10:00:00Z") },   // before the card was filed
+    { pr: 488, mergedAt: at("2026-09-02T10:00:00Z") },   // qualifies
+    { pr: 490, mergedAt: at("2026-09-03T10:00:00Z") },   // qualifies
+  ];
+
+  it("a flagged card ALWAYS has a non-empty receipt", () => {
+    expect(isPossiblyDone(FILED, at("2026-09-02T10:00:00Z"), NAMINGS)).toBe(true);
+    expect(qualifyingNamings(FILED, at("2026-09-02T10:00:00Z"), NAMINGS).length).toBeGreaterThan(0);
+  });
+
+  it("the receipt names ONLY the pull requests that satisfied the rule", () => {
+    /* #400 merged before the card existed and is not the reason for anything.
+       #8 on the live queue is mentioned by ten PRs and answered by none. */
+    expect(qualifyingNamings(FILED, at("2026-09-02T10:00:00Z"), NAMINGS).map((n) => n.pr))
+      .toEqual([488, 490]);
+  });
+
+  it("an unflagged card has an EMPTY receipt — the two answers cannot disagree", () => {
+    const touched = at("2026-09-04T00:00:00Z");
+    expect(isPossiblyDone(FILED, touched, NAMINGS)).toBe(false);
+    expect(qualifyingNamings(FILED, touched, NAMINGS)).toEqual([]);
   });
 });
 

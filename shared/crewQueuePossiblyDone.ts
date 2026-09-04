@@ -246,13 +246,38 @@ export function isPossiblyDone(
   updatedAt: number,
   namings: readonly CardNaming[],
 ): boolean {
-  if (!Number.isFinite(filedAt)) return false;
+  return qualifyingNamings(filedAt, updatedAt, namings).length > 0;
+}
+
+/**
+ * WHICH pull requests satisfied the rule — the receipt behind the flag.
+ *
+ * ⚠ **THE FLAG AND ITS RECEIPT COME FROM ONE PREDICATE, and they did not until
+ * the reviewer caught it (PR #498, finding 1).** `crew-count-queue.mts` built
+ * the log's *"named by merged PR #488"* list with its own inline copy of the two
+ * comparisons, one line after calling `isPossiblyDone` — working law 4's second
+ * list, in the smallest possible form. The failure it invites is quiet and
+ * specific: edit the discriminator here (the `>=` the suite pins at both
+ * boundaries) and the copy is left behind, so a card flags with an EMPTY
+ * receipt and the 3am log prints *"#486 may already be done — named by merged
+ * PR "* with nothing after it. The one line a shift actually acts on would be
+ * the one line that silently emptied.
+ *
+ * So this is the rule, and `isPossiblyDone` is a question asked of it.
+ */
+export function qualifyingNamings(
+  filedAt: number,
+  updatedAt: number,
+  namings: readonly CardNaming[],
+): CardNaming[] {
+  if (!Number.isFinite(filedAt)) return [];
+  const qualifying: CardNaming[] = [];
   for (const naming of namings) {
     if (!Number.isFinite(naming.mergedAt)) continue;
     if (naming.mergedAt <= filedAt) continue;
-    if (!Number.isFinite(updatedAt) || naming.mergedAt >= updatedAt) return true;
+    if (!Number.isFinite(updatedAt) || naming.mergedAt >= updatedAt) qualifying.push(naming);
   }
-  return false;
+  return qualifying;
 }
 
 /**

@@ -28,8 +28,17 @@ import { CREW_WORK_CATEGORIES } from "../shared/crewWorkSwitches";
 
 const COUNTED_AT = new Date("2026-08-31T09:19:48Z");
 
+/**
+ * ⚠ THE FIXTURE CARRIES EVERY FIELD `readCountRows` DECLARES, and it stopped
+ * doing so once (PR #498, finding 3): `possiblyDone` was added to the row shape
+ * and this fixture kept four fields. Nothing caught it — `tsconfig.json`
+ * excludes `**\/*.test.ts` from `pnpm check`, so no type error, and the suite
+ * stayed green only because the parser reads `undefined` as nothing-flagged.
+ * A projection suite that quietly stops projecting one field is exactly the
+ * green-while-proving-nothing shape `arm-at-the-producer` is about.
+ */
 function row(categoryKey: string, openCount: number, titles: string | null = null) {
-  return { categoryKey, openCount, titles, excluded: null, countedAt: COUNTED_AT };
+  return { categoryKey, openCount, titles, excluded: null, possiblyDone: null, countedAt: COUNTED_AT };
 }
 
 /**

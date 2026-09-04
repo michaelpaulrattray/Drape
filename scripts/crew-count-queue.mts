@@ -102,9 +102,9 @@ import {
 } from "../shared/crewQueueExclusions.js";
 import {
   cardNumbersIn,
-  isPossiblyDone,
   parsePossiblyDone,
   possiblyDoneSentence,
+  qualifyingNamings,
   serializePossiblyDone,
   type CardNaming,
 } from "../shared/crewQueuePossiblyDone.js";
@@ -285,8 +285,9 @@ function countOpen(label: string, namings: ReadonlyMap<number, CardNaming[]> | n
       number: typeof row.number === "number" ? row.number : 0,
       title: typeof row.title === "string" ? row.title : "",
       at: typeof row.createdAt === "string" ? Date.parse(row.createdAt) : Number.NaN,
-      /* NaN when unreadable, and `isPossiblyDone` treats that as "do not flag" —
-         the quiet direction, stated in its own docblock. */
+      /* NaN when unreadable. `qualifyingNamings` states what each direction
+         does: an unreadable FILING date never flags, an unreadable UPDATED one
+         still can. */
       touched: typeof row.updatedAt === "string" ? Date.parse(row.updatedAt) : Number.NaN,
       /* `gh` returns labels as `[{ id, name, description, color }]`. A row whose
          labels are unreadable yields an EMPTY list, which makes the card
@@ -328,18 +329,19 @@ function countOpen(label: string, namings: ReadonlyMap<number, CardNaming[]> | n
     const possiblyDone: Array<{ card: number; title: string; prs: number[] }> = [];
     if (namings !== null) {
       for (const row of offeredRows) {
-        const named = namings.get(row.number) ?? [];
-        if (!isPossiblyDone(row.at, row.touched, named)) continue;
+        /* ⚠ THE FLAG AND ITS RECEIPT COME FROM ONE CALL. This filtered inline
+           with its own copy of the rule's two comparisons until the reviewer
+           caught it (PR #498, finding 1) — a second list one line from its
+           source, whose drift would empty the log line a shift acts on while
+           the flag itself kept working. Only the pull requests that actually
+           satisfied the rule are named: #8 is mentioned by ten and answered by
+           none of them. */
+        const qualifying = qualifyingNamings(row.at, row.touched, namings.get(row.number) ?? []);
+        if (qualifying.length === 0) continue;
         possiblyDone.push({
           card: row.number,
           title: row.title,
-          /* Only the pull requests that actually satisfied the rule are named,
-             so the log's receipt is the reason rather than every mention the
-             card has ever had — #8 is named by ten and answered by none of
-             them. */
-          prs: named
-            .filter((entry) => entry.mergedAt > row.at && (!Number.isFinite(row.touched) || entry.mergedAt >= row.touched))
-            .map((entry) => entry.pr),
+          prs: qualifying.map((entry) => entry.pr),
         });
       }
     }
