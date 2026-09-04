@@ -626,10 +626,15 @@
   letter-spacing: .09em;
   white-space: nowrap;
 }
-/* The same pill sitting IN the flow, in a compare column head rather than
-   pinned to a card's edge. This was an inline style on the element until card
-   390 item 6 — *"inline styles beating a class is how the CSS drifts"* — which
-   left `.dp-plan__tab` above correct in only one of its two contexts. */
+/* ⚠ `.dp-plan__tab--inline` STOOD HERE AND IS GONE — his ruling, #487, reply
+   #115: *"dont show the fits your use tag on the compare table it doesnt look
+   right."* It was the same pill sitting IN the flow, in a compare column head
+   rather than pinned to a card's edge, and it existed because card 390 item 6
+   replaced an inline style — *"inline styles beating a class is how the CSS
+   drifts"* — which had left `.dp-plan__tab` above correct in only one of its
+   two contexts. There is one context again: the plan cards. The rule is
+   deleted rather than left unused, and this note is here so the next reader
+   meets item 6's history with the reason it ended. */
 
 .dp-plan__tierhead { display: flex; align-items: baseline; gap: var(--s-3); }
 .dp-plan__tiername { font: 500 15px/1.2 var(--font-sans); letter-spacing: -.02em; color: var(--ink); }
