@@ -17,7 +17,10 @@
  * FIFTH instance immediately: the first draft tripped the third guard below,
  * which is as good an argument for the file as anything written here.
  *
- * # The three guards, and what each one is really about
+ * # The four guards, and what each one is really about
+ *
+ * The first three are suite guards with a derived scope; the fourth is a
+ * command on the shift close. All four run before a shift ends.
  *
  * **1 · `assertOneWorld` — which world am I in?** (`scriptWorldGuard`)
  * A script that loads `.env` for a `FAL_KEY` and then reaches for
@@ -45,6 +48,20 @@
  * reads, and `scripts/lib/dbConnection.mts` is the door for that family. It
  * also applies `timezone: "Z"`, without which every DATETIME comes back ten
  * hours early on this bench, silently, looking entirely reasonable.
+ *
+ * **4 · AND IT MUST TYPECHECK — the guard that was missing until 2026-09-05.**
+ * (`npx tsc --noEmit -p tsconfig.scripts.json`, now on the shift close beside
+ * the other two.) None of the three guards above typechecks anything, so a
+ * disposable could pass the entire prescribed close carrying a type error —
+ * and because CI never sees an untracked file, the red lands only on the NEXT
+ * shift's local tree. Measured the day this line was written: `pnpm check` was
+ * RED on main with 19 errors across 11 untracked disposables, the population
+ * having grown 15 -> 18 -> 19 across three re-measurements while every shift
+ * reported a green close. The commonest offender by far was `headless: "new"`,
+ * which this repo's `puppeteer-core` types as `boolean | "shell"` — it is
+ * `headless: true` here — and the second was a script re-declaring one of the
+ * product's own types locally instead of importing it (working law 4), which
+ * compiles until the real type moves. (#335, folded in from #249.)
  *
  * # It is a real script, and that is the point
  *

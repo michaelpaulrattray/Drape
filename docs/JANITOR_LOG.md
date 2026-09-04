@@ -270,3 +270,184 @@ authority over itself); the two undeletable `output/` paths should be retried
 once after a reboot and then declared; the owner question on
 `drape-pinned-42652964` and `Drape-census`; and re-read knip from the NIGHTLY,
 not locally.
+
+---
+
+## Run 3 — 2026-09-05 05:19–06:0x AEST (Janitor, patrol #3)
+
+Clock: run 2 was 2026-08-29, cadence 3 days, so this run was **4 days overdue**
+— `patrol-clocks.mts` ranked this seat first of four overdue seats and the
+founder's Housekeeping switch is ON. Inherited: run 2's own "Next run" list, the
+`output/` remainder (#8), the fifteen-red class (#335, which had grown), and the
+orphan `drape-shift-435-hero` that foreman-20260905-0510 left named.
+
+### A. ⚠ THE KEEP TEST IS KEYED ON A FIELD THAT ANYTHING CAN SILENTLY RESET — AND IT WAS RESET, ON 270 OF 307 FILES, IN ONE HOUR
+
+**This is the run's finding, and it invalidates the plan run 2 wrote for run 3.**
+
+Run 2 closed with an instruction that was exactly right in intent: *"Editing a
+file resets its mtime and therefore restarts its 7-day clock. The ORIGINAL
+mtimes of all 307 disposables were recorded before a byte was touched
+(`output/janitor-run2-disposable-mtimes.txt`) so run 3 sweeps on the original
+dates, not on tonight's repair date."* That record survived and was read.
+
+**Measured against it, file by file:**
+
+| | |
+|---|---|
+| recorded by run 2 | **307** |
+| still on disk | **307** (deleted since: 0) |
+| mtime unchanged | **37** |
+| ⚠ **mtime MOVED** | **270** |
+| what all 270 moved TO | **2026-08-30, hour 11** — a single hour |
+
+**Every untracked disposable in `scripts/` now carries an mtime of 2026-08-30 or
+later. Not one is older.** So on the disk's own evidence the entire population
+sits inside the manifest's 7-day window and **nothing is ever sweepable** — the
+guard fails in the direction where litter only accumulates, which is the
+direction nothing ever complains about.
+
+**What it was NOT** (controls run rather than assumed): not a line-ending
+normalisation — the 270 touched and the 37 untouched are **all LF, zero CRLF**,
+so the two groups are indistinguishable by content shape. No shift entry from
+2026-08-30 claims a mass edit of the disposables. **The cause is not established
+and is deliberately not guessed at** (law 7b).
+
+**It is independently corroborated, and it also corrects a live card.** #335
+dates its seven offenders at *"last modified 2026-08-30 11:13"* and reads that
+as their age. Run 2's record has `_briefing-e88` at **2026-08-29 05:22** and
+`_briefing-e89` at **2026-08-29 06:20**. The 11:13 stamp is the mass event, not
+authorship — two artifacts, written for different reasons, agreeing on the hour.
+
+⚠ **The durable lesson is bigger than this population: an mtime is not evidence
+of age, it is evidence of the last thing that touched the file.** A keep test
+built on one is a guard whose population can only grow. **This run did not amend
+the manifest** — run 2's own ruling stands that a lone patrol cannot rewrite a
+ratified guard mid-run — so the finding is a card, and the deletions below were
+dated at an artifact the machine cannot reset instead.
+
+### B. THE DATING THAT REPLACED IT — a committed artifact, not a timestamp
+
+`pnpm check` was **RED on main**: 19 errors across 11 untracked disposables
+(#335, matching foreman-200's 2026-09-04 reading exactly). Seven of the eleven
+are spent one-shot briefing writers orphaned when `journal` left the schema.
+They cannot be repaired: the field they write no longer exists and the briefing
+schema is `.strict()`.
+
+**#335's own recommendation is *"Delete the seven"*, and it names the condition:
+*"that is a call for the Janitor seat with the switch on."* Both held tonight.**
+
+Their age was established **at the editions they produced**, which are committed
+to `server/crew/crew-briefing.json` and cannot be re-stamped by anything on this
+machine:
+
+| writer | edition it shipped | edition's first commit | date |
+|---|---|---|---|
+| `_briefing-e88-disposable.mts` | 88 | `3f282601` | 2026-08-29 |
+| `_briefing-e89-disposable.mts` | 89 | (same series) | 2026-08-29 |
+| `_briefing-e90-disposable.mts` | 90 | `2826a491` | 2026-08-29 |
+| `_shift84-briefing-repair-disposable.mts` | (repair) | (same series) | 2026-08-29 |
+| `_shift95-briefing-e99-disposable.mts` | 99 | `9f3a81d9` | 2026-08-29 |
+| `_shift96-briefing-e100-disposable.mts` | 100 | `44ac97ef` | 2026-08-29 |
+| `_shift98-briefing-e102-disposable.mts` | 102 | `1cf532e5` | 2026-08-29 |
+
+**Seven days to the day, so outside the window, without trusting a single
+mtime.** Tracked citations checked before each: **0 for all seven.** The
+briefing stands at edition 246. **Deleted — 52,240 bytes. This table is the
+manifest #335's bar asks for**; nothing was swept silently.
+
+**The other four are INSIDE the window on genuine mtimes (2026-09-01 and
+2026-09-03, both after the mass event) and were REPAIRED, not deleted:**
+
+- `_381-after`, `_381-before`, `_382-frames` — `headless: "new"`, which this
+  tree's `puppeteer-core` types as `boolean | "shell"`. Now `headless: true`.
+  **This is the commonest offender in the whole class**, and the `verify` skill's
+  own recipe still writes it.
+- `_466-authorbench` — it **re-declared the product's `StatedAge` locally** as
+  `{ band: string; phase?: string }` and passed it to code expecting the real
+  union. Working law 4 inside a script: a mirror that compiles until the source
+  moves. It **imports** `StatedAge` from `server/castingV2/seedFidelity` now,
+  which immediately caught a fixture missing its required `phase`.
+
+**`pnpm check` exits 0 on the main tree** — the first green baseline since
+2026-08-31. #335's bar 1 is met.
+
+### C. THE GUARD THAT WAS MISSING — #335's bar 3, and #249's structural ask
+
+The prescribed shift close ran two guards over a shift's disposables and
+**neither typechecks anything**, so a disposable passed the entire close
+carrying a type error; CI never sees an untracked file, so the red landed only
+on the next shift's local tree. That is why the population grew 15 → 18 → 19
+across three re-measurements **while every shift reported a green close**.
+
+Added in the same sitting, in both places a shift can meet it:
+
+- **the close ritual** (`.agents/foreman/prompt.md`, gitignored — no PR exists
+  for it) now names `npx tsc --noEmit -p tsconfig.scripts.json` beside the other
+  two, with the measured numbers as its reason;
+- **`scripts/SKELETON-disposable.mts`**, the copy site, gains it as guard 4 —
+  #335's own second, smaller recommendation — and it names both offender shapes
+  so the next author recognises them.
+
+### D. Litter ledger — outside the repository
+
+| item | found | done |
+|---|---|---|
+| `drape-shift-435-hero`, `drape-shift-492-strip` | unregistered in `git worktree list`, no process holding either (`Win32_Process`, matched on command line), **each holding ONLY a `node_modules` Junction into the main tree** | **deleted** — junction removed with `rmdir` FIRST, never `rm -rf` through it, then the empty parent. Main tree's `node_modules` verified at **77 entries with `.bin/vitest` present, before and after each** |
+| 5 loose logs (`drape-71-check`, `drape-71-test`, `drape-shift-16-test{,2}`, `drape-shift-71-eol-install`, ~6 MB) | 2026-08-26, now **10 days old** — run 2 marked them "deletable at run 3" | **deleted**, one path per `rm`. Their only citations are the mailbox (**not an authority**), this log (which says delete), and untracked scratch |
+| `drape-debris-2026-08-19.zip` and two siblings | **KEEP**, unchanged — cited by `CLEANUP_MILESTONE_TRIAGE.md` | left, and recorded so run 4 does not re-open it |
+| `drape-pinned-42652964` (registered, detached) | ⚠ **run 2's owner question is CLOSED by a citation**: `scripts/court-ink-carry-a-disposable.mts:19` names the directory **by path, in a TRACKED file**. The un-wiring differ does not need it — its own docblock creates and removes throwaway trees | **KEEP.** 220 MB |
+| `Drape-census` (registered, `census/full-map`) | branch is an **ancestor of main**; holds only an untracked `output/` (2.3 MB — `_vitest-full.log` and ~20 uncited census scratch scripts). **No tracked file cites the directory** — `server/preCommitGate.test.ts:122` creates a temp branch of the same NAME, which is not a citation of this tree | **record-and-leave.** 229 MB. The scratch inside is the only copy of a founder-ordered instrument's working files; **committing or zipping it is the decision, and then the tree goes.** The owner question stays open for run 4 rather than being answered by deleting it |
+
+### E. `output/` — #8's stated remainder is ZERO, and a different remainder has grown
+
+**The 760-path list is complete: 0 of 760 still present.** Run 2 left 2, both in
+Windows' delete-pending state after an interrupted `rm`, and recorded that
+"nothing short of a reboot is expected to clear it" — **one `rm` each cleared
+both tonight**, so the expectation was right and the machine has since let go.
+**#8's `⚠ PARTIAL` is closed at the measurement.**
+
+⚠ **What has grown is a DIFFERENT population and must not be confused with it.**
+`output/` is now **1,420 entries and 6.5 GB**, and it is court frames rather
+than scratch:
+
+```
+1.1G  masked                     170M  _shift93          141M  view-reference-court
+779M  framing-court              166M  glossary-court    134M  imagegen
+170M  prompt-author-court-run3   156M  prompt-author-court-run2
+```
+
+**These are cited artifacts.** Court records under `docs/specs/` name strips
+inside them, so a sweep here breaks a record's evidence — the disposition needs
+a citation pass and a written manifest, which is a run of its own. Carded, not
+touched.
+
+### F. Dead-code reading — from the NIGHTLY, per run 2's doctrine
+
+Nightly `33903445959`, 2026-09-04, compact reporter (**file** counts, not
+symbols — run 2's correction):
+
+| reading | files | deps | exports | types | duplicates |
+|---|---|---|---|---|---|
+| nightly 2026-08-28 (run 2) | 51 | 1 | 180 | 117 | 18 |
+| **nightly 2026-09-04 (this run)** | **69** | 1 | **186** | **122** | **19** |
+
+**Unused files 51 → 69 in seven days (+18)** is the delta worth a look; the
+other three moved by single digits. Recorded on #108. **No deletion was proposed
+from it** — knip, the Atlas and the un-wiring differ are three readers and none
+has deletion authority alone.
+
+### G. Anti-boredom check
+
+Every act traces to run 2's own "Next run" list, to #8, to #335 (which named
+this seat and this switch as its condition), or to a finding this patrol
+produced on its own clock. **No instrument was built. Nothing was spent** — no
+credits, no house money, no render, no reader. Production writes: the crew run
+row and the queue counts, nothing else.
+
+**Next run (~2026-09-08):** the mtime finding's card decides what replaces the
+date guard, and **until it does, no `scripts/` sweep can be dated from disk** —
+use the editions/commits road above; the `Drape-census` owner question (commit
+or zip the census scratch, then remove the tree); the `output/` 6.5 GB citation
+pass, which needs a manifest; and re-read knip from the nightly, watching
+whether unused files keeps climbing.
