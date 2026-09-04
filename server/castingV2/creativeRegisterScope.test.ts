@@ -1387,7 +1387,12 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
        AUTHORITY_LINE already names the customer's text "the description". */
     expect(ANATOMY_VISIBILITY_LINE.toLowerCase()).not.toContain("brief");
     /* His sentence sits BETWEEN the named-anatomy rule and his two prohibitions,
-       so the placements and prohibitions govern named and implied anatomy alike. */
+       so the placements and prohibitions govern named and implied anatomy alike.
+       The anchors are asserted PRESENT first, or a deleted named-anatomy clause —
+       the exact tightening he forbade — would make the indexOf pair pass vacuously
+       (review of #528, finding 1). */
+    expect(ANATOMY_VISIBILITY_LINE).toContain("anatomy the description names");
+    expect(ANATOMY_VISIBILITY_LINE).toContain("Do not hide it behind the back.");
     expect(ANATOMY_VISIBILITY_LINE.indexOf("Show anatomy the species implies")).toBeGreaterThan(
       ANATOMY_VISIBILITY_LINE.indexOf("anatomy the description names"),
     );
