@@ -224,18 +224,26 @@
   color: var(--meta);
 }
 
-/* ------------------------------------------------------------ chips (§5) */
+/* ------------------------------------------------ the banner's state pill */
 
-.dp-crew__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-3);
-}
+/*
+  ⚠ **THIS PILL OUTLIVED THE AT-A-GLANCE CHIPS AND THAT IS DELIBERATE (#492).**
 
-.dp-crew__chipcell {
-  max-width: 16rem;
-}
+  `.dp-crew__chip` was born for the readings above and grew two more customers:
+  the FOCUS state (*Confirmed* / *Proposed — awaiting your word*) and each
+  milestone STEP's state (*Done* / *In progress* / *Waiting* / *Blocked*). #492
+  is about the readings and says so — *"No change to which readings the shifts
+  write"*, and nothing in it touches the focus line or the step list.
 
+  **And a pill is right for these two and was wrong for those three**, which is
+  the distinction worth keeping rather than harmonising away: these hold ONE
+  WORD from a closed set, sit at the end of a row, and label the thing beside
+  them. A reading is a sentence about the world and had no closed set at all —
+  that is why the cap had to go to the schema and the border had to go.
+
+  ⚠ **So do not "tidy" this into the state strip's dot, and do not re-point the
+  strip at this class.** Two shapes, two jobs, one page.
+*/
 .dp-crew__chip {
   display: inline-block;
   padding: 2px var(--s-3);
@@ -251,22 +259,116 @@
 }
 
 /*
-  ⚠ **THE ONE COLOUR ON THE BANNER, AND IT IS THE HOUSE RED.** §5 names it:
-  `CHIP_TONE.warn`'s hard-coded `#C0473A` IS `--errorInk`, and its own
-  argument — *"a warn chip is a problem wearing a smaller badge"* — stands
-  once it is a token. `--errorInk` rather than `--error` because this is
-  TEXT: plain `--error` measures 3.40:1 on the dark surface, below AA.
+  §5 named this: the old hard-coded `#C0473A` IS `--errorInk`. `--errorInk`
+  rather than plain `--error` because this is TEXT — `--error` measures 3.40:1
+  on the dark surface, below AA.
 */
 .dp-crew__chip--warn {
   border-color: var(--errorInk);
   color: var(--errorInk);
 }
 
-.dp-crew__chipsrc {
-  margin-top: 2px;
-  padding-left: var(--s-1);
-  font: 400 10px/1.4 var(--font-sans);
-  color: var(--faint);
+/* ------------------------------------- state at a glance (§5, #492's shape) */
+
+/*
+  ⚠ **THE PILLS ARE GONE AND THE HIERARCHY IS THE OTHER WAY UP (#492).**
+
+  His words at a frame of this block: *"the top of the programs card with the
+  little status card readings needs a better design honest it looks terribly
+  designed"*. Four faults, and only the first is about the border:
+
+  1. A stroked pill held a 67-character headline, so it wrapped to two lines of
+     11px inside a rounded outline — a tag that had swallowed a paragraph.
+  2. Three pills in a wrapping flex row put two on one line and orphaned the
+     third, each cell as tall as its own paragraph, so nothing aligned.
+  3. The 10px `--faint` sentence UNDER the pill was the actual reading, while
+     the loudest element on the page's first block carried the least of it.
+  4. Nothing else on the page is a stroked pill. The stat readings elsewhere
+     are a quiet strip: small label, the reading beneath, no border.
+
+  So: **equal grid cells** (2 fixes ragged by construction, not by asking a
+  shift to write shorter sentences — cells in a grid row share a height), **no
+  border at all** (1, 4), and the **label demoted to the page's own eyebrow
+  grammar while the source is promoted to a readable 12.5px `--secondary`** (3).
+  The label cap that makes any of it hold is at the SCHEMA, not here —
+  `crewBriefing.ts`, 40 characters, refused by the rite.
+
+  ⚠ **THE LABEL REUSES `.dp-crew__subhead` RATHER THAN A SECOND EYEBROW FACE.**
+  This page already has one — 8.5px mono, uppercase, 0.13em — on *The ladder*
+  and *The rest of the pipeline*. A near-copy of it under a new name is working
+  law 4 with a stylesheet attached, and this directory has been burned by that
+  exact shape before.
+*/
+.dp-crew__state {
+  display: grid;
+  /* Set by the component from the number of readings, capped at three (§ the
+     component's own note). The fallback is the shape the block has today. */
+  grid-template-columns: repeat(var(--dp-statecols, 3), minmax(0, 1fr));
+  gap: var(--s-7) var(--s-9);
+}
+
+.dp-crew__statecell {
+  min-width: 0;
+}
+
+.dp-crew__statelabel {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  /* The page's eyebrow, said once: see `.dp-crew__subhead`. */
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+
+/*
+  The tone, 6px, beside the label. `--rule` for neutral rather than nothing:
+  an absent dot would shift the label 12px left of its neighbours and the
+  alignment the grid just bought would be lost on the one cell that is quiet.
+*/
+.dp-crew__statedot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--rule);
+}
+
+.dp-crew__statedot--good {
+  background: var(--ink);
+}
+
+/*
+  ⚠ **THE ONE COLOUR ON THE BANNER, AND IT IS STILL THE HOUSE RED.** §5 named
+  it when it was a pill border: the old `#C0473A` IS `--errorInk`, and the
+  argument — *a warn reading is a problem wearing a smaller badge* — is
+  unchanged by the badge becoming a dot. `--errorInk` rather than `--error`
+  because it was TEXT there and is a 6px mark here: plain `--error` measures
+  3.40:1 on the dark surface, and a 6px mark has less to spare than text does.
+*/
+.dp-crew__statedot--warn {
+  background: var(--errorInk);
+}
+
+/*
+  THE READING. It was 10px `--faint` under a pill; it is the content of this
+  block and now reads like it — the same step down from the mission below that
+  `--secondary` takes from `--ink` everywhere else on this page.
+*/
+.dp-crew__statesrc {
+  margin-top: var(--s-2);
+  font: 400 12.5px/1.55 var(--font-sans);
+  color: var(--secondary);
+}
+
+/*
+  Three columns of sentences do not survive a narrow pane, and neither does
+  two. One per line is the honest fallback — `.dp-set__statcard`'s own rule,
+  and the same breakpoint the rest of this page already turns at.
+*/
+@media (max-width: 900px) {
+  .dp-crew__state { grid-template-columns: 1fr; }
 }
 
 /* ------------------------------------------------- the program banner (§6) */

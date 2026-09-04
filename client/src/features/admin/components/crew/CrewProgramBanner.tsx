@@ -6,6 +6,16 @@
  * confirming quote is rendered as a quote and never paraphrased — a focus is
  * set by his word, and the word is the evidence that it was.
  *
+ * ⚠ **#492 CHANGED THE FIRST BLOCK AND NOTHING BELOW IT.** The founder, at a
+ * frame of the top of this card: *"the top of the programs card with the little
+ * status card readings needs a better design honest it looks terribly designed
+ * . if you agree with that file it onto the next up list so my agent can pick
+ * it up when its ready."* The at-a-glance readings are a state strip now — a
+ * grid of equal cells, a quiet eyebrow label capped at 40 AT THE SCHEMA, the
+ * tone as a 6px dot, and the reading itself in the page's reading face. The
+ * mission, the focus, the quote, the milestone bar, the steps and the ladder
+ * are untouched, which is the card's own bar.
+ *
  * ⚠ **BRIEF 08 CHANGED THE SURFACE AND NOTHING ELSE (#398).** The order of the
  * blocks, the words in them, the quote and its attribution, and the ONE
  * progress number read off the steps are all exactly as they were. What moved:
@@ -14,6 +24,8 @@
  * whose argument is that a quote already carries two markers (its rule and its
  * attribution) and a third marker for one fact says nothing new.
  */
+import type { CSSProperties } from "react";
+
 import { Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -65,16 +77,31 @@ const RUNG_LABEL: Record<string, string> = {
 };
 
 /*
-  ⚠ **`warn` IS THE HOUSE RED, AND NOW IT SAYS SO.** It carried the literal
-  with a comment explaining that the value came from tokens.css. The value IS
-  `--errorInk`, brief 08 §5 names it, and the chip's own argument — a warn chip
-  is a problem wearing a smaller badge — stands unchanged once the colour is
-  the token rather than a copy of one.
+  ⚠ **THE THREE TONES SURVIVED THE PILL; THE PILL DID NOT (#492).**
+
+  His words at a frame of this block: *"the top of the programs card with the
+  little status card readings needs a better design honest it looks terribly
+  designed"*. The tones are not the fault and they do not change — `warn` is
+  still the house red (`--errorInk`, brief 08 §5, and `--errorInk` rather than
+  `--error` because this is TEXT). What changed is what carries them: a 6px dot
+  beside a quiet label, instead of a stroked pill that was the loudest thing on
+  the block while holding the least information on it.
+
+  ⚠ **`warn` SAYS ITS WORD OUT LOUD.** It is the one tone that changes what he
+  does, and a dot is a colour — the only encoding a screen reader cannot hear.
+  `good` and `neutral` get no word on purpose: the absence of a warning is the
+  resting state, and announcing it on every reading is noise.
 */
-const CHIP_TONE: Record<string, string> = {
-  good: "dp-crew__chip--good",
-  warn: "dp-crew__chip--warn",
+const STATE_DOT: Record<string, string> = {
+  good: "dp-crew__statedot--good",
+  warn: "dp-crew__statedot--warn",
   neutral: "",
+};
+
+const STATE_SPOKEN: Record<string, string | null> = {
+  good: null,
+  warn: "Needs attention: ",
+  neutral: null,
 };
 
 export function CrewProgramBanner({ program }: { program: CrewBriefingView["program"] }) {
@@ -82,19 +109,47 @@ export function CrewProgramBanner({ program }: { program: CrewBriefingView["prog
     <section className="dp-crew__card">
       <TableHead eyebrow="The program" />
 
-      {/* At-a-glance chips (#74). A chip's source is the reading it cites —
-          shown under it in small type, never hidden in a tooltip he has to
-          discover. */}
+      {/*
+        STATE AT A GLANCE (#74's readings, #492's shape).
+
+        ⚠ **THE HIERARCHY IS THE FIX.** His frame showed a stroked pill holding
+        a 67-character headline over a 10px grey paragraph carrying the actual
+        reading — the loudest element on the page's first block carrying the
+        least information per pixel. So the label is now a quiet eyebrow capped
+        at 40 AT THE SCHEMA, and `source` — the reading it cites — is drawn in
+        the page's normal reading face. It is still shown under the label and
+        still never hidden in a tooltip he has to discover.
+
+        ⚠ **THE GRID IS WHAT FIXES THE RAGGED EDGE, and it fixes it by
+        construction rather than by a shift writing shorter sentences.** Three
+        pills in a wrapping flex row put two on the first line and orphaned the
+        third, each cell as tall as its own paragraph. Equal grid cells share a
+        row, so the labels align whatever the sources do. The column count is
+        the number of readings (`chips.max(6)` at the schema), capped at three
+        so six readings become two rows of three rather than six slivers —
+        `.dp-set__statcard`'s own pattern, and the reason this sets a custom
+        property instead of a class per count.
+      */}
       {program.chips.length > 0 && (
-        <div className="dp-crew__chips dp-crew__gap">
+        <div
+          className="dp-crew__state dp-crew__gap"
+          style={{ "--dp-statecols": Math.min(program.chips.length, 3) } as CSSProperties}
+        >
           {program.chips.map((chip, index) => (
             /* Composite key (PR #78 review nit): labels are writer-controlled
                and the schema does not force them unique. */
-            <div key={`${index}-${chip.label}`} className="dp-crew__chipcell">
-              <span className={cn("dp-crew__chip", CHIP_TONE[chip.tone] ?? CHIP_TONE.neutral)}>
+            <div key={`${index}-${chip.label}`} className="dp-crew__statecell">
+              <p className="dp-crew__statelabel">
+                <span
+                  aria-hidden="true"
+                  className={cn("dp-crew__statedot", STATE_DOT[chip.tone] ?? STATE_DOT.neutral)}
+                />
+                {STATE_SPOKEN[chip.tone] && (
+                  <span className="sr-only">{STATE_SPOKEN[chip.tone]}</span>
+                )}
                 {chip.label}
-              </span>
-              {chip.source && <p className="dp-crew__chipsrc">{chip.source}</p>}
+              </p>
+              {chip.source && <p className="dp-crew__statesrc">{chip.source}</p>}
             </div>
           ))}
         </div>
