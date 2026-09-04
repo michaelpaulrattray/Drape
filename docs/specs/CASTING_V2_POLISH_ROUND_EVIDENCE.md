@@ -51,7 +51,8 @@ so the local `outline: none` lost and the accent ring drew around the text. The
 same trap is documented in `foundation.css` for `.dp-input`; this field simply
 never inherited the fix.
 
-**Why the law never caught it:** law 1 in `scripts/drive-casting-design-laws.mts`
+**Why the law never caught it:** law 1 in `scripts/drive-design-laws.mts` (then
+named `drive-casting-design-laws.mts`)
 scanned `.dp-input` only, and the rename is a bare styled `<input>`. A law that
 inspects only the controls that opted in is a law the next control opts out of.
 It now scans `.dp-input, input[type=text], input:not([type]), textarea`.

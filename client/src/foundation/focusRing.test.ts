@@ -24,11 +24,20 @@ import { describe, expect, it } from "vitest";
  * stylesheet as it stood BEFORE the rule — the blanket alone — must fail the
  * same matcher, or the arm proves only that a regex compiles.
  *
- * **Stated limit.** Source guards cannot see a render. Whether a focused staff
- * search box shows an ink border and no red ring was driven at the running app
- * in both themes and recorded on the PR; the drive that asserts the same law
- * on casting surfaces (`scripts/drive-casting-design-laws.mts`, law 1) does not
- * yet visit the staff pages, and that is a gap named here rather than closed.
+ * **Stated limit, and it is SMALLER since #512.** Source guards cannot see a
+ * render. The drive that asserts the same law at the running app
+ * (`scripts/drive-design-laws.mts`, law 1) now visits the staff pages — every
+ * address the router declares, both themes — so the gap this paragraph used to
+ * name is closed.
+ *
+ * ⚠ **And closing it turned up that the drive could not have seen this control
+ * anyway.** Law 1 selected text fields with an ALLOW-LIST
+ * (`.dp-input, input[type=text], input:not([type]), textarea`), and every staff
+ * table search box in the product — including the one the founder raised this
+ * rule over — is `<input type="search">`. Measured at the running app:
+ * `/admin/users` reported *"no text fields on this surface"* and passed. The
+ * drive derives its population from THIS stylesheet's carve-out now, and
+ * `server/designLawTextEntry.test.ts` reddens if the two ever disagree.
  */
 
 const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));

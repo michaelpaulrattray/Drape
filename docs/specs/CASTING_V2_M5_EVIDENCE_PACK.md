@@ -20,7 +20,9 @@ unlinked reference).
 
 ## 1. Mechanized design laws
 
-These no longer depend on review memory. `scripts/drive-casting-design-laws.mts`
+These no longer depend on review memory. `scripts/drive-design-laws.mts` (named
+`drive-casting-design-laws.mts` when this pack was written; renamed by #512 when it
+stopped being casting-only)
 asserts them across three surfaces × two themes and exits non-zero on any
 violation.
 
