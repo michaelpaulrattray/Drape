@@ -34,8 +34,18 @@
 #   fingerprint and regenerated nothing, so five of the last sixty gate runs
 #   died on `Architecture Atlas freshness` alone. So a commit staging a path
 #   the maps are built from regenerates them and carries them — see
-#   .githooks/atlas-stage. It runs LAST: a commit arms 1 or 2 will refuse
-#   should not pay nine seconds first.
+#   .githooks/atlas-stage. It runs LAST, so that a commit arms 1 or 2 are
+#   going to refuse does not pay nine seconds before being told.
+#
+#   ⚠ ONE MERGE ROAD PAYS TWICE AND THAT IS STATED RATHER THAN HIDDEN
+#   (review of PR #517, finding 2): atlas-regenerate clears the marker
+#   BEFORE its `automatic` branch exits, so the AUTOMATIC merge resume
+#   (`git commit --no-edit`) arrives here with no marker and ARM 3
+#   regenerates a tree ARM 0 regenerated a moment ago — nine seconds,
+#   byte-identical output, harmless. The CONFLICTED road keeps its marker
+#   through to this hook and is the one the skip below covers. Left as is:
+#   a second marker to make the automatic road skip would be state that
+#   can go stale, to save nine seconds on the rarer of two roads.
 #
 # THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify. Driven by
 # server/preCommitGate.test.ts against real temporary repositories.

@@ -164,14 +164,31 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
          under docs/ and IS hashed into the architecture fingerprint, so a commit
          editing it alone goes stale — the exact failure this arm prevents, filed
          against the card that proposed it. */
+      /* ⚠ THE FIRST VERSION OF THIS ARM PROVED THE FIRING BY LEAVING AN
+         UNSTAGED source on disk and asserting the committed map CONTAINED it —
+         which is the partial-stage defect below, asserted as though it were the
+         desired behaviour (review of PR #517, finding 1). The firing is proven
+         by the hook saying so and by the map moving, with the tree clean. */
       const dir = repoWithMap();
-      writeFileSync(join(dir, "server", "unstaged.ts"), "export const u = 1;\n");
+      writeFileSync(join(dir, "server", "second.ts"), "export const s = 1;\n");
       writeFileSync(join(dir, "docs", "architecture", "annotations.yaml"), "annotations: []\n");
-      armed(dir, "add", "docs/architecture/annotations.yaml");
+      armed(dir, "add", "docs/architecture/annotations.yaml", "server/second.ts");
       const result = armed(dir, "commit", "-q", "-m", "annotations");
       expect(result.status, result.stderr).toBe(0);
       expect(result.stderr).toContain("regenerating");
-      expect(headMap(dir)).toContain("unstaged.ts");
+      expect(headMap(dir)).toBe("second.ts\nseed.ts\n");
+      expect(armed(dir, "status", "--porcelain").stdout.trim()).toBe("");
+    });
+
+    it("fires on annotations.yaml ALONE, with no source file staged beside it", () => {
+      /* The narrowest form of the correction to the card's body: a commit whose
+         entire content is that one file under docs/. */
+      const dir = repoWithMap();
+      writeFileSync(join(dir, "docs", "architecture", "annotations.yaml"), "annotations: []\n");
+      armed(dir, "add", "docs/architecture/annotations.yaml");
+      const result = armed(dir, "commit", "-q", "-m", "annotations alone");
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toContain("regenerating");
     });
 
     it("fires on a DELETED source file, which has no blob to look at", () => {
@@ -180,6 +197,64 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
       const committed = armed(dir, "commit", "-q", "-m", "remove a module");
       expect(committed.status, committed.stderr).toBe(0);
       expect(headMap(dir).trim()).toBe("");
+    });
+  });
+
+  describe("⚠ the partial stage — the map is built from the WORKING TREE", () => {
+    /* The generators hash bytes on disk, not the index, so a commit that stages
+       some sources and leaves others dirty carries a map of a tree that is not
+       the one committed — and the gate, which rebuilds from the COMMITTED tree,
+       still reddens. Not a regression (a manual generate read the same disk) and
+       not refused (committing part of a working tree is legitimate). It WARNS,
+       because the failure mode is a hook telling you it carried the map of your
+       own tree when it carried someone else's. Review of PR #517, finding 1. */
+
+    it("WARNS and names the unstaged sources rather than claiming the map matches", () => {
+      const dir = repoWithMap();
+      writeFileSync(join(dir, "server", "staged.ts"), "export const a = 1;\n");
+      writeFileSync(join(dir, "server", "wip.ts"), "export const b = 1;\n");
+      armed(dir, "add", "server/staged.ts");
+      const result = armed(dir, "commit", "-q", "-m", "partial stage");
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toContain("WORKING TREE");
+      expect(result.stderr).toContain("server/wip.ts");
+      /* And it does NOT tell the author the opposite. */
+      expect(result.stderr).not.toContain("the map of its own tree");
+    });
+
+    it("catches a MODIFIED-but-unstaged source, not only an untracked one", () => {
+      /* Two different git listings answer this — `git diff --name-only` and
+         `git ls-files --others`. An arm covering one would pass a hook that
+         only read the other, which is how a warning ends up half-armed. */
+      const dir = repoWithMap();
+      writeFileSync(join(dir, "server", "seed.ts"), "export const seed = 2;\n");
+      writeFileSync(join(dir, "server", "staged.ts"), "export const a = 1;\n");
+      armed(dir, "add", "server/staged.ts");
+      const result = armed(dir, "commit", "-q", "-m", "partial stage, modified file");
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toContain("server/seed.ts");
+    });
+
+    it("stays SILENT when everything is staged — the warning must not cry wolf", () => {
+      /* The positive control's mirror: a warning that fired on every commit
+         would pass both arms above and teach everyone to ignore it. */
+      const dir = repoWithMap();
+      writeFileSync(join(dir, "server", "staged.ts"), "export const a = 1;\n");
+      armed(dir, "add", "server/staged.ts");
+      const result = armed(dir, "commit", "-q", "-m", "everything staged");
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toContain("the map of its own tree");
+      expect(result.stderr).not.toContain("WORKING TREE");
+    });
+
+    it("ignores dirt the maps are not built from — a stray README is not a warning", () => {
+      const dir = repoWithMap();
+      writeFileSync(join(dir, "server", "staged.ts"), "export const a = 1;\n");
+      writeFileSync(join(dir, "NOTES.md"), "scratch\n");
+      armed(dir, "add", "server/staged.ts");
+      const result = armed(dir, "commit", "-q", "-m", "dirty docs");
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).not.toContain("WORKING TREE");
     });
   });
 
@@ -227,9 +302,29 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
       expect(roots).toContain("server");
 
       const hook = readFileSync(resolve(".githooks/atlas-stage"), "utf8");
-      const pattern = /grep -E '(\^\([^']+)'/.exec(hook);
-      expect(pattern, "atlas-stage no longer filters with the grep this arm reads").not.toBeNull();
+      const pattern = /\nMATCHES='([^']+)'/.exec(hook);
+      expect(pattern, "atlas-stage no longer declares its filter as MATCHES='…'").not.toBeNull();
       const filter = new RegExp(pattern![1]!);
+
+      /* ⚠ AND THE ROOTS ARE NOT THE WHOLE INPUT. `fingerprint()` hashes every
+         scanned file PLUS whatever else it reads by name — today that is
+         annotations.yaml, which is why the filter carries it. The first version
+         of this arm derived the roots and then hard-coded that one extra on
+         both sides, so a future out-of-roots input would have repeated this
+         card's defect silently (review of PR #517). So the extras are derived
+         too: every `path.join(repoRoot, …)` inside the fingerprint function
+         must be a path the filter fires on. */
+      const body = /function fingerprint\(\): string \{([\s\S]*?)\n\}/.exec(generator);
+      expect(body, "fingerprint() is no longer declared the way this arm reads it").not.toBeNull();
+      const extras = [...body![1]!.matchAll(/path\.join\(repoRoot,\s*([^)]+)\)/g)].map((m) =>
+        [...m[1]!.matchAll(/"([^"]+)"/g)].map((s) => s[1]!).join("/"),
+      );
+      for (const extra of extras) {
+        expect(
+          filter.test(extra),
+          `fingerprint() hashes "${extra}" and .githooks/atlas-stage does not fire on it`,
+        ).toBe(true);
+      }
 
       for (const root of roots) {
         /* A root only matters through the files inside it, and the filter is on
