@@ -84,16 +84,16 @@
 import { useState } from "react";
 
 import {
-  CREW_PIPELINE_VISIBLE_GROUPS,
-  PIPELINE_SWITCHED_KEY,
+  CREW_PIPELINE_GROUPS,
+  CREW_PIPELINE_ORPHAN_GROUPS,
 } from "@shared/crewPipelineGroups";
 import {
   indexIntentsByCard,
-  intentSentence,
   type CrewCardIntentView,
 } from "@shared/crewCardIntents";
 import { queueExclusionSentence } from "@shared/crewQueueExclusions";
-import { queueTitlesView, type CrewQueueTitle } from "@shared/crewQueueTitles";
+import { queueTitlesView } from "@shared/crewQueueTitles";
+import { CardTitles } from "./CrewCardTitles";
 import {
   CREW_WORK_CATEGORIES,
   CREW_WORK_MASTER_KEY,
@@ -323,125 +323,36 @@ export function CrewBackgroundWork({
 }
 
 /**
- * THE CARD TITLES, AND HIS TAP ON EACH OF THEM (#285's list, #325's tap).
+ * ZONE 2 — NOT ON ANY ROAD (#325's block, reshaped by #493).
  *
- * ⚠ **ONE COMPONENT, DRAWN IN BOTH ZONES.** The switch rows and the pipeline
- * groups rendered this list twice, byte for byte, before the tap existed —
- * which was harmless while it was five lines and is exactly how a control ends
- * up living on half a panel. His question was about *"all those other ones"*,
- * so the tap has to reach every card the page names, and the only way to be
- * sure of that is for there to be one list.
+ * Founder, 2026-09-04, verbatim: *"the issue i have with the pipeline is its
+ * doubling up for exable i can already see my next up so why do i need to see
+ * qued by me again in the pipeline also some thing exist under the main
+ * feature plan like n1 or n2 or n3 etc i shouldnt see to see these in the
+ * pipeline if they are already under the main program card righ?"*
  *
- * # ⚠ THE TAP DOES NOT CLOSE THE CARD, AND THE LABEL SAYS SO
+ * He was right. This block used to draw all twelve groups, so "Queued by you"
+ * repeated NEXT UP and roadmap/parked/design-unbuilt repeated the ladder the
+ * Program card draws. **The one rule now: every open card appears in exactly
+ * ONE section — the one that says what it is waiting on.** This block draws
+ * only the groups homed HERE (`CREW_PIPELINE_ORPHAN_GROUPS`) — the cards on no
+ * road at all — and everything homed elsewhere appears as one quiet line of
+ * counts, so the arithmetic he asked for in #325 ("all 97") is still on the
+ * page without a single card being listed twice.
  *
- * It reads **Not relevant**, not *Close* and not a bin icon, because what it
- * does is record what he thinks — a shift closes the card afterwards, having
- * checked. A control whose label promises the thing it does not do is the
- * dead-control shape his own stub ruling forbids, wearing a working one's
- * clothes.
+ * # ⚠ VISIBLE, AND NEVER SWITCHABLE — the distinction is still the whole design
  *
- * The confirmation is the SENTENCE that replaces it — *"Marked not relevant —
- * a shift will check it and close it"* — rather than a toast that vanishes, so
- * a tap he took at 1am is still visible at 8am. And it is reversible in one
- * press until a shift acts, which is why there is no confirm dialog: the
- * cheapest undo beats the cheapest warning.
- */
-function CardTitles({
-  titles, intents, onIntent, pendingCard,
-}: {
-  titles: readonly CrewQueueTitle[];
-  intents: ReadonlyMap<number, CrewCardIntentView>;
-  /** `null` while the table is absent — the tap is withheld rather than drawn dead. */
-  onIntent: ((issueNumber: number, intent: "close" | null) => void) | null;
-  pendingCard: number | null;
-}) {
-  if (titles.length === 0) return null;
-  return (
-    <>
-      {titles.map((card) => {
-        const intent = intents.get(card.number);
-        const sentence = intentSentence(intent);
-        /* Only a LIVE mark is takeable back. A resolved row keeps a shift's
-           answer on the page rather than offering him an undo that would erase
-           the record of what was done and why. */
-        const marked = sentence !== null && intent?.resolution == null;
-        return (
-          <li key={card.number} className="dp-crew__cardtitle">
-            <div className="dp-crew__cardrow">
-              {/* ⚠ `flex: 1` IS WHAT MAKES THE BUTTONS A COLUMN RATHER THAN A
-                  RAGGED EDGE. Without it the title shrinks to its content and
-                  the tap lands wherever that title happens to end — measured at
-                  the frame, `Not relevant` sat mid-row on the short titles and
-                  at the margin on the long ones, across 56 rows. `min-width: 0`
-                  is what lets the ellipsis work inside a flex child. */}
-              <span className="dp-crew__cardname" title={`#${card.number} ${card.title}`}>
-                {/* An issue number is a measured value, so it is mono (§4). */}
-                <span className="dp-crew__mono">#{card.number}</span>
-                {" "}
-                {card.title}
-              </span>
-              {/* A resolved card's row is a REPORT, not a control — there is
-                  nothing left for him to press, and drawing a live button
-                  beside a shift's answer would invite him to press it. */}
-              {onIntent !== null && intent?.resolution == null && (
-                <button
-                  type="button"
-                  disabled={pendingCard === card.number}
-                  onClick={() => onIntent(card.number, marked ? null : "close")}
-                  className={cn("dp-crew__tap", marked && "dp-crew__tap--marked")}
-                  aria-label={
-                    marked
-                      ? `Undo — keep #${card.number} in the queue`
-                      : `Mark #${card.number} not relevant`
-                  }
-                >
-                  {marked ? "Undo" : "Not relevant"}
-                </button>
-              )}
-            </div>
-            {sentence && <p className="dp-crew__taken">{sentence}</p>}
-          </li>
-        );
-      })}
-    </>
-  );
-}
-
-/**
- * ZONE 2 — THE REST OF THE PIPELINE (#325).
+ * There is no `<Switch>` in this component and there must never be one. What
+ * each group buys him is the SENTENCE under the count saying why nobody will
+ * act without his word.
  *
- * Founder, 2026-08-31: *"all those other ones should be put them under
- * additional categories so i can see the full pipeline like all 97? and should
- * there be a delete icon next to them so i can close them or remove them myself
- * if they are not relevant?"*
+ * # ⚠ THE EMPTY STATE IS AN ANSWER, NOT AN ABSENCE
  *
- * Measured the hour this shipped: **100 open, 29 reached by a switch above, 71
- * reached by nothing.** The panel he looks at from bed could see under a third
- * of his own pipeline, and the other seventy-one were not merely uncounted —
- * they were invisible, with no way to ask why.
- *
- * # ⚠ VISIBLE, AND NEVER SWITCHABLE — the distinction is the whole design
- *
- * There is no `<Switch>` in this component and there must never be one.
- * `design-unbuilt` and `roadmap` are feature work, and `PROGRAM.md`'s founder
- * law is *"the team NEVER selects the next feature. Ever."* A switch on either
- * is that law with a toggle attached. His card argues the second half too:
- * **eleven switches is worse to operate than the five there then were**, on a
- * panel whose stated purpose is one he reads from bed. (Seven since #429, and
- * his argument is unchanged by the two — the point was never the exact number.)
- *
- * So what each group buys him is not a control — it is the SENTENCE under the
- * count saying why it is not on offer. That is the honest answer to *"how do I
- * see the full pipeline"*, and a stronger one than eleven switches.
- *
- * # ⚠ THE TOTAL IS DERIVED FROM THE ROWS, NOT ASSERTED BESIDE THEM
- *
- * His bar: *"the counts sum to the real total."* The sum below is over EVERY
- * group including `switched` — the cards the panel above already reaches — which
- * is why that group exists at all. Adding the switch counts instead would
- * be wrong by however many cards carry two of their labels (today 30 against
- * 29), and two numbers disagreeing by one, on the panel built because he could
- * not tell a broken counter from a real zero, is not a rounding matter.
+ * When every orphan group is at zero the block says *"Every open card is on a
+ * road"* — his card's own sentence — with the count's age beside it, because a
+ * reassuring sentence without its age is the confident wrong number this panel
+ * exists to prevent. The rows themselves are not drawn at zero-everything; his
+ * card says "and nothing else", and the sentence IS the real answer.
  */
 function PipelineGroups({
   workState, now, intentsByCard, onIntent, intentPendingCard,
@@ -455,15 +366,15 @@ function PipelineGroups({
   const byKey = new Map(workState.groups.map((row) => [row.groupKey, row]));
 
   /*
-    ⚠ NOTHING COUNTED YET SAYS SO, RATHER THAN DRAWING TWELVE ZEROS. Between
-    this deploy and the next shift's count there are no rows, and "the pipeline
-    is empty" is the most reassuring and most wrong sentence this panel could
+    ⚠ NOTHING COUNTED YET SAYS SO, RATHER THAN DRAWING ZEROS. Between this
+    deploy and the next shift's count there are no rows, and "every card is on
+    a road" is the most reassuring and most wrong sentence this block could
     print — the same rule `countedAt` exists for one section up.
   */
   if (workState.groups.length === 0) {
     return (
       <div className="dp-crew__rule dp-crew__rule--tight">
-        <h3 className="dp-crew__subhead">The rest of the pipeline</h3>
+        <h3 className="dp-crew__subhead">Not on any road</h3>
         <p className="dp-crew__blurb dp-crew__gap--tight">
           Not counted yet — the next shift fills this in when it starts.
         </p>
@@ -471,9 +382,28 @@ function PipelineGroups({
     );
   }
 
-  /* Every group, including `switched`, which is what makes this the real total. */
+  /* Every group, including the elsewhere-homed ones — the real total (#325). */
   const total = workState.groups.reduce((sum, row) => sum + row.openCount, 0);
-  const onOffer = byKey.get(PIPELINE_SWITCHED_KEY)?.openCount ?? 0;
+  const orphanTotal = CREW_PIPELINE_ORPHAN_GROUPS.reduce(
+    (sum, group) => sum + (byKey.get(group.key)?.openCount ?? 0),
+    0,
+  );
+  /* ONE quiet line for everything that lives elsewhere (#493): each phrase is
+     the group's own `elsewhere` word, so the line is derived from the same
+     vocabulary that homes the cards — never a second list. Zero-count entries
+     are omitted here (the sections themselves are the zero answer). */
+  const homeRank: Record<string, number> = { switches: 0, "next-up": 1, ladder: 2 };
+  const elsewhere = CREW_PIPELINE_GROUPS
+    .filter((group) => group.elsewhere !== null)
+    .map((group) => ({ group, count: byKey.get(group.key)?.openCount ?? 0 }))
+    .filter((entry) => entry.count > 0)
+    /* Section order down the page, then biggest first — his card's own example
+       reads "on the ladder · parked · unbuilt designs", the annexes after the
+       road they sit beside. */
+    .sort((a, b) =>
+      (homeRank[a.group.home] ?? 9) - (homeRank[b.group.home] ?? 9) || b.count - a.count)
+    .map((entry) => `${entry.count} ${entry.group.elsewhere}`)
+    .join(" · ");
   /* One age for the section: the groups are written in one pass, so they share
      a `countedAt` by construction. The oldest is taken rather than the first,
      so a row left standing by a skipped count cannot make the section look
@@ -484,25 +414,37 @@ function PipelineGroups({
     const b = row.countedAt instanceof Date ? row.countedAt.getTime() : new Date(row.countedAt).getTime();
     return b < a ? row.countedAt : worst;
   }, null);
+  const stamp = oldest ? ` · counted ${ago(oldest, now)}` : "";
+
+  /* HIS CARD'S OWN EMPTY STATE: every open card has a home. The sentence and
+     its age, and nothing else — the elsewhere sections are their own answer. */
+  if (orphanTotal === 0) {
+    return (
+      <div className="dp-crew__rule dp-crew__rule--tight" data-testid="crew-orphans-empty">
+        <h3 className="dp-crew__subhead">Not on any road</h3>
+        <p className="dp-crew__catname dp-crew__gap--tight">
+          Every open card is on a road
+          <span className="dp-crew__count">{stamp}</span>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="dp-crew__rule dp-crew__rule--tight">
-      <h3 className="dp-crew__subhead">The rest of the pipeline</h3>
+      <h3 className="dp-crew__subhead">Not on any road</h3>
       <p className="dp-crew__catname dp-crew__gap--tight">
-        {total} open in total
-        <span className="dp-crew__count">
-          {" "}· {onOffer} on offer above, {total - onOffer} not
-          {oldest ? ` · counted ${ago(oldest, now)}` : ""}
-        </span>
+        {orphanTotal} of {total} open
+        <span className="dp-crew__count">{stamp}</span>
       </p>
       <p className="dp-crew__conseq dp-crew__gap--tight">
-        {/* His card's own sentence, and the reason there are no switches here. */}
-        These are not offered as background work. Each line says why — the ones below feature work
-        are yours to decide, not a shift&apos;s.
+        {/* His card's own reason there are no switches here. */}
+        No switch offers these and no rung waits on them — each line says why, and nothing
+        moves without your word.
       </p>
 
       <ul className="dp-crew__cats dp-crew__gap">
-        {CREW_PIPELINE_VISIBLE_GROUPS.map((group) => {
+        {CREW_PIPELINE_ORPHAN_GROUPS.map((group) => {
           const row = byKey.get(group.key);
           const titles = queueTitlesView(row?.openCount ?? 0, row?.titles ?? []);
           return (
@@ -532,6 +474,13 @@ function PipelineGroups({
           );
         })}
       </ul>
+
+      {/* The quiet line (#493): where everything else lives, in one sentence. */}
+      {elsewhere && (
+        <p className="dp-crew__foot" data-testid="crew-elsewhere-line">
+          Everything else has a home: {elsewhere}.
+        </p>
+      )}
     </div>
   );
 }

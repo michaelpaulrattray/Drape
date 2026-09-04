@@ -1258,3 +1258,39 @@ describe("card 492 — the readings are a state strip in the house grammar", () 
     expect(media).toMatch(/grid-template-columns:\s*1fr/);
   });
 });
+
+/* ================================================================
+   #493 — THE ONE-PLACE RULE AT THE SURFACES
+   ================================================================
+   The vocabulary test pins WHICH groups are orphans; these pin that the
+   components actually draw off that vocabulary — the render-level doubling
+   his order names cannot come back without one of these reddening. Each
+   presence arm is its own positive control: the string it wants exists in
+   exactly one deliberate place.
+*/
+describe("issue 493 — no card is listed twice", () => {
+  it("the pipeline block draws only the orphan groups, and its empty state is his sentence", () => {
+    const body = code(read(path.join(HERE, "CrewBackgroundWork.tsx")));
+    expect(body).toContain("CREW_PIPELINE_ORPHAN_GROUPS.map");
+    expect(body).toContain("Every open card is on a road");
+    /* The deleted all-groups view must not creep back in as the row source. */
+    expect(body).not.toContain("CREW_PIPELINE_VISIBLE_GROUPS");
+  });
+
+  it("the ladder draws its waiting cards — count always, cards on a tap, remainder honest", () => {
+    const banner = code(read(path.join(HERE, "CrewProgramBanner.tsx")));
+    expect(banner).toContain("ladderCards");
+    expect(banner).toContain("<CardTitles");
+    expect(banner).toContain("Rung not yet named");
+    /* The tap reaches the ladder rows too (#325's rule: every card the page
+       names), and it is withheld while the intents table is absent. */
+    expect(banner).toContain("cardIntents.available");
+  });
+
+  it("NEXT UP's waiting-on-you chip links to the needs-you card that holds it (move 3)", () => {
+    const nextUp = code(read(path.join(HERE, "CrewNextUp.tsx")));
+    expect(nextUp).toContain("#crew-card-");
+    const needsYou = code(read(path.join(HERE, "CrewNeedsYou.tsx")));
+    expect(needsYou).toContain("id={`crew-card-");
+  });
+});

@@ -113,6 +113,21 @@ export type CrewPipelineGroup = {
   readonly queueLabel: string | null;
   /** Why it is not on offer. One line, his page reads it under the count. */
   readonly blurb: string;
+  /**
+   * WHERE THIS GROUP'S CARDS RENDER on his page (#493 — his order: *"why do i
+   * need to see qued by me again in the pipeline"*). The one-place rule: every
+   * open card appears in exactly ONE section, the one that says what it is
+   * waiting on. `here` means the pipeline block itself draws the rows;
+   * anything else means the block prints only a count in its quiet
+   * elsewhere line, and the named section draws the cards.
+   */
+  readonly home: "switches" | "next-up" | "ladder" | "here";
+  /**
+   * The phrase the quiet counts line reads for a group homed elsewhere —
+   * completed as `{count} {elsewhere}` — and `null` exactly when the group is
+   * homed `here` (the consistency is pinned by `crewPipelineGroups.test.ts`).
+   */
+  readonly elsewhere: string | null;
 };
 
 /**
@@ -140,78 +155,104 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     label: "On offer above",
     queueLabel: null,
     blurb: "Reached by the switches above — this is the only group that is switchable.",
+    home: "switches",
+    elsewhere: "on offer above",
   },
   {
     key: "ordered",
     label: "Queued by you",
     queueLabel: "founder-ordered",
     blurb: "You asked for these by name — they are in NEXT UP and taken first.",
+    home: "next-up",
+    elsewhere: "in NEXT UP",
   },
   {
     key: "blocked",
     label: "Blocked",
     queueLabel: "blocked",
     blurb: "Waiting on something the card names.",
+    home: "here",
+    elsewhere: null,
   },
   {
     key: "parked",
     label: "Parked",
     queueLabel: "parked",
     blurb: "Stopped on your own ruling — the card names which.",
+    home: "ladder",
+    elsewhere: "parked",
   },
   {
     key: "design-unbuilt",
     label: "Design, unbuilt",
     queueLabel: "design-unbuilt",
     blurb: "Feature work. The team never selects the next feature — this one is yours.",
+    home: "ladder",
+    elsewhere: "unbuilt designs",
   },
   {
     key: "roadmap",
     label: "Roadmap",
     queueLabel: "roadmap",
     blurb: "Sequenced work — it waits for its rung on the ladder.",
+    home: "ladder",
+    elsewhere: "on the ladder",
   },
   {
     key: "debt",
     label: "Debt",
     queueLabel: "debt",
     blurb: "Carded cleanup — it needs your word because the scope varies.",
+    home: "here",
+    elsewhere: null,
   },
   {
     key: "lost-and-found",
     label: "Lost and found",
     queueLabel: "lost-and-found",
     blurb: "Catalogued intentions, not a queue — things found while doing something else.",
+    home: "here",
+    elsewhere: null,
   },
   {
     key: "scope-change",
     label: "Scope changes",
     queueLabel: "scope-change",
     blurb: "A change to what we agreed we are building — yours to rule on.",
+    home: "here",
+    elsewhere: null,
   },
   {
     key: "toolbelt",
     label: "Toolbelt",
     queueLabel: "toolbelt",
     blurb: "The team's own tools — nothing a customer sees.",
+    home: "here",
+    elsewhere: null,
   },
   {
     key: "patrol",
     label: "Patrols",
     queueLabel: "patrol",
     blurb: "A seat's standing round — it runs on its own clock, not on a switch.",
+    home: "here",
+    elsewhere: null,
   },
   {
     key: "other",
     label: "Other",
     queueLabel: null,
     blurb: "Labelled, but with nothing this panel names — worth a look, they may want a category.",
+    home: "here",
+    elsewhere: null,
   },
   {
     key: "unfiled",
     label: "Unfiled",
     queueLabel: null,
     blurb: "No label at all — nobody can find these, and they want triaging.",
+    home: "here",
+    elsewhere: null,
   },
 ] as const;
 
@@ -221,14 +262,102 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
  */
 export const PIPELINE_SWITCHED_KEY = "switched";
 
-/**
- * The groups his page actually DRAWS, which is every one except the arithmetic.
- *
- * A derived view rather than a second array, because a second array is the one
- * mistake this whole panel keeps being rebuilt to avoid.
+/*
+ * ⚠ `CREW_PIPELINE_VISIBLE_GROUPS` — "every group except the arithmetic" — was
+ * DELETED by #493: the page no longer has a section that draws all eleven, so
+ * the view lost its one production consumer the day the doubling was removed.
+ * The drawn set is `CREW_PIPELINE_ORPHAN_GROUPS` above; a group's cards render
+ * where its `home` says.
  */
-export const CREW_PIPELINE_VISIBLE_GROUPS: readonly CrewPipelineGroup[] =
-  CREW_PIPELINE_GROUPS.filter((group) => group.key !== PIPELINE_SWITCHED_KEY);
+
+/**
+ * The groups the pipeline block actually DRAWS — those homed `here` (#493).
+ *
+ * His order, verbatim: *"the issue i have with the pipeline is its doubling up
+ * for exable i can already see my next up so why do i need to see qued by me
+ * again in the pipeline"*. So the block lists only the cards NO other section
+ * shows — the ones nobody will act on without his word — and everything homed
+ * elsewhere appears as one quiet line of counts.
+ *
+ * ⚠ Derived from `home`, never a second array: the card's own enumeration
+ * ("debt, lost-and-found, scope-change, blocked, other, unfiled") omitted
+ * `toolbelt` and `patrol`, and dropping them would put a future toolbelt card
+ * on NO section of the page — the exact no-place failure #493 exists to
+ * prevent. The one-place rule outranks the enumeration, said on the card.
+ */
+export const CREW_PIPELINE_ORPHAN_GROUPS: readonly CrewPipelineGroup[] =
+  CREW_PIPELINE_GROUPS.filter((group) => group.home === "here");
+
+/**
+ * The groups whose cards live under the ladder in THE PROGRAM (#493 move 2):
+ * `roadmap`, `parked`, `design-unbuilt` — derived from `home`, so a group
+ * re-homed later moves its population in one field.
+ */
+export const CREW_LADDER_GROUP_KEYS: readonly string[] =
+  CREW_PIPELINE_GROUPS.filter((group) => group.home === "ladder").map((group) => group.key);
+
+/**
+ * THE RUNG LABEL — `rung:N3` places a card under ladder rung N3 (#493).
+ *
+ * ⚠ **A rung label is TRANSCRIPTION, never sequencing.** It is applied only
+ * where the record already names the rung — the founder's word, the card's own
+ * title, or the signed rebaseline plan naming the card by number. A shift
+ * assigning a rung on its own judgement would be selecting the next feature,
+ * which `PROGRAM.md` reserves to him. A card with no rung label renders in the
+ * ladder's honest remainder: *on the ladder, rung not yet named.*
+ */
+export const RUNG_LABEL_PREFIX = "rung:";
+
+/**
+ * The rung a card's labels place it on, or `null` for unplaced.
+ *
+ * Validated against the ladder's OWN keys (the deployed briefing's
+ * `program.ladder`), so a typo like `rung:N9` reads as unplaced rather than
+ * inventing a rung — the sweep reports it out loud rather than dropping it
+ * silently. Two rung labels on one card resolve to the first in ladder order,
+ * deterministically.
+ */
+export function rungFromLabels(
+  labels: readonly string[],
+  rungKeys: readonly string[],
+): string | null {
+  const named = new Set(
+    labels
+      .filter((label) => label.startsWith(RUNG_LABEL_PREFIX))
+      .map((label) => label.slice(RUNG_LABEL_PREFIX.length)),
+  );
+  for (const key of rungKeys) {
+    if (named.has(key)) return key;
+  }
+  return null;
+}
+
+/**
+ * THE ONE-PLACE RULE'S CHECKER (#493's bar): given the card numbers each
+ * section draws, every number that appears in more than one section.
+ *
+ * Pure and total so it can be positively controlled — a checker that cannot
+ * name a duplicate cannot fail, and a guard that cannot fail proves nothing
+ * (working law 2). Its consumers: the one-place guard arm over the real
+ * briefing fixture, and the briefing schema's own nextUp/ladder refinement.
+ */
+export function onePlaceViolations(
+  populations: readonly (readonly number[])[],
+): number[] {
+  const seen = new Set<number>();
+  const doubled = new Set<number>();
+  for (const population of populations) {
+    /* Within one section a duplicate is that section's own defect (its schema
+       already refuses it); this checker reads ACROSS sections. Deduped via a
+       Set but iterated as an array — one tsconfig on this file targets es5. */
+    const unique = Array.from(new Set(population));
+    for (const issueNumber of unique) {
+      if (seen.has(issueNumber)) doubled.add(issueNumber);
+      seen.add(issueNumber);
+    }
+  }
+  return Array.from(doubled).sort((a, b) => a - b);
+}
 
 /**
  * Which group one open card belongs to — exactly one, always.

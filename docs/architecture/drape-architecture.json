@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c4bcda411adc558a"
+    "sourceFingerprint": "7e67be03a4ed1204"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 55
+      "moduleCount": 56
     },
     {
       "id": "domain:alerting",
@@ -681,6 +681,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "path": "client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "path": "client/src/features/admin/components/crew/CrewCardTitles.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -14230,6 +14236,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
@@ -14266,6 +14277,21 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:shared/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "to": "module:shared/crewCardIntents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "to": "module:shared/crewQueueTitles.ts",
       "kind": "imports"
     },
     {
@@ -14410,6 +14436,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
@@ -14421,6 +14452,16 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:shared/crewCardIntents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:shared/crewQueueTitles.ts",
       "kind": "imports"
     },
     {
@@ -27901,6 +27942,11 @@
     {
       "from": "module:server/crew/crewBriefing.ts",
       "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/crewBriefing.ts",
+      "to": "module:shared/crewPipelineGroups.ts",
       "kind": "imports"
     },
     {

@@ -153,6 +153,13 @@ export type CrewNextUpRow = {
    */
   blockedOnYou: boolean;
   /**
+   * The OPEN needs-you card whose question holds this row, when one does —
+   * the `id` slug the card's DOM anchor is built from (#493 move 3). Derived
+   * in the same pass as `blockedOnYou`, from the same population, so the chip
+   * can never link to a card the rule did not count.
+   */
+  holdingCardId: string | null;
+  /**
    * Why no shift has taken this row yet, or `null` when nothing is stopping
    * one (#298). His question was *"did it skip things or what happened"* —
    * five rows were skipped and every skip was correct, but the block could
@@ -170,18 +177,20 @@ export function nextUpRows(
   nextUp: CrewBriefingView["nextUp"],
   cards: readonly CrewNeedsYouCard[],
 ): CrewNextUpRow[] {
-  const askingHim = new Set(
+  const askingHim = new Map(
     cards
       .filter((card) => card.state === "open" && card.issueNumber !== null)
-      .map((card) => card.issueNumber as number),
+      .map((card) => [card.issueNumber as number, card.id]),
   );
   return nextUp.items.map((item) => {
-    const blockedOnYou = askingHim.has(item.issueNumber);
+    const holdingCardId = askingHim.get(item.issueNumber) ?? null;
+    const blockedOnYou = holdingCardId !== null;
     return {
       issueNumber: item.issueNumber,
       title: item.title,
       urgent: item.urgent,
       blockedOnYou,
+      holdingCardId,
       hold: resolveHold({ blockedOnYou, held: item.held ?? null }),
     };
   });

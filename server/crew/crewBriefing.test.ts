@@ -492,3 +492,51 @@ describe("#492 — the at-a-glance label is capped where it cannot be forgotten"
     }
   });
 });
+
+/*
+  #493 — THE ONE-PLACE RULE AND THE RUNG'S EXISTENCE, HELD AT THE PARSE.
+
+  The ladder cards and NEXT UP are written by one sweep from one partition, so
+  these refinements can only fire on a hand edit — and when one does, the rite
+  refuses the edition instead of deploying a page that lists a card twice
+  (the exact doubling his order names) or draws a rung the bar above does not
+  hold. Both arms drive the refusal, not just the acceptance (working law 2).
+*/
+describe("#493 — the briefing cannot list one card in two homes", () => {
+  const valid = () => JSON.parse(readFileSync(briefingPath, "utf8"));
+
+  it("the real file parses, and both populations are real", () => {
+    const parsed = crewBriefingSchema.parse(valid());
+    expect(parsed.program.ladderCards.items.length).toBeGreaterThan(0);
+    expect(parsed.nextUp.items.length).toBeGreaterThan(0);
+  });
+
+  it("⚠ POSITIVE CONTROL — a NEXT UP card copied onto the ladder is REFUSED", () => {
+    const base = valid();
+    const doubled = base.nextUp.items[0].issueNumber;
+    base.program.ladderCards.items.push({
+      issueNumber: doubled,
+      title: "the same card, listed twice",
+      kind: "roadmap",
+      rung: null,
+    });
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/exactly one home/);
+  });
+
+  it("⚠ POSITIVE CONTROL — a rung the ladder does not hold is REFUSED", () => {
+    const base = valid();
+    base.program.ladderCards.items.push({
+      issueNumber: 999999,
+      title: "a card on a rung that does not exist",
+      kind: "roadmap",
+      rung: "N99",
+    });
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/program\.ladder\[\]\.key/);
+  });
+
+  it("a duplicated ladder card is refused within its own list too", () => {
+    const base = valid();
+    base.program.ladderCards.items.push({ ...base.program.ladderCards.items[0] });
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/unique/);
+  });
+});

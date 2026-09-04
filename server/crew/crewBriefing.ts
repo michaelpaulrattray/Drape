@@ -60,6 +60,7 @@
 import { z } from "zod";
 
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
+import { CREW_LADDER_GROUP_KEYS, onePlaceViolations } from "../../shared/crewPipelineGroups.js";
 
 import briefingJson from "./crew-briefing.json";
 
@@ -96,6 +97,38 @@ const ladderRungSchema = z.object({
   key: z.string(),
   title: z.string(),
   state: z.enum(["done", "current", "queued", "parked"]),
+}).strict();
+
+/**
+ * One open card waiting on the ladder (#493 move 2) — the roadmap, parked and
+ * design-unbuilt populations, homed under THE PROGRAM instead of re-listed in
+ * the pipeline block.
+ *
+ * `kind` is the card's pipeline group (`shared/crewPipelineGroups.ts`'s ladder
+ * homes), so the page can say *parked* or *unbuilt design* beside the row
+ * without a second vocabulary. `rung` is the ladder key the record names via a
+ * `rung:` label, or `null` for the honest remainder — *on the ladder, rung not
+ * yet named*. A refinement below refuses a rung the ladder does not hold.
+ */
+const ladderCardSchema = z.object({
+  issueNumber: z.number().int().positive(),
+  title: z.string().min(1).max(300),
+  kind: z.enum(CREW_LADDER_GROUP_KEYS as [string, ...string[]]),
+  rung: z.string().nullable(),
+}).strict();
+
+/**
+ * The ladder's own queue (#493) — a derived snapshot, exactly the NEXT UP
+ * pattern (#290): `scripts/crew-desk-sweep.mts` writes it mechanically from
+ * the queue's labels through `pipelineGroupFor`, the ONE partition, so a card
+ * offered on the switches or queued in NEXT UP can never also appear here.
+ * `readAt` is rendered out loud, never implied, for `nextUp.readAt`'s reason.
+ */
+const ladderCardsSchema = z.object({
+  readAt: isoDateTime,
+  items: z.array(ladderCardSchema).max(100)
+    .refine(uniqueBy<{ issueNumber: number }>("ladder card", (item) => String(item.issueNumber)),
+      "ladderCards.items[].issueNumber must be unique"),
 }).strict();
 
 /**
@@ -330,6 +363,8 @@ export const crewBriefingSchema = z.object({
     milestone: milestoneSchema.nullable(),
     ladder: z.array(ladderRungSchema)
       .refine(uniqueBy("rung", (rung) => rung.key), uniqueMessage("ladder[].key")),
+    /** The open cards waiting on the ladder, by rung where the record names one (#493). */
+    ladderCards: ladderCardsSchema,
     /** At-a-glance state, capped so the strip stays a glance (#74). */
     chips: z.array(chipSchema).max(6),
   }).strict(),
@@ -399,6 +434,34 @@ export const crewBriefingSchema = z.object({
       );
     }),
   "a waiting-founder pipeline row must name an OPEN needsYou card, and only such a row may carry cardId (#291)",
+).refine(
+  /*
+    A LADDER CARD'S RUNG MUST BE A RUNG THE LADDER HOLDS (#493). A `rung:N9`
+    typo in GitHub reads as unplaced at the sweep; a rung typed into the file
+    directly is refused here, so the page can never draw a rung that does not
+    exist on the bar above it.
+  */
+  (briefing) => {
+    const rungKeys = new Set(briefing.program.ladder.map((rung) => rung.key));
+    return briefing.program.ladderCards.items.every(
+      (item) => item.rung === null || rungKeys.has(item.rung),
+    );
+  },
+  "a ladder card's rung must name a program.ladder[].key (#493)",
+).refine(
+  /*
+    THE ONE-PLACE RULE, HELD AT THE PARSE (#493, the #291 precedent): a card in
+    NEXT UP may not also sit on the ladder. The two lists are written by the
+    same sweep from one partition, so this can only fire on a hand edit — and
+    when it does, the rite refuses the edition rather than deploying a page
+    that lists one card twice, which is the exact doubling his order names.
+  */
+  (briefing) =>
+    onePlaceViolations([
+      briefing.nextUp.items.map((item) => item.issueNumber),
+      briefing.program.ladderCards.items.map((item) => item.issueNumber),
+    ]).length === 0,
+  "a card may not appear in both NEXT UP and the ladder — every open card has exactly one home (#493)",
 );
 
 export type CrewBriefing = z.infer<typeof crewBriefingSchema>;
@@ -421,6 +484,9 @@ export function degradedCrewBriefing(): CrewBriefing {
       focus: { state: "none", title: "", quote: null, quotedAt: null },
       milestone: null,
       ladder: [],
+      /* Empty rather than absent, for `nextUp`'s reason: the ladder block
+         renders nothing extra and the page stays honest about not knowing. */
+      ladderCards: { readAt: new Date().toISOString(), items: [] },
       chips: [],
     },
     needsYou: [],
