@@ -268,23 +268,42 @@ first**: the slice-refund sentences on `point_transactions` stand at **28 refund
 / 560 credits** (14d) and **72 / 1,440** (60d) — agreeing exactly with the slice
 counts on both windows. The reader prints that comparison every run.
 
-⚠ **What that comparison does NOT prove was over-claimed in the first draft of
-this run's own instrument, and the correction is worth more than the agreement**
-(PR #533, gate review finding 1). The check said a disagreement meant one reader
-was wrong. It does not. Four benign populations separate the two counts on a
-perfectly healthy window: a **`render_fault`** slice refunds under its own
-sentence (*"This tile came back as a contact sheet rather than a portrait"* —
-both sentences are summed now, and the second has not fired in 60 days, which is
-exactly why the first draft read AGREES and looked fine); a slice with
+⚠ **What that comparison does NOT prove was over-claimed TWICE in this run's own
+instrument, and the two corrections are worth more than the agreement they
+produced** (PR #533, both gate review rounds). The check first said a
+disagreement meant one reader was wrong. It does not. Three benign populations
+separate the two counts on a perfectly healthy window: a slice with
 `pointsCost <= 0` or an **unrecorded** refund is a real loss with no ledger row;
-a roll **in flight at read time** has `processing` slices nothing has yet had a
-chance to refund — so slices younger than the ~6-minute recovery window are now
-reported separately and kept OUT of the "did not arrive" figure; and the two
-tables are windowed on their own `createdAt`, so a slice near the boundary can
-fall inside while its refund falls outside. **Only the second is a finding, and
-only once the other three are ruled out by hand.** This is the same over-claim
-shape §C below was written to catch, committed in the very run that catches it —
-which is the honest reason it is written down here rather than quietly fixed.
+a roll or retry **in flight at read time** has `processing` slices nothing has
+yet had a chance to refund — so slices younger than the ~6-minute recovery window
+are now reported separately and kept OUT of the "did not arrive" figure; and the
+two tables are windowed on their own `createdAt`, so a slice near the boundary
+can fall inside while its refund falls outside. **Only the first is a finding,
+and only once the other two are ruled out by hand.**
+
+⚠ **AND THE SUBJECT OF THE READING WAS WRONG, NOT JUST ITS CAVEAT — the second
+round found the RETRY ROAD.** A retry is a separately paid picture and it settles
+through the **same** writer (`retryService` calls `dispatchCandidate` with the
+retry's own operation id), so a retried tile writes its own slice row and, when
+it fails, refunds under the very sentences counted here. Reading
+`castingV2.roll` alone dropped a paid picture that arrived nowhere out of the
+headline while still counting its refund on the ledger side — **manufacturing a
+disagreement out of a healthy window.** Both kinds are read now, each on its own
+line, and every refund sentence on the slice path is counted (four of them,
+quoted from their writers).
+
+⚠ **BOTH GAPS SURVIVED EVERY DRIVEN CONTROL FOR THE SAME REASON, AND THAT IS THE
+LESSON OF THIS RUN.** Neither population had ever occurred: the render-fault
+sentence has not fired in 60 days, and **no `castingV2.retry` operation has ever
+run on production, all time** (read at the rows — `CASTING_RETRY_SCOPE` is
+`users:1`, so the one live population is the founder retrying exactly the refused
+tiles this run measures). A control proves a checker *can* fire; it says nothing
+about whether it fires for the right reasons, and **an arm over a population that
+does not exist yet is green by construction.** What found both was enumerating
+the call sites of `recordRefund` on the slice path — the same move §C credits for
+finding the class in the first place. This is the same over-claim shape §C was
+written to catch, committed twice in the very run that catches it, which is the
+honest reason it is written down here rather than quietly fixed.
 
 ### C. AND THE CLASS WAS ALREADY WRITTEN DOWN — the ledger was not reading it
 
@@ -374,31 +393,50 @@ unexplained; the durable fix is carded, not built (see §H).
 
 `scripts/machinist-ledger-read.mts` gains, in section C:
 
-1. **the roll at slice grain** — paid / arrived / refused / stranded, with the
-   class off `generations.errorMessage`, deliberately NOT folding `processing`
-   into `failed` (a slice stranded when its operation died is refunded by the
-   recovery sweep, not by `failCandidate`, and collapsing them would hide
-   whichever one grew);
-2. **the money-ledger cross-check** printed beside it — **both** slice-refund
-   sentences, saying AGREES or reporting the difference **and naming what can
+1. **every paid slice road at slice grain** — roll AND retry, each on its own
+   line: paid / arrived / refused / stranded, with the class off
+   `generations.errorMessage`, deliberately NOT folding `processing` into
+   `failed` (a slice stranded when its operation died is refunded by the recovery
+   sweep, not by `failCandidate`, and collapsing them would hide whichever one
+   grew);
+2. **the money-ledger cross-check** printed beside it — **every** slice-refund
+   sentence, saying AGREES or reporting the difference **and naming what can
    benignly cause one**, rather than leaving a reader to compare two numbers by
-   eye or to read a difference as a defect;
+   eye or to read a difference as a defect. **It runs even when the slice
+   population is EMPTY**, because a reading whose population collapsed to zero
+   while the money ledger holds refunds is the loudest form of exactly what the
+   cross-check exists to catch — and the first shape of it went silent in that
+   case, which the kind-filter control caught;
 3. **the fence line** — failures whose `errorCode` a later Cast deletion erased,
    named as erased rather than printed as unexplained.
 
 **The cross-check was proven able to fail before its verdict was believed**
-(working law 2): with the stranded slices dropped from the slice query it read
-*"20 … DIFFERS BY +8"* against the ledger's 28; restored, both windows read
-AGREES. Every figure quoted above is reproducible by running the reader — no
-number in this run came from a hand-written query that is not in the tree
-(doctrine entry 5).
+(working law 2). Three controls, each driven against production and each restored
+and verified disarmed at the bytes:
 
-⚠ **That control passed and the instrument was still wrong, which is the lesson
-of this run and not a footnote.** A negative control proves a checker *can* fire;
-it says nothing about whether the checker fires for the RIGHT reasons, and the
-gate review found four ways this one fires on a healthy window. **A driven
-control is a floor, never coverage** — the arms above are kept, and the reading
-that actually improved the instrument was a reviewer enumerating the writers.
+| arm | armed | disarmed |
+|---|---|---|
+| stranded slices dropped from the slice query | `20 … DIFFERS BY +8` | 28, AGREES |
+| recovery window widened so every `processing` row reads as young | 8 slices leave "did not arrive" → `20 (8.1%)`, `DIFFERS BY +8` | 28 (11.3%), AGREES |
+| `castingV2.roll` dropped from the kind list | population empties → `DIFFERS BY +28` | 248 slices, AGREES |
+
+Every figure quoted above is reproducible by running the reader — no number in
+this run came from a hand-written query that is not in the tree (doctrine
+entry 5), and **no figure moved across any of the three corrections.**
+
+⚠ **All three controls passed and the instrument was wrong twice anyway, which is
+the lesson of this run and not a footnote.** A control proves a checker *can*
+fire; it says nothing about whether it fires for the RIGHT reasons, and it cannot
+speak at all about a population that has never occurred — which is precisely what
+both gaps were. **A driven control is a floor, never coverage.** The reading that
+actually improved the instrument, twice, was enumerating the writers.
+
+**And the second and third defects were found by driving the fix for the first**
+— the in-flight control printed *"still in flight"* against a **`failed`** row (a
+settled outcome the reader was mislabelling, visible in real use on any window
+containing a roll from the last six minutes), and the kind-filter control left
+the cross-check silent on an emptied population. Neither was in the review; both
+came out of running the correction rather than reasoning about it.
 
 ### G. Attempted and reverted
 

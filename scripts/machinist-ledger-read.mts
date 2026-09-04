@@ -247,57 +247,84 @@ console.log(`   denominator: ${refundedFailures} of ${failedRefines} failed refi
   the totals below simply get smaller. Section C's fence line names the same
   scrub on the OPERATION side; this is its other half.
 
+  ⚠ THE POPULATION IS BOTH PAID SLICE ROADS, NOT JUST THE ROLL. A RETRY IS A
+  SEPARATELY PAID PICTURE and it settles through the SAME writer: `retryService`
+  calls `dispatchCandidate` with the retry's own `operationId`, so a retried tile
+  writes its own `generations` row and, when it fails, refunds under the very
+  sentences counted below. Reading `castingV2.roll` alone would drop a paid
+  picture that arrived nowhere out of the headline and a delivered one out of
+  "arrived" — while still counting its refund on the ledger side, which
+  manufactures a disagreement out of a healthy window. Both kinds are read, each
+  on its own line, so the two sides describe the same population.
+
   The money ledger is printed beside it as a SECOND READER that shares no
   resolver with the first. ⚠ BUT A DIFFERENCE IS NOT AUTOMATICALLY A DEFECT, and
   saying so was this block's own first mistake — the same over-claim shape the
-  run above was written to catch. FOUR benign populations make the two counts
-  differ on a perfectly healthy window:
+  run above was written to catch. THREE benign populations still make the two
+  counts differ on a perfectly healthy window:
 
-    1. a `render_fault` slice refunds under a DIFFERENT sentence ("This tile came
-       back as a contact sheet rather than a portrait"), so it is counted below —
-       both sentences are summed for exactly this reason;
-    2. a slice with `pointsCost <= 0`, or one whose refund failed to record
+    1. a slice with `pointsCost <= 0`, or one whose refund failed to record
        (`refundUnrecorded`), is a real loss with no refund row at all;
-    3. a roll IN FLIGHT at read time has `processing` slices that nothing has had
-       a chance to refund yet — so slices younger than the recovery window are
-       reported as still in flight and kept OUT of the "did not arrive" figure;
-    4. the two tables are windowed on their own `createdAt`, so a slice near the
+    2. a roll or retry IN FLIGHT at read time has `processing` slices that
+       nothing has had a chance to refund yet — so slices younger than the
+       recovery window are reported as still in flight and kept OUT of the "did
+       not arrive" figure;
+    3. the two tables are windowed on their own `createdAt`, so a slice near the
        boundary can fall inside while its refund falls outside.
 
   So the line says AGREES or reports the difference and names what can cause it.
-  Only (2) is a finding, and only after (1), (3) and (4) are ruled out by hand.
+  Only (1) is a finding, and only after (2) and (3) are ruled out by hand.
+
+  ⚠ TWO EARLIER SHORTFALLS IN THIS SAME LIST ARE KEPT AS THE REASON IT IS
+  DERIVED FROM THE WRITERS RATHER THAN REMEMBERED. The first draft counted ONE
+  refund sentence and missed the `render_fault` line; the second counted two and
+  missed the RETRY ROAD, which flows through the shared writer under the same
+  sentence. Both survived a driven control for the same reason — neither
+  population had occurred in the measured windows — and both were found by
+  enumerating the call sites of `recordRefund` on the slice path instead. **Every
+  sentence below is quoted from its writer, and a new refund sentence on that
+  path belongs in this list in the same commit.**
 */
 /* Lease (5 min) + one sweep pass (60s) — CLAUDE.md, "Deploying while a paid roll
    is in flight": the window before a dead operation's slices become eligible for
    refund at all. A slice younger than this has not failed to be refunded; it has
    not been looked at yet. */
 const RECOVERY_WINDOW_MS = 6 * 60 * 1000;
-console.log(`   the roll's SLICES — one generations row per slice, bound to its operation:`);
+console.log(`   PAID SLICES (roll + retry) — one generations row per slice, bound to its operation:`);
 const slices = await q(
-  `SELECT g.status AS status, g.errorMessage AS errorMessage,
+  `SELECT o.kind AS kind, g.status AS status, g.errorMessage AS errorMessage,
           COUNT(*) AS n,
           SUM(g.createdAt >= ?) AS young
      FROM generations g
      JOIN generation_operations o ON o.id = g.operationId
-    WHERE g.createdAt >= ? AND o.kind = 'castingV2.roll'
-    GROUP BY g.status, g.errorMessage ORDER BY n DESC`,
+    WHERE g.createdAt >= ? AND o.kind IN ('castingV2.roll', 'castingV2.retry')
+    GROUP BY o.kind, g.status, g.errorMessage ORDER BY n DESC`,
   [new Date(Date.now() - RECOVERY_WINDOW_MS), since],
 );
 const sliceTotal = slices.reduce((total, row) => total + Number(row.n), 0);
+const sum = (rows: any[], field: "n" | "young" = "n") =>
+  rows.reduce((total, row) => total + Number(row[field] ?? 0), 0);
+/*
+  ⚠ THE EMPTY CASE STILL RUNS THE CROSS-CHECK, and that is the whole point of
+  having one. An earlier shape printed "(none in window)" and returned — so a
+  reading whose slice population had collapsed to zero while the money ledger
+  held refunds said NOTHING, which is the exact failure the cross-check exists to
+  catch and the loudest form of it. Found by driving the kind-filter control on
+  PR #533: dropping `castingV2.roll` emptied the population and the reader went
+  quiet with 28 unexplained refunds sitting beside it.
+*/
+const arrived = sum(slices.filter((row) => row.status === "completed"));
+const refused = sum(slices.filter((row) => row.status === "failed"));
+/* Neither `completed` nor `failed` — a slice still `pending`/`processing`.
+   `failed` is terminal and is never "in flight" however fresh the row is. */
+const unfinished = slices.filter((row) => row.status !== "completed" && row.status !== "failed");
+/* (2) above: a slice younger than the recovery window has not failed to be
+   refunded, it has not been looked at yet. It is reported, never counted. */
+const inFlight = sum(unfinished, "young");
+const stranded = sum(unfinished) - inFlight;
 if (sliceTotal === 0) {
-  console.log("   (no roll slices in window)");
+  console.log("   (no paid slices in window — the cross-check below still runs)");
 } else {
-  const sum = (rows: any[], field: "n" | "young" = "n") =>
-    rows.reduce((total, row) => total + Number(row[field] ?? 0), 0);
-  const arrived = sum(slices.filter((row) => row.status === "completed"));
-  const refused = sum(slices.filter((row) => row.status === "failed"));
-  /* Neither `completed` nor `failed` — a slice still `pending`/`processing`.
-     `failed` is terminal and is never "in flight" however fresh the row is. */
-  const unfinished = slices.filter((row) => row.status !== "completed" && row.status !== "failed");
-  /* (3) above: a slice younger than the recovery window has not failed to be
-     refunded, it has not been looked at yet. It is reported, never counted. */
-  const inFlight = sum(unfinished, "young");
-  const stranded = sum(unfinished) - inFlight;
   const pct = (n: number) => `${((n / sliceTotal) * 100).toFixed(1)}%`;
   console.log(
     `   ${sliceTotal} slices paid for · ${arrived} arrived · ${refused} failed (${pct(refused)}) · ` +
@@ -312,21 +339,34 @@ if (sliceTotal === 0) {
        the filter was added. */
     const young = row.status === "failed" ? 0 : Number(row.young ?? 0);
     console.log(
-      `     ${String(row.n).padStart(4)}  ${row.status}  class ${row.errorMessage ?? "(none recorded)"}` +
+      `     ${String(row.n).padStart(4)}  ${row.kind.replace("castingV2.", "")}  ${row.status}  ` +
+        `class ${row.errorMessage ?? "(none recorded)"}` +
         (young > 0 ? `  (${young} of them still in flight)` : ""),
     );
   }
+}
+{
   /*
-    The second reader. Same event, different table, no shared resolver — and BOTH
-    slice-refund sentences, because a render fault refunds under its own line and
-    counting one of the two would manufacture a disagreement out of a healthy
-    window (finding 1 on PR #533).
+    The second reader. Same event, different table, no shared resolver — and
+    EVERY refund sentence on the slice path, each quoted from its writer:
+
+      "Casting candidate did not arrive"      rollService (roll AND retry, the
+                                              shared dispatch) + rollRecovery
+      "This tile came back as a contact …"    rollService, the render_fault exit
+      "Casting retry landed nowhere"          retryService, the landed-nowhere exit
+      "Casting retry did not arrive (recov…)" retryRecovery
+
+    Counting a subset of these is not a smaller reading, it is a WRONG one: it
+    manufactures a disagreement out of a healthy window. Two drafts of this list
+    did exactly that (PR #533's two review rounds).
   */
   const arrivalRefunds = await q(
     `SELECT description, COUNT(*) AS n, SUM(amount) AS credits FROM point_transactions
       WHERE createdAt >= ? AND type = 'refund'
         AND description IN ('Casting candidate did not arrive',
-                            'This tile came back as a contact sheet rather than a portrait')
+                            'This tile came back as a contact sheet rather than a portrait',
+                            'Casting retry landed nowhere',
+                            'Casting retry did not arrive (recovered)')
       GROUP BY description ORDER BY n DESC`,
     [since],
   );
@@ -334,13 +374,14 @@ if (sliceTotal === 0) {
   const ledgerCredits = arrivalRefunds.reduce((total, row) => total + Number(row.credits ?? 0), 0);
   const difference = ledgerSays - (refused + stranded);
   console.log(
-    `     cross-check on the money ledger (both slice-refund sentences): ${ledgerSays} refunds ` +
+    `     cross-check on the money ledger (every slice-refund sentence, roll and retry): ${ledgerSays} refunds ` +
       `for ${ledgerCredits} credits — ` +
       (difference === 0
         ? "AGREES"
         : `DIFFERS BY ${difference > 0 ? "+" : ""}${difference}. Benign causes first: a zero-cost or ` +
-          "unrecorded refund, or a slice whose refund fell the other side of the window boundary. " +
-          "A difference is a finding only once those are ruled out by hand."),
+          "unrecorded refund, a slice still in flight at read time, or one whose refund fell the " +
+          "other side of the window boundary. A difference is a finding only once those are ruled " +
+          "out by hand."),
   );
   for (const row of arrivalRefunds) {
     console.log(`       ${String(row.n).padStart(4)}  ${row.credits} cr  "${row.description}"`);
