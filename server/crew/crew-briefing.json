@@ -1,7 +1,7 @@
 {
-  "edition": 233,
-  "updatedAt": "2026-09-04T00:05:53.942Z",
-  "shift": "Foreman — 4 September morning (#425: the Change plan corrections, and two features you already had)",
+  "edition": 234,
+  "updatedAt": "2026-09-04T01:23:40.111Z",
+  "shift": "Foreman — 4 September morning (#429: two more switches on your background-work panel)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,6 +128,33 @@
     ]
   },
   "needsYou": [
+    {
+      "id": "work-switches-429-ask",
+      "title": "Your background-work panel has seven switches now — do you want either of them on tonight?",
+      "state": "open",
+      "filedAt": "2026-09-04T01:23:40.111Z",
+      "issueNumber": 429,
+      "productImpact": "Two rows were added to the switch panel you read from bed: Small fixes (11 cards) and Casting upkeep (7). Both are off. They are the difference between a quiet shift stopping with nothing to do and a quiet shift working through eleven small self-contained items — and, separately, they let you keep the casting road shut while the rest of the product ticks along.",
+      "recommendation": "Small fixes ON, Casting upkeep OFF. Small fixes is eleven items that need no decision from you. Casting upkeep is seven casting items, and the creative register is still waiting on your eye — that road should stay shut until you have looked at it.",
+      "workedExample": "With Small fixes on, a quiet shift may pick up #455 — the AUTO 30s switch on two staff pages sits over a reader that actually refreshes every 60 seconds, so the label lies to you by half. Small, self-contained, no decision needed. With Casting upkeep off, that same shift still cannot touch anything on the casting road, which is the entire reason it is a second switch rather than part of the first.",
+      "options": [
+        {
+          "key": "small-only",
+          "label": "Small fixes on, Casting upkeep off (recommended)",
+          "consequence": "Quiet shifts get eleven real items to work through instead of writing 'quiet night' and stopping. Casting stays frozen until you have judged the register."
+        },
+        {
+          "key": "both-off",
+          "label": "Leave both off",
+          "consequence": "How they ship, and nothing changes tonight. The two rows sit there for whenever you want them and cost nothing switched off."
+        },
+        {
+          "key": "both-on",
+          "label": "Both on",
+          "consequence": "Adds the seven casting-upkeep items. Each is inside existing behaviour and none touches the register's prompts — but it is the road you froze, so it is your call rather than mine."
+        }
+      ]
+    },
     {
       "id": "change-plan-425",
       "title": "Two of your four Change plan asks were already built — and nothing was owed",
@@ -1533,6 +1560,26 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "work-switches-429-frames",
+      "state": "open",
+      "title": "Seven switches instead of five — and the Debt number below them drops from 22 to 9",
+      "filedAt": "2026-09-04T01:23:40.111Z",
+      "issueNumber": 429,
+      "question": "Two things to look at, and only the second is really a question.\n\nFirst, the two new rows at the bottom of the switch list. They read like the five above them: a name, a number, a line saying what is in there, and five card titles. Both are off.\n\nSecond — and this is the one I would rather you saw here than found on your own page — the pipeline below the switches has changed shape. Debt now reads 9 where it read 22, and On offer reads 51 where it read 33. That is thirteen cards moving from \"needs your word\" to \"a switch can reach it\", which is what the new labels mean. Nothing closed, nothing hidden, still 77 open in total.\n\nIf you would rather those thirteen had stayed under Debt so the number kept its old shape, say so and it is a one-line change — but my read is that the new number is the honest one, because calling a two-line CSS fix \"debt that needs your word\" was the wrong sentence about it.",
+      "frames": [
+        {
+          "key": "crew-eye/c93807a3-ef39-4aa9-8103-c10a63978f1c.png",
+          "arm": "The seven switches, dark",
+          "caption": "Small fixes and Casting upkeep sit under Process, in the same shape as the five above. Both off — off is simply the absence of a setting, so nothing had to be written to make them off."
+        },
+        {
+          "key": "crew-eye/4f6f6ab8-8cde-4d04-8229-8d0ff6b8e48a.png",
+          "arm": "The same seven, light",
+          "caption": "The light theme, same frame. The Casting upkeep line was shortened after measuring it on a phone-width screen, where the first wording ran to three lines and every other row takes one or two."
+        }
+      ]
+    },
     {
       "id": "change-plan-425-frames",
       "state": "open",
@@ -3319,6 +3366,13 @@
   ],
   "pipeline": [
     {
+      "id": "work-switches-429",
+      "prNumber": 489,
+      "status": "merged",
+      "title": "Two more switches on your panel: Small fixes and Casting upkeep",
+      "note": "You asked for these on the queue triage: \"do what you can without interferring with the current agent working on code then file the remaining work into next up in the crew tab so the agent knows when to pickup and do the work.\"\n\nYour background-work panel now has seven switches instead of five. The two new ones are **Small fixes (11)** and **Casting upkeep (7)**, both off, and both showing a real number and five card titles from the moment this deploys — the cards were labelled before the switches existed, so neither row starts life empty.\n\nWhy two and not one: casting is frozen while the creative register waits on your eye. One \"small fixes\" switch would let a quiet shift wander onto the casting road on exactly the night you want it left alone. With two, you can run Small fixes and leave Casting upkeep off.\n\n**One thing below the switches will look different, and it is worth ten seconds.** The panel that shows you the rest of the pipeline files each card under whichever heading reaches it, and a card a switch can now reach stops being listed as work you have to rule on. So **Debt drops from 22 to 9** and On offer goes from 33 to 51. Nothing was closed and nothing was hidden — the total is still 77 either way. It is that thirteen of those cards were being described to you as \"needs your word because the scope varies\" when they are small self-contained fixes, and now they say so.\n\nNo database change was needed, and that is the quiet good news: a new switch turned out to be one line of code and nothing else — no migration, no ceremony, no command for you to run."
+    },
+    {
       "id": "change-plan-425",
       "prNumber": 488,
       "status": "merged",
@@ -4905,7 +4959,7 @@
     114
   ],
   "nextUp": {
-    "readAt": "2026-09-04T00:06:23.343Z",
+    "readAt": "2026-09-04T01:21:52.584Z",
     "items": [
       {
         "issueNumber": 243,
@@ -4925,11 +4979,6 @@
       {
         "issueNumber": 404,
         "title": "The plan card's blurb slot is empty on purpose — his one-line positioning statement, best written after the ladder folds",
-        "urgent": false
-      },
-      {
-        "issueNumber": 429,
-        "title": "Two new background-work switches: Small fixes and Casting upkeep, derived from labels already on the cards",
         "urgent": false
       },
       {
