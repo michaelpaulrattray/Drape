@@ -89,7 +89,7 @@ a second list shadowing the queue would drift from it (working law 4).
 > amended it (v2) and the excavation hardened it (v3/v4). N1–N8 governs;
 > PROGRAM.md points here; the original plan's §K ladder is historical.
 
-## 4. The remaining ladder — rungs N1–N8 (v2: N3 expanded and N4 Takes added on the founder's pre-sign review)
+## 4. The remaining ladder — rungs N1–N8 (v2: N3 expanded and N4 Takes added on the founder's pre-sign review; v3: N4b Voice added on his 2026-09-04 word)
 
 Fresh names (N for "new ladder"), because both "M" and "R" are taken by
 history. Small, independently reviewable, in the original plan's style: each
@@ -262,6 +262,19 @@ Placed before the cutover arc, as the original plan intended for M8. Gate:
 D-117's gate verdict + pricing rulings + his eye on the shipped surface.
 Rollback: flag off.
 
+⚠ **N4b — Voice** *(a rung on the founder's own word, 2026-09-04, terminal,
+verbatim: "give voice its own rung its very important.")*: the cast's voice
+package, built to the engine split he ruled the day before (§6 question 1's
+amendment — ElevenLabs Voice Design for creature / monster / sci-fi, Inworld
+for human). **Nothing is built**: the interface has zero implementations and
+zero callers, `cast_voices` is absent from the schema, and the transport was
+never verified — so this rung starts at a design, not at a migration. Its
+design answers THE DISAPPEARING-TECHNOLOGY LAW's three questions in its own
+body before anything is cut (`CLAUDE.md`), because the split names two engines
+and clause 5 is exactly about when a customer may see one. **Numbered N4b
+rather than renumbering N5–N8, so every existing citation of those rungs stays
+true.** Gate: his eye on a voiced cast. Rollback: flag off. Design card: #499.
+
 **N5 — Entries converge** *(original M10 finished)*: canvas Cast-new and the
 wardrobe picker re-pointed at V2 sessions/casts; the boards surface stops
 importing `@/features/casting/*`. This is the last *product* prerequisite of
@@ -316,9 +329,13 @@ and waits for his word (THE MILESTONE GATE, PROGRAM.md).
 1. **Takes and Voice: before or after retirement?** ⚠ **HALF-ANSWERED on the
    founder's pre-sign review (2026-08-25): Takes is SCHEDULED — his verbatim
    "takes actually has a solid use case that i designed with another agent"
-   — now rung N4.** Voice remains the open half: transport never verified,
-   nothing depends on it; recommendation unchanged (**after** — the shelf,
-   entered by his word). His call.
+   — now rung N4.** ✅ **AND THE OTHER HALF IS ANSWERED, 2026-09-04
+   (terminal), verbatim: *"give voice its own rung its very important."* So the
+   recommendation that stood here — **after** retirement, on the shelf — is
+   SUPERSEDED by his word: Voice is **N4b**, directly after Takes and well
+   before the cutover arc. The reasoning it was parked on (transport never
+   verified, nothing depends on it) is still true and is now a fact about how
+   the rung STARTS, not a reason to defer it. This question is closed.
 
    ⚠ **AMENDMENT 2026-09-03 — THE ENGINE SPLIT, on his ruling.** Asked whether
    a cheaper or better model had overtaken the spec's vendor, he answered with a

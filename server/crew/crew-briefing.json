@@ -1,7 +1,7 @@
 {
-  "edition": 240,
-  "updatedAt": "2026-09-04T08:10:31.457Z",
-  "shift": "Opus — 4 September (the switch count says what may already be done, #494)",
+  "edition": 241,
+  "updatedAt": "2026-09-04T19:15:00+10:00",
+  "shift": "Opus — 4 September (the reviewer stops cancelling itself, #434)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -89,6 +89,11 @@
         "state": "queued"
       },
       {
+        "key": "N4b",
+        "title": "Voice — the cast gets a voice, on your word: \"give voice its own rung its very important\"",
+        "state": "queued"
+      },
+      {
         "key": "N5",
         "title": "Entries converge — canvas and studio cast the same way",
         "state": "queued"
@@ -127,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T08:10:24.607Z",
+      "readAt": "2026-09-04T09:10:55.333Z",
       "items": [
         {
           "issueNumber": 16,
@@ -220,6 +225,12 @@
           "rung": "N4"
         },
         {
+          "issueNumber": 499,
+          "title": "N4b — Voice: the cast's voice package gets its own rung, two engines by voice kind (his word, 4 Sep)",
+          "kind": "design-unbuilt",
+          "rung": "N4b"
+        },
+        {
           "issueNumber": 509,
           "title": "Errors and product analytics before real users — one error tracker, one event stream, and one honest strip on the admin Overview",
           "kind": "roadmap",
@@ -236,12 +247,6 @@
           "title": "Law-7 sibling: the legacy refine box does not re-measure on a resize (cosmetic, legacy studio)",
           "kind": "roadmap",
           "rung": "N8"
-        },
-        {
-          "issueNumber": 499,
-          "title": "N4b — Voice: the cast's voice package gets its own rung, two engines by voice kind (his word, 4 Sep)",
-          "kind": "design-unbuilt",
-          "rung": null
         }
       ]
     }
@@ -254,7 +259,7 @@
       "workedExample": "It flagged #486 (\"outlined buttons stand 2px taller than filled ones\") because a merged pull request names it and nobody has been back to the card since. Re-reading took thirty seconds: that pull request says in its own words \"not fixed here\", so #486 is genuinely still open. That is the instrument working as ordered — it points, a shift looks, and the looking is cheap. It is deliberately not clever enough to read \"not fixed\" out of the prose, because we have a card open right now, at its third occurrence, for a different reader that tried to and could not see a negation containing its own keyword.",
       "options": [],
       "recommendation": "Look at the Bugs and Small fixes rows and tell me whether \"possibly fixed\" is the phrase you want. Two things to know before you judge it.\n\nFirst, it finds what it can, never everything. Of the five cards we caught in September that were already fixed and still open, this reading would have found three and missed two — the two that no pull request ever mentioned. So an empty flag means \"nothing found\", never \"nothing stale\".\n\nSecond, and I would rather you heard it from me than spotted it: tonight's very first reading is inflated by this feature's OWN pull request. It flags a card when a merged pull request mentions it — and the pull request that built this thing mentions sixteen cards, because its write-up argues about examples. Three of the six on the Bugs row are there only for that reason. Measured across all 183 merged pull requests, one that FIXES a card mentions three; one that merely CITES examples mentions eight to sixteen, and only nine of the 183 are in that second group. So the separation is clean and mechanical, and it is filed as #514. It is the same mistake we already fixed once on the quiet-night detector, which read a shift WRITING about quiet nights as having had one.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-04T08:03:08.451Z",
       "issueNumber": 494
     },
@@ -1736,7 +1741,7 @@
   "eyeItems": [
     {
       "id": "possibly-fixed-494-frames",
-      "state": "open",
+      "state": "done",
       "cardId": "possibly-fixed-494",
       "title": "The switch rows with the new line — does \"possibly fixed\" read right beside \"already queued\"?",
       "filedAt": "2026-09-04T08:03:08.451Z",
@@ -3653,6 +3658,14 @@
   ],
   "pipeline": [
     {
+      "id": "pr-515-review-race",
+      "title": "#434 — the code reviewer could cancel itself and leave a red mark with nothing behind it",
+      "status": "merged",
+      "prNumber": 515,
+      "note": "Your urgent one, fixed. What was happening: the reviewer listens for a few different signals — a pull request opening, a shift saying \"this is finished\", and a label being added. All of them shared one place in the queue, and the rule for that place was \"the newest arrival wins\". So when a change was opened WITH a label attached, the label arrived a fraction of a second later, pushed the real review out of the queue, and then did nothing itself — because only one particular label is meant to buy a review. The change was left showing a red review mark with no review behind it. Now each signal has its own place in the queue, so one that is going to do nothing can never push out one that would.\n\nOne thing worth correcting, because you were told a worse number than the truth. The card said the reviewer had skipped 27 of its last 60 runs. Read at the record instead: of its last 100 runs, 46 reviewed, 45 skipped, 8 failed and ONE was cancelled. The 45 skips are the reviewer doing its job — it is meant to ignore most labels — and the one cancellation is the whole bug, on 2 September. The reviewer has not been missing half its work. The fix is still worth having: it is silent when it fires and it costs a whole review each time.\n\nThis one could not be reviewed by the reviewer, and that is by design rather than a lapse: the reviewer refuses to run on a change to its own instructions. In its place, the new guard was broken ten different ways on purpose and caught all ten, and every number above was read at the record rather than taken from the card.",
+      "cardId": null
+    },
+    {
       "id": "pr-498-possibly-fixed",
       "title": "#494 — the switch count says which of its cards may already be done",
       "status": "merged",
@@ -4999,10 +5012,10 @@
   "problems": [
     {
       "id": "ladder-rung-n4b-499",
-      "title": "Your new Voice rung has no place on the ladder yet, so its card shows as unplaced",
+      "title": "Your new Voice rung has a place on the ladder now",
       "severity": "warning",
-      "state": "open",
-      "detail": "You asked for Voice to get its own rung today (#499, \"N4b\"), and the card carries that label. The ladder on this page still holds the seven rungs it held yesterday, so the page cannot draw a card under a rung that is not there. It does the safe thing rather than the tidy one: the card shows under \"Rung not yet named\" and the sweep says out loud why, instead of quietly dropping it or inventing a rung nobody agreed to. Adding a rung to the ladder is a change to the plan itself, so a shift does not do it on its own judgement — it is the first act of whoever takes #499."
+      "state": "resolved",
+      "detail": "Fixed tonight. Voice sits on the ladder as N4b, directly after Takes, exactly where you put it — so its card draws under a rung instead of under \"Rung not yet named\". The governing plan document has the rung too, with the reason for the odd number written down: it is N4b rather than a renumber, so every existing reference to N5, N6, N7 and N8 stays true instead of quietly pointing at the wrong thing. What this does NOT do is start building it — nothing about a voice exists yet, and its design is still #499 waiting its turn. This is the ladder agreeing with what you said."
     },
     {
       "id": "shared-tree-block-479",
@@ -5297,16 +5310,13 @@
     121,
     122,
     123,
-    124
+    124,
+    125,
+    126
   ],
   "nextUp": {
-    "readAt": "2026-09-04T08:10:23.620Z",
+    "readAt": "2026-09-04T09:10:54.497Z",
     "items": [
-      {
-        "issueNumber": 434,
-        "title": "A label applied at PR creation cancels the Fable review and then skips itself — red review, no verdict (measured on #433)",
-        "urgent": true
-      },
       {
         "issueNumber": 243,
         "title": "#232's RENDER half is unproven: the creature mouth line needs a fixture whose seed does NOT name the anatomy",
@@ -5335,11 +5345,6 @@
       {
         "issueNumber": 501,
         "title": "The Atlas regenerates on EVERY commit, not only on merges — 5 of the last 60 gate failures were freshness, all avoidable locally",
-        "urgent": false
-      },
-      {
-        "issueNumber": 502,
-        "title": "The reviewer's cancel-on-label bug is URGENT — 27 of the last 60 review runs were skipped and produced no verdict (#434)",
         "urgent": false
       },
       {
