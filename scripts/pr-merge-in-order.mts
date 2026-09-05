@@ -29,12 +29,23 @@
  *   - a red gate (it never retries one, and never merges past one);
  *   - a Fable verdict nobody has read — GREEN IS NOT A PASS (#219), the
  *     findings ride the sticky comment, and `--acknowledge <n>` is the shift
- *     saying it has read them;
- *   - a money/auth diff with no verdict at all, and a diff touching
- *     `review.yml` (the reviewer self-skips on its own change, #165);
+ *     saying it has read them. The acknowledgement is PINNED to the verdict
+ *     count it was given for, so a later one is not waived by an earlier word;
+ *   - a money/auth diff with no verdict at all — whether the reviewer failed
+ *     or triage declined it — and a diff touching `review.yml` (the reviewer
+ *     self-skips on its own change, #165);
  *   - a real content conflict, a draft, or branch protection saying BLOCKED;
+ *   - a worktree that is not clean: a merge commit folds staged work into
+ *     itself, and these worktrees are a shift's ACTIVE workspace;
  *   - a branch with no registered worktree — it will not cut one, because a
  *     worktree it did not create is not one it should take down.
+ *
+ * And it WAITS, rather than merging, on a review that is still in flight. That
+ * one was the gate review of its own PR (#558, finding 1): the gate finishes
+ * while a PR is a draft, `gh pr ready` starts the review and starts NO new gate
+ * run, so "green gate, review mid-run" is the team's ROUTINE first-round state.
+ * Reading it as "the reviewer produced nothing" made merging past a review the
+ * default outcome rather than the exception. IN FLIGHT IS NOT DOWN.
  *
  * EXIT CODES — the finding is the exit code, like `gate-stall-check`:
  *     0  every named PR is merged (or was already)
@@ -61,9 +72,13 @@ import {
   REVIEWER_WORKFLOW_PATH,
   decideMergeAction,
   describeAction,
+  extractJobNames,
   extractMoneyPattern,
   orderByOpened,
+  classifyMergeOutcome,
+  refuseDirtyWorktree,
   refuseProtectedPush,
+  refuseUnknownJobName,
   sharesFiles,
 } from "./lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "./lib/pushPaths.mts";
@@ -113,6 +128,8 @@ function git(cwd: string, args: string[]): GitResult {
 const argv = process.argv.slice(2);
 const prNumbers: number[] = [];
 const acknowledged = new Set<number>();
+/** PR number -> the verdict count when its acknowledgement was honoured. */
+const ackPinnedAt = new Map<number, number>();
 let dryRun = false;
 let intervalMs = 30_000;
 let timeoutMs = 45 * 60_000;
@@ -199,6 +216,30 @@ try {
   fail(`cannot read the protected refs from .githooks/pre-push: ${(error as Error).message}`);
 }
 
+// ---- the job names this tool keys on, CHECKED against the workflows -------
+// A renamed `review` job would make every run read as "no verdict" forever and
+// nothing would redden — the silent, permissive direction (#558 review,
+// finding 3). So the names are asserted against what the workflows declare,
+// and an absent one refuses the run.
+const REVIEW_JOB_NAME = "review";
+const GATE_JOB_NAME = "gate-checks";
+const GATE_WORKFLOW_PATH = ".github/workflows/gate.yml";
+for (const [needed, workflowPath] of [
+  [REVIEW_JOB_NAME, REVIEWER_WORKFLOW_PATH],
+  [GATE_JOB_NAME, GATE_WORKFLOW_PATH],
+] as const) {
+  const file = join(REPO_ROOT, workflowPath);
+  if (!existsSync(file)) fail(`${workflowPath} is missing — cannot check job names`);
+  let declared: string[];
+  try {
+    declared = extractJobNames(readFileSync(file, "utf8"));
+  } catch (error) {
+    fail(`${workflowPath}: ${(error as Error).message}`);
+  }
+  const refusal = refuseUnknownJobName(needed, declared, workflowPath);
+  if (refusal !== null) fail(refusal);
+}
+
 // ---- the reviewer workflow's id, DERIVED ----------------------------------
 const workflows = api<{ workflows: Array<{ id: number; path: string }> }>(
   "repos/:owner/:repo/actions/workflows?per_page=100",
@@ -239,7 +280,7 @@ type Rollup = {
  */
 function gateStateOf(rollup: readonly Rollup[]): GateState {
   const runs = rollup
-    .filter((c) => c.__typename === "CheckRun" && c.name === "gate-checks")
+    .filter((c) => c.__typename === "CheckRun" && c.name === GATE_JOB_NAME)
     .sort((a, b) => new Date(a.startedAt ?? 0).getTime() - new Date(b.startedAt ?? 0).getTime());
   const newest = runs[runs.length - 1];
   if (!newest) return "absent";
@@ -253,33 +294,52 @@ function gateStateOf(rollup: readonly Rollup[]): GateState {
  * declined it" — a run concludes `success` either way (#219). Cached per run
  * id because the loop re-reads on every poll.
  */
-const reviewJobCache = new Map<number, string | null>();
+type ReviewJobReading = { status: string | null; conclusion: string | null };
 
-function reviewJobConclusion(runId: number): string | null {
+/**
+ * ⚠ ONLY TERMINAL STATES ARE CACHED. The first shape cached whatever it saw,
+ * including `in_progress` and "no job yet", for the whole process lifetime — so
+ * the 45-minute polling loop re-read the PR every 30 seconds and NEVER re-read
+ * the job, and a verdict produced mid-run stayed invisible until the process
+ * restarted (#558 review, finding 2). A cache that freezes a transient is
+ * worse than no cache: it turns a wait into a permanent wrong answer.
+ */
+const reviewJobCache = new Map<number, ReviewJobReading>();
+
+function readReviewJob(runId: number): ReviewJobReading {
   const cached = reviewJobCache.get(runId);
   if (cached !== undefined) return cached;
-  const jobs = api<{ jobs: Array<{ name: string; conclusion: string | null }> }>(
+  const jobs = api<{ jobs: Array<{ name: string; status: string; conclusion: string | null }> }>(
     `repos/:owner/:repo/actions/runs/${runId}/jobs?per_page=100`,
   ).jobs;
-  const job = jobs.find((j) => j.name === "review");
-  const value = job ? (job.conclusion ?? "in_progress") : null;
-  reviewJobCache.set(runId, value);
+  const job = jobs.find((j) => j.name === REVIEW_JOB_NAME);
+  const value: ReviewJobReading = job
+    ? { status: job.status, conclusion: job.conclusion }
+    : { status: null, conclusion: null };
+  if (value.status === "completed") reviewJobCache.set(runId, value);
   return value;
 }
 
 function readReviewRuns(headBranch: string): ReviewRunReading[] {
   const runs = api<{
-    workflow_runs: Array<{ id: number; head_branch: string; created_at: string }>;
+    workflow_runs: Array<{ id: number; head_branch: string; created_at: string; status: string }>;
   }>(
     `repos/:owner/:repo/actions/workflows/${reviewWorkflow!.id}/runs` +
       `?branch=${encodeURIComponent(headBranch)}&per_page=100`,
   ).workflow_runs;
-  return runs.map((r) => ({
-    id: r.id,
-    headBranch: r.head_branch,
-    createdAt: r.created_at,
-    reviewJobConclusion: reviewJobConclusion(r.id),
-  }));
+  return runs.map((r) => {
+    // A queued run has no jobs yet; asking for them costs a call that can only
+    // answer "not started", which the run's own status already says.
+    const job = r.status === "completed" ? readReviewJob(r.id) : { status: null, conclusion: null };
+    return {
+      id: r.id,
+      headBranch: r.head_branch,
+      createdAt: r.created_at,
+      runStatus: r.status,
+      reviewJobStatus: job.status,
+      reviewJobConclusion: job.conclusion,
+    };
+  });
 }
 
 function readPr(number: number, worktrees: Map<string, string>): PrReading {
@@ -309,6 +369,14 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     createdAt: view.createdAt,
   };
   const tally = tallyRounds(readReviewRuns(view.headRefName), identity);
+  const verdictCount = tally.verdicts.length;
+
+  // An acknowledgement is PINNED to the verdict count observed the first time
+  // this PR was read — so a verdict landing later in the run is not waived by
+  // a word said before it existed (#558 review, finding 6).
+  if (acknowledged.has(view.number) && !ackPinnedAt.has(view.number)) {
+    ackPinnedAt.set(view.number, verdictCount);
+  }
 
   return {
     number: view.number,
@@ -321,7 +389,8 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     files: view.files.map((f) => f.path),
     gate: gateStateOf(view.statusCheckRollup ?? []),
     review: reviewPresence(tally),
-    acknowledged: acknowledged.has(view.number),
+    verdictCount,
+    acknowledgedAtVerdictCount: ackPinnedAt.get(view.number) ?? null,
     worktreePath: worktrees.get(view.headRefName) ?? null,
   };
 }
@@ -369,26 +438,60 @@ function syncMain(pr: PrReading, worktreePath: string): "synced" | "conflict" {
     say(`DRY RUN — would run, in ${worktreePath}: git fetch origin main; git merge origin/main; git push`);
     return "synced";
   }
+
+  // ⚠ A DIRTY WORKTREE IS A STOP, NOT A MERGE (#558 review, finding 4). The
+  //    overlap rule makes these worktrees a shift's ACTIVE workspace, and a
+  //    merge commit folds whatever is staged there into itself — so
+  //    half-finished work would land on the PR silently and be pushed. Stopping
+  //    is this tool's own ethos; there is no version of "guess what the shift
+  //    meant by those files" that belongs here.
+  const dirty = git(worktreePath, ["status", "--porcelain"]);
+  if (dirty.code !== 0) fail(`#${pr.number}: git status failed in ${worktreePath}: ${dirty.out}`);
+  const dirtyRefusal = refuseDirtyWorktree(dirty.out);
+  if (dirtyRefusal !== null) {
+    say(`#${pr.number}: NOT SYNCING ${worktreePath} — ${dirtyRefusal}`);
+    return "conflict";
+  }
+
   const fetch = git(worktreePath, ["fetch", "origin", "main"]);
   if (fetch.code !== 0) fail(`#${pr.number}: git fetch failed in ${worktreePath}: ${fetch.out}`);
 
   const merge = git(worktreePath, ["merge", "origin/main", "--no-edit"]);
   const unmerged = git(worktreePath, ["diff", "--name-only", "--diff-filter=U"]);
-  if (unmerged.out.trim() !== "") {
-    say(
-      `#${pr.number}: REAL CONFLICT in ${worktreePath} — ${unmerged.out.trim().split(/\r?\n/).join(", ")}`,
-    );
-    return "conflict";
-  }
-  if (merge.code !== 0) {
-    // No unmerged paths and a non-zero merge is the atlas driver's shape: the
-    // map was regenerated and staged by the hook, and git wants the commit.
-    const commit = git(worktreePath, ["commit", "--no-edit"]);
-    if (commit.code !== 0) {
-      say(`#${pr.number}: git merge stopped and git commit --no-edit failed: ${commit.out.trim()}`);
+  // `--git-path` resolves inside a LINKED worktree, where `.git` is a file and
+  // the real directory lives under the main tree's `worktrees/`.
+  const pathOf = git(worktreePath, ["rev-parse", "--git-path", "MERGE_HEAD"]);
+  const mergeHead = pathOf.code === 0 ? resolve(worktreePath, pathOf.out.trim()) : "";
+
+  switch (
+    classifyMergeOutcome({
+      exitCode: merge.code,
+      unmergedPaths: unmerged.out,
+      mergeHeadExists: mergeHead !== "" && existsSync(mergeHead),
+    })
+  ) {
+    case "conflict":
+      say(
+        `#${pr.number}: REAL CONFLICT in ${worktreePath} — ${unmerged.out.trim().split(/\r?\n/).join(", ")}`,
+      );
       return "conflict";
+    case "never-started":
+      say(
+        `#${pr.number}: the merge NEVER STARTED (no MERGE_HEAD) — git refused it: ` +
+          merge.out.trim().split(/\r?\n/).slice(0, 4).join(" / "),
+      );
+      return "conflict";
+    case "atlas-driver-stop": {
+      const commit = git(worktreePath, ["commit", "--no-edit"]);
+      if (commit.code !== 0) {
+        say(`#${pr.number}: the atlas driver stopped the merge and \`git commit --no-edit\` failed: ${commit.out.trim()}`);
+        return "conflict";
+      }
+      say(`#${pr.number}: merge completed through the atlas driver (regenerated map committed)`);
+      break;
     }
-    say(`#${pr.number}: merge completed through the atlas driver (regenerated map committed)`);
+    case "clean":
+      break;
   }
 
   // Read the branch back from the worktree itself, immediately before pushing:

@@ -56,9 +56,20 @@ export type ReviewRunReading = {
   /** ISO, GitHub's `created_at`. */
   createdAt: string;
   /**
+   * GitHub's `status` on the RUN: queued | in_progress | completed. Read
+   * because a queued run has no jobs yet, so the job list alone cannot tell
+   * "the reviewer has not started" from "there is no reviewer".
+   */
+  runStatus: string;
+  /**
+   * The `status` of the job named `review`: queued | in_progress | completed,
+   * or `null` when the run holds no such job.
+   */
+  reviewJobStatus: string | null;
+  /**
    * The conclusion of the job NAMED `review` in that run, or `null` when the
-   * run holds no such job. `skipped` is a real value here and means triage
-   * declined — it is not the same as absent.
+   * run holds no such job or has not reached one. `skipped` is a real value
+   * here and means triage declined — it is not the same as absent.
    */
   reviewJobConclusion: string | null;
 };
@@ -71,11 +82,33 @@ export type PrIdentity = {
 };
 
 /** What a single run was, for this PR. */
-export type RoundKind = "verdict" | "declined" | "no-verdict" | "not-this-pr";
+export type RoundKind = "verdict" | "declined" | "no-verdict" | "pending" | "not-this-pr";
 
+/**
+ * ⚠ `pending` IS A FOURTH KIND AND IT WAS MISSING FROM THE FIRST SHAPE OF THIS
+ * MODULE — the gate review of PR #558 found it, and it defeated the whole
+ * tool's headline contract.
+ *
+ * **IN FLIGHT IS NOT DOWN.** A review that is 30 seconds into its run has
+ * produced no verdict yet, and the first shape mapped that to `no-verdict` —
+ * the bucket the standing orders say merges on the gate alone. The failure is
+ * the team's own routine, not a tail case: the gate runs while the PR is still
+ * a draft and finishes; `gh pr ready` starts the review (20-minute timeout) and
+ * starts NO new gate run; a shift running the merge tool a minute later sees a
+ * green gate and a review that has produced nothing, and merges — with the
+ * verdict landing minutes later on a merged PR, unread. That is exactly the
+ * outcome the unread-verdict stop exists to prevent, arriving by the one road
+ * it did not cover.
+ *
+ * A pending run is therefore treated like a running gate: WAIT.
+ */
 export function classifyRun(run: ReviewRunReading, pr: PrIdentity): RoundKind {
   if (run.headBranch !== pr.headRefName) return "not-this-pr";
   if (new Date(run.createdAt).getTime() < new Date(pr.createdAt).getTime()) return "not-this-pr";
+  // The run itself first: a queued run has no jobs yet, so an absent review job
+  // on it means "not started", never "no reviewer".
+  if (run.runStatus !== "completed") return "pending";
+  if (run.reviewJobStatus !== null && run.reviewJobStatus !== "completed") return "pending";
   switch (run.reviewJobConclusion) {
     case "success":
       return "verdict";
@@ -98,6 +131,8 @@ export type RoundTally = {
   noVerdicts: readonly ReviewRunReading[];
   /** Runs triage declined. */
   declined: readonly ReviewRunReading[];
+  /** Runs still going. Neither a verdict nor its absence — yet. */
+  pending: readonly ReviewRunReading[];
 };
 
 /**
@@ -108,6 +143,7 @@ export function tallyRounds(runs: readonly ReviewRunReading[], pr: PrIdentity): 
   const verdicts: ReviewRunReading[] = [];
   const noVerdicts: ReviewRunReading[] = [];
   const declined: ReviewRunReading[] = [];
+  const pending: ReviewRunReading[] = [];
   const ordered = [...runs].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
@@ -122,11 +158,14 @@ export function tallyRounds(runs: readonly ReviewRunReading[], pr: PrIdentity): 
       case "declined":
         declined.push(run);
         break;
+      case "pending":
+        pending.push(run);
+        break;
       case "not-this-pr":
         break;
     }
   }
-  return { verdicts, noVerdicts, declined };
+  return { verdicts, noVerdicts, declined, pending };
 }
 
 /**
@@ -142,10 +181,25 @@ export function tallyRounds(runs: readonly ReviewRunReading[], pr: PrIdentity): 
  *                 that half because it is the caller that knows the files.
  *   "none"        triage declined, or the reviewer was never invoked. The
  *                 four mechanical checks are the whole bar.
+ *   "pending"     a review is IN FLIGHT. Not a verdict, and emphatically not
+ *                 its absence — the caller waits, exactly as it waits on a
+ *                 running gate.
+ *
+ * ⚠ THE ORDER OF THESE TESTS MATTERS AND `pending` OUTRANKS EVERYTHING,
+ * INCLUDING AN EXISTING VERDICT. Three cases, and it is right in all three:
+ * a PR whose first review failed (#219) and whose second is mid-run must wait
+ * for the second rather than merge on the first one's absence; a PR whose
+ * first verdict has been acknowledged and whose second is mid-run must wait
+ * too, because a second look is only ever started deliberately and merging
+ * through one discards the thing that was asked for; and a first review still
+ * running is the case the gate review of #558 caught. The cost of the strict
+ * order is a wait the shift could have spent reading the first verdict. The
+ * cost of the loose one is a merge past a review.
  */
-export type ReviewPresence = "verdict" | "no-verdict" | "none";
+export type ReviewPresence = "verdict" | "no-verdict" | "none" | "pending";
 
 export function reviewPresence(tally: RoundTally): ReviewPresence {
+  if (tally.pending.length > 0) return "pending";
   if (tally.verdicts.length > 0) return "verdict";
   if (tally.noVerdicts.length > 0) return "no-verdict";
   return "none";
@@ -165,6 +219,17 @@ export function reviewPresence(tally: RoundTally): ReviewPresence {
  * (#219), a cancelled run (#434), the reviewer refusing its own change (#165)
  * — judged nothing. Counting it would let an OUTAGE spend one of the two
  * rounds a shift is allowed, which is the opposite of what the cap is for.
+ *
+ * ⚠ DECLARED SCAFFOLDING, NOT A LIVE CONTROL (fidelity law: a shortcut is
+ * permitted only when DECLARED, and the gate review of PR #558 asked for this
+ * sentence by name). `decideRoundNotice` and `FINAL_ROUND_MESSAGE` land here
+ * with NO CALLER. Their call site is #543 ITEM 5 — the step in `review.yml`
+ * that posts the line when a second verdict is produced — which is a separate
+ * PR because a diff touching `review.yml` can never earn a green review
+ * (#165) and must not drag this tool's own review down with it. If item 5 is
+ * abandoned, these two exports are deleted rather than left sitting: a control
+ * that exists on paper and is invoked by nothing is the exact class CLAUDE.md's
+ * "Currently not enforced" list is made of.
  */
 export type RoundNotice =
   | { kind: "silent"; verdictsSoFar: number }

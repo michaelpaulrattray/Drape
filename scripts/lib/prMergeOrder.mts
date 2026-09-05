@@ -49,8 +49,22 @@ export type PrReading = {
   files: readonly string[];
   gate: GateState;
   review: ReviewPresence;
-  /** The shift passed `--acknowledge <n>`: it has read this PR's verdict. */
-  acknowledged: boolean;
+  /** How many reviewer verdicts exist for this PR right now. */
+  verdictCount: number;
+  /**
+   * ⚠ AN ACKNOWLEDGEMENT IS PINNED TO WHAT WAS READ, NOT TO THE PR.
+   *
+   * The verdict count at the moment `--acknowledge <n>` was honoured, or
+   * `null` when the shift did not acknowledge this PR. The first shape of this
+   * field was a plain boolean fixed at process start, and the gate review of
+   * PR #558 named the hole: this tool can run for 45 minutes, so a SECOND
+   * verdict landing mid-run — a `needs-fable` re-add, or a review that was
+   * still in flight when the shift acknowledged — was auto-waived by an
+   * acknowledgement given before it existed. `--acknowledge` says "I have read
+   * what is there", and a number is the only honest record of what "there"
+   * meant.
+   */
+  acknowledgedAtVerdictCount: number | null;
   /**
    * The registered `git worktree` holding this branch, or `null`. Merging main
    * into a branch needs a checkout, and this tool refuses to create one — a
@@ -115,6 +129,72 @@ export function touchesMoney(files: readonly string[], moneyPattern: string): bo
 
 export function touchesReviewerWorkflow(files: readonly string[]): boolean {
   return files.includes(REVIEWER_WORKFLOW_PATH);
+}
+
+/**
+ * ⚠ THE CHECK NAMES THIS TOOL KEYS ON ARE DERIVED FROM THE WORKFLOW FILES.
+ *
+ * The gate review of PR #558 found the first shape mirroring them — `"review"`
+ * and `"gate-checks"` as literals, with the suite header claiming an arm read
+ * them from source when none did. The `review` one fails in the SILENT,
+ * PERMISSIVE direction, which is the direction that costs: rename that job and
+ * every run reads as "no verdict" forever, so ordinary PRs with real verdicts
+ * merge unread and nothing anywhere reddens.
+ *
+ * A workflow's check name is the job's `name:` if it declares one, else the job
+ * key. This returns every job name a workflow declares, so the caller can
+ * REFUSE at startup when the name it needs is not among them — a fail-closed
+ * check rather than a second copy of a string.
+ */
+export function extractJobNames(workflowYaml: string): string[] {
+  const lines = workflowYaml.split(/\r?\n/);
+  const start = lines.findIndex((l) => /^jobs:\s*$/.test(l));
+  if (start === -1) {
+    throw new Error("workflow declares no top-level `jobs:` block — read it by hand");
+  }
+  const names: string[] = [];
+  let key: string | null = null;
+  let named = false;
+  const flush = () => {
+    if (key !== null && !named) names.push(key);
+    key = null;
+    named = false;
+  };
+  for (const line of lines.slice(start + 1)) {
+    if (/^\S/.test(line) && line.trim() !== "") break; // back to top level
+    const jobKey = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+    if (jobKey) {
+      flush();
+      key = jobKey[1]!;
+      continue;
+    }
+    const jobName = /^ {4}name:\s*(.+?)\s*$/.exec(line);
+    if (jobName && key !== null && !named) {
+      names.push(jobName[1]!.replace(/^["']|["']$/g, ""));
+      named = true;
+    }
+  }
+  flush();
+  if (names.length === 0) throw new Error("workflow declares no jobs — read it by hand");
+  return names;
+}
+
+/**
+ * Refuse at startup rather than reading a renamed job as an absent one.
+ * Returns a refusal reason, or `null` when the name is declared.
+ */
+export function refuseUnknownJobName(
+  needed: string,
+  declared: readonly string[],
+  workflowPath: string,
+): string | null {
+  if (declared.includes(needed)) return null;
+  return (
+    `${workflowPath} declares no job named \`${needed}\` — it declares ` +
+    `${declared.map((n) => `\`${n}\``).join(", ")}. This tool keys on that name, and reading a ` +
+    `renamed job as an absent one fails SILENTLY in the permissive direction, so it refuses ` +
+    `instead. Update the constant beside the rename.`
+  );
 }
 
 /** The merge order is the order opened; the number breaks a same-second tie. */
@@ -195,17 +275,45 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
 
   // 4. The reviewer. Green is not a pass (#219): a verdict exists to be READ,
   //    and reading it is the one thing here that is not mechanical.
-  if (pr.review === "verdict" && !pr.acknowledged) {
-    return {
-      kind: "stop",
-      reason:
-        "a Fable verdict exists and has not been acknowledged. A GREEN review reports that a " +
-        "review was PRODUCED, never that the diff passed — its findings ride the sticky " +
-        `comment. Read it, then re-run with --acknowledge ${pr.number}.`,
-    };
+  //
+  //    4a. IN FLIGHT IS NOT DOWN, and it comes first. The gate finishes while
+  //    a PR is still a draft; `gh pr ready` then starts the review and starts
+  //    NO new gate run — so "green gate, review mid-run" is the team's routine
+  //    first-round state, not a tail case, and reading it as "no verdict" is
+  //    how this tool would have merged past a review by default (#558 review,
+  //    finding 1).
+  if (pr.review === "pending") {
+    return { kind: "wait", reason: "a Fable review is IN FLIGHT — in flight is not down" };
   }
-  if (pr.review === "no-verdict") {
-    if (touchesReviewerWorkflow(pr.files) && !pr.acknowledged) {
+  if (pr.review === "verdict") {
+    if (pr.acknowledgedAtVerdictCount === null) {
+      return {
+        kind: "stop",
+        reason:
+          "a Fable verdict exists and has not been acknowledged. A GREEN review reports that a " +
+          "review was PRODUCED, never that the diff passed — its findings ride the sticky " +
+          `comment. Read it, then re-run with --acknowledge ${pr.number}.`,
+      };
+    }
+    if (pr.acknowledgedAtVerdictCount < pr.verdictCount) {
+      return {
+        kind: "stop",
+        reason:
+          `a NEWER verdict landed after your acknowledgement (${pr.verdictCount} verdicts now, ` +
+          `${pr.acknowledgedAtVerdictCount} when you acknowledged). An acknowledgement is pinned ` +
+          "to what was read, not to the PR. Read the newest sticky comment and re-run.",
+      };
+    }
+  }
+  // 4b. No verdict at all. Two populations are held rather than merged, and
+  //     the second of them keys on `none` as well as on `no-verdict`: triage
+  //     honours a `skip-review` label BEFORE it tests the money pattern, so a
+  //     stale label on a PR that later gains a money file produces a money
+  //     diff with a DECLINED review and no verdict anywhere (#558 review,
+  //     finding 5). Where a human used to click merge, this tool now does.
+  if (pr.review === "no-verdict" || pr.review === "none") {
+    const acknowledged = pr.acknowledgedAtVerdictCount !== null;
+    if (pr.review === "no-verdict" && touchesReviewerWorkflow(pr.files) && !acknowledged) {
       return {
         kind: "stop",
         reason:
@@ -214,14 +322,15 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
           `yourself, then re-run with --acknowledge ${pr.number}.`,
       };
     }
-    if (touchesMoney(pr.files, ctx.moneyPattern) && !pr.acknowledged) {
+    if (touchesMoney(pr.files, ctx.moneyPattern) && !acknowledged) {
       return {
         kind: "stop",
         reason:
-          "it touches a money/auth surface and NO reviewer verdict exists. The standing orders " +
-          "merge an ordinary PR on the gate alone when the reviewer is down, and hold a " +
-          "money/auth one. Get a verdict (remove then re-add `needs-fable`, #368) or " +
-          `hand-review it and re-run with --acknowledge ${pr.number}.`,
+          "it touches a money/auth surface and NO reviewer verdict exists" +
+          (pr.review === "none" ? " (triage declined it — check for a stale `skip-review` label)" : "") +
+          ". The standing orders merge an ordinary PR on the gate alone when the reviewer is " +
+          "down, and hold a money/auth one. Get a verdict (remove then re-add `needs-fable`, " +
+          `#368) or hand-review it and re-run with --acknowledge ${pr.number}.`,
       };
     }
   }
@@ -240,6 +349,14 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   if (pr.mergeStateStatus === "BEHIND") {
     return syncOrStop(pr, "it is BEHIND main and the branch must be updated before it merges");
   }
+  // ⚠ UNSTABLE is deliberately NOT a hold, and the reason is written down
+  //    because the #558 review raised it as the thing that failed to rescue
+  //    finding 1. It means a NON-REQUIRED check is pending or red — and in
+  //    this repository the usual non-required check is `review`, which is red
+  //    BY DESIGN on any PR touching the reviewer's own workflow (#165). Holding
+  //    on UNSTABLE would deadlock exactly those PRs forever. The two states it
+  //    stands for are both read at their own source instead: the gate directly,
+  //    and the review through `pending`/`verdict` above.
   if (pr.mergeable === "UNKNOWN" || pr.mergeStateStatus === "UNKNOWN") {
     return {
       kind: "wait",
@@ -300,6 +417,57 @@ export function refuseProtectedPush(
     `guards. The deploy rite (\`npx tsx scripts/deploy-rite.mts\`) is the only road to a ` +
     `protected ref, and this tool is not it.`
   );
+}
+
+/**
+ * ⚠ A DIRTY WORKTREE IS A STOP, NEVER A MERGE (#558 review, finding 4).
+ *
+ * The overlap rule makes these worktrees a shift's ACTIVE workspace — that is
+ * the whole point of them. A merge commit folds whatever is staged into
+ * itself, so merging main into a branch whose worktree carries half-finished
+ * work pushes that work onto the PR silently, in a commit whose message says
+ * "Merge branch main". There is no reading of the shift's intent that belongs
+ * in a tool, so it names the files and stops.
+ *
+ * Takes `git status --porcelain` output; returns a refusal or `null`.
+ */
+export function refuseDirtyWorktree(porcelain: string): string | null {
+  const entries = porcelain
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l !== "");
+  if (entries.length === 0) return null;
+  return (
+    `the worktree is not clean (${entries.length} entr${entries.length === 1 ? "y" : "ies"}): ` +
+    `${entries.join("; ")}. A merge would fold uncommitted work into the merge commit and push ` +
+    `it onto the PR. Commit or stash it, then re-run.`
+  );
+}
+
+/**
+ * ⚠ A MERGE THAT STOPPED AND A MERGE THAT NEVER STARTED LOOK IDENTICAL FROM
+ * AN EXIT CODE, AND THEY NEED OPPOSITE THINGS (#558 review, finding 4).
+ *
+ * The atlas merge driver accepts a placeholder and leaves the regenerated map
+ * STAGED with `MERGE_HEAD` written, waiting for `git commit --no-edit` — git
+ * does not re-read the index after `pre-merge-commit`, so that commit is the
+ * documented next step and not a workaround. A merge that REFUSED to begin —
+ * local changes would be overwritten, an unborn branch — writes no `MERGE_HEAD`
+ * at all, and firing a blind commit at it produced a misleading "unresolved
+ * paths" message in the first shape of this tool.
+ */
+export type MergeOutcome = "clean" | "conflict" | "atlas-driver-stop" | "never-started";
+
+export function classifyMergeOutcome(input: {
+  exitCode: number;
+  /** `git diff --name-only --diff-filter=U` output. */
+  unmergedPaths: string;
+  /** Whether the path `git rev-parse --git-path MERGE_HEAD` names exists. */
+  mergeHeadExists: boolean;
+}): MergeOutcome {
+  if (input.unmergedPaths.trim() !== "") return "conflict";
+  if (input.exitCode === 0) return "clean";
+  return input.mergeHeadExists ? "atlas-driver-stop" : "never-started";
 }
 
 /** One line, in the words the mailbox entry and the briefing use. */

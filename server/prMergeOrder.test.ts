@@ -12,8 +12,13 @@
  *   - the money/auth pattern is extracted from the live `.github/workflows/
  *     review.yml`, so a rename there reddens this suite instead of silently
  *     letting a money PR merge unreviewed (working law 4 — never mirror);
- *   - the `review` job name and the `gate-checks` job name are read out of the
- *     real workflow files for the same reason.
+ *   - the `review` and `gate-checks` job names are asserted against what the
+ *     real workflow files DECLARE. The gate review of PR #558 found this
+ *     header claiming that arm before it existed — the header was the mirror,
+ *     which is the joke working law 4 exists to spoil. It exists now, and it
+ *     matters because the `review` name fails in the SILENT, PERMISSIVE
+ *     direction: rename that job and every run reads as "no verdict" forever,
+ *     so ordinary PRs with real verdicts merge unread and nothing reddens.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -26,9 +31,13 @@ import {
   REVIEWER_WORKFLOW_PATH,
   decideMergeAction,
   describeAction,
+  classifyMergeOutcome,
+  extractJobNames,
   extractMoneyPattern,
+  refuseDirtyWorktree,
   orderByOpened,
   refuseProtectedPush,
+  refuseUnknownJobName,
   sharesFiles,
   touchesMoney,
   touchesReviewerWorkflow,
@@ -60,7 +69,8 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   files: ["scripts/thing.mts"],
   gate: "green",
   review: "none",
-  acknowledged: false,
+  verdictCount: 0,
+  acknowledgedAtVerdictCount: null,
   worktreePath: "C:/Users/Admin/drape-shift-551-thing",
   ...over,
 });
@@ -189,13 +199,13 @@ describe("decideMergeAction — the branch order is the contract", () => {
   });
 
   it("STOPS on an unacknowledged verdict — green is not a pass", () => {
-    const a = decideMergeAction(pr({ review: "verdict" }), ctx);
+    const a = decideMergeAction(pr({ review: "verdict", verdictCount: 1 }), ctx);
     expect(a.kind).toBe("stop");
     expect(a.kind === "stop" && a.reason).toMatch(/--acknowledge 551/);
   });
 
   it("merges once the verdict is acknowledged", () => {
-    expect(decideMergeAction(pr({ review: "verdict", acknowledged: true }), ctx)).toEqual({
+    expect(decideMergeAction(pr({ review: "verdict", verdictCount: 1, acknowledgedAtVerdictCount: 1 }), ctx)).toEqual({
       kind: "merge",
     });
   });
@@ -216,7 +226,7 @@ describe("decideMergeAction — the branch order is the contract", () => {
   it("but a money/auth PR WITH a read verdict merges", () => {
     expect(
       decideMergeAction(
-        pr({ review: "verdict", acknowledged: true, files: ["server/routes/billing.ts"] }),
+        pr({ review: "verdict", verdictCount: 1, acknowledgedAtVerdictCount: 1, files: ["server/routes/billing.ts"] }),
         ctx,
       ),
     ).toEqual({ kind: "merge" });
@@ -234,7 +244,7 @@ describe("decideMergeAction — the branch order is the contract", () => {
   it("and merges it once hand-reviewed", () => {
     expect(
       decideMergeAction(
-        pr({ review: "no-verdict", acknowledged: true, files: [REVIEWER_WORKFLOW_PATH] }),
+        pr({ review: "no-verdict", acknowledgedAtVerdictCount: 0, files: [REVIEWER_WORKFLOW_PATH] }),
         ctx,
       ),
     ).toEqual({ kind: "merge" });
@@ -271,7 +281,7 @@ describe("decideMergeAction — the branch order is the contract", () => {
   });
 
   it("an unacknowledged verdict outranks a conflict — the read comes before the sync", () => {
-    const a = decideMergeAction(pr({ review: "verdict", mergeable: "CONFLICTING" }), ctx);
+    const a = decideMergeAction(pr({ review: "verdict", verdictCount: 1, mergeable: "CONFLICTING" }), ctx);
     expect(a.kind).toBe("stop");
   });
 
@@ -286,6 +296,180 @@ describe("decideMergeAction — the branch order is the contract", () => {
       const p = pr(over);
       expect(describeAction(p, decideMergeAction(p, ctx))).toMatch(/#551/);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The seven findings from the gate review of PR #558, each with the arm that
+// would have caught it. Findings 1 and 2 are the severe pair: as first written,
+// the team's own draft-then-ready flow made "merged past the review" the
+// DEFAULT first-round outcome rather than the exception.
+describe("#558 review — in flight is not down", () => {
+  it("🔴 1 · WAITS on a review that is mid-run, instead of merging on its absence", () => {
+    const a = decideMergeAction(pr({ review: "pending" }), ctx);
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/in flight is not down/);
+  });
+
+  it("🔴 1 · a queued run — no jobs yet — is pending, not 'no reviewer'", () => {
+    expect(
+      classifyRun(run({ runStatus: "queued", reviewJobStatus: null, reviewJobConclusion: null }), identity),
+    ).toBe("pending");
+  });
+
+  it("🔴 1 · a review job still in_progress is pending", () => {
+    expect(
+      classifyRun(run({ reviewJobStatus: "in_progress", reviewJobConclusion: null }), identity),
+    ).toBe("pending");
+  });
+
+  it("🔴 1 · pending outranks a first failed run — wait for the second, do not merge on the first", () => {
+    const tally = tallyRounds(
+      [
+        run({ id: 1, createdAt: "2026-09-05T08:19:00Z", reviewJobConclusion: "failure" }),
+        run({ id: 2, createdAt: "2026-09-05T08:40:00Z", runStatus: "in_progress", reviewJobStatus: null, reviewJobConclusion: null }),
+      ],
+      identity,
+    );
+    expect(reviewPresence(tally)).toBe("pending");
+    expect(decideMergeAction(pr({ review: "pending" }), ctx).kind).toBe("wait");
+  });
+
+  it("🔴 1 · pending outranks an ACKNOWLEDGED verdict too — a second look is only ever asked for deliberately", () => {
+    const tally = tallyRounds(
+      [
+        run({ id: 1, createdAt: "2026-09-05T08:19:00Z" }),
+        run({ id: 2, createdAt: "2026-09-05T08:40:00Z", runStatus: "in_progress", reviewJobStatus: null, reviewJobConclusion: null }),
+      ],
+      identity,
+    );
+    expect(reviewPresence(tally)).toBe("pending");
+  });
+
+  it("🟠 6 · an acknowledgement is pinned to what was read, not to the PR", () => {
+    const a = decideMergeAction(
+      pr({ review: "verdict", verdictCount: 2, acknowledgedAtVerdictCount: 1 }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/NEWER verdict landed/);
+  });
+
+  it("🟠 6 · and it still covers the verdict it was given for", () => {
+    expect(
+      decideMergeAction(pr({ review: "verdict", verdictCount: 1, acknowledgedAtVerdictCount: 1 }), ctx),
+    ).toEqual({ kind: "merge" });
+  });
+
+  it("🟠 5 · a money PR whose review was DECLINED is held too, not just one with a failed review", () => {
+    // Triage honours `skip-review` BEFORE it tests the money pattern, so a
+    // stale label on a PR that later gains a money file lands exactly here.
+    const a = decideMergeAction(
+      pr({ review: "none", files: ["server/routes/billing.ts"] }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/skip-review/);
+  });
+
+  it("🟠 5 · an ordinary declined PR still merges — the hold is money-only", () => {
+    expect(decideMergeAction(pr({ review: "none" }), ctx)).toEqual({ kind: "merge" });
+  });
+});
+
+describe("🟡 4 · the sync refuses a dirty worktree and tells a stopped merge from one that never began", () => {
+  it("a clean worktree is not refused", () => {
+    expect(refuseDirtyWorktree("")).toBeNull();
+    expect(refuseDirtyWorktree("\n  \n")).toBeNull();
+  });
+
+  it("REFUSES, naming the files, on anything uncommitted", () => {
+    // The overlap rule makes these worktrees a shift's ACTIVE workspace, so
+    // "there is probably nothing important there" is exactly the assumption
+    // that would push half-finished work onto a PR.
+    const refusal = refuseDirtyWorktree(" M server/thing.ts\n?? scratch.md\n");
+    expect(refusal).not.toBeNull();
+    expect(refusal).toMatch(/server\/thing\.ts/);
+    expect(refusal).toMatch(/scratch\.md/);
+    expect(refusal).toMatch(/2 entries/);
+  });
+
+  it("refuses on a STAGED file too — that is the one a merge commit swallows", () => {
+    expect(refuseDirtyWorktree("A  server/new.ts\n")).toMatch(/server\/new\.ts/);
+  });
+
+  it("a merge that exits 0 is clean", () => {
+    expect(
+      classifyMergeOutcome({ exitCode: 0, unmergedPaths: "", mergeHeadExists: true }),
+    ).toBe("clean");
+  });
+
+  it("unmerged paths are a real conflict, whatever the exit code", () => {
+    expect(
+      classifyMergeOutcome({ exitCode: 1, unmergedPaths: "server/x.ts\n", mergeHeadExists: true }),
+    ).toBe("conflict");
+  });
+
+  it("a non-zero merge WITH MERGE_HEAD is the atlas driver waiting for its commit", () => {
+    expect(
+      classifyMergeOutcome({ exitCode: 1, unmergedPaths: "", mergeHeadExists: true }),
+    ).toBe("atlas-driver-stop");
+  });
+
+  it("a non-zero merge with NO MERGE_HEAD never started — a blind commit here is the bug", () => {
+    expect(
+      classifyMergeOutcome({ exitCode: 128, unmergedPaths: "", mergeHeadExists: false }),
+    ).toBe("never-started");
+  });
+});
+
+describe("🟡 3 · the job names are asserted against the workflows, not mirrored", () => {
+  const reviewJobs = extractJobNames(reviewYml);
+  const gateJobs = extractJobNames(
+    readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8"),
+  );
+
+  it("reads the real review.yml's jobs", () => {
+    expect(reviewJobs).toContain("triage");
+    expect(reviewJobs).toContain("review");
+  });
+
+  it("reads the real gate.yml's jobs", () => {
+    expect(gateJobs).toContain("gate-checks");
+    expect(gateJobs).toContain("founder-gate");
+  });
+
+  it("the names this tool keys on are declared by those files", () => {
+    expect(refuseUnknownJobName("review", reviewJobs, "review.yml")).toBeNull();
+    expect(refuseUnknownJobName("gate-checks", gateJobs, "gate.yml")).toBeNull();
+  });
+
+  it("REFUSES a name the workflow does not declare, naming what it does", () => {
+    const refusal = refuseUnknownJobName("reviewer", reviewJobs, "review.yml");
+    expect(refusal).not.toBeNull();
+    expect(refusal).toMatch(/`review`/);
+    expect(refusal).toMatch(/SILENTLY/);
+  });
+
+  it("falls back to the job KEY when a job declares no name", () => {
+    expect(extractJobNames("jobs:\n  build:\n    runs-on: ubuntu-latest\n")).toEqual(["build"]);
+  });
+
+  it("prefers the declared name over the key", () => {
+    expect(extractJobNames("jobs:\n  a:\n    name: pretty\n  b:\n    runs-on: x\n")).toEqual([
+      "pretty",
+      "b",
+    ]);
+  });
+
+  it("does not mistake the `on:` block's keys for jobs", () => {
+    // `on:\n  pull_request:` sits at the same indent as a job key.
+    const names = extractJobNames("on:\n  pull_request:\n    branches: [main]\njobs:\n  only:\n    runs-on: x\n");
+    expect(names).toEqual(["only"]);
+  });
+
+  it("REFUSES a workflow with no jobs block rather than returning an empty list", () => {
+    expect(() => extractJobNames("name: x\non:\n  push:\n")).toThrow(/jobs:/);
   });
 });
 
@@ -338,6 +522,8 @@ const run = (over: Partial<ReviewRunReading> = {}): ReviewRunReading => ({
   id: 1,
   headBranch: "team/shift-worktree",
   createdAt: "2026-09-05T08:19:36Z",
+  runStatus: "completed",
+  reviewJobStatus: "completed",
   reviewJobConclusion: "success",
   ...over,
 });
