@@ -73,6 +73,35 @@ It is the only file in the repository that invokes `git push`. It sets
 report's custody block. `capability:check --drive` is not here either, because
 it spends.
 
+### 1b · `scripts/pr-merge-in-order.mts` — changes `main`, and is still not a door
+
+Added 2026-09-05 (#543 item 3, founder-ordered). It is the second file in the
+repository to invoke `git push`, and it earns the most interesting entry on this
+list, because **it does change `main` and the change is not a bypass.**
+
+- **Its `git push` cannot reach a protected ref.** It is a bare push inside a
+  feature branch's own worktree, run only to merge `main` INTO a branch GitHub
+  reports `BEHIND` or `CONFLICTING` — the sync the overlap rule makes routine
+  now that two PRs are in flight at once. The worktree comes from a PR's
+  `headRefName`, and a pull request's head is never `main`.
+- **That is reasoning from somewhere else, so it is also locked at the push.**
+  `refuseProtectedPush` reads `HEAD` back out of the worktree immediately
+  before pushing and refuses any ref `.githooks/pre-push` guards — derived from
+  the hook by `readProtectedRefs`, never restated. A worktree somehow sitting
+  on `main` gets a refusal, not a push.
+- **The way it reaches `main` is `gh pr merge --squash`**, which the detector
+  cannot see because it is not `git push`. That road is the sanctioned one: it
+  goes through branch protection with `gate-checks` required, and the tool
+  itself refuses to merge a PR whose gate is not green, whose Fable verdict
+  nobody has acknowledged, or which touches a money/auth surface or `review.yml`
+  with no verdict at all.
+
+**The general point this entry records**, since it is the first of its kind
+here: the enumerated list is about `git push`, and `gh pr merge` is a second
+verb that writes to `main`. It is not a hole — every PR merge is exactly the
+road the gate exists to police — but a future tool that merges without the gate
+green would be one, and it would appear on no list in this document.
+
 ### 2 · CI — nothing
 
 All four workflows (`gate.yml`, `review.yml`, `knip.yml`, `secrets.yml`)
