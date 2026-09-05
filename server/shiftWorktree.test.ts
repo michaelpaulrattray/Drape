@@ -269,6 +269,43 @@ describe.runIf(process.platform === "win32")("junctions, against the real filesy
 describe("the script's own text — the sequence a reader must be able to trust", () => {
   const source = readFileSync(join(import.meta.dirname, "..", "scripts", "shift-worktree.mts"), "utf8");
 
+  it("⚠ THE LEFTOVER PATH IS REACHABLE — the git probes are skipped when git has let go (finding 1)", () => {
+    // The dead end this closes: an unregistered directory's `.git` file points
+    // at a pruned entry, so BOTH `git log` probes fail. Exiting there would
+    // send the shift back to hand-typing a recursive delete — on the second
+    // run of the tool built to remove exactly that hazard.
+    const guarded = source.indexOf("if (registered) {");
+    const probe = source.indexOf('git(["log", "--oneline", "@{u}..HEAD"]');
+    const giveUp = source.indexOf("could not tell whether this branch has unpushed commits");
+    expect(guarded).toBeGreaterThan(-1);
+    expect(probe).toBeGreaterThan(guarded);
+    expect(giveUp).toBeGreaterThan(guarded);
+  });
+
+  it("⚠ THE DELETE IS CAUGHT — a held directory must not exit 1, the 'nothing changed' code (finding 2)", () => {
+    // `force: true` suppresses a missing path, never an EBUSY on a held file.
+    // By the time the delete runs the junction is gone and the worktree is
+    // unregistered, so exit 1 would be a lie about a partial removal.
+    const tryIndex = source.indexOf("try {\n    rmSync(plan.path");
+    expect(tryIndex, "the recursive delete is not inside a try/catch").toBeGreaterThan(-1);
+    expect(source.slice(tryIndex)).toContain("could not delete");
+  });
+
+  it("registered is an exact path match on a checked listing, not a substring (finding 3)", () => {
+    // `drape-shift-a` must not match the entry for `drape-shift-a-b`.
+    expect(source).toContain('line.startsWith("worktree ")');
+    expect(source).toContain("git worktree list failed");
+    expect(source).not.toContain('worktree", "list", "--porcelain"]).out.replace');
+  });
+
+  it("the unpushed count asks the branch's OWN remote before refusing (finding 4)", () => {
+    // `git worktree add -b team/x <path> origin/main` sets upstream to
+    // origin/main, so `@{u}..HEAD` over-refuses before a `push -u`. Safe
+    // direction, but a guard that fires on healthy input trains the --force
+    // habit the header warns about.
+    expect(source).toContain("origin/${plan.branch}..HEAD");
+  });
+
   it("proves the junction is gone BEFORE any recursive delete", () => {
     const proof = source.indexOf("junctionMustBeGone(");
     const destroy = source.indexOf("rmSync(plan.path");

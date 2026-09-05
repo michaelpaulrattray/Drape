@@ -157,29 +157,69 @@ if (!existsSync(plan.path)) refuse(`${plan.path} does not exist`);
 // Read the state BEFORE deciding anything, and read it from the worktree
 // itself — asking the main tree about another worktree's branch is how a
 // helper comes to be confidently wrong about whose work it is deleting.
-const registered = git(["worktree", "list", "--porcelain"]).out.replace(/\\/g, "/").includes(plan.path);
-
-let unpushedCommits = 0;
-const unpushed = git(["log", "--oneline", "@{u}..HEAD"], plan.path);
-if (unpushed.status === 0) {
-  unpushedCommits = unpushed.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
-} else {
-  // No upstream at all — every commit since main is unpushed, which is the
-  // MOST dangerous case and must never read as zero.
-  const sinceMain = git(["log", "--oneline", "origin/main..HEAD"], plan.path);
-  if (sinceMain.status === 0) {
-    unpushedCommits = sinceMain.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
-  } else {
-    fail("could not tell whether this branch has unpushed commits — refusing to guess about deleting work");
-  }
-}
-
-const status = git(["status", "--porcelain"], plan.path);
-if (status.status !== 0) fail(`git status in the worktree failed: ${status.err.trim()}`);
-const dirtyFiles = status.out
+// ⚠ AN EXACT LINE MATCH, NOT A SUBSTRING (review finding 3). `--porcelain`
+// prints one `worktree <path>` line per tree, and a substring test lets
+// `drape-shift-a` match the entry for `drape-shift-a-b`. The status is checked
+// too: a failed listing must not read as "not registered", which is a state
+// with a different consequence.
+const listed = git(["worktree", "list", "--porcelain"]);
+if (listed.status !== 0) fail(`git worktree list failed: ${listed.err.trim()}`);
+const registered = listed.out
   .split(/\r?\n/)
-  .map((l) => l.slice(3).trim())
-  .filter((l) => l.length > 0);
+  .some((line) => line.startsWith("worktree ") && line.slice("worktree ".length).trim().replace(/\\/g, "/") === plan.path);
+
+/**
+ * ⚠ THE LEFTOVER CASE IS REACHABLE AND MUST NOT DEAD-END (review finding 1).
+ *
+ * A directory that git no longer knows about — the documented git 2.55
+ * "unregisters and leaves the directory behind" outcome, or this script's own
+ * run failing at the delete after the unregister succeeded — has a `.git` file
+ * pointing at a pruned entry, so BOTH git probes below fail. Exiting on that
+ * would send the shift back to hand-typing a recursive delete, which is the one
+ * hazard this tool exists to remove, and it would do so on the second run of
+ * the tool itself.
+ *
+ * So an unregistered path is treated as litter: there is no branch state to
+ * protect because git has already let go of it.
+ */
+let unpushedCommits = 0;
+let dirtyFiles: string[] = [];
+
+if (registered) {
+  const unpushed = git(["log", "--oneline", "@{u}..HEAD"], plan.path);
+  if (unpushed.status === 0) {
+    unpushedCommits = unpushed.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+    // ⚠ AND THE UPSTREAM MAY BE `origin/main` RATHER THAN THIS BRANCH (review
+    // finding 4). `git worktree add -b team/x <path> origin/main` sets the new
+    // branch's upstream to origin/main, so before a `push -u` every commit
+    // reads as unpushed even when `origin/team/x` already has them. That
+    // over-refuses, which is the safe direction — but a guard that refuses on
+    // healthy input trains the `--force` habit, so ask the remote branch too
+    // and take the smaller honest count.
+    if (unpushedCommits > 0) {
+      const againstOwnRemote = git(["log", "--oneline", `origin/${plan.branch}..HEAD`], plan.path);
+      if (againstOwnRemote.status === 0) {
+        unpushedCommits = againstOwnRemote.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+      }
+    }
+  } else {
+    // No upstream at all — every commit since main is unpushed, which is the
+    // MOST dangerous case and must never read as zero.
+    const sinceMain = git(["log", "--oneline", "origin/main..HEAD"], plan.path);
+    if (sinceMain.status === 0) {
+      unpushedCommits = sinceMain.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+    } else {
+      fail("could not tell whether this branch has unpushed commits — refusing to guess about deleting work");
+    }
+  }
+
+  const status = git(["status", "--porcelain"], plan.path);
+  if (status.status !== 0) fail(`git status in the worktree failed: ${status.err.trim()}`);
+  dirtyFiles = status.out
+    .split(/\r?\n/)
+    .map((l) => l.slice(3).trim())
+    .filter((l) => l.length > 0);
+}
 
 const state: RemovalState = {
   unpushedCommits,
@@ -230,7 +270,19 @@ if (state.registered) {
 }
 
 if (!dryRun) {
-  rmSync(plan.path, { recursive: true, force: true });
+  // ⚠ CAUGHT, BECAUSE AN UNCAUGHT THROW HERE EXITS 1 — THE "REFUSED, NOTHING
+  // WAS CHANGED" CODE — AFTER THE JUNCTION IS GONE AND THE WORKTREE IS
+  // UNREGISTERED (review finding 2). `force: true` only suppresses a missing
+  // path; a file held open on Windows still throws EBUSY/EPERM. Anything
+  // reading the documented exit codes would call a partial removal a clean
+  // no-op, which is the worst of the three things it could think.
+  try {
+    rmSync(plan.path, { recursive: true, force: true });
+  } catch (error) {
+    fail(
+      `could not delete ${plan.path}: ${error instanceof Error ? error.message : String(error)}. The junction is already removed and the worktree unregistered — close whatever holds the directory and run remove again.`,
+    );
+  }
   if (existsSync(plan.path)) fail(`${plan.path} is still present — something holds it open`);
   git(["worktree", "prune"]);
 }
