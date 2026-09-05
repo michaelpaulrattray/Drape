@@ -26,6 +26,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEPLOY_SOURCE_REF,
+  classifyPushFailure,
   deployRefOrderProblem,
   divergedRefMessage,
   pushFailureMessage,
@@ -256,5 +257,143 @@ describe("#317 · the rite actually uses it (driven by sabotage)", () => {
   it("the reader is looking at a real BRANCHES, and refuses a shape it cannot parse", () => {
     expect(branchesFrom(riteSource())).toEqual(["main", "main:local-migration"]);
     expect(() => branchesFrom("const BRANCHES = something();")).toThrow(/wrong shape/);
+  });
+});
+
+/**
+ * #577 — THE DIAGNOSIS IS READ OUT OF THE ERROR, NOT ASSUMED FROM THE SHAPE.
+ *
+ * The measured incident: a rite run died on `Could not resolve host` and then
+ * printed the ordinary-race repair, whose first line is `git fetch origin` —
+ * the very command that had just failed. The classifier is a pure function of
+ * the error text, so every arm here is a fixture string: no network, no git,
+ * no remote.
+ *
+ * The one that matters most is the LAST group — the message must not merely
+ * say something different, it must stop saying the false thing.
+ */
+describe("#577 · the push failure is classified before it is diagnosed", () => {
+  /* THE REGRESSION FIXTURE — the real stderr, verbatim, from 2026-09-05 20:45 UTC. */
+  const DNS_FAILURE =
+    "fatal: unable to access 'https://github.com/mrattray/Drape.git/': "
+    + "Could not resolve host: github.com";
+
+  it("reads a rejection as the race", () => {
+    expect(classifyPushFailure("! [rejected]        main -> main (fetch first)")).toBe("race");
+    expect(classifyPushFailure("Updates were rejected because the tip of your current branch is behind"))
+      .toBe("race");
+    expect(classifyPushFailure("error: failed to push some refs\nhint: non-fast-forward")).toBe("race");
+  });
+
+  it("reads the incident's own stderr as a network failure", () => {
+    expect(classifyPushFailure(DNS_FAILURE)).toBe("network");
+  });
+
+  it("reads the other ways the wire dies as network failures too", () => {
+    expect(classifyPushFailure("fatal: unable to access '…': Failed to connect to github.com port 443"))
+      .toBe("network");
+    expect(classifyPushFailure("ssh: connect to host github.com port 22: Connection timed out"))
+      .toBe("network");
+    expect(classifyPushFailure("fatal: the remote end hung up\nOpenSSL SSL_read: Connection reset"))
+      .toBe("network");
+    expect(classifyPushFailure("Temporary failure in name resolution")).toBe("network");
+  });
+
+  /*
+    THE FAIL-TOWARD-THE-SHRUG ARMS. `unable to access` and `could not read from
+    remote repository` are deliberately absent from both sign lists: git prints
+    the first over a 403 as readily as over dead DNS, and the second is usually
+    authentication. A message that called either one a network blip would send
+    a tired reader to wait out a permissions problem.
+  */
+  it("refuses to guess at an authentication failure", () => {
+    expect(classifyPushFailure("remote: Permission to mrattray/Drape.git denied to bot.\n"
+      + "fatal: unable to access '…': The requested URL returned error: 403")).toBe("unknown");
+    expect(classifyPushFailure("git@github.com: Permission denied (publickey).\n"
+      + "fatal: Could not read from remote repository.")).toBe("unknown");
+  });
+
+  it("refuses to guess at silence, and at an error carrying both signatures", () => {
+    expect(classifyPushFailure("")).toBe("unknown");
+    expect(classifyPushFailure("pre-push hook refused: the atlas is stale")).toBe("unknown");
+    /* Both at once is not a third diagnosis — it is a reason to stop. */
+    expect(classifyPushFailure("! [rejected] main -> main\nCould not resolve host: github.com"))
+      .toBe("unknown");
+  });
+
+  /** A sequence whose failure carries the given stderr. */
+  const failWith = (failFor: string, output: string) =>
+    pushInSequence(["main", "main:local-migration"], (branch) =>
+      branch === failFor ? { ok: false, output } : { ok: true, output: "To github.com:x/y.git" });
+
+  it("says the network is down and prints NO merge repair at all", () => {
+    const message = pushFailureMessage(failWith("main", DNS_FAILURE));
+
+    expect(message).toMatch(/THE NETWORK IS DOWN/);
+    expect(message).toMatch(/nothing is wrong with this tree/);
+    expect(message).toMatch(/git ls-remote origin/);
+    /* THE DEFECT ITSELF: not one word of the race repair may survive. */
+    expect(message).not.toMatch(/git merge/);
+    expect(message).not.toMatch(/git fetch origin\n/);
+    expect(message).not.toMatch(/ordinary race/);
+    /* It still carries the raw error and the force-push refusal. */
+    expect(message).toMatch(/Could not resolve host/);
+    expect(message).toMatch(/DO NOT force push/);
+  });
+
+  it("states what shipped even when the wire died — that fact is read, not diagnosed", () => {
+    const message = pushFailureMessage(failWith("main:local-migration", DNS_FAILURE));
+
+    expect(message).toMatch(/ALREADY PUSHED: main\b/);
+    expect(message).toMatch(/production'?s own ref is the one that did NOT land/);
+    expect(message).toMatch(/THE NETWORK IS DOWN/);
+    expect(message).toMatch(/the one that did is already correct/);
+    expect(message).not.toMatch(/git merge/);
+  });
+
+  it("shrugs honestly when it does not recognise the cause", () => {
+    const message = pushFailureMessage(
+      failWith("main", "fatal: Could not read from remote repository."),
+    );
+
+    expect(message).toMatch(/THE CAUSE WAS NOT RECOGNISED/);
+    expect(message).toMatch(/Could not read from remote repository/);
+    expect(message).not.toMatch(/git merge/);
+    expect(message).not.toMatch(/THE NETWORK IS DOWN/);
+    /*
+      #360's class, met head on: this message NAMES both roads in order to rule
+      them out ("neither the ordinary race nor a network failure"), so the arm
+      asserts the DECLARATION is absent, not the phrase. Matching the phrase
+      would forbid the message from explaining itself.
+    */
+    expect(message).not.toMatch(/This is the ordinary race/);
+    expect(message).toMatch(/DO NOT force push/);
+  });
+
+  it("still gives the merge repair when the cause really is the race", () => {
+    const message = pushFailureMessage(
+      failWith("main", "! [rejected]        main -> main (fetch first)"),
+    );
+
+    expect(message).toMatch(/ordinary race/);
+    expect(message).toMatch(/git merge origin\/main --no-edit/);
+    expect(message).not.toMatch(/THE NETWORK IS DOWN/);
+    expect(message).not.toMatch(/NOT RECOGNISED/);
+  });
+
+  /*
+    The no-op sentence used to hard-code `origin/main` as the ref that landed,
+    which is true only of a two-ref rite. Derived from the sequence now, so a
+    third ref cannot turn the sentence into a lie without the arm noticing.
+  */
+  it("names the ref that actually landed as the no-op, derived from the sequence", () => {
+    const three = pushInSequence(["main", "main:staging", "main:local-migration"], (branch) =>
+      branch === "main:local-migration"
+        ? { ok: false, output: "! [rejected] (fetch first)" }
+        : { ok: true, output: "" });
+    const message = pushFailureMessage(three);
+
+    expect(message).toMatch(/Merging\norigin\/staging would be a no-op here/);
+    expect(message).toMatch(/git merge origin\/local-migration --no-edit/);
   });
 });
