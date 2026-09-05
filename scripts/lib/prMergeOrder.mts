@@ -313,7 +313,16 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   //     finding 5). Where a human used to click merge, this tool now does.
   if (pr.review === "no-verdict" || pr.review === "none") {
     const acknowledged = pr.acknowledgedAtVerdictCount !== null;
-    if (pr.review === "no-verdict" && touchesReviewerWorkflow(pr.files) && !acknowledged) {
+    // ⚠ THIS STOP COVERS `none` AS WELL AS `no-verdict`, and the round-three
+    //    review of #558 is why: the round-two fix taught the MONEY hold that
+    //    lesson and left its sibling one clause away — working law 7's own
+    //    shape, a class fixed at one of its two members. Two roads reach a
+    //    `review.yml` PR with presence `none`: a stale `skip-review` label
+    //    (triage honours it BEFORE the self-skip check), and a triage-job
+    //    outage, which skips the review job through unmet `needs` and requires
+    //    no label at all. Either one would have merged the reviewer's own
+    //    workflow with no verdict and no hand review.
+    if (touchesReviewerWorkflow(pr.files) && !acknowledged) {
       return {
         kind: "stop",
         reason:

@@ -342,6 +342,54 @@ function readReviewRuns(headBranch: string): ReviewRunReading[] {
   });
 }
 
+/**
+ * ⚠ THE FILE LIST IS PAGINATED, NOT TAKEN FROM `gh pr view --json files`.
+ *
+ * Both of this tool's holds — the money/auth one and the #165 hand-review one
+ * — are only as good as this list, and a SHORT list fails in the permissive
+ * direction: a `server/security/` file missing from it reads as an ordinary
+ * diff. `gh pr view --json files` fetches the GraphQL connection with a fixed
+ * page, and the round-three review of #558 raised the cap as a real risk that
+ * it could not verify.
+ *
+ * ⚠ I COULD NOT MEASURE IT EITHER, AND SAY SO RATHER THAN GUESSING (law 7b):
+ * the largest pull request in this repository's whole history is FIFTY files
+ * (#370, read at `gh pr list --limit 200`), so no local artifact can exhibit
+ * the cap. The question is therefore DISSOLVED instead of answered —
+ * `gh api --paginate` is complete whatever the cap is, and costs one extra
+ * call on a diff nobody here has ever produced.
+ */
+function readPrFiles(number: number): string[] {
+  // ⚠ `filename`, not `path`. The REST payload names it `filename`; `path` is
+  //    the GraphQL connection's name, and asking REST for `.path` returns one
+  //    EMPTY STRING PER FILE — a list of the right length carrying nothing, so
+  //    both holds read every diff as ordinary. Written the wrong way here for
+  //    ten minutes and caught by DRIVING the tool, not by reading it: the
+  //    dry-run printed `files=0` on a seven-file PR.
+  const out = gh([
+    "api",
+    "--paginate",
+    `repos/:owner/:repo/pulls/${number}/files`,
+    "--jq",
+    ".[].filename",
+  ]);
+  const files = out
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l !== "");
+  // Fail CLOSED. A pull request always changes at least one file, so an empty
+  // list means the reading broke, and an empty list is exactly what makes both
+  // holds pass. This is the guard that would have caught the line above.
+  if (files.length === 0) {
+    fail(
+      `#${number}: read ZERO changed files. A pull request always changes at least one, so this ` +
+        `reading is broken — and an empty list silently disarms both the money hold and the ` +
+        `#165 hand-review hold. Refusing rather than merging.`,
+    );
+  }
+  return files;
+}
+
 function readPr(number: number, worktrees: Map<string, string>): PrReading {
   const view = JSON.parse(
     gh([
@@ -349,7 +397,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
       "view",
       String(number),
       "--json",
-      "number,createdAt,isDraft,state,mergeable,mergeStateStatus,headRefName,files,statusCheckRollup",
+      "number,createdAt,isDraft,state,mergeable,mergeStateStatus,headRefName,statusCheckRollup",
     ]),
   ) as {
     number: number;
@@ -359,7 +407,6 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     mergeable: string;
     mergeStateStatus: string;
     headRefName: string;
-    files: Array<{ path: string }>;
     statusCheckRollup: Rollup[] | null;
   };
 
@@ -386,7 +433,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     state: view.state,
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
-    files: view.files.map((f) => f.path),
+    files: readPrFiles(view.number),
     gate: gateStateOf(view.statusCheckRollup ?? []),
     review: reviewPresence(tally),
     verdictCount,
@@ -433,10 +480,12 @@ function mergePr(pr: PrReading): void {
  * telling the two apart is the whole job of this function: unmerged paths mean
  * a real content conflict and a person.
  */
-function syncMain(pr: PrReading, worktreePath: string): "synced" | "conflict" {
+type SyncResult = { kind: "synced" } | { kind: "stopped"; instruction: string };
+
+function syncMain(pr: PrReading, worktreePath: string): SyncResult {
   if (dryRun) {
     say(`DRY RUN — would run, in ${worktreePath}: git fetch origin main; git merge origin/main; git push`);
-    return "synced";
+    return { kind: "synced" };
   }
 
   // ⚠ A DIRTY WORKTREE IS A STOP, NOT A MERGE (#558 review, finding 4). The
@@ -450,7 +499,14 @@ function syncMain(pr: PrReading, worktreePath: string): "synced" | "conflict" {
   const dirtyRefusal = refuseDirtyWorktree(dirty.out);
   if (dirtyRefusal !== null) {
     say(`#${pr.number}: NOT SYNCING ${worktreePath} — ${dirtyRefusal}`);
-    return "conflict";
+    return {
+      kind: "stopped",
+      // ⚠ NOT "resolve the unresolved paths, commit, push" — there are none,
+      //    and that instruction would send the shift to commit the very
+      //    half-finished work the refusal exists to keep off the PR (#558
+      //    round-three review, finding 3: finding 4's own class one frame up).
+      instruction: `Commit or stash your own files in ${worktreePath}, then re-run.`,
+    };
   }
 
   const fetch = git(worktreePath, ["fetch", "origin", "main"]);
@@ -474,18 +530,29 @@ function syncMain(pr: PrReading, worktreePath: string): "synced" | "conflict" {
       say(
         `#${pr.number}: REAL CONFLICT in ${worktreePath} — ${unmerged.out.trim().split(/\r?\n/).join(", ")}`,
       );
-      return "conflict";
+      return {
+        kind: "stopped",
+        instruction: `Resolve the conflicted paths in ${worktreePath}, commit, push, and re-run.`,
+      };
     case "never-started":
       say(
         `#${pr.number}: the merge NEVER STARTED (no MERGE_HEAD) — git refused it: ` +
           merge.out.trim().split(/\r?\n/).slice(0, 4).join(" / "),
       );
-      return "conflict";
+      return {
+        kind: "stopped",
+        instruction:
+          `Read what git refused in ${worktreePath} and clear it — no merge is in progress, so ` +
+          "there is nothing to resolve or commit.",
+      };
     case "atlas-driver-stop": {
       const commit = git(worktreePath, ["commit", "--no-edit"]);
       if (commit.code !== 0) {
         say(`#${pr.number}: the atlas driver stopped the merge and \`git commit --no-edit\` failed: ${commit.out.trim()}`);
-        return "conflict";
+        return {
+          kind: "stopped",
+          instruction: `Finish the merge by hand in ${worktreePath} (\`git commit --no-edit\`), push, and re-run.`,
+        };
       }
       say(`#${pr.number}: merge completed through the atlas driver (regenerated map committed)`);
       break;
@@ -505,7 +572,7 @@ function syncMain(pr: PrReading, worktreePath: string): "synced" | "conflict" {
   const push = git(worktreePath, ["push"]);
   if (push.code !== 0) fail(`#${pr.number}: git push failed in ${worktreePath}: ${push.out}`);
   say(`#${pr.number}: main merged in and pushed — a new gate run will start`);
-  return "synced";
+  return { kind: "synced" };
 }
 
 const sleep = (n: number) => new Promise<void>((r) => setTimeout(r, n));
@@ -564,11 +631,10 @@ outer: for (const first of readings) {
     }
     if (action.kind === "sync-main") {
       const result = syncMain(pr, action.worktreePath);
-      if (result === "conflict") {
-        say(
-          `#${pr.number} STOP — the merge left unresolved paths. Resolve them in ` +
-            `${action.worktreePath}, commit, push, and re-run.`,
-        );
+      if (result.kind === "stopped") {
+        // The instruction comes from the case that stopped, not from a blanket
+        // line one frame up (#558 round-three review, finding 3).
+        say(`#${pr.number} STOP — ${result.instruction}`);
         exitCode = 2;
         break outer;
       }

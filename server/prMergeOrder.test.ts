@@ -375,6 +375,26 @@ describe("#558 review — in flight is not down", () => {
   it("🟠 5 · an ordinary declined PR still merges — the hold is money-only", () => {
     expect(decideMergeAction(pr({ review: "none" }), ctx)).toEqual({ kind: "merge" });
   });
+
+  it("🔴 R3-1 · the #165 hand-review stop covers a DECLINED review too, not only a failed one", () => {
+    // Round two taught the money hold to key on `none` and left its sibling
+    // one clause away — working law 7's own shape, a class fixed at one of its
+    // two members. Two roads reach a review.yml PR with presence `none`: a
+    // stale `skip-review` label (triage honours it BEFORE the self-skip check)
+    // and a triage-job outage, which needs no label at all.
+    const a = decideMergeAction(pr({ review: "none", files: [REVIEWER_WORKFLOW_PATH] }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/165/);
+  });
+
+  it("🔴 R3-1 · and it still merges once hand-reviewed", () => {
+    expect(
+      decideMergeAction(
+        pr({ review: "none", acknowledgedAtVerdictCount: 0, files: [REVIEWER_WORKFLOW_PATH] }),
+        ctx,
+      ),
+    ).toEqual({ kind: "merge" });
+  });
 });
 
 describe("🟡 4 · the sync refuses a dirty worktree and tells a stopped merge from one that never began", () => {
