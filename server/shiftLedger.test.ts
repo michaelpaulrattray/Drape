@@ -22,6 +22,7 @@ import {
   renderLedgerBlock,
   summarise,
 } from "../scripts/lib/shiftLedger.mts";
+import { type GhRunner, readMergedPrs } from "../scripts/lib/mergedPrGateTime.mts";
 
 const run = (over: Partial<ShiftRunReading> = {}): ShiftRunReading => ({
   id: 1,
@@ -179,6 +180,136 @@ describe("the figures, and their denominators", () => {
     expect(TARGETS.cardsPerLandingSession).toBe(3);
     expect(TARGETS.gateMinutesPerCard).toBe(10);
     expect(TARGETS.baselineGateRunsPerCard).toBeCloseTo(3.1, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE I/O HALF, DRIVEN FROM FIXTURES (#559 review, finding 4). Until the `gh`
+// runner was injectable, the module's own REFUSAL logic — the part that decides
+// whether a reading may be believed at all — sat on the one side no arm could
+// reach. That is law 2 exactly: a checker that cannot be made to fail in a test
+// is not a checker. No network runs in this block.
+describe("the GitHub half refuses rather than reporting a short list", () => {
+  const WORKFLOWS = JSON.stringify({
+    workflows: [{ id: 7, path: ".github/workflows/gate.yml" }],
+  });
+
+  /** A `gh` double keyed on the subcommand, so each arm states only what it needs. */
+  const fakeGh =
+    (responses: { workflows?: string; prList?: string | (() => never); runs?: string }): GhRunner =>
+    (args) => {
+      if (args[0] === "api" && args[1]?.includes("actions/workflows?")) {
+        return responses.workflows ?? WORKFLOWS;
+      }
+      if (args[0] === "pr" && args[1] === "list") {
+        const v = responses.prList;
+        if (typeof v === "function") return v();
+        return v ?? "[]";
+      }
+      return responses.runs ?? JSON.stringify({ workflow_runs: [] });
+    };
+
+  const listOf = (n: number, mergedAt = "2026-09-05T10:30:00Z") =>
+    JSON.stringify(
+      Array.from({ length: n }, (_, i) => ({
+        number: 100 + i,
+        mergedAt,
+        createdAt: "2026-09-05T10:00:00Z",
+        headRefName: `team/x${i}`,
+      })),
+    );
+
+  it("REFUSES when the page bound is reached — a truncated count is not a count", () => {
+    // ⚠ The first shape refused only when EVERY listed PR was in-window, which
+    // reasons from creation order about a merge-date question: a long-lived
+    // branch merged yesterday sits below a hundred younger PRs and is dropped
+    // silently. The bound alone is the refusal now.
+    const result = readMergedPrs("2026-09-01T00:00:00Z", { limit: 3, gh: fakeGh({ prList: listOf(3) }) });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/truncated count is not a count/);
+    expect(!result.ok && result.why).toMatch(/--pr-limit/);
+  });
+
+  it("does NOT refuse below the bound", () => {
+    const result = readMergedPrs("2026-09-01T00:00:00Z", { limit: 5, gh: fakeGh({ prList: listOf(3) }) });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.prs).toHaveLength(3);
+  });
+
+  it("selects on MERGE date at GitHub, not by filtering a default listing", () => {
+    let searched: string | null = null;
+    readMergedPrs("2026-09-02T04:00:00Z", {
+      limit: 50,
+      gh: (args) => {
+        if (args[0] === "pr" && args[1] === "list") {
+          searched = args[args.indexOf("--search") + 1] ?? null;
+          return "[]";
+        }
+        return WORKFLOWS;
+      },
+    });
+    expect(searched).toBe("merged:>=2026-09-02");
+  });
+
+  it("still applies the exact timestamp bound the join uses — the date search is deliberately wider", () => {
+    const result = readMergedPrs("2026-09-05T12:00:00Z", {
+      limit: 50,
+      gh: fakeGh({ prList: listOf(2, "2026-09-05T09:00:00Z") }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.prs).toEqual([]);
+  });
+
+  it("REFUSES, with a reason, when gh cannot list workflows", () => {
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      gh: () => {
+        throw new Error("gh: not authenticated\nmore detail");
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/could not list workflows/);
+    expect(!result.ok && result.why).toMatch(/not authenticated/);
+  });
+
+  it("REFUSES when the gate workflow is gone rather than reporting zero gate minutes", () => {
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      gh: fakeGh({ workflows: JSON.stringify({ workflows: [] }) }),
+    });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/gate\.yml/);
+  });
+
+  it("REFUSES when gh pr list itself fails", () => {
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      gh: fakeGh({
+        prList: () => {
+          throw new Error("gh: API rate limit exceeded");
+        },
+      }),
+    });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/gh pr list failed/);
+  });
+
+  it("sums only COMPLETED gate runs created between opening and merge", () => {
+    const runs = JSON.stringify({
+      workflow_runs: [
+        // inside the window, completed: 7 minutes
+        { created_at: "2026-09-05T10:05:00Z", updated_at: "2026-09-05T10:12:00Z", status: "completed" },
+        // still running at read time — skipped, a stated floor-direction limit
+        { created_at: "2026-09-05T10:15:00Z", updated_at: "2026-09-05T10:16:00Z", status: "in_progress" },
+        // created AFTER the merge — another PR's run on a reused branch
+        { created_at: "2026-09-05T11:00:00Z", updated_at: "2026-09-05T11:09:00Z", status: "completed" },
+        // created BEFORE the PR existed
+        { created_at: "2026-09-05T09:00:00Z", updated_at: "2026-09-05T09:08:00Z", status: "completed" },
+      ],
+    });
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      limit: 50,
+      gh: fakeGh({ prList: listOf(1), runs }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.prs[0]).toMatchObject({ gateRuns: 1, gateMinutes: 7 });
   });
 });
 

@@ -8,7 +8,7 @@
  * quoted week after week comes from one reader and never from a memory
  * (INSTRUMENT_DOCTRINE entry 5). Built on patrol #1 (card #98, 2026-08-26).
  *
- *   railway.cmd run --service MySQL -- npx tsx scripts/machinist-ledger-read.mts [--days 14]
+ *   railway.cmd run --service MySQL -- npx tsx scripts/machinist-ledger-read.mts [--days 14] [--pr-limit N]
  *
  * What it prints, and where each figure comes from:
  *
@@ -47,6 +47,12 @@
  *                               NOT per key — house courts and product traffic
  *                               share it) and fal traffic priced off our rows
  *                               through the rite's own readers (falSpend.mts).
+ *   G. the shift process        cards landed per session and gate minutes per
+ *                               card (#543 item 4) — `crew_shift_runs` joined
+ *                               to GitHub's own PR and gate-run timestamps.
+ *                               The ONLY section that needs the network beyond
+ *                               a provider's books, so it prints UNREAD rather
+ *                               than zeros when `gh` cannot answer.
  *
  * Every table carries its denominator. A window with no rows prints as such
  * rather than as zero. The census decomposition (per-stage seconds inside a
@@ -82,6 +88,16 @@ const arg = (name: string): string | undefined => {
 const days = Number(arg("days") ?? 14);
 if (!Number.isFinite(days) || days <= 0) {
   console.error(`--days is not a positive number: ${arg("days")}`);
+  process.exit(1);
+}
+// Section G's page bound. Sized from the window rather than fixed, because
+// hitting it is a REFUSAL: at the team's measured ~13 merged PRs a day, a
+// fixed 100 would have made the DEFAULT `--days 14` run refuse every time and
+// then name a flag that did not exist (#559 review, finding 2). 50/day is ~4x
+// headroom on the fastest week on record, and the flag is real.
+const prLimit = Number(arg("pr-limit") ?? Math.max(100, Math.ceil(days * 50)));
+if (!Number.isFinite(prLimit) || prLimit <= 0) {
+  console.error(`--pr-limit is not a positive number: ${arg("pr-limit")}`);
   process.exit(1);
 }
 const since = new Date(Date.now() - days * 86_400_000);
@@ -515,9 +531,15 @@ console.log(`   fal priced total $${priced.usd.toFixed(2)} (unpriced models: ${p
 // or absent `gh` must print as an absence and never as a clean set of figures
 // (doctrine entry 1).
 console.log("");
+// ⚠ Runs OVERLAPPING the window, not runs STARTING inside it (#559 review,
+// finding 3). A shift that began just before `since` and merged a PR just
+// after it would otherwise be absent from the sessions while its PR sat in
+// the merged-PR window — filed as unattributed under a printed explanation
+// that is wrong for that case, so a boundary artifact would read as a
+// recurring anomaly.
 const shiftRuns = (await q(
   `SELECT id, shift, seat, startedAt, endedAt, outcome
-     FROM crew_shift_runs WHERE startedAt >= ? ORDER BY startedAt`,
+     FROM crew_shift_runs WHERE endedAt >= ? OR endedAt IS NULL ORDER BY startedAt`,
   [since],
 )).map<ShiftRunReading>((row) => ({
   id: Number(row.id),
@@ -528,7 +550,7 @@ const shiftRuns = (await q(
   outcome: row.outcome === null || row.outcome === undefined ? null : String(row.outcome),
 }));
 
-const mergedPrs = readMergedPrs(sinceIso);
+const mergedPrs = readMergedPrs(sinceIso, { limit: prLimit });
 if (!mergedPrs.ok) {
   console.log(`G. THE SHIFT PROCESS — UNREAD: ${mergedPrs.why}`);
   console.log(`   (${shiftRuns.length} shift run(s) in the window were read; the GitHub half is what failed.)`);

@@ -277,8 +277,10 @@ export function renderLedgerBlock(reading: ShiftLedgerReading, windowLabel: stri
         reading.unattributed.map((p) => `#${p.number} (${p.mergedAt})`).join(", "),
     );
     lines.push(
-      "    A PR merged by hand, or during a shift whose row was never closed, lands here. It is " +
-        "printed rather than dropped so the denominator stays honest.",
+      "    A PR merged by hand, or during a shift whose row was never closed, lands here — as " +
+        "does one merged by a shift that both started AND ended outside this window, which is a " +
+        "boundary artifact rather than an anomaly. It is printed rather than dropped so the " +
+        "denominator stays honest.",
     );
   }
   if (reading.overlappingRunIds.length > 0) {
