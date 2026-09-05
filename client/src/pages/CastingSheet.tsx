@@ -2850,6 +2850,16 @@ export default function CastingSheet() {
                   onOpenCast={(castId) => navigate(`/casting/cast/${castId}`)}
                   onRetry={retryOffered ? () => onRetry(candidate.candidateId) : undefined}
                   retryPriceCredits={retryPrice}
+                  /*
+                    THE CLICK FRAME FOR RETRY (#551), and it is the same flag
+                    the button has always read — it just had nowhere to show.
+
+                    `busy` above disables the button from this; this puts the
+                    tile on its skeleton. Both come from `retrying`, so there is
+                    one fact and two readings of it rather than a second piece
+                    of state that can disagree with the first.
+                  */
+                  retrying={Boolean(retrying[candidate.candidateId])}
                 />
               ))}
         </div>
