@@ -28,10 +28,12 @@ import {
   describeAction,
   extractMoneyPattern,
   orderByOpened,
+  refuseProtectedPush,
   sharesFiles,
   touchesMoney,
   touchesReviewerWorkflow,
 } from "../scripts/lib/prMergeOrder.mts";
+import { gitTreeReader, readProtectedRefs } from "../scripts/lib/pushPaths.mts";
 import {
   FINAL_ROUND_MESSAGE,
   type PrIdentity,
@@ -284,6 +286,36 @@ describe("decideMergeAction — the branch order is the contract", () => {
       const p = pr(over);
       expect(describeAction(p, decideMergeAction(p, ctx))).toMatch(/#551/);
     }
+  });
+});
+
+describe("the push this tool performs can never reach a protected ref", () => {
+  // The population is the hook's own, read the way `pushPathsToMain.test.ts`
+  // reads it — a second list of protected refs is the thing this avoids.
+  const PROTECTED = readProtectedRefs(gitTreeReader(REPO_ROOT));
+
+  it("the real hook still names main, so this arm has something to refuse", () => {
+    // A positive control on the FIXTURE: an empty protected list would make
+    // every refusal arm below pass by testing nothing.
+    expect(PROTECTED).toContain("main");
+    expect(PROTECTED.length).toBeGreaterThan(0);
+  });
+
+  it("REFUSES a push from a worktree sitting on any protected ref", () => {
+    for (const ref of PROTECTED) {
+      const refusal = refuseProtectedPush(ref, PROTECTED);
+      expect(refusal, `${ref} must be refused`).not.toBeNull();
+      expect(refusal).toMatch(/deploy-rite/);
+    }
+  });
+
+  it("allows an ordinary team branch", () => {
+    expect(refuseProtectedPush("team/551-thing", PROTECTED)).toBeNull();
+  });
+
+  it("matches the whole ref, not a prefix — `main-ish` is not `main`", () => {
+    expect(refuseProtectedPush("team/maintenance", PROTECTED)).toBeNull();
+    expect(refuseProtectedPush("mainline", PROTECTED)).toBeNull();
   });
 });
 

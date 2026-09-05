@@ -273,6 +273,35 @@ function syncOrStop(pr: PrReading, why: string): MergeAction {
   return { kind: "sync-main", reason: why, worktreePath: pr.worktreePath };
 }
 
+/**
+ * ⚠ THE PUSH THIS TOOL PERFORMS CAN NEVER BE A PUSH TO `main`, AND THAT IS
+ * MADE STRUCTURAL HERE RATHER THAN ARGUED IN A COMMENT.
+ *
+ * `syncMain` runs a bare `git push` inside a worktree, which pushes that
+ * worktree's CURRENT branch. Every reachable path sets that worktree from a
+ * PR's own head branch, and a PR's head is never `main` — but "never by
+ * construction elsewhere" is exactly the shape of reasoning the enumerated
+ * push-path list exists to distrust (#263, and the founder's bar: the answer
+ * must come from a search, not an assumption). So the branch is READ back
+ * immediately before the push and compared against the refs
+ * `.githooks/pre-push` guards, derived from the hook itself rather than
+ * restated (`readProtectedRefs`, working law 4).
+ *
+ * The deploy rite remains the only door to main. This is the lock that keeps
+ * that sentence true of this file.
+ */
+export function refuseProtectedPush(
+  currentBranch: string,
+  protectedRefs: readonly string[],
+): string | null {
+  if (!protectedRefs.includes(currentBranch)) return null;
+  return (
+    `REFUSING to push: the worktree is on \`${currentBranch}\`, which .githooks/pre-push ` +
+    `guards. The deploy rite (\`npx tsx scripts/deploy-rite.mts\`) is the only road to a ` +
+    `protected ref, and this tool is not it.`
+  );
+}
+
 /** One line, in the words the mailbox entry and the briefing use. */
 export function describeAction(pr: PrReading, action: MergeAction): string {
   switch (action.kind) {

@@ -70,6 +70,28 @@ const FLAGGED: Record<string, { door: boolean; why: string }> = {
       + "containing `git push origin main`, so the literal is in its own source. Its "
       + "only child process is `git ls-files`, through gitTreeReader.",
   },
+  "scripts/lib/prMergeOrder.mts": {
+    door: false,
+    why: "The decision half of the merge runner below. It is PURE — no child "
+      + "processes at all — and the literal is in the docblock of "
+      + "`refuseProtectedPush`, the function that reads HEAD back out of a worktree "
+      + "and refuses to push any ref .githooks/pre-push guards. Over-inclusion "
+      + "putting the lock itself on the list is the contract working, not a miss.",
+  },
+  "scripts/pr-merge-in-order.mts": {
+    door: false,
+    why: "THE SHIFT'S MERGE RUNNER (#543 item 3) — and the entry it earns is the "
+      + "interesting one, because it does change `main` and still is not a door. Its "
+      + "`git push` is a BARE push inside a feature branch's own worktree, run only "
+      + "to merge main INTO a branch GitHub reports behind or conflicting; the branch "
+      + "comes from a PR's headRefName, which is never main. That is reasoning from "
+      + "elsewhere, so it is also locked here: `refuseProtectedPush` reads HEAD back "
+      + "out of the worktree immediately before the push and refuses any ref "
+      + ".githooks/pre-push guards, derived from the hook rather than restated. The "
+      + "way it reaches main is `gh pr merge --squash`, which the detector cannot see "
+      + "and which is not a bypass — it is the sanctioned road, through branch "
+      + "protection and a green gate, and it merges nothing whose gate is not green.",
+  },
 };
 
 /** The subset that can really reach main. Derived from the map, never a second list. */

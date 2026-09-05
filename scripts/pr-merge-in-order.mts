@@ -63,8 +63,10 @@ import {
   describeAction,
   extractMoneyPattern,
   orderByOpened,
+  refuseProtectedPush,
   sharesFiles,
 } from "./lib/prMergeOrder.mts";
+import { gitTreeReader, readProtectedRefs } from "./lib/pushPaths.mts";
 import {
   type ReviewRunReading,
   reviewPresence,
@@ -187,6 +189,14 @@ try {
   moneyPattern = extractMoneyPattern(readFileSync(reviewYmlPath, "utf8"));
 } catch (error) {
   fail((error as Error).message);
+}
+
+// ---- the refs this tool may never push, DERIVED from the hook -------------
+let PROTECTED_REFS: string[];
+try {
+  PROTECTED_REFS = readProtectedRefs(gitTreeReader(REPO_ROOT));
+} catch (error) {
+  fail(`cannot read the protected refs from .githooks/pre-push: ${(error as Error).message}`);
 }
 
 // ---- the reviewer workflow's id, DERIVED ----------------------------------
@@ -380,6 +390,14 @@ function syncMain(pr: PrReading, worktreePath: string): "synced" | "conflict" {
     }
     say(`#${pr.number}: merge completed through the atlas driver (regenerated map committed)`);
   }
+
+  // Read the branch back from the worktree itself, immediately before pushing:
+  // the refusal must key on what git is about to push, never on what this tool
+  // believes it set up.
+  const head = git(worktreePath, ["rev-parse", "--abbrev-ref", "HEAD"]);
+  if (head.code !== 0) fail(`#${pr.number}: cannot read HEAD in ${worktreePath}: ${head.out}`);
+  const refusal = refuseProtectedPush(head.out.trim(), PROTECTED_REFS);
+  if (refusal !== null) fail(`#${pr.number}: ${refusal}`);
 
   const push = git(worktreePath, ["push"]);
   if (push.code !== 0) fail(`#${pr.number}: git push failed in ${worktreePath}: ${push.out}`);
