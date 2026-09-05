@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "987c3e706127872f"
+    "sourceFingerprint": "2129302623404c06"
   },
   "domains": [
     {
@@ -11054,6 +11054,10 @@
     {
       "id": "test:server/capabilityAtlas.test.ts",
       "path": "server/capabilityAtlas.test.ts"
+    },
+    {
+      "id": "test:server/card391LadderFold.test.ts",
+      "path": "server/card391LadderFold.test.ts"
     },
     {
       "id": "test:server/castModelModal.test.ts",

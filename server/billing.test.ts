@@ -4,18 +4,17 @@ import { SUBSCRIPTION_PRODUCTS } from "./stripe/stripeProducts";
 import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanToTier } from "./stripe/stripeService";
 
 describe("Billing - Plan Tiers Configuration", () => {
+  // The seven survivors' prices and credits are HIS numbers, pinned exactly
+  // where they were before the #391 fold — the ruling was "leave the seven
+  // survivors' prices and credit amounts exactly where they are".
   it("should have correct pricing for all tiers", () => {
     expect(PLAN_TIERS.free.price).toBe(0);
     expect(PLAN_TIERS.starter.price).toBe(2700);
     expect(PLAN_TIERS.pro.price).toBe(6800);
     expect(PLAN_TIERS.studio.price).toBe(15900);
-    expect(PLAN_TIERS.studio_plus.price).toBe(37500);
     expect(PLAN_TIERS.business.price).toBe(84000);
-    expect(PLAN_TIERS.business_plus.price).toBe(195000);
     expect(PLAN_TIERS.scale.price).toBe(480000);
-    expect(PLAN_TIERS.scale_plus.price).toBe(880000);
     expect(PLAN_TIERS.enterprise.price).toBe(1500000);
-    expect(PLAN_TIERS.enterprise_plus.price).toBe(2700000);
     expect(PLAN_TIERS.ultimate.price).toBe(4800000);
   });
 
@@ -24,13 +23,9 @@ describe("Billing - Plan Tiers Configuration", () => {
     expect(PLAN_TIERS.starter.monthlyCredits).toBe(75000);
     expect(PLAN_TIERS.pro.monthlyCredits).toBe(200000);
     expect(PLAN_TIERS.studio.monthlyCredits).toBe(500000);
-    expect(PLAN_TIERS.studio_plus.monthlyCredits).toBe(1250000);
     expect(PLAN_TIERS.business.monthlyCredits).toBe(3000000);
-    expect(PLAN_TIERS.business_plus.monthlyCredits).toBe(7500000);
     expect(PLAN_TIERS.scale.monthlyCredits).toBe(20000000);
-    expect(PLAN_TIERS.scale_plus.monthlyCredits).toBe(40000000);
     expect(PLAN_TIERS.enterprise.monthlyCredits).toBe(75000000);
-    expect(PLAN_TIERS.enterprise_plus.monthlyCredits).toBe(150000000);
     expect(PLAN_TIERS.ultimate.monthlyCredits).toBe(300000000);
   });
 
@@ -42,8 +37,8 @@ describe("Billing - Plan Tiers Configuration", () => {
     expect(PLAN_TIERS.ultimate.rolloverPercent).toBe(100);
   });
 
-  it("should have 12 total tiers", () => {
-    expect(Object.keys(PLAN_TIERS).length).toBe(12);
+  it("should have 8 total tiers — the #391 fold (7 offered + the hidden top rung)", () => {
+    expect(Object.keys(PLAN_TIERS).length).toBe(8);
   });
 
   it("should have progressively increasing credits", () => {
@@ -121,13 +116,9 @@ describe("Billing - Monthly Credits", () => {
     expect(getMonthlyCredits("starter")).toBe(75000);
     expect(getMonthlyCredits("pro")).toBe(200000);
     expect(getMonthlyCredits("studio")).toBe(500000);
-    expect(getMonthlyCredits("studio_plus")).toBe(1250000);
     expect(getMonthlyCredits("business")).toBe(3000000);
-    expect(getMonthlyCredits("business_plus")).toBe(7500000);
     expect(getMonthlyCredits("scale")).toBe(20000000);
-    expect(getMonthlyCredits("scale_plus")).toBe(40000000);
     expect(getMonthlyCredits("enterprise")).toBe(75000000);
-    expect(getMonthlyCredits("enterprise_plus")).toBe(150000000);
     expect(getMonthlyCredits("ultimate")).toBe(300000000);
   });
 });

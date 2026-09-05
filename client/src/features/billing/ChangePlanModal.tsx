@@ -32,10 +32,12 @@
  *
  * ## What the reconciliation changed (BRIEF-RECONCILIATION Q3)
  *
- * The brief's ladder is five rungs at `2.79¢ … 1.87¢`; **ours is twelve** at
- * 0.036¢ down to 0.016¢ a credit. The population of both modes is derived from
- * `billing.getPlans` in `planLadder.ts` — see its header for the whole reading
- * — and the compare control says `Compare plans` rather than `Compare all 5`.
+ * The brief's ladder is five rungs at `2.79¢ … 1.87¢`; **ours is the offered
+ * seven** (#391 folded the twelve: four Plus rungs dropped, Ultimate hidden
+ * behind the email line below the ladder) at 0.036¢ down to 0.02¢ a credit.
+ * The population of both modes is derived from `billing.getPlans` in
+ * `planLadder.ts` — see its header for the whole reading — and the compare
+ * control says `Compare plans` rather than `Compare all 5`.
  *
  * ## Card 390 — his six form corrections, and the one thing they must not do
  *
@@ -444,10 +446,11 @@ export function ChangePlanModal({
                     what filled the slot was `About N casting frames`, which is
                     not a positioning statement but what the CREDITS make, so
                     it has moved into the credits block below where §6c puts
-                    it. Writing twelve marketing lines here would be inventing
-                    user-visible claims (the quotation-not-requirement law), and
-                    #391 may fold the ladder to seven rungs, so eleven of them
-                    could be discarded copy. **The slot is his to fill: carded.**
+                    it. Writing marketing lines here would be inventing
+                    user-visible claims (the quotation-not-requirement law).
+                    #391 has folded the ladder to the offered seven, so the
+                    slot now wants six lines, not eleven — **still his to
+                    fill: carded (#404).**
                   */}
                   {isCurrent ? (
                     /*
@@ -549,6 +552,27 @@ export function ChangePlanModal({
           */}
           </>
         )}
+
+        {/*
+          #391 — THE HIDDEN TOP RUNG'S DOOR, and it is deliberately just an
+          email (his ruling, verbatim: "just an email link for now, keep it
+          simple. they request a higher limit and we can send them the link if
+          we approve"). One quiet line, under the ladder in BOTH modes; it
+          names no plan and no price — a rung he has not decided to publish
+          must not be advertised by its own escape hatch. Do NOT grow this
+          into a form, a request table, or a greyed-out card: each was
+          considered on the card and declined by name.
+        */}
+        <p className="dp-plan__request">
+          Need a higher limit?{" "}
+          <a
+            className="dp-plan__request-link"
+            href="mailto:support@klieglabs.com?subject=A%20higher%20plan"
+          >
+            Write to support@klieglabs.com
+          </a>{" "}
+          — larger plans are arranged personally.
+        </p>
 
         {/* §6f — the honest version of "Expand credit limit" */}
         <div className="dp-plan__cross">

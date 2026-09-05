@@ -18,7 +18,14 @@ import {
   getCustomerInvoices,
   getAllCustomerInvoices,
 } from "../stripe/stripeService";
-import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan, PAID_PLAN_ORDER, PLAN_ORDER } from "../stripe/stripeProducts";
+import {
+  SUBSCRIPTION_PRODUCTS,
+  SubscriptionPlan,
+  PAID_PLAN_ORDER,
+  PURCHASABLE_PLANS,
+  OFFERED_PLAN_ORDER,
+  OFFERED_PLAN_TIERS,
+} from "../stripe/stripeProducts";
 import { PLAN_TIERS } from "../../drizzle/schema";
 import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
@@ -27,20 +34,29 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 export const billingRouter = router({
-  // Get available pricing plans
+  // Get available pricing plans.
+  //
+  // ⚠ THE OFFERED LADDER ONLY (#391). This is a public endpoint, and the
+  // hidden top rung's price is deliberately unpublished — so it maps
+  // PURCHASABLE_PLANS and OFFERED_PLAN_TIERS, never the whole product table
+  // (invariant 8: an explicit projection, not a spread). The hidden rung's
+  // door is the email line the plan modal draws under the ladder.
   getPlans: publicProcedure.query(() => {
     return {
-      subscriptions: Object.entries(SUBSCRIPTION_PRODUCTS).map(([key, plan]) => ({
-        id: key as SubscriptionPlan,
-        name: plan.name,
-        description: plan.description,
-        priceInCents: plan.priceInCents,
-        credits: plan.credits,
-        features: plan.features,
-        interval: plan.interval,
-      })),
-      tiers: PLAN_TIERS,
-      planOrder: PLAN_ORDER,
+      subscriptions: PURCHASABLE_PLANS.map((key) => {
+        const plan = SUBSCRIPTION_PRODUCTS[key];
+        return {
+          id: key as SubscriptionPlan,
+          name: plan.name,
+          description: plan.description,
+          priceInCents: plan.priceInCents,
+          credits: plan.credits,
+          features: plan.features,
+          interval: plan.interval,
+        };
+      }),
+      tiers: OFFERED_PLAN_TIERS,
+      planOrder: OFFERED_PLAN_ORDER,
     };
   }),
 
@@ -50,6 +66,8 @@ export const billingRouter = router({
     if (!subscription) {
       return {
         planTier: "free" as const,
+        planName: PLAN_TIERS.free.name,
+        planPriceInCents: PLAN_TIERS.free.price,
         balance: 0,
         subscriptionStatus: null,
         currentPeriodEnd: null,
@@ -61,6 +79,13 @@ export const billingRouter = router({
 
     return {
       planTier: subscription.planTier,
+      // The OWN-ROW naming of the plan (#391): `getPlans` serves only the
+      // offered ladder, so an account on the hidden rung cannot look its own
+      // name up there — and a customer's own tier is their data. Without
+      // this, Settings would caption a hand-sold Ultimate account "Free",
+      // which is the one thing a billing surface must never do.
+      planName: PLAN_TIERS[subscription.planTier]?.name ?? subscription.planTier,
+      planPriceInCents: PLAN_TIERS[subscription.planTier]?.price ?? 0,
       balance: subscription.balance,
       creditsPurchased: subscription.creditsPurchased,
       creditsUsed: subscription.creditsUsed,
@@ -79,7 +104,10 @@ export const billingRouter = router({
   // Create checkout session for subscription
   createSubscriptionCheckout: protectedProcedure
     .input(z.object({
-      plan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
+      // Derived, never retyped (#391, working law 4) — and the hidden rung is
+      // structurally absent: a plan the UI does not offer must not be a plan
+      // the API accepts (invariant 5).
+      plan: z.enum(PURCHASABLE_PLANS),
       interval: z.enum(["monthly", "annual"]).optional().default("monthly"),
     }).strict())
     .mutation(async ({ ctx, input }) => {
@@ -223,11 +251,11 @@ export const billingRouter = router({
   // Preview proration for plan change
   previewPlanChange: protectedProcedure
     .input(z.object({
-      newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
+      newPlan: z.enum(PURCHASABLE_PLANS),
     }).strict())
     .query(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);
-      
+
       if (!subscription?.stripeSubscriptionId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -354,7 +382,7 @@ export const billingRouter = router({
   // Change subscription plan with proration
   changePlan: protectedProcedure
     .input(z.object({
-      newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
+      newPlan: z.enum(PURCHASABLE_PLANS),
       // Additive for deploy skew: current clients send one id per deliberate
       // click; an older bundle may omit it until the new client is live.
       //

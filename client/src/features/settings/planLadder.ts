@@ -9,10 +9,11 @@
  * ## ⚠ Where this departs from the brief, and why (BRIEF-RECONCILIATION Q3)
  *
  * The brief says **`Compare all 5`** and quotes a five-rung ladder with unit
- * prices of `2.79¢ … 1.87¢`. **We have TWELVE tiers** (`PLAN_TIERS`,
- * `drizzle/schema.ts`), free through ultimate, at 0.036¢ down to 0.016¢ a
- * credit. That is the blank canvas the reconciliation exists to catch: the
- * mockup was drawn without the price table in view.
+ * prices of `2.79¢ … 1.87¢`. **We offer SEVEN tiers** (#391 folded the twelve
+ * — `PLAN_TIERS`, `drizzle/schema.ts`, minus the hidden top rung the server
+ * never serves), free through enterprise, at 0.036¢ down to 0.02¢ a credit.
+ * That is the blank canvas the reconciliation exists to catch: the mockup was
+ * drawn without the price table in view.
  *
  * Two things follow, and only one of them is a decision:
  *

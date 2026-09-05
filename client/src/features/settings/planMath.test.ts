@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { PLAN_TIERS } from "../../../../drizzle/schema";
+import { OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
 import {
   alignToPreview,
   annualPrice,
@@ -36,23 +37,34 @@ import {
  * fixture is monotonic.
  */
 
-/** The real ladder, in the real order, exactly as the modal builds it. */
-const LADDER: LadderPlan[] = (
-  [
-    "free",
-    "starter",
-    "pro",
-    "studio",
-    "studio_plus",
-    "business",
-    "business_plus",
-    "scale",
-    "scale_plus",
-    "enterprise",
-    "enterprise_plus",
-    "ultimate",
-  ] as const
-).map((id) => ({
+/**
+ * The real ladder, in the real order, exactly as the modal builds it — the
+ * OFFERED seven (#391): `billing.getPlans` serves `OFFERED_PLAN_ORDER`, so the
+ * hidden rung never reaches these functions in production and must not appear
+ * in the fixture either. The arm below pins the fold itself.
+ */
+const OFFERED = [
+  "free",
+  "starter",
+  "pro",
+  "studio",
+  "business",
+  "scale",
+  "enterprise",
+] as const;
+
+/* Card #391's own pin — the fold this fixture must not silently outlive. */
+describe("card 391 — the fixture IS the ladder the server serves", () => {
+  it("OFFERED matches OFFERED_PLAN_ORDER, seven rungs ending at Enterprise", () => {
+    /* Mirrored on purpose and pinned here: if the product's offered ladder
+       moves, this fixture must be re-read, not silently re-derived. */
+    expect([...OFFERED]).toEqual(OFFERED_PLAN_ORDER);
+    expect(OFFERED).toHaveLength(7);
+    expect(OFFERED[OFFERED.length - 1]).toBe("enterprise");
+  });
+});
+
+const LADDER: LadderPlan[] = OFFERED.map((id) => ({
   id,
   name: PLAN_TIERS[id].name,
   priceInCents: PLAN_TIERS[id].price,
@@ -212,11 +224,13 @@ describe("the ladder, against the product's real price table", () => {
     expect(recommendPlan(LADDER, "studio", covers - 1)).toBeNull();
     /* Just over it: the next rung that actually covers it. */
     const fit = recommendPlan(LADDER, "studio", covers + 1);
-    expect(fit?.id).toBe("studio_plus");
+    expect(fit?.id).toBe("business");
     /* Far over it: it skips past the rungs that do not cover the projection. */
     expect(recommendPlan(LADDER, "starter", 2_500_000)?.id).toBe("business");
-    /* Beyond the top rung: the top rung is still the best answer we have. */
-    expect(recommendPlan(LADDER, "studio", Number.MAX_SAFE_INTEGER)?.id).toBe("ultimate");
+    /* Beyond the top rung: the top rung is still the best answer we have —
+       and since #391 that top is Enterprise; what sits above it is asked for
+       by email, never recommended by a card. */
+    expect(recommendPlan(LADDER, "studio", Number.MAX_SAFE_INTEGER)?.id).toBe("enterprise");
     /* An unknown plan id answers nothing rather than guessing. */
     expect(recommendPlan(LADDER, "nonesuch", 10)).toBeNull();
   });
@@ -224,7 +238,7 @@ describe("the ladder, against the product's real price table", () => {
   it("draws three cards — current, recommendation, anchor — and never fewer", () => {
     const recommended = recommendPlan(LADDER, "studio", PLAN_TIERS.studio.monthlyCredits + 1);
     const trio = cardTrio(LADDER, "studio", recommended);
-    expect(trio.map((plan) => plan.id)).toEqual(["studio", "studio_plus", "business"]);
+    expect(trio.map((plan) => plan.id)).toEqual(["studio", "business", "scale"]);
 
     /* No recommendation: still three, still including the plan they are on. */
     const flat = cardTrio(LADDER, "studio", null);
@@ -233,9 +247,9 @@ describe("the ladder, against the product's real price table", () => {
 
     /* At the TOP of the ladder there is nothing above, so it fills downwards
        rather than drawing one card. */
-    const top = cardTrio(LADDER, "ultimate", null);
+    const top = cardTrio(LADDER, "enterprise", null);
     expect(top).toHaveLength(3);
-    expect(top.map((plan) => plan.id)).toContain("ultimate");
+    expect(top.map((plan) => plan.id)).toContain("enterprise");
   });
 
   it("the compare window is five wide and always holds both the plan and the offer", () => {
@@ -248,8 +262,8 @@ describe("the ladder, against the product's real price table", () => {
     /* Bottom of the ladder: the window cannot slide below index 0. */
     expect(compareWindow(LADDER, "free", null)[0].id).toBe("free");
     /* Top of the ladder: nor past the end. */
-    const atTop = compareWindow(LADDER, "ultimate", null);
-    expect(atTop[atTop.length - 1].id).toBe("ultimate");
+    const atTop = compareWindow(LADDER, "enterprise", null);
+    expect(atTop[atTop.length - 1].id).toBe("enterprise");
     expect(atTop).toHaveLength(COMPARE_COLUMNS);
   });
 

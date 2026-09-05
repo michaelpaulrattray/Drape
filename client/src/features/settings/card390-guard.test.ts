@@ -114,7 +114,8 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
       "improve" means ASCEND — you get more credits for your dollar as you
       climb. Read against `PLAN_TIERS` itself, not a fixture.
     */
-    expect(PAID.length, "no paid rungs found — the reader is broken").toBe(11);
+    /* 7 paid rungs since the #391 fold — six offered plus the hidden top. */
+    expect(PAID.length, "no paid rungs found — the reader is broken").toBe(7);
     for (let index = 1; index < PAID.length; index += 1) {
       const before = creditsPerDollar(PAID[index - 1].price, PAID[index - 1].monthlyCredits);
       const after = creditsPerDollar(PAID[index].price, PAID[index].monthlyCredits);
