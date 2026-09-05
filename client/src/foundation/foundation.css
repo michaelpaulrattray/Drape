@@ -671,8 +671,18 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  /* Outlined variants add their own 1px and drop a pixel of padding to match,
-     which is why secondary is 13px where primary is 14px (README §5). */
+  /* An outlined variant adds its own 1px on EVERY side, so it drops a pixel of
+     padding on BOTH axes to stand the same size as the filled one beside it:
+     secondary is 8px/13px where primary is 9px/14px, and small-secondary is
+     6px/12px where small-primary is 7px/13px (README §5).
+
+     ⚠ Until #486 the compensation was written on the horizontal axis only while
+     this comment claimed both, so every outlined button in the product stood
+     2px taller than its filled twin. Measured in the running app: primary 36px
+     against secondary 38px, small-primary 31.25px against small-secondary
+     33.25px. `outlinedButtonBox.test.ts` now does this arithmetic off the
+     stylesheet itself, so a new size or a new outlined variant cannot re-open
+     it quietly. */
   border: 0;
   border-radius: var(--r-btn);
   font-family: var(--font-sans);
@@ -697,7 +707,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 .dp-btn--primary:hover { opacity: 0.86; }
 
 .dp-btn--secondary {
-  padding: 9px 13px;
+  padding: 8px 13px;
   background: var(--surface);
   border: 1px solid var(--borderInput);
   color: var(--secondary);
@@ -730,6 +740,14 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 .dp-btn--small {
   padding: 7px 13px;
   font-size: 11.5px;
+}
+
+/* The size modifier restates the padding, so the outlined compensation has to be
+   restated with it — otherwise a small secondary is 2px taller and 2px wider
+   than the small primary beside it. Compound selector, so it wins on
+   specificity rather than on source order. */
+.dp-btn--small.dp-btn--secondary {
+  padding: 6px 12px;
 }
 
 /* Icon-only in chrome: 30px, pad on hover. */

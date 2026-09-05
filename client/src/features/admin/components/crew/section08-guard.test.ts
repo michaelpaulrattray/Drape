@@ -605,19 +605,29 @@ describe("§4 — two faces, and every measured value is mono", () => {
     the assertion with it silently. The population is DERIVED now: every place
     on this page that prints a bare `#<number>` must draw it in a mono class.
 
-    ⚠ **`CrewWorkingNow.tsx` prints `PR #{run.prNumber}` in `dp-crew__body--quiet`
-    and is EXEMPT here by name, not by accident** — a bare `#` before a PR
-    number inside a running sentence, which is a different shape from a
-    standalone id chip. It is a real §4 inconsistency (`CrewPipeline` calls a PR
-    number a measured value and monos it) and it is filed rather than fixed
-    under a card about a different section. Removing the exemption without
-    fixing that file is what this comment is here to make impossible to do
-    quietly.
+    ✅ **THE EXEMPTION IS GONE AND THE SET IS EMPTY — issue 448 closed, and it
+    closed the way its own comment said it would.** `CrewWorkingNow.tsx` printed
+    `PR #{run.prNumber}` in `dp-crew__body--quiet`; it prints it in
+    `dp-crew__mono` now, which is the call `CrewPipeline` already made for the
+    same value and wrote the reason down for. The set stays declared rather than
+    deleted so the next exemption has to be added deliberately, with its reason,
+    where this one had to be.
 
-    ⚠ **THE CARD IS ISSUE 448**, named here on the reviewer's finding: a defect
-    recorded only in a test comment is not filed, because the queue is the sole
-    system of record and a fact that lives only in a message does not exist.
-    When 448 closes, this exemption set goes empty in the same PR.
+    ⚠ **ONE SIBLING WAS READ AND DELIBERATELY NOT CHANGED, so it is recorded
+    here rather than left for the next sweep to re-find.** The same file draws
+    `{run.cardRef}` — a bare `#571` — in `dp-crew__strong`, and §4's own list
+    names issue numbers as mono. It is NOT an instance: the card ref is the
+    row's SUBJECT, leading the sentence as emphasis (which is exactly what
+    `dp-crew__strong` is documented as), where a PR number TRAILS it as a
+    reference. Mono would drop it to 10.5px `--faint` and de-emphasise the one
+    thing that makes the row scannable. That is a look, so it is his eye's and
+    not a shift's (law 9) — filed on 448 with a frame rather than decided here.
+
+    ⚠ **AND THE SWEEP BELOW STRUCTURALLY CANNOT SEE THAT SIBLING**, which is a
+    limit worth stating beside the one already below: it matches the literal
+    `#{`, and a card ref carries its `#` in the DATA, not in the JSX. Every id
+    rendered from a string that already contains its hash is invisible to this
+    arm, however it is drawn.
 
     ⚠ **WHAT THIS SWEEP CANNOT SEE, so its clean run is a floor and not
     coverage.** It attributes an id to the NEAREST PRECEDING `className="`,
@@ -628,7 +638,7 @@ describe("§4 — two faces, and every measured value is mono", () => {
     sites were read by hand and each genuinely sits inside its mono element —
     but a fifth written in either shape would pass without being checked.
   */
-  const ISSUE_NUMBER_EXEMPT = new Set(["CrewWorkingNow.tsx"]);
+  const ISSUE_NUMBER_EXEMPT = new Set<string>([]);
   /*
     ⚠ **THIS ARM LOST ITS STEP-NUMBER HALF TO #414, DELIBERATELY AND OUT
     LOUD.** It read `expect(banner).toMatch(/dp-crew__num dp-crew__stepnum/)`
@@ -664,6 +674,21 @@ describe("§4 — two faces, and every measured value is mono", () => {
     }
     /* FLOOR: a sweep that found nothing is green for the wrong reason. */
     expect(seen, "the id sweep read no rendered ids at all").toBeGreaterThan(2);
+  });
+
+  it("the id sweep exempts nobody, and re-exempting a file is a loud act", () => {
+    /*
+      Issue 448 emptied this set. An exemption is a real tool — the comment
+      above shows what a defensible one looks like — but it hid a live §4
+      inconsistency for as long as it existed, so putting a file back has to
+      cost two edits and this sentence rather than one quiet addition.
+    */
+    expect(Array.from(ISSUE_NUMBER_EXEMPT)).toStrictEqual([]);
+    /* And the file that was exempt is genuinely being read now, not merely
+       unlisted — a floor of one, on the surface the exemption named. */
+    const working = surfaces().find((f) => f.name === "CrewWorkingNow.tsx");
+    expect(working, "CrewWorkingNow.tsx is not in the swept population").toBeDefined();
+    expect(code(working!.text)).toContain("#{run.prNumber}");
   });
 
   it("POSITIVE CONTROL: the id sweep rejects a number drawn outside a mono class", () => {

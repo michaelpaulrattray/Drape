@@ -160,7 +160,16 @@ function PastRun({ run, now }: { run: CrewShiftRunView; now: number }) {
       <span>
         {run.cardRef && <span className="dp-crew__strong">{run.cardRef} </span>}
         {run.outcomeNote ?? run.intent}
-        {run.prNumber && <span className="dp-crew__body--quiet"> · PR #{run.prNumber}</span>}
+        {/*
+          A PR number is a measured value, so it is mono (§4) — the same call
+          `CrewPipeline` makes for the same value, and the reason this file
+          stopped being exempt from the id sweep (#448).
+        */}
+        {run.prNumber && (
+          <span className="dp-crew__body--quiet">
+            {" "}· PR <span className="dp-crew__mono">#{run.prNumber}</span>
+          </span>
+        )}
         <span className="dp-crew__body--quiet">
           {" "}· {run.shift}, {ago(run.endedAt ?? run.startedAt, now)}
         </span>

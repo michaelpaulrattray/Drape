@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0e8957a75f1a1e09"
+    "sourceFingerprint": "a7e22110097f2d0e"
   },
   "domains": [
     {
@@ -10818,6 +10818,10 @@
     {
       "id": "test:client/src/foundation/icons-guard.test.ts",
       "path": "client/src/foundation/icons-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/outlinedButtonBox.test.ts",
+      "path": "client/src/foundation/outlinedButtonBox.test.ts"
     },
     {
       "id": "test:client/src/foundation/promotion-guard.test.ts",
