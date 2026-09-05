@@ -1,7 +1,7 @@
 {
-  "edition": 256,
-  "updatedAt": "2026-09-05T06:00:00.000Z",
-  "shift": "Foreman — #541: the Needs Fable label gets a road out (PR #544)",
+  "edition": 257,
+  "updatedAt": "2026-09-05T07:35:00.000Z",
+  "shift": "Foreman (Fable) - #534: the sheet stops showing the machine's prompt; #539 beside it",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T05:48:14.576Z",
+      "readAt": "2026-09-05T07:15:04.553Z",
       "items": [
         {
           "issueNumber": 16,
@@ -246,6 +246,17 @@
     }
   },
   "needsYou": [
+    {
+      "id": "customer-record-534-eye",
+      "issueNumber": 534,
+      "title": "Your sheet ruling is built and live behind your flag - roll a sheet and judge the record (#534)",
+      "productImpact": "The prompt record on every sheet now shows exactly two things: the brief as you typed it, and what you changed on that roll. The machine's sentences are gone from the wire itself. This changes what you judge at the N1 gate, so the card stays open for your eye - frames are in the gallery, and the fastest real check is a Follow on your own account: the record should show just your brief.",
+      "workedExample": "Your Follow sheet that started this: under 'The prompt this sheet was painted from' it printed 'Continue this family: same casting brief, new person...' beside your brief. The same sheet now says 'The brief this sheet was cast from' and then only your words.",
+      "options": [],
+      "recommendation": "Look at the two frames; if the record reads as yours, close #534 - or tap a correction and a shift takes it.",
+      "state": "open",
+      "filedAt": "2026-09-05T07:35:00.000Z"
+    },
     {
       "id": "ladder-fold-391",
       "issueNumber": 391,
@@ -1816,8 +1827,29 @@
   ],
   "eyeItems": [
     {
+      "id": "customer-record-534-frames",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 534,
+      "filedAt": "2026-09-05T07:35:00.000Z",
+      "title": "The sheet's record after your ruling - your words, your change, nothing of the machine's",
+      "question": "Open record on a Follow sheet that carries a chip edit: 'The brief this sheet was cast from' - the brief verbatim - then 'Changed on this roll: Age - 40s'. The follow instruction that offended you is still in that roll's stored record and does not render; it cannot, because it no longer crosses to the page at all. Does this read as YOUR record now - and is 'The brief this sheet was cast from' the right sentence, or would you say it differently?",
+      "frames": [
+        {
+          "key": "crew-eye/153ca98a-6c71-4ddc-bde0-b0bf3b0c12be.png",
+          "caption": "Dark theme, record open: brief verbatim + 'Changed on this roll - Age - 40s'. No machine sentence.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/2c745907-193a-452d-a719-0353a1921b99.png",
+          "caption": "Light theme, same sheet - the record holds in both.",
+          "arm": "light"
+        }
+      ]
+    },
+    {
       "id": "max-verbatim-477-strip",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 477,
       "filedAt": "2026-09-05T02:20:00.000Z",
@@ -3797,6 +3829,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-546-customer-record-534",
+      "title": "The sheet never shows the machine's prompt any more - only your words and what you changed (#534, your ruling)",
+      "status": "merged",
+      "prNumber": 546,
+      "note": "Your ruling, verbatim: 'why are we showing the follow prompt to the user this is the machine showing through it should just show their original prompt and anything they changed on the new roll even on a follow showing the user the prompt continue this family is stupid.'\n\nDone, and done at the root: the studio's sentences (the follow instruction, the author's paragraph, the locked block) no longer leave the server at all - the sheet could not show them even by mistake. The record now reads 'The brief this sheet was cast from', then your words exactly as you typed them, then - only when you changed something on that roll - one line per change ('Age - 40s'). On a Follow with no edits it is just your brief, which is what you asked for.\n\nTwo things went with it, on purpose: the 'Use as brief' button (its whole offer was the machine's paragraph; the box already starts as your brief, and the author comes back as a visible assistant in the Re-imagine design, #535) and two old grey AUTHOR lines that explained studio machinery ('there is no authored prompt to show'). The one AUTHOR line that stays is the honest one you passed: 'cast exactly as you wrote them.'\n\nFrames from the real app, both themes, are in your eye gallery below - your eye closes #534, not the merge."
+    },
+    {
+      "id": "pr-547-heat-fact-539",
+      "title": "Heat can no longer argue with your words - your one fix from the before/after is in, measured (#539, your reply #133)",
+      "status": "merged",
+      "prNumber": 547,
+      "note": "Your fix, verbatim: 'it says \"clinical sheen\" on metal I wrote as matte, so heat must never contradict a stated fact; add that clause.' The clause is in, written as a direction (heat is additive, never corrective) rather than a banned-word list - 'sheen' is still a word the studio may say, it just may not fight a fact you stated.\n\nMeasured before it merged, on your own cyborg brief: with the old instruction, 2 of 8 drafts asserted a sheen against your matte metal; with the clause, 0 of 8 - every finish word agrees with matte ('no polish, no gloss', 'dulled by wear rather than polished'). And the drafts did not get thinner: about the same length, every stated fact still word-for-word. Cost of the measurement: about 30 cents. Your note that the Re-imagine design (#535) inherits this instruction as its base is honoured - the clause carries in."
+    },
+    {
       "id": "pr-544-auto-escalation-541",
       "title": "Five of your orders were frozen behind a label nobody could act on — the team now reaches its senior seat by itself (#541, your \"go\")",
       "status": "merged",
@@ -5595,7 +5641,7 @@
     133
   ],
   "nextUp": {
-    "readAt": "2026-09-05T05:48:13.828Z",
+    "readAt": "2026-09-05T07:15:03.585Z",
     "items": [
       {
         "issueNumber": 543,
@@ -5633,11 +5679,7 @@
       {
         "issueNumber": 534,
         "title": "The sheet never shows the machine's prompt — only the customer's words and what they changed on this roll, on a Follow too (his ruling, 5 Sep)",
-        "urgent": false,
-        "held": {
-          "state": "fable",
-          "because": "a change to WHAT HE JUDGES — it rewrites what the sheet shows him under the customer's own brief, which is the surface his eye rules on at the N1 gate."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 535,
@@ -5647,11 +5689,6 @@
           "state": "fable",
           "because": "a DESIGN DECISION — he asked for a design report, not a build (*\"file it as a design card at n1\"*), so the whole card is the decision."
         }
-      },
-      {
-        "issueNumber": 539,
-        "title": "MAX heat must never contradict a stated fact — his one fix off the #477 before/after (reply #133)",
-        "urgent": false
       }
     ]
   }
