@@ -60,8 +60,12 @@ const VOCABULARIES: Record<EchoField, readonly string[]> = {
   look: LOOK_KEYS,
 };
 
-/** Everyday words for the popover heading, matching the sentence's register. */
-const HEADINGS: Record<EchoField, string> = {
+/**
+ * Everyday words for the popover heading, matching the sentence's register.
+ * Exported for the sheet's "Changed on this roll" record (#534) — one owner
+ * for the axis names, so the echo and the record cannot disagree.
+ */
+export const ECHO_FIELD_HEADINGS: Record<EchoField, string> = {
   sex: "Sex",
   ageBand: "Age",
   agePhase: "Age phase",
@@ -242,8 +246,8 @@ function EchoSpanView({
     */
     return (
       <Popover
-        label={`Change ${HEADINGS[field].toLowerCase()}, queued as ${queuedValue ?? "varying"}`}
-        heading={`${HEADINGS[field]} · queued`}
+        label={`Change ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, queued as ${queuedValue ?? "varying"}`}
+        heading={`${ECHO_FIELD_HEADINGS[field]} · queued`}
         className="dpc-echo__pendingTrigger"
         options={VOCABULARIES[field].map((value) => ({
           value,
@@ -270,10 +274,10 @@ function EchoSpanView({
     <Popover
       label={
         pinned
-          ? `Change ${HEADINGS[field].toLowerCase()}, currently ${span.text}`
-          : `Pin ${HEADINGS[field].toLowerCase()}, currently left to the roll`
+          ? `Change ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, currently ${span.text}`
+          : `Pin ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, currently left to the roll`
       }
-      heading={pinned ? HEADINGS[field] : `${HEADINGS[field]} · varying`}
+      heading={pinned ? ECHO_FIELD_HEADINGS[field] : `${ECHO_FIELD_HEADINGS[field]} · varying`}
       className={pinned ? "dpc-echo__fact" : "dp-pop__trigger--open"}
       options={VOCABULARIES[field].map((value) => ({
         value,
@@ -290,7 +294,7 @@ function EchoSpanView({
       footer={
         pinned && varyOffered(vary, field)
           ? {
-              label: `Let ${HEADINGS[field].toLowerCase()} vary`,
+              label: `Let ${ECHO_FIELD_HEADINGS[field].toLowerCase()} vary`,
               onSelect: () => onAdjust({ kind: "vary", field }),
             }
           : null

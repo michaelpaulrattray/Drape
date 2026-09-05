@@ -31,7 +31,13 @@ import { CAST_STYLES, type CastStyle } from "../../shared/castStyles";
 import { candidateFailureKind, type CandidateFailureKind } from "../../shared/candidateFailure";
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
-import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
+import {
+  OVERRIDABLE_FIELDS,
+  UNLOCKABLE_FIELDS,
+  type CastingChip,
+  type OverridableField,
+  type UnlockableField,
+} from "./briefCompiler";
 import { statesWardrobe } from "./statedWardrobe";
 import type { CastingPath } from "../../shared/castingPaths";
 import { HOUSE_WARDROBE_LINE, currentWardrobeLine } from "./wardrobeLine";
@@ -121,46 +127,33 @@ export type RollProjection = {
    */
   statedWardrobe: boolean;
   /**
-   * THE PROMPT THIS SHEET WAS PAINTED FROM — the author road only (#131 slice
-   * D; ruling rule 5, verbatim: *"The expanded prompt is shown on the cast,
-   * editable. No hidden prompt, ever."*).
+   * WHAT THE CUSTOMER CHANGED ON THIS ROLL — their chip edits, in the words
+   * the sentence took them as (#534; his ruling, verbatim: *"it should just
+   * show their original prompt and anything they changed on the new roll even
+   * on a follow"*). The sheet's prompt record draws TWO things and nothing
+   * else: `briefText` — their own sentence, verbatim — and these lines.
    *
-   * ⚠ AND THE LOCKED HOUSE BLOCK IS NOT IN IT — #168, his ruling refining
-   * rule 5 (verbatim: *"the framing hair camera language realism is all our
-   * personal prompting styles that i dont want competitors to be able to
-   * steal … just not our locked settings prompting"*). Rule 5's purpose was
-   * honesty about what the AUTHOR did with the customer's words, never
-   * disclosure of the studio's craft. So this is REBUILT FROM THE CUSTOMER'S
-   * OWN PARTS — the brief as sent (`register.briefSent` when a chip edit
-   * rewrote it, else the row's `briefText`), the family clause where one was
-   * carried, and the author's content — and the block's text never crosses
-   * the wire at all (invariant-8 shape: out by construction, not omitted by
-   * the renderer). The sheet's footer line still says a locked block exists.
-   * The house-composed prompt of every other roll stays inside
-   * `compiledBrief`, and this is `null` there — an unflagged sheet is
-   * byte-identical to today's. Owner-scoped like the rest of the roll.
-   * "Editable" lands as *use as brief*: the sheet offers it back as the next
-   * roll's sentence, which is why the entrance admits
-   * `BRIEF_TEXT_MAX_AUTHOR_ROAD`.
+   * ⚠ THIS FIELD REPLACED `authoredPrompt` / `authoredText` / `authoredFrom`
+   * (#131 slice D, superseded by #534). The old record rebuilt the wire —
+   * brief, family clause, the author's content — and on his own Follow sheet
+   * that printed the studio's follow instruction under his brief: the machine
+   * showing through. The follow clause, the author's draft and every other
+   * studio sentence now stay inside `compiledBrief` and never cross this
+   * boundary at all (invariant-8 shape: out by construction, not omitted by
+   * a renderer). Rule 5's honesty — *"no hidden prompt, ever"* — is the
+   * ROW's: every byte sent is still recorded on it; the customer's sheet is
+   * not the surface that discloses the studio's craft, which is exactly the
+   * ground #168 gave for keeping the locked block out of the old field.
+   *
+   * Two sources, both the customer's own acts, validated field-by-field like
+   * every read out of `compiledBrief`: `register.rewrites` (#164 — a chip
+   * edit written into the sentence; `value` is the phrase the fact now
+   * reads, `sentence` is the one plain line that was appended) and, on rows
+   * written before Row A (#177), the facts the old axis clause carried
+   * (`carried.overrides`). A shape this reader does not know is dropped,
+   * never forwarded.
    */
-  authoredPrompt: string | null;
-  /**
-   * WHAT *USE AS BRIEF* PUTS IN THE BOX — the customer's words plus the
-   * author's CONTENT, and never the locked house block (review of #141,
-   * finding 1): the block is appended by code on every roll, so a draft that
-   * carried it would send the block twice and hand the reader studio
-   * sentences as customer-stated facts. Null unless the author wrote content
-   * (a LOW or static sheet has nothing to offer back — its brief is already
-   * in the box). `authoredPrompt` above stays the WHOLE prompt, for showing.
-   */
-  authoredText: string | null;
-  /**
-   * HER WORDS on a sheet the author REWROTE (#230) — the left half of his
-   * *"your words → authored brief"*. Null on every other kind of sheet,
-   * including the rows written before the rewrite landed, where the brief is
-   * already the first thing `authoredPrompt` shows.
-   */
-  authoredFrom: string | null;
+  briefChanges: BriefChange[];
   /**
    * HOW FAR THE AUTHOR WENT on this sheet (#131 slice E) — `low` | `max` on an
    * author register, null everywhere else. The dock preselects the NEXT roll's
@@ -564,18 +557,11 @@ function readVarianceHeld(compiledBrief: unknown): boolean {
  * unknown must never be reported as a failure.
  */
 /**
- * The authored prompt as SHOWN, read through a validator like everything else
- * lifted out of `compiledBrief` — and REBUILT from the customer's own parts
- * rather than sliced out of `register.prompt` (#168): the brief as sent, the
- * family clause where one was carried, the author's content. The locked house
- * block sits at the end of `register.prompt` and is the studio's framework
- * (his ruling), so the whole-prompt field is never forwarded — a block
- * sentence structurally cannot appear here because no part this function
- * assembles ever contained one (`containsHouseSentence` proves it in the
- * suite, with a sabotage arm). `AUTHORED_PROMPT_MAX` is a validator bound,
- * not a product one: the word budget keeps a real prompt well under it.
+ * Validator bound for one change line — a rewrite phrase or one plain
+ * appended sentence, never a paragraph. A bound, not a product limit: the
+ * longest line `briefRewrite` writes is well under it.
  */
-export const AUTHORED_PROMPT_MAX = 8000;
+export const BRIEF_CHANGE_MAX = 200;
 
 /**
  * Did this roll compose its prompts on the AUTHOR ROAD? Read off the roll's
@@ -595,90 +581,74 @@ export function rollComposedOnAuthorRoad(compiledBrief: unknown): boolean {
   return (register as { kind?: unknown }).kind === "author";
 }
 
-export function readAuthoredPrompt(briefText: string, compiledBrief: unknown): string | null {
-  if (!compiledBrief || typeof compiledBrief !== "object") return null;
-  const register = (compiledBrief as { register?: unknown }).register;
-  if (!register || typeof register !== "object") return null;
-  const { kind, prompt, content, briefSent, carried, compose } = register as {
-    kind?: unknown;
-    prompt?: unknown;
-    content?: unknown;
-    briefSent?: unknown;
-    carried?: unknown;
-    compose?: unknown;
-  };
-  /* An author row always records the whole prompt; a row without one never painted. */
-  if (kind !== "author" || typeof prompt !== "string") return null;
-  const parts: string[] = [];
-  const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
-  const authoredText = typeof content === "string" && content.trim().length > 0 ? content.trim() : null;
-  /*
-    ⚠ #230 — ON A REWRITE ROW THE CUSTOMER'S OWN WORDS WERE NOT SENT, so
-    showing them here would be a second brief on a surface whose whole purpose
-    is *no hidden prompt, ever*: the sheet would draw a stack the engine never
-    received. The raw seed is shown beside this, labelled as HER WORDS, by
-    `readAuthoredFrom` below — which is his own *"your words → authored
-    brief"*. An `append` row (no `compose` field: everything written before
-    2026-08-29) still draws brief-then-content, because that is what its engine
-    actually got.
-  */
-  const rewrote = compose === "rewrite" && authoredText !== null;
-  if (rewrote) parts.push(authoredText!);
-  else if (brief.trim().length > 0) parts.push(brief.trim());
-  const clause = carried && typeof carried === "object" ? (carried as { clause?: unknown }).clause : null;
-  if (typeof clause === "string" && clause.trim().length > 0) parts.push(clause.trim());
-  if (!rewrote && authoredText) parts.push(authoredText);
-  const shown = parts.join("\n\n");
-  if (shown.length === 0 || shown.length > AUTHORED_PROMPT_MAX) return null;
-  return shown;
-}
+/**
+ * A change the CUSTOMER made on this roll, as the record may show it (#534).
+ * `value` — a replaced fact, shown beside its axis ("Age — in their late
+ * 50s"); `sentence` — one plain line their edit appended, shown as itself.
+ */
+export type BriefChangeShape = "value" | "sentence";
+export type BriefChange = { field: OverridableField; shape: BriefChangeShape; to: string };
 
 /**
- * HER WORDS, on a sheet whose prompt is not made of them — the left half of
- * his *"The record can show 'your words → authored brief'"* (#230).
+ * WHAT THEY CHANGED ON THIS ROLL (#534) — the readers `readAuthoredPrompt`,
+ * `readAuthoredFrom` and `readAuthoredText` used to stand here, assembling
+ * the record the customer saw out of the wire's parts, family clause
+ * included; his ruling retired all three (*"showing the user the prompt
+ * continue this family is stupid"*). This reads only the customer's own
+ * acts back out of the row:
  *
- * Null everywhere it would be noise: on an `append` row (the brief is already
- * the first thing `readAuthoredPrompt` shows), on a LOW or static sheet (the
- * brief IS the prompt), and off the author road entirely.
+ *   - `register.rewrites` — a chip edit written into the sentence (#164):
+ *     `replaced` crosses as a `value` ("in their late 50s"), `appended` as
+ *     the one plain `sentence` it added.
+ *   - `carried.overrides` — rows written before Row A (#177), where the old
+ *     axis clause carried the facts; the raw value crosses ("50s"), the
+ *     clause itself never does.
+ *
+ * Validated against the closed field list, like `readChips`: a field or
+ * shape this reader does not know is dropped, never forwarded.
  */
-export function readAuthoredFrom(briefText: string, compiledBrief: unknown): string | null {
-  if (!compiledBrief || typeof compiledBrief !== "object") return null;
+export function readBriefChanges(compiledBrief: unknown): BriefChange[] {
+  if (!compiledBrief || typeof compiledBrief !== "object") return [];
   const register = (compiledBrief as { register?: unknown }).register;
-  if (!register || typeof register !== "object") return null;
-  const { kind, content, briefSent, compose } = register as {
-    kind?: unknown; content?: unknown; briefSent?: unknown; compose?: unknown;
-  };
-  if (kind !== "author" || compose !== "rewrite") return null;
-  if (typeof content !== "string" || content.trim().length === 0) return null;
-  const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
-  const trimmed = brief.trim();
-  if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
-  return trimmed;
-}
-
-/** Brief + the author's content — what a customer may roll again with. Null without authored content. */
-export function readAuthoredText(briefText: string, compiledBrief: unknown): string | null {
-  if (!compiledBrief || typeof compiledBrief !== "object") return null;
-  const register = (compiledBrief as { register?: unknown }).register;
-  if (!register || typeof register !== "object") return null;
-  const { kind, content, briefSent, compose } = register as {
-    kind?: unknown; content?: unknown; briefSent?: unknown; compose?: unknown;
-  };
-  if (kind !== "author" || typeof content !== "string") return null;
-  const trimmed = content.trim();
-  if (trimmed.length === 0 || trimmed.length > AUTHORED_PROMPT_MAX) return null;
-  /*
-    ⚠ #230 — ON A REWRITE ROW THE AUTHORED PARAGRAPH IS THE WHOLE BRIEF, so
-    prepending the customer's own words would put a stack in her box and the
-    next roll would send one. An `append` row still offers brief + content:
-    that is what its engine received, and #164's reason for `briefSent`
-    (a chip edit rewrote her sentence) is untouched on that road.
-  */
-  if (compose === "rewrite") return trimmed;
-  /* The brief AS SENT (#164): a chip edit rewrote the sentence, and rolling
-     again with the pre-edit text would silently undo the customer's own change. */
-  const brief = typeof briefSent === "string" && briefSent.trim().length > 0 ? briefSent : briefText;
-  return `${brief.trim()}\n\n${trimmed}`;
+  if (!register || typeof register !== "object") return [];
+  const { kind, rewrites, carried } = register as { kind?: unknown; rewrites?: unknown; carried?: unknown };
+  if (kind !== "author") return [];
+  const changes: BriefChange[] = [];
+  if (Array.isArray(rewrites)) {
+    for (const entry of rewrites) {
+      if (!entry || typeof entry !== "object") continue;
+      const { field, mode, to } = entry as Record<string, unknown>;
+      if (typeof field !== "string" || !OVERRIDABLE_FIELDS.includes(field as OverridableField)) continue;
+      /* A mode this reader does not know is dropped like any other unknown
+         shape (review of #546): a future third mode — say a removal whose
+         `to` holds the OLD value — must not cross as a value line. */
+      if (mode !== "replaced" && mode !== "appended") continue;
+      if (typeof to !== "string" || to.trim().length === 0) continue;
+      changes.push({
+        field: field as OverridableField,
+        shape: mode === "appended" ? "sentence" : "value",
+        to: to.trim().slice(0, BRIEF_CHANGE_MAX),
+      });
+    }
+  }
+  /* ⚠ Rows from the axis-clause era recorded ONE chip edit in BOTH channels —
+     `rewrites: [{ ageBand → "40s" }]` beside `carried.overrides: { ageBand:
+     "40s" }` (measured on real rows, dev 105/107, 2026-09-05) — so a reader
+     that took both would say the same change twice. The rewrite record wins;
+     an override crosses only for a field it did not already say. Since Row A
+     (#177) the two cannot coexist: an anchored follow drops chip edits and
+     writes `overrides` empty. */
+  const said = new Set(changes.map((change) => change.field));
+  const overrides = carried && typeof carried === "object" ? (carried as { overrides?: unknown }).overrides : null;
+  if (overrides && typeof overrides === "object") {
+    for (const [field, value] of Object.entries(overrides as Record<string, unknown>)) {
+      if (!OVERRIDABLE_FIELDS.includes(field as OverridableField)) continue;
+      if (said.has(field as OverridableField)) continue;
+      if (typeof value !== "string" || value.trim().length === 0) continue;
+      changes.push({ field: field as OverridableField, shape: "value", to: value.trim().slice(0, BRIEF_CHANGE_MAX) });
+    }
+  }
+  return changes;
 }
 
 export function readImagination(compiledBrief: unknown): Imagination | null {
@@ -818,9 +788,7 @@ export function projectRoll(input: {
       cannot drift from the sentence it describes.
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
-    authoredPrompt: readAuthoredPrompt(input.roll.briefText, input.roll.compiledBrief),
-    authoredText: readAuthoredText(input.roll.briefText, input.roll.compiledBrief),
-    authoredFrom: readAuthoredFrom(input.roll.briefText, input.roll.compiledBrief),
+    briefChanges: readBriefChanges(input.roll.compiledBrief),
     imagination: readImagination(input.roll.compiledBrief),
     style: readCastStyle(input.roll.compiledBrief),
     authorSatOut: readAuthorSatOut(input.roll.compiledBrief),

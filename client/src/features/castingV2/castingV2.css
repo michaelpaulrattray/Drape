@@ -1703,9 +1703,11 @@
 }
 
 /*
-  The prompt the sheet was painted from (author road only). A closed record in
-  the quiet 0.62-opacity register; open, the text keeps the author's paragraph
-  break and reads as prose, never as code.
+  The brief the sheet was cast from (#534) — the customer's own sentence,
+  verbatim, plus what they changed on this roll, one line each. A closed
+  record in the quiet 0.62-opacity register; open, it reads as prose, never
+  as code. Nothing the studio writes renders here — the projection no longer
+  carries a machine sentence at all.
 */
 .dpc-prompt {
   margin: 10px 0 0;
@@ -1735,9 +1737,8 @@
   opacity: 0.85;
 }
 /*
-  YOUR WORDS → AUTHORED BRIEF (#230). Two labelled records inside the one
-  disclosure, in the same quiet register as everything else in this panel —
-  a label, not a heading, because the panel already has its summary.
+  "Changed on this roll" (#534) — a label, not a heading, because the panel
+  already has its summary; the lines stay in the same quiet register.
 */
 .dpc-prompt__label {
   margin: 12px 0 0;
@@ -1746,34 +1747,15 @@
   text-transform: uppercase;
   opacity: 0.5;
 }
-.dpc-prompt__text--seed {
-  opacity: 0.62;
+.dpc-prompt__changes {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
 }
-
-.dpc-prompt__row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-.dpc-prompt__use {
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border: 1px solid var(--ink);
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-.dpc-prompt__use:hover {
-  background: var(--fill);
-}
-.dpc-prompt__note {
-  font-size: 12px;
-  opacity: 0.6;
+.dpc-prompt__change {
+  margin: 2px 0 0;
+  line-height: 1.5;
+  opacity: 0.85;
 }
 
 /*

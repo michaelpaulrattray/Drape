@@ -78,8 +78,8 @@ describe("the Row A clause", () => {
 
   it("the sheet no longer renders the expression-only line (#166: 'Kill that line on Follow sheets')", () => {
     const sheet = readFileSync(join(__dirname, "../../client/src/pages/CastingSheet.tsx"), "utf8");
-    /* Positive control that this arm read the real sheet, not an empty path. */
-    expect(sheet).toContain("THE PROMPT, SHOWN");
+    /* Positive control that this arm read the real sheet, not an empty path (#534 renamed the block). */
+    expect(sheet).toContain("THE BRIEF, SHOWN");
     expect(sheet).not.toContain("differ mainly in expression");
     expect(sheet).not.toContain("close relative");
   });

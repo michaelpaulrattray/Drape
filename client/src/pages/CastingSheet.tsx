@@ -13,7 +13,7 @@ import {
   Skeleton,
 } from "@/foundation";
 import { AppChrome } from "@/components/AppChrome";
-import { BriefEcho } from "@/features/castingV2/components/BriefEcho";
+import { BriefEcho, ECHO_FIELD_HEADINGS } from "@/features/castingV2/components/BriefEcho";
 import { BriefField } from "@/features/castingV2/components/BriefField";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
@@ -59,7 +59,6 @@ import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
-import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "@shared/briefLength";
 import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
   CandidateViewer,
@@ -119,6 +118,18 @@ const POLL_MS = 2_500;
  */
 const IDLE_POLL_MS = 12_000;
 const TERMINAL_ROLL_STATUSES = new Set(["complete", "partial", "failed", "cancelled"]);
+/**
+ * The axis name for a `value`-shaped "Changed on this roll" line (#534). The
+ * echo owns the everyday names (one owner — the record and the sentence may
+ * never disagree); `archetype` is not an echo field, and its modern rewrite is
+ * always a full sentence, so that label reaches only rows written before Row A
+ * that carried one.
+ */
+function changeHeading(field: string): string {
+  return field in ECHO_FIELD_HEADINGS
+    ? ECHO_FIELD_HEADINGS[field as keyof typeof ECHO_FIELD_HEADINGS]
+    : "Direction";
+}
 
 export default function CastingSheet() {
   const [, params] = useRoute("/casting/s/:sessionId");
@@ -557,12 +568,15 @@ export default function CastingSheet() {
    */
   const shownBrief = roll.data?.briefText ?? "";
   const brief = displayText(draft, shownBrief);
-  /* The prompt this sheet was painted from — null on every sheet off the author road (#131 slice D). */
-  const authoredPrompt = roll.data?.authoredPrompt ?? null;
-  /* What USE AS BRIEF offers back — the brief the engine got, never the locked block (review of #141). */
-  const authoredText = roll.data?.authoredText ?? null;
-  /* HER WORDS, on a sheet the author rewrote (#230) — null on every other kind. */
-  const authoredFrom = roll.data?.authoredFrom ?? null;
+  /* What the customer changed on THIS roll — the record's second half (#534). */
+  const briefChanges = roll.data?.briefChanges ?? [];
+  /*
+    The author-sat-out line, only where its sentence is true to a customer
+    (#534): the two legacy reasons said "there is no authored prompt to
+    show", and no sheet shows one any more. The copy module returns null for
+    them, so the decision lives beside the sentences it is about.
+  */
+  const authorSatOutLine = roll.data?.authorSatOut ? authorSatOutRecord(roll.data.authorSatOut) : null;
   const draftAnchor = useRef<string | null>(null);
   useEffect(() => {
     const rollId = roll.data?.rollId;
@@ -2392,19 +2406,21 @@ export default function CastingSheet() {
           </p>
         ) : null}
         {/*
-          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO. Two kinds of
-          row reach this line: the past-tense pair (`anchored`/`edited`, rows
-          written before #154, when a follow or chip edit composed house) and
-          the LIVE one — `static` (#252, his ruling: the customer isn't lied
-          to), a MAX roll whose author was refused twice or failed, projected
-          from the register's own `mode`. This line is the whole of that fix:
-          without it a static sheet reads "Max imagination" over a prompt
-          nobody authored. Off the row like the two lines above it.
+          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO — but only in
+          the one sentence that is true to a customer (#534). The LIVE reason,
+          `static` (#252, his ruling: the customer isn't lied to — a MAX roll
+          whose author was refused twice or failed), still draws: without it a
+          static sheet reads "Max imagination" over a prompt nobody authored,
+          and its copy passed his eye ("cast exactly as you wrote them"). The
+          past-tense pair (`anchored`/`edited`, rows written before #154) no
+          longer draws: their sentences named the machinery and promised an
+          authored prompt the record no longer shows anywhere. The copy module
+          returns null for them. Off the row like the two lines above it.
         */}
-        {roll.data?.authorSatOut ? (
+        {authorSatOutLine ? (
           <p className="dpc-wardrobeline">
             <span className="dp-chrome">AUTHOR</span>
-            <span className="dpc-wardrobeline__line">{authorSatOutRecord(roll.data.authorSatOut)}</span>
+            <span className="dpc-wardrobeline__line">{authorSatOutLine}</span>
           </p>
         ) : null}
 
@@ -2423,74 +2439,46 @@ export default function CastingSheet() {
         */}
 
         {/*
-          THE PROMPT, SHOWN (#131 slice D; founder ruling rule 5: "the expanded
-          prompt is shown on the cast, editable. No hidden prompt, ever").
+          THE BRIEF, SHOWN — AND NOTHING THE STUDIO WROTE (#534; his ruling,
+          verbatim: "why are we showing the follow prompt to the user this is
+          the machine showing through it should just show their original
+          prompt and anything they changed on the new roll even on a follow
+          showing the user the prompt continue this family is stupid").
 
-          Only the author road has one to show — the server projects null
-          everywhere else, so an unflagged sheet draws nothing here. Closed by
-          default: it is the record of what the eight were painted from, in the
-          same quiet register as the variance note, not a second brief box.
+          This supersedes the #131 slice D record ("the prompt this sheet was
+          painted from"): that block rebuilt the wire — brief, family clause,
+          the author's paragraph — and on his own Follow sheet it printed the
+          studio's follow instruction under his brief. The record now shows
+          TWO things and nothing else (#362's fold, folded in here): the
+          customer's sentence, verbatim, and what THEY changed on this roll,
+          one line each. The follow clause, the author's draft and the locked
+          block no longer cross the wire at all (`rollProjection.ts`,
+          `briefChanges`) — a machine sentence cannot leak from a projection
+          that does not carry one. On every sheet with a brief now, not only
+          the author road: the record is their own words, and every roll has
+          those.
 
-          "Editable" lands as USE AS BRIEF: one tap puts the whole prompt in the
-          brief box as a draft, and the next roll carries it verbatim (the brief
-          is the first paragraph BY CODE on this road). It takes the same road
-          as typing — the queued chip adjustments fall away, because the
-          sentence has been rewritten (the keystroke rule below the box).
+          USE AS BRIEF went with the author's draft: its whole offer was the
+          machine's paragraph, which this rule forbids the sheet to render.
+          The box already starts as their own brief; the author comes back as
+          a visible assistant on the brief in #535's design.
         */}
-        {authoredPrompt ? (
+        {shownBrief.trim().length > 0 ? (
           <details className="dpc-prompt">
-            <summary className="dpc-prompt__summary">The prompt this sheet was painted from</summary>
-            {/*
-              YOUR WORDS → AUTHORED BRIEF (#230, his own words for what the
-              record may show). It is drawn only where the author REWROTE the
-              seed: on a LOW or static sheet the prompt below IS her sentence,
-              and printing it twice under two headings would invent a
-              distinction the roll did not have.
-            */}
-            {authoredFrom ? (
+            <summary className="dpc-prompt__summary">The brief this sheet was cast from</summary>
+            <p className="dpc-prompt__text">{shownBrief}</p>
+            {briefChanges.length > 0 ? (
               <>
-                <p className="dpc-prompt__label">Your words</p>
-                <p className="dpc-prompt__text dpc-prompt__text--seed">{authoredFrom}</p>
-                <p className="dpc-prompt__label">The authored brief</p>
+                <p className="dpc-prompt__label">Changed on this roll</p>
+                <ul className="dpc-prompt__changes">
+                  {briefChanges.map((change, index) => (
+                    <li key={`${change.field}-${index}`} className="dpc-prompt__change">
+                      {change.shape === "sentence" ? change.to : `${changeHeading(change.field)} — ${change.to}`}
+                    </li>
+                  ))}
+                </ul>
               </>
             ) : null}
-            <p className="dpc-prompt__text">{authoredPrompt}</p>
-            {/*
-              USE AS BRIEF offers the brief + the author's CONTENT — never the
-              locked block, which code appends again on every roll (review of
-              #141, finding 1). So the button exists only where the author
-              wrote content (a LOW or static sheet's brief is already the box),
-              and NOT on text the entrance would refuse (review of #137): past
-              the road's bound it would fill the box with something the next
-              roll cannot take. The bound is the server's, read from `shared`.
-            */}
-            {authoredText && authoredText.length <= BRIEF_TEXT_MAX_AUTHOR_ROAD ? (
-              <div className="dpc-prompt__row">
-                <button
-                  type="button"
-                  className="dpc-prompt__use"
-                  onClick={() => {
-                    setDraft(typed(authoredText));
-                    if (Object.keys(overrides).length > 0) clearOverrides();
-                  }}
-                >
-                  Use as brief
-                </button>
-                <span className="dpc-prompt__note">
-                  {authoredFrom
-                    ? "The author's rewrite of your words — one brief, not two. The studio's locked block is added again at the roll."
-                    : "Your words, then the author's art direction. The studio's locked block is added again at the roll."}
-                </span>
-              </div>
-            ) : authoredText ? (
-              <p className="dpc-prompt__note">
-                Too long to roll again as written — a brief stops at {BRIEF_TEXT_MAX_AUTHOR_ROAD.toLocaleString()} characters. Copy the part you want into the box.
-              </p>
-            ) : (
-              <p className="dpc-prompt__note">
-                Your words, then the studio's locked camera, light and grey seamless — the same block on every roll.
-              </p>
-            )}
           </details>
         ) : null}
 
