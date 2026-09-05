@@ -1,7 +1,7 @@
 {
-  "edition": 249,
-  "updatedAt": "2026-09-04T22:32:13.357Z",
-  "shift": "Fable — 5 September (#252: a Max sheet that lost its author says so now)",
+  "edition": 250,
+  "updatedAt": "2026-09-05T00:20:00.000Z",
+  "shift": "Machinist — patrol #2 (5 September): the pictures that never arrived, and why we could not say",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-04T22:31:28.376Z",
+      "readAt": "2026-09-05T00:04:02.627Z",
       "items": [
         {
           "issueNumber": 16,
@@ -162,12 +162,6 @@
           "issueNumber": 203,
           "title": "N2: RETIRE the wardrobe/basics two-paths machinery — founder ruling in advance ('yeah we will retire the wardrobe/basics path obviously', 2026-08-28)",
           "kind": "parked",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 362,
-          "title": "N2+: fold the original brief behind one line on a MAX sheet, and drive-check the next-roll chips against the author road",
-          "kind": "roadmap",
           "rung": "N2"
         },
         {
@@ -1780,12 +1774,23 @@
       "state": "done",
       "filedAt": "2026-09-04T06:23:52.079Z",
       "issueNumber": 493
+    },
+    {
+      "id": "machinist-patrol-2-lost-slices",
+      "title": "One picture in nine never arrived last fortnight — and now we can finally say why",
+      "productImpact": "When you cast a sheet you pay for eight pictures. Over the last two weeks, 28 of the 248 you paid for never turned up — about one in nine. Your credits came back every time, so the money is right; what you lost was the picture. Over the two months before that the rate was about one in thirty-seven, so it has got roughly four times worse. And 20 of the 28 are the same thing: the image engine looked at the brief and refused to draw it.",
+      "workedExample": "Your creature rolls are where it lands. You ask for eight and five or six come back, with two or three tiles saying the picture could not be made. Until today the record could not tell you whether that was a refusal, a timeout or the engine falling over — so nobody could fix the right thing. It turns out the answer was already being written down every time, in a place the report was not reading. Read at the rows this shift: 20 of 20 were refusals. Not one was a crash or a timeout.",
+      "options": [],
+      "recommendation": "Nothing needed from you. This is a measurement, and the work it points at is already on your list as #129 — the refusal patrol you ordered on 26 August, which now has a real number behind it instead of a hunch, plus a labelled set of refused briefs sitting on production it can learn from without spending anything. Worth knowing when you judge N1: these are your own hard creature briefs, not customer traffic — every roll in the window was yours.",
+      "state": "done",
+      "filedAt": "2026-09-05T00:20:00.000Z",
+      "issueNumber": 129
     }
   ],
   "eyeItems": [
     {
       "id": "satout-line-252",
-      "state": "open",
+      "state": "done",
       "cardId": null,
       "issueNumber": 252,
       "filedAt": "2026-09-04T22:32:13.357Z",
@@ -3749,6 +3754,14 @@
   ],
   "pipeline": [
     {
+      "id": "pr-533-machinist-2",
+      "title": "Machinist patrol #2 — the paid pictures that never arrived, counted properly for the first time",
+      "status": "merged",
+      "prNumber": 533,
+      "note": "Read only; spent nothing. Reviewed three times and corrected five times before merging — the reviewer kept finding the same shape, a check that looked healthy only because the thing it would have got wrong had not happened yet. No measured number moved across any of it. Two new items filed for later: #532 and #536.",
+      "cardId": null
+    },
+    {
       "id": "pr-529-author-sat-out",
       "title": "A customer who chose Max and got no author is told the truth now — and the studio keeps a note of why",
       "status": "merged",
@@ -5512,10 +5525,11 @@
     127,
     128,
     129,
-    130
+    130,
+    131
   ],
   "nextUp": {
-    "readAt": "2026-09-04T22:31:27.551Z",
+    "readAt": "2026-09-05T00:04:01.749Z",
     "items": [
       {
         "issueNumber": 391,
@@ -5545,6 +5559,16 @@
       {
         "issueNumber": 531,
         "title": "Stripe returns point at the wrong domain — one production base URL (klieglabs.com), read from one place, with a no-drape-domains test (reply #130)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 534,
+        "title": "The sheet never shows the machine's prompt — only the customer's words and what they changed on this roll, on a Follow too (his ruling, 5 Sep)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 535,
+        "title": "Re-imagine: the author becomes a visible writing assistant on the brief, and the imagination level goes — a DESIGN card at N1 for his word (5 Sep)",
         "urgent": false
       }
     ]
