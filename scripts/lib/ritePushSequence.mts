@@ -123,6 +123,65 @@ export function deployRefOrderProblem(branches: readonly string[]): string | nul
 }
 
 /**
+ * WHY THE PUSH FAILED — READ, NEVER ASSUMED (#577).
+ *
+ * The recovery for a rejected push and the recovery for a dead network are
+ * different, and one of them actively wastes the reader's time: on
+ * 2026-09-05 a rite run died on `Could not resolve host: github.com` and then
+ * printed the ordinary-race diagnosis, whose first instruction is `git fetch
+ * origin` — **which fails for exactly the same reason the push did.** Worse
+ * than useless: it reads as though the tree were at fault when the tree was
+ * fine, and CLAUDE.md keeps a whole section on a road asserted from a shape
+ * instead of read at the bytes.
+ *
+ * Three classes, and the third is the point:
+ *
+ * - `race` — the remote moved under us (`[rejected]`, `fetch first`,
+ *   `non-fast-forward`). One merge repairs it and no history moves.
+ * - `network` — nothing reached GitHub at all (DNS, connect, timeout, reset).
+ *   The tree is innocent, no merge helps, and the repair is to wait.
+ * - `unknown` — **everything else, including anything matching BOTH.** A wrong
+ *   confident diagnosis costs more than an honest shrug, so this fails toward
+ *   the shrug: print the raw error and say the cause was not recognised.
+ *
+ * Note what is deliberately NOT here: `unable to access`, which git prints
+ * over a 403 as readily as over a dead DNS, and `could not read from remote
+ * repository`, which is usually authentication. Both land in `unknown`, where
+ * a tired reader is told to look rather than told something false.
+ *
+ * A pure function of the error text — no network, no git, so its arms are
+ * fixture strings.
+ */
+export type PushFailureCause = "race" | "network" | "unknown";
+
+const RACE_SIGNS = [
+  /!\s*\[rejected\]/i,
+  /\bnon-fast-forward\b/i,
+  /\bfetch first\b/i,
+  /updates were rejected/i,
+  /behind its remote counterpart/i,
+] as const;
+
+const NETWORK_SIGNS = [
+  /could not resolve host/i,
+  /failed to connect/i,
+  /connection (?:timed out|refused|reset)/i,
+  /operation timed out/i,
+  /network is unreachable/i,
+  /(?:recv|send) failure/i,
+  /temporary failure in name resolution/i,
+] as const;
+
+export function classifyPushFailure(output: string): PushFailureCause {
+  const text = output ?? "";
+  const race = RACE_SIGNS.some((sign) => sign.test(text));
+  const network = NETWORK_SIGNS.some((sign) => sign.test(text));
+  /* Both at once is not a third diagnosis, it is a reason to stop guessing. */
+  if (race === network) return "unknown";
+  return race ? "race" : "network";
+}
+
+/**
  * THE MESSAGE A SHIFT READS AT 5AM (#317, proposal 2).
  *
  * The card's own reason for asking: *"the recovery … is not discoverable from
@@ -147,6 +206,12 @@ export function deployRefOrderProblem(branches: readonly string[]): string | nul
  * did NOT land. A message whose one reachable scenario prints a loop is worse
  * than no message, because this one exists precisely for a shift too tired to
  * check it.
+ *
+ * ⚠ **AND THE RECOVERY IS CHOSEN BY THE CAUSE, NOT BY THE SHAPE (#577).** What
+ * SHIPPED is read from the sequence and is true whatever went wrong, so it is
+ * stated first and unconditionally. What to DO about it comes from
+ * `classifyPushFailure`, because the merge repair is right for a race, useless
+ * for a dead network, and a guess for anything else.
  */
 export function pushFailureMessage(sequence: PushSequence): string {
   const failed = sequence.failed;
@@ -163,19 +228,15 @@ export function pushFailureMessage(sequence: PushSequence): string {
   /* THE TIP TO MERGE IS THE ONE THAT DID NOT LAND — never `origin/main` by
      reflex. See the ⚠ in this function's docblock. */
   const orphanRef = `origin/${refOf(failed.branch)}`;
+  const nothingShipped = shipped.length === 0;
+  /* The tip that DID land — derived, so a third ref cannot make this a lie. */
+  const landedRef = nothingShipped ? "" : `origin/${refOf(shipped[shipped.length - 1]!)}`;
 
-  if (shipped.length === 0) {
+  /* ── the FACT half: read from the sequence, so it holds whatever went wrong ── */
+  if (nothingShipped) {
     lines.push(
-      `NOTHING WAS PUSHED. Production is untouched and still builds the previous commit.`,
+      "NOTHING WAS PUSHED. Production is untouched and still builds the previous commit.",
       "",
-      "This is almost always the ordinary race: a squash merge landed on",
-      `${orphanRef} while this tree sat a commit behind. The repair is one merge,`,
-      "and it rewrites no history:",
-      "",
-      "    git fetch origin",
-      `    git merge ${orphanRef} --no-edit     # the atlas has a merge driver; if it`,
-      "                                        # asks, git commit --no-edit",
-      "    npx tsx scripts/deploy-rite.mts",
     );
   } else {
     lines.push(
@@ -185,22 +246,69 @@ export function pushFailureMessage(sequence: PushSequence): string {
           + "\nis still on its previous commit while main has moved ahead of it."
         : "Production's ref is among them, so it is building a tree main does not carry."}`,
       "",
-      `The orphaned tip is on ${orphanRef} — the ref that failed. Merging origin/main`,
-      "would be a no-op here, because main is what just landed. Merge the tip that did",
-      "not, so it becomes an ancestor again, and prove the merge changed no content:",
+    );
+  }
+
+  /* ── the DIAGNOSIS half: chosen by the cause, never by the shape (#577) ── */
+  const cause = classifyPushFailure(failed.output);
+
+  if (cause === "network") {
+    lines.push(
+      "THE NETWORK IS DOWN — nothing is wrong with this tree, and no merge helps.",
+      "git never got an answer, so `git fetch` would fail for the same reason this",
+      "push did. Whether the remote moved at all is what the check below settles —",
+      "a mid-transfer reset can land a ref before the wire dies, and the retry then",
+      "reports it as already up to date. Either way this tree is intact.",
       "",
-      "    git fetch origin",
-      `    git merge ${orphanRef} --no-edit`,
-      `    git diff <pre-merge-tip> HEAD --stat                 # must be EMPTY`,
-      `    git merge-base --is-ancestor ${orphanRef} HEAD    # must succeed`,
+      "Wait a minute, prove the network is back, then re-run the rite unchanged:",
+      "",
+      "    git ls-remote origin -h refs/heads/main    # succeeds once it is back",
       "    npx tsx scripts/deploy-rite.mts",
+      ...(nothingShipped
+        ? []
+        : ["", "The retry pushes the ref that did not land; the one that did is already correct."]),
+    );
+  } else if (cause === "race") {
+    if (nothingShipped) {
+      lines.push(
+        "This is the ordinary race: a squash merge landed on",
+        `${orphanRef} while this tree sat a commit behind. The repair is one merge,`,
+        "and it rewrites no history:",
+        "",
+        "    git fetch origin",
+        `    git merge ${orphanRef} --no-edit     # the atlas has a merge driver; if it`,
+        "                                        # asks, git commit --no-edit",
+        "    npx tsx scripts/deploy-rite.mts",
+      );
+    } else {
+      lines.push(
+        `The orphaned tip is on ${orphanRef} — the ref that failed. Merging`,
+        `${landedRef} would be a no-op here, because it is what just landed. Merge the tip that did`,
+        "not, so it becomes an ancestor again, and prove the merge changed no content:",
+        "",
+        "    git fetch origin",
+        `    git merge ${orphanRef} --no-edit`,
+        `    git diff <pre-merge-tip> HEAD --stat                 # must be EMPTY`,
+        `    git merge-base --is-ancestor ${orphanRef} HEAD    # must succeed`,
+        "    npx tsx scripts/deploy-rite.mts",
+      );
+    }
+  } else {
+    lines.push(
+      "THE CAUSE WAS NOT RECOGNISED — the error above is neither the ordinary race",
+      "nor a network failure, so this message is not going to guess at a repair.",
+      "Read it, and only then decide. Two roads it is NOT allowed to assume for you:",
+      "a rejection wants a merge, a dead network wants a wait, and an authentication",
+      "failure wants neither.",
+      "",
+      "    npx tsx scripts/deploy-rite.mts    # once you know what the error says",
     );
   }
 
   lines.push(
     "",
-    "⚠ DO NOT force push. A shift must never rewrite either deploy ref — the merge",
-    "  above is the sanctioned repair and it loses nothing.",
+    "⚠ DO NOT force push. A shift must never rewrite either deploy ref — whatever",
+    "  the cause turns out to be, forcing loses work and repairs nothing.",
   );
   return lines.join("\n");
 }
