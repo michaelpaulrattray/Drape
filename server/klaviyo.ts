@@ -245,8 +245,8 @@ export async function sendReferralInviteEmail(params: {
  * The live appeal route for a frozen customer (#452, founder's word 2026-09-02:
  * *"Point it at support@klieglabs.com"*).
  *
- * It replaces `https://drape.ai/support`, which was dead twice over: the old
- * domain, and a `/support` path that has never existed in the client — so
+ * It replaces the retired domain's `/support` URL, which was dead twice over:
+ * the old domain, and a `/support` path that has never existed in the client — so
  * swapping only the domain would have produced a tidier 404. This is the same
  * address `Login.tsx` gives the same person in the same situation (#392), which
  * is why it is a `mailto:` and not an invented page.

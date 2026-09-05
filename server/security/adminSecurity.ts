@@ -28,7 +28,7 @@ import { AUDIT_ACTIONS } from "../../drizzle/schema";
  */
 const ADMIN_ALLOWLIST: (number | string)[] = [
   // Add allowed admin user IDs or emails here
-  // Example: 1, "admin@drape.app", 2
+  // Example: 1, "admin@klieglabs.com", 2
   process.env.OWNER_OPEN_ID || null,
   process.env.OWNER_NAME || null,
 ].filter(Boolean) as (number | string)[];
