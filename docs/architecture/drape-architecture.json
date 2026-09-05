@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fc227ff4854f5028"
+    "sourceFingerprint": "8cac3e49c3c96610"
   },
   "domains": [
     {
@@ -12800,6 +12800,10 @@
     {
       "id": "test:server/phase-a-quota.test.ts",
       "path": "server/phase-a-quota.test.ts"
+    },
+    {
+      "id": "test:server/prMergeOrder.test.ts",
+      "path": "server/prMergeOrder.test.ts"
     },
     {
       "id": "test:server/preCommitGate.test.ts",
