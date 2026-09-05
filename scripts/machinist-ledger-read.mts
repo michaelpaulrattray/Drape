@@ -32,6 +32,13 @@
  *                               ledger nothing purges. Seven classes share one
  *                               sentence, so that row reads as a named FAMILY
  *                               rather than as a guess between them.
+ *                               Since patrol #2 it also reads the ROLL at SLICE
+ *                               grain — one `generations` row per slice, its
+ *                               class off `errorMessage`, cross-checked against
+ *                               the refund ledger — and it NAMES the failures
+ *                               whose errorCode a later Cast deletion erased,
+ *                               so an erased reason is never read as an absent
+ *                               one.
  *   D. candidates               casting_candidates by status + failureClass.
  *   E. face scans               casting_face_scans, split by geometry.scanned —
  *                               true is a PAID look (20 segmenter calls, $0.10);
@@ -199,6 +206,233 @@ if (classified.length === 0) console.log("   (none)");
 const refundedFailures = refunds.reduce((total, row) => total + Number(row.n), 0);
 const failedRefines = refineFailures.reduce((total, row) => total + Number(row.n), 0);
 console.log(`   denominator: ${refundedFailures} of ${failedRefines} failed refines carry a refund row`);
+
+/*
+  THE ROLL'S LOST SLICES — and the class was already written down (patrol #2).
+
+  Patrol #1 read the roll only at the OPERATION, where a roll that lost one
+  slice of eight and a roll that lost seven both read as the single word
+  `partial`. That is the wrong grain for the only question worth asking about a
+  roll: how many of the pictures the customer paid for actually arrived.
+
+  It is also why the roll's failures looked unclassifiable. They are not. Every
+  slice writes a `generations` row bound to its operation, `rollService.ts`
+  writes the computed `failureClass` into that row's `errorMessage` on the
+  failure path — and `generations` is purged only by account or Cast deletion,
+  so unlike `casting_candidates` (swept) and `casting_candidate_variants`
+  (failureClass non-null on zero rows, all time) it is still there weeks later.
+  The ledger had been buying that signal and throwing it away, which is the
+  disappearing-technology law's clause 4 pointed at our own instrument.
+
+  Two things this deliberately does NOT do:
+
+  - It does not divide `chargedCredits` by a per-slice price to get a
+    denominator. The row count IS the denominator, and it needs no constant that
+    could drift. (Measured the day it was written: 248 rows against 31 rolls in
+    the window, and 1,896 against 237 over 60 days — exactly eight per roll,
+    with nothing assumed.)
+  - It does not fold `processing` into `failed`. A slice stranded mid-flight on
+    an operation that died is a different event from a slice the engine refused,
+    it is refunded by a different road (the recovery sweep, not `failCandidate`),
+    and collapsing them would hide whichever one grew.
+
+  ⚠ AND THE ROW COUNT SURVIVES A CAST DELETION ONLY BY AN ACCIDENT WORTH
+  NAMING. `finalCastDeletion.ts` scrubs `generations` too — it NULLs
+  `errorMessage` AND `operationId` on every row carrying the deleted `modelId`,
+  which would erase the class and break the very JOIN below. Roll slices escape
+  because `createGeneration` writes them with NO `modelId` (`rollService.ts`, the
+  `variation:` step), so the `where(eq(generations.modelId, …))` never matches
+  them. That is a property of the writer, not a guarantee of the reader: a slice
+  that ever starts carrying a `modelId` disappears from this reading silently and
+  the totals below simply get smaller. Section C's fence line names the same
+  scrub on the OPERATION side; this is its other half.
+
+  ⚠ THE POPULATION IS BOTH PAID SLICE ROADS, NOT JUST THE ROLL. A RETRY IS A
+  SEPARATELY PAID PICTURE and it settles through the SAME writer: `retryService`
+  calls `dispatchCandidate` with the retry's own `operationId`, so a retried tile
+  writes its own `generations` row and, when it fails, refunds under the very
+  sentences counted below. Reading `castingV2.roll` alone would drop a paid
+  picture that arrived nowhere out of the headline and a delivered one out of
+  "arrived" — while still counting its refund on the ledger side, which
+  manufactures a disagreement out of a healthy window. Both kinds are read, each
+  on its own line, so the two sides describe the same population.
+
+  The money ledger is printed beside it as a SECOND READER that shares no
+  resolver with the first. ⚠ BUT A DIFFERENCE IS NOT AUTOMATICALLY A DEFECT, and
+  saying so was this block's own first mistake — the same over-claim shape the
+  run above was written to catch. THREE benign populations still make the two
+  counts differ on a perfectly healthy window:
+
+    1. a slice with `pointsCost <= 0`, or one whose refund failed to record
+       (`refundUnrecorded`), is a real loss with no refund row at all;
+    2. a roll or retry IN FLIGHT at read time has unfinished slices that nothing
+       has had a chance to refund yet — so slices whose OPERATION is still live
+       (`claimed`/`running`) are reported as in flight and kept OUT of the "did
+       not arrive" figure;
+    3. the two tables are windowed on their own `createdAt`, so a slice near the
+       boundary can fall inside while its refund falls outside.
+
+  So the line says AGREES or reports the difference and names what can cause it.
+  Only (1) is a finding, and only after (2) and (3) are ruled out by hand.
+
+  ⚠ TWO EARLIER SHORTFALLS IN THIS SAME LIST ARE KEPT AS THE REASON IT IS
+  DERIVED FROM THE WRITERS RATHER THAN REMEMBERED. The first draft counted ONE
+  refund sentence and missed the `render_fault` line; the second counted two and
+  missed the RETRY ROAD, which flows through the shared writer under the same
+  sentence. Both survived a driven control for the same reason — neither
+  population had occurred in the measured windows — and both were found by
+  enumerating the call sites of `recordRefund` on the slice path instead. **Every
+  sentence below is quoted from its writer, and a new refund sentence on that
+  path belongs in this list in the same commit.**
+*/
+/*
+  ⚠ IN FLIGHT IS THE OPERATION'S OWN STATE, NOT THE SLICE ROW'S AGE.
+
+  The first shape of this asked whether the slice row was younger than a
+  six-minute constant — lease (5 min) plus one sweep pass (60s), the window
+  before a DEAD operation's slices become eligible for refund at all. That
+  constant answers the wrong question. A LIVE operation renews its lease every 30
+  seconds indefinitely and so never becomes eligible however long it runs:
+  CLAUDE.md's own sentence is that the lease "only ever governed how long a DEAD
+  one kept its rows non-terminal". §A of this run measures roll p95 at 343s and a
+  60-day max of 1,495s — so a reading taken beside a live long roll would have
+  folded up to eight of its slices into "did NOT arrive" and printed a false
+  disagreement beside them.
+
+  `generation_operations.status` records the answer directly, and this query
+  already joins that row. `claimed`/`running` is a settlement that has not
+  happened yet. (`recovery_required` is deliberately NOT in flight: it is a
+  parked failure waiting on support, which is a loss the customer is still
+  carrying.) Clause 4 of the disappearing-technology law pointed at this
+  instrument a third time in one sitting — a constant standing in for a signal
+  the engine already writes down.
+*/
+console.log(`   PAID SLICES (roll + retry) — one generations row per slice, bound to its operation:`);
+const slices = await q(
+  `SELECT o.kind AS kind, g.status AS status, g.errorMessage AS errorMessage,
+          COUNT(*) AS n,
+          SUM(o.status IN ('claimed', 'running')) AS live
+     FROM generations g
+     JOIN generation_operations o ON o.id = g.operationId
+    WHERE g.createdAt >= ? AND o.kind IN ('castingV2.roll', 'castingV2.retry')
+    GROUP BY o.kind, g.status, g.errorMessage ORDER BY n DESC`,
+  [since],
+);
+const sliceTotal = slices.reduce((total, row) => total + Number(row.n), 0);
+const sum = (rows: any[], field: "n" | "live" = "n") =>
+  rows.reduce((total, row) => total + Number(row[field] ?? 0), 0);
+/*
+  ⚠ THE EMPTY CASE STILL RUNS THE CROSS-CHECK, and that is the whole point of
+  having one. An earlier shape printed "(none in window)" and returned — so a
+  reading whose slice population had collapsed to zero while the money ledger
+  held refunds said NOTHING, which is the exact failure the cross-check exists to
+  catch and the loudest form of it. Found by driving the kind-filter control on
+  PR #533: dropping `castingV2.roll` emptied the population and the reader went
+  quiet with 28 unexplained refunds sitting beside it.
+*/
+const arrived = sum(slices.filter((row) => row.status === "completed"));
+const refused = sum(slices.filter((row) => row.status === "failed"));
+/* Neither `completed` nor `failed` — a slice still `pending`/`processing`.
+   `failed` is terminal and is never "in flight" however fresh the row is. */
+const unfinished = slices.filter((row) => row.status !== "completed" && row.status !== "failed");
+/* (2) above: a slice whose OPERATION is still live has not failed to be
+   refunded, it has not settled yet. It is reported, never counted. */
+const inFlight = sum(unfinished, "live");
+const stranded = sum(unfinished) - inFlight;
+if (sliceTotal === 0) {
+  console.log("   (no paid slices in window — the cross-check below still runs)");
+} else {
+  const pct = (n: number) => `${((n / sliceTotal) * 100).toFixed(1)}%`;
+  console.log(
+    `   ${sliceTotal} slices paid for · ${arrived} arrived · ${refused} failed (${pct(refused)}) · ` +
+      `${stranded} stranded mid-flight (${pct(stranded)}) — did NOT arrive: ${refused + stranded} (${pct(refused + stranded)})` +
+      (inFlight > 0 ? ` · ${inFlight} still in flight (their operation is live, not counted)` : ""),
+  );
+  for (const row of slices.filter((r) => r.status !== "completed")) {
+    /* The in-flight annotation belongs only to UNFINISHED rows. A `failed` slice
+       is terminal even while its operation is still finishing the other seven,
+       and labelling it "still in flight" would be the reader lying about a
+       settled outcome — a defect this row shape actually produced under its own
+       control run before the filter was added. */
+    const live = row.status === "failed" ? 0 : Number(row.live ?? 0);
+    console.log(
+      `     ${String(row.n).padStart(4)}  ${row.kind.replace("castingV2.", "")}  ${row.status}  ` +
+        `class ${row.errorMessage ?? "(none recorded)"}` +
+        (live > 0 ? `  (${live} of them still in flight)` : ""),
+    );
+  }
+}
+{
+  /*
+    The second reader. Same event, different table, no shared resolver — and
+    EVERY refund sentence on the slice path, each quoted from its writer:
+
+      "Casting candidate did not arrive"      rollService (roll AND retry, the
+                                              shared dispatch) + rollRecovery
+      "This tile came back as a contact …"    rollService, the render_fault exit
+      "Casting retry landed nowhere"          retryService, the landed-nowhere exit
+      "Casting retry did not arrive (recov…)" retryRecovery
+
+    Counting a subset of these is not a smaller reading, it is a WRONG one: it
+    manufactures a disagreement out of a healthy window. Two drafts of this list
+    did exactly that (PR #533's two review rounds).
+  */
+  const arrivalRefunds = await q(
+    `SELECT description, COUNT(*) AS n, SUM(amount) AS credits FROM point_transactions
+      WHERE createdAt >= ? AND type = 'refund'
+        AND description IN ('Casting candidate did not arrive',
+                            'This tile came back as a contact sheet rather than a portrait',
+                            'Casting retry landed nowhere',
+                            'Casting retry did not arrive (recovered)')
+      GROUP BY description ORDER BY n DESC`,
+    [since],
+  );
+  const ledgerSays = sum(arrivalRefunds);
+  const ledgerCredits = arrivalRefunds.reduce((total, row) => total + Number(row.credits ?? 0), 0);
+  const difference = ledgerSays - (refused + stranded);
+  console.log(
+    `     cross-check on the money ledger (every slice-refund sentence, roll and retry): ${ledgerSays} refunds ` +
+      `for ${ledgerCredits} credits — ` +
+      (difference === 0
+        ? "AGREES"
+        : `DIFFERS BY ${difference > 0 ? "+" : ""}${difference}. Benign causes first: a zero-cost or ` +
+          "unrecorded refund, a slice still in flight at read time, or one whose refund fell the " +
+          "other side of the window boundary. A difference is a finding only once those are ruled " +
+          "out by hand."),
+  );
+  for (const row of arrivalRefunds) {
+    console.log(`       ${String(row.n).padStart(4)}  ${row.credits} cr  "${row.description}"`);
+  }
+}
+
+/*
+  THE FENCE, NAMED SO IT IS NEVER READ AS AN UNEXPLAINED FAILURE (patrol #2).
+
+  A permanent Cast deletion scrubs every PRIOR operation on that Cast — modelId,
+  result, errorCode, publicMessage all to NULL, `subjectDeletedAt` stamped
+  (`finalCastDeletion.ts`, the R7-5 replay fence). It does not touch `status`.
+  So a delete that failed and was then retried successfully leaves a `failed`
+  row with no code and no message, and section C above prints it as a failure
+  nobody can explain — which is exactly how 14 of 60 `model.delete` rows read on
+  production, every one of them fenced, none of the 46 successes fenced.
+
+  The reason is not lost knowledge, it is erased knowledge, and the difference
+  matters: nothing here can be recovered by reading harder.
+*/
+const fenced = await q(
+  `SELECT kind, COUNT(*) AS n FROM generation_operations
+    WHERE createdAt >= ? AND status IN ('failed','partial') AND subjectDeletedAt IS NOT NULL
+    GROUP BY kind ORDER BY n DESC`,
+  [since],
+);
+if (fenced.length > 0) {
+  const fencedTotal = fenced.reduce((total, row) => total + Number(row.n), 0);
+  console.log(
+    `   of the failures above, ${fencedTotal} carry the deletion replay fence (subjectDeletedAt) — ` +
+      `their errorCode was ERASED by a later successful deletion of the same Cast, not never written:`,
+  );
+  for (const row of fenced) console.log(`     ${String(row.n).padStart(4)}  ${row.kind}`);
+}
 
 // ── D. candidates ─────────────────────────────────────────────────────
 const candidates = await q(

@@ -206,3 +206,299 @@ closed at the real time. No instrument built beyond the reader the card ordered;
 the client half of the charter is UNREAD and is named above rather than
 assumed fine — its instrument is a Retro proposal, not a Machinist act, until
 a card names it. Next run: ~2026-09-02, from this file.
+
+---
+
+## Run 2 — 2026-09-05 08:52–10:5x AEST (Machinist, patrol #2; weekly clock, 3 days overdue)
+
+Nothing spent: every figure is a `SELECT` over rows that already exist, or a
+call to a provider's own books endpoint. Reader: `scripts/machinist-ledger-read.mts`
+(extended this run — see §F). Windows: **14d** = the 14 days to
+2026-09-04 22:52Z, **60d** = the 60 days to the same instant, run against
+`hayabusa.proxy.rlwy.net:23768` (production) at `ba36999e`.
+
+⚠ **THE DENOMINATOR FIRST, BECAUSE IT CHANGES HOW EVERY RATE BELOW READS: ALL
+101 OPERATIONS IN THE 14-DAY WINDOW BELONG TO ONE ACCOUNT — user 1, the
+founder.** Zero customer traffic. So these are dogfood and house-court rates,
+not a customer reliability reading, and a rate measured over eight rolls of a
+deliberately hard creature brief is not the rate a first customer will meet.
+Run 1 did not say this and should have; it is now the first line of the run.
+
+### A. Wall-clock per paid operation (createdAt → completedAt)
+
+| kind | window | n | median | p95 | max | statuses |
+|---|---|---|---|---|---|---|
+| `castingV2.refine` | 14d | 12 | **120 s** | 174 s | 174 s | 11 succeeded · 1 failed |
+| `castingV2.refine` | 60d | 222 | 121 s | 285 s | 390 s | 189 succeeded · 33 failed |
+| `castingV2.roll` | 14d | 31 | **55 s** | 343 s | 359 s | 20 succeeded · 10 partial · 1 failed |
+| `castingV2.roll` | 60d | 237 | 47 s | 126 s | 1,495 s | 215 succeeded · 17 partial · 5 failed |
+| `model.delete` | 14d | 58 | 1 s | 1 s | 20 s | 44 succeeded · 14 failed |
+
+- **The refine median has not moved in three weeks** — 120 s against run 1's
+  124 s, on a fresh population of 12. Its 60-day figure (121 s) is unchanged to
+  the second, which is what one expects of a number whose 70% is a single engine
+  call.
+- **Refines past the ~305 s gateway wall: 0 of 12 in the window.** The 60-day
+  count is 9 of 222 — the same nine run 1 read, so **no refine has crossed the
+  wall since 2026-08-21.** `CASTING_REFINE_DISPATCH_SCOPE` has been `all` since
+  2026-08-25 and the lost-ANSWER defect is closed; this is the WAIT, and it is
+  behaving.
+- The roll's p95 of 343 s in the window is the 8-slice creature courts, not a
+  regression: the 60-day p95 is 126 s over 237 rolls.
+
+### B. THE ROLL AT SLICE GRAIN — the reading run 1 could not take
+
+Run 1 read the roll only at the OPERATION, where a roll that lost one slice of
+eight and a roll that lost seven both read as the single word `partial`. That is
+the wrong grain for the only question worth asking about a roll: **how many of
+the pictures he paid for actually arrived.**
+
+| window | slices paid for | arrived | refused by the engine | stranded mid-flight | **did not arrive** |
+|---|---|---|---|---|---|
+| 14d | 248 | 220 | 20 (8.1%) | 8 (3.2%) | **28 — 11.3%** |
+| 60d | 1,896 | 1,824 | 35 (1.8%) | 37 (2.0%) | **72 — 3.8%** |
+
+The denominator is the row count, not `chargedCredits ÷ 20` — 248 rows against
+31 rolls and 1,896 against 237 is exactly eight per roll with no price constant
+that could drift. **The 46 days BEFORE this window ran at 44 of 1,648 = 2.7%,**
+so the recent rate is **four times** the rate that preceded it.
+
+**Both figures are confirmed by a second reader that shares no resolver with the
+first**: the slice-refund sentences on `point_transactions` stand at **28 refunds
+/ 560 credits** (14d) and **72 / 1,440** (60d) — agreeing exactly with the slice
+counts on both windows. The reader prints that comparison every run.
+
+⚠ **What that comparison does NOT prove was over-claimed TWICE in this run's own
+instrument, and the two corrections are worth more than the agreement they
+produced** (PR #533, both gate review rounds). The check first said a
+disagreement meant one reader was wrong. It does not. Three benign populations
+separate the two counts on a perfectly healthy window: a slice with
+`pointsCost <= 0` or an **unrecorded** refund is a real loss with no ledger row;
+a roll or retry **in flight at read time** has unfinished slices nothing has yet
+had a chance to refund — so slices whose **operation is still live** are now
+reported separately and kept OUT of the "did not arrive" figure; and the two
+tables are windowed on their own `createdAt`, so a slice near the boundary can
+fall inside while its refund falls outside. **Only the first is a finding, and
+only once the other two are ruled out by hand.**
+
+⚠ **That second cause was measured by the WRONG SIGNAL in its first two shapes,
+and the third review round caught it.** It asked whether the slice ROW was
+younger than a six-minute constant — the lease plus one sweep, which is the
+window before a **dead** operation's slices become refundable. A **live**
+operation renews its lease every 30 seconds indefinitely and never becomes
+eligible however long it runs. §A of this very run measures roll p95 at **343 s**
+and a 60-day max of **1,495 s**, so a reading taken beside a live long roll would
+have folded up to eight of its slices into "did not arrive" **and** printed a
+false disagreement beside them. It reads `generation_operations.status` now —
+`claimed`/`running`, the answer the engine already writes down, on the row the
+query was already joining. **Clause 4 of the disappearing-technology law,
+pointed at this one instrument three times in one sitting.**
+
+⚠ **AND THE SUBJECT OF THE READING WAS WRONG, NOT JUST ITS CAVEAT — the second
+round found the RETRY ROAD.** A retry is a separately paid picture and it settles
+through the **same** writer (`retryService` calls `dispatchCandidate` with the
+retry's own operation id), so a retried tile writes its own slice row and, when
+it fails, refunds under the very sentences counted here. Reading
+`castingV2.roll` alone dropped a paid picture that arrived nowhere out of the
+headline while still counting its refund on the ledger side — **manufacturing a
+disagreement out of a healthy window.** Both kinds are read now, each on its own
+line, and every refund sentence on the slice path is counted (four of them,
+quoted from their writers).
+
+⚠ **BOTH GAPS SURVIVED EVERY DRIVEN CONTROL FOR THE SAME REASON, AND THAT IS THE
+LESSON OF THIS RUN.** Neither population had ever occurred: the render-fault
+sentence has not fired in 60 days, and **no `castingV2.retry` operation has ever
+run on production, all time** (read at the rows — `CASTING_RETRY_SCOPE` is
+`users:1`, so the one live population is the founder retrying exactly the refused
+tiles this run measures). A control proves a checker *can* fire; it says nothing
+about whether it fires for the right reasons, and **an arm over a population that
+does not exist yet is green by construction.** What found both was enumerating
+the call sites of `recordRefund` on the slice path — the same move §C credits for
+finding the class in the first place. This is the same over-claim shape §C was
+written to catch, committed twice in the very run that catches it, which is the
+honest reason it is written down here rather than quietly fixed.
+
+### C. AND THE CLASS WAS ALREADY WRITTEN DOWN — the ledger was not reading it
+
+⚠ **All 20 of the refused slices in the window are `content_policy`. Every
+single one.** The engine refused the picture; nothing timed out, nothing 500'd,
+no provider limit was hit. Over 60 days the classified split is **20
+`content_policy` + 15 `capability`**.
+
+This is the part worth more than the number. Patrol #1 recorded that a roll
+failure's class survives nowhere: `casting_candidates` is swept, and
+`casting_candidate_variants.failureClass` is non-null on **zero** production
+rows, all time. Both are true. **The conclusion drawn from them was wrong.**
+`rollService.ts` writes the computed `failureClass` into the slice's own
+`generations` row (`errorMessage`), and `generations` is purged only by account
+or Cast deletion — so the class has been sitting there, in full, the whole time.
+
+⚠ **And it survives a Cast deletion by an accident, not by a guarantee — stated
+here because §D's own closing rule demands it.** `finalCastDeletion.ts` scrubs
+`generations` as well: it NULLs `errorMessage` **and `operationId`** on every row
+carrying the deleted `modelId`, which would erase the class *and* break the JOIN
+this whole reading stands on. Roll slices escape only because `createGeneration`
+writes them with **no `modelId`** (the `variation:` step). That is a property of
+the writer. A slice that ever starts carrying one vanishes from this reading
+silently, and the totals above simply get smaller — so the reader's comment block
+names it beside the query rather than leaving it to be rediscovered.
+
+**The ledger was buying that signal and throwing it away.** That is the
+disappearing-technology law's clause 4 — *read what the engine already gives you
+before reaching for a better one* — pointed at our own instrument, and it is the
+second time this ledger has hit the shape: #111 found the refine's class on the
+money ledger after run 1 filed it as unrecoverable. **Two runs, two "the class
+is lost" findings, both false.** The rule this seat takes from it: before
+recording that something is not measurable, enumerate every table the writing
+path touches, not just the one the reader already opens.
+
+No new card is filed for the refusal rate itself. **#129 is open and is exactly
+its brief** — the refusal-loop patrol, founder-ordered 2026-08-26: log refused
+and passed prompts, find the trigger words, measured word→replacement pairs into
+the author's rewrite list. It now has a measured denominator instead of an
+anecdote, and the numbers are recorded on it.
+
+### D. `model.delete` reads 14 failed of 58 — and the reason was ERASED, not absent
+
+Every one of the 14 carries `errorCode` NULL, `publicMessage` NULL, `modelId`
+NULL, `result` NULL **and `subjectDeletedAt` stamped**; none of the 46 successes
+carries the stamp. Read at the code: `finalCastDeletion.ts` scrubs every PRIOR
+operation on a Cast when that Cast is permanently deleted (the R7-5 replay
+fence) — nulling `errorCode`, `publicMessage`, `modelId` and `result` — and it
+does **not** touch `status`. So a delete that failed and was then retried
+successfully leaves behind a `failed` row with no reason on it.
+
+**They did fail** — `status` was written before the scrub. What is gone is why.
+The distinction matters because "never recorded" invites you to add a column and
+"erased afterwards" tells you the column already existed and something else took
+it. **Nothing here can be recovered by reading harder.**
+
+The cause of these particular fourteen is not a mystery and is not refiled:
+**#301 and #308, both closed** (2026-08-30 and 2026-08-31) — the referencePlates
+substring guard and the evidence-key shape check, each of which stopped one of
+his Casts deleting, on exactly the days these rows fall. What is new is that the
+ledger could not have told you that, and would not be able to tell you next
+time. Over 60 days **52 failures are fenced**, including **all 35
+`evidence_candidate_generate` failures** that run 1's §A listed with no
+explanation available. The reader now names them rather than printing them as
+unexplained; the durable fix is carded, not built (see §H).
+
+### E. Provider books, and what the house is actually spending
+
+- **OpenRouter (text), the provider's own books, account-wide: $36.64 over the
+  13 active days in the window — ≈$2.82/day**, against run 1's ≈$4.70/day
+  excluding its campaign spike. Nothing resembling 08-15's $98.09 has recurred.
+  `x-ai/grok-4.6` appears on three days (08-29, 09-02, 09-03) — the #466 author
+  bench and #477's evidence — and is the only model other than
+  `anthropic/claude-sonnet-5` on the account all window.
+- **fal (image), priced off our surviving rows: $8.71 over 88 roll renders,
+  ≈$0.62/day.** Zero refine rows survive in the window, so this is a floor, as
+  it was in run 1.
+- **Text still out-spends image, now about four to one ($36.64 : $8.71)** on
+  house-and-product traffic combined. Run 1 measured five to one on product
+  traffic alone; the direction has held across two independent windows, which is
+  worth more than either ratio.
+- **Face scans: 83 paid looks = $8.30**, 75 of them on 2026-08-29 alone.
+  Zero render-written rows; zero rows holding carried geometry, all time. The
+  carried-geometry writer (`a010923d`) has still never produced a row.
+
+### F. What was built this run (the seat's own instrument, not a new one)
+
+`scripts/machinist-ledger-read.mts` gains, in section C:
+
+1. **every paid slice road at slice grain** — roll AND retry, each on its own
+   line: paid / arrived / refused / stranded, with the class off
+   `generations.errorMessage`, deliberately NOT folding `processing` into
+   `failed` (a slice stranded when its operation died is refunded by the recovery
+   sweep, not by `failCandidate`, and collapsing them would hide whichever one
+   grew);
+2. **the money-ledger cross-check** printed beside it — **every** slice-refund
+   sentence, saying AGREES or reporting the difference **and naming what can
+   benignly cause one**, rather than leaving a reader to compare two numbers by
+   eye or to read a difference as a defect. **It runs even when the slice
+   population is EMPTY**, because a reading whose population collapsed to zero
+   while the money ledger holds refunds is the loudest form of exactly what the
+   cross-check exists to catch — and the first shape of it went silent in that
+   case, which the kind-filter control caught;
+3. **the fence line** — failures whose `errorCode` a later Cast deletion erased,
+   named as erased rather than printed as unexplained.
+
+**The cross-check was proven able to fail before its verdict was believed**
+(working law 2). Three controls, each driven against production and each restored
+and verified disarmed at the bytes:
+
+| arm | armed | disarmed |
+|---|---|---|
+| stranded slices dropped from the slice query | `20 … DIFFERS BY +8` | 28, AGREES |
+| in-flight test widened to swallow every unfinished slice | 8 slices leave "did not arrive" → `20 (8.1%)`, `DIFFERS BY +8` | 28 (11.3%), AGREES |
+| `castingV2.roll` dropped from the kind list | population empties → `DIFFERS BY +28` **through the empty branch** | 248 slices, AGREES |
+
+Every figure quoted above is reproducible by running the reader — no number in
+this run came from a hand-written query that is not in the tree (doctrine
+entry 5), and **no figure moved across any of the three corrections.**
+
+⚠ **All three controls passed and the instrument was wrong twice anyway, which is
+the lesson of this run and not a footnote.** A control proves a checker *can*
+fire; it says nothing about whether it fires for the RIGHT reasons, and it cannot
+speak at all about a population that has never occurred — which is precisely what
+both gaps were. **A driven control is a floor, never coverage.** The reading that
+actually improved the instrument, twice, was enumerating the writers.
+
+**And the second and third defects were found by driving the fix for the first**
+— the in-flight control printed *"still in flight"* against a **`failed`** row (a
+settled outcome the reader was mislabelling, visible in real use on any window
+containing a roll from the last six minutes), and the kind-filter control left
+the cross-check silent on an emptied population. Neither was in the review; both
+came out of running the correction rather than reasoning about it.
+
+### G. Attempted and reverted
+
+Nothing attempted. The patrol reads and records; it builds no optimisation. The
+prior standing verdicts are unchanged and worth re-reading before anyone retries
+them: the 760 px viewer cap lift was withdrawn on measurement (height binds
+first), and the framing trim's margin clause was deleted because painted detail
+follows composition rather than resolution.
+
+### H. THE WORST NUMBER — run 2
+
+**Eleven of every hundred pictures he paid for did not arrive — 28 of 248 slices
+in fourteen days, against 2.7% over the 46 days before — and 20 of the 28 are
+the engine refusing to draw them.**
+
+It beats run 1's worst number on both halves of the charter. The house pays for
+nothing (a refused slice bills no render) but the *customer* pays in the only
+currency a casting sheet has: **he asks for eight people and gets seven, or
+five.** Run 1's worst number — one paid edit in seven failing — is now a
+*better* number than this one: the refine road ran 11 of 12 in the window with
+its class recorded and its gateway wall untouched.
+
+**Its brief is #129 and it already exists** — the refusal-loop patrol he ordered
+on 2026-08-26. What run 2 adds is that #129 is no longer speculative: the
+population is `content_policy`, it is 100% of the classified losses, and the
+prompts that drew it are his own creature briefs. The card carries these
+numbers.
+
+**Runner-up, unchanged and still un-briefed: the client half of the charter is
+UNREAD.** No instrument records page load, interaction latency or the canvas —
+the *"laggy in general"* half of #58. Run 1 said so; run 2 says so again with
+nothing new to add, because saying it twice is the honest alternative to letting
+silence read as health.
+
+**Carded this run:** two, both filed and not worked, per the anti-boredom rule —
+**#532**, the delete road's erased failure reason (§D), and **#536**, the
+cross-check's four refund sentences being a hand-copied MIRROR of four inline
+literals in the writer modules (working law 4). The second is the reviewer's
+last finding and it is correct: the comment's own *"a new sentence belongs in
+this list in the same commit"* is a remembered rule, not a derived one, and the
+whole run is a record of remembered rules failing silently over populations that
+have not occurred. It is carded rather than fixed here because the fix touches
+four server modules on the refund path, which is a different diff from a patrol's
+own reader.
+
+### I. Close
+
+Seat: Machinist, patrol #2, one seat, shift `foreman-20260905-1010`. Clock: run
+1 was 2026-08-26, so this run was 3 days past a weekly clock — the clock now
+counts from today, and `scripts/patrol-clocks.mts` reads the `## Run` heading
+above rather than a date typed anywhere else. Reader extended and its control
+driven; ledger appended; #129 given its numbers; one card filed. Nothing spent.
