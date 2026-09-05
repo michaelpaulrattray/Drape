@@ -1,7 +1,7 @@
 {
-  "edition": 257,
-  "updatedAt": "2026-09-05T07:35:00.000Z",
-  "shift": "Foreman (Fable) - #534: the sheet stops showing the machine's prompt; #539 beside it",
+  "edition": 258,
+  "updatedAt": "2026-09-05T09:05:00.000Z",
+  "shift": "Foreman (Retro) — #543: the shift never idles on a gate — preflight and the worktree helper",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -249,11 +249,11 @@
     {
       "id": "customer-record-534-eye",
       "issueNumber": 534,
-      "title": "Your sheet ruling is built and live behind your flag - roll a sheet and judge the record (#534)",
-      "productImpact": "The prompt record on every sheet now shows exactly two things: the brief as you typed it, and what you changed on that roll. The machine's sentences are gone from the wire itself. This changes what you judge at the N1 gate, so the card stays open for your eye - frames are in the gallery, and the fastest real check is a Follow on your own account: the record should show just your brief.",
-      "workedExample": "Your Follow sheet that started this: under 'The prompt this sheet was painted from' it printed 'Continue this family: same casting brief, new person...' beside your brief. The same sheet now says 'The brief this sheet was cast from' and then only your words.",
+      "title": "Your reply on the sheet record is filed — the half you asked for next is carded and waiting on a shift (#534)",
+      "productImpact": "You judged it at 07:48: \"The record half is right, keep it. Drop 'Changed on this roll'; I made the change, I don't need it repeated.\" Both are recorded on the card word for word, and no shift will close it — you said it stays open until you have seen the rest.\n\nThe half you asked for next is the substantive one: a chip edit should write straight into the prompt box, the box IS the next brief, and the only note about a difference is a small \"edited below, not cast yet\" when the box no longer matches the sheet above it. Your merge condition is on the card too — chips and box can never disagree, and the guard has to prove it in both directions before it merges.\n\nNothing is waiting on you here tonight. This row is on your page so you can see your words landed somewhere a shift will read.",
+      "workedExample": "Today's built version prints a \"Changed on this roll\" line under your brief — \"Age — 40s\". You have said to take that away: you made the change, so the sheet repeating it back is the machine explaining itself, which is the thing this card was about in the first place.",
       "options": [],
-      "recommendation": "Look at the two frames; if the record reads as yours, close #534 - or tap a correction and a shift takes it.",
+      "recommendation": "Nothing to do — the next shift on this card builds what you described. Tap a correction if I have any of it wrong.",
       "state": "open",
       "filedAt": "2026-09-05T07:35:00.000Z"
     },
@@ -3829,6 +3829,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-549-preflight-543",
+      "title": "Your \"optimize it as urgent\" — a shift now checks its own work before it asks the machines, and both of tonight's changes passed first time (#543)",
+      "status": "merged",
+      "prNumber": 549,
+      "note": "Your order, verbatim: \"investigate our current process and optimize it as urgent.\"\n\nHere is the problem in plain terms. When a shift finishes a change it hands it to the automatic checks, which take about seven minutes. If anything is wrong it comes back red, the shift fixes it, and hands it over again. That was happening 3.1 times per change — so roughly fourteen wasted minutes per change, and the shift sat doing nothing for every one of them. Over a night that is most of the time the team is awake.\n\nNearly all of it was avoidable: the thing that came back red was usually something the shift could have asked about on its own machine in under two minutes. So there is now one command that asks those questions locally first. It takes about 100 seconds and it stops at the first problem.\n\nTonight is the evidence, and it is the whole of the evidence: BOTH changes this shift made passed the automatic checks on the FIRST run. Not 3.1 — one each. And the very first time the tool was run, on its own change, it caught a real problem in 98 seconds that would otherwise have cost a seven-minute red — the exact failure that accounts for every one of the last five check failures.\n\nTwo bugs it found in ITSELF before anything shipped, which is the part I would want you to know: it was silently running no tests at all for the commonest kind of change (a pattern that matched nothing), and it was about to build a command longer than Windows can accept — the same limit that quietly killed four shifts in one day last week. Both were failing in the direction of checking LESS while looking fine.\n\nNothing here changes what the checks look for. It only changes when the shift finds out."
+    },
+    {
+      "id": "pr-550-shift-worktree-543",
+      "title": "The riskiest thing a shift types by hand, now a command that refuses to destroy your work (#543)",
+      "status": "merged",
+      "prNumber": 550,
+      "note": "The second half of the same order. To work on two things at once — which is what stops the shift idling while it waits — it has to set up and tear down a separate copy of the project. Tearing one down ends in a delete-everything command, typed by hand, twice a night now instead of once.\n\nIt is one command each way now, and it refuses rather than guesses: it will not delete a copy holding work that has not been saved anywhere, and when you override it, it says exactly what it is destroying first.\n\nOne thing worth telling you because it changes what the team believed. The team's own notes said that deleting one of these copies could wipe out the project's shared library folder — over a gigabyte, used by everything running on the machine. I tested that properly instead of trusting the note, four different ways. Three of them are completely safe. The fourth destroys it — and the fourth is the exact form a person types by hand. So the note was right about the danger and wrong about the shape, and the tool now guards the one case that actually bites.\n\nThe part I would flag: my FIRST test of that fourth case said it was safe, and it was worthless — the setup had silently failed, so the test deleted an empty folder and reported everything fine. A clean result only means something if the test could have failed. Every test now proves the setup worked before it deletes anything.\n\nThe tool then removed both of tonight's own copies, and recovered from its own interrupted run, which is as good a check as I can give you."
+    },
+    {
       "id": "pr-546-customer-record-534",
       "title": "The sheet never shows the machine's prompt any more - only your words and what you changed (#534, your ruling)",
       "status": "merged",
@@ -5638,7 +5652,8 @@
     130,
     131,
     132,
-    133
+    133,
+    134
   ],
   "nextUp": {
     "readAt": "2026-09-05T07:15:03.585Z",
