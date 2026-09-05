@@ -57,9 +57,11 @@ export type HeroDeckEntry = {
  * way to his augmented elder (production roll 240 — the brief is his own
  * Re-imagine specimen, the one that cast eight distinct women), and the
  * feline humanoid frame was replaced by one from roll 242, because the
- * earlier frame had no tail and this one does — the trailing "Long tail" in
- * that brief is his, typed on the roll, and it stays because the rule above
- * is that the sentence shown is the sentence that cast the face.
+ * earlier frame had no tail and this one does. Roll 242's sentence carried
+ * "long tail" twice (a trailing "Long tail" he typed on the roll); the deck
+ * shows it once, on his word ("id rather it read cleanly") — the same words
+ * the engine read, with the duplicate dropped, so the rule above (the
+ * sentence shown is the sentence that cast the face) holds in substance.
  */
 export const SHOWCASE_DECK: readonly HeroDeckEntry[] = [
   {
@@ -83,7 +85,7 @@ export const SHOWCASE_DECK: readonly HeroDeckEntry[] = [
     name: "Feline humanoid",
     meta: "Example",
     brief:
-      "Adult feline humanoid, hairless violet-blue skin, large ears, amber eyes, long tail. Powerful sphinx-cat presence. Dark structured armour in bronze, gold and coloured inlay. Long tail",
+      "Adult feline humanoid, hairless violet-blue skin, large ears, amber eyes, long tail. Powerful sphinx-cat presence. Dark structured armour in bronze, gold and coloured inlay.",
     imageUrl: "/casting-hero/deck/sphinx.webp",
   },
   {
