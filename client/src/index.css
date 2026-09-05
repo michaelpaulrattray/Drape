@@ -554,10 +554,26 @@ input[type="range"].slider-obsidian::-moz-range-thumb:hover {
     font-family: 'Space Grotesk', monospace;
   }
   
-  /* Selection highlight - obsidian */
+  /*
+    Selection highlight — THE INVERSION, NOT A COLOUR (#542, his own report:
+    *"when i highlight text in dark mode its black and white still shouldnt it
+    highlight white and change text to black? just like lightmode highlights
+    black and changes text to white?"*).
+
+    It was `background: #111111; color: white` — two literals with no theme
+    branch, which is the intended obsidian highlight in light and a near-black
+    smudge on a near-black page in dark. The tokens already swap per theme, so
+    the rule states the RELATIONSHIP (highlight in the text colour, text in the
+    page colour) and gets both inversions from one line each.
+
+    ⚠ `--surface` rather than a `--paper` token: there is no `--paper` in
+    `foundation/tokens.css`. `--surface` is the app background in both themes
+    (#FFFFFF light, #1C1C1F dark), so `--ink` on `--surface` is exactly the
+    pair the rest of the page is drawn from.
+  */
   ::selection {
-    background: #111111;
-    color: white;
+    background: var(--ink);
+    color: var(--surface);
   }
 }
 
