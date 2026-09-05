@@ -1,7 +1,7 @@
 {
-  "edition": 265,
-  "updatedAt": "2026-09-05T17:22:08.855Z",
-  "shift": "Warden — the weekly security pass came back clean, and account search by id now works",
+  "edition": 266,
+  "updatedAt": "2026-09-05T19:17:04.916Z",
+  "shift": "Foreman — the deploy stops between its two pushes now, and one command of yours is waiting",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -246,6 +246,17 @@
     }
   },
   "needsYou": [
+    {
+      "id": "deploy-refs-merge-317",
+      "issueNumber": 317,
+      "title": "One command from you publishes three things that are finished and waiting (#317)",
+      "productImpact": "Nothing is broken and nothing is at risk. Two finished pieces of work and tonight's page are sitting in the workshop unable to reach your live site, and the last step needs your hands rather than a shift's.\n\nWhat happened: last night's publish hit the fault described in the row below — it wrote to the second place (which your live site builds from) after the first write had been refused. So right now your live site is running a version WITHOUT the account-search fix, and the workshop copy has a version your live site is not running. Until those two agree, no shift can publish anything, including this page.\n\nThe repair is a single ordinary merge. The two versions are one step apart from a shared starting point and they touch completely separate files, so there is nothing to untangle and no decision to make — I checked that before writing this.\n\nWhy a shift did not just do it: merging is on the short list of commands your settings hold back for a person to approve, and a night shift running unattended has nobody to approve it. My predecessor hit the same wall and correctly left it alone rather than finding a way around your setting. So did I.",
+      "workedExample": "In C:\\Users\\Admin\\Drape, two commands:\n\n    git merge origin/main --no-edit\n    npx tsx scripts/deploy-rite.mts\n\nThe first joins the two versions. The second is the ordinary publish, and it will then carry all three things at once: the account-search fix (#420, merged last night), tonight's publish fix (#317), and this page.\n\nProof it is only the merge that is missing, rather than something else being wrong: I ran the publish tonight in its safe rehearsal mode, which writes nothing. Every other check passed — the code compiles, both architecture maps are current, the secret scan is clean, this page parses, all 252 of your gallery frames are present, the script checks pass. It stopped at exactly one line:\n\n    REFUSED: origin/main is at 8cc9ef5f — not eb75b068",
+      "options": [],
+      "recommendation": "Run the two commands above when you next sit down. If you would rather not, tell me and I will ask for the merge approval instead — but it is thirty seconds of your time against a shift asking you to approve a command anyway.",
+      "state": "open",
+      "filedAt": "2026-09-05T19:17:04.919Z"
+    },
     {
       "id": "tail-court-reimagine-530",
       "issueNumber": 530,
@@ -3989,6 +4000,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-570-rite-push-halt-317",
+      "title": "The nightly publish can no longer put your live site on a half-finished version (#317)",
+      "status": "merged",
+      "prNumber": 570,
+      "note": "This is a workshop fault, not something a customer could see — but it has bitten three times in a week and it is why your page went stale last night.\n\nPublishing your site writes to two places, one after the other. The second one is what your live site is actually built from. If the first write is refused — which happens for an ordinary, harmless reason, when a piece of work merges on GitHub a minute before the publish runs — the publish used to carry on and do the SECOND write anyway. So your live site got a version that the first place did not have. And from that moment nobody could publish anything at all, including your page, until somebody untangled it by hand.\n\nThe cost was never paid by the night that caused it. It happened on 30 August, again on the evening of the 5th (your site sat for six minutes on a version missing the very fix the page said was merged), and again last night with the account-search fix.\n\nWhy it could not stop before is the interesting part: the code that did the writing threw away whether each write had SUCCEEDED. It handed back the text of the error, which looks exactly like the text of a success — and a write that had nothing to do prints nothing at all. So there was no way to tell the three apart. That is fixed at the root: the writes now report success or failure properly, and the second one is simply never attempted if the first was refused.\n\nTwo more things came with it. The order matters — the write your live site depends on has to be the LAST one, or stopping is pointless because the damage is already done — so that order is now checked before anything is written rather than assumed. And when it does refuse, it now prints the exact commands to put it right, and warns against the one shortcut that would lose work. The refusal message is read at five in the morning by somebody tired, which is precisely when the wrong instinct wins.\n\nThe automatic reviewer found a real fault in that message, and it was a good catch: in the one situation the message would ever be read, it printed a command that would have done nothing and sent the reader round the same loop. Fixed in the same round, with two checks that fail if anyone ever puts it back."
+    },
+    {
       "id": "pr-569-id-search-420",
       "title": "A moderator can finally search for an account by its number — it had never worked, on either staff page (#420)",
       "status": "merged",
@@ -5546,11 +5564,18 @@
   ],
   "problems": [
     {
+      "id": "deploy-refs-diverged-0906",
+      "title": "Your live site is one fix behind the workshop, and the publish is held until you merge",
+      "severity": "warning",
+      "state": "open",
+      "detail": "Read at the actual versions rather than reported from last night's note. Your live site is built from a version that does NOT contain the account-search fix, while the workshop copy carries last night's page and not that fix. Neither is wrong in itself; they simply disagree, and the publish correctly refuses to run while they do.\n\nNothing a customer touches is affected — the site is healthy, and the missing fix is a staff search box. The real cost is that no shift can publish your page until it is resolved, so tonight's news is written and waiting rather than in front of you.\n\nThe cause is the fault fixed tonight (#317) and the repair is one merge, on the card at the top of what needs you. The fix that landed tonight stops the NEXT one; it cannot undo this one."
+    },
+    {
       "id": "queue-shape-0906-foreman",
-      "title": "The queue: 95 open, 6 carrying your word, 0 urgent, 1 rotting",
+      "title": "The queue: 94 open, 6 carrying your word, 0 urgent, 1 rotting",
       "severity": "info",
       "state": "open",
-      "detail": "One card closed since last night (#530, your sphinx-cat tail question — the court is on the page below it) and one more tonight (#420). Six cards carry your word and none of them is waiting on a shift: two need the reviewer's seat (#508, #535), one waits on another card (#404), #391 is pricing work no shift may take, #543 and #534 are both waiting on YOU rather than on anybody's hands.\n\nOne card has now gone a week untouched — **#257**, about a colour check that reads two kinds of colour and misses a third. It is not urgent and nothing is broken because of it; it is on this line because the rule is that a card going quiet gets said out loud rather than sinking.\n\nNothing else has aged."
+      "detail": "One card closed tonight (#317, the publish fault — the row below explains it). Six cards carry your word and none is waiting on a shift's hands: two need the reviewer's seat (#508, #535), one waits on another card (#404), #391 is pricing work no shift may take, and #543 and #534 are both waiting on YOUR eye rather than on anybody's work.\n\n**#257** has now gone more than a week untouched — a colour check that reads two kinds of colour and misses a third. Nothing is broken because of it; it is named here because the rule is that a card going quiet gets said out loud rather than sinking.\n\nNothing else has aged."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -5561,10 +5586,10 @@
     },
     {
       "id": "patrols-overdue-505",
-      "title": "Three of the team's four check-ups were overdue — one is left",
+      "title": "All four of the team's check-ups are up to date",
       "severity": "warning",
-      "state": "open",
-      "detail": "Nothing needs doing from you. The team runs four regular check-ups: tidying, security, speed, and a look back at its own week. Three of the four were overdue when you last read this page. The look-back ran tonight (it is what this shift was), and tidying and speed both ran earlier today, so only the SECURITY pass is still waiting — it is next in line. The dates are read from each check-up's own logbook now rather than typed anywhere, so this line cannot quietly go stale again."
+      "state": "resolved",
+      "detail": "Nothing needs doing from you. The team runs four regular check-ups: tidying, security, speed, and a look back at its own week. All three that were overdue have now run — the security pass finished last night — and the clock reads no seat overdue for the first time since the dates started being counted properly. The dates come from each check-up's own logbook rather than being typed anywhere, so this cannot quietly go stale again."
     },
     {
       "id": "ladder-rung-n4b-499",
