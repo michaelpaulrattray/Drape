@@ -54,6 +54,34 @@
  * means *"force the full Fable review on this PR"* — a PR-scoped instruction to
  * the gate. Overloading it would make a card asking for a review and a card
  * waiting on the review arm indistinguishable, and one of those is takeable.
+ *
+ * ⚠ **AND `awaiting-fable` HAS A WRITTEN RULE SINCE 2026-09-05 (#541,
+ * founder-ordered and urgent), BECAUSE IT WAS BEING APPLIED AS "THIS LOOKS
+ * HARD".** His question, verbatim: *"a bunch of next up in que says need fable
+ * are these blocked? we have acesss to fable?"* Measured that morning: **five**
+ * of his own ordered cards carried it (#508, #530, #534, #535, #539) and **two
+ * of the five were never judgment-class at all** — #530 is a court and #539 is
+ * one clause in an instruction; the relay removed those two labels on his word.
+ * The other three sat behind a hold that nothing in the product could clear,
+ * because the marker that reaches Fable was only ever written by hand and no
+ * shift ever wrote it.
+ *
+ * **The rule, and it is short on purpose:**
+ *
+ * - **`awaiting-fable` means a DESIGN DECISION, or a change to WHAT HE JUDGES.**
+ *   Those two things only.
+ * - **A court, a clause, a guard arm, a copy fix, a relabel is Opus work,
+ *   whatever card it hangs off.** Difficulty is not the test; being asked to
+ *   decide something is.
+ * - **A shift that applies the label writes the `CREW_HOLD_MARKER` line saying
+ *   WHICH of the two it is.** A label without that line is removed by the next
+ *   shift's re-read — by a person reading the card, never by a script, because
+ *   removing a hold is the act that lets work start.
+ *
+ * The road out is now automatic: `scripts/next-up-escalation.mts` is consulted
+ * at every shift launch and writes the Fable marker itself when a card carrying
+ * this label is the next one a shift would take. That is the invariant-7 half
+ * of the repair — a hold with no road out is not a hold, it is a freezer.
  */
 export const CREW_HOLD_LABELS = {
   blocked: "blocked",
