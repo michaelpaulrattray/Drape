@@ -516,6 +516,49 @@ describe("what the hero must NOT grow back (§2f)", () => {
     expect(button.slice(0, 700)).not.toMatch(/ChevronDown|dp-chevron/);
   });
 
+  /*
+    #552, his report: *"the settings card on the casting sheet prompt box is
+    stretching fullwidth?"* — `.dp-dock` is a column flex, whose cross-axis
+    default is `stretch`, so the chip was pulled to the dock's whole width.
+
+    The arm reads the DOCK's own direction rather than trusting the chip's rule
+    alone: the defect is a RELATIONSHIP between two files, and pinning only the
+    chip would stay green if the dock later became a row and some other surface
+    a column. If `.dp-dock` stops being a column this arm should be re-read,
+    which is what its message says.
+  */
+  it("the settings chip hugs its content inside the dock's column", async () => {
+    const css = await read(CSS);
+    const chip = rule(css, ".dpc-setbtn");
+    expect(chip, "the .dpc-setbtn rule must be readable for this to mean anything").toBeTruthy();
+
+    const foundation = await read("client/src/foundation/foundation.css");
+    const dock = rule(foundation, ".dp-dock");
+    expect(dock, ".dp-dock must be readable for this to mean anything").toBeTruthy();
+    expect(
+      dock,
+      "the dock is no longer a column — re-read #552 before trusting the arm below",
+    ).toContain("flex-direction: column");
+
+    expect(
+      chip,
+      "a column flex child with an auto cross size is stretched to the container's width",
+    ).toContain("width: fit-content");
+
+    /*
+      ⚠ AND NOT `align-self`, which is the tempting fix and reaches a surface
+      the bug was never on: the same button mounts inside `.dpc-hero__actions`,
+      a ROW with `align-items: center`, where `align-self: flex-start` moves it
+      from vertically centred to top-aligned.
+    */
+    const heroActions = rule(css, ".dpc-hero__actions");
+    expect(heroActions, ".dpc-hero__actions must be readable").toContain("align-items: center");
+    expect(
+      chip,
+      "align-self acts on the cross axis, which is horizontal in the dock and VERTICAL in the hero row",
+    ).not.toContain("align-self");
+  });
+
   it("each door is absent, never disabled, where the server did not open it", async () => {
     const page = code(await read(PAGE));
     // D-180: a disabled control is a question with no answer wearing a tap target.
