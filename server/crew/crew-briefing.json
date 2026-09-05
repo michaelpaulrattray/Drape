@@ -247,9 +247,9 @@
   },
   "needsYou": [
     {
-      "id": "deploy-refs-merge-317",
-      "issueNumber": 317,
-      "title": "One command from you publishes three things that are finished and waiting (#317)",
+      "id": "deploy-refs-merge-571",
+      "issueNumber": 571,
+      "title": "One command from you publishes three things that are finished and waiting (#571)",
       "productImpact": "Nothing is broken and nothing is at risk. Two finished pieces of work and tonight's page are sitting in the workshop unable to reach your live site, and the last step needs your hands rather than a shift's.\n\nWhat happened: last night's publish hit the fault described in the row below — it wrote to the second place (which your live site builds from) after the first write had been refused. So right now your live site is running a version WITHOUT the account-search fix, and the workshop copy has a version your live site is not running. Until those two agree, no shift can publish anything, including this page.\n\nThe repair is a single ordinary merge. The two versions are one step apart from a shared starting point and they touch completely separate files, so there is nothing to untangle and no decision to make — I checked that before writing this.\n\nWhy a shift did not just do it: merging is on the short list of commands your settings hold back for a person to approve, and a night shift running unattended has nobody to approve it. My predecessor hit the same wall and correctly left it alone rather than finding a way around your setting. So did I.",
       "workedExample": "In C:\\Users\\Admin\\Drape, two commands:\n\n    git merge origin/main --no-edit\n    npx tsx scripts/deploy-rite.mts\n\nThe first joins the two versions. The second is the ordinary publish, and it will then carry all three things at once: the account-search fix (#420, merged last night), tonight's publish fix (#317), and this page.\n\nProof it is only the merge that is missing, rather than something else being wrong: I ran the publish tonight in its safe rehearsal mode, which writes nothing. Every other check passed — the code compiles, both architecture maps are current, the secret scan is clean, this page parses, all 252 of your gallery frames are present, the script checks pass. It stopped at exactly one line:\n\n    REFUSED: origin/main is at 8cc9ef5f — not eb75b068",
       "options": [],
@@ -5572,10 +5572,10 @@
     },
     {
       "id": "queue-shape-0906-foreman",
-      "title": "The queue: 94 open, 6 carrying your word, 0 urgent, 1 rotting",
+      "title": "The queue: 94 open, 6 carrying your word, 1 urgent, 1 rotting",
       "severity": "info",
       "state": "open",
-      "detail": "One card closed tonight (#317, the publish fault — the row below explains it). Six cards carry your word and none is waiting on a shift's hands: two need the reviewer's seat (#508, #535), one waits on another card (#404), #391 is pricing work no shift may take, and #543 and #534 are both waiting on YOUR eye rather than on anybody's work.\n\n**#257** has now gone more than a week untouched — a colour check that reads two kinds of colour and misses a third. Nothing is broken because of it; it is named here because the rule is that a card going quiet gets said out loud rather than sinking.\n\nNothing else has aged."
+      "detail": "One card closed tonight (#317, the publish fault — the row below explains it) and one opened: **#571**, the merge waiting on you at the top of this list. It is the only urgent card and it is thirty seconds of your time. Six cards carry your word and none is waiting on a shift's hands: two need the reviewer's seat (#508, #535), one waits on another card (#404), #391 is pricing work no shift may take, and #543 and #534 are both waiting on YOUR eye rather than on anybody's work.\n\n**#257** has now gone more than a week untouched — a colour check that reads two kinds of colour and misses a third. Nothing is broken because of it; it is named here because the rule is that a card going quiet gets said out loud rather than sinking.\n\nNothing else has aged."
     },
     {
       "id": "sweep-clock-broken-526",
