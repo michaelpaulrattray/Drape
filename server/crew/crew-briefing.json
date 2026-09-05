@@ -1,7 +1,7 @@
 {
-  "edition": 260,
-  "updatedAt": "2026-09-05T12:27:03.791Z",
-  "shift": "Foreman — your sphinx-cat tail court, and two things you reported the same day",
+  "edition": 261,
+  "updatedAt": "2026-09-05T13:01:12.751Z",
+  "shift": "Foreman — your sphinx-cat tail court, and both fixes you reported are in",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T11:27:55.833Z",
+      "readAt": "2026-09-05T13:00:52.851Z",
       "items": [
         {
           "issueNumber": 16,
@@ -3929,7 +3929,7 @@
     {
       "id": "pr-563-dock-chip-552",
       "title": "The settings chip on the casting sheet stops stretching the full width of the dock (#552)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 563,
       "note": "Your report, and a one-property fix — but the interesting part is what it nearly broke.\n\nThe dock stacks its contents in a column, and a column stretches its children sideways by default, which is why the chip was 1146px wide in an 1176px dock. The obvious repair would have pinned the chip to the start of its container. The same chip also sits on the casting hero, in a ROW — where that same instruction means something completely different, and would have quietly shifted it from centred to top-aligned. So the fix names the WIDTH instead, which does the whole job in the dock and means nothing at all in a row.\n\nMeasured live on a real sheet: 1146px before, 132px after, and 132px is exactly what the chip measures on the hero.\n\nIts first automatic check went red on something small and the reason is worth keeping: the check that a shift runs before asking the machines could not have caught it, because it only runs tests that sit near the change and the relevant one lives in another folder. That is #565."
     },
@@ -5782,7 +5782,7 @@
     134
   ],
   "nextUp": {
-    "readAt": "2026-09-05T11:27:54.972Z",
+    "readAt": "2026-09-05T13:00:51.832Z",
     "items": [
       {
         "issueNumber": 391,
