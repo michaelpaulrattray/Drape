@@ -4127,6 +4127,26 @@
   credits chip does not and opens a modal). This control wore dropdown grammar
   over modal behaviour.
 */
+/*
+  THE CHIP HUGS ITS CONTENT IN ANY CONTAINER (#552, his report: *"the settings
+  card on the casting sheet prompt box is stretching fullwidth?"*).
+
+  `.dp-dock` is `flex-direction: column` (foundation.css), and a column flex
+  container's cross-axis default is `stretch` — so a child whose cross size is
+  `auto` gets pulled to the dock's full width however `inline-flex` it declares
+  itself. On the hero the same button sits inside `.dpc-hero__actions`, a ROW,
+  which is why only the dock ever showed it.
+
+  ⚠ `width: fit-content` RATHER THAN `align-self: flex-start`, which the card
+  proposed. `align-self` acts on the CROSS axis, and the two containers this
+  button mounts in have PERPENDICULAR cross axes: in the dock's column it would
+  fix the width, but in the hero's row — which sets `align-items: center` — it
+  would silently move the chip from vertically centred to top-aligned beside its
+  siblings. `stretch` applies only where the cross-size property is `auto`, so
+  naming the width defeats it in a column and is exactly what an inline-flex
+  item already computes in a row. It fixes the class without reaching a surface
+  the bug was never on.
+*/
 .dpc-setbtn {
   display: inline-flex;
   align-items: center;
@@ -4139,6 +4159,7 @@
   font: 400 11.5px var(--font-sans);
   cursor: pointer;
   flex: none;
+  width: fit-content;
   transition:
     border-color var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease),
