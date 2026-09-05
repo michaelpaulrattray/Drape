@@ -7,6 +7,7 @@ import {
   BOX_EDITED_MARK,
   boxDiffersFromSheet,
   chipEditOutcome,
+  pendingAdjustments,
   rollAdjustments,
 } from "./chipEdit";
 
@@ -159,6 +160,31 @@ describe("a chip edit writes into the box, and the box is the only channel", () 
       });
       expect(payload.unlock).toEqual(["ageBand", "sex"]);
       expect(payload.overrides).toEqual({ ageBand: "40s", sex: "female" });
+    });
+
+    it("and the ECHO cannot promise more than the wire carries — the same stale store draws no arrow (review finding 1)", () => {
+      /*
+        The display half of the same class. A store CAN be non-empty on the
+        author road (a chip queued on the house road, then the flag widened
+        while the tab was open), and the echo used to read it directly — so it
+        drew "30s → 40s · next roll" over a roll that sends nothing. Derived
+        from `rollAdjustments` now, so the two cannot come apart again.
+      */
+      const pending = pendingAdjustments({
+        authorRoad: true,
+        unlocked: ["ageBand", "sex"],
+        overrides: { ageBand: "40s", sex: "female" },
+      });
+      expect(pending).toEqual({ overrides: {}, unlocked: [] });
+    });
+
+    it("positive control: off the author road the echo still draws the queued change", () => {
+      const pending = pendingAdjustments({
+        authorRoad: false,
+        unlocked: ["ageBand"],
+        overrides: { ageBand: "40s" },
+      });
+      expect(pending).toEqual({ overrides: { ageBand: "40s" }, unlocked: ["ageBand"] });
     });
 
     it("off the author road an empty store still sends nothing — undefined, not an empty object", () => {

@@ -97,6 +97,34 @@ export function rollAdjustments(args: {
 }
 
 /**
+ * WHAT THE ECHO MAY DRAW AS QUEUED — derived from `rollAdjustments`, never
+ * from the store directly.
+ *
+ * ⚠ **Finding 1 of the review of PR #567, and it is the fix's own class coming
+ * back through the display.** The wire half was made empty on the author road
+ * and the echo went on reading the STORE, which can legitimately be non-empty
+ * there: a chip queued on the house road, then the flag widened while the tab
+ * is open (the config query refetches on focus), or a slice left over from
+ * before this shipped. In exactly those states the echo drew *"30s → 40s ·
+ * next roll"* over a roll that sends nothing — a chip promising a change the
+ * wire will never carry, which is the disagreement reply #134 bans, wearing
+ * the other half's clothes.
+ *
+ * So the arrow shows precisely what the roll will carry and cannot show more.
+ * Deriving it from the wire function rather than adding a second `authorRoad`
+ * check is the point: two places deciding the same thing is how these two
+ * halves came apart in the first place (working law 4).
+ */
+export function pendingAdjustments(args: {
+  authorRoad: boolean;
+  unlocked: readonly UnlockableField[];
+  overrides: LockOverrides;
+}): { overrides: LockOverrides; unlocked: readonly UnlockableField[] } {
+  const sent = rollAdjustments(args);
+  return { overrides: sent.overrides ?? {}, unlocked: sent.unlock ?? [] };
+}
+
+/**
  * Whether the box has been edited away from the brief this sheet was cast
  * from — the one difference his ruling allows the sheet to mention, and the
  * condition under which it says so.

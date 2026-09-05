@@ -66,6 +66,20 @@ describe("replacement in place", () => {
       .toBe("an androgynous person in their 30s");
   });
 
+  it("two people whose ages are both stated: NEITHER possessive moves, because neither is attributable (review of #567, finding 2)", () => {
+    /*
+      "daughter" is not in `GENDER_NOUN`, so the subject noun reads as unique
+      and the edit replaces it — while the sentence holds TWO anchored age
+      spans. Before this arm the pass rewrote both and misgendered the
+      daughter: "a man in his 30s, her daughter in HIS teens". Falling back to
+      leaving both alone is the behaviour this file had before the possessive
+      pass existed, so the failure mode is a stale word and never a new wrong
+      one.
+    */
+    expect(rewriteBrief("a woman in her 30s, her daughter in her teens", { sex: "male" })?.text)
+      .toBe("a man in her 30s, her daughter in her teens");
+  });
+
   it("and NOTHING else: a possessive outside an anchored age span is left alone, because nobody can tell whose it is", () => {
     /*
       "her brother" belongs to the subject; "her jacket" might belong to

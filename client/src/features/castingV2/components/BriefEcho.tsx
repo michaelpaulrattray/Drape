@@ -62,8 +62,12 @@ const VOCABULARIES: Record<EchoField, readonly string[]> = {
 
 /**
  * Everyday words for the popover heading, matching the sentence's register.
- * Exported for the sheet's "Changed on this roll" record (#534) — one owner
- * for the axis names, so the echo and the record cannot disagree.
+ *
+ * It was exported for the sheet's "Changed on this roll" record; that record
+ * died with #534 and the sheet dropped the import, so the only readers left
+ * are in this file. Still exported because it is this module's public
+ * vocabulary and a future surface naming an axis should take it from here
+ * rather than writing a second list.
  */
 export const ECHO_FIELD_HEADINGS: Record<EchoField, string> = {
   sex: "Sex",

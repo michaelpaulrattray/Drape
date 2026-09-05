@@ -44,6 +44,7 @@ import {
   BOX_EDITED_MARK,
   boxDiffersFromSheet,
   chipEditOutcome,
+  pendingAdjustments,
   rollAdjustments,
 } from "@/features/castingV2/chipEdit";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
@@ -2553,9 +2554,13 @@ export default function CastingSheet() {
               false. Derived, never mirrored.
             */
             authorRoad={roll.data.imagination !== null}
-            // What the user has queued but the sheet in front of them cannot
-            // show, because rolls are immutable.
-            pending={{ overrides, unlocked }}
+            /*
+              What the user has queued but the sheet in front of them cannot
+              show, because rolls are immutable — and never more than the roll
+              will actually carry (review of #567, finding 1). On the author
+              road that is nothing, because the box already holds the edit.
+            */
+            pending={pendingAdjustments({ authorRoad, unlocked, overrides })}
             vary={{ authorRoad, followHeld: standingFollowId !== null }}
             onAdjust={(adjustment) => {
               /*

@@ -32,10 +32,8 @@ import { candidateFailureKind, type CandidateFailureKind } from "../../shared/ca
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
 import {
-  OVERRIDABLE_FIELDS,
   UNLOCKABLE_FIELDS,
   type CastingChip,
-  type OverridableField,
   type UnlockableField,
 } from "./briefCompiler";
 import { statesWardrobe } from "./statedWardrobe";

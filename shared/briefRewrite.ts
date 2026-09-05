@@ -288,23 +288,36 @@ const POSSESSIVE: Record<Sex, string> = { female: "her", male: "his", nonbinary:
  * the customer's own brief box, in front of them, at the click. Broken English
  * in his box is not a thing to leave standing on the surface his eye judges.
  *
- * It is deliberately NARROW. The only possessives touched are the ones inside
- * an ANCHORED AGE SPAN — "in her 30s", "in his late 40s" — which is the one
- * place this module already knows a possessive refers to the SUBJECT rather
- * than to something the subject owns. A bare "her jacket" or "his brother" is
- * left exactly alone, because nothing here can tell whose they are, and the
- * whole lesson of this file's matchers (review of PR #173) is that an
- * unanchored token is a guess.
+ * It is deliberately NARROW, in two ways, and the second was added by the
+ * review of PR #567 (finding 2).
+ *
+ * **Only inside an ANCHORED AGE SPAN** — "in her 30s", "in his late 40s" —
+ * which is the one place this module already knows a possessive refers to the
+ * SUBJECT rather than to something the subject owns. A bare "her jacket" or
+ * "his brother" is left exactly alone, because nothing here can tell whose
+ * they are, and the whole lesson of this file's matchers (review of PR #173)
+ * is that an unanchored token is a guess.
+ *
+ * **And only when the brief holds exactly ONE such span**, which is
+ * `requireSingle` applied to the pronoun. ⚠ Without it, *"a woman in her 30s,
+ * her daughter in her teens"* + a male chip gave *"a man in his 30s, her
+ * daughter in HIS teens"* — the daughter misgendered, because `GENDER_NOUN`
+ * does not list "daughter", so the subject noun read as unique while the age
+ * spans did not. A second anchored span means a second person whose age is
+ * stated, and no possessive there is attributable. Leaving both alone is the
+ * behaviour this file had before today, so the fallback is the status quo and
+ * never a new wrong word.
  *
  * It runs only where the sex was REPLACED. An APPENDED sex ("Cast a man.")
  * leaves the brief's own subject wording untouched by design, so there is no
  * noun for a possessive to have followed.
  */
 function agreePossessives(text: string, sex: Sex): string {
+  const anchored = new RegExp(`\\bin (her|his|their)(\\s+${DECADE})`, "gi");
+  const spans = Array.from(text.matchAll(anchored));
+  if (spans.length !== 1) return text;
   const possessive = POSSESSIVE[sex];
-  return text.replace(new RegExp(`\\bin (her|his|their)(\\s+${DECADE})`, "gi"), (_whole, _pronoun, tail: string) =>
-    `in ${possessive}${tail}`,
-  );
+  return text.replace(anchored, (_whole, _pronoun, tail: string) => `in ${possessive}${tail}`);
 }
 
 /**
