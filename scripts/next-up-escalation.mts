@@ -55,6 +55,21 @@
  * QUEUE** — the same trap #504 names for the NEXT UP read that parks the team.
  * `gh()` returns `null` on any failure and `null` is never read as "no cards".
  *
+ * # ⚠ ONE HOLD ON HIS PAGE IS INVISIBLE HERE, AND IT IS NAMED RATHER THAN LEFT
+ *
+ * `resolveHold`'s **`you`** — *Waiting on you* — is derived from HIS OWN DESK
+ * (an open `needsYou` card naming the issue, #291's rule), not from a label. It
+ * outranks every label on the page. This gate reads `gh issue list` and cannot
+ * see it, so a card he is blocking CAN still be escalated here if it also
+ * carries `awaiting-fable`.
+ *
+ * That is an accepted cut rather than an oversight: the alternative is reading
+ * `server/crew/crew-briefing.json`, which the desk sweep writes at shift CLOSE
+ * and is therefore a shift stale at the moment this runs — a hold that is one
+ * shift out of date is a worse input than a hold that is honestly absent. The
+ * cost is bounded and it is one session: a Fable shift that opens a card
+ * waiting on him reads the card, finds the question, and says so.
+ *
  * # THE NO-REPEAT RULE — "a bug here must cost one session, never five"
  *
  * The runner DELETES the marker as it launches, so without state a card that
@@ -81,11 +96,18 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { heldStateFromLabels } from "../shared/crewNextUpHold.js";
+import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
 type Json = Record<string, any>;
 
 const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today"]);
+
+/**
+ * The `gh --limit`, stated ONCE and reused as its own floor guard: a limit and
+ * the number a reader compares against are the same fact, and two copies of one
+ * fact is how a list silently starts capping (working law 4).
+ */
+const QUEUE_LIMIT = 200;
 
 /* ─── arguments, refused rather than ignored ───
    Both crew writers REFUSE a flag they do not know, for the reason #288
@@ -108,12 +130,27 @@ for (let i = 0; i < argv.length; i += 1) {
     console.error(`REFUSING: ${arg} needs a value.`);
     process.exit(1);
   }
+  if (flags.has(arg)) {
+    /* Last-wins on a repeat is the same fault as ignoring an unknown flag: the
+       caller's second intention silently beats their first and nothing says so. */
+    console.error(`REFUSING: ${arg} was given twice.`);
+    process.exit(1);
+  }
   flags.set(arg, value);
   i += 1;
 }
 
 const STATE_PATH = resolve(flags.get("--state") ?? ".agents/foreman/escalation-state.json");
-/** The day boundary is passed in so the counter can be driven without waiting for midnight. */
+/**
+ * The day the session counter belongs to, passed in so the roll can be driven
+ * without waiting for midnight.
+ *
+ * ⚠ **UTC, not his clock.** The counter therefore rolls at UTC midnight, which
+ * is mid-morning in Sydney. It is a cost-visibility figure and nothing keys off
+ * it, so the boundary being in the wrong place costs a line in a mailbox note
+ * and never a decision — said here so the next reader does not have to work it
+ * out from `toISOString`.
+ */
 const TODAY = flags.get("--today") ?? new Date().toISOString().slice(0, 10);
 
 type EscalationState = {
@@ -206,7 +243,7 @@ function readQueue(): Json[] | null {
     "issue", "list",
     "--label", "founder-ordered",
     "--state", "open",
-    "--limit", "200",
+    "--limit", String(QUEUE_LIMIT),
     "--json", "number,title,labels",
   ]);
   return Array.isArray(rows) ? (rows as Json[]) : null;
@@ -219,7 +256,7 @@ function none(why: string): never {
 
 const rows = readQueue();
 if (rows === null) none("the founder-ordered queue could not be read — no escalation is ever made on a queue nobody could see");
-if (rows.length >= 200) none("200 rows came back, which is the --limit — that is a floor, not a list");
+if (rows.length >= QUEUE_LIMIT) none(`${QUEUE_LIMIT} rows came back, which is the --limit — that is a floor, not a list`);
 
 /**
  * NEXT UP order, and it is **the sweep's order or it is nothing**: urgent
@@ -238,7 +275,7 @@ const items = rows
       issueNumber: Number(row.number),
       title: String(row.title ?? ""),
       urgent: labels.includes("urgent"),
-      held: heldStateFromLabels(labels),
+      held: heldStatesFromLabels(labels),
     };
   })
   .sort((a, b) =>
@@ -267,9 +304,11 @@ if (items.length === 0) none("NEXT UP is empty — nothing is ordered");
  * stated here rather than discovered, because a gate that quietly jumped his
  * order would be worse than one that waits.
  */
-const firstTakeable = items.find((item) => item.held === null || item.held === "fable");
+const firstTakeable = items.find(
+  (item) => !item.held.includes("blocked") && !item.held.includes("sitting"),
+);
 if (firstTakeable === undefined) none(`every one of the ${items.length} ordered card(s) is blocked or needs a sitting — a Fable shift cannot clear those either`);
-if (firstTakeable.held !== "fable") {
+if (!firstTakeable.held.includes("fable")) {
   none(`the next card is #${firstTakeable.issueNumber}, which an Opus shift can take — Fable is not needed`);
 }
 
@@ -290,7 +329,7 @@ if (state.lastCard === firstTakeable.issueNumber) {
  * *"one Fable session each"*) and a bundle must not quietly merge them.
  */
 const after = items.slice(items.indexOf(firstTakeable) + 1);
-const bundle = after.filter((item) => item.held === null).map((item) => item.issueNumber);
+const bundle = after.filter((item) => item.held.length === 0).map((item) => item.issueNumber);
 
 const sessionsToday = state.day === TODAY ? state.countToday : 0;
 console.log(

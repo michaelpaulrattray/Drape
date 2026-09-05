@@ -135,18 +135,43 @@ export const CREW_HOLD_MARKER = "**Waiting on:**";
 export const CREW_HOLD_REASON_MAX = 160;
 
 /**
+ * EVERY held state a card's labels put it in, furthest-from-takeable first.
+ *
+ * ⚠ **THIS EXISTS BECAUSE THE COLLAPSE BELOW IS LOSSY, AND A CALLER THAT NEEDS
+ * TO ASK ABOUT ONE PARTICULAR HOLD MUST NOT ASK THE COLLAPSED ANSWER** (found
+ * by the reviewer on PR #544, 2026-09-05, before it shipped).
+ *
+ * The chip on his page wants one word, so `heldStateFromLabels` picks one. But
+ * `blocked` + `awaiting-fable` collapses to **`fable`** — the ranking puts
+ * `fable` further from takeable than `blocked` — so a caller asking *"is this
+ * card Fable's to take?"* gets **yes** for a card that is also blocked. That is
+ * a natural filing ("needs a design decision AND waits on something external"),
+ * and the caller that would have been wrong is the auto-escalation gate, which
+ * spends an expensive Fable session when it answers yes.
+ *
+ * Derive, never mirror (working law 4): the one-word answer is the first
+ * element of this list rather than a second implementation of the same sort.
+ */
+export function heldStatesFromLabels(labels: readonly string[]): CrewHeldState[] {
+  const present = new Set(labels);
+  return (Object.keys(CREW_HOLD_LABELS) as CrewHeldState[])
+    .filter((state) => present.has(CREW_HOLD_LABELS[state]))
+    .sort((a, b) => CREW_HOLD_ORDER.indexOf(b) - CREW_HOLD_ORDER.indexOf(a));
+}
+
+/**
  * The held state a card's labels put it in, or `null` when nothing does.
  *
  * Two labels is a filing mistake rather than a state, and the answer is the
  * FURTHEST from takeable — a card that is both blocked and needs a sitting is
  * not takeable for either reason, and the softer word would overstate it.
+ *
+ * ⚠ **This is the answer for a CHIP, which shows one word. A caller deciding
+ * whether it may ACT on a card asks `heldStatesFromLabels` and reads the whole
+ * list** — see that function for the pair that makes the difference.
  */
 export function heldStateFromLabels(labels: readonly string[]): CrewHeldState | null {
-  const present = new Set(labels);
-  const held = (Object.keys(CREW_HOLD_LABELS) as CrewHeldState[])
-    .filter((state) => present.has(CREW_HOLD_LABELS[state]));
-  if (held.length === 0) return null;
-  return held.sort((a, b) => CREW_HOLD_ORDER.indexOf(b) - CREW_HOLD_ORDER.indexOf(a))[0];
+  return heldStatesFromLabels(labels)[0] ?? null;
 }
 
 /**

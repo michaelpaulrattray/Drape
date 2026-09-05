@@ -136,6 +136,54 @@ describe("the escalation verdict", () => {
     expect(result.last).toMatch(/^ESCALATE #508 /);
   });
 
+  it("does NOT escalate a card that is BOTH blocked and awaiting-fable", () => {
+    /*
+      THE ARM THE REVIEWER ASKED FOR, and it is the exact failure the card was
+      written to prevent (PR #544, before merge). `heldStateFromLabels` collapses
+      several holds to the ONE furthest from takeable, and `CREW_HOLD_ORDER`
+      ranks `fable` ABOVE `blocked` — so a card carrying both resolved to
+      "fable", and a gate reading the collapsed answer would have spent an
+      expensive Fable session opening a card that cannot proceed.
+
+      "Needs a design decision AND waits on something external" is an ordinary
+      filing, not a corner. The repair reads EVERY held state
+      (`heldStatesFromLabels`) rather than the one-word chip answer.
+    */
+    const queue = queueFile("blocked-and-fable", [
+      card(534, ["founder-ordered", "blocked", "awaiting-fable"]),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("blocked-and-fable"), "--today", "2026-09-05");
+
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.status).toBe(1);
+  });
+
+  it("walks PAST a blocked-and-fable card to the real next one", () => {
+    /* The other direction: the pair must be SKIPPED, not treated as a wall. */
+    const queue = queueFile("past-dual", [
+      card(508, ["founder-ordered", "blocked", "awaiting-fable"]),
+      card(534, ["founder-ordered", "awaiting-fable"]),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("past-dual"), "--today", "2026-09-05");
+
+    expect(result.last).toMatch(/^ESCALATE #534 /);
+  });
+
+  it("never offers a held card as a bundle candidate", () => {
+    /* A bundle candidate is work the Fable sitting could also land; a card with
+       ANY hold on it is not that, whichever hold collapsed to the top. */
+    const queue = queueFile("bundle-holds", [
+      card(534, ["founder-ordered", "awaiting-fable"]),
+      card(540, ["founder-ordered", "blocked", "awaiting-fable"]),
+      card(542, ["founder-ordered"]),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("bundle-holds"), "--today", "2026-09-05");
+
+    expect(result.last).toMatch(/^ESCALATE #534 /);
+    expect(result.last).toContain("bundle=#542");
+    expect(result.last).not.toContain("#540");
+  });
+
   it("does NOT escalate when every ordered card is blocked or needs a sitting", () => {
     const queue = queueFile("all-held", [
       card(404, ["founder-ordered", "blocked"]),
@@ -282,6 +330,16 @@ describe("it fails toward NOT spending", () => {
       .toMatch(/^ESCALATE #534 /);
   });
 
+  it("REFUSES a flag given twice rather than letting the last one win", () => {
+    /* Same fault as ignoring an unknown flag: the caller's second intention
+       silently beats their first and nothing says so. */
+    const queue = queueFile("twice", []);
+    const result = run("--queue", queue, "--queue", queue);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("was given twice");
+  });
+
   it("REFUSES an argument it does not know rather than ignoring it", () => {
     /* #288: `--dry-run` was appended to a script that had no such word, was
        ignored, and stamped a running shift terminal on production. */
@@ -323,6 +381,14 @@ describe("the order is the desk sweep's order, or it is nothing", () => {
   it("uses shared/crewNextUpHold.ts for the hold verdict rather than its own list", () => {
     /* The labels are the one owner's; a second copy here is how `#278` came to
        tell him a card was blocked for two shifts after it was unblocked. */
-    expect(readFileSync(SCRIPT, "utf8")).toContain("heldStateFromLabels");
+    const source = readFileSync(SCRIPT, "utf8");
+    expect(source).toContain("heldStatesFromLabels");
+
+    /* ⚠ AND IT READS THE FULL LIST, NEVER THE ONE-WORD CHIP ANSWER. That was
+       the defect the reviewer caught before merge: `heldStateFromLabels`
+       collapses `blocked` + `awaiting-fable` to "fable", so acting on it would
+       have spent a Fable session on a blocked card. A future edit reaching for
+       the shorter name reddens here as well as on the behaviour arms. */
+    expect(source).not.toMatch(/[^s]heldStateFromLabels\(/);
   });
 });
