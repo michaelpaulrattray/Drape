@@ -1,7 +1,7 @@
 {
-  "edition": 262,
-  "updatedAt": "2026-09-05T14:44:42.456Z",
-  "shift": "Foreman — the chip now writes into your prompt box, and the box is the next brief",
+  "edition": 263,
+  "updatedAt": "2026-09-05T14:50:02.604Z",
+  "shift": "Foreman — the chip writes into your prompt box; your six answers are marked seen",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -270,7 +270,7 @@
         }
       ],
       "recommendation": "The first. It is a dollar fifty and it answers the question you actually asked, on the road you actually used. The free version can only tell us the words left the building, not that the picture ignored them.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-05T12:27:03.793Z"
     },
     {
@@ -281,7 +281,7 @@
       "workedExample": "The before-picture, measured over the three days BEFORE any of tonight's work landed: 1.18 jobs finished per working session against a target of 3, and 28.25 minutes of machine checking per job against a target of 10. Both miss, which is the point of taking it before rather than after.\n\nThe next performance read covers the nights that have the new tools. If cards-per-session goes up and minutes-per-job goes down, the design worked. If they do not, it did not, and the numbers will say so plainly rather than being explained away.",
       "options": [],
       "recommendation": "Nothing to do tonight. When you next look at a performance read, the two numbers are in it — and your word on them closes this card.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-05T11:35:00.000Z"
     },
     {
@@ -1876,7 +1876,7 @@
     },
     {
       "id": "sphinx-tail-court-530",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 530,
       "filedAt": "2026-09-05T12:27:03.791Z",
@@ -1892,7 +1892,7 @@
     },
     {
       "id": "sphinx-tail-controls-530",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 530,
       "filedAt": "2026-09-05T12:27:03.791Z",
@@ -1908,7 +1908,7 @@
     },
     {
       "id": "dock-chip-552",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 552,
       "filedAt": "2026-09-05T12:27:03.791Z",
@@ -1924,7 +1924,7 @@
     },
     {
       "id": "selection-542",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 542,
       "filedAt": "2026-09-05T12:27:03.791Z",
