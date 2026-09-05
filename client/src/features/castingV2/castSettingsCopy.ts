@@ -48,13 +48,23 @@ export function castSettingsRecord(style: CastStyle | null, imagination: Imagina
  */
 export type AuthorSatOutReason = "anchored" | "edited" | "static";
 
-const AUTHOR_SAT_OUT_RECORD: Record<AuthorSatOutReason, string> = {
-  anchored: "Sat this one out — this follow was cast the studio's own way, before the author could carry a family, so there is no authored prompt to show.",
-  edited: "Sat this one out — these chip edits were cast the studio's own way, before the author could carry them, so there is no authored prompt to show.",
+/**
+ * ⚠ `anchored` and `edited` are NULL since #534 (his ruling: the sheet never
+ * shows the machine's prompt). Their sentences named the machinery ("the
+ * author", "authored prompt") and closed on "there is no authored prompt to
+ * show" — a promise about a record that no longer shows an authored prompt
+ * anywhere, so the line had become machinery explaining machinery. The rows
+ * still carry the reason; the sheet just no longer reads it out. `static`
+ * stays: it says what happened in her terms, and its closing clause — "cast
+ * exactly as you wrote them" — passed his eye (#252).
+ */
+const AUTHOR_SAT_OUT_RECORD: Record<AuthorSatOutReason, string | null> = {
+  anchored: null,
+  edited: null,
   static: "Sat this one out — the studio couldn't write a stronger brief than your words this time, so they were cast exactly as you wrote them.",
 };
 
-export function authorSatOutRecord(reason: AuthorSatOutReason): string {
+export function authorSatOutRecord(reason: AuthorSatOutReason): string | null {
   return AUTHOR_SAT_OUT_RECORD[reason];
 }
 
