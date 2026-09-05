@@ -35,8 +35,15 @@ import { describe, expect, it } from "vitest";
  *
  * **Stated limit:** these are source arms. They prove the stylesheet's
  * arithmetic, not a render — a page-level override could still put a border on
- * a button, and no parse can see that. The frames on #486 are the other half,
- * and his eye is the last word (law 9).
+ * a button, and no parse can see that. The frames on the card are the other
+ * half, and his eye is the last word (law 9).
+ *
+ * ⚠ **And one shape the parser reads WRONG rather than skipping** (PR 578,
+ * note 2): the rule regex flattens `@media` blocks, so a button rule wrapped in
+ * a media query would be read as unconditional. Nothing exercises it today —
+ * neither media block in this stylesheet touches a button — but it is the one
+ * case where the "skipped rather than half-understood" sentence above does not
+ * hold, and a limit that is only true today is worth writing down while it is.
  */
 
 const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
@@ -229,11 +236,24 @@ describe("outlined buttons occupy the same box as their filled twin", () => {
     }
   }
 
-  it("would fail if the compensation were dropped on either axis (the negative control)", () => {
-    /* Working law 2: an arm that cannot fail proves nothing. These drive the
-       same arithmetic over the stylesheet AS IT STOOD before #486, which must
-       come out unequal on the vertical axis and equal on the horizontal — the
-       exact shape of the defect. */
+  it("the shape of the defect: a one-axis compensation is equal across and unequal down", () => {
+    /*
+      ⚠ THIS ARM CONTROLS LESS THAN ITS FIRST DRAFT CLAIMED, and the correction
+      is the reviewer's (PR 578, note 1). It called itself "the negative
+      control" for working law 2, which was not true of it: it does arithmetic
+      on TRANSCRIBED literals, so it exercises `expand` and `px` and nothing
+      else — a broken `parseRules` or `winning` would sail straight through it.
+      A docblock claiming a control the code does not hold is the same defect
+      this whole file exists to fix, so the claim is withdrawn rather than the
+      arm deleted: what it does prove is that the pre-fix numbers really do
+      produce the measured shape (equal across, 1px out down), which is the
+      reading the card is built on.
+
+      The instrument's real proof is elsewhere and is named here so nobody
+      leans on this one: the cascade arm above pins the exact winning
+      declarations, and four sabotages were driven against the live stylesheet
+      (receipts on the card), each reddening exactly its own arms.
+    */
     const before = expand("9px 13px");
     const primary = expand("9px var(--s-6)");
     const withBorder = { top: before.top + 1, right: before.right + 1, bottom: before.bottom + 1, left: before.left + 1 };
