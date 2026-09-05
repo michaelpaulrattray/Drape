@@ -108,3 +108,138 @@ Retro: first run 2026-08-26; next ~2026-09-02. Recurrence rate this period:
 5 repeat classes over 13 shifts; 4 guards proposed (#100 R1, #101 R5, #102 R3, #103 R4), 0 laws (nothing here
 needs a founder ruling — every failure is already against a written rule, so
 the answer is mechanism, not more words).
+
+---
+
+## Run 2 — 2026-09-05 12:10–13:0x AEST (Retro, patrol #2, card #95)
+
+**Window:** 2026-08-26 07:30 (run 1's close) → 2026-09-05. **209 seat-stamped
+mailbox entries**, 8 of them machine-written `runner-close-*` files for shifts
+that wrote nothing at all.
+
+**Why the Retro ran tonight and not a NEXT UP card.** The band held 7 open
+`founder-ordered` cards and every one was read at its own body first: #391 says
+in its own text that it is not a card a shift takes (it is a Stripe catalogue
+and pricing decision); #404 waits on #391; #508 is `founder-review` and needs
+him to flip the Railway source himself; #530 is a court; #531 is a money path
+and says `judgment-class` on its face; #534's second half is undesigned and
+collides with #535, which is a design card awaiting his word. None is
+admissible to an Opus seat, so #505's rule applied: an overdue patrol whose
+switch is ON is the next background card. Retro was **10 days into a 7-day
+clock**, Process is ON.
+
+### A. Audit ledger
+
+**Run 1 sampled eleven claims by hand. This run read the whole period, because
+the guard run 1 proposed (#101) now does the sampling itself** — every entry
+carries a machine-written trailer checking merge claims, the receipt and the
+placeholder. So the audit's shape changed: verify the INSTRUMENT, then read its
+output in bulk, then check by hand the class it cannot see.
+
+**The instrument can fail** (working law 2): 13 entries carry `⚠ UNVERIFIED
+CLOSE` against 168 `verified`. It is not stuck green.
+
+⚠ **But my own first reading of it was wrong, in exactly the way this run's
+main finding is about, and it is recorded because it is the cheapest possible
+demonstration.** Grepping the corpus for the phrase `UNVERIFIED CLOSE` returned
+**21** entries; anchoring on the trailer's own heading returns **13**. The other
+eight were shifts *writing about* the guard. A reader that asks "does this text
+contain X" cannot tell a report from the thing it reports on — and I made the
+error inside the hour I spent fixing it in the guard.
+
+**The claim class the trailer cannot see — card closures — was read in bulk and
+holds.** Every `#N CLOSED` claim in the period's September entries was checked
+against the issue's real state: **68 claims, 68 true.** The checker was
+controlled first (it flags #531, #534 and #358 as OPEN and reports a
+non-existent number as NOT FOUND), so a silent lookup failure could not read as
+a pass. Run 1's comparable figure was nine of eleven shifts holding.
+
+**Verdict: the audit found no false claim this period.** The two failure shapes
+run 1 named — a report written ahead of its artifacts, and a dying process
+leaving claims standing — did not recur in a checkable form. That is the #101
+guard doing its job, and it is also why the guard's accuracy is now the thing
+worth auditing, which is B.
+
+### B. Recurrence ledger
+
+| # | Repeat | Occurrences (evidence) | Class | Proposal | Status |
+|---|---|---|---|---|---|
+| **R6** | **A guard infers a signal from PROSE, so a report *about* the guard trips it** | `is-quiet-entry.ps1` read "NOT a quiet night" as a quiet declaration (**#360**, fixed 2026-09-01); `close-stamp.ps1` read denials and its own trailer as merge claims (**#358**, six instances, fixed tonight); the Retro's own corpus grep over-reported 21 for 13 (tonight, §A) | a detector matching a MENTION where only a DECLARATION counts | **Guard, and the repair is transferable rather than per-site**: #360's rule — fenced blocks and blockquotes stripped first, the claim must BEGIN a line after markdown furniture, and the machine's own trailer is not the shift's prose | **#358 FIXED tonight**, 13 arms in `.agents/foreman/drive-close-stamp.ps1`; #360 already fixed. **The class is now closed in both known sites** |
+| **R7** | **A shift runs for an hour, does work, dies, and leaves no report** | `runner-close-*`: 2026-08-28 (40 min), 08-30 (killed by the founder, correctly), 08-31 ×4 (three of them dying in the same second — the #332 command-line-length class), 09-03 (93 min, code 1), 09-04 (52 min, code 1) | shift process death with no record | Already carded and already fixed twice from different directions: **#330/#332** (the 186 KB prompt crossing the Windows command-line limit) and **#490** (a 529 from Anthropic, now a transient class rather than a model fallback) | **No new proposal.** The two 09-03/09-04 deaths PRECEDE #490's close (03:07Z on 09-04) and are the instances that produced it. **No silent death since.** Re-read next run — one clear day is not yet evidence |
+| **R8** | **Two cards for one defect, filed from different doors, neither naming the other** | **#467** (filed 2026-09-02 from a gate review, with the code read at `server/routes/billing.ts:112-114` and `:153-155`) and **#531** (filed 2026-09-04 from his reply #130) are the same Stripe base-URL bug | a founder instruction carded without a dedup pass against the open queue | **No guard proposed** — a label query cannot tell two cards apart by subject, and the relay filing his words promptly is the right instinct. The cheap answer is the one taken: **cross-link them**, so whoever takes #531 inherits #467's line numbers instead of re-finding them | **Cross-linked tonight.** Watch for a second instance before proposing mechanism |
+
+**Recurrence rate this period: 3 repeat classes over 209 entries** (run 1: 5
+classes over 13 shifts). One class closed with a guard, one already closed by
+two earlier cards, one answered with a cross-link. **0 laws proposed** — as in
+run 1, every failure is already against a written rule, so the answer is
+mechanism rather than more words.
+
+### C. The anti-boredom read
+
+Every PR merged since 2026-09-03, against the card it cites:
+
+**24 PRs, 24 trace to a pre-existing card, a founder reply, or a patrol on its
+own clock.** The two that did not resolve mechanically both survive by hand:
+PR #491 cites **#487** (my extractor took the last `#NNN` in the title, which
+was *"reply #115"* — a Crew reply number, not a card: the reader's fault, not
+the shift's), and PR #533 is the **Machinist's patrol #2**, self-authorising on
+a clock it was three days past.
+
+**No boredom finding this period.**
+
+### D. What was fixed tonight — #358, and what the fix cost
+
+The card was labelled `seat:retro` and had been open since 2026-08-31 with the
+class already named by a previous sweep. Three false-positive mechanisms were
+measured at the real entries before anything was written:
+
+1. **A line-initial denial** — `PR #357 was not merged by me…`
+2. **A blockquote** — `> NOTHING WAS MERGED. PR #357 IS STILL OPEN`
+3. ⚠ **The guard's own trailer** — `PR #357 "merged" -> gh: OPEN <-- MISMATCH`.
+   **This is the one nobody had named, and it explains why 2026-09-01 produced
+   a run of FIVE consecutive false alarms rather than one**: the standing orders
+   tell every shift to read its predecessor's trailer FIRST, so each shift
+   quoted the last one's stamp and inherited its false alarm. **A guard that
+   propagates its own false positives through the very ritual designed to
+   surface them.**
+
+The repair is #360's rule with the trailer exclusion added. ⚠ **One departure
+from the card's own comment is declared rather than quiet**: it asked for no
+negation pattern, and mechanism 1 *is* a line-initial declaration, so the
+begins-the-line rule cannot separate it — only its polarity differs. A narrow
+same-line polarity test does that one job and is documented in the code as the
+residue the declaration rules cannot see.
+
+**A fourth site was found on the way and fixed with them** — `$placeholder`
+matched `RECEIPT_PLACEHOLDER` anywhere in the body, which the card did not name.
+It had never fired, for a reason worth writing down: the trailer the guard
+appends contains the literal, so the check was clean only because it always ran
+before its own output existed. **The old guard was not idempotent — re-running
+it on any already-stamped entry flags it.** The fixed one is.
+
+**Measured, driven through the real script, never a reimplementation:**
+
+- **13/13 arms green** (`.agents/foreman/drive-close-stamp.ps1`), each with a
+  before-arm against the pre-fix copy: 8 arms reproduce the defect, 3 true
+  positives are preserved (including the origin specimen — a shift claiming an
+  OPEN PR merged), 2 true negatives hold.
+- **Corpus, 17 real entries through both scripts under identical conditions:
+  UNVERIFIED 6 → 0, and ZERO entries went verified → UNVERIFIED.** No true
+  positive was lost. ⚠ **Stated as a limit rather than discovered later: this
+  is a same-conditions comparison, NOT a replay of the historical verdicts** —
+  `gh` answers about today (#357 has since merged) and the receipt clock is now,
+  so a 2026-09-01 verdict cannot be reproduced exactly.
+- Two of the driver's own arms were wrong on the first run and both are recorded
+  because they are the same family: one read the fixture's own trailer instead of
+  the new one (**an arm inert by construction**), and one accidentally put the
+  test phrase at line-start.
+
+**Coverage note:** `.agents/` is gitignored, so no suite in the repository can
+ever see this guard. The driver is the only coverage it can have — **run it
+after any edit to `close-stamp.ps1`.**
+
+### Clocks
+
+Retro: run 1 2026-08-26, run 2 2026-09-05 (9 days late — the clock reader
+`scripts/patrol-clocks.mts` now derives this from the heading above, which is
+what #505 built). Next due ~2026-09-12.

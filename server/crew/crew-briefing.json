@@ -1,7 +1,7 @@
 {
-  "edition": 252,
-  "updatedAt": "2026-09-05T02:20:00.000Z",
-  "shift": "Foreman - Fable (5 September): MAX keeps your words, and the instruction stops teaching what its own guards refuse",
+  "edition": 253,
+  "updatedAt": "2026-09-05T03:05:00.000Z",
+  "shift": "Retro — patrol #2 (5 September): the alarm that was crying wolf, and NEXT UP stops looking like work",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T01:18:06.598Z",
+      "readAt": "2026-09-05T02:26:51.869Z",
       "items": [
         {
           "issueNumber": 16,
@@ -246,6 +246,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "ladder-fold-391",
+      "issueNumber": 391,
+      "title": "Your twelve price plans fold to seven — and nobody is on the ones that go",
+      "productImpact": "You ruled on 1 September that twelve plans is too many to sell and it should be about seven. That ruling has been sitting at the top of your queue for four days and no shift has touched it, correctly — every plan is a live product in Stripe, and which ones survive is a pricing decision, not an engineering one.\n\nWhat was missing is that this page never told you it was waiting on you. It has been sitting in NEXT UP looking like queued work. That is fixed tonight: your queue now marks which rows are waiting on you and which are waiting on a reviewer, so you can see at a glance that nothing there is actually moving.",
+      "workedExample": "The twelve today, read from the code rather than from a document:\n\n    Free      Starter $27   Pro $68    Studio $159\n    Studio Plus $375        Business $840\n    Business Plus $1,950    Scale $4,800\n    Scale Plus $8,800       Enterprise $15,000\n    Enterprise Plus $27,000 Ultimate $48,000\n\nFour of them are a “Plus” version of the one above. Drop those four and hide Ultimate behind “ask us”, and you are left with exactly the seven you described:\n\n    Free  Starter  Pro  Studio  Business  Scale  Enterprise\n\nAND ONE QUESTION IS ALREADY ANSWERED. The card said this needed a plan for anyone already on a rung that disappears. I checked the live database tonight: there are four accounts and all four are on Free. Nobody is on a paid plan at all, so nobody has to be moved. That worry is gone — today. It comes back the moment a real customer subscribes, which is the argument for doing this before launch rather than after.",
+      "options": [
+        {
+          "key": "a",
+          "label": "Drop the four Plus plans and hide Ultimate — the seven above",
+          "consequence": "Matches what you said. Nothing to migrate: no account is on any of them. The Stripe products for the five removed plans get archived, which is your click, not ours."
+        },
+        {
+          "key": "b",
+          "label": "Same seven, but keep the credit amounts exactly as they are",
+          "consequence": "The simplest possible change — the surviving plans keep their price and their monthly credits untouched. The gap between Studio ($159) and Business ($840) gets wide, because Studio Plus was the step between."
+        },
+        {
+          "key": "c",
+          "label": "Six, not seven — tell us which one else goes",
+          "consequence": "You said “six would sell better”. Dropping the Plus plans lands on seven, so getting to six means cutting one more by name."
+        }
+      ],
+      "recommendation": "(a), with (b)'s answer to the credits: drop the four Plus plans, hide Ultimate behind an email, and leave the seven survivors' prices and credit amounts exactly where they are. It is the smallest change that matches your ruling, and with nobody on a paid plan it costs nothing to make now. The one thing we cannot choose for you is whether the Studio-to-Business gap is too big — if it is, that is the moment to move a number, and it is a pricing call.",
+      "state": "open",
+      "filedAt": "2026-09-05"
+    },
     {
       "id": "design-law-523-price-on-the-button",
       "title": "Should the Cast it button carry its price in the label, or is beside it enough?",
@@ -5237,10 +5264,10 @@
     },
     {
       "id": "patrols-overdue-505",
-      "title": "Three of the team's four regular check-ups are still overdue",
+      "title": "Three of the team's four check-ups were overdue — one is left",
       "severity": "warning",
       "state": "open",
-      "detail": "Nothing needs doing from you — this is the team reporting on itself, which is what you ordered. Tidying was 4 days late and RAN TONIGHT, so it is now caught up and next due on 8 September. Still waiting: the weekly look-back, the security pass and the speed pass, each about 3 days late. The look-back matters most, because it is the seat that spots the same mistake happening twice — and tonight produced two more items for it. Your switches are all on, so the next shifts work through them, most overdue first."
+      "detail": "Nothing needs doing from you. The team runs four regular check-ups: tidying, security, speed, and a look back at its own week. Three of the four were overdue when you last read this page. The look-back ran tonight (it is what this shift was), and tidying and speed both ran earlier today, so only the SECURITY pass is still waiting — it is next in line. The dates are read from each check-up's own logbook now rather than typed anywhere, so this line cannot quietly go stale again."
     },
     {
       "id": "ladder-rung-n4b-499",
@@ -5552,42 +5579,65 @@
     131
   ],
   "nextUp": {
-    "readAt": "2026-09-05T01:18:05.816Z",
+    "readAt": "2026-09-05T02:26:51.144Z",
     "items": [
       {
         "issueNumber": 391,
         "title": "His ladder ruling: twelve rungs fold to SEVEN, with the top one hidden and offered by email on request",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "your pricing brief — which rungs survive the fold, what happens to anyone on a folded one, and whether the credit amounts move with it. Every rung is a live St…"
+        }
       },
       {
         "issueNumber": 404,
         "title": "The plan card's blurb slot is empty on purpose — his one-line positioning statement, best written after the ladder folds",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#391 — the blurb is one line per rung, and the ladder folds from twelve to about seven first. Writing twelve now throws five away."
+        }
       },
       {
         "issueNumber": 508,
         "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
       },
       {
         "issueNumber": 530,
         "title": "The sphinx-cat tail court — his one remaining check on the species sentence (reply #129)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
       },
       {
         "issueNumber": 531,
         "title": "Stripe returns point at the wrong domain — one production base URL (klieglabs.com), read from one place, with a no-drape-domains test (reply #130)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
       },
       {
         "issueNumber": 534,
         "title": "The sheet never shows the machine's prompt — only the customer's words and what they changed on this roll, on a Follow too (his ruling, 5 Sep)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
       },
       {
         "issueNumber": 535,
         "title": "Re-imagine: the author becomes a visible writing assistant on the brief, and the imagination level goes — a DESIGN card at N1 for his word (5 Sep)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
       }
     ]
   }
