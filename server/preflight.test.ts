@@ -34,10 +34,12 @@ import {
   EXCUSED_GATE_STEPS,
   PREFLIGHT_CHECKS,
   VITEST_ENTRY,
+  COLLECTED_PATTERNS,
   chunkVitestFiles,
   formatSeconds,
   gateCommandMatches,
   gateRunCommands,
+  isCollectedTest,
   selectDiffAdjacentTests,
   vitestArgv,
 } from "../scripts/lib/preflight.mts";
@@ -167,6 +169,13 @@ describe("gateRunCommands — reading the workflow's own commands", () => {
     ]);
   });
 
+  it("REFUSES a folded `run: >` block rather than reading it as the command \">\"", () => {
+    const folded = ["      - name: Folded", "        run: >", "          pnpm something"].join("\n");
+    expect(() => gateRunCommands(folded)).toThrow(/folded/);
+    // The real gate has none, which is why this is a guard and not a parser.
+    expect(() => gateRunCommands(readFileSync(path.join(repoRoot, ".github", "workflows", "gate.yml"), "utf8"))).not.toThrow();
+  });
+
   it("ends a block at the first line back out to the step's indent", () => {
     const workflow = ["      - name: Block", "        run: |", "          echo inside", "      - name: Next", "        run: echo outside"].join("\n");
     expect(gateRunCommands(workflow)).toEqual(["echo inside", "echo outside"]);
@@ -194,7 +203,17 @@ describe("the drift arm — preflight against the real gate", () => {
    * asks only about the commands that could plausibly be a check: an
    * invocation of this repository's own tooling.
    */
-  const TOOLING = /^(pnpm|npx|npm|node|tsx)\s/;
+  //
+  // ⚠ THE SECOND CLAUSE IS THE FIX FOR ROUND 2'S FINDING 1, AND IT MATTERS
+  // BECAUSE `sh scripts/*.sh` IS THE GATE'S HOUSE STYLE FOR EXACTLY THE CHECKS
+  // THAT MATTER MOST. Two of the gate's four security instruments run that way
+  // (`sh scripts/secret-scan.sh`, `sh scripts/workflow-lint.sh`), so a prefix
+  // list of five package managers left the whole shape outside the population:
+  // a new `run: sh scripts/new-guard.sh` step would have arrived with nobody
+  // adopting or excusing it, which is precisely the event this arm exists to
+  // make impossible. Any command naming a repository script counts now —
+  // the gate's plumbing (`jq`, `gh`, `echo`, `set -euo pipefail`) never does.
+  const TOOLING = /^(pnpm|npx|npm|node|tsx)\s|scripts\//;
 
   it("finds the gate's real check steps (a positive control — the reader must not be reading nothing)", () => {
     const tooling = gateCommands.filter((c) => TOOLING.test(c));
@@ -260,6 +279,24 @@ describe("the drift arm — preflight against the real gate", () => {
     expect(gateCommandMatches('GITLEAKS="$(sh scripts/secret-scan.sh fetch)"', "scripts/secret-scan.sh", "token")).toBe(true);
   });
 
+  it("⚠ NEGATIVE CONTROL — a new `sh scripts/*.sh` gate step IS reported (round 2, finding 1)", () => {
+    // The shape that used to slip through entirely. Without this arm the
+    // widening above is untested and the drift arm's promise stays narrower
+    // than its own header claims.
+    const synthetic = ["      - name: New guard", "        run: sh scripts/new-guard.sh"].join("\n");
+    const commands = gateRunCommands(synthetic).filter((c) => TOOLING.test(c));
+    expect(commands).toEqual(["sh scripts/new-guard.sh"]);
+    expect(unhandled(commands)).toEqual(["sh scripts/new-guard.sh"]);
+  });
+
+  it("the widening does not drag the gate's shell plumbing into the population", () => {
+    // The other direction: a filter that admits everything makes the arm
+    // unpassable and gets deleted, which is worse than one that admits too
+    // little. These are real lines from gate.yml's own run blocks.
+    const plumbing = ["set -euo pipefail", 'echo "pr=$PR"', "gh pr view 1 --json mergeable", "git fetch origin main"];
+    for (const line of plumbing) expect(TOOLING.test(line), line).toBe(false);
+  });
+
   it("NEGATIVE CONTROL — an unadopted, unexcused gate step IS reported", () => {
     // Without this the arm above passes when the reader is broken, which is
     // exactly how a green suite proves nothing (working law 2).
@@ -286,6 +323,62 @@ describe("the drift arm — preflight against the real gate", () => {
   it("the full suite is EXCUSED, never adopted — running it is the seven minutes preflight exists to save", () => {
     expect(PREFLIGHT_CHECKS.some((c) => c.gateRun === "pnpm test")).toBe(false);
     expect(EXCUSED_GATE_STEPS.some((e) => e.gateRun === "pnpm test")).toBe(true);
+  });
+});
+
+describe("the SECOND mirror — the collected roots, against vitest.config.ts itself", () => {
+  /**
+   * ⚠ THIS ARM EXISTS BECAUSE THE MIRROR WAS WRONG AT BIRTH (round 2, finding
+   * 2). The suffix list was flat — `.test.ts` and `.spec.ts` under both roots —
+   * while the config has no `client/src` `.spec.ts` entry. Nothing fired,
+   * because the tree holds no `.spec.ts` files at all; the day someone wrote
+   * `client/src/features/x/y.spec.ts`, preflight would have selected a file
+   * vitest never collects and gone GREEN about a test it never ran.
+   *
+   * The gate list already had a drift arm and this one did not, which is the
+   * whole lesson: working law 4 applies to every mirror in a file, not the one
+   * you were thinking about.
+   */
+  const configText = readFileSync(path.join(repoRoot, "vitest.config.ts"), "utf8");
+
+  /** The `include:` array's string literals, read out of the config's own bytes. */
+  function configIncludes(text: string): string[] {
+    const match = /include:\s*\[([^\]]*)\]/.exec(text);
+    if (!match) throw new Error("could not find vitest's include array — this arm cannot measure anything");
+    return [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  }
+
+  it("finds the config's include patterns (a positive control)", () => {
+    const includes = configIncludes(configText);
+    expect(includes.length).toBeGreaterThan(0);
+    expect(includes).toContain("server/**/*.test.ts");
+  });
+
+  it("COLLECTED_PATTERNS is exactly the config's include list, root for root and suffix for suffix", () => {
+    const fromConfig = configIncludes(configText)
+      .map((pattern) => {
+        const parsed = /^(.*?)\*\*\/\*(\.\w+\.ts)$/.exec(pattern);
+        return parsed ? { root: parsed[1], suffix: parsed[2] } : null;
+      })
+      .filter((p): p is { root: string; suffix: string } => p !== null);
+
+    expect(fromConfig.length, "no include pattern parsed — the arm would pass on nothing").toBeGreaterThan(0);
+    expect([...COLLECTED_PATTERNS].sort((a, b) => `${a.root}${a.suffix}`.localeCompare(`${b.root}${b.suffix}`))).toEqual(
+      fromConfig.sort((a, b) => `${a.root}${a.suffix}`.localeCompare(`${b.root}${b.suffix}`)),
+    );
+  });
+
+  it("a client-side .spec.ts is NOT collectable — the exact file the flat list would have selected", () => {
+    expect(isCollectedTest("client/src/features/x/y.spec.ts")).toBe(false);
+    // …while the three real shapes are.
+    expect(isCollectedTest("server/foo.test.ts")).toBe(true);
+    expect(isCollectedTest("server/foo.spec.ts")).toBe(true);
+    expect(isCollectedTest("client/src/foundation/theme.test.ts")).toBe(true);
+  });
+
+  it("still excludes integration tests, which the config excludes by name", () => {
+    expect(isCollectedTest("server/health.integration.test.ts")).toBe(false);
+    expect(configText).toContain("integration.test.ts");
   });
 });
 

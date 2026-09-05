@@ -35,6 +35,7 @@ import {
   PREFLIGHT_CHECKS,
   chunkVitestFiles,
   formatSeconds,
+  isCollectedTest,
   selectDiffAdjacentTests,
   vitestArgv,
   type PreflightCheck,
@@ -134,11 +135,9 @@ function changedFiles(): { files: string[]; baseUsed: string | null } {
  * a glob dialect.
  */
 function repoTestFiles(): string[] {
-  const isSuite = (file: string) => {
-    const unix = file.replace(/\\/g, "/");
-    if (!unix.startsWith("server/") && !unix.startsWith("client/src/")) return false;
-    return unix.endsWith(".test.ts") || unix.endsWith(".spec.ts");
-  };
+  // `isCollectedTest` rather than a second copy of the rule: this predicate and
+  // the selector's must never be able to disagree about what vitest collects.
+  const isSuite = isCollectedTest;
   // ⚠ THE UNTRACKED LISTING IS NOT OPTIONAL, AND LEAVING IT OUT WAS A SIBLING
   // OF THE PATHSPEC BUG ABOVE (review finding 1 on PR #549 — the sweep this
   // file's own two defects should have caught and did not).

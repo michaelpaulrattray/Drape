@@ -177,23 +177,50 @@ export const PREFLIGHT_CHECKS: readonly PreflightCheck[] = [
   },
 ];
 
-/** Vitest's own include/exclude, mirrored no further than this. */
-const TEST_SUFFIXES = [".test.ts", ".spec.ts"] as const;
-
-function isTestFile(file: string): boolean {
-  if (file.includes(".integration.test.")) return false;
-  return TEST_SUFFIXES.some((suffix) => file.endsWith(suffix));
-}
+/**
+ * Vitest's `include`, mirrored — as ROOT-AND-SUFFIX PAIRS, because the two
+ * roots do not take the same suffixes and treating them as one list was wrong
+ * at birth (review round 2, finding 2 on PR #549).
+ *
+ * ⚠ `vitest.config.ts` collects `server/**\/*.test.ts`, `server/**\/*.spec.ts`
+ * and `client/src/**\/*.test.ts` — there is **no** `client/src` `.spec.ts`
+ * entry. A flat suffix list therefore let preflight select a
+ * `client/src/…/x.spec.ts` that vitest never collects: passed as a positional
+ * filter beside real files it matches nothing and goes GREEN about a test it
+ * never ran, and passed alone it reds with "No test files found" on a file the
+ * gate does not run either. Zero `.spec.ts` files exist today, so it was
+ * latent — which is exactly when a mirror is cheapest to fix.
+ *
+ * This is the second mirror in this file (the first shadows `gate.yml`), and
+ * working law 4 applies to it identically: `server/preflight.test.ts` parses
+ * the real `include` array and reddens when these pairs drift from it.
+ */
+export const COLLECTED_PATTERNS: ReadonlyArray<{ readonly root: string; readonly suffix: string }> = [
+  { root: "server/", suffix: ".test.ts" },
+  { root: "server/", suffix: ".spec.ts" },
+  { root: "client/src/", suffix: ".test.ts" },
+];
 
 /**
- * Vitest only collects `server/**` and `client/src/**` (vitest.config.ts). A
- * changed file outside those roots — a script, a doc, a workflow — has no
- * neighbouring suite to select, and saying so is better than selecting none
- * silently.
+ * Whether vitest's `pnpm test` config would collect this path.
+ *
+ * A changed file outside the collected roots — a script, a doc, a workflow —
+ * has no neighbouring suite to select, and saying so is better than selecting
+ * none silently.
  */
+export function isCollectedTest(file: string): boolean {
+  const unix = file.replace(/\\/g, "/");
+  // `*.integration.test.ts` needs a running dev server and is excluded from
+  // `pnpm test` by the config; selecting one turns a green preflight into a red
+  // that has nothing to do with the diff.
+  if (unix.includes(".integration.test.")) return false;
+  return COLLECTED_PATTERNS.some(({ root, suffix }) => unix.startsWith(root) && unix.endsWith(suffix));
+}
+
+/** Whether a changed file sits under a root vitest collects at all. */
 function isCollectedRoot(file: string): boolean {
   const unix = file.replace(/\\/g, "/");
-  return unix.startsWith("server/") || unix.startsWith("client/src/");
+  return COLLECTED_PATTERNS.some(({ root }) => unix.startsWith(root));
 }
 
 function dirOf(file: string): string {
@@ -225,7 +252,7 @@ export function selectDiffAdjacentTests(
   changed: readonly string[],
   repoTests: readonly string[],
 ): TestSelection {
-  const tests = repoTests.map((t) => t.replace(/\\/g, "/")).filter(isTestFile);
+  const tests = repoTests.map((t) => t.replace(/\\/g, "/")).filter(isCollectedTest);
   const byDirectory = new Map<string, string[]>();
   for (const test of tests) {
     const dir = dirOf(test);
@@ -270,6 +297,16 @@ export function gateRunCommands(workflowText: string): string[] {
   const lines = workflowText.split(/\r?\n/);
   const commands: string[] = [];
   for (let i = 0; i < lines.length; i += 1) {
+    // ⚠ A FOLDED BLOCK IS REFUSED, NOT PARSED WRONG (review round 2, nit).
+    // `run: >` would otherwise read as the literal command ">" and every line
+    // of its body would go unseen — one more silent road into the drift arm,
+    // which is the one thing this reader must never have. The gate uses no
+    // folded blocks today; if one arrives, this says so instead of going quiet.
+    if (/^\s*run:\s*>[-+]?\s*$/.test(lines[i])) {
+      throw new Error(
+        "gate.yml uses a folded `run: >` block, which this reader cannot see into — teach it the shape before trusting the drift arm again",
+      );
+    }
     const inline = /^\s*run:\s*(?!\|)(\S.*)$/.exec(lines[i]);
     if (inline) {
       commands.push(inline[1].trim());
