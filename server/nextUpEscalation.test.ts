@@ -197,8 +197,17 @@ describe("the escalation verdict", () => {
   });
 
   it("does NOT escalate on an empty queue", () => {
-    const queue = queueFile("empty", []);
-    const result = run("--queue", queue, "--state", statePath("empty"), "--today", "2026-09-05");
+    /* ⚠ THE FIXTURE NAMES HERE ARE NOT FREE, AND THAT IS NOT A STYLE NOTE.
+       `pinningTests` (scripts/lib/capabilityAtlas.mts) credits any server test
+       naming a door id as a QUOTED LITERAL. The first draft of this suite used
+       "empty" and "unreadable", and the capability atlas duly recorded this
+       crew-tooling file as PINNING the casting refusal doors `empty`,
+       `unreachable` and `concept.unreadable` — three doors it has never been
+       within a mile of. A real arm could then be deleted and the
+       `unpinned-refusal` finding would not fire. Caught by the reviewer in the
+       Atlas diff of this PR's own commit. */
+    const queue = queueFile("empty-queue", []);
+    const result = run("--queue", queue, "--state", statePath("empty-queue"), "--today", "2026-09-05");
 
     expect(result.last).toMatch(/^NONE: /);
     expect(result.status).toBe(1);
@@ -293,10 +302,31 @@ describe("it fails toward NOT spending", () => {
   it("answers NONE when the queue cannot be read at all", () => {
     /* An unauthenticated `gh` prints nothing, which looks exactly like an empty
        queue — so an unreadable queue must never be read as "no cards". */
-    const result = run("--queue", join(dir, "does-not-exist.json"), "--state", statePath("unreadable"), "--today", "2026-09-05");
+    const result = run("--queue", join(dir, "does-not-exist.json"), "--state", statePath("unreadable-state"), "--today", "2026-09-05");
 
     expect(result.last).toMatch(/^NONE: /);
     expect(result.last).toContain("could not be read");
+    expect(result.status).toBe(1);
+  });
+
+  it("answers NONE when a row has no usable issue number", () => {
+    /*
+      NaN IS THE ONE SHAPE THAT COULD HAVE ESCALATED FOREVER, and it is the
+      card's own "one session, never five" running backwards. `Number(undefined)`
+      is NaN, so a malformed row could print `ESCALATE #NaN` — and then
+      `--record NaN` is refused, the ledger never advances, and the no-repeat
+      rule never engages. Every launch would buy another session on the same
+      unreadable row. A queue holding a row nobody can name is an unreadable
+      queue, so it answers NONE.
+    */
+    const path = join(dir, "no-number.json");
+    writeFileSync(path, JSON.stringify([
+      { title: "a row with no number", labels: [{ name: "awaiting-fable" }] },
+    ]), "utf8");
+    const result = run("--queue", path, "--state", statePath("no-number"), "--today", "2026-09-05");
+
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.last).not.toContain("NaN");
     expect(result.status).toBe(1);
   });
 

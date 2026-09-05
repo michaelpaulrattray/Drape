@@ -266,6 +266,20 @@ if (rows.length >= QUEUE_LIMIT) none(`${QUEUE_LIMIT} rows came back, which is th
  * asked. The two sorts are the one paragraph of shared logic that is duplicated
  * here, and `server/nextUpEscalation.test.ts` pins them against each other.
  */
+/**
+ * ⚠ **A ROW NOBODY CAN NAME MAKES THE WHOLE QUEUE UNREADABLE, and the reason is
+ * the no-repeat rule rather than tidiness** (reviewer finding, PR #544).
+ *
+ * `Number(undefined)` is `NaN`. A malformed row carrying `awaiting-fable` could
+ * become the top card, print `ESCALATE #NaN` — and then `--record NaN` is
+ * refused by the integer check above, so the ledger never advances and the same
+ * row buys a Fable session at **every** launch. That is "one session, never
+ * five" running backwards, which is the one direction this gate must not have.
+ */
+if (rows.some((row) => !Number.isInteger(Number(row?.number)))) {
+  none("a row in the founder-ordered queue has no usable issue number — a queue that cannot be read row by row is an unreadable queue");
+}
+
 const items = rows
   .map((row) => {
     const labels = Array.isArray(row.labels)

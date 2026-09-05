@@ -140,8 +140,7 @@
           "server/castingV2/refineService.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
           "server/db/referenceReadDemand.test.ts",
-          "server/deployWatchDecision.test.ts",
-          "server/nextUpEscalation.test.ts"
+          "server/deployWatchDecision.test.ts"
         ],
         "sites": [
           "server/castingV2/conceptDescribe.ts:1168",
@@ -171,8 +170,7 @@
           "server/castingV2/faceScanService.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceSlotCatalogue.test.ts",
-          "server/castingV2/refineRefusals.test.ts",
-          "server/nextUpEscalation.test.ts"
+          "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:635",
@@ -674,8 +672,7 @@
           "server/castingV2/refineService.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
           "server/db/referenceReadDemand.test.ts",
-          "server/deployWatchDecision.test.ts",
-          "server/nextUpEscalation.test.ts"
+          "server/deployWatchDecision.test.ts"
         ],
         "sites": [
           "server/castingV2/castingIntent.ts:1274",
