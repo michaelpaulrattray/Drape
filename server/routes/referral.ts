@@ -16,6 +16,7 @@ import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { sendReferralInviteEmail } from "../klaviyo";
+import { appBaseUrl } from "../_core/appOrigin";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("routes/referral");
 
@@ -38,7 +39,7 @@ export const referralRouter = router({
       });
     }
 
-    const baseUrl = ctx.req.headers.origin || "https://drape.ai";
+    const baseUrl = ctx.req.headers.origin || appBaseUrl();
     const referralLink = `${baseUrl}?ref=${code}`;
 
     return {
@@ -115,7 +116,7 @@ export const referralRouter = router({
       }
 
       // Send email via Klaviyo (non-blocking — invite is recorded regardless)
-      const baseUrl = ctx.req.headers.origin || "https://drape.ai";
+      const baseUrl = ctx.req.headers.origin || appBaseUrl();
       const code = await getOrCreateReferralCode(ctx.user.id, ip);
       const referralLink = code ? `${baseUrl}?ref=${code}` : baseUrl;
 
