@@ -121,3 +121,89 @@ run (08-31), the first `admin_audit` read (§A's stated gap), append run 2.
 
 A process note for the Retro, not a Warden finding: one patrol, three
 processes, two deaths mid-close — the R5 class (#101) twice in one card.
+
+---
+
+## Run 2 — 2026-09-06 02:49–03:2x AEST (Warden, patrol #2)
+
+Ran because `patrol-clocks.mts` read the seat **4 days overdue** with his
+Security switch ON, and nothing in NEXT UP was takeable by an Opus shift (each
+of the six read at the card: #543 waiting on his verdict, #534 built and
+waiting on his eye, #391 money-path, #404 blocked on it, #508 and #535 both
+carrying a proper `awaiting-fable` hold line under #541 rule 3).
+
+Run 1 left this run a named brief and it is worked in order: `secrets.yml`'s
+first scheduled run, the first `audit_logs` read, and the standing readings.
+
+### A. Findings baseline — the readings
+
+**Nothing was found. Every reading below is the artifact, not the claim.**
+
+| reading | at | verdict | done with it |
+|---|---|---|---|
+| gitleaks, full history — the first SCHEDULED run (run 1's stated next step) | run **33439965525**, 2026-08-31T21:10:29Z, `2f623002`, cron `0 16 * * 1` | **3094 commits, 68.47 MB, `no leaks found`** | Read at the run's own log, not at its green tick — the conclusion and the finding are different questions (#219's lesson). Baseline moves 2668 → 3094 commits, still zero. Next scheduled run 2026-09-07. |
+| semgrep, tree | run **33972169630**, `team/chips-write-box` (merged as `49acd1d1`), semgrep 1.174.0 | **`Ran 76 rules on 1770 files: 0 findings`**, step green | Population 1607 → 1770 files since run 1, same 76 rules, still zero. ⚠ **The LOCAL road is gone**: `pnpm warden:semgrep` on this Windows box now fails `'semgrep' is not recognized` — run 1 took a local reading and this seat could not. CI takes it on every PR, so the reading exists; the ledger entry below records which road it is. |
+| access-control suites | `31940367`, 02:49 local | **4 files / 26 tests green** — `approvalGate` 11, `staffImageBoundary` 5, `publicInputStrictness` 6, `sessionIssuanceSites` 4 | Identical to run 1. Invariant 9's five mint sites still five. |
+| **`audit_logs` — the first read (run 1's stated gap)** | production, `hayabusa…:23768`, 580 rows, 2026-07-10 → 2026-09-05 | **0 critical, 6 warning** — the six are three `credits.admin_added` + their three `admin.action` partners, all July, all `userId` 1, all his own credit adjustments | Read counts and shapes only; no metadata body printed, because a body is what the boundary is about. |
+| `abuse.*` rows — the login-attack detector's own writes | same read | **zero, all time** | ⚠ **Zero rows is not evidence the wire is alive**, so it was checked rather than assumed: `noteFailedLogin` is called at **both** failed-login exits (`server/routes/emailAuth.ts:243, :293`) including the unknown-email exit, and `loginAttackAlert.test.ts` drives it **11/11 green**. So the alarm is live and nothing has crossed 50 failures in five minutes — expected on a 4-account beta. |
+| **the metadata boundary, at the rows** | same read, keys and lengths only | **holds** — `masterPrompt\|technicalSchema\|preferences\|resultUrl\|imageUrl` appears in **0 of 580 rows** | The two casting writers are the volume (457 `casting.scan_miss`, 19 `casting.refusal` = 82% of the log) and both are clean by construction: `scan_miss` carries `{rescan, variantId, cacheSize}`, 53 chars max; `casting.refusal` carries enumerated reason tags only (`absorbed`, `wall_unfileable`, `gate_ink_document`, … longest 17 chars), `facet` null on every row, **nothing she typed**. |
+| the bug-report exception (CLAUDE.md's one enumerated widening, #255) | `31940367` | **holds** — all three procedures `adminProcedure`, never `moderatorProcedure`; `.strict()` inputs; the audit row carries `Bug report #N: from → to` and **never the `description`** | `bugReportInbox.test.ts` 12/12. Population still zero rows. |
+| invariant 5 — the public-endpoint allowlist | Atlas findings | **12, matching CLAUDE.md's enumerated list name for name** | Also read: `onboarding-endpoint` 2 (the two exemptions), `non-strict-input` 132 — both exactly the figures CLAUDE.md carries. No drift. |
+| `blocked_ips` | production | **0 rows** | Consistent with the documented inert control (recorded, never checked on a request). Nothing changed; not re-filed. |
+| the security surface's own diff since run 1 | `git log --since=2026-08-26` | **5 commits, 8 files** — read | Two money-path: `4b4a9dfd` (#531, Stripe returns) is configured-not-Origin-derived with wire arms both environments (`productionBaseUrl.test.ts` 10/10) — the header-trust trap named and avoided; `ce6c0cb9` (#401 toolKind). Nothing to file. |
+| staff population | production | **1 admin, 3 users** | Recorded. |
+
+⚠ **A false alarm that died at the artifact, recorded so nobody re-finds it:**
+the newest `auth.login` row is **2026-08-25**, eleven days before this run, which
+looks like an audit write that stopped. It is not. `SESSION_MAX_AGE_MS` is
+**30 days** (`shared/const.ts:2`), both mints write `LOGIN_SUCCESS`
+(`emailAuth.ts:345`, `googleAuth.ts` ×2), and the shifts mint their own cookies
+rather than walking the login route. A live session covers the gap entirely.
+
+⚠ **And an arithmetic trap in this seat's own instrument:** the `json_table`
+key-fan-out read reports `casting.scan_miss` at **1371** where the row count is
+**457** — one row per key, three keys. The two numbers are both right and only
+one of them is a row count.
+
+### B. Instrument ledger
+
+Unchanged from run 1 and re-read at the workflow files rather than believed:
+gitleaks in `gate.yml` (step *"Secret scan (gitleaks, this PR's commits)"*),
+`actionlint + zizmor`, semgrep before install, and `secrets.yml`'s Monday cron;
+`knip.yml` nightly is firing (last five scheduled runs all success, 08-31 →
+09-04).
+
+**One row changes: semgrep's local road.** Run 1 recorded a LOCAL reading
+(`fcfee27e`, 08:20); semgrep is no longer on this box. **CI is now the only road
+to that reading**, which is the same standing the ledger already gives actionlint
+and zizmor. Stated rather than left to be discovered by the next seat wondering
+why the command fails.
+
+### C. Controls
+
+No new control was built — the anti-boredom rule binds this seat hardest, and
+nothing on the queue asked for one. The controls exercised were existing ones,
+each driven rather than cited: `loginAttackAlert` 11/11 (the alarm can fire),
+the four access-control suites 26/26, `bugReportInbox` 12/12,
+`productionBaseUrl` 10/10.
+
+### D. What this run leaves standing, and run 3's brief
+
+Nothing was found, so nothing was filed — a clean weekly pass.
+
+**Run 3 (~2026-09-13) takes, in order:**
+1. `secrets.yml`'s 2026-09-07 scheduled run, read at its log.
+2. The `audit_logs` read again, and this time **look at whether the two casting
+   writers should be in this table at all** — 82% of a staff-readable security
+   log is product telemetry. It is not a boundary breach (proven above) and it is
+   not a finding; it is a question about whether the abuse signal is legible
+   under the volume, and it belongs to a card someone writes deliberately, not to
+   a patrol that noticed it.
+3. Re-read the security-surface diff since this run, the same way §A did.
+
+**Not a Warden brief and named so it is not re-proposed:** the in-memory hash
+chain, the empty admin allowlist and unchecked IP blocks are all on CLAUDE.md's
+"currently not enforced" list with their roads read; none of them moved.
+
+**Side work this shift, not part of the patrol:** #420 (the staff account search
+by id) — PR #569.

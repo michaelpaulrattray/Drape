@@ -1,7 +1,7 @@
 {
-  "edition": 264,
-  "updatedAt": "2026-09-05T15:34:40.205Z",
-  "shift": "Foreman — your tail court, re-run on the Re-imagine road: 24 tails out of 24",
+  "edition": 265,
+  "updatedAt": "2026-09-05T17:22:08.855Z",
+  "shift": "Warden — the weekly security pass came back clean, and account search by id now works",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T15:34:29.853Z",
+      "readAt": "2026-09-05T17:28:54.053Z",
       "items": [
         {
           "issueNumber": 16,
@@ -1924,7 +1924,7 @@
     },
     {
       "id": "sphinx-tail-court-530",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 530,
       "filedAt": "2026-09-05T12:27:03.791Z",
@@ -1940,7 +1940,7 @@
     },
     {
       "id": "sphinx-tail-controls-530",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 530,
       "filedAt": "2026-09-05T12:27:03.791Z",
@@ -3989,6 +3989,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-569-id-search-420",
+      "title": "A moderator can finally search for an account by its number — it had never worked, on either staff page (#420)",
+      "status": "merged",
+      "prNumber": 569,
+      "note": "Both staff pages print an account number beside every person — `#40486` — and both invited you to search by it. Typing one returned nothing. Not \"no such account\": nothing, for any number, ever. The search was looking at names, emails and the sign-in handle, and never at the number it was showing you.\n\nSomeone had already noticed half of this and taken the words \"or id\" off the moderator page, which was the right thing to do while it did not work — a box that offers something it cannot do is worse than a box that does not offer it. This is the other half: the search does it now, so the words come back.\n\nTwo things worth knowing about how it works. A number matches EXACTLY. The obvious quick fix would have been to match numbers loosely, and that would have looked fine and been worse than useless: searching for \"1\" would return nearly every account. And it still searches names and emails at the same time, because an email can have digits in it and hiding a real match would be its own small bug.\n\nThe sweep found the sibling nobody had: the ADMIN page's account search had been making exactly the same promise, through exactly the same machinery, the whole time — the earlier fix only reached the moderator page. It needed no separate change; one fix made both pages honest at once, and they are now checked together so they cannot drift apart again.\n\nThe code reviewer caught the best problem of the night, and it is the kind that only shows up when someone reads it as a person would use it: the pages print the number as `#40486`, so the likeliest thing anyone will ever paste is the string they copied off the row in front of them — and the `#` made it fail, printing \"No users match that search\" all over again. It takes the `#` now. Fixed, tested, and driven in the real app: typing `40486` or `#40486` returns exactly that one account, in both light and dark."
+    },
+    {
+      "id": "warden-patrol-2",
+      "title": "The weekly security pass ran, and it found nothing — here is what \"nothing\" was actually checked against",
+      "status": "merged",
+      "note": "You have Security switched on in the background panel, and that seat had gone eleven days without a run. It ran tonight. Nothing was found, and nothing was filed — but \"clean\" is only worth something if you know what it looked at, so here is the list in plain terms.\n\n**Nobody's secrets are in our code.** Every commit this product has ever had — 3,094 of them — was scanned for passwords and keys on 31 August. None found. That scan runs itself every Monday now, and I read its own log rather than trusting the green tick beside it.\n\n**Nobody can reach what they shouldn't.** The four suites that hold the rules about who can see what — who can sign in, what staff can see of a customer's work, which addresses the public can reach — all pass, 26 checks. The list of publicly reachable addresses is still exactly the twelve it is supposed to be, name for name.\n\n**The alarm on the front door is alive.** We have an alarm that fires if someone starts guessing passwords at the site. It has never fired, which for four accounts is what you would expect — but \"it has never fired\" and \"it is broken\" look identical from the outside, so I checked it the other way: it is connected at both places a failed sign-in can happen, and I set it off deliberately to watch it work.\n\n**And the one I most wanted to check: our own staff log does not leak a customer's work.** The security log staff can read now holds 580 entries. The rule is that staff may see THAT a picture was made, never the words that made it. I read all 580 for any trace of a brief, a recipe or an image address. There are none — the two things that write most of that log carry a candidate number and a one-word reason and nothing a customer typed.\n\nOne thing I nearly reported and did not: no sign-in has been recorded since 25 August, which looks like a broken log. It is not — a signed-in session lasts thirty days, so yours simply has not expired. Worth saying because a false alarm about security is expensive in a way a real one is not.\n\nThe seat's own record has the numbers and what the next run should look at.",
+      "prNumber": null
+    },
+    {
       "id": "pr-567-chip-writes-box-534",
       "title": "A chip edit writes straight into your prompt box, and the box is the next brief (#534)",
       "status": "merged",
@@ -5533,10 +5547,10 @@
   "problems": [
     {
       "id": "queue-shape-0906-foreman",
-      "title": "The queue: 96 open, 7 carrying your word, 0 urgent, 0 rotting",
+      "title": "The queue: 95 open, 6 carrying your word, 0 urgent, 1 rotting",
       "severity": "info",
       "state": "open",
-      "detail": "Unchanged in shape since last night, and that is the honest reading rather than a fresh count dressed up as news.\n\nSeven cards carry your word. Two wait on a shift with the reviewer's seat (#508, #535); one waits on another card first (#404); #391 is money-path work that no shift on this seat may take, which is a gap in the rules rather than a queue problem and is noted on #543. That leaves #530 — worked tonight and now back with you — and #534, which is waiting on your eye rather than on any work.\n\nNothing has gone a week untouched."
+      "detail": "One card closed since last night (#530, your sphinx-cat tail question — the court is on the page below it) and one more tonight (#420). Six cards carry your word and none of them is waiting on a shift: two need the reviewer's seat (#508, #535), one waits on another card (#404), #391 is pricing work no shift may take, #543 and #534 are both waiting on YOU rather than on anybody's hands.\n\nOne card has now gone a week untouched — **#257**, about a colour check that reads two kinds of colour and misses a third. It is not urgent and nothing is broken because of it; it is on this line because the rule is that a card going quiet gets said out loud rather than sinking.\n\nNothing else has aged."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -5864,7 +5878,7 @@
     140
   ],
   "nextUp": {
-    "readAt": "2026-09-05T15:34:29.096Z",
+    "readAt": "2026-09-05T17:28:53.327Z",
     "items": [
       {
         "issueNumber": 391,
@@ -5888,11 +5902,6 @@
           "state": "fable",
           "because": "a DESIGN DECISION — what replaces the deploy rite as the road to production, and what the rite becomes instead, is a shape question rather than a transcription…"
         }
-      },
-      {
-        "issueNumber": 530,
-        "title": "The sphinx-cat tail court — his one remaining check on the species sentence (reply #129)",
-        "urgent": false
       },
       {
         "issueNumber": 534,
