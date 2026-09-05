@@ -619,6 +619,10 @@ export function readBriefChanges(compiledBrief: unknown): BriefChange[] {
       if (!entry || typeof entry !== "object") continue;
       const { field, mode, to } = entry as Record<string, unknown>;
       if (typeof field !== "string" || !OVERRIDABLE_FIELDS.includes(field as OverridableField)) continue;
+      /* A mode this reader does not know is dropped like any other unknown
+         shape (review of #546): a future third mode — say a removal whose
+         `to` holds the OLD value — must not cross as a value line. */
+      if (mode !== "replaced" && mode !== "appended") continue;
       if (typeof to !== "string" || to.trim().length === 0) continue;
       changes.push({
         field: field as OverridableField,

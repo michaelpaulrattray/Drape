@@ -225,6 +225,9 @@ describe("nothing internal crosses the boundary", () => {
           { field: "notAField", mode: "replaced", to: "x" },
           { field: "build", mode: "replaced", to: "   " },
           { field: "build", mode: "replaced", to: 42 },
+          /* An unknown MODE drops too (review of #546) — a future "removed"
+             edit's `to` could hold the OLD value, which must not cross. */
+          { field: "sex", mode: "removed", to: "a woman" },
           { field: "heritage", mode: "replaced", to: `ok ${"x".repeat(BRIEF_CHANGE_MAX * 2)}` },
           "not an object",
         ],
