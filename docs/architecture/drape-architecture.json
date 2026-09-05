@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fc227ff4854f5028"
+    "sourceFingerprint": "69cc0d47295bffb0"
   },
   "domains": [
     {
@@ -13332,6 +13332,10 @@
     {
       "id": "test:server/shiftDigest.test.ts",
       "path": "server/shiftDigest.test.ts"
+    },
+    {
+      "id": "test:server/shiftLedger.test.ts",
+      "path": "server/shiftLedger.test.ts"
     },
     {
       "id": "test:server/shiftWorktree.test.ts",

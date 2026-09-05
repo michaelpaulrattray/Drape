@@ -68,6 +68,12 @@ import {
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { priceFalCalls, readFalPrices, readFalTraffic } from "./lib/falSpend.mts";
 import { activityByDay, readOpenRouterActivity } from "./lib/openrouterBalance.mts";
+import { readMergedPrs } from "./lib/mergedPrGateTime.mts";
+import {
+  type ShiftRunReading,
+  attributePrsToSessions,
+  renderLedgerBlock,
+} from "./lib/shiftLedger.mts";
 
 const arg = (name: string): string | undefined => {
   const index = process.argv.indexOf(`--${name}`);
@@ -496,6 +502,44 @@ for (const model of priced.models) {
   console.log(`   ${usd.padStart(9)}  ${String(model.calls).padStart(5)} calls  ${model.model}  [${model.basis}] ${model.note}`);
 }
 console.log(`   fal priced total $${priced.usd.toFixed(2)} (unpriced models: ${priced.unpriced.length}) — refine rows are the SURVIVING ones, so this is a floor`);
+
+// ── G. the shift process ──────────────────────────────────────────────
+// #543 item 4, founder-ordered. Two numbers, derived at every ledger run from
+// `crew_shift_runs` joined to GitHub's own PR timestamps: CARDS LANDED PER
+// SESSION and GATE MINUTES PER CARD. They are the verdict on the overlap +
+// preflight design this card built, and the card's own words are that they
+// belong in a tracked reader rather than the investigation's disposable.
+//
+// ⚠ IT IS UNREAD, NEVER ZERO, WHEN `gh` CANNOT ANSWER. The rest of this ledger
+// reads production's own rows; this section needs GitHub, so an unauthenticated
+// or absent `gh` must print as an absence and never as a clean set of figures
+// (doctrine entry 1).
+console.log("");
+const shiftRuns = (await q(
+  `SELECT id, shift, seat, startedAt, endedAt, outcome
+     FROM crew_shift_runs WHERE startedAt >= ? ORDER BY startedAt`,
+  [since],
+)).map<ShiftRunReading>((row) => ({
+  id: Number(row.id),
+  shift: String(row.shift),
+  seat: String(row.seat),
+  startedAt: new Date(row.startedAt).toISOString(),
+  endedAt: row.endedAt ? new Date(row.endedAt).toISOString() : null,
+  outcome: row.outcome === null || row.outcome === undefined ? null : String(row.outcome),
+}));
+
+const mergedPrs = readMergedPrs(sinceIso);
+if (!mergedPrs.ok) {
+  console.log(`G. THE SHIFT PROCESS — UNREAD: ${mergedPrs.why}`);
+  console.log(`   (${shiftRuns.length} shift run(s) in the window were read; the GitHub half is what failed.)`);
+} else {
+  console.log(
+    renderLedgerBlock(
+      attributePrsToSessions(shiftRuns, mergedPrs.prs),
+      `last ${days}d, since ${sinceIso.slice(0, 10)}`,
+    ),
+  );
+}
 
 await db.end();
 
