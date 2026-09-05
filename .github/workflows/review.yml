@@ -324,8 +324,15 @@ jobs:
       # Node 24 strips types natively, so this runs the shared `.mts` reader
       # with NO dependency install — the same reason gate.yml reaches for
       # setup-node rather than a package install for its own cheap steps.
+      # ⚠ `continue-on-error` HERE TOO, AND IT IS NOT BELT-AND-BRACES.
+      # Without it, a failed setup-node fails the JOB — so the `review` check
+      # goes RED after a review that actually ran and produced findings, which
+      # reads as "no verdict" (#219) and is the single worst thing this whole
+      # step could cause. Found by hand-reviewing this PR, which is the review
+      # it can never get from the reviewer (#165).
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         if: ${{ steps.fable.outcome == 'success' }}
+        continue-on-error: true
         with:
           node-version: 24
 

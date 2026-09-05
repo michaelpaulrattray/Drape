@@ -86,6 +86,22 @@ describe("the step cannot change what the `review` check means (#219)", () => {
     expect(stepBlock).toContain("continue-on-error: true");
   });
 
+  it("⚠ and so is the setup-node step BEFORE it — every step this feature added", () => {
+    // Found by hand-reviewing this change, which is the review it can never
+    // get from the reviewer (#165). Without it, a failed setup-node fails the
+    // JOB, so `review` goes RED after a review that actually ran and produced
+    // findings — which reads as "no verdict" (#219) and is the worst thing
+    // this step could possibly cause.
+    const nodeStep = (() => {
+      const start = reviewYml.indexOf("      - uses: actions/setup-node@");
+      expect(start, "the setup-node step is missing from review.yml").toBeGreaterThan(-1);
+      const next = reviewYml.indexOf("\n      - ", start + 10);
+      return reviewYml.slice(start, next === -1 ? reviewYml.length : next);
+    })();
+    expect(nodeStep).toContain("continue-on-error: true");
+    expect(nodeStep).toContain("steps.fable.outcome == 'success'");
+  });
+
   it("it runs only when the reviewer actually produced a verdict", () => {
     // The self-skip branch (#165) and any outage are outcomes other than
     // success, and neither of those is a round.
