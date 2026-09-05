@@ -80,7 +80,7 @@ import { interpretBrief } from "./interpreter";
 import { authorPrompt, authorTextEngine, type Imagination } from "./promptAuthor";
 import { houseLaneFor } from "./houseBlock";
 import { followClause } from "./familyClause";
-import { rewriteBrief } from "./briefRewrite";
+import { rewriteBrief } from "@shared/briefRewrite";
 import type { CastStyle } from "../../shared/castStyles";
 import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
 import type { CastingPath } from "../../shared/castingPaths";

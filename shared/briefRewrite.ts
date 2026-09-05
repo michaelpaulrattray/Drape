@@ -44,14 +44,70 @@
  * Author road only: the house road composes per-candidate prose from the
  * intent, which `applyOverrides` already edits structurally — its prompts
  * never carried the contradiction.
+ *
+ * ⚠ **IT MOVED OUT OF `server/castingV2/` INTO `shared/` ON 2026-09-05 (#534),
+ * AND THE MOVE IS THE POINT.** The founder, verbatim: *"a chip edit writes
+ * straight into the prompt box, the box is the next brief … Chips and box can
+ * never disagree, and the guard must prove that before it merges."* Under #164
+ * this ran at COMPILE time, so the customer's box still said "in their 30s"
+ * while the engine was sent "40s" — the disagreement he was looking at. Run it
+ * at the CHIP CLICK instead and the box carries the edit, the box is what the
+ * roll sends, and there is no second channel left to disagree with it. That
+ * needs one rewriter reachable from both sides, which is this file's address.
+ * A second copy in `client/` would be working law 4 exactly.
+ *
+ * One consequence, named rather than discovered: the APPENDED sentences are
+ * now CUSTOMER-VISIBLE, because they land in the box the customer is reading.
+ * They are ordinary casting English for that reason — "Of Nordic heritage.",
+ * "Athletic build.", "A warm, unhurried presence." — and never studio
+ * machinery. Nothing from the locked house block is in here and none may be
+ * added: what the sheet may show is #534's own rule.
  */
-import type { LockOverrides } from "./briefCompiler";
-import type { AgeBand, AgePhase, Build, EnergyKey, Heritage, LookKey, Sex } from "./castingIntent";
-import { HERITAGES, LOOK_KEYS } from "./castingIntent";
-import { agePhrase } from "./familyClause";
+import type { AgeBand, AgePhase, Build, EnergyKey, Heritage, LookKey, Sex } from "./castingVocabularies";
+import { HERITAGES, LOOK_KEYS } from "./castingVocabularies";
+
+/**
+ * The facts a chip edit may write into the brief.
+ *
+ * Structurally the server's `LockOverrides` (`briefCompiler.ts`) and the
+ * client's (`sheetState.ts`) — all three are built from the same shared
+ * vocabularies, so each caller passes its own type and neither has to import
+ * the other's. It is declared here rather than imported because this module is
+ * the one both sides now share (#534): a shared module reaching into `server/`
+ * is exactly the dependency that would stop the client from ever calling it.
+ *
+ * `archetype` is `string` rather than the server's `ArchetypeKey` because the
+ * archetype prose is prompt craft and stays server-side. No chip sets it — the
+ * echo's fields are sex, age, heritage, build, presence and look — so the
+ * client never supplies one, and the server's narrower union is assignable.
+ */
+export type BriefFactOverrides = Partial<{
+  sex: Sex;
+  ageBand: AgeBand;
+  agePhase: AgePhase;
+  heritage: Heritage;
+  build: Build;
+  energy: EnergyKey;
+  look: LookKey;
+  archetype: string;
+}>;
+
+/**
+ * The age fact as a phrase — "in their late 40s", "in their seventies or older".
+ *
+ * It lives beside the rewriter that appends it; `familyClause.ts` re-exports it
+ * for the follow clause, so there is ONE owner and the two surfaces cannot come
+ * to word the same fact differently (working law 4).
+ */
+export function agePhrase(band: AgeBand, phase: AgePhase | null): string {
+  const qualifier = phase ? `${phase} ` : "";
+  if (band === "70s+") return `in their ${qualifier}seventies or older`;
+  if (band === "teens") return `in their ${qualifier}teens`;
+  return `in their ${qualifier}${band}`;
+}
 
 export type BriefEditMode = "replaced" | "appended";
-export type BriefEdit = { field: keyof LockOverrides; mode: BriefEditMode; to: string };
+export type BriefEdit = { field: keyof BriefFactOverrides; mode: BriefEditMode; to: string };
 export type RewrittenBrief = { text: string; edits: BriefEdit[] };
 
 const SUBJECT_NOUN: Record<Sex, string> = {
@@ -124,7 +180,7 @@ function ageToken(band: AgeBand, phase: AgePhase | null): string {
 }
 
 type FieldWriter = {
-  field: keyof LockOverrides;
+  field: keyof BriefFactOverrides;
   /** Spans stating the fact today; every match is replaced. */
   matcher: RegExp | null;
   /** What a matched span becomes — a function where the span's own grammar shapes the result. */
@@ -141,7 +197,7 @@ type FieldWriter = {
   requireSingle?: boolean;
 };
 
-function writersOf(overrides: LockOverrides): FieldWriter[] {
+function writersOf(overrides: BriefFactOverrides): FieldWriter[] {
   const writers: FieldWriter[] = [];
   if (overrides.ageBand) {
     const token = ageToken(overrides.ageBand, overrides.agePhase ?? null);
@@ -218,12 +274,72 @@ function energySentence(energy: EnergyKey): string {
   return ENERGY_SENTENCE[energy];
 }
 
+/** The possessive that agrees with a subject of this sex. */
+const POSSESSIVE: Record<Sex, string> = { female: "her", male: "his", nonbinary: "their" };
+
+/**
+ * THE POSSESSIVE FOLLOWS THE NOUN IT BELONGS TO.
+ *
+ * ⚠ **Found on 2026-09-05 while wiring #534, and it is a defect this file has
+ * always had** — it simply could not be SEEN before. `writersOf` replaces the
+ * gender NOUN and nothing else, so "a Nordic woman in her 30s" edited to male
+ * came out "a Nordic man in **her** 30s". Until today that sentence went
+ * straight to the engine and no human read it; from today it is written into
+ * the customer's own brief box, in front of them, at the click. Broken English
+ * in his box is not a thing to leave standing on the surface his eye judges.
+ *
+ * It is deliberately NARROW, and the attribution is **ADJACENCY**: the only
+ * possessive touched is the one in an anchored age span sitting IMMEDIATELY
+ * AFTER the gender noun this pass just replaced — "man **in his** 30s". That
+ * is the one construction in which the pronoun provably refers to the subject,
+ * because the subject noun is the word before it.
+ *
+ * ⚠ **TWO WEAKER ANCHORS WERE TRIED FIRST AND BOTH LET A SECOND PERSON THROUGH**
+ * (rounds 1 and 2 of the review of PR #567), which is why the rule is stated
+ * this way rather than as a span filter:
+ *
+ *   - *"every anchored span"* misgendered a second aged person —
+ *     *"a woman in her 30s, her daughter in her teens"* + male gave
+ *     *"…her daughter in HIS teens"*. `GENDER_NOUN` does not list "daughter",
+ *     so the subject noun read as unique while the age spans did not.
+ *   - *"the sole anchored span"* was no better, only rarer: **exactly one is
+ *     not the same as the subject's.** When the subject's age is UNSTATED and
+ *     a second person's is stated, the only span in the sentence belongs to
+ *     the other person — *"a woman, her daughter in her teens"* + male gave
+ *     *"a man, her daughter in HIS teens"*. Span-count was a proxy for
+ *     attribution and the proxy held only when the subject happened to be
+ *     among the aged.
+ *
+ * Adjacency is not a proxy. Everything else is left exactly alone — a bare
+ * "her jacket", "his brother", or any age span belonging to someone else —
+ * because nothing here can tell whose they are, and this file's standing
+ * lesson (review of PR #173) is that an unanchored token is a guess. The
+ * fallback is the behaviour this module had before the pass existed: a stale
+ * possessive on the subject. It can leave a word behind; it cannot write a new
+ * wrong one.
+ *
+ * It runs only where the sex was REPLACED. An APPENDED sex ("Cast a man.")
+ * leaves the brief's own subject wording untouched by design, so there is no
+ * noun for a possessive to have followed.
+ */
+function agreePossessives(text: string, sex: Sex): string {
+  const possessive = POSSESSIVE[sex];
+  /*
+    The noun as it now reads — this runs AFTER the replacement, so the word to
+    anchor on is the new one. Escaped because "androgynous person" holds a
+    space and nothing else; kept in step with `BARE_NOUN` by reading it.
+  */
+  const noun = escapeRegExp(BARE_NOUN[sex]);
+  const adjacent = new RegExp(`(\\b${noun}\\s+in\\s+)(?:her|his|their)(\\s+${DECADE})`, "gi");
+  return text.replace(adjacent, (_whole, head: string, tail: string) => `${head}${possessive}${tail}`);
+}
+
 /**
  * The brief with the customer's chip edits in place, or null when there is
  * nothing to write. Appended sentences ride after the brief's own text,
  * separated by a sentence break; replaced spans leave every other byte alone.
  */
-export function rewriteBrief(briefText: string, overrides: LockOverrides | undefined): RewrittenBrief | null {
+export function rewriteBrief(briefText: string, overrides: BriefFactOverrides | undefined): RewrittenBrief | null {
   const writers = writersOf(overrides ?? {});
   if (writers.length === 0) return null;
 
@@ -256,6 +372,12 @@ export function rewriteBrief(briefText: string, overrides: LockOverrides | undef
         },
       );
       edits.push({ field: writer.field, mode: "replaced", to: writer.to });
+      /*
+        A replaced gender noun takes its possessives with it — see
+        `agreePossessives`. Inside the loop and keyed on THIS writer, so it
+        cannot fire on a brief where the sex only appended.
+      */
+      if (writer.field === "sex" && overrides?.sex) text = agreePossessives(text, overrides.sex);
     } else {
       appendices.push(writer.appended);
       edits.push({ field: writer.field, mode: "appended", to: writer.appended });

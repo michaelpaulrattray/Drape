@@ -7,7 +7,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHOR_SAT_OUT_REASONS, BRIEF_CHANGE_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readBriefChanges, readChips, readImagination } = await import(
+const { AUTHOR_SAT_OUT_REASONS, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readChips, readImagination } = await import(
   "./rollProjection"
 );
 const { authorSatOutRecord } = await import("../../client/src/features/castingV2/castSettingsCopy");
@@ -111,17 +111,29 @@ describe("nothing internal crosses the boundary", () => {
     }
     // The user's own sentence comes back, because it is theirs.
     expect(JSON.parse(projected).briefText).toBe("a wiry cyclist in her 20s");
-    // And no change lines on a house roll: the field exists and is empty (#534).
-    expect(JSON.parse(projected).briefChanges).toEqual([]);
+    /*
+      And the record is her sentence ALONE (#534, his reply #134: "Drop
+      'Changed on this roll'; I made the change, I don't need it repeated").
+      Asserted as ABSENT rather than empty: `toEqual([])` passed on an
+      undefined-free object before this field existed and would pass again the
+      day somebody re-added it holding [] — the key itself is the claim.
+    */
+    expect(Object.keys(JSON.parse(projected))).not.toContain("briefChanges");
   });
 
   /*
     THE PROMPT RECORD IS THE CUSTOMER'S, AND NOTHING ELSE (#534; his ruling,
     verbatim: "it should just show their original prompt and anything they
     changed on the new roll even on a follow"). The projection carries
-    `briefText` and `briefChanges` — the follow clause, the author's draft and
-    the locked block never cross the boundary at all. These arms supersede the
-    #131 slice D suite that pinned the old rebuilt record.
+    `briefText` and that is the whole of it — the follow clause, the author's
+    draft and the locked block never cross the boundary at all. These arms
+    supersede the #131 slice D suite that pinned the old rebuilt record.
+
+    ⚠ **AND `briefChanges` WENT WITH THEM ON 2026-09-05**, on his reply #134
+    ("Drop 'Changed on this roll'; I made the change, I don't need it
+    repeated"). Its reader and its arms are deleted rather than skipped: a
+    chip edit now writes into the customer's own box at the click, so the
+    change IS the brief and there is nothing left for a second field to say.
   */
   describe("the prompt record: the customer's words and their own changes — never a machine sentence (#534)", () => {
     const followRow = () =>
@@ -143,8 +155,6 @@ describe("nothing internal crosses the boundary", () => {
     it("a Follow row's projection carries her words and NO machine sentence — not the clause, not the author's draft, not the block", () => {
       const projected = projectRoll({ roll: followRow(), candidates: [candidateRow()] });
       expect(projected.briefText).toBe("goth woman mid 30s");
-      /* Nothing rode this follow but the brief, so there is no change line. */
-      expect(projected.briefChanges).toEqual([]);
       /* The WHOLE projection, not a field: a machine sentence anywhere reddens (invariant 8's shape). */
       const json = JSON.stringify(projected);
       expect(json).not.toContain("Same casting brief as the attached look");
@@ -159,92 +169,6 @@ describe("nothing internal crosses the boundary", () => {
       expect(raw).toContain("Same casting brief as the attached look");
       expect(raw).toContain("Pale skin, black lace.");
       expect(containsHouseSentence(raw)).not.toBeNull();
-    });
-
-    it("a chip edit crosses as the customer's own change — replaced as a value, appended as its one sentence (#164 → #534)", () => {
-      const register = {
-        kind: "author",
-        rewrites: [
-          { field: "ageBand", mode: "replaced", to: "in their late 50s" },
-          { field: "archetype", mode: "appended", to: "Cast in the moody direction." },
-        ],
-      };
-      expect(readBriefChanges({ register })).toEqual([
-        { field: "ageBand", shape: "value", to: "in their late 50s" },
-        { field: "archetype", shape: "sentence", to: "Cast in the moody direction." },
-      ]);
-    });
-
-    it("a row written before Row A: the facts the old axis clause carried cross, the clause itself never does", () => {
-      const register = {
-        kind: "author",
-        authored: true,
-        carried: {
-          follow: true,
-          overrides: { ageBand: "50s" },
-          clause: "Continue this family: cast a close relative of one person — a woman.",
-        },
-        prompt: "irrelevant here",
-      };
-      expect(readBriefChanges({ register })).toEqual([{ field: "ageBand", shape: "value", to: "50s" }]);
-      const projected = projectRoll({
-        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", register } }),
-        candidates: [candidateRow()],
-      });
-      /* The sentence his ruling quotes — the one his own sheet showed him — never crosses. */
-      expect(JSON.stringify(projected)).not.toContain("Continue this family");
-      expect(JSON.stringify(projected)).not.toContain("close relative");
-      expect(projected.briefChanges).toEqual([{ field: "ageBand", shape: "value", to: "50s" }]);
-    });
-
-    it("an axis-clause-era row that recorded one edit in BOTH channels says it ONCE — the real-row shape (dev 105/107)", () => {
-      /* Byte shape read off dev roll 107, 2026-09-05: same ageBand edit in
-         `rewrites` and in `carried.overrides`. A reader taking both would
-         print "Age — 40s" twice on his own sheet. */
-      const register = {
-        kind: "author",
-        mode: "seed",
-        rewrites: [{ field: "ageBand", mode: "replaced", to: "40s" }],
-        carried: {
-          follow: true,
-          overrides: { ageBand: "40s", heritage: "nordic" },
-          clause: "Continue this family: same casting brief, new person — a person, in their 40s.",
-        },
-      };
-      expect(readBriefChanges({ register })).toEqual([
-        { field: "ageBand", shape: "value", to: "40s" },
-        /* A field only the overrides said still crosses. */
-        { field: "heritage", shape: "value", to: "nordic" },
-      ]);
-    });
-
-    it("a shape the reader does not know is dropped, never forwarded — and bounded like every read out of compiledBrief", () => {
-      const register = {
-        kind: "author",
-        rewrites: [
-          { field: "notAField", mode: "replaced", to: "x" },
-          { field: "build", mode: "replaced", to: "   " },
-          { field: "build", mode: "replaced", to: 42 },
-          /* An unknown MODE drops too (review of #546) — a future "removed"
-             edit's `to` could hold the OLD value, which must not cross. */
-          { field: "sex", mode: "removed", to: "a woman" },
-          { field: "heritage", mode: "replaced", to: `ok ${"x".repeat(BRIEF_CHANGE_MAX * 2)}` },
-          "not an object",
-        ],
-      };
-      const changes = readBriefChanges({ register });
-      expect(changes).toHaveLength(1);
-      expect(changes[0]!.field).toBe("heritage");
-      expect(changes[0]!.to).toHaveLength(BRIEF_CHANGE_MAX);
-    });
-
-    it("nothing off the author road: a house register, a malformed record and a bare roll all project no changes", () => {
-      expect(readBriefChanges({ register: { kind: "house", because: "edited" } })).toEqual([]);
-      expect(readBriefChanges({ register: { kind: "author" } })).toEqual([]);
-      expect(readBriefChanges({ register: null })).toEqual([]);
-      expect(readBriefChanges({})).toEqual([]);
-      expect(readBriefChanges(null)).toEqual([]);
-      expect(projectRoll({ roll: rollRow(), candidates: [candidateRow()] }).briefChanges).toEqual([]);
     });
 
     it("the sheet's imagination is projected from an author register and nowhere else (slice E)", () => {
@@ -286,7 +210,6 @@ describe("nothing internal crosses the boundary", () => {
         candidates: [candidateRow()],
       });
       expect(followed.authorSatOut).toBe("anchored");
-      expect(followed.briefChanges).toEqual([]);
       expect(followed.imagination).toBeNull();
     });
 
@@ -309,9 +232,8 @@ describe("nothing internal crosses the boundary", () => {
       });
       expect(lost.authorSatOut).toBe("static");
       expect(lost.imagination).toBe("max");
-      /* Her words are the record (#534) — briefText is the whole of it, and no change lines. */
+      /* Her words are the record (#534) — briefText is the whole of it. */
       expect(lost.briefText).toBe("goth woman mid 30s");
-      expect(lost.briefChanges).toEqual([]);
     });
 
     it("every reason the projection can say has a DECIDED line on the sheet — copy, or a deliberate null (#534)", () => {
