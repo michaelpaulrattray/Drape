@@ -1,7 +1,7 @@
 {
-  "edition": 250,
-  "updatedAt": "2026-09-05T00:20:00.000Z",
-  "shift": "Machinist — patrol #2 (5 September): the pictures that never arrived, and why we could not say",
+  "edition": 251,
+  "updatedAt": "2026-09-05T00:35:00.000Z",
+  "shift": "Machinist — patrol #2 (5 September): three answers you gave stop reading as questions",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -264,7 +264,7 @@
         }
       ],
       "recommendation": "Widen the check. That line tells you more than a label could — how many, how much, how long — and it sits where your eye already is. But it is a look-and-feel call, so it is yours.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-04T19:00:03.750Z",
       "issueNumber": 523
     },
@@ -286,7 +286,7 @@
         }
       ],
       "recommendation": "The first, with that one moderator sentence looked at on its own terms. The value of exempting by a named class is that the name states the intent; letting each screen invent its own and then teaching the rule about each one gives that up.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-04T19:00:03.750Z",
       "issueNumber": 524
     },
@@ -1806,7 +1806,7 @@
     },
     {
       "id": "species-court-243-strips",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 243,
       "filedAt": "2026-09-04T21:35:23.766Z",
