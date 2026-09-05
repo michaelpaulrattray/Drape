@@ -1487,8 +1487,8 @@ describe("PIN THE WORLD, NEVER THE PIECES — his MAX noun law (#237)", () => {
       "Adult feline humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber eyes, long tail. "
       + "Sphinx-cat presence, sovereign and predatory. Dark structured armour in aged bronze and gold with jewel-toned inlay — ceremonial, worn, formidable.";
     expect(pieceNounIn(golden, seed)).toBeNull();
-    /* And so does his own "optional heat", which is pressure and not parts. */
-    expect(pieceNounIn("Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft youthful rounding.", seed)).toBeNull();
+    /* And so does his own "optional heat", which is pressure and not parts (one word removed under #477 — the full-chain arm below). */
+    expect(pieceNounIn("Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft rounding.", seed)).toBeNull();
   });
 
   it("THE PLURAL IS THE FIXTURE'S OWN DEFECT: 'high collars' is caught, and 'collarbones' is not", () => {
@@ -1763,5 +1763,82 @@ describe("#327 — the four corrections to MAX", () => {
     /* And the instruction may still SAY them — a rule has to name what it forbids. */
     expect(NO_NEW_SUBJECT_RULE).toContain("WARDROBE");
     expect(NO_NEW_SUBJECT_RULE).toContain("backstory");
+  });
+});
+
+/**
+ * #477 — VERBATIM-FIRST, on his reply #114 (*"keep Sonnet, and read Grok's
+ * verbatim discipline as evidence for tightening MAX's instruction rather
+ * than swapping the engine"*), carrying #252's instruction half.
+ *
+ * ⚠ **THE FIRST ARM IS THE CLASS, NOT AN INSTANCE.** The defect it closes:
+ * the instruction TAUGHT text its own guards refuse — the golden heat
+ * example said *"No soft youthful rounding"* and `ageContradictionIn`
+ * refuses "youthful" on any 30s+ seed, denial or not, so an obedient author
+ * quoting the example was refused (#466: the phrase borrowed nearly
+ * verbatim by both arms, 6/20 re-asks all on age words; #252: 5/5 age
+ * events were "youthful"). The arm pins every taught-good example string to
+ * the source with `toContain` FIRST (so the quote cannot drift from the
+ * prompt — working law 4) and then drives it through the full real
+ * `draftRefusal` chain at the least favourable stated facts. A future
+ * worked example that teaches a refused phrase reddens here, whatever the
+ * phrase and whichever guard.
+ */
+describe("#477 — verbatim-first, and the instruction never teaches what its guards refuse", () => {
+  /** No word of any taught example appears in this seed, so seed-exemption cannot mask a hit. */
+  const NEUTRAL_SEED = { text: "a stern adult subject", facts: seedFactsOf("a stern adult subject", { sex: null, age: null }) };
+  /** The least favourable stated facts: any 30s+ band arms the youth-word refusal. */
+  const WORST_AGE = { band: "40s", phase: "mid" } as const;
+
+  it("⚠ THE CLASS ARM: every taught-good example string passes the full refusal chain at the worst stated facts", () => {
+    const max = maxSystemPrompt(400);
+    const taughtGood = [
+      /* His golden sphinx target, whole. */
+      "Adult feline humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber eyes, long tail. "
+      + "Sphinx-cat presence, sovereign and predatory. Dark structured armour in aged bronze and gold with jewel-toned inlay — ceremonial, worn, formidable.",
+      /* His heat sentence, one word lighter (#477 — the original is verbatim in the source comment). */
+      "Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft rounding.",
+      /* The finished-seed example's own statement of what heat IS. */
+      "the same paneling read harder — colder, more clinical, more couture — with nothing named that the request did not name",
+      /* The fitted rule's two TYPE shapes. */
+      "fitted mechanical eye",
+      "integrated facial hardware",
+    ];
+    for (const taught of taughtGood) {
+      expect(max, `the quote is pinned to the source: ${taught.slice(0, 40)}…`).toContain(taught);
+      expect(draftRefusal(taught, 400, WORST_AGE, NEUTRAL_SEED), taught.slice(0, 60)).toBeNull();
+    }
+  });
+
+  it("⚠ POSITIVE CONTROL: the sentence the instruction used to teach IS refused by the same chain — the arm can fail", () => {
+    /* His original heat sentence. Before #477 the class arm above would have reddened on exactly this. */
+    const original = "Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft youthful rounding.";
+    expect(maxSystemPrompt(400)).not.toContain(original);
+    expect(draftRefusal(original, 400, WORST_AGE, NEUTRAL_SEED)).toContain("youthful");
+    /* And on a teens seed the same sentence passes — the guard's own allowance, unchanged by this card. */
+    expect(draftRefusal(original, 400, { band: "teens", phase: null }, NEUTRAL_SEED)).toBeNull();
+  });
+
+  it("FACTS STAY opens verbatim-first, and the re-description instruction is gone", () => {
+    const max = maxSystemPrompt(400);
+    expect(max).toContain("FACTS STAY, IN THE REQUEST'S OWN WORDS");
+    expect(max).toContain("write around their phrases, never re-describe them in richer prose of yours");
+    /* The old opening TOLD the author to re-describe — the #466 bench measured the register it produced. */
+    expect(max).not.toContain("in your own sentence");
+    expect(max).toContain("TASTE GOES UP, IN TIGHT CLAUSES");
+    expect(max).toContain("set beside the request's own words in a few short clauses");
+  });
+
+  it("the denial clauses say what the guards already do — never a refused word, even to deny it", () => {
+    const max = maxSystemPrompt(400);
+    expect(max).toContain("Never write one of those words even to DENY it");
+    expect(max).toContain("\"no youthful rounding\" still moves a stated age");
+    /*
+      Driven, so the clause is a description of the product and not a hope:
+      the guards have no denial-awareness, and a denial dies exactly as an
+      assertion does. Loosening THAT stays behind his (b) bar on #252.
+    */
+    expect(draftRefusal("Real textured skin, not waxy or airbrushed.", 400, null, NEUTRAL_SEED)).toContain("airbrushed");
+    expect(draftRefusal("Nothing youthful about her.", 400, WORST_AGE, NEUTRAL_SEED)).toContain("youthful");
   });
 });
