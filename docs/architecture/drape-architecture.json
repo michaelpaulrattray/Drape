@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0a33521da5fca03b"
+    "sourceFingerprint": "579dc54eacbbe75e"
   },
   "domains": [
     {
@@ -13222,6 +13222,10 @@
     {
       "id": "test:server/reviewerManualRoad.test.ts",
       "path": "server/reviewerManualRoad.test.ts"
+    },
+    {
+      "id": "test:server/ritePushSequence.test.ts",
+      "path": "server/ritePushSequence.test.ts"
     },
     {
       "id": "test:server/roleManagement.test.ts",

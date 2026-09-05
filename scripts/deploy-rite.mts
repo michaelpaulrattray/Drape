@@ -116,6 +116,13 @@ import {
   readFalPrices,
   readFalTraffic,
 } from "./lib/falSpend.mts";
+import {
+  deployRefOrderProblem,
+  divergedRefMessage,
+  pushFailureMessage,
+  pushInSequence,
+  type PushOutcome,
+} from "./lib/ritePushSequence.mts";
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
@@ -267,8 +274,33 @@ const git = (...args: string[]) => run("git", args).trim();
   variable that outlives the push would be a marker any later hand-push
   inherits, which is the gate with its own key taped to it.
 */
-const gitPush = (...args: string[]) =>
-  run("git", ["push", ...args], false, { ...process.env, DRAPE_DEPLOY_RITE: "1" }).trim();
+/*
+  AND IT KEEPS THE EXIT STATUS (#317).
+
+  This used to be `gitPush`, built on `run()` above — which returns stderr as a
+  string on failure, so it reported a REJECTED push and a successful one with
+  the same type and no status. That is why the push loop below could not stop
+  between the two refs, and production was three times handed a tree `main` did
+  not carry. Reading the text instead is not an option: a successful push
+  writes `To github.com…` to stderr, and an up-to-date one writes nothing at
+  all.
+
+  `spawnSync` is used rather than the `try/catch` above precisely so the status
+  is a value and not an exception — the shape that swallowed it in the first
+  place.
+*/
+const gitPushStatus = (...args: string[]): PushOutcome => {
+  const result = spawnSync("git", ["push", ...args], {
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+    env: { ...process.env, DRAPE_DEPLOY_RITE: "1" },
+  });
+  return {
+    ok: result.status === 0,
+    output: `${result.stdout ?? ""}${result.stderr ?? ""}`.trim()
+      || String(result.error?.message ?? ""),
+  };
+};
 
 /*
   AND THE GATE'S OWN INSTALLATION IS CHECKED BEFORE ANYTHING ELSE.
@@ -823,7 +855,29 @@ say("");
 */
 const priorDeployment = DRY ? null : (listDeployments()[0]?.id ?? null);
 
-if (!DRY) for (const branch of BRANCHES) say(`  push ${branch}: ${gitPush("origin", branch) || "ok"}`);
+/*
+  THE PUSH STOPS AT THE FIRST FAILURE (#317).
+
+  It did not, for three incidents: a `main` rejected as non-fast-forward was
+  printed and the loop went on to push `main:local-migration`, which production
+  builds from. The ref that ships was the one that survived the failure.
+
+  The order guard is checked HERE rather than only in the suite because the
+  stop only protects production while production's own ref is LAST — reorder
+  `BRANCHES` and this block silently stops helping (invariant 7: a control must
+  refuse, not assume).
+*/
+if (!DRY) {
+  const orderProblem = deployRefOrderProblem(BRANCHES);
+  if (orderProblem) die(orderProblem);
+
+  const sequence = pushInSequence(BRANCHES, (branch) => gitPushStatus("origin", branch));
+  for (const attempt of sequence.attempts) {
+    say(`  push ${attempt.branch}: ${attempt.ok ? attempt.output || "ok" : "FAILED"}`);
+  }
+  for (const skipped of sequence.skipped) say(`  push ${skipped}: NOT ATTEMPTED — an earlier ref failed`);
+  if (sequence.failed) die(pushFailureMessage(sequence));
+}
 
 /*
   THE REMOTE'S OWN ANSWER, not the push command's exit code. `git push` on an
@@ -834,7 +888,7 @@ if (!DRY) for (const branch of BRANCHES) say(`  push ${branch}: ${gitPush("origi
 for (const branch of BRANCHES) {
   const ref = branch.includes(":") ? branch.split(":")[1]! : branch;
   const remote = git("ls-remote", "origin", `refs/heads/${ref}`).split(/\s+/)[0] ?? "";
-  if (remote !== sha) die(`origin/${ref} is at ${remote.slice(0, 8) || "(absent)"} — not ${shortSha}`);
+  if (remote !== sha) die(divergedRefMessage(ref, remote, shortSha));
   say(`  origin/${ref} = ${shortSha}  ✓`);
 }
 if (DRY) { say(""); say("DRY RUN — stopping before the watch."); process.exit(0); }
