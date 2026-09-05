@@ -57,7 +57,7 @@ gone). Driver `scripts/_477-court-disposable.mts`, reader
 | | re-asked | of them, on a TAUGHT word | static (customer loses MAX) |
 |---|---|---|---|
 | **before** | **5/14** | 3 ("youthful" ×3, all cyborg — the example's own word) | 0 |
-| **after** | **1/14** | 0 (the one refusal was "younger", the model's own word) | 0 |
+| **after** | **1/14** | 0 (the one refusal was "younger" — not example text, though the finished-seed rule still DISPLAYS "no younger age", so the display channel is not fully closed; only taught-GOOD examples are, and the reviewer's observation to that effect is right) | 0 |
 
 The before arm's other two: `"the set"` (a NEVER_WRITTEN word, guard doing
 its job) and `"in his fifties"` on a brief stating *"late forties to

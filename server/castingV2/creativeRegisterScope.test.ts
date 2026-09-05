@@ -1783,9 +1783,16 @@ describe("#327 — the four corrections to MAX", () => {
  * `draftRefusal` chain at the least favourable stated facts. A future
  * worked example that teaches a refused phrase reddens here, whatever the
  * phrase and whichever guard.
+ *
+ * ⚠ **THE `taughtGood` LIST IS A MIRROR AND CARRIES A MIRROR OBLIGATION**
+ * (working law 4, declared rather than solved: the prompt carries no
+ * good/bad markup a reader could derive the list from). A worked example
+ * ADDED to `maxSystemPrompt` as taught-good text must be added here in the
+ * same commit, or it escapes this closure silently — the `toContain` pins
+ * only protect the strings the list already holds.
  */
 describe("#477 — verbatim-first, and the instruction never teaches what its guards refuse", () => {
-  /** No word of any taught example appears in this seed, so seed-exemption cannot mask a hit. */
+  /** No REFUSABLE word of any taught example appears in this seed ("adult" is shared and no guard reads it), so seed-exemption cannot mask a hit. */
   const NEUTRAL_SEED = { text: "a stern adult subject", facts: seedFactsOf("a stern adult subject", { sex: null, age: null }) };
   /** The least favourable stated facts: any 30s+ band arms the youth-word refusal. */
   const WORST_AGE = { band: "40s", phase: "mid" } as const;
