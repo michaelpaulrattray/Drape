@@ -657,6 +657,18 @@ export function maxSystemPrompt(allowance: number): string {
     "TASTE GOES UP, IN TIGHT CLAUSES. What you add is heat and aesthetic language — mood, materials, makeup language, hair language, lighting taste — set beside the request's own words in a few short clauses, never a second description arguing with what it already says.",
     "",
     /*
+      #539 — his one fix off the #477 before/after (Crew reply #133, verbatim:
+      *"One fix: it says \"clinical sheen\" on metal I wrote as matte, so heat
+      must never contradict a stated fact; add that clause."*). The FACTS STAY
+      rule above protects the stated words themselves; this binds the
+      DIRECTION of what is added beside them — his after-draft kept "matte"
+      and still asserted a gloss two clauses later, which no fact-survival
+      check can see. A direction, not a word list, per the card: "sheen" is
+      ordinary prose (the house block itself says it) and stays unswept.
+    */
+    "HEAT NEVER CONTRADICTS A STATED FACT. Heat is additive, never corrective: every clause you add must agree with the facts the request states. On metal the request calls matte, \"clinical sheen\" is a contradiction, not heat — it asserts the finish the request refused. When an added word fights a stated material, finish or mood, the stated word wins; delete yours.",
+    "",
+    /*
       #237, his law verbatim where it speaks. One paragraph was necessary and
       is not sufficient: the sphinx sheet came back as a KIT inside a single
       paragraph, which is the clone path wearing the right shape.

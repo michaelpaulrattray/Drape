@@ -1836,6 +1836,16 @@ describe("#477 — verbatim-first, and the instruction never teaches what its gu
     expect(max).toContain("set beside the request's own words in a few short clauses");
   });
 
+  it("#539 — heat never contradicts a stated fact: the clause is in the instruction, as a direction and not a word list", () => {
+    const max = maxSystemPrompt(400);
+    expect(max).toContain("HEAT NEVER CONTRADICTS A STATED FACT");
+    expect(max).toContain("Heat is additive, never corrective");
+    /* His worked example rides with it — the exact miss reply #133 names. */
+    expect(max).toContain("\"clinical sheen\" is a contradiction, not heat");
+    /* And it is a DIRECTION, not a sweep: "sheen" stays sayable — the house block itself says it. */
+    expect(draftRefusal("Matte metal with a faint sheen at the edges.", 400, null, NEUTRAL_SEED)).toBeNull();
+  });
+
   it("the denial clauses say what the guards already do — never a refused word, even to deny it", () => {
     const max = maxSystemPrompt(400);
     expect(max).toContain("Never write one of those words even to DENY it");
