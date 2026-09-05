@@ -537,7 +537,10 @@ describe("what the hero must NOT grow back (§2f)", () => {
     expect(dock, ".dp-dock must be readable for this to mean anything").toBeTruthy();
     expect(
       dock,
-      "the dock is no longer a column — re-read #552 before trusting the arm below",
+      // No `#` on the card number here: `#552` is a valid three-digit hex and
+      // the token guard reads STRINGS. Its own message says to move the
+      // reference into a comment, which it strips — so this is that comment.
+      "the dock is no longer a column — re-read issue 552 before trusting the arm below",
     ).toContain("flex-direction: column");
 
     expect(
