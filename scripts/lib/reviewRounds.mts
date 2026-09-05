@@ -220,16 +220,15 @@ export function reviewPresence(tally: RoundTally): ReviewPresence {
  * — judged nothing. Counting it would let an OUTAGE spend one of the two
  * rounds a shift is allowed, which is the opposite of what the cap is for.
  *
- * ⚠ DECLARED SCAFFOLDING, NOT A LIVE CONTROL (fidelity law: a shortcut is
- * permitted only when DECLARED, and the gate review of PR #558 asked for this
- * sentence by name). `decideRoundNotice` and `FINAL_ROUND_MESSAGE` land here
- * with NO CALLER. Their call site is #543 ITEM 5 — the step in `review.yml`
- * that posts the line when a second verdict is produced — which is a separate
- * PR because a diff touching `review.yml` can never earn a green review
- * (#165) and must not drag this tool's own review down with it. If item 5 is
- * abandoned, these two exports are deleted rather than left sitting: a control
- * that exists on paper and is invoked by nothing is the exact class CLAUDE.md's
- * "Currently not enforced" list is made of.
+ * ✅ WIRED. These two shipped one PR ahead of their call site, as DECLARED
+ * scaffolding (fidelity law; the gate review of PR #558 asked for that sentence
+ * by name, and the promise it carried was that item 5 would either wire them or
+ * delete them). Item 5 wired them: `scripts/review-round-notice.mts`, run by
+ * the `review` job on the run that produces a verdict.
+ * `server/reviewRoundCap.test.ts` guards the CHAIN — the step exists, it calls
+ * the script, the script calls this decision rather than a copy of it — because
+ * "helper written, docs written, todo ticked, call site never added" is exactly
+ * how CLAUDE.md's "Currently not enforced" list was filled.
  */
 export type RoundNotice =
   | { kind: "silent"; verdictsSoFar: number }
@@ -245,6 +244,30 @@ export const FINAL_ROUND_MESSAGE =
  * `verdictsIncludingThisRun` is the count AFTER this run's own verdict is
  * added — the notice is posted by the run that produced the second one.
  */
+/**
+ * The hidden marker the notice carries, and the reason it exists: the review
+ * job runs the notice step on EVERY verdict, so without it a third and fourth
+ * deliberate look would each repeat the line — and a message that repeats is
+ * one people stop reading.
+ *
+ * ⚠ IT LIVES HERE, WITH ITS DECISION, BECAUSE THE FIRST SHAPE PUT BOTH IN THE
+ * CLI AND A SABOTAGE PROVED THE ARM BLIND. Deleting the whole idempotence check
+ * from the script reddened NOTHING: the suite could only see that the marker
+ * STRING was present, which a broken guard keeps. The decision is a function
+ * now and the suite drives it.
+ */
+export const ROUND_NOTICE_MARKER = "<!-- review-round-cap -->";
+
+/** Has the notice already been posted on this pull request? */
+export function alreadyNoticed(commentBodies: readonly string[]): boolean {
+  return commentBodies.some((body) => body.includes(ROUND_NOTICE_MARKER));
+}
+
+/** The comment body, so the thing written and the thing searched for are one. */
+export function roundNoticeBody(notice: Extract<RoundNotice, { kind: "final-round" }>): string {
+  return `${ROUND_NOTICE_MARKER}\n**Round ${notice.verdictsSoFar}.** ${notice.message}`;
+}
+
 export function decideRoundNotice(verdictsIncludingThisRun: number): RoundNotice {
   if (verdictsIncludingThisRun >= 2) {
     return {

@@ -295,6 +295,61 @@ jobs:
             pass it cleanly — do not invent findings.
           claude_args: "--model claude-fable-5"
 
+      # THE SECOND ROUND SAYS SO (#543 item 5, founder-ordered).
+      #
+      # The investigation behind that card measured the reviewer at 1.3 runs
+      # per PR — but SEVEN of the last twenty-five merged PRs took two or more
+      # rounds, and that tail is the whole gap between the 27-minute median
+      # wait and the 42-minute mean. So on the run that produces a PR's SECOND
+      # verdict, one line is posted saying the round is the last and how a
+      # third is deliberately asked for.
+      #
+      # ⚠ A NOTICE, NEVER A BLOCK. `continue-on-error` and a script whose every
+      # exit is 0: a bookkeeping step that could redden `review` would make that
+      # check mean a third thing, and its two meanings (#219 — a verdict exists,
+      # or none does) are already the subtlest reading on a PR's checks page.
+      # The shift's judgement remains the thing that stops; this only makes the
+      # count visible at the moment it matters.
+      #
+      # ⚠ IT COUNTS VERDICTS, NEVER ATTEMPTS. A run that produced none — the
+      # allowance running out (#219), a cancelled run (#434), the self-skip
+      # (#165) — judged nothing, and counting it would let an OUTAGE spend one
+      # of the two rounds a shift is allowed. The counting rule lives in
+      # `scripts/lib/reviewRounds.mts`, shared with the merge tool that reads
+      # the same fact (#543 item 3), so the two cannot become two answers.
+      #
+      # It runs only when the reviewer actually produced a verdict — the
+      # self-skip branch (#165) and any failure are `steps.fable.outcome`
+      # other than success, and neither is a round.
+      # Node 24 strips types natively, so this runs the shared `.mts` reader
+      # with NO dependency install — the same reason gate.yml reaches for
+      # setup-node rather than a package install for its own cheap steps.
+      # ⚠ `continue-on-error` HERE TOO, AND IT IS NOT BELT-AND-BRACES.
+      # Without it, a failed setup-node fails the JOB — so the `review` check
+      # goes RED after a review that actually ran and produced findings, which
+      # reads as "no verdict" (#219) and is the single worst thing this whole
+      # step could cause. Found by hand-reviewing this PR, which is the review
+      # it can never get from the reviewer (#165).
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        if: ${{ steps.fable.outcome == 'success' }}
+        continue-on-error: true
+        with:
+          node-version: 24
+
+      - name: Say when this is the second and final review round
+        if: ${{ steps.fable.outcome == 'success' }}
+        continue-on-error: true
+        # ⚠ THE PR NUMBER GOES THROUGH `env`, NOT INTO THE `run` BLOCK.
+        # zizmor's template-injection audit reddened the gate on the first
+        # push of this step: a `${{ … }}` expansion inside `run:` is textual
+        # substitution into the shell, and the rule holds whatever the field's
+        # type is. The variable is quoted below and the script re-validates it
+        # as a positive integer besides.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/review-round-notice.mts --pr "$PR_NUMBER"
+
       # WHAT A `review` CHECK MEANS (issue #219). The colour of this check
       # reports whether a review was PRODUCED — never whether the diff passed.
       # Findings ride a GREEN check's sticky comment (the action exits 0
