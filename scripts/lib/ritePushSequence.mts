@@ -255,8 +255,10 @@ export function pushFailureMessage(sequence: PushSequence): string {
   if (cause === "network") {
     lines.push(
       "THE NETWORK IS DOWN — nothing is wrong with this tree, and no merge helps.",
-      "git could not reach GitHub at all, so the refs are exactly where they were.",
-      "`git fetch` would fail for the same reason this push did.",
+      "git never got an answer, so `git fetch` would fail for the same reason this",
+      "push did. Whether the remote moved at all is what the check below settles —",
+      "a mid-transfer reset can land a ref before the wire dies, and the retry then",
+      "reports it as already up to date. Either way this tree is intact.",
       "",
       "Wait a minute, prove the network is back, then re-run the rite unchanged:",
       "",
