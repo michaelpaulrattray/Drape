@@ -91,16 +91,26 @@ function filesToScan(): string[] {
 
 /**
  * Everything a document may QUOTE without asserting: fenced code, blockquotes,
- * and any double-quoted span. #360's exact lesson — the corrected paragraph in
- * `CLAUDE.md` reproduces the false sentence in order to strike it, and a guard
- * that fired on that would forbid the correction from being written down.
+ * and — **in prose only** — any double-quoted span. #360's exact lesson: the
+ * corrected paragraph in `CLAUDE.md` reproduces the false sentence in order to
+ * strike it, and a guard that fired on that would forbid the correction from
+ * being written down.
+ *
+ * ⚠ **THE DOUBLE-QUOTE STRIP IS MARKDOWN-ONLY, AND THE FIRST CUT APPLIED IT
+ * EVERYWHERE** (PR #582 review, finding 1). Three of the five scan targets are
+ * CODE directories, where double quotes are the house string style — so a
+ * `say("every push to main deploys …")` in a `scripts/lib` helper read as a
+ * quotation and passed. **A runtime message is the prose a shift reads most**,
+ * which made that hole systematic rather than the exotic remainder the docblock
+ * below owns up to. Nothing was lost by narrowing it: all three shipped copies
+ * and both real negative controls live in comments or markdown.
  */
-function withoutQuotation(source: string): string {
-  return source
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/^\s*>.*$/gm, " ")
-    .replace(/"[^"\n]*"/g, " ")
-    .replace(/[“][^”\n]*[”]/g, " ");
+type SourceKind = "md" | "code";
+
+function withoutQuotation(source: string, kind: SourceKind): string {
+  const unquoted = source.replace(/```[\s\S]*?```/g, " ").replace(/^\s*>.*$/gm, " ");
+  if (kind !== "md") return unquoted;
+  return unquoted.replace(/"[^"\n]*"/g, " ").replace(/[“][^”\n]*[”]/g, " ");
 }
 
 /**
@@ -130,9 +140,10 @@ const CLAIM =
 /** The ref a claim may legally name — derived, never restated. */
 const DEPLOYING_REF = DEPLOY_SOURCE_REF;
 
-function wrongClaims(source: string): Array<{ ref: string; sentence: string }> {
+/** Defaults to `code`, the STRICTER reading — a new caller cannot get the lax one by forgetting. */
+function wrongClaims(source: string, kind: SourceKind = "code"): Array<{ ref: string; sentence: string }> {
   const hits: Array<{ ref: string; sentence: string }> = [];
-  for (const match of withoutQuotation(source).matchAll(CLAIM)) {
+  for (const match of withoutQuotation(source, kind).matchAll(CLAIM)) {
     const ref = match[1]!.replace(/`/g, "");
     /* `main:local-migration` is the refspec the rite pushes — it lands on the
        deploying ref, so a claim about it is true. */
@@ -161,7 +172,8 @@ describe("#296 · nothing tells a shift that a merge to main deploys", () => {
     for (const file of filesToScan()) {
       const source = readListedSource(file);
       if (source === null) continue; /* it left between the listing and the read */
-      for (const hit of wrongClaims(source)) {
+      const kind: SourceKind = path.extname(file) === ".md" ? "md" : "code";
+      for (const hit of wrongClaims(source, kind)) {
         offenders.push(`${path.relative(ROOT, file)} — "${hit.sentence.trim()}"`);
       }
     }
@@ -202,17 +214,34 @@ describe("#296 · nothing tells a shift that a merge to main deploys", () => {
 
   it("is a declaration test, so the correction may quote what it is correcting", () => {
     /* The shape CLAUDE.md's corrected paragraph actually uses — a mention. */
-    expect(wrongClaims('This sentence read "Every push to `main` deploys" until 2026-09-06, and it was false'))
+    expect(wrongClaims('This sentence read "Every push to `main` deploys" until it was corrected', "md"))
       .toEqual([]);
-    expect(wrongClaims("> Every push to `main` deploys, and the founder dogfoods paid rolls")).toEqual([]);
-    expect(wrongClaims("```\nEvery push to `main` deploys\n```")).toEqual([]);
+    expect(wrongClaims("> Every push to `main` deploys, and the founder dogfoods paid rolls", "md")).toEqual([]);
+    expect(wrongClaims("```\nEvery push to `main` deploys\n```", "md")).toEqual([]);
 
     /* And the same words UNQUOTED are still a claim — the mention test must not
        have been bought by turning the guard off. */
-    expect(wrongClaims("Every push to `main` deploys, and the founder dogfoods paid rolls")).toHaveLength(1);
+    expect(wrongClaims("Every push to `main` deploys, and the founder dogfoods paid rolls", "md"))
+      .toHaveLength(1);
 
     expect(wrongClaims("A merged PR has not shipped anything; the rite is what deploys.")).toEqual([]);
     expect(wrongClaims("Railway watches local-migration, and a squash merge only moves main.")).toEqual([]);
     expect(wrongClaims("Product code goes branch, PR, gate; then run the rite to deploy.")).toEqual([]);
+  });
+
+  /*
+    PR #582 REVIEW, FINDING 1. The double-quote strip is for markdown prose. In
+    a code file double quotes are the house string style, so applying it there
+    let a RUNTIME MESSAGE — the prose a shift reads most — carry the false claim
+    inside a string literal and pass as a quotation.
+  */
+  it("catches a false claim inside a code string literal, and still forgives it in prose", () => {
+    const inCode = 'say("Every push to `main` deploys — run the rite after merging");';
+    expect(wrongClaims(inCode, "code")).toHaveLength(1);
+    expect(wrongClaims(inCode, "md")).toEqual([]);
+
+    /* And the strictness is the DEFAULT, so a new caller cannot get the lax
+       reading by forgetting the argument. */
+    expect(wrongClaims(inCode)).toHaveLength(1);
   });
 });

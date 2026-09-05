@@ -641,7 +641,9 @@ Production deploys when `local-migration` moves, and the founder dogfoods paid
 rolls while that happens. A deploy that lands mid-roll kills the process holding
 its candidates.
 
-⚠ **THIS SENTENCE READ *"Every push to `main` deploys"* UNTIL 2026-09-06 AND IT
+⚠ **THIS SENTENCE READ *"Every push to `main` deploys"* UNTIL IT WAS CORRECTED
+ON 2026-09-06 — the founder's local date; the commit's UTC stamp reads a day
+earlier, which is this paragraph's own point in miniature — AND IT
 WAS FALSE IN THE DIRECTION THAT LETS A SHIFT REPORT A LIE** (#296, measured by
 driving it: PR #294 merged at `09:46Z` and twenty-five minutes later production
 was still serving the previous build — **no deployment was ever created for the
