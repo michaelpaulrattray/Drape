@@ -42,8 +42,18 @@ describe("the cap has a call site (invariant 7)", () => {
   });
 
   it("it passes the pull request number, which is the only thing it needs", () => {
-    expect(reviewYml).toMatch(
-      /node scripts\/review-round-notice\.mts --pr \$\{\{ github\.event\.pull_request\.number \}\}/,
+    expect(reviewYml).toMatch(/node scripts\/review-round-notice\.mts --pr "\$PR_NUMBER"/);
+    expect(reviewYml).toMatch(/PR_NUMBER: \$\{\{ github\.event\.pull_request\.number \}\}/);
+  });
+
+  it("⚠ and it passes it through `env`, never interpolated into the run block", () => {
+    // zizmor's template-injection audit reddened the gate on this step's first
+    // push: a `${{ … }}` expansion inside `run:` is textual substitution into
+    // the shell, and the rule holds whatever the field's type is. Preflight
+    // cannot see this — the workflow linters are on its excused list — so the
+    // arm lives here, where a local run reaches it.
+    expect(reviewYml).not.toContain(
+      "review-round-notice.mts --pr ${{ github.event.pull_request.number }}",
     );
   });
 

@@ -332,9 +332,16 @@ jobs:
       - name: Say when this is the second and final review round
         if: ${{ steps.fable.outcome == 'success' }}
         continue-on-error: true
+        # ⚠ THE PR NUMBER GOES THROUGH `env`, NOT INTO THE `run` BLOCK.
+        # zizmor's template-injection audit reddened the gate on the first
+        # push of this step: a `${{ … }}` expansion inside `run:` is textual
+        # substitution into the shell, and the rule holds whatever the field's
+        # type is. The variable is quoted below and the script re-validates it
+        # as a positive integer besides.
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/review-round-notice.mts --pr ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/review-round-notice.mts --pr "$PR_NUMBER"
 
       # WHAT A `review` CHECK MEANS (issue #219). The colour of this check
       # reports whether a review was PRODUCED — never whether the diff passed.
