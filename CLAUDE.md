@@ -637,8 +637,30 @@ the live service on every push.
 
 ## Deploying while a paid roll is in flight
 
-Every push to `main` deploys, and the founder dogfoods paid rolls while that
-happens. A deploy that lands mid-roll kills the process holding its candidates.
+Production deploys when `local-migration` moves, and the founder dogfoods paid
+rolls while that happens. A deploy that lands mid-roll kills the process holding
+its candidates.
+
+⚠ **THIS SENTENCE READ *"Every push to `main` deploys"* UNTIL IT WAS CORRECTED
+ON 2026-09-06 — the founder's local date; the commit's UTC stamp reads a day
+earlier, which is this paragraph's own point in miniature — AND IT
+WAS FALSE IN THE DIRECTION THAT LETS A SHIFT REPORT A LIE** (#296, measured by
+driving it: PR #294 merged at `09:46Z` and twenty-five minutes later production
+was still serving the previous build — **no deployment was ever created for the
+merge commit**, not failed, not building, never started). Railway watches
+**`local-migration`**, and a squash merge only moves `main`, so **a merged PR has
+not shipped anything.** `scripts/deploy-rite.mts` is the only thing that pushes
+both refs, which makes the rite — not the merge — the act that deploys. ⚠ **And
+every reading a shift naturally reaches for agrees with the merge**: `gh pr view`
+says `MERGED`, `git log origin/main` carries the commit, and `/api/health`
+returns `200` **from the OLD process**. That last one is the trap, and it is why
+the rite prints an `UPTIME ANCHOR` beside the `200`: an old process cannot pass
+as a new one silently. The production URL a health check must actually use is
+`https://drape-production-0232.up.railway.app` (`deploy-rite.mts`, and the
+`deploy-railway` skill) — `klieglabs.com` returns no connection and reads as an
+outage that does not exist. `server/deployTriggerClaims.test.ts` keeps this
+sentence and its two siblings honest, deriving the deploying ref from
+`DEPLOY_SOURCE_REF` rather than restating it.
 
 **This is a known and accepted collision class, not a bug.** Per-slice billing
 plus the recovery sweep is the designed answer: a roll is eight independently

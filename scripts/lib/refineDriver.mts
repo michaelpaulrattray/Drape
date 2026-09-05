@@ -267,8 +267,9 @@ export async function waitUntilIdle(page: Page, timeoutMs = LANDING_TIMEOUT_MS):
 /**
  * HOW LONG THE SERVER HAS BEEN UP — the only way to tell OUR fault from ITS.
  *
- * Every push to `main` deploys, and a deploy kills the process holding a
- * refinement. That is a known and accepted collision class (founder ruling,
+ * A deploy kills the process holding a refinement — and a deploy is a push of
+ * `local-migration`, which is the deploy rite and never a squash merge to
+ * `main` (#296). That is a known and accepted collision class (founder ruling,
  * 2026-08-01): per-slice billing plus the recovery sweep is the designed answer,
  * and the money is right — charged 25, swept, refunded 25.
  *
