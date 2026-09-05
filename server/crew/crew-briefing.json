@@ -1,7 +1,7 @@
 {
-  "edition": 263,
-  "updatedAt": "2026-09-05T14:50:02.604Z",
-  "shift": "Foreman — the chip writes into your prompt box; your six answers are marked seen",
+  "edition": 264,
+  "updatedAt": "2026-09-05T15:34:40.205Z",
+  "shift": "Foreman — your tail court, re-run on the Re-imagine road: 24 tails out of 24",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T13:00:52.851Z",
+      "readAt": "2026-09-05T15:34:29.853Z",
       "items": [
         {
           "issueNumber": 16,
@@ -247,6 +247,33 @@
   },
   "needsYou": [
     {
+      "id": "tail-court-reimagine-530",
+      "issueNumber": 530,
+      "title": "Two courts, 48 frames, every one with a tail — I need the actual sheet where yours went missing (#530)",
+      "productImpact": "You asked for the same three arms re-run on the Re-imagine road, with the writer's paragraph beside the strip. It ran tonight for $1.34 of house money — no credits of yours, nothing on production.\n\nTHE TAIL LANDED ON ALL 24 FRAMES AGAIN, on every arm. Two roads now, 48 pictures, and I cannot make your brief fail.\n\nYour added condition turned out to be the answer rather than the decoration. The worry was that the writer quietly drops the words 'long tail' before the house instruction ever sees them. It does not: the writer was run eight times on your brief and kept 'long tail' every single time — one of them says it twice, 'tail held with coiled, deliberate control'. It kept 'whiskers' eight times out of eight too, and never once fell silent and left your words to stand alone.\n\nSo I went and read your own seven sphinx-cat rolls on the live database — free, no pictures made. Every one of them sent a description that names the tail. And here is the thing that undoes my last note to you: FIVE of the seven ran on the plain road, not Re-imagine, including both of your two most recent on Friday. So my guess that your bad frame came from a Re-imagine roll was itself unchecked, and it now looks wrong.\n\nI have run out of ways to reproduce this from the outside. What would settle it in minutes is the actual picture: point me at the sheet where the tail is missing and I will read that exact roll and its frames rather than trying to recreate it.",
+      "workedExample": "With your sentence: 8/8 tails. Sentence lifted out: 8/8. 'Hairless' removed: 8/8. Rows A and B were painted from the SAME writer's paragraph, byte for byte, so those two rows differ by exactly your 83-character sentence and nothing else — which is the cleanest way to ask what your sentence buys. It buys nothing on this brief, because your brief NAMES the tail and an older instruction already covers named parts. It also does no harm, which was the other thing worth knowing.",
+      "options": [
+        {
+          "key": "point-at-the-sheet",
+          "label": "Point me at the sheet where the tail is missing, and I read that roll",
+          "consequence": "Free and fast. I read the exact row: what was sent, which road it took, and the frames themselves. It is the only lead left that has not already come back clean."
+        },
+        {
+          "key": "close-the-tail-question",
+          "label": "Close the tail question — the strips satisfy you",
+          "consequence": "Reasonable after 48 frames. Your species sentence stays in, proven harmless on both roads. The risk is that whatever you saw stays unexplained and turns up again on a roll you care about."
+        },
+        {
+          "key": "chase-the-small-tile",
+          "label": "Chase the small-tile hunch instead — make the sheet let you get close",
+          "consequence": "A different card and a real one: at strip size I could not see a whisker on any of the 24 frames, and at face size they are on all of them. If your complaints are about what a small tile can show, no prompt change will ever fix them."
+        }
+      ],
+      "recommendation": "The first, and it costs nothing. Everything I can measure says the machinery is doing this right, so the next honest step is your actual picture rather than another reconstruction of it. If you would rather just close it, that is a fair call after 48 frames and I will say so on the card.",
+      "state": "open",
+      "filedAt": "2026-09-05T15:34:40.208Z"
+    },
+    {
       "id": "tail-court-verdict-530",
       "issueNumber": 530,
       "title": "Your tail court ran, and your premise did not reproduce — I need your word before chasing the reason (#530)",
@@ -270,7 +297,7 @@
         }
       ],
       "recommendation": "The first. It is a dollar fifty and it answers the question you actually asked, on the road you actually used. The free version can only tell us the words left the building, not that the picture ignored them.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-05T12:27:03.793Z"
     },
     {
@@ -1854,6 +1881,27 @@
   ],
   "eyeItems": [
     {
+      "id": "tail-court-reimagine-strip-530",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 530,
+      "filedAt": "2026-09-05T15:34:40.208Z",
+      "title": "The tail court on the Re-imagine road — does anything here look like a missing tail to you?",
+      "question": "Three rows of eight, all Re-imagined. Row A carries your species sentence, row B is the same picture-instruction with your sentence lifted out, row C is your 'no hairless' hunch. Every frame in all three has a tail. The writer's paragraph is printed underneath so you can see for yourself that it kept your words — that was the thing we were actually testing, and it passed.\n\nThe second frame is the faces from the same run, blown up. Worth ten seconds: at the size of the strip I could not see a single whisker on any of them, and at this size they are on every one. If 'no whiskers' was really 'too small to see', that is a sheet problem and no prompt change will ever fix it.",
+      "frames": [
+        {
+          "key": "crew-eye/7125c191-ce71-4651-b0e2-4539e16ba9f5.png",
+          "caption": "24 frames, three arms, and the writer's paragraph beneath — 'long tail' survived it, and every frame carries one.",
+          "arm": "strip"
+        },
+        {
+          "key": "crew-eye/08de4d4f-a1e5-4780-8024-8f58d6e980e4.jpg",
+          "caption": "The same faces close up. The whiskers are fine and pale — invisible at tile size, plain at this one.",
+          "arm": "faces"
+        }
+      ]
+    },
+    {
       "id": "chip-writes-the-box-534",
       "state": "open",
       "cardId": null,
@@ -1908,7 +1956,7 @@
     },
     {
       "id": "dock-chip-552",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 552,
       "filedAt": "2026-09-05T12:27:03.791Z",
@@ -1924,7 +1972,7 @@
     },
     {
       "id": "selection-542",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 542,
       "filedAt": "2026-09-05T12:27:03.791Z",
@@ -5484,11 +5532,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0905-foreman",
-      "title": "The queue: 93 open, 7 carrying your word, 0 urgent, 0 rotting",
+      "id": "queue-shape-0906-foreman",
+      "title": "The queue: 96 open, 7 carrying your word, 0 urgent, 0 rotting",
       "severity": "info",
       "state": "open",
-      "detail": "The urgent one cleared tonight: #543 was the only card carrying it, all five of its pieces are built, and the label came off because what is left is your verdict rather than work.\n\nSeven cards carry your word. Two of them are genuinely waiting on a shift with the reviewer's seat rather than this one (#508, #535); one is waiting on another card first (#404); the other four are takeable now.\n\nNothing has gone a week untouched. That figure is honest tonight in a way it was not two nights ago — it was reset across the whole roadmap by a labelling pass then, and nothing has swept the queue wholesale since."
+      "detail": "Unchanged in shape since last night, and that is the honest reading rather than a fresh count dressed up as news.\n\nSeven cards carry your word. Two wait on a shift with the reviewer's seat (#508, #535); one waits on another card first (#404); #391 is money-path work that no shift on this seat may take, which is a gap in the rules rather than a queue problem and is noted on #543. That leaves #530 — worked tonight and now back with you — and #534, which is waiting on your eye rather than on any work.\n\nNothing has gone a week untouched."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -5816,7 +5864,7 @@
     140
   ],
   "nextUp": {
-    "readAt": "2026-09-05T13:00:51.832Z",
+    "readAt": "2026-09-05T15:34:29.096Z",
     "items": [
       {
         "issueNumber": 391,
