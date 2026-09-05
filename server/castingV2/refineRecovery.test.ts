@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * A deploy lands mid-refine — the collision class, one surface down (D-85).
  *
- * Every push to `main` deploys, and the founder dogfoods paid work while that
+ * Production deploys when `local-migration` moves — the deploy rite, never a
+ * squash merge to `main` (#296) — and the founder dogfoods paid work while that
  * happens. A deploy that lands mid-refine kills the process holding the
  * generation, and the answer is the same as the roll's: the sweep settles it,
  * and money is conserved either way.
