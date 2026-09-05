@@ -206,11 +206,14 @@ describe("#392 — the client's contact addresses", () => {
  *   `/casting/cast/:castId`) would false-red. Fail-LOUD, and deliberately not
  *   pre-solved: no server pointer has a path today, and a matcher written for a
  *   case that does not exist is a matcher nothing has ever driven.
- * - `server/routes/referral.ts` falls back to `https://drape.ai` for a referral
- *   link's base when the `Origin` header is absent. It is a **bare host with no
- *   path**, so it is not a dead destination in this arm's sense, and it belongs
- *   to the founder's parked branding pass — named in its own arm below so it is
- *   not mistaken for something this file missed.
+ * - `server/routes/referral.ts` falls back to the shared production base URL
+ *   (`appBaseUrl()`, `server/_core/appOrigin.ts`) for a referral link's base
+ *   when the `Origin` header is absent. ⚠ Until 2026-09-05 that fallback was a
+ *   `https://drape.ai` literal, parked here as the founder's branding pass —
+ *   **his order on #531 (reply #130) superseded the parking**: *"a test that
+ *   nothing in the product points at drape.app or drape.ai."* The arm below
+ *   kept its job (the fallback stays a bare host) and lost its parked-domain
+ *   half to `server/productionBaseUrl.test.ts`, which owns the domain sweep.
  */
 
 const SERVER_SRC = path.resolve(__dirname);
@@ -381,24 +384,25 @@ describe("#452 — the support pointers the SERVER sends a customer", () => {
     expect(onRetiredDestination(live[0].url)).toBe(false);
   });
 
-  it("⚠ the referral base-URL fallback is NAMED, not swept", () => {
+  it("⚠ the referral base-URL fallback reads the one production base URL", () => {
     /*
-      `routes/referral.ts` falls back to `https://drape.ai` when the `Origin`
-      header is absent. It is on the retired domain and it is deliberately left
-      alone: the founder parked branding (*"we will change the old drape emails
-      and branding at a later date"*), and unlike the freeze link it is a bare
-      host rather than a path that cannot exist.
+      Until 2026-09-05 this arm NAMED a parked `https://drape.ai` literal as the
+      fallback when the `Origin` header is absent. His order on #531 (reply
+      #130) superseded the parking — *"nothing in the product points at
+      drape.app or drape.ai"* — so the fallback now reads `appBaseUrl()` from
+      `server/_core/appOrigin.ts`, the same one place the Stripe returns read.
 
-      ⚠ This arm is DOCUMENTATION and says so. What it asserts is the thing that
-      COULD change — that the fallback is still there and still a bare host — so
-      if somebody gives it a path it stops being a branding question and this
-      reddens.
+      ⚠ Still DOCUMENTATION, and its job is unchanged: assert the thing that
+      COULD change — the fallback still exists (a referral link with no Origin
+      still gets a base) and it still reads the SHARED source rather than a
+      fresh literal that could drift (working law 4). The domain sweep itself
+      lives in `server/productionBaseUrl.test.ts`.
     */
     const referral = fs.readFileSync(path.join(SERVER_SRC, "routes", "referral.ts"), "utf8");
-    const fallbacks = [...referral.matchAll(/headers\.origin\s*\|\|\s*"([^"]+)"/g)].map((m) => m[1]);
+    const fallbacks = [...referral.matchAll(/headers\.origin\s*\|\|\s*([\w.()]+)/g)].map((m) => m[1]);
     expect(fallbacks.length, "the referral origin fallback moved or was renamed").toBeGreaterThan(0);
-    for (const url of fallbacks) {
-      expect(appPathOf(url), `the referral fallback grew a path: ${url}`).toBeNull();
+    for (const expr of fallbacks) {
+      expect(expr, "the referral fallback stopped reading the shared base URL").toBe("appBaseUrl()");
     }
   });
 });

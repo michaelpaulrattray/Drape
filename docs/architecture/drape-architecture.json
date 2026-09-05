@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "229aafe9467edf8f"
+    "sourceFingerprint": "11a4ab1fac2ba87c"
   },
   "domains": [
     {
@@ -98,7 +98,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:profile",
@@ -2842,6 +2842,12 @@
       "id": "module:drizzle/schema.ts",
       "path": "drizzle/schema.ts",
       "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/_core/appOrigin.ts",
+      "path": "server/_core/appOrigin.ts",
+      "domain": "platform",
       "lifecycle": "active"
     },
     {
@@ -12802,6 +12808,10 @@
     {
       "id": "test:server/privateEvidencePurge.test.ts",
       "path": "server/privateEvidencePurge.test.ts"
+    },
+    {
+      "id": "test:server/productionBaseUrl.test.ts",
+      "path": "server/productionBaseUrl.test.ts"
     },
     {
       "id": "test:server/productionFlagPositions.test.ts",
@@ -30519,6 +30529,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/_core/appOrigin.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
     },
@@ -32295,6 +32310,11 @@
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:server/_core/appOrigin.ts",
       "kind": "imports"
     },
     {

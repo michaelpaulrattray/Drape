@@ -20,6 +20,7 @@ import {
 } from "../stripe/stripeService";
 import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan, PAID_PLAN_ORDER, PLAN_ORDER } from "../stripe/stripeProducts";
 import { PLAN_TIERS } from "../../drizzle/schema";
+import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
 import { z } from "zod";
@@ -98,7 +99,7 @@ export const billingRouter = router({
       const subscription = await getSubscriptionByUserId(ctx.user.id);
       const customerId = await getOrCreateStripeCustomer(
         ctx.user.id,
-        user.email || `user-${ctx.user.id}@drape.app`,
+        user.email || `user-${ctx.user.id}@${PRODUCTION_APP_HOSTNAME}`,
         user.displayName || user.name || undefined,
         subscription?.stripeCustomerId
       );
@@ -108,11 +109,10 @@ export const billingRouter = router({
         await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
       }
 
-      // Create checkout session
-      const baseUrl = process.env.NODE_ENV === "production" 
-        ? "https://drape.app" 
-        : "http://localhost:3000";
-      
+      // Create checkout session — the return URLs come from the one production
+      // base URL (#531, his order: "one production base URL read from one place")
+      const baseUrl = appBaseUrl();
+
       const checkoutUrl = await createSubscriptionCheckoutSession(
         customerId,
         input.plan,
@@ -150,9 +150,7 @@ export const billingRouter = router({
       });
     }
 
-    const baseUrl = process.env.NODE_ENV === "production" 
-      ? "https://drape.app" 
-      : "http://localhost:3000";
+    const baseUrl = appBaseUrl();
 
     const portalUrl = await createCustomerPortalSession(
       subscription.stripeCustomerId,
