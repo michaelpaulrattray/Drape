@@ -134,11 +134,27 @@ function changedFiles(): { files: string[]; baseUsed: string | null } {
  * a glob dialect.
  */
 function repoTestFiles(): string[] {
-  return lines(git(["ls-files"])).filter((file) => {
+  const isSuite = (file: string) => {
     const unix = file.replace(/\\/g, "/");
     if (!unix.startsWith("server/") && !unix.startsWith("client/src/")) return false;
     return unix.endsWith(".test.ts") || unix.endsWith(".spec.ts");
-  });
+  };
+  // ⚠ THE UNTRACKED LISTING IS NOT OPTIONAL, AND LEAVING IT OUT WAS A SIBLING
+  // OF THE PATHSPEC BUG ABOVE (review finding 1 on PR #549 — the sweep this
+  // file's own two defects should have caught and did not).
+  //
+  // `changedFiles()` deliberately collects untracked files, on the stated
+  // ground that a new test file written this shift is exactly the thing worth
+  // running. But a file can only be SELECTED if it appears here, so while this
+  // was `git ls-files` alone a brand-new `server/thing.test.ts` was the one
+  // file in the diff that could never run — and because `server/` holds 263
+  // tracked neighbours the directory read as covered and preflight reported
+  // green. Silent, and in the fewer-tests direction, which is the only one
+  // that matters here.
+  return [
+    ...lines(git(["ls-files"])),
+    ...lines(git(["ls-files", "--others", "--exclude-standard"])),
+  ].filter(isSuite);
 }
 
 const { files: changed, baseUsed } = changedFiles();
@@ -238,6 +254,17 @@ if (firstRed) {
   console.log(`PREFLIGHT RED on ${firstRed.check.id}. Fix it, then run again — the gate would have`);
   console.log("spent ~7 minutes to tell you the same thing, and this is the run the");
   console.log("3.1-runs-per-PR figure exists to remove.");
+  if (firstRed.check.id === "architecture" || firstRed.check.id === "capability") {
+    // ⚠ THE COMMONEST HONEST RED, AND IT IS ABOUT ORDER RATHER THAN CORRECTNESS.
+    // `.githooks/atlas-stage` regenerates both maps AT COMMIT TIME (#501), so a
+    // tree with uncommitted source changes is stale here by construction. Left
+    // unexplained this reddens on almost every pre-commit run and teaches the
+    // shift that preflight's atlas check means nothing.
+    console.log("");
+    console.log("If you have not committed yet, this is expected rather than wrong: the commit");
+    console.log("hook regenerates both maps (#501). Commit first, then run preflight — the map");
+    console.log("it checks is the one your commit actually carries.");
+  }
   if (firstRed.check.id.startsWith("diff-tests")) {
     // ⚠ SAID OUT LOUD BECAUSE A TOOL THAT REDDENS AT RANDOM IS A TOOL A SHIFT
     // LEARNS TO IGNORE (#548, found by this script on its own branch). A few

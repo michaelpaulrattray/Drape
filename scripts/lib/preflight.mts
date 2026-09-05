@@ -44,7 +44,7 @@
 
 /** A check preflight runs, in the gate's own order. */
 export type PreflightCheck = {
-  /** Stable id, used by the drift arm and by `--only`. */
+  /** Stable id, used by the drift arm and printed on a red so the shift can name the failing check. */
   readonly id: string;
   /** What the shift sees on the line. */
   readonly label: string;
@@ -62,36 +62,79 @@ export type PreflightCheck = {
  * A gate step preflight does NOT run, and why. The drift arm requires every
  * gate `run:` line to be either adopted by a check above or excused here, so a
  * new gate step cannot appear without someone deciding which it is.
+ *
+ * ⚠ `match` EXISTS BECAUSE A PLAIN SUBSTRING EXCUSE FAILS OPEN, AND TWO OF
+ * THESE ENTRIES WERE ALREADY DEAD (review findings 2 and 3 on PR #549).
+ *
+ * `"command"` matches a whole gate command, or that command followed by a
+ * space — never a prefix of a longer name. With a bare substring the excuse
+ * `pnpm test` swallowed any future `pnpm test:integration` or `pnpm test:e2e`
+ * step, which is precisely the "a new step arrived and nobody decided about
+ * it" event this list exists to make impossible.
+ *
+ * `"token"` is a deliberate substring, for the steps the gate runs through a
+ * shell script rather than as a bare command. It is the honest exception and
+ * it is declared rather than assumed — and it is what fixes the second half of
+ * that finding: the `gitleaks` and `actionlint` excuses named binaries that
+ * appear nowhere in a gate `run:` line (the gate runs `sh scripts/secret-scan.sh`
+ * and `sh scripts/workflow-lint.sh`), so both excused nothing at all and would
+ * have sat here forever after those steps left. They name the script now, and
+ * an arm requires every excuse to match a real gate command.
  */
-export const EXCUSED_GATE_STEPS: ReadonlyArray<{ readonly gateRun: string; readonly reason: string }> = [
+export type ExcuseMatch = "command" | "token";
+
+export const EXCUSED_GATE_STEPS: ReadonlyArray<{
+  readonly gateRun: string;
+  readonly match: ExcuseMatch;
+  readonly reason: string;
+}> = [
   {
-    gateRun: "gitleaks",
+    gateRun: "scripts/secret-scan.sh",
+    match: "token",
     reason:
-      "needs the gitleaks binary, which a dev box is not required to have; the gate is the only place this must hold.",
+      "the gitleaks secret scan — needs the gitleaks binary, which a dev box is not required to have; the gate is the only place this must hold. A token because the gate runs it inside a shell assignment.",
   },
   {
-    gateRun: "actionlint",
-    reason: "workflow linting needs actionlint + zizmor installed; only a workflow diff can fail it and that is rare.",
+    gateRun: "scripts/workflow-lint.sh",
+    match: "token",
+    reason:
+      "actionlint + zizmor — needs both binaries installed, and only a workflow diff can fail it. A token because the gate runs it behind environment-variable prefixes.",
   },
   {
     gateRun: "semgrep",
-    reason: "needs semgrep (python) installed; the Warden runs it on its own clock and the gate blocks on it.",
+    match: "token",
+    reason:
+      "needs semgrep (python) installed; the Warden runs it on its own clock and the gate blocks on it. A token because the step is three commands, only one of which is ours.",
   },
   {
     gateRun: "pnpm install --frozen-lockfile",
+    match: "command",
     reason: "a local tree already has its dependencies; the lockfile arm is a CI concern.",
   },
   {
     gateRun: "pnpm test",
+    match: "command",
     reason:
       "THE SEVEN MINUTES THIS SCRIPT EXISTS TO NOT SPEND TWICE — preflight runs the diff-adjacent files instead (see the header's stated limit).",
   },
   {
-    gateRun: "scripts/drive-design-laws.mts --controls",
+    gateRun: "npx tsx scripts/drive-design-laws.mts --controls",
+    match: "command",
     reason:
       "drives a browser against a built app; minutes and a dev server, so it belongs to the gate and to a UI shift's own law-6 pass.",
   },
 ];
+
+/**
+ * Whether a gate command is covered by an adopted check or an excuse.
+ *
+ * Word-boundary by default so `pnpm test` cannot claim `pnpm test:integration`;
+ * substring only where an excuse says out loud that it is a token.
+ */
+export function gateCommandMatches(command: string, run: string, match: ExcuseMatch = "command"): boolean {
+  if (match === "token") return command.includes(run);
+  return command === run || command.startsWith(`${run} `);
+}
 
 /**
  * The cheap checks, in the gate's order. `pnpm check` already carries the

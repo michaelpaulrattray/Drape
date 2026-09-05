@@ -36,6 +36,7 @@ import {
   VITEST_ENTRY,
   chunkVitestFiles,
   formatSeconds,
+  gateCommandMatches,
   gateRunCommands,
   selectDiffAdjacentTests,
   vitestArgv,
@@ -110,6 +111,33 @@ describe("selectDiffAdjacentTests — the card's rule", () => {
     expect(selection.uncovered).toEqual(["server/db/connection.ts"]);
   });
 
+  it("⚠ AN UNTRACKED NEW TEST FILE SELECTS ITSELF (review finding 1)", () => {
+    // The shape that was silently green: a shift writes `server/thing.test.ts`
+    // as the arm for its own fix and has not `git add`ed it yet. `server/` has
+    // 263 tracked neighbours, so the directory read as covered — and the one
+    // file in the diff that was the point of the change never ran.
+    //
+    // The caller unions the untracked listing into `repoTests`; this pins the
+    // selection half — a suite in that list is selected like any other.
+    const selection = selectDiffAdjacentTests(
+      ["server/brandNew.test.ts"],
+      [...REPO_TESTS, "server/brandNew.test.ts"],
+    );
+    expect(selection.files).toContain("server/brandNew.test.ts");
+    expect(selection.uncovered).toEqual([]);
+  });
+
+  it("a brand-new suite in a FRESH directory is selected, not filed as uncovered", () => {
+    // The other half of the same finding: before the fix this printed under
+    // "no neighbouring suite" while BEING the suite.
+    const selection = selectDiffAdjacentTests(
+      ["server/newarea/thing.ts", "server/newarea/thing.test.ts"],
+      [...REPO_TESTS, "server/newarea/thing.test.ts"],
+    );
+    expect(selection.files).toEqual(["server/newarea/thing.test.ts"]);
+    expect(selection.uncovered).toEqual([]);
+  });
+
   it("reads Windows path separators, because git and the shell disagree on this machine", () => {
     const selection = selectDiffAdjacentTests(["server\\routes\\billing.ts"], REPO_TESTS);
     expect(selection.files).toEqual(["server/routes/billing.test.ts"]);
@@ -152,10 +180,10 @@ describe("the drift arm — preflight against the real gate", () => {
   /** A run command is "handled" if a check adopts it or an excuse names it. */
   function unhandled(commands: readonly string[]): string[] {
     const adopted = PREFLIGHT_CHECKS.map((c) => c.gateRun).filter((r) => r.length > 0);
-    const excused = EXCUSED_GATE_STEPS.map((e) => e.gateRun);
     return commands.filter(
       (command) =>
-        !adopted.some((run) => command.includes(run)) && !excused.some((run) => command.includes(run)),
+        !adopted.some((run) => gateCommandMatches(command, run, "command")) &&
+        !EXCUSED_GATE_STEPS.some((e) => gateCommandMatches(command, e.gateRun, e.match)),
     );
   }
 
@@ -188,8 +216,48 @@ describe("the drift arm — preflight against the real gate", () => {
     // is green about something the gate no longer asks.
     for (const check of PREFLIGHT_CHECKS) {
       if (check.gateRun === "") continue;
-      expect(gateCommands.some((command) => command.includes(check.gateRun)), `preflight check "${check.id}" echoes gate step \`${check.gateRun}\`, which gate.yml no longer runs`).toBe(true);
+      expect(
+        gateCommands.some((command) => gateCommandMatches(command, check.gateRun, "command")),
+        `preflight check "${check.id}" echoes gate step \`${check.gateRun}\`, which gate.yml no longer runs`,
+      ).toBe(true);
     }
+  });
+
+  it("⚠ EVERY EXCUSE STILL MATCHES A REAL GATE STEP — two of them did not (review finding 3)", () => {
+    // An excuse that matches nothing excuses nothing, and sits here looking
+    // load-bearing. The `gitleaks` and `actionlint` entries named binaries that
+    // appear in no gate `run:` line at all — the gate runs those two through
+    // `sh scripts/secret-scan.sh` and `sh scripts/workflow-lint.sh`.
+    //
+    // Read against EVERY gate command, not the tooling-filtered population,
+    // precisely because those two steps are shell scripts.
+    for (const excuse of EXCUSED_GATE_STEPS) {
+      expect(
+        gateCommands.some((command) => gateCommandMatches(command, excuse.gateRun, excuse.match)),
+        `the excuse \`${excuse.gateRun}\` matches no command in gate.yml — it excuses nothing. Name the step the gate actually runs, or delete the entry.`,
+      ).toBe(true);
+    }
+  });
+
+  it("⚠ A NEW `pnpm test:*` STEP IS NOT SWALLOWED BY THE `pnpm test` EXCUSE (review finding 2)", () => {
+    // The substring road failed open here: "pnpm test:integration".includes(
+    // "pnpm test") is true, so a genuinely new gate step would have been
+    // excused by the seven-minutes reason with nobody deciding about it.
+    const synthetic = ["      - name: New", "        run: pnpm test:integration"].join("\n");
+    const commands = gateRunCommands(synthetic).filter((c) => TOOLING.test(c));
+    expect(commands).toEqual(["pnpm test:integration"]);
+    expect(unhandled(commands)).toEqual(["pnpm test:integration"]);
+  });
+
+  it("word-boundary matching still accepts a handled command with arguments", () => {
+    // The other direction, and it matters as much: a refusal that fires on
+    // healthy input is how a guard gets switched off.
+    expect(gateCommandMatches("pnpm check", "pnpm check")).toBe(true);
+    expect(gateCommandMatches("pnpm install --frozen-lockfile", "pnpm install --frozen-lockfile")).toBe(true);
+    expect(gateCommandMatches("pnpm test --reporter=dot", "pnpm test")).toBe(true);
+    expect(gateCommandMatches("pnpm test:integration", "pnpm test")).toBe(false);
+    expect(gateCommandMatches("pnpm checkers", "pnpm check")).toBe(false);
+    expect(gateCommandMatches('GITLEAKS="$(sh scripts/secret-scan.sh fetch)"', "scripts/secret-scan.sh", "token")).toBe(true);
   });
 
   it("NEGATIVE CONTROL — an unadopted, unexcused gate step IS reported", () => {
@@ -205,6 +273,13 @@ describe("the drift arm — preflight against the real gate", () => {
     for (const excuse of EXCUSED_GATE_STEPS) {
       expect(excuse.gateRun.trim().length).toBeGreaterThan(0);
       expect(excuse.reason.trim().length).toBeGreaterThan(20);
+    }
+  });
+
+  it("a token excuse says WHY it is a substring, because that is the failing-open shape", () => {
+    for (const excuse of EXCUSED_GATE_STEPS) {
+      if (excuse.match !== "token") continue;
+      expect(excuse.reason, `${excuse.gateRun} is a token excuse and must say why`).toContain("token because");
     }
   });
 
