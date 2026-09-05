@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f5f4bfc00ea84442"
+    "sourceFingerprint": "3a538c66b38fc4b4"
   },
   "domains": [
     {
@@ -12808,6 +12808,10 @@
     {
       "id": "test:server/prePushGate.test.ts",
       "path": "server/prePushGate.test.ts"
+    },
+    {
+      "id": "test:server/preflight.test.ts",
+      "path": "server/preflight.test.ts"
     },
     {
       "id": "test:server/privateEvidencePurge.test.ts",
