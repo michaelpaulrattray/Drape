@@ -238,6 +238,18 @@ if (firstRed) {
   console.log(`PREFLIGHT RED on ${firstRed.check.id}. Fix it, then run again — the gate would have`);
   console.log("spent ~7 minutes to tell you the same thing, and this is the run the");
   console.log("3.1-runs-per-PR figure exists to remove.");
+  if (firstRed.check.id.startsWith("diff-tests")) {
+    // ⚠ SAID OUT LOUD BECAUSE A TOOL THAT REDDENS AT RANDOM IS A TOOL A SHIFT
+    // LEARNS TO IGNORE (#548, found by this script on its own branch). A few
+    // suites drive real child processes inside vitest's 5s default timeout;
+    // under the parallel load of a large selection they lose the race and fail
+    // with `Test timed out in 5000ms` — a different set each run. Naming the
+    // one command that tells the two apart costs a line and saves the trust.
+    console.log("");
+    console.log("If a named suite passes when you run it ALONE, that red is #548 — a");
+    console.log("load-sensitive timeout in a suite that spawns child processes, not your");
+    console.log("change. Check with:  node node_modules/vitest/vitest.mjs run <that file>");
+  }
   process.exit(1);
 }
 
