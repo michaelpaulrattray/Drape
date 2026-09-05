@@ -188,8 +188,8 @@ export function UserTable({
       onOpenChange={(id) => onSelectUser(id === null ? null : Number(id))}
       empty={{
         title: "No users match that search.",
-        /* Not "or id" — `listUsers` never matches the numeric id. */
-        body: "Try a different name or email.",
+        /* "or id" is honest since #420 — an all-digit term matches the id exactly. */
+        body: "Try a different name, email or id.",
       }}
       footer={{
         meta: pageRange({

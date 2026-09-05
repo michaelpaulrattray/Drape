@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fb8e61cc1e6e2ae2"
+    "sourceFingerprint": "0e8957a75f1a1e09"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 44
+      "moduleCount": 46
     },
     {
       "id": "domain:client-shared",
@@ -1675,6 +1675,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/keptStrip.ts",
+      "path": "client/src/features/castingV2/keptStrip.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/panelBridge.ts",
       "path": "client/src/features/castingV2/panelBridge.ts",
       "domain": "castingV2",
@@ -1719,6 +1725,12 @@
     {
       "id": "module:client/src/features/castingV2/retentionCopy.ts",
       "path": "client/src/features/castingV2/retentionCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/retryFace.ts",
+      "path": "client/src/features/castingV2/retryFace.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10624,6 +10636,10 @@
       "path": "client/src/features/castingV2/keptPanelAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/keptStrip.test.ts",
+      "path": "client/src/features/castingV2/keptStrip.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/lostContact.test.ts",
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
@@ -10670,6 +10686,10 @@
     {
       "id": "test:client/src/features/castingV2/retentionCopy.test.ts",
       "path": "client/src/features/castingV2/retentionCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/retryFace.test.ts",
+      "path": "client/src/features/castingV2/retryFace.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/roomAnatomy.test.ts",
@@ -10882,6 +10902,10 @@
     {
       "id": "test:server/adminUserManagement.test.ts",
       "path": "server/adminUserManagement.test.ts"
+    },
+    {
+      "id": "test:server/adminUserSearch.test.ts",
+      "path": "server/adminUserSearch.test.ts"
     },
     {
       "id": "test:server/announcements.test.ts",
@@ -13218,6 +13242,10 @@
     {
       "id": "test:server/reviewerManualRoad.test.ts",
       "path": "server/reviewerManualRoad.test.ts"
+    },
+    {
+      "id": "test:server/ritePushSequence.test.ts",
+      "path": "server/ritePushSequence.test.ts"
     },
     {
       "id": "test:server/roleManagement.test.ts",
@@ -16513,6 +16541,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
+      "to": "module:client/src/features/castingV2/retryFace.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -19379,6 +19412,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/frameDecodes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/keptStrip.ts",
       "kind": "imports"
     },
     {

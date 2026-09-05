@@ -102,6 +102,37 @@ verb that writes to `main`. It is not a hole — every PR merge is exactly the
 road the gate exists to police — but a future tool that merges without the gate
 green would be one, and it would appear on no list in this document.
 
+### 1c · `scripts/lib/ritePushSequence.mts` — names `git push`, and cannot push
+
+Added 2026-09-06 (#317). It is the rite's push-SEQUENCE decision: which refs go,
+in which order, and — the point of the card — that the sequence **STOPS at the
+first failure**, so a rejected `main` can never be followed by the
+`local-migration` push that production actually builds from.
+
+- **It is pure.** No child processes at all. The rite injects a pusher
+  (`gitPushStatus`) and keeps sole custody of `DRAPE_DEPLOY_RITE`, the marker
+  `.githooks/pre-push` demands for `main` and `local-migration`. This module
+  could not push a protected ref even if it tried to spawn one.
+- **The literal is prose, in contract 2 of its docblock**, explaining why the
+  verdict must come from the child's exit status rather than its output: a
+  successful `git push` writes `To github.com…` to stderr, and an up-to-date one
+  writes nothing at all, so any reading that matches on text is a coin flip.
+  That was the shape of the bug — `run()` returned stderr as a string, so a
+  rejected push and a successful one had the same type and no status.
+- **Its recovery messages also print git commands**, including `git merge`, for
+  a human to run at 5am. Text on a terminal, never a spawn — and they name the
+  merge repair specifically to steer a tired shift away from `--force`, which is
+  the one thing it must not do to either deploy ref.
+
+`server/ritePushSequence.test.ts` is on the list for the same reason and spawns
+nothing either: it drives the sequence with a **fake pusher**, which is exactly
+what lets the STOP be proven without a remote.
+
+**Over-inclusion here is the contract working**, exactly as it is for
+`pushPaths.mts` and this suite: a file that reasons *about* pushing gets read by
+a detector that matches the words, and the answer is to write down why it is not
+a door rather than to narrow the detector.
+
 ### 2 · CI — nothing
 
 All four workflows (`gate.yml`, `review.yml`, `knip.yml`, `secrets.yml`)

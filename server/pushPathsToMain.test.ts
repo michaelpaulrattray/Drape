@@ -70,6 +70,23 @@ const FLAGGED: Record<string, { door: boolean; why: string }> = {
       + "containing `git push origin main`, so the literal is in its own source. Its "
       + "only child process is `git ls-files`, through gitTreeReader.",
   },
+  "scripts/lib/ritePushSequence.mts": {
+    door: false,
+    why: "The rite's push-SEQUENCE decision (#317) — pure, no child processes at all. "
+      + "It decides the ORDER and the STOP; the rite injects the pusher and keeps "
+      + "sole custody of DRAPE_DEPLOY_RITE, so this module cannot push even in "
+      + "principle. The literal is in contract 2 of its docblock, explaining why "
+      + "failure must be read from the exit status: a successful `git push` writes to "
+      + "stderr too, and an up-to-date one writes nothing. Its recovery messages also "
+      + "print git commands for a human to run — text, never a spawn.",
+  },
+  "server/ritePushSequence.test.ts": {
+    door: false,
+    why: "The suite for the module above (#317). It spawns nothing — it drives the "
+      + "sequence with a FAKE pusher, which is the whole reason the STOP can be "
+      + "proven without a remote. The literal appears in its docblock and in the arm "
+      + "asserting that failure is read from the status rather than the output.",
+  },
   "scripts/lib/prMergeOrder.mts": {
     door: false,
     why: "The decision half of the merge runner below. It is PURE — no child "

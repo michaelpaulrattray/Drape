@@ -41,6 +41,78 @@ const log = createModuleLogger("db/admin");
 // ============================================================================
 
 /**
+ * THE MODERATOR'S ACCOUNT SEARCH — and why a numeric term is its own branch.
+ *
+ * The surface shows a numeric account id beside every row (`#40486`) and had
+ * offered to search by it since it was built. The server matched `name`,
+ * `email` and `openId` — the auth-provider handle, never `users.id` — so
+ * typing an id returned nothing at all, for any id, and #399 removed the
+ * claim rather than leave a dead control on a staff surface. This is the
+ * other half (#420): the capability, so the claim can come back.
+ *
+ * # A DIGIT TERM MATCHES THE ID EXACTLY, NEVER BY `LIKE`
+ *
+ * `LIKE '%1%'` over the id returns every account whose id merely CONTAINS a 1,
+ * which on any real population is most of them — a worse answer than none, and
+ * the thing the card asked to be checked on the way. So an all-digit term is
+ * an identity lookup: this account or no account.
+ *
+ * It still matches the three text fields as well, because an email or a name
+ * may legitimately be numeric and a moderator holding "40486" from a support
+ * ticket should not have a matching email hidden from them.
+ *
+ * # ⚠ AND IT ACCEPTS THE SHAPE THIS PRODUCT ITSELF PRINTS: `#40486`
+ *
+ * Both staff surfaces render the id with a leading hash — `#40486`
+ * (`UserInvestigationWidgets.tsx`, `admin/UserTable.tsx`) — so the likeliest
+ * thing anyone will ever paste into this box is the string they copied off the
+ * row in front of them, or off a ticket quoting it. The first version of this
+ * function tested `/^\d+$/` and a pasted `#40486` fell straight through to
+ * `LIKE '%#40486%'` over the text fields, found nothing, and printed *"No users
+ * match that search"* — **the original defect's exact symptom, reproduced on
+ * the one paste shape the product manufactures.** (Gate review, PR #569.)
+ *
+ * ONE optional leading hash is stripped, and only for the id test; the three
+ * text clauses keep the term as it was typed, because someone searching for a
+ * literal "#40486" in a name is asking a different question.
+ *
+ * # THE BOUND, AND WHY IT IS NOT DECORATION
+ *
+ * `users.id` is a signed 32-bit int. A term of twenty digits is not an id on
+ * this table, and handing it to MySQL as one is asking a question about a
+ * value the column cannot hold; out of range, it falls through to the text
+ * fields alone. `Number.isSafeInteger` is checked first because a long digit
+ * string parses to a float that compares wrongly rather than failing.
+ *
+ * # PRECONDITION
+ *
+ * The term must be non-empty — an empty one renders `LIKE '%%'`, which matches
+ * every account. The only call site guards it (`if (search && search.trim())`)
+ * and a second caller must do the same. Stated here because the rest of this
+ * docblock states everything else, and a precondition that is only true by
+ * accident at the one call site is how a mirror starts.
+ */
+export function userSearchCondition(search: string): SQL {
+  const term = search.trim();
+  const searchTerm = `%${term}%`;
+  const clauses: SQL[] = [
+    like(users.name, searchTerm),
+    like(users.email, searchTerm),
+    like(users.openId, searchTerm),
+  ];
+
+  const digits = term.startsWith("#") ? term.slice(1) : term;
+  if (/^\d+$/.test(digits)) {
+    const asNumber = Number(digits);
+    if (Number.isSafeInteger(asNumber) && asNumber > 0 && asNumber <= 2147483647) {
+      clauses.push(eq(users.id, asNumber));
+    }
+  }
+
+  return or(...clauses)!;
+}
+
+/**
  * Get paginated list of all users with search and filters.
  */
 export async function listAllUsers(options: {
@@ -85,14 +157,7 @@ export async function listAllUsers(options: {
     const conditions: SQL[] = [];
 
     if (search && search.trim()) {
-      const searchTerm = `%${search.trim()}%`;
-      conditions.push(
-        or(
-          like(users.name, searchTerm),
-          like(users.email, searchTerm),
-          like(users.openId, searchTerm)
-        )!
-      );
+      conditions.push(userSearchCondition(search));
     }
 
     if (status === "suspended") {
