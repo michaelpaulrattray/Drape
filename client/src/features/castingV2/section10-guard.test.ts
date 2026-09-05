@@ -532,7 +532,7 @@ describe("what the hero must NOT grow back (§2f)", () => {
     const chip = rule(css, ".dpc-setbtn");
     expect(chip, "the .dpc-setbtn rule must be readable for this to mean anything").toBeTruthy();
 
-    const foundation = await read("client/src/foundation/foundation.css");
+    const foundation = await read(new URL("../../foundation/foundation.css", import.meta.url));
     const dock = rule(foundation, ".dp-dock");
     expect(dock, ".dp-dock must be readable for this to mean anything").toBeTruthy();
     expect(
