@@ -618,3 +618,86 @@ describe("foundation tokens define every token in both themes", () => {
     expect(tokens).toContain(".dp-root {\n  background: var(--surface);");
   });
 });
+
+/**
+ * THE SELECTION HIGHLIGHT (#542) — the one rule in `index.css` that is under
+ * guard, and the narrowness is DECLARED rather than quiet.
+ *
+ * His report: *"when i highlight text in dark mode its black and white still
+ * shouldnt it highlight white and change text to black? just like lightmode
+ * highlights black and changes text to white?"* — `::selection` was
+ * `background: #111111; color: white`, two literals with no theme branch, so a
+ * dark-mode highlight painted near-black on a near-black page.
+ *
+ * ⚠ **`client/src/index.css` IS NOT ENROLLED IN `GUARDED_PATHS`, AND THAT IS A
+ * COUNTED REMAINDER, NOT AN OVERSIGHT.** The file holds **97 further hex
+ * literals** (98 before this fix) across its Tailwind base and component
+ * layers — marketing type scales, legacy page chrome, the hero's blues. Most
+ * are not theme-sensitive and none has been read; enrolling the whole file
+ * would redden the gate on 97 unrelated declarations in a one-line bug fix,
+ * which is a different job and gets its own card. **What is enrolled is the
+ * rule his report is about**, so the next literal *there* reddens.
+ *
+ * The arm reads the DECLARATION rather than the whole file for the same reason
+ * the guard above resolves every path: a substring test over 700 lines would
+ * pass on a `::selection` rule that had been deleted entirely.
+ */
+describe("the selection highlight inverts per theme (#542)", () => {
+  const indexCss = fs.readFileSync(path.join(clientSrc, "index.css"), "utf8");
+
+  /** The `::selection { … }` body, or null if the rule is gone. */
+  const selectionBody = ((): string | null => {
+    const at = indexCss.indexOf("::selection");
+    if (at < 0) return null;
+    const open = indexCss.indexOf("{", at);
+    const close = indexCss.indexOf("}", open);
+    if (open < 0 || close < 0) return null;
+    return indexCss.slice(open + 1, close);
+  })();
+
+  it("declares a ::selection rule at all", () => {
+    // The positive control for every arm below: they all read this body, and a
+    // deleted rule would make each of them vacuously true.
+    expect(selectionBody, "`::selection` is gone from index.css").not.toBeNull();
+  });
+
+  it("takes both of its colours from theme tokens", () => {
+    expect(selectionBody).toMatch(/background:\s*var\(--ink\)/);
+    expect(selectionBody).toMatch(/color:\s*var\(--surface\)/);
+  });
+
+  it("holds no colour literal — the defect was two of them", () => {
+    // `#111111` and the keyword `white`, which is what made the highlight the
+    // same colour in both themes.
+    const literals = [
+      ...(selectionBody ?? "").matchAll(/#[0-9a-fA-F]{3,8}\b|\b(?:white|black)\b/g),
+    ].map((m) => m[0]);
+    expect(
+      literals,
+      "A literal here cannot invert: the same colour paints both themes",
+    ).toEqual([]);
+  });
+
+  it("uses a pair that actually inverts between the themes", () => {
+    // Reading the token table rather than trusting the names: --ink and
+    // --surface must each be declared in BOTH blocks and must differ, or the
+    // rule states a relationship the tokens do not deliver.
+    const tokens = fs.readFileSync(path.join(clientSrc, "foundation", "tokens.css"), "utf8");
+    const valueIn = (selector: string, token: string): string | null => {
+      const block = tokens.slice(tokens.indexOf(selector));
+      const body = block.slice(block.indexOf("{") + 1, block.indexOf("\n}"));
+      const hit = new RegExp(`${token}\\s*:\\s*([^;]+);`).exec(body);
+      return hit ? hit[1]!.trim() : null;
+    };
+    for (const token of ["--ink", "--surface"]) {
+      const light = valueIn(":root {", token);
+      const dark = valueIn('[data-theme="dark"] {', token);
+      expect(light, `${token} is not declared in the light block`).not.toBeNull();
+      expect(dark, `${token} is not declared in the dark block`).not.toBeNull();
+      expect(
+        light,
+        `${token} is the same in both themes — the selection rule would not invert`,
+      ).not.toEqual(dark);
+    }
+  });
+});
