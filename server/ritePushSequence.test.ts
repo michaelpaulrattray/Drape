@@ -146,6 +146,36 @@ describe("#317 · the failure message names the recovery and forbids the force p
     expect(message).toMatch(/--is-ancestor/);
   });
 
+  /*
+    THE REVIEWER'S FINDING ON PR #570, kept as an arm rather than a fixed
+    comment. The first draft printed `git merge origin/main` in BOTH branches.
+    In the shipped branch that is the one scenario the message will ever be
+    read in — `main` landed, `local-migration` was rejected — and there
+    `origin/main` IS HEAD, so the command is "Already up to date" followed by a
+    re-run that fails identically. The orphan is on the ref that did NOT land.
+  */
+  it("merges the ref that FAILED, never origin/main by reflex", () => {
+    const shipped = pushInSequence(
+      ["main", "main:local-migration"],
+      pusherFailing(["main:local-migration"], []),
+    );
+    const message = pushFailureMessage(shipped);
+
+    expect(message).toMatch(/git merge origin\/local-migration --no-edit/);
+    expect(message).not.toMatch(/git merge origin\/main/);
+    /* And it says WHY, so the next reader does not "helpfully" change it back. */
+    expect(message).toMatch(/would be a no-op here/);
+    expect(message).toMatch(/--is-ancestor origin\/local-migration HEAD/);
+  });
+
+  it("still merges origin/main when main is the ref that failed", () => {
+    const message = pushFailureMessage(
+      pushInSequence(["main", "main:local-migration"], pusherFailing(["main"], [])),
+    );
+    expect(message).toMatch(/git merge origin\/main --no-edit/);
+    expect(message).not.toMatch(/git merge origin\/local-migration/);
+  });
+
   it("is empty when nothing failed", () => {
     expect(pushFailureMessage(pushInSequence(["main"], () => ({ ok: true, output: "" })))).toBe("");
   });
@@ -158,6 +188,18 @@ describe("#317 · the failure message names the recovery and forbids the force p
     const onMain = divergedRefMessage("main", "", "abc1234");
     expect(onMain).toMatch(/\(absent\)/);
     expect(onMain).toMatch(/Production builds from local-migration/);
+  });
+
+  /* Same finding, same shape, second site (#570 review). */
+  it("the diverged-ref message merges the ref that disagrees, not origin/main", () => {
+    const onProd = divergedRefMessage("local-migration", "a".repeat(40), "abc1234");
+    expect(onProd).toMatch(/git merge origin\/local-migration --no-edit/);
+    expect(onProd).not.toMatch(/git merge origin\/main/);
+    expect(onProd).toMatch(/not origin\/main by/);
+
+    const onMain = divergedRefMessage("main", "b".repeat(40), "abc1234");
+    expect(onMain).toMatch(/git merge origin\/main --no-edit/);
+    expect(onMain).not.toMatch(/git merge origin\/local-migration/);
   });
 });
 

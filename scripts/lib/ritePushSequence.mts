@@ -135,10 +135,18 @@ export function deployRefOrderProblem(branches: readonly string[]): string | nul
  * - **Nothing shipped** (the failure was the first ref) — the ordinary race.
  *   Merge the remote tip and re-run. No history moves and production was never
  *   handed anything.
- * - **Something shipped already** — only reachable if `BRANCHES` is reordered
- *   or grows, since the stop above prevents it otherwise. The fuller
- *   orphan-recovery is named, with the two readings that prove it was a
- *   content no-op (recorded on #317 by the shift that used it).
+ * - **Something shipped already** — `main` landed and `local-migration` was
+ *   rejected. The fuller orphan-recovery is named, with the two readings that
+ *   prove it was a content no-op (recorded on #317 by the shift that used it).
+ *
+ * ⚠ **BOTH MERGE THE REMOTE TIP OF THE REF THAT FAILED, AND THE FIRST DRAFT
+ * MERGED `origin/main` IN BOTH** (found by the reviewer on PR #570). In the
+ * shipped case that is a guaranteed no-op: `main` landed one line earlier, so
+ * `origin/main` IS `HEAD` — "Already up to date", then a re-run that hits the
+ * identical rejection. The orphan is on `origin/local-migration`, the ref that
+ * did NOT land. A message whose one reachable scenario prints a loop is worse
+ * than no message, because this one exists precisely for a shift too tired to
+ * check it.
  */
 export function pushFailureMessage(sequence: PushSequence): string {
   const failed = sequence.failed;
@@ -152,30 +160,39 @@ export function pushFailureMessage(sequence: PushSequence): string {
     "",
   ];
 
+  /* THE TIP TO MERGE IS THE ONE THAT DID NOT LAND — never `origin/main` by
+     reflex. See the ⚠ in this function's docblock. */
+  const orphanRef = `origin/${refOf(failed.branch)}`;
+
   if (shipped.length === 0) {
     lines.push(
       `NOTHING WAS PUSHED. Production is untouched and still builds the previous commit.`,
       "",
-      "This is almost always the ordinary race: a squash merge landed on origin/main",
-      "while this tree sat a commit behind. The repair is one merge, and it rewrites",
-      "no history:",
+      "This is almost always the ordinary race: a squash merge landed on",
+      `${orphanRef} while this tree sat a commit behind. The repair is one merge,`,
+      "and it rewrites no history:",
       "",
       "    git fetch origin",
-      "    git merge origin/main --no-edit     # the atlas has a merge driver; if it",
+      `    git merge ${orphanRef} --no-edit     # the atlas has a merge driver; if it`,
       "                                        # asks, git commit --no-edit",
       "    npx tsx scripts/deploy-rite.mts",
     );
   } else {
     lines.push(
       `⚠ ALREADY PUSHED: ${shipped.join(", ")}.`,
-      `If ${DEPLOY_SOURCE_REF} is among them, production is building a tree that main`,
-      "does not carry. Merge the orphaned tip back so it becomes an ancestor again,",
-      "then prove the merge changed no content before re-running:",
+      `${refOf(failed.branch) === DEPLOY_SOURCE_REF
+        ? "That means production's own ref is the one that did NOT land, so production"
+          + "\nis still on its previous commit while main has moved ahead of it."
+        : "Production's ref is among them, so it is building a tree main does not carry."}`,
+      "",
+      `The orphaned tip is on ${orphanRef} — the ref that failed. Merging origin/main`,
+      "would be a no-op here, because main is what just landed. Merge the tip that did",
+      "not, so it becomes an ancestor again, and prove the merge changed no content:",
       "",
       "    git fetch origin",
-      "    git merge origin/main --no-edit",
-      "    git diff <pre-merge-tip> HEAD --stat          # must be EMPTY",
-      "    git merge-base --is-ancestor <orphan> HEAD    # must succeed",
+      `    git merge ${orphanRef} --no-edit`,
+      `    git diff <pre-merge-tip> HEAD --stat                 # must be EMPTY`,
+      `    git merge-base --is-ancestor ${orphanRef} HEAD    # must succeed`,
       "    npx tsx scripts/deploy-rite.mts",
     );
   }
@@ -191,6 +208,10 @@ export function pushFailureMessage(sequence: PushSequence): string {
 /**
  * The same guidance for the VERIFY block, which catches a divergence that
  * ALREADY exists — including one left behind before this module shipped.
+ *
+ * ⚠ The ref to merge is `origin/<the ref that disagrees>`, for the same reason
+ * as above: when `local-migration` is the one out of step, `git merge
+ * origin/main` is a no-op and sends the reader round the loop again.
  */
 export function divergedRefMessage(ref: string, remote: string, shortSha: string): string {
   return [
@@ -200,12 +221,13 @@ export function divergedRefMessage(ref: string, remote: string, shortSha: string
       ? "Production builds from this ref, so it is the one that matters most."
       : "This ref did not land. Production builds from " + DEPLOY_SOURCE_REF + ".",
     "",
-    "Recover by merging — never by forcing:",
+    `Recover by merging the tip that disagrees — origin/${ref}, not origin/main by`,
+    "reflex — and never by forcing:",
     "",
     "    git fetch origin",
-    "    git merge origin/main --no-edit",
-    "    git diff <pre-merge-tip> HEAD --stat          # must be EMPTY",
-    "    git merge-base --is-ancestor <orphan> HEAD    # must succeed",
+    `    git merge origin/${ref} --no-edit`,
+    `    git diff <pre-merge-tip> HEAD --stat              # must be EMPTY`,
+    `    git merge-base --is-ancestor origin/${ref} HEAD    # must succeed`,
     "    npx tsx scripts/deploy-rite.mts",
     "",
     "⚠ DO NOT force push either deploy ref. See #317.",
