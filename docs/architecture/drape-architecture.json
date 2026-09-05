@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d6b0b5c54db9248e"
+    "sourceFingerprint": "486171cc6c2b276c"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:client-shared",
@@ -1719,6 +1719,12 @@
     {
       "id": "module:client/src/features/castingV2/retentionCopy.ts",
       "path": "client/src/features/castingV2/retentionCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/retryFace.ts",
+      "path": "client/src/features/castingV2/retryFace.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10672,6 +10678,10 @@
       "path": "client/src/features/castingV2/retentionCopy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/retryFace.test.ts",
+      "path": "client/src/features/castingV2/retryFace.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/roomAnatomy.test.ts",
       "path": "client/src/features/castingV2/roomAnatomy.test.ts"
     },
@@ -16517,6 +16527,11 @@
     {
       "from": "module:client/src/features/castingV2/components/BriefField.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
+      "to": "module:client/src/features/castingV2/retryFace.ts",
       "kind": "imports"
     },
     {

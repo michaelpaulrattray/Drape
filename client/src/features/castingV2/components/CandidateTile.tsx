@@ -8,6 +8,7 @@ import {
   isRetryableFailure,
   type CandidateFailureKind,
 } from "@shared/candidateFailure";
+import { retryShowsSkeleton } from "../retryFace";
 
 /**
  * One candidate, one tile, arriving on its own.
@@ -53,6 +54,7 @@ export function CandidateTile({
   onOpenViewer,
   onRetry,
   retryPriceCredits,
+  retrying,
 }: {
   candidate: TileCandidate;
   /**
@@ -143,11 +145,40 @@ export function CandidateTile({
   onRetry?: () => void;
   /** The retry price, server-derived (`castingV2.config`) — printed on the button, D-15. */
   retryPriceCredits?: number;
+  /**
+   * THIS TILE'S RETRY HAS BEEN CLICKED AND HAS NOT COME BACK (#551).
+   *
+   * The founder, watching his own sheet: *"when i click it there is no
+   * indication anything is happening for around 5 seconds or so — to a user it
+   * would feel like you clicked retry, there was a 5 second delay, and then
+   * something happened rather than an immediate effect."*
+   *
+   * He was reading the tile correctly: `retrying` already existed on the sheet
+   * and its only effect here was `busy`, which greys the button and leaves the
+   * failed face in place. The visible change waited on the server writing
+   * `casting` and then on the next poll tick — the ~5 seconds he felt.
+   *
+   * So the click frame paints, exactly as D-38 has every other action on this
+   * sheet paint: the tile goes to the SAME skeleton a fresh roll's tile shows
+   * before its first frame, and the poll then carries it to the picture or to
+   * a second failure as it always did. The sheet clears the flag in its
+   * `finally`, so a refusal — closed scope, no credits, the filter — drops the
+   * tile back onto its failed face with the toast that says why.
+   */
+  retrying?: boolean;
 }) {
   // Declared before any early return — a hook after a conditional return is a
   // hook that sometimes does not run.
 
-  if (candidate.status === "casting") {
+  /*
+    A RETRY IN FLIGHT IS A CASTING TILE, and it is asked here rather than at the
+    failed branch so that it reaches the one face this product already uses for
+    "your picture is being made". The rule and the reason it is narrowed to a
+    failed tile live in `retryFace.ts`, with the negative control.
+  */
+  const retryInFlight = retryShowsSkeleton({ status: candidate.status, retrying });
+
+  if (candidate.status === "casting" || retryInFlight) {
     /*
       Three states, and the order matters: the click frame, then the wind-down,
       then ordinary casting. Nothing here can move backwards — `windingDown` is
@@ -159,15 +190,29 @@ export function CandidateTile({
       one, because a user who has cancelled already knows why this is taking a
       while and already has the refund promise in the dock's line.
     */
-    const caption = cancelling
-      ? "Cancelling…"
-      : windingDown
-        ? "Finishing — will be refunded"
-        : overdue
-          ? "Taking longer than usual — this refunds automatically if it can't finish"
-          : "Casting…";
+    /*
+      A retry outranks all three, and it has to. `overdue`, `windingDown` and
+      `cancelling` are read from the ORIGINAL attempt — the one that already
+      failed minutes ago — so letting them through would open a freshly clicked
+      retry on "Taking longer than usual", which is both untrue and the exact
+      opposite of the immediacy this change is for.
+    */
+    const caption = retryInFlight
+      ? "Casting…"
+      : cancelling
+        ? "Cancelling…"
+        : windingDown
+          ? "Finishing — will be refunded"
+          : overdue
+            ? "Taking longer than usual — this refunds automatically if it can't finish"
+            : "Casting…";
     return (
-      <div className={windingDown ? "dp-stack dpc-tile--winding" : "dp-stack"} style={{ gap: 9 }}>
+      <div
+        // Same reason as the caption: the wind-down dimming belongs to the
+        // attempt that was cancelled, never to the one just paid for.
+        className={windingDown && !retryInFlight ? "dp-stack dpc-tile--winding" : "dp-stack"}
+        style={{ gap: 9 }}
+      >
         <Skeleton style={{ aspectRatio: "4 / 5" }} label={`CASTING ${candidate.indexLabel}`} />
         <span className="dp-metadata">{caption}</span>
       </div>
