@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "536d12459dbd265a"
+    "sourceFingerprint": "ee86cfdffa2e1496"
   },
   "domains": [
     {
@@ -19408,11 +19408,6 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:shared/briefLength.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
@@ -35087,10 +35082,10 @@
       "message": "Names 5 of RecoverableRollOperation's 5 fields (server/castingV2/rollRecovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:295",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:288",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:295",
+      "subject": "server/castingV2/rollProjection.ts:288",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

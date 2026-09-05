@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
 import { HOUSE_BLOCK, containsHouseSentence } from "./houseBlock";
+import { FOLLOW_ANCHOR_CLAUSE } from "./familyClause";
 
 vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHOR_SAT_OUT_REASONS, AUTHORED_PROMPT_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readAuthoredFrom, readAuthoredPrompt, readAuthoredText, readChips, readImagination } = await import(
+const { AUTHOR_SAT_OUT_REASONS, BRIEF_CHANGE_MAX, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readBriefChanges, readChips, readImagination } = await import(
   "./rollProjection"
 );
 const { authorSatOutRecord } = await import("../../client/src/features/castingV2/castSettingsCopy");
@@ -110,115 +111,137 @@ describe("nothing internal crosses the boundary", () => {
     }
     // The user's own sentence comes back, because it is theirs.
     expect(JSON.parse(projected).briefText).toBe("a wiry cyclist in her 20s");
-    // And no prompt does, on a house roll: the field exists and is null.
-    expect(JSON.parse(projected).authoredPrompt).toBeNull();
+    // And no change lines on a house roll: the field exists and is empty (#534).
+    expect(JSON.parse(projected).briefChanges).toEqual([]);
   });
 
   /*
-    THE PROMPT THE SHEET WAS PAINTED FROM (#131 slice D, ruling rule 5: "no
-    hidden prompt, ever"). It crosses the boundary ONLY on an author register,
-    because there it is the customer's words plus the author's and nothing
-    house-internal; every other shape is null rather than forwarded.
+    THE PROMPT RECORD IS THE CUSTOMER'S, AND NOTHING ELSE (#534; his ruling,
+    verbatim: "it should just show their original prompt and anything they
+    changed on the new roll even on a follow"). The projection carries
+    `briefText` and `briefChanges` — the follow clause, the author's draft and
+    the locked block never cross the boundary at all. These arms supersede the
+    #131 slice D suite that pinned the old rebuilt record.
   */
-  describe("the authored prompt crosses the boundary on the author road and nowhere else — and never the locked block (#168)", () => {
-    it("the shown prompt is REBUILT from the customer's parts: brief, clause, content — the block's text never crosses the wire", () => {
-      const projected = projectRoll({
-        roll: rollRow({
-          briefText: "goth woman mid 30s",
-          compiledBrief: {
-            compiler: "pathA-v1",
-            framingBlock: "internal framing text",
-            register: {
-              kind: "author",
-              authored: true,
-              content: "Pale skin, black lace.",
-              carried: { follow: true, overrides: {}, clause: "Continue this family: same casting brief, new person — a woman." },
-              prompt: `goth woman mid 30s\n\nPale skin, black lace.\n\n${HOUSE_BLOCK}`,
-            },
+  describe("the prompt record: the customer's words and their own changes — never a machine sentence (#534)", () => {
+    const followRow = () =>
+      rollRow({
+        briefText: "goth woman mid 30s",
+        compiledBrief: {
+          compiler: "pathA-v1",
+          framingBlock: "internal framing text",
+          register: {
+            kind: "author",
+            authored: true,
+            content: "Pale skin, black lace.",
+            carried: { follow: true, overrides: {}, clause: FOLLOW_ANCHOR_CLAUSE },
+            prompt: `goth woman mid 30s\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`,
           },
-        }),
-        candidates: [candidateRow()],
+        },
       });
-      expect(projected.authoredPrompt).toBe(
-        "goth woman mid 30s\n\nContinue this family: same casting brief, new person — a woman.\n\nPale skin, black lace.",
-      );
-      /* The whole projection, not just the field: no house sentence anywhere (invariant 8's shape). */
-      expect(containsHouseSentence(JSON.stringify(projected))).toBeNull();
-      expect(JSON.stringify(projected)).not.toContain("internal framing text");
-      /* Positive control: the raw register field DOES hold the block, so forwarding it would have been caught. */
-      expect(containsHouseSentence(`goth woman mid 30s\n\n${HOUSE_BLOCK}`)).not.toBeNull();
+
+    it("a Follow row's projection carries her words and NO machine sentence — not the clause, not the author's draft, not the block", () => {
+      const projected = projectRoll({ roll: followRow(), candidates: [candidateRow()] });
+      expect(projected.briefText).toBe("goth woman mid 30s");
+      /* Nothing rode this follow but the brief, so there is no change line. */
+      expect(projected.briefChanges).toEqual([]);
+      /* The WHOLE projection, not a field: a machine sentence anywhere reddens (invariant 8's shape). */
+      const json = JSON.stringify(projected);
+      expect(json).not.toContain("Same casting brief as the attached look");
+      expect(json).not.toContain("Do not copy this face");
+      expect(json).not.toContain("Pale skin, black lace.");
+      expect(containsHouseSentence(json)).toBeNull();
+      expect(json).not.toContain("internal framing text");
     });
 
-    it("the brief AS SENT wins over the typed brief when a chip edit rewrote it (#164)", () => {
+    it("positive control: the raw row DOES hold every one of those sentences — a projection that forwarded one would redden above", () => {
+      const raw = JSON.stringify(followRow());
+      expect(raw).toContain("Same casting brief as the attached look");
+      expect(raw).toContain("Pale skin, black lace.");
+      expect(containsHouseSentence(raw)).not.toBeNull();
+    });
+
+    it("a chip edit crosses as the customer's own change — replaced as a value, appended as its one sentence (#164 → #534)", () => {
       const register = {
         kind: "author",
-        content: "Pale skin.",
-        briefSent: "a fitness creator in their 40s, close-cropped hair",
+        rewrites: [
+          { field: "ageBand", mode: "replaced", to: "in their late 50s" },
+          { field: "archetype", mode: "appended", to: "Cast in the moody direction." },
+        ],
+      };
+      expect(readBriefChanges({ register })).toEqual([
+        { field: "ageBand", shape: "value", to: "in their late 50s" },
+        { field: "archetype", shape: "sentence", to: "Cast in the moody direction." },
+      ]);
+    });
+
+    it("a row written before Row A: the facts the old axis clause carried cross, the clause itself never does", () => {
+      const register = {
+        kind: "author",
+        authored: true,
+        carried: {
+          follow: true,
+          overrides: { ageBand: "50s" },
+          clause: "Continue this family: cast a close relative of one person — a woman.",
+        },
         prompt: "irrelevant here",
       };
-      expect(readAuthoredPrompt("a fitness creator in their 30s, close-cropped hair", { register }))
-        .toBe("a fitness creator in their 40s, close-cropped hair\n\nPale skin.");
-      expect(readAuthoredText("a fitness creator in their 30s, close-cropped hair", { register }))
-        .toBe("a fitness creator in their 40s, close-cropped hair\n\nPale skin.");
+      expect(readBriefChanges({ register })).toEqual([{ field: "ageBand", shape: "value", to: "50s" }]);
+      const projected = projectRoll({
+        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", register } }),
+        candidates: [candidateRow()],
+      });
+      /* The sentence his ruling quotes — the one his own sheet showed him — never crosses. */
+      expect(JSON.stringify(projected)).not.toContain("Continue this family");
+      expect(JSON.stringify(projected)).not.toContain("close relative");
+      expect(projected.briefChanges).toEqual([{ field: "ageBand", shape: "value", to: "50s" }]);
     });
 
-    it("a house register (a follow or an edited roll under the flag) projects null — its prompt is the house composer's", () => {
-      expect(readAuthoredPrompt("x", { register: { kind: "house", because: "anchored", prompt: "CASTING CATEGORY (ABSOLUTE) …" } })).toBeNull();
-    });
-
-    it("use-as-brief gets the brief + the author's CONTENT and never the block (review of #141): null on a seed/static sheet", () => {
-      expect(readAuthoredText("goth woman mid 30s", { register: { kind: "author", mode: "authored", content: " Pale skin, black lace. ", prompt: "goth woman mid 30s\n\nPale skin, black lace.\n\nFRAMING: …" } }))
-        .toBe("goth woman mid 30s\n\nPale skin, black lace.");
-      expect(readAuthoredText("goth woman mid 30s", { register: { kind: "author", mode: "seed", content: null, prompt: "goth woman mid 30s\n\nFRAMING: …" } })).toBeNull();
-      expect(readAuthoredText("x", { register: { kind: "house", content: "y" } })).toBeNull();
-      const projected = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
-      expect(projected.authoredText).toBeNull();
-    });
-
-    /*
-      #230 — THE REWRITE ROW. His own sentence for what the record may show is
-      *"your words → authored brief"*, and the two halves are two readers: the
-      prompt is the authored paragraph ALONE (the customer's words were not
-      sent, so drawing them inside the prompt would put a stack on the one
-      surface whose promise is *no hidden prompt, ever*), and her words are
-      shown beside it, labelled as hers.
-    */
-    it("a REWRITE row shows the authored paragraph alone, and her words beside it (#230)", () => {
+    it("an axis-clause-era row that recorded one edit in BOTH channels says it ONCE — the real-row shape (dev 105/107)", () => {
+      /* Byte shape read off dev roll 107, 2026-09-05: same ageBand edit in
+         `rewrites` and in `carried.overrides`. A reader taking both would
+         print "Age — 40s" twice on his own sheet. */
       const register = {
         kind: "author",
-        compose: "rewrite",
-        mode: "authored",
-        content: "A goth woman in her mid 30s, pale and severe.",
-        prompt: "A goth woman in her mid 30s, pale and severe.\n\nFRAMING: …",
+        mode: "seed",
+        rewrites: [{ field: "ageBand", mode: "replaced", to: "40s" }],
+        carried: {
+          follow: true,
+          overrides: { ageBand: "40s", heritage: "nordic" },
+          clause: "Continue this family: same casting brief, new person — a person, in their 40s.",
+        },
       };
-      expect(readAuthoredPrompt("goth woman mid 30s", { register }))
-        .toBe("A goth woman in her mid 30s, pale and severe.");
-      expect(readAuthoredFrom("goth woman mid 30s", { register })).toBe("goth woman mid 30s");
-      /* USE AS BRIEF offers the brief the engine got — prepending her words would roll a stack next time. */
-      expect(readAuthoredText("goth woman mid 30s", { register }))
-        .toBe("A goth woman in her mid 30s, pale and severe.");
-      /* The brief AS SENT still wins over the typed one (#164) on the "your words" half. */
-      expect(readAuthoredFrom("goth woman mid 30s", { register: { ...register, briefSent: "goth woman mid 40s" } }))
-        .toBe("goth woman mid 40s");
+      expect(readBriefChanges({ register })).toEqual([
+        { field: "ageBand", shape: "value", to: "40s" },
+        /* A field only the overrides said still crosses. */
+        { field: "heritage", shape: "value", to: "nordic" },
+      ]);
     });
 
-    it("an APPEND row — every row written before 2026-08-29 — is still drawn as what its engine actually got", () => {
-      /* No `compose` field at all: the shape of every author row that already exists. */
-      const old = { kind: "author", mode: "authored", content: "Pale skin, black lace.", prompt: "irrelevant here" };
-      expect(readAuthoredPrompt("goth woman mid 30s", { register: old }))
-        .toBe("goth woman mid 30s\n\nPale skin, black lace.");
-      expect(readAuthoredText("goth woman mid 30s", { register: old }))
-        .toBe("goth woman mid 30s\n\nPale skin, black lace.");
-      /* "Your words" is null there — the brief is already the first thing the prompt shows. */
-      expect(readAuthoredFrom("goth woman mid 30s", { register: old })).toBeNull();
+    it("a shape the reader does not know is dropped, never forwarded — and bounded like every read out of compiledBrief", () => {
+      const register = {
+        kind: "author",
+        rewrites: [
+          { field: "notAField", mode: "replaced", to: "x" },
+          { field: "build", mode: "replaced", to: "   " },
+          { field: "build", mode: "replaced", to: 42 },
+          { field: "heritage", mode: "replaced", to: `ok ${"x".repeat(BRIEF_CHANGE_MAX * 2)}` },
+          "not an object",
+        ],
+      };
+      const changes = readBriefChanges({ register });
+      expect(changes).toHaveLength(1);
+      expect(changes[0]!.field).toBe("heritage");
+      expect(changes[0]!.to).toHaveLength(BRIEF_CHANGE_MAX);
     });
 
-    it("'your words' is null wherever it would be noise — a LOW or static sheet, and off the road entirely", () => {
-      expect(readAuthoredFrom("x", { register: { kind: "author", compose: "rewrite", mode: "seed", content: null, prompt: "x" } })).toBeNull();
-      expect(readAuthoredFrom("x", { register: { kind: "author", compose: "rewrite", mode: "static", content: null, prompt: "x" } })).toBeNull();
-      expect(readAuthoredFrom("x", { register: { kind: "house", because: "anchored" } })).toBeNull();
-      expect(readAuthoredFrom("x", null)).toBeNull();
-      expect(projectRoll({ roll: rollRow(), candidates: [candidateRow()] }).authoredFrom).toBeNull();
+    it("nothing off the author road: a house register, a malformed record and a bare roll all project no changes", () => {
+      expect(readBriefChanges({ register: { kind: "house", because: "edited" } })).toEqual([]);
+      expect(readBriefChanges({ register: { kind: "author" } })).toEqual([]);
+      expect(readBriefChanges({ register: null })).toEqual([]);
+      expect(readBriefChanges({})).toEqual([]);
+      expect(readBriefChanges(null)).toEqual([]);
+      expect(projectRoll({ roll: rollRow(), candidates: [candidateRow()] }).briefChanges).toEqual([]);
     });
 
     it("the sheet's imagination is projected from an author register and nowhere else (slice E)", () => {
@@ -260,7 +283,7 @@ describe("nothing internal crosses the boundary", () => {
         candidates: [candidateRow()],
       });
       expect(followed.authorSatOut).toBe("anchored");
-      expect(followed.authoredPrompt).toBeNull();
+      expect(followed.briefChanges).toEqual([]);
       expect(followed.imagination).toBeNull();
     });
 
@@ -283,12 +306,12 @@ describe("nothing internal crosses the boundary", () => {
       });
       expect(lost.authorSatOut).toBe("static");
       expect(lost.imagination).toBe("max");
-      /* Her words are the record — no authored pairing is drawn (`authoredFrom` needs content). */
-      expect(lost.authoredPrompt).toBe("goth woman mid 30s");
-      expect(lost.authoredFrom).toBeNull();
+      /* Her words are the record (#534) — briefText is the whole of it, and no change lines. */
+      expect(lost.briefText).toBe("goth woman mid 30s");
+      expect(lost.briefChanges).toEqual([]);
     });
 
-    it("every reason the projection can say has copy on the sheet — the client map is a second declaration and cannot be allowed to silently miss one (working law 4)", () => {
+    it("every reason the projection can say has a DECIDED line on the sheet — copy, or a deliberate null (#534)", () => {
       /*
         The population is DERIVED: the house vocabulary from its constant, and
         "static" from the projection function itself — so deleting the static
@@ -296,25 +319,19 @@ describe("nothing internal crosses the boundary", () => {
       */
       const derivedStatic = readAuthorSatOut({ register: { kind: "author", mode: "static" } });
       expect(derivedStatic).toBe("static");
-      for (const reason of [...AUTHOR_SAT_OUT_REASONS, derivedStatic!]) {
-        const copy = authorSatOutRecord(reason);
-        expect(copy).toContain("Sat this one out");
-        expect(copy.length).toBeGreaterThan(40);
+      /*
+        #534: the two legacy reasons are NULL on purpose — their sentences
+        named the machinery and promised an authored prompt no sheet shows any
+        more. Pinned as null, not skipped, so a reason the copy map forgets
+        entirely is still a type error there rather than a blank line here.
+      */
+      for (const reason of AUTHOR_SAT_OUT_REASONS) {
+        expect(authorSatOutRecord(reason)).toBeNull();
       }
-    });
-
-    it("anything that is not a bounded author register is null, never forwarded", () => {
-      expect(readAuthoredPrompt("brief", null)).toBeNull();
-      expect(readAuthoredPrompt("brief", {})).toBeNull();
-      expect(readAuthoredPrompt("brief", { register: null })).toBeNull();
-      /* No recorded whole prompt means the row never painted — nothing to show. */
-      expect(readAuthoredPrompt("brief", { register: { kind: "author" } })).toBeNull();
-      expect(readAuthoredPrompt("brief", { register: { kind: "author", prompt: 42 } })).toBeNull();
-      /* An empty rebuild (blank brief, no clause, no content) is null, not an empty record. */
-      expect(readAuthoredPrompt("   ", { register: { kind: "author", prompt: "x" } })).toBeNull();
-      /* Past the validator bound the field is withheld, exactly as before. */
-      expect(readAuthoredPrompt("x".repeat(AUTHORED_PROMPT_MAX + 1), { register: { kind: "author", prompt: "x" } })).toBeNull();
-      expect(readAuthoredPrompt("x".repeat(AUTHORED_PROMPT_MAX), { register: { kind: "author", prompt: "x" } })).toHaveLength(AUTHORED_PROMPT_MAX);
+      const staticCopy = authorSatOutRecord(derivedStatic!);
+      expect(staticCopy).toContain("Sat this one out");
+      /* The clause his eye passed (#252) — the one sentence the line may still say. */
+      expect(staticCopy).toContain("cast exactly as you wrote them");
     });
   });
 
