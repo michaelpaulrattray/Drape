@@ -52,6 +52,16 @@ export type HeroDeckEntry = {
  * surface.
  *
  * It is a named constant so the set can be re-picked in one edit (#240).
+ *
+ * RE-PICKED 2026-09-05 on his word (terminal): the pink-haired android gave
+ * way to his augmented elder (production roll 240 — the brief is his own
+ * Re-imagine specimen, the one that cast eight distinct women), and the
+ * feline humanoid frame was replaced by one from roll 242, because the
+ * earlier frame had no tail and this one does. Roll 242's sentence carried
+ * "long tail" twice (a trailing "Long tail" he typed on the roll); the deck
+ * shows it once, on his word ("id rather it read cleanly") — the same words
+ * the engine read, with the duplicate dropped, so the rule above (the
+ * sentence shown is the sentence that cast the face) holds in substance.
  */
 export const SHOWCASE_DECK: readonly HeroDeckEntry[] = [
   {
@@ -79,12 +89,12 @@ export const SHOWCASE_DECK: readonly HeroDeckEntry[] = [
     imageUrl: "/casting-hero/deck/sphinx.webp",
   },
   {
-    key: "example-android",
-    name: "Android",
+    key: "example-seer",
+    name: "Augmented elder",
     meta: "Example",
     brief:
-      "Female android, youthful, delicate synthetic skin, sculpted pink hair with blunt fringe. Exposed mechanical neck and chest framework with wiring and plating. Sci-fi humanoid robot type, doll-like porcelain android presence.",
-    imageUrl: "/casting-hero/deck/android.webp",
+      "an old woman, punk to the bone, whose augmentation is all for seeing. Her eyes are insect-like instruments, iridescent and unblinking; circuitry lives under the skin of her skull and shows at the temples; her hair is cut hard and defiant; her hands were left human on purpose. Weathered, precise, unhurried.",
+    imageUrl: "/casting-hero/deck/seer.webp",
   },
   {
     key: "example-orc",
