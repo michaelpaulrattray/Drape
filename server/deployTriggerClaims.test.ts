@@ -33,11 +33,12 @@
  * rite itself pushes to, so this guard cannot drift into being a second source
  * of truth about which ref deploys (working law 4).
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { DEPLOY_SOURCE_REF } from "../scripts/lib/ritePushSequence.mts";
+import { readListedSource } from "./testing/listedSource";
 
 const ROOT = process.cwd();
 
@@ -54,14 +55,23 @@ const SCANNED_DIRS = [
 ];
 const SCANNED_EXTENSIONS = [".md", ".mts", ".ts"];
 
+/**
+ * ⚠ **A LISTED ENTRY CAN LEAVE BETWEEN THE LISTING AND THE READ** (#223, and
+ * `server/testing/listedSource.test.ts` is the guard that caught this file's
+ * first cut). `scripts/lib` carries disposables that parallel suites create and
+ * delete, so every `statSync` on a listed path passes `throwIfNoEntry: false`
+ * and every read goes through `readListedSource`, which answers `null` for an
+ * absent file and still THROWS on any other error. A bare read here would
+ * ENOENT the deploy rite on a clean tree.
+ *
+ * The directory listing itself still REFUSES — a scanned root that has moved is
+ * a broken guard, not a missing file, and a scan silently short is exactly what
+ * the population arm below exists to catch.
+ */
 function filesToScan(): string[] {
-  const found = SCANNED_FILES.map((file) => path.join(ROOT, file)).filter((file) => {
-    try {
-      return statSync(file).isFile();
-    } catch {
-      return false;
-    }
-  });
+  const found = SCANNED_FILES.map((file) => path.join(ROOT, file)).filter(
+    (file) => statSync(file, { throwIfNoEntry: false })?.isFile() === true,
+  );
   for (const dir of SCANNED_DIRS) {
     const absolute = path.join(ROOT, dir);
     let entries: string[];
@@ -72,9 +82,8 @@ function filesToScan(): string[] {
     }
     for (const entry of entries) {
       const full = path.join(absolute, entry);
-      if (statSync(full).isFile() && SCANNED_EXTENSIONS.includes(path.extname(entry))) {
-        found.push(full);
-      }
+      if (!SCANNED_EXTENSIONS.includes(path.extname(entry))) continue;
+      if (statSync(full, { throwIfNoEntry: false })?.isFile() === true) found.push(full);
     }
   }
   return found;
@@ -150,7 +159,9 @@ describe("#296 · nothing tells a shift that a merge to main deploys", () => {
   it("finds no document claiming a push or merge of main deploys", () => {
     const offenders: string[] = [];
     for (const file of filesToScan()) {
-      for (const hit of wrongClaims(readFileSync(file, "utf8"))) {
+      const source = readListedSource(file);
+      if (source === null) continue; /* it left between the listing and the read */
+      for (const hit of wrongClaims(source)) {
         offenders.push(`${path.relative(ROOT, file)} — "${hit.sentence.trim()}"`);
       }
     }
