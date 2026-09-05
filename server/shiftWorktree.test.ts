@@ -298,6 +298,36 @@ describe("the script's own text — the sequence a reader must be able to trust"
     expect(source).not.toContain('worktree", "list", "--porcelain"]).out.replace');
   });
 
+  it("⚠ `add` REFUSES BEFORE ITS FIRST MUTATION, never halfway (round 2, findings 1 and 2)", () => {
+    // `add` performs four acts. Every check that could fail must sit before
+    // `git worktree add`, or a failure leaves a half-made worktree behind.
+    const firstMutation = source.indexOf('git(["worktree", "add"');
+    expect(firstMutation).toBeGreaterThan(-1);
+    for (const guard of [
+      "only exists on Windows",
+      "already exists`",
+      "already exists locally",
+    ]) {
+      const at = source.indexOf(guard);
+      expect(at, `guard "${guard}" not found`).toBeGreaterThan(-1);
+      expect(at, `guard "${guard}" runs AFTER the worktree is created`).toBeLessThan(firstMutation);
+    }
+  });
+
+  it("⚠ NEVER `-B` — resetting an existing branch is the destruction this tool prevents", () => {
+    // The tempting one-character fix for the re-add case, and the wrong one:
+    // it would throw away exactly the commits `remove` had just refused to
+    // destroy.
+    expect(source).toContain('"-b"');
+    expect(source).not.toContain('"-B"');
+  });
+
+  it("the mirror leftover — registered but the directory gone — prunes rather than refusing (finding 3)", () => {
+    const branch = source.indexOf("registeredButGone");
+    expect(branch).toBeGreaterThan(-1);
+    expect(source).toContain("prune the stale registration");
+  });
+
   it("the unpushed count asks the branch's OWN remote before refusing (finding 4)", () => {
     // `git worktree add -b team/x <path> origin/main` sets upstream to
     // origin/main, so `@{u}..HEAD` over-refuses before a `push -u`. Safe

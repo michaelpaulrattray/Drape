@@ -22,8 +22,16 @@
  *
  * EXIT CODES:
  *     0  done (or, with --dry-run, would be done)
- *     1  refused — the reason is printed and nothing was changed
- *     2  tool error
+ *     1  refused on the TREE'S STATE — unpushed commits, uncommitted work, a
+ *        dangerous slug, a branch that already exists. Nothing was changed.
+ *     2  refused on the CALL or failed mid-act — an unknown flag, a missing
+ *        argument, a git command that failed, a directory something holds
+ *        open. Nothing was changed EXCEPT where the message says otherwise.
+ *
+ * Both are refusals in plain English; the split is about whether the tool or
+ * the tree is the thing to fix, and the two are kept distinct because a script
+ * reading these codes must be able to tell "your branch is dirty" from "you
+ * typed something I do not understand".
  */
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, readFileSync, rmSync } from "node:fs";
@@ -101,7 +109,29 @@ const plan = planFor(slug, repoRoot, parentDir);
 
 // ---- add ------------------------------------------------------------------
 if (command === "add") {
+  // ⚠ REFUSE BEFORE THE FIRST MUTATION, NOT HALFWAY THROUGH (round 2,
+  // findings 1 and 2). `add` performs four acts; each of these would have let
+  // it fail after some of them, leaving a half-made worktree for the shift to
+  // work out.
+  if (process.platform !== "win32") {
+    refuse("`add` junctions node_modules with `cmd /c mklink`, which only exists on Windows");
+  }
   if (existsSync(plan.path)) refuse(`${plan.path} already exists`);
+
+  // The tool's two halves must not contradict each other: `remove` deliberately
+  // says "the branch still exists locally", and `git worktree add -b` refuses a
+  // branch that exists. Removing a slug on Monday and re-adding it on Wednesday
+  // is an ordinary thing to do, and it used to end in a raw git error with no
+  // remedy named.
+  //
+  // NOT `-B`, which silently resets an existing branch — that is precisely the
+  // destruction this tool exists to prevent, and it would throw away commits
+  // the `remove` guards had just refused to destroy.
+  if (git(["rev-parse", "--verify", "--quiet", `refs/heads/${plan.branch}`]).status === 0) {
+    refuse(
+      `the branch ${plan.branch} already exists locally (a previous \`remove\` keeps it on purpose). Delete it with \`git branch -D ${plan.branch}\` if it holds nothing you want, or choose another slug.`,
+    );
+  }
 
   console.log(`shift-worktree add ${slug}`);
   console.log(`  path   ${plan.path}`);
@@ -152,7 +182,28 @@ if (command === "add") {
 }
 
 // ---- remove ---------------------------------------------------------------
-if (!existsSync(plan.path)) refuse(`${plan.path} does not exist`);
+// ⚠ THE MIRROR OF THE LEFTOVER CASE, AND THE SAME CLASS (round 2, finding 3).
+// Round 1 made "directory present, git has let go" reachable; this is
+// "git still holds a registration, directory already gone". Refusing left the
+// stale entry for the shift to `git worktree prune` by hand — the tool
+// dead-ending on its own lifecycle, which is the shape worth fixing rather than
+// the two instances.
+if (!existsSync(plan.path)) {
+  const stale = git(["worktree", "list", "--porcelain"]);
+  const registeredButGone =
+    stale.status === 0 &&
+    stale.out
+      .split(/\r?\n/)
+      .some((line) => line.startsWith("worktree ") && line.slice("worktree ".length).trim().replace(/\\/g, "/") === plan.path);
+  if (!registeredButGone) refuse(`${plan.path} does not exist`);
+  console.log(`shift-worktree remove ${slug}`);
+  console.log(`  the directory is already gone, but git still has it registered — pruning.`);
+  if (!dryRun) git(["worktree", "prune"]);
+  say("prune the stale registration");
+  console.log("");
+  console.log(dryRun ? "--dry-run: nothing was changed." : `Pruned. The branch ${plan.branch} still exists locally.`);
+  process.exit(0);
+}
 
 // Read the state BEFORE deciding anything, and read it from the worktree
 // itself — asking the main tree about another worktree's branch is how a
