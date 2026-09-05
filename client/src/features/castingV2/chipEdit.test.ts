@@ -59,7 +59,10 @@ const CHIP_LANDS_AS = [
 /** A brief that STATES every one of those facts, so each edit replaces rather than appends. */
 const STATED = "a Nordic woman in her 30s with an athletic build, a severe minimal look";
 
-describe("#534 · a chip edit writes into the box, and the box is the only channel", () => {
+/* The card is #534 — named in the docblock above rather than in this title,
+   because the foundation's token guard reads a `#534` in CODE as a hex literal
+   and its own message says to move the reference into a comment. */
+describe("a chip edit writes into the box, and the box is the only channel", () => {
   describe("direction 1 — chip to box", () => {
     it("his own frame: the age chip rewrites the sentence, and 30s is nowhere in it", () => {
       const outcome = chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "ageBand", value: "40s" });
