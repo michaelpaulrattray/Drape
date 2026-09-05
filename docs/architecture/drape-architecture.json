@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f5f4bfc00ea84442"
+    "sourceFingerprint": "a3455d3d64f845fd"
   },
   "domains": [
     {
@@ -13328,6 +13328,10 @@
     {
       "id": "test:server/shiftDigest.test.ts",
       "path": "server/shiftDigest.test.ts"
+    },
+    {
+      "id": "test:server/shiftWorktree.test.ts",
+      "path": "server/shiftWorktree.test.ts"
     },
     {
       "id": "test:server/slack/slackApproval.test.ts",
