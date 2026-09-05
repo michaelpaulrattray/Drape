@@ -1,7 +1,7 @@
 {
-  "edition": 259,
-  "updatedAt": "2026-09-05T11:35:00.000Z",
-  "shift": "Foreman (Retro) — #543 finished: the shift's PRs merge themselves, and two numbers now judge it",
+  "edition": 260,
+  "updatedAt": "2026-09-05T12:27:03.791Z",
+  "shift": "Foreman — your sphinx-cat tail court, and two things you reported the same day",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -246,6 +246,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "tail-court-verdict-530",
+      "issueNumber": 530,
+      "title": "Your tail court ran, and your premise did not reproduce — I need your word before chasing the reason (#530)",
+      "productImpact": "You ordered one last check before closing the species sentence: your sphinx-cat brief, two arms of eight, with the sentence and without, both strips in front of you. It ran tonight for $1.56 of house money — no credits of yours, nothing on production.\n\nTHE TAIL LANDED ON ALL 24 FRAMES, on both arms. I could not make your brief fail.\n\nTwo things follow from that, and the first is good news about your sentence. It is not what puts the tail there — and it never was on THIS brief. The house instruction has always had two parts, and only the second one is yours: an older line already says that anatomy the description NAMES must be visible in the frame, and your sentence covers the case where a part is NOT named. Your brief names the tail. So both arms carried the older line, and both grew tails. Your sentence is neither proved nor disproved by this brief — and it is shown to do no harm, which was the other thing worth knowing.\n\nThe second thing needs you. You said the brief 'has never once rendered the tail', and I believe you — but I drove a different road than you did. This court sends your words straight to the engine with the house instruction attached. The frame you sent me came from a Re-imagine roll, where a writer rewrites your brief first. If that rewrite softens or drops 'long tail' on the way past, the house instruction has nothing left to hold on to, because by then the description is the writer's and not yours.\n\nThat is a different fault on a different road, and I stopped rather than chase it, because it touches the thing you are about to judge.",
+      "workedExample": "Arm with your sentence: tail visible 8/8. Arm without it: 8/8. Arm with 'hairless' removed: 8/8. Whiskers, on your own three counts: 7 full + 1 small, then 6 full + 2 small, then 8 full — which leans the way your sphynx-breed hunch predicted, but one frame in eight is not a difference and I will not dress it as one. No clause is being added to the house instruction on that reading, exactly as you instructed.",
+      "options": [
+        {
+          "key": "reimagine-court",
+          "label": "Re-run the same three arms on the Re-imagine road (~$1.50)",
+          "consequence": "Answers the question you actually asked, on the road you actually used. The writer's paragraph goes beside the strip, so you can see whether it kept your words 'long tail' or quietly dropped them."
+        },
+        {
+          "key": "read-stored-prompts",
+          "label": "Free instead: count how often 'tail' survives the writer in your existing rolls",
+          "consequence": "Costs nothing and takes ten minutes, but it is weaker: it reads what was SENT, and can never tell you that the picture ignored a word that did survive."
+        },
+        {
+          "key": "close-here",
+          "label": "Neither — close the tail question on what these frames show",
+          "consequence": "Reasonable if the strip satisfies you. The risk is that your original complaint stays unexplained and turns up again on a roll you care about."
+        }
+      ],
+      "recommendation": "The first. It is a dollar fifty and it answers the question you actually asked, on the road you actually used. The free version can only tell us the words left the building, not that the picture ignored them.",
+      "state": "open",
+      "filedAt": "2026-09-05T12:27:03.793Z"
+    },
     {
       "id": "process-verdict-543",
       "issueNumber": 543,
@@ -1826,6 +1853,70 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "sphinx-tail-court-530",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 530,
+      "filedAt": "2026-09-05T12:27:03.791Z",
+      "title": "Your sphinx-cat tail court — and it did not land on either answer your rule named",
+      "question": "You said: if the tail lands with the sentence and not without, close it; if it lands in neither, that is a separate finding. IT LANDED IN BOTH — 24 frames out of 24, on every arm, and I opened them myself before saying so. Top row is your brief with the species sentence, middle is the same brief with the sentence lifted out, bottom is your 'hairless' hypothesis with that one word removed. Two questions for your eye. First: do you see a tail you would call a tail on every frame, or is the reader flattering me? Second: row three's whiskers read fuller to the machine than rows one and two — do they read fuller to YOU, or is that one frame's difference and nothing?",
+      "frames": [
+        {
+          "key": "crew-eye/85799156-1b3a-4b36-b03d-b6b12c6c66c9.jpg",
+          "caption": "Three arms, eight each. With your sentence / without it / without the word 'hairless'. Tail on all 24.",
+          "arm": "dark"
+        }
+      ]
+    },
+    {
+      "id": "sphinx-tail-controls-530",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 530,
+      "filedAt": "2026-09-05T12:27:03.791Z",
+      "title": "The four frames that make the court's answer worth anything",
+      "question": "These are not part of your court — they are the proof that it could have failed. The answer I expected was 'no tail anywhere', and a nothing-happened result only means something if the same setup can produce a something. So before spending on your 24, I rendered four from a brief that shouts for whiskers and a tail: four tails curling up beside the shoulder INTO a chest-up frame, four sets of clear whiskers. That rules out 'the framing makes it impossible' as an excuse. Nothing needed from you here — it is shown so you can see that the court was set up to be able to fail.",
+      "frames": [
+        {
+          "key": "crew-eye/e399faab-37cc-4b14-ab4a-cbdc505bad24.jpg",
+          "caption": "The positive control: a brief that demands both. 4/4 tail, 4/4 whiskers, checked by eye first.",
+          "arm": "dark"
+        }
+      ]
+    },
+    {
+      "id": "dock-chip-552",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 552,
+      "filedAt": "2026-09-05T12:27:03.791Z",
+      "title": "The stretched settings chip you reported — before and after, on a real sheet",
+      "question": "Your words: 'the settings card on the casting sheet prompt box is stretching fullwidth?' Top row is what you saw, bottom is now. Measured live rather than eyeballed: the chip was 1146px inside an 1176px dock and is now 132px, which is exactly its width on the casting hero. Does the dock read right to you now?",
+      "frames": [
+        {
+          "key": "crew-eye/bb58982f-84be-44cc-a477-7692e287be52.jpg",
+          "caption": "Before: 1146px of 1176. After: 132px — the same width the chip has always had on the hero.",
+          "arm": "dark"
+        }
+      ]
+    },
+    {
+      "id": "selection-542",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 542,
+      "filedAt": "2026-09-05T12:27:03.791Z",
+      "title": "Highlighting text in dark mode — the inversion you asked for",
+      "question": "Your words: 'shouldnt it highlight white and change text to black? just like lightmode highlights black and changes text to white?' It does now. Light mode is untouched. Drag across some copy next time you are in the app and tell me if it reads right.",
+      "frames": [
+        {
+          "key": "crew-eye/00c06424-af68-4612-9431-3f7873f70082.png",
+          "caption": "Dark mode, headline and paragraph selected: white highlight, black text. Light mode unchanged.",
+          "arm": "dark"
+        }
+      ]
+    },
     {
       "id": "customer-record-534-frames",
       "state": "answered",
@@ -3828,6 +3919,20 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-562-selection-542",
+      "title": "Highlighting text in dark mode now inverts, the way it does in light (#542)",
+      "status": "merged",
+      "prNumber": 562,
+      "note": "You reported it with a frame: a dark-mode highlight was black on a black page, so a selection was a smudge and the text barely changed. One rule was written as two fixed colours with no sense of which theme it was in. It now says the RELATIONSHIP — highlight takes the text colour, text takes the page colour — so both inversions come out of the same line. Light mode is untouched.\n\nChecked in the running app in both themes rather than reasoned about, and the reviewer went further than I did: it found the one other place selection colours are set (inside form fields) and confirmed it already resolves to the same pair, so there is no sibling of this bug left.\n\nOne honest remainder, and it is now #564: the file this rule lives in holds 97 other fixed colours that nothing checks. Most are probably fine — marketing chrome does not have a theme — but nobody has read them, and an unread file is how this one hid."
+    },
+    {
+      "id": "pr-563-dock-chip-552",
+      "title": "The settings chip on the casting sheet stops stretching the full width of the dock (#552)",
+      "status": "in-review",
+      "prNumber": 563,
+      "note": "Your report, and a one-property fix — but the interesting part is what it nearly broke.\n\nThe dock stacks its contents in a column, and a column stretches its children sideways by default, which is why the chip was 1146px wide in an 1176px dock. The obvious repair would have pinned the chip to the start of its container. The same chip also sits on the casting hero, in a ROW — where that same instruction means something completely different, and would have quietly shifted it from centred to top-aligned. So the fix names the WIDTH instead, which does the whole job in the dock and means nothing at all in a row.\n\nMeasured live on a real sheet: 1146px before, 132px after, and 132px is exactly what the chip measures on the hero.\n\nIts first automatic check went red on something small and the reason is worth keeping: the check that a shift runs before asking the machines could not have caught it, because it only runs tests that sit near the change and the relevant one lives in another folder. That is #565."
+    },
     {
       "id": "pr-558-merge-in-order-543",
       "title": "Your \"optimize it as urgent\" is finished — the team's changes now queue themselves through the checks, and it stopped itself three times tonight (#543)",
