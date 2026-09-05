@@ -1,7 +1,7 @@
 {
-  "edition": 258,
-  "updatedAt": "2026-09-05T09:05:00.000Z",
-  "shift": "Foreman (Retro) — #543: the shift never idles on a gate — preflight and the worktree helper",
+  "edition": 259,
+  "updatedAt": "2026-09-05T11:35:00.000Z",
+  "shift": "Foreman (Retro) — #543 finished: the shift's PRs merge themselves, and two numbers now judge it",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T07:15:04.553Z",
+      "readAt": "2026-09-05T11:27:55.833Z",
       "items": [
         {
           "issueNumber": 16,
@@ -247,15 +247,15 @@
   },
   "needsYou": [
     {
-      "id": "customer-record-534-eye",
-      "issueNumber": 534,
-      "title": "Your reply on the sheet record is filed — the half you asked for next is carded and waiting on a shift (#534)",
-      "productImpact": "You judged it at 07:48: \"The record half is right, keep it. Drop 'Changed on this roll'; I made the change, I don't need it repeated.\" Both are recorded on the card word for word, and no shift will close it — you said it stays open until you have seen the rest.\n\nThe half you asked for next is the substantive one: a chip edit should write straight into the prompt box, the box IS the next brief, and the only note about a difference is a small \"edited below, not cast yet\" when the box no longer matches the sheet above it. Your merge condition is on the card too — chips and box can never disagree, and the guard has to prove it in both directions before it merges.\n\nNothing is waiting on you here tonight. This row is on your page so you can see your words landed somewhere a shift will read.",
-      "workedExample": "Today's built version prints a \"Changed on this roll\" line under your brief — \"Age — 40s\". You have said to take that away: you made the change, so the sheet repeating it back is the machine explaining itself, which is the thing this card was about in the first place.",
+      "id": "process-verdict-543",
+      "issueNumber": 543,
+      "title": "Your \"optimize it as urgent\" is built, all five pieces — the verdict is the only thing left, and it is yours (#543)",
+      "productImpact": "You asked, on the 5th: \"investigate our current process and optimize it as urgent.\" The investigation found the team sitting idle for 52% of a typical night — 27 minutes of every session waiting on automatic checks with nothing else on the bench. Five things were ordered off that finding and all five are now built, tested and in use:\n\n  1. a shift checks its own work before it asks the machines (about 100 seconds instead of a 7-minute red)\n  2. one command to set up and take down a working folder, which was the riskiest thing a shift typed by hand\n  3. one command that queues the shift's changes through the checks and puts them in, in order\n  4. two numbers, worked out every time the performance read runs, that say whether any of it helped\n  5. a second code review is told it is the last one\n\nYour card set the bar for closing it: \"the ledger's next reading is the verdict, in the founder's own words on this card.\" So it stays open for you. Nothing is left to build and no shift will take it as work — the card says so at the top now.",
+      "workedExample": "The before-picture, measured over the three days BEFORE any of tonight's work landed: 1.18 jobs finished per working session against a target of 3, and 28.25 minutes of machine checking per job against a target of 10. Both miss, which is the point of taking it before rather than after.\n\nThe next performance read covers the nights that have the new tools. If cards-per-session goes up and minutes-per-job goes down, the design worked. If they do not, it did not, and the numbers will say so plainly rather than being explained away.",
       "options": [],
-      "recommendation": "Nothing to do — the next shift on this card builds what you described. Tap a correction if I have any of it wrong.",
+      "recommendation": "Nothing to do tonight. When you next look at a performance read, the two numbers are in it — and your word on them closes this card.",
       "state": "open",
-      "filedAt": "2026-09-05T07:35:00.000Z"
+      "filedAt": "2026-09-05T11:35:00.000Z"
     },
     {
       "id": "ladder-fold-391",
@@ -1828,7 +1828,7 @@
   "eyeItems": [
     {
       "id": "customer-record-534-frames",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 534,
       "filedAt": "2026-09-05T07:35:00.000Z",
@@ -3829,6 +3829,27 @@
   ],
   "pipeline": [
     {
+      "id": "pr-558-merge-in-order-543",
+      "title": "Your \"optimize it as urgent\" is finished — the team's changes now queue themselves through the checks, and it stopped itself three times tonight (#543)",
+      "status": "merged",
+      "prNumber": 558,
+      "note": "The last piece of your order. Here is the plain version of the problem it solves.\n\nA shift makes a change, hands it to the automatic checks, and waits about seven minutes. Two nights ago it just sat there. Now it starts the next small job while the first is being checked — which is faster, but it means two or three changes are in the air at once, each needing its checks watched, each needing to be brought up to date when an earlier one lands, and all of them needing to go in the right order. That is a lot of hand-typing at two in the morning, and hand-typing is where mistakes come from.\n\nSo there is one command now. It waits, it brings a change up to date when an earlier one lands, and it puts them in one at a time in the order they were opened, printing a receipt for each.\n\nWhat matters much more is what it REFUSES to do. It never judges anything. It stops and says which change and why whenever the next step is a decision: a failed check (it never quietly retries one), a code review nobody has read, a change touching money or sign-in with no review at all, a half-finished piece of work sitting in the folder. The whole value is in taking away the waiting and the bookkeeping — the moment a tool that merges starts making judgement calls, what it can cost you stops being bounded.\n\nIt was used on itself tonight. It merged its own change, then the next one, then the third — and it stopped all three times it was supposed to. Once because a review had not been read. Once because a stray file was sitting in a folder it was about to fold into a change. Once because the change touched the code reviewer's own settings, which the reviewer cannot read, so a person had to. Each of those was a real stop on a real change, not a rehearsal.\n\nThe code reviewer found seven problems with it and then three more, and two of them were serious in the same way: as first written it would have merged past a review that was still being written. Our own routine made that the NORMAL case, not a rare one. All ten are fixed, each with a test that fails if the fix is ever undone."
+    },
+    {
+      "id": "pr-559-ledger-numbers-543",
+      "title": "Two numbers now say whether the team is getting faster — and the first reading is the honest before-picture (#543)",
+      "status": "merged",
+      "prNumber": 559,
+      "note": "You asked for the process to be optimised. The only way that means anything is if something measures it afterwards, and says so even when the answer is no.\n\nSo the team's regular performance read now works out two things from its own records: how many jobs a night's session actually finished, and how many minutes of machine checking each of those cost. The targets were set in your card before any of this was built — at least three jobs on a night of small jobs, and no more than ten minutes of checking per job.\n\nThe first reading is over the three days BEFORE tonight's work, and it fails both:\n\n  jobs finished per working session   1.18   (target 3)\n  minutes of checking per job        28.25   (target 10)\n\nThat is the before-picture, and it is meant to be uncomfortable. The next reading covers the nights that have the new tools, and that is the one that answers your question. It is on your card for your word.\n\nOne more figure is worth your eye, because it is what makes the other two believable. The card was filed on a measurement that said each change was going through the checks 3.1 times. This new reader works it out a completely different way, over a different stretch of days — and it comes out at 3.13. Two independent roads to the same number is the strongest evidence you can get that an instrument is telling the truth.\n\nIt also refuses to flatter itself. Anything it cannot account for is printed rather than dropped, because a count that quietly discards what it cannot explain always looks tidier than the truth."
+    },
+    {
+      "id": "pr-560-round-cap-543",
+      "title": "A second code review is now told it is the last one — the fix for the longest waits (#543)",
+      "status": "merged",
+      "prNumber": 560,
+      "note": "The final piece. When the code reviewer finds problems, the shift fixes them and asks for another look. Usually one round is the end of it. But seven of the last twenty-five changes went round two or more times, and that tail is the entire difference between a typical wait of 27 minutes and an average of 42.\n\nSo on a second review, the reviewer now says so in one line: this is the last automatic round; if it is still not right, the change is not understood well enough and it should be written down and left rather than pushed at again.\n\nIt is a note, never a block. It cannot fail anything, it only speaks when a review actually happened, and it says it once per change rather than every time.\n\n⚠ One thing worth knowing about this particular change: the code reviewer cannot review it, because it edits the reviewer's own settings and the reviewer refuses to run on itself. That is a deliberate safety feature, not a fault. So a person had to read it — and doing that properly found the one thing in it that could genuinely have hurt: a failure in a supporting step would have marked the review RED after a review that had actually run and found things. A red mark there means \"no review happened\", so a shift would have read a real verdict as an outage and gone straight past it. That is exactly what this whole piece exists to prevent, and it was one line away from causing it. Fixed, with a test that fails if it comes back."
+    },
+    {
       "id": "pr-549-preflight-543",
       "title": "Your \"optimize it as urgent\" — a shift now checks its own work before it asks the machines, and both of tonight's changes passed first time (#543)",
       "status": "merged",
@@ -5330,6 +5351,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0905-foreman",
+      "title": "The queue: 93 open, 7 carrying your word, 0 urgent, 0 rotting",
+      "severity": "info",
+      "state": "open",
+      "detail": "The urgent one cleared tonight: #543 was the only card carrying it, all five of its pieces are built, and the label came off because what is left is your verdict rather than work.\n\nSeven cards carry your word. Two of them are genuinely waiting on a shift with the reviewer's seat rather than this one (#508, #535); one is waiting on another card first (#404); the other four are takeable now.\n\nNothing has gone a week untouched. That figure is honest tonight in a way it was not two nights ago — it was reset across the whole roadmap by a labelling pass then, and nothing has swept the queue wholesale since."
+    },
+    {
       "id": "sweep-clock-broken-526",
       "title": "The rule for deleting old scratch files can no longer tell what is old",
       "severity": "warning",
@@ -5510,13 +5538,6 @@
       "detail": "This row asked you to run one database command so your taps had somewhere to record. It is gone, and you did not run it. You approved the auto-migration work with \"Merge it\" at 20:46, it merged, and tonight's deploy created the table on its own way past. Tap \"Not relevant\" on a card and a shift picks it up: it either closes the card and says what it checked, or keeps it and tells you why on the row. It cannot record a decision about a tap you have taken back.",
       "severity": "warning",
       "state": "resolved"
-    },
-    {
-      "id": "queue-shape-0903-foreman",
-      "title": "The queue: 86 open, 13 carrying your word, 0 urgent",
-      "severity": "info",
-      "state": "open",
-      "detail": "The urgent one cleared tonight — #434 was the only card carrying it, and it is closed.\n\n⚠ The \"gone a week untouched\" figure reads ZERO tonight and it read NINE last night, and nobody re-read one of those nine. It counts from the last time anything was written to a card, and last night's ladder work put a rung label on the whole roadmap set — which reset the clock on all of them without anybody looking at what the cards say. The number is true and it is not the answer to your question. Filed as #516 with the fix; until it lands, read tonight's zero as \"the label pass touched everything\", not as \"the backlog is fresh\".\n\n13 cards carry your word and every one is takeable — none is waiting on an answer from you. Two of them still want the reviewer seat rather than this one: #477 and #429."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5656,13 +5677,8 @@
     134
   ],
   "nextUp": {
-    "readAt": "2026-09-05T07:15:03.585Z",
+    "readAt": "2026-09-05T11:27:54.972Z",
     "items": [
-      {
-        "issueNumber": 543,
-        "title": "The shift never idles on a gate — preflight, a second worktree while the gate runs, merge-in-order, two review rounds max, and the two numbers that prove it (URGENT, his order)",
-        "urgent": true
-      },
       {
         "issueNumber": 391,
         "title": "His ladder ruling: twelve rungs fold to SEVEN, with the top one hidden and offered by email on request",
@@ -5704,6 +5720,11 @@
           "state": "fable",
           "because": "a DESIGN DECISION — he asked for a design report, not a build (*\"file it as a design card at n1\"*), so the whole card is the decision."
         }
+      },
+      {
+        "issueNumber": 543,
+        "title": "The shift never idles on a gate — preflight, a second worktree while the gate runs, merge-in-order, two review rounds max, and the two numbers that prove it (URGENT, his order)",
+        "urgent": false
       }
     ]
   }
