@@ -1,7 +1,7 @@
 {
-  "edition": 251,
-  "updatedAt": "2026-09-05T00:35:00.000Z",
-  "shift": "Machinist — patrol #2 (5 September): three answers you gave stop reading as questions",
+  "edition": 252,
+  "updatedAt": "2026-09-05T02:20:00.000Z",
+  "shift": "Foreman - Fable (5 September): MAX keeps your words, and the instruction stops teaching what its own guards refuse",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T00:04:02.627Z",
+      "readAt": "2026-09-05T01:18:06.598Z",
       "items": [
         {
           "issueNumber": 16,
@@ -1789,6 +1789,22 @@
   ],
   "eyeItems": [
     {
+      "id": "max-verbatim-477-strip",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 477,
+      "filedAt": "2026-09-05T02:20:00.000Z",
+      "title": "MAX before/after on your cyborg brief - does the tightened author still have enough heat?",
+      "question": "Top row: the instruction as it stood. Bottom row: after your reply #114 (keep Sonnet, tighten toward verbatim discipline). Both painted from each arm's FIRST draft, no cherry-pick. My read: the after row keeps costume more generic (top-left wears the tactical strap kit you refused in #327) and holds the temple ports on his right 4/4 - and loses none of the severity. The one thing neither row fixes is the glowing eye's side: the engine paints it on the image's right 7 of 8 times, a paint habit, not the author. If the bottom row reads thinner to your eye than the top, say so - that is the one risk of tightening toward your words, and it is one clause to soften.",
+      "frames": [
+        {
+          "key": "crew-eye/ac6ed535-b389-4098-8ef1-8f61972daeea.png",
+          "caption": "BEFORE (top) / AFTER (bottom), 4 frames each from the first draft of each arm, same 553-char brief.",
+          "arm": "dark"
+        }
+      ]
+    },
+    {
       "id": "satout-line-252",
       "state": "done",
       "cardId": null,
@@ -1806,7 +1822,7 @@
     },
     {
       "id": "species-court-243-strips",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 243,
       "filedAt": "2026-09-04T21:35:23.766Z",
@@ -3754,6 +3770,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-537-max-verbatim-477",
+      "title": "MAX now keeps the customer's exact words - and fewer drafts die on the studio's own example (#477, your reply #114)",
+      "status": "merged",
+      "prNumber": 537,
+      "note": "Your ruling executed: Sonnet stays, the instruction tightened on Grok's verbatim discipline. The instruction was also teaching the author a phrase the studio then refuses - 'No soft youthful rounding' in its own golden example - so obedient drafts died and customers waited. Measured before/after on your cyborg brief: refusal re-asks 5/14 to 1/14, your exact phrases kept 10.4 to 11.8 of 12, invented wardrobe 3 to 0, and the sheet did not get thinner. Frames passed your #327 list; strip in your gallery. ~$0.49 house."
+    },
+    {
       "id": "pr-533-machinist-2",
       "title": "Machinist patrol #2 — the paid pictures that never arrived, counted properly for the first time",
       "status": "merged",
@@ -5529,7 +5552,7 @@
     131
   ],
   "nextUp": {
-    "readAt": "2026-09-05T00:04:01.749Z",
+    "readAt": "2026-09-05T01:18:05.816Z",
     "items": [
       {
         "issueNumber": 391,
@@ -5539,11 +5562,6 @@
       {
         "issueNumber": 404,
         "title": "The plan card's blurb slot is empty on purpose — his one-line positioning statement, best written after the ladder folds",
-        "urgent": false
-      },
-      {
-        "issueNumber": 477,
-        "title": "Tighten MAX's instruction on Grok's verbatim-discipline evidence — keep Sonnet (his reply #114)",
         "urgent": false
       },
       {
