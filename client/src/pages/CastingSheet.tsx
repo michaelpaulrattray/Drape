@@ -1094,17 +1094,6 @@ export default function CastingSheet() {
     ? (pathChoice ?? sheetPath ?? DEFAULT_CASTING_PATH)
     : null;
 
-  /*
-    WHO THE DOCK'S SIGN IS ABOUT.
-
-    Newest keep first, because the last thing you kept is almost always the one
-    you mean — and signed faces out of the aim if one ever arrives. The rule and
-    its reasoning live in `signTarget.ts`, because the TRAY asks the same
-    question and the two of them disagreeing is how a click armed a different
-    woman (fable-729 §5). Today the server's loader keeps signed candidates out
-    of the shortlist entirely (fable-744 §3b), so this filter passes everything;
-    it stays because the ceremony it aims costs 450 credits.
-  */
   const candidates = roll.data?.candidates ?? [];
   const rollWasCancelled = roll.data?.status === "cancelled";
 
