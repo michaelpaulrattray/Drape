@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fb8e61cc1e6e2ae2"
+    "sourceFingerprint": "fbbb8cd0e872c3df"
   },
   "domains": [
     {
@@ -10882,6 +10882,10 @@
     {
       "id": "test:server/adminUserManagement.test.ts",
       "path": "server/adminUserManagement.test.ts"
+    },
+    {
+      "id": "test:server/adminUserSearch.test.ts",
+      "path": "server/adminUserSearch.test.ts"
     },
     {
       "id": "test:server/announcements.test.ts",

@@ -41,6 +41,54 @@ const log = createModuleLogger("db/admin");
 // ============================================================================
 
 /**
+ * THE MODERATOR'S ACCOUNT SEARCH — and why a numeric term is its own branch.
+ *
+ * The surface shows a numeric account id beside every row (`#40486`) and had
+ * offered to search by it since it was built. The server matched `name`,
+ * `email` and `openId` — the auth-provider handle, never `users.id` — so
+ * typing an id returned nothing at all, for any id, and #399 removed the
+ * claim rather than leave a dead control on a staff surface. This is the
+ * other half (#420): the capability, so the claim can come back.
+ *
+ * # A DIGIT TERM MATCHES THE ID EXACTLY, NEVER BY `LIKE`
+ *
+ * `LIKE '%1%'` over the id returns every account whose id merely CONTAINS a 1,
+ * which on any real population is most of them — a worse answer than none, and
+ * the thing the card asked to be checked on the way. So an all-digit term is
+ * an identity lookup: this account or no account.
+ *
+ * It still matches the three text fields as well, because an email or a name
+ * may legitimately be numeric and a moderator holding "40486" from a support
+ * ticket should not have a matching email hidden from them.
+ *
+ * # THE BOUND, AND WHY IT IS NOT DECORATION
+ *
+ * `users.id` is a signed 32-bit int. A term of twenty digits is not an id on
+ * this table, and handing it to MySQL as one is asking a question about a
+ * value the column cannot hold; out of range, it falls through to the text
+ * fields alone. `Number.isSafeInteger` is checked first because a long digit
+ * string parses to a float that compares wrongly rather than failing.
+ */
+export function userSearchCondition(search: string): SQL {
+  const term = search.trim();
+  const searchTerm = `%${term}%`;
+  const clauses: SQL[] = [
+    like(users.name, searchTerm),
+    like(users.email, searchTerm),
+    like(users.openId, searchTerm),
+  ];
+
+  if (/^\d+$/.test(term)) {
+    const asNumber = Number(term);
+    if (Number.isSafeInteger(asNumber) && asNumber > 0 && asNumber <= 2147483647) {
+      clauses.push(eq(users.id, asNumber));
+    }
+  }
+
+  return or(...clauses)!;
+}
+
+/**
  * Get paginated list of all users with search and filters.
  */
 export async function listAllUsers(options: {
@@ -85,14 +133,7 @@ export async function listAllUsers(options: {
     const conditions: SQL[] = [];
 
     if (search && search.trim()) {
-      const searchTerm = `%${search.trim()}%`;
-      conditions.push(
-        or(
-          like(users.name, searchTerm),
-          like(users.email, searchTerm),
-          like(users.openId, searchTerm)
-        )!
-      );
+      conditions.push(userSearchCondition(search));
     }
 
     if (status === "suspended") {

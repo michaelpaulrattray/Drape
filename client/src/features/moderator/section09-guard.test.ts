@@ -419,17 +419,71 @@ describe("brief 09 §5 — dashed while unresolved, and no dead state", () => {
     expect("onClick={() => onSelectUser(user.userId)}").not.toContain("identity");
   });
 
-  it("no surface claims a search by id — the server does not do one", () => {
+  it("a surface may claim a search by id ONLY because the server does one", () => {
     /*
-      The placeholder read *"Search users by name, email, or ID…"* and typing an
-      id returned nothing: a control naming a capability we do not have, which
-      is `BRIEF-RECONCILIATION.md`'s question 4 and the founder's own ruling on
-      the centred search.
+      ⚠ THIS ARM WAS INVERTED BY #420, AND THE INVERSION IS THE POINT.
+
+      It used to REFUSE the claim: the placeholder read *"Search users by name,
+      email, or ID…"* while `listUsers` matched `name`, `email` and `openId` and
+      never the numeric id, so typing an id returned nothing at all, for any id
+      — a control naming a capability we did not have, which is
+      `BRIEF-RECONCILIATION.md`'s question 4. #399 withdrew the claim; #420 built
+      the capability, and withdrawing the claim a second time would now be the
+      wrong repair.
+
+      So the honest guard is not "never say it" — it is **the copy and the query
+      agree**, which is the thing that was actually broken and is the thing that
+      can break again in EITHER direction. It is read at both artifacts rather
+      than at one: a surface that offers an id search while the server's
+      predicate has no `users.id` clause reddens, and so does the reverse.
+
+      ⚠ The admin panel's own user search (`features/admin/UserFilters.tsx`) made
+      the SAME claim through the SAME predicate and #399's sweep never reached it
+      — law 7's sibling, found by #420's sweep. It is inside this arm now, so the
+      two staff surfaces cannot drift apart again.
+
+      ⚠ CEILING, STATED RATHER THAN IMPLIED: this reads a file as claiming or not
+      claiming, so it catches a surface withdrawing the claim ENTIRELY (driven:
+      dropping both the label and the placeholder from `UserFilters.tsx` reddens
+      it) and does NOT catch a HALF-withdrawal — that file says "or id" twice,
+      and removing one of the two leaves the arm green. Closing that needs a rule
+      about which strings on a surface are capability claims, which nobody has
+      written; a reader inventing one would be worth less than this sentence.
     */
-    for (const { name, text } of rebuilt()) {
-      expect(code(text), `${name} still offers a search by id`).not.toMatch(/email,? or id/i);
-    }
+    const ADMIN_SRC = path.resolve(CLIENT_SRC, "features/admin");
+    const SERVER_ADMIN = read(
+      path.resolve(CLIENT_SRC, "..", "..", "server", "db", "admin.ts"),
+    );
+
+    /* The capability, read at the predicate the surfaces actually reach. */
+    const predicate = code(SERVER_ADMIN);
+    expect(
+      predicate,
+      "the server's user search no longer matches the numeric id — withdraw the claim from the surfaces in the same commit",
+    ).toContain("eq(users.id, asNumber)");
+    expect(
+      predicate,
+      "an id term must match EXACTLY: LIKE '%1%' over the id returns most of the table",
+    ).not.toMatch(/like\(\s*users\.id/);
+
+    /* And every staff surface that offers it is therefore telling the truth. */
+    const surfaces = [
+      ...rebuilt(),
+      { name: "admin/UserFilters.tsx", text: read(path.join(ADMIN_SRC, "UserFilters.tsx")) },
+    ];
+    const claiming = surfaces.filter(({ text }) => /email,? or id/i.test(code(text)));
+    expect(
+      claiming.map((s) => s.name).sort(),
+      "both staff account searches offer the id, because both reach the same predicate",
+    ).toEqual([
+      "UserInvestigationTab.tsx",
+      "UserInvestigationWidgets.tsx",
+      "admin/UserFilters.tsx",
+    ]);
+
+    /* POSITIVE CONTROL — the matcher can see the claim and can see its absence. */
     expect('placeholder="Name, email or id"').toMatch(/email,? or id/i);
+    expect('placeholder="Name or email"').not.toMatch(/email,? or id/i);
   });
 
   it("the flagged figures carry the pane's own sign and grouping rules", () => {

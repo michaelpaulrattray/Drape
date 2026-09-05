@@ -229,16 +229,17 @@ export function UserInvestigationTab({
           }}
           label="Search accounts"
           /*
-            ⚠ **"or id" IS NOT OFFERED, BECAUSE THE SERVER DOES NOT DO IT.**
-            `listUsers` matches `name`, `email` and `openId` and never the
-            numeric id (`server/db/admin.ts`) — the old placeholder read
-            *"Search users by name, email, or ID…"* and typing an id returned
-            nothing. A placeholder is a claim about a capability; this one was
-            false before this PR and is not carried forward. The gap itself is
-            filed as #420 rather than fixed here, because widening a query is a
-            server change and this is a surface brief.
+            ⚠ **"or id" IS OFFERED AGAIN, AND ONLY BECAUSE THE SERVER NOW DOES
+            IT** (#420). `userSearchCondition` (`server/db/admin.ts`) matches an
+            all-digit term against `users.id` EXACTLY, beside the three text
+            fields. Until that landed the placeholder was a claim about a
+            capability we did not have: it read *"Search users by name, email,
+            or ID…"* and typing an id returned nothing, for any id, so #399
+            withdrew the claim rather than leave a dead control on a staff
+            surface. The order matters and is the rule this comment is here to
+            keep — the copy follows the capability, never the other way round.
           */
-          placeholder="Name or email"
+          placeholder="Name, email or id"
         />
       </TableHead>
 
