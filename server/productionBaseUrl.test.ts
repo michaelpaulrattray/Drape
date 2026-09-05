@@ -48,7 +48,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const REPO_ROOT = path.resolve(__dirname, "..");
-const PRODUCT_ROOTS = ["client/src", "server", "shared"];
+const PRODUCT_ROOTS = ["client/src", "server", "shared", "drizzle"];
+/** Shipped files outside the walked roots (the gate review's finding on PR #538). */
+const PRODUCT_SINGLE_FILES = ["client/index.html"];
 const PRODUCT_EXTENSIONS = /\.(tsx?|jsx?|css|html|json)$/;
 const TEST_FILE = /\.test\.tsx?$/;
 const EXCLUDED_FILES = ["server/crew/crew-briefing.json"];
@@ -79,6 +81,7 @@ const walk = (dir: string): string[] =>
 /** Every file the sweep reads, as repo-relative POSIX paths. */
 const productFiles = (): string[] =>
   PRODUCT_ROOTS.flatMap((root) => walk(path.join(REPO_ROOT, root)))
+    .concat(PRODUCT_SINGLE_FILES.map((rel) => path.join(REPO_ROOT, rel)))
     .map((full) => path.relative(REPO_ROOT, full).replace(/\\/g, "/"))
     .filter((rel) => !TEST_FILE.test(rel) && !EXCLUDED_FILES.includes(rel));
 
@@ -96,6 +99,8 @@ describe("#531 — nothing in the product points at drape.app or drape.ai", () =
       "server/routes/referral.ts",
       "server/_core/appOrigin.ts",
       "client/src/pages/Login.tsx",
+      "client/index.html",
+      "drizzle/schema.ts",
     ]) {
       expect(files, `the sweep is not looking at ${mustSee}`).toContain(mustSee);
     }
