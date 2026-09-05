@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d6b0b5c54db9248e"
+    "sourceFingerprint": "0ef270cd3af05a5d"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:client-shared",
@@ -1671,6 +1671,12 @@
     {
       "id": "module:client/src/features/castingV2/heroDeck.ts",
       "path": "client/src/features/castingV2/heroDeck.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/keptStrip.ts",
+      "path": "client/src/features/castingV2/keptStrip.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10624,6 +10630,10 @@
       "path": "client/src/features/castingV2/keptPanelAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/keptStrip.test.ts",
+      "path": "client/src/features/castingV2/keptStrip.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/lostContact.test.ts",
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
@@ -19387,6 +19397,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/frameDecodes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/keptStrip.ts",
       "kind": "imports"
     },
     {

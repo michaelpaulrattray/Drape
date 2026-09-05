@@ -86,6 +86,7 @@ import { prefetchFrames } from "@/features/castingV2/frameDecodes";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
+import { visibleShortlist } from "@/features/castingV2/keptStrip";
 import { signTargets } from "@/features/castingV2/signTarget";
 import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 
@@ -1104,11 +1105,50 @@ export default function CastingSheet() {
     of the shortlist entirely (fable-744 §3b), so this filter passes everything;
     it stays because the ceremony it aims costs 450 credits.
   */
-  const keptTiles = signTargets(shortlist);
-  const signTarget =
-    keptTiles.find((entry) => entry.candidateId === signSelectionId) ?? keptTiles[0] ?? null;
   const candidates = roll.data?.candidates ?? [];
   const rollWasCancelled = roll.data?.status === "cancelled";
+
+  /*
+    THE TRAY AS THE USER BELIEVES IT (#554).
+
+    `shortlist` is the SERVER's list, and it cannot change until a mutation has
+    been to Railway and back — the ~2s the founder measured between clicking
+    Keep and the thumbnail appearing in the dock, while the tile's own ring had
+    already painted. One derivation now, in `keptStrip.ts`, and the three
+    surfaces that must agree about who is in the tray all read it: the strip
+    itself, the kept count, and the Sign target below.
+
+    It is deliberately ABOVE `keptTiles`: aiming the 450-credit ceremony at the
+    server's list while the strip drew the optimistic one is exactly the ring
+    and target disagreeing that `signTarget.ts` was written to end.
+  */
+  const keptStrip = visibleShortlist({
+    shortlist,
+    candidates,
+    rollIndex: roll.data?.rollIndex ?? null,
+    optimisticKept,
+    optimisticDiscarded,
+  });
+
+  /*
+    WHO THE DOCK'S SIGN IS ABOUT.
+
+    Newest keep first, because the last thing you kept is almost always the one
+    you mean — and signed faces out of the aim if one ever arrives. The rule and
+    its reasoning live in `signTarget.ts`, because the TRAY asks the same
+    question and the two of them disagreeing is how a click armed a different
+    woman (fable-729 §5). Today the server's loader keeps signed candidates out
+    of the shortlist entirely (fable-744 §3b), so this filter passes everything;
+    it stays because the ceremony it aims costs 450 credits.
+
+    Aimed at the VISIBLE tray rather than the server's: a face just kept is the
+    newest keep, so she is the one the button offers, and Sign takes a
+    candidateId with no kept gate of its own — the ceremony is unaffected by
+    whether her keep has landed yet.
+  */
+  const keptTiles = signTargets(keptStrip);
+  const signTarget =
+    keptTiles.find((entry) => entry.candidateId === signSelectionId) ?? keptTiles[0] ?? null;
 
   /*
     THE VIEWER LIVES HERE, not on the tile (founder ruling, 2026-08-02 — one
@@ -2944,7 +2984,7 @@ export default function CastingSheet() {
               is what made Roll again unreachable without scrolling.
             */}
             <KeptTray
-              shortlist={shortlist}
+              shortlist={keptStrip}
               selectedId={signTarget?.candidateId ?? null}
               onSelect={setSignSelection}
               focusCandidateId={focusCandidateId}
@@ -2992,9 +3032,14 @@ export default function CastingSheet() {
                 Your words steer this family — anything you state overrides, everything else
                 stays theirs
               </Instruction>
-            ) : shortlist.length > 0 ? (
+            ) : keptStrip.length > 0 ? (
+              /*
+                The count reads the same list the strip draws (#554). It said
+                "1 kept" beside two thumbnails for as long as a mutation was in
+                the air, which is the two-views defect at its most obvious.
+              */
               <span className="dp-small" style={{ marginLeft: 12 }}>
-                {shortlist.length} kept
+                {keptStrip.length} kept
               </span>
             ) : (
               <Instruction>Keep the ones worth a second look</Instruction>
