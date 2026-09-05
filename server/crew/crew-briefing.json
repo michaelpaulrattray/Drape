@@ -1,7 +1,7 @@
 {
-  "edition": 261,
-  "updatedAt": "2026-09-05T13:01:12.751Z",
-  "shift": "Foreman — your sphinx-cat tail court, and both fixes you reported are in",
+  "edition": 262,
+  "updatedAt": "2026-09-05T14:44:42.456Z",
+  "shift": "Foreman — the chip now writes into your prompt box, and the box is the next brief",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -1853,6 +1853,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "chip-writes-the-box-534",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 534,
+      "filedAt": "2026-09-05T14:44:42.459Z",
+      "title": "Your chip edit now lands in the prompt box itself — is the sentence at the top still right to stay put?",
+      "question": "This is what you asked for on Friday: click the age chip and the box in the dock rewrites itself to YOUR sentence with YOUR change in it, and the only note about the difference is the small 'edited below, not cast yet' beside the record. Both frames are one real sheet, mid-edit: the brief was 'in their 30s', the chip was set to 50s, and the box now says 50s. The one thing worth your eye rather than a test: the reading sentence at the top still says 'in their 40s' — what these eight faces were actually cast from — because your own rule was that the top never lies about the pictures. Is that right, or would you rather the sentence followed the box?",
+      "frames": [
+        {
+          "key": "crew-eye/493b1511-3f4d-4539-8db3-5c3374572a10.png",
+          "caption": "Dark, mid-edit: 'edited below, not cast yet' beside the record, the box below reading 50s, the sentence above still on 40s.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/9c17d441-59c9-4575-8afe-9635961922e0.png",
+          "caption": "Light, the same sheet and the same moment — the mark stays quiet in both.",
+          "arm": "light"
+        }
+      ]
+    },
     {
       "id": "sphinx-tail-court-530",
       "state": "open",
@@ -3920,6 +3941,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-567-chip-writes-box-534",
+      "title": "A chip edit writes straight into your prompt box, and the box is the next brief (#534)",
+      "status": "merged",
+      "prNumber": 567,
+      "note": "You saw the old version and said the record half was right but the half that mattered was missing: a chip edit should write into the prompt box, and the box should BE the next brief. It does now. Click the age chip on a sheet and the box in the dock rewrites itself — your sentence, your change in it — and the only word about a difference is the small 'edited below, not cast yet' beside the record. 'Changed on this roll' is gone from the page and from the wire underneath it.\n\nWhat makes it hold rather than just look right: on your road nothing rides a roll beside the brief any more. The chip edit used to travel as a separate instruction the box knew nothing about — that WAS the disagreement in your frame — so that second channel is simply gone. A chip and the box cannot disagree because there is only one of them left. Driven both ways in the tests and sabotaged four times to prove the tests can fail.\n\nFound and fixed on the way, because your ruling is what made it visible: changing the SEX chip on 'a Nordic woman in her 30s' used to give 'a Nordic man in HER 30s'. That has always been wrong; nothing could see it while the sentence only went to the engine. It is in your box now.\n\nTwo review rounds, six findings, all taken — the second round caught a real one I had half-fixed, where the pronoun could land on a second person in the sentence ('her daughter in HIS teens'). Your eye on the frames closes the card, not the merge."
+    },
+    {
       "id": "pr-562-selection-542",
       "title": "Highlighting text in dark mode now inverts, the way it does in light (#542)",
       "status": "merged",
@@ -5779,7 +5807,13 @@
     131,
     132,
     133,
-    134
+    134,
+    135,
+    136,
+    137,
+    138,
+    139,
+    140
   ],
   "nextUp": {
     "readAt": "2026-09-05T13:00:51.832Z",
