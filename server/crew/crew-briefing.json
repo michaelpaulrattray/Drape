@@ -1,7 +1,7 @@
 {
-  "edition": 268,
-  "updatedAt": "2026-09-05T21:45:00.000Z",
-  "shift": "Foreman — your page is unstuck and live again, and two things line up that never did",
+  "edition": 269,
+  "updatedAt": "2026-09-05T23:20:00.000Z",
+  "shift": "Foreman — two messages that told a shift the wrong thing, both fixed at the source",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T21:37:10.862Z",
+      "readAt": "2026-09-05T22:57:04.263Z",
       "items": [
         {
           "issueNumber": 16,
@@ -249,28 +249,12 @@
     {
       "id": "tail-court-reimagine-530",
       "issueNumber": 530,
-      "title": "Two courts, 48 frames, every one with a tail — I need the actual sheet where yours went missing (#530)",
-      "productImpact": "You asked for the same three arms re-run on the Re-imagine road, with the writer's paragraph beside the strip. It ran tonight for $1.34 of house money — no credits of yours, nothing on production.\n\nTHE TAIL LANDED ON ALL 24 FRAMES AGAIN, on every arm. Two roads now, 48 pictures, and I cannot make your brief fail.\n\nYour added condition turned out to be the answer rather than the decoration. The worry was that the writer quietly drops the words 'long tail' before the house instruction ever sees them. It does not: the writer was run eight times on your brief and kept 'long tail' every single time — one of them says it twice, 'tail held with coiled, deliberate control'. It kept 'whiskers' eight times out of eight too, and never once fell silent and left your words to stand alone.\n\nSo I went and read your own seven sphinx-cat rolls on the live database — free, no pictures made. Every one of them sent a description that names the tail. And here is the thing that undoes my last note to you: FIVE of the seven ran on the plain road, not Re-imagine, including both of your two most recent on Friday. So my guess that your bad frame came from a Re-imagine roll was itself unchecked, and it now looks wrong.\n\nI have run out of ways to reproduce this from the outside. What would settle it in minutes is the actual picture: point me at the sheet where the tail is missing and I will read that exact roll and its frames rather than trying to recreate it.",
-      "workedExample": "With your sentence: 8/8 tails. Sentence lifted out: 8/8. 'Hairless' removed: 8/8. Rows A and B were painted from the SAME writer's paragraph, byte for byte, so those two rows differ by exactly your 83-character sentence and nothing else — which is the cleanest way to ask what your sentence buys. It buys nothing on this brief, because your brief NAMES the tail and an older instruction already covers named parts. It also does no harm, which was the other thing worth knowing.",
-      "options": [
-        {
-          "key": "point-at-the-sheet",
-          "label": "Point me at the sheet where the tail is missing, and I read that roll",
-          "consequence": "Free and fast. I read the exact row: what was sent, which road it took, and the frames themselves. It is the only lead left that has not already come back clean."
-        },
-        {
-          "key": "close-the-tail-question",
-          "label": "Close the tail question — the strips satisfy you",
-          "consequence": "Reasonable after 48 frames. Your species sentence stays in, proven harmless on both roads. The risk is that whatever you saw stays unexplained and turns up again on a roll you care about."
-        },
-        {
-          "key": "chase-the-small-tile",
-          "label": "Chase the small-tile hunch instead — make the sheet let you get close",
-          "consequence": "A different card and a real one: at strip size I could not see a whisker on any of the 24 frames, and at face size they are on all of them. If your complaints are about what a small tile can show, no prompt change will ever fix them."
-        }
-      ],
-      "recommendation": "The first, and it costs nothing. Everything I can measure says the machinery is doing this right, so the next honest step is your actual picture rather than another reconstruction of it. If you would rather just close it, that is a fair call after 48 frames and I will say so on the card.",
-      "state": "open",
+      "title": "Answered — the missing-tail sheets predate the fix, and the tail question is closed (#530)",
+      "productImpact": "You answered this while I was working, and your answer is the one thing nobody here could have reached: **the sheets you remembered are rolls 235 and 236 from 29 August — before the species sentence existed.**\n\nSo the two courts were not failing to reproduce a live fault. They were photographing a version of the studio in which it had already been fixed. Forty-eight frames all grew tails because, on today's tree, they do.\n\nThe tail question is closed on your word. Your species sentence stays in, and it is now measured harmless on both roads.\n\n**The whiskers are noted and NOT being chased**, exactly as you said. One thing in your note makes the record I had written weaker rather than stronger, and it should be said plainly: I had guessed the whiskers were a small-picture problem — invisible on a strip, fine at full size. You say your own full-size frame had none. That kills my guess, and it is written on the card so nobody picks this up later believing it.\n\n**And the cheap lesson, which is mine:** the fact that settled this was the DATE of your frame, and I never asked for it. Two paid courts were funded to reconstruct a picture whose date would have answered the question for nothing.",
+      "workedExample": "Rolls 235 and 236: 29 August. The species sentence shipped 4 September (#243, PR #528). Everything measured since — two courts, 48 frames, $2.90 of house money, the writer driven eight times, seven of your live rolls read at the database — was aimed at a date that no longer existed.",
+      "options": [],
+      "recommendation": "Nothing is needed from you. The card is closed, the whiskers are noted and untouched, and the prompt is exactly as you left it.",
+      "state": "done",
       "filedAt": "2026-09-05T15:34:40.208Z"
     },
     {
@@ -1882,7 +1866,7 @@
   "eyeItems": [
     {
       "id": "tail-court-reimagine-strip-530",
-      "state": "open",
+      "state": "done",
       "cardId": null,
       "issueNumber": 530,
       "filedAt": "2026-09-05T15:34:40.208Z",
@@ -3989,6 +3973,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-581-push-cause-577",
+      "title": "The publish now reads WHY it failed before telling anyone how to fix it (#577)",
+      "status": "merged",
+      "prNumber": 581,
+      "note": "Last night the nightly publish stopped because the machine briefly lost its internet connection. It said so — and then, underneath, it told the shift to repair it by merging a branch.\n\nThat advice could not possibly have worked. The first step it suggested needs the internet too. Worse, it read as though something were wrong with the code, when the code was completely fine and the only problem was a dropped connection that came back three minutes later.\n\nIt happened because the message was written for the one failure we see most — two people's work landing at the same moment — and it printed that same advice no matter what had actually gone wrong.\n\nNow it reads the error first and says one of three things. If two changes collided: the merge advice, exactly as before. If the connection dropped: nothing is wrong with your code, wait a minute, here is how to check the internet is back, then run it again. And if it does not recognise the failure at all, it says so plainly and prints the raw error instead of guessing.\n\nThat third one is the part I would defend hardest. It would have been easy to add more clever guesses. A wrong confident answer at five in the morning costs more than an honest \"I do not know, read this\" — so when the two sets of clues overlap, or nothing matches, it deliberately refuses to guess.\n\nThere is a case it now handles that it did not before: a password or permissions failure. That used to be told it was a collision. It is now told nothing at all, which is correct, because waiting for the internet to come back would not have fixed a permissions problem either.\n\nProven by deliberately breaking it five different ways and checking each break was caught — including putting the original fault back, which reddens exactly the three checks that would have caught last night's incident."
+    },
+    {
+      "id": "pr-582-deploy-trigger-296",
+      "title": "Our own notes told the team that merging a change puts it live. It does not (#296)",
+      "status": "merged",
+      "prNumber": 582,
+      "note": "This one is about the team's honesty rather than about anything you can see on screen, and it is the more important of tonight's two.\n\nOur main instructions file said, in plain words, that finishing a change puts it on your live site. That is not true. Finishing a change only files it; a separate publish step is what actually puts it on the site. It has always worked that way.\n\nSomebody measured what happens if you believe the wrong version: a change was finished at 9:46 in the morning, and twenty-five minutes later your site was still running the old one. Nothing had failed — nothing had even been attempted.\n\nWhat makes that dangerous is that every obvious way of checking agrees with the mistake. The change says \"merged\". The record says it is there. And the site's own health check answers \"fine, 200\" — because the OLD copy of the site is answering it, perfectly healthily. A shift could merge, see three greens, and report to you that something had shipped when nothing had. That is exactly the shape of report this team is not allowed to produce.\n\nThe sentence is corrected, and the correction carries the trap beside it — including the one reading that CAN tell an old copy from a new one, and the real web address to check (the other one we had been reaching for answers nothing and looks like an outage that is not happening).\n\nThe part worth telling you about is that the sentence had THREE copies. Fixing the official one would have left two others quietly teaching the wrong thing, because a correction spreads to wherever people read, not to wherever the rule officially lives. All three are fixed, and there is now an automatic check that goes red if the claim comes back anywhere.\n\nThat check found two more places I had missed — and both turned out to be innocent, sentences that only LOOKED like the mistake. They are kept as permanent examples of what must NOT be flagged, so the check cannot quietly become over-eager later."
+    },
+    {
       "id": "pr-578-outlined-button-486",
       "title": "Outlined buttons stood 2px taller than filled ones, everywhere in the product — they line up now (#486)",
       "status": "merged",
@@ -5582,10 +5580,10 @@
   "problems": [
     {
       "id": "queue-shape-0906-foreman",
-      "title": "The queue: 94 open, 6 carrying your word, nothing urgent, 1 rotting",
+      "title": "The queue: 93 open, 6 carrying your word, nothing urgent, 1 rotting",
       "severity": "info",
       "state": "open",
-      "detail": "**The urgent band is empty for the first time in three nights.** #571 — the merge that was holding your page — is closed, and it was the only urgent card. Three more closed tonight (#486 and #448, both below) and two opened from reviews (#577, #580).\n\nSix cards still carry your word and **none is waiting on a shift's hands**: two need the reviewer's seat (#508, #535), one waits on another card (#404), #391 is pricing work no shift may take, and #543 and #534 are both waiting on YOUR eye rather than on anybody's work.\n\n**#257** is still the one rotting card — untouched since 29 August. It is a colour check that reads two kinds of colour and misses a third. Nothing is broken because of it; it is named because a card going quiet gets said out loud rather than sinking.\n\nNothing else has aged."
+      "detail": "**The urgent band is empty for a second night.** Two cards closed tonight (#577 and #296, both below) and nothing new was filed — the first shift in a while that took work off the board without putting any back on.\n\nSix cards still carry your word, and one of them moved tonight without being built. **#391 — your plan ladder folding from twelve rungs to seven — has been sitting at the top of that list for five nights while shift after shift correctly stepped over it.** It is priced work on live subscription products, which no ordinary shift may touch. The reason it never moved is that nothing had ever said so in a way the machinery could read; I have now said it, so **the next shift starts on the seat that CAN take it and goes straight to that card.**\n\nThere is one honest gap in it, and it is yours rather than mine: your ruling settled which rungs survive, but not what the hidden top rung looks like to a customer — what they see where Ultimate used to be, and how they ask for it. That is a design question and it is on the card.\n\n**Your three replies about the tail court came in while I worked, and all three are acted on** — the question is closed, the whiskers are noted and untouched, and the reason it could never be reproduced is now written down.\n\n**#257** is still the one rotting card — untouched since 29 August. Nothing is broken because of it; it is named because a card going quiet gets said out loud rather than sinking."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -5910,15 +5908,21 @@
     137,
     138,
     139,
-    140
+    140,
+    141,
+    142,
+    143
   ],
   "nextUp": {
-    "readAt": "2026-09-05T21:37:09.850Z",
+    "readAt": "2026-09-05T22:57:03.431Z",
     "items": [
       {
         "issueNumber": 391,
         "title": "His ladder ruling: twelve rungs fold to SEVEN, with the top one hidden and offered by email on request",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
       },
       {
         "issueNumber": 404,
