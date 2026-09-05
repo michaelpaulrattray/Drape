@@ -54,6 +54,34 @@
  * means *"force the full Fable review on this PR"* — a PR-scoped instruction to
  * the gate. Overloading it would make a card asking for a review and a card
  * waiting on the review arm indistinguishable, and one of those is takeable.
+ *
+ * ⚠ **AND `awaiting-fable` HAS A WRITTEN RULE SINCE 2026-09-05 (#541,
+ * founder-ordered and urgent), BECAUSE IT WAS BEING APPLIED AS "THIS LOOKS
+ * HARD".** His question, verbatim: *"a bunch of next up in que says need fable
+ * are these blocked? we have acesss to fable?"* Measured that morning: **five**
+ * of his own ordered cards carried it (#508, #530, #534, #535, #539) and **two
+ * of the five were never judgment-class at all** — #530 is a court and #539 is
+ * one clause in an instruction; the relay removed those two labels on his word.
+ * The other three sat behind a hold that nothing in the product could clear,
+ * because the marker that reaches Fable was only ever written by hand and no
+ * shift ever wrote it.
+ *
+ * **The rule, and it is short on purpose:**
+ *
+ * - **`awaiting-fable` means a DESIGN DECISION, or a change to WHAT HE JUDGES.**
+ *   Those two things only.
+ * - **A court, a clause, a guard arm, a copy fix, a relabel is Opus work,
+ *   whatever card it hangs off.** Difficulty is not the test; being asked to
+ *   decide something is.
+ * - **A shift that applies the label writes the `CREW_HOLD_MARKER` line saying
+ *   WHICH of the two it is.** A label without that line is removed by the next
+ *   shift's re-read — by a person reading the card, never by a script, because
+ *   removing a hold is the act that lets work start.
+ *
+ * The road out is now automatic: `scripts/next-up-escalation.mts` is consulted
+ * at every shift launch and writes the Fable marker itself when a card carrying
+ * this label is the next one a shift would take. That is the invariant-7 half
+ * of the repair — a hold with no road out is not a hold, it is a freezer.
  */
 export const CREW_HOLD_LABELS = {
   blocked: "blocked",
@@ -107,18 +135,43 @@ export const CREW_HOLD_MARKER = "**Waiting on:**";
 export const CREW_HOLD_REASON_MAX = 160;
 
 /**
+ * EVERY held state a card's labels put it in, furthest-from-takeable first.
+ *
+ * ⚠ **THIS EXISTS BECAUSE THE COLLAPSE BELOW IS LOSSY, AND A CALLER THAT NEEDS
+ * TO ASK ABOUT ONE PARTICULAR HOLD MUST NOT ASK THE COLLAPSED ANSWER** (found
+ * by the reviewer on PR #544, 2026-09-05, before it shipped).
+ *
+ * The chip on his page wants one word, so `heldStateFromLabels` picks one. But
+ * `blocked` + `awaiting-fable` collapses to **`fable`** — the ranking puts
+ * `fable` further from takeable than `blocked` — so a caller asking *"is this
+ * card Fable's to take?"* gets **yes** for a card that is also blocked. That is
+ * a natural filing ("needs a design decision AND waits on something external"),
+ * and the caller that would have been wrong is the auto-escalation gate, which
+ * spends an expensive Fable session when it answers yes.
+ *
+ * Derive, never mirror (working law 4): the one-word answer is the first
+ * element of this list rather than a second implementation of the same sort.
+ */
+export function heldStatesFromLabels(labels: readonly string[]): CrewHeldState[] {
+  const present = new Set(labels);
+  return (Object.keys(CREW_HOLD_LABELS) as CrewHeldState[])
+    .filter((state) => present.has(CREW_HOLD_LABELS[state]))
+    .sort((a, b) => CREW_HOLD_ORDER.indexOf(b) - CREW_HOLD_ORDER.indexOf(a));
+}
+
+/**
  * The held state a card's labels put it in, or `null` when nothing does.
  *
  * Two labels is a filing mistake rather than a state, and the answer is the
  * FURTHEST from takeable — a card that is both blocked and needs a sitting is
  * not takeable for either reason, and the softer word would overstate it.
+ *
+ * ⚠ **This is the answer for a CHIP, which shows one word. A caller deciding
+ * whether it may ACT on a card asks `heldStatesFromLabels` and reads the whole
+ * list** — see that function for the pair that makes the difference.
  */
 export function heldStateFromLabels(labels: readonly string[]): CrewHeldState | null {
-  const present = new Set(labels);
-  const held = (Object.keys(CREW_HOLD_LABELS) as CrewHeldState[])
-    .filter((state) => present.has(CREW_HOLD_LABELS[state]));
-  if (held.length === 0) return null;
-  return held.sort((a, b) => CREW_HOLD_ORDER.indexOf(b) - CREW_HOLD_ORDER.indexOf(a))[0];
+  return heldStatesFromLabels(labels)[0] ?? null;
 }
 
 /**

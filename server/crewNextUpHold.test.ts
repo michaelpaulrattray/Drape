@@ -8,6 +8,7 @@ import {
   CREW_HOLD_REASON_MAX,
   CREW_HOLD_WORD,
   heldStateFromLabels,
+  heldStatesFromLabels,
   holdReasonFromBody,
   resolveHold,
 } from "../shared/crewNextUpHold.js";
@@ -47,6 +48,35 @@ describe("the state comes from a LABEL, and only from a label", () => {
   it("two hold labels resolve to the one furthest from takeable", () => {
     expect(heldStateFromLabels(["needs-sitting", "blocked"])).toBe("sitting");
     expect(heldStateFromLabels(["blocked", "awaiting-fable"])).toBe("fable");
+  });
+
+  /**
+   * THE COLLAPSE IS LOSSY, AND A CALLER THAT ACTS ON IT CAN BE WRONG (found by
+   * the reviewer on PR #544, 2026-09-05, before it shipped).
+   *
+   * The line directly above is correct for a CHIP, which shows one word. But
+   * `blocked` + `awaiting-fable` answering "fable" told the auto-escalation gate
+   * that a BLOCKED card was Fable's to take, and that gate spends an expensive
+   * session when it agrees. So the full list is the answer for anyone deciding
+   * whether they may act, and the one-word answer is derived from it.
+   */
+  it("reports EVERY hold, so a caller can ask about one instead of the winner", () => {
+    expect(heldStatesFromLabels(["blocked", "awaiting-fable"])).toEqual(["fable", "blocked"]);
+    expect(heldStatesFromLabels(["needs-sitting", "blocked"])).toEqual(["sitting", "blocked"]);
+    expect(heldStatesFromLabels(["awaiting-fable"])).toEqual(["fable"]);
+    expect(heldStatesFromLabels(["urgent", "founder-ordered"])).toEqual([]);
+  });
+
+  it("keeps the one-word answer DERIVED from the full list, never a second sort", () => {
+    for (const labels of [
+      ["blocked", "awaiting-fable"],
+      ["needs-sitting", "blocked", "awaiting-fable"],
+      ["awaiting-fable"],
+      ["urgent"],
+      [],
+    ]) {
+      expect(heldStateFromLabels(labels)).toBe(heldStatesFromLabels(labels)[0] ?? null);
+    }
   });
 
   /**
