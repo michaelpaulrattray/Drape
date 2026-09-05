@@ -288,36 +288,50 @@ const POSSESSIVE: Record<Sex, string> = { female: "her", male: "his", nonbinary:
  * the customer's own brief box, in front of them, at the click. Broken English
  * in his box is not a thing to leave standing on the surface his eye judges.
  *
- * It is deliberately NARROW, in two ways, and the second was added by the
- * review of PR #567 (finding 2).
+ * It is deliberately NARROW, and the attribution is **ADJACENCY**: the only
+ * possessive touched is the one in an anchored age span sitting IMMEDIATELY
+ * AFTER the gender noun this pass just replaced — "man **in his** 30s". That
+ * is the one construction in which the pronoun provably refers to the subject,
+ * because the subject noun is the word before it.
  *
- * **Only inside an ANCHORED AGE SPAN** — "in her 30s", "in his late 40s" —
- * which is the one place this module already knows a possessive refers to the
- * SUBJECT rather than to something the subject owns. A bare "her jacket" or
- * "his brother" is left exactly alone, because nothing here can tell whose
- * they are, and the whole lesson of this file's matchers (review of PR #173)
- * is that an unanchored token is a guess.
+ * ⚠ **TWO WEAKER ANCHORS WERE TRIED FIRST AND BOTH LET A SECOND PERSON THROUGH**
+ * (rounds 1 and 2 of the review of PR #567), which is why the rule is stated
+ * this way rather than as a span filter:
  *
- * **And only when the brief holds exactly ONE such span**, which is
- * `requireSingle` applied to the pronoun. ⚠ Without it, *"a woman in her 30s,
- * her daughter in her teens"* + a male chip gave *"a man in his 30s, her
- * daughter in HIS teens"* — the daughter misgendered, because `GENDER_NOUN`
- * does not list "daughter", so the subject noun read as unique while the age
- * spans did not. A second anchored span means a second person whose age is
- * stated, and no possessive there is attributable. Leaving both alone is the
- * behaviour this file had before today, so the fallback is the status quo and
- * never a new wrong word.
+ *   - *"every anchored span"* misgendered a second aged person —
+ *     *"a woman in her 30s, her daughter in her teens"* + male gave
+ *     *"…her daughter in HIS teens"*. `GENDER_NOUN` does not list "daughter",
+ *     so the subject noun read as unique while the age spans did not.
+ *   - *"the sole anchored span"* was no better, only rarer: **exactly one is
+ *     not the same as the subject's.** When the subject's age is UNSTATED and
+ *     a second person's is stated, the only span in the sentence belongs to
+ *     the other person — *"a woman, her daughter in her teens"* + male gave
+ *     *"a man, her daughter in HIS teens"*. Span-count was a proxy for
+ *     attribution and the proxy held only when the subject happened to be
+ *     among the aged.
+ *
+ * Adjacency is not a proxy. Everything else is left exactly alone — a bare
+ * "her jacket", "his brother", or any age span belonging to someone else —
+ * because nothing here can tell whose they are, and this file's standing
+ * lesson (review of PR #173) is that an unanchored token is a guess. The
+ * fallback is the behaviour this module had before the pass existed: a stale
+ * possessive on the subject. It can leave a word behind; it cannot write a new
+ * wrong one.
  *
  * It runs only where the sex was REPLACED. An APPENDED sex ("Cast a man.")
  * leaves the brief's own subject wording untouched by design, so there is no
  * noun for a possessive to have followed.
  */
 function agreePossessives(text: string, sex: Sex): string {
-  const anchored = new RegExp(`\\bin (her|his|their)(\\s+${DECADE})`, "gi");
-  const spans = Array.from(text.matchAll(anchored));
-  if (spans.length !== 1) return text;
   const possessive = POSSESSIVE[sex];
-  return text.replace(anchored, (_whole, _pronoun, tail: string) => `in ${possessive}${tail}`);
+  /*
+    The noun as it now reads — this runs AFTER the replacement, so the word to
+    anchor on is the new one. Escaped because "androgynous person" holds a
+    space and nothing else; kept in step with `BARE_NOUN` by reading it.
+  */
+  const noun = escapeRegExp(BARE_NOUN[sex]);
+  const adjacent = new RegExp(`(\\b${noun}\\s+in\\s+)(?:her|his|their)(\\s+${DECADE})`, "gi");
+  return text.replace(adjacent, (_whole, head: string, tail: string) => `${head}${possessive}${tail}`);
 }
 
 /**

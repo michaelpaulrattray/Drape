@@ -123,6 +123,28 @@ describe("a chip edit writes into the box, and the box is the only channel", () 
       expect(text).toBe(HIS_BRIEF);
     });
 
+    it("agePhase is the seventh EchoField and no picker can fire it — pinned, because if one ever does the click is eaten", () => {
+      /*
+        Round 2 of the review, informational finding: the table above covers
+        six of `EchoField`'s seven. `writersOf` has no agePhase-only writer
+        (the phase rides the ageBand edit), so on the author road the outcome
+        is `none` — no box change, no store, no feedback — while the same
+        click off that road becomes a live override.
+
+        It is DORMANT, not live: `briefEcho.ts`'s span builder folds the phase
+        into the ageBand span's text and never emits `field: "agePhase"`, so
+        nothing can reach it today. But the vocabulary, the heading and the
+        popover machinery all exist for it, and `none` had no coverage at all.
+        This arm states the current contract so the day a span emits agePhase
+        the difference is a failing test rather than a click that does nothing.
+      */
+      expect(chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "agePhase", value: "late" }))
+        .toEqual({ kind: "none" });
+      /* And off the author road the same click is a live override — the asymmetry, stated. */
+      expect(chipEditOutcome({ authorRoad: false, brief: HIS_BRIEF, field: "agePhase", value: "late" }))
+        .toEqual({ kind: "override", field: "agePhase", value: "late" });
+    });
+
     it("the client runs the SAME rewriter the compiler ran, not a second copy of it", () => {
       /*
         Working law 4. If this ever stops being true, a chip edit shows the

@@ -66,18 +66,32 @@ describe("replacement in place", () => {
       .toBe("an androgynous person in their 30s");
   });
 
-  it("two people whose ages are both stated: NEITHER possessive moves, because neither is attributable (review of #567, finding 2)", () => {
-    /*
-      "daughter" is not in `GENDER_NOUN`, so the subject noun reads as unique
-      and the edit replaces it — while the sentence holds TWO anchored age
-      spans. Before this arm the pass rewrote both and misgendered the
-      daughter: "a man in his 30s, her daughter in HIS teens". Falling back to
-      leaving both alone is the behaviour this file had before the possessive
-      pass existed, so the failure mode is a stale word and never a new wrong
-      one.
-    */
+  /*
+    A SECOND PERSON'S AGE IS NEVER TOUCHED — and it took two review rounds to
+    get the anchor right, so both failures have an arm rather than a comment.
+
+    "daughter" and "son" are not in `GENDER_NOUN`, so the SUBJECT noun reads as
+    unique and is replaced, while the age span in the sentence belongs to
+    somebody else. Adjacency to the replaced noun is what attributes the
+    pronoun; span-count was a proxy and failed in the second case below, where
+    the sole span in the whole sentence is the daughter's.
+  */
+  it("a second person's age span is left alone even when the subject's age is also stated", () => {
+    /* Round 1 of the review: this rewrote BOTH and gave "…her daughter in HIS teens". */
     expect(rewriteBrief("a woman in her 30s, her daughter in her teens", { sex: "male" })?.text)
-      .toBe("a man in her 30s, her daughter in her teens");
+      .toBe("a man in his 30s, her daughter in her teens");
+  });
+
+  it("…and when the subject's age is NOT stated, so the only span in the sentence is the other person's", () => {
+    /*
+      Round 2 of the review, and the reason the anchor is adjacency rather than
+      "exactly one span": exactly one is not the same as the subject's. Both of
+      these misgendered the child before this arm.
+    */
+    expect(rewriteBrief("a woman, her daughter in her teens", { sex: "male" })?.text)
+      .toBe("a man, her daughter in her teens");
+    expect(rewriteBrief("a guy, his son in his teens", { sex: "female" })?.text)
+      .toBe("a woman, his son in his teens");
   });
 
   it("and NOTHING else: a possessive outside an anchored age span is left alone, because nobody can tell whose it is", () => {
