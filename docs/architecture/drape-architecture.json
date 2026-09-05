@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2352b06f6473ab44"
+    "sourceFingerprint": "7ad52ea383db1858"
   },
   "domains": [
     {
@@ -38,12 +38,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 185
+      "moduleCount": 184
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 43
+      "moduleCount": 44
     },
     {
       "id": "domain:client-shared",
@@ -128,7 +128,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:staff",
@@ -1527,6 +1527,12 @@
     {
       "id": "module:client/src/features/castingV2/castingV2.css",
       "path": "client/src/features/castingV2/castingV2.css",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/chipEdit.ts",
+      "path": "client/src/features/castingV2/chipEdit.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3745,12 +3751,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/briefRewrite.ts",
-      "path": "server/castingV2/briefRewrite.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/castingV2/callCensus.ts",
       "path": "server/castingV2/callCensus.ts",
       "domain": "casting-v2",
@@ -5901,6 +5901,12 @@
     {
       "id": "module:shared/briefLength.ts",
       "path": "shared/briefLength.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/briefRewrite.ts",
+      "path": "shared/briefRewrite.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -10556,6 +10562,10 @@
     {
       "id": "test:client/src/features/castingV2/castingV2CssEmitters.test.ts",
       "path": "client/src/features/castingV2/castingV2CssEmitters.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/chipEdit.test.ts",
+      "path": "client/src/features/castingV2/chipEdit.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/chosenFrame.test.ts",
@@ -16457,6 +16467,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/chipEdit.ts",
+      "to": "module:client/src/features/castingV2/briefDraft.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/chipEdit.ts",
+      "to": "module:client/src/features/castingV2/sheetState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/chipEdit.ts",
+      "to": "module:shared/briefRewrite.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:client/src/features/castingV2/briefEcho.ts",
       "kind": "imports"
@@ -19264,6 +19289,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/castSettingsCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/chipEdit.ts",
       "kind": "imports"
     },
     {
@@ -23228,11 +23258,6 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
-      "to": "module:server/castingV2/briefRewrite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },
@@ -23308,6 +23333,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:shared/briefRewrite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
@@ -23329,21 +23359,6 @@
     {
       "from": "module:server/castingV2/briefRefusalCopy.ts",
       "to": "module:shared/briefLength.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/briefRewrite.ts",
-      "to": "module:server/castingV2/briefCompiler.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/briefRewrite.ts",
-      "to": "module:server/castingV2/castingIntent.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/briefRewrite.ts",
-      "to": "module:server/castingV2/familyClause.ts",
       "kind": "imports"
     },
     {
@@ -24129,6 +24144,11 @@
     {
       "from": "module:server/castingV2/familyClause.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/familyClause.ts",
+      "to": "module:shared/briefRewrite.ts",
       "kind": "imports"
     },
     {
@@ -33057,6 +33077,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:shared/briefRewrite.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:shared/castingClarification.ts",
       "to": "module:shared/castingOptions.ts",
       "kind": "imports"
@@ -35102,10 +35127,10 @@
       "message": "Names 5 of RecoverableRollOperation's 5 fields (server/castingV2/rollRecovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:288",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:260",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:288",
+      "subject": "server/castingV2/rollProjection.ts:260",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

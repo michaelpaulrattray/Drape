@@ -1704,10 +1704,9 @@
 
 /*
   The brief the sheet was cast from (#534) — the customer's own sentence,
-  verbatim, plus what they changed on this roll, one line each. A closed
-  record in the quiet 0.62-opacity register; open, it reads as prose, never
-  as code. Nothing the studio writes renders here — the projection no longer
-  carries a machine sentence at all.
+  verbatim, and nothing else. A closed record in the quiet 0.62-opacity
+  register; open, it reads as prose, never as code. Nothing the studio writes
+  renders here — the projection no longer carries a machine sentence at all.
 */
 .dpc-prompt {
   margin: 10px 0 0;
@@ -1737,25 +1736,23 @@
   opacity: 0.85;
 }
 /*
-  "Changed on this roll" (#534) — a label, not a heading, because the panel
-  already has its summary; the lines stay in the same quiet register.
+  "edited below, not cast yet" (#534, his §16) — the ONE note the sheet makes
+  about a difference, and it replaces the "Changed on this roll" list that
+  stood here for a morning.
+
+  On the summary line rather than under the record, because it is a statement
+  about the DOCK and not about the brief above it: it must be readable with the
+  record still closed, which is how the sheet is normally read. Quieter than
+  the summary it sits beside — this is a footnote, not a warning; nothing is
+  wrong, the customer is mid-edit — so no accent colour and no icon. Its own
+  size rather than the summary's, so the two do not read as one phrase.
 */
-.dpc-prompt__label {
-  margin: 12px 0 0;
+.dpc-prompt__edited {
+  margin-left: 8px;
   font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.5;
-}
-.dpc-prompt__changes {
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.dpc-prompt__change {
-  margin: 2px 0 0;
-  line-height: 1.5;
-  opacity: 0.85;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  font-style: italic;
 }
 
 /*

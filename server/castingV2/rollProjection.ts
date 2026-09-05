@@ -127,34 +127,6 @@ export type RollProjection = {
    */
   statedWardrobe: boolean;
   /**
-   * WHAT THE CUSTOMER CHANGED ON THIS ROLL — their chip edits, in the words
-   * the sentence took them as (#534; his ruling, verbatim: *"it should just
-   * show their original prompt and anything they changed on the new roll even
-   * on a follow"*). The sheet's prompt record draws TWO things and nothing
-   * else: `briefText` — their own sentence, verbatim — and these lines.
-   *
-   * ⚠ THIS FIELD REPLACED `authoredPrompt` / `authoredText` / `authoredFrom`
-   * (#131 slice D, superseded by #534). The old record rebuilt the wire —
-   * brief, family clause, the author's content — and on his own Follow sheet
-   * that printed the studio's follow instruction under his brief: the machine
-   * showing through. The follow clause, the author's draft and every other
-   * studio sentence now stay inside `compiledBrief` and never cross this
-   * boundary at all (invariant-8 shape: out by construction, not omitted by
-   * a renderer). Rule 5's honesty — *"no hidden prompt, ever"* — is the
-   * ROW's: every byte sent is still recorded on it; the customer's sheet is
-   * not the surface that discloses the studio's craft, which is exactly the
-   * ground #168 gave for keeping the locked block out of the old field.
-   *
-   * Two sources, both the customer's own acts, validated field-by-field like
-   * every read out of `compiledBrief`: `register.rewrites` (#164 — a chip
-   * edit written into the sentence; `value` is the phrase the fact now
-   * reads, `sentence` is the one plain line that was appended) and, on rows
-   * written before Row A (#177), the facts the old axis clause carried
-   * (`carried.overrides`). A shape this reader does not know is dropped,
-   * never forwarded.
-   */
-  briefChanges: BriefChange[];
-  /**
    * HOW FAR THE AUTHOR WENT on this sheet (#131 slice E) — `low` | `max` on an
    * author register, null everywhere else. The dock preselects the NEXT roll's
    * meter from it, the way the path switch preselects from the sheet's path:
@@ -557,13 +529,6 @@ function readVarianceHeld(compiledBrief: unknown): boolean {
  * unknown must never be reported as a failure.
  */
 /**
- * Validator bound for one change line — a rewrite phrase or one plain
- * appended sentence, never a paragraph. A bound, not a product limit: the
- * longest line `briefRewrite` writes is well under it.
- */
-export const BRIEF_CHANGE_MAX = 200;
-
-/**
  * Did this roll compose its prompts on the AUTHOR ROAD? Read off the roll's
  * own record (`compiledBrief.register.kind`), validated rather than trusted.
  *
@@ -582,74 +547,22 @@ export function rollComposedOnAuthorRoad(compiledBrief: unknown): boolean {
 }
 
 /**
- * A change the CUSTOMER made on this roll, as the record may show it (#534).
- * `value` — a replaced fact, shown beside its axis ("Age — in their late
- * 50s"); `sentence` — one plain line their edit appended, shown as itself.
- */
-export type BriefChangeShape = "value" | "sentence";
-export type BriefChange = { field: OverridableField; shape: BriefChangeShape; to: string };
-
-/**
- * WHAT THEY CHANGED ON THIS ROLL (#534) — the readers `readAuthoredPrompt`,
- * `readAuthoredFrom` and `readAuthoredText` used to stand here, assembling
- * the record the customer saw out of the wire's parts, family clause
- * included; his ruling retired all three (*"showing the user the prompt
- * continue this family is stupid"*). This reads only the customer's own
- * acts back out of the row:
+ * ⚠ **THE "CHANGED ON THIS ROLL" RECORD IS GONE FROM THIS PROJECTION (#534,
+ * 2026-09-05) — HIS WORD, AND IT IS NOT COSMETIC.** Crew reply #134, verbatim:
+ * *"Drop 'Changed on this roll'; I made the change, I don't need it repeated."*
  *
- *   - `register.rewrites` — a chip edit written into the sentence (#164):
- *     `replaced` crosses as a `value` ("in their late 50s"), `appended` as
- *     the one plain `sentence` it added.
- *   - `carried.overrides` — rows written before Row A (#177), where the old
- *     axis clause carried the facts; the raw value crosses ("50s"), the
- *     clause itself never does.
+ * `BriefChange`, `readBriefChanges` and the `briefChanges` field stood here
+ * for one morning. What replaced them is not another field: a chip edit now
+ * writes into the customer's own brief box at the click (`@shared/briefRewrite`,
+ * run client-side), so the change IS the brief — and a record narrating it back
+ * is the product explaining the customer's own action to them, which is the
+ * defect this whole card is about.
  *
- * Validated against the closed field list, like `readChips`: a field or
- * shape this reader does not know is dropped, never forwarded.
+ * Nothing about what the ROW keeps has changed — `register.rewrites` and
+ * `carried.overrides` are written exactly as before, so rule 5's honesty and
+ * the moderator's metadata boundary are untouched. Only the customer-facing
+ * projection dropped a field, and only because it had no reader left.
  */
-export function readBriefChanges(compiledBrief: unknown): BriefChange[] {
-  if (!compiledBrief || typeof compiledBrief !== "object") return [];
-  const register = (compiledBrief as { register?: unknown }).register;
-  if (!register || typeof register !== "object") return [];
-  const { kind, rewrites, carried } = register as { kind?: unknown; rewrites?: unknown; carried?: unknown };
-  if (kind !== "author") return [];
-  const changes: BriefChange[] = [];
-  if (Array.isArray(rewrites)) {
-    for (const entry of rewrites) {
-      if (!entry || typeof entry !== "object") continue;
-      const { field, mode, to } = entry as Record<string, unknown>;
-      if (typeof field !== "string" || !OVERRIDABLE_FIELDS.includes(field as OverridableField)) continue;
-      /* A mode this reader does not know is dropped like any other unknown
-         shape (review of #546): a future third mode — say a removal whose
-         `to` holds the OLD value — must not cross as a value line. */
-      if (mode !== "replaced" && mode !== "appended") continue;
-      if (typeof to !== "string" || to.trim().length === 0) continue;
-      changes.push({
-        field: field as OverridableField,
-        shape: mode === "appended" ? "sentence" : "value",
-        to: to.trim().slice(0, BRIEF_CHANGE_MAX),
-      });
-    }
-  }
-  /* ⚠ Rows from the axis-clause era recorded ONE chip edit in BOTH channels —
-     `rewrites: [{ ageBand → "40s" }]` beside `carried.overrides: { ageBand:
-     "40s" }` (measured on real rows, dev 105/107, 2026-09-05) — so a reader
-     that took both would say the same change twice. The rewrite record wins;
-     an override crosses only for a field it did not already say. Since Row A
-     (#177) the two cannot coexist: an anchored follow drops chip edits and
-     writes `overrides` empty. */
-  const said = new Set(changes.map((change) => change.field));
-  const overrides = carried && typeof carried === "object" ? (carried as { overrides?: unknown }).overrides : null;
-  if (overrides && typeof overrides === "object") {
-    for (const [field, value] of Object.entries(overrides as Record<string, unknown>)) {
-      if (!OVERRIDABLE_FIELDS.includes(field as OverridableField)) continue;
-      if (said.has(field as OverridableField)) continue;
-      if (typeof value !== "string" || value.trim().length === 0) continue;
-      changes.push({ field: field as OverridableField, shape: "value", to: value.trim().slice(0, BRIEF_CHANGE_MAX) });
-    }
-  }
-  return changes;
-}
 
 export function readImagination(compiledBrief: unknown): Imagination | null {
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
@@ -788,7 +701,6 @@ export function projectRoll(input: {
       cannot drift from the sentence it describes.
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
-    briefChanges: readBriefChanges(input.roll.compiledBrief),
     imagination: readImagination(input.roll.compiledBrief),
     style: readCastStyle(input.roll.compiledBrief),
     authorSatOut: readAuthorSatOut(input.roll.compiledBrief),

@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { rewriteBrief } from "./briefRewrite";
+import { rewriteBrief } from "@shared/briefRewrite";
 import { neverWrittenIn } from "./promptAuthor";
 import { containsHouseSentence } from "./houseBlock";
 import { ARCHETYPE_KEYS, BUILDS, ENERGY_KEYS, HERITAGES, LOOK_KEYS, SEXES, AGE_BANDS, AGE_PHASES } from "./castingIntent";
@@ -48,6 +48,40 @@ describe("replacement in place", () => {
     expect(rewriteBrief("a woman with silver hair", { sex: "male" })?.text).toBe("a man with silver hair");
     const out = rewriteBrief("a female pilot", { sex: "male" });
     expect(out?.text).toBe("a male pilot");
+  });
+
+  /*
+    THE POSSESSIVE FOLLOWS THE NOUN (#534, 2026-09-05).
+
+    A defect this module always had and that nothing could see: until #534 the
+    rewritten text went only to the engine, so "a Nordic man in HER 30s" was
+    never read by a person. It is written into the customer's own brief box now,
+    at the click, so it is read by the one person whose eye closes the card.
+  */
+  it("a replaced gender noun takes the age span's possessive with it — all three sexes", () => {
+    expect(rewriteBrief("a Nordic woman in her 30s with an athletic build", { sex: "male" })?.text)
+      .toBe("a Nordic man in his 30s with an athletic build");
+    expect(rewriteBrief("a man in his 40s", { sex: "female" })?.text).toBe("a woman in her 40s");
+    expect(rewriteBrief("a woman in her 30s", { sex: "nonbinary" })?.text)
+      .toBe("an androgynous person in their 30s");
+  });
+
+  it("and NOTHING else: a possessive outside an anchored age span is left alone, because nobody can tell whose it is", () => {
+    /*
+      "her brother" belongs to the subject; "her jacket" might belong to
+      anyone in the sentence. The anchored age span is the only possessive
+      this module has ever been able to attribute, so it is the only one it
+      touches — the unanchored-token lesson of the #173 review, applied to a
+      pronoun.
+    */
+    expect(rewriteBrief("a woman in her 30s beside her brother", { sex: "male" })?.text)
+      .toBe("a man in his 30s beside her brother");
+  });
+
+  it("an APPENDED sex changes no possessive at all — there was no noun for one to have followed", () => {
+    /* The brief states no gender noun, so the edit appends and the subject's own wording is untouched. */
+    expect(rewriteBrief("a fitness creator in their 30s", { sex: "male" })?.text)
+      .toBe("a fitness creator in their 30s. Cast a man.");
   });
 
   it("two people in frame make the subject ambiguous — a gender edit falls to APPEND, never rewrites both (review of #173, finding 1)", () => {

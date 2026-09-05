@@ -13,7 +13,7 @@ import {
   Skeleton,
 } from "@/foundation";
 import { AppChrome } from "@/components/AppChrome";
-import { BriefEcho, ECHO_FIELD_HEADINGS } from "@/features/castingV2/components/BriefEcho";
+import { BriefEcho } from "@/features/castingV2/components/BriefEcho";
 import { BriefField } from "@/features/castingV2/components/BriefField";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
@@ -40,6 +40,12 @@ import {
   typed,
   type BriefDraft,
 } from "@/features/castingV2/briefDraft";
+import {
+  BOX_EDITED_MARK,
+  boxDiffersFromSheet,
+  chipEditOutcome,
+  rollAdjustments,
+} from "@/features/castingV2/chipEdit";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
@@ -118,19 +124,6 @@ const POLL_MS = 2_500;
  */
 const IDLE_POLL_MS = 12_000;
 const TERMINAL_ROLL_STATUSES = new Set(["complete", "partial", "failed", "cancelled"]);
-/**
- * The axis name for a `value`-shaped "Changed on this roll" line (#534). The
- * echo owns the everyday names (one owner — the record and the sentence may
- * never disagree); `archetype` is not an echo field, and its modern rewrite is
- * always a full sentence, so that label reaches only rows written before Row A
- * that carried one.
- */
-function changeHeading(field: string): string {
-  return field in ECHO_FIELD_HEADINGS
-    ? ECHO_FIELD_HEADINGS[field as keyof typeof ECHO_FIELD_HEADINGS]
-    : "Direction";
-}
-
 export default function CastingSheet() {
   const [, params] = useRoute("/casting/s/:sessionId");
   const [, navigate] = useLocation();
@@ -568,8 +561,14 @@ export default function CastingSheet() {
    */
   const shownBrief = roll.data?.briefText ?? "";
   const brief = displayText(draft, shownBrief);
-  /* What the customer changed on THIS roll — the record's second half (#534). */
-  const briefChanges = roll.data?.briefChanges ?? [];
+  /*
+    THE BOX HAS BEEN EDITED AWAY FROM THE SHEET (#534, his §16) — the single
+    condition under which the record says a word about a difference. It reads
+    the same two strings the dock and the headline draw, so the mark cannot
+    disagree with either; `boxDiffersFromSheet` asks the draft's own question
+    rather than a second one.
+  */
+  const boxEdited = boxDiffersFromSheet(brief, shownBrief);
   /*
     The author-sat-out line, only where its sentence is true to a customer
     (#534): the two legacy reasons said "there is no authored prompt to
@@ -886,12 +885,7 @@ export default function CastingSheet() {
             no imagination ever rides a follow, because the meter is only
             drawn on the author road in the first place.
           */
-          ...(authorRoad
-            ? {}
-            : {
-                unlock: unlocked.length > 0 ? unlocked : undefined,
-                overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
-              }),
+          ...rollAdjustments({ authorRoad, unlocked, overrides: sendOverrides }),
           ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
@@ -902,8 +896,22 @@ export default function CastingSheet() {
           clientRequestId,
           sessionId,
           briefText: brief,
-          unlock: unlocked.length > 0 ? unlocked : undefined,
-          overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
+          /*
+            ⚠ **ON THE AUTHOR ROAD NOTHING RIDES BESIDE THE BRIEF (#534).**
+            The box IS the next brief — a chip edit has already written itself
+            into it — so an `overrides` field here could only restate the box
+            or contradict it, and his condition is that the two can never
+            disagree. Removing the channel is the structural form of that: not
+            a promise that they agree, a wire with nowhere for a disagreement
+            to live. Off the author road they ride exactly as before, because
+            the house road composes from the intent and never read these facts
+            out of the brief's text at all.
+
+            `rollAdjustments` is the one owner of that rule, shared with the
+            follow branch above, which has sent nothing since #177 Row A for
+            its own reason. Two branches each carrying a copy is how they drift.
+          */
+          ...rollAdjustments({ authorRoad, unlocked, overrides: sendOverrides }),
           /*
             THE PATH, ONLY WHERE ONE WAS EVER SHOWN (design §6).
 
@@ -2465,20 +2473,31 @@ export default function CastingSheet() {
         */}
         {shownBrief.trim().length > 0 ? (
           <details className="dpc-prompt">
-            <summary className="dpc-prompt__summary">The brief this sheet was cast from</summary>
+            <summary className="dpc-prompt__summary">
+              The brief this sheet was cast from
+              {/*
+                ⚠ **THE ONLY NOTE ABOUT A DIFFERENCE (#534, his reply #134:
+                "the only note about a difference is the small 'edited below,
+                not cast yet' mark when the box no longer matches the sheet
+                above it").**
+
+                It replaces the "Changed on this roll" list that shipped in
+                PR #546 and that he rejected the same morning — verbatim, "I
+                made the change, I don't need it repeated." A record narrating
+                the customer's own action back at them is the machine
+                explaining itself, which is the defect this whole card is
+                about.
+
+                And it is ONE mark, not a per-fact list, because his §16 makes
+                it a statement about the DOCK rather than about any fact:
+                *"When the dock differs from the headline, one small mark up
+                top … The top never lies about the pictures."* So it says
+                nothing about what changed — the box below says that, in the
+                customer's own words, which is where they made the change.
+              */}
+              {boxEdited ? <span className="dpc-prompt__edited">{BOX_EDITED_MARK}</span> : null}
+            </summary>
             <p className="dpc-prompt__text">{shownBrief}</p>
-            {briefChanges.length > 0 ? (
-              <>
-                <p className="dpc-prompt__label">Changed on this roll</p>
-                <ul className="dpc-prompt__changes">
-                  {briefChanges.map((change, index) => (
-                    <li key={`${change.field}-${index}`} className="dpc-prompt__change">
-                      {change.shape === "sentence" ? change.to : `${changeHeading(change.field)} — ${change.to}`}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
           </details>
         ) : null}
 
@@ -2550,6 +2569,18 @@ export default function CastingSheet() {
                 "20s → 50s · next roll" and "50s — applies to your next roll"
                 are one sentence twice, and only one of them is attached to the
                 fact it describes.
+
+                ⚠ **AND ON THE AUTHOR ROAD A SET NO LONGER QUEUES ANYTHING AT
+                ALL (#534, his reply #134: "a chip edit writes straight into
+                the prompt box, the box is the next brief").** It rewrites the
+                box, in front of them, and the box is what the roll sends — so
+                the queued-change arrow never draws there, because there is no
+                queue to draw. His §16 is why it must not: the top of the sheet
+                is the PAST and "the top never lies about the pictures", so the
+                fact in the sentence keeps saying what these eight were cast
+                from, and the ONE note about the difference is the mark beside
+                the record. `chipEdit.ts` owns which road does which, and its
+                suite drives both directions of his merge condition.
               */
               if (adjustment.kind === "undo") {
                 undoOverride(adjustment.field);
@@ -2559,7 +2590,17 @@ export default function CastingSheet() {
                 unlock(adjustment.field as UnlockableField);
                 return;
               }
-              setOverride(adjustment.field, adjustment.value as never);
+              const outcome = chipEditOutcome({
+                authorRoad,
+                brief,
+                field: adjustment.field,
+                value: adjustment.value as string,
+              });
+              if (outcome.kind === "box") {
+                setDraft(typed(outcome.text));
+                return;
+              }
+              if (outcome.kind === "override") setOverride(outcome.field, outcome.value as never);
             }}
           />
         ) : null}

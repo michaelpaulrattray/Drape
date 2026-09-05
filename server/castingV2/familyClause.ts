@@ -68,15 +68,13 @@ export const FOLLOW_ANCHOR_CLAUSE =
 
 /**
  * "in their late 30s" — the phrase `briefRewrite` renders a chip-edited age
- * with. It lives here from the axis-clause era; the follow clause itself no
- * longer says an age.
+ * with. It lived HERE from the axis-clause era and moved to `@shared/briefRewrite`
+ * with the rewriter on 2026-09-05 (#534), because the client now runs that
+ * rewrite at the chip click. Re-exported rather than copied so this module's
+ * own callers are untouched and there is still one owner of the wording
+ * (working law 4); the follow clause itself no longer says an age.
  */
-export function agePhrase(band: AgeBand, phase: AgePhase | null): string {
-  const qualifier = phase ? `${phase} ` : "";
-  if (band === "70s+") return `in their ${qualifier}seventies or older`;
-  if (band === "teens") return `in their ${qualifier}teens`;
-  return `in their ${qualifier}${band}`;
-}
+export { agePhrase } from "@shared/briefRewrite";
 
 /**
  * The carried record for an anchored follow. No inputs, and that is the
