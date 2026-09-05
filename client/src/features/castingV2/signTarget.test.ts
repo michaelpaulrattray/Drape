@@ -69,7 +69,18 @@ describe("and both surfaces ask it rather than keeping their own copy", () => {
 
   it("the sheet builds its target list through the same one", async () => {
     const sheet = await readFile(SHEET, "utf8");
-    expect(sheet).toContain("signTargets(shortlist)");
+    /*
+      ⚠ The argument moved in #554 and this assertion moved with it, because it
+      had pinned the VARIABLE NAME while its own describe block says the rule is
+      "both surfaces ask the shared function rather than keeping their own
+      copy". The sheet now aims at `keptStrip` — the server's shortlist overlaid
+      with what the user has just clicked — so that the strip the eye sees and
+      the target the 450-credit button spends on are one list. Feeding the raw
+      server list here again would restore exactly the ring-and-target
+      disagreement this file was written for, one network round trip wide, so
+      the call is still pinned rather than loosened to `signTargets(`.
+    */
+    expect(sheet).toContain("signTargets(keptStrip)");
     expect(sheet).not.toContain("filter((entry) => !entry.signed)");
   });
 
