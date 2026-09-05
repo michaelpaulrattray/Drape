@@ -138,6 +138,41 @@
  * not the facts. **His eye on the strip is the gate; these numbers are
  * pointers.**
  *
+ * # ⚠ VERBATIM-FIRST, AND THE INSTRUCTION STOPS TEACHING WHAT ITS GUARDS
+ * REFUSE — #477 (+ #252's instruction half), 2026-09-05
+ *
+ * His verdict on the author bench (#466), Crew reply #114 verbatim: *"A —
+ * keep Sonnet, and read Grok's verbatim discipline as evidence for tightening
+ * MAX's instruction rather than swapping the engine."* The bench had measured
+ * two registers under ONE instruction: the shipped author re-describing the
+ * customer's facts in +124..+222 words of its own prose (with every
+ * #327-class miss riding inside that prose), the verbatim arm keeping her
+ * sentences at +14..+44 and hitting none of them. The engine stays; the
+ * instruction moves toward the discipline. Two clauses carry it — FACTS STAY
+ * opens *"IN THE REQUEST'S OWN WORDS"* and TASTE GOES UP arrives *"IN TIGHT
+ * CLAUSES"* — and the fork's *"in your own sentence"*, which was an
+ * instruction to re-describe, is gone.
+ *
+ * The second half is #252's: drafts were dying on tokens THIS INSTRUCTION
+ * ITSELF DISPLAYS. The golden heat example taught *"No soft youthful
+ * rounding"* while `ageContradictionIn` refuses "youthful" on any 30s+ seed,
+ * denial or not — the bench watched both arms borrow the phrase nearly
+ * verbatim, and #252's floor read 5/5 age events as an added "youthful" and
+ * 7/16 events as SKIN_RULE's own enumerated words, denial being the echo's
+ * natural shape. So: one word out of the example (his original is verbatim in
+ * the comment beside it), a never-even-to-deny sentence on SKIN_RULE and on
+ * FACTS STAY's age clause, and a suite arm that drives every taught-good
+ * example string through the full `draftRefusal` chain at the least
+ * favourable stated facts. **No guard moved** — loosening a guard stays
+ * behind his (b) bar (*"a measured test shows a specific phrase is blocking
+ * good MAX"*), which the `register.refusals` rows (#529) now make cheap.
+ *
+ * The before/after this card's bar required (the #327 shape, his own
+ * 553-char cyborg brief plus the fixture where the shipped author lost a
+ * customer's MAX to age words): numbers in
+ * `docs/specs/MAX_VERBATIM_COURT_2026-09-05.md`, frames beside them, his eye
+ * the gate.
+ *
  * # What is STRUCTURAL rather than promised
  *
  *   - ONE brief on the wire: the composed prompt is the authored paragraph (or,
@@ -481,9 +516,23 @@ export const FACTS_FIRST_RULE =
   + "is: \"a man rebuilt for function\" does not carry \"a dark mechanical plate along the jawline\". Taste comes "
   + "AFTER the facts, never wrapped around them.";
 
+/*
+  ⚠ THE DENIAL CLAUSE IS #477's, AND IT IS MEASURED, NOT STYLISTIC. The guard
+  (`skinContradictionIn`) is a substring match with no denial-awareness, so
+  "not waxy" dies exactly as "waxy" does (driven: "Real textured skin, not waxy
+  or airbrushed." is refused for "airbrushed") — and #252's refusal breakdown
+  read 7 of 16 events on words THIS RULE itself enumerates (waxy ×2,
+  airbrushed ×3, doll-like ×2): the model echoes its own rule's tokens, and a
+  denial is the echo's natural shape. The rule now says what the guard does.
+  Loosening the GUARD instead (denial-awareness) stays behind his (b) bar on
+  #252 — *"only after a measured test shows a specific phrase is blocking good
+  MAX"* — which the `register.refusals` rows #529 added will one day feed.
+*/
 const SKIN_RULE =
   "Do NOT ADD skin or surface words that fight the studio's own realism rules — no translucent, poreless, flawless, "
   + "airbrushed, waxy or doll-like skin, and no perfect symmetry — and do not reach for a synonym of one either. "
+  + "Never write one of those words even to DENY it: \"not waxy\" still puts the word in the brief and the studio "
+  + "refuses it — say what the skin IS. "
   + "If the request uses such a word, keep it: it is a stated fact. Skin it does not describe has texture, pores and life.";
 
 /**
@@ -580,10 +629,32 @@ export function maxSystemPrompt(allowance: number): string {
     "",
     `The request below is the seed. Your job is to REWRITE it into a single casting paragraph — who is being cast, and what the look is. ${REPLACE_RULE}`,
     "",
-    /* §5g (#171), his sentence, kept verbatim through the rewrite. */
-    "FACTS STAY. Every fact the request states survives, in your own sentence: sex, age, heritage, build, hair, wardrobe, features, materials, mood. Facts cannot move at any level or in any wording — \"mid 30s\" must never surface as \"young woman\", and an adjective the request chose (\"subtle\") must not become a different one (\"crisp\"). Never dropped, never softened, never contradicted, never re-described. Taste can be added. Facts cannot be rewritten.",
+    /*
+      §5g (#171), his sentence — TIGHTENED VERBATIM-FIRST under #477 (his reply
+      #114: *"keep Sonnet, and read Grok's verbatim discipline as evidence for
+      tightening MAX's instruction rather than swapping the engine"*). The old
+      opening said facts survive *"in your own sentence"*, which is an
+      instruction to RE-DESCRIBE — and the #466 bench measured exactly that
+      register: the shipped author re-described the same facts in +124..+222
+      words of its own prose, and every #327-class miss (the skin-stack, the
+      block brushes, the jewellery listing) rode inside that prose, while the
+      verbatim-first arm held +14..+44 and hit none of them. Keeping the
+      request's words COMPOSES with RESOLVE-NOT-STACK — the bench's own cyborg
+      draft is the proof: "pale porcelain skin that is heavily weathered" is
+      one read, both facts, her words. The age sentence is #252's floor: 5 of
+      5 stated-age refusal events were an added "youthful", and the guard
+      (`ageContradictionIn`) refuses a youth word inside a denial exactly as it
+      refuses an assertion — driven before this line was written.
+    */
+    "FACTS STAY, IN THE REQUEST'S OWN WORDS. Every fact the request states survives — sex, age, heritage, build, hair, wardrobe, features, materials, mood — and wherever the request's own words already work you KEEP them: write around their phrases, never re-describe them in richer prose of yours. Facts cannot move at any level or in any wording — \"mid 30s\" must never surface as \"young woman\", and an adjective the request chose (\"subtle\") must not become a different one (\"crisp\"). Never dropped, never softened, never contradicted, never re-described. The request's own age words are the only age words: never add age language of your own, even inside a denial — \"no youthful rounding\" still moves a stated age. Taste can be added. Facts cannot be rewritten.",
     "",
-    "TASTE GOES UP. What you add is heat and aesthetic language — mood, materials, makeup language, hair language, lighting taste — never a second description arguing with what it already says.",
+    /*
+      #477 — "IN TIGHT CLAUSES" carries the register half of the same ruling:
+      what he kept from the verbatim arm is that heat arrives as short clauses
+      set beside the customer's words, not as paragraphs of authored prose the
+      facts then have to survive inside.
+    */
+    "TASTE GOES UP, IN TIGHT CLAUSES. What you add is heat and aesthetic language — mood, materials, makeup language, hair language, lighting taste — set beside the request's own words in a few short clauses, never a second description arguing with what it already says.",
     "",
     /*
       #237, his law verbatim where it speaks. One paragraph was necessary and
@@ -625,8 +696,22 @@ export function maxSystemPrompt(allowance: number): string {
       His own golden target and his own failing kit, labelled — the shape
       `conceptDescribe.ts` uses for his granularity ruling, and the specimen is
       the sheet he refused.
+
+      ⚠ ONE WORD IS REMOVED FROM HIS HEAT SENTENCE UNDER #477, and this comment
+      is where his original stays verbatim: *"Metal hand-finished and
+      battle-worn, not costume-clean. Eyes still and calculating. No soft
+      youthful rounding."* The instruction was TEACHING a phrase its own guard
+      refuses — `ageContradictionIn` refuses "youthful" as a whole word on any
+      30s+ seed, denial or not (driven: `draftRefusal` on this exact sentence
+      at a mid-40s stated age returns the age refusal) — and the #466 bench
+      caught the leak in the wild: both arms' surviving feline and goth drafts
+      borrowed "no soft youthful rounding" nearly verbatim from this example,
+      6 of 20 calls were re-asked on age words, and one customer's read fell
+      to static on a brief that plainly stated its age. An obedient author
+      quoting the golden example must never be refused for it; the suite now
+      drives every taught-good example through the full refusal chain.
     */
-    "Worked example of the PIECES rule. An armoured feline humanoid should come back like this: \"Adult feline humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber eyes, long tail. Sphinx-cat presence, sovereign and predatory. Dark structured armour in aged bronze and gold with jewel-toned inlay — ceremonial, worn, formidable.\" Heat on top of that is pressure, never parts: \"Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft youthful rounding.\" What it must never become is a kit — \"angular pauldrons, banded vambraces, a high sculpted collar\" — which is a build sheet, not a casting note.",
+    "Worked example of the PIECES rule. An armoured feline humanoid should come back like this: \"Adult feline humanoid, hairless violet-blue skin, large ears, whiskers, luminous amber eyes, long tail. Sphinx-cat presence, sovereign and predatory. Dark structured armour in aged bronze and gold with jewel-toned inlay — ceremonial, worn, formidable.\" Heat on top of that is pressure, never parts: \"Metal hand-finished and battle-worn, not costume-clean. Eyes still and calculating. No soft rounding.\" What it must never become is a kit — \"angular pauldrons, banded vambraces, a high sculpted collar\" — which is a build sheet, not a casting note.",
     "",
     /*
       #327 rules 1-3, his four corrections read at his own MAX draft. They sit
