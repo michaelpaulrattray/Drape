@@ -1,6 +1,6 @@
 {
-  "edition": 255,
-  "updatedAt": "2026-09-05T05:55:00.000Z",
+  "edition": 256,
+  "updatedAt": "2026-09-05T06:00:00.000Z",
   "shift": "Foreman — #541: the Needs Fable label gets a road out (PR #544)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -1817,7 +1817,7 @@
   "eyeItems": [
     {
       "id": "max-verbatim-477-strip",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 477,
       "filedAt": "2026-09-05T02:20:00.000Z",
