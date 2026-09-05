@@ -96,6 +96,32 @@ describe("userSearchCondition — the staff account search", () => {
     expect(render("2147483647").sql).toContain("`users`.`id` = ?");
   });
 
+  it("accepts the shape the product itself prints — a pasted `#40486`", () => {
+    /*
+      ⚠ THE ONE PASTE SHAPE THAT MATTERS, and the first version of this suite
+      missed it while covering two that the product never produces.
+
+      Both staff surfaces render the id as `#40486`. So the likeliest term
+      anyone will ever paste is the one they copied off the row in front of
+      them — and under `/^\d+$/` it fell through to `LIKE '%#40486%'` over the
+      text fields and printed "No users match that search": the original defect
+      reproduced on the product's own output. (Gate review, PR #569.)
+    */
+    const hashed = render("#40486");
+    expect(hashed.sql).toContain("`users`.`id` = ?");
+    expect(hashed.params).toContain(40486);
+
+    /* The text clauses keep the term AS TYPED — a literal "#40486" in a name is
+       a different question, and the hash is stripped for the id test alone. */
+    expect(hashed.params).toContain("%#40486%");
+    expect(hashed.params).not.toContain("%40486%");
+
+    /* Exactly ONE hash is stripped; this is not a general punctuation cleaner. */
+    for (const notAnId of ["##40486", "#", "# 40486", "#40486#", "#+40486"]) {
+      expect(render(notAnId).sql, `${notAnId} was treated as an id`).not.toContain("`users`.`id` =");
+    }
+  });
+
   it("treats a padded or signed term as text, not as an id", () => {
     /*
       `+40486` and `40486 ` are the shapes a paste from a spreadsheet or a

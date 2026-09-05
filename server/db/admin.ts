@@ -61,6 +61,21 @@ const log = createModuleLogger("db/admin");
  * may legitimately be numeric and a moderator holding "40486" from a support
  * ticket should not have a matching email hidden from them.
  *
+ * # ⚠ AND IT ACCEPTS THE SHAPE THIS PRODUCT ITSELF PRINTS: `#40486`
+ *
+ * Both staff surfaces render the id with a leading hash — `#40486`
+ * (`UserInvestigationWidgets.tsx`, `admin/UserTable.tsx`) — so the likeliest
+ * thing anyone will ever paste into this box is the string they copied off the
+ * row in front of them, or off a ticket quoting it. The first version of this
+ * function tested `/^\d+$/` and a pasted `#40486` fell straight through to
+ * `LIKE '%#40486%'` over the text fields, found nothing, and printed *"No users
+ * match that search"* — **the original defect's exact symptom, reproduced on
+ * the one paste shape the product manufactures.** (Gate review, PR #569.)
+ *
+ * ONE optional leading hash is stripped, and only for the id test; the three
+ * text clauses keep the term as it was typed, because someone searching for a
+ * literal "#40486" in a name is asking a different question.
+ *
  * # THE BOUND, AND WHY IT IS NOT DECORATION
  *
  * `users.id` is a signed 32-bit int. A term of twenty digits is not an id on
@@ -68,6 +83,14 @@ const log = createModuleLogger("db/admin");
  * value the column cannot hold; out of range, it falls through to the text
  * fields alone. `Number.isSafeInteger` is checked first because a long digit
  * string parses to a float that compares wrongly rather than failing.
+ *
+ * # PRECONDITION
+ *
+ * The term must be non-empty — an empty one renders `LIKE '%%'`, which matches
+ * every account. The only call site guards it (`if (search && search.trim())`)
+ * and a second caller must do the same. Stated here because the rest of this
+ * docblock states everything else, and a precondition that is only true by
+ * accident at the one call site is how a mirror starts.
  */
 export function userSearchCondition(search: string): SQL {
   const term = search.trim();
@@ -78,8 +101,9 @@ export function userSearchCondition(search: string): SQL {
     like(users.openId, searchTerm),
   ];
 
-  if (/^\d+$/.test(term)) {
-    const asNumber = Number(term);
+  const digits = term.startsWith("#") ? term.slice(1) : term;
+  if (/^\d+$/.test(digits)) {
+    const asNumber = Number(digits);
     if (Number.isSafeInteger(asNumber) && asNumber > 0 && asNumber <= 2147483647) {
       clauses.push(eq(users.id, asNumber));
     }
