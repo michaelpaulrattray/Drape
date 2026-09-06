@@ -171,8 +171,17 @@ const relative = (file: string): string => path.relative(repoRoot, file).split(p
 const TOUCHES_A_LISTED_ENTRY =
   /\b(?:readFileSync|statSync|readListedSource|readIfPresent|statIfPresent)\s*\(/;
 
+/* Walks a directory and then touches what it listed — the class itself, with no
+   claim about WHICH directory. This is the whole rule for a `scripts/lib`
+   module, whose root is an argument. */
+const walksAndTouches = (source: string): boolean =>
+  /readdirSync\s*\(/.test(source) && TOUCHES_A_LISTED_ENTRY.test(source);
+
+/* The same rule for a TEST SUITE, which writes its root in its own text and so
+   can be asked which one — without it the scan pulls in every suite that lists
+   any directory at all, most of which never go near `scripts/`. */
 const isTheClass = (source: string): boolean =>
-  namesAScriptsRoot(source) && /readdirSync\s*\(/.test(source) && TOUCHES_A_LISTED_ENTRY.test(source);
+  namesAScriptsRoot(source) && walksAndTouches(source);
 
 /*
   ⚠ A WALK DELEGATED TO AN IMPORTED MODULE WAS STRUCTURALLY INVISIBLE, AND THAT
@@ -202,7 +211,23 @@ function scriptLibWalkers(): string[] {
     if (!entry.endsWith(".mts")) continue;
     const source = readListedSource(path.join(dir, entry));
     if (source === null) continue; /* a disposable can leave mid-walk — the rule this file owns */
-    if (isTheClass(source)) found.push(relative(path.join(dir, entry)));
+    /*
+      ⚠ NO `namesAScriptsRoot` HERE, AND THAT IS THE WHOLE OF #594. A test
+      suite writes its walk root in its own text, so asking for the spelling is
+      a fair proxy for "does this walk scripts/". A `scripts/lib` MODULE is the
+      opposite shape: the root arrives as an ARGUMENT, so the spelling says
+      nothing about whether it walks one, and requiring it made membership hang
+      on prose. Measured: `declaredEnvNames.mts` names no scripts root at all,
+      so restoring its bare `statSync` — the very read PR #592 had just fixed —
+      went GREEN; and `importerCountDiff.mts` was in the population only through
+      backticked `scripts/` mentions in its docblock, i.e. one reworded comment
+      away from leaving silently.
+
+      An exported walker taking a caller-supplied root is in the class whichever
+      root it happens to be handed today. Walk plus a touch of what it listed is
+      the entire test, and it has nothing to rot.
+    */
+    if (walksAndTouches(source)) found.push(relative(path.join(dir, entry)));
   }
   return found;
 }
@@ -245,6 +270,29 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     "ACCOUNT_SPENDERS — two hand-kept spender names, each behind existsSync, and a"
     + " name that has gone missing REPORTS as a finding rather than throwing (the"
     + " #345 note at the site)",
+  ],
+  /*
+     ⚠ EIGHT ROWS, NOT ONE BLANKET LINE — the card's own bar (#594), because the
+     whole question about this module is WHICH of its ten reads were listed
+     entries. Read call by call: three were (the two `listFiles(SOURCE_DIR)`
+     sweeps and the `listFiles(server)` sweep behind `pinningTests`) and now go
+     through `readIfPresent`; these eight are FIXED names and must keep throwing.
+     A census whose declared-source file has vanished is broken, and reporting a
+     short door list as a complete one is the failure the whole atlas exists to
+     prevent — so the tolerance stops exactly at the walk.
+  */
+  "scripts/lib/capabilityAtlas.mts": [
+    "codeLinesOf — the STRICT twin, kept for its two fixed callers"
+    + " (refineInterpreter.ts, refineDelta.ts); the listed-entry callers use"
+    + " codeLinesIfPresent",
+    "castingV2Scope.ts — the flag declarations, by fixed name",
+    "ROLL_ENTRANCE_FILE — behind its own existsSync, which throws a NAMED error"
+    + " saying the five walls would silently lose every citation",
+    "briefRefusalCopy.ts — the roll copy table, by fixed name",
+    "conceptDescribeCopy.ts — the concept copy table, by fixed name",
+    "refineDelta.ts — the union members’ own type lines, by fixed name",
+    "cannotSayCopy.ts — the cannot-say copy table, by fixed name",
+    "CAPABILITY_JSON — the committed atlas, behind existsSync in readCommittedAtlas",
   ],
   "server/patrolClocks.test.ts": [
     "REAL_LOGS — the four patrol logs by fixed name; one going missing is the defect and must throw",
@@ -329,15 +377,22 @@ describe("the class cannot come back through an eighth suite", () => {
     expect(walkers).toContain("scripts/lib/stopline.mts");
     expect(walkers).toContain("scripts/lib/productionMention.mts");
     /*
-      ⚠ PINNED SEPARATELY BECAUSE ITS MEMBERSHIP HANGS ON PROSE (PR #592 review,
-      finding 2). `importerCountDiff.mts` walks `server`/`client`/`shared`; the
-      only reason `namesAScriptsRoot` matches it is a backticked `scripts/` in
-      its docblock and in the carve-out note beside its walk. Reword either
-      comment and it leaves the population silently — after which restoring its
-      bare `statSync` goes green again, which is the exact sabotage result this
-      change was written to close.
+      ⚠ THESE TWO ARE THE POSITIVE CONTROL FOR #594 ITSELF, and they are the
+      reason that card is closed rather than merely described. Neither names a
+      scripts root, so both are in the population ONLY because the walk above
+      dropped `namesAScriptsRoot`. Put it back and these two arms redden — which
+      is the point: without them the requirement could be restored and the only
+      symptom would be two modules quietly ceasing to be watched, the exact
+      silent-narrowing failure this whole file is built against.
+
+      `importerCountDiff.mts` is deliberately NOT pinned here any more. PR #592
+      pinned it by name because its membership hung on a backticked `scripts/` in
+      its docblock — a patch over this hole rather than a fix of it. The hole is
+      fixed, so the pin has no work left to do and its stated reason is no longer
+      true; leaving a pin whose comment lies is worse than not having it.
     */
-    expect(walkers).toContain("scripts/lib/importerCountDiff.mts");
+    expect(walkers).toContain("scripts/lib/declaredEnvNames.mts");
+    expect(walkers).toContain("scripts/lib/capabilityAtlas.mts");
   });
 
   it("every suite that walks scripts/ reads its entries through the helper", () => {
