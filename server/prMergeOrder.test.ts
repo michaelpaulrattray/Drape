@@ -32,6 +32,8 @@ import {
   decideMergeAction,
   describeAction,
   classifyMergeOutcome,
+  classifyPrMergeReceipt,
+  classifyRemoteBranchDeletion,
   extractJobNames,
   extractMoneyPattern,
   refuseDirtyWorktree,
@@ -639,5 +641,157 @@ describe("the two-round cap counts VERDICTS, never attempts", () => {
   it("the message names the deliberate road to a third look, and the one-shot label trap", () => {
     expect(FINAL_ROUND_MESSAGE).toMatch(/needs-fable/);
     expect(FINAL_ROUND_MESSAGE).toMatch(/368/);
+  });
+});
+
+/**
+ * THE RECEIPT (#568) — a failure AFTER the irreversible act must not read as a
+ * failure BEFORE it.
+ *
+ * The incident this drives: `gh pr merge --delete-branch` merged PR #567 and
+ * then threw doing its own LOCAL tidy-up, which cannot work from a shift
+ * worktree because the main tree holds `main`. The tool reported a crash over a
+ * pull request that was already in `main`, and the shift only learned the truth
+ * by running `gh pr view` by hand.
+ *
+ * The two inputs are deliberately independent — what `gh` did, and what the
+ * record says — because the whole defect was one standing in for the other.
+ */
+describe("the merge receipt is read back from GitHub, never inferred from an exit code", () => {
+  it("the ordinary road: gh returned and the record says MERGED", () => {
+    expect(classifyPrMergeReceipt({ mergeError: null, stateAfter: "MERGED" })).toEqual({
+      kind: "merged",
+    });
+  });
+
+  it("⚠ THE #568 STATE: gh threw and the record says MERGED — merged, then something failed", () => {
+    const receipt = classifyPrMergeReceipt({
+      mergeError: "fatal: 'main' is already used by worktree at 'C:/Users/Admin/Drape'",
+      stateAfter: "MERGED",
+    });
+    expect(receipt.kind).toBe("merged-then-failed");
+    /* The detail is the thing a shift needs to act on, so it is carried whole
+       rather than summarised into "something went wrong". */
+    expect(receipt.kind === "merged-then-failed" && receipt.detail).toMatch(/already used by worktree/);
+  });
+
+  it("a real failure: gh threw and the record agrees nothing landed", () => {
+    const receipt = classifyPrMergeReceipt({
+      mergeError: "GraphQL: Pull request is not mergeable",
+      stateAfter: "OPEN",
+    });
+    expect(receipt.kind).toBe("not-merged");
+    expect(receipt.kind === "not-merged" && receipt.detail).toMatch(/not mergeable/);
+  });
+
+  it("gh returning while the record says OPEN is still not-merged — the artifact wins", () => {
+    const receipt = classifyPrMergeReceipt({ mergeError: null, stateAfter: "OPEN" });
+    expect(receipt.kind).toBe("not-merged");
+    expect(receipt.kind === "not-merged" && receipt.detail).toMatch(/state=OPEN/);
+  });
+
+  it("⚠ an unreadable record is its OWN state and never a vote for 'nothing landed'", () => {
+    /* Working law 2's direction: a broken reader that quietly votes for the
+       status quo would send a shift to re-merge a pull request that may
+       already be in main. */
+    const afterThrow = classifyPrMergeReceipt({ mergeError: "some gh error", stateAfter: null });
+    expect(afterThrow.kind).toBe("merge-state-unknown");
+    expect(afterThrow.kind === "merge-state-unknown" && afterThrow.detail).toMatch(/could not be read back/);
+
+    const afterSuccess = classifyPrMergeReceipt({ mergeError: null, stateAfter: null });
+    expect(afterSuccess.kind).toBe("merge-state-unknown");
+  });
+
+  it("the four states are mutually exclusive over the whole input square", () => {
+    /* The negative control for the arms above: two gh outcomes × three record
+       answers must produce six readings and never a gap. */
+    const kinds = new Set<string>();
+    for (const mergeError of [null, "boom"]) {
+      for (const stateAfter of ["MERGED", "OPEN", null]) {
+        kinds.add(classifyPrMergeReceipt({ mergeError, stateAfter }).kind);
+      }
+    }
+    expect([...kinds].sort()).toEqual(["merge-state-unknown", "merged", "merged-then-failed", "not-merged"]);
+  });
+});
+
+/**
+ * THE REMOTE BRANCH DELETE (#568 recommendation 2) — the cleanup is done where
+ * it is legal, so the local checkout is never touched and the failure above
+ * cannot occur at all.
+ */
+describe("deleting the remote branch: already-gone is a success, not a failure", () => {
+  it("a clean delete", () => {
+    expect(classifyRemoteBranchDeletion({ exitCode: 0, output: "" })).toBe("deleted");
+  });
+
+  it("⚠ a ref GitHub already removed satisfies the post-condition and must not fail", () => {
+    /* A repository with 'Automatically delete head branches' on removes it
+       during the merge; the thing this tool wants is that the branch is not
+       there, and both roads give that. 422 is the one answer that can only
+       mean absence. */
+    expect(
+      classifyRemoteBranchDeletion({
+        exitCode: 1,
+        output: 'gh: Reference does not exist (HTTP 422)',
+      }),
+    ).toBe("already-gone");
+  });
+
+  it("⚠ A 404 IS NOT ABSENCE — GitHub answers it for a token without push rights", () => {
+    /* PR #612 review, finding 3. The first shape read 404 as already-gone, so a
+       scoped-down token would have been told the branch was tidied while it
+       survived. The two errors are not symmetric: a surviving branch reported
+       as deleted is a lie a shift acts on; a deleted branch reported as needing
+       a look costs one glance. */
+    expect(classifyRemoteBranchDeletion({ exitCode: 1, output: "gh: Not Found (HTTP 404)" })).toBe(
+      "failed",
+    );
+  });
+
+  it("a real failure stays a failure — the negative control the arm above needs", () => {
+    expect(
+      classifyRemoteBranchDeletion({ exitCode: 1, output: "gh: Resource protected by organization SAML enforcement" }),
+    ).toBe("failed");
+    expect(classifyRemoteBranchDeletion({ exitCode: 1, output: "" })).toBe("failed");
+  });
+});
+
+/**
+ * ⚠ THE CONTRACT AT THE WIRE (invariant 5, and the only arm that could have
+ * caught #568 before it shipped): `--delete-branch` must NOT reach
+ * `gh pr merge`, because it is that flag's LOCAL half that breaks in a
+ * worktree. Asserted on the bytes of the call this tool builds, not on a
+ * constant near it.
+ */
+describe("the merge call itself never asks gh to touch the local checkout", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "pr-merge-in-order.mts"), "utf8");
+
+  it("builds `gh pr merge --squash` with no --delete-branch", () => {
+    const call = source.match(/const args = \[[^\]]*\];/);
+    expect(call).not.toBeNull();
+    expect(call?.[0]).toContain('"--squash"');
+    expect(call?.[0]).not.toContain("--delete-branch");
+  });
+
+  it("still honours the flag, through the API road that touches nothing local", () => {
+    expect(source).toContain("deleteRemoteBranch");
+    expect(source).toMatch(/git\/refs\/heads\//);
+  });
+
+  it("⚠ EVERY gh call in the branch delete is INSIDE its guard — it runs after the merge", () => {
+    /* PR #612 review, finding 1: the repo-name lookup sat OUTSIDE the try, so a
+       transient failure there threw uncaught after the irreversible act and
+       killed every later PR in the order — #568's own shape one call to the
+       right, under a docblock promising "never fatal". Asserted on the bytes of
+       the function rather than on the comment above it. */
+    const fn = source.slice(source.indexOf("function deleteRemoteBranch"));
+    const end = fn.search(/^\}$/m);
+    expect(end).toBeGreaterThan(-1);
+    const body = fn.slice(0, end);
+    const guardOpens = body.indexOf("try {");
+    expect(guardOpens).toBeGreaterThan(-1);
+    const beforeGuard = body.slice(0, guardOpens);
+    expect(beforeGuard).not.toContain("gh(");
   });
 });
