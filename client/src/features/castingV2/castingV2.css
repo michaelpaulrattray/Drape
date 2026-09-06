@@ -2630,47 +2630,6 @@
 }
 
 /*
-  THE GENERATED CHIPS (#535 decision 12) — a few directions in the brief's own
-  world, under the box they write into.
-
-  Quiet by construction: they are an OFFER, and the priced button sits in the
-  same row above them. So no fill, no accent, a hairline at low contrast, and
-  the same 12px the quiet line beside them uses — read at a glance, never
-  competing with Roll again. They wrap rather than scroll: four fragments at
-  dock width is at most two rows, and a second row is better than a first row
-  with the rest hidden behind a scroll nobody sees (the refine stack's rule).
-*/
-.dpc-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.dpc-chips__chip {
-  padding: 4px 10px;
-  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
-  border-radius: 999px;
-  background: none;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--faint);
-  cursor: pointer;
-  text-align: left;
-}
-
-.dpc-chips__chip:hover {
-  color: inherit;
-  border-color: color-mix(in srgb, currentColor 34%, transparent);
-}
-
-.dpc-chips__chip[aria-disabled="true"] {
-  opacity: 0.4;
-  cursor: default;
-}
-
-/*
   THE REFINE PANEL — under the expanded face, inside the viewer chrome.
 
   Marked as chrome so the viewer's click-out handler treats it as surface

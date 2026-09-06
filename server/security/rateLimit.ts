@@ -282,19 +282,6 @@ export const RATE_LIMITS = {
     maxRequests: 20,
     keyPrefix: 'reimagine',
   },
-  /*
-    THE GENERATED CHIPS (#535 decision 12). Its own bucket for the press's
-    reason — house money, no charge path — and TIGHTER, because unlike the
-    press this is not a person clicking: the sheet asks once for a brief and
-    caches the answer, so the honest ceiling is "how many different sheets
-    could someone open in a minute", not "how fast can someone iterate". Ten
-    is generous for that and cheap to raise if a real customer ever meets it.
-  */
-  briefChips: {
-    windowMs: 60 * 1000,      // 1 minute
-    maxRequests: 10,
-    keyPrefix: 'brief_chips',
-  },
 } as const;
 
 /**
