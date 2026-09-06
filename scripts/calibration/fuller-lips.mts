@@ -30,6 +30,7 @@ import { createFalMaskedEditEngine } from "../../server/providers/falImages";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { coverage } from "../../server/castingV2/maskGeometry";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
 const OUT = "output/masked/fuller-lips";
 mkdirSync(OUT, { recursive: true });
@@ -52,7 +53,18 @@ const PROMPT = "Edit this photograph of this exact person, changing ONLY what is
 /* The painted frame is kept, so a compositing change can be re-measured without
    varying the painter (the shrink fixture's lesson). */
 let painted: { bytes: Buffer; contentType: string };
-if (process.argv.includes("--repaint") || !existsSync(`${OUT}/painted.png`)) {
+/**
+ * THIS SCRIPT'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * A bare `includes("--repaint")` is the same class as the `indexOf` reader and
+ * was invisible to the grep that defined #345's population: a mistyped
+ * `--repaints` was discarded in silence and this arm re-bought its paint.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: [],
+  boolean: ["repaint"],
+});
+if (ARGS.flag("repaint") || !existsSync(`${OUT}/painted.png`)) {
   const began = Date.now();
   const fresh = await engine.edit({
     prompt: PROMPT,

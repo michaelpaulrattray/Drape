@@ -250,7 +250,207 @@ function routesThroughTheFreeze(source: string): boolean {
   incident and the stated limit.
 */
 
-/** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
+/**
+ * EVERY PAID SCRIPT THAT STILL READS ITS FLAGS BY NAME (#345).
+ *
+ * # Why this is derived and not a list of three
+ *
+ * `server/spendingScriptArguments.test.ts` guarded this class over a HARD-CODED
+ * `DRIVERS` list of the three files the card happened to name. A population
+ * keyed on the known instances stops watching everything else the moment the
+ * instances are fixed — the `fix-drops-subject-from-guard` shape — and it did:
+ * **eight calibration courts drove fal region reads and masked edits with the
+ * old reader, and the guard was green over all of them the whole time.**
+ *
+ * ⚠ **AND THE GREP THAT DEFINED THE CARD'S POPULATION UNDERCOUNTS THE CLASS.**
+ * `#345` measured itself with `grep "process\.argv\.indexOf("`, which cannot
+ * see the two other spellings of the same defect: a bare
+ * `process.argv.includes("--repaint")` as a file's only reader (four paid
+ * scripts), and a positional `process.argv[2]`. Both discard an unknown word in
+ * exactly the same silence. So the rule here is not a pattern of the defect but
+ * its complement: **in a paid script, the only permitted mention of
+ * `process.argv` is the strict parse call itself.** A rule shaped that way
+ * cannot be outrun by a fourth spelling nobody has thought of.
+ *
+ * # What counts as paid
+ *
+ * An import of one of the transports that bills — the fal region reader, the
+ * fal image and queue modules, the identity engine, the OpenRouter reader — or
+ * a call to either spend door. A script that only READS a ledger is not paid
+ * and is not swept here; the cost of a swallowed flag there is a wrong report,
+ * which is `#345`'s own reasoning for doing the spenders first.
+ *
+ * Disposables are excluded, as the card excludes them: they are written and
+ * thrown away in one sitting, and their author is at the keyboard.
+ *
+ * Returns repository-relative paths, so a failure names something openable.
+ */
+export function paidScriptsReadingFlagsByName(
+  scriptsDir: string,
+  repoRoot: string,
+  exempt: readonly string[] = [],
+): string[] {
+  const offenders: string[] = [];
+  const exemptSet = new Set(exempt);
+  const selfPath = fileURLToPath(import.meta.url);
+  for (const file of scriptFilesUnder(scriptsDir)) {
+    /* This module READS raw argv on purpose: it is the freeze's own door, not
+       a caller of it — the same self-skip `unguardedSpendGates` above takes,
+       and for the same reason. */
+    if (file === selfPath) continue;
+    const relative = file.replace(repoRoot, "").replace(/^[\\/]/, "").replace(/\\/g, "/");
+    if (relative.includes("disposable")) continue;
+    if (exemptSet.has(relative)) continue;
+    const source = readIfPresent(file);
+    if (source === null) continue; /* vanished between list and read (#589) */
+    if (!drivesAPaidTransport(source)) continue;
+    if (readsArgvOutsideTheStrictParse(source)) offenders.push(relative);
+  }
+  return offenders;
+}
+
+/**
+ * WHETHER A SCRIPT DRIVES A TRANSPORT THAT BILLS.
+ *
+ * Read at the IMPORT rather than at a mention, for the reason
+ * `routesThroughTheFreeze` above already carries: a docblock explaining that a
+ * file is *not* a paid one would otherwise put it in the swept population.
+ *
+ * ⚠ **THIS IS A FLOOR, NOT A CEILING, AND THE FIRST DRAFT CLAIMED OTHERWISE**
+ * (PR #603's review, finding 2). The sentence *"a new paid driver joins the
+ * swept population by existing"* is true only of a driver importing one of the
+ * names below, directly and statically. Three ways a spender stays invisible,
+ * stated here rather than discovered later — the repo's own rule that a clean
+ * run is a floor and not coverage:
+ *
+ *   1. **ONE HOP.** A script importing a module that itself reaches a paid
+ *      engine is not matched. This is not hypothetical: `hair-arrangement-court`
+ *      imports `presentationState`, whose `capturePresentation` defaults to
+ *      `interpreterEngine()` and bills OpenRouter — it carried the very defect
+ *      this reader exists to find, and the reader could not see it. It is on the
+ *      list below BY NAME for that reason.
+ *   2. **A dynamic `await import(…)`** produces no match — the Atlas's own
+ *      documented blind spot, where 65 modules once read as having no callers.
+ *   3. The paid **text** transports were absent entirely from the first draft,
+ *      while `openrouterBalance` — which only READS the balance — was present.
+ *      Including the reader and excluding the spenders was the inverted half of
+ *      the same mistake this card corrected in `#345`'s own body.
+ *
+ * A grep-shaped guard is not going to resolve transitive imports, and it is not
+ * asked to. What it must not do is describe itself as complete.
+ */
+export function drivesAPaidTransport(source: string): boolean {
+  const code = codeWithoutBlockComments(source);
+  const transports = [
+    /* fal — images, queue, region reads, identity */
+    "falRegionReader", "falImages", "falQueue", "falTransport", "signEngine",
+    /* OpenRouter — the transports that SPEND, and the balance reader */
+    "openrouterText", "openrouterImages", "openrouterBalance",
+    /* one hop, named because it is a measured miss rather than a guess (1) */
+    "presentationState",
+  ].join("|");
+  if (new RegExp(`\\bfrom\\s+["'][^"']*(${transports})["']`).test(code)) return true;
+  return /\b(?:fixtureS|s)pendAuthorized\s*\(/.test(code);
+}
+
+/**
+ * EVERY SCRIPT WHOSE STRICT PARSE WOULD REFUSE ITS OWN `--spend` (PR #603's
+ * review, round 2 — a regression this card introduced and nearly shipped).
+ *
+ * Both spend doors take `argv` as a DEFAULT PARAMETER and read `--spend`
+ * themselves. So in a script that ALSO parses strictly there are two readers of
+ * one command line, and only one of them has been told the word exists: the
+ * parse runs first and refuses `--spend` as unknown before the gate is ever
+ * consulted. `composite-anchored-arm.mts` shipped exactly that — its documented
+ * paid line, and the dry run's own *"re-run with --spend"* epilogue, both led
+ * into `REFUSING: unknown argument --spend`.
+ *
+ * ⚠ **The class arm could not have caught it, which is why this exists.**
+ * `readsArgvOutsideTheStrictParse` bans argv reads *outside* the parse, and this
+ * read is INSIDE `stopline.mts`, through a default parameter — invisible to any
+ * per-file text rule. The vocabulary arms cover only the three named `DRIVERS`.
+ * A file failing this way is silent in every other instrument: nothing spends,
+ * nothing errors, and the suite is green.
+ *
+ * A script passing its own `argv` explicitly is not caught here and does not
+ * need to be — it has chosen where the word is read.
+ */
+export function spendWordsRefusedByTheirOwnParse(scriptsDir: string, repoRoot: string): string[] {
+  const broken: string[] = [];
+  const selfPath = fileURLToPath(import.meta.url);
+  for (const file of scriptFilesUnder(scriptsDir)) {
+    if (file === selfPath) continue; /* the door itself */
+    const source = readIfPresent(file);
+    if (source === null) continue; /* vanished between list and read (#589) */
+    const code = codeWithoutBlockComments(source);
+    if (!code.includes("parseStrictArgsOrRefuse(")) continue;
+    /* THE DEFAULT-PARAMETER FORM ONLY — a call passing an explicit argv has
+       chosen its own reader and is not this defect.
+
+       ⚠ The first shape of this test was `pendAuthorized\(\s*["'`]`, which
+       matched the explicit form too, since that also opens with a string. Its
+       own control caught it (`spendAuthorized("x", myOwnArgv)` was reported),
+       which is the whole reason the control writes a not-this-defect file
+       rather than only an offender. A single string or template argument
+       followed immediately by `)` is the default-parameter call; a second
+       argument puts a comma in the way. */
+    if (!/\b(?:fixtureS|s)pendAuthorized\(\s*(?:`[^`]*`|"[^"]*"|'[^']*')\s*\)/.test(code)) continue;
+    if (/boolean\s*:\s*\[[^\]]*["']spend["']/.test(code)) continue;
+    broken.push(file.replace(repoRoot, "").replace(/^[\\/]/, "").replace(/\\/g, "/"));
+  }
+  return broken;
+}
+
+/**
+ * WHETHER A SCRIPT TOUCHES `process.argv` ANYWHERE BUT THE STRICT PARSE.
+ *
+ * The complement rule described above. Block comments are stripped first —
+ * `#360`'s class, and the reason the sibling suite needed the same stripper:
+ * every file repaired under this card quotes the reader it replaced, by name,
+ * in the docblock explaining why it is gone. A guard that cannot tell a
+ * quotation from an occurrence forces the prose to go quiet about the very
+ * thing it guards.
+ *
+ * ⚠ Its own limit, since the claim it replaced was too strong (PR #603's
+ * review, finding 3): this is a TEXT match on `process.argv`, so a destructured
+ * `const { argv } = process` reads past it. It cannot be outrun by another
+ * SPELLING of a flag read — which is what the complement rule buys — but it is
+ * not proof against a rewrite of how argv is reached.
+ */
+export function readsArgvOutsideTheStrictParse(source: string): boolean {
+  const code = codeWithoutBlockComments(source)
+    .replace(/parseStrictArgsOrRefuse\(\s*process\.argv\.slice\(2\)/g, "parseStrictArgsOrRefuse(");
+  return /process\.argv/.test(code);
+}
+
+/**
+ * A source with its BLOCK comments removed.
+ *
+ * ⚠ TWO limits, both stated rather than discovered, and both false-NEGATIVE —
+ * this reader can go quiet, never loud.
+ *
+ *   1. `//` line comments are left alone. Stripping to end-of-line would
+ *      swallow anything after a `https://` inside a string literal.
+ *   2. It does not know about string literals, so a `/*` inside one — a glob
+ *      like `"src/[*]"`, a regex source — opens a "comment" that swallows real
+ *      code to the next close. An argv read after such a string is invisible to
+ *      the sweep (PR #603's review, round 2). No file in the tree does this
+ *      today; a real tokenizer is the fix if one ever does.
+ */
+export function codeWithoutBlockComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+/**
+ * Every `.ts`/`.mts` under a directory. A clean sweep with no population is not
+ * a sweep.
+ *
+ * ⚠ SORTED, because callers assert on the order (PR #603's review, finding 3).
+ * `readdirSync` returns filesystem order, which differs between Windows and the
+ * Linux gate — so an arm asserting an exact array was green here and on CI by
+ * luck rather than by construction. Sorting at the source fixes it for every
+ * caller instead of each one remembering.
+ */
 export function scriptFilesUnder(dir: string): string[] {
   const files: string[] = [];
   const walk = (at: string) => {
@@ -263,7 +463,7 @@ export function scriptFilesUnder(dir: string): string[] {
     }
   };
   walk(dir);
-  return files;
+  return files.sort();
 }
 
 /*

@@ -51,6 +51,7 @@ import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { createFalMaskedEditEngine, FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "../../server/providers/falImages";
 import { NANO_BANANA_PRO_USD_PER_IMAGE } from "../../server/providers/falQueue";
 import { castingIdentityEngine } from "../../server/castingV2/signEngine";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
 /*
   THE SOURCE FRAME IS A DELIVERED ONE, AND THAT IS THE ARCHITECTURE, NOT A
@@ -77,12 +78,26 @@ const READS = `${OUT}/reads`;
 /* The bench's own cached reads, for the counter's control frames. */
 const BENCH = "output/cprime";
 
-const arg = (name: string, fallback: string): string => {
-  const at = process.argv.indexOf(`--${name}`);
-  return at > -1 ? (process.argv[at + 1] ?? fallback) : fallback;
-};
-const N = Number(arg("n", "5"));
-const DRY = process.argv.includes("--dry");
+/**
+ * THIS CELL'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * The reader here was `process.argv.indexOf("--" + name)` beside a bare
+ * `includes("--dry")`, which cannot fail on a word it was never asked about.
+ * The sharp case is the safest-sounding word an operator can type: **`--dry-run`
+ * is not `--dry`**, so it was discarded in silence and this cell — which drives
+ * a fal masked edit and a region read per instance — spent house money on a
+ * line the operator believed was a rehearsal. That is #288's production
+ * incident exactly, on a paid transport rather than a shift row.
+ *
+ * A refusal now prints the known vocabulary, so the operator reads `--dry` and
+ * types it. Nothing is spent on the way to finding out.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["n"],
+  boolean: ["dry"],
+});
+const N = Number(ARGS.value("n") ?? "5");
+const DRY = ARGS.flag("dry");
 
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) { console.error("FAL_KEY is required"); process.exit(1); }

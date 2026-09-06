@@ -30,6 +30,7 @@ import "dotenv/config";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { capturePresentation } from "../../server/castingV2/presentationState";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 import {
   HAIR_ARRANGEMENTS,
   HAIR_ARRANGEMENT_IDS,
@@ -44,14 +45,38 @@ const INDEX = `${OUT}/masters.json`;
 const TRUTH = `${OUT}/truth.json`;
 const HAIR_WORN = facetOfSubject("hairWorn");
 
-const args = process.argv.slice(2);
-const repeat = Number(args[args.indexOf("--repeat") + 1]) || 3;
+/**
+ * THIS COURT'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345,
+ * found by PR #603's review).
+ *
+ * ⚠ THIS SCRIPT SPENDS, AND ITS OWN HEADER SAYS OTHERWISE. *"No credits"* is
+ * true of the CUSTOMER's credits and false of the house account: the `--try`
+ * path calls `capturePresentation`, which defaults to `interpreterEngine()` and
+ * bills OpenRouter one text completion per master per repeat. That is the same
+ * misclassification this card corrected for the eight fal courts, one hop of
+ * indirection further along — and the indirection is exactly why the derived
+ * sweep in `stopline.mts` could not see this file.
+ *
+ * The old reader's failure was silent and multiplicative: `--repaet 5` left
+ * `indexOf` at -1, so `args[0]` was read instead — `Number("--try")` is NaN,
+ * the `|| 3` caught it, and the court ran **three** rounds of paid completions
+ * while the operator believed they had asked for five.
+ *
+ * `--try` is declared though nothing reads it: it is the documented way to name
+ * the non-collect path, and a spec omitting it would refuse this file's own
+ * header line.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["repeat", "public-base"],
+  boolean: ["collect", "try"],
+});
+const repeat = Number(ARGS.value("repeat")) || 3;
 
 type Master = { candidate: string; candidateId: number; file: string; url: string; note: string };
 
 /* ── collect ─────────────────────────────────────────────────────────────── */
 
-if (args.includes("--collect")) {
+if (ARGS.flag("collect")) {
   const { openDatabase } = await import("../lib/dbConnection.mts");
   const { assertOneWorld } = await import("../lib/worldGuard.mts");
   const databaseKey = process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL";
@@ -68,9 +93,7 @@ if (args.includes("--collect")) {
     `--public-base` is how a `--service MySQL` run passes the other half
     explicitly, and passing it IS the declaration.
   */
-  const explicitBase = args.includes("--public-base")
-    ? args[args.indexOf("--public-base") + 1]
-    : undefined;
+  const explicitBase = ARGS.value("public-base") ?? undefined;
   assertOneWorld(explicitBase ? [databaseKey] : [databaseKey, "R2_PUBLIC_URL"]);
   const databaseUrl = process.env[databaseKey];
   if (!databaseUrl) throw new Error("no database URL — run under `railway run --service MySQL`");

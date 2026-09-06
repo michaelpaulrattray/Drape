@@ -70,6 +70,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
 
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 /* ONE implementation of the counter, shared with the benches — never a second
    copy of a courted instrument (law 4). Its declared limit travels with it. */
 import { cheekBand as readCheekBand, countSpecks } from "./lib/speckDensity.mjs";
@@ -184,8 +185,19 @@ const RUN_15_FRAMES: Frame[] = [
   { name: "pos CONTROL — heavily freckled redhead", file: "output/walk/run-11/05-delivered.png" },
 ];
 
-const runFlag = process.argv.indexOf("--run");
-const RUN = runFlag > -1 ? String(process.argv[runFlag + 1]) : "12";
+/**
+ * THIS BENCH'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * `--run` selects which frame set the fal region reads are spent on. The
+ * reader here could not fail on a word it was never asked about, so `--runs 15`
+ * silently read run 12 — a full bench of paid reads against the wrong master,
+ * and nothing in the output says so.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["run"],
+  boolean: [],
+});
+const RUN = ARGS.value("run") ?? "12";
 const BENCH: Record<string, { master: string; frames: Frame[] }> = {
   "12": { master: "output/marks-court/MASTER-run12.png", frames: RUN_12_FRAMES },
   "15": { master: "output/marks-court/MASTER-run15.png", frames: RUN_15_FRAMES },

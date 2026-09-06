@@ -47,11 +47,23 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fetchImageBytes } from "../lib/imageBytes.mts";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { FAL_GPT_IMAGE_2_EDIT, FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "../../server/providers/falImages";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
 const BASE = "https://pub-990e39d8d995468eb61aced83162123a.r2.dev";
 const MASTER = "casting-v2/candidates/5b9a6e1b-667c-4f03-abf9-c3eea4f249c5.png";
 const OUT = "output/maskurl";
-const DRY = process.argv.includes("--dry");
+/**
+ * THIS SCRIPT'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * THE `--dry` TRAP, THIRD INSTANCE ON A PAID SCRIPT: `--dry-run` is not
+ * `--dry`, and the reader could not tell — so the safest-sounding word an
+ * operator can type was discarded and this probe bought its edits.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: [],
+  boolean: ["dry"],
+});
+const DRY = ARGS.flag("dry");
 
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) { console.error("FAL_KEY is required"); process.exit(1); }

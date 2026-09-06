@@ -31,6 +31,7 @@ import { createFalMaskedEditEngine } from "../../server/providers/falImages";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
 const OUT = "output/masked/shrink-harvest";
 mkdirSync(OUT, { recursive: true });
@@ -63,7 +64,17 @@ const PROMPT = "Edit this photograph of this exact person, changing ONLY what is
 
   `--repaint` takes a fresh one, for when the question really is about the paint.
 */
-const repaint = process.argv.includes("--repaint");
+/**
+ * THIS SCRIPT'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * A bare `includes("--repaint")` is the same class as the `indexOf` reader and
+ * was invisible to the grep that defined #345's population.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: [],
+  boolean: ["repaint"],
+});
+const repaint = ARGS.flag("repaint");
 let painted: { bytes: Buffer; contentType: string };
 if (repaint || !existsSync(`${OUT}/painted.png`)) {
   const began = Date.now();

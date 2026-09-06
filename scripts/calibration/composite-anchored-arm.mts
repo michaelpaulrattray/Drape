@@ -45,10 +45,38 @@ import { harvestRefinement } from "../../server/castingV2/maskedRefine.js";
 import { readRaster, type Mask, type Raster } from "../../server/castingV2/maskedComposite.js";
 import { ratioAgainst, SHARPNESS_BAND } from "../../server/castingV2/sharpness.js";
 import { fixtureSpendAuthorized } from "../lib/stopline.mts";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
+/**
+ * THIS ARM'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * The reader here could not fail on a word it was never asked about, so a
+ * mistyped `--chians` fell back to 2 chains and this arm painted its fixtures
+ * anyway — a provider spend on a line the operator had already got wrong.
+ */
+/*
+  ⚠ `--spend` IS DECLARED HERE THOUGH THIS PARSE NEVER READS IT, and leaving it
+  out was a REGRESSION this card's own review caught (PR #603, round 2).
+
+  `fixtureSpendAuthorized` below takes `process.argv` as a DEFAULT PARAMETER and
+  checks it itself, so the word never reaches this spec — but the strict parse
+  runs first, and a spec that has not been told the word is legal refuses the
+  line at the top of this file (`--spend [--chains 2]`) before the gate is ever
+  consulted. The dry run's own epilogue tells the operator to "re-run with
+  --spend", which would have sent them straight into `REFUSING: unknown
+  argument --spend`.
+
+  The freeze owns the ANSWER; the parser still has to know the word is legal.
+  Same reasoning, same wording, as `drive-finding-replay.mts` and
+  `drive-self-walk.mts` — this file was the third caller of that gate family and
+  the only one whose repair dropped the declaration.
+*/
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["chains", "out", "master"],
+  boolean: ["spend"],
+});
 function arg(name: string, fallback = ""): string {
-  const index = process.argv.indexOf(`--${name}`);
-  return index > -1 ? (process.argv[index + 1] ?? fallback) : fallback;
+  return ARGS.value(name) ?? fallback;
 }
 
 const CHAINS = Number(arg("chains", "2"));
