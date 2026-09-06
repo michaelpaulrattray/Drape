@@ -23,7 +23,7 @@ import { PLAN_BLURBS, blurbFor } from "./planBlurbs";
  * no longer exist, and the shape this program keeps digging out of documents.
  * Only the first would ever be reported.
  */
-describe("#404 — the plan blurb map cannot drift from the ladder", () => {
+describe("card 404 — the plan blurb map cannot drift from the ladder", () => {
   it("every offered rung has a line, and it is not blank", () => {
     for (const tier of OFFERED_PLAN_ORDER) {
       const line = blurbFor(tier);
