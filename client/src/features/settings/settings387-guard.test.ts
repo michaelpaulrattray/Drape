@@ -109,7 +109,17 @@ describe("card 387 item 2 — the window follows the account", () => {
     const w = windowStart(new Date("2026-01-01T00:00:00Z"), 12_000, 75_000);
     expect(w.days).toBe(90);
     expect(w.firstDay).toBe("2026-06-18");
-    expect(w.elapsedDays, "the average must still be over the real period").toBeGreaterThan(90);
+    /*
+      ⚠ THIS ARM SAID THE OPPOSITE UNTIL PR #622's REVIEW, AND IT IS RE-AIMED
+      RATHER THAN DELETED. It read `expect(w.elapsedDays).toBeGreaterThan(90)`
+      with the reason *"the average must still be over the real period"* — a
+      belief that is simply wrong once you ask what the sum contains. The sum
+      is 90 days of rows, because that is all the server will seed; dividing it
+      by the 258 days since 1 January is arithmetic nobody can defend, and it
+      is #385's own defect (a figure and a window that disagree) one window
+      further out. There is one number now and no second one to reach for.
+    */
+    expect(Object.keys(w), "an uncapped elapsed count came back").not.toContain("elapsedDays");
   });
 
   it("a period start in the FUTURE falls back rather than reporting a negative window", () => {

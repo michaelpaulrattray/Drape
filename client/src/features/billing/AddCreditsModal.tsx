@@ -107,7 +107,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   const periodStart = status?.currentPeriodStart ? new Date(status.currentPeriodStart) : null;
   const cycleSpend = useCycleSpend(periodStart);
   const rawCycle = useMemo(
-    () => readCycle(status, cycleSpend?.spent ?? null),
+    () => readCycle(status, cycleSpend),
     [status, cycleSpend],
   );
   const cycle = useMemo(

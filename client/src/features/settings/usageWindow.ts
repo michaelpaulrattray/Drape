@@ -47,23 +47,52 @@ export type DailyUsageRow = { date: string; creditsUsed: number };
  * `[08-31, 09-01, 08-30]`, out of order, with a partial 3rd day on the end. A
  * filter keyed on the nominal start would have counted part of a day outside
  * the window it names; keyed on the first SEEDED day it drops cleanly.
+ *
+ * ⚠ **`days` IS BOTH WHAT WE ASK THE SERVER FOR AND WHAT THE SUM COVERS, AND
+ * IT IS THE ONLY DIVISOR ANY RATE MAY USE — this returned a second, UNCAPPED
+ * `elapsedDays` until PR #622's review caught what that costs.**
+ *
+ * The cap bites on an annual plan. Read at the shipped functions: a subscriber
+ * **200 days** into a 365-day period spending a steady 1,000/day sums 90,000
+ * here (the last 90 days) — and both surfaces then divided that by the days
+ * since the PERIOD began. The Usage pane printed *"averaged over 201 days"*
+ * under a 90-day figure, and the modals' burn read **450 a day against a true
+ * 1,000**, putting the empty date two months late and handing `recommendPlan` a
+ * projection of ~164k against a real ~365k — a rung BELOW what the customer
+ * actually uses.
+ *
+ * ⚠ **AND ONE MEMBER OF THIS FAMILY IS STILL OPEN, NAMED HERE RATHER THAN
+ * LEFT TO BE REDISCOVERED — #624.** `firstDay` is the UTC DAY of
+ * `periodStart`, and `getDailyUsage` aggregates by day on the server, so a
+ * period that begins mid-day (which every real Stripe subscription does) counts
+ * the whole of that day — up to ~24 hours of the PREVIOUS cycle. The client
+ * cannot fix it: the sub-day rows do not survive the query. #624 carries the
+ * server-side repair and its recommendation.
+ *
+ * That is #385's own defect surviving one window further out: a sum and a
+ * divisor measuring different spans. This docblock used to call the cap
+ * *"stated rather than silently truncating the answer"*, which was true of a
+ * TOTAL and false the moment the total became a RATE. So there is one number
+ * now, and no caller can reach the other one.
  */
 export function windowStart(
   periodStart: Date | null,
   balance: number,
   allowance: number,
-): { firstDay: string; label: string; days: number; elapsedDays: number; note?: string } {
+): { firstDay: string; label: string; days: number; note?: string } {
   const now = new Date();
   const dayKey = (d: Date) => d.toISOString().slice(0, 10);
 
   if (periodStart && periodStart.getTime() <= now.getTime()) {
-    const elapsedDays = Math.max(
+    const sincePeriodStart = Math.max(
       1,
       Math.ceil((now.getTime() - periodStart.getTime()) / 86_400_000) + 1,
     );
-    /* `getDailyUsage` caps at 90; a period longer than that is an annual plan,
-       and the cap is stated rather than silently truncating the answer. */
-    const days = Math.min(90, elapsedDays);
+    /* `getDailyUsage` caps at 90; a period longer than that is an annual plan.
+       ⚠ THE CAP IS APPLIED ONCE AND THE UNCAPPED FIGURE IS NOT RETURNED — see
+       the docblock. `days` is the span the sum actually covers, because
+       `firstDay` below is the LATER of the two edges. */
+    const days = Math.min(90, sincePeriodStart);
     const seededFirst = new Date(now.getTime() - (days - 1) * 86_400_000);
     return {
       /* The later of the two edges: the period's own start when the whole
@@ -71,7 +100,6 @@ export function windowStart(
       firstDay: dayKey(periodStart) > dayKey(seededFirst) ? dayKey(periodStart) : dayKey(seededFirst),
       label: "this billing period",
       days,
-      elapsedDays,
       note: allowance > 0 ? `of ${allowance.toLocaleString()} this billing period` : undefined,
     };
   }
@@ -86,7 +114,6 @@ export function windowStart(
     firstDay: dayKey(new Date(now.getTime() - (days - 1) * 86_400_000)),
     label: "in the last 30 days",
     days,
-    elapsedDays: days,
     note: `${balance.toLocaleString()} credits left`,
   };
 }

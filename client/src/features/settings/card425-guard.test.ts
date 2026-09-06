@@ -227,7 +227,11 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
     `readCycle` takes it as its own argument, because the only spend field the
     server returns is a lifetime counter and this fixture means one cycle.
   */
-  const SUBSCRIBED_SPEND = Math.round(STARTER * 0.9);
+  /* The window covers the 20 days of the cycle that have run — the span the
+     sum is taken over, which is `readBurn`'s divisor since PR #622 review
+     finding 1. It matches the old `cycleLength - daysLeft` for a 30-day
+     cycle, so every figure this file asserts is unchanged. */
+  const SUBSCRIBED_SPEND = { spent: Math.round(STARTER * 0.9), days: 20 };
   const SUBSCRIBED = {
     balance: Math.round(STARTER * 0.09),
     currentPeriodStart: new Date(now.getTime() - 20 * DAY),
@@ -235,7 +239,7 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
   };
   /* A Free account: no subscription, therefore no period. This is the state he
      was looking at when he asked what had happened to them. */
-  const FREE_SPEND = 120;
+  const FREE_SPEND = { spent: 120, days: 30 };
   const FREE = {
     balance: 380,
     currentPeriodStart: null,
@@ -247,7 +251,7 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
     expect(cycle, "readCycle refused a complete cycle").not.toBeNull();
     const burn = readBurn(cycle!, now);
     expect(burn.emptyOn, "no empty date — the band cannot render").not.toBeNull();
-    expect(burn.perDay, `a burn of zero from ${SUBSCRIBED_SPEND} spent credits`).toBeGreaterThan(0);
+    expect(burn.perDay, `a burn of zero from ${SUBSCRIBED_SPEND.spent} spent credits`).toBeGreaterThan(0);
     /* The band's sharper half: it only dramatises when the balance runs out
        BEFORE renewal, which is the whole reason to act. */
     expect(burn.dryDays, "the band would claim a shortfall that is not there").toBeGreaterThan(0);

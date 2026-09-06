@@ -30,13 +30,13 @@ import { sumWindow, windowStart } from "@/features/settings/usageWindow";
  */
 export function useCycleSpend(
   periodStart: Date | null,
-): { spent: number; elapsedDays: number } | null {
+): { spent: number; days: number } | null {
   /*
     `windowStart`'s balance and allowance arguments only feed the Usage pane's
     NOTE copy, which nothing here renders — so they are zero, and this call is
     used purely for the window edges the pane and the modals must agree on.
   */
-  const { firstDay, days, elapsedDays } = windowStart(periodStart, 0, 0);
+  const { firstDay, days } = windowStart(periodStart, 0, 0);
   const { data: daily } = trpc.usage.getDailyUsage.useQuery(
     { days },
     /* No period, no cycle, and nothing on this surface reads the answer — a
@@ -46,5 +46,7 @@ export function useCycleSpend(
     { enabled: periodStart !== null },
   );
   if (!daily) return null;
-  return { spent: sumWindow(daily, firstDay), elapsedDays };
+  /* ⚠ THE SPAN TRAVELS WITH THE SUM (PR #622 review, finding 1). Returning a
+     bare number let the caller divide a 90-day total by 200 elapsed days. */
+  return { spent: sumWindow(daily, firstDay), days };
 }

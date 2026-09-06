@@ -59,6 +59,17 @@ export type BillingCycle = {
    * than printing a rate off a figure nobody has.
    */
   spent: number;
+  /**
+   * ⚠ **HOW MANY DAYS `spent` COVERS, AND IT IS THE ONLY DIVISOR `readBurn`
+   * MAY USE** (PR #622 review, finding 1).
+   *
+   * The spend is summed over a window the server caps at 90 days; the days
+   * ELAPSED in the period can be 365. Dividing one by the other is #385's own
+   * defect surviving one window further out, and it understated an annual
+   * subscriber's burn by more than half. Carrying the span beside the sum
+   * means a caller cannot supply one without the other.
+   */
+  spentOverDays: number;
   /** Credits still on the balance. */
   remaining: number;
   /** Whole days between now and the renewal. Never negative. */
@@ -76,12 +87,16 @@ export type BillingCycle = {
  * no Stripe period, so it has no burn rate, no empty date and no proration —
  * and the honest copy for that is a different sentence, not a zero.
  *
- * ⚠ **`cycleSpent` IS REQUIRED AND HAS NO DEFAULT — THAT IS THE FIX FOR #385.**
+ * ⚠ **`spend` IS REQUIRED AND HAS NO DEFAULT — THAT IS THE FIX FOR #385.**
  * The dates come off `status`; the SPEND cannot, because the only spend field
  * on that projection is a lifetime counter (see `BillingCycle.spent`). Making
  * it a second positional argument with no default means a caller must decide
  * where its cycle spend comes from, and the old wrong read cannot come back by
  * somebody passing the same object.
+ *
+ * ⚠ **AND IT CARRIES THE SPAN IT COVERS, not a bare number** (PR #622 review,
+ * finding 1). A sum whose window a caller can forget to mention is how the
+ * repair itself came to divide a 90-day total by 200 elapsed days.
  *
  * `null` means *not known yet* — the per-day sum is still loading — and lands
  * as a spend of `0`, which `readBurn` turns into no rate rather than a zero
@@ -96,7 +111,7 @@ export function readCycle(
       }
     | null
     | undefined,
-  cycleSpent: number | null,
+  spend: { spent: number; days: number } | null,
   now: Date = new Date(),
 ): BillingCycle | null {
   if (!status?.currentPeriodStart || !status?.currentPeriodEnd) return null;
@@ -106,7 +121,9 @@ export function readCycle(
   const cycleLength = Math.max(1, Math.round((end.getTime() - start.getTime()) / DAY_MS));
   const daysLeft = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / DAY_MS));
   return {
-    spent: Math.max(0, cycleSpent ?? 0),
+    spent: Math.max(0, spend?.spent ?? 0),
+    /* At least 1: it is a divisor, and a window that has begun is a day old. */
+    spentOverDays: Math.max(1, spend?.days ?? 1),
     remaining: Math.max(0, status.balance ?? 0),
     daysLeft: Math.min(daysLeft, cycleLength),
     cycleLength,
@@ -136,13 +153,22 @@ export type BurnReading = {
  * at infinity — so `daysToEmpty` and `emptyOn` are `null` and the caller says
  * something else. The same guard covers the first day of a cycle, where the
  * days elapsed are zero and the division is undefined rather than merely large.
+ *
+ * ⚠ **THE GUARD AND THE DIVISOR ARE TWO DIFFERENT NUMBERS, DELIBERATELY** (PR
+ * #622 review, finding 1). *Has this cycle begun?* is answered by the days
+ * elapsed in the PERIOD — that is what stops a rate being printed for a cycle
+ * that has not started. *Over how many days was this spent?* is answered by
+ * the window the sum actually covers, which the server caps at 90. They agree
+ * on a monthly plan and differ by a factor of four on an annual one, and using
+ * the first for both is what understated an annual subscriber's burn to 450 a
+ * day against a real 1,000.
  */
 export function readBurn(cycle: BillingCycle, now: Date = new Date()): BurnReading {
   const elapsed = Math.max(0, cycle.cycleLength - cycle.daysLeft);
   if (elapsed <= 0 || cycle.spent <= 0) {
     return { perDay: 0, daysToEmpty: null, emptyOn: null, dryDays: 0 };
   }
-  const perDay = cycle.spent / elapsed;
+  const perDay = cycle.spent / cycle.spentOverDays;
   const daysToEmpty = cycle.remaining / perDay;
   const emptyOn = new Date(now.getTime() + daysToEmpty * DAY_MS);
   const dryDays = Math.max(0, Math.round(cycle.daysLeft - daysToEmpty));

@@ -50,8 +50,8 @@ const DAY = 86_400_000;
   is the ordinary shape of a real account rather than a contrived one.
 */
 const NOW = new Date("2026-09-07T00:00:00Z");
-const LIFETIME = 120_000;
-const THIS_CYCLE = 4_000;
+const LIFETIME = { spent: 120_000, days: 11 };
+const THIS_CYCLE = { spent: 4_000, days: 11 };
 const SUBSCRIBED = {
   balance: 20_000,
   currentPeriodStart: new Date(NOW.getTime() - 10 * DAY),
@@ -69,10 +69,16 @@ describe("card 385 — the cycle's spend is the cycle's, not the account's whole
 
     /*
       The numbers, so the failure is legible rather than a bare inequality:
-      11 days elapsed of the 30. 120,000 / 11 = 10,909 a day against
-      4,000 / 11 = 364 — a factor of thirty. The balance of 20,000 then empties
-      in under two days on the wrong reading and in 55 days on the right one,
-      which is after the renewal, so the band should not fire at all.
+      the window spans 11 days of the 30-day cycle. 120,000 / 11 = 10,909 a day
+      against 4,000 / 11 = 364 — a factor of thirty. The balance of 20,000 then
+      empties in under two days on the wrong reading and in 55 days on the right
+      one, which is after the renewal, so the band should not fire at all.
+
+      ⚠ THE DIVISOR IS THE WINDOW SPAN, NOT `cycleLength - daysLeft`, and this
+      comment named 11 while the code divided by 10 until PR #622 review
+      (finding 2). Two divisors for one window put the Usage pane and the
+      modals ~10%% apart on the same account. There is one now, and the
+      arithmetic above is the arithmetic that runs.
     */
     expect(wrongBurn.perDay).toBeGreaterThan(rightBurn.perDay * 25);
     expect(wrongBurn.daysToEmpty!, "the wrong reading did not empty inside the cycle")
@@ -102,7 +108,7 @@ describe("card 385 — the cycle's spend is the cycle's, not the account's whole
       { id: "studio", name: "Studio", credits: 600_000, priceInCents: 15_900 },
     ] as unknown as LadderPlan[];
 
-    const projectedFrom = (spend: number) => {
+    const projectedFrom = (spend: { spent: number; days: number }) => {
       const cycle = readCycle(SUBSCRIBED, spend, NOW)!;
       return Math.round(readBurn(cycle, NOW).perDay * cycle.cycleLength);
     };
@@ -151,10 +157,10 @@ describe("card 385 — the cycle's spend is the cycle's, not the account's whole
       its real name, and a cycle spend of 4,000 beside it. If somebody ever
       restores `status.creditsUsed ?? cycleSpent`, this goes red.
     */
-    const withLifetimeField = { ...SUBSCRIBED, creditsUsed: LIFETIME } as never;
+    const withLifetimeField = { ...SUBSCRIBED, creditsUsed: LIFETIME.spent } as never;
     const cycle = readCycle(withLifetimeField, THIS_CYCLE, NOW)!;
     expect(cycle.spent, "a spend field on the status object reached the cycle again")
-      .toBe(THIS_CYCLE);
+      .toBe(THIS_CYCLE.spent);
 
     const source = code(read(join(HERE, "planMath.ts")));
     expect(source, "planMath reads a spend field off the server projection again")
@@ -167,6 +173,97 @@ describe("card 385 — the cycle's spend is the cycle's, not the account's whole
       expect(source, `${file} no longer sums a real per-day window`).toContain("useCycleSpend");
       expect(source, `${file} reads the lifetime counter again`).not.toContain("creditsUsed");
     }
+  });
+});
+
+describe("⚠ card 385 — the ANNUAL period, where the sum's window and the cycle's length part company", () => {
+  /*
+    PR #622's REVIEW, FINDING 1 — the fix's own defect, one window further out,
+    and the reason this describe block exists at all.
+
+    `usage.getDailyUsage` caps at 90 days (`server/routes/usage.ts:34`), so the
+    sum can only ever cover 90 of an annual period's 365. The first version of
+    this repair divided that 90-day total by `cycleLength - daysLeft`, which on
+    an annual plan is the days since the period began. That is #385 exactly —
+    a figure and a window that disagree — with the sign flipped: it now
+    UNDERSELLS.
+
+    The fixture is the reviewer's own: 200 days into a 365-day period, a steady
+    1,000 a day, 50,000 left.
+  */
+  const ANNUAL_NOW = new Date("2026-09-07T00:00:00Z");
+  const ANNUAL = {
+    balance: 50_000,
+    currentPeriodStart: new Date(ANNUAL_NOW.getTime() - 200 * DAY),
+    currentPeriodEnd: new Date(ANNUAL_NOW.getTime() + 165 * DAY),
+  };
+  /* What the hook can actually sum: 90 days at 1,000 a day. */
+  const NINETY_DAYS = { spent: 90_000, days: 90 };
+
+  it("divides the 90-day sum by 90 days, not by the 200 the period has run", () => {
+    const cycle = readCycle(ANNUAL, NINETY_DAYS, ANNUAL_NOW)!;
+    expect(cycle.cycleLength, "the fixture is not an annual period").toBe(365);
+    expect(cycle.spentOverDays, "the span the sum covers did not travel with it").toBe(90);
+
+    const burn = readBurn(cycle, ANNUAL_NOW);
+    /* The truth. Dividing by 200 instead gives 450, which is the defect. */
+    expect(burn.perDay).toBeCloseTo(1_000, 6);
+    expect(burn.perDay, "the 200-day divisor is back").not.toBeCloseTo(450, 0);
+    /* 50,000 left at 1,000 a day is 50 days, against ~111 on the wrong read. */
+    expect(Math.round(burn.daysToEmpty!)).toBe(50);
+  });
+
+  it("⚠ and the rung it recommends is the one the customer actually needs", () => {
+    /*
+      THE ARM THAT MAKES FINDING 1 A PRODUCT DEFECT RATHER THAN AN ARITHMETIC
+      ONE. `projected = perDay × cycleLength`: 365,000 on the true reading,
+      164,250 on the wrong one — which lands on a rung BELOW their real usage,
+      the mirror of #385's own upsell.
+    */
+    const LADDER: LadderPlan[] = [
+      { id: "starter", name: "Starter", credits: 75_000, priceInCents: 2_700 },
+      { id: "pro", name: "Pro", credits: 200_000, priceInCents: 5_900 },
+      { id: "studio", name: "Studio", credits: 600_000, priceInCents: 15_900 },
+    ] as unknown as LadderPlan[];
+
+    const cycle = readCycle(ANNUAL, NINETY_DAYS, ANNUAL_NOW)!;
+    const projected = Math.round(readBurn(cycle, ANNUAL_NOW).perDay * cycle.cycleLength);
+    expect(projected).toBe(365_000);
+    expect(recommendPlan(LADDER, "starter" as never, projected)!.id).toBe("studio");
+
+    /* The wrong reading's projection, computed here rather than asserted about,
+       so the arm shows WHY the rungs differ instead of claiming they do. */
+    const understated = Math.round((90_000 / 200) * 365);
+    expect(understated).toBe(164_250);
+    expect(recommendPlan(LADDER, "starter" as never, understated)!.id).toBe("pro");
+  });
+
+  it("⚠ the window itself no longer offers a second, uncapped number to divide by", () => {
+    /* The wire for this finding: `windowStart` returned BOTH a capped `days`
+       and an uncapped `elapsedDays`, and every caller that reached for the
+       second one was wrong. It is gone rather than documented. */
+    const w = windowStart(new Date(ANNUAL_NOW.getTime() - 200 * DAY), 50_000, 75_000);
+    expect(w.days).toBe(90);
+    expect(Object.keys(w)).not.toContain("elapsedDays");
+    expect(Object.keys(w).sort()).toEqual(["days", "firstDay", "label", "note"]);
+  });
+
+  it("⚠ a cycle that has NOT begun still prints no rate — the two numbers do different jobs", () => {
+    /*
+      The guard and the divisor were one number before this finding, so
+      replacing the divisor could silently have removed the guard. `readBurn`
+      keeps asking `cycleLength - daysLeft <= 0` — *has this cycle begun?* —
+      and separately divides by the span the sum covers.
+    */
+    const notStarted = {
+      balance: 50_000,
+      currentPeriodStart: ANNUAL_NOW,
+      currentPeriodEnd: new Date(ANNUAL_NOW.getTime() + 30 * DAY),
+    };
+    const cycle = readCycle(notStarted, { spent: 5_000, days: 30 }, ANNUAL_NOW)!;
+    expect(cycle.spentOverDays, "the span is present, so only the guard can be refusing").toBe(30);
+    expect(readBurn(cycle, ANNUAL_NOW).emptyOn, "a rate was printed for a cycle that has not run a day")
+      .toBeNull();
   });
 });
 

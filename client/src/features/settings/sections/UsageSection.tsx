@@ -91,19 +91,26 @@ export function UsageSection({
   balance: number;
   periodStart: Date | null;
 }) {
-  const { firstDay, label, days, elapsedDays, note } = windowStart(periodStart, balance, allowance);
+  const { firstDay, label, days, note } = windowStart(periodStart, balance, allowance);
   const { data: daily } = trpc.usage.getDailyUsage.useQuery({ days });
   const { data: storage } = trpc.profile.storageInfo.useQuery();
 
   const creditsUsed = sumWindow(daily, firstDay);
   /*
-    ⚠ THE DIVISOR IS DAYS ELAPSED, NOT ROWS RETURNED. The first draft divided by
-    the number of rows inside the window, which is zero while the query is in
-    flight and on the first instant of a new period — and it rendered
-    `across 0 days` under a figure, which is the shape of nonsense this whole
-    card is about. A window that has begun is at least one day old.
+    ⚠ THE DIVISOR IS THE WINDOW'S OWN SPAN — NOT THE ROWS RETURNED, AND NOT THE
+    DAYS SINCE THE PERIOD BEGAN.
+
+    Two drafts got this wrong in two different directions. The first divided by
+    the number of ROWS inside the window, which is zero while the query is in
+    flight and rendered `across 0 days` under a figure. The second divided by
+    the days since `periodStart`, which is uncapped — so on an annual plan 200
+    days in, this printed a 90-day total *"averaged over 201 days"*, a figure
+    less than half the truth (PR #622 review, finding 1b).
+
+    `days` is what the server was asked for AND what the sum covers, so the two
+    cannot disagree. A window that has begun is at least one day old.
   */
-  const perDay = Math.round(creditsUsed / elapsedDays);
+  const perDay = Math.round(creditsUsed / days);
 
   const storageUsed = storage?.used ?? 0;
   const storageLimit = storage?.limit ?? 0;
@@ -121,7 +128,7 @@ export function UsageSection({
             {
               label: "Credits a day",
               value: perDay.toLocaleString(),
-              note: `averaged over ${elapsedDays} ${elapsedDays === 1 ? "day" : "days"}`,
+              note: `averaged over ${days} ${days === 1 ? "day" : "days"}`,
             },
           ]}
         />

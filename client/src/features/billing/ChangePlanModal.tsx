@@ -250,7 +250,7 @@ export function ChangePlanModal({
   const periodStart = status?.currentPeriodStart ? new Date(status.currentPeriodStart) : null;
   const cycleSpend = useCycleSpend(periodStart);
   const cycle = useMemo(
-    () => readCycle(status, cycleSpend?.spent ?? null),
+    () => readCycle(status, cycleSpend),
     [status, cycleSpend],
   );
   const burn = useMemo(() => (cycle ? readBurn(cycle) : null), [cycle]);
