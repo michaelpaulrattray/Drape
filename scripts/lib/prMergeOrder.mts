@@ -494,3 +494,119 @@ export function describeAction(pr: PrReading, action: MergeAction): string {
       return `#${pr.number} STOP — ${action.reason}`;
   }
 }
+
+/**
+ * ⚠ **A FAILURE AFTER THE IRREVERSIBLE ACT LOOKS EXACTLY LIKE A FAILURE BEFORE
+ * IT, AND THAT IS THE WHOLE OF #568.**
+ *
+ * `gh pr merge --delete-branch` does two things under one exit code: it merges
+ * the pull request on GitHub, and then it tidies up LOCALLY — switching the
+ * checkout off the branch it is about to delete. In a shift's worktree that
+ * second half cannot work, because the main tree holds `main` by the standing
+ * orders' own rule, and git refuses:
+ *
+ *     fatal: 'main' is already used by worktree at 'C:/Users/Admin/Drape'
+ *
+ * Measured on PR #567 (shift `foreman-20260905-2329`): **the merge landed**
+ * (`49acd1d1`, `MERGED 2026-09-05T14:42:16Z`) and the tool threw a raw
+ * `execFileSync` dump naming the merge call. The shift had no way to tell that
+ * from a merge that never happened, and only learned the truth by asking
+ * `gh pr view` by hand — a report contradicting its own artifact, which is
+ * working law 1's whole subject.
+ *
+ * So the exit code is never the receipt. **GitHub's own answer is**, and this
+ * function is the reading of it: what `gh` did is one input, what the record
+ * says is the other, and only their combination names a state.
+ *
+ * The four states, and why each is separate rather than folded into a
+ * neighbour:
+ *
+ *   * `merged` — the ordinary road. `gh` returned, GitHub says MERGED.
+ *   * `merged-then-failed` — **the #568 state.** The PR is merged and
+ *     something after it failed. The caller reports the receipt and carries
+ *     on; treating this as a failure is what cost the shift its diagnosis.
+ *   * `not-merged` — `gh` failed and the record agrees nothing landed. A real
+ *     failure, and the raw output is the useful part.
+ *   * `unreadable` — the read-back itself failed, so **neither** answer is
+ *     established. It is deliberately NOT folded into `not-merged`: a broken
+ *     reader voting for "nothing happened" is how an instrument stops being
+ *     able to fail (working law 2), and here it would send a shift to re-merge
+ *     a pull request that may already be in `main`.
+ */
+export type PrMergeReceipt =
+  | { kind: "merged" }
+  | { kind: "merged-then-failed"; detail: string }
+  | { kind: "not-merged"; detail: string }
+  | { kind: "unreadable"; detail: string };
+
+export function classifyPrMergeReceipt(input: {
+  /** What `gh pr merge` threw, or `null` when it returned cleanly. */
+  readonly mergeError: string | null;
+  /** `state` read back from `gh pr view`, or `null` when THAT read failed. */
+  readonly stateAfter: string | null;
+}): PrMergeReceipt {
+  if (input.stateAfter === null) {
+    return {
+      kind: "unreadable",
+      detail: input.mergeError === null
+        ? "gh pr merge returned, but the state could not be read back."
+        : `gh pr merge failed AND the state could not be read back: ${input.mergeError}`,
+    };
+  }
+  if (input.stateAfter === "MERGED") {
+    return input.mergeError === null
+      ? { kind: "merged" }
+      : { kind: "merged-then-failed", detail: input.mergeError };
+  }
+  return {
+    kind: "not-merged",
+    detail: input.mergeError === null
+      ? `gh reported no error but GitHub says state=${input.stateAfter}`
+      : input.mergeError,
+  };
+}
+
+/**
+ * ⚠ **AND THE CLEANUP IS DONE WHERE IT IS LEGAL, WHICH MEANS NOT ASKING `gh`
+ * TO TOUCH THE LOCAL CHECKOUT AT ALL (#568, recommendation 2).**
+ *
+ * This tool's own help has always said what it intends: *"also delete the
+ * REMOTE branch on merge"*. `gh pr merge --delete-branch` does more than that —
+ * it deletes the remote ref and then deletes the local branch, switching the
+ * checkout to the default branch first. Neither half of that local work is
+ * legal from a shift worktree, and neither is wanted: `shift-worktree remove`
+ * deliberately KEEPS the local branch (its own comment says so), so a local
+ * delete here would contradict the other half of the shift's tooling.
+ *
+ * Deleting the ref through the API does exactly the documented thing and
+ * touches nothing local, so the failure above cannot occur at all. The receipt
+ * classifier stays regardless — it guards the class, not this one call.
+ *
+ * ⚠ **A REF THAT IS ALREADY GONE IS A SUCCESS, NOT A FAILURE.** A repository
+ * with *Automatically delete head branches* on removes it during the merge, and
+ * a shift that ran `--delete-branch` on a second pass would then see a 422. The
+ * post-condition this tool cares about is *the remote branch is not there*, and
+ * both roads satisfy it. Failing on the second would turn a tidy repository
+ * into an error message.
+ *
+ * ⚠ **AND A FAILED DELETE IS NEVER FATAL.** It happens strictly AFTER the
+ * merge, so exiting non-zero on it would recreate #568's defect one call to the
+ * right: a shift reading a failure over a pull request that is already in
+ * `main`. It is reported and the run continues.
+ */
+export type RemoteBranchDeletion = "deleted" | "already-gone" | "failed";
+
+export function classifyRemoteBranchDeletion(input: {
+  readonly exitCode: number;
+  /** Combined stdout+stderr from the `gh api` call. */
+  readonly output: string;
+}): RemoteBranchDeletion {
+  if (input.exitCode === 0) return "deleted";
+  /* GitHub answers an absent ref with 422 "Reference does not exist" on the
+     git-refs endpoint and 404 when the path itself does not resolve. Matched on
+     the message rather than on a status line, because `gh api` prints the
+     message and only sometimes the code. */
+  return /reference does not exist|not found|404|no commit found for/i.test(input.output)
+    ? "already-gone"
+    : "failed";
+}

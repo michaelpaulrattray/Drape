@@ -76,6 +76,8 @@ import {
   extractMoneyPattern,
   orderByOpened,
   classifyMergeOutcome,
+  classifyPrMergeReceipt,
+  classifyRemoteBranchDeletion,
   refuseDirtyWorktree,
   refuseProtectedPush,
   refuseUnknownJobName,
@@ -447,25 +449,129 @@ function say(line: string): void {
   console.log(`[${new Date().toISOString().slice(11, 19)}] ${line}`);
 }
 
+/**
+ * A multi-line tool dump folded onto one line, so a receipt stays one `say`.
+ *
+ * The whole point of #568's fix is that the important sentence is READ; a raw
+ * `execFileSync` dump wrapping over six lines is how the last one was missed.
+ */
+function oneLine(text: string): string {
+  return text.split(/\r?\n/).map((part) => part.trim()).filter((part) => part !== "").join(" | ");
+}
+
+/**
+ * THE MERGE, AND THE RECEIPT IS READ BACK RATHER THAN INFERRED (#568).
+ *
+ * ⚠ **NOTHING HERE TRUSTS AN EXIT CODE, AND NOTHING HERE ASKS `gh` TO TOUCH
+ * THE LOCAL CHECKOUT.** Both properties come from one incident: `gh pr merge
+ * --delete-branch` merged PR #567 and then threw doing its own local tidy-up,
+ * which cannot work from a shift worktree — so the tool reported a failure over
+ * a pull request that was already in `main`. `classifyPrMergeReceipt` and
+ * `classifyRemoteBranchDeletion` in `lib/prMergeOrder.mts` carry the reasoning
+ * and the four states; this function is their I/O.
+ */
 function mergePr(pr: PrReading): void {
+  /* ⚠ `--delete-branch` is deliberately NOT passed to `gh pr merge`, even when
+     the flag is set. It is the local half of that flag that broke, and this
+     tool's help only ever promised the remote half — which `deleteRemoteBranch`
+     does below, after the receipt is printed. */
   const args = ["pr", "merge", String(pr.number), "--squash"];
-  if (deleteBranch) args.push("--delete-branch");
   if (dryRun) {
     say(`DRY RUN — would run: gh ${args.join(" ")}`);
+    if (deleteBranch) say(`DRY RUN — would then delete the remote branch ${pr.headRefName}`);
     return;
   }
-  gh(args);
-  const after = JSON.parse(
-    gh(["pr", "view", String(pr.number), "--json", "state,mergedAt,mergeCommit"]),
-  ) as { state: string; mergedAt: string | null; mergeCommit: { oid: string } | null };
-  // The receipt is read back from GitHub rather than assumed from an exit code:
-  // a report is a claim, the artifact is the fact (working law 1).
-  say(
-    `MERGED #${pr.number} — ${after.state}, squash ${after.mergeCommit?.oid.slice(0, 8) ?? "?"}, ` +
-      `at ${after.mergedAt ?? "?"}`,
-  );
-  if (after.state !== "MERGED") {
-    fail(`#${pr.number}: gh reported no error but GitHub says state=${after.state}`);
+
+  let mergeError: string | null = null;
+  try {
+    gh(args);
+  } catch (error) {
+    const e = error as { stdout?: string; stderr?: string; message?: string };
+    mergeError = `${e.stdout ?? ""}${e.stderr ?? ""}`.trim() || (e.message ?? String(error));
+  }
+
+  /* The read-back happens WHATEVER `gh` did, and its own failure is a third
+     answer rather than a vote for "nothing landed". */
+  let stateAfter: string | null = null;
+  let receiptLine = "";
+  try {
+    const after = JSON.parse(
+      gh(["pr", "view", String(pr.number), "--json", "state,mergedAt,mergeCommit"]),
+    ) as { state: string; mergedAt: string | null; mergeCommit: { oid: string } | null };
+    stateAfter = after.state;
+    receiptLine =
+      `#${pr.number} — ${after.state}, squash ${after.mergeCommit?.oid.slice(0, 8) ?? "?"}, ` +
+      `at ${after.mergedAt ?? "?"}`;
+  } catch (error) {
+    receiptLine = `#${pr.number} — the state could not be read back: ${(error as Error).message}`;
+  }
+
+  const receipt = classifyPrMergeReceipt({ mergeError, stateAfter });
+
+  /* ⚠ THE RECEIPT IS PRINTED BEFORE ANY INTERPRETATION OF IT, so a shift
+     reading a crashed run still learns what happened to its pull request. */
+  switch (receipt.kind) {
+    case "merged":
+      say(`MERGED ${receiptLine}`);
+      break;
+    case "merged-then-failed":
+      say(`MERGED ${receiptLine}`);
+      say(
+        `#${pr.number}: MERGED, then a later step failed — the pull request IS in main and ` +
+          `must not be re-merged. What failed: ${oneLine(receipt.detail)}`,
+      );
+      break;
+    case "not-merged":
+      say(`NOT MERGED ${receiptLine}`);
+      fail(`#${pr.number}: ${oneLine(receipt.detail)}`);
+      break;
+    case "unreadable":
+      /* ⚠ NOT folded into `not-merged`: the instruction is the opposite one.
+         There, re-running is the repair; here it could merge twice or chase a
+         pull request that is already in `main`. */
+      say(`UNKNOWN ${receiptLine}`);
+      fail(
+        `#${pr.number}: ${oneLine(receipt.detail)} Check \`gh pr view ${pr.number} --json state\` ` +
+          `BEFORE re-running — this tool cannot say whether the merge landed.`,
+      );
+      break;
+  }
+
+  if (deleteBranch) deleteRemoteBranch(pr);
+}
+
+/**
+ * Delete the pull request's head branch on GitHub, and only there.
+ *
+ * Never fatal: it runs after the merge, so failing the process here would put
+ * a shift back in #568's position — an error over a pull request that landed.
+ */
+function deleteRemoteBranch(pr: PrReading): void {
+  const repo = gh(["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]).trim();
+  let code = 0;
+  let output = "";
+  try {
+    output = gh([
+      "api", "-X", "DELETE",
+      `repos/${repo}/git/refs/heads/${pr.headRefName}`,
+    ]);
+  } catch (error) {
+    const e = error as { status?: number; stdout?: string; stderr?: string; message?: string };
+    code = e.status ?? 1;
+    output = `${e.stdout ?? ""}${e.stderr ?? ""}`.trim() || (e.message ?? String(error));
+  }
+  switch (classifyRemoteBranchDeletion({ exitCode: code, output })) {
+    case "deleted":
+      say(`#${pr.number}: deleted the remote branch ${pr.headRefName}`);
+      break;
+    case "already-gone":
+      say(`#${pr.number}: the remote branch ${pr.headRefName} was already gone — nothing to delete`);
+      break;
+    case "failed":
+      say(
+        `#${pr.number}: MERGED, but the remote branch ${pr.headRefName} could not be deleted ` +
+          `— ${oneLine(output)}. Delete it by hand; the merge is unaffected.`,
+      );
   }
 }
 
