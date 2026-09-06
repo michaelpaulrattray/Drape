@@ -253,8 +253,15 @@ export function resolveHold(row: {
  *
  * # ⚠ IT APPLIES AND IT NEVER REMOVES, AND THAT ASYMMETRY IS THE WHOLE DESIGN
  *
- * Applying is safe: the worst case is a card held one sweep too long, and the
- * next sweep is minutes away. **Removing is not.** `blocked` is applied by hand
+ * Applying is the cheaper mistake: a wrongly applied hold delays one card and
+ * nothing else. ⚠ **But it does NOT heal itself, and saying so was the first
+ * shape's second inaccuracy** (PR #613 review, finding 2): the next sweep only
+ * NAMES a hold it should not have applied — clearing it is a person's act,
+ * because this function never removes. The road out is the stale report plus
+ * somebody reading it, and a docblock that promised the sweep would undo its
+ * own mistake is the kind of confident sentence this repository has watched
+ * become the next incident's root cause. **Removing automatically is worse
+ * still.** `blocked` is applied by hand
  * for reasons that have nothing to do with his desk — #404 is blocked on #391's
  * ladder fold — and a script that stripped it because the desk was silent would
  * un-hold a card nobody had read. The standing orders say so in as many words:
@@ -263,19 +270,54 @@ export function resolveHold(row: {
  *
  * The rot the header warns about — *"the queue claiming he owes an answer he
  * has already given"* — is therefore answered by REPORTING rather than by
- * removing. A hold applied by hand always carries its `CREW_HOLD_MARKER` line;
- * one this function applied never does. So **`blocked`, no marker line, and a
- * silent desk** is precisely the shape of a hold whose reason has gone, and it
- * is named for a person instead of being quietly cleared.
+ * removing. **Every open `founder-ordered` card carrying `blocked` that his
+ * desk does not hold is reported**, and the report says whether the card
+ * carries a written reason, because that changes what a person should do with
+ * it rather than whether they should look.
+ *
+ * ⚠ **THE FIRST SHAPE OF THIS USED THE MARKER LINE AS A DISCRIMINATOR AND IT
+ * DOES NOT WORK** (PR #613 review, finding 1). It rested on *"a hold applied by
+ * hand always carries its marker line; one this function applied never does"* —
+ * and the second half is false for any card whose body EVER carried one.
+ * `holdReasonFromBody` reads the first marker line whatever its age, and #298's
+ * design deliberately leaves a rotted line in place when a label is removed,
+ * because nothing renders it. So a card once hand-blocked, later unblocked, then
+ * parked on his desk and answered would have carried `blocked` for ever and
+ * been named to nobody — **the exact freeze this report exists to prevent.**
+ *
+ * ⚠ **AND THAT FOSSIL HAD A SECOND SYMPTOM THAT FIRED SOONER: THE WRONG
+ * SENTENCE ON HIS PAGE.** The sweep renders a hold's reason from the body, so a
+ * hold applied HERE would have adopted an unrelated older sentence and shown it
+ * beside a live chip — *"a stale reason outliving its state"*, which is the one
+ * bug #298 was built to kill. `apply` therefore carries `bodyCarriesFossil`, and
+ * the sweep gives an applied hold its reason from **the desk card**, never from
+ * the body.
  */
 export type DeskHoldPlan = {
   /** Cards his desk holds that carry no hold label at all — apply `blocked`. */
-  readonly apply: ReadonlyArray<{ readonly issueNumber: number; readonly deskCardId: string }>;
+  readonly apply: ReadonlyArray<{
+    readonly issueNumber: number;
+    readonly deskCardId: string;
+    /**
+     * The body already holds a `CREW_HOLD_MARKER` line from some EARLIER hold.
+     * The caller must not render it as this hold's reason, and says so out loud.
+     */
+    readonly bodyCarriesFossil: boolean;
+  }>;
   /**
-   * Cards carrying `blocked` with no written reason that his desk no longer
-   * names. Reported for a person; NEVER unlabelled here.
+   * Cards carrying `blocked` that his desk no longer names. Reported for a
+   * person; NEVER unlabelled here.
+   *
+   * `hasWrittenReason` changes the LOUDNESS, never whether it is reported — a
+   * card with a reason is probably held on something real (#404 is held on
+   * #391's ladder fold) and a card without one is probably this sweep's own
+   * hold outliving its cause. Filtering the first kind out is what froze cards
+   * in the first shape of this function.
    */
-  readonly stale: ReadonlyArray<{ readonly issueNumber: number }>;
+  readonly stale: ReadonlyArray<{
+    readonly issueNumber: number;
+    readonly hasWrittenReason: boolean;
+  }>;
 };
 
 export function planDeskHoldLabels(input: {
@@ -295,21 +337,28 @@ export function planDeskHoldLabels(input: {
     if (!deskByIssue.has(card.issueNumber)) deskByIssue.set(card.issueNumber, card.cardId);
   }
 
-  const apply: Array<{ issueNumber: number; deskCardId: string }> = [];
-  const stale: Array<{ issueNumber: number }> = [];
+  const apply: Array<{ issueNumber: number; deskCardId: string; bodyCarriesFossil: boolean }> = [];
+  const stale: Array<{ issueNumber: number; hasWrittenReason: boolean }> = [];
 
   for (const row of input.ordered) {
     const onDesk = deskByIssue.get(row.issueNumber) ?? null;
     const held = heldStateFromLabels(row.labels);
+    const writtenReason = holdReasonFromBody(row.body) !== null;
     if (onDesk !== null) {
       /* ⚠ ANY hold label is enough. A card already carrying `awaiting-fable` is
          not takeable, which is the only thing this repair is about — piling
          `blocked` on top would add a second chip and change nothing. */
-      if (held === null) apply.push({ issueNumber: row.issueNumber, deskCardId: onDesk });
+      if (held === null) {
+        apply.push({
+          issueNumber: row.issueNumber,
+          deskCardId: onDesk,
+          bodyCarriesFossil: writtenReason,
+        });
+      }
       continue;
     }
-    if (row.labels.includes(CREW_HOLD_LABELS.blocked) && holdReasonFromBody(row.body) === null) {
-      stale.push({ issueNumber: row.issueNumber });
+    if (row.labels.includes(CREW_HOLD_LABELS.blocked)) {
+      stale.push({ issueNumber: row.issueNumber, hasWrittenReason: writtenReason });
     }
   }
 

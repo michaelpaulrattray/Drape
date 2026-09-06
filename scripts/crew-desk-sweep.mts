@@ -83,6 +83,7 @@ import {
 } from "../shared/crewCardResolution.js";
 import {
   CREW_HOLD_LABELS,
+  CREW_HOLD_MARKER,
   heldStateFromLabels,
   holdReasonFromBody,
   planDeskHoldLabels,
@@ -168,7 +169,7 @@ const changes: string[] = [];
 const skipped: string[] = [];
 /* Cards carrying `blocked` with no written reason his desk no longer names —
    named for a person, never unlabelled here (#586). */
-let staleHolds: ReadonlyArray<{ issueNumber: number }> = [];
+let staleHolds: ReadonlyArray<{ issueNumber: number; hasWrittenReason: boolean }> = [];
 
 /* ─── 1. NEXT UP — the founder-ordered queue, in the order a shift takes it ─── */
 
@@ -225,14 +226,28 @@ if (ordered === null) {
       .map((card) => ({ issueNumber: Number(card.issueNumber), cardId: String(card.id) })),
   });
 
-  /* Which issues ended up held, so the rows written below carry the label this
-     run applied rather than the one `gh` answered with a moment ago. */
-  const applied = new Set<number>();
+  /*
+    Which issues ended up held, and WHY — so the rows written below carry the
+    label this run applied rather than the one `gh` answered with a moment ago.
+
+    ⚠ **THE REASON COMES FROM THE DESK AND NEVER FROM THE BODY** (PR #613
+    review, finding 1). A body may still hold a `**Waiting on:**` line from some
+    earlier hold — #298's design deliberately leaves a rotted line in place when
+    a label is removed, because nothing renders it — and reading it here would
+    have shown an unrelated old sentence beside a brand-new chip. That is
+    *"a stale reason outliving its state"*, the one bug #298 was built to kill,
+    revived by a new state adopting an old sentence.
+  */
+  const applied = new Map<number, string>();
   for (const hold of deskPlan.apply) {
     if (!WRITE) {
       changes.push(
         `HOLD: #${hold.issueNumber} would get \`blocked\` — his desk card `
-        + `\`${hold.deskCardId}\` is open and the card carries no hold label`,
+        + `\`${hold.deskCardId}\` is open and the card carries no hold label`
+        + (hold.bodyCarriesFossil
+          ? ` (its body still carries an OLDER \`${CREW_HOLD_MARKER}\` line, which would NOT`
+            + ` be used as the reason)`
+          : ""),
       );
       continue;
     }
@@ -249,9 +264,13 @@ if (ordered === null) {
       );
       continue;
     }
-    applied.add(hold.issueNumber);
+    applied.set(hold.issueNumber, `his desk card \`${hold.deskCardId}\` is open`);
     changes.push(
-      `HOLD: #${hold.issueNumber} labelled \`blocked\` — his desk card \`${hold.deskCardId}\` is open`,
+      `HOLD: #${hold.issueNumber} labelled \`blocked\` — his desk card \`${hold.deskCardId}\` is open`
+      + (hold.bodyCarriesFossil
+        ? ` (its body still carries an OLDER \`${CREW_HOLD_MARKER}\` line; the reason shown`
+          + ` is the desk card, not that sentence)`
+        : ""),
     );
   }
 
@@ -277,10 +296,15 @@ if (ordered === null) {
         *"why was this skipped"*, and demanding prose would let a filer's
         omission quietly un-hold a card.
       */
+      const appliedReason = applied.get(Number(row.number)) ?? null;
       const state = heldStateFromLabels(
-        applied.has(Number(row.number)) ? [...labels, CREW_HOLD_LABELS.blocked] : labels,
+        appliedReason === null ? labels : [...labels, CREW_HOLD_LABELS.blocked],
       );
-      const because = state === null ? null : holdReasonFromBody(String(row.body ?? ""));
+      /* A hold this run applied says WHY from the desk; every other hold keeps
+         reading the filer's own line, which is #298's rule untouched. */
+      const because = state === null
+        ? null
+        : appliedReason ?? holdReasonFromBody(String(row.body ?? ""));
       return {
         issueNumber: Number(row.number),
         title: String(row.title).slice(0, 300),
@@ -307,9 +331,17 @@ if (ordered === null) {
   /* Said out loud whichever way the row above went: a hold is the thing an
      operator most wants to check before shipping, and "unchanged" hides it. */
   const holds = items.filter((item) => "held" in item);
-  changes.push(holds.length === 0
+  /* ⚠ In report-only mode nothing was applied, so a row this run WOULD hold is
+     absent from `holds` — and printing "no card is held" four lines under
+     "HOLD: #N would get `blocked`" is the two-contradictory-facts shape this
+     script's own pass-2 comment names as the disease (PR #613 review, nit). */
+  const wouldHold = WRITE ? 0 : deskPlan.apply.length;
+  changes.push(holds.length === 0 && wouldHold === 0
     ? `NEXT UP: no card is held — every row is takeable`
-    : `NEXT UP: ${holds.length} held — ${holds.map((i) => `#${i.issueNumber} ${(i as { held: { state: string } }).held.state}`).join(", ")}`);
+    : `NEXT UP: ${holds.length} held${wouldHold > 0 ? `, ${wouldHold} more would be once applied` : ""}`
+      + (holds.length === 0
+        ? ""
+        : ` — ${holds.map((i) => `#${i.issueNumber} ${(i as { held: { state: string } }).held.state}`).join(", ")}`));
 }
 
 /* ─── 1b. THE LADDER CARDS — roadmap / parked / design-unbuilt, homed under
@@ -455,14 +487,27 @@ if (heldCards.length > 0) {
 }
 
 if (staleHolds.length > 0) {
+  /*
+    ⚠ EVERY desk-silent `blocked` card is here, and the written reason changes
+    only the LOUDNESS (PR #613 review, finding 1). The first shape used the
+    marker line to filter this list, and a card whose body carried a FOSSIL line
+    from an older hold would then have been frozen for ever without ever being
+    named — the freeze this block exists to prevent.
+  */
+  const loud = staleHolds.filter((hold) => !hold.hasWrittenReason);
+  const quiet = staleHolds.filter((hold) => hold.hasWrittenReason);
   console.log("");
-  console.log(`⚠ ${staleHolds.length} card(s) carry \`blocked\` with no reason written and nothing`);
-  console.log("  on his desk holding them. That is the shape of a hold this sweep applied whose");
-  console.log("  reason has since gone — but removing a hold is the act that lets work start, so");
-  console.log("  it is named for a person rather than cleared by a script (#586). Read each and");
-  console.log("  either remove the label or write its `**Waiting on:**` line:");
-  for (const hold of staleHolds) {
-    console.log(`  ! #${hold.issueNumber}`);
+  console.log(`⚠ ${staleHolds.length} card(s) carry \`blocked\` and nothing on his desk holds them.`);
+  console.log("  Removing a hold is the act that lets work start, so none is cleared here (#586).");
+  if (loud.length > 0) {
+    console.log("  NO REASON WRITTEN — most likely a hold this sweep applied whose desk card has");
+    console.log("  since been answered. Remove the label or write its `**Waiting on:**` line:");
+    for (const hold of loud) console.log(`  ! #${hold.issueNumber}`);
+  }
+  if (quiet.length > 0) {
+    console.log("  A reason IS written — probably held on something real (a card, a rung). Worth");
+    console.log("  a glance only, to check the sentence is still true:");
+    for (const hold of quiet) console.log(`  · #${hold.issueNumber}`);
   }
 }
 

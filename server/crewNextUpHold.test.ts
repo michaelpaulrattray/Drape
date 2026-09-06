@@ -192,7 +192,9 @@ describe("a card his desk is holding gets a label the escalation gate can see", 
       ordered: [orderedCard(508)],
       deskOpen: [{ issueNumber: 508, cardId: "deploy-flip-508" }],
     });
-    expect(plan.apply).toEqual([{ issueNumber: 508, deskCardId: "deploy-flip-508" }]);
+    expect(plan.apply).toEqual([
+      { issueNumber: 508, deskCardId: "deploy-flip-508", bodyCarriesFossil: false },
+    ]);
     expect(plan.stale).toEqual([]);
   });
 
@@ -252,7 +254,11 @@ describe("a card his desk is holding gets a label the escalation gate can see", 
  * on a silent desk would un-hold a card nobody had read.
  */
 describe("a hold whose reason has gone is REPORTED, never cleared", () => {
-  it("⚠ #404's real shape: `blocked` with a written reason, desk silent — NOT reported", () => {
+  it("⚠ #404's real shape: `blocked` with a written reason, desk silent — reported QUIETLY", () => {
+    /* The first shape filtered this card out entirely, and that is the defect
+       the reviewer found: the marker line cannot tell a live hand-hold from a
+       FOSSIL one, so filtering on it freezes any card whose body ever carried
+       a line. It is reported; `hasWrittenReason` sets the loudness. */
     const plan = planDeskHoldLabels({
       ordered: [{
         issueNumber: 404,
@@ -261,16 +267,51 @@ describe("a hold whose reason has gone is REPORTED, never cleared", () => {
       }],
       deskOpen: [],
     });
-    expect(plan.stale).toEqual([]);
+    expect(plan.stale).toEqual([{ issueNumber: 404, hasWrittenReason: true }]);
     expect(plan.apply).toEqual([]);
   });
 
-  it("`blocked`, no written reason, desk silent — reported for a person", () => {
+  it("`blocked`, no written reason, desk silent — reported LOUDLY", () => {
     const plan = planDeskHoldLabels({
       ordered: [{ issueNumber: 508, labels: ["blocked"], body: "no marker line here" }],
       deskOpen: [],
     });
-    expect(plan.stale).toEqual([{ issueNumber: 508 }]);
+    expect(plan.stale).toEqual([{ issueNumber: 508, hasWrittenReason: false }]);
+  });
+
+  it("⚠ THE FOSSIL CARD: once hand-held, unblocked, now on his desk — the old line is flagged", () => {
+    /* PR #613 review, finding 1, the second symptom. #298 deliberately leaves a
+       rotted marker line in a body when a label is removed, because nothing
+       renders it. A hold applied HERE would adopt that sentence and show it
+       beside a brand-new chip, which is exactly the "stale reason outliving its
+       state" bug #298 was built to kill. The caller is told, and takes its
+       reason from the desk instead. */
+    const plan = planDeskHoldLabels({
+      ordered: [{
+        issueNumber: 508,
+        labels: ["founder-ordered"],
+        body: `${CREW_HOLD_MARKER} #391 — a hold that ended weeks ago.`,
+      }],
+      deskOpen: [{ issueNumber: 508, cardId: "deploy-flip-508" }],
+    });
+    expect(plan.apply).toEqual([
+      { issueNumber: 508, deskCardId: "deploy-flip-508", bodyCarriesFossil: true },
+    ]);
+  });
+
+  it("⚠ AND IT CANNOT FREEZE: the same fossil card, after his desk card is answered", () => {
+    /* The reviewer's own failure scenario, driven end to end. Under the first
+       shape this returned an EMPTY stale list — the card kept `blocked` for
+       ever and was named to nobody. */
+    const plan = planDeskHoldLabels({
+      ordered: [{
+        issueNumber: 508,
+        labels: ["founder-ordered", "blocked"],
+        body: `${CREW_HOLD_MARKER} #391 — a hold that ended weeks ago.`,
+      }],
+      deskOpen: [],
+    });
+    expect(plan.stale).toEqual([{ issueNumber: 508, hasWrittenReason: true }]);
   });
 
   it("the plan NEVER carries a removal — there is no shape for one", () => {
