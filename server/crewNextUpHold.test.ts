@@ -10,6 +10,7 @@ import {
   heldStateFromLabels,
   heldStatesFromLabels,
   holdReasonFromBody,
+  planDeskHoldLabels,
   resolveHold,
 } from "../shared/crewNextUpHold.js";
 
@@ -167,5 +168,134 @@ describe("the resolved verdict", () => {
       expect(resolveHold({ blockedOnYou: false, held: { state } })?.word)
         .toBe(CREW_HOLD_WORD[state]);
     }
+  });
+});
+
+/**
+ * ⚠ THE DESK'S ANSWER, TRANSLATED INTO THE LABEL VOCABULARY (#586).
+ *
+ * The incident: on 2026-09-06 the #508 Fable shift parked its card on his desk,
+ * removed `awaiting-fable`, and applied nothing in its place. Twenty-one
+ * minutes later the escalation gate answered *"NONE: the next card is #508,
+ * which an Opus shift can take"* — so an Opus shift launched and **#535, the
+ * next `awaiting-fable` card in his own order, was never escalated**. A hold
+ * that lives only in prose is invisible to the thing that launches shifts.
+ *
+ * The fixtures below are the four cards of that morning.
+ */
+describe("a card his desk is holding gets a label the escalation gate can see", () => {
+  const orderedCard = (issueNumber: number, labels: string[] = [], body = "") =>
+    ({ issueNumber, labels, body });
+
+  it("⚠ THE #586 CASE: on his desk, no hold label — apply `blocked`", () => {
+    const plan = planDeskHoldLabels({
+      ordered: [orderedCard(508)],
+      deskOpen: [{ issueNumber: 508, cardId: "deploy-flip-508" }],
+    });
+    expect(plan.apply).toEqual([{ issueNumber: 508, deskCardId: "deploy-flip-508" }]);
+    expect(plan.stale).toEqual([]);
+  });
+
+  it("the desk card ID rides along, so the report says WHY rather than just what", () => {
+    const plan = planDeskHoldLabels({
+      ordered: [orderedCard(508)],
+      deskOpen: [{ issueNumber: 508, cardId: "deploy-flip-508" }],
+    });
+    expect(plan.apply[0]?.deskCardId).toBe("deploy-flip-508");
+  });
+
+  it("a card already carrying ANY hold label is left alone — a second chip changes nothing", () => {
+    for (const label of Object.values(CREW_HOLD_LABELS)) {
+      const plan = planDeskHoldLabels({
+        ordered: [orderedCard(535, [label])],
+        deskOpen: [{ issueNumber: 535, cardId: "reimagine-design-535" }],
+      });
+      expect(plan.apply, `already held by ${label}`).toEqual([]);
+    }
+  });
+
+  it("⚠ THE NEGATIVE CONTROL: a card his desk does NOT name is never labelled", () => {
+    /* Without this arm the rule could be "label everything" and every arm
+       above would still pass. */
+    const plan = planDeskHoldLabels({
+      ordered: [orderedCard(543)],
+      deskOpen: [{ issueNumber: 508, cardId: "deploy-flip-508" }],
+    });
+    expect(plan.apply).toEqual([]);
+  });
+
+  it("a desk card that has been ANSWERED does not hold anything — only OPEN cards are passed in", () => {
+    /* The sweep filters on `state === "open"` before calling; this pins the
+       contract that an empty desk produces an empty plan rather than a
+       hold-everything default. */
+    expect(planDeskHoldLabels({ ordered: [orderedCard(543)], deskOpen: [] }).apply).toEqual([]);
+  });
+
+  it("two open desk cards naming one issue hold it once, not twice", () => {
+    const plan = planDeskHoldLabels({
+      ordered: [orderedCard(530)],
+      deskOpen: [
+        { issueNumber: 530, cardId: "tail-court-reimagine-530" },
+        { issueNumber: 530, cardId: "tail-court-verdict-530" },
+      ],
+    });
+    expect(plan.apply).toHaveLength(1);
+  });
+});
+
+/**
+ * ⚠ IT APPLIES AND IT NEVER REMOVES — the asymmetry the module header argues
+ * for, driven rather than promised.
+ *
+ * `blocked` is applied by hand for reasons that have nothing to do with his
+ * desk (#404 is blocked on #391's ladder fold), so a script that stripped it
+ * on a silent desk would un-hold a card nobody had read.
+ */
+describe("a hold whose reason has gone is REPORTED, never cleared", () => {
+  it("⚠ #404's real shape: `blocked` with a written reason, desk silent — NOT reported", () => {
+    const plan = planDeskHoldLabels({
+      ordered: [{
+        issueNumber: 404,
+        labels: ["design-unbuilt", "founder-ordered", "blocked"],
+        body: `${CREW_HOLD_MARKER} #391 — the blurb is one line per rung, and the ladder folds first.`,
+      }],
+      deskOpen: [],
+    });
+    expect(plan.stale).toEqual([]);
+    expect(plan.apply).toEqual([]);
+  });
+
+  it("`blocked`, no written reason, desk silent — reported for a person", () => {
+    const plan = planDeskHoldLabels({
+      ordered: [{ issueNumber: 508, labels: ["blocked"], body: "no marker line here" }],
+      deskOpen: [],
+    });
+    expect(plan.stale).toEqual([{ issueNumber: 508 }]);
+  });
+
+  it("the plan NEVER carries a removal — there is no shape for one", () => {
+    const plan = planDeskHoldLabels({
+      ordered: [{ issueNumber: 508, labels: ["blocked"], body: "" }],
+      deskOpen: [],
+    });
+    expect(Object.keys(plan).sort()).toEqual(["apply", "stale"]);
+  });
+
+  it("a card still on his desk is not stale, whatever its body says", () => {
+    const plan = planDeskHoldLabels({
+      ordered: [{ issueNumber: 508, labels: ["blocked"], body: "" }],
+      deskOpen: [{ issueNumber: 508, cardId: "deploy-flip-508" }],
+    });
+    expect(plan.stale).toEqual([]);
+  });
+
+  it("`awaiting-fable` with a silent desk is not this rule's business", () => {
+    /* Removing a Fable hold is a person's read of the card (#541 rule 3), and
+       this reader must not start quietly counting it as rot. */
+    const plan = planDeskHoldLabels({
+      ordered: [{ issueNumber: 535, labels: ["awaiting-fable"], body: "" }],
+      deskOpen: [],
+    });
+    expect(plan.stale).toEqual([]);
   });
 });

@@ -227,3 +227,91 @@ export function resolveHold(row: {
     because: row.held.because ?? null,
   };
 }
+
+/**
+ * ⚠ **MAKING THE LABELS TRUE — the sweep's half of the hold rule (#586).**
+ *
+ * The header above says `you` is derived from his desk and deliberately is not
+ * a label. That is right for the PAGE, and it left a hole everywhere else:
+ * **the gate that launches shifts, and every `gh issue list` reader, derive
+ * holds from LABELS ONLY.** They cannot see his desk.
+ *
+ * Measured 2026-09-06. The #508 Fable shift parked its card on his desk
+ * (`deploy-flip-508`, waiting on three Railway fields), removed
+ * `awaiting-fable`, and applied nothing in its place. Twenty-one minutes later
+ * the runner asked `scripts/next-up-escalation.mts` and got **`NONE: the next
+ * card is #508, which an Opus shift can take`** — so an Opus shift launched and
+ * **#535, the next `awaiting-fable` card in his own order, was not escalated.**
+ * #534 sat one row down in the same state. **A desk-held card with no label
+ * reads as takeable, and every Fable card behind it freezes** — #541's pattern
+ * in a new shape, one day after #541 closed.
+ *
+ * So the label is not a second copy of the desk; it is the desk's answer
+ * TRANSLATED into the one vocabulary the other readers have, re-derived every
+ * shift from the same source the page uses, which is what stops it drifting
+ * (working law 4 — derive, never mirror).
+ *
+ * # ⚠ IT APPLIES AND IT NEVER REMOVES, AND THAT ASYMMETRY IS THE WHOLE DESIGN
+ *
+ * Applying is safe: the worst case is a card held one sweep too long, and the
+ * next sweep is minutes away. **Removing is not.** `blocked` is applied by hand
+ * for reasons that have nothing to do with his desk — #404 is blocked on #391's
+ * ladder fold — and a script that stripped it because the desk was silent would
+ * un-hold a card nobody had read. The standing orders say so in as many words:
+ * *removing a hold is the act that lets work start*, and it is done by a person
+ * reading the card.
+ *
+ * The rot the header warns about — *"the queue claiming he owes an answer he
+ * has already given"* — is therefore answered by REPORTING rather than by
+ * removing. A hold applied by hand always carries its `CREW_HOLD_MARKER` line;
+ * one this function applied never does. So **`blocked`, no marker line, and a
+ * silent desk** is precisely the shape of a hold whose reason has gone, and it
+ * is named for a person instead of being quietly cleared.
+ */
+export type DeskHoldPlan = {
+  /** Cards his desk holds that carry no hold label at all — apply `blocked`. */
+  readonly apply: ReadonlyArray<{ readonly issueNumber: number; readonly deskCardId: string }>;
+  /**
+   * Cards carrying `blocked` with no written reason that his desk no longer
+   * names. Reported for a person; NEVER unlabelled here.
+   */
+  readonly stale: ReadonlyArray<{ readonly issueNumber: number }>;
+};
+
+export function planDeskHoldLabels(input: {
+  /** The open `founder-ordered` queue, as `gh issue list` returns it. */
+  readonly ordered: ReadonlyArray<{
+    readonly issueNumber: number;
+    readonly labels: readonly string[];
+    readonly body: string;
+  }>;
+  /** OPEN `needsYou` cards on the briefing, by the issue each one names. */
+  readonly deskOpen: ReadonlyArray<{ readonly issueNumber: number; readonly cardId: string }>;
+}): DeskHoldPlan {
+  const deskByIssue = new Map<number, string>();
+  for (const card of input.deskOpen) {
+    /* First card wins: two open cards naming one issue is his desk asking twice,
+       and either id explains the hold. */
+    if (!deskByIssue.has(card.issueNumber)) deskByIssue.set(card.issueNumber, card.cardId);
+  }
+
+  const apply: Array<{ issueNumber: number; deskCardId: string }> = [];
+  const stale: Array<{ issueNumber: number }> = [];
+
+  for (const row of input.ordered) {
+    const onDesk = deskByIssue.get(row.issueNumber) ?? null;
+    const held = heldStateFromLabels(row.labels);
+    if (onDesk !== null) {
+      /* ⚠ ANY hold label is enough. A card already carrying `awaiting-fable` is
+         not takeable, which is the only thing this repair is about — piling
+         `blocked` on top would add a second chip and change nothing. */
+      if (held === null) apply.push({ issueNumber: row.issueNumber, deskCardId: onDesk });
+      continue;
+    }
+    if (row.labels.includes(CREW_HOLD_LABELS.blocked) && holdReasonFromBody(row.body) === null) {
+      stale.push({ issueNumber: row.issueNumber });
+    }
+  }
+
+  return { apply, stale };
+}

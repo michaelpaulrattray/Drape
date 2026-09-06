@@ -81,7 +81,12 @@ import {
   planCardResolutions,
   promotionLine,
 } from "../shared/crewCardResolution.js";
-import { heldStateFromLabels, holdReasonFromBody } from "../shared/crewNextUpHold.js";
+import {
+  CREW_HOLD_LABELS,
+  heldStateFromLabels,
+  holdReasonFromBody,
+  planDeskHoldLabels,
+} from "../shared/crewNextUpHold.js";
 import {
   CREW_LADDER_GROUP_KEYS,
   RUNG_LABEL_PREFIX,
@@ -114,6 +119,26 @@ const WRITE = process.argv.includes("--write");
 
 type Json = Record<string, any>;
 
+/**
+ * ⚠ A WRITE THAT PRINTS NO JSON — `gh issue edit` answers with a URL, so the
+ * reader below would parse-fail on a call that SUCCEEDED and report the label
+ * as unwritten (#586). Two shapes, because they are two questions: `gh` asks
+ * *what does the record say*, this asks *did the write land*.
+ *
+ * Returns `true` on exit 0, `false` on anything else. Never throws, so a failed
+ * label cannot take the whole sweep down after it has already changed the
+ * briefing in memory.
+ */
+function ghWrite(args: string[]): boolean {
+  try {
+    execFileSync("gh", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    return true;
+  } catch (cause) {
+    console.error(`[warn] gh ${args.slice(0, 3).join(" ")} failed: ${(cause as Error).message}`);
+    return false;
+  }
+}
+
 /** `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
 function gh(args: string[]): unknown | null {
   try {
@@ -141,6 +166,9 @@ function prState(prNumber: number): string | null {
 const briefing = JSON.parse(readFileSync(BRIEFING, "utf8")) as Json;
 const changes: string[] = [];
 const skipped: string[] = [];
+/* Cards carrying `blocked` with no written reason his desk no longer names —
+   named for a person, never unlabelled here (#586). */
+let staleHolds: ReadonlyArray<{ issueNumber: number }> = [];
 
 /* ─── 1. NEXT UP — the founder-ordered queue, in the order a shift takes it ─── */
 
@@ -174,6 +202,61 @@ if (ordered === null) {
     non-urgent card above three urgent ones, which is a running order that no
     shift would obey.
   */
+  /*
+    ⚠ **THE LABELS ARE MADE TRUE BEFORE THE ROWS ARE BUILT (#586)**, so his page
+    and the readers that launch shifts agree after ONE run rather than after
+    two. `planDeskHoldLabels` owns the rule and the reasoning; this is its I/O.
+
+    The defect it closes: a shift that parks a card on his desk leaves a
+    sentence, and the escalation gate reads LABELS. On 2026-09-06 a desk-held
+    card with no label read as Opus-takeable and #535 — the next
+    `awaiting-fable` card in his own order — was not escalated.
+  */
+  const deskPlan = planDeskHoldLabels({
+    ordered: ordered.map((row) => ({
+      issueNumber: Number(row.number),
+      labels: Array.isArray(row.labels)
+        ? row.labels.map((label: Json) => String(label?.name ?? ""))
+        : [],
+      body: String(row.body ?? ""),
+    })),
+    deskOpen: ((briefing.needsYou ?? []) as Json[])
+      .filter((card) => card.state === "open" && typeof card.issueNumber === "number")
+      .map((card) => ({ issueNumber: Number(card.issueNumber), cardId: String(card.id) })),
+  });
+
+  /* Which issues ended up held, so the rows written below carry the label this
+     run applied rather than the one `gh` answered with a moment ago. */
+  const applied = new Set<number>();
+  for (const hold of deskPlan.apply) {
+    if (!WRITE) {
+      changes.push(
+        `HOLD: #${hold.issueNumber} would get \`blocked\` — his desk card `
+        + `\`${hold.deskCardId}\` is open and the card carries no hold label`,
+      );
+      continue;
+    }
+    const done = ghWrite([
+      "issue", "edit", String(hold.issueNumber), "--add-label", CREW_HOLD_LABELS.blocked,
+    ]);
+    if (!done) {
+      /* A label that could not be written is NOT reported as applied — the
+         whole point is that the gate reads labels, so a claim here with no
+         label there is the defect wearing the repair's clothes. */
+      skipped.push(
+        `HOLD: #${hold.issueNumber} could not be labelled \`blocked\` — the gate will still `
+        + `read it as takeable. Apply it by hand.`,
+      );
+      continue;
+    }
+    applied.add(hold.issueNumber);
+    changes.push(
+      `HOLD: #${hold.issueNumber} labelled \`blocked\` — his desk card \`${hold.deskCardId}\` is open`,
+    );
+  }
+
+  staleHolds = deskPlan.stale;
+
   const items = ordered
     .slice()
     .map((row) => {
@@ -194,7 +277,9 @@ if (ordered === null) {
         *"why was this skipped"*, and demanding prose would let a filer's
         omission quietly un-hold a card.
       */
-      const state = heldStateFromLabels(labels);
+      const state = heldStateFromLabels(
+        applied.has(Number(row.number)) ? [...labels, CREW_HOLD_LABELS.blocked] : labels,
+      );
       const because = state === null ? null : holdReasonFromBody(String(row.body ?? ""));
       return {
         issueNumber: Number(row.number),
@@ -366,6 +451,18 @@ if (heldCards.length > 0) {
   console.log("  parse, so each is left alone and named instead (#604):");
   for (const hold of heldCards) {
     console.log(`  ! ${hold.list} ${hold.id} (#${hold.issueNumber}) — ${hold.reason}`);
+  }
+}
+
+if (staleHolds.length > 0) {
+  console.log("");
+  console.log(`⚠ ${staleHolds.length} card(s) carry \`blocked\` with no reason written and nothing`);
+  console.log("  on his desk holding them. That is the shape of a hold this sweep applied whose");
+  console.log("  reason has since gone — but removing a hold is the act that lets work start, so");
+  console.log("  it is named for a person rather than cleared by a script (#586). Read each and");
+  console.log("  either remove the label or write its `**Waiting on:**` line:");
+  for (const hold of staleHolds) {
+    console.log(`  ! #${hold.issueNumber}`);
   }
 }
 
