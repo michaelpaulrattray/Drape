@@ -1,7 +1,7 @@
 {
-  "edition": 274,
-  "updatedAt": "2026-09-06T07:35:18.386Z",
-  "shift": "Foreman — your \"build it\" is recorded and Re-imagine starts next; meanwhile two instruments that had been quietly lying were fixed",
+  "edition": 275,
+  "updatedAt": "2026-09-06T10:10:35.984Z",
+  "shift": "Foreman (Fable) — Re-imagine is BUILT and live on your account: press the spiral on any brief box",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T07:35:20.970Z",
+      "readAt": "2026-09-06T10:10:59.153Z",
       "items": [
         {
           "issueNumber": 16,
@@ -249,13 +249,13 @@
     {
       "id": "reimagine-design-535",
       "issueNumber": 535,
-      "title": "Re-imagine — you said BUILD IT, and the build starts on the next shift",
-      "productImpact": "Your two words, on the card and on the frames, at 06:42 this morning. They are recorded word-for-word on the card and in the team’s own program file, and the card is no longer marked as waiting on you. Nothing is built yet: this is a feature, so it gets a whole shift to itself rather than being squeezed in beside small fixes, and the design report you approved is its instructions. You need do nothing further — the next thing you see on this is the working thing.",
-      "workedExample": "You press Re-imagine beside your brief box, your words come back richer, in the box, editable, with an undo. That is what is being built.",
-      "state": "answered",
+      "title": "Re-imagine is BUILT and live for you — press it, then your eye closes #535 and #534",
+      "productImpact": "Your 'build it' this morning is a working thing tonight. On the casting page, on any sheet's box, and on an uploaded concept's description, the small spiral now sends your words through the studio's writer and lands a new idea back in the box — editable, with Undo, another idea on every press, one quiet line when it has nothing to offer. The imagination level is gone everywhere (the settings modal is Style alone), the reading sentence on sheets is read-only with no pickers, and the box is the only place you edit — your two named defects ('slim build' on an ogre, edits tacked onto the end) are both dead. Typing an instruction into the box and pressing the spiral folds it in: 'make them older and give them a beard' came back as a silvered, bearded sixty-something, rewritten into the brief itself.",
+      "workedExample": "Type 'a pirate' on the casting page and press the spiral: a sea-worn idea arrives in your box, Undo under it. Press again: a different pirate. Then on a sheet, type an instruction after the brief and press — it folds in rather than dangling off the end.",
+      "state": "open",
       "filedAt": "2026-09-06T04:55:38.218Z",
       "options": [],
-      "recommendation": "Look at the frames, then reply on #535. If the shape is right, 'build it' is enough — the deletion list, the instruction change and the court are all specified and priced (court under the $50 line). If the glyph is wrong, say which of the three — or 'redraw'."
+      "recommendation": "Press it on your own briefs. Two things are still queued on the card before it closes: the suggestion chips beside the box (decision 12, next shift) and the court on the built writer (priced on the card, under the $50 line). Your eye closes #535 and #534 together whenever you are satisfied — nothing needs an answer to keep moving."
     },
     {
       "id": "deploy-flip-508",
@@ -1888,47 +1888,42 @@
   "eyeItems": [
     {
       "id": "reimagine-design-535-frames",
-      "state": "answered",
+      "state": "open",
       "cardId": null,
       "issueNumber": 535,
       "filedAt": "2026-09-06T04:55:38.218Z",
-      "title": "Re-imagine on the three surfaces — is this the shape you meant?",
-      "question": "These are design mockups drawn onto the running app, not shipped UI. The small spiral is the proposed glyph — it sits where the sparkle sits today, hover reads 'Re-imagine'. The settings chip and the sheet's record line read 'Photoreal' alone: the level is gone everywhere. Then your own two courts as strips: the top rows kept your pieces, the bottom rows carried the register — the pairs you judged 10x and 'much better'.",
+      "title": "Re-imagine, real and live — the three surfaces as they shipped tonight",
+      "question": "These are the shipped surfaces from the running app, not mockups: the spiral in your brief boxes, the idea landed in the box with its quiet line and Undo, the chip and record reading Photoreal alone, and the settings modal as a single Style column. Is this the thing you asked for?",
       "frames": [
         {
-          "key": "crew-eye/5124e397-0ccc-4950-8487-0d586e83a2bd.png",
-          "caption": "The casting page: the glyph beside Cast it, the chip reading Photoreal alone.",
-          "arm": "hero"
+          "key": "crew-eye/51a4a8f1-eb1e-4da4-9448-a5c720881a98.png",
+          "caption": "The casting page, dark: a pressed idea in the box, the line with Undo, the spiral beside Cast it, the chip reading Photoreal alone.",
+          "arm": "hero-dark"
         },
         {
-          "key": "crew-eye/66c4e41b-c576-4701-94c3-e4f6cd57e1df.png",
-          "caption": "After a press: your war-built woman written into the box, editable — one quiet line beneath with Undo.",
-          "arm": "hero-after"
+          "key": "crew-eye/36922aa9-9081-437d-8388-58f333096b3c.png",
+          "caption": "The same, light.",
+          "arm": "hero-light"
         },
         {
-          "key": "crew-eye/dc30aba0-b98d-4bcd-bf72-5a0ea8d8146e.png",
-          "caption": "The sheet: the glyph where the sparkle sat, the record line and gear reading Photoreal, the reading sentence read-only.",
-          "arm": "sheet"
+          "key": "crew-eye/a23c5559-c5de-4da3-b144-3abbe955b764.png",
+          "caption": "A sheet's dock, dark: the folded instruction ('make them older, give them a beard') rewritten INTO the brief, the spiral where the sparkle sat.",
+          "arm": "dock-dark"
         },
         {
-          "key": "crew-eye/998738b0-8910-4b8f-b966-2c984a087604.png",
-          "caption": "The concept upload: the description is a brief box too, so it gets the same glyph.",
+          "key": "crew-eye/832f62b0-9b03-455e-b549-9e3302f282c8.png",
+          "caption": "The same dock, light.",
+          "arm": "dock-light"
+        },
+        {
+          "key": "crew-eye/49bc0b27-0072-4fc2-b0c7-c2b97e9d43e5.png",
+          "caption": "An uploaded concept: the reader's description re-imagined in place, the spiral on the description's label line.",
           "arm": "concept"
         },
         {
-          "key": "crew-eye/77ec21f0-4e63-4dfe-beff-72612c7e0d95.png",
-          "caption": "Three glyph candidates at every size the product draws — the spiral is the one in the frames; the turn-arrow reads as Retry, the loop dies small. Yours to pick or redraw.",
-          "arm": "glyph"
-        },
-        {
-          "key": "crew-eye/ad63c7d0-7ba0-4103-a61d-b0e18e0e31cc.png",
-          "caption": "Your first court: roll 244 kept every piece (four of one collar), roll 245 carried the register (four different women). Your 10x verdict, as a picture.",
-          "arm": "court-1"
-        },
-        {
-          "key": "crew-eye/82ccce82-d2d4-4d17-b390-b7fdf9999221.png",
-          "caption": "Your second court: the sphinx with materials kept as pieces, against colours carried as register — your 'much better'.",
-          "arm": "court-2"
+          "key": "crew-eye/fda002ae-947e-4460-8f66-26dc08eb4331.png",
+          "caption": "Cast settings now: Style alone. The Imagination column is gone.",
+          "arm": "settings"
         }
       ]
     },
@@ -4041,6 +4036,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-598-reimagine-535",
+      "status": "merged",
+      "prNumber": 598,
+      "title": "Re-imagine — the writer on every brief box, and the imagination level deleted (#535)",
+      "note": "The whole build in one change: the new door (free to you, rate-limited, dark to everyone but your account), the three surfaces, the read-only reading sentence, and roughly 2,400 lines of the old level's machinery removed. Two review rounds, seven findings, all taken — the sharpest one caught the new age guard turning itself off on briefs like 'a young woman in her 20s', fixed and pinned. Deployed by the merge itself: your Railway flip worked on its first real merge — production served the new build 93 seconds after the squash, verified at the health endpoint's build hash."
+    },
+    {
       "id": "pr-593-citing-prs-514",
       "status": "merged",
       "prNumber": 593,
@@ -6024,10 +6026,11 @@
     143,
     144,
     145,
-    146
+    146,
+    147
   ],
   "nextUp": {
-    "readAt": "2026-09-06T07:35:20.146Z",
+    "readAt": "2026-09-06T10:10:58.318Z",
     "items": [
       {
         "issueNumber": 404,
@@ -6036,14 +6039,6 @@
         "held": {
           "state": "blocked",
           "because": "#391 — the blurb is one line per rung, and the ladder folds from twelve to about seven first. Writing twelve now throws five away."
-        }
-      },
-      {
-        "issueNumber": 508,
-        "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
-        "urgent": false,
-        "held": {
-          "state": "blocked"
         }
       },
       {
@@ -6058,11 +6053,7 @@
       {
         "issueNumber": 535,
         "title": "Re-imagine: the author becomes a visible writing assistant on the brief, and the imagination level goes — a DESIGN card at N1 for his word (5 Sep)",
-        "urgent": false,
-        "held": {
-          "state": "fable",
-          "because": "a change to WHAT HE JUDGES — not a design decision any more, he has made that. The build removes the imagination level from the author road and rewrites what t…"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 543,
