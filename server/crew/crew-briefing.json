@@ -1,7 +1,7 @@
 {
-  "edition": 269,
-  "updatedAt": "2026-09-05T23:20:00.000Z",
-  "shift": "Foreman — two messages that told a shift the wrong thing, both fixed at the source",
+  "edition": 270,
+  "updatedAt": "2026-09-06T00:45:00.000Z",
+  "shift": "Fable (escalated) — the plan ladder folds to seven, the top rung answered by email",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-05T22:57:04.263Z",
+      "readAt": "2026-09-06T00:37:14.272Z",
       "items": [
         {
           "issueNumber": 16,
@@ -298,8 +298,8 @@
     {
       "id": "ladder-fold-391",
       "issueNumber": 391,
-      "title": "Answered — drop the four Plus plans and hide Ultimate; the build is queued (#391)",
-      "productImpact": "Your answer, verbatim: “go with your reccomendation” — so the ladder folds to Free · Starter · Pro · Studio · Business · Scale · Enterprise, Ultimate is hidden and offered by email, and the seven survivors keep their prices and credits exactly as they are. Nothing to migrate: all four live accounts are on Free. Your one click, when you are ready: archiving the five removed plans’ Stripe products — that lives in Stripe, not in our code. The build itself is queued as money-path work on #391.\n\nYou ruled on 1 September that twelve plans is too many to sell and it should be about seven. That ruling has been sitting at the top of your queue for four days and no shift has touched it, correctly — every plan is a live product in Stripe, and which ones survive is a pricing decision, not an engineering one.\n\nWhat was missing is that this page never told you it was waiting on you. It has been sitting in NEXT UP looking like queued work. That is fixed tonight: your queue now marks which rows are waiting on you and which are waiting on a reviewer, so you can see at a glance that nothing there is actually moving.",
+      "title": "Done — the ladder is folded and live: six paid plans plus Free, Ultimate offered by email (#391)",
+      "productImpact": "Your answer, verbatim: “go with your reccomendation” — and it is built and deployed. The plan picker shows Free · Starter · Pro · Studio · Business · Scale · Enterprise, every price and credit amount exactly where it was. Ultimate appears nowhere and cannot be bought through the app; under the ladder one quiet line says “Need a higher limit? Write to support@klieglabs.com — larger plans are arranged personally.” A person writes in, you decide, and if you approve we send a checkout link by hand. Your one remaining click, whenever you like: archive the removed plans in the Stripe dashboard — that lives in Stripe, not in our code, and nothing in the product waits on it. One optional tidy-up is recorded on the card for a future ceremony: the database column still ACCEPTS the four old plan names (nobody has ever been on them); removing them is a one-command act that only you run, and nothing depends on it.",
       "workedExample": "The twelve today, read from the code rather than from a document:\n\n    Free      Starter $27   Pro $68    Studio $159\n    Studio Plus $375        Business $840\n    Business Plus $1,950    Scale $4,800\n    Scale Plus $8,800       Enterprise $15,000\n    Enterprise Plus $27,000 Ultimate $48,000\n\nFour of them are a “Plus” version of the one above. Drop those four and hide Ultimate behind “ask us”, and you are left with exactly the seven you described:\n\n    Free  Starter  Pro  Studio  Business  Scale  Enterprise\n\nAND ONE QUESTION IS ALREADY ANSWERED. The card said this needed a plan for anyone already on a rung that disappears. I checked the live database tonight: there are four accounts and all four are on Free. Nobody is on a paid plan at all, so nobody has to be moved. That worry is gone — today. It comes back the moment a real customer subscribes, which is the argument for doing this before launch rather than after.",
       "options": [
         {
@@ -319,7 +319,7 @@
         }
       ],
       "recommendation": "(a), with (b)'s answer to the credits: drop the four Plus plans, hide Ultimate behind an email, and leave the seven survivors' prices and credit amounts exactly where they are. It is the smallest change that matches your ruling, and with nobody on a paid plan it costs nothing to make now. The one thing we cannot choose for you is whether the Studio-to-Business gap is too big — if it is, that is the moment to move a number, and it is a pricing call.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-05"
     },
     {
@@ -3973,6 +3973,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-583-ladder-fold-391",
+      "title": "The plan ladder is six paid plans plus Free now — and the biggest one is asked for, not scrolled past (#391)",
+      "status": "merged",
+      "prNumber": 583,
+      "note": "Your ruling, built: the four Plus plans are gone, Ultimate no longer appears anywhere, and under the plan cards sits one quiet line — “Need a higher limit? Write to support@klieglabs.com — larger plans are arranged personally.” No price is published for the hidden plan and nobody can buy it through the app: someone writes in, you decide, and if you approve we send them a checkout link by hand. Every surviving plan’s price and credit amount is exactly what it was — that was your ruling and the tests now pin it. Two rounds of review; the real catch was that an account you hand-sell onto the hidden plan would have been captioned ‘Free’ in Settings — fixed and photographed working. Your one remaining click, whenever you like: archiving the removed plans in the Stripe dashboard. Nothing in the product waits on it."
+    },
+    {
       "id": "pr-581-push-cause-577",
       "title": "The publish now reads WHY it failed before telling anyone how to fix it (#577)",
       "status": "merged",
@@ -5911,19 +5918,12 @@
     140,
     141,
     142,
-    143
+    143,
+    144
   ],
   "nextUp": {
-    "readAt": "2026-09-05T22:57:03.431Z",
+    "readAt": "2026-09-06T00:37:13.160Z",
     "items": [
-      {
-        "issueNumber": 391,
-        "title": "His ladder ruling: twelve rungs fold to SEVEN, with the top one hidden and offered by email on request",
-        "urgent": false,
-        "held": {
-          "state": "fable"
-        }
-      },
       {
         "issueNumber": 404,
         "title": "The plan card's blurb slot is empty on purpose — his one-line positioning statement, best written after the ladder folds",
