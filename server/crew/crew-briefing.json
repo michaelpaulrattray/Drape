@@ -1,7 +1,7 @@
 {
-  "edition": 271,
-  "updatedAt": "2026-09-06T02:15:00.000Z",
-  "shift": "Fable (escalated) — deploy on merge: the design is taken, the dark half is live, three clicks of yours flip the road",
+  "edition": 272,
+  "updatedAt": "2026-09-06T04:20:00.000Z",
+  "shift": "Foreman — two quiet safety nets repaired: the scripts that spend your credits now refuse a mistyped word, and the 'may already be fixed' flag stopped having an expiry date",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T01:58:53.517Z",
+      "readAt": "2026-09-06T04:12:15.975Z",
       "items": [
         {
           "issueNumber": 16,
@@ -3984,6 +3984,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-587-strict-args-345",
+      "title": "A mistyped word can no longer start a job that spends your credits (#345)",
+      "status": "merged",
+      "prNumber": 587,
+      "note": "Three of our internal tools charge real credits to your account — one of them 125 at a time, another 25 a step. All three read their command line in a way that **could not fail on a word it had never been told about**: a typo, or the safest-sounding word an operator can type, was silently thrown away and the tool did the real thing on its default settings. That exact shape has now caused three incidents here, including one on production that made this page say 'Nothing running' while a shift was running. All three now refuse an unknown word and print the list of words they do know.\n\n**Two things turned up on the way that nobody was looking for.** The control that proves every credit-spending script obeys the freeze had been **crashing for twelve days** — a tidy-up on 25 August deleted two files it named, and it died on the missing name before reaching its last two checks. Nothing noticed, because nothing runs it automatically. It is fixed, it now runs in the automatic checks, and its first complete run in a fortnight came back clean: 501 files, nothing able to spend without the freeze.\n\nAnd one word — `--prove` — still walked straight past the new refusal, in five separate places. All five closed. Two review rounds, every finding taken; nothing was spent."
+    },
+    {
+      "id": "pr-588-possibly-fixed-window-507",
+      "title": "The 'may already be fixed' flag on your background-work panel had a quiet expiry date (#507)",
+      "status": "merged",
+      "prNumber": 588,
+      "note": "When you switch a background category on, the count beside it can say things like **'Bugs (19, 5 possibly fixed)'** — cards where the work looks like it already landed and nobody closed them. To work that out, the shift reads the recent merged changes; it read the last 500 and refused the whole thing if it hit that number. We are at 217 and merging several a day.\n\nSo in a few months every run would have refused, every category would have been written with **no flags at all**, and from this page that looks exactly like 'nothing is ever stale' — the most reassuring wrong answer this panel can give. The only trace would have been one line in a log nobody re-reads.\n\nThe limit is gone. It now reads back only as far as your oldest open card, which is all the flag can ever need and shrinks as old cards close — so it cannot expire. And if it ever does hit a wall, it names every card it could not judge instead of quietly saying nothing. Nothing on this page changes shape; the number simply keeps being true."
+    },
+    {
       "id": "pr-584-deploy-on-merge-508",
       "title": "Deploy on merge — the dark half: design recorded, safety nets built, everything inert until your three Railway fields (#508)",
       "status": "merged",
@@ -5605,10 +5619,10 @@
   "problems": [
     {
       "id": "queue-shape-0906-foreman",
-      "title": "The queue: 93 open, 6 carrying your word, nothing urgent, 1 rotting",
+      "title": "The queue: 91 open, 5 carrying your word, nothing urgent, 1 rotting",
       "severity": "info",
       "state": "open",
-      "detail": "**The urgent band is empty for a second night.** Two cards closed tonight (#577 and #296, both below) and nothing new was filed — the first shift in a while that took work off the board without putting any back on.\n\nSix cards still carry your word, and one of them moved tonight without being built. **#391 — your plan ladder folding from twelve rungs to seven — has been sitting at the top of that list for five nights while shift after shift correctly stepped over it.** It is priced work on live subscription products, which no ordinary shift may touch. The reason it never moved is that nothing had ever said so in a way the machinery could read; I have now said it, so **the next shift starts on the seat that CAN take it and goes straight to that card.**\n\nThere is one honest gap in it, and it is yours rather than mine: your ruling settled which rungs survive, but not what the hidden top rung looks like to a customer — what they see where Ultimate used to be, and how they ask for it. That is a design question and it is on the card.\n\n**Your three replies about the tail court came in while I worked, and all three are acted on** — the question is closed, the whiskers are noted and untouched, and the reason it could never be reproduced is now written down.\n\n**#257** is still the one rotting card — untouched since 29 August. Nothing is broken because of it; it is named because a card going quiet gets said out loud rather than sinking."
+      "detail": "**The urgent band is empty for a third night, and the board got smaller again.** Two more cards closed tonight (#345's paid half and #507, both below) and one was filed — net two off the board.\n\nFive cards still carry your word and **not one of them is work a shift may take**: #508 waits on your three Railway fields, #543 waits on your verdict, #534 rides #535, #535 is a design question for you, and #404 needs your one-line positioning sentence. That is a healthy state rather than a stuck one — it means the queue in front of you is genuinely yours — but it is worth saying plainly, because from the row order it can look like five things nobody is doing.\n\n**#257** is still the one rotting card — untouched since 29 August. Nothing is broken because of it; it is named because a card going quiet gets said out loud rather than sinking."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -5940,7 +5954,7 @@
     144
   ],
   "nextUp": {
-    "readAt": "2026-09-06T01:58:52.674Z",
+    "readAt": "2026-09-06T04:12:15.234Z",
     "items": [
       {
         "issueNumber": 404,
@@ -5954,12 +5968,19 @@
       {
         "issueNumber": 508,
         "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked"
+        }
       },
       {
         "issueNumber": 534,
         "title": "The sheet never shows the machine's prompt — only the customer's words and what they changed on this roll, on a Follow too (his ruling, 5 Sep)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "a change to WHAT HE JUDGES — it rewrites what the sheet shows him under the customer's own brief, which is the surface his eye rules on at the N1 gate."
+        }
       },
       {
         "issueNumber": 535,
