@@ -1,7 +1,7 @@
 {
-  "edition": 280,
-  "updatedAt": "2026-09-06T16:14:05Z",
-  "shift": "Foreman (Opus) - two fixes for your page and the team's own tooling: a finished chore stops asking, and a rollback stops costing a wasted deploy check",
+  "edition": 281,
+  "updatedAt": "2026-09-06T17:55:40Z",
+  "shift": "Foreman (Opus) - two fixes to the team's own tools: the merge step stops reporting a success as a failure, and a card parked on your desk stops freezing the work queued behind it",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,11 +128,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "95 open · 6 carrying your word · 1 urgent (the publish). 13 closed in the last day, 2 tonight."
+        "source": "91 open · 2 carrying your word · none urgent. 14 closed today, 2 tonight. 1 unread a week."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T16:13:22.182Z",
+      "readAt": "2026-09-06T17:55:44.268Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4062,6 +4062,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-612-merge-receipt-568",
+      "title": "The tool that merges the team's work stopped telling us a finished job had failed (#568)",
+      "status": "merged",
+      "prNumber": 612,
+      "note": "On Friday a shift finished a job, the merge went through cleanly, and the tool then printed a crash. The work had landed; nothing anywhere said so. The shift only found out by going and looking it up by hand, and the next one at three in the morning could just as easily have concluded the opposite and done it all again. The cause: the command does two things at once - it merges the work on GitHub, then tidies up files on this machine - and reports both under one result, so a failure in the harmless second half read exactly like a failure in the first. It now reads the answer back from GitHub itself and says plainly which of four things happened, printing the receipt before it interprets anything. And it no longer asks for the tidy-up that broke, so the failure cannot happen at all. Nothing you can see changes; it buys back a wrong diagnosis at the worst possible moment."
+    },
+    {
+      "id": "pr-613-desk-hold-586",
+      "title": "A card sitting on your desk no longer quietly freezes the work queued behind it (#586)",
+      "status": "merged",
+      "prNumber": 613,
+      "note": "When you were waiting to enter three Railway fields, that card sat on your desk as it should - but the thing that decides which shift to launch next could not see your desk. It reads labels, and nobody had put one on. So it looked at that card, decided an ordinary shift could take it, and the design work queued behind it was skipped for the night. Nobody was careless; the page and the launcher were reading two different sources. Your desk's answer is now written into the labels the launcher does read, re-derived every shift from your desk itself so the two cannot drift apart. It only ever adds a hold and never removes one - taking a hold off is what lets work start, and that stays a person's decision - so a hold whose reason has gone gets named for someone to read rather than cleared by a script. The review caught a real bug in the first version: an old sentence left in a card could have been shown beside a brand-new hold, which is exactly the sort of wrong-looking page this was meant to stop."
+    },
+    {
       "id": "pr-609-desk-card-closed-604",
       "title": "A card you have already dealt with stops sitting on your desk asking (#604)",
       "status": "merged",
@@ -6095,7 +6109,7 @@
     151
   ],
   "nextUp": {
-    "readAt": "2026-09-06T16:13:21.232Z",
+    "readAt": "2026-09-06T17:55:43.466Z",
     "items": [
       {
         "issueNumber": 404,
