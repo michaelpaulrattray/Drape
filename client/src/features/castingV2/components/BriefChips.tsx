@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import { trpc } from "@/lib/trpc";
 
 import type { ReimagineState } from "./Reimagine";
@@ -100,25 +98,30 @@ export function BriefChips({
     would reserve height that appears late and pushes the dock (D-15).
   */
   const offered = chipsShown({ enabled, chips: chips.data?.chips });
-  /*
-    THE ONE THAT IS ALREADY IN THE BRIEF GOES INERT — driven, not designed
-    in the abstract: tapping the same chip twice folds the same direction in
-    twice, which reads as the studio not having noticed the first one.
-
-    Dimmed rather than REMOVED, because removing it reflows the row under a
-    finger that is still on it. It comes back the moment its fold does not
-    stand any more — Undo, or typing over it — because then it is a direction
-    on offer again.
-  */
-  const [taken, setTaken] = useState<string | null>(null);
-  const spent = reimagine.canUndo ? taken : null;
-
   if (offered.length === 0) return null;
 
   return (
     <div className="dpc-chips" role="group" aria-label={BRIEF_CHIPS_GROUP_LABEL}>
       {offered.map((chip) => {
-        const inert = reimagine.pending || spent === chip;
+        /*
+          THE ONE THAT IS ALREADY IN THE BRIEF GOES INERT — driven, not
+          designed in the abstract: tapping the same chip twice folds the
+          same direction in twice, which reads as the studio not having
+          noticed the first one.
+
+          ⚠ **Read off `reimagine.written`, which is the direction actually
+          STANDING in the box, and NOT off local state gated on `canUndo`**
+          (review of PR #601, finding 1). That first shape marked the chip
+          taken on the click and asked a shared undo slot whether it had
+          landed, so a tap that FAILED dimmed its chip on the strength of an
+          earlier press, and a press after a successful tap left the chip
+          dimmed over a direction it had just written over. Both are the
+          component promising something the box does not hold.
+
+          Dimmed rather than REMOVED, because removing it reflows the row
+          under a finger that is still on it.
+        */
+        const inert = reimagine.pending || reimagine.written === chip;
         return (
           <button
             key={chip}
@@ -128,7 +131,6 @@ export function BriefChips({
             aria-disabled={inert ? true : undefined}
             onClick={() => {
               if (inert) return;
-              setTaken(chip);
               reimagine.tap(chip);
             }}
           >

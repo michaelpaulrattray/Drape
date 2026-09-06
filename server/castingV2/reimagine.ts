@@ -112,6 +112,13 @@ export const REIMAGINE_ALLOWANCE_FLOOR = 40;
  * job and not a chip's.
  */
 export const REIMAGINE_DIRECTION_MARGIN = 40;
+/**
+ * The sentence that turns a tapped chip into the editing instruction the fold
+ * road already handles — OURS, not the customer's, which is why it is a
+ * constant with two readers: the composer and the refusal that keeps it out
+ * of a draft (review of PR #601, finding 2).
+ */
+export const DIRECTION_MARKER = "Apply this direction to the brief above:";
 /** A draft may exceed its allowance by this fraction before it is re-asked — the author road's own tolerance. */
 export const REIMAGINE_OVERRUN_TOLERANCE = 0.1;
 /** The author's output budget — the interpreter's figure, for its reason (reasoning tokens count). */
@@ -318,6 +325,16 @@ export function lockedTrioOf(briefText: string): LockedTrio {
  */
 export function reimagineRefusal(draft: string, allowance: number, seedText: string): string | null {
   if (draft.length === 0) return "Your previous reply was empty.";
+  /*
+    OUR OWN SCAFFOLDING, NEVER IN A DRAFT (review of PR #601, finding 2). The
+    seed no longer exempts the marker's words, so this is belt as well as
+    braces — but a draft that parrots the instruction line is a specific,
+    recognisable failure and it deserves the specific sentence rather than
+    whichever generic guard happens to catch a fragment of it.
+  */
+  if (draft.toLowerCase().includes(DIRECTION_MARKER.toLowerCase())) {
+    return "Your previous draft repeated the instruction line back. Write the brief itself — never the instruction you were given.";
+  }
   if (isStacked(draft)) {
     return "Your previous draft was more than one paragraph. Write ONE paragraph, with no blank line, no heading and no list.";
   }
@@ -533,8 +550,20 @@ export async function reimagineBrief(input: {
   const direction = input.direction?.trim() ?? "";
   const briefText =
     direction.length > 0
-      ? `${input.briefText.trim()}\n\nApply this direction to the brief above: ${direction}`
+      ? `${input.briefText.trim()}\n\n${DIRECTION_MARKER} ${direction}`
       : input.briefText.trim();
+  /*
+    ⚠ THE GUARDS' SEED IS THE CUSTOMER'S WORDS, NEVER OUR SCAFFOLDING
+    (review of PR #601, finding 2). Every word guard on this road is
+    seed-exempt — his own *"unless the user typed them"* — so passing the
+    COMPOSED text as the seed would exempt the marker sentence's own
+    vocabulary, and a draft echoing it would land in the customer's box
+    having passed every check. The customer's words are their brief plus the
+    direction they chose; the marker is ours, and it is exempted from
+    nothing.
+  */
+  const seedForGuards =
+    direction.length > 0 ? `${input.briefText.trim()}\n${direction}` : briefText;
   /*
     A STEER GETS THE BRIEF'S OWN LENGTH PLUS A LITTLE, not the press's 220.
     The paragraph above states the rule; this is the same rule as a number,
@@ -580,7 +609,7 @@ export async function reimagineBrief(input: {
     let model = first.provenance.model;
     let latencyMs = first.latencyMs;
     spentMs = latencyMs;
-    const why = reimagineRefusal(text, allowance, briefText);
+    const why = reimagineRefusal(text, allowance, seedForGuards);
     if (why) {
       refusals.push(why);
       log.warn({ allowance, why }, "[reimagine] re-asking once");
@@ -588,7 +617,7 @@ export async function reimagineBrief(input: {
       text = cleanReply(second.text);
       model = second.provenance.model;
       latencyMs += second.latencyMs;
-      const stillWhy = reimagineRefusal(text, allowance, briefText);
+      const stillWhy = reimagineRefusal(text, allowance, seedForGuards);
       if (stillWhy) {
         refusals.push(stillWhy);
         log.warn({ why: stillWhy }, "[reimagine] second draft refused too — nothing to offer, the words stand");

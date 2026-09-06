@@ -10,9 +10,11 @@ import {
   normalizeChip,
 } from "./briefChips";
 import {
+  DIRECTION_MARKER,
   REIMAGINE_DIRECTION_MARGIN,
   REIMAGINE_WORD_BUDGET,
   reimagineBrief,
+  reimagineRefusal,
 } from "./reimagine";
 import { countWords } from "./promptAuthor";
 import type { TextEngine } from "../providers/types";
@@ -78,6 +80,15 @@ describe("a chip is written from HER brief, not from a list (#535 decision 12)",
 
   it("refuses a colour the brief never asked about", () => {
     expect(chipRefusal("piercing blue eyes", OGRE)).not.toBeNull();
+    /*
+      And her OWN colour comes back to her — across spellings, because the
+      exemption side is a substring while the refusal side stays a whole word
+      (review of PR #601, finding 4). Widening the exemption can only return a
+      colour she already wrote; it can never admit one she did not.
+    */
+    expect(chipRefusal("blond gone coarse with age", "a blonde surfer, weather-beaten")).toBeNull();
+    expect(chipRefusal("grey at the temples", "a greying detective")).toBeNull();
+    expect(chipRefusal("grey at the temples", OGRE)).not.toBeNull();
   });
 
   it("refuses the locked trio — a chip may not age, sex or re-species the subject", () => {
@@ -290,6 +301,34 @@ describe("the tap is a FOLD — written into the brief, never tacked onto its en
     await reimagineBrief({ engine, briefText: OGRE });
     expect(asked()[0]).not.toContain("that is a STEER");
     expect(asked()[0]).toContain(`at most ${REIMAGINE_WORD_BUDGET} words`);
+  });
+
+  /*
+    ⚠ OUR SCAFFOLDING IS NOT THE CUSTOMER'S WORDS (review of PR #601,
+    finding 2). Every word guard on this road is seed-exempt, so composing
+    the marker sentence INTO the guards' seed would exempt its own
+    vocabulary and a draft echoing it would pass every check into her box.
+    Two arms, because the fix is two things: the seed no longer carries the
+    marker, and a draft that parrots it is refused by name.
+  */
+  it("a draft that parrots the instruction line is refused", async () => {
+    const parrot = `${DIRECTION_MARKER} weathered by a hard country. An ogre chieftain in his 50s.`;
+    const { engine, calls } = engineSaying([parrot, parrot]);
+    const outcome = await reimagineBrief({
+      engine,
+      briefText: OGRE,
+      direction: "weathered by a hard country",
+    });
+    expect(outcome.kind).toBe("nothing");
+    expect(outcome.refusals[0]).toContain("repeated the instruction line");
+    expect(calls()).toBe(2);
+  });
+
+  it("the guards' seed is her brief plus her chosen direction, never the marker", () => {
+    /* A whole-word guard exempts what the SEED says; the marker's own words must not be in it. */
+    expect(reimagineRefusal(`x ${DIRECTION_MARKER} y`, 400, `${OGRE}\nweathered by a hard country`)).toContain(
+      "repeated the instruction line",
+    );
   });
 
   it("a plain press sends no direction line at all", async () => {

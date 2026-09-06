@@ -56,6 +56,20 @@ export type ReimagineState = {
   line: "idea" | "direction" | "nothing" | null;
   canUndo: boolean;
   /**
+   * The direction whose fold is STANDING in the box right now, or null.
+   *
+   * ⚠ **It exists because `canUndo` was asked this question and cannot answer
+   * it** (review of PR #601, finding 1). `canUndo` is true after ANY
+   * successful write, so a chip tap that failed left its chip dimmed as
+   * "already folded in" — the fold that made `canUndo` true was an earlier
+   * press — and a press AFTER a successful tap left the chip dimmed although
+   * its direction had just been written over. This is set only by a tap that
+   * SUCCEEDED, on its own flight, and cleared by a press, an undo or a
+   * keystroke, so the strip's promise ("it comes back the moment its fold
+   * does not stand any more") is the same fact the box holds.
+   */
+  written: string | null;
+  /**
    * The box holds no words to press on — the glyph dims rather than firing
    * (review of PR #598, finding 4: an empty press met the schema's `min(1)`
    * and the error path said "your words stand" over no words at all). Dimmed
@@ -85,6 +99,8 @@ export function useReimagine(input: {
 }): ReimagineState {
   const mutation = trpc.castingV2.reimagine.useMutation();
   const [line, setLine] = useState<ReimagineState["line"]>(null);
+  /* The direction standing in the box — see `ReimagineState.written`. */
+  const [written, setWritten] = useState<string | null>(null);
   /*
     One level of undo, a ref rather than state: it is read only inside
     handlers, and it must be captured at the press — the value the customer
@@ -121,7 +137,10 @@ export function useReimagine(input: {
             prior.current = was;
             input.onValue(outcome.text);
             setLine(said);
+            /* A press writes over whatever direction stood, so it clears it. */
+            setWritten(direction);
           } else {
+            /* Nothing was written, so nothing changed about what stands. */
             setLine("nothing");
           }
         },
@@ -145,15 +164,27 @@ export function useReimagine(input: {
     input.onValue(prior.current);
     prior.current = null;
     setLine(null);
+    setWritten(null);
   };
 
   const typed = () => {
     flight.current += 1;
     prior.current = null;
     if (line !== null) setLine(null);
+    if (written !== null) setWritten(null);
   };
 
-  return { pending: mutation.isPending, line, canUndo: prior.current !== null, empty, press, tap, undo, typed };
+  return {
+    pending: mutation.isPending,
+    line,
+    canUndo: prior.current !== null,
+    written,
+    empty,
+    press,
+    tap,
+    undo,
+    typed,
+  };
 }
 
 /**

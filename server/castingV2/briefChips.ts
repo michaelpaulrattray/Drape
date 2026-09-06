@@ -273,8 +273,16 @@ export function chipRefusal(chip: string, briefText: string): string | null {
   }
   if (chipIsOffTheOldLists(trimmed)) return "a fragment off the old lists, not out of the brief";
   const lowerBrief = briefText.toLowerCase().replace(/\s+/g, " ");
+  /*
+    ⚠ The EXEMPTION side is a substring, deliberately, while the REFUSAL side
+    stays a whole word (review of PR #601, finding 4): a brief saying
+    "blonde" must exempt a chip saying "blond", and "greying" must exempt
+    "grey". Widening only the exemption can only ever let a colour the
+    customer already named come back to them — it can never admit one they
+    did not write, which is the thing decision 6 actually bans.
+  */
   const colour = CHIP_COLOUR_WORDS.find(
-    (word) => saysWord(lower, word) && !saysWord(lowerBrief, word),
+    (word) => saysWord(lower, word) && !lowerBrief.includes(word),
   );
   if (colour) return `"${colour}" pins a colour the brief never asked for`;
   const forbidden = neverWrittenIn(trimmed, briefText);

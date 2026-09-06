@@ -66,11 +66,34 @@ describe("the component", () => {
   */
   it("the chip already folded in goes inert while its fold stands", async () => {
     const code = (await chipsSource()).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-    expect(code).toContain("const spent = reimagine.canUndo ? taken : null;");
-    expect(code).toContain("const inert = reimagine.pending || spent === chip;");
+    expect(code).toContain("const inert = reimagine.pending || reimagine.written === chip;");
     expect(code).toContain("if (inert) return;");
-    /* Dimmed, never filtered out of the row. */
-    expect(code).not.toContain(".filter((chip) => chip !== taken)");
+    /* Dimmed, never filtered out of the row — removing it reflows under a finger. */
+    expect(code).not.toContain(".filter((chip) => chip !==");
+    /*
+      ⚠ Read off the direction that is actually STANDING, never off a local
+      optimistic flag gated on the shared undo slot (review of PR #601,
+      finding 1): that shape dimmed a chip whose tap had FAILED, on the
+      strength of an earlier press.
+    */
+    expect(code).not.toContain("canUndo");
+    expect(code).not.toContain("useState");
+  });
+
+  it("the standing direction is set only by a tap that landed, and cleared by press, undo and typing", async () => {
+    const code = (await readFile(new URL("./components/Reimagine.tsx", import.meta.url), "utf8"))
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    /* Inside the success branch, so a failed or "nothing" reply changes nothing. */
+    const success = code.slice(code.indexOf('if (outcome.kind === "idea")'));
+    expect(success.slice(0, 320)).toContain("setWritten(direction)");
+    /* A press carries `direction === null`, so the same line clears it. */
+    expect(code).toContain('const press = () => send(null, "idea");');
+    /* And both ways back out clear it. */
+    const undo = code.slice(code.indexOf("const undo = () =>"));
+    expect(undo.slice(0, 260)).toContain("setWritten(null)");
+    const typed = code.slice(code.indexOf("const typed = () =>"));
+    expect(typed.slice(0, 260)).toContain("setWritten(null)");
   });
 });
 
