@@ -26,7 +26,6 @@
  * cast's creative content — the composed prompt, the archetype thesis, the
  * character notes — stays inside `compiledBrief` and stays here.
  */
-import { IMAGINATIONS, type Imagination } from "../../shared/imagination";
 import { CAST_STYLES, type CastStyle } from "../../shared/castStyles";
 import { candidateFailureKind, type CandidateFailureKind } from "../../shared/candidateFailure";
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
@@ -125,14 +124,13 @@ export type RollProjection = {
    */
   statedWardrobe: boolean;
   /**
-   * HOW FAR THE AUTHOR WENT on this sheet (#131 slice E) — `low` | `max` on an
-   * author register, null everywhere else. The dock preselects the NEXT roll's
-   * meter from it, the way the path switch preselects from the sheet's path:
-   * a MAX sheet whose "Roll again" silently went out at LOW would be a wrong
-   * default on a paid action. Read through a validator like everything lifted
-   * out of `compiledBrief`.
+   * DID THIS SHEET COMPOSE ON THE AUTHOR ROAD — the register's own `kind`,
+   * validated (`rollComposedOnAuthorRoad`), replacing the `imagination` field
+   * that used to answer this question by proxy (#535: the level is gone; the
+   * road is the fact the sheet still needs — it decides the read-only reading
+   * sentence and which record lines draw).
    */
-  imagination: Imagination | null;
+  authorRoad: boolean;
   /**
    * WHICH STYLE's bundle closed the prompt (#142) — `photoreal` on an author
    * register that recorded one, null everywhere else INCLUDING author rows
@@ -140,34 +138,16 @@ export type RollProjection = {
    * and never back-fills a fact. Read through a validator like `imagination`.
    */
   style: CastStyle | null;
-  /**
-   * WHY THE AUTHOR SAT THIS SHEET OUT — two vocabularies, one line on the sheet.
-   *
-   * Rows written before #154: a roll the author road could not carry
-   * under `CASTING_CREATIVE_REGISTER_SCOPE` — a FOLLOW (`anchored`) or a roll
-   * carrying a chip unlock or override (`edited`) — composed HOUSE, and
-   * `briefCompiler` recorded the reason on the row (`register: { kind:
-   * "house", because }`). No new row records one; the rows already written
-   * still project here. Until this field the reason
-   * reached the ROW and never the SHEET: the customer saw an authored sheet,
-   * tapped Follow or removed a chip, and got a sheet with no prompt record, no
-   * settings line and no word about why — the author simply vanished.
-   *
-   * `static` (#252, his ruling on the card, 2026-08-30: *"(a) so the customer
-   * isn't lied to"*): a MAX roll whose author was refused twice by the road's
-   * own guards, or whose author call failed — the customer's words + the block
-   * stood, `mode: "static"` on the row. The row was careful to stay
-   * distinguishable and the SHEET was not: it said "Max imagination" and drew
-   * the prompt record with nothing marking that nobody authored it. One MAX
-   * call in five lost its author at the measured entrance (card #252), so this
-   * is a line a paying customer will actually meet.
-   *
-   * Null on every other register and on every unflagged roll (which has no
-   * register at all), so an unflagged sheet is byte-identical to today's. Read
-   * through a validator like `imagination`: an unknown reason is null, never
-   * forwarded.
-   */
-  authorSatOut: AuthorSatOutReason | null;
+  /*
+    `authorSatOut` LEFT THIS PROJECTION WITH THE IMAGINATION LEVEL (#535).
+    Its `static` sentence existed because a hidden mode could silently become
+    the other one (#252's lie); with the level gone the roll road never calls
+    the author at all, so no new row can sit anything out — and the Re-imagine
+    press says "nothing to offer" in the box, in the moment, instead of a
+    sheet confessing afterwards. The rows' `mode`/`because` records are
+    untouched (the row is the artifact); the field simply has no reader left,
+    which is the #534 precedent for dropping one.
+  */
   /**
    * WHAT THIS SHEET IS WEARING — the two paths (design §3.3, item 6).
    *
@@ -562,15 +542,6 @@ export function rollComposedOnAuthorRoad(compiledBrief: unknown): boolean {
  * projection dropped a field, and only because it had no reader left.
  */
 
-export function readImagination(compiledBrief: unknown): Imagination | null {
-  if (!compiledBrief || typeof compiledBrief !== "object") return null;
-  const register = (compiledBrief as { register?: unknown }).register;
-  if (!register || typeof register !== "object") return null;
-  const { kind, imagination } = register as { kind?: unknown; imagination?: unknown };
-  if (kind !== "author") return null;
-  return (IMAGINATIONS as readonly unknown[]).includes(imagination) ? (imagination as Imagination) : null;
-}
-
 export function readCastStyle(compiledBrief: unknown): CastStyle | null {
   if (!compiledBrief || typeof compiledBrief !== "object") return null;
   const register = (compiledBrief as { register?: unknown }).register;
@@ -578,42 +549,6 @@ export function readCastStyle(compiledBrief: unknown): CastStyle | null {
   const { kind, style } = register as { kind?: unknown; style?: unknown };
   if (kind !== "author") return null;
   return (CAST_STYLES as readonly unknown[]).includes(style) ? (style as CastStyle) : null;
-}
-
-/**
- * The two reasons the author road USED TO decline a roll under the flag (before
- * #154) — the vocabulary the compiler's former `houseBecause` wrote, pinned
- * here so the sheet's copy and the rows already written cannot drift apart (a
- * reason this list does not know projects null, and the arm in
- * `rollProjection.test.ts` that reads a made-up reason is what keeps that
- * honest rather than silent).
- *
- * ⚠ `static` is NOT in this list on purpose: it is not a `houseBecause` value
- * and no house row has ever carried it — it is derived below from an author
- * register's own `mode`, the field the compiler has always written when the
- * author was refused twice or failed (#252). A house row saying
- * `because: "static"` stays null, exactly like any other word this vocabulary
- * does not know.
- */
-export const AUTHOR_SAT_OUT_REASONS = ["anchored", "edited"] as const;
-export type AuthorSatOutReason = (typeof AUTHOR_SAT_OUT_REASONS)[number] | "static";
-
-export function readAuthorSatOut(compiledBrief: unknown): AuthorSatOutReason | null {
-  if (!compiledBrief || typeof compiledBrief !== "object") return null;
-  const register = (compiledBrief as { register?: unknown }).register;
-  if (!register || typeof register !== "object") return null;
-  const { kind, because, mode } = register as { kind?: unknown; because?: unknown; mode?: unknown };
-  /*
-    #252 (a), his ruling: a MAX roll that lost its author says so. `mode` is the
-    row's own record ("static" = refused twice or the call failed; seed + block
-    stood) — no other field is consulted, so a row written before `mode`
-    existed projects null here rather than a guess. Production held no such row
-    at the card's reading (0 of 4 MAX rolls), so nothing already rendered
-    changes meaning.
-  */
-  if (kind === "author") return mode === "static" ? "static" : null;
-  if (kind !== "house") return null;
-  return (AUTHOR_SAT_OUT_REASONS as readonly unknown[]).includes(because) ? (because as AuthorSatOutReason) : null;
 }
 
 function readFellBack(compiledBrief: unknown): boolean {
@@ -699,9 +634,8 @@ export function projectRoll(input: {
       cannot drift from the sentence it describes.
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
-    imagination: readImagination(input.roll.compiledBrief),
+    authorRoad: rollComposedOnAuthorRoad(input.roll.compiledBrief),
     style: readCastStyle(input.roll.compiledBrief),
-    authorSatOut: readAuthorSatOut(input.roll.compiledBrief),
     /*
       THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.
 

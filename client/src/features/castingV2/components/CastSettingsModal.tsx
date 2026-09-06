@@ -10,13 +10,6 @@ import {
   DEFAULT_CAST_STYLE,
   type CastStyle,
 } from "@shared/castStyles";
-import {
-  DEFAULT_IMAGINATION,
-  IMAGINATION_LINES,
-  IMAGINATION_NAMES,
-  IMAGINATIONS,
-  type Imagination,
-} from "@shared/imagination";
 
 import { castSettingsSummary } from "../castSettingsCopy";
 
@@ -38,9 +31,15 @@ import { castSettingsSummary } from "../castSettingsCopy";
  *                  described never IP-named (rule 9; §10b: *"coming soon
  *                  features so the modal stays true"*). An announcement is not
  *                  a dead control; a disabled pill would be (D-180).
- *   IMAGINATION  — the meter (slice E) moved in here, its home (§10 ruling 2:
- *                  *"selected inside the modal as a setting not outside of
- *                  it"*). Same component, same two words.
+ *
+ * ⚠ **THE IMAGINATION COLUMN IS GONE (#535, his decision 1: "Imagination as a
+ * level goes. … Style is the only setting").** The Low/Max choice was a
+ * decision offered with no basis for making it — the disappearing-technology
+ * gate's own failure shape — and #252 measured its honest state: one setting
+ * that works and one that was refused by our own guards 54% of the time. The
+ * author is the visible Re-imagine press on the brief box now; nothing here
+ * survives of the meter, and the modal is a single Style column.
+ *
  * No framing, lighting or background controls — advanced, N3. The modal never
  * shows the block's text.
  *
@@ -63,28 +62,15 @@ import { castSettingsSummary } from "../castSettingsCopy";
  */
 export function CastSettingsModal({
   style,
-  imagination,
-  followHeld,
   onStyle,
-  onImagination,
   onDismiss,
 }: {
   style: CastStyle;
-  imagination: Imagination;
-  /**
-   * TRUE DURING A STANDING FOLLOW (#177 Row A): an anchored roll never calls
-   * the author — the followed photograph holds the family — so the
-   * imagination row yields to a sentence saying so rather than standing as a
-   * meter that reads nothing (a dead control, the no-dead-controls ruling).
-   * The style row stays live: the style still picks the locked block.
-   */
-  followHeld?: boolean;
   onStyle: (style: CastStyle) => void;
-  onImagination: (imagination: Imagination) => void;
   onDismiss: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const isDefault = style === DEFAULT_CAST_STYLE && (followHeld || imagination === DEFAULT_IMAGINATION);
+  const isDefault = style === DEFAULT_CAST_STYLE;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -171,7 +157,6 @@ export function CastSettingsModal({
               className="dpc-setm__reset"
               onClick={() => {
                 onStyle(DEFAULT_CAST_STYLE);
-                if (!followHeld) onImagination(DEFAULT_IMAGINATION);
                 /*
                   `Math.max(0, …)` for the reason its sibling at `currentIndex`
                   has it: `findIndex` answers -1, and `index` clamps the TOP of
@@ -193,13 +178,10 @@ export function CastSettingsModal({
         </div>
 
         {/*
-          TWO COLUMNS AND NO NAV (§3a). The first version of this had a left nav
-          after the reference it was cut from, and his brief retires it with the
-          measurement: *"the nav cost 182px of a 724px modal to switch between
-          two things that both fit on screen, and the two settings are read as
-          one sentence — `Photoreal · Low` — so hiding half of it behind a click
-          is pure cost."* The chip that opens this modal says that sentence; the
-          modal should not then take it apart.
+          ONE COLUMN AND NO NAV. §3a retired the left nav with a measurement
+          (*"the nav cost 182px of a 724px modal to switch between two
+          things"*), and #535 retired the second column itself — Style is the
+          only setting now, which is his decision 1 verbatim.
         */}
         <div className="dpc-setm__body">
           <section className="dpc-setm__col dpc-setm__col--style" aria-label="Style">
@@ -303,59 +285,6 @@ export function CastSettingsModal({
             </div>
           </section>
 
-          <section className="dpc-setm__col dpc-setm__col--mind" aria-label="Imagination">
-            <span className="dpc-setm__colhead">Imagination</span>
-            <p className="dpc-setm__colline">What the studio does with the words you leave out.</p>
-
-            {followHeld ? (
-              /*
-                ⚠ **#177 Row A, AND HIS BRIEF DOES NOT KNOW ABOUT IT.** A follow
-                is held by the photograph of the face you picked; the anchored
-                roll never calls the author, so there is no meter to set. §3d
-                writes "two cards" unconditionally — drawing them here would put
-                a dead control back on the exact surface a founder ruling took
-                one off. The style half stays live, because the style still
-                picks the locked block.
-              */
-              <p className="dpc-setm__held">
-                A follow holds the look of the face you picked — imagination applies to fresh casts.
-              </p>
-            ) : (
-              /*
-                TWO CARDS, NOT A SLIDER AND NOT A SEGMENTED CONTROL (§3d). Max
-                does not do MORE of Low, it rewrites your brief: a track between
-                two stops invites a drag toward a middle that cannot exist and
-                frames a behaviour switch as a magnitude. And either control
-                would show only the selected consequence, when the consequence
-                IS the entire decision — so both lines stay on screen.
-              */
-              <div className="dpc-setm__minds">
-                {IMAGINATIONS.map((option) => {
-                  const on = imagination === option;
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      className={on ? "dpc-setm__mind dpc-setm__mind--on" : "dpc-setm__mind"}
-                      aria-pressed={on}
-                      onClick={() => onImagination(option)}
-                    >
-                      <span className="dpc-setm__mindtop">
-                        <span className="dpc-setm__mindname">{IMAGINATION_NAMES[option]}</span>
-                        {option === DEFAULT_IMAGINATION ? (
-                          <span className="dpc-setm__minddefault">DEFAULT</span>
-                        ) : null}
-                        {/* A spacer element, not `margin-left: auto` — his §4, for the whole surface. */}
-                        <span className="dpc-setm__mindair" aria-hidden="true" />
-                        {on ? <span className="dpc-setm__inuse">IN USE</span> : null}
-                      </span>
-                      <span className="dpc-setm__mindline">{IMAGINATION_LINES[option]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </section>
         </div>
 
         <div className="dpc-setm__foot">
@@ -381,18 +310,11 @@ export function CastSettingsModal({
  */
 export function CastSettingsButton({
   style,
-  imagination,
-  followHeld,
   onStyle,
-  onImagination,
   idPrefix,
 }: {
   style: CastStyle;
-  imagination: Imagination;
-  /** See `CastSettingsModal.followHeld` — during a standing follow the summary names the style alone, because that is all the next roll reads. */
-  followHeld?: boolean;
   onStyle: (style: CastStyle) => void;
-  onImagination: (imagination: Imagination) => void;
   idPrefix: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -429,17 +351,12 @@ export function CastSettingsButton({
           on #435 for one word from him.
         */}
         <Settings2 size={13} strokeWidth={1.9} className="dpc-setbtn__glyph" aria-hidden="true" />
-        <span className="dpc-setbtn__value">
-          {followHeld ? CAST_STYLE_NAMES[style] : castSettingsSummary(style, imagination)}
-        </span>
+        <span className="dpc-setbtn__value">{castSettingsSummary(style)}</span>
       </button>
       {open ? (
         <CastSettingsModal
           style={style}
-          imagination={imagination}
-          followHeld={followHeld}
           onStyle={onStyle}
-          onImagination={onImagination}
           onDismiss={() => setOpen(false)}
         />
       ) : null}

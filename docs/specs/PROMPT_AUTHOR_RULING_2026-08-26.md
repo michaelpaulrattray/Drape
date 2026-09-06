@@ -2,6 +2,19 @@
 
 **Status: RULED. Supersedes the compiler architecture of `CREATIVE_REGISTER_DESIGN.md` §1a/§1b as the roll road's design; the register's next revision is built to THIS. Court first (§6), under the spend threshold.**
 
+> ⚠ **PARTLY SUPERSEDED BY #535 — "build it", 2026-09-06
+> (`REIMAGINE_DESIGN_2026-09-06.md`).** The imagination METER is gone: §5's
+> MAX spec, rule 10, and every "imagination level/slider" clause below are
+> superseded — the author is a visible Re-imagine press on the brief box now
+> (`server/castingV2/reimagine.ts`), locked to sex/age/species when typed,
+> with the customer's own box as the fidelity control. Rule 3's clause that
+> the author writes "style, framing, background, lighting" is superseded the
+> other way: lighting/camera/framing/backdrop/scene are a BAN in the
+> Re-imagine instruction (his decision 7) because an authored lighting clause
+> can out-argue the locked block. **§1 (verbatim to the engine), the locked
+> block's ownership, rule 8 (prompt overrides), the budget's spirit and §6's
+> court method all still stand.** Kept as origin, not as law.
+
 Supersedes, explicitly: the "basics is the default birth state" law (2026-08-25, #63), the "wardrobe should be the default select" ruling (2026-08-22), the interpreter's *WHAT TO IGNORE COMPLETELY* discard list, and the register engagement gate. Both earlier outfit rulings are quoted in `shared/castingPaths.ts` and `CASTING_V2_BASICS_DEFAULT_DESIGN.md`; those files take a header pointing here.
 
 ## 0. The thesis, in his words

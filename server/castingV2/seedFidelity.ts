@@ -135,7 +135,13 @@ const ERA_DECADES = new Set(["70s", "80s", "90s"]);
  * elder adjectives ("aged", "mature") double as material/styling words and a
  * guard that refuses "aged leather" would be the typo gate owning a real word.
  */
-const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
+/**
+ * Exported since #535: the Re-imagine steering rule reads the same list, and
+ * a private copy over there is working law 4's mirror (review of PR #598,
+ * finding 3 — the copies agreed the day they were written, which is when
+ * mirrors always agree).
+ */
+export const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
 
 /** Every age band a readable claim in `text` resolves to, in the order the claims appear. */
 export function ageClaimsIn(text: string): AgeBand[] {
@@ -150,6 +156,28 @@ export function ageClaimsIn(text: string): AgeBand[] {
     }
   }
   return claims;
+}
+
+/**
+ * WHERE the readable claims sit — the same shapes, the same era filter, as
+ * character spans over the whitespace-normalised lowercase text (#535: the
+ * Re-imagine steering rule needs positions, and a second copy of the shapes
+ * over there would be working law 4's mirror). A span is reported only for a
+ * match that actually resolves to a band, exactly as `ageClaimsIn` counts it.
+ */
+export function ageClaimSpans(text: string): Array<{ start: number; end: number }> {
+  const lower = text.toLowerCase().replace(/\s+/g, " ");
+  const spans: Array<{ start: number; end: number }> = [];
+  for (const { shape, eraAmbiguous } of AGE_CLAIM_SHAPES) {
+    for (const match of Array.from(lower.matchAll(shape))) {
+      const token = match[1] ?? match[0];
+      if (eraAmbiguous && ERA_DECADES.has(token)) continue;
+      const claimed = /^\d+$/.test(token) ? bandOfYears(Number(token)) : BAND_OF_WORD[token] ?? null;
+      if (claimed === null) continue;
+      spans.push({ start: match.index ?? 0, end: (match.index ?? 0) + match[0].length });
+    }
+  }
+  return spans;
 }
 
 /**
@@ -207,55 +235,14 @@ export function saysSex(text: string, sex: Sex): boolean {
   return SEX_WORDS[sex].some((word) => saysWord(lower, word));
 }
 
-/**
- * THE FACTS THIS ROLL'S SEED STATED IN ITS OWN WORDS — read from the raw
- * seed, so nothing the reader merely INFERRED is ever demanded of the
- * rewrite. `sex` and `age` are null when the seed did not say them readably,
- * and a null fact is not checked at all.
- */
-export type SeedFacts = {
-  /** The reader's recorded age, kept only when the seed itself makes a readable claim. */
-  age: StatedAge | null;
-  /** The reader's recorded sex, kept only when the seed itself says it in words. */
-  sex: Sex | null;
-};
-
-/**
- * What the rewrite must keep, derived from the seed the customer typed and
- * the values the reader recorded. Both halves are required: the reader's
- * value is what a claim is compared against, and the seed is what says
- * whether the customer stated it at all.
- */
-export function seedFactsOf(seedText: string, reader: { sex: Sex | null; age: StatedAge | null }): SeedFacts {
-  const lower = seedText.toLowerCase().replace(/\s+/g, " ");
-  const seedSaysSex = reader.sex !== null && SEX_WORDS[reader.sex].some((word) => saysWord(lower, word));
-  /*
-    An age is checked only where the SEED makes a claim this module can read.
-    The reader sets `ageBand` from an idiom too ("a teenager", a stated year),
-    and demanding a rewrite restate a band the customer never wrote is how a
-    good rewrite gets refused and the customer silently loses MAX.
-  */
-  const seedClaims = reader.age !== null ? ageClaimsIn(seedText) : [];
-  return {
-    sex: seedSaysSex ? reader.sex : null,
-    age: seedClaims.length > 0 ? reader.age : null,
-  };
-}
-
-/**
- * THE FACT THE REWRITE DROPPED, in the words a re-ask can quote, or null.
- * Presence only — a contradiction is `ageContradictionIn`'s question, asked
- * separately so the two failures are told apart in the log and on the row.
- */
-export function droppedFactIn(content: string, facts: SeedFacts): string | null {
-  if (facts.sex && !saysSex(content, facts.sex)) {
-    return `the subject's sex (${facts.sex})`;
-  }
-  if (facts.age && ageClaimsIn(content).length === 0) {
-    return `the subject's age (${facts.age.phase ? `${facts.age.phase} ` : ""}${facts.age.band})`;
-  }
-  return null;
-}
+/*
+  `SeedFacts`, `seedFactsOf` and `droppedFactIn` RETIRED WITH THE MAX AUTHOR
+  (#535). Presence-of-every-stated-fact was that road's contract, and it IS
+  the pieces road the founder's two rolled courts rejected (rolls 244/245 and
+  243/246, his eye) — the Re-imagine press locks only sex, age and species
+  when typed (`reimagine.ts`, `lockedTrioOf`), and the result lands editable
+  in the customer's own box, which is the new fidelity control.
+*/
 
 /** Every sex value has surface words — asserted here so a widened vocabulary cannot ship a silent hole. */
 {

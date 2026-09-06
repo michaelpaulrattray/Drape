@@ -21,6 +21,7 @@ import {
   conceptCountLabel,
 } from "../conceptUpload";
 import { ACCEPTED_PICTURE_FILES } from "../pictureBytes";
+import { ReimagineButton, ReimagineLine, useReimagine } from "./Reimagine";
 import { CastingModal } from "@/foundation/CastingModal";
 
 /**
@@ -171,6 +172,16 @@ export function ConceptReviewModal({
   }, [description]);
 
   /*
+    RE-IMAGINE on the description box (#535): the reader's description is a
+    brief box like the others, so it gets the same glyph and the same
+    contract — a press writes a new idea into the box, editable, with undo.
+    Enabled unconditionally here because this modal is reachable only inside
+    `CASTING_CONCEPT_UPLOAD_SCOPE`, whose capture ANDs the author road's flag
+    (`captureCastingConceptUploadEnabled`).
+  */
+  const reimagine = useReimagine({ value: text, onValue: setText, enabled: true });
+
+  /*
     DEPTH-COUNTED, because `dragleave` fires every time the pointer crosses into
     a CHILD element — a naive pair of enter/leave handlers flickers the drop
     state on and off as the cursor moves over the text inside the zone.
@@ -317,22 +328,35 @@ export function ConceptReviewModal({
         {/* Nothing to review yet, and nothing to say about a field that is not there. */}
         {empty || refused ? null : (
           <>
-            <label className="dpc-modal__label" htmlFor="dpc-concept-description">
-              {CONCEPT_REVIEW_LABEL}
-            </label>
+            <span className="dpc-modal__labelrow">
+              <label className="dpc-modal__label" htmlFor="dpc-concept-description">
+                {CONCEPT_REVIEW_LABEL}
+              </label>
+              {/*
+                RE-IMAGINE (#535) — drawn only once there are words to press
+                on: while the reader is still writing there is nothing in the
+                box, and a control that can do nothing is D-180's dead end.
+              */}
+              {reading || description === null ? null : <ReimagineButton state={reimagine} />}
+            </span>
             {/* The house field box; the textarea inside it carries its own height. */}
             <div className="dpc-modal__field">
               <textarea
                 id="dpc-concept-description"
                 value={text}
                 placeholder={reading ? CONCEPT_REVIEW_READING : undefined}
-                disabled={reading}
+                disabled={reading || reimagine.pending}
                 rows={6}
                 aria-label={CONCEPT_REVIEW_LABEL}
-                aria-busy={reading}
-                onChange={(event) => setText(event.target.value)}
+                aria-busy={reading || reimagine.pending}
+                onChange={(event) => {
+                  /* Typing clears the Re-imagine line and spends the undo (#535 §1). */
+                  reimagine.typed();
+                  setText(event.target.value);
+                }}
               />
             </div>
+            <ReimagineLine state={reimagine} />
           </>
         )}
 

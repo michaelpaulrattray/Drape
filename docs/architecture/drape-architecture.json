@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8c4899c80d03b70d"
+    "sourceFingerprint": "77e338bb61a874f8"
   },
   "domains": [
     {
@@ -38,12 +38,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 184
+      "moduleCount": 185
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 46
+      "moduleCount": 47
     },
     {
       "id": "domain:client-shared",
@@ -128,7 +128,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 52
+      "moduleCount": 51
     },
     {
       "id": "domain:staff",
@@ -1617,6 +1617,12 @@
     {
       "id": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "path": "client/src/features/castingV2/components/RefinePanel.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/Reimagine.tsx",
+      "path": "client/src/features/castingV2/components/Reimagine.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -4543,6 +4549,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/reimagine.ts",
+      "path": "server/castingV2/reimagine.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/reliabilityReport.ts",
       "path": "server/castingV2/reliabilityReport.ts",
       "domain": "casting-v2",
@@ -6055,12 +6067,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:shared/imagination.ts",
-      "path": "shared/imagination.ts",
-      "domain": "shared",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:shared/inkCutRoute.ts",
       "path": "shared/inkCutRoute.ts",
       "domain": "shared",
@@ -7460,6 +7466,16 @@
       "id": "route:castingV2.refine",
       "namespace": "castingV2",
       "name": "refine",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.reimagine",
+      "namespace": "castingV2",
+      "name": "reimagine",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -10669,6 +10685,10 @@
       "path": "client/src/features/castingV2/railWaitAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/readOnlyEcho.test.ts",
+      "path": "client/src/features/castingV2/readOnlyEcho.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/referenceAttachCopy.test.ts",
       "path": "client/src/features/castingV2/referenceAttachCopy.test.ts"
     },
@@ -11785,10 +11805,6 @@
       "path": "server/castingV2/heritagePromotion.test.ts"
     },
     {
-      "id": "test:server/castingV2/imaginationMeter.test.ts",
-      "path": "server/castingV2/imaginationMeter.test.ts"
-    },
-    {
       "id": "test:server/castingV2/inheritedVerdict.test.ts",
       "path": "server/castingV2/inheritedVerdict.test.ts"
     },
@@ -12259,6 +12275,10 @@
     {
       "id": "test:server/castingV2/refusalTag.test.ts",
       "path": "server/castingV2/refusalTag.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/reimagine.test.ts",
+      "path": "server/castingV2/reimagine.test.ts"
     },
     {
       "id": "test:server/castingV2/reliabilityReport.test.ts",
@@ -16519,11 +16539,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/castSettingsCopy.ts",
-      "to": "module:shared/imagination.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/chipEdit.ts",
       "to": "module:client/src/features/castingV2/briefDraft.ts",
       "kind": "imports"
@@ -16599,8 +16614,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
-      "to": "module:shared/imagination.ts",
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:client/src/features/castingV2/components/Reimagine.tsx",
       "kind": "imports"
     },
     {
@@ -16741,6 +16756,16 @@
     {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:shared/refineLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/Reimagine.tsx",
+      "to": "module:client/src/foundation/icons.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/Reimagine.tsx",
+      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
@@ -19420,6 +19445,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/Reimagine.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "kind": "imports"
     },
@@ -19539,11 +19569,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:shared/imagination.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
@@ -19576,6 +19601,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/PathToggle.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/Reimagine.tsx",
       "kind": "imports"
     },
     {
@@ -19631,11 +19661,6 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/clientRequestId.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:shared/imagination.ts",
       "kind": "imports"
     },
     {
@@ -25510,11 +25535,6 @@
     },
     {
       "from": "module:server/castingV2/promptAuthor.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:server/providers/openrouterText.ts",
       "kind": "imports"
     },
@@ -25525,17 +25545,7 @@
     },
     {
       "from": "module:server/castingV2/promptAuthor.ts",
-      "to": "module:shared/castingVocabularies.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:shared/castStyles.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/promptAuthor.ts",
-      "to": "module:shared/imagination.ts",
       "kind": "imports"
     },
     {
@@ -27054,6 +27064,41 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/reimagine.ts",
+      "to": "module:server/castingV2/houseBlock.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/reimagine.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/reimagine.ts",
+      "to": "module:server/castingV2/promptAuthor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/reimagine.ts",
+      "to": "module:server/castingV2/seedFidelity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/reimagine.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/reimagine.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/reimagine.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/reliabilityReport.ts",
       "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
@@ -27364,11 +27409,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/rollProjection.ts",
-      "to": "module:shared/imagination.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/rollRecovery.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -27531,11 +27571,6 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:shared/castStyles.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/rollService.ts",
-      "to": "module:shared/imagination.ts",
       "kind": "imports"
     },
     {
@@ -30930,6 +30965,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/promptAuthor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/railTakes.ts",
       "kind": "imports"
     },
@@ -30966,6 +31006,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/refineService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/reimagine.ts",
       "kind": "imports"
     },
     {
@@ -31106,11 +31151,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/clientRequestId.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:shared/imagination.ts",
       "kind": "imports"
     },
     {
@@ -35194,31 +35234,31 @@
       "message": "Names 5 of RecoverableRollOperation's 5 fields (server/castingV2/rollRecovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:258",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:238",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:258",
+      "subject": "server/castingV2/rollProjection.ts:238",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1105",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1101",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1105",
+      "subject": "server/castingV2/rollService.ts:1101",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:259",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:258",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:259",
+      "subject": "server/castingV2/rollService.ts:258",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:317",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:314",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:317",
+      "subject": "server/castingV2/rollService.ts:314",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

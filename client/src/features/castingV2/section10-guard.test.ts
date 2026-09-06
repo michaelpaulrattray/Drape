@@ -459,36 +459,24 @@ describe("the settings modal (§3)", () => {
     expect("  height: 240px;").toMatch(/(?<!min-|max-)height:\s*\d/);
   });
 
-  it("there is no nav column and no third setting", async () => {
+  /* Card 535 (his decision 1) — the number stays out of the title string because the token guard reads #535 as a hex literal. */
+  it("there is no nav column, and Style is the ONLY setting", async () => {
     const modal = code(await read(MODAL));
     expect(modal).toContain("dpc-setm__col--style");
-    expect(modal).toContain("dpc-setm__col--mind");
+    /*
+      ⚠ #535 SUPERSEDED §3d: the Imagination column is DELETED with the level
+      — the author is the visible Re-imagine press on the brief box, and the
+      modal holds Style alone. The two-cards arms that stood here guarded a
+      control that no longer exists; this arm now guards its absence, so the
+      meter cannot quietly grow back.
+    */
+    expect(modal).not.toContain("dpc-setm__col--mind");
+    expect(modal).not.toMatch(/[Ii]magination/);
     // §3a retired the nav on a measurement: 182px of a 724px modal to switch between two things.
     expect(modal).not.toMatch(/dpc-setm__nav|role="tablist"/);
-    // §3e: no candidate count, no advanced section, no trait controls.
+    // §3e: no candidate count, no advanced section, no trait controls, and no slider ever.
     expect(modal).not.toMatch(/candidateCount|Advanced|Heritage|Build/i);
-  });
-
-  it("both imagination lines are on screen, and neither is a slider", async () => {
-    const modal = code(await read(MODAL));
-    // §3d: the consequence IS the decision, so a control that shows only the selected one is wrong.
-    expect(modal).toContain("IMAGINATION_LINES[option]");
-    expect(modal).toContain("IMAGINATIONS.map");
     expect(modal).not.toMatch(/type="range"|<Slider/);
-  });
-
-  it("a standing follow still suppresses the imagination half (the follow ruling)", async () => {
-    const modal = code(await read(MODAL));
-    /*
-      ⚠ THE ONE BEHAVIOUR HIS BRIEF COULD NOT KNOW ABOUT. §3d writes "two cards"
-      unconditionally; an anchored roll never calls the author, so drawing them
-      during a follow would put a dead control back on the exact surface a
-      founder ruling took one off. This arm is the whole reason the
-      reconciliation happened before a line was written.
-    */
-    expect(modal).toContain("followHeld ?");
-    const held = modal.slice(modal.indexOf("followHeld ?"));
-    expect(held.slice(0, 400)).toContain("dpc-setm__held");
   });
 });
 

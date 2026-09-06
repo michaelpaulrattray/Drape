@@ -43,7 +43,8 @@ import {
   captureCastingTwoPathsEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
-import { IMAGINATIONS } from "../../shared/imagination";
+import { reimagineBrief } from "../castingV2/reimagine";
+import { authorTextEngine } from "../castingV2/promptAuthor";
 import { CAST_STYLES } from "../../shared/castStyles";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_PROVENANCES } from "../../shared/inkProvenance";
@@ -1068,11 +1069,11 @@ export const castingV2Router = router({
     twoPathsEnabled: captureCastingTwoPathsEnabled(ctx.user.id),
     /*
       WHETHER THIS ACCOUNT IS ON THE AUTHOR ROAD (#131 slice E) — and therefore
-      whether the IMAGINATION meter is drawn and the wardrobe/basics switch is
-      NOT (ruling rules 10 and 11: the engine dresses the cast on this road).
-      Same shape as the two above: the client asks so it does not offer a
-      control nobody's roll would read; `rollService` ignores an `imagination`
-      from an account the author does not serve, read at the compile site.
+      whether the RE-IMAGINE glyph is drawn on the brief boxes (#535), the
+      reading sentence goes read-only, and the wardrobe/basics switch is NOT
+      (ruling rules 10 and 11: the engine dresses the cast on this road). Same
+      shape as the two above: the client asks so it does not offer a control
+      nobody's roll would read — the `reimagine` door checks the same capture.
     */
     authorRoadEnabled: captureCastingCreativeRegisterEnabled(ctx.user.id),
     /*
@@ -1270,15 +1271,17 @@ export const castingV2Router = router({
           */
           path: z.enum(CASTING_PATHS).optional(),
           /*
-            THE IMAGINATION METER (#131 slice E). Optional for the path's
-            reason: the control is drawn only on the author road, absent means
-            the author's own default (LOW), and an account off the road has
-            nothing that reads it. `follow` takes one too since #154 — the
-            author carries a follow as the family clause, so the gear is drawn
-            on a standing follow and what it says must reach the roll.
+            ⚠ TOMBSTONE (#535): the imagination meter is GONE — the level left
+            the product with the Re-imagine press, and nothing reads this
+            field. It STAYS in the schema because this input is `.strict()`
+            and deleting it in the commit that stops sending it would
+            BAD_REQUEST every in-flight bundle mid-deploy (the input-removal
+            rule, invariant 4's billing clause). An inline pair rather than
+            the retired `shared/imagination.ts` vocabulary: the wire tolerance
+            outlives the module by exactly one deploy, then this line goes.
           */
-          imagination: z.enum(IMAGINATIONS).optional(),
-          /* The settings modal's style (#142) — the meter's rule, one control over: optional, absent means photoreal. */
+          imagination: z.enum(["low", "max"]).optional(),
+          /* The settings modal's style (#142) — optional, absent means photoreal. */
           style: z.enum(CAST_STYLES).optional(),
         })
         .strict(),
@@ -1295,7 +1298,6 @@ export const castingV2Router = router({
         unlock: input.unlock,
         overrides: input.overrides,
         path: input.path,
-        imagination: input.imagination,
         style: input.style,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
@@ -1318,17 +1320,13 @@ export const castingV2Router = router({
           unlock: unlockList,
           overrides: overrideObject,
           /*
-            THE SETTINGS ON A FOLLOW, since Row A (#177): only `style` is
-            read — it picks the locked block — because an anchored roll never
-            calls the author, so the client stops sending `imagination` with a
-            follow and the compile forces the no-call road regardless. The
-            field STAYS in the schema: this input is `.strict()`, and deleting
-            it in the commit that stops sending it would BAD_REQUEST every
-            in-flight bundle mid-deploy (the removal contract). No `path`: a
-            follow is dressed by the engine on the author road and inherits
-            the sheet's path off it.
+            ⚠ TOMBSTONE (#535), the createRoll field's twin — see the comment
+            there. Nothing reads it; it stays one deploy past the client's
+            last send (the input-removal rule). No `path`: a follow is dressed
+            by the engine on the author road and inherits the sheet's path
+            off it.
           */
-          imagination: z.enum(IMAGINATIONS).optional(),
+          imagination: z.enum(["low", "max"]).optional(),
           style: z.enum(CAST_STYLES).optional(),
         })
         .strict(),
@@ -1347,10 +1345,50 @@ export const castingV2Router = router({
         // Re-anchored to this user's own candidates inside the roll
         // transaction; a foreign id can only fail to resolve.
         followCandidatePublicId: input.candidateId,
-        imagination: input.imagination,
         style: input.style,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
+    }),
+
+  /**
+   * RE-IMAGINE — the author as a visible writing assistant on the brief
+   * (#535; his "build it", 2026-09-06; spec `REIMAGINE_DESIGN_2026-09-06.md`
+   * §3). One press: the words in the box go through the author and the result
+   * comes back for the BOX — visible, editable, with undo on the client.
+   * Casting always uses whatever is in the box; this door writes nothing.
+   *
+   * FREE to the customer (one house text call, cents) — the roll is the paid
+   * act, so the priced-button law is untouched. Rate-limited with its own
+   * bucket because it spends house money with no charge path to pace it (the
+   * concept-describe argument). Owner is `ctx.user.id` and the input carries
+   * words only (invariants 3/4).
+   *
+   * `nothing` is an honest state, not an error: the author had nothing to
+   * offer (refused twice by our own word guards, or the call failed) and the
+   * customer's words stand. The surface has one quiet sentence for it; an
+   * outage and a refusal deliberately read the same, because the customer's
+   * next act is identical in both.
+   */
+  reimagine: protectedProcedure
+    .input(z.object({ briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD) }).strict())
+    .mutation(async ({ ctx, input }): Promise<{ kind: "idea"; text: string } | { kind: "nothing" }> => {
+      /*
+        THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside
+        `CASTING_CREATIVE_REGISTER_SCOPE` there is no such capability, and the
+        capture already ANDs the casting parent inside itself. The glyph is
+        drawn off `config.authorRoadEnabled`, the same capture, so an account
+        that can press it is an account this door admits.
+      */
+      if (!captureCastingCreativeRegisterEnabled(ctx.user.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
+      }
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.reimagine);
+      const engine = authorTextEngine();
+      if (!engine) return { kind: "nothing" };
+      const outcome = await reimagineBrief({ engine, briefText: input.briefText });
+      /* An explicit projection (invariant 8): the box gets the text and nothing else — no model, no latency, no refusal sentences. */
+      if (outcome.kind === "idea") return { kind: "idea", text: outcome.text };
+      return { kind: "nothing" };
     }),
 
   /** The 2.5s poll. Per-candidate states, nothing provider-shaped (§J). */

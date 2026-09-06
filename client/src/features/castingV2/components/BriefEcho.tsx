@@ -103,20 +103,26 @@ export type PendingAdjustments = {
 };
 
 /**
- * Which pinned facts may be LET VARY, and whether the facts are adjustable at
- * all. Off the author road, everything as it always was. On it, NO fact may
- * be let vary (#177 Row A): the brief reaches the engine verbatim, so a fact
- * read out of the sentence cannot be unsaid by a chip — and a follow is held
- * by the anchor PHOTOGRAPH now, which a chip cannot strip either; the
- * standing-follow exception #154 carved out died with the axis clause. The
- * SET pickers are a different question: on a plain authored roll they stay,
- * because #164 writes an override into the sentence itself — but during a
- * standing follow (`followHeld`) the whole span goes read-only, since the
- * server drops adjustments on an anchored roll (facts change at the roll,
- * never at the follow) and a picker whose choice evaporates is the H8
- * failure wearing a control. The server draws the same rule into each chip's
- * `removable` (`buildChips`); this is the echo's copy of it, keyed on the
- * NEXT roll.
+ * Whether the facts are adjustable at all, keyed on the NEXT roll's road.
+ *
+ * ⚠ **ON THE AUTHOR ROAD THE SENTENCE IS READ-ONLY — NO PICKERS AT ALL**
+ * (#535, his ruling 2026-09-06, verbatim: *"make the top sentence read-only
+ * with no pickers at all, and make the prompt box the only place I edit"*).
+ * His two named defects were exactly this surface's offers: the options came
+ * from the old generic lists ("slim build" offered on an ogre), and an edit
+ * was appended to the sentence's end instead of rewritten into it. The
+ * sentence says what the studio read in the words that cast these eight, and
+ * it never changes, because the pictures never change; the *"edited below,
+ * not cast yet"* mark is the only link between it and the box. The guard his
+ * §19 asked for ("chips and box can never disagree") is trivially true in
+ * this shape and is replaced by its structural form: the sentence renders
+ * from the roll's recorded brief only, and no control on it can write —
+ * which the suite pins by rendering.
+ *
+ * Off the author road, everything as it always was: the house road composes
+ * per-candidate prose from the intent, its overrides are its only edit
+ * channel, and that machinery retires with the road itself, not with this
+ * card.
  */
 export type VaryPolicy = { authorRoad: boolean; followHeld?: boolean };
 
@@ -124,9 +130,9 @@ export function varyOffered(policy: VaryPolicy | undefined, _field: EchoField): 
   return !policy || !policy.authorRoad;
 }
 
-/** True when the NEXT roll is an anchored follow — nothing about a fact is offerable there. */
+/** True when the sentence offers no controls at all — the author road (his read-only ruling, #535). */
 export function factsHeld(policy: VaryPolicy | undefined): boolean {
-  return policy?.authorRoad === true && policy.followHeld === true;
+  return policy?.authorRoad === true;
 }
 
 export function BriefEcho({
@@ -206,13 +212,11 @@ function EchoSpanView({
   const pinned = span.kind === "fact";
 
   /*
-    A STANDING FOLLOW HOLDS ITS FACTS (#177 Row A): the next roll is anchored
-    on a photograph, the server drops any adjustment sent with it, so no
-    picker is offered — the span reads at full ink like the category, and the
-    line under the echo says how to change things (edit the sentence, which
-    genuinely rides). A queued leftover is deliberately NOT drawn as
-    "→ next roll" here: that would promise a future the anchored roll will
-    not deliver.
+    THE AUTHOR ROAD'S SENTENCE IS READ-ONLY (#535, his ruling — see
+    `VaryPolicy`): every fact reads at full ink like the category, no picker,
+    no queued arrow, because the prompt box below is the only editor and the
+    sentence is the record of what was cast. This also covers the standing
+    follow, which was read-only first (#177 Row A) for its own reason.
   */
   if (factsHeld(vary)) return <span className="dpc-echo__role">{span.text}</span>;
 

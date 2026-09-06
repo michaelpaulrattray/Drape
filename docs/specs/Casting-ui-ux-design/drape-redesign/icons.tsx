@@ -208,6 +208,19 @@ export const P = {
    * this is a stand-in for a glyph he owns, and it is flagged as one on #374.
    */
   exit:     'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+
+  /*
+   * Re-imagine — a spiral: a thought turning (#535, the author as a visible
+   * writing assistant on every brief box). Two arcs, drawn to the set's rule.
+   *
+   * Drawn fresh under his "redraw as required" ruling (#394) and passed at
+   * the frames — the design report's mockups rendered THIS candidate on all
+   * three surfaces and his word on them was "build it" (Crew replies
+   * #145/#146, 2026-09-06). Chosen over a turn-arrow (reads as the tile's
+   * Retry at 13px) and a line-loop (dies at 13px); legible at 13px, no
+   * collision in the set. His to redraw, like everything here.
+   */
+  reimagine: 'M12 3.5a8.5 8.5 0 1 1-8.5 8.5M3.5 12a5.5 5.5 0 1 1 5.5 5.5',
 } as const;
 
 export type IconName = keyof typeof P;
