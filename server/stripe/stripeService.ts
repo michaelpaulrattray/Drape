@@ -240,8 +240,17 @@ export function mapStripeStatus(
 /**
  * Map plan name to PlanTier
  */
-export function mapPlanToTier(plan: SubscriptionPlan): PlanTier {
-  return plan as PlanTier;
+/**
+ * A Stripe subscription's `metadata.plan` mapped to a tier the product still
+ * DECLARES — or `null` when it names one we no longer do (#391 folded four
+ * rungs out of `PLAN_TIERS`). The front door refuses those plans at the
+ * parser; this is the back door, and a bare cast here would persist a folded
+ * tier that `getMonthlyCredits` then throws on at the next renewal — a
+ * failed webhook AFTER a successful charge. The caller decides the fallback
+ * (it keeps the account's current tier), because this function cannot know it.
+ */
+export function mapPlanToTier(plan: SubscriptionPlan): PlanTier | null {
+  return plan in PLAN_TIERS ? (plan as PlanTier) : null;
 }
 
 /**

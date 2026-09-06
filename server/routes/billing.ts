@@ -21,12 +21,11 @@ import {
 import {
   SUBSCRIPTION_PRODUCTS,
   SubscriptionPlan,
-  PAID_PLAN_ORDER,
   PURCHASABLE_PLANS,
   OFFERED_PLAN_ORDER,
   OFFERED_PLAN_TIERS,
+  ownPlanFacts,
 } from "../stripe/stripeProducts";
-import { PLAN_TIERS } from "../../drizzle/schema";
 import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
@@ -66,10 +65,10 @@ export const billingRouter = router({
     if (!subscription) {
       return {
         planTier: "free" as const,
-        planName: PLAN_TIERS.free.name,
-        planPriceInCents: PLAN_TIERS.free.price,
+        ...ownPlanFacts("free"),
         balance: 0,
         subscriptionStatus: null,
+        currentPeriodStart: null,
         currentPeriodEnd: null,
         canUpgrade: true,
         canManage: false,
@@ -84,8 +83,7 @@ export const billingRouter = router({
       // name up there — and a customer's own tier is their data. Without
       // this, Settings would caption a hand-sold Ultimate account "Free",
       // which is the one thing a billing surface must never do.
-      planName: PLAN_TIERS[subscription.planTier]?.name ?? subscription.planTier,
-      planPriceInCents: PLAN_TIERS[subscription.planTier]?.price ?? 0,
+      ...ownPlanFacts(subscription.planTier),
       balance: subscription.balance,
       creditsPurchased: subscription.creditsPurchased,
       creditsUsed: subscription.creditsUsed,

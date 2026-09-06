@@ -11,7 +11,9 @@ import {
   PLAN_ORDER,
   PURCHASABLE_PLANS,
   SUBSCRIPTION_PRODUCTS,
+  ownPlanFacts,
 } from "./stripe/stripeProducts";
+import { mapPlanToTier } from "./stripe/stripeService";
 import { billingRouter } from "./routes/billing";
 
 /**
@@ -47,6 +49,12 @@ import { billingRouter } from "./routes/billing";
  */
 
 const HIDDEN = HIDDEN_PLAN_TIERS as readonly string[];
+
+const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+
+/** Source with comments stripped — a rule written in prose is not a rule shipped. */
+const code = (text: string) =>
+  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 /** The real input parser of a procedure — the same object the wire runs. */
 function parserOf(name: string): { parse: (input: unknown) => unknown } {
@@ -146,13 +154,56 @@ describe("card #391 — getPlans serves the offered ladder and never the hidden 
   });
 });
 
+describe("card #391 — an account ON the hidden rung still knows its own plan (PR #583 finding 1)", () => {
+  it("ownPlanFacts names every declared tier, the hidden one included", () => {
+    expect(ownPlanFacts("enterprise")).toEqual({
+      planName: "Enterprise",
+      planPriceInCents: PLAN_TIERS.enterprise.price,
+      planMonthlyCredits: PLAN_TIERS.enterprise.monthlyCredits,
+    });
+    /* The hidden rung is hidden from the OFFER, never from its own owner. */
+    expect(ownPlanFacts("ultimate").planName).toBe("Ultimate");
+    expect(ownPlanFacts("ultimate").planMonthlyCredits).toBe(PLAN_TIERS.ultimate.monthlyCredits);
+  });
+
+  it("a folded legacy value is captioned as words, never as the pipeline slug, and claims nothing", () => {
+    const facts = ownPlanFacts("studio_plus");
+    expect(facts.planName).not.toContain("_");
+    expect(facts.planName.toLowerCase()).toContain("studio");
+    expect(facts.planPriceInCents).toBe(0);
+    expect(facts.planMonthlyCredits).toBe(0);
+  });
+
+  it("getStatus actually serves it — the fix must be invoked, not merely exported (invariant 7)", () => {
+    const billing = readFileSync(join(HERE, "routes", "billing.ts"), "utf8");
+    expect(code(billing)).toContain("ownPlanFacts(");
+  });
+
+  it("Settings actually reads it — the caption prefers the own-row fields over the catalogue", () => {
+    const surfaces = readFileSync(
+      join(HERE, "..", "client", "src", "features", "settings", "AccountSurfaces.tsx"),
+      "utf8",
+    );
+    const src = code(surfaces);
+    expect(src).toContain("status?.planName");
+    expect(src).toContain("status?.planMonthlyCredits");
+    expect(src).toContain("status?.planPriceInCents");
+  });
+});
+
+describe("card #391 — the back door matches the front (PR #583 finding 2)", () => {
+  it("mapPlanToTier answers null for a plan the product no longer declares", () => {
+    expect(mapPlanToTier("studio_plus" as never)).toBeNull();
+    expect(mapPlanToTier("nonesuch" as never)).toBeNull();
+    /* Positive control: declared plans still map to themselves. */
+    expect(mapPlanToTier("starter")).toBe("starter");
+    expect(mapPlanToTier("ultimate")).toBe("ultimate");
+  });
+});
+
 describe("card #391 — the email door ships with the fold", () => {
-  const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
   const MODAL = join(HERE, "..", "client", "src", "features", "billing", "ChangePlanModal.tsx");
   const CSS = join(HERE, "..", "client", "src", "features", "settings", "settings.css");
-
-  const code = (text: string) =>
-    text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
   it("the plan modal's CODE carries the mailto, on the address the product already uses", () => {
     const modal = code(readFileSync(MODAL, "utf8"));

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2129302623404c06"
+    "sourceFingerprint": "20253ee7e71b2344"
   },
   "domains": [
     {
@@ -30609,11 +30609,6 @@
     {
       "from": "module:server/routes/auth.ts",
       "to": "module:shared/const.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/billing.ts",
-      "to": "module:drizzle/schema.ts",
       "kind": "imports"
     },
     {

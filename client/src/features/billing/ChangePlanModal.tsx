@@ -225,7 +225,15 @@ export function ChangePlanModal({
     return rungs;
   }, [plans]);
 
-  const currentName = ladder.find((plan) => plan.id === currentId)?.name ?? null;
+  /*
+    #391 — an account on the HIDDEN rung is not on the offered ladder, so the
+    header takes its own plan's name from `getStatus` (the own-row read). The
+    trio below deliberately falls back to the ladder's first three with
+    nothing marked current: there is nothing above the hidden rung to sell,
+    and inventing a card for it would publish what he has not priced.
+  */
+  const currentName =
+    ladder.find((plan) => plan.id === currentId)?.name ?? status?.planName ?? null;
 
   const cycle = useMemo(() => readCycle(status), [status]);
   const burn = useMemo(() => (cycle ? readBurn(cycle) : null), [cycle]);

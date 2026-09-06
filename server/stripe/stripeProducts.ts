@@ -55,6 +55,39 @@ export const OFFERED_PLAN_TIERS = Object.fromEntries(
   OFFERED_PLAN_ORDER.map((tier) => [tier, PLAN_TIERS[tier]]),
 ) as { [K in Exclude<PlanTier, HiddenPlanTier>]: (typeof PLAN_TIERS)[K] };
 
+/**
+ * The OWN-ROW plan facts `billing.getStatus` serves (#391). A customer's own
+ * tier is their data, and since `getPlans` stopped serving the hidden rung,
+ * this is the ONLY road by which an account on it learns its own plan's name
+ * — without it, Settings captions a hand-sold Ultimate account "Free", which
+ * is the one thing a billing surface must never do (PR #583 finding 1).
+ *
+ * Takes the raw DB value rather than `PlanTier` because the column
+ * deliberately still accepts the four folded legacy values. Zero rows hold
+ * one today; if one ever appears it is captioned as WORDS, never as the
+ * pipeline slug, and no price or allowance is claimed that the product no
+ * longer states.
+ */
+export function ownPlanFacts(tier: string): {
+  planName: string;
+  planPriceInCents: number;
+  planMonthlyCredits: number;
+} {
+  const known = (PLAN_TIERS as Record<string, { name: string; price: number; monthlyCredits: number }>)[tier];
+  if (known) {
+    return {
+      planName: known.name,
+      planPriceInCents: known.price,
+      planMonthlyCredits: known.monthlyCredits,
+    };
+  }
+  return {
+    planName: tier.charAt(0).toUpperCase() + tier.slice(1).replace(/_/g, " "),
+    planPriceInCents: 0,
+    planMonthlyCredits: 0,
+  };
+}
+
 // Subscription Plans — generated from PLAN_TIERS
 export const SUBSCRIPTION_PRODUCTS: Record<string, {
   name: string;
