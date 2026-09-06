@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { windowStart } from "./sections/UsageSection";
+/* #385 moved `windowStart` out of the pane and into a module both the pane
+   and the two money modals read, so the window cannot mean two things. */
+import { windowStart } from "./usageWindow";
 
 /**
  * #387 — his five corrections to the built Settings panes, held where each one

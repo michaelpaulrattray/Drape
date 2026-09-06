@@ -222,27 +222,32 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
     real shortfall to name. Both facts must exist.
   */
   const now = new Date("2026-07-21T00:00:00Z");
+  /*
+    #385 — the cycle SPEND is no longer a field on the status projection.
+    `readCycle` takes it as its own argument, because the only spend field the
+    server returns is a lifetime counter and this fixture means one cycle.
+  */
+  const SUBSCRIBED_SPEND = Math.round(STARTER * 0.9);
   const SUBSCRIBED = {
-    creditsUsed: Math.round(STARTER * 0.9),
     balance: Math.round(STARTER * 0.09),
     currentPeriodStart: new Date(now.getTime() - 20 * DAY),
     currentPeriodEnd: new Date(now.getTime() + 10 * DAY),
   };
   /* A Free account: no subscription, therefore no period. This is the state he
      was looking at when he asked what had happened to them. */
+  const FREE_SPEND = 120;
   const FREE = {
-    creditsUsed: 120,
     balance: 380,
     currentPeriodStart: null,
     currentPeriodEnd: null,
   };
 
   it("⚠ THE RUN-OUT BAND IS BUILT: a subscribed cycle produces a real date, not a stub", () => {
-    const cycle = readCycle(SUBSCRIBED, now);
+    const cycle = readCycle(SUBSCRIBED, SUBSCRIBED_SPEND, now);
     expect(cycle, "readCycle refused a complete cycle").not.toBeNull();
     const burn = readBurn(cycle!, now);
     expect(burn.emptyOn, "no empty date — the band cannot render").not.toBeNull();
-    expect(burn.perDay, `a burn of zero from ${SUBSCRIBED.creditsUsed} spent credits`).toBeGreaterThan(0);
+    expect(burn.perDay, `a burn of zero from ${SUBSCRIBED_SPEND} spent credits`).toBeGreaterThan(0);
     /* The band's sharper half: it only dramatises when the balance runs out
        BEFORE renewal, which is the whole reason to act. */
     expect(burn.dryDays, "the band would claim a shortfall that is not there").toBeGreaterThan(0);
@@ -252,7 +257,7 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
   });
 
   it("⚠ THE `FITS YOUR USE` BADGE IS BUILT: a burn above the plan names a real rung", () => {
-    const cycle = readCycle(SUBSCRIBED, now)!;
+    const cycle = readCycle(SUBSCRIBED, SUBSCRIBED_SPEND, now)!;
     const burn = readBurn(cycle, now);
     const projected = Math.round(burn.perDay * cycle.cycleLength);
     expect(
@@ -283,7 +288,7 @@ describe("card 425 items 3 and 4 — the two he thought were unbuilt", () => {
       elements are absent BY CONSTRUCTION on a Free account, and no stub is owed
       — a placeholder here would label a shipped feature "not built yet".
     */
-    expect(readCycle(FREE, now), "a Free account produced a billing cycle").toBeNull();
+    expect(readCycle(FREE, FREE_SPEND, now), "a Free account produced a billing cycle").toBeNull();
     /* No cycle → no burn → the projection the recommendation reads is 0, and
        zero can never exceed a plan's credits, so no rung is ever recommended. */
     expect(recommendPlan(LADDER, "free" as never, 0), "a free plan was told to upgrade").toBeNull();

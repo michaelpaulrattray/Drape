@@ -86,11 +86,11 @@ describe("the four constants and what is derived from them", () => {
     const now = new Date("2026-07-24T00:00:00Z");
     const cycle = readCycle(
       {
-        creditsUsed: 4_760,
         balance: 1_240,
         currentPeriodStart: "2026-07-12T00:00:00Z",
         currentPeriodEnd: "2026-08-12T00:00:00Z",
       },
+      4_760,
       now,
     );
     expect(cycle).not.toBeNull();
@@ -105,11 +105,11 @@ describe("the four constants and what is derived from them", () => {
       date — and the surfaces render a different sentence. Guessing "30 days"
       here would put a confident, wrong date in front of a customer.
     */
-    expect(readCycle({ creditsUsed: 10, balance: 5 })).toBeNull();
-    expect(readCycle(null)).toBeNull();
-    expect(readCycle(undefined)).toBeNull();
+    expect(readCycle({ balance: 5 }, 10)).toBeNull();
+    expect(readCycle(null, 10)).toBeNull();
+    expect(readCycle(undefined, 10)).toBeNull();
     expect(
-      readCycle({ currentPeriodStart: "not a date", currentPeriodEnd: "also not" }),
+      readCycle({ currentPeriodStart: "not a date", currentPeriodEnd: "also not" }, 10),
     ).toBeNull();
   });
 

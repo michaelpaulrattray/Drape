@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dde8750ac21d38fa"
+    "sourceFingerprint": "cdbcbd4c7ef9b31b"
   },
   "domains": [
     {
@@ -23,7 +23,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 8
+      "moduleCount": 9
     },
     {
       "id": "domain:boards",
@@ -123,7 +123,7 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 15
+      "moduleCount": 16
     },
     {
       "id": "domain:shared",
@@ -885,6 +885,12 @@
     {
       "id": "module:client/src/features/billing/index.ts",
       "path": "client/src/features/billing/index.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/billing/useCycleSpend.ts",
+      "path": "client/src/features/billing/useCycleSpend.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -2199,6 +2205,12 @@
     {
       "id": "module:client/src/features/settings/settings.css",
       "path": "client/src/features/settings/settings.css",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/usageWindow.ts",
+      "path": "client/src/features/settings/usageWindow.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -10801,6 +10813,10 @@
       "path": "client/src/features/operations/outcomeSlot.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/card385-guard.test.ts",
+      "path": "client/src/features/settings/card385-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/card390-guard.test.ts",
       "path": "client/src/features/settings/card390-guard.test.ts"
     },
@@ -14974,6 +14990,11 @@
     },
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:client/src/features/billing/useCycleSpend.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/features/settings/planLadder.ts",
       "kind": "imports"
     },
@@ -15000,6 +15021,11 @@
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
     },
     {
@@ -15050,6 +15076,16 @@
     {
       "from": "module:client/src/features/billing/index.ts",
       "to": "module:client/src/features/billing/LowBalanceWarning.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/useCycleSpend.ts",
+      "to": "module:client/src/features/settings/usageWindow.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/useCycleSpend.ts",
+      "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
@@ -17740,6 +17776,11 @@
     {
       "from": "module:client/src/features/settings/sections/UsageSection.tsx",
       "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "to": "module:client/src/features/settings/usageWindow.ts",
       "kind": "imports"
     },
     {
