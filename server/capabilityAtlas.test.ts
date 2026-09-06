@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildStaticAtlas, declaredConceptRefusals, declaredInterpreterRefusals, declaredRollRefusals, declaredServiceRefusals, drivenFindings,
   duplicateDoorFindings, listFiles, outcomeId,
-  pinningTests, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
+  pinCandidates, pinningTests, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
   CAPABILITY_MD, type Finding,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
@@ -118,6 +118,167 @@ describe("the static half reads what the source declares", () => {
       );
       expect(reported).toBe(entry.pinnedBy.length === 0);
     }
+  });
+
+  /*
+    #545 / #614 — A PIN MUST REACH THE DOOR'S MODULE.
+
+    The collector used to credit any `server/**\/*.test.ts` that contained a
+    door id as a quoted literal, anywhere, for any reason. Three unrelated
+    suites picked up casting doors by accident that way — a temp-file name, a
+    merge receipt state, a deploy verdict — and the failure runs in the
+    REASSURING direction: a stranger's fixture holds a door's pin count above
+    zero, so deleting the door's real arms can no longer raise
+    `unpinned-refusal`. Working law 2, pointed at the census.
+
+    The arms below are deliberately in three layers: the rule alone, the rule
+    against the REAL specimens in this tree, and the whole-census invariant that
+    the repair did not simply delete pins.
+  */
+  it("NEGATIVE CONTROL — spelling a door id does not pin it; reaching the door's module does", () => {
+    const doorish = 'expect(state).toEqual({ kind: "unreadable" });';
+
+    /* A stranger: it names the door and reaches nothing casting. */
+    expect(reachesDoors("server/deployWatchDecision.test.ts", doorish)).toBe(false);
+
+    /* Two ways to reach: living in the module, or importing from it. */
+    expect(reachesDoors("server/castingV2/refineRefusals.test.ts", doorish)).toBe(true);
+    expect(
+      reachesDoors("server/db/referenceReadDemand.test.ts", `import { X } from "../castingV2/makeupFromReference";\n${doorish}`),
+    ).toBe(true);
+
+    /*
+      ⚠ AND THE PATH ARM IS A PREFIX OF THE DIRECTORY, NOT OF THE STRING. The
+      legacy pipeline lives at `server/casting/`, which `server/castingV2`
+      does NOT contain and which must not inherit the domain's credit — the
+      `["empty", ""]` row in `server/casting/geminiMigration.test.ts` is one of
+      the four false pins this change removes.
+    */
+    expect(reachesDoors("server/casting/geminiMigration.test.ts", '["empty", ""]')).toBe(false);
+  });
+
+  it("⚠ the import arm RESOLVES the specifier — a filename carrying the token is not the module (review #615, finding 1)", () => {
+    /*
+      The first shape asked whether a specifier merely CONTAINED `castingV2`,
+      which is a substring standing in for a fact the path already states — the
+      very class this function exists to fix, one level down. A crew helper
+      named `castingV2Report.mts` would have let any stranger importing it pin
+      every door it happened to quote.
+
+      ⚠ The review proposed DECLARING the looseness instead, believing it was
+      load-bearing for `server/segmentsOnFaceEndpoint.test.ts`. Read at the
+      artifact: that file holds no pins at all, so nothing rested on it — which
+      is why the exact rule was taken and the atlas did not move.
+    */
+    const doorish = 'expect(x).toEqual({ kind: "unreadable" });';
+
+    /* Resolves INTO the door module — the real out-of-domain pin's shape. */
+    expect(reachesDoors("server/db/referenceReadDemand.test.ts", `from "../castingV2/makeupFromReference";\n${doorish}`)).toBe(true);
+
+    /* Names the token, resolves ELSEWHERE — credited before, refused now. */
+    expect(reachesDoors("server/segmentsOnFaceEndpoint.test.ts", `from "./db/castingV2Segments";\n${doorish}`)).toBe(false);
+    expect(reachesDoors("server/x.test.ts", `from "../routes/castingV2";\n${doorish}`)).toBe(false);
+    expect(reachesDoors("server/x.test.ts", `from "./crew/castingV2Report.mts";\n${doorish}`)).toBe(false);
+
+    /*
+      A bare package specifier is not a path in this tree and never resolves.
+      ⚠ The specifier here is deliberately `castingV2/refineDelta` and not the
+      bare `castingV2`: the shorter one is refused by the trailing slash on the
+      prefix whether the bare-specifier guard exists or not, so an arm using it
+      passes for the wrong reason and reddens under no sabotage. This one
+      resolves to `server/castingV2/refineDelta` the moment the guard is gone.
+    */
+    expect(reachesDoors("server/x.test.ts", `from "castingV2/refineDelta";\n${doorish}`)).toBe(false);
+
+    /*
+      A DYNAMIC import counts — 13 suites outside the module reach it only that
+      way, and a static-only reader is the Atlas's own `d614320f` blind spot.
+      `vi.mock` too: naming a module to mock it is naming it as the subject.
+    */
+    expect(reachesDoors("server/y.test.ts", `await import("./castingV2/refineDelta");\n${doorish}`)).toBe(true);
+    expect(reachesDoors("server/y.test.ts", `vi.mock("./castingV2/refineDelta", () => ({}));\n${doorish}`)).toBe(true);
+    /* …and a dynamic import resolving ELSEWHERE still grants nothing. */
+    expect(reachesDoors("server/y.test.ts", `await import("./db/castingV2Segments");\n${doorish}`)).toBe(false);
+    /*
+      Nor does one climbing above the repo root — and the shape is chosen the
+      same way. The specifier must be one that would land INSIDE the module if
+      `..` clamped at the root instead of refusing, or the arm is green whatever
+      the resolver does.
+    */
+    expect(reachesDoors("server/db/x.test.ts", `from "../../../server/castingV2/thing";\n${doorish}`)).toBe(false);
+  });
+
+  it("POSITIVE CONTROL — the real specimens, read at this tree rather than at a fixture", () => {
+    const pins = pinningTests(["unreadable", "empty", "wall_unfileable", "busy"]);
+
+    /*
+      The three false pins are named because each was found by a different PR's
+      review and each would otherwise come back the next time someone writes a
+      fixture called `empty`. If one of these files is ever deleted or renamed,
+      this arm should be updated — it is asserting a FACT about the tree, and
+      that is the point.
+    */
+    for (const stranger of [
+      "server/deployWatchDecision.test.ts",
+      "server/benchKit.test.ts",
+      "server/casting/geminiMigration.test.ts",
+    ]) {
+      for (const id of ["unreadable", "empty", "wall_unfileable"]) {
+        expect(pins.get(id), `${stranger} must not pin ${id}`).not.toContain(stranger);
+      }
+    }
+
+    /*
+      ⚠ THE HALF THAT MATTERS MORE: a repair that drops a false pin by dropping
+      pins generally is worse than the defect. Measured before this was written,
+      requiring a casting IMPORT alone dropped 156 of 194 pins and emptied 27
+      doors; a LOCATION-only filter dropped this very file, which drives the
+      door through the reference reader and imports its codes.
+    */
+    expect(pins.get("unreadable")).toContain("server/db/referenceReadDemand.test.ts");
+    expect(pins.get("busy")!.length).toBeGreaterThan(0);
+    for (const id of ["unreadable", "empty", "wall_unfileable", "busy"]) {
+      expect(pins.get(id)!.length, id).toBeGreaterThan(0);
+    }
+  });
+
+  it("no door lost its LAST pin — the repair narrows the census, it does not empty it", () => {
+    /*
+      #614's bar: "No door's pin count changes except for a reason the diff can
+      name." The whole-census form of that is this — exactly one door is
+      unpinned, and it is the one that was unpinned before the change.
+    */
+    const atlas = buildStaticAtlas(CORPUS);
+    const unpinned = atlas.declared.filter((d) => d.pinnedBy.length === 0).map((d) => d.id);
+    expect(unpinned).toEqual(["wall_basics_wardrobe"]);
+  });
+
+  it("REFUSES rather than reporting every door unpinned when nothing reaches the module", () => {
+    /*
+      The other direction of the same failure. If the reach test ever stops
+      matching — a directory rename, a resolver bug — every door reads as
+      unpinned and the census reports a catastrophe that is really a broken
+      instrument. It refuses instead.
+
+      Driven through `pinCandidates` rather than the filesystem scan, because a
+      backstop whose only road is a real tree is a backstop nobody can prove
+      blocks (working law 3).
+    */
+    expect(() => pinCandidates([
+      ["server/deployWatchDecision.test.ts", 'const x = "unreadable";'],
+      ["server/benchKit.test.ts", 'reason: "wall_unfileable"'],
+    ])).toThrow(/no test file reaches server\/castingV2/);
+
+    /* POSITIVE CONTROL — it is the emptiness that refuses, not the call. */
+    expect(pinCandidates([
+      ["server/deployWatchDecision.test.ts", 'const x = "unreadable";'],
+      ["server/castingV2/refineRefusals.test.ts", 'reason: "wall_unfileable"'],
+    ]).map(([f]) => f)).toEqual(["server/castingV2/refineRefusals.test.ts"]);
+
+    /* And the census's own exclusion still holds, on the same road. */
+    expect(() => pinCandidates([
+      ["server/castingV2/somethingElse.test.ts", 'import "../../scripts/lib/capabilityAtlas.mts";'],
+    ])).toThrow(/no test file reaches/);
   });
 
   it("NEGATIVE CONTROL — a door EXPLAINED in a docblock is not CITED there", () => {

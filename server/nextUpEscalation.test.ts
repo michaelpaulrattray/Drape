@@ -197,15 +197,17 @@ describe("the escalation verdict", () => {
   });
 
   it("does NOT escalate on an empty queue", () => {
-    /* ⚠ THE FIXTURE NAMES HERE ARE NOT FREE, AND THAT IS NOT A STYLE NOTE.
-       `pinningTests` (scripts/lib/capabilityAtlas.mts) credits any server test
-       naming a door id as a QUOTED LITERAL. The first draft of this suite used
-       "empty" and "unreadable", and the capability atlas duly recorded this
-       crew-tooling file as PINNING the casting refusal doors `empty`,
-       `unreachable` and `concept.unreadable` — three doors it has never been
-       within a mile of. A real arm could then be deleted and the
-       `unpinned-refusal` finding would not fire. Caught by the reviewer in the
-       Atlas diff of this PR's own commit. */
+    /* ⚠ THE FIXTURE NAMES HERE ARE FREE AGAIN — HISTORY, NOT A RULE (#545).
+       This comment used to warn that they were not. The capability census once
+       credited ANY test under `server/` that quoted a door id, so this suite's
+       first draft — naming temp files "empty" and "unreadable" — was recorded
+       as PINNING the casting doors `empty`, `unreachable` and
+       `concept.unreadable`, three doors it has never been within a mile of. A
+       real arm could then be deleted and `unpinned-refusal` would not fire.
+       Fixed at the class in #615: a pin must now REACH `server/castingV2` by
+       living there or importing from it (`reachesDoors`,
+       scripts/lib/capabilityAtlas.mts), and this file does neither. The names
+       below stay descriptive because they read better, not because they must. */
     const queue = queueFile("empty-queue", []);
     const result = run("--queue", queue, "--state", statePath("empty-queue"), "--today", "2026-09-05");
 

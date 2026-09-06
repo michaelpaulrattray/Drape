@@ -295,11 +295,145 @@ export function declaredFlags(): string[] {
 }
 
 /**
- * Which test files name an id — as a QUOTED literal, so `busy` in prose does not
- * count as a pin. A refusal with no pin is a door nobody has proven can shut.
+ * The directory the doors are DECLARED in. A test pins one only if it reaches
+ * here — see `reachesDoors` and `pinningTests` below.
  */
-export function pinningTests(ids: string[]): Map<string, string[]> {
-  const tests = listFiles(path.join(repoRoot, "server"), (n) => n.endsWith(".test.ts"));
+const DOOR_MODULE_DIR = "server/castingV2";
+
+/**
+ * Resolve a RELATIVE import specifier against the importing file, to a
+ * repo-relative path with `.` and `..` collapsed.
+ *
+ * A bare specifier (a package) and one climbing above the repo root both return
+ * null: neither is a path in this tree, and neither may resolve to one.
+ */
+function resolveSpecifier(fromFile: string, specifier: string): string | null {
+  if (!specifier.startsWith("./") && !specifier.startsWith("../")) return null;
+  const parts = fromFile.split("/").slice(0, -1);
+  for (const part of specifier.split("/")) {
+    if (part === "" || part === ".") continue;
+    if (part === "..") {
+      if (parts.length === 0) return null;
+      parts.pop();
+      continue;
+    }
+    parts.push(part);
+  }
+  return parts.join("/");
+}
+
+/**
+ * Does this test file REACH the module the doors are declared in — by living
+ * there, or by importing from there?
+ *
+ * Kept beside `pinningTests` because it is that function's whole correction,
+ * and separate from it because the arms drive it directly: a rule that can only
+ * be exercised through a full atlas build is a rule nobody sabotages.
+ *
+ * ⚠ **THE IMPORT ARM RESOLVES THE SPECIFIER; IT DOES NOT SEARCH IT FOR A TOKEN
+ * (PR #615 review, finding 1).** The first shape asked whether the specifier
+ * merely CONTAINED `castingV2`, which credited `./db/castingV2Segments` and
+ * `../routes/castingV2` — files outside the door module whose NAMES carry the
+ * word. That is a substring standing in for a fact the path already states,
+ * which is the very class this function exists to fix, re-opened one level
+ * down: name a crew helper `castingV2Report.mts` and any stranger importing it
+ * may pin every door it happens to quote.
+ *
+ * ⚠ **TIGHTENING IT COSTS NOTHING, AND THAT WAS MEASURED RATHER THAN ASSUMED.**
+ * The review suggested declaring the looseness instead, on the ground that it
+ * was load-bearing for `server/segmentsOnFaceEndpoint.test.ts` (which imports
+ * `./db/castingV2Segments`). Read at the artifact: that file holds **no pins at
+ * all** — it never quotes a door id — so nothing rests on the substring. The
+ * exact rule keeps every real pin and the atlas is byte-identical.
+ */
+export function reachesDoors(relPath: string, text: string): boolean {
+  if (relPath.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
+  /*
+    ⚠ A DYNAMIC IMPORT COUNTS, AND THIS REPOSITORY HAS ALREADY PAID ONCE FOR
+    ASSUMING OTHERWISE (PR #615 review, round 2). A static-`from`-only reader is
+    exactly the Architecture Atlas's blind spot at `d614320f`, where 65 modules
+    read as having no caller — both login routes among them, reached only by
+    `await import(…)` — and "no caller" is the reading that says safe to remove.
+    Here the direction is the safe one rather than the dangerous one, but it is
+    still wrong: **13 test suites outside `server/castingV2/` reach the module
+    ONLY dynamically**, so the day one of them adds a real pin the census would
+    refuse to credit it and keep `unpinned-refusal` firing on a door that has an
+    arm. None quotes a door id today, which is why the regenerated atlas does
+    not move.
+
+    `vi.mock("…")` is covered by the same alternation, because mocking a module
+    is naming it as the subject just as plainly as importing it.
+  */
+  const specifiers = [
+    ...text.matchAll(/\bfrom\s+["']([^"']+)["']/g),
+    ...text.matchAll(/\b(?:import|require|vi\.mock|vi\.doMock)\s*\(\s*["']([^"']+)["']/g),
+  ];
+  for (const match of specifiers) {
+    const resolved = resolveSpecifier(relPath, match[1]!);
+    if (resolved && resolved.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
+  }
+  return false;
+}
+
+/**
+ * THE PIN RULE AND WHY IT IS WHAT IT IS — the record for `reachesDoors` above
+ * and `pinCandidates` below, which apply it.
+ *
+ * A pin is a test proving a refusal door can shut, and a refusal with no pin is
+ * a door nobody has proven can shut.
+ *
+ * ⚠ **A FILE THAT MERELY SPELLS A DOOR ID IS NOT A PIN — #545 / #614.** Until
+ * 2026-09-07 the only question asked was whether the quoted literal appeared
+ * ANYWHERE in ANY test under `server/`, so a fixture name, a temp-file name or
+ * an unrelated state enum equal to a door id counted as proof that the door can
+ * shut. Three specimens, none deliberate, each found by a different PR's review:
+ * `server/nextUpEscalation.test.ts` naming temp files `"empty"` and
+ * `"unreadable"` pinned THREE casting doors (#545); `server/prMergeOrder.test.ts`
+ * gave `concept.unreadable` a 23rd pin with a receipt state (#614, renamed at
+ * source); and `server/deployWatchDecision.test.ts` sits on that list today for
+ * a `{ kind: "unreadable" }` deploy verdict.
+ *
+ * **It disables an arm in the reassuring direction** — working law 2 pointed at
+ * the census itself. Delete a door's real arms and `unpinned-refusal` still
+ * cannot fire, because a stranger's fixture holds the count above zero.
+ *
+ * **THE RULE: A PIN MUST REACH THE DOOR'S MODULE.** Structural, by where the
+ * file lives and what it imports, never by name — the self-exclusion below is
+ * the same shape, and this is it one step wider. It is deliberately NOT a list
+ * of excluded filenames: a second list of names is what working law 4 exists to
+ * spoil, and it would rot on the first rename.
+ *
+ * ⚠ **MEASURED BEFORE IT WAS WRITTEN, BECAUSE THE OBVIOUS REPAIRS ARE WORSE
+ * THAN THE DEFECT.** At the tree of 2026-09-07: 59 doors, 194 pin entries.
+ * Requiring a casting IMPORT alone dropped **156 of 194 and emptied 27 doors** —
+ * fixing a false pin by deleting the census. A LOCATION-only filter drops 6 and
+ * empties none, but it drops a REAL pin (`server/db/referenceReadDemand.test.ts`
+ * drives `unreadable` through the reference reader and imports the door's own
+ * codes) while KEEPING a false one inside `server/casting/`. **Reach keeps that
+ * real pin and drops exactly the four false ones**: `deployWatchDecision.test.ts`
+ * (a deploy verdict), `benchKit.test.ts` (a refusal literal the bench harness
+ * constructs, which cannot fail if the door stops shutting), and
+ * `casting/geminiMigration.test.ts` (the label in an `["empty", ""]` row, in the
+ * LEGACY pipeline, not this door). **194 → 190 pins, and no door loses its
+ * last one: unpinned stays at 1.**
+ *
+ * ⚠ **ITS LIMIT IS DECLARED, AND IT FAILS TOWARD THE WARNING.** The reach test
+ * is textual, so a suite outside `server/castingV2` reaching a door only through
+ * a barrel would lose its pin. That direction is the safe one: the door reads
+ * UNPINNED and `unpinned-refusal` fires, asking for an arm that already exists —
+ * loud and wrong beats quiet and wrong, and quiet-and-wrong is the bug here.
+ */
+/**
+ * Which of the tree's test files may pin a door at all — the two structural
+ * exclusions, applied to `[relative path, source]` pairs.
+ *
+ * Separate from `pinningTests` so the arms can drive the REFUSAL below: a
+ * backstop whose only road runs through a real filesystem scan is a backstop
+ * nobody can prove blocks (working law 3).
+ */
+export function pinCandidates(
+  entries: ReadonlyArray<readonly [string, string]>,
+): Array<readonly [string, string]> {
   /*
     THE CENSUS'S OWN TEST IS NOT A PIN. Its positive control has to NAME an
     unpinned id, and the first run of this scan counted that mention as the pin
@@ -307,13 +441,40 @@ export function pinningTests(ids: string[]): Map<string, string[]> {
     into the corpus it searches (memory: specimen-joins-the-vocabulary, fourth
     instance). Excluded structurally, by what the file imports, not by name.
   */
-  const texts = tests
-    .map((file) => [file, fs.readFileSync(file, "utf8")] as const)
-    .filter(([, text]) => !text.includes("lib/capabilityAtlas.mts"));
+  const kept = entries
+    .filter(([, text]) => !text.includes("lib/capabilityAtlas.mts"))
+    .filter(([file, text]) => reachesDoors(file, text));
+  /*
+    REFUSE RATHER THAN RETURN A SHORT LIST (the Atlas collector rule, CLAUDE.md).
+    If the reach test matches nothing, every door reads as unpinned and the
+    census reports a catastrophe that is really a broken resolver.
+  */
+  if (kept.length === 0) {
+    throw new Error(
+      `pinCandidates: no test file reaches ${DOOR_MODULE_DIR}. That is a broken resolver, ` +
+      "not a product with no arms — refusing rather than reporting every door unpinned.",
+    );
+  }
+  return kept;
+}
+
+/**
+ * Which test files name an id — as a QUOTED literal, so `busy` in prose does not
+ * count as a pin, and only among the files `pinCandidates` allows.
+ *
+ * A refusal with no pin is a door nobody has proven can shut. The reach rule
+ * that decides who may pin, and the measurements behind it, are documented on
+ * `pinCandidates` and `reachesDoors` above.
+ */
+export function pinningTests(ids: string[]): Map<string, string[]> {
+  const tests = listFiles(path.join(repoRoot, "server"), (n) => n.endsWith(".test.ts"));
+  const texts = pinCandidates(
+    tests.map((file) => [rel(file), fs.readFileSync(file, "utf8")] as const),
+  );
   const out = new Map<string, string[]>();
   for (const id of ids) {
     const quoted = [`"${id}"`, `'${id}'`, `\`${id}\``];
-    out.set(id, texts.filter(([, text]) => quoted.some((q) => text.includes(q))).map(([file]) => rel(file)));
+    out.set(id, texts.filter(([, text]) => quoted.some((q) => text.includes(q))).map(([file]) => file));
   }
   return out;
 }
