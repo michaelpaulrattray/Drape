@@ -164,6 +164,15 @@ function repoTestFiles(): string[] {
  * literal is resolved against. Derived from `git ls-files` rather than walked,
  * so it cannot disagree with what is actually in the repository.
  */
+/** A file's text, or "" — this whole block degrades rather than crashing. */
+function readIfPossible(file: string): string {
+  try {
+    return fs.readFileSync(file, "utf8");
+  } catch {
+    return "";
+  }
+}
+
 function repoPaths(): Set<string> {
   const paths = new Set<string>();
   for (const file of [
@@ -197,7 +206,15 @@ const subjects = buildSubjectIndex(
     }
   }),
   repoPaths(),
-  aliasPrefixes(fs.readFileSync(path.join(repoRoot, "tsconfig.json"), "utf8")),
+  /*
+    ⚠ THE READ IS GUARDED, NOT ONLY THE PARSE (PR #616 review, finding 1).
+    `aliasPrefixes`' docblock promises that a tsconfig which cannot be read
+    yields no aliases — but only the parse half was implemented, so a missing or
+    unreadable file threw uncaught and killed preflight with exit 1, which this
+    script's own header defines as "a check went red". Losing the alias spelling
+    is the designed outcome; crashing is not.
+  */
+  aliasPrefixes(readIfPossible(path.join(repoRoot, "tsconfig.json"))),
 );
 const selection = selectDiffAdjacentTests(changed, repoTests, subjects);
 
