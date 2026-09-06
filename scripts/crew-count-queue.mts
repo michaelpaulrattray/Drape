@@ -117,7 +117,7 @@ import {
 import { CREW_WORK_CATEGORIES } from "../shared/crewWorkSwitches.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 
-import { isOutOfNamingReach, mergedPullRequestArgs } from "./lib/crewNamingWindow.mts";
+import { judgementIsBlind, mergedPullRequestArgs, SEARCH_RESULT_CEILING } from "./lib/crewNamingWindow.mts";
 
 const TABLE = "crew_queue_counts";
 const TITLES_COLUMN = "titles";
@@ -145,7 +145,7 @@ const POSSIBLY_DONE_COLUMN = "possiblyDone";
  * (`shared/crewQueuePossiblyDone.ts`), so nothing merged before the oldest open
  * card can change any verdict, and old cards close.
  */
-const MERGED_PR_PAGE_BOUND = 1000;
+const MERGED_PR_PAGE_BOUND = SEARCH_RESULT_CEILING;
 
 /** WHICH WORLD, named plainly — see `crew-shift-start.mts`'s note. */
 function whichWorld(): "PRODUCTION" | "DEV" {
@@ -237,14 +237,15 @@ function readOldestOpenCardFiling(): { number: number; date: string } | null {
 /**
  * The pull-request index, and how far back it can actually see.
  *
- * `horizonAt` is null when the whole derived window came back — the ordinary
+ * `truncated` is false when the whole derived window came back — the ordinary
  * case, and it means every open card can be judged. When the page bound is hit
- * it is the oldest `mergedAt` the reader actually holds, and a card filed
- * before it is OUT OF REACH rather than unflagged (#507's bar).
+ * the reader cannot know WHICH merges it is missing (neither `gh` road returns
+ * a merge-date-ordered page), so every offered card is reported OUT OF REACH by
+ * name rather than unflagged (#507's bar, corrected by PR #588's review).
  */
 type CardNamingIndex = {
   readonly index: Map<number, CardNaming[]>;
-  readonly horizonAt: number | null;
+  readonly truncated: boolean;
 };
 
 function readCardNamings(since: { number: number; date: string } | null): CardNamingIndex | null {
@@ -263,30 +264,21 @@ function readCardNamings(since: { number: number; date: string } | null): CardNa
     );
     const rows = JSON.parse(out);
     if (!Array.isArray(rows)) return null;
-    /* ⚠ THE PAGE BOUND IS A HORIZON NOW, NOT A REFUSAL (#507). The old code
-       returned null here, which wrote every category UNFLAGGED — and an
-       unflagged category is the sentence *"nothing is ever stale"*, which is
-       the answer this instrument exists to stop the panel giving. Reporting how
-       far back the reader can see keeps every card inside that reach judged and
-       names the ones outside it. */
-    let horizonAt: number | null = null;
-    if (rows.length >= MERGED_PR_PAGE_BOUND) {
-      const oldest = Math.min(
-        ...(rows as Array<{ mergedAt?: unknown }>)
-          .map((row) => (typeof row.mergedAt === "string" ? Date.parse(row.mergedAt) : Number.NaN))
-          .filter((value) => Number.isFinite(value)),
-      );
-      horizonAt = Number.isFinite(oldest) ? oldest : null;
+    /* ⚠ THE PAGE BOUND IS NOT A REFUSAL (#507) AND NOT A PARTIAL READING
+       EITHER (PR #588's review). The old code returned null here, which wrote
+       every category UNFLAGGED — the sentence *"nothing is ever stale"*, which
+       is the answer this instrument exists to stop the panel giving. The first
+       repair judged cards newer than the oldest merge it held, which assumed
+       the page was the newest-by-merge slice and neither `gh` road promises
+       that. So the index is built and simply not consulted: every offered card is
+       named as unjudged, and the reason is printed. */
+    const truncated = rows.length >= MERGED_PR_PAGE_BOUND;
+    if (truncated) {
       console.error(
         `⚠ the possibly-fixed reading hit its page bound: ${MERGED_PR_PAGE_BOUND} merged pull requests came back`
-        + (horizonAt === null
-          ? " and none carried a readable merge date — every card is reported OUT OF REACH."
-          : ` — it can see back to ${new Date(horizonAt).toISOString().slice(0, 10)}, and cards filed before that`
-            + " are reported OUT OF REACH rather than unflagged."),
+        + " — the reader cannot tell which merges it is missing, so every offered card is reported OUT OF REACH"
+        + " rather than unflagged. Narrow the window by closing old cards, or page the read by date.",
       );
-      /* Not knowing the horizon is the one case that cannot be reported per
-         card, so it refuses the whole reading exactly as before. */
-      if (horizonAt === null) return null;
     }
     const index = new Map<number, CardNaming[]>();
     for (const row of rows as Array<{ number?: unknown; title?: unknown; body?: unknown; mergedAt?: unknown }>) {
@@ -306,7 +298,7 @@ function readCardNamings(since: { number: number; date: string } | null): CardNa
         index.set(card, [...(index.get(card) ?? []), { pr, mergedAt }]);
       }
     }
-    return { index, horizonAt };
+    return { index, truncated };
   } catch (cause) {
     console.error(`[warn] could not read the merged pull requests: ${(cause as Error).message}`);
     return null;
@@ -418,9 +410,10 @@ function countOpen(label: string, namings: CardNamingIndex | null): CategoryRead
     const outOfReach: Array<{ card: number; title: string }> = [];
     if (namings !== null) {
       for (const row of offeredRows) {
-        /* #507: a card filed before the reader's horizon is UNJUDGED, and
-           saying nothing about it is the same output as "nothing found". */
-        if (isOutOfNamingReach(row.at, namings.horizonAt)) {
+        /* #507: on a truncated read the reader does not know what it is
+           missing, and saying nothing about a card is the same output as
+           "nothing found". Every offered card is named instead. */
+        if (judgementIsBlind(namings.truncated)) {
           outOfReach.push({ card: row.number, title: row.title });
           continue;
         }
@@ -699,7 +692,7 @@ try {
     }
     /* #507: named, so a horizon can never look like a clean reading. */
     for (const row of reading.outOfReach) {
-      console.log(`      ? #${row.card} OUT OF REACH — filed before the merged-PR horizon, not judged · ${row.title}`);
+      console.log(`      ? #${row.card} OUT OF REACH — the merged-PR read was truncated, not judged · ${row.title}`);
     }
   }
 

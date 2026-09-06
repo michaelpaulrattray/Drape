@@ -39,11 +39,30 @@
  * never narrows it** — the same reason.
  */
 
+/**
+ * GitHub's Search API returns at most this many results, whatever `--limit`
+ * says. It is not our number and we cannot raise it.
+ *
+ * It matters because truncation here is detected by `rows.length >= bound`: set
+ * the bound above the ceiling and that comparison can never fire, the read is
+ * silently short, and every card outside the invisible reach is written
+ * unflagged with no horizon and no log line — #507's exact shape, one
+ * constant-edit away. So the search path REFUSES a bound above it rather than
+ * trusting a future editor to know (reviewer finding 2 on PR #588).
+ */
+export const SEARCH_RESULT_CEILING = 1000;
+
 /** The `gh pr list` arguments for the merged-pull-request read. */
 export function mergedPullRequestArgs(
   since: { readonly date: string } | null,
   pageBound: number,
 ): string[] {
+  if (since && pageBound > SEARCH_RESULT_CEILING) {
+    throw new Error(
+      `a search-path page bound of ${pageBound} is above GitHub's ${SEARCH_RESULT_CEILING}-result search `
+      + "ceiling, so truncation could never be detected and the reading would be a silent floor.",
+    );
+  }
   const shared = ["--limit", String(pageBound), "--json", "number,title,body,mergedAt"];
   /* `is:merged` rides INSIDE the search rather than trusting `--state merged`
      to survive alongside it: one flag, one meaning, and the search form is the
@@ -54,20 +73,25 @@ export function mergedPullRequestArgs(
 }
 
 /**
- * Whether a card was filed before the reader could see, and therefore cannot be
- * judged this run.
+ * WHETHER THIS RUN CAN JUDGE ANY CARD AT ALL.
  *
- * `horizonAt` is null in the ordinary case — the whole derived window came back
- * and every open card is inside it. It is set only when the page bound was hit,
- * and is then the oldest merge the reader actually holds.
+ * ⚠ **The first shape of this took a per-card horizon and it was UNSOUND**
+ * (reviewer finding 1 on PR #588). It computed the oldest merge in the page it
+ * held and judged every card filed after that date normally — which is only
+ * true if the rows held are the most-recent-by-MERGE slice. Neither road
+ * promises that: GitHub search has no merged-date sort and returns best-match
+ * order, and the `--state merged` fallback orders by CREATED date, so a PR
+ * created long ago and merged yesterday can be one of the rows dropped. A
+ * qualifying merge newer than the horizon would then be absent, its card judged
+ * normally, and written **not flagged** — the silent direction this whole card
+ * exists to close, reintroduced inside its own escape hatch.
  *
- * ⚠ A card with an UNREADABLE filing date is NOT out of reach. It is already
- * handled by the rule (an unreadable date cannot satisfy "merged after filed"),
- * and reporting it here would move a card from *not flagged* to *unjudged* on
- * the strength of a parse failure that has nothing to do with the horizon.
+ * So there is no partial reading. A truncated page means the reader does not
+ * know WHICH pull requests it is missing, and every offered card is reported
+ * out of reach by name. That is not the old refusal wearing a hat: the old one
+ * wrote every category unflagged, which reads as *"nothing is stale"*; this
+ * names each card it could not judge, in the log a shift acts on.
  */
-export function isOutOfNamingReach(filedAt: number, horizonAt: number | null): boolean {
-  if (horizonAt === null) return false;
-  if (!Number.isFinite(filedAt)) return false;
-  return filedAt < horizonAt;
+export function judgementIsBlind(truncated: boolean): boolean {
+  return truncated;
 }
