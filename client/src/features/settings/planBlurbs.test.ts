@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { HIDDEN_PLAN_TIERS, OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
@@ -86,12 +89,49 @@ describe("#404 — the plan blurb map cannot drift from the ladder", () => {
     }
   });
 
-  it("⚠ a line stays one line at the slot's size", () => {
+  it("⚠ the slot reserves two lines, so a wrap cannot misalign the cards", () => {
     /*
-      §6c's slot is `one line, 400 11px/1.55`. A long sentence wraps and pushes
-      the action button out of alignment across the three cards, which is the
-      exact complaint card 425 item 2 fixed on the current-plan marker. The
-      bound is generous — this catches a paragraph pasted in, not a word added.
+      ⚠ **THIS ARM IS A PROXY FOR A DRIVEN FACT AND SAYS SO.** What actually
+      matters is a pixel reading — the three cards’ action buttons share a top
+      edge — and no unit test in this repository can take it; the frames in the
+      PR are the evidence. What this holds is the one CSS declaration that
+      reading depends on, so it cannot be deleted as dead weight by someone who
+      never saw the misalignment it fixes.
+
+      Measured before the fix, at 1440 in the running app: two of the seven
+      lines wrap at this card width, the shorter card’s action sat at y=439
+      against its neighbours’ 456, and every element below it — credits, what
+      it makes, rollover, perks — carried the same 17px offset.
+    */
+    const css = readFileSync(fileURLToPath(new URL("./settings.css", import.meta.url)), "utf8");
+    const at = css.indexOf(".dp-plan__blurb");
+    expect(at, "the blurb has no style block at all").toBeGreaterThan(-1);
+    const block = css.slice(at, css.indexOf("}", at));
+    expect(block, "the blurb slot stopped reserving its height — cards will misalign on a wrap").toContain(
+      "min-height",
+    );
+  });
+
+  it("⚠ a line stays inside the slot's RESERVED two lines", () => {
+    /*
+      ⚠ **THIS ARM'S FIRST SHAPE WAS WRONG AND THE RUNNING APP IS WHAT SAID
+      SO.** It was written as *"a line stays one line"* with a 72-character cap,
+      on §6c's word that the blurb is one line. Driven at 1440 (law 6), two of
+      the seven approved lines WRAP — 58 and 54 characters against a 233px text
+      column — and both passed this cap while doing it, because **a character
+      count cannot model a width.** They pulled the shorter card's action and
+      credits block 17px above its neighbours, which is card 425 item 2's exact
+      complaint.
+
+      The layout fix reserves two lines of height for every card, so wrapping no
+      longer misaligns anything and the real bound became THREE lines rather
+      than one. This cap is calibrated to that: ~72 characters is comfortably
+      inside two lines at this width, and a third line is where the reserved box
+      overflows again.
+
+      ⚠ **It is still a proxy and says so.** The honest instrument for this is
+      the driven frame, not the string length; this arm catches a paragraph
+      pasted into the table, and his eye catches the rest.
     */
     for (const [id, line] of Object.entries(PLAN_BLURBS)) {
       expect(line.length, `${id}'s blurb is long enough to wrap the slot`).toBeLessThanOrEqual(

@@ -672,7 +672,27 @@
    facts — one is who the rung is for, the other is what its credits buy — and
    card 390 item 5 exists precisely because the second was standing in for the
    first. One class per fact is what keeps that from happening again. */
-.dp-plan__blurb { font: 400 11px/1.55 var(--font-sans); color: var(--metaStrong); }
+.dp-plan__blurb {
+  font: 400 11px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+  /* ⚠ **TWO LINES OF HEIGHT ARE RESERVED WHETHER OR NOT THE LINE NEEDS THEM,
+     AND THIS WAS FOUND AT THE RUNNING APP RATHER THAN REASONED** (#404, law
+     6). §6c calls the blurb *"one line"* and at this card width (233px of
+     text at 11px) two of the seven wrap: *"For a brand team casting across
+     several campaigns at once."* is 58 characters and takes 34px, against
+     Studio's 17px. The card is a stretch flex column, so the shorter card
+     pulled its action, its credits block and its perk row 17px ABOVE its two
+     neighbours — the same misalignment card 425 item 2 went out of its way to
+     PREVENT when it kept the current-plan marker's height.
+
+     Reserving the height fixes it for every string rather than for these
+     seven. **That is the point: these lines are placeholders and he intends
+     to rewrite them**, so a layout that only lines up for the words that
+     happen to be here today is a trap set for his own edit. A character cap
+     cannot stand in for this — width is not length, and the suite's cap says
+     so about itself. */
+  min-height: calc(2 * 1.55 * 11px);
+}
 
 /* §6c's credits block — *"credits + A MONTH; then what it makes; then what
    expires"* — three lines that belong together and read as one, against the
