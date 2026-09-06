@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "849d1098f85d488e"
+    "sourceFingerprint": "dde8750ac21d38fa"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 14
+      "moduleCount": 15
     },
     {
       "id": "domain:shared",
@@ -2139,6 +2139,12 @@
     {
       "id": "module:client/src/features/settings/parts.tsx",
       "path": "client/src/features/settings/parts.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/planBlurbs.ts",
+      "path": "client/src/features/settings/planBlurbs.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -10803,6 +10809,10 @@
       "path": "client/src/features/settings/card425-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/planBlurbs.test.ts",
+      "path": "client/src/features/settings/planBlurbs.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/planMath.test.ts",
       "path": "client/src/features/settings/planMath.test.ts"
     },
@@ -14990,6 +15000,11 @@
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/settings/planBlurbs.ts",
       "kind": "imports"
     },
     {
