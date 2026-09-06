@@ -260,23 +260,29 @@ function routesThroughTheFreeze(source: string): boolean {
  * because a tolerance that swallowed everything would turn the roster green by
  * making it blind (invariant 7). The suite drives both directions.
  */
-export function statIfPresent(path: string): Stats | null {
+/*
+  ONE catch for both helpers (PR #590 review, finding 2): with two hand-rolled
+  try/catches the suite's EISDIR arm drove only the read helper, and a blinded
+  stat catch would have stayed green. Shared, the one driven arm covers both.
+  Stated limit, as listedSource.ts states its own: a DIRECTORY that vanishes
+  before readdirSync still throws — this tolerance covers entries, not roots.
+*/
+function enoentNull<T>(read: () => T): T | null {
   try {
-    return statSync(path);
+    return read();
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw error;
   }
 }
 
+export function statIfPresent(path: string): Stats | null {
+  return enoentNull(() => statSync(path));
+}
+
 /** `readFileSync` with #589's ENOENT-only tolerance — see `statIfPresent`. */
 export function readIfPresent(path: string): string | null {
-  try {
-    return readFileSync(path, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-    throw error;
-  }
+  return enoentNull(() => readFileSync(path, "utf8"));
 }
 
 /** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
