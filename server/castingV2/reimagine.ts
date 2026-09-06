@@ -210,24 +210,36 @@ const NONBINARY_EXPLICIT = ["nonbinary", "non-binary", "agender", "androgynous",
  * was refused twice by the very guard meant to protect it, and the press
  * answered "nothing to offer".
  *
- * ⚠ **A steer word is DESCRIPTION until its position or an imperative says
- * otherwise** (review of PR #598, finding 1): *"a young woman in her 20s"*
- * types an age and describes it — emptying the lock there turns off the one
- * mechanical age guard on some of the most natural briefs in the product. So
- * a word from this list steers only when it sits AFTER the last readable age
- * claim (the fold's natural shape — the instruction is typed at the end), or
- * when the box carries an imperative ("make…", "turn…"). The vocabulary
- * derives from `seedFidelity.ts`'s own `YOUTH_WORDS` (working law 4) plus
- * the ageing direction words that list has no reason to hold.
+ * ⚠ **A steer word is DESCRIPTION until an imperative or a trailing
+ * instruction fragment says otherwise** (review of PR #598, findings 1 of
+ * both rounds — each round found a descriptive shape the previous rule read
+ * as steering): *"a young woman in her 20s"* and *"a woman in her 40s,
+ * middle-aged and weary"* both type an age and describe it, and emptying the
+ * lock there turns off the one mechanical age guard on some of the most
+ * natural briefs in the product. So a word from this list steers only when
+ * the box carries an imperative ("make her…", "turn them…", "age him…"), or
+ * when the word sits in a fragment AFTER a sentence boundary that follows
+ * the last readable age claim — the fold's natural shape, an instruction
+ * typed at the end ("…close-cropped hair. older"). Bare "age"/"aged" left
+ * the list entirely: in a brief box they are overwhelmingly description
+ * ("middle-aged", "looks her age"), and the imperative shape carries "age
+ * her up". The vocabulary derives from `seedFidelity.ts`'s own
+ * `YOUTH_WORDS` (working law 4) plus the direction words that list has no
+ * reason to hold.
  *
- * ⚠ Declared limits, both pinned in the suite: a bare number ("make them
- * 45") steers without a word this list can see, and an instruction typed
- * BEFORE the brief's own age with no imperative ("younger. a woman in her
- * 30s") reads as description; each falls to "your words stand", and the
- * court's fold fixtures (#535 §7) measure how often those shapes occur.
+ * ⚠ Declared limits, pinned in the suite: a bare number ("make them 45")
+ * steers without a word this list can see; an instruction with no imperative
+ * and no sentence boundary ("…in her 30s older please") reads as
+ * description; and a descriptive fragment after a full stop ("…in her 40s.
+ * Young at heart.") reads as steering. Each falls the safe way — to "your
+ * words stand" or to an unlocked press whose result lands editable in the
+ * box — and the court's fold fixtures (#535 §7) measure how often the
+ * shapes occur.
  */
-const AGE_STEER_WORDS = [...YOUTH_WORDS, "older", "elderly", "age", "aged", "ageing", "aging"] as const;
+const AGE_STEER_WORDS = [...YOUTH_WORDS, "older", "elderly"] as const;
 const IMPERATIVE_SHAPE = /(^|[^a-z])(make|turn) (her|him|them|it|the)\b/;
+/** "age her up" — the verb IS the steering act, no separate direction word needed. */
+const AGE_IMPERATIVE_SHAPE = /(^|[^a-z])age (her|him|them|it|the)\b/;
 
 export function lockedTrioOf(briefText: string): LockedTrio {
   const lower = briefText.toLowerCase().replace(/\s+/g, " ");
@@ -250,13 +262,22 @@ export function lockedTrioOf(briefText: string): LockedTrio {
     blanked = blanked.slice(0, start) + " ".repeat(end - start) + blanked.slice(end);
   }
   const lastClaimEnd = spans.reduce((max, span) => Math.max(max, span.end), 0);
-  const steered = AGE_STEER_WORDS.some((word) => {
+  const imperative = IMPERATIVE_SHAPE.test(blanked);
+  const steered = AGE_IMPERATIVE_SHAPE.test(blanked) || AGE_STEER_WORDS.some((word) => {
     const escaped = word.replace(/[-]/g, "\\-");
     /* EVERY occurrence, not the first: "a young woman … make her young again" steers on the second. */
     const occurrences = Array.from(blanked.matchAll(new RegExp(`(^|[^a-z])${escaped}(?![a-z'’])`, "g")));
     return occurrences.some((match) => {
+      if (imperative) return true;
       const at = (match.index ?? 0) + match[1].length;
-      return at > lastClaimEnd || IMPERATIVE_SHAPE.test(blanked);
+      /*
+        After the claim AND across a sentence boundary — "…in her 40s,
+        middle-aged and weary" is one sentence describing one woman;
+        "…close-cropped hair. older" is a brief and then an instruction.
+        Blanking preserved offsets, so the punctuation between them is real.
+      */
+      if (at <= lastClaimEnd) return false;
+      return /[.;!?]/.test(blanked.slice(lastClaimEnd, at));
     });
   });
   return {
@@ -268,8 +289,18 @@ export function lockedTrioOf(briefText: string): LockedTrio {
 
 /**
  * Why a draft is refused, or null when it may stand. The re-ask quotes this
- * sentence to the author, the row records it (#252's lesson: the rate was
- * always recorded and the reason was recoverable nowhere).
+ * sentence to the author.
+ *
+ * ⚠ **THE REASONS LIVE IN LOGS ONLY TODAY — A DECLARED LOSS** (review of PR
+ * #598, round 2 finding 2; the first draft of this docblock said "the row
+ * records it", which invited the next reader to go looking for a record
+ * that does not exist). A press persists nothing: `refusals`/`attempts`
+ * reach `log.warn` and the route's projection deliberately drops them
+ * (invariant 8). The old road's `register.refusals` (#529) — the measured
+ * channel the founder's loosen-a-guard bar reads — has no successor on the
+ * road that now runs these guards; the refusal-loop patrol (#129) is where
+ * a queryable channel gets designed if the logs prove too thin, and the
+ * court (#535 §7) reads its rates from its own driven arms, not from here.
  *
  * Order matters the way `draftRefusal`'s did: the shape checks first, then
  * the words this studio never sends, then the locked trio — a draft that says

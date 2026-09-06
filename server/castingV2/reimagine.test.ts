@@ -88,6 +88,15 @@ describe("the locked trio, read from the box's own text", () => {
     expect(lockedTrioOf("a young woman in her 20s, freckled").ageBands).toEqual(["20s"]);
     expect(lockedTrioOf("an aging punk in his 60s").ageBands).toEqual(["60s"]);
     expect(lockedTrioOf("a middle-aged woman in her 40s").ageBands).toEqual(["40s"]);
+    /* And AFTER the claim too (round 2 of the review): one sentence describing one woman is not an instruction. */
+    expect(lockedTrioOf("a woman in her 40s, middle-aged and weary").ageBands).toEqual(["40s"]);
+    expect(lockedTrioOf("a woman in her 30s, young at heart").ageBands).toEqual(["30s"]);
+    expect(lockedTrioOf("a detective in his 50s with youthful energy").ageBands).toEqual(["50s"]);
+    expect(lockedTrioOf("a woman in her 30s who looks her age").ageBands).toEqual(["30s"]);
+    /* A trailing instruction FRAGMENT — brief, full stop, direction — is the fold and does steer. */
+    expect(lockedTrioOf("a woman in her 30s, close-cropped hair. older").ageBands).toEqual([]);
+    /* "age her up" is the imperative shape now that bare "age"/"aged" left the steer list. */
+    expect(lockedTrioOf("a woman in her 30s. age her up a decade").ageBands).toEqual([]);
     expect(lockedTrioOf("an adult sphinx in ceremonial armour").species).toBe("feline");
     expect(lockedTrioOf("a portrait of a diver").species).toBeNull();
     /* Two groups named — a fold changing species says both — locks none. */
@@ -141,10 +150,12 @@ describe("the refusal chain — the roll guards plus the trio, and his own outpu
     /* And a DESCRIPTIVE steer word beside a claim leaves the guard armed: the reviewer's own failure case. */
     expect(reimagineRefusal("A woman in her 50s, freckled and quick.", 400, "a young woman in her 20s, freckled"))
       .toContain("50s");
-    /* ⚠ Declared limits, both directions: a bare-number instruction steers invisibly, and an instruction typed BEFORE the brief's own age with no imperative reads as description. */
+    /* ⚠ Declared limits, all three directions: a bare-number instruction steers invisibly; an instruction with no imperative and no sentence boundary reads as description; a descriptive fragment after a full stop reads as steering. */
     expect(reimagineRefusal("A fitness creator in her mid 40s.", 400, "a fitness creator in her 30s. make her 45"))
       .toContain("40s");
+    expect(lockedTrioOf("a woman in her 30s older please").ageBands).toEqual(["30s"]);
     expect(lockedTrioOf("younger please. a woman in her 30s").ageBands).toEqual(["30s"]);
+    expect(lockedTrioOf("a woman in her 40s. Young at heart, though.").ageBands).toEqual([]);
   });
 
   it("a locked sex must keep being said; a locked species survives as its GROUP, so his sphinx→'feline humanoid' passes", () => {

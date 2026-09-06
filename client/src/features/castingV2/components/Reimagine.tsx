@@ -163,23 +163,23 @@ export function ReimagineButton({
   );
 }
 
-/** The one quiet line under the box, with Undo where there is something to undo. */
+/**
+ * The one quiet line under the box, with Undo WHEREVER there is something to
+ * undo — including beside the "nothing" line (review of PR #598, round 2
+ * finding 3: a press-again that came back empty used to swallow the Undo for
+ * the idea still sitting in the box, making the promised way back
+ * unreachable until the customer typed).
+ */
 export function ReimagineLine({ state }: { state: ReimagineState }) {
   if (state.line === null) return null;
   return (
     <p className="dpc-reim__line" role="status">
-      {state.line === "idea" ? (
-        <>
-          {REIMAGINED_LINE}
-          {state.canUndo ? (
-            <button type="button" className="dpc-reim__undo" onClick={state.undo}>
-              {REIMAGINE_UNDO_LABEL}
-            </button>
-          ) : null}
-        </>
-      ) : (
-        NOTHING_TO_OFFER_LINE
-      )}
+      {state.line === "idea" ? REIMAGINED_LINE : NOTHING_TO_OFFER_LINE}
+      {state.canUndo ? (
+        <button type="button" className="dpc-reim__undo" onClick={state.undo}>
+          {REIMAGINE_UNDO_LABEL}
+        </button>
+      ) : null}
     </p>
   );
 }
