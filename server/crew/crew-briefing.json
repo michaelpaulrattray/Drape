@@ -1,7 +1,7 @@
 {
-  "edition": 279,
-  "updatedAt": "2026-09-06T14:40:00Z",
-  "shift": "Foreman (Opus) - the suggestions under your brief box are gone on your word, and your page now says so",
+  "edition": 280,
+  "updatedAt": "2026-09-06T16:14:05Z",
+  "shift": "Foreman (Opus) - two fixes for your page and the team's own tooling: a finished chore stops asking, and a rollback stops costing a wasted deploy check",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T14:21:47.057Z",
+      "readAt": "2026-09-06T16:13:22.182Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4062,6 +4062,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-609-desk-card-closed-604",
+      "title": "A card you have already dealt with stops sitting on your desk asking (#604)",
+      "status": "merged",
+      "prNumber": 609,
+      "note": "You entered three Railway fields on Saturday afternoon. The card asking you to do it stayed on your page for a day afterwards, and you ended up asking whether you had replied to everything — the honest answer needed someone to go and read the rows. The page was marking a card finished only when a shift had first marked it 'answered', and your reply had never moved it there. It now goes by the record: when the work behind a card is closed, the card leaves your desk, however it was labelled on the way. The same gap one list over is why a set of frames sat asking for your eye on a feature you had deleted. Where clearing a card would leave something else on the page dangling, it says so and leaves it alone rather than guessing."
+    },
+    {
+      "id": "pr-610-atlas-push-gate-606-519",
+      "title": "Undoing a change no longer costs the team a wasted seven-minute check (#606, #519)",
+      "status": "merged",
+      "prNumber": 610,
+      "note": "When we undo a change — which is now how every rollback is done — the team's own internal map of the codebase was not being rebuilt, so the automatic check rejected the work three and a half minutes in and the whole thing had to be redone. It happened on Saturday's revert of the suggestion chips. Git simply does not run the rebuild step on three of its commands, which we measured rather than guessed. The obvious repair turned out to work on two of those three and fail silently on the commonest one, so it was rejected: something that covers most cases reads as coverage. Instead the check that already protected the live site now also runs before a shift's work leaves the machine, so the problem is caught in ten seconds instead of seven minutes. Costs you nothing and changes nothing you can see; it buys the nights back time."
+    },
+    {
       "id": "pr-605-remove-brief-chips-535",
       "status": "merged",
       "prNumber": 605,
@@ -5739,10 +5753,10 @@
   "problems": [
     {
       "id": "queue-shape-0906-foreman",
-      "title": "The queue: 91 open, 5 carrying your word, nothing urgent, 1 unread for a week",
+      "title": "The queue: 92 open, 2 carrying your word, nothing urgent, 1 unread for a week",
       "severity": "info",
       "state": "open",
-      "detail": "Unchanged in shape since last night, and that is honest rather than a stall: two cards closed tonight and two were filed in their place, one of them found by the code reviewer. The 5 carrying your word are the NEXT UP list — four wait on you, one waits on a scheduled performance read. One card has now gone a week with nobody re-reading it against the code (#257); it gets read on the next housekeeping pass rather than left to age."
+      "detail": "Steady. Three cards closed tonight (#604, #606, #519) and two filed — one of them found by the reviewer inside our own fix, which is the gate earning its keep. NEXT UP still holds two and neither is takeable tonight: the plan-card blurb waits on the ladder folding, and the shift-process card waits on your verdict. Nothing carries the urgent label. One card (#257) has gone a week with nobody re-reading it, unchanged from last night."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -6081,7 +6095,7 @@
     151
   ],
   "nextUp": {
-    "readAt": "2026-09-06T14:21:46.053Z",
+    "readAt": "2026-09-06T16:13:21.232Z",
     "items": [
       {
         "issueNumber": 404,
