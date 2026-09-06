@@ -213,8 +213,18 @@ describe("a pull request that CITES cards is not evidence about any of them (#51
       (p50 3, p75 4, p90 6, p95 8 over 220 merged PRs) is what makes 8
       defensible; a later edit to 3 or to 40 would leave every arm above green
       while making the rule meaningless in one direction or the other.
+
+      ⚠ THE LOWER BOUND IS 7, THE BOTTOM OF THE MEASURED-IDENTICAL BAND — NOT 6
+      (PR #593 review). It read `>= 6` first, and 6 is the one nearby value this
+      change's own driven reading CONDEMNS: on the live queue 7, 8 and 9 were
+      identical, while 6 lost two genuine findings (#482 and #479). So an edit
+      from 8 to 6 would have left every arm here green — the boundary arm is
+      relative to the constant, the positive control uses two cards, the #498
+      arm uses sixteen — while silently dropping real findings, which is exactly
+      the drift this arm exists to catch. A guard whose range admits the value
+      its own measurement rejects is not guarding that measurement.
     */
-    expect(CITED_CARDS_CEILING).toBeGreaterThanOrEqual(6);
+    expect(CITED_CARDS_CEILING).toBeGreaterThanOrEqual(7);
     expect(CITED_CARDS_CEILING).toBeLessThanOrEqual(10);
   });
 
