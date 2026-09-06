@@ -236,7 +236,122 @@ export type TestSelection = {
   readonly directories: readonly string[];
   /** Changed files vitest could never collect a neighbour for, with their reason. */
   readonly uncovered: readonly string[];
+  /** Suites selected because they are ABOUT a changed tree, not beside it. */
+  readonly subjectFiles: readonly string[];
 };
+
+/**
+ * A quoted path-shaped literal: at least one slash, no spaces, no interpolation.
+ * Deliberately loose — every candidate is then RESOLVED against the real tree,
+ * so a literal that is not a directory costs nothing but a set lookup.
+ */
+const PATH_LITERAL = /["'`]([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+)["'`]/g;
+
+/**
+ * Collapse `.` and `..` inside a repo-relative path.
+ *
+ * ⚠ **WITHOUT THIS THE INDEX MISSES THE SUITE THAT OWNS THE FILE, and it was
+ * found by driving preflight on this very change rather than by reasoning.**
+ * `server/preflight.test.ts` reaches its subject as `"../scripts/lib/preflight.mts"`,
+ * so the resolved candidate is the literal string `server/../scripts/lib`,
+ * which is not in the directory set and matched nothing. The suite most about
+ * the change was the one suite the index could not find.
+ *
+ * A path that climbs above the repo root returns null rather than clamping:
+ * `../../elsewhere` is not a directory of this tree and must not resolve to one.
+ */
+function normalizeRepoPath(candidate: string): string | null {
+  const out: string[] = [];
+  for (const part of candidate.split("/")) {
+    if (part === "" || part === ".") continue;
+    if (part === "..") {
+      if (out.length === 0) return null;
+      out.pop();
+      continue;
+    }
+    out.push(part);
+  }
+  return out.join("/");
+}
+
+/** The directories a path sits under, longest first, ending at the repo root. */
+function ancestorsOf(file: string): string[] {
+  const parts = file.replace(/\\/g, "/").split("/");
+  const out: string[] = [];
+  for (let i = parts.length - 1; i > 0; i -= 1) out.push(parts.slice(0, i).join("/"));
+  out.push("");
+  return out;
+}
+
+/**
+ * Which directories of this repository a test file is ABOUT — the reverse of
+ * adjacency, and the answer to #565.
+ *
+ * ⚠ **A GUARD'S FILE AND ITS SUBJECT ARE DIFFERENT THINGS, ON PURPOSE.**
+ * `client/src/foundation/token-guard.test.ts` guards four feature trees;
+ * `architectureAtlas.test.ts` guards the whole server. Directory adjacency
+ * finds the suites that sit NEXT TO a change and cannot find the suites that
+ * are ABOUT it — so preflight went green on PR #563 and the gate reddened seven
+ * minutes later on the guard that owns the changed directory.
+ *
+ * ⚠ **A LITERAL IS RESOLVED AGAINST THE TREE, NOT MATCHED AGAINST A ROOT
+ * PREFIX — AND #565'S OWN RECOMMENDATION FAILS WITHOUT THAT.** Measured before
+ * this was written: reading only literals spelled from a repo root
+ * (`client/src/…`, `server/…`) finds **zero** subjects for that card's own
+ * specimen, because `token-guard.test.ts` writes `"features/castingV2"`,
+ * relative to `client/src`. Written the card's way this would have shipped
+ * green and still missed the incident that produced it.
+ *
+ * The resolution takes no list of roots: a literal is tried against the
+ * DECLARING FILE'S OWN ANCESTORS, longest first, up to the repo root. That is
+ * derived from where the suite actually sits (working law 4), so it cannot rot
+ * the way an enumerated root list would.
+ *
+ * ⚠ **A SUITE IS NEVER ITS OWN SUBJECT.** Its own directory is already covered
+ * by adjacency, and counting it here would make every `__fixtures__` path in
+ * every suite re-select the directory it already lives in.
+ *
+ * ⚠ **THE SUBJECT IS THE EXACT PATH THE LITERAL NAMES — A FILE STAYS A FILE.**
+ * The first shape here widened a file literal to its directory, and driving it
+ * showed why that is wrong: every suite importing anything from `scripts/lib`
+ * became a subject of every OTHER module in `scripts/lib`, and a two-file change
+ * selected **71** suites where the precise reading selects a fraction of that.
+ * Importing a neighbour is not being about it. A literal naming a DIRECTORY is
+ * about that whole tree, which is what a cross-tree guard writes and is the
+ * case #565 exists for.
+ *
+ * @param tests      `[repo-relative test path, its source text]` pairs
+ * @param realPaths  every file AND directory that exists in the tree
+ */
+export function buildSubjectIndex(
+  tests: ReadonlyArray<readonly [string, string]>,
+  realPaths: ReadonlySet<string>,
+): Map<string, string[]> {
+  const index = new Map<string, string[]>();
+  for (const [rawPath, text] of tests) {
+    const test = rawPath.replace(/\\/g, "/");
+    const own = dirOf(test);
+    const roots = ancestorsOf(test);
+    const named = new Set<string>();
+    for (const match of text.matchAll(PATH_LITERAL)) {
+      const candidate = match[1]!;
+      for (const root of roots) {
+        const resolved = normalizeRepoPath(root ? `${root}/${candidate}` : candidate);
+        /* Its own path and its own directory are adjacency's job, not this. */
+        if (resolved && realPaths.has(resolved) && resolved !== own && resolved !== test) {
+          named.add(resolved);
+          break;
+        }
+      }
+    }
+    for (const subject of named) {
+      const bucket = index.get(subject);
+      if (bucket) bucket.push(test);
+      else index.set(subject, [test]);
+    }
+  }
+  return index;
+}
 
 /**
  * The card's rule, exactly: the vitest files whose paths share a directory
@@ -245,14 +360,28 @@ export type TestSelection = {
  * A changed file that IS a test file selects itself, which matters because the
  * commonest diff of all on this team is a source file plus its arm.
  *
+ * ⚠ **ADJACENCY ALONE IS BLIND TO THE SUITE THAT OWNS THE CHANGE (#565).** A
+ * `subjects` index — see `buildSubjectIndex` — adds the suites that NAME a
+ * changed directory, whether or not they sit in it. Passing none keeps the
+ * original behaviour exactly, which is what the arms compare against.
+ *
+ * ⚠ **AND SUBJECTS ARE READ FOR A CHANGED FILE OUTSIDE THE COLLECTED ROOTS
+ * TOO, WHICH IS THE BIGGER HALF.** Measured: a one-file change under `shared/`
+ * or `scripts/lib/` selected **nothing at all** — those roots hold no suites,
+ * so every such file went straight to `uncovered` and the whole step was
+ * silently empty. `scripts/lib/` is where this team's own instruments live.
+ *
  * @param changed    repo-relative paths the diff touches (any slash style)
  * @param repoTests  every vitest-collected test path in the repository
+ * @param subjects   directory -> suites ABOUT it, from `buildSubjectIndex`
  */
 export function selectDiffAdjacentTests(
   changed: readonly string[],
   repoTests: readonly string[],
+  subjects: ReadonlyMap<string, readonly string[]> = new Map(),
 ): TestSelection {
   const tests = repoTests.map((t) => t.replace(/\\/g, "/")).filter(isCollectedTest);
+  const collected = new Set(tests);
   const byDirectory = new Map<string, string[]>();
   for (const test of tests) {
     const dir = dirOf(test);
@@ -263,24 +392,41 @@ export function selectDiffAdjacentTests(
 
   const directories = new Set<string>();
   const uncovered: string[] = [];
+  const subjectFiles = new Set<string>();
   for (const raw of changed) {
     const file = raw.replace(/\\/g, "/");
-    if (!isCollectedRoot(file)) {
-      uncovered.push(file);
-      continue;
-    }
     const dir = dirOf(file);
-    if (byDirectory.has(dir)) directories.add(dir);
-    else uncovered.push(file);
+    /*
+      THE FILE ITSELF, ITS DIRECTORY, AND EVERY TREE ABOVE IT. A guard that
+      names a whole tree (`token-guard.test.ts` writes "features/castingV2")
+      owns everything under it, so a change three directories down is still its
+      subject — that is the case adjacency cannot see and this exists for.
+    */
+    const claims = [file, dir, ...ancestorsOf(file).slice(1)];
+    /*
+      A suite is only runnable if vitest collects it — the subject index is
+      built from the same list, but filtering here means a stale or hand-made
+      index can never put a file vitest ignores on the command line, which is
+      how preflight goes green about a test it never ran.
+    */
+    const about = [...new Set(claims.flatMap((c) => subjects.get(c) ?? []))].filter((t) => collected.has(t));
+    for (const test of about) subjectFiles.add(test);
+
+    const adjacent = isCollectedRoot(file) && byDirectory.has(dir);
+    if (adjacent) directories.add(dir);
+    /* Uncovered means NOTHING selected it — neither beside it nor about it. */
+    if (!adjacent && about.length === 0) uncovered.push(file);
   }
 
   const files = new Set<string>();
   for (const dir of directories) for (const test of byDirectory.get(dir) ?? []) files.add(test);
+  for (const test of subjectFiles) files.add(test);
 
   return {
     files: [...files].sort(),
     directories: [...directories].sort(),
     uncovered: [...new Set(uncovered)].sort(),
+    subjectFiles: [...subjectFiles].sort(),
   };
 }
 

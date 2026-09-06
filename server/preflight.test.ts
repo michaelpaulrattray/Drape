@@ -40,6 +40,7 @@ import {
   gateCommandMatches,
   gateRunCommands,
   isCollectedTest,
+  buildSubjectIndex,
   selectDiffAdjacentTests,
   vitestArgv,
 } from "../scripts/lib/preflight.mts";
@@ -111,6 +112,170 @@ describe("selectDiffAdjacentTests — the card's rule", () => {
     const selection = selectDiffAdjacentTests(["server/db/connection.ts"], REPO_TESTS);
     expect(selection.files).toEqual([]);
     expect(selection.uncovered).toEqual(["server/db/connection.ts"]);
+  });
+});
+
+/*
+  #565 — THE SUITES THAT ARE ABOUT THE CHANGE, NOT ONLY THE ONES BESIDE IT.
+
+  Preflight went green on PR #563 and the gate reddened seven minutes later on
+  `client/src/foundation/token-guard.test.ts` — the guard that owns hex literals
+  in `client/src/features/castingV2`, living in a different tree. Adjacency
+  finds the suites NEXT TO a change; it cannot find the suites ABOUT it.
+*/
+describe("buildSubjectIndex — a guard's file and its subject are different things", () => {
+  const REAL_PATHS = new Set([
+    "client", "client/src", "client/src/foundation", "client/src/features",
+    "client/src/features/castingV2", "client/src/features/castingV2/parts",
+    "client/src/foundation/token-guard.test.ts",
+    "client/src/features/castingV2/Roll.tsx",
+    "scripts", "scripts/lib", "scripts/lib/preflight.mts", "scripts/lib/other.mts",
+    "server", "server/preflight.test.ts",
+  ]);
+
+  it("⚠ THE CARD'S OWN SPECIMEN — a tree named RELATIVE to the suite's ancestor resolves", () => {
+    /*
+      Written the card's way — literals spelled from a repo root — this finds
+      NOTHING, and that was measured before a line was written. `token-guard`
+      writes "features/castingV2", relative to `client/src`. The resolution
+      takes no list of roots: a literal is tried against the DECLARING FILE'S
+      OWN ancestors, so it is derived from where the suite sits.
+    */
+    const index = buildSubjectIndex(
+      [["client/src/foundation/token-guard.test.ts", 'const GUARDED_PATHS = ["features/castingV2", "features/billing"];']],
+      REAL_PATHS,
+    );
+    expect(index.get("client/src/features/castingV2")).toEqual([
+      "client/src/foundation/token-guard.test.ts",
+    ]);
+  });
+
+  it("⚠ A FILE LITERAL STAYS A FILE — importing a neighbour is not being about it", () => {
+    /*
+      The first shape widened a file literal to its directory, and driving it
+      showed why that is wrong: every suite importing anything from
+      `scripts/lib` became a subject of every OTHER module there, and a
+      two-file change selected 71 suites against 4 for the precise reading.
+    */
+    const index = buildSubjectIndex(
+      [["server/preflight.test.ts", 'import { x } from "../scripts/lib/other.mts";']],
+      REAL_PATHS,
+    );
+    expect(index.get("scripts/lib/other.mts")).toEqual(["server/preflight.test.ts"]);
+    expect(index.get("scripts/lib")).toBeUndefined();
+  });
+
+  it("⚠ A RELATIVE LITERAL IS NORMALIZED — without it the suite that OWNS the file is the one it misses", () => {
+    /*
+      Found by driving preflight on this very change: `server/preflight.test.ts`
+      reaches its subject as "../scripts/lib/preflight.mts", so the candidate is
+      the literal string `server/../scripts/lib/preflight.mts` — not a path in
+      the set, matching nothing.
+    */
+    const index = buildSubjectIndex(
+      [["server/preflight.test.ts", 'from "../scripts/lib/preflight.mts"']],
+      REAL_PATHS,
+    );
+    expect(index.get("scripts/lib/preflight.mts")).toEqual(["server/preflight.test.ts"]);
+  });
+
+  it("NEGATIVE CONTROLS — a literal that is not a path in this tree, and a suite's own home", () => {
+    const index = buildSubjectIndex([[
+      "client/src/foundation/token-guard.test.ts",
+      [
+        'fetch("https://example.com/api/thing");',
+        'expect(msg).toBe("not/a/real/path");',
+        'const own = "client/src/foundation";',
+        'const self = "client/src/foundation/token-guard.test.ts";',
+      ].join("\n"),
+    ]], REAL_PATHS);
+    /* A suite is never its own subject — adjacency already covers its home. */
+    expect(index.get("client/src/foundation")).toBeUndefined();
+    expect(index.get("client/src/foundation/token-guard.test.ts")).toBeUndefined();
+    /* And nothing invented from a URL or a prose string. */
+    expect([...index.keys()]).toEqual([]);
+  });
+
+  it("a literal climbing above the repo root resolves to nothing rather than clamping", () => {
+    const index = buildSubjectIndex(
+      [["server/preflight.test.ts", 'from "../../../etc/passwd"']],
+      REAL_PATHS,
+    );
+    expect([...index.keys()]).toEqual([]);
+  });
+});
+
+describe("selectDiffAdjacentTests — subjects, the #565 half", () => {
+  const REPO_TESTS_WITH_GUARD = [
+    ...REPO_TESTS,
+    "client/src/foundation/token-guard.test.ts",
+  ];
+  const SUBJECTS = new Map<string, string[]>([
+    ["client/src/features/castingV2", ["client/src/foundation/token-guard.test.ts"]],
+    ["scripts/lib/preflight.mts", ["server/foo.test.ts"]],
+  ]);
+
+  it("⚠ THE INCIDENT — a change in a guarded tree now selects the guard that owns it", () => {
+    const selection = selectDiffAdjacentTests(
+      ["client/src/features/castingV2/Roll.tsx"],
+      REPO_TESTS_WITH_GUARD,
+      SUBJECTS,
+    );
+    expect(selection.files).toContain("client/src/foundation/token-guard.test.ts");
+    expect(selection.subjectFiles).toEqual(["client/src/foundation/token-guard.test.ts"]);
+  });
+
+  it("a guard that names a TREE owns a change several directories down", () => {
+    const selection = selectDiffAdjacentTests(
+      ["client/src/features/castingV2/parts/deep/Thing.tsx"],
+      REPO_TESTS_WITH_GUARD,
+      SUBJECTS,
+    );
+    expect(selection.subjectFiles).toEqual(["client/src/foundation/token-guard.test.ts"]);
+  });
+
+  it("⚠ THE BIGGER HALF — a root with NO suites beside it stops selecting nothing at all", () => {
+    /*
+      Measured: a one-file change under `shared/` or `scripts/lib/` selected
+      nothing, because neither root holds a suite. Every such file went straight
+      to `uncovered` and the whole diff-tests step was silently empty — and
+      `scripts/lib/` is where this team's own instruments live.
+    */
+    const bare = selectDiffAdjacentTests(["scripts/lib/preflight.mts"], REPO_TESTS_WITH_GUARD);
+    expect(bare.files).toEqual([]);
+    expect(bare.uncovered).toEqual(["scripts/lib/preflight.mts"]);
+
+    const withSubjects = selectDiffAdjacentTests(
+      ["scripts/lib/preflight.mts"],
+      REPO_TESTS_WITH_GUARD,
+      SUBJECTS,
+    );
+    expect(withSubjects.files).toEqual(["server/foo.test.ts"]);
+    /* Covered now — so it must NOT still be reported as covered by nothing. */
+    expect(withSubjects.uncovered).toEqual([]);
+  });
+
+  it("⚠ NEVER puts a file vitest does not collect on the command line", () => {
+    /*
+      The index is built from the collected list, but a stale or hand-made one
+      must not be able to add an integration test — passed beside real files it
+      matches nothing and preflight goes GREEN about a test it never ran.
+    */
+    const selection = selectDiffAdjacentTests(
+      ["server/health.ts"],
+      REPO_TESTS,
+      new Map([["server", ["server/health.integration.test.ts", "docs/notes.md"]]]),
+    );
+    expect(selection.files).not.toContain("server/health.integration.test.ts");
+    expect(selection.files).not.toContain("docs/notes.md");
+    expect(selection.subjectFiles).toEqual([]);
+  });
+
+  it("POSITIVE CONTROL — passing no index leaves the original behaviour byte for byte", () => {
+    const before = selectDiffAdjacentTests(["server/foo.ts"], REPO_TESTS);
+    expect(before.files).toEqual(["server/bar.test.ts", "server/foo.test.ts"]);
+    expect(before.subjectFiles).toEqual([]);
+    expect(before.uncovered).toEqual([]);
   });
 
   it("⚠ AN UNTRACKED NEW TEST FILE SELECTS ITSELF (review finding 1)", () => {
