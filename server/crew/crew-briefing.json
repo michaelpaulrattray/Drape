@@ -1,7 +1,7 @@
 {
-  "edition": 281,
-  "updatedAt": "2026-09-06T17:55:40Z",
-  "shift": "Foreman (Opus) - two fixes to the team's own tools: the merge step stops reporting a success as a failure, and a card parked on your desk stops freezing the work queued behind it",
+  "edition": 282,
+  "updatedAt": "2026-09-06T19:47:39.548Z",
+  "shift": "Foreman (Opus) - three bugs closed in the team's own instruments: the map of the studio's refusals stops counting strangers as proof, and the pre-push check stops missing the guard that owns your change",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T17:55:44.268Z",
+      "readAt": "2026-09-06T19:48:07.764Z",
       "items": [
         {
           "issueNumber": 16,
@@ -246,6 +246,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "git-c-gate-574",
+      "issueNumber": 574,
+      "title": "A safety prompt on the six commands that can destroy work has a way around it - one minute of your hands",
+      "productImpact": "Your settings file puts six git commands behind a confirmation prompt. They are the destructive family - the ones that can throw away work nothing can give back - and two of them act on whatever folder they are run in, including the working folder your own sessions share with the night shifts.\n\nThe prompt matches on how the command starts. There is a second, perfectly ordinary way to write those commands - naming the folder first - and written that way they match none of the six patterns, so they run with no prompt at all. A shift measured this after hitting it by accident doing something legitimate. Nothing has been lost. The point is that nothing would have stopped it.\n\nIt is on your desk rather than fixed because it lives in a file no shift may edit - and more to the point, a session editing the permission file that governs it is the one edit that should never be automatic.",
+      "workedExample": "Measured, three ways of writing the same command:\n\n    git merge origin/main                -> asked (correct)\n    cd <folder>; git merge origin/main   -> asked (correct)\n    git -C <folder> merge origin/main    -> RAN, no prompt\n\nThe same shape is git -C <folder> reset --hard, which destroys uncommitted work in that folder. The fix is adding the second spelling of each of the six to the same list - about a minute. The card carries the exact lines.",
+      "state": "open",
+      "filedAt": "2026-09-06T19:50:00.000Z",
+      "options": [
+        {
+          "key": "a",
+          "label": "Add the six second spellings",
+          "consequence": "The prompt covers both ways of writing the command. No effect on anything routine - these are spellings of commands you already chose to be asked about."
+        },
+        {
+          "key": "b",
+          "label": "Leave it",
+          "consequence": "The prompt stays easy to walk around by accident, on exactly the commands that can lose work."
+        }
+      ],
+      "recommendation": "(a). While you are in that file, card #571 asks for a related narrowing in the same place, so the two are one sitting."
+    },
     {
       "id": "reimagine-design-535",
       "issueNumber": 535,
@@ -728,28 +750,23 @@
     {
       "id": "plan-blurb-404",
       "issueNumber": 404,
-      "title": "One line per plan, in your words - the only slot on the plan card nobody can fill for you",
-      "productImpact": "Your section-03 brief gives each plan card a one-line positioning statement between the price and the button. It has never had one. What was sitting in that slot was \"About 1,428 casting frames\" - which is not a positioning statement, it is what the credits MAKE, and tonight it moved down into the credits block where your own brief puts it.\n\nSo the slot is now empty, deliberately and invisibly - no gap, no placeholder, nothing looks broken. What is missing is a sentence saying who each rung is FOR.",
-      "workedExample": "It would read like this, and the words would be yours:\n\n    Studio                    3,145 CREDITS PER $1\n    $159 / month\n    Where most studios settle - a full campaign a week.\n    [ Upgrade ]\n    500,000 A MONTH - About 1,428 casting frames.\n\nThe reason a shift did not just write twelve of them: that is inventing claims about your product in your voice, which is the one thing the copy rules forbid. And you have already ruled (#391) that twelve rungs fold to seven - so eleven lines written tonight would mean five thrown away and the rest re-cut.",
+      "title": "One line per plan, in your words - the thing this was waiting for has landed",
+      "productImpact": "This is back on your desk because the reason it was waiting is gone.\n\nYour plan cards have a slot for a one-line statement saying who each plan is FOR, sitting between the price and the button. It has never had one. When you last saw this card, the answer was to write them after the ladder folded from twelve rungs to seven - and that fold has now SHIPPED. There are seven rungs. Nothing gets thrown away by writing them now.\n\nA shift cannot write these for you: a positioning statement is a claim about your product in your voice, and inventing seven of them is the one thing the copy rules forbid.\n\nWorth knowing how it surfaced. The card was still labelled as waiting on the ladder a day after the ladder was done, so it sat in your NEXT UP queue pointing at finished work - and the queue would have gone on saying that. A shift found it by opening the code rather than trusting the label.",
+      "workedExample": "Seven lines, in ladder order, as short as you like - six to ten words each reads best at that size. The shape, not a suggestion of the words:\n\n    Studio                    3,145 CREDITS PER $1\n    $159 / month\n    For a team shooting a campaign a month.\n    [ Upgrade ]\n    500,000 A MONTH - About 1,428 casting frames.\n\nReply here with seven lines and the build is a small one.",
       "options": [
         {
           "key": "a",
-          "label": "Drop the slot from the design",
-          "consequence": "The cards are already legible - price, value figure, credits and what they make do the work. One less thing to write."
+          "label": "Reply with seven lines",
+          "consequence": "The slot fills in your voice. Small build, one shift."
         },
         {
           "key": "b",
-          "label": "Write twelve now",
-          "consequence": "Cheapest to build, most likely to be redone: five of the twelve disappear when the ladder folds."
-        },
-        {
-          "key": "c",
-          "label": "Write seven, after the ladder folds",
-          "consequence": "One small piece of work, copy written once, in your voice. Nothing is blocked while it waits - the empty slot is invisible."
+          "label": "Drop the slot from the design",
+          "consequence": "The cards already read well without it - price, value figure, credits and what they make. One less thing to write, and the card closes."
         }
       ],
-      "recommendation": "(c) - write it after #391 lands, for the seven rungs that survive. Nothing is waiting on this and the slot's absence cannot be seen, so it can sit as long as you like.",
-      "state": "answered",
+      "recommendation": "(a) - but there is no hurry and nothing is blocked behind it. The empty slot is invisible: no gap, no placeholder, nothing looks broken. It is on your desk tonight because it was mislabelled as blocked, not because it has become urgent.",
+      "state": "open",
       "filedAt": "2026-09-02"
     },
     {
@@ -4062,6 +4079,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-615-pin-reach-545-614",
+      "title": "Our map of the studio's refusals stopped counting strangers as proof (#545, #614)",
+      "status": "merged",
+      "prNumber": 615,
+      "note": "The studio has about sixty places where it politely says no - I cannot picture that, that reference is unreadable. We keep a map of which of those have a test proving they still work, so one that quietly breaks gets found before a customer meets it. The map decided a refusal was proven if ANY test file anywhere in the codebase happened to contain its name in quotes. That is how a temporary file called empty, written by our own night-shift tooling, came to count as proof that the casting studio's empty refusal still works. Three separate cases had crept in, none of them deliberate. The danger runs the reassuring way round: every real test for a refusal could be deleted and the warning still would not fire, because a stranger's filename held the count above zero. A test now only counts if it actually reaches the casting code. The obvious repairs were measured before anything was written and both were worse than the bug - one of them deleted 156 of the 194 proofs. What shipped removes exactly the four false ones and keeps every real one."
+    },
+    {
+      "id": "pr-616-preflight-subjects-565",
+      "title": "The pre-push check now runs the tests that are ABOUT a change, not only the ones sitting next to it (#565)",
+      "status": "merged",
+      "prNumber": 616,
+      "note": "Before a shift pushes work it runs a quick local check, so the seven-minute build server does not have to be the thing that finds a simple mistake. That check picked tests by neighbourhood - the tests in the same folder as the changed file. But several of our tests are guards that watch a whole area of the app from somewhere else entirely. One of them watches the casting screens from a shared folder, and last week a change to the casting screens passed the local check and then failed on the build server seven minutes later, on exactly that guard. The check now also reads which parts of the app each test actually names, so a guard that watches your change runs before the push. Two things are worth knowing. Written the way the bug report itself recommended, this fix would have found NOTHING - the guard names the casting folder in a shorthand that method cannot read, and that only showed up by running it rather than reasoning about it. And it turned out two whole areas of the codebase were running NO local tests at all, because no tests live beside them; those now run 21 and 18. The whole thing costs about a tenth of a second."
+    },
+    {
       "id": "pr-612-merge-receipt-568",
       "title": "The tool that merges the team's work stopped telling us a finished job had failed (#568)",
       "status": "merged",
@@ -6109,15 +6140,15 @@
     151
   ],
   "nextUp": {
-    "readAt": "2026-09-06T17:55:43.466Z",
+    "readAt": "2026-09-06T19:48:06.793Z",
     "items": [
       {
         "issueNumber": 404,
-        "title": "The plan card's blurb slot is empty on purpose — his one-line positioning statement, best written after the ladder folds",
+        "title": "The plan card's blurb slot is empty and the ladder has now folded — seven one-line positioning statements, in his words",
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "#391 — the blurb is one line per rung, and the ladder folds from twelve to about seven first. Writing twelve now throws five away."
+          "because": "YOU — seven one-line blurbs, one per plan. See \"What is actually needed from you\" at the foot of this card."
         }
       },
       {
