@@ -484,9 +484,31 @@ function cleanReply(raw: string): string {
 export async function reimagineBrief(input: {
   engine: TextEngine;
   briefText: string;
+  /**
+   * A GENERATED CHIP the customer tapped (#535 decision 12), or nothing for a
+   * plain press.
+   *
+   * A tap is a FOLD, not a re-imagine, and it reuses decision 11's road
+   * rather than growing a second one: the direction is composed onto the
+   * brief as the editing instruction it is, and the instruction's own first
+   * paragraph — *"APPLY the instruction and return the one clean brief with
+   * the change rewritten into it — never tacked onto the end"* — is already
+   * exactly his ruling for this case (Crew reply #144: *"the edit gets tacked
+   * onto the end of the prompt instead of rewritten into it"*). One road,
+   * already driven, already guarded, already courted at his eye.
+   *
+   * ⚠ **The composition lives HERE and not on the client** so the sentence
+   * has one owner: a client that wrote its own join would be a second author
+   * of the prompt, and the two would drift (working law 4).
+   */
+  direction?: string | null;
   signal?: AbortSignal;
 }): Promise<ReimagineOutcome> {
-  const briefText = input.briefText.trim();
+  const direction = input.direction?.trim() ?? "";
+  const briefText =
+    direction.length > 0
+      ? `${input.briefText.trim()}\n\nApply this direction to the brief above: ${direction}`
+      : input.briefText.trim();
   const allowance = reimagineAllowance(briefText);
   const system = reimagineSystemPrompt(allowance);
   let attempts = 0;

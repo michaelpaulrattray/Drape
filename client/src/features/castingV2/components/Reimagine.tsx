@@ -36,6 +36,16 @@ import { trpc } from "@/lib/trpc";
 export const REIMAGINED_LINE = "Re-imagined from your words — press again for another idea.";
 export const REIMAGINE_UNDO_LABEL = "Undo";
 export const NOTHING_TO_OFFER_LINE = "Nothing to offer this time — your words stand.";
+/**
+ * What the line says after a generated chip is tapped (#535 decision 12).
+ *
+ * Different from the press's line because a different thing happened: a press
+ * returns a NEW IDEA, a tap keeps their brief and writes one direction into
+ * it. Saying "re-imagined" over a tap would be the surface lying about the
+ * smaller of the two acts — and his ruling (#144) is precisely that the edit
+ * must be *written into* the brief, so the sentence names that.
+ */
+export const DIRECTION_WRITTEN_LINE = "Written into your brief.";
 /** Decision 17: while a follow chip is up, the press is dimmed with this hover. */
 export const REIMAGINE_FOLLOW_HELD_TITLE = "Clear the follow to re-imagine";
 
@@ -43,7 +53,7 @@ export type ReimagineState = {
   /** The glyph is turning — the box should dim and refuse edits for the moment. */
   pending: boolean;
   /** The quiet line to draw under the box, or null. */
-  line: "idea" | "nothing" | null;
+  line: "idea" | "direction" | "nothing" | null;
   canUndo: boolean;
   /**
    * The box holds no words to press on — the glyph dims rather than firing
@@ -55,6 +65,12 @@ export type ReimagineState = {
    */
   empty: boolean;
   press: () => void;
+  /**
+   * A generated chip was tapped (#535 decision 12) — the same author call
+   * with the direction attached, so the brief comes back with it written IN
+   * rather than appended (his ruling, Crew reply #144).
+   */
+  tap: (direction: string) => void;
   undo: () => void;
   /** Typing clears the line and spends the undo — call from the box's onChange. */
   typed: () => void;
@@ -68,7 +84,7 @@ export function useReimagine(input: {
   enabled: boolean;
 }): ReimagineState {
   const mutation = trpc.castingV2.reimagine.useMutation();
-  const [line, setLine] = useState<"idea" | "nothing" | null>(null);
+  const [line, setLine] = useState<ReimagineState["line"]>(null);
   /*
     One level of undo, a ref rather than state: it is read only inside
     handlers, and it must be captured at the press — the value the customer
@@ -85,19 +101,26 @@ export function useReimagine(input: {
 
   const empty = input.value.trim().length === 0;
 
-  const press = () => {
+  /*
+    ONE road for both acts. A press and a chip tap differ in exactly two
+    things — whether a direction rides along, and which line the surface says
+    afterwards — so they share the flight guard, the undo capture and the
+    honest failure rather than growing a second copy of them (working law 4:
+    a second implementation shadowing this one would drift from it).
+  */
+  const send = (direction: string | null, said: "idea" | "direction") => {
     if (mutation.isPending || !input.enabled || empty) return;
     const wasAt = ++flight.current;
     const was = input.value;
     mutation.mutate(
-      { briefText: was.trim() },
+      direction === null ? { briefText: was.trim() } : { briefText: was.trim(), direction },
       {
         onSuccess: (outcome) => {
           if (flight.current !== wasAt) return;
           if (outcome.kind === "idea") {
             prior.current = was;
             input.onValue(outcome.text);
-            setLine("idea");
+            setLine(said);
           } else {
             setLine("nothing");
           }
@@ -109,6 +132,12 @@ export function useReimagine(input: {
         },
       },
     );
+  };
+
+  const press = () => send(null, "idea");
+  const tap = (direction: string) => {
+    if (direction.trim().length === 0) return;
+    send(direction.trim(), "direction");
   };
 
   const undo = () => {
@@ -124,7 +153,7 @@ export function useReimagine(input: {
     if (line !== null) setLine(null);
   };
 
-  return { pending: mutation.isPending, line, canUndo: prior.current !== null, empty, press, undo, typed };
+  return { pending: mutation.isPending, line, canUndo: prior.current !== null, empty, press, tap, undo, typed };
 }
 
 /**
@@ -172,9 +201,15 @@ export function ReimagineButton({
  */
 export function ReimagineLine({ state }: { state: ReimagineState }) {
   if (state.line === null) return null;
+  const said =
+    state.line === "idea"
+      ? REIMAGINED_LINE
+      : state.line === "direction"
+        ? DIRECTION_WRITTEN_LINE
+        : NOTHING_TO_OFFER_LINE;
   return (
     <p className="dpc-reim__line" role="status">
-      {state.line === "idea" ? REIMAGINED_LINE : NOTHING_TO_OFFER_LINE}
+      {said}
       {state.canUndo ? (
         <button type="button" className="dpc-reim__undo" onClick={state.undo}>
           {REIMAGINE_UNDO_LABEL}

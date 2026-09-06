@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "77e338bb61a874f8"
+    "sourceFingerprint": "cad0b0238557055d"
   },
   "domains": [
     {
@@ -38,12 +38,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 185
+      "moduleCount": 186
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:client-shared",
@@ -1539,6 +1539,12 @@
     {
       "id": "module:client/src/features/castingV2/chosenFrame.ts",
       "path": "client/src/features/castingV2/chosenFrame.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/BriefChips.tsx",
+      "path": "client/src/features/castingV2/components/BriefChips.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3747,6 +3753,12 @@
     {
       "id": "module:server/castingV2/brandScrub.ts",
       "path": "server/castingV2/brandScrub.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/briefChips.ts",
+      "path": "server/castingV2/briefChips.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7283,6 +7295,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.briefChips",
+      "namespace": "castingV2",
+      "name": "briefChips",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.cancel",
       "namespace": "castingV2",
       "name": "cancel",
@@ -10577,6 +10599,10 @@
       "path": "client/src/features/casting/castingPrices.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/briefChipsSurface.test.ts",
+      "path": "client/src/features/castingV2/briefChipsSurface.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/briefDraft.test.ts",
       "path": "client/src/features/castingV2/briefDraft.test.ts"
     },
@@ -11539,6 +11565,10 @@
     {
       "id": "test:server/castingV2/brandScrub.test.ts",
       "path": "server/castingV2/brandScrub.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/briefChips.test.ts",
+      "path": "server/castingV2/briefChips.test.ts"
     },
     {
       "id": "test:server/castingV2/briefCompiler.test.ts",
@@ -16554,6 +16584,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/BriefChips.tsx",
+      "to": "module:client/src/features/castingV2/components/Reimagine.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/BriefChips.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:client/src/features/castingV2/briefEcho.ts",
       "kind": "imports"
@@ -19386,6 +19426,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/chosenFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/BriefChips.tsx",
       "kind": "imports"
     },
     {
@@ -23336,6 +23381,46 @@
     {
       "from": "module:server/castingV2/bornWornDetector.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:server/castingV2/houseBlock.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:server/castingV2/promptAuthor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:server/castingV2/reimagine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:server/castingV2/seedFidelity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefChips.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -30871,6 +30956,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/askReference.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/briefChips.ts",
       "kind": "imports"
     },
     {
