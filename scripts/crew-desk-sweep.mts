@@ -286,7 +286,34 @@ if (allOpen === null) {
     : `LADDER: unchanged (${ladderItems.length}), stamp refreshed`);
 }
 
-/* ─── 2. a finished card is done, from the issue's own state ─── */
+/* ─── 2. a row whose PR is merged is merged ─── */
+
+/*
+  ⚠ THIS RUNS BEFORE THE CARD PASS, AND THE ORDER IS LOAD-BEARING (review of
+  PR #609, finding 1). A `waiting-founder` row HOLDS the card it names, so a
+  card pass planned first would hold a card on a row this pass is about to
+  repair — printing `pipeline R: waiting-founder → merged` and `needsYou C is
+  HELD because R still says he is blocking it` in one report, and leaving C on
+  his desk a sweep longer than the record justifies. Two contradictory facts
+  about one row is the exact shape this script's header says it exists to kill.
+*/
+for (const item of (briefing.pipeline ?? []) as Json[]) {
+  if (item.status === "merged") continue;
+  if (typeof item.prNumber !== "number") continue;
+  const state = prState(item.prNumber);
+  if (state === null) {
+    skipped.push(`pipeline ${item.id}: PR ${item.prNumber} could not be read — left ${item.status}.`);
+    continue;
+  }
+  if (state === "MERGED") {
+    changes.push(`pipeline ${item.id}: ${item.status} → merged (PR ${item.prNumber} is merged)`);
+    item.status = "merged";
+    /* A merged row cannot be waiting on him; its cardId would fail the parse. */
+    delete item.cardId;
+  }
+}
+
+/* ─── 3. a finished card is done, from the issue's own state ─── */
 
 const resolution = planCardResolutions(briefing as ResolvableBriefing, issueState);
 
@@ -305,24 +332,6 @@ for (const item of resolution.unreadable) {
   skipped.push(
     `${item.list} ${item.id}: issue #${item.issueNumber} could not be read — left as it was.`,
   );
-}
-
-/* ─── 3. a row whose PR is merged is merged ─── */
-
-for (const item of (briefing.pipeline ?? []) as Json[]) {
-  if (item.status === "merged") continue;
-  if (typeof item.prNumber !== "number") continue;
-  const state = prState(item.prNumber);
-  if (state === null) {
-    skipped.push(`pipeline ${item.id}: PR ${item.prNumber} could not be read — left ${item.status}.`);
-    continue;
-  }
-  if (state === "MERGED") {
-    changes.push(`pipeline ${item.id}: ${item.status} → merged (PR ${item.prNumber} is merged)`);
-    item.status = "merged";
-    /* A merged row cannot be waiting on him; its cardId would fail the parse. */
-    delete item.cardId;
-  }
 }
 
 /* ─── 4. waiting-founder, reported against his desk and never guessed ─── */
@@ -378,5 +387,14 @@ if (WRITE) {
 
 /* A stale `waiting-founder` row is a failure of the sweep's own subject even
    when everything else applied cleanly: exiting 0 on it would let a shift read
-   a green run as a clean desk. */
+   a green run as a clean desk.
+
+   ⚠ A HELD CARD (#604) DELIBERATELY DOES NOT EXIT 2, AND THAT IS A DECISION
+   RATHER THAN AN OVERSIGHT (review of PR #609, finding 3). The two look alike
+   — both are the record disagreeing with his page — but a liar is a shape the
+   briefing schema REFUSES at the parse, so a shift that ignores it cannot ship
+   at all; a hold is schema-valid, transient, and resolves itself the sweep
+   after its dependant is settled. Exiting 2 on it would spend the signal that
+   currently means "you cannot ship this" on a state you can. It is printed
+   loudly instead, in its own block. */
 process.exit(liars.length > 0 ? 2 : 0);

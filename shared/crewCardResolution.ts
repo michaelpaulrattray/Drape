@@ -171,36 +171,40 @@ export function planCardResolutions(
     if (!closing(card, "needsYou")) continue;
     const issueNumber = card.issueNumber as number;
 
+    /* ⚠ EVERY reason is collected, not just the first (review of PR #609,
+       finding 2). A card can be held by BOTH, and naming one of them sends the
+       shift to settle it only to meet the other on the next sweep. */
+    const reasons: string[] = [];
+
     /* #133: an eye item that will STILL be open needs its card open. One that
        is closing in this same plan is not a dependant — both land together. */
     const orphanedEye = eyeItems.find(
       (item) => item.cardId === card.id && item.state === "open" && !eyeClosing.has(item.id),
     );
     if (orphanedEye) {
-      held.push({
-        list: "needsYou",
-        id: card.id,
-        issueNumber,
-        reason: `eye item '${orphanedEye.id}' is still open and names this card (#133) — `
-          + `settle the frames, or close its issue, before the card can be marked done`,
-      });
-      continue;
+      reasons.push(
+        `eye item '${orphanedEye.id}' is still open and names this card (#133) — `
+        + `settle the frames, or close its issue, before the card can be marked done`,
+      );
     }
 
     /* #291: a `waiting-founder` row NAMES the open card it waits on. What that
        row should become — merged, in review, blocked, deleted — is a judgement
-       about work, so it is reported and never guessed. */
+       about work, so it is reported and never guessed. (A row whose PR has
+       merged is already repaired by the pass ABOVE this one, so it cannot
+       still be holding anything here.) */
     const claimingRow = pipeline.find(
       (row) => row.status === "waiting-founder" && row.cardId === card.id,
     );
     if (claimingRow) {
-      held.push({
-        list: "needsYou",
-        id: card.id,
-        issueNumber,
-        reason: `pipeline row '${claimingRow.id ?? "(unnamed)"}' still says he is blocking it (#291) — `
-          + `give that row its real status before the card can be marked done`,
-      });
+      reasons.push(
+        `pipeline row '${claimingRow.id ?? "(unnamed)"}' still says he is blocking it (#291) — `
+        + `give that row its real status before the card can be marked done`,
+      );
+    }
+
+    if (reasons.length > 0) {
+      held.push({ list: "needsYou", id: card.id, issueNumber, reason: reasons.join("; and ") });
       continue;
     }
 

@@ -127,6 +127,27 @@ describe("planCardResolutions — a promotion that would break his page is HELD 
     expect(plan.held[0].reason).toContain("a-row");
   });
 
+  it("names BOTH holds when a card has both, so the shift does not make two trips", () => {
+    const briefing: ResolvableBriefing = {
+      needsYou: [card("a-card", "open", 100)],
+      eyeItems: [{ ...card("its-frames", "open", 101), cardId: "a-card" }],
+      pipeline: [{ id: "a-row", status: "waiting-founder", cardId: "a-card" }],
+    };
+    const plan = planCardResolutions(briefing, reader({ 100: "CLOSED", 101: "OPEN" }).read);
+
+    expect(plan.held).toHaveLength(1);
+    expect(plan.held[0].reason).toContain("its-frames");
+    expect(plan.held[0].reason).toContain("a-row");
+  });
+
+  /*
+    ⚠ THE ORDERING ARM (review of PR #609, finding 1). The sweep repairs a
+    merged pipeline row BEFORE it plans the cards, so by the time this function
+    runs, a row whose PR merged is already `merged` and has lost its cardId. If
+    that order is ever reversed, the sweep reports "row → merged" and "card held
+    by that row" in one breath. This arm pins the contract this function relies
+    on: a row that is no longer `waiting-founder` holds nothing.
+  */
   it("a pipeline row that is NOT waiting-founder holds nothing up", () => {
     const briefing: ResolvableBriefing = {
       needsYou: [card("a-card", "open", 100)],
