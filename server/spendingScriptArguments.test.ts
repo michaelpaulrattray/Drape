@@ -46,10 +46,30 @@ import { describe, expect, it } from "vitest";
 
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
 import { readIfPresent, statIfPresent } from "../scripts/lib/listedEntry.mts";
-import { scriptFilesUnder, unguardedSpendGates } from "../scripts/lib/stopline.mts";
+import {
+  drivesAPaidTransport, paidScriptsReadingFlagsByName, scriptFilesUnder, unguardedSpendGates,
+} from "../scripts/lib/stopline.mts";
 
 const REPO = join(__dirname, "..");
 
+/**
+ * ⚠ THIS LIST WAS THE THREE FILES THE CARD NAMED, AND THAT IS WHY IT WENT GREEN
+ * OVER TWELVE MORE (#345, second pass).
+ *
+ * A population keyed on the known instances stops watching everything else the
+ * moment the instances are fixed — `fix-drops-subject-from-guard`, and this is
+ * a measured instance of it rather than a worry. While these three arms were
+ * green, **eight calibration courts drove fal region reads and masked edits
+ * with the old reader**, and four more read a bare `includes("--repaint")` or
+ * `includes("--dry")`. The guard could not have found one of them: they were
+ * never in its population.
+ *
+ * The named three stay as the SPEC-level population — they are the files whose
+ * declared vocabulary is checked against what they read, which needs the
+ * `arg()` shim shape they share. The class-level question (*does any paid
+ * script still read flags by name?*) is asked of a DERIVED population below,
+ * where a new paid driver joins by existing rather than by being remembered.
+ */
 const DRIVERS = [
   "scripts/drive-finding-replay.mts",
   "scripts/drive-self-walk.mts",
@@ -464,6 +484,116 @@ describe("a file that vanishes between list and read is skipped, and nothing els
       expect(scriptFilesUnder(dir)).toHaveLength(2);
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * NO PAID SCRIPT IN THE TREE READS ITS FLAGS BY NAME — THE DERIVED POPULATION
+ * (#345, second pass).
+ *
+ * The arms at the top of this file guard three files by name. This one asks the
+ * CLASS question of every script that drives a billing transport, so a new paid
+ * driver is covered by existing rather than by somebody remembering to add it.
+ *
+ * # The rule is the COMPLEMENT of the defect, deliberately
+ *
+ * `#345` measured its own population with `grep "process\.argv\.indexOf("`, and
+ * that grep cannot see two other spellings of the identical mistake: a bare
+ * `process.argv.includes("--repaint")` as a file's only reader, and a positional
+ * `process.argv[2]`. Both discard an unknown word in exactly the same silence,
+ * and four paid scripts were carrying the first one. So the reader does not
+ * match the defect — it asserts that **the only mention of `process.argv` in a
+ * paid script is the strict parse call**, which a fourth spelling cannot slip
+ * past.
+ */
+describe("no paid script reads its flags by name", () => {
+  const SCRIPTS = join(REPO, "scripts");
+
+  /**
+   * ⚠ THE TWO EXEMPTIONS ARE INTERFACE DIFFERENCES, NOT UNFIXED INSTANCES, AND
+   * EACH CARRIES ITS REASON HERE RATHER THAN IN A COMMIT MESSAGE.
+   *
+   * `parseStrictArgs` reads `--name value` and refuses both a `--name=value`
+   * pair and a bare positional word. These two scripts have the other two
+   * shapes as their DOCUMENTED command lines, so converting them is a change to
+   * how an operator invokes them — a separate decision from tightening a
+   * parser, and one that belongs on its own card (#602) rather than inside this
+   * sweep.
+   *
+   * Both fail SAFE today, which is why they could wait: `calibrate-providers`
+   * defaults to a dry run and spends only on an explicit `--execute`, and
+   * `tilt-instrument` falls back to a fixed specimen path. Neither can be made
+   * to spend by a word being swallowed — the property the twelve repaired files
+   * did NOT have.
+   */
+  const INTERFACE_EXEMPT = [
+    "scripts/calibrate-providers.mts",
+    "scripts/calibration/tilt-instrument.mts",
+  ] as const;
+
+  it("sweeps a real population — a clean answer over no files is not an answer", () => {
+    const paid = scriptFilesUnder(SCRIPTS).filter((file) => drivesAPaidTransport(readFileSync(file, "utf8")));
+    expect(paid.length).toBeGreaterThan(15);
+  });
+
+  it("every paid script parses strictly", () => {
+    expect(paidScriptsReadingFlagsByName(SCRIPTS, REPO, INTERFACE_EXEMPT)).toEqual([]);
+  });
+
+  it("the exemptions are still real files, and still paid", () => {
+    /* An exemption naming a deleted or de-fanged file is a hole that reads as
+       an allowance — the `ACCOUNT_SPENDERS` crash above, one describe block
+       away, is what that costs. */
+    for (const relative of INTERFACE_EXEMPT) {
+      expect(existsSync(join(REPO, relative)), `${relative} is exempted and gone`).toBe(true);
+      expect(drivesAPaidTransport(sourceOf(relative)), `${relative} is exempted and no longer paid`).toBe(true);
+    }
+  });
+
+  it("the exemptions are the ONLY things standing between this arm and a red", () => {
+    /* The positive control the arm above cannot be trusted without: with the
+       exemptions withdrawn, the sweep must name exactly those two. A reader
+       that had quietly stopped finding anything would pass "every paid script
+       parses strictly" and this is what catches it. */
+    expect(paidScriptsReadingFlagsByName(SCRIPTS, REPO)).toEqual([...INTERFACE_EXEMPT]);
+  });
+
+  it("really sees each of the three spellings, and clears a strict file", () => {
+    const scratch = mkdtempSync(join(tmpdir(), "paidflags-"));
+    try {
+      const paid = 'import { createFalRegionReader } from "../../server/castingV2/falRegionReader";\n';
+      writeFileSync(join(scratch, "byindex.mts"), paid + 'const at = process.argv.indexOf("--n");\n');
+      writeFileSync(join(scratch, "byincludes.mts"), paid + 'const r = process.argv.includes("--repaint");\n');
+      writeFileSync(join(scratch, "bypositional.mts"), paid + 'const s = process.argv[2];\n');
+      writeFileSync(join(scratch, "strict.mts"),
+        paid + 'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: ["n"], boolean: [] });\n');
+      /* And a file reading argv by name that is NOT paid — the sweep is about
+         spenders, and one that flagged every reporter would be a different
+         (and much noisier) control than the one claimed. */
+      writeFileSync(join(scratch, "unpaid.mts"), 'const at = process.argv.indexOf("--n");\n');
+      expect(paidScriptsReadingFlagsByName(scratch, scratch)).toEqual([
+        "byincludes.mts", "byindex.mts", "bypositional.mts",
+      ]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it("reads the CODE, so a docblock may quote the reader it replaced", () => {
+    /* #360's class, and it is load-bearing here: every one of the twelve files
+       repaired under this card names the old shape in the prose explaining why
+       it is gone. A guard that could not tell a quotation from an occurrence
+       would force that prose to go quiet. */
+    const scratch = mkdtempSync(join(tmpdir(), "paidquote-"));
+    try {
+      writeFileSync(join(scratch, "quoting.mts"),
+        'import { createFalRegionReader } from "../../server/castingV2/falRegionReader";\n'
+        + '/* The reader here was `process.argv.indexOf("--" + name)`, which could not fail. */\n'
+        + 'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: [] });\n');
+      expect(paidScriptsReadingFlagsByName(scratch, scratch)).toEqual([]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
     }
   });
 });

@@ -36,6 +36,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
 
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 import {
   BORN_WORN_CLASSES,
   BORN_WORN_DETECTOR,
@@ -62,9 +63,21 @@ const manifest = JSON.parse(readFileSync(`${OUT}/specimens.json`, "utf8")) as {
   arms: Record<"bespectacled" | "bare", Array<{ candidate: string; url: string; roll: string; brief: string }>>;
 };
 
-const only = process.argv.includes("--class")
-  ? process.argv[process.argv.indexOf("--class") + 1]
-  : "glasses";
+/**
+ * THIS COURT'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * Both reads below could not fail on a word they were never asked about, and
+ * the failure was silent in the direction that costs: a mistyped `--clas` or
+ * `--flooor` fell back to the DEFAULT class and the catalogue's own floor, so
+ * the court ran its fal region reads and printed a table for a subject the
+ * operator had not asked for. A wrong court reads as a finding.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["class", "floor"],
+  boolean: [],
+});
+
+const only = ARGS.value("class") ?? "glasses";
 const armed = BORN_WORN_CLASSES.filter((entry) => entry.id === only);
 if (armed.length === 0) {
   console.error(`no such class "${only}" in the catalogue`);
@@ -78,9 +91,7 @@ const subject = armed[0];
   where the two populations actually sit before anybody writes a number into
   the catalogue.
 */
-const floorArg = process.argv.includes("--floor")
-  ? Number(process.argv[process.argv.indexOf("--floor") + 1])
-  : subject.floor;
+const floorArg = ARGS.value("floor") !== null ? Number(ARGS.value("floor")) : subject.floor;
 if (typeof floorArg !== "number" || !Number.isFinite(floorArg)) {
   console.error(`"${only}" has no measured floor — pass one to try it: --floor 0.001`);
   process.exit(1);

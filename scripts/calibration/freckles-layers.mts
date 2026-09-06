@@ -63,9 +63,26 @@ import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
 import { amplitudeFor } from "../../server/castingV2/changeAmplitude";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
-const caseFlag = process.argv.indexOf("--case");
-const CASE = caseFlag > -1 ? String(process.argv[caseFlag + 1]) : "written";
+/**
+ * THIS BENCH'S WHOLE VOCABULARY, DECLARED IN ONE PLACE SO A WORD OUTSIDE IT
+ * REFUSES (#345).
+ *
+ * All four flags are declared HERE though three of them are read 270 lines
+ * below, and that is the point rather than an accident: a vocabulary spread
+ * down a file is how half of it quietly stops being enforced (working law 4).
+ *
+ * The silent failure this replaces is a paid one — `--engien nbp` fell back to
+ * gpt2 and the bench repainted a full layer set on the wrong engine, then
+ * filed the frames in the wrong engine's directory, where the row that reads
+ * them cannot tell.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["case", "engine", "tag"],
+  boolean: ["repaint"],
+});
+const CASE = ARGS.value("case") ?? "written";
 
 /**
  * The two shapes, each with the master it belongs to and the facets production
@@ -333,16 +350,14 @@ if (!chosen) throw new Error(`no case "${CASE}" — the cases are ${Object.keys(
   The rounds live in their own directories so an engine's frames can never be
   read into the other's row.
 */
-const engineFlag = process.argv.indexOf("--engine");
-const ENGINE = engineFlag > -1 ? String(process.argv[engineFlag + 1]) : "gpt2";
+const ENGINE = ARGS.value("engine") ?? "gpt2";
 const ENGINE_MODEL: Record<string, string | undefined> = {
   gpt2: undefined, /* the product's own default for the masked path */
   nbp: "fal-ai/nano-banana-pro/edit",
 };
 if (!(ENGINE in ENGINE_MODEL)) throw new Error(`no engine "${ENGINE}" — try ${Object.keys(ENGINE_MODEL).join(", ")}`);
 
-const tagFlag = process.argv.indexOf("--tag");
-const TAG = tagFlag > -1 ? String(process.argv[tagFlag + 1]) : "";
+const TAG = ARGS.value("tag") ?? "";
 const suffix = `${ENGINE === "gpt2" ? "" : `-${ENGINE}`}${TAG ? `-${TAG}` : ""}`;
 const OUT = `${chosen.out}${suffix}`;
 mkdirSync(OUT, { recursive: true });
@@ -367,7 +382,7 @@ const PROMPT = chosen.prompt;
 console.log(`case "${CASE}" — facets [${chosen.facets.join(", ")}]
 `);
 
-const repaint = process.argv.includes("--repaint");
+const repaint = ARGS.flag("repaint");
 let painted: { bytes: Buffer; contentType: string };
 if (repaint || !existsSync(`${OUT}/painted.png`)) {
   const began = Date.now();

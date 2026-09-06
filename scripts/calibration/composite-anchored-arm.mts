@@ -45,10 +45,21 @@ import { harvestRefinement } from "../../server/castingV2/maskedRefine.js";
 import { readRaster, type Mask, type Raster } from "../../server/castingV2/maskedComposite.js";
 import { ratioAgainst, SHARPNESS_BAND } from "../../server/castingV2/sharpness.js";
 import { fixtureSpendAuthorized } from "../lib/stopline.mts";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
+/**
+ * THIS ARM'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * The reader here could not fail on a word it was never asked about, so a
+ * mistyped `--chians` fell back to 2 chains and this arm painted its fixtures
+ * anyway — a provider spend on a line the operator had already got wrong.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["chains", "out", "master"],
+  boolean: [],
+});
 function arg(name: string, fallback = ""): string {
-  const index = process.argv.indexOf(`--${name}`);
-  return index > -1 ? (process.argv[index + 1] ?? fallback) : fallback;
+  return ARGS.value(name) ?? fallback;
 }
 
 const CHAINS = Number(arg("chains", "2"));

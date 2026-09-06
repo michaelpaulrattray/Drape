@@ -79,6 +79,7 @@ import {
   loadMaskFile, maskOf, ontoFaceOf, iouWithMapped, componentsOf, boxOf, type FaceMask,
 } from "../lib/shapeOnFace.mts";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 import { createFalMaskedEditEngine, FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "../../server/providers/falImages";
 
 const OUT = "output/edit-law";
@@ -107,12 +108,21 @@ const GLOSSY_BAND = [
   })),
 ];
 
-const arg = (name: string, fallback: string): string => {
-  const at = process.argv.indexOf(`--${name}`);
-  return at > -1 ? (process.argv[at + 1] ?? fallback) : fallback;
-};
+/**
+ * THIS CELL'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * `--dry-run` is not `--dry`, and the reader underneath this could not tell:
+ * an unknown word was discarded in silence and the cell spent its fal edits
+ * anyway. `--cn` is declared here too — it is read 900 lines below, and a
+ * vocabulary split across a file is how one half stops being enforced.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["n", "cn"],
+  boolean: ["dry"],
+});
+const arg = (name: string, fallback: string): string => ARGS.value(name) ?? fallback;
 const N = Number(arg("n", "3"));
-const DRY = process.argv.includes("--dry");
+const DRY = ARGS.flag("dry");
 
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) { console.error("FAL_KEY is required"); process.exit(1); }

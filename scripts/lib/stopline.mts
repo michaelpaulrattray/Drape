@@ -250,6 +250,108 @@ function routesThroughTheFreeze(source: string): boolean {
   incident and the stated limit.
 */
 
+/**
+ * EVERY PAID SCRIPT THAT STILL READS ITS FLAGS BY NAME (#345).
+ *
+ * # Why this is derived and not a list of three
+ *
+ * `server/spendingScriptArguments.test.ts` guarded this class over a HARD-CODED
+ * `DRIVERS` list of the three files the card happened to name. A population
+ * keyed on the known instances stops watching everything else the moment the
+ * instances are fixed — the `fix-drops-subject-from-guard` shape — and it did:
+ * **eight calibration courts drove fal region reads and masked edits with the
+ * old reader, and the guard was green over all of them the whole time.**
+ *
+ * ⚠ **AND THE GREP THAT DEFINED THE CARD'S POPULATION UNDERCOUNTS THE CLASS.**
+ * `#345` measured itself with `grep "process\.argv\.indexOf("`, which cannot
+ * see the two other spellings of the same defect: a bare
+ * `process.argv.includes("--repaint")` as a file's only reader (four paid
+ * scripts), and a positional `process.argv[2]`. Both discard an unknown word in
+ * exactly the same silence. So the rule here is not a pattern of the defect but
+ * its complement: **in a paid script, the only permitted mention of
+ * `process.argv` is the strict parse call itself.** A rule shaped that way
+ * cannot be outrun by a fourth spelling nobody has thought of.
+ *
+ * # What counts as paid
+ *
+ * An import of one of the transports that bills — the fal region reader, the
+ * fal image and queue modules, the identity engine, the OpenRouter reader — or
+ * a call to either spend door. A script that only READS a ledger is not paid
+ * and is not swept here; the cost of a swallowed flag there is a wrong report,
+ * which is `#345`'s own reasoning for doing the spenders first.
+ *
+ * Disposables are excluded, as the card excludes them: they are written and
+ * thrown away in one sitting, and their author is at the keyboard.
+ *
+ * Returns repository-relative paths, so a failure names something openable.
+ */
+export function paidScriptsReadingFlagsByName(
+  scriptsDir: string,
+  repoRoot: string,
+  exempt: readonly string[] = [],
+): string[] {
+  const offenders: string[] = [];
+  const exemptSet = new Set(exempt);
+  const selfPath = fileURLToPath(import.meta.url);
+  for (const file of scriptFilesUnder(scriptsDir)) {
+    /* This module READS raw argv on purpose: it is the freeze's own door, not
+       a caller of it — the same self-skip `unguardedSpendGates` above takes,
+       and for the same reason. */
+    if (file === selfPath) continue;
+    const relative = file.replace(repoRoot, "").replace(/^[\\/]/, "").replace(/\\/g, "/");
+    if (relative.includes("disposable")) continue;
+    if (exemptSet.has(relative)) continue;
+    const source = readIfPresent(file);
+    if (source === null) continue; /* vanished between list and read (#589) */
+    if (!drivesAPaidTransport(source)) continue;
+    if (readsArgvOutsideTheStrictParse(source)) offenders.push(relative);
+  }
+  return offenders;
+}
+
+/**
+ * WHETHER A SCRIPT DRIVES A TRANSPORT THAT BILLS.
+ *
+ * Read at the IMPORT rather than at a mention, for the reason
+ * `routesThroughTheFreeze` above already carries: a docblock explaining that a
+ * file is *not* a paid one would otherwise put it in the swept population.
+ */
+export function drivesAPaidTransport(source: string): boolean {
+  const code = codeWithoutBlockComments(source);
+  if (/\bfrom\s+["'][^"']*(falRegionReader|falImages|falQueue|falTransport|signEngine|openrouterBalance)["']/.test(code)) {
+    return true;
+  }
+  return /\b(?:fixtureS|s)pendAuthorized\s*\(/.test(code);
+}
+
+/**
+ * WHETHER A SCRIPT TOUCHES `process.argv` ANYWHERE BUT THE STRICT PARSE.
+ *
+ * The complement rule described above. Block comments are stripped first —
+ * `#360`'s class, and the reason the sibling suite needed the same stripper:
+ * every file repaired under this card quotes the reader it replaced, by name,
+ * in the docblock explaining why it is gone. A guard that cannot tell a
+ * quotation from an occurrence forces the prose to go quiet about the very
+ * thing it guards.
+ */
+export function readsArgvOutsideTheStrictParse(source: string): boolean {
+  const code = codeWithoutBlockComments(source)
+    .replace(/parseStrictArgsOrRefuse\(\s*process\.argv\.slice\(2\)/g, "parseStrictArgsOrRefuse(");
+  return /process\.argv/.test(code);
+}
+
+/**
+ * A source with its BLOCK comments removed.
+ *
+ * ⚠ Its limit, stated rather than discovered: `//` line comments are left
+ * alone. Stripping to end-of-line would swallow anything after a `https://`
+ * inside a string literal — a false NEGATIVE, which is the wrong direction
+ * here.
+ */
+export function codeWithoutBlockComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 /** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
 export function scriptFilesUnder(dir: string): string[] {
   const files: string[] = [];

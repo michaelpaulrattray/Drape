@@ -68,6 +68,7 @@ import { composeRenderPrompt } from "../../server/castingV2/refineDelta";
 import { runFalImageJob } from "../../server/providers/falTransport";
 import { FAL_GPT_IMAGE_2_EDIT } from "../../server/providers/falImages";
 import { DEFAULT_IDENTITY_EDIT_MODEL } from "../../server/providers/falQueue";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) throw new Error("FAL_KEY required");
@@ -78,11 +79,22 @@ mkdirSync(OUT, { recursive: true });
 const MASTER_FILE = "output/masked/specimens/fresh-02.png";
 const FEATHER = 3;
 
-const enginesFlag = process.argv.indexOf("--engines");
-const ENGINES = (enginesFlag >= 0 ? process.argv[enginesFlag + 1] : "nbp,gpt2").split(",");
+/**
+ * THIS FIXTURE'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * ⚠ The cost of the old reader is written in this file's own next comment:
+ * `--only` exists so that re-running one scenario does not re-buy the other
+ * two. A reader that cannot fail on a word it was never asked about turned
+ * `--onyl bespectacled` into `ONLY = null` — **and bought all three across
+ * both engines**, which is the exact spend the flag was added to prevent.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["engines", "only"],
+  boolean: [],
+});
+const ENGINES = (ARGS.value("engines") ?? "nbp,gpt2").split(",");
 /* Re-running one scenario should not re-buy the other two. */
-const onlyFlag = process.argv.indexOf("--only");
-const ONLY = onlyFlag >= 0 ? process.argv[onlyFlag + 1]!.split(",") : null;
+const ONLY = ARGS.value("only")?.split(",") ?? null;
 
 /* ------------------------------------------------------------- segmentation */
 

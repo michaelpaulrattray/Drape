@@ -54,6 +54,7 @@ import sharp from "sharp";
 import { aboutFacet, verifyRender } from "../../server/castingV2/renderVerification";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { boxOfMask, magnifiedDetail } from "../../server/castingV2/verificationDetail";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
 const OUT = "output/marks-court";
 mkdirSync(OUT, { recursive: true });
@@ -157,8 +158,23 @@ const RUN_15_CASES: Case[] = [
   { name: "fresh-02 specimen (no freckles)", file: "output/masked/specimens/fresh-02.png", asked: "freckles", truth: "absent" },
 ];
 
-const runFlag = process.argv.indexOf("--run");
-const RUN = runFlag > -1 ? String(process.argv[runFlag + 1]) : "12";
+/**
+ * THIS COURT'S WHOLE VOCABULARY, DECLARED IN ONE PLACE SO A WORD OUTSIDE IT
+ * REFUSES (#345).
+ *
+ * `--repeat` is declared here though it is read 100 lines below — one place,
+ * so neither half can drift out of enforcement (working law 4).
+ *
+ * The spend this protects is multiplicative: every case is read `--repeat`
+ * times through the fal region reader, so a mistyped `--repaet 1` did not
+ * refuse, it fell back to **5** and bought five times the reads the operator
+ * asked for.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["run", "repeat"],
+  boolean: [],
+});
+const RUN = ARGS.value("run") ?? "12";
 const BENCH: Record<string, { master: string; cases: Case[] }> = {
   "12": { master: "output/marks-court/MASTER-run12.png", cases: RUN_12_CASES },
   "15": { master: "output/marks-court/MASTER-run15.png", cases: RUN_15_CASES },
@@ -264,8 +280,7 @@ async function ask(
   return { verified: check.verified ?? null, saw: String(check.saw ?? "") };
 }
 
-const repeatFlag = process.argv.indexOf("--repeat");
-const REPEAT = repeatFlag > -1 ? Number(process.argv[repeatFlag + 1]) : 5;
+const REPEAT = ARGS.value("repeat") !== null ? Number(ARGS.value("repeat")) : 5;
 if (!Number.isInteger(REPEAT) || REPEAT < 1) throw new Error("--repeat needs a whole number of readings");
 
 /**
