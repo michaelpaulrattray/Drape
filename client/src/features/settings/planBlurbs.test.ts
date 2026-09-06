@@ -54,6 +54,43 @@ describe("card 404 — the plan blurb map cannot drift from the ladder", () => {
     expect(blurbFor("no_such_rung")).toBeNull();
   });
 
+  it("⚠ a PROTOTYPE key yields null too — this arm's claim used to be false", () => {
+    /*
+      PR #619 review, finding 1. The lookup was `PLAN_BLURBS[planId] ?? null`,
+      and a plain object literal inherits from `Object.prototype`, so three
+      strings answered with a FUNCTION rather than null — truthy, not a string,
+      and rendered into JSX it crashes the card. The arm above asserted
+      "an unknown rung yields null" and was passing while that was untrue of
+      `constructor`, `toString` and `hasOwnProperty`, because it only ever
+      tried one friendly string.
+
+      Not reachable today — `plan.id` comes from the server's `planOrder`
+      walk — which is why this is hardening. The reason it was taken anyway is
+      that a suite making a claim wider than it tests is the thing this
+      repository keeps paying for.
+    */
+    for (const key of ["constructor", "toString", "hasOwnProperty", "__proto__"]) {
+      expect(blurbFor(key), `${key} answered with something other than null`).toBeNull();
+    }
+  });
+
+  it("⚠ the FREE line is the one that makes product claims, and it is named not hidden", () => {
+    /*
+      PR #619 review, finding 2. The module used to say every line was free of
+      capability claims; six are, and *"Try the studio. A few casts a month, no
+      card."* is not — it carries a volume and a signup fact, both true today
+      and both changeable by a product decision.
+
+      ⚠ **It is NOT rewritten.** He named these seven and said *"Build to
+      those"*; editing his approved copy to make a docblock of mine true would
+      be the worse error. This arm exists so the exception is a FACT IN THE
+      SUITE rather than a sentence in a comment — if a later shift softens the
+      free line into the who-it-is-for shape the other six use, this arm goes
+      red and makes them read this paragraph first.
+    */
+    expect(PLAN_BLURBS.free).toBe("Try the studio. A few casts a month, no card.");
+  });
+
   it("⚠ no line claims a CAPABILITY — that is what makes a placeholder safe to ship", () => {
     /*
       These seven are the relay's words under his order, not his own, and he

@@ -23,12 +23,26 @@
  * weekly and building a roster"* is not derived from a credit count. His later
  * word governs, and it is explicit twice.
  *
- * ✅ **The half of that bar which SURVIVES is the half that matters, and every
- * line here holds it: none of them claims a CAPABILITY.** They say who a rung
- * is *for*. Nothing here promises a feature, a volume, a turnaround or a
- * result, so no line can become false by the product changing — only by him
- * preferring different words. That is what makes them safe to ship in front of
- * paying customers while they wait for his voice.
+ * ✅ **The half of that bar which SURVIVES is the half that matters, and SIX of
+ * the seven hold it absolutely: they claim no CAPABILITY.** They say who a rung
+ * is *for* — no feature, no volume, no turnaround, no result — so they cannot
+ * become false by the product changing, only by him preferring different words.
+ * That is what makes them safe in front of paying customers while they wait for
+ * his voice.
+ *
+ * ⚠ **THE FREE LINE IS THE EXCEPTION AND IT IS NAMED HERE RATHER THAN COVERED
+ * OVER** (PR #619 review, finding 2 — this paragraph claimed "every line" and
+ * that was overstated by exactly one). *"Try the studio. A few casts a month,
+ * no card."* makes TWO product claims: a volume (*"a few casts a month"*, which
+ * tracks the free tier's 5,000 monthly credits) and a signup fact (*"no
+ * card"*). Both are true today and **both can be made false by a product
+ * decision** — cutting the free allowance, or asking for a card at signup —
+ * and neither the regex arm nor anything else would redden if that happened.
+ *
+ * **It is left exactly as he approved it**, because he named these seven and
+ * *"Build to those"* is the instruction; silently rewriting his copy to satisfy
+ * a docblock of mine would be the worse error. What changes is that the claim
+ * above is now true as written, and the exception is on the card for him.
  *
  * ## Why a client-side map and not a server field
  *
@@ -44,7 +58,7 @@
  * ⚠ **THE HIDDEN RUNG GETS NO LINE, AND ITS ABSENCE IS DELIBERATE.**
  * `ultimate` is off the offered ladder (#391, `HIDDEN_PLAN_TIERS`) and its
  * door is the email line under the modal. `planBlurbs.test.ts` pins the map
- * against `OFFERED_PLAN_TIERS` in both directions, so a rung added to the
+ * against `OFFERED_PLAN_ORDER` in both directions, so a rung added to the
  * ladder without a line, or a line for a rung nobody is served, goes red
  * rather than shipping a card with a hole in it.
  */
@@ -88,5 +102,13 @@ export const PLAN_BLURBS: Record<string, string> = {
  * the control.
  */
 export function blurbFor(planId: string): string | null {
-  return PLAN_BLURBS[planId] ?? null;
+  /* ⚠ **`Object.hasOwn`, NOT `??` — a plain object literal inherits
+     `constructor`, `toString` and `hasOwnProperty`, so
+     `PLAN_BLURBS["constructor"] ?? null` returns a FUNCTION: truthy,
+     not a string, and rendered into JSX it crashes the card. Nothing can
+     reach it today — `plan.id` only ever comes from the server's
+     `planOrder` walk — so this is hardening rather than a bug fix, and
+     it is taken because the suite CLAIMED "an unknown rung yields null" while
+     that was false for three strings (PR #619 review, finding 1). */
+  return Object.hasOwn(PLAN_BLURBS, planId) ? PLAN_BLURBS[planId] : null;
 }
