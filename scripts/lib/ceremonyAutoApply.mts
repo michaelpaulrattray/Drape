@@ -65,7 +65,6 @@
  * declares a table and nothing in the repository creates it" is a finding.
  */
 
-/** The three shapes that may run unattended. Anything else is refused. */
 import {
   conformanceVerdict,
   declaredIndexesFrom,
@@ -73,6 +72,7 @@ import {
   liveSchemaFrom,
 } from "./schemaConformance.mts";
 
+/** The three shapes that may run unattended. Anything else is refused. */
 export type StatementKind = "additive" | "destructive";
 
 export type ParsedStatement = {
@@ -402,32 +402,47 @@ export async function applyPlan(
   execute: (sql: string) => Promise<void>,
   readBack: () => Promise<MissingObjects>,
 ): Promise<ApplyOutcome> {
-  const applied: ParsedStatement[] = [];
-  for (const statement of plan.apply) {
-    try {
-      await execute(statement.sql);
-      applied.push(statement);
-    } catch (cause) {
-      return {
-        applied,
-        failure: { statement, message: (cause as Error).message },
-        stillAbsent: [],
-      };
-    }
-  }
-  const after = await readBack();
   const wanted = new Set(plan.apply.flatMap((statement) => [
     ...statement.createsTables.map((table) => `table ${table}`),
     ...statement.addsColumns.map((column) => `column ${column}`),
     ...statement.createsIndexes.map((index) => `index ${index}`),
     ...statement.incidentalIndexes.map((index) => `index ${index}`),
   ]));
-  const stillAbsent = [
+  const absentOf = (after: MissingObjects): string[] => [
     ...after.tables.map((table) => `table ${table}`),
     ...after.columns.map((column) => `column ${column}`),
     ...after.indexes.map((index) => `index ${index}`),
   ].filter((object) => wanted.has(object));
-  return { applied, failure: null, stillAbsent };
+
+  const applied: ParsedStatement[] = [];
+  for (const statement of plan.apply) {
+    try {
+      await execute(statement.sql);
+      applied.push(statement);
+    } catch (cause) {
+      /*
+        A FAILURE STILL GETS ITS READ-BACK (review of #584 round 2, finding 1).
+        Two deploys minutes apart each plan the same gap; the first applies it,
+        the second's identical statement errors (duplicate table/column), and
+        without this read the second deploy would be ABORTED over a gap that is
+        already closed — production held on the older build by a race that
+        delivered exactly what was wanted. So the failure carries what is
+        still absent across the WHOLE plan: an empty list means a racer
+        finished the job and the error is benign; a non-empty one is a real
+        failed write. A read-back that itself throws reports every wanted
+        object as absent — unprovable is treated as absent, the closed
+        direction.
+      */
+      let stillAbsent: readonly string[] = [...wanted];
+      try { stillAbsent = absentOf(await readBack()); } catch { /* fail closed */ }
+      return {
+        applied,
+        failure: { statement, message: (cause as Error).message },
+        stillAbsent,
+      };
+    }
+  }
+  return { applied, failure: null, stillAbsent: absentOf(await readBack()) };
 }
 
 export type MigrationReport = {
@@ -596,14 +611,25 @@ export async function autoApplyMigrations(options: {
   const outcome = await applyPlan(plan, execute, readBack);
   const blocking: string[] = [];
   for (const statement of outcome.applied) lines.push(`applied: ${statement.file} — ${summarise(statement)}`);
-  if (outcome.failure) {
+  if (outcome.failure && outcome.stillAbsent.length === 0) {
+    /* The race that is NOT a failure (review of #584 round 2, finding 1): the
+       statement errored, yet everything the plan wanted is present — a
+       concurrent deploy applied the same migration first. Said plainly and
+       not blocked on, or the newer of two quick merges would be aborted over
+       a gap that is already closed. */
+    lines.push(
+      `${outcome.failure.statement.file}: a statement errored (${outcome.failure.message}) but every object `
+      + "the plan wanted is PRESENT on read-back — a concurrent deploy applied the same migration; not blocking",
+    );
+  } else if (outcome.failure) {
     blocking.push(
       `${outcome.failure.statement.file}: the migration FAILED — ${outcome.failure.message}. `
       + `${outcome.applied.length} statement(s) before it did land; nothing after it was attempted.`,
     );
-  }
-  for (const object of outcome.stillAbsent) {
-    blocking.push(`${object}: the statement creating it ran without error and the object is STILL ABSENT — stop and investigate`);
+  } else {
+    for (const object of outcome.stillAbsent) {
+      blocking.push(`${object}: the statement creating it ran without error and the object is STILL ABSENT — stop and investigate`);
+    }
   }
   problems.push(...blocking);
   lines.push(

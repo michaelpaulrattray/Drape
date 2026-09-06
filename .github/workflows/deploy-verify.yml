@@ -89,6 +89,15 @@ jobs:
             status=$(echo "$body" | jq -r '.status // empty')
             build=$(echo "$body" | jq -r '.build // empty')
             if [ "$status" != "healthy" ] || [ "$build" != "$SHA" ]; then
+              # A NEWER build taking over mid-confirmation is a supersede, not a
+              # regression (review of #584 round 2, finding 2) — same check as
+              # the main loop, or two quick merges paint the earlier one red.
+              if [ -n "$build" ] && [ "$build" != "$SHA" ]; then
+                if gh api "repos/${GITHUB_REPOSITORY}/compare/$SHA...$build" --jq .status 2>/dev/null | grep -qx "ahead"; then
+                  echo "superseded during confirmation: production serves $build, which is ahead of $SHA on main"
+                  exit 0
+                fi
+              fi
               echo "::error::read $i/3 regressed: status=${status:-none} build=${build:-none}"
               exit 1
             fi

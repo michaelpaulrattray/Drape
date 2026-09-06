@@ -48,7 +48,7 @@ const url = process.env.DATABASE_URL;
 
 const code = await (async (): Promise<number> => {
   if (!onRailway) {
-    console.log("predeploy: REFUSED — not running inside Railway (RAILWAY_ENVIRONMENT_NAME absent).");
+    console.log("predeploy: REFUSED — not running inside Railway (neither RAILWAY_ENVIRONMENT_NAME nor RAILWAY_ENVIRONMENT is set).");
     console.log("  This command migrates the environment it runs in; a laptop run would touch whatever .env names.");
     return 1;
   }

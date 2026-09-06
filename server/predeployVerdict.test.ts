@@ -53,9 +53,10 @@ describe("predeployVerdict through the real applier", () => {
     expect(predeployVerdict(report).exitCode).toBe(0);
   });
 
-  it("⚠ a statement that ERRORS blocks the deploy — exit 1, said as BLOCKING", async () => {
+  it("⚠ a statement that ERRORS with the object truly absent blocks — exit 1, said as BLOCKING", async () => {
     const report = await drive({
       missing: wantT,
+      after: wantT, // the read-back agrees: the write really did not land
       sql: "CREATE TABLE `t` (`id` int);",
       execute: async () => { throw new Error("ER_LOCK_WAIT_TIMEOUT"); },
     });
@@ -64,6 +65,22 @@ describe("predeployVerdict through the real applier", () => {
     expect(verdict.exitCode).toBe(1);
     expect(verdict.lines.some((line) => line.startsWith("BLOCKING:"))).toBe(true);
     expect(verdict.lines.at(-1)).toContain("REFUSING the deploy");
+  });
+
+  it("⚠ a statement that ERRORS while a CONCURRENT deploy delivered the gap does NOT block (review of #584 r2, f1)", async () => {
+    /* Two merges minutes apart: deploy A applies `CREATE TABLE t`; deploy B's
+       identical statement errors on duplicate-table, but B's read-back finds
+       nothing missing. Aborting B would hold production on the OLDER build
+       over a gap that is already closed. */
+    const report = await drive({
+      missing: wantT,
+      after: none, // the racer applied it
+      sql: "CREATE TABLE `t` (`id` int);",
+      execute: async () => { throw new Error("ER_TABLE_EXISTS_ERROR"); },
+    });
+    expect(report.blocking).toEqual([]);
+    expect(report.lines.some((line) => line.includes("concurrent deploy applied the same migration"))).toBe(true);
+    expect(predeployVerdict(report).exitCode).toBe(0);
   });
 
   it("⚠ a statement that runs without error while the object stays ABSENT blocks — working law 1's read-back", async () => {
@@ -101,9 +118,11 @@ describe("predeployVerdict through the real applier", () => {
   it("blocking is a SUBSET of problems — the rite's exit accounting is unchanged by the split", async () => {
     const report = await drive({
       missing: wantT,
+      after: wantT,
       sql: "CREATE TABLE `t` (`id` int);",
       execute: async () => { throw new Error("boom"); },
     });
+    expect(report.blocking.length).toBeGreaterThan(0);
     for (const problem of report.blocking) expect(report.problems).toContain(problem);
   });
 });
