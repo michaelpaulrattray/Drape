@@ -47,12 +47,25 @@
  * line; the caller owns its meaning.
  */
 
-/** What a script accepts. Anything outside these two lists is refused. */
+/** What a script accepts. Anything outside these lists is refused. */
 export type ArgSpec = {
-  /** Flags taking a following value: `--outcome shipped`. */
+  /** Flags taking a following value: `--outcome shipped` or `--outcome=shipped`. */
   readonly value: readonly string[];
   /** Flags that are on or off by their presence: `--dry-run`. */
   readonly boolean: readonly string[];
+  /**
+   * How many BARE WORDS this script legally takes, and it defaults to none.
+   *
+   * ⚠ **THE BLANKET REFUSAL WAS RIGHT AND IS KEPT — THIS ONLY MOVES WHO SAYS
+   * SO** (#602). The docblock above explains what a swallowed positional
+   * costs: `close 26` becoming *close whatever is newest*. That is still what
+   * happens to a script that does not declare one, which is every script but
+   * the one that asked. A positional is legal exactly where a script has
+   * written down that it takes one, and the count is checked — `tilt a b` is
+   * refused by a script declaring `positional: 1`, which the old reader could
+   * not have told you either way.
+   */
+  readonly positional?: number;
 };
 
 export type StrictArgs = {
@@ -60,6 +73,8 @@ export type StrictArgs = {
   value(name: string): string | null;
   /** Whether `--name` was present. */
   flag(name: string): boolean;
+  /** The nth bare word, or null when it was not passed. */
+  positional(index: number): string | null;
 };
 
 export class ArgumentError extends Error {}
@@ -76,9 +91,41 @@ export function parseStrictArgs(argv: readonly string[], spec: ArgSpec): StrictA
   const booleanFlags = new Set(spec.boolean.map((name) => `--${name}`));
   const values = new Map<string, string>();
   const flags = new Set<string>();
+  const positionals: string[] = [];
+  const positionalLimit = spec.positional ?? 0;
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]!;
+
+    /*
+      THE `=` FORM (#602). `--phase=gate` and `--phase gate` are one thing said
+      two ways, and refusing one of them was never a safety property — it was
+      simply a shape the first reader did not speak, which is why
+      `calibrate-providers.mts` (whose own header documents `--phase=gate`)
+      could not join the sweep without changing the command an operator types.
+
+      ⚠ The split is on the FIRST `=` only, so `--out=a=b` is the value `a=b`
+      rather than a refusal — a path or a query string is a legitimate value
+      and splitting it would be a new way to lose part of one silently.
+    */
+    const equals = token.startsWith("--") ? token.indexOf("=") : -1;
+    if (equals > 2) {
+      const name = token.slice(0, equals);
+      const inlineValue = token.slice(equals + 1);
+      if (booleanFlags.has(name)) {
+        throw new ArgumentError(`${name} takes no value, and was given ${inlineValue || "an empty one"}.`);
+      }
+      if (!valueFlags.has(name)) {
+        throw new ArgumentError(`unknown argument ${name}.\nKnown: ${known(spec)}`);
+      }
+      /* An empty value is the same mistake as a missing one and reads the same
+         way to the caller — `--phase=` must not become the string "". */
+      if (inlineValue === "") throw new ArgumentError(`${name} needs a value.`);
+      if (values.has(name)) throw new ArgumentError(`${name} was given twice.`);
+      values.set(name, inlineValue);
+      continue;
+    }
+
     if (valueFlags.has(token)) {
       if (values.has(token)) throw new ArgumentError(`${token} was given twice.`);
       const next = argv[index + 1];
@@ -96,6 +143,10 @@ export function parseStrictArgs(argv: readonly string[], spec: ArgSpec): StrictA
       flags.add(token);
       continue;
     }
+    if (!token.startsWith("--") && positionals.length < positionalLimit) {
+      positionals.push(token);
+      continue;
+    }
     throw new ArgumentError(
       `unknown argument ${token}.\nKnown: ${known(spec)}`,
     );
@@ -104,14 +155,20 @@ export function parseStrictArgs(argv: readonly string[], spec: ArgSpec): StrictA
   return {
     value: (name) => values.get(`--${name}`) ?? null,
     flag: (name) => flags.has(`--${name}`),
+    positional: (index) => positionals[index] ?? null,
   };
 }
 
 /** The vocabulary, printed the way a caller would type it. */
 export function known(spec: ArgSpec): string {
+  /* The positional is named too, because a refusal that lists only flags
+     against a script that takes a bare word tells the operator the opposite of
+     what is true. */
+  const slots = spec.positional ?? 0;
   return [
     ...spec.value.map((name) => `--${name} <value>`),
     ...spec.boolean.map((name) => `--${name}`),
+    ...(slots > 0 ? [`${slots} bare word${slots === 1 ? "" : "s"}`] : []),
   ].join(", ");
 }
 

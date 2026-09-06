@@ -47,7 +47,8 @@ import { describe, expect, it } from "vitest";
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
 import { readIfPresent, statIfPresent } from "../scripts/lib/listedEntry.mts";
 import {
-  drivesAPaidTransport, paidScriptsReadingFlagsByName, scriptFilesUnder,
+  drivesAPaidTransport, paidScriptsReadingFlagsByName, readsArgvOutsideTheStrictParse,
+  scriptFilesUnder,
   spendWordsRefusedByTheirOwnParse, unguardedSpendGates,
 } from "../scripts/lib/stopline.mts";
 
@@ -96,9 +97,9 @@ const sourceOf = (relative: string) => readFileSync(join(REPO, relative), "utf8"
  */
 const codeOf = (relative: string) => sourceOf(relative).replace(/\/\*[\s\S]*?\*\//g, "");
 
-type Spec = { value: string[]; boolean: string[] };
+type Spec = { value: string[]; boolean: string[]; positional?: number };
 
-/** The `value:` / `boolean:` arrays out of a script's own parse call. */
+/** The `value:` / `boolean:` / `positional:` fields out of a script's own parse call. */
 function specIn(source: string): Spec {
   const call = /parseStrictArgsOrRefuse\(\s*process\.argv\.slice\(2\),\s*\{([\s\S]*?)\}\s*\)/.exec(source);
   if (!call) throw new Error("no parseStrictArgsOrRefuse call found — the script stopped parsing strictly");
@@ -107,7 +108,17 @@ function specIn(source: string): Spec {
     if (!match) throw new Error(`no ${name}: [...] in the spec`);
     return [...match[1]!.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
   };
-  return { value: list("value"), boolean: list("boolean") };
+  /* ⚠ READ, NOT DEFAULTED (#602). A reader that dropped `positional` would
+     hand every arm below a spec that refuses the bare word the script legally
+     takes — i.e. it would report the documented command line as broken while
+     the script itself worked, which is the extractor lying in the noisy
+     direction rather than the silent one, but lying either way. */
+  const positional = /positional:\s*(\d+)/.exec(call[1]!);
+  return {
+    value: list("value"),
+    boolean: list("boolean"),
+    ...(positional ? { positional: Number(positional[1]) } : {}),
+  };
 }
 
 /**
@@ -447,6 +458,93 @@ describe("and the lines an operator really types are still accepted", () => {
   });
 });
 
+/**
+ * THE TWO SHAPES #602 TAUGHT THE PARSER, AND THE REFUSALS THEY MUST NOT COST.
+ *
+ * Both were added so that two paid scripts could join the sweep **without
+ * changing the command an operator types** — which is the only condition on
+ * which #345 let them wait. So the arms come in pairs: the shape now parses,
+ * AND the refusal it would have been easiest to lose is still a refusal.
+ */
+describe("card 602 — the `=` pair and the declared positional", () => {
+  const SPEC = { value: ["phase", "out"], boolean: ["execute"] } as const;
+
+  it("⚠ `--phase=gate` and `--phase gate` are the same thing said twice", () => {
+    expect(parseStrictArgs(["--phase=gate"], SPEC).value("phase")).toBe("gate");
+    expect(parseStrictArgs(["--phase", "gate"], SPEC).value("phase")).toBe("gate");
+  });
+
+  it("⚠ the split is on the FIRST `=` — a value may contain one", () => {
+    /* A path, a query string or a base64 blob is a legitimate value, and
+       splitting on every `=` would be a NEW way to lose part of one silently,
+       which is the class this whole file exists about. */
+    expect(parseStrictArgs(["--out=a=b/c"], SPEC).value("out")).toBe("a=b/c");
+  });
+
+  it("⚠ an `=` pair does not smuggle an unknown flag or an empty value past", () => {
+    expect(() => parseStrictArgs(["--phse=gate"], SPEC)).toThrow(/unknown argument --phse/);
+    /* `--phase=` reads as "not passed" to every caller, which is exactly the
+       confusion the missing-value refusal was written for. */
+    expect(() => parseStrictArgs(["--phase="], SPEC)).toThrow(/--phase needs a value/);
+    /* And a boolean given a value is a misunderstanding worth saying out loud
+       rather than accepting: `--execute=false` must never read as off. */
+    expect(() => parseStrictArgs(["--execute=false"], SPEC)).toThrow(/--execute takes no value/);
+  });
+
+  it("⚠ the two spellings share one duplicate check", () => {
+    expect(() => parseStrictArgs(["--phase", "a", "--phase=b"], SPEC)).toThrow(/--phase was given twice/);
+    expect(() => parseStrictArgs(["--phase=a", "--phase", "b"], SPEC)).toThrow(/--phase was given twice/);
+  });
+
+  it("⚠ a bare word is legal exactly where a script DECLARES one", () => {
+    const positional = { value: [], boolean: [], positional: 1 } as const;
+    expect(parseStrictArgs(["output/x.png"], positional).positional(0)).toBe("output/x.png");
+    expect(parseStrictArgs([], positional).positional(0)).toBeNull();
+    /* THE NEGATIVE CONTROL, and it is the whole reason the slot is opt-in:
+       every script that has NOT declared one still refuses, which is the
+       property `close 26` becoming "close whatever is newest" was about. */
+    expect(() => parseStrictArgs(["26"], SPEC)).toThrow(/unknown argument 26/);
+  });
+
+  it("⚠ the declared COUNT is checked — a second word is not swallowed", () => {
+    const positional = { value: [], boolean: [], positional: 1 } as const;
+    expect(() => parseStrictArgs(["a", "b"], positional)).toThrow(/unknown argument b/);
+    /* And a flag is still a flag beside a positional, not a second bare word. */
+    expect(() => parseStrictArgs(["a", "--nope"], positional)).toThrow(/unknown argument --nope/);
+  });
+
+  it("⚠ the refusal NAMES the positional, or it tells the operator the opposite of the truth", () => {
+    const positional = { value: [], boolean: [], positional: 1 } as const;
+    expect(() => parseStrictArgs(["a", "b"], positional)).toThrow(/1 bare word/);
+    /* And says nothing about bare words where none are allowed. */
+    expect(() => parseStrictArgs(["26"], SPEC)).not.toThrow(/bare word/);
+  });
+
+  it("⚠ the two repaired scripts' own documented command lines still parse", () => {
+    /*
+      THE ARM THAT ACTUALLY CLOSES #602. The spec is read out of each script
+      rather than retyped, and the lines are the ones written in each file's
+      own header — so a spec that drifts from the documentation reddens here
+      instead of refusing at somebody's keyboard.
+    */
+    const calibrate = specIn(codeOf("scripts/calibrate-providers.mts"));
+    expect(() => parseStrictArgs([], calibrate)).not.toThrow();
+    expect(() => parseStrictArgs(["--phase=gate"], calibrate)).not.toThrow();
+    expect(() => parseStrictArgs(["--phase=nbp", "--execute", "--ceiling=12"], calibrate)).not.toThrow();
+    /* The two flags the CARD did not name and the code reads (law 7c). */
+    expect(parseStrictArgs(["--images=fal", "--concurrency=8"], calibrate).value("images")).toBe("fal");
+    /* And the word its own guards paragraph documents, which never existed as
+       a flag — accepted, and refused beside its opposite by the script. */
+    expect(() => parseStrictArgs(["--dry-run"], calibrate)).not.toThrow();
+
+    const tilt = specIn(codeOf("scripts/calibration/tilt-instrument.mts"));
+    expect(() => parseStrictArgs([], tilt)).not.toThrow();
+    expect(parseStrictArgs(["output/masked/probe/a.png"], tilt).positional(0))
+      .toBe("output/masked/probe/a.png");
+    expect(() => parseStrictArgs(["--samples", "9"], tilt)).toThrow(/unknown argument --samples/);
+  });
+});
+
 /*
   #589 — THE VANISH-RACE, both directions (#223's class in this module's own
   walker). `scriptWorldGuard.test.ts` plants and unlinks a real file in the
@@ -528,7 +626,29 @@ describe("no paid script reads its flags by name", () => {
    * to spend by a word being swallowed — the property the twelve repaired files
    * did NOT have.
    */
-  const INTERFACE_EXEMPT = [
+  /**
+   * ⚠ **AND THE LIST IS EMPTY AS OF #602 — the paragraph above is kept as the
+   * REASON, not as the state.** Both shapes were taught to the parser rather
+   * than argued out of the scripts: `--phase=gate` parses, and a bare word is
+   * legal exactly where a script declares `positional: 1`. So neither
+   * documented command line changed, which was the whole condition on which
+   * these two were allowed to wait.
+   *
+   * ⚠ **AN EMPTY EXEMPTION LIST TAKES A POSITIVE CONTROL WITH IT, AND THAT IS
+   * THE REAL COST OF CLOSING THIS.** The arm below used to read
+   * `expect(sweep(SCRIPTS, REPO)).toEqual([...INTERFACE_EXEMPT])` — a real-tree
+   * check that the reader still FINDS something. With the list empty it would
+   * be `expect([]).toEqual([])`, which passes just as happily on a reader that
+   * has quietly stopped looking. The replacement is two arms: the scratch-tree
+   * control below (which plants all three spellings and a strict file, and is
+   * the reader's real positive control), and a named arm on the two files
+   * themselves — because a population keyed on the DEFECT stops watching every
+   * file you fix.
+   */
+  const INTERFACE_EXEMPT = [] as const;
+
+  /** The two #602 repaired, named so the sweep keeps watching them by name. */
+  const FORMERLY_EXEMPT = [
     "scripts/calibrate-providers.mts",
     "scripts/calibration/tilt-instrument.mts",
   ] as const;
@@ -563,19 +683,35 @@ describe("no paid script reads its flags by name", () => {
   it("the exemptions are still real files, and still paid", () => {
     /* An exemption naming a deleted or de-fanged file is a hole that reads as
        an allowance — the `ACCOUNT_SPENDERS` crash above, one describe block
-       away, is what that costs. */
+       away, is what that costs. Vacuous while the list is empty, and kept
+       because the list is what may grow again, not this arm. */
     for (const relative of INTERFACE_EXEMPT) {
       expect(existsSync(join(REPO, relative)), `${relative} is exempted and gone`).toBe(true);
       expect(drivesAPaidTransport(sourceOf(relative)), `${relative} is exempted and no longer paid`).toBe(true);
     }
   });
 
-  it("the exemptions are the ONLY things standing between this arm and a red", () => {
-    /* The positive control the arm above cannot be trusted without: with the
-       exemptions withdrawn, the sweep must name exactly those two. A reader
-       that had quietly stopped finding anything would pass "every paid script
-       parses strictly" and this is what catches it. */
-    expect(paidScriptsReadingFlagsByName(SCRIPTS, REPO)).toEqual([...INTERFACE_EXEMPT]);
+  it("⚠ nothing is exempt — and #602's two are still watched BY NAME", () => {
+    /*
+      ⚠ THE MEMORY THIS ARM EXISTS FOR: *a population keyed on the DEFECT stops
+      watching each file you fix.* The sweep above finds files that read argv
+      loosely; `calibrate-providers` and `tilt-instrument` no longer do, so
+      they are silent in it whether they are swept or not — exactly the state
+      `hair-arrangement-court` is in one arm below, and for the same reason it
+      is pinned there.
+
+      So each is asserted to be BOTH still paid (in the population at all) and
+      still strict. Sabotage either file's parse call and this goes red; the
+      sweep alone would too, but only while the reader itself still works, and
+      this arm says which file rather than that the count moved.
+    */
+    expect([...INTERFACE_EXEMPT], "an exemption came back without its reason").toEqual([]);
+    for (const relative of FORMERLY_EXEMPT) {
+      const source = sourceOf(relative);
+      expect(drivesAPaidTransport(source), `${relative} left the swept population`).toBe(true);
+      expect(readsArgvOutsideTheStrictParse(source), `${relative} reads argv loosely again`).toBe(false);
+    }
+    expect(paidScriptsReadingFlagsByName(SCRIPTS, REPO)).toEqual([]);
   });
 
   it("really sees each of the three spellings, and clears a strict file", () => {

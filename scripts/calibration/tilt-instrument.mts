@@ -48,11 +48,25 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { cornersFromMask, medianReading, readingFrom, type TiltReading } from "../../server/castingV2/canthalTilt";
+import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
 
 const OUT = "output/masked/tilt-instrument";
 mkdirSync(OUT, { recursive: true });
 
-const SPECIMEN = process.argv[2] ?? "output/masked/probe/18c9c4fb-e6a6-4aaa-b6ba-3e689fba021f.png";
+/*
+  ⚠ THE BARE SPECIMEN PATH IS DECLARED NOW, NOT MERELY READ (#345 remainder,
+  closed by #602). It was `process.argv[2]`, which cannot fail on anything: a
+  mistyped `--sample 9` landed as the SPECIMEN and a second bare word vanished.
+  `positional: 1` keeps the documented command working — `npx tsx
+  scripts/calibration/tilt-instrument.mts <path>` — while a second word, or any
+  flag at all, is now refused by name.
+*/
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: [],
+  boolean: [],
+  positional: 1,
+});
+const SPECIMEN = ARGS.positional(0) ?? "output/masked/probe/18c9c4fb-e6a6-4aaa-b6ba-3e689fba021f.png";
 const SAMPLES = Number(process.env.TILT_SAMPLES ?? 5);
 /* Expected added tilt, in degrees. `k = tan(theta)` makes the warp add exactly theta. */
 const ANGLES = [0, 8, 4];
