@@ -38,7 +38,15 @@
  *      happened"*. The state comes from a hold LABEL and the sentence from one
  *      line of the card body; `shared/crewNextUpHold.ts` owns both and says why
  *      those halves are held to different standards.
- *   2. **`answered` → `done`** when the card's issue is CLOSED.
+ *   2. **`done`** when the card's issue is CLOSED — from `open` as well as from
+ *      `answered` (#604). It used to promote only from `answered`, so a card he
+ *      finished without ever being marked answered stayed on his desk asking for
+ *      a chore he had already done: `deploy-flip-508` told him to enter three
+ *      Railway fields for a day after he entered them. **The rule now keys on
+ *      the record rather than on the state a shift happened to type.** A
+ *      promotion that would orphan an open eye item (#133) or a
+ *      `waiting-founder` row (#291) is HELD and reported instead — see
+ *      `shared/crewCardResolution.ts`, which owns the whole judgement.
  *   3. **not-merged → `merged`** when the row's PR is MERGED.
  *   4. **`waiting-founder`** is REPORTED against the desk. It is not repaired
  *      automatically and that is deliberate: what a stale row should become —
@@ -68,6 +76,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  type ResolvableBriefing,
+  planCardResolutions,
+  promotionLine,
+} from "../shared/crewCardResolution.js";
 import { heldStateFromLabels, holdReasonFromBody } from "../shared/crewNextUpHold.js";
 import {
   CREW_LADDER_GROUP_KEYS,
@@ -273,22 +286,25 @@ if (allOpen === null) {
     : `LADDER: unchanged (${ladderItems.length}), stamp refreshed`);
 }
 
-/* ─── 2. answered → done, from the issue's own state ─── */
+/* ─── 2. a finished card is done, from the issue's own state ─── */
 
-for (const list of ["needsYou", "eyeItems"] as const) {
-  for (const card of (briefing[list] ?? []) as Json[]) {
-    if (card.state !== "answered") continue;
-    if (typeof card.issueNumber !== "number") continue;
-    const state = issueState(card.issueNumber);
-    if (state === null) {
-      skipped.push(`${list} ${card.id}: issue #${card.issueNumber} could not be read — left answered.`);
-      continue;
-    }
-    if (state === "CLOSED") {
-      card.state = "done";
-      changes.push(`${list} ${card.id}: answered → done (#${card.issueNumber} is closed)`);
-    }
-  }
+const resolution = planCardResolutions(briefing as ResolvableBriefing, issueState);
+
+for (const promotion of resolution.promote) {
+  const card = ((briefing[promotion.list] ?? []) as Json[]).find((row) => row.id === promotion.id);
+  if (!card) continue;
+  card.state = "done";
+  changes.push(promotionLine(promotion));
+}
+/* Held cards get their OWN block below, not `skipped`: that heading says "a read
+   that failed", and a hold is the opposite — the read succeeded and the answer
+   needs a hand. Two different facts under one heading is the shape this whole
+   script exists to kill. */
+const heldCards = resolution.held;
+for (const item of resolution.unreadable) {
+  skipped.push(
+    `${item.list} ${item.id}: issue #${item.issueNumber} could not be read — left as it was.`,
+  );
 }
 
 /* ─── 3. a row whose PR is merged is merged ─── */
@@ -332,6 +348,16 @@ if (skipped.length > 0) {
   console.log("");
   console.log("SKIPPED — a read that failed is never a verdict:");
   for (const line of skipped) console.log(`  ! ${line}`);
+}
+
+if (heldCards.length > 0) {
+  console.log("");
+  console.log(`⚠ ${heldCards.length} card(s) are finished by their issue but cannot be marked done yet.`);
+  console.log("  Marking them would orphan something the briefing schema then refuses at the");
+  console.log("  parse, so each is left alone and named instead (#604):");
+  for (const hold of heldCards) {
+    console.log(`  ! ${hold.list} ${hold.id} (#${hold.issueNumber}) — ${hold.reason}`);
+  }
 }
 
 if (liars.length > 0) {
