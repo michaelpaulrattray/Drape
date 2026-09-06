@@ -527,17 +527,27 @@ export function describeAction(pr: PrReading, action: MergeAction): string {
  *     on; treating this as a failure is what cost the shift its diagnosis.
  *   * `not-merged` — `gh` failed and the record agrees nothing landed. A real
  *     failure, and the raw output is the useful part.
- *   * `unreadable` — the read-back itself failed, so **neither** answer is
- *     established. It is deliberately NOT folded into `not-merged`: a broken
- *     reader voting for "nothing happened" is how an instrument stops being
- *     able to fail (working law 2), and here it would send a shift to re-merge
- *     a pull request that may already be in `main`.
+ *   * `merge-state-unknown` — the read-back itself failed, so **neither**
+ *     answer is established. It is deliberately NOT folded into `not-merged`:
+ *     a broken reader voting for "nothing happened" is how an instrument stops
+ *     being able to fail (working law 2), and here it would send a shift to
+ *     re-merge a pull request that may already be in `main`.
+ *
+ * ⚠ **THAT LAST NAME IS DELIBERATE AND IT USED TO BE `unreadable`** (PR #612
+ * review, finding 2). The capability atlas counts any `server/*.test.ts`
+ * containing a QUOTED door id as a test PINNING that door, and `unreadable` is
+ * the casting studio's own interpreter-refusal door — so this suite silently
+ * became its 23rd pin (22 → 23, read at the generated diff). A door pinned by a
+ * merge-tool test that never drives it is an instrument arm quietly disabled:
+ * delete the real pins and `unpinned-refusal` still would not fire. The
+ * collector's shape-match class is the root cause and is filed separately;
+ * this name is the part that belongs in this PR.
  */
 export type PrMergeReceipt =
   | { kind: "merged" }
   | { kind: "merged-then-failed"; detail: string }
   | { kind: "not-merged"; detail: string }
-  | { kind: "unreadable"; detail: string };
+  | { kind: "merge-state-unknown"; detail: string };
 
 export function classifyPrMergeReceipt(input: {
   /** What `gh pr merge` threw, or `null` when it returned cleanly. */
@@ -547,7 +557,7 @@ export function classifyPrMergeReceipt(input: {
 }): PrMergeReceipt {
   if (input.stateAfter === null) {
     return {
-      kind: "unreadable",
+      kind: "merge-state-unknown",
       detail: input.mergeError === null
         ? "gh pr merge returned, but the state could not be read back."
         : `gh pr merge failed AND the state could not be read back: ${input.mergeError}`,
@@ -602,11 +612,19 @@ export function classifyRemoteBranchDeletion(input: {
   readonly output: string;
 }): RemoteBranchDeletion {
   if (input.exitCode === 0) return "deleted";
-  /* GitHub answers an absent ref with 422 "Reference does not exist" on the
-     git-refs endpoint and 404 when the path itself does not resolve. Matched on
-     the message rather than on a status line, because `gh api` prints the
-     message and only sometimes the code. */
-  return /reference does not exist|not found|404|no commit found for/i.test(input.output)
-    ? "already-gone"
-    : "failed";
+  /*
+    ⚠ **ONLY THE UNAMBIGUOUS ANSWER COUNTS AS ALREADY-GONE, AND `404` IS NOT
+    ONE** (PR #612 review, finding 3). GitHub answers an absent ref with 422
+    "Reference does not exist" on the git-refs endpoint — that is the one shape
+    that can only mean the branch is not there. It also answers **404 for a
+    DELETE the token lacks push permission on**, which means the branch very
+    much IS there, and the first shape of this function read that as tidied.
+
+    The two errors are not symmetric. Reporting a surviving branch as deleted
+    is a lie a shift acts on; reporting a deleted branch as needing a look
+    costs one glance and is never fatal either way. So the ambiguous answers
+    fall to `failed`, and the message below names both possibilities rather
+    than asserting one.
+  */
+  return /reference does not exist/i.test(input.output) ? "already-gone" : "failed";
 }

@@ -525,7 +525,7 @@ function mergePr(pr: PrReading): void {
       say(`NOT MERGED ${receiptLine}`);
       fail(`#${pr.number}: ${oneLine(receipt.detail)}`);
       break;
-    case "unreadable":
+    case "merge-state-unknown":
       /* ⚠ NOT folded into `not-merged`: the instruction is the opposite one.
          There, re-running is the repair; here it could merge twice or chase a
          pull request that is already in `main`. */
@@ -547,10 +547,17 @@ function mergePr(pr: PrReading): void {
  * a shift back in #568's position — an error over a pull request that landed.
  */
 function deleteRemoteBranch(pr: PrReading): void {
-  const repo = gh(["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]).trim();
   let code = 0;
   let output = "";
+  /* ⚠ EVERY `gh` CALL IS INSIDE THE GUARD, INCLUDING THE REPO-NAME LOOKUP
+     (PR #612 review, finding 1). The first shape read the repo name OUTSIDE
+     this try, so a transient failure there — a network blip, a token refresh —
+     threw uncaught AFTER the merge and killed the whole run, taking every
+     later PR in the order with it. That is #568's own shape one call to the
+     right, in a function whose docblock says "never fatal". The docblock was
+     right and the code was not. */
   try {
+    const repo = gh(["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]).trim();
     output = gh([
       "api", "-X", "DELETE",
       `repos/${repo}/git/refs/heads/${pr.headRefName}`,

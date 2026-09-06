@@ -695,11 +695,11 @@ describe("the merge receipt is read back from GitHub, never inferred from an exi
        status quo would send a shift to re-merge a pull request that may
        already be in main. */
     const afterThrow = classifyPrMergeReceipt({ mergeError: "some gh error", stateAfter: null });
-    expect(afterThrow.kind).toBe("unreadable");
-    expect(afterThrow.kind === "unreadable" && afterThrow.detail).toMatch(/could not be read back/);
+    expect(afterThrow.kind).toBe("merge-state-unknown");
+    expect(afterThrow.kind === "merge-state-unknown" && afterThrow.detail).toMatch(/could not be read back/);
 
     const afterSuccess = classifyPrMergeReceipt({ mergeError: null, stateAfter: null });
-    expect(afterSuccess.kind).toBe("unreadable");
+    expect(afterSuccess.kind).toBe("merge-state-unknown");
   });
 
   it("the four states are mutually exclusive over the whole input square", () => {
@@ -711,7 +711,7 @@ describe("the merge receipt is read back from GitHub, never inferred from an exi
         kinds.add(classifyPrMergeReceipt({ mergeError, stateAfter }).kind);
       }
     }
-    expect([...kinds].sort()).toEqual(["merged", "merged-then-failed", "not-merged", "unreadable"]);
+    expect([...kinds].sort()).toEqual(["merge-state-unknown", "merged", "merged-then-failed", "not-merged"]);
   });
 });
 
@@ -728,15 +728,24 @@ describe("deleting the remote branch: already-gone is a success, not a failure",
   it("⚠ a ref GitHub already removed satisfies the post-condition and must not fail", () => {
     /* A repository with 'Automatically delete head branches' on removes it
        during the merge; the thing this tool wants is that the branch is not
-       there, and both roads give that. */
+       there, and both roads give that. 422 is the one answer that can only
+       mean absence. */
     expect(
       classifyRemoteBranchDeletion({
         exitCode: 1,
         output: 'gh: Reference does not exist (HTTP 422)',
       }),
     ).toBe("already-gone");
+  });
+
+  it("⚠ A 404 IS NOT ABSENCE — GitHub answers it for a token without push rights", () => {
+    /* PR #612 review, finding 3. The first shape read 404 as already-gone, so a
+       scoped-down token would have been told the branch was tidied while it
+       survived. The two errors are not symmetric: a surviving branch reported
+       as deleted is a lie a shift acts on; a deleted branch reported as needing
+       a look costs one glance. */
     expect(classifyRemoteBranchDeletion({ exitCode: 1, output: "gh: Not Found (HTTP 404)" })).toBe(
-      "already-gone",
+      "failed",
     );
   });
 
@@ -768,5 +777,21 @@ describe("the merge call itself never asks gh to touch the local checkout", () =
   it("still honours the flag, through the API road that touches nothing local", () => {
     expect(source).toContain("deleteRemoteBranch");
     expect(source).toMatch(/git\/refs\/heads\//);
+  });
+
+  it("⚠ EVERY gh call in the branch delete is INSIDE its guard — it runs after the merge", () => {
+    /* PR #612 review, finding 1: the repo-name lookup sat OUTSIDE the try, so a
+       transient failure there threw uncaught after the irreversible act and
+       killed every later PR in the order — #568's own shape one call to the
+       right, under a docblock promising "never fatal". Asserted on the bytes of
+       the function rather than on the comment above it. */
+    const fn = source.slice(source.indexOf("function deleteRemoteBranch"));
+    const end = fn.search(/^\}$/m);
+    expect(end).toBeGreaterThan(-1);
+    const body = fn.slice(0, end);
+    const guardOpens = body.indexOf("try {");
+    expect(guardOpens).toBeGreaterThan(-1);
+    const beforeGuard = body.slice(0, guardOpens);
+    expect(beforeGuard).not.toContain("gh(");
   });
 });

@@ -140,8 +140,7 @@
           "server/castingV2/refineService.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
           "server/db/referenceReadDemand.test.ts",
-          "server/deployWatchDecision.test.ts",
-          "server/prMergeOrder.test.ts"
+          "server/deployWatchDecision.test.ts"
         ],
         "sites": [
           "server/castingV2/conceptDescribe.ts:1168",
@@ -672,8 +671,7 @@
           "server/castingV2/refineService.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
           "server/db/referenceReadDemand.test.ts",
-          "server/deployWatchDecision.test.ts",
-          "server/prMergeOrder.test.ts"
+          "server/deployWatchDecision.test.ts"
         ],
         "sites": [
           "server/castingV2/castingIntent.ts:1274",
