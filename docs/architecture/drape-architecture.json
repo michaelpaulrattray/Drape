@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8b6d686b1fa47c81"
+    "sourceFingerprint": "de534d735e9b9830"
   },
   "domains": [
     {
@@ -12589,6 +12589,10 @@
       "path": "server/crewHeartbeat.test.ts"
     },
     {
+      "id": "test:server/crewNamingWindow.test.ts",
+      "path": "server/crewNamingWindow.test.ts"
+    },
+    {
       "id": "test:server/crewNextUpHold.test.ts",
       "path": "server/crewNextUpHold.test.ts"
     },
@@ -13427,6 +13431,10 @@
     {
       "id": "test:server/slack/slackWebhook.test.ts",
       "path": "server/slack/slackWebhook.test.ts"
+    },
+    {
+      "id": "test:server/spendingScriptArguments.test.ts",
+      "path": "server/spendingScriptArguments.test.ts"
     },
     {
       "id": "test:server/staffImageBoundary.test.ts",

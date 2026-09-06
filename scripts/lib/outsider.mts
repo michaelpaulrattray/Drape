@@ -55,6 +55,8 @@
  *
  *   npx tsx scripts/lib/outsider.mts --prove    # drives idempotence + the scope refusal
  */
+import { resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
 
@@ -252,7 +254,21 @@ export function assertOutsideScope(outsider: Outsider, flag: ScopeFlag): void {
 
 /* ------------------------------------------------------------------ controls */
 
-if (process.argv.includes("--prove")) {
+/*
+  ITS CONTROLS RUN ONLY WHEN THIS FILE IS THE ONE THAT WAS INVOKED (#345, the
+  class sweep behind PR #587's reviewer finding 2).
+
+  A module-scope argv read is the IMPORTER's argv. So `npx tsx
+  scripts/drive-self-walk.mts --prove --spend` ran THIS module's self-controls
+  and exited before the driver's own strict parse ever saw the unknown word -
+  the driver neither walked nor refused. One word bypassing a refusal, which is
+  the class the strict parse exists to close. Five modules in `scripts/lib`
+  carried it; `server/spendingScriptArguments.test.ts` now pins all five.
+*/
+const invokedDirectly = process.argv[1] !== undefined
+  && resolvePath(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly && process.argv.includes("--prove")) {
   const say = (line: string) => console.log(line);
   let failed = 0;
   const check = (name: string, ok: boolean, saw: string) => {

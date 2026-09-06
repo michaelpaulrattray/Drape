@@ -41,6 +41,8 @@
  */
 
 /** Words that carry no distinguishing weight when matched inside a `saw`. */
+import { resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
 const NOISE = new Set([
   "with", "and", "the", "her", "his", "their", "one", "each", "both", "pair",
   "matching", "visible", "worn", "that", "this", "from", "into", "onto", "over",
@@ -208,7 +210,21 @@ const CASES: Array<{ kind: "POSITIVE" | "NEGATIVE"; why: string; asked: string; 
   },
 ];
 
-if (process.argv.includes("--prove")) {
+/*
+  ITS CONTROLS RUN ONLY WHEN THIS FILE IS THE ONE THAT WAS INVOKED (#345, the
+  class sweep behind PR #587's reviewer finding 2).
+
+  A module-scope argv read is the IMPORTER's argv. So `npx tsx
+  scripts/drive-self-walk.mts --prove --spend` ran THIS module's self-controls
+  and exited before the driver's own strict parse ever saw the unknown word -
+  the driver neither walked nor refused. One word bypassing a refusal, which is
+  the class the strict parse exists to close. Five modules in `scripts/lib`
+  carried it; `server/spendingScriptArguments.test.ts` now pins all five.
+*/
+const invokedDirectly = process.argv[1] !== undefined
+  && resolvePath(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly && process.argv.includes("--prove")) {
   let failed = 0;
   for (const bench of CASES) {
     const found = contradicts(bench.asked, bench.saw);
