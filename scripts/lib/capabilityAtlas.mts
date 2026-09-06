@@ -53,6 +53,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readIfPresent } from "./listedEntry.mts";
 import { CORPUS, UNREACHABLE_DOORS, KNOWN_DEBTS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
 import { ROADS, LAWS, type Road } from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
@@ -169,11 +170,32 @@ function codeLinesOf(file: string): string {
   return fs.readFileSync(file, "utf8").split("\n").filter((line) => !isCommentLine(line)).join("\n");
 }
 
+/**
+ * `codeLinesOf` FOR A LISTED ENTRY — `null` means the file left between the
+ * listing and the read (#589, #594).
+ *
+ * ⚠ THE PAIR IS TWO FUNCTIONS ON PURPOSE, AND FOLDING IT INTO ONE TOLERANT
+ * FUNCTION IS THE MISTAKE THIS COMMENT EXISTS TO STOP. `codeLinesOf` is also
+ * called with FIXED names — `refineInterpreter.ts` and `refineDelta.ts` — and
+ * those must keep throwing: a declared source that is gone is the defect, and a
+ * census that shrugged at it would report a short door list as a complete one,
+ * which is the blind-guard shape this repository has been bitten by twice.
+ * Only the callers walking `listFiles` may tolerate an absence, so only they
+ * get this door — and which of the two a site calls is that site's own
+ * statement about what it is reading.
+ */
+function codeLinesIfPresent(file: string): string | null {
+  const text = readIfPresent(file);
+  if (text === null) return null;
+  return text.split("\n").filter((line) => !isCommentLine(line)).join("\n");
+}
+
 /** Every `refusal("id"` in the service modules — the door's own name. */
 export function declaredServiceRefusals(): string[] {
   const ids = new Set<string>();
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
-    const text = codeLinesOf(file);
+    const text = codeLinesIfPresent(file);
+    if (text === null) continue; /* listed, then gone — it declares nothing now */
     for (const match of text.matchAll(/\brefusal\(\s*"([a-z][a-z0-9_]*)"/g)) ids.add(match[1]!);
   }
   return [...ids].sort();
@@ -192,7 +214,9 @@ export function declaredInterpreterRefusals(): string[] {
   const text = codeLinesOf(interpreter);
   for (const match of text.matchAll(/\breason:\s*"([a-z][a-z0-9_]*)"/g)) ids.add(match[1]!);
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
-    for (const match of codeLinesOf(file).matchAll(/"(gate_[a-z_]+)"/g)) ids.add(match[1]!);
+    const gates = codeLinesIfPresent(file);
+    if (gates === null) continue; /* listed, then gone */
+    for (const match of gates.matchAll(/"(gate_[a-z_]+)"/g)) ids.add(match[1]!);
   }
   const delta = codeLinesOf(path.join(SOURCE_DIR, "refineDelta.ts"));
   for (const match of delta.matchAll(/\|\s*\{\s*reason:\s*"([a-z][a-z0-9_]*)"/g)) ids.add(match[1]!);
@@ -469,7 +493,13 @@ export function pinCandidates(
 export function pinningTests(ids: string[]): Map<string, string[]> {
   const tests = listFiles(path.join(repoRoot, "server"), (n) => n.endsWith(".test.ts"));
   const texts = pinCandidates(
-    tests.map((file) => [rel(file), fs.readFileSync(file, "utf8")] as const),
+    /* A suite that left between the listing and the read pins nothing — the same
+       answer as a suite that never named the door — so it is dropped rather than
+       throwing. `flatMap` is how the empty answer says so without a second pass. */
+    tests.flatMap((file) => {
+      const text = readIfPresent(file);
+      return text === null ? [] : [[rel(file), text] as const];
+    }),
   );
   const out = new Map<string, string[]>();
   for (const id of ids) {
@@ -537,7 +567,9 @@ export function raiseSites(): Map<string, string[]> {
   for (const file of listFiles(SOURCE_DIR, (n) => n.endsWith(".ts") && !n.endsWith(".test.ts"))) {
     const inConcept = file === conceptFile;
     const qualify = (id: string) => (inConcept && conceptMembers.has(id) ? `concept.${id}` : id);
-    const lines = fs.readFileSync(file, "utf8").split("\n");
+    const source = readIfPresent(file);
+    if (source === null) continue; /* listed, then gone — it cites nothing now */
+    const lines = source.split("\n");
     lines.forEach((line, at) => {
       if (isCommentLine(line)) return;
       for (const match of line.matchAll(/\brefusal\(\s*"([a-z][a-z0-9_]*)"/g)) add(qualify(match[1]!), `${rel(file)}:${at + 1}`);
