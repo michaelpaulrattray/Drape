@@ -459,7 +459,8 @@ describe("the settings modal (§3)", () => {
     expect("  height: 240px;").toMatch(/(?<!min-|max-)height:\s*\d/);
   });
 
-  it("there is no nav column, and Style is the ONLY setting (#535, his decision 1)", async () => {
+  /* Card 535 (his decision 1) — the number stays out of the title string because the token guard reads #535 as a hex literal. */
+  it("there is no nav column, and Style is the ONLY setting", async () => {
     const modal = code(await read(MODAL));
     expect(modal).toContain("dpc-setm__col--style");
     /*
