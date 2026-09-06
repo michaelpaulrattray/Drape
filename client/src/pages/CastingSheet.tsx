@@ -61,7 +61,6 @@ import {
   wardrobeLineText,
 } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
-import { BriefChips } from "@/features/castingV2/components/BriefChips";
 import {
   ReimagineButton,
   ReimagineLine,
@@ -2973,22 +2972,6 @@ export default function CastingSheet() {
           </div>
           {/* The one quiet line about what just happened to the words — under the box they happened in (#535 §1). */}
           <ReimagineLine state={reimagine} />
-          {/*
-            THE GENERATED CHIPS (#535 decision 12) — a few directions in this
-            brief's own world, under the box they write into. Drawn only on
-            the author road, and NOT during a standing follow: the family
-            holds the look there (his §17), which is the same reason the press
-            beside them is dimmed — a tap would fire the call the press
-            refuses. Nothing is drawn when the brief pins everything, which is
-            his own sentence and not an empty state.
-          */}
-          {authorRoad ? (
-            <BriefChips
-              briefText={shownBrief}
-              reimagine={reimagine}
-              enabled={standingFollowId === null}
-            />
-          ) : null}
           <div className="dp-row">
             {/*
               The shortlist lives here now, as a small stack where Sign will

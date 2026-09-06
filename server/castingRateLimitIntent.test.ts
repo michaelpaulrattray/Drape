@@ -146,10 +146,6 @@ describe("which bucket each casting procedure was handed", () => {
       follow: "generation",
       /* Free house-money text call with its own bucket (#535) — the concept describer's argument. */
       reimagine: "reimagine",
-      /* The generated chips beside the box (#535 decision 12) — the same
-         argument, its own bucket, and tighter: the surface asks once per
-         brief and caches, so this is never a person clicking. */
-      briefChips: "briefChips",
       getRoll: "castingPoll",
       keep: "castingSheet",
       discard: "castingSheet",
