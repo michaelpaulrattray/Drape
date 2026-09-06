@@ -70,6 +70,22 @@
  * cost is bounded and it is one session: a Fable shift that opens a card
  * waiting on him reads the card, finds the question, and says so.
  *
+ * ⚠ **THE OTHER DIRECTION OF THAT CUT WAS NOT BOUNDED, AND IT IS CLOSED NOW
+ * (#586).** The paragraph above argues the case where a desk-held card ALSO
+ * carries `awaiting-fable` — cost, one wasted Fable session. The case it did
+ * not consider is a desk-held card carrying **NO LABEL AT ALL**: this gate
+ * reads it as takeable, answers `NONE`, and **every `awaiting-fable` card
+ * behind it freezes.** Measured on 2026-09-06, when #508 sat on his desk
+ * unlabelled and #535 — the next Fable card in his own order — was never
+ * escalated.
+ *
+ * The repair is NOT a read of the briefing from here, for the staleness reason
+ * above. It is that `crew-desk-sweep.mts` now applies `blocked` to any open
+ * `founder-ordered` card an OPEN `needsYou` card names, so the desk's answer
+ * arrives in the one vocabulary this gate already speaks. **This file is
+ * unchanged by that and deliberately so** — it still reads labels only, and
+ * still cannot see a desk-held card the sweep has not reached yet.
+ *
  * # THE NO-REPEAT RULE — "a bug here must cost one session, never five"
  *
  * The runner DELETES the marker as it launches, so without state a card that
