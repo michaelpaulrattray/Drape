@@ -196,11 +196,48 @@ export function unguardedSpendGates(scriptsDir: string, repoRoot: string): strin
     /* This module DECLARES the word. It is the door, not a caller of it. */
     if (file === selfPath) continue;
     const source = readFileSync(file, "utf8");
-    if (!source.includes('"--spend"') && !source.includes("'--spend'")) continue;
-    if (source.includes("lib/stopline.m")) continue;
+    if (!asksToSpend(source)) continue;
+    if (routesThroughTheFreeze(source)) continue;
     unguarded.push(file.replace(repoRoot, "").replace(/^[\\/]/, ""));
   }
   return unguarded;
+}
+
+/**
+ * WHETHER A FILE CAN BE ASKED TO SPEND — all three spellings, because #345 made
+ * a new one canonical (reviewer finding 1, second cycle on PR #587).
+ *
+ * The literal `"--spend"` was the only spelling there was until the paid drivers
+ * moved to a strict argument spec. In that idiom the word appears as
+ * `boolean: ["spend"]` and is read as `ARGS.flag("spend")`, with **no `--spend`
+ * literal anywhere** — so the next paid driver, copied from `drive-self-walk.mts`
+ * exactly as the `--prove` sweep says the next module always is, would have been
+ * invisible to this roster and to the suite that pins it. The hole was
+ * prospective and opened by the repair itself; no file in the tree used the new
+ * spelling when it was found.
+ */
+function asksToSpend(source: string): boolean {
+  if (source.includes('"--spend"') || source.includes("'--spend'")) return true;
+  /* The strict-spec spelling, both halves: the declaration and the read. */
+  if (/\bflag\(\s*["']spend["']\s*\)/.test(source)) return true;
+  return /boolean\s*:\s*\[[^\]]*["']spend["']/.test(source);
+}
+
+/**
+ * WHETHER A FILE IMPORTS THIS MODULE — an IMPORT, never a MENTION.
+ *
+ * The skip was `source.includes("lib/stopline.m")`, which is the #360 class
+ * standing inside the control that #345 hoisted into CI: a rogue file whose
+ * comment reads *"unlike lib/stopline.mts, this one..."* was skipped while
+ * hand-rolling its own spend gate. Pre-existing text, and hoisting it into a
+ * pinned control is what raised the cost of a false negative here.
+ *
+ * Both real shapes are matched — a static `from "…stopline.mts"` and a dynamic
+ * `await import("…stopline.mts")` — and nothing else is.
+ */
+function routesThroughTheFreeze(source: string): boolean {
+  if (/\bfrom\s+["'][^"']*stopline\.m[jt]s["']/.test(source)) return true;
+  return /\bimport\(\s*["'][^"']*stopline\.m[jt]s["']\s*\)/.test(source);
 }
 
 /** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
@@ -231,6 +268,17 @@ export function scriptFilesUnder(dir: string): string[] {
 */
 const invokedDirectly = process.argv[1] !== undefined
   && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+/* The guard fails toward SILENCE - a symlinked checkout or a drive-letter
+   casing difference on Windows would exit 0 having proven nothing. Asked for,
+   and not run, is the one state worth saying out loud. */
+if (!invokedDirectly && process.argv.includes("--prove")) {
+  console.error(
+    "NOTE: --prove was passed, but this module was imported rather than invoked"
+    + ` (argv[1] is ${process.argv[1] ?? "unset"}). Its controls did NOT run.`
+    + " Run `npx tsx scripts/lib/stopline.mts --prove` directly.",
+  );
+}
 
 if (invokedDirectly && process.argv.includes("--prove")) {
   const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");

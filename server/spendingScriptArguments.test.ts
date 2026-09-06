@@ -132,6 +132,37 @@ describe("the paid drivers declare a vocabulary, and it is the one they read", (
     expect(undeclared, `${path} reads flags its spec does not declare`).toEqual([]);
   });
 
+  /**
+   * AND THE OTHER DIRECTION, WHICH IS THE INCIDENT ITSELF (reviewer finding 2,
+   * second cycle on PR #587).
+   *
+   * The arm above is read subset-of declared: it guards *a documented command
+   * starts refusing*. **Declared-but-unread is `#288` verbatim** — a flag the
+   * parser cheerfully accepts and the script then ignores, which is exactly
+   * what `--dry-run` did to a running shift's row on production.
+   *
+   * So: declared minus read must be `["spend"]` for the two spenders and
+   * nothing at all for the ledger. `spend` is the one legitimate exception in
+   * the tree — the freeze reads it off raw argv rather than through the parse —
+   * and the exception is only allowed to a file that really calls that door.
+   */
+  const SPEND_IS_READ_BY_THE_FREEZE = [
+    "scripts/drive-finding-replay.mts",
+    "scripts/drive-self-walk.mts",
+  ] as const;
+
+  it.each(DRIVERS)("%s reads every flag it declares", (path) => {
+    const source = sourceOf(path);
+    const spec = specIn(codeOf(path));
+    const read = new Set(flagsRead(source));
+    const unread = [...spec.value, ...spec.boolean].filter((name) => !read.has(name)).sort();
+    const allowed = (SPEND_IS_READ_BY_THE_FREEZE as readonly string[]).includes(path) ? ["spend"] : [];
+    expect(unread, `${path} declares flags nothing reads`).toEqual(allowed);
+    /* The exception is earned, not assumed: a file may only leave `spend`
+       unread through the parse if it really asks the freeze. */
+    if (allowed.length > 0) expect(source).toContain("spendAuthorized(");
+  });
+
   it.each(DRIVERS)("%s asks for at least one flag, so the arm above can fail", (path) => {
     expect(flagsRead(sourceOf(path)).length).toBeGreaterThan(0);
   });
@@ -224,6 +255,44 @@ describe("no script in the tree can spend without the freeze", () => {
 
   it("every `--spend` gate routes through the stop-the-line", () => {
     expect(unguardedSpendGates(SCRIPTS, REPO)).toEqual([]);
+  });
+
+  it("sees the NEW idiom this repair made canonical, not just the literal", () => {
+    /* Reviewer finding 1, second cycle: after #345 the house style for a
+       spender is a strict spec, where the word is `boolean: ["spend"]` read as
+       `ARGS.flag("spend")` and the `--spend` literal never appears. The next
+       paid driver gets copied from `drive-self-walk.mts`; a roster that could
+       only see the literal would not have been looking at it. */
+    const scratch = mkdtempSync(join(tmpdir(), "spendidiom-"));
+    try {
+      writeFileSync(join(scratch, "new-idiom.mts"),
+        'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["spend"] });\n'
+        + 'const SPEND = ARGS.flag("spend");\n');
+      expect(unguardedSpendGates(scratch, scratch)).toEqual(["new-idiom.mts"]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it("skips a file that IMPORTS the freeze, and only one that imports it", () => {
+    /* The skip was `source.includes("lib/stopline.m")` — a mention standing in
+       for an import, the #360 class inside the control this PR pinned into CI.
+       A rogue file whose comment merely names the module was skipped. */
+    const scratch = mkdtempSync(join(tmpdir(), "spendmention-"));
+    try {
+      writeFileSync(join(scratch, "mentions-only.mts"),
+        '/* Unlike lib/stopline.mts, this one decides for itself. */\n'
+        + 'const SPEND = process.argv.includes("--spend");\n');
+      writeFileSync(join(scratch, "static-import.mts"),
+        'import { spendAuthorized } from "./lib/stopline.mts";\n'
+        + 'const SPEND = spendAuthorized("x") && process.argv.includes("--spend");\n');
+      writeFileSync(join(scratch, "dynamic-import.mts"),
+        'const { spendAuthorized } = await import("../lib/stopline.mts");\n'
+        + 'const SPEND = spendAuthorized("x") && process.argv.includes("--spend");\n');
+      expect(unguardedSpendGates(scratch, scratch)).toEqual(["mentions-only.mts"]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
   });
 
   it("and it really would report one — the positive control", () => {
