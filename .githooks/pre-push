@@ -164,6 +164,12 @@ atlas_push_gate() {
   return 1
 }
 
+# ⚠ THIS MUST STAY THE FIRST `case "$1" in` IN THE FILE (review of PR #610,
+# finding 2). `scripts/lib/pushPaths.mts:readProtectedRefs` parses the first one
+# to derive which refs the gate protects; put `deleting_ref` above it and the
+# reader silently returns an empty list — a gate that protects nothing, read as
+# a gate. `server/pushPathsToMain.test.ts` pins the answer to ["main"] and would
+# redden, but the coupling is invisible at the bytes, so it is written here.
 protected_ref() {
   case "$1" in
     refs/heads/main) return 0 ;;
@@ -171,6 +177,7 @@ protected_ref() {
   esac
 }
 
+# Keep BELOW protected_ref — see the note above it.
 deleting_ref() {
   # git sends the all-zero sha as the local side of a branch DELETION; there is
   # no tree to judge, so the freshness arm must not fire on one.
