@@ -53,7 +53,7 @@
  *
  *   npx tsx scripts/lib/stopline.mts --prove   # controls, both directions
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, type Stats } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -195,7 +195,8 @@ export function unguardedSpendGates(scriptsDir: string, repoRoot: string): strin
   for (const file of scriptFilesUnder(scriptsDir)) {
     /* This module DECLARES the word. It is the door, not a caller of it. */
     if (file === selfPath) continue;
-    const source = readFileSync(file, "utf8");
+    const source = readIfPresent(file);
+    if (source === null) continue; /* vanished between list and read (#589) */
     if (!asksToSpend(source)) continue;
     if (routesThroughTheFreeze(source)) continue;
     unguarded.push(file.replace(repoRoot, "").replace(/^[\\/]/, ""));
@@ -240,13 +241,59 @@ function routesThroughTheFreeze(source: string): boolean {
   return /\bimport\(\s*["'][^"']*stopline\.m[jt]s["']\s*\)/.test(source);
 }
 
+/**
+ * A FILE A LISTING NAMED CAN BE GONE BY THE TIME YOU READ IT (#223, #589).
+ *
+ * `scriptWorldGuard.test.ts`'s positive control plants a real file in the real
+ * `scripts/` directory and unlinks it in `finally`; vitest runs suites in
+ * parallel, so this module's walk can see the plant at `readdirSync` and miss
+ * it at `statSync`/`readFileSync`. That threw, and the throw REFUSED the
+ * deploy rite on a clean tree twice on 2026-09-06 (receipts
+ * `2026-09-06T04-57-28-138Z` and `2026-09-06T04-58-57-115Z`) — #223's class
+ * exactly, reintroduced because this walker was written after that repair
+ * reached the six walkers that existed then (`server/testing/listedSource.ts`
+ * carries the full argument).
+ *
+ * ENOENT ONLY, and that bound is the whole design: a file gone at the read was
+ * not part of the tree at the moment of the reading, and skipping it is the
+ * correct answer — while EACCES, EISDIR or a decode failure still throw,
+ * because a tolerance that swallowed everything would turn the roster green by
+ * making it blind (invariant 7). The suite drives both directions.
+ */
+/*
+  ONE catch for both helpers (PR #590 review, finding 2): with two hand-rolled
+  try/catches the suite's EISDIR arm drove only the read helper, and a blinded
+  stat catch would have stayed green. Shared, the one driven arm covers both.
+  Stated limit, as listedSource.ts states its own: a DIRECTORY that vanishes
+  before readdirSync still throws — this tolerance covers entries, not roots.
+*/
+function enoentNull<T>(read: () => T): T | null {
+  try {
+    return read();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+export function statIfPresent(path: string): Stats | null {
+  return enoentNull(() => statSync(path));
+}
+
+/** `readFileSync` with #589's ENOENT-only tolerance — see `statIfPresent`. */
+export function readIfPresent(path: string): string | null {
+  return enoentNull(() => readFileSync(path, "utf8"));
+}
+
 /** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
 export function scriptFilesUnder(dir: string): string[] {
   const files: string[] = [];
   const walk = (at: string) => {
     for (const entry of readdirSync(at)) {
       const full = join(at, entry);
-      if (statSync(full).isDirectory()) walk(full);
+      const stat = statIfPresent(full);
+      if (stat === null) continue; /* vanished between list and stat (#589) */
+      if (stat.isDirectory()) walk(full);
       else if (entry.endsWith(".mts") || entry.endsWith(".ts")) files.push(full);
     }
   };
