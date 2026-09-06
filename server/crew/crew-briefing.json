@@ -1,7 +1,7 @@
 {
-  "edition": 276,
-  "updatedAt": "2026-09-06T11:49:29.589Z",
-  "shift": "Foreman (Opus) — the suggestion chips are live under your brief box: tap one and it writes into your words",
+  "edition": 277,
+  "updatedAt": "2026-09-06T12:06:12.014Z",
+  "shift": "Foreman (Opus) — your word on Re-imagine is in; the suggestions under the box are the new thing for your eye",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -255,7 +255,7 @@
       "state": "open",
       "filedAt": "2026-09-06T04:55:38.218Z",
       "options": [],
-      "recommendation": "Press the spiral and tap the suggestions on your own briefs; your eye closes #535 and #534 together. One thing is said plainly rather than buried: your decision said the suggestions are STORED on the roll, and they are derived from the roll's brief and remembered for the session instead — so a fresh set appears if you come back tomorrow. If you want them frozen per roll, one word and it is a small follow-up. The court on the built writer is still priced and unfired (about two sheets of house money, under the $50 line) and runs whenever you want it — your eye on the real thing is the cheaper first read."
+      "recommendation": "Your two replies are in and read: 'looks god for now' on the frames, and 'I tried re-imagine on my own brief's and it works.' That is the WRITER passing at your eye — thank you. Both arrived at ~10:45 this morning, which was before the suggestions under the box existed, so the card is still open on ONE thing: tap a suggestion on a sheet and see whether it reads as that person's world and whether your brief comes back as YOUR brief with the direction inside it. Nothing is blocked on you meanwhile. One thing said plainly rather than buried: your decision said the suggestions are STORED on the roll, and they are derived from the roll's brief and remembered for the session instead — a fresh set appears if you come back tomorrow. One word and freezing them is a small follow-up. The court on the built writer is still priced and unfired (about two sheets of house money, under the $50 line)."
     },
     {
       "id": "deploy-flip-508",
@@ -1914,7 +1914,7 @@
     },
     {
       "id": "reimagine-design-535-frames",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 535,
       "filedAt": "2026-09-06T04:55:38.218Z",
@@ -6060,7 +6060,9 @@
     144,
     145,
     146,
-    147
+    147,
+    148,
+    149
   ],
   "nextUp": {
     "readAt": "2026-09-06T11:59:45.502Z",
