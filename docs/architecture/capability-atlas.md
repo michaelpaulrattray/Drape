@@ -63,14 +63,14 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:635<br>server/castingV2/refineInterpreter.ts:905<br>(+1) | 7 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1274<br>server/castingV2/castingIntent.ts:1310<br>(+14) | 22 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:635<br>server/castingV2/refineInterpreter.ts:905<br>(+1) | 6 test(s) | guard.empty |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1274<br>server/castingV2/castingIntent.ts:1310<br>(+14) | 21 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:634<br>server/castingV2/refineInterpreter.ts:919<br>(+2) | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1618<br>(+2) | 7 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:547<br>server/castingV2/refineInterpreter.ts:1601<br>(+1) | 6 test(s) | guard.content |
 | `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1628<br>(+2) | 8 test(s) | background.white |
 | `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1693<br>(+1) | 4 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
-| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineDelta.ts:1347<br>(+2) | 9 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineDelta.ts:1347<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:571<br>server/castingV2/refineDelta.ts:571<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:578<br>server/castingV2/refineDelta.ts:578<br>(+4) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:597<br>server/castingV2/refineDelta.ts:597<br>(+3) | 3 test(s) | _documented-unreachable or gap — see findings_ |
@@ -245,9 +245,9 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | concept.no_transport | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts, hairColourFromReference.test.ts, refineService.test.ts |
 | concept.not_a_casting_note | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
 | concept.not_about_the_person | concept-refusal |  | conceptDescribe.test.ts |
-| concept.unreadable | concept-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts, server/deployWatchDecision.test.ts |
+| concept.unreadable | concept-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
-| empty | interpreter-refusal |  | server/casting/geminiMigration.test.ts, diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, readerOutageRefusal.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts |
+| empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, readerOutageRefusal.test.ts, referenceSlotCatalogue.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
@@ -285,14 +285,14 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts, vacantPhrase.test.ts |
 | unnamedObject | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts |
 | unplacedInk | cannot-say | refunded | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts, inkDesignForAsk.test.ts, refineService.test.ts, repaintAsks.test.ts |
-| unreadable | interpreter-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts, server/deployWatchDecision.test.ts |
+| unreadable | interpreter-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, inkUploadService.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts |
 | version_missing | service-refusal |  | refineService.test.ts |
 | wall_basics_wardrobe | interpreter-refusal |  | **none** |
 | wall_content | interpreter-refusal |  | colourContextDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
 | wall_likeness | interpreter-refusal |  | colourContextDoor.test.ts, inkReferenceGate.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineInterpreterReferenceEntrance.test.ts, refineRefusals.test.ts, stageWallBackstop.test.ts |
 | wall_stage | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
 | wall_unbacked | interpreter-refusal |  | priorContextDoor.test.ts, refineRefusals.test.ts, stageWallBackstop.test.ts, vocabularyPin.test.ts |
-| wall_unfileable | interpreter-refusal |  | server/benchKit.test.ts, colourContextDoor.test.ts, inventionDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineFacets.test.ts, refineInterpreterVouchedRecheck.test.ts, refineService.test.ts, refusalTag.test.ts |
+| wall_unfileable | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineFacets.test.ts, refineInterpreterVouchedRecheck.test.ts, refineService.test.ts, refusalTag.test.ts |
 | whichInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 
 ## Flags (24)
