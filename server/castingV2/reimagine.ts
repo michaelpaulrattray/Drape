@@ -82,8 +82,14 @@ import {
   pieceNounIn,
   skinContradictionIn,
 } from "./promptAuthor";
-import { AGE_BANDS, SEXES, type AgeBand, type Sex } from "../../shared/castingVocabularies";
-import { ageClaimsIn, saysSex, type StatedAge } from "./seedFidelity";
+import { SEXES, type AgeBand, type Sex } from "../../shared/castingVocabularies";
+import {
+  ageClaimSpans,
+  ageClaimsIn,
+  ageContradictionIn,
+  saysSex,
+  YOUTH_WORDS,
+} from "./seedFidelity";
 
 const log = createModuleLogger("reimagine");
 
@@ -193,23 +199,35 @@ export type LockedTrio = {
 };
 
 const NONBINARY_EXPLICIT = ["nonbinary", "non-binary", "agender", "androgynous", "gender-neutral"] as const;
-const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
 /**
- * Words that STEER the age without claiming a band — the fold's vocabulary
- * ("make her young", "make them older"). When the box says one, the customer
- * is moving the age themselves, so the age is not locked: the draft may land
- * on a band the box never claimed, and the customer reads the result in
- * their own editable box (the design's fidelity control). Driven before it
- * was written: without this, his own §11 example — an ageing instruction
- * typed after a brief that states an age — was refused twice by the very
- * guard meant to protect it, and the press answered "nothing to offer".
+ * Words that can STEER the age without claiming a band — the fold's
+ * vocabulary ("make her young", "…close-cropped hair. make them older").
+ * When the box is steering, the customer is moving the age themselves, so
+ * the age is not locked: the draft may land on a band the box never claimed,
+ * and the customer reads the result in their own editable box (the design's
+ * fidelity control). Driven before it was written: without this, his own §11
+ * example — an ageing instruction typed after a brief that states an age —
+ * was refused twice by the very guard meant to protect it, and the press
+ * answered "nothing to offer".
  *
- * ⚠ Declared limit: a bare number ("make them 45") steers without a word
- * this list can see and without an age-claim shape; that fold still meets
- * the lock and falls to "your words stand". The court's fold fixtures (#535
- * §7) measure how often that shape occurs.
+ * ⚠ **A steer word is DESCRIPTION until its position or an imperative says
+ * otherwise** (review of PR #598, finding 1): *"a young woman in her 20s"*
+ * types an age and describes it — emptying the lock there turns off the one
+ * mechanical age guard on some of the most natural briefs in the product. So
+ * a word from this list steers only when it sits AFTER the last readable age
+ * claim (the fold's natural shape — the instruction is typed at the end), or
+ * when the box carries an imperative ("make…", "turn…"). The vocabulary
+ * derives from `seedFidelity.ts`'s own `YOUTH_WORDS` (working law 4) plus
+ * the ageing direction words that list has no reason to hold.
+ *
+ * ⚠ Declared limits, both pinned in the suite: a bare number ("make them
+ * 45") steers without a word this list can see, and an instruction typed
+ * BEFORE the brief's own age with no imperative ("younger. a woman in her
+ * 30s") reads as description; each falls to "your words stand", and the
+ * court's fold fixtures (#535 §7) measure how often those shapes occur.
  */
-const AGE_STEER_WORDS = ["older", "younger", "young", "youthful", "elderly", "age", "aged", "ageing", "aging"] as const;
+const AGE_STEER_WORDS = [...YOUTH_WORDS, "older", "elderly", "age", "aged", "ageing", "aging"] as const;
+const IMPERATIVE_SHAPE = /(^|[^a-z])(make|turn) (her|him|them|it|the)\b/;
 
 export function lockedTrioOf(briefText: string): LockedTrio {
   const lower = briefText.toLowerCase().replace(/\s+/g, " ");
@@ -220,16 +238,27 @@ export function lockedTrioOf(briefText: string): LockedTrio {
   );
   const groups = speciesGroupsIn(briefText);
   /*
-    "aged NN" is a CLAIM, not steering — `ageClaimsIn` reads it, so the lock
-    holds on the number it states. A steering word that appears only inside a
-    claim shape must not unlock: strip the readable claims first, then look.
+    "aged NN" is a CLAIM, not steering — the spans are `ageClaimsIn`'s own
+    (`ageClaimSpans`, same shapes, same era filter), blanked to equal-length
+    spaces so positions hold. A steering word inside a claim shape never
+    steers; one before the last claim steers only under an imperative.
   */
   const claims = ageClaimsIn(briefText);
-  const withoutClaims = lower
-    .replace(/\bin (?:her|his|their) (?:(?:early|mid|late)[ -])?[a-z0-9]+\b/g, " ")
-    .replace(/\baged? \d{1,3}\b/g, " ")
-    .replace(/\b\d{1,3}[ -]years?[ -]old\b/g, " ");
-  const steered = AGE_STEER_WORDS.some((word) => saysPhrase(withoutClaims, word));
+  const spans = ageClaimSpans(briefText);
+  let blanked = lower;
+  for (const { start, end } of spans) {
+    blanked = blanked.slice(0, start) + " ".repeat(end - start) + blanked.slice(end);
+  }
+  const lastClaimEnd = spans.reduce((max, span) => Math.max(max, span.end), 0);
+  const steered = AGE_STEER_WORDS.some((word) => {
+    const escaped = word.replace(/[-]/g, "\\-");
+    /* EVERY occurrence, not the first: "a young woman … make her young again" steers on the second. */
+    const occurrences = Array.from(blanked.matchAll(new RegExp(`(^|[^a-z])${escaped}(?![a-z'’])`, "g")));
+    return occurrences.some((match) => {
+      const at = (match.index ?? 0) + match[1].length;
+      return at > lastClaimEnd || IMPERATIVE_SHAPE.test(blanked);
+    });
+  });
   return {
     sex: saidSexes.length === 1 ? saidSexes[0] : null,
     ageBands: steered ? [] : claims,
@@ -271,11 +300,31 @@ export function reimagineRefusal(draft: string, allowance: number, seedText: str
   }
 
   const locked = lockedTrioOf(seedText);
-  /* AGE — the draft may claim no band the box did not claim itself. */
   const draftBands = ageClaimsIn(draft);
-  const stray = draftBands.find((band) => !locked.ageBands.includes(band));
-  if (locked.ageBands.length > 0 && stray !== undefined) {
-    return `Your previous draft claimed an age (${stray}) the request did not state. Sex, age and species are locked when typed — keep the request's own age words exactly.`;
+  const lockedSet = Array.from(new Set(locked.ageBands));
+  if (lockedSet.length === 1) {
+    /*
+      One typed band: the check IS `seedFidelity.ts`'s own contradiction
+      reader — stray claims and added youth words against the stated band,
+      one owner (review of PR #598, finding 2: this module briefly
+      re-implemented it, and the dispositions table claimed a wiring that
+      did not exist). A youth word the BOX itself contains never reaches
+      here descriptively refused: beside a claim it is description and the
+      draft repeating it repeats her word — `ageContradictionIn` refuses
+      youth words only against a 30s+ band, which such a box has pinned.
+    */
+    const moved = ageContradictionIn(draft, { band: lockedSet[0], phase: null });
+    /* Her own word is never the author's move — a "young" the box says (descriptively, beside its claim) is exempt, the seed-exemption every word guard here carries. */
+    const lowerSeed = seedText.toLowerCase().replace(/\s+/g, " ");
+    if (moved && !saysPhrase(lowerSeed, moved.toLowerCase())) {
+      return `Your previous draft said "${moved}", which moves the stated age (${lockedSet[0]}). Sex, age and species are locked when typed — keep the request's own age words exactly.`;
+    }
+  } else if (lockedSet.length > 1) {
+    /* Several typed bands ("late twenties to thirties"): the draft may claim those and no others. */
+    const stray = draftBands.find((band) => !lockedSet.includes(band));
+    if (stray !== undefined) {
+      return `Your previous draft claimed an age (${stray}) the request did not state. Sex, age and species are locked when typed — keep the request's own age words exactly.`;
+    }
   }
   if (locked.ageBands.length > 0 && draftBands.length === 0) {
     /*
@@ -284,19 +333,6 @@ export function reimagineRefusal(draft: string, allowance: number, seedText: str
       locked fact by omission.
     */
     return `Your previous draft dropped the stated age (${locked.ageBands[0]}). Sex, age and species are locked when typed — the idea must keep it.`;
-  }
-  /*
-    An added youth word moves a stated 30s+ age (#252's floor). A youth word
-    the BOX itself contains never reaches here: it steers, and steering
-    empties `ageBands` above.
-  */
-  if (locked.ageBands.length > 0 && AGE_BANDS.indexOf(locked.ageBands[0]) >= AGE_BANDS.indexOf("30s")) {
-    const lower = draft.toLowerCase().replace(/\s+/g, " ");
-    const youth = YOUTH_WORDS.find((word) => saysPhrase(lower, word));
-    if (youth) {
-      const stated: StatedAge = { band: locked.ageBands[0], phase: null };
-      return `Your previous draft said "${youth}", which moves the stated age (${stated.band}). Sex, age and species are locked when typed — never add age language of your own.`;
-    }
   }
   /* SEX — presence. An ordinary flip drops the box's own sex words and reddens here (the fidelity module's declared shape). */
   if (locked.sex && !saysSex(draft, locked.sex)) {

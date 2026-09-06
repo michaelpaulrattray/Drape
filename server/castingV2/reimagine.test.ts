@@ -80,6 +80,14 @@ describe("the locked trio, read from the box's own text", () => {
   it("age is the box's own readable claims; species is a single named group", () => {
     expect(lockedTrioOf(WAR_BUILT_BRIEF).ageBands).toEqual(["30s"]);
     expect(lockedTrioOf("a pirate").ageBands).toEqual([]);
+    /*
+      A steer word that is DESCRIPTION does not empty the lock (review of PR
+      #598, finding 1): these are among the most natural briefs the product
+      gets, each types an age, and each must stay locked.
+    */
+    expect(lockedTrioOf("a young woman in her 20s, freckled").ageBands).toEqual(["20s"]);
+    expect(lockedTrioOf("an aging punk in his 60s").ageBands).toEqual(["60s"]);
+    expect(lockedTrioOf("a middle-aged woman in her 40s").ageBands).toEqual(["40s"]);
     expect(lockedTrioOf("an adult sphinx in ceremonial armour").species).toBe("feline");
     expect(lockedTrioOf("a portrait of a diver").species).toBeNull();
     /* Two groups named — a fold changing species says both — locks none. */
@@ -130,9 +138,13 @@ describe("the refusal chain — the roll guards plus the trio, and his own outpu
     expect(reimagineRefusal("A fitness creator in their 50s, grey at the temples, full beard.", 400, older)).toBeNull();
     /* "aged 52" is a CLAIM, not steering — the lock holds on the number it states. */
     expect(lockedTrioOf("a ballerina, aged 52").ageBands).toEqual(["50s"]);
-    /* ⚠ The declared limit: a bare-number instruction against a stated band steers without a word the reader can see. */
+    /* And a DESCRIPTIVE steer word beside a claim leaves the guard armed: the reviewer's own failure case. */
+    expect(reimagineRefusal("A woman in her 50s, freckled and quick.", 400, "a young woman in her 20s, freckled"))
+      .toContain("50s");
+    /* ⚠ Declared limits, both directions: a bare-number instruction steers invisibly, and an instruction typed BEFORE the brief's own age with no imperative reads as description. */
     expect(reimagineRefusal("A fitness creator in her mid 40s.", 400, "a fitness creator in her 30s. make her 45"))
       .toContain("40s");
+    expect(lockedTrioOf("younger please. a woman in her 30s").ageBands).toEqual(["30s"]);
   });
 
   it("a locked sex must keep being said; a locked species survives as its GROUP, so his sphinx→'feline humanoid' passes", () => {

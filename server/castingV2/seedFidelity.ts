@@ -135,7 +135,13 @@ const ERA_DECADES = new Set(["70s", "80s", "90s"]);
  * elder adjectives ("aged", "mature") double as material/styling words and a
  * guard that refuses "aged leather" would be the typo gate owning a real word.
  */
-const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
+/**
+ * Exported since #535: the Re-imagine steering rule reads the same list, and
+ * a private copy over there is working law 4's mirror (review of PR #598,
+ * finding 3 — the copies agreed the day they were written, which is when
+ * mirrors always agree).
+ */
+export const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
 
 /** Every age band a readable claim in `text` resolves to, in the order the claims appear. */
 export function ageClaimsIn(text: string): AgeBand[] {
@@ -150,6 +156,28 @@ export function ageClaimsIn(text: string): AgeBand[] {
     }
   }
   return claims;
+}
+
+/**
+ * WHERE the readable claims sit — the same shapes, the same era filter, as
+ * character spans over the whitespace-normalised lowercase text (#535: the
+ * Re-imagine steering rule needs positions, and a second copy of the shapes
+ * over there would be working law 4's mirror). A span is reported only for a
+ * match that actually resolves to a band, exactly as `ageClaimsIn` counts it.
+ */
+export function ageClaimSpans(text: string): Array<{ start: number; end: number }> {
+  const lower = text.toLowerCase().replace(/\s+/g, " ");
+  const spans: Array<{ start: number; end: number }> = [];
+  for (const { shape, eraAmbiguous } of AGE_CLAIM_SHAPES) {
+    for (const match of Array.from(lower.matchAll(shape))) {
+      const token = match[1] ?? match[0];
+      if (eraAmbiguous && ERA_DECADES.has(token)) continue;
+      const claimed = /^\d+$/.test(token) ? bandOfYears(Number(token)) : BAND_OF_WORD[token] ?? null;
+      if (claimed === null) continue;
+      spans.push({ start: match.index ?? 0, end: (match.index ?? 0) + match[0].length });
+    }
+  }
+  return spans;
 }
 
 /**

@@ -45,6 +45,15 @@ export type ReimagineState = {
   /** The quiet line to draw under the box, or null. */
   line: "idea" | "nothing" | null;
   canUndo: boolean;
+  /**
+   * The box holds no words to press on — the glyph dims rather than firing
+   * (review of PR #598, finding 4: an empty press met the schema's `min(1)`
+   * and the error path said "your words stand" over no words at all). Dimmed
+   * rather than hidden, unlike the concept modal's, because this glyph sits
+   * beside a box the customer is actively typing in and a control that pops
+   * in and out at the first keystroke is jitter, not quiet.
+   */
+  empty: boolean;
   press: () => void;
   undo: () => void;
   /** Typing clears the line and spends the undo — call from the box's onChange. */
@@ -74,8 +83,10 @@ export function useReimagine(input: {
   */
   const flight = useRef(0);
 
+  const empty = input.value.trim().length === 0;
+
   const press = () => {
-    if (mutation.isPending || !input.enabled) return;
+    if (mutation.isPending || !input.enabled || empty) return;
     const wasAt = ++flight.current;
     const was = input.value;
     mutation.mutate(
@@ -113,7 +124,7 @@ export function useReimagine(input: {
     if (line !== null) setLine(null);
   };
 
-  return { pending: mutation.isPending, line, canUndo: prior.current !== null, press, undo, typed };
+  return { pending: mutation.isPending, line, canUndo: prior.current !== null, empty, press, undo, typed };
 }
 
 /**
@@ -141,7 +152,7 @@ export function ReimagineButton({
         .join(" ")}
       aria-label="Re-imagine"
       title={held ? REIMAGINE_FOLLOW_HELD_TITLE : "Re-imagine"}
-      aria-disabled={held || state.pending ? true : undefined}
+      aria-disabled={held || state.pending || state.empty ? true : undefined}
       onClick={() => {
         if (held) return;
         state.press();
