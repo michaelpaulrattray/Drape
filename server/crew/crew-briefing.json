@@ -1,7 +1,7 @@
 {
-  "edition": 282,
-  "updatedAt": "2026-09-06T19:47:39.548Z",
-  "shift": "Foreman (Opus) - three bugs closed in the team's own instruments: the map of the studio's refusals stops counting strangers as proof, and the pre-push check stops missing the guard that owns your change",
+  "edition": 283,
+  "updatedAt": "2026-09-06T20:44:42.402Z",
+  "shift": "Foreman (Opus) - the safety net that guards your only publish path had stopped watching two of its own files, and a scare about the code reviewer turns out to be a measuring fault",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T19:48:07.764Z",
+      "readAt": "2026-09-06T20:43:33.244Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4079,6 +4079,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-617-class-guard-594",
+      "title": "The check that keeps your publishes from failing had gone blind to two of its own files (#594)",
+      "status": "merged",
+      "prNumber": 617,
+      "note": "Everything the team builds reaches your live site through one publish step, and that step refuses to run if anything looks wrong. Four times across two incidents it refused on work that was perfectly fine - each time for the same silly reason: a piece of our tooling listed the files in a folder, then went to read one that had been deleted a split second earlier, and fell over. Harmless in itself, but it costs a night's work a wasted round trip every time.\n\nSo a guard was written to stop that mistake being made again. Tonight we found the guard was only watching files that happened to MENTION the word \"scripts\" somewhere in them - which is a fine rule for one kind of file and meaningless for another kind, where the folder being read is passed in from outside. Two files were therefore invisible to it. One of them had already been fixed by hand, and we proved the guard would not have noticed if that fix were undone. The other had never been fixed at all - and it is the file that builds the map of every refusal the casting studio can give a customer.\n\nBoth are watched now. The guard asks what a file DOES rather than what it says about itself. Nothing a customer can see changes, and we checked that: the map of refusals comes out byte for byte identical.\n\nTwo details worth recording. The ten places that file reads from were read one at a time rather than waved through together, because three of them genuinely needed to be forgiving and the other seven must keep failing loudly - a map that shrugs when one of its sources goes missing would report a short list of refusals as a complete one. And the automatic code review caught a real mistake in the first attempt: we had removed a second guard on the argument that its own written note said it was no longer needed. The note was an incomplete account of what it did. It is back, and the exact scenario the reviewer described was run to prove it works."
+    },
+    {
       "id": "pr-615-pin-reach-545-614",
       "title": "Our map of the studio's refusals stopped counting strangers as proof (#545, #614)",
       "status": "merged",
@@ -5797,11 +5804,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0906-foreman",
-      "title": "The queue: 92 open, 2 carrying your word, nothing urgent, 1 unread for a week",
+      "id": "queue-shape-0907-foreman",
+      "title": "The queue: 87 open, 2 carrying your word, nothing urgent, 1 unread for a week",
       "severity": "info",
       "state": "open",
-      "detail": "Steady. Three cards closed tonight (#604, #606, #519) and two filed — one of them found by the reviewer inside our own fix, which is the gate earning its keep. NEXT UP still holds two and neither is takeable tonight: the plan-card blurb waits on the ladder folding, and the shift-process card waits on your verdict. Nothing carries the urgent label. One card (#257) has gone a week with nobody re-reading it, unchanged from last night."
+      "detail": "Steady, and slightly smaller than last night (92 to 87). One card closed tonight (#594) and two others measured rather than built. NEXT UP still holds the same two and neither was takeable: the plan-card blurbs wait on seven lines only you can write, and the shift-process card waits on your verdict. Nothing carries the urgent label. One card (#257) has now gone a week with nobody re-reading it, unchanged from last night.\n\nOne piece of genuinely good news, found while checking something else. A card filed two nights ago warned that a change had gone through with NO automatic code review at all, and that we would not have known. That warning was measured the wrong way. It checked each change at its final state - but a review runs when the work is first put up, and any later edit moves the thing being pointed at, so the review becomes invisible to that check. Measured properly: 9 of the last 10 changes DID get a full code review. The one that did not is a single genuine case from 5 September, still open and now narrowed from three possible causes to one. The card has been corrected so the next person does not build an alarm on a faulty reading - it would have cried wolf on almost every change."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -6140,7 +6147,7 @@
     151
   ],
   "nextUp": {
-    "readAt": "2026-09-06T19:48:06.793Z",
+    "readAt": "2026-09-06T20:43:32.272Z",
     "items": [
       {
         "issueNumber": 404,
