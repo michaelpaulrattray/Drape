@@ -102,6 +102,23 @@ const log = createModuleLogger("reimagine");
  */
 export const REIMAGINE_WORD_BUDGET = 220;
 export const REIMAGINE_ALLOWANCE_FLOOR = 40;
+/**
+ * How much a TAPPED CHIP may add (#535 decision 12) — the brief's own length
+ * plus this, rather than the press's 220.
+ *
+ * A steer is the small act: his own words, one direction woven in. Driven
+ * before it was set — with the press's allowance, one tap on an eight-word
+ * brief came back with eighty-five words of new prose, which is the glyph's
+ * job and not a chip's.
+ */
+export const REIMAGINE_DIRECTION_MARGIN = 40;
+/**
+ * The sentence that turns a tapped chip into the editing instruction the fold
+ * road already handles — OURS, not the customer's, which is why it is a
+ * constant with two readers: the composer and the refusal that keeps it out
+ * of a draft (review of PR #601, finding 2).
+ */
+export const DIRECTION_MARKER = "Apply this direction to the brief above:";
 /** A draft may exceed its allowance by this fraction before it is re-asked — the author road's own tolerance. */
 export const REIMAGINE_OVERRUN_TOLERANCE = 0.1;
 /** The author's output budget — the interpreter's figure, for its reason (reasoning tokens count). */
@@ -308,6 +325,16 @@ export function lockedTrioOf(briefText: string): LockedTrio {
  */
 export function reimagineRefusal(draft: string, allowance: number, seedText: string): string | null {
   if (draft.length === 0) return "Your previous reply was empty.";
+  /*
+    OUR OWN SCAFFOLDING, NEVER IN A DRAFT (review of PR #601, finding 2). The
+    seed no longer exempts the marker's words, so this is belt as well as
+    braces — but a draft that parrots the instruction line is a specific,
+    recognisable failure and it deserves the specific sentence rather than
+    whichever generic guard happens to catch a fragment of it.
+  */
+  if (draft.toLowerCase().includes(DIRECTION_MARKER.toLowerCase())) {
+    return "Your previous draft repeated the instruction line back. Write the brief itself — never the instruction you were given.";
+  }
   if (isStacked(draft)) {
     return "Your previous draft was more than one paragraph. Write ONE paragraph, with no blank line, no heading and no list.";
   }
@@ -386,10 +413,26 @@ export function reimagineRefusal(draft: string, allowance: number, seedText: str
  * and the MAX instruction both used for his rulings, because an instruction
  * that names the rule and shows the miss is the one models follow).
  */
-export function reimagineSystemPrompt(allowance: number): string {
+export function reimagineSystemPrompt(allowance: number, direction?: string | null): string {
+  const chosen = direction?.trim() ?? "";
   return [
     "You are the writing assistant of a casting studio. The request below is the words in a customer's own brief box. What you return REPLACES those words in the box — the customer reads it, edits it, and can undo it, so write the brief itself and nothing else.",
     "",
+    /*
+      ⚠ A TAPPED CHIP IS THE SMALL ACT, AND THIS PARAGRAPH IS WHY (#535
+      decision 12, found by driving it — law 6). Without it the generic fold
+      below turned his eight-word brief into eighty-five words of new prose
+      on one tap: a full re-imagining, which is what the GLYPH is for. A
+      customer who taps a suggestion is steering, not starting again, and a
+      control whose effect you cannot anticipate is one you learn by trial —
+      which is the disappearing-technology law failing.
+    */
+    ...(chosen.length > 0
+      ? [
+          "THIS REQUEST CARRIES A CHOSEN DIRECTION, and that is a STEER, not a re-imagining. Keep the customer's brief as it is — their words, their order, their length — and write the direction INTO it where it belongs, changing only what the direction touches. Add nothing else of your own. A short brief stays short.",
+          "",
+        ]
+      : []),
     /*
       Decision 11 + his 2026-09-06 ruling, and the fold comes FIRST because it
       changes what every later rule means: on a fold the "request" is a brief
@@ -484,11 +527,54 @@ function cleanReply(raw: string): string {
 export async function reimagineBrief(input: {
   engine: TextEngine;
   briefText: string;
+  /**
+   * A GENERATED CHIP the customer tapped (#535 decision 12), or nothing for a
+   * plain press.
+   *
+   * A tap is a FOLD, not a re-imagine, and it reuses decision 11's road
+   * rather than growing a second one: the direction is composed onto the
+   * brief as the editing instruction it is, and the instruction's own first
+   * paragraph — *"APPLY the instruction and return the one clean brief with
+   * the change rewritten into it — never tacked onto the end"* — is already
+   * exactly his ruling for this case (Crew reply #144: *"the edit gets tacked
+   * onto the end of the prompt instead of rewritten into it"*). One road,
+   * already driven, already guarded, already courted at his eye.
+   *
+   * ⚠ **The composition lives HERE and not on the client** so the sentence
+   * has one owner: a client that wrote its own join would be a second author
+   * of the prompt, and the two would drift (working law 4).
+   */
+  direction?: string | null;
   signal?: AbortSignal;
 }): Promise<ReimagineOutcome> {
-  const briefText = input.briefText.trim();
-  const allowance = reimagineAllowance(briefText);
-  const system = reimagineSystemPrompt(allowance);
+  const direction = input.direction?.trim() ?? "";
+  const briefText =
+    direction.length > 0
+      ? `${input.briefText.trim()}\n\n${DIRECTION_MARKER} ${direction}`
+      : input.briefText.trim();
+  /*
+    ⚠ THE GUARDS' SEED IS THE CUSTOMER'S WORDS, NEVER OUR SCAFFOLDING
+    (review of PR #601, finding 2). Every word guard on this road is
+    seed-exempt — his own *"unless the user typed them"* — so passing the
+    COMPOSED text as the seed would exempt the marker sentence's own
+    vocabulary, and a draft echoing it would land in the customer's box
+    having passed every check. The customer's words are their brief plus the
+    direction they chose; the marker is ours, and it is exempted from
+    nothing.
+  */
+  const seedForGuards =
+    direction.length > 0 ? `${input.briefText.trim()}\n${direction}` : briefText;
+  /*
+    A STEER GETS THE BRIEF'S OWN LENGTH PLUS A LITTLE, not the press's 220.
+    The paragraph above states the rule; this is the same rule as a number,
+    so the overrun check can actually enforce it — the instruction alone
+    produced an 85-word answer to an 8-word brief when it was driven.
+  */
+  const allowance =
+    direction.length > 0
+      ? Math.max(REIMAGINE_ALLOWANCE_FLOOR, countWords(input.briefText) + REIMAGINE_DIRECTION_MARGIN)
+      : reimagineAllowance(briefText);
+  const system = reimagineSystemPrompt(allowance, direction.length > 0 ? direction : null);
   let attempts = 0;
   const refusals: string[] = [];
   let spentMs: number | null = null;
@@ -523,7 +609,7 @@ export async function reimagineBrief(input: {
     let model = first.provenance.model;
     let latencyMs = first.latencyMs;
     spentMs = latencyMs;
-    const why = reimagineRefusal(text, allowance, briefText);
+    const why = reimagineRefusal(text, allowance, seedForGuards);
     if (why) {
       refusals.push(why);
       log.warn({ allowance, why }, "[reimagine] re-asking once");
@@ -531,7 +617,7 @@ export async function reimagineBrief(input: {
       text = cleanReply(second.text);
       model = second.provenance.model;
       latencyMs += second.latencyMs;
-      const stillWhy = reimagineRefusal(text, allowance, briefText);
+      const stillWhy = reimagineRefusal(text, allowance, seedForGuards);
       if (stillWhy) {
         refusals.push(stillWhy);
         log.warn({ why: stillWhy }, "[reimagine] second draft refused too — nothing to offer, the words stand");
