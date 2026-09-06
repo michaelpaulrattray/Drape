@@ -28,9 +28,12 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-verify
-  cancel-in-progress: true
+# NO concurrency group, deliberately (review of #584, finding 2). A cancelled
+# run — especially one cancelled while still QUEUED, where no step ever
+# executes — leaves a commit with a check that narrates nothing, which is the
+# exact #434 trap this repository already fell into on review.yml. Overlapping
+# runs cost a few curl polls a minute; each one ends at a narrated verdict:
+# live, superseded (green, said plainly), or red.
 
 jobs:
   verify:

@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   autoApplyMigrations,
+  readSchemaGap,
   type MissingObjects,
 } from "../scripts/lib/ceremonyAutoApply.mts";
 import { predeployVerdict } from "../scripts/lib/predeployVerdict.mts";
@@ -104,6 +105,45 @@ describe("predeployVerdict through the real applier", () => {
       execute: async () => { throw new Error("boom"); },
     });
     for (const problem of report.blocking) expect(report.problems).toContain(problem);
+  });
+});
+
+describe("readSchemaGap — the ONE reading both deploy roads plan writes from (review of #584, f1)", () => {
+  /* A minimal real schema source: declaredSchemaFrom parses mysqlTable calls. */
+  const SOURCE = `
+export const widgets = mysqlTable("widgets", {
+  id: int("id").primaryKey(),
+  name: varchar("name", { length: 64 }),
+});
+`;
+  const queries = (columns: Array<{ t: string; c: string }>) =>
+    async (sql: string): Promise<any[]> =>
+      sql.includes("information_schema.COLUMNS") ? columns : [];
+
+  it("computes the gap from declared-minus-live", async () => {
+    const gap = await readSchemaGap(SOURCE, queries([{ t: "other", c: "id" }]));
+    expect(gap.missing.tables).toContain("widgets");
+  });
+
+  it("finds nothing missing when the service holds what the code declares", async () => {
+    const gap = await readSchemaGap(SOURCE, queries([
+      { t: "widgets", c: "id" },
+      { t: "widgets", c: "name" },
+    ]));
+    expect(gap.missing.tables).toEqual([]);
+    expect(gap.missing.columns).toEqual([]);
+  });
+
+  it("⚠ REFUSES an empty COLUMNS read — working law 2, and this reader decides a WRITE", async () => {
+    await expect(readSchemaGap(SOURCE, queries([]))).rejects.toThrow("no columns at all");
+  });
+
+  it("⚠ BOTH deploy roads call it — the drift this extraction exists to prevent", () => {
+    expect(readFileSync("scripts/deploy-rite.mts", "utf8")).toContain("readSchemaGap(");
+    expect(readFileSync("scripts/predeploy-migrate.mts", "utf8")).toContain("readSchemaGap(");
+    /* And neither keeps a private copy of the reading's queries. */
+    expect(readFileSync("scripts/deploy-rite.mts", "utf8")).not.toContain("information_schema.COLUMNS");
+    expect(readFileSync("scripts/predeploy-migrate.mts", "utf8")).not.toContain("information_schema.COLUMNS");
   });
 });
 

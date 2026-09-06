@@ -90,16 +90,12 @@ import { comparePositions, parseVariableLines } from "./lib/productionFlagPositi
 import {
   DECLARED_BUT_UNMIGRATED,
   DECLARED_COLUMNS_BUT_UNMIGRATED,
-  conformanceVerdict,
-  declaredIndexesFrom,
-  declaredSchemaFrom,
-  liveSchemaFrom,
 } from "./lib/schemaConformance.mts";
 import {
   type MissingObjects,
   autoApplyMigrations,
   migrationFilesFrom,
-  missingObjectsFrom,
+  readSchemaGap,
 } from "./lib/ceremonyAutoApply.mts";
 import { assetReferencesIn, assetVerdict } from "./lib/staticAssetReferences.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
@@ -1050,48 +1046,20 @@ const schema = await (async (): Promise<{ line: string; migration: readonly stri
     const connection = await openDatabase(url);
     /* Relative, like the receipt path above: the rite runs from the repo root. */
     const schemaSource = readFileSync("drizzle/schema.ts", "utf8");
-    const declared = declaredSchemaFrom(schemaSource);
-    const declaredIndexes = declaredIndexesFrom(schemaSource);
 
     /*
       ONE READING OF THE SERVICE, TAKEN TWICE — before the migration and after
       it — so the second is a READ-BACK rather than a repeat of the first
-      (working law 1). It answers two questions from one pair of queries: the
-      raw declared-minus-live set the applier plans against, and the tolerated
-      verdict the receipt prints.
+      (working law 1). The reading itself lives in the lib (`readSchemaGap`),
+      because the pre-deploy command (#508) plans production writes from the
+      same closure and two copies of it drift (review of #584, finding 1).
     */
-    const read = async () => {
-      const [rows] = await connection.query<any[]>(
-        `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
-      );
-      const [indexRows] = await connection.query<any[]>(
-        `SELECT DISTINCT INDEX_NAME AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()`,
-      );
-      /*
-        THE READER IS PROVEN BEFORE ITS ANSWER IS BELIEVED (working law 2). An
-        empty COLUMNS result is the whole basis for deciding to CREATE, and it
-        is also what a wrong database or a silently failed query looks like —
-        and since #322 this reader DECIDES A WRITE rather than only reporting,
-        so the control that was optional when it merely printed is not now.
-      */
-      if ((rows as any[]).length === 0) throw new Error("information_schema returned no columns at all");
-      const live = liveSchemaFrom(rows as Array<{ t: string; c: string }>);
-      const indexes = {
-        declared: declaredIndexes,
-        live: new Set((indexRows as Array<{ n: string }>).map((row) => row.n)),
-      };
-      /* Both exception lists empty: an ENUMERATED table is precisely the one
-         the applier most needs to see, and its indexes with it. */
-      const raw = conformanceVerdict(declared, live, indexes, {}, {});
-      return {
-        verdict: conformanceVerdict(declared, live, indexes),
-        /* The verdict→planner mapping lives in the lib now — the pre-deploy
-           command (#508) is its second caller and two copies drift. */
-        missing: missingObjectsFrom(raw) satisfies MissingObjects,
-      };
-    };
+    const read = () => readSchemaGap(
+      schemaSource,
+      async (sql) => (await connection.query<any[]>(sql))[0] as any[],
+    );
 
-    let { verdict, missing } = await read();
+    let { verdict, missing, declaredIndexCount } = await read();
     const migration = await autoApply(connection, missing, async () => (await read()).missing);
     if (migration.applied > 0) verdict = (await read()).verdict;
 
@@ -1102,7 +1070,7 @@ const schema = await (async (): Promise<{ line: string; migration: readonly stri
     return {
       line:
         `${verdict.declaredTables} tables declared · ${verdict.liveTables} on the service · `
-        + `${declaredIndexes.size} named indexes · ${enumerated} enumerated as unmigrated`,
+        + `${declaredIndexCount} named indexes · ${enumerated} enumerated as unmigrated`,
       migration: migration.lines,
       problems: [...migration.problems, ...verdict.problems],
     };

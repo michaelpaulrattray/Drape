@@ -66,6 +66,13 @@
  */
 
 /** The three shapes that may run unattended. Anything else is refused. */
+import {
+  conformanceVerdict,
+  declaredIndexesFrom,
+  declaredSchemaFrom,
+  liveSchemaFrom,
+} from "./schemaConformance.mts";
+
 export type StatementKind = "additive" | "destructive";
 
 export type ParsedStatement = {
@@ -458,6 +465,55 @@ export function missingObjectsFrom(verdict: {
     tables: verdict.missingTables,
     columns: verdict.missingColumns,
     indexes: verdict.missingIndexes.map((name) => name.slice(name.indexOf(".") + 1)),
+  };
+}
+
+/**
+ * THE ONE READING BOTH DEPLOY ROADS PLAN THEIR WRITES FROM (review of #584,
+ * finding 1). The rite and the pre-deploy command each held their own copy of
+ * this closure — the two `information_schema` queries, the empty-COLUMNS
+ * guard, the raw-vs-tolerated verdict pair — and the copy that decided a
+ * production write was the newer one. Two copies of a reading drift (working
+ * law 4), so the reading lives here and the callers inject only how to run a
+ * query.
+ *
+ * The empty-COLUMNS refusal is working law 2, and since #322 this reader
+ * DECIDES A WRITE rather than only reporting: an empty result is the whole
+ * basis for deciding to CREATE, and it is also exactly what a wrong database
+ * or a silently failed query looks like.
+ *
+ * Two verdicts from one pair of queries, deliberately: `missing` comes from
+ * the RAW comparison (empty exception lists — an enumerated table is
+ * precisely the one the applier most needs to see), while `verdict` is the
+ * tolerated one the receipts print.
+ */
+export async function readSchemaGap(
+  schemaSource: string,
+  query: (sql: string) => Promise<any[]>,
+): Promise<{
+  verdict: ReturnType<typeof conformanceVerdict>;
+  missing: MissingObjects;
+  declaredIndexCount: number;
+}> {
+  const declared = declaredSchemaFrom(schemaSource);
+  const declaredIndexes = declaredIndexesFrom(schemaSource);
+  const rows = await query(
+    `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
+  );
+  const indexRows = await query(
+    `SELECT DISTINCT INDEX_NAME AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()`,
+  );
+  if (rows.length === 0) throw new Error("information_schema returned no columns at all");
+  const live = liveSchemaFrom(rows as Array<{ t: string; c: string }>);
+  const indexes = {
+    declared: declaredIndexes,
+    live: new Set((indexRows as Array<{ n: string }>).map((row) => row.n)),
+  };
+  const raw = conformanceVerdict(declared, live, indexes, {}, {});
+  return {
+    verdict: conformanceVerdict(declared, live, indexes),
+    missing: missingObjectsFrom(raw),
+    declaredIndexCount: declaredIndexes.size,
   };
 }
 

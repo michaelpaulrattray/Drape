@@ -37,16 +37,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import {
   autoApplyMigrations,
   migrationFilesFrom,
-  missingObjectsFrom,
+  readSchemaGap,
   type MissingObjects,
 } from "./lib/ceremonyAutoApply.mts";
 import { predeployVerdict } from "./lib/predeployVerdict.mts";
-import {
-  conformanceVerdict,
-  declaredIndexesFrom,
-  declaredSchemaFrom,
-  liveSchemaFrom,
-} from "./lib/schemaConformance.mts";
 import { openDatabase, worldOf } from "./lib/dbConnection.mts";
 
 const onRailway = Boolean(process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_ENVIRONMENT);
@@ -68,27 +62,13 @@ const code = await (async (): Promise<number> => {
   try {
     connection = await openDatabase(url);
     const schemaSource = readFileSync("drizzle/schema.ts", "utf8");
-    const declared = declaredSchemaFrom(schemaSource);
-    const declaredIndexes = declaredIndexesFrom(schemaSource);
 
-    const read = async (): Promise<MissingObjects> => {
-      const [rows] = await connection!.query<any[]>(
-        `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
-      );
-      const [indexRows] = await connection!.query<any[]>(
-        `SELECT DISTINCT INDEX_NAME AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()`,
-      );
-      /* Working law 2, and since #322 this reader DECIDES A WRITE: an empty
-         COLUMNS result is what a wrong database or a silently failed query
-         looks like, and it is also the whole basis for deciding to CREATE. */
-      if ((rows as any[]).length === 0) throw new Error("information_schema returned no columns at all");
-      const live = liveSchemaFrom(rows as Array<{ t: string; c: string }>);
-      const raw = conformanceVerdict(declared, live, {
-        declared: declaredIndexes,
-        live: new Set((indexRows as Array<{ n: string }>).map((row) => row.n)),
-      }, {}, {});
-      return missingObjectsFrom(raw);
-    };
+    /* The reading is the LIB's (`readSchemaGap`) — the same closure the rite
+       plans against, with only the query runner injected, so the two deploy
+       roads cannot drift apart on what "missing" means (review of #584,
+       finding 1; working law 4). */
+    const read = async (): Promise<MissingObjects> =>
+      (await readSchemaGap(schemaSource, async (sql) => (await connection!.query<any[]>(sql))[0] as any[])).missing;
 
     const report = await autoApplyMigrations({
       missing: await read(),
