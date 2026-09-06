@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8b6d686b1fa47c81"
+    "sourceFingerprint": "250c3f2004025498"
   },
   "domains": [
     {
@@ -13427,6 +13427,10 @@
     {
       "id": "test:server/slack/slackWebhook.test.ts",
       "path": "server/slack/slackWebhook.test.ts"
+    },
+    {
+      "id": "test:server/spendingScriptArguments.test.ts",
+      "path": "server/spendingScriptArguments.test.ts"
     },
     {
       "id": "test:server/staffImageBoundary.test.ts",

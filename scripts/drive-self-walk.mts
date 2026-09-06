@@ -113,15 +113,8 @@ import { openDatabase } from "./lib/dbConnection.mjs";
 import { adjudicateCandidateCarries, formatCarriedVerdict } from "./lib/carriedAdjudicator.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { spendAuthorized } from "./lib/stopline.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-function arg(name: string, fallback = ""): string {
-  const index = process.argv.indexOf(`--${name}`);
-  return index > -1 ? process.argv[index + 1] : fallback;
-}
-
-const BASE = arg("base", "http://localhost:3000");
-const TOKEN = arg("token");
-const CANDIDATE = arg("candidate");
 /*
   THE FREEZE IS ASKED BEFORE THE ARGUMENTS ARE EVEN VALIDATED.
 
@@ -129,8 +122,37 @@ const CANDIDATE = arg("candidate");
   stop-the-line: the order lived in a mailbox file a shift had to remember to
   re-read, so it moved into one the tooling reads for itself. Dry runs are
   untouched — a frozen shift still plans.
+
+  It sits ABOVE the parse rather than three constants below it (#345): the
+  sentence above is what this file promises, and a strict parse that refused a
+  mistyped word first would have quietly made it false.
 */
 const SPEND = spendAuthorized("spend a walk's credits on the founder's account");
+
+/**
+ * THIS FILE'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * The reader here was `process.argv.indexOf("--" + name)`, which cannot fail on
+ * a word it was never asked about: `--dry-run`, `--Fresh`, a typo'd `--tokan`
+ * were all discarded in silence and the walk went ahead on the defaults. This
+ * driver charges 25 credits a step to the founder's own account, and `--fresh`
+ * missed is the difference between measuring the product and measuring a chain
+ * of edits — a wrong reading nobody could see afterwards.
+ *
+ * `--spend` is declared even though the freeze above owns the answer: the
+ * parser still has to know the word is legal or every real walk would refuse.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["base", "token", "candidate", "out", "fresh", "publicBase"],
+  boolean: ["spend"],
+});
+function arg(name: string, fallback = ""): string {
+  return ARGS.value(name) ?? fallback;
+}
+
+const BASE = arg("base", "http://localhost:3000");
+const TOKEN = arg("token");
+const CANDIDATE = arg("candidate");
 const OUT = arg("out", `output/walk/${new Date().toISOString().replace(/[:.]/g, "-")}`);
 /**
  * `--fresh <rollPublicId>` walks an UNTOUCHED face from that roll instead of a

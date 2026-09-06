@@ -256,19 +256,49 @@ if (process.argv.includes("--prove")) {
     quietly moved to the fixture door would fail here rather than at 150
     credits.
   */
+  /*
+    ⚠ A NAMED SPENDER THAT IS GONE IS A FINDING, NOT AN EXCEPTION (#345).
+
+    This list is hand-kept — deliberately, because it is the thing arm 9's
+    derived roster is checked against. But the reader below used to
+    `readFileSync` each name straight, so a name that stopped existing THREW,
+    and the throw landed BEFORE arms 8 and 9 ever ran.
+
+    That is what happened. The litter purge of 2026-08-25 (`989e70a0`) deleted
+    `scripts/calibration/bespectacled-roll-production.mts` and
+    `scripts/prove-caption-governs-disposable.mts` — correctly, one a finished
+    campaign script and one a disposable — and from that morning
+    `stopline --prove` died on a stack trace at arm 8. **The derived roster, the
+    one arm that can find a NEW spender with no freeze on it, had not run for
+    twelve days**, and nothing said so: nothing in CI drives `--prove`, and the
+    crash's non-zero exit looks like any other failing script. A path-three
+    death (CLAUDE.md's third road), found by driving the control rather than
+    citing it.
+
+    Both names are off the list, each read at the tree and at `git log` before
+    it went. A name that goes missing now REPORTS, so the next deletion costs a
+    line of output instead of two arms.
+  */
   const ACCOUNT_SPENDERS = [
     "scripts/drive-self-walk.mts",
     "scripts/drive-finding-replay.mts",
-    "scripts/calibration/bespectacled-roll-production.mts",
-    "scripts/prove-caption-governs-disposable.mts",
   ];
   const root = fileURLToPath(new URL("../..", import.meta.url));
+  const missingSpender = ACCOUNT_SPENDERS.filter((relative) => !existsSync(join(root, relative)));
   const wrongDoor = ACCOUNT_SPENDERS.filter((relative) => {
+    if (!existsSync(join(root, relative))) return false;
     const source = readFileSync(join(root, relative), "utf8");
     return !source.includes("spendAuthorized(") || source.includes("fixtureSpendAuthorized(");
   });
   check(
-    "ACCOUNT SPENDERS — the walk, the roll and the prover use the STRICT door",
+    "ACCOUNT SPENDERS — every named spender still exists",
+    missingSpender.length === 0,
+    missingSpender.length
+      ? `gone (delete the name, or restore the file): ${missingSpender.join(", ")}`
+      : `${ACCOUNT_SPENDERS.length} named`,
+  );
+  check(
+    "ACCOUNT SPENDERS — the walk and the replay use the STRICT door",
     wrongDoor.length === 0,
     wrongDoor.length ? `wrong door: ${wrongDoor.join(", ")}` : `${ACCOUNT_SPENDERS.length} checked`,
   );
