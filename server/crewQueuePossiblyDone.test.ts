@@ -20,9 +20,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CITED_CARDS_CEILING,
   NO_POSSIBLY_DONE,
   QUEUE_POSSIBLY_DONE_CAP,
   cardNumbersIn,
+  isCitingRatherThanFixing,
   isPossiblyDone,
   parsePossiblyDone,
   possiblyDoneSentence,
@@ -167,6 +169,67 @@ describe("the flag and its receipt come from ONE predicate (PR #498, finding 1)"
     const touched = at("2026-09-04T00:00:00Z");
     expect(isPossiblyDone(FILED, touched, NAMINGS)).toBe(false);
     expect(qualifyingNamings(FILED, touched, NAMINGS)).toEqual([]);
+  });
+});
+
+describe("a pull request that CITES cards is not evidence about any of them (#514)", () => {
+  /*
+    THE INSTRUMENT'S OWN PULL REQUEST WAS ITS LOUDEST FALSE SIGNAL. PR #498
+    built this flag and cited sixteen cards while arguing about the reading;
+    all sixteen turned *possibly fixed* on his panel the hour it merged.
+
+    ⚠ These arms drive the RULE. What the rule is worth was settled by driving
+    it over the live queue instead — 92 open cards against 220 merged pull
+    requests, 14 flags to 13, and the single flag it removes is `#532`, named by
+    the Machinist patrol report that FILED it. A threshold with a passing unit
+    test and no reading of the real queue would be a number chosen by feel with
+    a green tick beside it.
+  */
+  it("POSITIVE CONTROL — an ordinary two-card PR is not citing, so both still flag", () => {
+    expect(isCitingRatherThanFixing(cardNumbersIn("Closes #123. Also touches #45.", 500).length)).toBe(false);
+  });
+
+  it("PR #498's own shape — sixteen cards reads as citing", () => {
+    const body = Array.from({ length: 16 }, (_, at) => `#${at + 100}`).join(", ");
+    const cards = cardNumbersIn(body, 498);
+    expect(cards).toHaveLength(16);
+    expect(isCitingRatherThanFixing(cards.length)).toBe(true);
+  });
+
+  it("the boundary is exactly where the constant says, on both sides", () => {
+    /*
+      PINNED AT BOTH EDGES BECAUSE A `>` THAT DRIFTS TO `>=` IS SILENT: it would
+      drop three more merged pull requests, and each of those three — #515, #347
+      and #314, measured — genuinely FIXES the card in its title while citing
+      seven others. Losing them costs real findings, and nothing would say so.
+    */
+    expect(isCitingRatherThanFixing(CITED_CARDS_CEILING)).toBe(false);
+    expect(isCitingRatherThanFixing(CITED_CARDS_CEILING + 1)).toBe(true);
+  });
+
+  it("the ceiling stays inside the range the measurement supports", () => {
+    /*
+      A GUARD ON THE NUMBER ITSELF, not on the comparison. The distribution
+      (p50 3, p75 4, p90 6, p95 8 over 220 merged PRs) is what makes 8
+      defensible; a later edit to 3 or to 40 would leave every arm above green
+      while making the rule meaningless in one direction or the other.
+
+      ⚠ THE LOWER BOUND IS 7, THE BOTTOM OF THE MEASURED-IDENTICAL BAND — NOT 6
+      (PR #593 review). It read `>= 6` first, and 6 is the one nearby value this
+      change's own driven reading CONDEMNS: on the live queue 7, 8 and 9 were
+      identical, while 6 lost two genuine findings (#482 and #479). So an edit
+      from 8 to 6 would have left every arm here green — the boundary arm is
+      relative to the constant, the positive control uses two cards, the #498
+      arm uses sixteen — while silently dropping real findings, which is exactly
+      the drift this arm exists to catch. A guard whose range admits the value
+      its own measurement rejects is not guarding that measurement.
+    */
+    expect(CITED_CARDS_CEILING).toBeGreaterThanOrEqual(7);
+    expect(CITED_CARDS_CEILING).toBeLessThanOrEqual(10);
+  });
+
+  it("a PR naming nothing is not citing — the empty case is not the loud case", () => {
+    expect(isCitingRatherThanFixing(0)).toBe(false);
   });
 });
 

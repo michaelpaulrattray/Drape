@@ -250,6 +250,55 @@ export function isPossiblyDone(
 }
 
 /**
+ * A MERGED PULL REQUEST THAT NAMES THIS MANY CARDS IS CITING THEM, NOT FIXING
+ * THEM — and its mentions are not evidence about any single one of them (#514).
+ *
+ * ⚠ **THE INSTRUMENT'S OWN PULL REQUEST BECAME ITS LOUDEST FALSE SIGNAL.** PR
+ * #498 built this flag, and its body argues about the reading by citing
+ * sixteen cards as examples. Every one of the sixteen turned *possibly fixed*
+ * on his panel the moment it merged — Bugs went 5 flagged to 6 and Housekeeping
+ * 1 to 2, and the added ones were cards that PR merely mentioned.
+ *
+ * This is a REPEAT of a class this repository has already ruled on: #360 fixed
+ * the quiet-shift detector for exactly this shape, where a shift writing ABOUT
+ * quiet nights was counted as having had one. **A mention read as a
+ * declaration**, twice, in two different readers.
+ *
+ * ⚠ **DERIVED, NOT CHOSEN BY FEEL.** Measured over all 220 merged pull requests
+ * on 2026-09-06 (the card's own reading of 183 agreed):
+ *
+ * | cards named by one merged PR | |
+ * |---|---|
+ * | p50 | 3 |
+ * | p75 | 4 |
+ * | p90 | 6 |
+ * | **p95** | **8** |
+ * | max | 16 (PR #498) |
+ *
+ * A pull request that FIXES a card names one or two. A pull request that CITES
+ * examples — a law-7 sweep, a triage, a patrol report, a design argument —
+ * names eight to sixteen. The ceiling is p95, the top of the card's stated
+ * 6–8 range, because the failure worth avoiding is the other one: dropping a
+ * real finding to remove noise.
+ *
+ * ⚠ **THE NEGATIVE CONTROL DECIDED THE BOUNDARY, NOT THE PERCENTILE.** Driven
+ * over the live queue the day this landed — 92 open cards against 220 merged
+ * pull requests — the rule moves **14 flags to 13**, and the single flag it
+ * removes is `#532`, named by PR #533. **PR #533 is the Machinist's patrol
+ * report, and it FILED #532**; it did not fix it. So the one flag this costs is
+ * exactly the noise it was built to remove, and no genuine finding dies.
+ * Ceilings of 7, 8 and 9 were identical on that queue; 6 lost two real ones.
+ *
+ * ⚠ **IT NARROWS NOISE — IT ADDS NO COVERAGE.** A card nobody has re-read is
+ * still only *possibly* done, and this instrument remains a floor.
+ */
+export const CITED_CARDS_CEILING = 8;
+
+export function isCitingRatherThanFixing(namedCards: number): boolean {
+  return namedCards > CITED_CARDS_CEILING;
+}
+
+/**
  * WHICH pull requests satisfied the rule — the receipt behind the flag.
  *
  * ⚠ **THE FLAG AND ITS RECEIPT COME FROM ONE PREDICATE, and they did not until

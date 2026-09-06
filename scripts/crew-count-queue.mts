@@ -101,7 +101,9 @@ import {
   type CrewQueueExclusions,
 } from "../shared/crewQueueExclusions.js";
 import {
+  CITED_CARDS_CEILING,
   cardNumbersIn,
+  isCitingRatherThanFixing,
   parsePossiblyDone,
   possiblyDoneSentence,
   qualifyingNamings,
@@ -281,6 +283,7 @@ function readCardNamings(since: { number: number; date: string } | null): CardNa
       );
     }
     const index = new Map<number, CardNaming[]>();
+    let citing = 0;
     for (const row of rows as Array<{ number?: unknown; title?: unknown; body?: unknown; mergedAt?: unknown }>) {
       const pr = typeof row.number === "number" ? row.number : 0;
       const mergedAt = typeof row.mergedAt === "string" ? Date.parse(row.mergedAt) : Number.NaN;
@@ -294,9 +297,29 @@ function readCardNamings(since: { number: number; date: string } | null): CardNa
          A pull request's own number is dropped: a body legitimately names it. */
       const title = typeof row.title === "string" ? row.title : "";
       const body = typeof row.body === "string" ? row.body : "";
-      for (const card of cardNumbersIn(`${title}\n${body}`, pr)) {
+      const cards = cardNumbersIn(`${title}\n${body}`, pr);
+      /* ⚠ A CITING PULL REQUEST CONTRIBUTES NOTHING, AND IT IS DROPPED HERE
+         RATHER THAN AT THE FLAG (#514). One skip removes the naming from the
+         index, so the flag and its RECEIPT lose it together — this module has
+         already been bitten once by a second copy of a comparison (PR #498,
+         finding 1), and a ceiling applied at the question rather than at the
+         evidence would be that same second list. */
+      if (isCitingRatherThanFixing(cards.length)) {
+        citing += 1;
+        continue;
+      }
+      for (const card of cards) {
         index.set(card, [...(index.get(card) ?? []), { pr, mergedAt }]);
       }
+    }
+    if (citing > 0) {
+      /* SAID OUT LOUD, because a reader that silently drops evidence is the
+         shape this card is about. The instrument stays a floor and reports
+         where its floor is. */
+      console.error(
+        `note: ${citing} merged pull request(s) named more than ${CITED_CARDS_CEILING} cards each and were read as`
+        + " CITING rather than fixing (#514) — their mentions are not evidence about any single card.",
+      );
     }
     return { index, truncated };
   } catch (cause) {
