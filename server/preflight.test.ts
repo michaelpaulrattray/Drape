@@ -40,6 +40,7 @@ import {
   gateCommandMatches,
   gateRunCommands,
   isCollectedTest,
+  aliasPrefixes,
   buildSubjectIndex,
   selectDiffAdjacentTests,
   vitestArgv,
@@ -194,6 +195,95 @@ describe("buildSubjectIndex — a guard's file and its subject are different thi
     expect(index.get("client/src/foundation/token-guard.test.ts")).toBeUndefined();
     /* And nothing invented from a URL or a prose string. */
     expect([...index.keys()]).toEqual([]);
+  });
+
+  /*
+    #616 REVIEW, FINDING 1 — two more spellings of "a suite ABOUT the change",
+    both silent, both in the fewer-tests direction. The class here is a suite
+    reaching its subject by a spelling the index cannot read, and the review
+    named both with specimens that were verified at the tree before this was
+    written.
+  */
+  const ALIASES = [["@/", "client/src/"], ["@shared/", "shared/"]] as const;
+
+  it("⚠ AN EXTENSIONLESS IMPORT RESOLVES — the behaviour differed by spelling inside ONE file", () => {
+    /*
+      `server/architectureCreditCosts.test.ts` — CLAUDE.md's own price-list
+      guard — imports its cost modules extensionless and `generate-architecture.mts`
+      with an extension; only the second resolved, so a change to a cost module
+      did not select the suite guarding its prices. 108 suites in `server/`
+      alone carry cross-directory extensionless imports.
+    */
+    const index = buildSubjectIndex(
+      [["server/architectureCreditCosts.test.ts", 'from "./casting/castingCreditCosts";']],
+      new Set(["server", "server/casting", "server/casting/castingCreditCosts.ts"]),
+    );
+    expect(index.get("server/casting/castingCreditCosts.ts")).toEqual([
+      "server/architectureCreditCosts.test.ts",
+    ]);
+  });
+
+  it("⚠ THE LITERAL AS WRITTEN WINS — an implied extension never shadows a real directory", () => {
+    /* Both exist: the directory must be the subject, not the same-named file. */
+    const index = buildSubjectIndex(
+      [["server/x.test.ts", 'const dir = "shared/thing";']],
+      new Set(["server", "shared", "shared/thing", "shared/thing.ts"]),
+    );
+    expect(index.get("shared/thing")).toEqual(["server/x.test.ts"]);
+    expect(index.get("shared/thing.ts")).toBeUndefined();
+  });
+
+  it("⚠ AN ALIAS IMPORT RESOLVES — and the obvious pattern for it does not work", () => {
+    /*
+      The review's specimen: `client/src/features/operations/outcomeShown.test.ts`
+      imports "@/features/castingV2/failureCopy" and asserts on that module's
+      copy, reaching it by no other literal. #565's scenario in a different
+      spelling.
+
+      ⚠ The first repair here allowed `@?` before the first segment — which
+      still demands a word character before the slash, so a BARE `@/` matched
+      nothing and the specimen was still absent when driven. That is why the
+      first segment alternates.
+    */
+    const index = buildSubjectIndex(
+      [["client/src/features/operations/outcomeShown.test.ts", 'from "@/features/castingV2/failureCopy";']],
+      new Set([
+        "client", "client/src", "client/src/features", "client/src/features/castingV2",
+        "client/src/features/castingV2/failureCopy.ts",
+        "client/src/features/operations",
+      ]),
+      ALIASES,
+    );
+    expect(index.get("client/src/features/castingV2/failureCopy.ts")).toEqual([
+      "client/src/features/operations/outcomeShown.test.ts",
+    ]);
+  });
+
+  it("⚠ AN ALIAS IS ABSOLUTE — it is never also tried against the suite's ancestors", () => {
+    /*
+      Otherwise `@/features/x` inside `client/src/features/operations/` would
+      also be read as `client/src/features/operations/@/features/x`, and a
+      repository that happened to hold such a path would get a false subject.
+    */
+    const index = buildSubjectIndex(
+      [["client/src/features/operations/x.test.ts", 'from "@/features/thing";']],
+      new Set([
+        "client/src/features/operations",
+        "client/src/features/operations/@/features/thing",
+      ]),
+      ALIASES,
+    );
+    expect([...index.keys()]).toEqual([]);
+  });
+
+  it("aliasPrefixes DERIVES the map from tsconfig, and survives a file it cannot read", () => {
+    expect(aliasPrefixes('{"compilerOptions":{"paths":{"@/*":["./client/src/*"],"@shared/*":["./shared/*"]}}}'))
+      .toEqual([["@/", "client/src/"], ["@shared/", "shared/"]]);
+    /* A pattern that is not a prefix mapping is skipped rather than guessed. */
+    expect(aliasPrefixes('{"compilerOptions":{"paths":{"exact":["./x.ts"]}}}')).toEqual([]);
+    /* Unreadable or absent config loses the alias spelling and nothing else. */
+    expect(aliasPrefixes("not json at all")).toEqual([]);
+    expect(aliasPrefixes("{}")).toEqual([]);
   });
 
   it("a literal climbing above the repo root resolves to nothing rather than clamping", () => {

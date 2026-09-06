@@ -34,6 +34,7 @@ import path from "node:path";
 
 import {
   PREFLIGHT_CHECKS,
+  aliasPrefixes,
   buildSubjectIndex,
   chunkVitestFiles,
   formatSeconds,
@@ -196,6 +197,7 @@ const subjects = buildSubjectIndex(
     }
   }),
   repoPaths(),
+  aliasPrefixes(fs.readFileSync(path.join(repoRoot, "tsconfig.json"), "utf8")),
 );
 const selection = selectDiffAdjacentTests(changed, repoTests, subjects);
 

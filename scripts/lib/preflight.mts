@@ -245,7 +245,66 @@ export type TestSelection = {
  * Deliberately loose — every candidate is then RESOLVED against the real tree,
  * so a literal that is not a directory costs nothing but a set lookup.
  */
-const PATH_LITERAL = /["'`]([A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)+)["'`]/g;
+/*
+  ⚠ THE FIRST SEGMENT ALTERNATES, AND THE OBVIOUS `@?` DOES NOT WORK. The alias
+  in this repo is a BARE `@` followed straight by a slash (`@/features/…`), so
+  `@?[A-Za-z0-9_.-]+` — which still demands a word character before the first
+  slash — matched nothing at all. Caught by driving the review's own specimen
+  and finding it still absent, not by reading the pattern.
+*/
+const PATH_LITERAL = /["'`]((?:@[A-Za-z0-9_.-]*|[A-Za-z0-9_.-]+)(?:\/[A-Za-z0-9_.-]+)+)["'`]/g;
+
+/**
+ * The extensions an import may leave off. Tried only when the literal as
+ * written is not a path in the tree, so an existing directory always wins.
+ *
+ * ⚠ **WITHOUT THIS THE BEHAVIOUR DIFFERS BY SPELLING INSIDE ONE FILE (PR #616
+ * review, finding 1b).** `server/architectureCreditCosts.test.ts` — CLAUDE.md's
+ * own price-list guard — imports its four cost modules extensionless
+ * (`"./casting/castingCreditCosts"`) and `"../scripts/generate-architecture.mts"`
+ * with an extension; only the second resolved, so a change to a cost module did
+ * not select the suite that guards its prices. Measured at the tree: **108**
+ * suites in `server/` alone carry cross-directory extensionless imports.
+ */
+const IMPLIED_EXTENSIONS = [".ts", ".tsx", ".mts", ".mjs", ".js", ".json"];
+
+/**
+ * `tsconfig.json`'s `compilerOptions.paths`, as `[prefix, replacement]` pairs —
+ * DERIVED, never a hand-kept copy (working law 4), because a second list of
+ * aliases would drift the first time one is added.
+ *
+ * ⚠ **AN ALIAS IMPORT PRODUCED NO CANDIDATE AT ALL BEFORE THIS (PR #616 review,
+ * finding 1a).** `client/src/features/operations/outcomeShown.test.ts` imports
+ * `"@/features/castingV2/failureCopy"` and asserts on that module's copy,
+ * reaching it by no other literal — so a change to `failureCopy.ts` selected
+ * castingV2's own neighbours, read as covered, and the cross-tree suite about
+ * it never ran. That is #565's scenario verbatim, in a different spelling.
+ *
+ * A tsconfig that cannot be read or has no `paths` yields no aliases: the index
+ * loses the alias spelling and keeps every other, which is the direction this
+ * whole selection fails in by design.
+ */
+export function aliasPrefixes(tsconfigText: string): Array<readonly [string, string]> {
+  let paths: Record<string, unknown>;
+  try {
+    /* Strip line comments — tsconfig permits them and JSON.parse does not. */
+    const stripped = tsconfigText.replace(/^\s*\/\/.*$/gm, "");
+    paths = (JSON.parse(stripped)?.compilerOptions?.paths ?? {}) as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+  const out: Array<readonly [string, string]> = [];
+  for (const [pattern, targets] of Object.entries(paths)) {
+    const target = Array.isArray(targets) ? targets[0] : undefined;
+    if (typeof target !== "string") continue;
+    if (!pattern.endsWith("/*") || !target.endsWith("/*")) continue;
+    out.push([
+      pattern.slice(0, -1),
+      target.slice(0, -1).replace(/^\.\//, ""),
+    ] as const);
+  }
+  return out;
+}
 
 /**
  * Collapse `.` and `..` inside a repo-relative path.
@@ -326,6 +385,7 @@ function ancestorsOf(file: string): string[] {
 export function buildSubjectIndex(
   tests: ReadonlyArray<readonly [string, string]>,
   realPaths: ReadonlySet<string>,
+  aliases: ReadonlyArray<readonly [string, string]> = [],
 ): Map<string, string[]> {
   const index = new Map<string, string[]>();
   for (const [rawPath, text] of tests) {
@@ -335,14 +395,30 @@ export function buildSubjectIndex(
     const named = new Set<string>();
     for (const match of text.matchAll(PATH_LITERAL)) {
       const candidate = match[1]!;
-      for (const root of roots) {
-        const resolved = normalizeRepoPath(root ? `${root}/${candidate}` : candidate);
-        /* Its own path and its own directory are adjacency's job, not this. */
-        if (resolved && realPaths.has(resolved) && resolved !== own && resolved !== test) {
-          named.add(resolved);
-          break;
-        }
+      /*
+        An ALIAS is absolute from the repo root, so it is tried alone rather
+        than against the ancestors — `@/features/x` under `client/src/…` must
+        not also be read as `client/src/features/operations/@/features/x`.
+      */
+      const alias = aliases.find(([prefix]) => candidate.startsWith(prefix));
+      const attempts = alias
+        ? [`${alias[1]}${candidate.slice(alias[0].length)}`]
+        : roots.map((root) => (root ? `${root}/${candidate}` : candidate));
+
+      let hit: string | null = null;
+      for (const attempt of attempts) {
+        const resolved = normalizeRepoPath(attempt);
+        if (!resolved) continue;
+        /*
+          The literal as written wins; only then are the implied extensions
+          tried, so an existing DIRECTORY is never shadowed by a same-named file.
+        */
+        if (realPaths.has(resolved)) { hit = resolved; break; }
+        const implied = IMPLIED_EXTENSIONS.map((ext) => `${resolved}${ext}`).find((p) => realPaths.has(p));
+        if (implied) { hit = implied; break; }
       }
+      /* Its own path and its own directory are adjacency's job, not this. */
+      if (hit && hit !== own && hit !== test) named.add(hit);
     }
     for (const subject of named) {
       const bucket = index.get(subject);
