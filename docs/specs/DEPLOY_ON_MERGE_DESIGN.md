@@ -187,13 +187,3 @@ needed a freeze against himself.
 - Nothing in this design changes what the gate checks, what the reviewer
   reviews, or any money/auth rule. The pre-push hook still refuses direct
   pushes to `main`.
-
-## Flip record
-
-- **2026-09-06 17:26 AEST — flipped.** Pre-deploy command and healthcheck
-  rehearsed on the old road first (deployment `3f960d48`: predeploy ran in its
-  own container, `nothing pending`, healthcheck green, `/api/health` uptime
-  142 s = new process). Branch changed `local-migration` → `main`; Railway
-  built main at `90e7fdca` (PR #592) with no rite, and `/api/health` answered
-  `build=90e7fdca` at uptime 70 s. `DEPLOY_ON_MERGE=live` set 07:27Z. This
-  paragraph is the step-6 proof merge.
