@@ -284,20 +284,22 @@ describe("the enumeration runs on the path it guards (#263, review finding 1)", 
   });
 });
 
-describe("the pre-push gate covers both deploying branches (#263)", () => {
-  it("main and local-migration are both refused without the rite's marker", () => {
+describe("the pre-push gate covers the deploying branch (#263; one branch since #508)", () => {
+  it("main is refused without the rite's marker — and it is the only deploying branch", () => {
     const refs = readProtectedRefs(gitTreeReader(ROOT));
     expect(
       refs,
-      "both branches deploy production. A branch that deploys and is not in the hook's "
-      + "case arm can be pushed by hand with no freeze check and no custody checks. (#263)",
-    ).toEqual(["local-migration", "main"]);
+      "the branch production builds from must be in the hook's case arm, or it can be "
+      + "pushed by hand with no freeze check and no custody checks (#263). Since the "
+      + "2026-09-06 flip (#508) that branch is `main` alone — `local-migration` is deleted, "
+      + "and a second entry here would be a deploying branch this suite does not know about.",
+    ).toEqual(["main"]);
   });
 
   it("POSITIVE CONTROL — a hook that lost a branch is reported, and an unreadable one REFUSES", () => {
-    const narrowed = realHook.replace("|refs/heads/local-migration", "");
+    const narrowed = realHook.replace("refs/heads/main)", "refs/heads/mainx)");
     expect(narrowed).not.toEqual(realHook); // the sabotage landed
-    expect(readProtectedRefs(fakeTree({ ".githooks/pre-push": narrowed }))).toEqual(["main"]);
+    expect(readProtectedRefs(fakeTree({ ".githooks/pre-push": narrowed }))).toEqual(["mainx"]);
 
     expect(() => readProtectedRefs(fakeTree({}))).toThrow(/missing or unreadable/);
     expect(() => readProtectedRefs(fakeTree({ ".githooks/pre-push": "#!/bin/sh\nexit 0\n" })))

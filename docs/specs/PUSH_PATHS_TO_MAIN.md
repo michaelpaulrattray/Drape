@@ -1,5 +1,11 @@
 # Every path that can reach `main` without a pull request
 
+> ⚠ **2026-09-06 (#508 PR-2): `local-migration` is deleted.** Railway builds
+> `main` directly, so every sentence below that says "both deploying branches"
+> or "`main` and `local-migration`" describes the two-ref era it was written in.
+> The live shape: `main` is the one deploying branch; the pre-push hook guards
+> it alone; a PR merge is now itself a deploy and carries the gate.
+
 **Card #263. Founder ruling, 2026-08-30, verbatim:**
 
 > *"The CI hole is the best find in the card. A gate that only runs on pull
@@ -305,7 +311,7 @@ runs our hooks.
 - **Driven — 11/11.** `scripts/_263-sabotage-disposable.mts` edits the real files
   and runs the real suite, one cause at a time: the rite losing the typecheck
   call, the rite losing the script-guard call, the hook losing
-  `local-migration`, the detector losing the argv shape, a new unlisted pushing
+  `main` (`local-migration` until #508 PR-2 deleted it), the detector losing the argv shape, a new unlisted pushing
   script, a workflow gaining `contents: write`, a workflow losing its
   `permissions:` block, **the enumeration falling off the rite's push path**,
   a **`.cmd` wrapper pushing** — the native shape on the Windows machine the rite

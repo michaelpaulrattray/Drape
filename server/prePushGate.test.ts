@@ -48,14 +48,19 @@ describe("the pre-push gate", () => {
     expect(rite).toContain("DRAPE_DEPLOY_RITE");
   });
 
-  it("REFUSES a push to either production branch without the rite's marker", () => {
+  it("REFUSES a push to the production branch without the rite's marker", () => {
     expect(drive("refs/heads/main", undefined)).toBe(1);
-    expect(drive("refs/heads/local-migration", undefined)).toBe(1);
+  });
+
+  it("no longer guards local-migration — the branch is deleted and nothing deploys from it (#508)", () => {
+    /* Before 2026-09-06 this ref deployed production beside `main` and was
+       refused the same way. Railway watches `main` now; a hand push here would
+       recreate a branch nothing reads, which is untidy but not a deploy. */
+    expect(drive("refs/heads/local-migration", undefined)).toBe(0);
   });
 
   it("allows the same push when the rite's marker is set", () => {
     expect(drive("refs/heads/main", "1")).toBe(0);
-    expect(drive("refs/heads/local-migration", "1")).toBe(0);
   });
 
   it("leaves every other branch alone, marker or not", () => {

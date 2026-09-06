@@ -30,7 +30,9 @@
  *
  * # What it will not do
  *
- * It pushes `main` and `main:local-migration` and it reads. It never sets a
+ * It pushes `main` and it reads (since 2026-09-06 Railway builds from `main`
+ * directly — #508 — so a merge deploys too, and the rite is the road for the
+ * editions' protected push and the CHECKER of every deploy). It never sets a
  * variable, never touches a database, never force-pushes, and never rewrites
  * history — the four things the overnight grant excludes. `--dry` performs
  * every reading and no push.
@@ -147,8 +149,13 @@ const DRY = process.argv.includes("--dry");
 */
 const SERVICE = process.env.RAILWAY_SERVICE ?? "Drape";
 const BASE = process.env.PROD_BASE_URL ?? "https://drape-production-0232.up.railway.app";
-/** The branches every deploy carries. Production builds from the second one. */
-const BRANCHES = ["main", "main:local-migration"] as const;
+/**
+ * The branches every rite push carries. Production builds from `main` (Railway
+ * watches it since the 2026-09-06 flip, #508 D6/D7); `main:local-migration`
+ * left this list in PR-2 and the branch is deleted at origin. Kept as a list
+ * because the push sequence, its order guard and its suite are written for one.
+ */
+const BRANCHES = ["main"] as const;
 
 const lines: string[] = [];
 const say = (line = "") => { console.log(line); lines.push(line); };
@@ -265,7 +272,7 @@ const git = (...args: string[]) => run("git", args).trim();
 /*
   THE MARKER THE PRE-PUSH GATE LOOKS FOR (ordered fable-982).
 
-  `.githooks/pre-push` refuses any push to `main` or `local-migration` unless
+  `.githooks/pre-push` refuses any push to `main` unless
   this variable is set on the git process. It is set HERE and nowhere else, on
   the push child alone — not exported into the shift's environment, because a
   variable that outlives the push would be a marker any later hand-push
@@ -879,8 +886,8 @@ if (!DRY) {
 /*
   THE REMOTE'S OWN ANSWER, not the push command's exit code. `git push` on an
   up-to-date branch says nothing at all, which is indistinguishable from a push
-  that did not happen — and production builds from `local-migration`, so a
-  branch left behind deploys the previous commit under this one's name.
+  that did not happen — and production builds from `main` (since 2026-09-06),
+  so a branch left behind deploys the previous commit under this one's name.
 */
 for (const branch of BRANCHES) {
   const ref = branch.includes(":") ? branch.split(":")[1]! : branch;
@@ -1132,7 +1139,7 @@ const assets = await (async (): Promise<{ line: string; problems: string[] }> =>
 
 say("");
 say("─".repeat(72));
-say(`\`${shortSha}\` · main == local-migration · deploy SUCCESS · health ×3 — 200 ·`);
+say(`\`${shortSha}\` · origin/main == HEAD · deploy SUCCESS · health ×3 — 200 ·`);
 say(`healthy · db ${latencies.map((value) => value.toFixed(2)).join(" / ")} ms ·`);
 say(`paid work at push: ${inFlight}`);
 say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);

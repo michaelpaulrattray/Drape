@@ -63,9 +63,12 @@ const SABOTAGES: Sabotage[] = [
     apply: (t) => t.replace("runScriptGuardsOnCommit(path.resolve", "noop(path.resolve"),
   },
   {
-    name: "the pre-push hook stops guarding local-migration",
+    /* Was "stops guarding local-migration" until #508 PR-2 deleted that ref from
+       the hook; the arm now loses the one deploying branch the same way the
+       in-suite positive control does (main → mainx). */
+    name: "the pre-push hook stops guarding main",
     file: ".githooks/pre-push",
-    apply: (t) => t.replace("|refs/heads/local-migration", ""),
+    apply: (t) => t.replace("refs/heads/main)", "refs/heads/mainx)"),
   },
   {
     name: "the push detector stops matching the argv shape",

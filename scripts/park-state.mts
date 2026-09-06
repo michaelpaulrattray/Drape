@@ -122,14 +122,15 @@ async function readLedger(url: string): Promise<{ where: string; line: string } 
 const sha = git("rev-parse", "HEAD");
 const subject = git("log", "-1", "--format=%s");
 const dirty = git("status", "--porcelain").split("\n").filter((line) => line && !line.startsWith("??"));
-const remotes = ["main", "local-migration"].map((ref) => ({
+/* One deploying ref since the 2026-09-06 flip (#508): Railway builds `main`. */
+const remotes = ["main"].map((ref) => ({
   ref, at: (git("ls-remote", "origin", `refs/heads/${ref}`).split(/\s+/)[0] ?? "").slice(0, 8),
 }));
 
 say("```");
 say(`HEAD      ${sha.slice(0, 8)} · ${subject}`);
 say(`          ${remotes.map((entry) => `origin/${entry.ref}=${entry.at || "(absent)"}`).join(" · ")}`
-  + `${remotes.every((entry) => entry.at === sha.slice(0, 8)) ? "  — both match HEAD" : "  *** A BRANCH IS BEHIND ***"}`);
+  + `${remotes.every((entry) => entry.at === sha.slice(0, 8)) ? "  — matches HEAD" : "  *** ORIGIN IS BEHIND HEAD ***"}`);
 say(`tree      ${dirty.length === 0 ? "clean (tracked)" : `${dirty.length} uncommitted tracked change(s)`}`);
 
 const newest = run("railway.cmd", ["deployment", "list"], true).split("\n")

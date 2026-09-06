@@ -115,11 +115,11 @@ Production runs in the Railway project **drape-production** (deployed 2026-07-10
 ### Services
 
 - **MySQL** — Railway-managed MySQL. The app reaches it over Railway's private network via the reference variable `${{MySQL.MYSQL_URL}}` (resolves to `mysql://…@mysql.railway.internal:3306/railway`). The service also exposes `MYSQL_PUBLIC_URL` (proxy) — that's what you use to run migrations from a dev machine.
-- **Drape** — app service connected to the GitHub repo (`michaelpaulrattray/Drape`), branch **`local-migration`**. Build command `pnpm build`; start command `node dist/index.js` (NOT `pnpm start` — the start script needs `cross-env`, a devDependency; `NODE_ENV=production` is set as a service variable instead). Public domain targets port 3000, pinned via `PORT=3000`.
+- **Drape** — app service connected to the GitHub repo (`michaelpaulrattray/Drape`), branch **`main`** (since the 2026-09-06 flip, #508; `local-migration` is deleted). Build command `pnpm build`; pre-deploy command `node dist/predeploy.js` (the #322 migration applier, runs before cutover); healthcheck path `/api/health`; start command `node dist/index.js` (NOT `pnpm start` — the start script needs `cross-env`, a devDependency; `NODE_ENV=production` is set as a service variable instead). Public domain targets port 3000, pinned via `PORT=3000`.
 
 ### How deploys trigger
 
-Every push to `local-migration` triggers a Railway build + deploy. Changing a service variable also redeploys. Current convention: `local-migration` is kept in sync with `main` (`git push origin main:local-migration`).
+Every push to `main` triggers a Railway build + deploy — a squash-merged PR included, so **merged = live**. The `deploy-verify` workflow (gated on the repo variable `DEPLOY_ON_MERGE=live`) polls `/api/health` until it carries the merge's sha and goes red if the merge never became live. Changing a service variable also redeploys. The deploy rite is still the road for the editions' protected push and the checker of every deploy; it no longer has a second ref to keep in sync.
 
 ### Rollback
 
