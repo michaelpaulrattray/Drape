@@ -38,12 +38,14 @@
  * The extractor gets its own negative control, because a reader that quietly
  * finds nothing agrees with every expectation ever written about it.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
+import { scriptFilesUnder, unguardedSpendGates } from "../scripts/lib/stopline.mts";
 
 const REPO = join(__dirname, "..");
 
@@ -115,7 +117,16 @@ describe("the paid drivers declare a vocabulary, and it is the one they read", (
 
   it.each(DRIVERS)("%s declares every flag it asks for", (path) => {
     const source = sourceOf(path);
-    const spec = specIn(source);
+    /* ⚠ THE SPEC IS READ FROM THE CODE, NOT THE FILE (reviewer finding 1 on
+       PR #587) — the same #360 class the absence check above already dodges,
+       one function away. `RegExp.exec` returns the FIRST textual match, and
+       these files' docblocks sit above their calls: a docblock that quoted an
+       old `parseStrictArgsOrRefuse(...)` shape would be validated instead of
+       the real one, and this arm would stay green while a documented command
+       refused at somebody's keyboard. `flagsRead` keeps reading the whole file
+       on purpose — over-including there means MORE flags must be declared,
+       which is the safe direction. */
+    const spec = specIn(codeOf(path));
     const declared = new Set([...spec.value, ...spec.boolean]);
     const undeclared = flagsRead(source).filter((name) => !declared.has(name));
     expect(undeclared, `${path} reads flags its spec does not declare`).toEqual([]);
@@ -193,6 +204,97 @@ describe("the stop-the-line's named account spenders still exist", () => {
 });
 
 /**
+ * THE DERIVED ROSTER, WHERE CI CAN SEE IT (reviewer finding 3 on PR #587).
+ *
+ * The prover's arm 9 is the one that can find a NEW spender with no freeze on
+ * it, and after the crash repair it still ran only at a keyboard — so the
+ * diagnosis *"nothing in CI drives `--prove`"* outlived its own fix. A script
+ * hand-rolling `"--spend"` without importing `stopline` went green throughout
+ * the dark fortnight and would have kept going green.
+ *
+ * The sweep is hoisted out of the controls block and imported here rather than
+ * re-implemented (working law 4): one reading, two callers.
+ */
+describe("no script in the tree can spend without the freeze", () => {
+  const SCRIPTS = join(REPO, "scripts");
+
+  it("sweeps a real population — a clean answer over no files is not an answer", () => {
+    expect(scriptFilesUnder(SCRIPTS).length).toBeGreaterThan(100);
+  });
+
+  it("every `--spend` gate routes through the stop-the-line", () => {
+    expect(unguardedSpendGates(SCRIPTS, REPO)).toEqual([]);
+  });
+
+  it("and it really would report one — the positive control", () => {
+    /* Driven against a throwaway tree rather than by trusting the green above:
+       a sweep that returned [] unconditionally passes the arm before this one. */
+    const scratch = mkdtempSync(join(tmpdir(), "spendsweep-"));
+    try {
+      writeFileSync(join(scratch, "rogue.mts"), 'const SPEND = process.argv.includes("--spend");\n');
+      writeFileSync(
+        join(scratch, "guarded.mts"),
+        'import { spendAuthorized } from "./lib/stopline.mts";\nconst S = spendAuthorized("x");\n',
+      );
+      writeFileSync(join(scratch, "quiet.mts"), "export const nothing = 1;\n");
+      expect(unguardedSpendGates(scratch, scratch)).toEqual(["rogue.mts"]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * AND A `--prove` BLOCK BELONGS TO ITS OWN FILE (reviewer finding 2, swept).
+ *
+ * `if (process.argv.includes("--prove"))` at module scope reads the IMPORTER's
+ * command line. `npx tsx scripts/drive-self-walk.mts --prove --spend` therefore
+ * ran an imported module's self-controls and exited before the walk's strict
+ * parse ever saw the unknown word — the driver neither walked nor refused. One
+ * word bypassing a refusal, which is the very class this PR closes.
+ *
+ * The reviewer found it on `stopline.mts`. The sweep found four more, all the
+ * same shape; all five are guarded and all five are pinned here, because the
+ * repair is invisible at the call site and a sixth module would be written the
+ * old way by anyone copying an existing one.
+ */
+describe("a self-prove block runs only for the file that was invoked", () => {
+  const PROVERS = [
+    "scripts/lib/stopline.mts",
+    "scripts/lib/imageBytes.mts",
+    "scripts/lib/outsider.mts",
+    "scripts/lib/verdictContradiction.mts",
+    "scripts/lib/worldGuard.mts",
+  ] as const;
+
+  it.each(PROVERS)("%s guards its controls on direct invocation", (path) => {
+    const source = sourceOf(path);
+    expect(source).toMatch(/invokedDirectly && process\.argv\.includes\("--prove"\)/);
+    expect(source).toMatch(/import\.meta\.url/);
+  });
+
+  it("no module in scripts/lib takes --prove off the importer's argv", () => {
+    /* Derived, so a SIXTH module written the old way reddens here — the list
+       above would not have caught the four this sweep found. */
+    const unguarded = scriptFilesUnder(join(REPO, "scripts", "lib"))
+      .filter((file) => {
+        const source = readFileSync(file, "utf8");
+        if (!source.includes('process.argv.includes("--prove")')) return false;
+        return !source.includes('invokedDirectly && process.argv.includes("--prove")');
+      })
+      .map((file) => file.slice(REPO.length + 1));
+    expect(unguarded).toEqual([]);
+  });
+
+  it("the reader really finds the prove blocks it is judging", () => {
+    /* Without this the arm above is green over a population of zero. */
+    const provers = scriptFilesUnder(join(REPO, "scripts", "lib"))
+      .filter((file) => readFileSync(file, "utf8").includes('process.argv.includes("--prove")'));
+    expect(provers.length).toBe(PROVERS.length);
+  });
+});
+
+/**
  * AND THE POSITIVE ARMS, WHICH ARE THE ONES THAT MATTER MOST.
  *
  * A parser that refused everything would pass every refusal arm above. So the
@@ -200,7 +302,7 @@ describe("the stop-the-line's named account spenders still exist", () => {
  * headers — are parsed here and must be ACCEPTED.
  */
 describe("and the lines an operator really types are still accepted", () => {
-  const specOf = (path: (typeof DRIVERS)[number]) => specIn(sourceOf(path));
+  const specOf = (path: (typeof DRIVERS)[number]) => specIn(codeOf(path));
 
   it("accepts the finding replay's controls-only run", () => {
     const args = parseStrictArgs(
@@ -243,7 +345,7 @@ describe("and the lines an operator really types are still accepted", () => {
   /* THE INCIDENT SHAPE, on each driver: the safest-sounding word an operator
      can type, on a command line that used to run the real thing anyway. */
   it.each(DRIVERS)("%s refuses --dry-run instead of ignoring it", (path) => {
-    expect(() => parseStrictArgs(["--dry-run"], specIn(sourceOf(path)))).toThrow(ArgumentError);
+    expect(() => parseStrictArgs(["--dry-run"], specIn(codeOf(path)))).toThrow(ArgumentError);
   });
 
   it("refuses a near-miss on the flag that decides what gets walked", () => {

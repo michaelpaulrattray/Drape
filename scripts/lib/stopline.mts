@@ -53,7 +53,8 @@
  *
  *   npx tsx scripts/lib/stopline.mts --prove   # controls, both directions
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Resolved from the module, never from the CWD — see the header. */
@@ -172,11 +173,68 @@ export function fixtureSpendAuthorized(what: string, argv: readonly string[] = p
 
 /* ---------------------------------------------------------------- controls */
 
-if (process.argv.includes("--prove")) {
+/**
+ * EVERY `--spend` GATE IN A SCRIPTS TREE THAT DOES NOT ROUTE THROUGH THIS
+ * MODULE - the derived roster, hoisted out of `--prove` so CI can drive it
+ * (#345, reviewer suggestion on PR #587).
+ *
+ * It was inside the controls block, and the controls block runs only at a
+ * keyboard. That is the root cause the twelve-day crash exposed and the first
+ * repair did not close: a new script hand-rolling `"--spend"` without importing
+ * this module went green in CI throughout the dark fortnight, and would still.
+ *
+ * A hand-kept list of guarded scripts is the exact shape that bit `worldGuard`
+ * three times, so this stays derived. Hoisting changes nothing about WHAT it
+ * reads, only about who is allowed to ask.
+ *
+ * Returns repository-relative paths, so a failure names something openable.
+ */
+export function unguardedSpendGates(scriptsDir: string, repoRoot: string): string[] {
+  const selfPath = fileURLToPath(import.meta.url);
+  const unguarded: string[] = [];
+  for (const file of scriptFilesUnder(scriptsDir)) {
+    /* This module DECLARES the word. It is the door, not a caller of it. */
+    if (file === selfPath) continue;
+    const source = readFileSync(file, "utf8");
+    if (!source.includes('"--spend"') && !source.includes("'--spend'")) continue;
+    if (source.includes("lib/stopline.m")) continue;
+    unguarded.push(file.replace(repoRoot, "").replace(/^[\\/]/, ""));
+  }
+  return unguarded;
+}
+
+/** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
+export function scriptFilesUnder(dir: string): string[] {
+  const files: string[] = [];
+  const walk = (at: string) => {
+    for (const entry of readdirSync(at)) {
+      const full = join(at, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (entry.endsWith(".mts") || entry.endsWith(".ts")) files.push(full);
+    }
+  };
+  walk(dir);
+  return files;
+}
+
+/*
+  THE CONTROLS RUN ONLY WHEN THIS FILE IS THE ONE THAT WAS INVOKED (#345,
+  reviewer finding 2 on PR #587).
+
+  This block reads argv at MODULE SCOPE, so until now it read the IMPORTER's.
+  `npx tsx scripts/drive-self-walk.mts --prove --spend` therefore ran the
+  freeze's own self-controls and exited before the walk's strict parse ever saw
+  the unknown word: the driver neither walked nor refused. Harmless in money
+  terms, confusing in every other, and a sibling of exactly the class the strict
+  parse closes - one word bypassing a refusal. Every importer keeps its own
+  vocabulary now.
+*/
+const invokedDirectly = process.argv[1] !== undefined
+  && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly && process.argv.includes("--prove")) {
   const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
-  const { join } = await import("node:path");
   const { tmpdir } = await import("node:os");
-  const { readdirSync, statSync } = await import("node:fs");
 
   const scratch = mkdtempSync(join(tmpdir(), "stopline-"));
   const present = join(scratch, "STOPLINE");
@@ -308,29 +366,12 @@ if (process.argv.includes("--prove")) {
     every `--spend` gate must be this module's. A hand-kept list of guarded
     scripts is the exact shape that bit `worldGuard` three times.
   */
-  const scriptFiles: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir)) {
-      const full = join(dir, entry);
-      if (statSync(full).isDirectory()) walk(full);
-      else if (entry.endsWith(".mts") || entry.endsWith(".ts")) scriptFiles.push(full);
-    }
-  };
-  walk(fileURLToPath(new URL("..", import.meta.url)));
-
-  const selfPath = fileURLToPath(import.meta.url);
-  const unguarded: string[] = [];
-  for (const file of scriptFiles) {
-    if (file === selfPath) continue;
-    const source = readFileSync(file, "utf8");
-    if (!source.includes('"--spend"') && !source.includes("'--spend'")) continue;
-    if (source.includes("lib/stopline.m")) continue;
-    unguarded.push(file.replace(fileURLToPath(new URL("../..", import.meta.url)), "").replace(/^[\\/]/, ""));
-  }
+  const scriptsDir = fileURLToPath(new URL("..", import.meta.url));
+  const unguarded = unguardedSpendGates(scriptsDir, fileURLToPath(new URL("../..", import.meta.url)));
   check(
     "ROSTER — every `--spend` gate in scripts/ routes through this module",
     unguarded.length === 0,
-    unguarded.length ? `unguarded: ${unguarded.join(", ")}` : `${scriptFiles.length} files swept`,
+    unguarded.length ? `unguarded: ${unguarded.join(", ")}` : `${scriptFilesUnder(scriptsDir).length} files swept`,
   );
 
   rmSync(scratch, { recursive: true, force: true });
