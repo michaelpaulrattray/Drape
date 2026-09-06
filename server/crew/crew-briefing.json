@@ -1,7 +1,7 @@
 {
-  "edition": 273,
-  "updatedAt": "2026-09-06T04:55:38.217Z",
-  "shift": "Fable — the Re-imagine design report is written: the imagination level goes, the writer becomes a small button on every brief box, and the report is on your desk for your word",
+  "edition": 274,
+  "updatedAt": "2026-09-06T07:35:18.386Z",
+  "shift": "Foreman — your \"build it\" is recorded and Re-imagine starts next; meanwhile two instruments that had been quietly lying were fixed",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T04:55:53.116Z",
+      "readAt": "2026-09-06T07:35:20.970Z",
       "items": [
         {
           "issueNumber": 16,
@@ -249,10 +249,10 @@
     {
       "id": "reimagine-design-535",
       "issueNumber": 535,
-      "title": "Re-imagine is designed — read the report and say the word to build it (#535)",
-      "productImpact": "Your design decisions from the 5th are now one written report with everything the card's gate asked for. What a customer gets: one small glyph beside every brief box — the casting page, the sheet, the concept upload. Press it and the studio writes a new idea from their words, into the box, editable, with Undo; press again for another idea. Free until they cast. The Low/Max level, the Imagination column and the 'Max imagination' line all go; Style is the only setting left.\n\nTwo numbers from the measurement you ordered (your five test briefs, 30 runs through the real writer): **it came back with an idea 30 times out of 30** — the 'nothing to offer' case never fired — and a press takes **about 7 seconds** (worst seen: 20). So the button will feel alive, not broken, and the old silent failure (one in five Max casts quietly getting no writer) has no equivalent here: there is no hidden mode to fall out of.\n\nThe report also settles the two questions the card left open: creature age-bands stop mattering (nothing offers age pick-lists any more — your read-only-sentence ruling took them out), and 'sicker' stays yours to judge at the court.",
-      "workedExample": "In your eye gallery: the three surfaces in both themes with the glyph in place, the box AFTER a press holding your war-built woman, three glyph candidates for your eye, and your own two September-5 courts laid as strips — roll 244's four near-identical collars against roll 245's four different women, which is your '10x better' made visible.\n\nThe full report is `docs/specs/REIMAGINE_DESIGN_2026-09-06.md`. Nothing is built: your word on this card starts the build.",
-      "state": "open",
+      "title": "Re-imagine — you said BUILD IT, and the build starts on the next shift",
+      "productImpact": "Your two words, on the card and on the frames, at 06:42 this morning. They are recorded word-for-word on the card and in the team’s own program file, and the card is no longer marked as waiting on you. Nothing is built yet: this is a feature, so it gets a whole shift to itself rather than being squeezed in beside small fixes, and the design report you approved is its instructions. You need do nothing further — the next thing you see on this is the working thing.",
+      "workedExample": "You press Re-imagine beside your brief box, your words come back richer, in the box, editable, with an undo. That is what is being built.",
+      "state": "answered",
       "filedAt": "2026-09-06T04:55:38.218Z",
       "options": [],
       "recommendation": "Look at the frames, then reply on #535. If the shape is right, 'build it' is enough — the deletion list, the instruction change and the court are all specified and priced (court under the $50 line). If the glyph is wrong, say which of the three — or 'redraw'."
@@ -1888,7 +1888,7 @@
   "eyeItems": [
     {
       "id": "reimagine-design-535-frames",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 535,
       "filedAt": "2026-09-06T04:55:38.218Z",
@@ -4041,6 +4041,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-593-citing-prs-514",
+      "status": "merged",
+      "prNumber": 593,
+      "title": "Your background-work panel stops saying a card “may already be fixed” because a report merely mentioned it (#514)",
+      "note": "The panel flags a card when a finished change names it — useful when a change names one or two, which is what a fix does. But a report that ARGUES about something cites eight, ten, sixteen cards as examples, and every one was being marked possibly done. The change that built the flag cited sixteen and instantly mis-flagged all of them. Measured across every finished change we have: a fix names one to three, a report names eight or more. Above eight now reads as citing, not fixing. Checked against your live queue before shipping: it removes exactly one flag, and that flag was a patrol report being credited with fixing the card it had just written."
+    },
+    {
+      "id": "pr-592-listed-lib-guard-591",
+      "status": "merged",
+      "prNumber": 592,
+      "title": "The check that protects the team’s only publish path was blind to half the code it guards (#591)",
+      "note": "Twice yesterday morning the nightly publish REFUSED perfectly good work — it thought a file had vanished when another job had simply tidied it away mid-read. That fault was supposedly fixed weeks ago and a guard exists to stop it returning; the guard was looking in the wrong place. It only inspected the test files themselves, and the code doing the reading lived one step away in a shared helper, so it never saw it. It looks in both places now. The same fault turned up in three more helpers on the way, all fixed, and one gap too big for the same change is written down as its own card."
+    },
+    {
       "id": "pr-587-strict-args-345",
       "title": "A mistyped word can no longer start a job that spends your credits (#345)",
       "status": "merged",
@@ -5676,10 +5690,10 @@
   "problems": [
     {
       "id": "queue-shape-0906-foreman",
-      "title": "The queue: 91 open, 5 carrying your word, nothing urgent, 1 rotting",
+      "title": "The queue: 91 open, 5 carrying your word, nothing urgent, 1 unread for a week",
       "severity": "info",
       "state": "open",
-      "detail": "**The urgent band is empty for a third night, and the board got smaller again.** Two more cards closed tonight (#345's paid half and #507, both below) and one was filed — net two off the board.\n\nFive cards still carry your word and **not one of them is work a shift may take**: #508 waits on your three Railway fields, #543 waits on your verdict, #534 rides #535, #535 is a design question for you, and #404 needs your one-line positioning sentence. That is a healthy state rather than a stuck one — it means the queue in front of you is genuinely yours — but it is worth saying plainly, because from the row order it can look like five things nobody is doing.\n\n**#257** is still the one rotting card — untouched since 29 August. Nothing is broken because of it; it is named because a card going quiet gets said out loud rather than sinking."
+      "detail": "Unchanged in shape since last night, and that is honest rather than a stall: two cards closed tonight and two were filed in their place, one of them found by the code reviewer. The 5 carrying your word are the NEXT UP list — four wait on you, one waits on a scheduled performance read. One card has now gone a week with nobody re-reading it against the code (#257); it gets read on the next housekeeping pass rather than left to age."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -6008,10 +6022,12 @@
     141,
     142,
     143,
-    144
+    144,
+    145,
+    146
   ],
   "nextUp": {
-    "readAt": "2026-09-06T04:55:52.293Z",
+    "readAt": "2026-09-06T07:35:20.146Z",
     "items": [
       {
         "issueNumber": 404,
@@ -6045,7 +6061,7 @@
         "urgent": false,
         "held": {
           "state": "fable",
-          "because": "a DESIGN DECISION — he asked for a design report, not a build (*\"file it as a design card at n1\"*), so the whole card is the decision."
+          "because": "a change to WHAT HE JUDGES — not a design decision any more, he has made that. The build removes the imagination level from the author road and rewrites what t…"
         }
       },
       {
