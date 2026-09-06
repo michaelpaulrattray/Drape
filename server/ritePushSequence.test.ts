@@ -186,13 +186,21 @@ describe("#317 · the failure message names the recovery and forbids the force p
     expect(message).not.toMatch(/git merge origin\/main/);
   });
 
-  it("names production's ref when the ref that failed is NOT it", () => {
+  /*
+    PR #597 REVIEW, FINDING 3. Under contract 3 production's ref is LAST, so
+    when a NON-production ref fails, production's ref is in `skipped` — the
+    first draft said "production is building this commit" there, which is the
+    #296 lie direction. The fixture is a contract-compliant order (production
+    last); an order the guard refuses is not a fixture this suite may pin.
+  */
+  it("says production's ref was NOT pushed when an earlier, non-production ref failed", () => {
     const message = pushFailureMessage(
-      pushInSequence(["main", SECOND], pusherFailing([SECOND], [])),
+      pushInSequence(["main:staging", "main:qa", "main"], pusherFailing(["main:qa"], [])),
     );
-    expect(message).toMatch(/ALREADY PUSHED: main\b/);
-    expect(message).toMatch(new RegExp(`Production's ref \\(${DEPLOY_SOURCE_REF}\\) is among them`));
-    expect(message).toMatch(/production is building this/);
+    expect(message).toMatch(/ALREADY PUSHED: main:staging\b/);
+    expect(message).toMatch(new RegExp(`Production's ref \\(${DEPLOY_SOURCE_REF}\\) was NOT pushed`));
+    expect(message).toMatch(/still on its previous commit/);
+    expect(message).not.toMatch(/production is building this/);
   });
 
   it("is empty when nothing failed", () => {

@@ -256,8 +256,14 @@ export function pushFailureMessage(sequence: PushSequence): string {
       `${refOf(failed.branch) === DEPLOY_SOURCE_REF
         ? "That means production's own ref is the one that did NOT land, so production"
           + "\nis still on its previous commit while the refs that landed have moved ahead."
-        : `Production's ref (${DEPLOY_SOURCE_REF}) is among them, so production is building this`
-          + "\ncommit; the ref that failed is not the one production builds from."}`,
+        : shipped.map(refOf).includes(DEPLOY_SOURCE_REF)
+          ? `Production's ref (${DEPLOY_SOURCE_REF}) is among them, so production is building this`
+            + "\ncommit; the ref that failed is not the one production builds from."
+          /* Under contract 3 production's ref is LAST, so a non-production failure
+             leaves it in `skipped` — derived, never assumed (PR #597 review, 3). */
+          : `Production's ref (${DEPLOY_SOURCE_REF}) was NOT pushed — it sits after the ref that`
+            + "\nfailed — so production is still on its previous commit while the refs that landed"
+            + "\nmoved ahead of it."}`,
       "",
     );
   }
