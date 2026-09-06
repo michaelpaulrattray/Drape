@@ -99,6 +99,7 @@ import {
   type MissingObjects,
   autoApplyMigrations,
   migrationFilesFrom,
+  missingObjectsFrom,
 } from "./lib/ceremonyAutoApply.mts";
 import { assetReferencesIn, assetVerdict } from "./lib/staticAssetReferences.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
@@ -1084,13 +1085,9 @@ const schema = await (async (): Promise<{ line: string; migration: readonly stri
       const raw = conformanceVerdict(declared, live, indexes, {}, {});
       return {
         verdict: conformanceVerdict(declared, live, indexes),
-        missing: {
-          tables: raw.missingTables,
-          columns: raw.missingColumns,
-          /* `table.index` on the way out of the verdict; bare on the way into
-             the planner, because that is how the database names them. */
-          indexes: raw.missingIndexes.map((name) => name.slice(name.indexOf(".") + 1)),
-        } satisfies MissingObjects,
+        /* The verdict→planner mapping lives in the lib now — the pre-deploy
+           command (#508) is its second caller and two copies drift. */
+        missing: missingObjectsFrom(raw) satisfies MissingObjects,
       };
     };
 

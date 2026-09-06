@@ -428,8 +428,38 @@ export type MigrationReport = {
   readonly lines: readonly string[];
   /** Anything that costs the run its exit code. */
   readonly problems: readonly string[];
+  /**
+   * The subset of `problems` that mean the WRITE PATH itself failed — a
+   * statement that errored, or an object still absent after its statement ran.
+   * A REFUSED destructive statement and an unresolved declaration are problems
+   * but not blockers: they describe a ceremony that is waiting, not a write
+   * that went wrong. The pre-deploy road (#508) exits 1 only on these, because
+   * a waiting ceremony must not wedge every subsequent deploy while a failed
+   * write must never let the new build take traffic.
+   */
+  readonly blocking: readonly string[];
   readonly applied: number;
 };
+
+/**
+ * The bridge from a conformance verdict's field names to the planner's — the
+ * one mapping both deploy roads share (`table.index` on the way out of the
+ * verdict; bare on the way into the planner, because that is how the database
+ * names them). It existed inline in the rite; the pre-deploy command (#508)
+ * is a second caller, and two copies of a `.slice` like this drift
+ * (working law 4).
+ */
+export function missingObjectsFrom(verdict: {
+  readonly missingTables: readonly string[];
+  readonly missingColumns: readonly string[];
+  readonly missingIndexes: readonly string[];
+}): MissingObjects {
+  return {
+    tables: verdict.missingTables,
+    columns: verdict.missingColumns,
+    indexes: verdict.missingIndexes.map((name) => name.slice(name.indexOf(".") + 1)),
+  };
+}
 
 /** What a statement does, in one line, for the receipt. Never the whole DDL. */
 function summarise(statement: ParsedStatement): string {
@@ -466,7 +496,7 @@ export async function autoApplyMigrations(options: {
   const { missing, readBack, execute, listMigrations, dry } = options;
   const outstanding = missing.tables.length + missing.columns.length + missing.indexes.length;
   if (outstanding === 0) {
-    return { lines: ["nothing pending — the service holds everything the code declares"], problems: [], applied: 0 };
+    return { lines: ["nothing pending — the service holds everything the code declares"], problems: [], blocking: [], applied: 0 };
   }
 
   const files = listMigrations();
@@ -495,7 +525,7 @@ export async function autoApplyMigrations(options: {
 
   if (plan.apply.length === 0) {
     lines.push(`${outstanding} pending · 0 applied · ${plan.refuse.length} refused · ${plan.unresolved.length} unresolved`);
-    return { lines, problems, applied: 0 };
+    return { lines, problems, blocking: [], applied: 0 };
   }
 
   if (dry) {
@@ -504,25 +534,27 @@ export async function autoApplyMigrations(options: {
       `${outstanding} pending · ${plan.apply.length} would apply · ${plan.refuse.length} refused `
       + "(--dry: nothing was written)",
     );
-    return { lines, problems, applied: 0 };
+    return { lines, problems, blocking: [], applied: 0 };
   }
 
   const outcome = await applyPlan(plan, execute, readBack);
+  const blocking: string[] = [];
   for (const statement of outcome.applied) lines.push(`applied: ${statement.file} — ${summarise(statement)}`);
   if (outcome.failure) {
-    problems.push(
+    blocking.push(
       `${outcome.failure.statement.file}: the migration FAILED — ${outcome.failure.message}. `
       + `${outcome.applied.length} statement(s) before it did land; nothing after it was attempted.`,
     );
   }
   for (const object of outcome.stillAbsent) {
-    problems.push(`${object}: the statement creating it ran without error and the object is STILL ABSENT — stop and investigate`);
+    blocking.push(`${object}: the statement creating it ran without error and the object is STILL ABSENT — stop and investigate`);
   }
+  problems.push(...blocking);
   lines.push(
     `${outstanding} pending · ${outcome.applied.length} applied · ${plan.refuse.length} refused `
     + `· ${plan.unresolved.length} unresolved · ${outcome.stillAbsent.length} still absent after the read-back`,
   );
-  return { lines, problems, applied: outcome.applied.length };
+  return { lines, problems, blocking, applied: outcome.applied.length };
 }
 
 /** The real `drizzle/` listing, in the order the applier must replay it. */

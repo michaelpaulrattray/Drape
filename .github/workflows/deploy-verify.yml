@@ -1,0 +1,83 @@
+# DEPLOY VERIFY (#508 D5) — observability for the deploy-on-merge road, never
+# the road itself. After the founder's flip, Railway builds production from
+# `main` directly; this job answers "did this push actually become live?" with
+# zero secrets: it polls the public health endpoint until the `build` field
+# carries this push's sha (served since #508 — the reading that dissolves the
+# #296 trap, where a 200 from the OLD process read as "shipped").
+#
+# - Gated on the repo variable DEPLOY_ON_MERGE=live, set at flip time (step 5
+#   of the flip in docs/specs/DEPLOY_ON_MERGE_DESIGN.md). Before the flip a
+#   push to main deploys nothing, so the job would only ever time out red.
+# - RED here is a FINDING: the merge did not become live (build failed, the
+#   healthcheck refused it and the old build kept serving, or Railway never
+#   picked the push up). The next shift treats it like a red gate.
+# - A superseded push is not a failure: if main has moved past this sha and
+#   production answers with a NEWER commit that is on main, this deploy was
+#   legitimately replaced mid-wait and the job says so and exits green.
+# - If GitHub Actions is down, deploys flow anyway — only this receipt is
+#   missing. That asymmetry is the design (D1/D5): no third party sits on the
+#   road to production.
+name: deploy-verify
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-verify
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: ${{ vars.DEPLOY_ON_MERGE == 'live' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wait for production to serve this commit
+        env:
+          BASE: https://drape-production-0232.up.railway.app
+          SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          echo "waiting for $BASE/api/health to answer build=$SHA"
+          deadline=$(( $(date +%s) + 15*60 ))
+          while :; do
+            body=$(curl -sS --max-time 10 "$BASE/api/health" || echo '{}')
+            build=$(echo "$body" | jq -r '.build // empty')
+            status=$(echo "$body" | jq -r '.status // empty')
+            uptime=$(echo "$body" | jq -r '.uptime // empty')
+            if [ "$build" = "$SHA" ] && [ "$status" = "healthy" ]; then
+              echo "live: build=$build status=$status uptime=${uptime}s (UPTIME ANCHOR $(date -u +%H:%M:%SZ) at ${uptime}s)"
+              break
+            fi
+            # Superseded? If main's tip is no longer this sha and production
+            # serves a commit that is an ancestor-of-main newer than ours,
+            # this push was replaced while we waited — green, said plainly.
+            tip=$(gh api "repos/${GITHUB_REPOSITORY}/branches/main" --jq .commit.sha 2>/dev/null || echo "")
+            if [ -n "$tip" ] && [ "$tip" != "$SHA" ] && [ -n "$build" ] && [ "$build" != "$SHA" ]; then
+              if gh api "repos/${GITHUB_REPOSITORY}/compare/$SHA...$build" --jq .status 2>/dev/null | grep -qx "ahead"; then
+                echo "superseded: production serves $build, which is ahead of $SHA on main — this push was replaced mid-wait"
+                exit 0
+              fi
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::production never served $SHA within 15 minutes (last read: build=${build:-none} status=${status:-none})"
+              echo "This merge did NOT become live — a failed build, a healthcheck refusal (old build still serving), or Railway missed the push."
+              exit 1
+            fi
+            sleep 15
+          done
+          # Three healthy reads, like the rite — one read is a moment, three are a state.
+          for i in 2 3; do
+            sleep 5
+            body=$(curl -sS --max-time 10 "$BASE/api/health" || echo '{}')
+            status=$(echo "$body" | jq -r '.status // empty')
+            build=$(echo "$body" | jq -r '.build // empty')
+            if [ "$status" != "healthy" ] || [ "$build" != "$SHA" ]; then
+              echo "::error::read $i/3 regressed: status=${status:-none} build=${build:-none}"
+              exit 1
+            fi
+            echo "read $i/3: healthy, build=$build"
+          done
+          echo "deploy verified: $SHA is live and healthy (3/3 reads)"

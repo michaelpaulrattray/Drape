@@ -241,6 +241,43 @@ describe("healthHandler", () => {
     expect(res.body.checks.database.latencyMs).toBeGreaterThanOrEqual(0);
   });
 
+  it("serves the deployed commit sha when Railway stamps one, null otherwise (#508)", async () => {
+    mockGetDb.mockResolvedValue({
+      execute: vi.fn().mockResolvedValue([{ 1: 1 }]),
+    } as any);
+    const before = process.env.RAILWAY_GIT_COMMIT_SHA;
+    try {
+      process.env.RAILWAY_GIT_COMMIT_SHA = "d0beb8f5c55b36df7d674d55965a23b8d54ad69b";
+      const on = createMockRes();
+      await healthHandler(createMockReq(), on);
+      expect(on.body.build).toBe("d0beb8f5c55b36df7d674d55965a23b8d54ad69b");
+
+      delete process.env.RAILWAY_GIT_COMMIT_SHA;
+      const off = createMockRes();
+      await healthHandler(createMockReq(), off);
+      // null, not undefined: an absent key would make "off the platform" and
+      // "an old build without the field" indistinguishable to the verify job.
+      expect(off.body.build).toBeNull();
+    } finally {
+      if (before === undefined) delete process.env.RAILWAY_GIT_COMMIT_SHA;
+      else process.env.RAILWAY_GIT_COMMIT_SHA = before;
+    }
+  });
+
+  it("the rate-limit window admits Railway's own healthcheck cadence (#508 D2)", async () => {
+    /* The endpoint is the service's healthcheck path after the flip. The
+       checker polls during the cutover window; a 429 to it reads as an
+       unhealthy build and fails a good deploy. Asserted at the wire — the
+       config the handler actually hands the limiter — not at a constant. */
+    mockGetDb.mockResolvedValue({
+      execute: vi.fn().mockResolvedValue([{ 1: 1 }]),
+    } as any);
+    await healthHandler(createMockReq(), createMockRes());
+    const config = mockCheckRateLimit.mock.calls.at(-1)![1] as { maxRequests: number; windowMs: number };
+    expect(config.maxRequests).toBeGreaterThanOrEqual(30);
+    expect(config.windowMs).toBe(60_000);
+  });
+
   it("should call checkRateLimit with correct config prefix", async () => {
     mockGetDb.mockResolvedValue({
       execute: vi.fn().mockResolvedValue([{ 1: 1 }]),
