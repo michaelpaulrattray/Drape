@@ -139,8 +139,7 @@
           "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/refineService.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
-          "server/db/referenceReadDemand.test.ts",
-          "server/deployWatchDecision.test.ts"
+          "server/db/referenceReadDemand.test.ts"
         ],
         "sites": [
           "server/castingV2/conceptDescribe.ts:1168",
@@ -163,7 +162,6 @@
         "id": "empty",
         "kind": "interpreter-refusal",
         "pinnedBy": [
-          "server/casting/geminiMigration.test.ts",
           "server/castingV2/diagnosticCapture.test.ts",
           "server/castingV2/faceScan.test.ts",
           "server/castingV2/faceScanService.test.ts",
@@ -670,8 +668,7 @@
           "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/refineService.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
-          "server/db/referenceReadDemand.test.ts",
-          "server/deployWatchDecision.test.ts"
+          "server/db/referenceReadDemand.test.ts"
         ],
         "sites": [
           "server/castingV2/castingIntent.ts:1274",
@@ -787,7 +784,6 @@
         "id": "wall_unfileable",
         "kind": "interpreter-refusal",
         "pinnedBy": [
-          "server/benchKit.test.ts",
           "server/castingV2/colourContextDoor.test.ts",
           "server/castingV2/inventionDoor.test.ts",
           "server/castingV2/referenceWordsLane.test.ts",
