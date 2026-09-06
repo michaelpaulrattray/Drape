@@ -61,56 +61,78 @@ const log = createModuleLogger("briefChips");
 
 /** How many survive to the surface. Four is his "a few" and two rows at dock width. */
 export const BRIEF_CHIPS_MAX = 4;
-/** A chip is a fragment. Eight words is the ceiling; the instruction asks for two to six. */
-export const BRIEF_CHIP_MAX_WORDS = 8;
+/**
+ * A chip is a fragment. Ten words is the BACKSTOP; the instruction asks for
+ * two to six, and the measured drive lands at four to six.
+ *
+ * ⚠ It was eight until it was driven (law 6), and eight threw away *"a calm
+ * that settles a room before he speaks"* — nine words, on his ogre, and the
+ * best line of that list. A ceiling one word above the design's own ask is a
+ * ceiling that spends good work on a boundary nobody chose.
+ */
+export const BRIEF_CHIP_MAX_WORDS = 10;
 /** Output budget — small, but reasoning tokens count against it like everywhere else on this road. */
 export const BRIEF_CHIPS_MAX_OUTPUT_TOKENS = 2000;
 
 /**
  * Words a chip may never carry, on top of the guards it shares with the
- * author road.
+ * author road. Its job is the gap `containsHouseSentence` cannot cover: that
+ * guard reads for the studio's own SENTENCES, and a bare two-word fragment
+ * ("warm backlight") is not one of them while being exactly the thing
+ * decision 7 bans — and an authored lighting clause can out-argue the house
+ * block's AUTHORITY line, which is measured (#327), not theoretical.
  *
- * ⚠ **This list owns real words and that is a DECLARED trade** (the typo-gate
- * lesson: "shave"→"shape" once blocked the founder's own bald ask). *"shot
- * through with old wounds"* is a legitimate quality and this list refuses it.
- * The cost is different in kind here from the cost there: a refused chip
- * removes ONE suggestion from a list of four that the customer never knew was
- * coming, and never touches the words they typed. A refused BRIEF blocks a
- * person mid-sentence. So the balance tips the other way on this road, and it
- * is written down rather than assumed.
+ * ⚠ **IT WAS TWICE THIS SIZE UNTIL IT WAS DRIVEN, AND THE TYPO-GATE CLASS
+ * CAUGHT IT IN ONE RUN** (law 6, on the five briefs of #535 §7). The first
+ * draft banned bare `light`, `lit`, `shadow`, `shot`, `set`, `framed` and
+ * `crop`, and the drive refused *"hair cropped brutally short, self-cut"* on
+ * his cyborg — while **his own standing test brief says *"close-cropped
+ * hair"***. Every one of those words is ordinary casting prose: a set jaw,
+ * shadows under the eyes, a light step, status lights, shot through with old
+ * wounds. A guard that owns a real word costs the feature its best lines, and
+ * this repo has been bitten by exactly that five times.
  *
- * Its job is the gap `containsHouseSentence` cannot cover: that guard reads
- * for the studio's own SENTENCES, and a bare two-word fragment ("warm
- * backlight") is not one of them while being exactly the thing decision 7
- * bans.
+ * What is left is words with no second sense in a sentence about a PERSON.
+ * Lighting is caught by SHAPE instead (`CHIP_LIGHTING_SHAPES`), which is what
+ * "lit from below" actually looks like and what "three small red status
+ * lights" does not.
  */
 export const CHIP_BANNED_WORDS = [
-  "light",
-  "lights",
   "lighting",
-  "lit",
   "backlight",
+  "backlighting",
   "backlit",
-  "shadow",
-  "shadows",
   "camera",
   "lens",
-  "shot",
   "framing",
-  "framed",
-  "crop",
-  "cropped",
   "backdrop",
   "background",
   "scene",
-  "set",
   "studio",
   "portrait",
   "photo",
   "photograph",
+  "bokeh",
+  "vignette",
+  "exposure",
   "pose",
   "posed",
 ] as const;
+
+/**
+ * Lighting as a SHAPE rather than as a word — *"lit from below"*, *"a soft
+ * key light"* — so the ban survives without owning `light` itself.
+ *
+ * The declared limit: a lighting clause phrased in some way none of these
+ * match gets through to a box the customer reads, where the worst case is one
+ * odd suggestion they do not tap. The instruction bans it too; this is the
+ * backstop, not the mechanism.
+ */
+export const CHIP_LIGHTING_SHAPES: readonly RegExp[] = [
+  /(^|[^a-z])lit (from|by|against|in)(?![a-z])/,
+  /(^|[^a-z])(soft|hard|harsh|warm|cool|dim|low|rim|key|side|top|back|golden|natural|studio) light(ing|s)?(?![a-z])/,
+  /(^|[^a-z])(light|lighting) (falls|catches|rakes|pools|spills)(?![a-z])/,
+];
 
 /**
  * THE OLD LISTS THEMSELVES, DERIVED — his defect's own source (Crew reply
@@ -246,6 +268,9 @@ export function chipRefusal(chip: string, briefText: string): string | null {
   const lower = trimmed.toLowerCase().replace(/\s+/g, " ");
   const banned = CHIP_BANNED_WORDS.find((word) => saysWord(lower, word));
   if (banned) return `"${banned}" — the studio owns the camera and the room`;
+  if (CHIP_LIGHTING_SHAPES.some((shape) => shape.test(lower))) {
+    return "lighting — the studio owns the camera and the room";
+  }
   if (chipIsOffTheOldLists(trimmed)) return "a fragment off the old lists, not out of the brief";
   const lowerBrief = briefText.toLowerCase().replace(/\s+/g, " ");
   const colour = CHIP_COLOUR_WORDS.find(
@@ -340,16 +365,33 @@ export function briefChipsSystemPrompt(): string {
     "- QUALITIES, NEVER PIECES. Say what something is made of and what it feels like. Never a specific garment, cut, hairstyle, jewellery piece, colour or item.",
     "- Never lighting, camera, lens, framing, crop, backdrop, background, scene, props or story-setting. The studio owns those.",
     "- Never their sex, their age or what kind of being they are — those are the customer's to type.",
+    /*
+      His decision 6 bans "sounds"; a smell belongs to the same family and the
+      drive produced one ("scent of clean sweat and menthol"). A picture cannot
+      carry it, so it is a suggestion that changes nothing — instruction only,
+      deliberately not a word guard: `scent`, `sound` and `taste` all have
+      second senses in a sentence about a person, and this repo has been bitten
+      five times by a guard that owns a real word.
+    */
+    "- Never a smell, a sound or a taste. The picture cannot carry them, so a direction made of one changes nothing.",
     "- Two to six words each. A fragment, not a sentence and not an order: write \"salt-cured and slow to anger\", never \"make him salt-cured\". No full stop, no quotes.",
     "- If the brief already pins everything worth pinning, return NOTHING AT ALL.",
     "",
-    "Worked example. Brief: \"an ogre chieftain in his 50s\"",
-    "weathered by a hard country",
-    "gear of old iron and hide",
-    "scars he never explains",
-    "a stillness that reads as threat",
+    /*
+      ⚠ THE WORKED EXAMPLE IS DELIBERATELY NOT AN OGRE, and it was changed to
+      this after the first live drive (law 6). With an ogre example in the
+      instruction, an ogre BRIEF came back with the example's four lines
+      almost verbatim — the instruction leaking rather than the generator
+      working, and invisible on any brief except the one that matters, since
+      an ogre is the subject of the very defect this feature answers.
+    */
+    "Worked example. Brief: \"a lighthouse keeper in her 60s\"",
+    "salt-cured and slow to alarm",
+    "clothing of oiled wool and old rubber",
+    "hands ruined by rope and weather",
+    "a quiet that comes from long silences",
     "",
-    "Those are that ogre's own world. \"slim build\" would not be — a body word off a generic list, offered to an ogre. Neither would \"blue eyes\": it pins a colour the brief never asked about.",
+    "Those are that keeper's own world. \"slim build\" would not be — a body word off a generic list, and it is what an ogre was once offered. Neither would \"blue eyes\": it pins a colour the brief never asked about.",
     "",
     `Output one direction per line and nothing else. No numbering, no bullets, no heading, no commentary. At most ${BRIEF_CHIPS_MAX} lines.`,
   ].join("\n");

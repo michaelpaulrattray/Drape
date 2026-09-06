@@ -57,6 +57,21 @@ describe("the component", () => {
     expect(code).not.toContain("onValue");
     expect(code).not.toContain("setDraft");
   });
+
+  /*
+    Driven before it was written: tapping the same chip twice folds the same
+    direction in twice. It goes inert while its fold STANDS — tied to
+    `canUndo`, so Undo or typing puts it back on offer — and it is dimmed
+    rather than removed, because removing it reflows the row under a finger.
+  */
+  it("the chip already folded in goes inert while its fold stands", async () => {
+    const code = (await chipsSource()).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(code).toContain("const spent = reimagine.canUndo ? taken : null;");
+    expect(code).toContain("const inert = reimagine.pending || spent === chip;");
+    expect(code).toContain("if (inert) return;");
+    /* Dimmed, never filtered out of the row. */
+    expect(code).not.toContain(".filter((chip) => chip !== taken)");
+  });
 });
 
 describe("the sheet", () => {

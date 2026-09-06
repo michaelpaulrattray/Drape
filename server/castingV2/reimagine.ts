@@ -102,6 +102,16 @@ const log = createModuleLogger("reimagine");
  */
 export const REIMAGINE_WORD_BUDGET = 220;
 export const REIMAGINE_ALLOWANCE_FLOOR = 40;
+/**
+ * How much a TAPPED CHIP may add (#535 decision 12) — the brief's own length
+ * plus this, rather than the press's 220.
+ *
+ * A steer is the small act: his own words, one direction woven in. Driven
+ * before it was set — with the press's allowance, one tap on an eight-word
+ * brief came back with eighty-five words of new prose, which is the glyph's
+ * job and not a chip's.
+ */
+export const REIMAGINE_DIRECTION_MARGIN = 40;
 /** A draft may exceed its allowance by this fraction before it is re-asked — the author road's own tolerance. */
 export const REIMAGINE_OVERRUN_TOLERANCE = 0.1;
 /** The author's output budget — the interpreter's figure, for its reason (reasoning tokens count). */
@@ -386,10 +396,26 @@ export function reimagineRefusal(draft: string, allowance: number, seedText: str
  * and the MAX instruction both used for his rulings, because an instruction
  * that names the rule and shows the miss is the one models follow).
  */
-export function reimagineSystemPrompt(allowance: number): string {
+export function reimagineSystemPrompt(allowance: number, direction?: string | null): string {
+  const chosen = direction?.trim() ?? "";
   return [
     "You are the writing assistant of a casting studio. The request below is the words in a customer's own brief box. What you return REPLACES those words in the box — the customer reads it, edits it, and can undo it, so write the brief itself and nothing else.",
     "",
+    /*
+      ⚠ A TAPPED CHIP IS THE SMALL ACT, AND THIS PARAGRAPH IS WHY (#535
+      decision 12, found by driving it — law 6). Without it the generic fold
+      below turned his eight-word brief into eighty-five words of new prose
+      on one tap: a full re-imagining, which is what the GLYPH is for. A
+      customer who taps a suggestion is steering, not starting again, and a
+      control whose effect you cannot anticipate is one you learn by trial —
+      which is the disappearing-technology law failing.
+    */
+    ...(chosen.length > 0
+      ? [
+          "THIS REQUEST CARRIES A CHOSEN DIRECTION, and that is a STEER, not a re-imagining. Keep the customer's brief as it is — their words, their order, their length — and write the direction INTO it where it belongs, changing only what the direction touches. Add nothing else of your own. A short brief stays short.",
+          "",
+        ]
+      : []),
     /*
       Decision 11 + his 2026-09-06 ruling, and the fold comes FIRST because it
       changes what every later rule means: on a fold the "request" is a brief
@@ -509,8 +535,17 @@ export async function reimagineBrief(input: {
     direction.length > 0
       ? `${input.briefText.trim()}\n\nApply this direction to the brief above: ${direction}`
       : input.briefText.trim();
-  const allowance = reimagineAllowance(briefText);
-  const system = reimagineSystemPrompt(allowance);
+  /*
+    A STEER GETS THE BRIEF'S OWN LENGTH PLUS A LITTLE, not the press's 220.
+    The paragraph above states the rule; this is the same rule as a number,
+    so the overrun check can actually enforce it — the instruction alone
+    produced an 85-word answer to an 8-word brief when it was driven.
+  */
+  const allowance =
+    direction.length > 0
+      ? Math.max(REIMAGINE_ALLOWANCE_FLOOR, countWords(input.briefText) + REIMAGINE_DIRECTION_MARGIN)
+      : reimagineAllowance(briefText);
+  const system = reimagineSystemPrompt(allowance, direction.length > 0 ? direction : null);
   let attempts = 0;
   const refusals: string[] = [];
   let spentMs: number | null = null;

@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { trpc } from "@/lib/trpc";
 
 import type { ReimagineState } from "./Reimagine";
@@ -98,25 +100,42 @@ export function BriefChips({
     would reserve height that appears late and pushes the dock (D-15).
   */
   const offered = chipsShown({ enabled, chips: chips.data?.chips });
+  /*
+    THE ONE THAT IS ALREADY IN THE BRIEF GOES INERT — driven, not designed
+    in the abstract: tapping the same chip twice folds the same direction in
+    twice, which reads as the studio not having noticed the first one.
+
+    Dimmed rather than REMOVED, because removing it reflows the row under a
+    finger that is still on it. It comes back the moment its fold does not
+    stand any more — Undo, or typing over it — because then it is a direction
+    on offer again.
+  */
+  const [taken, setTaken] = useState<string | null>(null);
+  const spent = reimagine.canUndo ? taken : null;
+
   if (offered.length === 0) return null;
 
   return (
     <div className="dpc-chips" role="group" aria-label={BRIEF_CHIPS_GROUP_LABEL}>
-      {offered.map((chip) => (
-        <button
-          key={chip}
-          type="button"
-          className="dpc-chips__chip"
-          /* Dimmed rather than hidden while the studio is writing — the row must not move under a finger mid-tap. */
-          aria-disabled={reimagine.pending ? true : undefined}
-          onClick={() => {
-            if (reimagine.pending) return;
-            reimagine.tap(chip);
-          }}
-        >
-          {chip}
-        </button>
-      ))}
+      {offered.map((chip) => {
+        const inert = reimagine.pending || spent === chip;
+        return (
+          <button
+            key={chip}
+            type="button"
+            className="dpc-chips__chip"
+            /* Dimmed rather than hidden while the studio is writing — the row must not move under a finger mid-tap. */
+            aria-disabled={inert ? true : undefined}
+            onClick={() => {
+              if (inert) return;
+              setTaken(chip);
+              reimagine.tap(chip);
+            }}
+          >
+            {chip}
+          </button>
+        );
+      })}
     </div>
   );
 }

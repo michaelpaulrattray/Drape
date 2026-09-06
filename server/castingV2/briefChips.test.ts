@@ -9,7 +9,12 @@ import {
   chipRepeatsBrief,
   normalizeChip,
 } from "./briefChips";
-import { reimagineBrief } from "./reimagine";
+import {
+  REIMAGINE_DIRECTION_MARGIN,
+  REIMAGINE_WORD_BUDGET,
+  reimagineBrief,
+} from "./reimagine";
+import { countWords } from "./promptAuthor";
 import type { TextEngine } from "../providers/types";
 
 /**
@@ -106,7 +111,26 @@ describe("a chip is written from HER brief, not from a list (#535 decision 12)",
 
   it("refuses lighting and the room — the studio owns those (decision 7)", () => {
     expect(chipRefusal("lit from below", OGRE)).toContain("camera");
+    expect(chipRefusal("a soft key light on him", OGRE)).toContain("camera");
     expect(chipRefusal("against a bare backdrop", OGRE)).toContain("camera");
+    expect(chipRefusal("shot on a long lens", OGRE)).toContain("camera");
+  });
+
+  /*
+    ⚠ THE OTHER HALF OF THE SAME GUARD, and it is here because the first draft
+    got it wrong and the LIVE DRIVE caught it: a word list that owned `crop`,
+    `light`, `set`, `shot` and `shadow` refused "hair cropped brutally short"
+    on his cyborg — while HIS OWN standing brief says "close-cropped hair".
+    These are the sentences that must survive; the typo-gate class is exactly
+    a guard that owns a real word.
+  */
+  it("does NOT own the ordinary words of casting prose", () => {
+    expect(chipRefusal("hair cropped brutally short", OGRE)).toBeNull();
+    expect(chipRefusal("a set jaw and no hurry", OGRE)).toBeNull();
+    expect(chipRefusal("shadows worn under the eyes", OGRE)).toBeNull();
+    expect(chipRefusal("shot through with old wounds", OGRE)).toBeNull();
+    expect(chipRefusal("small status lights that never rest", OGRE)).toBeNull();
+    expect(chipRefusal("light on his feet for his size", OGRE)).toBeNull();
   });
 
   it("refuses an instruction — a chip is a quality the customer adopts", () => {
@@ -122,6 +146,8 @@ describe("a chip is written from HER brief, not from a list (#535 decision 12)",
   it("holds the fragment shape at both ends", () => {
     expect(chipRefusal("weathered", OGRE)).toContain("single word");
     expect(chipRefusal("a".concat(" b").repeat(BRIEF_CHIP_MAX_WORDS + 2), OGRE)).toContain("fragment");
+    /* His ogre's best line was nine words and an eight-word ceiling threw it away — driven, then raised. */
+    expect(chipRefusal("a calm that settles a room before he speaks", OGRE)).toBeNull();
   });
 
   it("normalizes what a model wraps around a bare line", () => {
@@ -193,9 +219,16 @@ describe("the honest empty (his sentence: a brief that pins everything shows no 
 describe("the instruction says the things his rulings say", () => {
   const prompt = briefChipsSystemPrompt();
 
-  it("carries his own worked example and his named miss", () => {
-    expect(prompt).toContain("an ogre chieftain in his 50s");
+  it("carries a worked example and his named miss — and the example is NOT an ogre", () => {
+    expect(prompt).toContain("Worked example");
     expect(prompt).toContain("slim build");
+    /*
+      Driven, then pinned: an ogre example made an ogre BRIEF come back with
+      the example's own lines. An ogre is the subject of his defect, so the
+      one brief that must be genuinely generated is exactly the one an ogre
+      example would spoil.
+    */
+    expect(prompt).not.toContain("ogre chieftain");
   });
 
   it("bans the studio's own subjects and the customer's own three facts", () => {
@@ -236,6 +269,27 @@ describe("the tap is a FOLD — written into the brief, never tacked onto its en
     const { engine, asked } = engineSaying(["An ogre chieftain in his 50s, weathered by a hard country."]);
     await reimagineBrief({ engine, briefText: OGRE, direction: "weathered by a hard country" });
     expect(asked()[0]).toContain("never tacked onto the end");
+  });
+
+  /*
+    A STEER IS THE SMALL ACT — driven, then pinned. With the press's own
+    220-word allowance, one tap on his eight-word brief came back with
+    eighty-five words of new prose: a full re-imagining, which is what the
+    glyph beside it is for. Both halves of the fix are asserted, because the
+    instruction alone did not hold it.
+  */
+  it("a tap keeps the brief's own length — the paragraph AND the number", async () => {
+    const { engine, asked } = engineSaying(["An ogre chieftain in his 50s, weathered by a hard country."]);
+    await reimagineBrief({ engine, briefText: OGRE, direction: "weathered by a hard country" });
+    expect(asked()[0]).toContain("that is a STEER, not a re-imagining");
+    expect(asked()[0]).toContain(`at most ${countWords(OGRE) + REIMAGINE_DIRECTION_MARGIN} words`);
+  });
+
+  it("a press keeps the press's own allowance — the steer clause is not sent", async () => {
+    const { engine, asked } = engineSaying(["An ogre chieftain in his 50s, built like a landslide."]);
+    await reimagineBrief({ engine, briefText: OGRE });
+    expect(asked()[0]).not.toContain("that is a STEER");
+    expect(asked()[0]).toContain(`at most ${REIMAGINE_WORD_BUDGET} words`);
   });
 
   it("a plain press sends no direction line at all", async () => {
