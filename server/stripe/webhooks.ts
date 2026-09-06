@@ -211,7 +211,17 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   }
 
   const userId = userWithCredits.id;
-  const planTier = plan ? mapPlanToTier(plan) : (userWithCredits.credits?.planTier || "free");
+  // #391: a metadata.plan naming a tier the product no longer declares (a
+  // folded rung on a stale checkout session) maps to null — keep the
+  // account's current tier rather than persisting a value the renewal path
+  // would later throw on, and say so in the log.
+  const mappedTier = plan ? mapPlanToTier(plan) : null;
+  if (plan && !mappedTier) {
+    log.warn(
+      `[Webhook] Subscription ${subscription.id} names a plan the product no longer declares ("${plan}") — keeping user ${userId}'s current tier`,
+    );
+  }
+  const planTier = mappedTier ?? (userWithCredits.credits?.planTier || "free");
 
   // Access period timestamps from the subscription object
   const periodStart = (subscription as any).current_period_start || Math.floor(Date.now() / 1000);

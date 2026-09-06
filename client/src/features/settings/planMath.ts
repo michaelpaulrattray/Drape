@@ -146,11 +146,11 @@ export function centsPerCredit(priceInCents: number, credits: number): number {
  * ⚠ **THE BRIEF'S OWN FIGURES ARE THE MOCKUP'S, NOT OURS, AND TWO DECIMALS
  * COLLAPSES OUR LADDER TO ONE NUMBER.** It quotes *"2.79¢ / 2.63¢ / 2.48¢ /
  * 2.33¢ / 1.87¢"*; our real ladder is `PLAN_TIERS` in `drizzle/schema.ts` —
- * Starter $27 for 75,000 credits is **0.036¢** a credit, and Ultimate is
- * 0.016¢. At the brief's two decimals every one of our twelve tiers prints
- * `0.04¢` or `0.02¢` and the descent it exists to show disappears. Three
- * decimals is the smallest precision at which every adjacent pair differs,
- * which is the only thing the number has to do.
+ * Starter $27 for 75,000 credits is **0.036¢** a credit, and Enterprise, the
+ * offered top since #391, is 0.02¢. At the brief's two decimals our tiers
+ * print `0.04¢`, `0.03¢` or `0.02¢` and the descent it exists to show
+ * disappears. Three decimals is the smallest precision at which every
+ * adjacent pair differs, which is the only thing the number has to do.
  */
 export function formatCentsPerCredit(priceInCents: number, credits: number): string {
   const cents = centsPerCredit(priceInCents, credits);
@@ -254,14 +254,14 @@ export function monthlyEquivalent(monthlyInCents: number): number {
  * Credits per dollar — the value argument, the right way up (card 390 item 4).
  *
  * ⚠ **`0.036¢ A CREDIT` IS NOT A VALUE ARGUMENT.** His agent's reading, and it
- * is right at the arithmetic: at sub-penny precision our twelve rungs separate
- * in the THIRD decimal, so the number that exists to show a descent needs three
+ * is right at the arithmetic: at sub-penny precision our rungs separate in
+ * the THIRD decimal, so the number that exists to show a descent needs three
  * decimals to show one at all — and a figure a customer cannot hold in their
  * head is not an argument, whatever it proves.
  *
  * Inverted, the same fact reads as a whole number that goes UP as you climb:
- * **2,778 credits per $1 on Starter, 6,250 on Ultimate.** Every adjacent pair
- * differs by hundreds, so the ladder argues for itself at a glance.
+ * **2,778 credits per $1 on Starter, 5,000 on Enterprise.** Every adjacent
+ * pair differs by hundreds, so the ladder argues for itself at a glance.
  *
  * ⚠ **THE MONOTONIC CHECK SURVIVES THE INVERSION AND CHANGES DIRECTION.** Cost
  * per credit had to DESCEND up the ladder; credits per dollar must ASCEND. It

@@ -126,11 +126,19 @@ export function AccountSurfaces({
 
   if (!anyOpen) return null;
 
+  /*
+    #391 — THE OWN PLAN'S FACTS COME FROM `getStatus`, NOT FROM THE CATALOGUE.
+    `getPlans` serves only the OFFERED ladder now (the hidden rung's price is
+    deliberately unpublished), so an account on the hidden rung cannot find
+    itself in `plans.tiers` — deriving the caption there is how a hand-sold
+    Ultimate account gets captioned "Free" (PR #583 finding 1). The catalogue
+    lookup stays only as the fallback for an older server bundle mid-deploy.
+  */
   const planId = status?.planTier ?? "free";
   const tier = plans?.tiers?.[planId as keyof NonNullable<typeof plans>["tiers"]];
-  const planName = tier?.name ?? "Free";
-  const allowance = tier?.monthlyCredits ?? 0;
-  const planPriceInCents = tier?.price ?? 0;
+  const planName = status?.planName ?? tier?.name ?? "Free";
+  const allowance = status?.planMonthlyCredits ?? tier?.monthlyCredits ?? 0;
+  const planPriceInCents = status?.planPriceInCents ?? tier?.price ?? 0;
   const renewsAt = status?.currentPeriodEnd ? new Date(status.currentPeriodEnd) : null;
 
   return (

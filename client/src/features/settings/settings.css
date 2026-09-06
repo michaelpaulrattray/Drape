@@ -755,6 +755,20 @@
   color: var(--metaStrong);
 }
 
+/* #391 — the hidden top rung's door: one quiet line under the ladder, both
+   modes. A sentence, not a card — it must never read as a rung. */
+.dp-plan__request {
+  margin: var(--s-6) 0 0;
+  padding: 0 var(--s-4);
+  font: 400 11px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+}
+.dp-plan__request-link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* §6f — the cross-link to Add credits */
 .dp-plan__cross {
   display: flex;

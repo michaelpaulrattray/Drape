@@ -72,6 +72,11 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     if (!plans) return [] as { id: string; name: string; credits: number; price: number }[];
     const order = plans.planOrder as string[];
     const currentIndex = order.indexOf(currentId);
+    /* #391 — an account on the hidden rung is not on the offered ladder;
+       indexOf answers -1 and every offered rung would then read as "above",
+       turning downgrades into a top-up offer. There is nothing to add from
+       up there, so the honest answer is no options. */
+    if (currentIndex < 0) return [];
     const currentCredits =
       plans.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? 0;
     return plans.subscriptions

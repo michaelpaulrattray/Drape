@@ -89,19 +89,25 @@ export type InsertUser = typeof users.$inferInsert;
  * Plan tier configuration with credit allocations
  */
 // Pricing: 50x display multiplier applied. Volume discounts at higher tiers.
+//
+// The ladder folded from twelve rungs to these eight on the founder's ruling
+// (#391, approved 2026-09-05: "go with your reccomendation" on the card's
+// recommendation — drop the four Plus rungs, hide Ultimate, leave the
+// survivors' prices and credit amounts exactly where they are). Declaration
+// order IS ladder order: PLAN_ORDER in server/stripe/stripeProducts.ts is
+// derived from these keys, so a rung added out of order ships a ladder out of
+// order. `ultimate` is a real, hand-sold product but is NOT offered: it never
+// appears in `billing.getPlans` and the checkout enums refuse it — the door is
+// an email line under the ladder (HIDDEN_PLAN_TIERS, stripeProducts.ts).
 export const PLAN_TIERS = {
   free: { name: 'Free', monthlyCredits: 5000, price: 0, rolloverPercent: 0 },
   starter: { name: 'Starter', monthlyCredits: 75000, price: 2700, rolloverPercent: 50 },              // $27/mo  — $0.00036/cr
   pro: { name: 'Pro', monthlyCredits: 200000, price: 6800, rolloverPercent: 75 },                     // $68/mo  — $0.00034/cr
   studio: { name: 'Studio', monthlyCredits: 500000, price: 15900, rolloverPercent: 100 },              // $159/mo — $0.000318/cr
-  studio_plus: { name: 'Studio Plus', monthlyCredits: 1250000, price: 37500, rolloverPercent: 100 },   // $375/mo — $0.0003/cr
   business: { name: 'Business', monthlyCredits: 3000000, price: 84000, rolloverPercent: 100 },         // $840/mo — $0.00028/cr
-  business_plus: { name: 'Business Plus', monthlyCredits: 7500000, price: 195000, rolloverPercent: 100 }, // $1,950/mo — $0.00026/cr
   scale: { name: 'Scale', monthlyCredits: 20000000, price: 480000, rolloverPercent: 100 },             // $4,800/mo — $0.00024/cr
-  scale_plus: { name: 'Scale Plus', monthlyCredits: 40000000, price: 880000, rolloverPercent: 100 },   // $8,800/mo — $0.00022/cr
   enterprise: { name: 'Enterprise', monthlyCredits: 75000000, price: 1500000, rolloverPercent: 100 },  // $15,000/mo — $0.0002/cr
-  enterprise_plus: { name: 'Enterprise Plus', monthlyCredits: 150000000, price: 2700000, rolloverPercent: 100 }, // $27,000/mo — $0.00018/cr
-  ultimate: { name: 'Ultimate', monthlyCredits: 300000000, price: 4800000, rolloverPercent: 100 },     // $48,000/mo — $0.00016/cr
+  ultimate: { name: 'Ultimate', monthlyCredits: 300000000, price: 4800000, rolloverPercent: 100 },     // $48,000/mo — $0.00016/cr — HIDDEN, arranged by email
 } as const;
 
 export type PlanTier = keyof typeof PLAN_TIERS;
@@ -114,7 +120,13 @@ export const credits = mysqlTable("points", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
   balance: int("balance").notNull().default(5000),
-  planTier: mysqlEnum("planTier", ["free", "starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]).default("free").notNull(),
+  // The DB column still accepts the four folded rung values (#391): narrowing
+  // a MySQL enum is a DESTRUCTIVE migration, which is the founder's ceremony
+  // alone, and zero rows have ever held one (read at production the day of the
+  // fold). `$type` narrows what the CODE can read or write to the live eight;
+  // the one-command `ALTER … MODIFY planTier` narrowing is recorded on #391
+  // for whenever he wants the column to match.
+  planTier: mysqlEnum("planTier", ["free", "starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]).$type<PlanTier>().default("free").notNull(),
   planExpiresAt: timestamp("planExpiresAt"),
   // Stripe subscription tracking
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
