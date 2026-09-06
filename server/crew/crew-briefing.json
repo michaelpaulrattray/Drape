@@ -1,7 +1,7 @@
 {
-  "edition": 270,
-  "updatedAt": "2026-09-06T00:45:00.000Z",
-  "shift": "Fable (escalated) — the plan ladder folds to seven, the top rung answered by email",
+  "edition": 271,
+  "updatedAt": "2026-09-06T02:15:00.000Z",
+  "shift": "Fable (escalated) — deploy on merge: the design is taken, the dark half is live, three clicks of yours flip the road",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T00:37:14.272Z",
+      "readAt": "2026-09-06T01:58:53.517Z",
       "items": [
         {
           "issueNumber": 16,
@@ -246,6 +246,17 @@
     }
   },
   "needsYou": [
+    {
+      "id": "deploy-flip-508",
+      "issueNumber": 508,
+      "title": "Deploy on merge is built and waiting — three fields in Railway flip it (#508)",
+      "productImpact": "Today nothing you merge actually ships until the deploy script runs on your machine — a merged fix can sit invisible for hours, and every deploy routes through one laptop. The design you ordered is now decided and built: after your flip, **merging is shipping.** The moment a PR lands on main, Railway builds it and it goes live — no laptop, no ceremony, no waiting.\n\nTwo safety nets went in first, and both are already active the next time we deploy: a new build that cannot start healthy **never takes traffic** (customers keep getting the old, working version), and database tables now create themselves **before** the new code goes live instead of after, on every road. Rolling back stays one click in Railway, or one revert merge.\n\nOne thing to know, said plainly: after the flip, a merge landing while you are mid-roll can still cost you the known ~6-minute wait (money always conserved). The polite hold-while-you-work check stays on the nightly record pushes, and a follow-up card (#585) adds the same manners to the way shifts merge.",
+      "workedExample": "In Railway → Drape service → Settings, in this order:\n1. **Pre-deploy command**: `node dist/predeploy.js` (timeout 600). This rehearses safely on the current road first — the next deploy proves it in the logs before anything depends on it.\n2. **Healthcheck path**: `/api/health`.\n3. **Watched branch**: change `local-migration` to `main` — this is the flip.\nThen reply 'flipped' and a shift arms the watcher (a GitHub setting), retires the old branch, and runs the proof from the card: one trivial merge watched going live with no script, one revert watched going live the same way.",
+      "state": "open",
+      "filedAt": "2026-09-06T02:15:00.000Z",
+      "options": [],
+      "recommendation": "Flip it when you have five quiet minutes. Steps 1 and 2 rehearse safely on the current road first, step 3 is the switch, and rollback stays one click in Railway either way."
+    },
     {
       "id": "tail-court-reimagine-530",
       "issueNumber": 530,
@@ -1887,7 +1898,7 @@
     },
     {
       "id": "chip-writes-the-box-534",
-      "state": "open",
+      "state": "answered",
       "cardId": null,
       "issueNumber": 534,
       "filedAt": "2026-09-05T14:44:42.459Z",
@@ -3973,6 +3984,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-584-deploy-on-merge-508",
+      "title": "Deploy on merge — the dark half: design recorded, safety nets built, everything inert until your three Railway fields (#508)",
+      "status": "merged",
+      "prNumber": 584,
+      "note": "The design question you filed as awaiting-fable is answered and recorded (docs/specs/DEPLOY_ON_MERGE_DESIGN.md). Built and merged, all dark: the migration runner Railway will call before each new build takes traffic, the health endpoint now naming which commit is live, and a watcher that goes red on any merge that fails to ship — silent until you flip. Two review rounds (pass + pass with two low findings, every finding taken, including a race where two quick merges could wrongly abort the newer one). Nothing changes until your three fields in Railway — the card on this page has them."
+    },
+    {
       "id": "pr-583-ladder-fold-391",
       "title": "The plan ladder is six paid plans plus Free now — and the biggest one is asked for, not scrolled past (#391)",
       "status": "merged",
@@ -5922,7 +5940,7 @@
     144
   ],
   "nextUp": {
-    "readAt": "2026-09-06T00:37:13.160Z",
+    "readAt": "2026-09-06T01:58:52.674Z",
     "items": [
       {
         "issueNumber": 404,
@@ -5936,11 +5954,7 @@
       {
         "issueNumber": 508,
         "title": "Deploy on merge — production builds from GitHub the moment main merges, and the rite becomes a checker rather than the only road",
-        "urgent": false,
-        "held": {
-          "state": "fable",
-          "because": "a DESIGN DECISION — what replaces the deploy rite as the road to production, and what the rite becomes instead, is a shape question rather than a transcription…"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 534,
