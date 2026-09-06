@@ -153,17 +153,71 @@ function serverTests(): string[] {
 
 const relative = (file: string): string => path.relative(repoRoot, file).split(path.sep).join("/");
 
+/*
+  ⚠ TOUCHING A LISTED ENTRY IS WHAT PUTS A WALKER IN THE CLASS — NOT THE
+  SPELLING IT TOUCHES IT WITH, and requiring the bare spelling made the guard
+  let go of a walker the moment it was FIXED (#591, found by sabotage).
+
+  This read `readFileSync\s*\(` until today. So `importerCountDiff.mts`, put on
+  the ENOENT-only tolerance an hour earlier in this same change, dropped
+  straight out of the population — and restoring its bare `statSync` afterwards
+  went GREEN. A guard that stops watching the files it has already corrected
+  cannot see them regress, which is the whole job.
+
+  Every way of touching a listed entry counts now, tolerant spellings included.
+  The arms below are what judge them; this predicate only decides who is
+  looked at.
+*/
+const TOUCHES_A_LISTED_ENTRY =
+  /\b(?:readFileSync|statSync|readListedSource|readIfPresent|statIfPresent)\s*\(/;
+
+const isTheClass = (source: string): boolean =>
+  namesAScriptsRoot(source) && /readdirSync\s*\(/.test(source) && TOUCHES_A_LISTED_ENTRY.test(source);
+
+/*
+  ⚠ A WALK DELEGATED TO AN IMPORTED MODULE WAS STRUCTURALLY INVISIBLE, AND THAT
+  IS THE DOOR #589 CAME THROUGH — weeks AFTER #223's repair reached the suites
+  that existed then (#591, PR #590 review finding 1).
+
+  The scan above reads TEST FILE SOURCES. `spendingScriptArguments.test.ts`
+  contains no `readdirSync` at all: its walk lives in `scripts/lib/stopline.mts`
+  and runs under vitest through an import. So the guard never saw the bare
+  `statSync` that refused the deploy rite on a clean tree twice in one morning,
+  with every current test green.
+
+  ⚠ THE POPULATION IS EVERY `scripts/lib` WALKER, NOT ONLY THE IMPORTED ONES,
+  and the wider rule is the simpler one. The first cut of this fix took the
+  reviewer's sketch literally and asked which modules a server test imports —
+  which needed an import-specifier regex (a second reading of the module graph,
+  free to drift from it, working law 4) and still left
+  `productionMention.mts` outside: it walks `scripts/` with `CONSUMER_ROOTS`
+  and is keyboard-run, so no import would ever have pulled it in. Being
+  unreachable from vitest means it cannot refuse the rite; it does not mean it
+  is not the class. Reading the directory covers both and has nothing to rot.
+*/
+function scriptLibWalkers(): string[] {
+  const dir = path.join(repoRoot, "scripts", "lib");
+  const found: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    if (!entry.endsWith(".mts")) continue;
+    const source = readListedSource(path.join(dir, entry));
+    if (source === null) continue; /* a disposable can leave mid-walk — the rule this file owns */
+    if (isTheClass(source)) found.push(relative(path.join(dir, entry)));
+  }
+  return found;
+}
+
 function candidates(): string[] {
-  return serverTests()
+  const tests = serverTests()
     .filter((file) => {
       /* This walk is itself over `server/`, where nothing is planted mid-run —
          but it costs nothing to read the same way the rule asks others to. */
       const source = readListedSource(file);
       if (source === null) return false;
-      return namesAScriptsRoot(source) && /readdirSync\s*\(/.test(source) && /readFileSync\s*\(/.test(source);
+      return isTheClass(source);
     })
-    .map(relative)
-    .sort();
+    .map(relative);
+  return [...tests, ...scriptLibWalkers()].sort();
 }
 
 /*
@@ -183,6 +237,14 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
   "server/castingV2/uploadRefusalCopy.test.ts": [
     "OWNER — the module that must stay a leaf",
     "each LITERAL_ALLOWED carve-out, a two-name list guarded by existsSync",
+  ],
+  "scripts/lib/stopline.mts": [
+    "STOPLINE_PATH — the freeze file by fixed path, behind its own existsSync; its"
+    + " catch answers `(present, unreadable)` rather than absent, which is the"
+    + " REFUSING direction and must stay",
+    "ACCOUNT_SPENDERS — two hand-kept spender names, each behind existsSync, and a"
+    + " name that has gone missing REPORTS as a finding rather than throwing (the"
+    + " #345 note at the site)",
   ],
   "server/patrolClocks.test.ts": [
     "REAL_LOGS — the four patrol logs by fixed name; one going missing is the defect and must throw",
@@ -221,11 +283,61 @@ const statCalls = (source: string): string[] => {
 const bareReadCount = (source: string): number =>
   [...source.matchAll(/\breadFileSync\s*\(/g)].length;
 
+/*
+  BOTH SPELLINGS OF THE TOLERANCE COUNT, and the second one is why this is a
+  function rather than a regex inline (#591). `server/` reads listed entries
+  through `readListedSource`; `scripts/` cannot import that module, so it has
+  its own ENOENT-only twin in `scripts/lib/listedEntry.mts`. A guard that knew
+  only the server spelling would have reported `stopline.mts`'s CORRECT helper
+  as an offender the moment it entered the population — the shape of false
+  alarm that gets a guard worked around at each site instead of fixed.
+*/
+const readsThroughAHelper = (source: string): boolean =>
+  /\breadListedSource\s*\(/.test(source)
+  || /\breadIfPresent\s*\(/.test(source)
+  /* ⚠ THE STAT SPELLING COUNTS TOO (PR #592 review, finding 4). A walker
+     that CLASSIFIES listed entries and never reads their bytes — every
+     touch correctly through `statIfPresent` — would otherwise be told by
+     the arm below to adopt a read helper it has no use for. Population is
+     zero today, and that is precisely when a false alarm is cheap to
+     prevent and expensive to meet: this file already records one shipping
+     and being met on the gate. */
+  || /\bstatIfPresent\s*\(/.test(source);
+
 describe("the class cannot come back through an eighth suite", () => {
   it("finds the walkers at all — a guard over an empty list is not a guard", () => {
     /* Invariant 7 in miniature: if a rename empties this scan, the assertion
        below passes vacuously and the ENOENT refusal comes straight back. */
     expect(candidates().length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("finds the scripts/lib walkers too — the half that was blind is not vacuous", () => {
+    /*
+      THE ARM THAT MAKES THE EXTENSION REAL. Everything #591 added lives behind
+      `scriptLibWalkers()`, and if it stops finding anything — a rename, a move
+      to `.ts`, a predicate that drifts — every arm below keeps passing over a
+      population that has quietly lost its scripts half. That is exactly the
+      state the guard was in on the morning #589 refused the rite.
+
+      Both are named rather than counted. `stopline.mts` is the module the
+      incident came through; `productionMention.mts` is the one an import-graph
+      reading could never have reached, and naming it is what stops the
+      population quietly narrowing back to the imported ones.
+    */
+    const walkers = scriptLibWalkers();
+    expect(walkers, "no scripts/lib walker is in the population — the #591 half is blind").not.toEqual([]);
+    expect(walkers).toContain("scripts/lib/stopline.mts");
+    expect(walkers).toContain("scripts/lib/productionMention.mts");
+    /*
+      ⚠ PINNED SEPARATELY BECAUSE ITS MEMBERSHIP HANGS ON PROSE (PR #592 review,
+      finding 2). `importerCountDiff.mts` walks `server`/`client`/`shared`; the
+      only reason `namesAScriptsRoot` matches it is a backticked `scripts/` in
+      its docblock and in the carve-out note beside its walk. Reword either
+      comment and it leaves the population silently — after which restoring its
+      bare `statSync` goes green again, which is the exact sabotage result this
+      change was written to close.
+    */
+    expect(walkers).toContain("scripts/lib/importerCountDiff.mts");
   });
 
   it("every suite that walks scripts/ reads its entries through the helper", () => {
@@ -243,7 +355,7 @@ describe("the class cannot come back through an eighth suite", () => {
     */
     const offenders = candidates()
       .filter((file) => !(file in NOT_THE_CLASS))
-      .filter((file) => !/\breadListedSource\s*\(/.test(readFileSync(path.join(repoRoot, file), "utf8")));
+      .filter((file) => !readsThroughAHelper(readFileSync(path.join(repoRoot, file), "utf8")));
 
     expect(
       offenders,
@@ -298,6 +410,26 @@ describe("the class cannot come back through an eighth suite", () => {
       + " a clean tree (#223). Pass `{ throwIfNoEntry: false }` and skip the empty answer:\n"
       + offenders.map((row) => `  ${row}`).join("\n"),
     ).toEqual([]);
+  });
+
+  it("the helper rule accepts all three spellings and only those — DRIVEN DIRECTLY", () => {
+    /*
+      ⚠ THE STAT-ONLY CLAUSE HAS NO MEMBER TO DRIVE IT, SO IT IS DRIVEN HERE
+      (PR #592 review, finding 4). All three walkers in the population today
+      read bytes, so a sabotage that removes `statIfPresent` from the predicate
+      reddens NOTHING — an untested clause sitting inside a tested guard, which
+      is working law 3 exactly. Asserting the predicate against source strings
+      costs nothing and closes it.
+
+      The negative arm is the one that matters: `statSync` alone must NOT
+      satisfy this, or the guard would wave through the bare call it exists to
+      catch.
+    */
+    expect(readsThroughAHelper("const s = statIfPresent(full);")).toBe(true);
+    expect(readsThroughAHelper("const t = readIfPresent(file);")).toBe(true);
+    expect(readsThroughAHelper("const u = readListedSource(file);")).toBe(true);
+    expect(readsThroughAHelper("const v = statSync(full);")).toBe(false);
+    expect(readsThroughAHelper("const w = readFileSync(file, \"utf8\");")).toBe(false);
   });
 
   it("keeps every bare-read row honest — a file that stops matching must lose its row", () => {

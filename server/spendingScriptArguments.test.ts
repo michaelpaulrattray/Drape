@@ -45,7 +45,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
-import { readIfPresent, scriptFilesUnder, statIfPresent, unguardedSpendGates } from "../scripts/lib/stopline.mts";
+import { readIfPresent, statIfPresent } from "../scripts/lib/listedEntry.mts";
+import { scriptFilesUnder, unguardedSpendGates } from "../scripts/lib/stopline.mts";
 
 const REPO = join(__dirname, "..");
 
@@ -433,6 +434,11 @@ describe("and the lines an operator really types are still accepted", () => {
   twice on 2026-09-06. The tolerance is ENOENT only — a helper that swallowed
   EISDIR or EACCES would turn every sweep green by making it blind, so the
   refusing direction is driven too.
+
+  The helpers moved to `scripts/lib/listedEntry.mts` (#591) so `stopline.mts`
+  and `productionMention.mts` — the two `scripts/` walkers — share ONE copy of
+  the rule. These arms follow them; they are still the only thing that drives
+  the tolerance in either direction.
 */
 describe("a file that vanishes between list and read is skipped, and nothing else is", () => {
   it("statIfPresent and readIfPresent answer null for a path that is gone", () => {
