@@ -77,7 +77,7 @@ import { scrubBrands } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
-import { authorPrompt, authorTextEngine, type Imagination } from "./promptAuthor";
+import { seedPromptRecord } from "./promptAuthor";
 import { houseLaneFor } from "./houseBlock";
 import { followClause } from "./familyClause";
 import { rewriteBrief } from "@shared/briefRewrite";
@@ -406,21 +406,16 @@ export type BriefCompilerInput = {
   briefFidelity?: boolean;
   /**
    * THE AUTHOR ROAD — inside `CASTING_CREATIVE_REGISTER_SCOPE`, captured at
-   * the roll and handed down like the two above (#131). On, EVERY roll is
-   * authored: the reader is asked the four-valued subject question, one text
-   * call writes ONE prompt for the sheet, and the two walls are the ruling's;
-   * a follow's anchor and the chip edits ride the family clause (#154). Off,
-   * or absent: the eight prompts, the reader's question and the walls are
-   * byte-identical to today's. The name is the flag's, kept so the capture
-   * site and the row's `register` read alike.
+   * the roll and handed down like the two above (#131). On, EVERY roll
+   * composes ONE prompt for the sheet — the customer's own words, the family
+   * clause when a follow is carried (#154), and the locked house block, all by
+   * code (#535: no text call at the roll; the author is the visible Re-imagine
+   * press, which writes into the box BEFORE anything rolls) — and the two
+   * walls are the ruling's. Off, or absent: the eight prompts, the reader's
+   * question and the walls are byte-identical to today's. The name is the
+   * flag's, kept so the capture site and the row's `register` read alike.
    */
   creativeRegister?: boolean;
-  /**
-   * How opinionated the author is on the author road (#131): `low` (his
-   * default) adds only the photoreal bundle where the brief is silent; `max`
-   * invents an ownable look and leaves the face open. Ignored off the flag.
-   */
-  imagination?: Imagination;
   /** The settings modal's style (#142) — read, like the meter, only on the author road. */
   style?: CastStyle;
   /** Set on a follow roll; the sheet narrows around this candidate. */
@@ -1318,12 +1313,18 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   /*
     THE AUTHOR ROAD (#131, his verdict on the court — "B is the studio"): under
     the flag EVERY roll takes it; the engagement gate is gone (ruling rule 2).
-    One text call authors ONE prompt — the brief verbatim first, by code, then
-    what an expert adds — and all eight slices carry it; the engine varies
-    everything the prompt leaves open. The interpreter above still ran, as the
-    READER: the identities, locks, persona lines, born ink and the honest record
-    are its and unchanged. An author outage costs the customer the author and
-    never the roll: the static bundle stands and the row says `authored: false`.
+    ONE prompt for the sheet — the brief verbatim first, the family clause when
+    a follow is carried, the locked block last, all composed BY CODE — and all
+    eight slices carry it; the engine varies everything the prompt leaves open.
+    The interpreter above still ran, as the READER: the identities, locks,
+    persona lines, born ink and the honest record are its and unchanged.
+
+    ⚠ NO TEXT CALL HAPPENS HERE SINCE #535. The imagination meter is gone and
+    the author is the visible Re-imagine press (`reimagine.ts`), which writes
+    into the customer's box BEFORE anything rolls — so whatever it contributed
+    is already inside `briefText`, read and kept by the customer, and a roll
+    can no longer lose its author mid-flight (`mode: "static"` is a
+    rows-already-written fact, never a new one).
   */
   /*
     A FOLLOW's anchor and a chip UNLOCK or OVERRIDE used to reach the engine
@@ -1334,34 +1335,15 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     with a control, an unlock on a follow as an axis the clause stops naming.
   */
   /*
-    THE AUTHOR'S OWN ENGINE (#466), not the interpreter's — same slug today,
-    deliberately, but the pin means a swap is one line in `promptAuthor.ts`
-    rather than a move of the slug every brief is interpreted by. A reversion
-    to `interpreterEngine()` here is what `authorModel.test.ts`'s compile-site
-    arm exists to catch: the interpreter's factory passes no model at all.
-  */
-  const authorEngine = authorRoad ? (input.engine ?? authorTextEngine()) : null;
-  /*
     Brand names never reach the image engine (founder gate 21) — on this road
     the brief itself travels to the provider as the customer's own words, so it
     is scrubbed the way `role` and `characterNotes` are, and the scrubbed text
     is what the row keeps and the sheet will show. Declared on #131 for his word.
   */
-  const authored = authorEngine
-    ? await authorPrompt({
-        engine: authorEngine,
+  const seeded = authorRoad
+    ? seedPromptRecord({
         /* Already scrubbed at the record above — the record IS the wire. */
         briefText: briefSent,
-        /*
-          THE COURTED FORMULA IS EXHAUSTIVE ON AN ANCHORED FOLLOW (#177 Row A:
-          "anchor photo + anchor's brief + the A clause"): no author call, so
-          the prompt is exactly the bytes the court judged — brief, clause,
-          block. Forcing LOW here rides the seed branch (no text call, mode
-          "seed") and records the imagination the roll actually had; the
-          author never saw the photograph, so its art direction on top of one
-          would be an unmeasured addition fighting the attached look.
-        */
-        imagination: carried ? "low" : input.imagination,
         style: input.style,
         /*
           WHICH LANE THE LOCKED BLOCK IS COMPOSED IN (#232, #237) — from the
@@ -1374,15 +1356,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         */
         lane: houseLaneFor(outcome.ok ? outcome.subject : "unread"),
         clause: carried?.clause ?? null,
-        /* §5g (#171): the reader's recorded age is the fidelity check's value — "mid 30s" may never come back "young". */
-        statedAge: intent.ageBand ? { band: intent.ageBand, phase: intent.agePhase } : null,
-        /*
-          #230 — the rewrite made the fidelity check load-bearing rather than a
-          backstop: the author's paragraph is now the ONLY place the customer's
-          facts exist on the wire. The reader's sex joins its age, and both are
-          demanded of the rewrite only where the SEED ITSELF says them.
-        */
-        statedSex: intent.sex,
       })
     : null;
   /*
@@ -1396,10 +1369,10 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     diagnosed) but `readResolvedIdentity` refuses it, and a null `personaLine`
     draws the tile's index label instead of a disposition nobody cast.
   */
-  const candidates = authored
+  const candidates = seeded
     ? sheet.candidates.map((candidate) => ({
         ...candidate,
-        prompt: authored.prompt,
+        prompt: seeded.prompt,
         personaLine: null,
         resolvedIdentity: { ...candidate.resolvedIdentity, unsent: true as const },
       }))
@@ -1437,64 +1410,38 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       archetype,
       chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad }),
       /*
-        WHO WROTE THIS SHEET — present ONLY under the flag, so an unflagged
-        roll's row is byte-identical to today's. `authored: false` is a sheet
-        that rendered on the STATIC bundle (the author failed or refused twice),
-        never one somebody authored; the two must stay distinguishable at the
-        row. `prompt` is the whole prompt the eight were painted from — the
-        customer's words and the author's, nothing house-internal — and it is
-        what the sheet will show (#131 slice D: no hidden prompt, ever).
+        HOW THIS SHEET WAS COMPOSED — present ONLY under the flag, so an
+        unflagged roll's row is byte-identical to today's. Since #535 there is
+        exactly one road: the customer's own words + the family clause + the
+        locked block, composed by code (`mode: "seed"`, `authored: false` on
+        every new row — the field names keep their historical meanings so a
+        census over old and new rows reads one vocabulary; the author-call
+        fields the MAX road wrote — `imagination`, `attempts`, `refusals`,
+        `model`, `latencyMs`, `allowance`, `addedWords` — are simply no longer
+        facts a roll has). `prompt` is the whole prompt the eight were painted
+        from — the customer's words, nothing house-internal — and it is what
+        the sheet will show (#131 slice D: no hidden prompt, ever).
       */
-      ...(authored
+      ...(seeded
         ? {
             register: {
               kind: "author",
-              imagination: authored.imagination,
-              /* The style the block was chosen by (#142) — shown on the sheet beside the meter: no hidden settings, ever. */
-              style: authored.style,
+              /* The style the block was chosen by (#142) — shown on the sheet's record line: no hidden settings, ever. */
+              style: seeded.style,
               /*
                 WHICH LANE the block was composed in (#232/#237) — `human` or
                 `creature`, recorded beside `subject` below rather than derived
                 from it by a later reader, so a row still says which block it
                 was painted under after the mapping has moved.
               */
-              lane: authored.lane,
-              /*
-                `mode` says which of the three roads wrote this prompt (§5b/5c):
-                `seed` — LOW, no author call, the customer's words + the locked
-                block; `authored` — MAX, a text call wrote the content;
-                `static` — MAX, the author failed twice, seed + block stands.
-                `authored` is kept beside it for the rows already written.
-              */
-              mode: authored.mode,
-              /*
-                WHICH SHAPE COMPOSED THIS PROMPT (#230). `rewrite` — the
-                author's paragraph REPLACED the customer's words on the wire;
-                `append`, which only rows written before 2026-08-29 carry (as
-                an ABSENT field, never this value), had the content sitting
-                beneath them. The sheet's readers branch on it so an old row
-                is still drawn as what it actually was.
-              */
-              compose: authored.compose,
-              /* The seed's own length, so `addedWords` below has a denominator on the row. */
-              seedWords: authored.seedWords,
-              authored: authored.authored,
-              content: authored.content,
-              addedWords: authored.addedWords,
-              houseBlockWords: authored.houseBlockWords,
-              allowance: authored.allowance,
-              attempts: authored.attempts,
-              /*
-                WHY a draft was refused, in the guards' own sentences (#252):
-                `attempts` and `mode` carried the rate for weeks while the
-                reason was recoverable nowhere — the founder's bar for
-                loosening any guard is a measured test, and the test needs
-                the reasons. Internal only: no sheet reader projects it.
-              */
-              refusals: authored.refusals,
-              model: authored.model,
-              latencyMs: authored.latencyMs,
-              prompt: authored.prompt,
+              lane: seeded.lane,
+              mode: seeded.mode,
+              compose: seeded.compose,
+              seedWords: seeded.seedWords,
+              authored: seeded.authored,
+              content: seeded.content,
+              houseBlockWords: seeded.houseBlockWords,
+              prompt: seeded.prompt,
               /*
                 WHAT KIND OF BEING the reader said this is — `human`, `being`,
                 or `unread` when the reply could not be parsed and the sheet

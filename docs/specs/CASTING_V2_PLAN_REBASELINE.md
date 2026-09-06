@@ -19,6 +19,12 @@ rows read this shift (2026-08-25) — never asserted from memory (law 7b).
 
 
 > **Amendment 2026-08-26 (founder, verbatim: "do it - add the minimal settings modal to N1"):** the settings modal's MINIMAL first version — style selector (photoreal only) + imagination slider — moves from N3 into N1 as the creative register's last slice before its milestone gate. The FULL modal (advanced framing/lighting/background settings, the other art styles) stays in N3. Context: the Prompt Author ruling (`PROMPT_AUTHOR_RULING_2026-08-26.md`) made the modal the author road's control surface.
+>
+> ⚠ **The imagination half of that amendment is SUPERSEDED by #535** ("build
+> it", 2026-09-06, `REIMAGINE_DESIGN_2026-09-06.md`): the level is deleted —
+> no slider, no Low/Max, no Imagination column — and the author is the visible
+> Re-imagine press on every brief box. Style is the only setting. The N1 gate
+> sentence is rewritten with it (the design's §5).
 
 ## 1. The name collision, stated once
 

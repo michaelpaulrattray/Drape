@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute, useSearch } from "wouter";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -61,10 +61,14 @@ import {
   wardrobeLineText,
 } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
-import { AUTHOR_CHIPS_ARE_A_RECORD, authorSatOutRecord, castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
+import {
+  ReimagineButton,
+  ReimagineLine,
+  useReimagine,
+} from "@/features/castingV2/components/Reimagine";
+import { castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
-import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
 import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
@@ -393,8 +397,7 @@ export default function CastingSheet() {
     holds only the user's own departure from it.
   */
   const [pathChoice, setPathChoice] = useState<CastingPath | null>(null);
-  /* The settings for the NEXT roll (#131 slice E, #142): her choice if she touched it, else the sheet's own, else the default. */
-  const [imaginationChoice, setImaginationChoice] = useState<Imagination | null>(null);
+  /* The settings for the NEXT roll (#142): her choice if she touched it, else the sheet's own, else the default. The imagination half left with #535. */
   const [styleChoice, setStyleChoice] = useState<CastStyle | null>(null);
 
   /** Closes synchronously on click; see `dispatchRoll` and `singleFlight.ts`. */
@@ -572,12 +575,23 @@ export default function CastingSheet() {
   */
   const boxEdited = boxDiffersFromSheet(brief, shownBrief);
   /*
-    The author-sat-out line, only where its sentence is true to a customer
-    (#534): the two legacy reasons said "there is no authored prompt to
-    show", and no sheet shows one any more. The copy module returns null for
-    them, so the decision lives beside the sentences it is about.
+    The author-sat-out line is GONE (#535): the roll road makes no author
+    call, so nothing can sit a sheet out silently — the Re-imagine press says
+    "nothing to offer" in the box, in the moment, which is the same honesty
+    said where the customer is looking.
   */
-  const authorSatOutLine = roll.data?.authorSatOut ? authorSatOutRecord(roll.data.authorSatOut) : null;
+  /*
+    RE-IMAGINE on the dock's box (#535). A press rewrites the DRAFT — the box
+    is the next brief (#534), so what comes back lands exactly where a typed
+    edit would, and Roll again stays pure (his §17: it casts what is in the
+    box). The fold rides the same press: an instruction typed into the box is
+    applied in place, never appended, never on the way to the engine.
+  */
+  const reimagine = useReimagine({
+    value: brief,
+    onValue: (text) => setDraft(typed(text)),
+    enabled: config.data?.authorRoadEnabled === true,
+  });
   const draftAnchor = useRef<string | null>(null);
   useEffect(() => {
     const rollId = roll.data?.rollId;
@@ -879,13 +893,11 @@ export default function CastingSheet() {
           /*
             NOTHING BUT THE BRIEF RIDES AN AUTHORED FOLLOW (#177 Row A, his
             build order: facts change at the roll, never at the follow). The
-            anchor photograph holds the family, so adjustments and the
-            imagination meter have nothing to reach — the server drops them
-            anyway, and a client that sent them would be posting controls the
-            product ignores. The STYLE still rides: it picks the locked block.
-            Off the author road the adjustments ride exactly as before — and
-            no imagination ever rides a follow, because the meter is only
-            drawn on the author road in the first place.
+            anchor photograph holds the family, so adjustments have nothing to
+            reach — the server drops them anyway, and a client that sent them
+            would be posting controls the product ignores. The STYLE still
+            rides: it picks the locked block. Off the author road the
+            adjustments ride exactly as before.
           */
           ...rollAdjustments({ authorRoad, unlocked, overrides: sendOverrides }),
           ...(nextStyle ? { style: nextStyle } : {}),
@@ -931,7 +943,6 @@ export default function CastingSheet() {
             argument `refineSubjects.ts` makes about expression.
           */
           ...(nextRollPath ? { path: nextRollPath } : {}),
-          ...(nextImagination ? { imagination: nextImagination } : {}),
           ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
@@ -1037,18 +1048,14 @@ export default function CastingSheet() {
     roll will use.
   */
   const authorRoad = config.data?.authorRoadEnabled === true;
-  const dockImaginationVisible = authorRoad && !viewingHistory;
+  const dockSettingsVisible = authorRoad && !viewingHistory;
   /*
-    Preselected from the SHEET (its `imagination` is the register's own record),
-    the path switch's rule one control over: a MAX sheet whose Roll again went
-    out at LOW would be a wrong default on a paid action. Null exactly where no
-    control is drawn, so nothing is sent from a sheet that showed nothing.
+    The style, preselected from the SHEET (#142): the sheet's own where it
+    recorded one, else photoreal. Null exactly where no control is drawn, so
+    nothing is sent from a sheet that showed nothing. (The imagination meter
+    that preselected beside it is gone — #535.)
   */
-  const nextImagination: Imagination | null = dockImaginationVisible
-    ? (imaginationChoice ?? roll.data?.imagination ?? DEFAULT_IMAGINATION)
-    : null;
-  /* The style, the same way (#142): the sheet's own where it recorded one, else photoreal. */
-  const nextStyle: CastStyle | null = dockImaginationVisible
+  const nextStyle: CastStyle | null = dockSettingsVisible
     ? (styleChoice ?? roll.data?.style ?? DEFAULT_CAST_STYLE)
     : null;
 
@@ -2429,36 +2436,22 @@ export default function CastingSheet() {
           </p>
         ) : null}
         {/*
-          THE SETTINGS THIS SHEET USED (#142: "shown on the sheet beside the
-          authored prompt — no hidden settings, ever"). The record line's own
-          shape, drawn off the ROW: an author register always recorded its
-          imagination, and records its style since the modal — an older author
-          row shows its imagination alone rather than a style it never stated.
-          A property of the roll, not of the account reading it, so like the
-          path line it is deliberately not behind the flag.
+          THE SETTINGS THIS SHEET USED (#142: no hidden settings, ever) —
+          style alone since #535 (his decision 1: Style is the only setting;
+          the "· Low imagination" half of this line left with the level). A
+          property of the roll, not of the account reading it, so like the
+          path line it is deliberately not behind the flag. An old author row
+          that recorded a level but no style draws nothing, which is the rule
+          this line has always had for facts a row does not carry.
+
+          The AUTHOR sat-out line that stood under this one is gone with the
+          level: the roll road makes no author call, so nothing can sit a
+          sheet out silently — the press says "nothing to offer" in the box.
         */}
-        {roll.data?.imagination ? (
+        {castSettingsRecord(roll.data?.style ?? null) ? (
           <p className="dpc-wardrobeline">
             <span className="dp-chrome">SETTINGS</span>
-            <span className="dpc-wardrobeline__line">{castSettingsRecord(roll.data.style, roll.data.imagination)}</span>
-          </p>
-        ) : null}
-        {/*
-          THE AUTHOR SAT THIS SHEET OUT, AND THE SHEET SAYS SO — but only in
-          the one sentence that is true to a customer (#534). The LIVE reason,
-          `static` (#252, his ruling: the customer isn't lied to — a MAX roll
-          whose author was refused twice or failed), still draws: without it a
-          static sheet reads "Max imagination" over a prompt nobody authored,
-          and its copy passed his eye ("cast exactly as you wrote them"). The
-          past-tense pair (`anchored`/`edited`, rows written before #154) no
-          longer draws: their sentences named the machinery and promised an
-          authored prompt the record no longer shows anywhere. The copy module
-          returns null for them. Off the row like the two lines above it.
-        */}
-        {authorSatOutLine ? (
-          <p className="dpc-wardrobeline">
-            <span className="dp-chrome">AUTHOR</span>
-            <span className="dpc-wardrobeline__line">{authorSatOutLine}</span>
+            <span className="dpc-wardrobeline__line">{castSettingsRecord(roll.data?.style ?? null)}</span>
           </p>
         ) : null}
 
@@ -2577,12 +2570,13 @@ export default function CastingSheet() {
             terse={rolls.length > 1}
             /*
               THIS sheet's road, read off the sheet's own register rather than
-              the config (#230): `imagination` is projected only for an author
-              row, so a non-null value IS "one authored prompt painted these",
-              which is exactly the condition that makes the differ-by caption
-              false. Derived, never mirrored.
+              the config (#230): `authorRoad` is the register's validated
+              `kind` (one authored prompt painted these), which is exactly the
+              condition that makes the differ-by caption false — and, since
+              his read-only ruling (#535), the condition under which the
+              sentence draws no pickers at all. Derived, never mirrored.
             */
-            authorRoad={roll.data.imagination !== null}
+            authorRoad={roll.data.authorRoad}
             /*
               What the user has queued but the sheet in front of them cannot
               show, because rolls are immutable — and never more than the roll
@@ -2639,16 +2633,11 @@ export default function CastingSheet() {
           />
         ) : null}
         {/*
-          READ-ONLY CHIPS, SAID ONCE (#154, his answer (2)): on the author road
-          the sentence goes to the engine verbatim, so the echo offers no "let
-          it vary", and this line says why. Drawn on a standing follow too
-          since #177 (Row A): the follow is held by the anchor photograph now,
-          so its axes stopped being adjustable — facts change at the roll,
-          never at the follow.
+          The "edit the sentence to change them" note is GONE with the pickers
+          (#535, his read-only ruling): the sentence is informational now, the
+          box below is the only editor, and a line explaining a control that
+          no longer exists would be the machine explaining itself.
         */}
-        {roll.data && authorRoad && !viewingHistory ? (
-          <p className="dp-small dpc-echo-note">{AUTHOR_CHIPS_ARE_A_RECORD}</p>
-        ) : null}
 
         {/*
           A failed dispatch says so, here, where the skeletons would have been.
@@ -2890,28 +2879,34 @@ export default function CastingSheet() {
               note={pathSwitchNote({ sheetPath, selected: nextRollPath })}
             />
           ) : null}
-          {/* THE GEAR (#142) for the next roll, where the meter's pills stood.
-              During a standing follow the imagination row yields to a note
-              (#177 Row A: an anchored roll never calls the author, and a
-              meter that read nothing would be a dead control) — the style
-              row stays live, because the style still picks the locked block. */}
-          {nextImagination && nextStyle ? (
+          {/* THE GEAR (#142) for the next roll — style alone since #535. */}
+          {nextStyle ? (
             <CastSettingsButton
               idPrefix="dpc-dock"
               style={nextStyle}
-              imagination={nextImagination}
-              followHeld={standingFollowId !== null}
               onStyle={setStyleChoice}
-              onImagination={setImaginationChoice}
             />
           ) : null}
           <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
             <Field className="dp-split__main dpc-briefrow">
-              <Sparkles size={13} strokeWidth={1.9} aria-hidden="true" />
+              {/*
+                RE-IMAGINE (#535) where the sparkle sat — a press, not a mark:
+                it sends the box through the studio's writer and lands the
+                idea back in the box, editable, with undo. Dimmed while a
+                follow chip is up (his §17: the family holds the look; hover
+                says how to free it). Off the author road the plain box needs
+                no glyph, and none is drawn (D-180).
+              */}
+              {authorRoad ? (
+                <ReimagineButton state={reimagine} followHeld={standingFollowId !== null} />
+              ) : null}
               <BriefField
                 value={brief}
+                disabled={reimagine.pending}
                 onChange={(event) => {
                   const next = event.target.value;
+                  /* Typing clears the Re-imagine line and spends the undo (#535 §1). */
+                  reimagine.typed();
                   setDraft(typed(next));
                   /*
                     THE ECHO REVERTS THE MOMENT YOU START TYPING.
@@ -2975,6 +2970,8 @@ export default function CastingSheet() {
               {awaitingNewRoll ? "Rolling…" : "Roll again"}
             </Button>
           </div>
+          {/* The one quiet line about what just happened to the words — under the box they happened in (#535 §1). */}
+          <ReimagineLine state={reimagine} />
           <div className="dp-row">
             {/*
               The shortlist lives here now, as a small stack where Sign will

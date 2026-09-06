@@ -207,55 +207,14 @@ export function saysSex(text: string, sex: Sex): boolean {
   return SEX_WORDS[sex].some((word) => saysWord(lower, word));
 }
 
-/**
- * THE FACTS THIS ROLL'S SEED STATED IN ITS OWN WORDS — read from the raw
- * seed, so nothing the reader merely INFERRED is ever demanded of the
- * rewrite. `sex` and `age` are null when the seed did not say them readably,
- * and a null fact is not checked at all.
- */
-export type SeedFacts = {
-  /** The reader's recorded age, kept only when the seed itself makes a readable claim. */
-  age: StatedAge | null;
-  /** The reader's recorded sex, kept only when the seed itself says it in words. */
-  sex: Sex | null;
-};
-
-/**
- * What the rewrite must keep, derived from the seed the customer typed and
- * the values the reader recorded. Both halves are required: the reader's
- * value is what a claim is compared against, and the seed is what says
- * whether the customer stated it at all.
- */
-export function seedFactsOf(seedText: string, reader: { sex: Sex | null; age: StatedAge | null }): SeedFacts {
-  const lower = seedText.toLowerCase().replace(/\s+/g, " ");
-  const seedSaysSex = reader.sex !== null && SEX_WORDS[reader.sex].some((word) => saysWord(lower, word));
-  /*
-    An age is checked only where the SEED makes a claim this module can read.
-    The reader sets `ageBand` from an idiom too ("a teenager", a stated year),
-    and demanding a rewrite restate a band the customer never wrote is how a
-    good rewrite gets refused and the customer silently loses MAX.
-  */
-  const seedClaims = reader.age !== null ? ageClaimsIn(seedText) : [];
-  return {
-    sex: seedSaysSex ? reader.sex : null,
-    age: seedClaims.length > 0 ? reader.age : null,
-  };
-}
-
-/**
- * THE FACT THE REWRITE DROPPED, in the words a re-ask can quote, or null.
- * Presence only — a contradiction is `ageContradictionIn`'s question, asked
- * separately so the two failures are told apart in the log and on the row.
- */
-export function droppedFactIn(content: string, facts: SeedFacts): string | null {
-  if (facts.sex && !saysSex(content, facts.sex)) {
-    return `the subject's sex (${facts.sex})`;
-  }
-  if (facts.age && ageClaimsIn(content).length === 0) {
-    return `the subject's age (${facts.age.phase ? `${facts.age.phase} ` : ""}${facts.age.band})`;
-  }
-  return null;
-}
+/*
+  `SeedFacts`, `seedFactsOf` and `droppedFactIn` RETIRED WITH THE MAX AUTHOR
+  (#535). Presence-of-every-stated-fact was that road's contract, and it IS
+  the pieces road the founder's two rolled courts rejected (rolls 244/245 and
+  243/246, his eye) — the Re-imagine press locks only sex, age and species
+  when typed (`reimagine.ts`, `lockedTrioOf`), and the result lands editable
+  in the customer's own box, which is the new fidelity control.
+*/
 
 /** Every sex value has surface words — asserted here so a widened vocabulary cannot ship a silent hole. */
 {

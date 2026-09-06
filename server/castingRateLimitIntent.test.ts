@@ -144,6 +144,8 @@ describe("which bucket each casting procedure was handed", () => {
       getSession: "castingPoll",
       createRoll: "generation",
       follow: "generation",
+      /* Free house-money text call with its own bucket (#535) — the concept describer's argument. */
+      reimagine: "reimagine",
       getRoll: "castingPoll",
       keep: "castingSheet",
       discard: "castingSheet",

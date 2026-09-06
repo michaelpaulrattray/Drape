@@ -1,0 +1,479 @@
+/**
+ * RE-IMAGINE — the author as a VISIBLE writing assistant on the brief (#535;
+ * the design is `docs/specs/REIMAGINE_DESIGN_2026-09-06.md` §3, built on his
+ * "build it", Crew replies #145/#146, 2026-09-06).
+ *
+ * # What this road is, in his contract
+ *
+ * Wherever there is a brief box, one press sends the words in the box through
+ * this module and writes the result back INTO the box — visible, editable,
+ * with Undo. Casting then always uses whatever is in the box. It replaces the
+ * imagination meter entirely: there is no hidden mode, so the #252 lie (a
+ * sheet saying "Max" over words nobody authored) has nothing to fall out of.
+ *
+ * # The instruction's contract (his decisions 3–11 on #535, plus the
+ * 2026-09-05 correction and his two rolled courts)
+ *
+ *   - **A new idea, not a polish** (decision 3): the customer's words are the
+ *     spark, not the cage; the result is recognisably born from them but may
+ *     be a different being.
+ *   - **Sex, age and species are LOCKED when typed** (decision 4). Nothing
+ *     else is. ⚠ The 2026-09-05 correction is the load-bearing half: an
+ *     earlier comment on the card said every named feature and material
+ *     survives verbatim, and the confirmed list SUPERSEDES it — his words when
+ *     he caught the gap: *"are you re-imagining this like our new re-imagine
+ *     design or like our old imagination design?"* His two rolled courts
+ *     settle it at his eye (law 9): rolls 244 vs 245 (*"10x better"*) and 243
+ *     vs 246 (*"much better"*) — the qualities paragraph beat the
+ *     keep-every-piece paragraph both times, and **named colours and
+ *     materials ARE pieces**.
+ *   - **Read the register first, carry it as qualities** (decisions 5–6): a
+ *     detailed brief has MORE register to keep, not less; identity nouns only
+ *     for the two or three things that make the type the type.
+ *   - **Never lighting, camera, framing, backdrop or scene** (decision 7) — a
+ *     BAN in the instruction, because the house block's AUTHORITY line can be
+ *     out-argued by an authored lighting clause.
+ *   - **Starts with the person; no titles or names; short by design**
+ *     (decisions 8–9).
+ *   - **What is added never contradicts a LOCKED fact and never contradicts
+ *     itself** (the reconciled #477/#539 clause, re-read for this road on
+ *     #535: a material is a PIECE the author may reinvent, so the clause
+ *     binds consistency, not the metal).
+ *   - **Instructions fold into the brief, visibly** (decision 11 + his
+ *     2026-09-06 read-only-sentence ruling): when the box holds an editing
+ *     instruction ("make her young", "50s"), the SAME press applies it and
+ *     returns the one clean brief — never appended to the end of the
+ *     sentence, never handled on the way to the engine.
+ *
+ * # What is deliberately NOT here (the design's §3 deletion list)
+ *
+ *   - `droppedFactIn` — RETIRED for this road. Its contract (every stated
+ *     fact survives) IS the pieces road his courts rejected; the result lands
+ *     editable in the customer's own box, and their reading it is the new
+ *     fidelity control.
+ *   - The FINISHED-seed "HEAT ONLY … more severe" mode, "lighting taste",
+ *     and FACTS-STAY-in-full — all shapes of the retired MAX instruction.
+ *
+ * # What is kept, and why (the design's own table)
+ *
+ * Every guard that protects the ROLL rather than the reader: `NEVER_WRITTEN`
+ * (pipeline notes, set words, "sternum"), the house-sentence check, the skin
+ * contradictions, the piece nouns (qualities-never-pieces is now the whole
+ * instruction; the noun list is its backstop), the one-paragraph and
+ * allowance shapes — and the fact checks NARROWED TO THE LOCKED TRIO, with a
+ * NEW species floor (decision 4 names species; until this module nothing in
+ * the product checked it).
+ *
+ * # The honest failure
+ *
+ * A draft is refused and re-asked once with the reason; a second refusal (or
+ * the call itself failing) returns `nothing` — the surface says *"Nothing to
+ * offer this time — your words stand."* in place and the box is untouched.
+ * Never an error the customer must interpret, never a changed box.
+ */
+import type { TextEngine } from "../providers/types";
+import { INTERPRET_TIMEOUT_MS } from "./interpreter";
+import { createModuleLogger } from "../logging/logger";
+import { containsHouseSentence } from "./houseBlock";
+import {
+  countWords,
+  isStacked,
+  neverWrittenIn,
+  pieceNounIn,
+  skinContradictionIn,
+} from "./promptAuthor";
+import { AGE_BANDS, SEXES, type AgeBand, type Sex } from "../../shared/castingVocabularies";
+import { ageClaimsIn, saysSex, type StatedAge } from "./seedFidelity";
+
+const log = createModuleLogger("reimagine");
+
+/**
+ * Short by design (decision 9: *"every extra noun costs spread"*). The floor
+ * above the seed's own length exists for the FOLD: applying "50s" to a
+ * 300-word brief must be able to return roughly 300 words, and an allowance
+ * that ordered the fold to cut the customer's brief would be the one
+ * instruction this road forbids.
+ */
+export const REIMAGINE_WORD_BUDGET = 220;
+export const REIMAGINE_ALLOWANCE_FLOOR = 40;
+/** A draft may exceed its allowance by this fraction before it is re-asked — the author road's own tolerance. */
+export const REIMAGINE_OVERRUN_TOLERANCE = 0.1;
+/** The author's output budget — the interpreter's figure, for its reason (reasoning tokens count). */
+export const REIMAGINE_MAX_OUTPUT_TOKENS = 5000;
+
+export function reimagineAllowance(briefText: string): number {
+  return Math.max(REIMAGINE_WORD_BUDGET, countWords(briefText) + REIMAGINE_ALLOWANCE_FLOOR);
+}
+
+/**
+ * THE SPECIES FLOOR (decision 4) — closed groups with surface forms, the
+ * `saysSex` shape: when the box names exactly one group, the draft must still
+ * say something from that group.
+ *
+ * ⚠ **A FLOOR, NOT COVERAGE, and that is a declared judgement** — species is
+ * an open set ("a moth-winged seraph") and an open-set check is the typo-gate
+ * class this repo has been bitten by five times. The groups below are the
+ * kinds briefs actually name, each word chosen because it has no common
+ * second sense in a casting sentence (no bare "cat" — "cat-eye makeup" would
+ * lock a species onto a human brief). A species outside the vocabulary is
+ * carried by the instruction and judged at the court (#535 §7) and his eye.
+ *
+ * Groups rather than words so a legitimate synonym survives: his own second
+ * court's brief said *sphinx* and its passing draft said *feline humanoid* —
+ * a presence check on the exact noun would have refused the draft his eye
+ * called "much better".
+ */
+export const SPECIES_GROUPS: ReadonlyArray<{ group: string; words: readonly string[] }> = [
+  { group: "feline", words: ["sphinx", "feline", "lioness", "leonine"] },
+  { group: "canine", words: ["canine", "wolflike", "wolf-like", "lupine"] },
+  { group: "machine", words: ["android", "robot", "robotic", "automaton", "synthetic being", "machine person"] },
+  { group: "cyborg", words: ["cyborg", "cybernetic"] },
+  { group: "vampire", words: ["vampire", "vampiric"] },
+  { group: "elf", words: ["elf", "elven", "elvish"] },
+  { group: "ogre", words: ["ogre", "ogress"] },
+  { group: "orc", words: ["orc", "orcish"] },
+  { group: "troll", words: ["troll"] },
+  { group: "goblin", words: ["goblin"] },
+  { group: "dwarf", words: ["dwarf", "dwarven"] },
+  { group: "giant", words: ["giant", "giantess"] },
+  { group: "demon", words: ["demon", "demonic", "demoness"] },
+  { group: "angel", words: ["angel", "angelic", "seraph", "seraphic"] },
+  { group: "alien", words: ["alien", "extraterrestrial"] },
+  { group: "mermaid", words: ["mermaid", "merman", "merfolk"] },
+  { group: "dragon", words: ["dragon", "draconic", "dragonkin"] },
+  { group: "reptilian", words: ["reptilian", "lizardfolk", "serpentine"] },
+  { group: "insectile", words: ["insectile", "insectoid"] },
+  { group: "ghost", words: ["ghost", "ghostly", "spectral", "wraith"] },
+  { group: "zombie", words: ["zombie", "undead"] },
+  { group: "faun", words: ["faun", "satyr"] },
+  { group: "centaur", words: ["centaur"] },
+  { group: "minotaur", words: ["minotaur"] },
+];
+
+/** Whole-word/phrase presence, the fidelity module's own boundary shape. */
+function saysPhrase(lower: string, phrase: string): boolean {
+  const escaped = phrase.replace(/[-]/g, "\\-");
+  return new RegExp(`(^|[^a-z])${escaped}(?![a-z'’])`).test(lower);
+}
+
+/** Every species group `text` names, in list order. */
+export function speciesGroupsIn(text: string): string[] {
+  const lower = text.toLowerCase().replace(/\s+/g, " ");
+  return SPECIES_GROUPS.filter(({ words }) => words.some((word) => saysPhrase(lower, word))).map(
+    ({ group }) => group,
+  );
+}
+
+/**
+ * THE LOCKED TRIO, read from the box's own text — sex, age and species, each
+ * locked only when TYPED, unambiguously, in a shape this module can read
+ * (decision 4: *"when not typed, the author leaves them open too"*).
+ *
+ * Text-only by design: this road runs before any roll, so there is no
+ * reader record to anchor on — and `seedFidelity.ts`'s own reasoning holds
+ * harder here, since demanding a fact the customer never typed would refuse
+ * good ideas and cost them the press.
+ *
+ *   - SEX locks when exactly ONE sex's surface words appear. A box saying
+ *     both ("a man and his wife") locks neither — declared, the fidelity
+ *     module's own sex-flip clause. Nonbinary locks only on its explicit
+ *     words, never on they/them/their, which ordinary prose is full of.
+ *   - AGE locks on the box's own readable claims (`ageClaimsIn`), and the
+ *     check is that the draft claims no band the box did not — so a FOLD
+ *     ("…in her 30s… make her young") passes on the customer's own word
+ *     while an author-invented "20s" on a 30s brief is refused.
+ *   - SPECIES locks when exactly ONE group is named; several named groups
+ *     lock none (the sex rule's shape — a fold changing species says both).
+ */
+export type LockedTrio = {
+  sex: Sex | null;
+  /** Every band the box claims — the draft may claim these and no others. Empty when unstated OR steered. */
+  ageBands: readonly AgeBand[];
+  species: string | null;
+};
+
+const NONBINARY_EXPLICIT = ["nonbinary", "non-binary", "agender", "androgynous", "gender-neutral"] as const;
+const YOUTH_WORDS = ["young", "younger", "youthful", "childlike"] as const;
+/**
+ * Words that STEER the age without claiming a band — the fold's vocabulary
+ * ("make her young", "make them older"). When the box says one, the customer
+ * is moving the age themselves, so the age is not locked: the draft may land
+ * on a band the box never claimed, and the customer reads the result in
+ * their own editable box (the design's fidelity control). Driven before it
+ * was written: without this, his own §11 example — an ageing instruction
+ * typed after a brief that states an age — was refused twice by the very
+ * guard meant to protect it, and the press answered "nothing to offer".
+ *
+ * ⚠ Declared limit: a bare number ("make them 45") steers without a word
+ * this list can see and without an age-claim shape; that fold still meets
+ * the lock and falls to "your words stand". The court's fold fixtures (#535
+ * §7) measure how often that shape occurs.
+ */
+const AGE_STEER_WORDS = ["older", "younger", "young", "youthful", "elderly", "age", "aged", "ageing", "aging"] as const;
+
+export function lockedTrioOf(briefText: string): LockedTrio {
+  const lower = briefText.toLowerCase().replace(/\s+/g, " ");
+  const saidSexes = SEXES.filter((sex) =>
+    sex === "nonbinary"
+      ? NONBINARY_EXPLICIT.some((word) => saysPhrase(lower, word))
+      : saysSex(briefText, sex),
+  );
+  const groups = speciesGroupsIn(briefText);
+  /*
+    "aged NN" is a CLAIM, not steering — `ageClaimsIn` reads it, so the lock
+    holds on the number it states. A steering word that appears only inside a
+    claim shape must not unlock: strip the readable claims first, then look.
+  */
+  const claims = ageClaimsIn(briefText);
+  const withoutClaims = lower
+    .replace(/\bin (?:her|his|their) (?:(?:early|mid|late)[ -])?[a-z0-9]+\b/g, " ")
+    .replace(/\baged? \d{1,3}\b/g, " ")
+    .replace(/\b\d{1,3}[ -]years?[ -]old\b/g, " ");
+  const steered = AGE_STEER_WORDS.some((word) => saysPhrase(withoutClaims, word));
+  return {
+    sex: saidSexes.length === 1 ? saidSexes[0] : null,
+    ageBands: steered ? [] : claims,
+    species: groups.length === 1 ? groups[0] : null,
+  };
+}
+
+/**
+ * Why a draft is refused, or null when it may stand. The re-ask quotes this
+ * sentence to the author, the row records it (#252's lesson: the rate was
+ * always recorded and the reason was recoverable nowhere).
+ *
+ * Order matters the way `draftRefusal`'s did: the shape checks first, then
+ * the words this studio never sends, then the locked trio — a draft that says
+ * the WRONG thing gets the precise sentence about what it moved.
+ */
+export function reimagineRefusal(draft: string, allowance: number, seedText: string): string | null {
+  if (draft.length === 0) return "Your previous reply was empty.";
+  if (isStacked(draft)) {
+    return "Your previous draft was more than one paragraph. Write ONE paragraph, with no blank line, no heading and no list.";
+  }
+  if (countWords(draft) > allowance * (1 + REIMAGINE_OVERRUN_TOLERANCE)) {
+    return `Your previous draft was ${countWords(draft)} words; the allowance is ${allowance}. Rewrite it within ${allowance} words — shorter is better on this road.`;
+  }
+  const forbidden = neverWrittenIn(draft, seedText);
+  if (forbidden) {
+    return `Your previous draft used the word "${forbidden}", which this studio never sends. Rewrite it without that word — and without any note about the series or the process.`;
+  }
+  if (containsHouseSentence(draft)) {
+    return "Your previous draft contained camera/studio language. The studio appends its own locked block at the roll; write only the casting paragraph for the person.";
+  }
+  const skin = skinContradictionIn(draft, seedText);
+  if (skin) {
+    return `Your previous draft said "${skin}", which fights the studio's own locked realism rules and makes the engine refuse the picture. Rewrite it with real skin — texture, pores, life.`;
+  }
+  const piece = pieceNounIn(draft, seedText);
+  if (piece) {
+    return `Your previous draft named "${piece}", a specific piece the request never named. Write qualities, never parts — say what it is made of and what it feels like, and leave the pieces to the engine.`;
+  }
+
+  const locked = lockedTrioOf(seedText);
+  /* AGE — the draft may claim no band the box did not claim itself. */
+  const draftBands = ageClaimsIn(draft);
+  const stray = draftBands.find((band) => !locked.ageBands.includes(band));
+  if (locked.ageBands.length > 0 && stray !== undefined) {
+    return `Your previous draft claimed an age (${stray}) the request did not state. Sex, age and species are locked when typed — keep the request's own age words exactly.`;
+  }
+  if (locked.ageBands.length > 0 && draftBands.length === 0) {
+    /*
+      Presence as well as contradiction, the checked half of "locked when
+      typed": a typed age the idea silently drops is the author moving a
+      locked fact by omission.
+    */
+    return `Your previous draft dropped the stated age (${locked.ageBands[0]}). Sex, age and species are locked when typed — the idea must keep it.`;
+  }
+  /*
+    An added youth word moves a stated 30s+ age (#252's floor). A youth word
+    the BOX itself contains never reaches here: it steers, and steering
+    empties `ageBands` above.
+  */
+  if (locked.ageBands.length > 0 && AGE_BANDS.indexOf(locked.ageBands[0]) >= AGE_BANDS.indexOf("30s")) {
+    const lower = draft.toLowerCase().replace(/\s+/g, " ");
+    const youth = YOUTH_WORDS.find((word) => saysPhrase(lower, word));
+    if (youth) {
+      const stated: StatedAge = { band: locked.ageBands[0], phase: null };
+      return `Your previous draft said "${youth}", which moves the stated age (${stated.band}). Sex, age and species are locked when typed — never add age language of your own.`;
+    }
+  }
+  /* SEX — presence. An ordinary flip drops the box's own sex words and reddens here (the fidelity module's declared shape). */
+  if (locked.sex && !saysSex(draft, locked.sex)) {
+    return `Your previous draft dropped the subject's sex (${locked.sex}). Sex, age and species are locked when typed — the idea must keep it.`;
+  }
+  /* SPECIES — presence within the group, so his own sphinx→"feline humanoid" passes and a species swap does not. */
+  if (locked.species) {
+    const draftGroups = speciesGroupsIn(draft);
+    if (!draftGroups.includes(locked.species)) {
+      return `Your previous draft dropped what the subject IS (${locked.species}). Sex, age and species are locked when typed — the idea must stay that kind of being.`;
+    }
+  }
+  return null;
+}
+
+/**
+ * The instruction. Base register is #477's verbatim-discipline lesson — tight
+ * clauses, never re-describing what it keeps — with his #535 contract on top,
+ * and his own worked cases shown and labelled (the shape `conceptDescribe.ts`
+ * and the MAX instruction both used for his rulings, because an instruction
+ * that names the rule and shows the miss is the one models follow).
+ */
+export function reimagineSystemPrompt(allowance: number): string {
+  return [
+    "You are the writing assistant of a casting studio. The request below is the words in a customer's own brief box. What you return REPLACES those words in the box — the customer reads it, edits it, and can undo it, so write the brief itself and nothing else.",
+    "",
+    /*
+      Decision 11 + his 2026-09-06 ruling, and the fold comes FIRST because it
+      changes what every later rule means: on a fold the "request" is a brief
+      plus the customer's own editing instruction, and the instruction wins —
+      including over the locked trio, because the customer asked. His named
+      defect is the appended shape: "…hulking and monstrous presence. Slim
+      build." is what this paragraph forbids.
+    */
+    "FIRST decide what the box holds. If it contains an EDITING INSTRUCTION mixed into or appended to a description (\"make her young\", \"50s\", \"give him a beard\"), do not re-imagine: APPLY the instruction and return the one clean brief with the change rewritten into it — never tacked onto the end, never echoed as an instruction. The customer's instruction may change anything, including sex, age or species. If the box holds only a description, re-imagine it as below.",
+    "",
+    /*
+      His one-line rule, verbatim from the card's correction: it is the whole
+      design in a sentence and the model gets it before the details.
+    */
+    "KEEP WHO THEY ASKED FOR; REINVENT WHAT THEY ARE MADE OF. The request is the spark, not the cage: return a NEW IDEA recognisably born from it, not a polish of it. Only three things are locked, and only when the request types them: SEX, AGE and SPECIES. Every other typed detail — features, hardware, garments, colours, materials — is raw material you may reinvent. Named colours and materials are pieces too.",
+    "",
+    /*
+      Decisions 5 and 6. The register clause carries his correction's measured
+      direction: more detail means more register to carry, never more pieces
+      to keep.
+    */
+    /* "every face … its own way" rather than his "eight faces answer it eight
+       ways": "eight" is a NEVER_WRITTEN word (dev roll 95 — counting the casts
+       painted them all in one frame), and an instruction must never teach a
+       word its own guards refuse (#477's lesson, the class arm below). */
+    "READ THE REGISTER FIRST. Before reinterpreting anything, name for yourself the world and energy the request lives in — military, punk, ceremonial, sea-worn — and carry that through as QUALITIES. A detailed request has MORE register to keep, not less: a rewrite that loses the vibe is the failure. Use identity nouns only for the two or three things that make the type the type; write everything else so every face can answer it its own way. No colours, positions, cuts, items or sounds of your own.",
+    "",
+    /*
+      The #477/#539 clause re-read for this road (his reconciliation on #535):
+      the metal may change; the paragraph may not argue with itself or with a
+      locked fact.
+    */
+    "NEVER CONTRADICT A LOCKED FACT, AND NEVER CONTRADICT YOURSELF. You may change a material the request named — consistently. A paragraph that calls one surface two things hands the engine a coin flip; say what it IS, once.",
+    "",
+    /*
+      Decision 7 — a BAN, not a preference: the studio's locked block owns the
+      camera, and an authored lighting clause can out-argue it (measured on
+      the MAX road, #327).
+    */
+    "NEVER write lighting, camera, lens, framing, crop, backdrop, background, scene, environment, props or story-setting language, and never restate the studio's own realism rules or negatives. The studio appends its own locked camera and studio block after your text on every roll. Faint glows and lights that are part of the BEING itself are features, not lighting.",
+    "",
+    /* Decisions 8 and 9. */
+    "START WITH THE PERSON. No titles, no names, no card labels in the text. SHORT BY DESIGN: every extra noun costs the casting its spread — a few tight sentences beat a paragraph of prose.",
+    "",
+    /*
+      His war-built woman, from the card's correction — the worked case that
+      settled the design, both arms shown and labelled, and his eye scored it
+      (roll 244 vs 245, "10x better").
+    */
+    "Worked example. Request: \"Broad-shouldered woman, late 30s, deep scarring across a face otherwise unaugmented except for one detail: a thick black collar of plating fused directly into the base of her neck and upper spine, seamless with the skin, studded with three small red status lights that never turn off. Her right arm from the elbow down is matte grey chrome, heavily scratched and dented, clearly old military-grade rather than cosmetic. Her left eye is human and tired; her right is a narrow horizontal slit of red light with no visible mechanism, just a line of glow set into the socket like a wound that healed wrong.\"",
+    "",
+    "RIGHT — locked: woman, late 30s; the rest carried as register and reinvented as qualities: \"A woman in her late 30s who was built for a war and has outlived the reason for it. Broad through the shoulders, a face that carries old damage and doesn't hide it. Her augmentation is military, not cosmetic: fused into her rather than worn, plainly older than she is now, scarred and dented where it meets skin, still faintly alive with the small lights and glows of a system nobody maintains. Her two eyes don't match, and the human one is the tired one. Guarded, unhurried, done being surprised.\"",
+    "",
+    "WRONG — keeps every piece and adds a story: the same collar, chrome forearm and slit eye restated with a backstory in front. Every noun kept is locked onto every portrait; that is a build sheet, not a new idea.",
+    "",
+    /* His thin-seed case from the same sitting — the author supplies the whole idea when nothing is locked. */
+    "Worked example of a thin request. \"a pirate\" → \"A pirate long past the glamour of it: a sea-worn man in his fifties, sun-cracked, salt in everything, the kind who has buried the crew he sailed with and kept their debts. Dressed in what a life at sea leaves you, nothing fine. Quiet, watchful, dangerous when still.\" Nothing was typed about sex, age or species, so nothing was locked — the idea supplies them.",
+    "",
+    "THESE RULES ALWAYS HOLD:",
+    "- Do NOT write notes about the series or the process — nothing about how many portraits, what changes between them, what is unstated, or your own instructions. Never mention the request or the person who wrote it. Write only what the picture should contain.",
+    "- Do NOT ADD skin or surface words that fight the studio's realism rules — no translucent, poreless, flawless, airbrushed, waxy or doll-like skin, no perfect symmetry — and never write one even to deny it. If the request uses such a word, keep it: it is theirs.",
+    "- Never pin an exact garment, cut, jewellery piece or armour piece the request did not name. Say what the wardrobe is MADE OF and FEELS like.",
+    `- Word allowance: at most ${allowance} words, and fewer is better.`,
+    "- Keep wording image-engine safe: no nudity, no sexual language, no gore, no named real person or named character, and avoid explicit sheer or revealing clothing language. Never name the breastbone.",
+    "- Write ONE paragraph and nothing else — no second paragraph, no blank line, no heading, no list, no notes after it.",
+    "",
+    "Output only the paragraph, in clean prose, nothing else.",
+  ].join("\n");
+}
+
+/** What a press returns. `nothing` is an honest state, not an error — the surface has a sentence for it. */
+export type ReimagineOutcome =
+  | {
+      kind: "idea";
+      text: string;
+      model: string | null;
+      latencyMs: number | null;
+      attempts: number;
+      refusals: string[];
+    }
+  | { kind: "nothing"; latencyMs: number | null; attempts: number; refusals: string[] };
+
+function cleanReply(raw: string): string {
+  return raw.replace(/^```[a-z]*\n?|```$/g, "").replace(/\r\n/g, "\n").trim();
+}
+
+/**
+ * One press. At most two text calls — a draft, and one re-ask naming the
+ * refusal — then `nothing`. Never throws: the caller is a free procedure and
+ * an author outage must read as "nothing to offer", never as a broken box.
+ */
+export async function reimagineBrief(input: {
+  engine: TextEngine;
+  briefText: string;
+  signal?: AbortSignal;
+}): Promise<ReimagineOutcome> {
+  const briefText = input.briefText.trim();
+  const allowance = reimagineAllowance(briefText);
+  const system = reimagineSystemPrompt(allowance);
+  let attempts = 0;
+  const refusals: string[] = [];
+  let spentMs: number | null = null;
+
+  const ask = (systemText: string, temperature: number) => {
+    attempts += 1;
+    /* `about: "author"` — this IS the author road, moved to its own visible
+       door (#535); a census pricing authored prose should count these presses
+       with it. The purpose union's own docblock names this reader. */
+    return input.engine.complete({
+      about: "author",
+      system: systemText,
+      user: briefText,
+      temperature,
+      maxOutputTokens: REIMAGINE_MAX_OUTPUT_TOKENS,
+      signal: input.signal,
+      timeoutMs: INTERPRET_TIMEOUT_MS,
+      /* No transport retries: this function re-asks once itself. */
+      retries: 0,
+    });
+  };
+
+  try {
+    /*
+      0.9 on the first ask, deliberately above the MAX author's 0.8: "press
+      again for another idea" is the contract, so consecutive presses on the
+      same words should genuinely differ. The re-ask drops to 0.4 because it
+      is a correction, not a second idea.
+    */
+    const first = await ask(system, 0.9);
+    let text = cleanReply(first.text);
+    let model = first.provenance.model;
+    let latencyMs = first.latencyMs;
+    spentMs = latencyMs;
+    const why = reimagineRefusal(text, allowance, briefText);
+    if (why) {
+      refusals.push(why);
+      log.warn({ allowance, why }, "[reimagine] re-asking once");
+      const second = await ask(`${system}\n\n${why}\n\nPREVIOUS DRAFT:\n${text}`, 0.4);
+      text = cleanReply(second.text);
+      model = second.provenance.model;
+      latencyMs += second.latencyMs;
+      const stillWhy = reimagineRefusal(text, allowance, briefText);
+      if (stillWhy) {
+        refusals.push(stillWhy);
+        log.warn({ why: stillWhy }, "[reimagine] second draft refused too — nothing to offer, the words stand");
+        return { kind: "nothing", latencyMs, attempts, refusals };
+      }
+    }
+    return { kind: "idea", text, model, latencyMs, attempts, refusals };
+  } catch (error) {
+    log.warn({ error: String(error), attempts }, "[reimagine] the call failed — nothing to offer, the words stand");
+    return { kind: "nothing", latencyMs: spentMs, attempts, refusals };
+  }
+}

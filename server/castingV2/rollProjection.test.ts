@@ -7,10 +7,9 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { AUTHOR_SAT_OUT_REASONS, projectCandidate, projectCandidateStatus, projectRoll, readAuthorSatOut, readChips, readImagination } = await import(
+const { projectCandidate, projectCandidateStatus, projectRoll, readChips, rollComposedOnAuthorRoad } = await import(
   "./rollProjection"
 );
-const { authorSatOutRecord } = await import("../../client/src/features/castingV2/castSettingsCopy");
 
 /**
  * Projection boundary (plan §J, access-control invariant 8).
@@ -171,92 +170,48 @@ describe("nothing internal crosses the boundary", () => {
       expect(containsHouseSentence(raw)).not.toBeNull();
     });
 
-    it("the sheet's imagination is projected from an author register and nowhere else (slice E)", () => {
-      expect(readImagination({ register: { kind: "author", imagination: "max" } })).toBe("max");
-      expect(readImagination({ register: { kind: "author", imagination: "low" } })).toBe("low");
-      expect(readImagination({ register: { kind: "author", imagination: "wild" } })).toBeNull();
-      expect(readImagination({ register: { kind: "house", imagination: "max" } })).toBeNull();
-      expect(readImagination({})).toBeNull();
-      const projected = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
-      expect(projected.imagination).toBeNull();
-      /* And on an AUTHOR roll the sheet gets the register's own value — the arm the sabotage needs. */
-      const authored = projectRoll({
-        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", register: { kind: "author", imagination: "max", prompt: "goth woman mid 30s, then the bundle" } } }),
-        candidates: [candidateRow()],
-      });
-      expect(authored.imagination).toBe("max");
-    });
-
-    it("why the author sat out reaches the SHEET from a house register, and nowhere else (#131's open item)", () => {
-      expect(readAuthorSatOut({ register: { kind: "house", because: "anchored" } })).toBe("anchored");
-      expect(readAuthorSatOut({ register: { kind: "house", because: "edited" } })).toBe("edited");
-      /* A reason this projection does not know is null, never forwarded as copy the sheet cannot say. */
-      expect(readAuthorSatOut({ register: { kind: "house", because: "moon" } })).toBeNull();
-      /*
-        #252 — "static" is the AUTHOR register's derived reason and never the
-        house vocabulary's: a house row saying it stays null (none was ever
-        written), and an author row says it only through its own `mode`.
-      */
-      expect(readAuthorSatOut({ register: { kind: "house", because: "static" } })).toBeNull();
-      /* An author register's `because` is never consulted; an unflagged roll has no register at all. */
-      expect(readAuthorSatOut({ register: { kind: "author", because: "anchored", imagination: "low", prompt: "x" } })).toBeNull();
-      expect(readAuthorSatOut({ compiler: "pathA-v1" })).toBeNull();
-      expect(readAuthorSatOut(null)).toBeNull();
+    it("the sheet's road is projected from the register's validated kind and nowhere else (#535 — the field the level used to answer by proxy)", () => {
+      expect(rollComposedOnAuthorRoad({ register: { kind: "author" } })).toBe(true);
+      /* The superseded PR #94 register and the house fallback both composed per-candidate prompts — neither is the author road. */
+      expect(rollComposedOnAuthorRoad({ register: { kind: "creative" } })).toBe(false);
+      expect(rollComposedOnAuthorRoad({ register: { kind: "house" } })).toBe(false);
+      expect(rollComposedOnAuthorRoad({})).toBe(false);
+      expect(rollComposedOnAuthorRoad(null)).toBe(false);
       const unflagged = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
-      expect(unflagged.authorSatOut).toBeNull();
-      /* The positive arm through the projection itself — the one a sabotage of the wire needs. */
-      const followed = projectRoll({
-        roll: rollRow({ compiledBrief: { compiler: "pathA-v1", register: { kind: "house", because: "anchored" } } }),
+      expect(unflagged.authorRoad).toBe(false);
+      /* Through the projection itself — the arm a sabotage of the wire needs. */
+      const authored = projectRoll({
+        roll: rollRow({ briefText: "goth woman mid 30s", compiledBrief: { compiler: "pathA-v1", register: { kind: "author", mode: "seed", prompt: "goth woman mid 30s, then the bundle" } } }),
         candidates: [candidateRow()],
       });
-      expect(followed.authorSatOut).toBe("anchored");
-      expect(followed.imagination).toBeNull();
-    });
-
-    it("a MAX roll that lost its author says so on the sheet — mode 'static' projects the sat-out reason (#252, his ruling: the customer isn't lied to)", () => {
-      /* The row a refused-twice or failed MAX author writes: mode static, no content. */
-      const staticRegister = {
-        compiler: "pathA-v1",
-        register: { kind: "author", imagination: "max", mode: "static", compose: "rewrite", authored: false, content: null, prompt: "goth woman mid 30s, then the bundle" },
-      };
-      expect(readAuthorSatOut(staticRegister)).toBe("static");
-      /* The other two modes stay silent — an authored or LOW sheet gained no line. */
-      expect(readAuthorSatOut({ register: { kind: "author", imagination: "max", mode: "authored", prompt: "x" } })).toBeNull();
-      expect(readAuthorSatOut({ register: { kind: "author", imagination: "low", mode: "seed", prompt: "x" } })).toBeNull();
-      /* A row from before `mode` existed projects null, never a guess — production held no static row at the card's reading. */
-      expect(readAuthorSatOut({ register: { kind: "author", imagination: "max", authored: false, prompt: "x" } })).toBeNull();
-      /* Through the projection itself: the sheet gets the reason, the settings record, and her words as the prompt. */
-      const lost = projectRoll({
-        roll: rollRow({ briefText: "goth woman mid 30s", compiledBrief: staticRegister }),
-        candidates: [candidateRow()],
-      });
-      expect(lost.authorSatOut).toBe("static");
-      expect(lost.imagination).toBe("max");
+      expect(authored.authorRoad).toBe(true);
       /* Her words are the record (#534) — briefText is the whole of it. */
-      expect(lost.briefText).toBe("goth woman mid 30s");
+      expect(authored.briefText).toBe("goth woman mid 30s");
     });
 
-    it("every reason the projection can say has a DECIDED line on the sheet — copy, or a deliberate null (#534)", () => {
+    it("the level and the sat-out reason are GONE from the wire (#535) — an old MAX/static row projects neither", () => {
       /*
-        The population is DERIVED: the house vocabulary from its constant, and
-        "static" from the projection function itself — so deleting the static
-        branch reddens this arm before the sheet draws a blank line.
+        The row a refused-twice MAX author wrote under the old road. The row
+        keeps its record (the row is the artifact); the projection carries no
+        `imagination` and no `authorSatOut` field at all, because the sheet
+        has no line left that would read them — the level is deleted and
+        nothing can sit a sheet out silently any more.
       */
-      const derivedStatic = readAuthorSatOut({ register: { kind: "author", mode: "static" } });
-      expect(derivedStatic).toBe("static");
-      /*
-        #534: the two legacy reasons are NULL on purpose — their sentences
-        named the machinery and promised an authored prompt no sheet shows any
-        more. Pinned as null, not skipped, so a reason the copy map forgets
-        entirely is still a type error there rather than a blank line here.
-      */
-      for (const reason of AUTHOR_SAT_OUT_REASONS) {
-        expect(authorSatOutRecord(reason)).toBeNull();
-      }
-      const staticCopy = authorSatOutRecord(derivedStatic!);
-      expect(staticCopy).toContain("Sat this one out");
-      /* The clause his eye passed (#252) — the one sentence the line may still say. */
-      expect(staticCopy).toContain("cast exactly as you wrote them");
+      const lost = projectRoll({
+        roll: rollRow({
+          briefText: "goth woman mid 30s",
+          compiledBrief: {
+            compiler: "pathA-v1",
+            register: { kind: "author", imagination: "max", mode: "static", compose: "rewrite", authored: false, content: null, prompt: "goth woman mid 30s, then the bundle" },
+          },
+        }),
+        candidates: [candidateRow()],
+      });
+      expect("imagination" in lost).toBe(false);
+      expect("authorSatOut" in lost).toBe(false);
+      /* And the register's own values never leak through some other field (invariant 8's shape). */
+      expect(JSON.stringify(lost)).not.toContain('"max"');
+      expect(lost.authorRoad).toBe(true);
     });
   });
 

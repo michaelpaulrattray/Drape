@@ -523,6 +523,22 @@
 }
 
 /*
+  A label with one quiet action on its right (#535 — the concept modal's
+  Re-imagine glyph sits on the description's label line, because the textarea
+  below it is a block the glyph cannot trail inside). The label keeps its own
+  rule above; the row only lays the two out.
+*/
+.dpc-modal__labelrow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dpc-modal__labelrow .dpc-modal__label {
+  margin-top: 16px;
+}
+
+/*
   THE STAFF FORM FIELD ROW (brief 11, section 5).
 
   Three treatments of one element across five staff dialogs -

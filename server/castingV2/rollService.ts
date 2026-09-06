@@ -39,7 +39,6 @@ import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
-import type { Imagination } from "../../shared/imagination";
 import type { CastStyle } from "../../shared/castStyles";
 import {
   captureCastingBornInkEnabled,
@@ -265,15 +264,13 @@ export type CreateRollInput = {
   clientRequestId: string;
   sessionPublicId: string;
   briefText: string;
-  /**
-   * THE IMAGINATION METER (#131 slice E) — how opinionated the author is on
-   * this roll. Absent means LOW (the author's own default). Handed to the
-   * compile and read there ONLY on the author road: for every other account
-   * the compiler never calls the author, so the value is inert by
-   * construction rather than by a check here.
-   */
-  imagination?: Imagination;
-  /** The settings modal's style (#142); the meter's rule — inert off the author road by construction. */
+  /*
+    The imagination meter left this input with #535: the roll road makes no
+    author call, so there is no level to carry. The route still ACCEPTS the
+    field (`.strict()` + the input-removal rule — an in-flight bundle
+    mid-deploy must not meet a BAD_REQUEST) and simply never passes it here.
+  */
+  /** The settings modal's style (#142) — inert off the author road by construction. */
   style?: CastStyle;
   /**
    * Facts the user unpinned by removing a chip. Rolls are immutable, so this
@@ -638,7 +635,6 @@ export async function createRoll(
       readInk,
       briefFidelity,
       creativeRegister,
-      imagination: input.imagination,
       style: input.style,
       followPersonaLine,
       followIdentity,

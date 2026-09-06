@@ -152,22 +152,39 @@ describe("the prompt author's model", () => {
     constant. If `briefCompiler.ts:` goes back to `interpreterEngine()`, the
     author's call disappears and the one engine built has `model: undefined`.
   */
-  it("is what the COMPILE SITE itself reaches for on the author road", async () => {
+  it("is NOT reached by the compile any more — the roll road makes no author call (#535)", async () => {
     const compiled = await castingBriefCompiler({
       briefText:
         "a young woman with an intense cyber-goth aesthetic, platinum-silver asymmetric hair, pale porcelain skin",
       candidateCount: 8,
       rollSeed: "author-model-arm",
       creativeRegister: true,
-      imagination: "max",
     });
-    /* The road actually ran: an authored MAX compile, not a refusal that never reached the author. */
+    /* The road ran and composed by code: seed + block, no text call. */
     const register = (compiled.compiledBrief as { register?: { kind?: string; mode?: string } }).register;
     expect(register?.kind).toBe("author");
-    expect(register?.mode).toBe("authored");
+    expect(register?.mode).toBe("seed");
     const models = built.map((b) => b.model);
-    expect(models, "expected the interpreter's unpinned engine AND the author's pinned one").toContain(undefined);
-    expect(models).toContain(AUTHOR_MODEL);
+    /* Only the interpreter's unpinned engine is built; the author's pinned one is never touched at a roll. */
+    expect(models).toContain(undefined);
+    expect(models).not.toContain(AUTHOR_MODEL);
+  });
+
+  /*
+    THE PIN'S ONE CALLER IS THE RE-IMAGINE DOOR NOW (#535). A render test
+    cannot drive it without a paid call, so the wiring is pinned at the
+    source: the procedure must reach `authorTextEngine()` — the factory whose
+    engine carries `AUTHOR_MODEL` (proven live by the arms above) — rather
+    than `interpreterEngine()`, which passes no model at all.
+  */
+  it("is what the RE-IMAGINE DOOR reaches for", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const route = await readFile(new URL("../routes/castingV2.ts", import.meta.url), "utf8");
+    const procedure = route.slice(route.indexOf("reimagine: protectedProcedure"));
+    expect(procedure.length).toBeGreaterThan(0);
+    const body = procedure.slice(0, procedure.indexOf("getRoll:"));
+    expect(body).toContain("authorTextEngine()");
+    expect(body).not.toContain("interpreterEngine()");
   });
 });
 

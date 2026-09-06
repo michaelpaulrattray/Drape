@@ -269,6 +269,19 @@ export const RATE_LIMITS = {
     maxRequests: 12,
     keyPrefix: 'casting_concept_describe',
   },
+  /*
+    RE-IMAGINE (#535). Its own bucket for the concept describer's reason: the
+    press is free to the customer and spends house money on every call (one
+    author text call, sometimes two on a re-ask), so it must not share a
+    window with anything a person or a poller needs. Sized for a human
+    iterating on a brief — "press again for another idea" is the contract, and
+    twenty presses in a minute is a loop, not a person.
+  */
+  reimagine: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 20,
+    keyPrefix: 'reimagine',
+  },
 } as const;
 
 /**

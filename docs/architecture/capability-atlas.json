@@ -164,7 +164,6 @@
         "kind": "interpreter-refusal",
         "pinnedBy": [
           "server/casting/geminiMigration.test.ts",
-          "server/castingV2/creativeRegisterScope.test.ts",
           "server/castingV2/diagnosticCapture.test.ts",
           "server/castingV2/faceScan.test.ts",
           "server/castingV2/faceScanService.test.ts",
@@ -496,7 +495,7 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1221",
+          "server/castingV2/briefCompiler.ts:1216",
           "server/castingV2/briefRefusalCopy.ts:114"
         ]
       },
@@ -509,7 +508,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1224",
+          "server/castingV2/briefCompiler.ts:1219",
           "server/castingV2/briefRefusalCopy.ts:120"
         ]
       },
@@ -524,7 +523,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1150",
+          "server/castingV2/briefCompiler.ts:1145",
           "server/castingV2/briefRefusalCopy.ts:126"
         ]
       },
@@ -536,8 +535,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1087",
-          "server/castingV2/briefCompiler.ts:1554",
+          "server/castingV2/briefCompiler.ts:1082",
+          "server/castingV2/briefCompiler.ts:1501",
           "server/castingV2/briefRefusalCopy.ts:106"
         ]
       },
@@ -553,8 +552,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1203",
-          "server/castingV2/briefCompiler.ts:1210",
+          "server/castingV2/briefCompiler.ts:1198",
+          "server/castingV2/briefCompiler.ts:1205",
           "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },

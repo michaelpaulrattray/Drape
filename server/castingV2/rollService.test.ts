@@ -381,26 +381,28 @@ describe("the sequence", () => {
   });
 
   /*
-    THE IMAGINATION METER (#131 slice E) reaches the compile exactly as sent,
-    and absent stays absent — the author's own default is the compiler's to
-    apply, never a second copy of "low" written here.
+    THE STYLE (#142) reaches the compile exactly as sent, and absent stays
+    absent — the default is the compiler's to apply, never a second copy of
+    "photoreal" written here. (The imagination meter this spy used to watch is
+    gone, #535 — `CreateRollInput` no longer has the field, which is the
+    stronger guarantee: nothing here could hand one on.)
   */
   const compileSpy = (seen: (string | undefined)[]) => {
     const dependencies = baseDependencies();
-    const compileBrief = (dependencies as { compileBrief: (input: { imagination?: string }) => unknown }).compileBrief;
+    const compileBrief = (dependencies as { compileBrief: (input: { style?: string }) => unknown }).compileBrief;
     return {
       ...(dependencies as object),
-      compileBrief: (input: { imagination?: string }) => {
-        seen.push(input.imagination);
+      compileBrief: (input: { style?: string }) => {
+        seen.push(input.style);
         return compileBrief(input);
       },
     } as never;
   };
 
-  it("hands `imagination` to the compile as sent", async () => {
+  it("hands `style` to the compile as sent", async () => {
     const seen: (string | undefined)[] = [];
-    await createRoll(compileSpy(seen), { ...INPUT, imagination: "max" });
-    expect(seen).toEqual(["max"]);
+    await createRoll(compileSpy(seen), { ...INPUT, style: "photoreal" });
+    expect(seen).toEqual(["photoreal"]);
   });
 
   it("on the author road NO path is born and no wardrobe pick is asked, even inside the two-paths flag (review of #138, finding 1)", async () => {

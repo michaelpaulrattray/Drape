@@ -25,6 +25,13 @@ IMAGINATION (future row)      → the WRITER'S ROOM's latitude (§1d), THIN brie
                                 noted and NOT built
 ```
 
+> ⚠ **THE IMAGINATION ROW IS DEAD — #535, his "build it", 2026-09-06
+> (`REIMAGINE_DESIGN_2026-09-06.md`).** His decision 1, superseding his own
+> naming below: *"Imagination as a level goes. No Low/Max, no slider, no
+> Imagination column in the settings modal. Style is the only setting."* The
+> latitude the row would have set is a visible Re-imagine press on the brief
+> box now. The paragraphs below are kept as the record of the earlier word.
+
 **`IMAGINATION` is the FOUNDER'S OWN NAME for that row** (2026-08-25, relayed
 fable-1674, verbatim: *"yes imagination is the perfect work for the setting."*).
 It is recorded now, before the modal builds, so the next seat does not invent a

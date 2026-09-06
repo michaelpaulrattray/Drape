@@ -1266,9 +1266,15 @@
 
 - symbol: MAX_SHEET_CHECKLIST
   file: server/castingV2/promptAuthor.ts
+  verdict: TAKEN
+  why: "deleted with the MAX author (#535, his 'build it' 2026-09-06): the imagination level is gone, no MAX sheet can be rolled, and a judging checklist for a road that no longer exists would be a document confident about code that moved underneath it"
+  argued: "REIMAGINE_DESIGN_2026-09-06.md §3"
+
+- symbol: ageContradictionIn
+  file: server/castingV2/seedFidelity.ts
   verdict: KEEP
-  why: "the founder's judging checklist for any MAX sheet, verbatim (§5g item 4, #171) — its consumer is the EYE CAPTION of every MAX sheet filed to his gallery, which is hand-written prose quoting this constant; a code importer will never exist by design, and the arm in creativeRegisterScope.test.ts keeps its clauses verbatim so the quoted copies have one source"
-  argued: "PROMPT_AUTHOR_RULING_2026-08-26.md §5g item 4 (#171)"
+  why: "the locked-age half of the Re-imagine trio check (#535): reimagineRefusal reads it directly, and it is re-exported by promptAuthor.ts for the existing importers; deleting it would blind the one mechanical age guard the press has"
+  argued: "REIMAGINE_DESIGN_2026-09-06.md §3"
 
 - symbol: readListedSource
   file: server/testing/listedSource.ts

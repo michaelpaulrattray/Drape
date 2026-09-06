@@ -1,82 +1,24 @@
 import { CAST_STYLE_NAMES, type CastStyle } from "@shared/castStyles";
-import { IMAGINATION_NAMES, type Imagination } from "@shared/imagination";
 
 /**
  * THE SETTINGS, SAID IN ONE LINE (#142) — on the gear before the roll
- * ("Photoreal · Low") and on the sheet's record line after it ("Photoreal ·
- * Low imagination"). One owner for both so the two surfaces cannot disagree
- * about what a setting is called (the copy module's own argument, one control
- * over in `castingPathCopy.ts`).
+ * ("Photoreal") and on the sheet's record line after it. One owner for both
+ * so the two surfaces cannot disagree about what a setting is called (the
+ * copy module's own argument, one control over in `castingPathCopy.ts`).
  *
- * The record form takes a NULL style on purpose: author rows written before
- * the style was recorded carry an imagination and no style, and the sheet says
- * what the row says rather than back-filling "Photoreal" onto a row that never
- * stated it (working law 1 — the row is the artifact).
+ * ⚠ **The imagination half is GONE (#535, his decision 1: Style is the only
+ * setting).** The record renders style alone; an author row that recorded a
+ * level still holds it in its register (the row is the artifact) — the sheet
+ * simply stops saying so, the way it already handles any fact a row does not
+ * carry. And the sat-out sentence family retired with the level: nothing can
+ * sit a sheet out silently any more, because the author is a visible press
+ * whose "nothing to offer" is said in the box, in the moment.
  */
-export function castSettingsSummary(style: CastStyle, imagination: Imagination): string {
-  return `${CAST_STYLE_NAMES[style]} · ${IMAGINATION_NAMES[imagination]}`;
+export function castSettingsSummary(style: CastStyle): string {
+  return CAST_STYLE_NAMES[style];
 }
 
-export function castSettingsRecord(style: CastStyle | null, imagination: Imagination): string {
-  const parts = [style ? CAST_STYLE_NAMES[style] : null, `${IMAGINATION_NAMES[imagination]} imagination`];
-  return parts.filter((part): part is string => part !== null).join(" · ");
+/** The sheet's record form — null style (an old row that never stated one) renders nothing. */
+export function castSettingsRecord(style: CastStyle | null): string | null {
+  return style ? CAST_STYLE_NAMES[style] : null;
 }
-
-/**
- * WHY THE AUTHOR SAT A SHEET OUT.
- *
- * `anchored` / `edited` — rows written before the family clause. Until
- * 2026-08-27 a follow or a chip-edited roll under the flag composed
- * house because the author road could not carry an anchor or a chip edit;
- * since #154 (`CASTING_V2_AUTHOR_ROAD_FAMILY_CLAUSE_DESIGN.md`) it carries
- * both as words and no new row records a reason. The rows already written do,
- * and the sheet still says so for them, in the past tense — the row is the
- * artifact.
- *
- * `static` — a live reason, not a past-tense one (#252, his ruling: *"(a) so
- * the customer isn't lied to"*): a MAX roll whose author was refused twice by
- * the studio's own rules, or whose author call failed, rolled on the
- * customer's words + the locked block. One MAX call in five did this at the
- * measured entrance and the sheet said nothing — it read "Max imagination"
- * over a prompt nobody authored. The copy says what actually happened in her
- * terms: no guard, no engine, no mode named — the studio tried and her words
- * stood.
- *
- * The vocabulary is the projection's (`AUTHOR_SAT_OUT_REASONS` + its derived
- * `static`), so a reason this map does not know is a type error here rather
- * than a blank line on the sheet.
- */
-export type AuthorSatOutReason = "anchored" | "edited" | "static";
-
-/**
- * ⚠ `anchored` and `edited` are NULL since #534 (his ruling: the sheet never
- * shows the machine's prompt). Their sentences named the machinery ("the
- * author", "authored prompt") and closed on "there is no authored prompt to
- * show" — a promise about a record that no longer shows an authored prompt
- * anywhere, so the line had become machinery explaining machinery. The rows
- * still carry the reason; the sheet just no longer reads it out. `static`
- * stays: it says what happened in her terms, and its closing clause — "cast
- * exactly as you wrote them" — passed his eye (#252).
- */
-const AUTHOR_SAT_OUT_RECORD: Record<AuthorSatOutReason, string | null> = {
-  anchored: null,
-  edited: null,
-  static: "Sat this one out — the studio couldn't write a stronger brief than your words this time, so they were cast exactly as you wrote them.",
-};
-
-export function authorSatOutRecord(reason: AuthorSatOutReason): string | null {
-  return AUTHOR_SAT_OUT_RECORD[reason];
-}
-
-/**
- * READ-ONLY CHIPS ON AN AUTHORED SHEET (#154, his answer (2): *"read-only chips
- * with the sentence"*). On the author road the brief goes to the engine word
- * for word, so a pinned fact read out of the sentence cannot be let vary by
- * removing it — the echo offers no "let it vary" there, and this line, drawn
- * once under the echo, says why. A standing FOLLOW's three anchored axes used
- * to stay adjustable; since #177 (Row A) the follow is held by the anchor
- * PHOTOGRAPH, which a chip cannot strip, so the line is drawn there too —
- * facts change at the roll, never at the follow.
- */
-export const AUTHOR_CHIPS_ARE_A_RECORD =
-  "These are what the studio read in your words — edit the sentence to change them.";

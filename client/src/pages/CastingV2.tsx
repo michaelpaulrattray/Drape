@@ -16,11 +16,15 @@ import { AppChrome } from "@/components/AppChrome";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
-import { DEFAULT_IMAGINATION, type Imagination } from "@shared/imagination";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
 import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
 import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
+import {
+  ReimagineButton,
+  ReimagineLine,
+  useReimagine,
+} from "@/features/castingV2/components/Reimagine";
 import { BriefField } from "@/features/castingV2/components/BriefField";
 import {
   ConceptUploadCard,
@@ -144,13 +148,13 @@ export default function CastingV2() {
   */
   const [path, setPath] = useState<CastingPath>(DEFAULT_CASTING_PATH);
   /*
-    THE SETTINGS (#142): the style and the imagination meter, both set in the
-    modal the gear opens, both his defaults (photoreal, LOW), both drawn only
-    on the author road. Page state and nothing else — leaving the page resets
-    them, which is the design's ephemerality ruling by construction.
+    THE SETTINGS (#142): the style, set in the modal the gear opens, his
+    default (photoreal), drawn only on the author road. Page state and nothing
+    else — leaving the page resets it, which is the design's ephemerality
+    ruling by construction. The imagination meter that sat beside it is GONE
+    (#535): the author is the visible Re-imagine press on the box now.
   */
   const [style, setStyle] = useState<CastStyle>(DEFAULT_CAST_STYLE);
-  const [imagination, setImagination] = useState<Imagination>(DEFAULT_IMAGINATION);
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<RosterScope>("All");
   const [starting, setStarting] = useState(false);
@@ -202,6 +206,16 @@ export default function CastingV2() {
 
   const utils = trpc.useUtils();
   const config = trpc.castingV2.config.useQuery({});
+  /*
+    RE-IMAGINE on the hero's brief box (#535). The hook lives up here with the
+    other unconditional hooks; the glyph itself is drawn only on the author
+    road, off the same capture the server's door checks.
+  */
+  const reimagine = useReimagine({
+    value: brief,
+    onValue: setBrief,
+    enabled: config.data?.authorRoadEnabled === true,
+  });
   const openSessions = trpc.castingV2.openSessions.useQuery(
     {},
     { enabled: config.data?.enabled === true },
@@ -508,7 +522,7 @@ export default function CastingV2() {
           */
           ...(pathToggleVisible ? { path } : {}),
           /* The settings travel only where the gear was drawn — the path's rule, one control over. */
-          ...(authorRoad ? { imagination, style } : {}),
+          ...(authorRoad ? { style } : {}),
         })
         .then(() => setStartingRoll(session.sessionId, false))
         .catch((error: unknown) =>
@@ -632,7 +646,12 @@ export default function CastingV2() {
               <BriefField
                 ref={briefField}
                 value={brief}
-                onChange={(event) => setBrief(event.target.value)}
+                disabled={reimagine.pending}
+                onChange={(event) => {
+                  /* Typing clears the Re-imagine line and spends the undo (#535 §1). */
+                  reimagine.typed();
+                  setBrief(event.target.value);
+                }}
                 onKeyDown={(event) => {
                   /*
                     ENTER STILL CASTS — the affordance this box has always had,
@@ -661,6 +680,13 @@ export default function CastingV2() {
                 placeholder="a fitness creator in their 30s, close-cropped hair"
                 aria-label="Casting brief"
               />
+              {/*
+                RE-IMAGINE (#535) — trailing in the box, beside the priced
+                button, never one itself: a press writes a new idea into the
+                box for her to read, edit or undo, and Cast it stays the only
+                thing that spends. Author road only, absent elsewhere (D-180).
+              */}
+              {authorRoad ? <ReimagineButton state={reimagine} /> : null}
               <Button
                 variant="primary"
                 size="small"
@@ -671,6 +697,8 @@ export default function CastingV2() {
                 {starting ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
               </Button>
             </Field>
+            {/* The one quiet line about what just happened to her words — under the box they happened in. */}
+            <ReimagineLine state={reimagine} />
             {/*
               THE RECEIPT LINE (#435, his brief 10 §2d) — what you get, what it
               costs, how long it takes, directly under the box that buys it.
@@ -791,9 +819,7 @@ export default function CastingV2() {
                   <CastSettingsButton
                     idPrefix="dpc-hero"
                     style={style}
-                    imagination={imagination}
                     onStyle={setStyle}
-                    onImagination={setImagination}
                   />
                 ) : null}
                 <span className="dpc-hero__actionsair" aria-hidden="true" />
