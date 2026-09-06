@@ -1,7 +1,7 @@
 {
-  "edition": 275,
-  "updatedAt": "2026-09-06T10:10:35.984Z",
-  "shift": "Foreman (Fable) — Re-imagine is BUILT and live on your account: press the spiral on any brief box",
+  "edition": 276,
+  "updatedAt": "2026-09-06T11:49:29.589Z",
+  "shift": "Foreman (Opus) — the suggestion chips are live under your brief box: tap one and it writes into your words",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T10:10:59.153Z",
+      "readAt": "2026-09-06T11:59:46.668Z",
       "items": [
         {
           "issueNumber": 16,
@@ -249,13 +249,13 @@
     {
       "id": "reimagine-design-535",
       "issueNumber": 535,
-      "title": "Re-imagine is BUILT and live for you — press it, then your eye closes #535 and #534",
-      "productImpact": "Your 'build it' this morning is a working thing tonight. On the casting page, on any sheet's box, and on an uploaded concept's description, the small spiral now sends your words through the studio's writer and lands a new idea back in the box — editable, with Undo, another idea on every press, one quiet line when it has nothing to offer. The imagination level is gone everywhere (the settings modal is Style alone), the reading sentence on sheets is read-only with no pickers, and the box is the only place you edit — your two named defects ('slim build' on an ogre, edits tacked onto the end) are both dead. Typing an instruction into the box and pressing the spiral folds it in: 'make them older and give them a beard' came back as a silvered, bearded sixty-something, rewritten into the brief itself.",
-      "workedExample": "Type 'a pirate' on the casting page and press the spiral: a sea-worn idea arrives in your box, Undo under it. Press again: a different pirate. Then on a sheet, type an instruction after the brief and press — it folds in rather than dangling off the end.",
+      "title": "Re-imagine is finished — the writer, and now the suggestions beside your box (#535)",
+      "productImpact": "The last piece of your Re-imagine decision is built. Under the brief box on any sheet there are now three or four short suggestions written FROM YOUR OWN BRIEF, in its own world — on 'a fitness creator in their 30s, close-cropped hair' the studio offered: posture drilled by years of reps · skin sun-warmed and faintly weathered · clothing of sweat-wicked technical mesh · energy coiled, ready to spring. Tap one and your brief comes back with that direction written INTO it, not stuck on the end, editable, with the same Undo. The suggestion you took goes quiet while it stands, and comes back the moment you undo it. Both halves of the defect you named are now dead in code: the offer is written from your words, so an ogre gets 'a temper banked low but ready' and never 'slim build'; and the edit is folded in rather than appended.",
+      "workedExample": "Open a sheet and look under the brief box. Tap the suggestion you like. 'a fitness creator in their 30s, close-cropped hair' became 'A fitness creator in their 30s, close-cropped hair, energy coiled like something about to spring. Every muscle looks primed rather than posed, weight balanced forward on the balls of the feet…' — your words kept exactly, the direction woven in. Undo puts your eight words back untouched.",
       "state": "open",
       "filedAt": "2026-09-06T04:55:38.218Z",
       "options": [],
-      "recommendation": "Press it on your own briefs. Two things are still queued on the card before it closes: the suggestion chips beside the box (decision 12, next shift) and the court on the built writer (priced on the card, under the $50 line). Your eye closes #535 and #534 together whenever you are satisfied — nothing needs an answer to keep moving."
+      "recommendation": "Press the spiral and tap the suggestions on your own briefs; your eye closes #535 and #534 together. One thing is said plainly rather than buried: your decision said the suggestions are STORED on the roll, and they are derived from the roll's brief and remembered for the session instead — so a fresh set appears if you come back tomorrow. If you want them frozen per roll, one word and it is a small follow-up. The court on the built writer is still priced and unfired (about two sheets of house money, under the $50 line) and runs whenever you want it — your eye on the real thing is the cheaper first read."
     },
     {
       "id": "deploy-flip-508",
@@ -1886,6 +1886,32 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "brief-chips-535-frames",
+      "state": "open",
+      "cardId": null,
+      "issueNumber": 535,
+      "filedAt": "2026-09-06T11:49:29.590Z",
+      "title": "The suggestions under your brief box — and what a tap does to your words",
+      "question": "These are from the running app, not mockups. Do the suggestions read as THIS person's world rather than as options off a list — and when you tap one, does your brief come back as your brief with that direction inside it?",
+      "frames": [
+        {
+          "key": "crew-eye/101d6609-0f9d-448e-aecf-12269310f2cf.png",
+          "caption": "The strip under the dock box, dark: four suggestions written from 'a fitness creator in their 30s, close-cropped hair', quiet beside Roll again.",
+          "arm": "chips-dark"
+        },
+        {
+          "key": "crew-eye/a827e8d3-4f4c-4b5d-aace-6d5903c2dde0.png",
+          "caption": "The same, light.",
+          "arm": "chips-light"
+        },
+        {
+          "key": "crew-eye/9034f0ea-ba3a-4297-bfc5-d176a5e0ab61.png",
+          "caption": "After one tap: your words kept and the direction written into them, 'Written into your brief. Undo' beneath, and the suggestion you took gone quiet while the other three stay live.",
+          "arm": "chips-tapped-dark"
+        }
+      ]
+    },
     {
       "id": "reimagine-design-535-frames",
       "state": "open",
@@ -4036,6 +4062,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-601-brief-chips-535",
+      "status": "merged",
+      "prNumber": 601,
+      "title": "The suggestions beside the brief box, and the tap that writes one in (#535 decision 12)",
+      "note": "A new door that reads your brief and writes a few directions in its own register — free to you, dark to everyone but your account, and it spends nothing of yours. Driving it in the real app changed four things a code review could not have found: a word ban that refused 'hair cropped brutally short' while your own test brief says 'close-cropped hair'; a length cap that threw away the best line written for your ogre; an example inside the instruction that an ogre brief simply copied back; and a tap that was doing the whole re-imagine instead of the small steer it should be. Two review rounds, four findings, all taken — the sharpest caught a suggestion going quiet although its change had failed to land."
+    },
+    {
       "id": "pr-598-reimagine-535",
       "status": "merged",
       "prNumber": 598,
@@ -6030,7 +6063,7 @@
     147
   ],
   "nextUp": {
-    "readAt": "2026-09-06T10:10:58.318Z",
+    "readAt": "2026-09-06T11:59:45.502Z",
     "items": [
       {
         "issueNumber": 404,
