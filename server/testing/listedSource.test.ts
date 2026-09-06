@@ -385,14 +385,34 @@ describe("the class cannot come back through an eighth suite", () => {
       symptom would be two modules quietly ceasing to be watched, the exact
       silent-narrowing failure this whole file is built against.
 
-      `importerCountDiff.mts` is deliberately NOT pinned here any more. PR #592
-      pinned it by name because its membership hung on a backticked `scripts/` in
-      its docblock — a patch over this hole rather than a fix of it. The hole is
-      fixed, so the pin has no work left to do and its stated reason is no longer
-      true; leaving a pin whose comment lies is worse than not having it.
+      `importerCountDiff.mts`'s pin below is kept but RE-ARGUED: PR #592 gave it
+      one because its membership hung on a backticked `scripts/` in its docblock,
+      and that hole is fixed here, so its old reason is spent. Its new reason is
+      the one every pin above carries — see the note at the pin itself.
     */
     expect(walkers).toContain("scripts/lib/declaredEnvNames.mts");
     expect(walkers).toContain("scripts/lib/capabilityAtlas.mts");
+    /*
+      ⚠ AND `importerCountDiff.mts` KEEPS ITS PIN — FOR A DIFFERENT REASON
+      THAN IT WAS GIVEN ONE (PR #617 review, finding 1). The first cut of this
+      change deleted it, on the argument that PR #592 pinned it to patch the
+      prose-membership hole and the hole is now fixed. True, and it missed that
+      the pin was doing a SECOND job its comment never stated.
+
+      Every member above is pinned, so each one reddens if it leaves the
+      population. Deleting this one left exactly one member that could leave
+      silently — and it is the likeliest to, because membership now hangs on a
+      module's OWN walk shape: extract its `readdirSync` into a shared helper
+      and `walksAndTouches` stops matching its text. That is the delegated-walk
+      shape this file already records as structurally invisible, and it is how
+      #589 refused the deploy rite on a clean tree twice in one morning with
+      every test green. A bare read added afterwards would go unwatched.
+
+      The lesson is the general one and it is why this comment is long: the
+      argument for deleting a guard was read off the guard's own COMMENT, and
+      the comment was an incomplete account of what the guard did.
+    */
+    expect(walkers).toContain("scripts/lib/importerCountDiff.mts");
   });
 
   it("every suite that walks scripts/ reads its entries through the helper", () => {
