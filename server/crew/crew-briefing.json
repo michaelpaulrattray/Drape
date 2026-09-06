@@ -1,7 +1,7 @@
 {
-  "edition": 278,
-  "updatedAt": "2026-09-06T13:50:00Z",
-  "shift": "Foreman (Opus) - a mistyped word can no longer spend on thirteen scripts, and the guard that missed them now derives its own list",
+  "edition": 279,
+  "updatedAt": "2026-09-06T14:40:00Z",
+  "shift": "Foreman (Opus) - the suggestions under your brief box are gone on your word, and your page now says so",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T13:45:37.959Z",
+      "readAt": "2026-09-06T14:21:47.057Z",
       "items": [
         {
           "issueNumber": 16,
@@ -249,13 +249,13 @@
     {
       "id": "reimagine-design-535",
       "issueNumber": 535,
-      "title": "Re-imagine is finished — the writer, and now the suggestions beside your box (#535)",
+      "title": "Re-imagine is finished, and the suggestions are removed on your word (#535)",
       "productImpact": "The last piece of your Re-imagine decision is built. Under the brief box on any sheet there are now three or four short suggestions written FROM YOUR OWN BRIEF, in its own world — on 'a fitness creator in their 30s, close-cropped hair' the studio offered: posture drilled by years of reps · skin sun-warmed and faintly weathered · clothing of sweat-wicked technical mesh · energy coiled, ready to spring. Tap one and your brief comes back with that direction written INTO it, not stuck on the end, editable, with the same Undo. The suggestion you took goes quiet while it stands, and comes back the moment you undo it. Both halves of the defect you named are now dead in code: the offer is written from your words, so an ogre gets 'a temper banked low but ready' and never 'slim build'; and the edit is folded in rather than appended.",
       "workedExample": "Open a sheet and look under the brief box. Tap the suggestion you like. 'a fitness creator in their 30s, close-cropped hair' became 'A fitness creator in their 30s, close-cropped hair, energy coiled like something about to spring. Every muscle looks primed rather than posed, weight balanced forward on the balls of the feet…' — your words kept exactly, the direction woven in. Undo puts your eight words back untouched.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-06T04:55:38.218Z",
       "options": [],
-      "recommendation": "Your two replies are in and read: 'looks god for now' on the frames, and 'I tried re-imagine on my own brief's and it works.' That is the WRITER passing at your eye — thank you. Both arrived at ~10:45 this morning, which was before the suggestions under the box existed, so the card is still open on ONE thing: tap a suggestion on a sheet and see whether it reads as that person's world and whether your brief comes back as YOUR brief with the direction inside it. Nothing is blocked on you meanwhile. One thing said plainly rather than buried: your decision said the suggestions are STORED on the roll, and they are derived from the roll's brief and remembered for the session instead — a fresh set appears if you come back tomorrow. One word and freezing them is a small follow-up. The court on the built writer is still priced and unfired (about two sheets of house money, under the $50 line)."
+      "recommendation": "Closed by your own word: \"remove suggestion chips they are not required and then close #535 and #534\". They are out of the code entirely - surface, door, instruction, rate limit, styling, and the hidden setting that only existed to carry a tapped phrase - and #535 and #534 are both closed. Re-imagine keeps everything you passed: the press beside the box, the line under it, Undo, and your own typed instructions still folded into the brief rather than stuck on the end. Nothing here needs you."
     },
     {
       "id": "deploy-flip-508",
@@ -1888,7 +1888,7 @@
   "eyeItems": [
     {
       "id": "brief-chips-535-frames",
-      "state": "open",
+      "state": "done",
       "cardId": null,
       "issueNumber": 535,
       "filedAt": "2026-09-06T11:49:29.590Z",
@@ -1914,7 +1914,7 @@
     },
     {
       "id": "reimagine-design-535-frames",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 535,
       "filedAt": "2026-09-06T04:55:38.218Z",
@@ -1976,7 +1976,7 @@
     },
     {
       "id": "chip-writes-the-box-534",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 534,
       "filedAt": "2026-09-05T14:44:42.459Z",
@@ -2061,7 +2061,7 @@
     },
     {
       "id": "customer-record-534-frames",
-      "state": "answered",
+      "state": "done",
       "cardId": null,
       "issueNumber": 534,
       "filedAt": "2026-09-05T07:35:00.000Z",
@@ -4061,6 +4061,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-605-remove-brief-chips-535",
+      "status": "merged",
+      "prNumber": 605,
+      "title": "The suggestions under your brief box are removed on your word (#535 / #534)",
+      "note": "You looked at the suggestions under your brief box, said \"good\", and half an hour later said \"remove suggestion chips they are not required and then close #535 and #534\". They are gone.\n\nWhat changed on your sheet: the row of short grey phrases under the brief box is no longer drawn. Nothing else about Re-imagine moved - the spiral press beside the box, the line under it and Undo are exactly as you passed them. Typing your own instruction into the box (\"make her older\", \"give him a beard\") still works and still gets written INTO the brief rather than tacked on the end; that never needed a suggestion to reach it.\n\nIt was taken out at the roots rather than switched off: the surface, the door behind it, the instruction and guards that wrote the phrases, its own rate limit, its styling, and the one hidden setting that existed purely to carry a tapped phrase. A feature that is switched off but still wired is the thing this team keeps finding months later, so when you close a road we take out what was bolted to it in the same act.\n\n#535 and #534 are both closed, as you asked. Re-imagine is finished."
+    },
     {
       "id": "pr-603-strict-flags-345",
       "status": "merged",
@@ -6070,10 +6077,11 @@
     147,
     148,
     149,
-    150
+    150,
+    151
   ],
   "nextUp": {
-    "readAt": "2026-09-06T13:45:37.163Z",
+    "readAt": "2026-09-06T14:21:46.053Z",
     "items": [
       {
         "issueNumber": 404,
@@ -6083,20 +6091,6 @@
           "state": "blocked",
           "because": "#391 — the blurb is one line per rung, and the ladder folds from twelve to about seven first. Writing twelve now throws five away."
         }
-      },
-      {
-        "issueNumber": 534,
-        "title": "The sheet never shows the machine's prompt — only the customer's words and what they changed on this roll, on a Follow too (his ruling, 5 Sep)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "a change to WHAT HE JUDGES — it rewrites what the sheet shows him under the customer's own brief, which is the surface his eye rules on at the N1 gate."
-        }
-      },
-      {
-        "issueNumber": 535,
-        "title": "Re-imagine: the author becomes a visible writing assistant on the brief, and the imagination level goes — a DESIGN card at N1 for his word (5 Sep)",
-        "urgent": false
       },
       {
         "issueNumber": 543,
