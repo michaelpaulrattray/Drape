@@ -28,12 +28,17 @@ on:
 permissions:
   contents: read
 
-# NO concurrency group, deliberately (review of #584, finding 2). A cancelled
-# run — especially one cancelled while still QUEUED, where no step ever
-# executes — leaves a commit with a check that narrates nothing, which is the
-# exact #434 trap this repository already fell into on review.yml. Overlapping
-# runs cost a few curl polls a minute; each one ends at a narrated verdict:
-# live, superseded (green, said plainly), or red.
+# cancel-in-progress is FALSE, deliberately (review of #584, finding 2): a
+# RUNNING verify is never killed mid-verdict, so the #434 trap — a cancelled
+# check misread as a verdict — cannot land on a run that had started. The one
+# state the group can still cancel is a QUEUED run superseded by a newer push,
+# where no step ever executes and nothing can narrate; so it is stated here
+# instead, the same way review.yml states it: ⚠ A CANCELLED deploy-verify
+# means a newer push replaced it while it was still queued. It is NOT a
+# verdict about that commit — the newer run verifies a tree containing it.
+concurrency:
+  group: deploy-verify
+  cancel-in-progress: false
 
 jobs:
   verify:
