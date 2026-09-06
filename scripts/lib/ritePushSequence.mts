@@ -10,9 +10,9 @@
  * two-ref era and is true of it.
  *
  * `scripts/deploy-rite.mts` pushed `main` and then `main:local-migration`.
- * **Production builds from `local-migration`** (the rite's own verify block
- * says so), so the two refs are not interchangeable: the one that ships is the
- * SECOND one. Until this module existed the loop had no early exit and could
+ * **Production built from `local-migration`** (the rite's own verify block
+ * said so), so the two refs were not interchangeable: the one that shipped was
+ * the SECOND one. Until this module existed the loop had no early exit and could
  * not have had one — `run()` wraps `execFileSync` in a `try/catch` and
  * RETURNS the stderr as a string, so `gitPush` reported a rejected push and a
  * successful one with the same type and no status:

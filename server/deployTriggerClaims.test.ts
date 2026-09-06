@@ -151,6 +151,13 @@ const CLAIM =
  * tells a shift its merged PR has not shipped sends it to run a rite that
  * production no longer waits for. Flagged only while the deploying ref is
  * `main`, because that is the only world in which the sentence is false.
+ *
+ * ⚠ Unlike `CLAIM` this is a MENTION test, not a declaration test — the phrase
+ * has no verb shape to narrow on. It holds today because the scan population
+ * is narrow and the only unquoted copies live outside it (the design doc, and
+ * this docblock). Widen `SCANNED_FILES`/`SCANNED_DIRS` and it will fire on the
+ * correction being written down (#360's class); quote the phrase there, or
+ * narrow this to a declaration before widening.
  */
 const MERGE_DENIAL = /\bmerged PR has not shipped\b/gi;
 
