@@ -101,11 +101,7 @@ import { currentValueOfFacet } from "../server/castingV2/refineDelta";
 import type { Mask } from "../server/castingV2/maskedComposite";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { bindingVerdictCount, contradictedBindingVerdicts } from "./lib/verdictContradiction.mts";
-
-function arg(name: string, fallback = ""): string {
-  const index = process.argv.indexOf(`--${name}`);
-  return index > -1 ? (process.argv[index + 1] ?? fallback) : fallback;
-}
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 /*
   `--spend` THROUGH THE ONE DOOR, not a hand-rolled read of argv.
@@ -116,7 +112,34 @@ function arg(name: string, fallback = ""): string {
   line.
 */
 const SPEND = spendAuthorized("walk the finding replay (125 credits on his account)");
-const CONTROLS = process.argv.includes("--controls");
+
+/**
+ * THIS FILE'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * The reader underneath this used to be `process.argv.indexOf("--" + name)`,
+ * which cannot fail on a word it was never asked about — so `--dryrun`,
+ * `--Spend` or a typo'd `--candidat` was discarded in silence and the walk ran
+ * anyway. On a driver that charges 125 credits to his real account that is the
+ * most expensive shape in the repository, and this file already carries a scar
+ * from it (the `--spend` note above).
+ *
+ * It is parsed AFTER the freeze above, so the documented order of refusals
+ * is unchanged: a frozen line still answers first, whatever the rest of the
+ * command line says.
+ *
+ * `--spend` is declared here even though it is READ through `spendAuthorized`
+ * rather than through this parse: the freeze owns the answer, but the parser
+ * still has to know the word is legal or every real walk would refuse.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["out", "base", "token", "candidate", "world", "bucket"],
+  boolean: ["controls", "rehearse", "overwrite", "spend"],
+});
+function arg(name: string, fallback = ""): string {
+  return ARGS.value(name) ?? fallback;
+}
+
+const CONTROLS = ARGS.flag("controls");
 /**
  * `--rehearse` — everything the walk does EXCEPT type and submit.
  *
@@ -132,7 +155,7 @@ const CONTROLS = process.argv.includes("--controls");
  * `--spend` that is testable without spending, which makes it obligatory rather
  * than nice.
  */
-const REHEARSE = process.argv.includes("--rehearse");
+const REHEARSE = ARGS.flag("rehearse");
 const OUT = path.resolve(arg("out", "output/finding-replay"));
 
 /*
@@ -153,7 +176,7 @@ const OUT = path.resolve(arg("out", "output/finding-replay"));
 */
 if (SPEND && existsSync(OUT)) {
   const delivered = readdirSync(OUT).filter((name) => /^\d+-delivered\.png$/.test(name));
-  if (delivered.length > 0 && !process.argv.includes("--overwrite")) {
+  if (delivered.length > 0 && !ARGS.flag("overwrite")) {
     throw new Error(
       `${OUT} already holds ${delivered.length} delivered frame(s) from a previous walk `
       + "— a spend would overwrite evidence that cannot be re-bought. Pass "

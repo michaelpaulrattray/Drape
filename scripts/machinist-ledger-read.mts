@@ -80,11 +80,23 @@ import {
   attributePrsToSessions,
   renderLedgerBlock,
 } from "./lib/shiftLedger.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const arg = (name: string): string | undefined => {
-  const index = process.argv.indexOf(`--${name}`);
-  return index === -1 ? undefined : process.argv[index + 1];
-};
+/**
+ * THIS FILE'S WHOLE VOCABULARY, DECLARED SO A WORD OUTSIDE IT REFUSES (#345).
+ *
+ * The reader here was `process.argv.indexOf("--" + name)`, which cannot fail on
+ * a word it was never asked about. Nothing here spends and nothing here writes,
+ * so the cost of a silently-discarded flag is a WRONG READING rather than a
+ * charge — and this is the ledger the founder judges the team's own numbers on,
+ * where a `--days 30` that was typed `--day 30` prints a confident fortnight
+ * and says nothing.
+ */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["days", "pr-limit"],
+  boolean: [],
+});
+const arg = (name: string): string | undefined => ARGS.value(name) ?? undefined;
 const days = Number(arg("days") ?? 14);
 if (!Number.isFinite(days) || days <= 0) {
   console.error(`--days is not a positive number: ${arg("days")}`);
