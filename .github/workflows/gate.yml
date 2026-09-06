@@ -7,11 +7,12 @@
 # worry about money paths just run it - ill let you know if there are money
 # issues."
 #
-# Direct pushes by the deploy rite are untouched: the rite pushes BOTH
-# production-deploying branches (`main` and, since 2026-09-03, the equally
-# protected `local-migration` — #461), and both are configured with
-# enforce_admins off, so the rite's push path (admin, via the pre-push hook
-# ceremony) bypasses these checks. Agent-built work arrives as PRs and cannot.
+# Direct pushes by the deploy rite are untouched: the rite pushes `main` (the
+# one production-deploying branch since the 2026-09-06 flip, #508 — the
+# equally protected `local-migration`, #461, is deleted), and it is configured
+# with enforce_admins off, so the rite's push path (admin, via the pre-push
+# hook ceremony) bypasses these checks. Agent-built work arrives as PRs and
+# cannot.
 
 # MANUAL RE-RUN (issue #80). GitHub creates no `pull_request` run at all —
 # no banner, no failure — when a PR's merge ref cannot be built (a

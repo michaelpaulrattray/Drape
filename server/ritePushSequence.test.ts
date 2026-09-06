@@ -1,11 +1,19 @@
 /**
- * #317 — THE RITE MUST STOP BETWEEN ITS TWO PUSHES.
+ * #317 — THE RITE MUST STOP AT THE FIRST FAILED PUSH.
  *
- * `scripts/deploy-rite.mts` pushes `main` and then `main:local-migration`, and
- * **production builds from the second one**. For three incidents the loop had
+ * `scripts/deploy-rite.mts` pushed `main` and then `main:local-migration`, and
+ * **production built from the second one**. For three incidents the loop had
  * no early exit, so a `main` rejected as non-fast-forward was printed and
  * `local-migration` shipped anyway — handing production a tree `main` did not
  * carry, and then blocking the rite for every later shift.
+ *
+ * ⚠ **SINCE 2026-09-06 THE RITE PUSHES ONE REF AND PRODUCTION BUILDS FROM IT**
+ * (`main`; #508 deploy-on-merge, `local-migration` deleted). The machinery is
+ * unchanged and this suite still drives it — with a HYPOTHETICAL second ref,
+ * `main:staging`, standing in for the one that retired, because the STOP, the
+ * order guard and the failure messages are written for a list and the day a
+ * second ref returns they must already work. The arms that read the rite's own
+ * source assert the list it actually has, which is one entry.
  *
  * The card asked for this suite by name: *"this wants its own sitting and a
  * sabotage arm proving the refusal actually fires, not a drive-by edit."*
@@ -38,6 +46,9 @@ import {
 const RITE_PATH = path.join(process.cwd(), "scripts", "deploy-rite.mts");
 const riteSource = () => readFileSync(RITE_PATH, "utf8");
 
+/** The stand-in second ref. Not a branch this product has; never pushed. */
+const SECOND = "main:staging";
+
 /**
  * The rite's OWN branch list, read out of its source rather than restated.
  * Working law 4: a second list shadowing a source of truth always drifts.
@@ -59,32 +70,32 @@ const pusherFailing = (failFor: string[], log: string[]) => (branch: string): Pu
 describe("#317 · the push sequence stops at the first failure", () => {
   it("pushes every branch when they all land", () => {
     const log: string[] = [];
-    const result = pushInSequence(["main", "main:local-migration"], pusherFailing([], log));
+    const result = pushInSequence([SECOND, "main"], pusherFailing([], log));
 
-    expect(log).toEqual(["main", "main:local-migration"]);
+    expect(log).toEqual([SECOND, "main"]);
     expect(result.failed).toBeNull();
     expect(result.skipped).toEqual([]);
     expect(result.attempts.map((a) => a.ok)).toEqual([true, true]);
   });
 
-  /* THE ARM THIS CARD EXISTS FOR. */
-  it("never attempts local-migration when main is rejected", () => {
+  /* THE ARM THIS CARD EXISTS FOR: a ref after a failed one is never attempted. */
+  it("never attempts the second ref when the first is rejected", () => {
     const log: string[] = [];
-    const result = pushInSequence(["main", "main:local-migration"], pusherFailing(["main"], log));
+    const result = pushInSequence([SECOND, "main"], pusherFailing([SECOND], log));
 
-    expect(log).toEqual(["main"]);
-    expect(log).not.toContain("main:local-migration");
-    expect(result.failed?.branch).toBe("main");
-    expect(result.skipped).toEqual(["main:local-migration"]);
+    expect(log).toEqual([SECOND]);
+    expect(log).not.toContain("main");
+    expect(result.failed?.branch).toBe(SECOND);
+    expect(result.skipped).toEqual(["main"]);
     expect(result.attempts).toHaveLength(1);
   });
 
   it("reports the failure when the LAST ref is the one that fails", () => {
     const log: string[] = [];
-    const result = pushInSequence(["main", "main:local-migration"], pusherFailing(["main:local-migration"], log));
+    const result = pushInSequence([SECOND, "main"], pusherFailing(["main"], log));
 
-    expect(log).toEqual(["main", "main:local-migration"]);
-    expect(result.failed?.branch).toBe("main:local-migration");
+    expect(log).toEqual([SECOND, "main"]);
+    expect(result.failed?.branch).toBe("main");
     expect(result.skipped).toEqual([]);
   });
 
@@ -104,29 +115,34 @@ describe("#317 · production's ref must be pushed LAST", () => {
     expect(deployRefOrderProblem(branchesFrom(riteSource()))).toBeNull();
   });
 
-  it("refuses the reversed order — stopping cannot help after production has shipped", () => {
-    const problem = deployRefOrderProblem(["main:local-migration", "main"]);
+  it("refuses production's ref anywhere but last — stopping cannot help after production has shipped", () => {
+    const problem = deployRefOrderProblem(["main", SECOND]);
     expect(problem).toMatch(/must be LAST/);
   });
 
   it("refuses a list that never pushes production's ref, and an empty one", () => {
-    expect(deployRefOrderProblem(["main"])).toMatch(/none of them is local-migration/);
+    expect(deployRefOrderProblem([SECOND])).toMatch(new RegExp(`none of them is ${DEPLOY_SOURCE_REF}`));
     expect(deployRefOrderProblem([])).toMatch(/empty/);
   });
 
   it("resolves a local:remote refspec to the ref it lands on", () => {
-    expect(refOf("main:local-migration")).toBe(DEPLOY_SOURCE_REF);
-    expect(refOf("main")).toBe("main");
+    expect(refOf(SECOND)).toBe("staging");
+    expect(refOf("main")).toBe(DEPLOY_SOURCE_REF);
+  });
+
+  it("production's ref is main — the 2026-09-06 flip, derived from the constant the rite pushes", () => {
+    expect(DEPLOY_SOURCE_REF).toBe("main");
+    expect(branchesFrom(riteSource()).map(refOf)).toContain(DEPLOY_SOURCE_REF);
   });
 });
 
 describe("#317 · the failure message names the recovery and forbids the force push", () => {
-  const failedFirst = pushInSequence(["main", "main:local-migration"], pusherFailing(["main"], []));
+  const failedFirst = pushInSequence([SECOND, "main"], pusherFailing([SECOND], []));
 
   it("says nothing shipped, and gives the one-merge repair", () => {
     const message = pushFailureMessage(failedFirst);
     expect(message).toMatch(/NOTHING WAS PUSHED/);
-    expect(message).toMatch(/git merge origin\/main --no-edit/);
+    expect(message).toMatch(/git merge origin\/staging --no-edit/);
     expect(message).toMatch(/deploy-rite\.mts/);
   });
 
@@ -137,12 +153,10 @@ describe("#317 · the failure message names the recovery and forbids the force p
   });
 
   it("escalates when something already shipped, with the two no-op readings", () => {
-    const shipped = pushInSequence(
-      ["main", "main:local-migration"],
-      pusherFailing(["main:local-migration"], []),
-    );
+    const shipped = pushInSequence([SECOND, "main"], pusherFailing(["main"], []));
     const message = pushFailureMessage(shipped);
     expect(message).toMatch(/ALREADY PUSHED/);
+    expect(message).toMatch(/production's own ref is the one that did NOT land/);
     expect(message).toMatch(/must be EMPTY/);
     expect(message).toMatch(/--is-ancestor/);
   });
@@ -150,31 +164,43 @@ describe("#317 · the failure message names the recovery and forbids the force p
   /*
     THE REVIEWER'S FINDING ON PR #570, kept as an arm rather than a fixed
     comment. The first draft printed `git merge origin/main` in BOTH branches.
-    In the shipped branch that is the one scenario the message will ever be
-    read in — `main` landed, `local-migration` was rejected — and there
-    `origin/main` IS HEAD, so the command is "Already up to date" followed by a
-    re-run that fails identically. The orphan is on the ref that did NOT land.
+    The orphan is on the ref that did NOT land; merging the one that did is
+    "Already up to date" followed by a re-run that fails identically.
   */
-  it("merges the ref that FAILED, never origin/main by reflex", () => {
-    const shipped = pushInSequence(
-      ["main", "main:local-migration"],
-      pusherFailing(["main:local-migration"], []),
-    );
+  it("merges the ref that FAILED, never the one that landed by reflex", () => {
+    const shipped = pushInSequence([SECOND, "main"], pusherFailing(["main"], []));
     const message = pushFailureMessage(shipped);
 
-    expect(message).toMatch(/git merge origin\/local-migration --no-edit/);
-    expect(message).not.toMatch(/git merge origin\/main/);
+    expect(message).toMatch(/git merge origin\/main --no-edit/);
+    expect(message).not.toMatch(/git merge origin\/staging/);
     /* And it says WHY, so the next reader does not "helpfully" change it back. */
-    expect(message).toMatch(/would be a no-op here/);
-    expect(message).toMatch(/--is-ancestor origin\/local-migration HEAD/);
+    expect(message).toMatch(/origin\/staging would be a no-op here/);
+    expect(message).toMatch(/--is-ancestor origin\/main HEAD/);
   });
 
-  it("still merges origin/main when main is the ref that failed", () => {
+  it("still merges the first ref when the first ref is the one that failed", () => {
     const message = pushFailureMessage(
-      pushInSequence(["main", "main:local-migration"], pusherFailing(["main"], [])),
+      pushInSequence([SECOND, "main"], pusherFailing([SECOND], [])),
     );
-    expect(message).toMatch(/git merge origin\/main --no-edit/);
-    expect(message).not.toMatch(/git merge origin\/local-migration/);
+    expect(message).toMatch(/git merge origin\/staging --no-edit/);
+    expect(message).not.toMatch(/git merge origin\/main/);
+  });
+
+  /*
+    PR #597 REVIEW, FINDING 3. Under contract 3 production's ref is LAST, so
+    when a NON-production ref fails, production's ref is in `skipped` — the
+    first draft said "production is building this commit" there, which is the
+    #296 lie direction. The fixture is a contract-compliant order (production
+    last); an order the guard refuses is not a fixture this suite may pin.
+  */
+  it("says production's ref was NOT pushed when an earlier, non-production ref failed", () => {
+    const message = pushFailureMessage(
+      pushInSequence(["main:staging", "main:qa", "main"], pusherFailing(["main:qa"], [])),
+    );
+    expect(message).toMatch(/ALREADY PUSHED: main:staging\b/);
+    expect(message).toMatch(new RegExp(`Production's ref \\(${DEPLOY_SOURCE_REF}\\) was NOT pushed`));
+    expect(message).toMatch(/still on its previous commit/);
+    expect(message).not.toMatch(/production is building this/);
   });
 
   it("is empty when nothing failed", () => {
@@ -182,25 +208,25 @@ describe("#317 · the failure message names the recovery and forbids the force p
   });
 
   it("the diverged-ref message names production's ref as the one that matters", () => {
-    const onProd = divergedRefMessage("local-migration", "a".repeat(40), "abc1234");
+    const onProd = divergedRefMessage(DEPLOY_SOURCE_REF, "a".repeat(40), "abc1234");
     expect(onProd).toMatch(/Production builds from this ref/);
     expect(onProd).toMatch(/DO NOT force push/);
 
-    const onMain = divergedRefMessage("main", "", "abc1234");
-    expect(onMain).toMatch(/\(absent\)/);
-    expect(onMain).toMatch(/Production builds from local-migration/);
+    const onOther = divergedRefMessage("staging", "", "abc1234");
+    expect(onOther).toMatch(/\(absent\)/);
+    expect(onOther).toMatch(new RegExp(`Production builds from ${DEPLOY_SOURCE_REF}`));
   });
 
   /* Same finding, same shape, second site (#570 review). */
-  it("the diverged-ref message merges the ref that disagrees, not origin/main", () => {
-    const onProd = divergedRefMessage("local-migration", "a".repeat(40), "abc1234");
-    expect(onProd).toMatch(/git merge origin\/local-migration --no-edit/);
-    expect(onProd).not.toMatch(/git merge origin\/main/);
-    expect(onProd).toMatch(/not origin\/main by/);
+  it("the diverged-ref message merges the ref that disagrees, not origin/main by reflex", () => {
+    const onOther = divergedRefMessage("staging", "a".repeat(40), "abc1234");
+    expect(onOther).toMatch(/git merge origin\/staging --no-edit/);
+    expect(onOther).not.toMatch(/git merge origin\/main/);
+    expect(onOther).toMatch(/not origin\/main by/);
 
     const onMain = divergedRefMessage("main", "b".repeat(40), "abc1234");
     expect(onMain).toMatch(/git merge origin\/main --no-edit/);
-    expect(onMain).not.toMatch(/git merge origin\/local-migration/);
+    expect(onMain).not.toMatch(/git merge origin\/staging/);
   });
 });
 
@@ -255,8 +281,14 @@ describe("#317 · the rite actually uses it (driven by sabotage)", () => {
   });
 
   it("the reader is looking at a real BRANCHES, and refuses a shape it cannot parse", () => {
-    expect(branchesFrom(riteSource())).toEqual(["main", "main:local-migration"]);
+    /* One ref since the 2026-09-06 flip (#508): `main:local-migration` left
+       the list in PR-2 and the branch is deleted at origin. */
+    expect(branchesFrom(riteSource())).toEqual(["main"]);
     expect(() => branchesFrom("const BRANCHES = something();")).toThrow(/wrong shape/);
+  });
+
+  it("the rite never names the retired ref as a push target", () => {
+    expect(riteSource()).not.toMatch(/"main:local-migration"/);
   });
 });
 
@@ -323,11 +355,11 @@ describe("#577 · the push failure is classified before it is diagnosed", () => 
 
   /** A sequence whose failure carries the given stderr. */
   const failWith = (failFor: string, output: string) =>
-    pushInSequence(["main", "main:local-migration"], (branch) =>
+    pushInSequence([SECOND, "main"], (branch) =>
       branch === failFor ? { ok: false, output } : { ok: true, output: "To github.com:x/y.git" });
 
   it("says the network is down and prints NO merge repair at all", () => {
-    const message = pushFailureMessage(failWith("main", DNS_FAILURE));
+    const message = pushFailureMessage(failWith(SECOND, DNS_FAILURE));
 
     expect(message).toMatch(/THE NETWORK IS DOWN/);
     expect(message).toMatch(/nothing is wrong with this tree/);
@@ -342,9 +374,9 @@ describe("#577 · the push failure is classified before it is diagnosed", () => 
   });
 
   it("states what shipped even when the wire died — that fact is read, not diagnosed", () => {
-    const message = pushFailureMessage(failWith("main:local-migration", DNS_FAILURE));
+    const message = pushFailureMessage(failWith("main", DNS_FAILURE));
 
-    expect(message).toMatch(/ALREADY PUSHED: main\b/);
+    expect(message).toMatch(/ALREADY PUSHED: main:staging\b/);
     expect(message).toMatch(/production'?s own ref is the one that did NOT land/);
     expect(message).toMatch(/THE NETWORK IS DOWN/);
     expect(message).toMatch(/the one that did is already correct/);
@@ -353,7 +385,7 @@ describe("#577 · the push failure is classified before it is diagnosed", () => 
 
   it("shrugs honestly when it does not recognise the cause", () => {
     const message = pushFailureMessage(
-      failWith("main", "fatal: Could not read from remote repository."),
+      failWith(SECOND, "fatal: Could not read from remote repository."),
     );
 
     expect(message).toMatch(/THE CAUSE WAS NOT RECOGNISED/);
@@ -372,11 +404,11 @@ describe("#577 · the push failure is classified before it is diagnosed", () => 
 
   it("still gives the merge repair when the cause really is the race", () => {
     const message = pushFailureMessage(
-      failWith("main", "! [rejected]        main -> main (fetch first)"),
+      failWith(SECOND, "! [rejected]        main -> main (fetch first)"),
     );
 
     expect(message).toMatch(/ordinary race/);
-    expect(message).toMatch(/git merge origin\/main --no-edit/);
+    expect(message).toMatch(/git merge origin\/staging --no-edit/);
     expect(message).not.toMatch(/THE NETWORK IS DOWN/);
     expect(message).not.toMatch(/NOT RECOGNISED/);
   });
@@ -387,13 +419,13 @@ describe("#577 · the push failure is classified before it is diagnosed", () => 
     third ref cannot turn the sentence into a lie without the arm noticing.
   */
   it("names the ref that actually landed as the no-op, derived from the sequence", () => {
-    const three = pushInSequence(["main", "main:staging", "main:local-migration"], (branch) =>
-      branch === "main:local-migration"
+    const three = pushInSequence(["main:staging", "main:qa", "main"], (branch) =>
+      branch === "main"
         ? { ok: false, output: "! [rejected] (fetch first)" }
         : { ok: true, output: "" });
     const message = pushFailureMessage(three);
 
-    expect(message).toMatch(/Merging\norigin\/staging would be a no-op here/);
-    expect(message).toMatch(/git merge origin\/local-migration --no-edit/);
+    expect(message).toMatch(/Merging\norigin\/qa would be a no-op here/);
+    expect(message).toMatch(/git merge origin\/main --no-edit/);
   });
 });

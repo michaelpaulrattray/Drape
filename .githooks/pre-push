@@ -8,10 +8,12 @@
 # with that sentence already written. A sentence did not hold; a sentence will
 # not hold. So the ceremony stops being a discipline and becomes a gate.
 #
-# `main` and `local-migration` both deploy production. A push to either without
-# the rite skips the freeze check, which is the reading that asks whether the
-# founder has paid work in flight — the judgement that is exactly wrong when it
-# is wrong.
+# `main` deploys production — since 2026-09-06 Railway builds from it directly
+# (#508), and `local-migration`, which used to deploy beside it, is deleted. A
+# push to `main` without the rite skips the freeze check, which is the reading
+# that asks whether the founder has paid work in flight — the judgement that is
+# exactly wrong when it is wrong. (A PR merge is the other road to `main` and
+# carries the gate instead; this hook is about HAND pushes.)
 #
 # The marker is set by scripts/deploy-rite.mts on the git child it spawns, and
 # by nothing else. It is deliberately not a file, a flag or a branch name: those
@@ -27,7 +29,7 @@
 
 protected_ref() {
   case "$1" in
-    refs/heads/main|refs/heads/local-migration) return 0 ;;
+    refs/heads/main) return 0 ;;
     *) return 1 ;;
   esac
 }

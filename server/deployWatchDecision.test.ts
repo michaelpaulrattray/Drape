@@ -96,9 +96,9 @@ describe("a deployment is mine only if it is new since the push AND built from t
     // The shape `railway deployment list --json --limit 2` printed on 2026-08-26, trimmed.
     const listing = JSON.stringify([
       { id: mine, status: "SUCCESS", createdAt: "2026-08-26T13:20:00.061Z",
-        meta: { branch: "local-migration", commitHash: sha, reason: "deploy" } },
+        meta: { branch: "main", commitHash: sha, reason: "deploy" } },
       { id: prior, status: "REMOVED", createdAt: "2026-08-26T12:45:42.000Z",
-        meta: { branch: "local-migration", commitHash: other, reason: "deploy" } },
+        meta: { branch: "main", commitHash: other, reason: "deploy" } },
     ]);
     expect(listedRows(listing)).toEqual([
       { id: mine, status: "SUCCESS", at: "2026-08-26T13:20:00.061Z", commitHash: sha },
