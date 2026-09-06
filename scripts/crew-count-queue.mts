@@ -117,21 +117,35 @@ import {
 import { CREW_WORK_CATEGORIES } from "../shared/crewWorkSwitches.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 
+import { isOutOfNamingReach, mergedPullRequestArgs } from "./lib/crewNamingWindow.mts";
+
 const TABLE = "crew_queue_counts";
 const TITLES_COLUMN = "titles";
 const EXCLUDED_COLUMN = "excluded";
 const POSSIBLY_DONE_COLUMN = "possiblyDone";
 
 /**
- * How many merged pull requests are read for the possibly-fixed flag (#494).
+ * The safety bound on how many merged pull requests are fetched (#494, #507).
  *
- * The whole history is 182 at the time of writing, so this is far above the
- * population and the cap is CHECKED below rather than assumed — `countOpen`'s
- * rule, for its reason: a `--limit` shorter than the real set turns the reading
- * into a silent floor, and this reading is already a floor for reasons it
- * cannot help (a fix pushed straight to main by the rite has no PR at all).
+ * ⚠ **THE WINDOW ITSELF IS NO LONGER THIS NUMBER — IT IS A DATE, DERIVED FROM
+ * THE OLDEST OPEN CARD** (`readOldestOpenCardFiling`). This constant is only
+ * the page bound underneath it, and hitting it is now a REPORTED HORIZON rather
+ * than a refusal of the whole reading.
+ *
+ * The reason is #507, found by the reviewer on PR #498 rather than by a
+ * customer: the window used to be a bare 500 with a refusal on top, the whole
+ * history was 182 when that shipped and is **217 today**, and this repository
+ * merges several a day. A few months on, every run would have refused, every
+ * category would have been written UNFLAGGED forever, and from his panel that
+ * is indistinguishable from *"nothing is ever stale"* — the most reassuring
+ * wrong answer this panel can print.
+ *
+ * A date bound cannot expire that way. The rule only ever qualifies a pull
+ * request that merged AFTER the card was filed
+ * (`shared/crewQueuePossiblyDone.ts`), so nothing merged before the oldest open
+ * card can change any verdict, and old cards close.
  */
-const MERGED_PR_WINDOW = 500;
+const MERGED_PR_PAGE_BOUND = 1000;
 
 /** WHICH WORLD, named plainly — see `crew-shift-start.mts`'s note. */
 function whichWorld(): "PRODUCTION" | "DEV" {
@@ -164,6 +178,13 @@ type CategoryReading = {
    * the log. Never a subtraction: these are cards inside `offered`.
    */
   readonly possiblyDone: ReadonlyArray<{ card: number; title: string; prs: readonly number[] }>;
+  /**
+   * OFFERED cards the reader could not judge because they were filed before the
+   * pull-request horizon (#507). Empty in the ordinary case. Never stored — it
+   * is a fact about the INSTRUMENT this run, not about the card, and it belongs
+   * where a shift reads.
+   */
+  readonly outOfReach: ReadonlyArray<{ card: number; title: string }>;
 };
 
 /**
@@ -180,11 +201,60 @@ type CategoryReading = {
  * leave every category UNFLAGGED rather than write "nothing is stale", which is
  * the most reassuring wrong answer this panel could print.
  */
-function readCardNamings(): Map<number, CardNaming[]> | null {
+/**
+ * THE OLDEST OPEN CARD'S FILING DATE — the window's own bound (#507).
+ *
+ * One `gh` call, sorted by GitHub rather than by us, because the answer is one
+ * row and paging a hundred to find a minimum is the same reading done slowly.
+ *
+ * `null` on any doubt, and `readCardNamings` then falls back to the whole
+ * history: a date that cannot be read must widen the window, never narrow it.
+ * A narrowed window would drop qualifying pull requests and report the result
+ * as "nothing flagged", which is the silent direction this file refuses
+ * everywhere else.
+ */
+function readOldestOpenCardFiling(): { number: number; date: string } | null {
   try {
     const out = execFileSync(
       "gh",
-      ["pr", "list", "--state", "merged", "--limit", String(MERGED_PR_WINDOW), "--json", "number,title,body,mergedAt"],
+      ["issue", "list", "--state", "open", "--limit", "1", "--search", "sort:created-asc", "--json", "number,createdAt"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+    const rows = JSON.parse(out);
+    if (!Array.isArray(rows) || rows.length !== 1) return null;
+    const row = rows[0] as { number?: unknown; createdAt?: unknown };
+    if (typeof row.createdAt !== "string" || !Number.isFinite(Date.parse(row.createdAt))) return null;
+    if (typeof row.number !== "number") return null;
+    /* The DAY, not the instant. `merged:>=` takes a date and truncates to its
+       start, so this is always a shade WIDER than the rule needs — the safe
+       direction, and the only one that cannot lose a qualifying merge. */
+    return { number: row.number, date: row.createdAt.slice(0, 10) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The pull-request index, and how far back it can actually see.
+ *
+ * `horizonAt` is null when the whole derived window came back — the ordinary
+ * case, and it means every open card can be judged. When the page bound is hit
+ * it is the oldest `mergedAt` the reader actually holds, and a card filed
+ * before it is OUT OF REACH rather than unflagged (#507's bar).
+ */
+type CardNamingIndex = {
+  readonly index: Map<number, CardNaming[]>;
+  readonly horizonAt: number | null;
+};
+
+function readCardNamings(since: { number: number; date: string } | null): CardNamingIndex | null {
+  try {
+    const out = execFileSync(
+      "gh",
+      /* Built in `scripts/lib/crewNamingWindow.mts` so the wire this reading
+         depends on has arms of its own — nothing here can be driven from a
+         suite without opening a database and calling GitHub. */
+      mergedPullRequestArgs(since, MERGED_PR_PAGE_BOUND),
       /* Bodies are large and the default 1MB pipe buffer truncates them into a
          JSON parse error — which would read here as "no pull request names any
          card", the silent-zero failure. Raised, and the parse below throws
@@ -193,12 +263,30 @@ function readCardNamings(): Map<number, CardNaming[]> | null {
     );
     const rows = JSON.parse(out);
     if (!Array.isArray(rows)) return null;
-    if (rows.length >= MERGED_PR_WINDOW) {
-      console.error(
-        `REFUSING the possibly-fixed reading: ${MERGED_PR_WINDOW} merged pull requests came back, which is the limit —`
-        + " older cards could not be judged and the flag would be a floor without saying so.",
+    /* ⚠ THE PAGE BOUND IS A HORIZON NOW, NOT A REFUSAL (#507). The old code
+       returned null here, which wrote every category UNFLAGGED — and an
+       unflagged category is the sentence *"nothing is ever stale"*, which is
+       the answer this instrument exists to stop the panel giving. Reporting how
+       far back the reader can see keeps every card inside that reach judged and
+       names the ones outside it. */
+    let horizonAt: number | null = null;
+    if (rows.length >= MERGED_PR_PAGE_BOUND) {
+      const oldest = Math.min(
+        ...(rows as Array<{ mergedAt?: unknown }>)
+          .map((row) => (typeof row.mergedAt === "string" ? Date.parse(row.mergedAt) : Number.NaN))
+          .filter((value) => Number.isFinite(value)),
       );
-      return null;
+      horizonAt = Number.isFinite(oldest) ? oldest : null;
+      console.error(
+        `⚠ the possibly-fixed reading hit its page bound: ${MERGED_PR_PAGE_BOUND} merged pull requests came back`
+        + (horizonAt === null
+          ? " and none carried a readable merge date — every card is reported OUT OF REACH."
+          : ` — it can see back to ${new Date(horizonAt).toISOString().slice(0, 10)}, and cards filed before that`
+            + " are reported OUT OF REACH rather than unflagged."),
+      );
+      /* Not knowing the horizon is the one case that cannot be reported per
+         card, so it refuses the whole reading exactly as before. */
+      if (horizonAt === null) return null;
     }
     const index = new Map<number, CardNaming[]>();
     for (const row of rows as Array<{ number?: unknown; title?: unknown; body?: unknown; mergedAt?: unknown }>) {
@@ -218,7 +306,7 @@ function readCardNamings(): Map<number, CardNaming[]> | null {
         index.set(card, [...(index.get(card) ?? []), { pr, mergedAt }]);
       }
     }
-    return index;
+    return { index, horizonAt };
   } catch (cause) {
     console.error(`[warn] could not read the merged pull requests: ${(cause as Error).message}`);
     return null;
@@ -246,7 +334,7 @@ function readCardNamings(): Map<number, CardNaming[]> | null {
  * makes "the count, the titles and the exclusions share one `countedAt`" a
  * property of the statement rather than of three reads agreeing.
  */
-function countOpen(label: string, namings: ReadonlyMap<number, CardNaming[]> | null): CategoryReading | null {
+function countOpen(label: string, namings: CardNamingIndex | null): CategoryReading | null {
   try {
     const out = execFileSync(
       "gh",
@@ -327,8 +415,15 @@ function countOpen(label: string, namings: ReadonlyMap<number, CardNaming[]> | n
        about a number it is not in. The flag annotates the offer; the exclusions
        describe what left it. */
     const possiblyDone: Array<{ card: number; title: string; prs: number[] }> = [];
+    const outOfReach: Array<{ card: number; title: string }> = [];
     if (namings !== null) {
       for (const row of offeredRows) {
+        /* #507: a card filed before the reader's horizon is UNJUDGED, and
+           saying nothing about it is the same output as "nothing found". */
+        if (isOutOfNamingReach(row.at, namings.horizonAt)) {
+          outOfReach.push({ card: row.number, title: row.title });
+          continue;
+        }
         /* ⚠ THE FLAG AND ITS RECEIPT COME FROM ONE CALL. This filtered inline
            with its own copy of the rule's two comparisons until the reviewer
            caught it (PR #498, finding 1) — a second list one line from its
@@ -336,7 +431,7 @@ function countOpen(label: string, namings: ReadonlyMap<number, CardNaming[]> | n
            the flag itself kept working. Only the pull requests that actually
            satisfied the rule are named: #8 is mentioned by ten and answered by
            none of them. */
-        const qualifying = qualifyingNamings(row.at, row.touched, namings.get(row.number) ?? []);
+        const qualifying = qualifyingNamings(row.at, row.touched, namings.index.get(row.number) ?? []);
         if (qualifying.length === 0) continue;
         possiblyDone.push({
           card: row.number,
@@ -352,6 +447,7 @@ function countOpen(label: string, namings: ReadonlyMap<number, CardNaming[]> | n
       offeredTitles: titlesOf(offeredRows),
       exclusions: exclusions as CrewQueueExclusions,
       possiblyDone,
+      outOfReach,
     };
   } catch (cause) {
     console.error(`[warn] could not count \`${label}\`: ${(cause as Error).message}`);
@@ -530,7 +626,11 @@ try {
     `readCardNamings`. A `null` here means every category is written UNFLAGGED,
     which is the honest degradation: this reading is a floor even when it works.
   */
-  const namings = readCardNamings();
+  const oldestOpen = readOldestOpenCardFiling();
+  if (oldestOpen === null) {
+    console.log("  (the oldest open card's date could not be read — the merged-PR window falls back to the whole history.)");
+  }
+  const namings = readCardNamings(oldestOpen);
   if (namings === null) {
     console.log("  ⚠ the possibly-fixed reading could not be taken this run — every category is written unflagged.");
   }
@@ -596,6 +696,10 @@ try {
        the pull request to open first. */
     for (const row of reading.possiblyDone) {
       console.log(`      ⚠ #${row.card} may already be done — named by merged PR ${row.prs.map((pr) => `#${pr}`).join(", ")} · ${row.title}`);
+    }
+    /* #507: named, so a horizon can never look like a clean reading. */
+    for (const row of reading.outOfReach) {
+      console.log(`      ? #${row.card} OUT OF REACH — filed before the merged-PR horizon, not judged · ${row.title}`);
     }
   }
 
