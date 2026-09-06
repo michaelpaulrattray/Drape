@@ -1,7 +1,7 @@
 {
-  "edition": 277,
-  "updatedAt": "2026-09-06T12:06:12.014Z",
-  "shift": "Foreman (Opus) — your word on Re-imagine is in; the suggestions under the box are the new thing for your eye",
+  "edition": 278,
+  "updatedAt": "2026-09-06T13:50:00Z",
+  "shift": "Foreman (Opus) - a mistyped word can no longer spend on thirteen scripts, and the guard that missed them now derives its own list",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T11:59:46.668Z",
+      "readAt": "2026-09-06T13:45:37.959Z",
       "items": [
         {
           "issueNumber": 16,
@@ -252,7 +252,7 @@
       "title": "Re-imagine is finished — the writer, and now the suggestions beside your box (#535)",
       "productImpact": "The last piece of your Re-imagine decision is built. Under the brief box on any sheet there are now three or four short suggestions written FROM YOUR OWN BRIEF, in its own world — on 'a fitness creator in their 30s, close-cropped hair' the studio offered: posture drilled by years of reps · skin sun-warmed and faintly weathered · clothing of sweat-wicked technical mesh · energy coiled, ready to spring. Tap one and your brief comes back with that direction written INTO it, not stuck on the end, editable, with the same Undo. The suggestion you took goes quiet while it stands, and comes back the moment you undo it. Both halves of the defect you named are now dead in code: the offer is written from your words, so an ogre gets 'a temper banked low but ready' and never 'slim build'; and the edit is folded in rather than appended.",
       "workedExample": "Open a sheet and look under the brief box. Tap the suggestion you like. 'a fitness creator in their 30s, close-cropped hair' became 'A fitness creator in their 30s, close-cropped hair, energy coiled like something about to spring. Every muscle looks primed rather than posed, weight balanced forward on the balls of the feet…' — your words kept exactly, the direction woven in. Undo puts your eight words back untouched.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-06T04:55:38.218Z",
       "options": [],
       "recommendation": "Your two replies are in and read: 'looks god for now' on the frames, and 'I tried re-imagine on my own brief's and it works.' That is the WRITER passing at your eye — thank you. Both arrived at ~10:45 this morning, which was before the suggestions under the box existed, so the card is still open on ONE thing: tap a suggestion on a sheet and see whether it reads as that person's world and whether your brief comes back as YOUR brief with the direction inside it. Nothing is blocked on you meanwhile. One thing said plainly rather than buried: your decision said the suggestions are STORED on the roll, and they are derived from the roll's brief and remembered for the session instead — a fresh set appears if you come back tomorrow. One word and freezing them is a small follow-up. The court on the built writer is still priced and unfired (about two sheets of house money, under the $50 line)."
@@ -263,7 +263,7 @@
       "title": "Deploy on merge is built and waiting — three fields in Railway flip it (#508)",
       "productImpact": "Today nothing you merge actually ships until the deploy script runs on your machine — a merged fix can sit invisible for hours, and every deploy routes through one laptop. The design you ordered is now decided and built: after your flip, **merging is shipping.** The moment a PR lands on main, Railway builds it and it goes live — no laptop, no ceremony, no waiting.\n\nTwo safety nets went in first, and both are already active the next time we deploy: a new build that cannot start healthy **never takes traffic** (customers keep getting the old, working version), and database tables now create themselves **before** the new code goes live instead of after, on every road. Rolling back stays one click in Railway, or one revert merge.\n\nOne thing to know, said plainly: after the flip, a merge landing while you are mid-roll can still cost you the known ~6-minute wait (money always conserved). The polite hold-while-you-work check stays on the nightly record pushes, and a follow-up card (#585) adds the same manners to the way shifts merge.",
       "workedExample": "In Railway → Drape service → Settings, in this order:\n1. **Pre-deploy command**: `node dist/predeploy.js` (timeout 600). This rehearses safely on the current road first — the next deploy proves it in the logs before anything depends on it.\n2. **Healthcheck path**: `/api/health`.\n3. **Watched branch**: change `local-migration` to `main` — this is the flip.\nThen reply 'flipped' and a shift arms the watcher (a GitHub setting), retires the old branch, and runs the proof from the card: one trivial merge watched going live with no script, one revert watched going live the same way.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-06T02:15:00.000Z",
       "options": [],
       "recommendation": "Flip it when you have five quiet minutes. Steps 1 and 2 rehearse safely on the current road first, step 3 is the switch, and rollback stays one click in Railway either way."
@@ -4062,6 +4062,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-603-strict-flags-345",
+      "status": "merged",
+      "prNumber": 603,
+      "title": "A mistyped flag can no longer quietly spend on thirteen more scripts (#345)",
+      "note": "Every one of these scripts is one WE run, never you - they paint test frames and read pictures to check the studio's own quality, and they spend the house account, not your credits. Thirteen of them took their settings in a way that could not notice a typo. Type --dry-run instead of --dry - a rehearsal, you think - and the word was thrown away in silence and the script bought the pictures anyway. One of them says so in its own note: an option exists there purely so that re-running one test does not re-buy the other two, and one slipped letter bought all three.\n\nThey all refuse now and print the words they do know, so a typo costs a second instead of a bill.\n\nThe finding underneath is the one worth having: a check already existed for exactly this, and it was watching a list of THREE files typed in by hand. Everything fixed, everything green - and twelve more scripts with the same fault sat outside the list where it could never look. It now works the list out for itself from which scripts can spend, so anything new is watched by existing rather than by somebody remembering.\n\nThe reviewer caught two real things I had missed and one I had CAUSED - a fourteenth script, and a change of mine that would have made one script refuse its own documented command. Both fixed, both now guarded."
+    },
+    {
       "id": "pr-601-brief-chips-535",
       "status": "merged",
       "prNumber": 601,
@@ -6062,10 +6069,11 @@
     146,
     147,
     148,
-    149
+    149,
+    150
   ],
   "nextUp": {
-    "readAt": "2026-09-06T11:59:45.502Z",
+    "readAt": "2026-09-06T13:45:37.163Z",
     "items": [
       {
         "issueNumber": 404,
