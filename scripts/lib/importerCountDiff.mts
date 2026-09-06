@@ -10,12 +10,26 @@
  * trees in a test, without a `git worktree` — the arms that CAN run cheaply
  * should not need the ones that cannot.
  */
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
+import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { join, resolve } from "node:path";
 
 /** Windows path separator, by code point: see the entrypoint's §heredoc note. */
 const SEP = String.fromCharCode(92);
 
+/*
+  ⚠ ENTRIES READ THROUGH THE ENOENT-ONLY TOLERANCE (#591), AND THE CARVE-OUT
+  WAS DECLINED ON PURPOSE.
+
+  This module walks `server`, `client` and `shared` today, where the ~440
+  untracked disposables this rule is about do not land — so the guard's own
+  precedent (`architectureAtlas.test.ts`'s row in `NOT_THE_CLASS`) would have
+  exempted it by name. It is fixed instead, because that row's reason would be
+  a claim about this walker's CALLERS rather than about the walker: `walk` is
+  EXPORTED and takes its root as an argument, so "it never walks scripts/" is
+  true until somebody passes a different directory, and nothing would go red on
+  the day they did. Two lines now against a carve-out that rots (working law 4).
+*/
 export function walk(dir: string, out: string[] = []): string[] {
   let entries: string[];
   try {
@@ -26,7 +40,9 @@ export function walk(dir: string, out: string[] = []): string[] {
   for (const entry of entries) {
     if (entry === "node_modules" || entry === "dist" || entry.startsWith(".")) continue;
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) walk(full, out);
+    const stat = statIfPresent(full);
+    if (stat === null) continue; /* vanished between list and stat (#589) */
+    if (stat.isDirectory()) walk(full, out);
     else if (/\.(ts|tsx|mts)$/.test(full)) out.push(full);
   }
   return out;
@@ -80,7 +96,8 @@ export function readTree(rootArgument: string): Tree {
   const exportPattern =
     /^export\s+(?:async\s+)?(?:const|let|function|class|enum)\s+([A-Za-z_$][\w$]*)/gm;
   for (const file of all) {
-    const src = readFileSync(file, "utf8");
+    const src = readIfPresent(file);
+    if (src === null) continue; /* left between the walk and the read (#589) */
     sources.set(file, src);
     if (isTestFile(file)) continue;
     if (!show(file).startsWith("server/")) continue;

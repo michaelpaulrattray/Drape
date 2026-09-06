@@ -53,7 +53,8 @@
  *
  *   npx tsx scripts/lib/stopline.mts --prove   # controls, both directions
  */
-import { existsSync, readFileSync, readdirSync, statSync, type Stats } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -241,49 +242,13 @@ function routesThroughTheFreeze(source: string): boolean {
   return /\bimport\(\s*["'][^"']*stopline\.m[jt]s["']\s*\)/.test(source);
 }
 
-/**
- * A FILE A LISTING NAMED CAN BE GONE BY THE TIME YOU READ IT (#223, #589).
- *
- * `scriptWorldGuard.test.ts`'s positive control plants a real file in the real
- * `scripts/` directory and unlinks it in `finally`; vitest runs suites in
- * parallel, so this module's walk can see the plant at `readdirSync` and miss
- * it at `statSync`/`readFileSync`. That threw, and the throw REFUSED the
- * deploy rite on a clean tree twice on 2026-09-06 (receipts
- * `2026-09-06T04-57-28-138Z` and `2026-09-06T04-58-57-115Z`) — #223's class
- * exactly, reintroduced because this walker was written after that repair
- * reached the six walkers that existed then (`server/testing/listedSource.ts`
- * carries the full argument).
- *
- * ENOENT ONLY, and that bound is the whole design: a file gone at the read was
- * not part of the tree at the moment of the reading, and skipping it is the
- * correct answer — while EACCES, EISDIR or a decode failure still throw,
- * because a tolerance that swallowed everything would turn the roster green by
- * making it blind (invariant 7). The suite drives both directions.
- */
 /*
-  ONE catch for both helpers (PR #590 review, finding 2): with two hand-rolled
-  try/catches the suite's EISDIR arm drove only the read helper, and a blinded
-  stat catch would have stayed green. Shared, the one driven arm covers both.
-  Stated limit, as listedSource.ts states its own: a DIRECTORY that vanishes
-  before readdirSync still throws — this tolerance covers entries, not roots.
+  THIS MODULE'S WALK READS THROUGH THE ENOENT-ONLY TOLERANCE, and the
+  tolerance itself lives in `scripts/lib/listedEntry.mts` — one home for it
+  (#591), because `productionMention.mts` walks `scripts/` too and a second
+  copy of a rule is working law 4. That module carries the argument, the
+  incident and the stated limit.
 */
-function enoentNull<T>(read: () => T): T | null {
-  try {
-    return read();
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-    throw error;
-  }
-}
-
-export function statIfPresent(path: string): Stats | null {
-  return enoentNull(() => statSync(path));
-}
-
-/** `readFileSync` with #589's ENOENT-only tolerance — see `statIfPresent`. */
-export function readIfPresent(path: string): string | null {
-  return enoentNull(() => readFileSync(path, "utf8"));
-}
 
 /** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
 export function scriptFilesUnder(dir: string): string[] {
