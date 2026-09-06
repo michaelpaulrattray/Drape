@@ -23,12 +23,18 @@ on:
   push:
     branches: [main]
 
+# contents:read is all the job needs: two read-only API calls (branch tip,
+# commit comparison) to tell a superseded push from a failed one.
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-verify
   cancel-in-progress: true
 
 jobs:
   verify:
+    name: Production serves this commit
     if: ${{ vars.DEPLOY_ON_MERGE == 'live' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
